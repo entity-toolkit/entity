@@ -72,6 +72,8 @@ if args['cluster']:
 # Settings
 makefile_options['DEBUGMODE'] = ('y' if args['debug'] else 'n')
 makefile_options['USEKOKKOS'] = ('y' if args['kokkos'] else 'n')
+if args['kokkos']:
+  makefile_options['KOKKOS_FLAG'] = "-D KOKKOS"
 
 # Target names
 makefile_options['NTT_TARGET'] = "ntt.exec"

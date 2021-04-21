@@ -61,6 +61,7 @@ all: ntt test
 
 ifeq ($(strip $(USEKOKKOS)), y)
 include ${KOKKOS_PATH}/Makefile.kokkos
+CPPFLAGS := ${CPPFLAGS} @KOKKOS_FLAG@
 endif
 
 # linking the main app
