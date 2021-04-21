@@ -35,7 +35,11 @@ After the compilation is successfull, you will find the corresponding executable
 
 ## Note for developers
 
+To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
 
+### Unit testing
+
+### Logging
 
 ## Third-party libraries
 
@@ -50,11 +54,11 @@ All the third-party libraries reside in the `extern` directory. They can be incl
 
 ## Dependencies
 
-While we try to keep the code as compatible as possible, there are certain minimal requirements we impose. 
+While we try to keep the code as compatible as possible, there are certain stringent requirements we impose (primarily due to limitations by `Kokkos`). 
 
 1. `python3`: for configuration (verify: `python --version`);
-2. `GNU Make`: for compilation (verify: `make -v`);
-3. `icc>=19.1` or `gcc=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`). 
+2. `GNU Make<=4.2.1`: for compilation (verify: `make -v`);
+3. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`). 
 
 ## To-do list for the near future
 
