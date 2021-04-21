@@ -14,3 +14,5 @@ __pycache__
 # Notation files
 *.cson
 
+# Temporary files
+*.swp
