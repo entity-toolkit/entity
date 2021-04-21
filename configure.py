@@ -13,6 +13,8 @@
 import argparse
 import glob
 import re
+import subprocess
+import os
 
 # Set template and output filenames
 makefile_input = 'Makefile.in'
@@ -24,7 +26,6 @@ DEF_cppstandard = 'c++17'
 
 # Options:
 ALL_clusters = ['stellar', 'frontera']
-ALL_compilers = ['icc', 'gcc', 'g++']
 
 # Step 1. Prepare parser, add each of the arguments
 parser = argparse.ArgumentParser()
@@ -37,7 +38,6 @@ parser.add_argument('--cluster',
 
 parser.add_argument('--compiler',
                     default=DEF_compiler,
-                    choices=ALL_compilers,
                     help='choose the compiler')
 
 parser.add_argument('--precision',
@@ -84,6 +84,16 @@ makefile_options['SRC_DIR'] = "lib"
 makefile_options['EXTERN_DIR'] = "extern"
 
 # Compilation commands
+# test if the compiler exists
+compiler_found = True
+try:
+  devnull = open(os.devnull, 'w')
+  subprocess.call(args['compiler'], stdout=devnull, stderr=devnull)
+except FileNotFoundError:
+  compiler_found = False
+if not compiler_found:
+  raise NameError(f"Compiler `{args['compiler']}` not found on this system.")
+
 makefile_options['CXX'] = args['compiler']
 makefile_options['CXXSTANDARD'] = f'-std={DEF_cppstandard}'
 
