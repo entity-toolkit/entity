@@ -60,7 +60,7 @@ default: all
 all: ntt test
 
 ifeq ($(strip $(USEKOKKOS)), y)
-	include ${KOKKOS_PATH}/Makefile.kokkos
+include ${KOKKOS_PATH}/Makefile.kokkos
 endif
 
 # linking the main app
@@ -72,8 +72,8 @@ $(BUILD_DIR)/$(TARGET): $(NTT_OBJS) $(OBJS) $(KOKKOS_LINK_DEPENDS)
 # linking tests
 test:$(BUILD_DIR)/$(TEST_TARGET)
 
-$(BUILD_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS)
-	$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS)
+$(BUILD_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS) $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS)
 
 # compiling
 $(BUILD_DIR)/%.cpp.o: %.cpp
@@ -84,5 +84,9 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 
 clean:
 	rm -r $(BUILD_DIR)
+
+ifeq ($(strip $(USEKOKKOS)), y)
+clean: kokkos-clean
+endif
 
 -include $(DEPS) $(NTT_DEPS) $(TEST_DEPS)
