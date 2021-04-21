@@ -1,0 +1,16 @@
+# Filesystem specific
+.DS_Store
+
+# Compilation junk
+*.o
+build/
+Makefile
+*.tmp
+
+# Accidental python files
+*.ipynb
+__pycache__
+
+# Notation files
+*.cson
+

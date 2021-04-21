@@ -1,0 +1,88 @@
+DEBUGMODE := @DEBUGMODE@ 
+USEKOKKOS := @USEKOKKOS@
+
+TARGET := @NTT_TARGET@
+TEST_TARGET := @TEST_TARGET@
+
+NTT_DIR := @NTT_DIR@
+TEST_DIR := @TEST_DIR@
+
+SRC_DIR := @SRC_DIR@
+
+# external libraries
+EXT_DIR := @EXTERN_DIR@
+KOKKOS_PATH := ${EXT_DIR}/kokkos
+
+# C++ flags
+CXX := @CXX@
+CXXSTANDARD := @CXXSTANDARD@
+ifeq ($(strip $(DEBUGMODE)), n)
+	# linker configuration flags (e.g. optimization level)
+	CONFFLAGS := @RELEASE_CONF_FLAGS@
+	PREPFLAGS := @RELEASE_PP_FLAGS@
+else
+	CONFFLAGS := @DEBUG_CONF_FLAGS@
+	PREPFLAGS := @DEBUG_PP_FLAGS@
+endif
+
+# warning flags
+WARNFLAGS := @WARNING_FLAGS@
+
+# custom preprocessor flags
+PREPFLAGS := ${PREPFLAGS} @PRECISION@ 
+
+# 3-rd party library configurations
+KOKKOS_CXX_STANDARD := 
+KOKKOS_OPTIONS = disable_deprecated_code
+
+BUILD_DIR := ./build
+
+SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
+
+NTT_SRCS := $(shell find $(NTT_DIR) -name *.cpp -or -name *.c)
+NTT_OBJS := $(NTT_SRCS:%=$(BUILD_DIR)/%.o)
+NTT_DEPS := $(NTT_OBJS:.o=.d)
+
+TEST_SRCS := $(shell find $(TEST_DIR) -name *.cpp -or -name *.c)
+TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o) 
+TEST_DEPS := $(TEST_OBJS:.o=.d)
+
+INC_DIRS := $(shell find $(SRC_DIR) -type d) ${EXT_DIR}
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+
+CPPFLAGS := ${INC_FLAGS} ${PREPFLAGS} ${WARNFLAGS} -MMD -MP
+CXXFLAGS := ${CXXFLAGS} ${CXXSTANDARD} ${CONFFLAGS}
+
+default: all
+
+all: ntt test
+
+ifeq ($(strip $(USEKOKKOS)), y)
+	include ${KOKKOS_PATH}/Makefile.kokkos
+endif
+
+# linking the main app
+ntt: $(BUILD_DIR)/$(TARGET)
+	
+$(BUILD_DIR)/$(TARGET): $(NTT_OBJS) $(OBJS) $(KOKKOS_LINK_DEPENDS)
+	$(CXX) $(NTT_OBJS) $(OBJS) -o $@ $(LDFLAGS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS)
+
+# linking tests
+test:$(BUILD_DIR)/$(TEST_TARGET)
+
+$(BUILD_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS)
+	$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS)
+
+# compiling
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $@
+
+.PHONY: ntt test clean
+
+clean:
+	rm -r $(BUILD_DIR)
+
+-include $(DEPS) $(NTT_DEPS) $(TEST_DEPS)
