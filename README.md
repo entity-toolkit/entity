@@ -3,6 +3,19 @@ One particle-in-cell code to rule them all.
 
 ## Getting started
 
+_Clone_ this repository with the following command:
+
+```shell
+git clone --recursive https://github.com/haykh/entity
+```
+
+Notice the `--recursive` flag which ensures that all the dependent libraries (submodules) are also downloaded. In case you already have the cloned repository but missed the submodules (this could happen if you `git clone` without `--recursive`) you may get them by doing
+
+```shell
+$ git submodule init 
+$ git submodule update
+```
+
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generat a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
 
 ```shell
