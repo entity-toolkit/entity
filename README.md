@@ -60,6 +60,8 @@ While we try to keep the code as compatible as possible, there are certain strin
 2. `GNU Make<=4.2.1`: for compilation (verify: `make -v`);
 3. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`). 
 
+> For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
+
 ## To-do list for the near future
 
 - [ ] parameter reading using `toml`
