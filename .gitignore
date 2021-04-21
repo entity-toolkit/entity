@@ -16,3 +16,7 @@ __pycache__
 
 # Temporary files
 *.swp
+
+# Temporary Kokkos files
+/Kokkos*
+/*.a
