@@ -10,14 +10,14 @@
 void test_extern_kokkos(void) {
   {
     Kokkos::initialize();
-    TEST_CHECK_ ( true, "`Kokkos` initialize done" );
+    TEST_CHECK_ ( true, "`Kokkos` initialize" );
     Kokkos::finalize();
-    TEST_CHECK_ ( true, "`Kokkos` finalize done" );
+    TEST_CHECK_ ( true, "`Kokkos` finalize" );
   }
 }
 #else
 void test_extern_kokkos(void) {
-  TEST_CHECK_( true, "-- `Kokkos` is disabled, so the test is ignored");
+  TEST_CHECK_ ( true, "-- `Kokkos` is disabled, so the test is ignored" );
 }
 #endif
 
