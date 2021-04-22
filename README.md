@@ -43,14 +43,16 @@ To keep the code clean, readable and easy to debug we employ some of the `c++` b
 
 ## Third-party libraries
 
-All the third-party libraries reside in the `extern` directory. The ones that are header-only can be included in the `.cpp` or `.h` files with `#include "{LIBNAME}/{LIBHEADER}[.h|.hpp]"`. Compiled libraries such as `Kokkos` are included similar to standard libraries, e.g., `#include <Kokkos_Core.hpp>`.
-
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability;
-2. [`acutest`](https://github.com/mity/acutest)<sup>h</sup>: for unit testing;
-3. [`toml11`](https://github.com/ToruNiina/toml11)<sup>h</sup>: for `toml` file parsing;
-4. [`plog`](https://github.com/SergiusTheBest/plog)<sup>h</sup>: for runtime logging.
+2. [`acutest`](https://github.com/mity/acutest)<sup>[h]</sup>: for unit testing;
+3. [`toml11`](https://github.com/ToruNiina/toml11)<sup>[h]</sup>: for `toml` file parsing;
+4. [`plog`](https://github.com/SergiusTheBest/plog)<sup>[h]</sup>: for runtime logging.
 
-<sup>h</sup> header-only library
+<sup>[h]</sup> header-only library
+
+> All the third-party libraries reside in the `extern` directory. 
+
+The header-only libraries can be included in the `.cpp` or `.h` files with `#include "{LIBNAME}/{LIBHEADER}[.h|.hpp]"`. Compiled libraries such as `Kokkos` are included similar to standard libraries, e.g., `#include <Kokkos_Core.hpp>`.
 
 ## Dependencies
 
