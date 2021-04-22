@@ -75,9 +75,9 @@ void test_lib_aux(void) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     testTimer.stop();
     res = testTimer.getElapsedIn(timer::second);
-    TEST_CHECK (std::abs(res - 0.1) < 1e-2);
+    TEST_CHECK (std::abs(res - 0.1) < 1e-1);
     res = testTimer.getElapsedIn(timer::nanosecond);
-    TEST_CHECK (std::abs(res - 1e8) < 1e-2 * 1e8);
+    TEST_CHECK (std::abs(res - 1e8) < 1e-1 * 1e8);
     TEST_MSG ("t_ellapsed = %Lf", res);
     TEST_MSG ("dt = %Lf", res - 1e8);
   }
