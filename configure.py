@@ -2,12 +2,18 @@
 #-----------------------------------------------------------------------------------------
 #
 # Options:
-#   -h  --help            help message
-#   --cluster             shortcut to choose cluster-specific configurations
-#   --compiler            compiler used (can be a valid path to the binary)
-#   --precision           floating point precision used
-#   -debug                compile in `debug` mode
-#   -kokkos               compile with `Kokkos` support
+#   -h  --help                    help message
+#   --cluster=<CLUSTER>           shortcut to choose cluster-specific configurations
+#   --compiler=<COMPILER>         compiler used (can be a valid path to the binary)
+#   --precision=[single|double]   floating point precision used
+#   -debug                        compile in `debug` mode
+#   -kokkos                       compile with `Kokkos` support
+#   --kokkos_arch=<ARCH>          `Kokkos` architecture
+#   --kokkos_devices=<DEV>        `Kokkos` devices
+#   --kokkos_options=<OPT>        `Kokkos` options
+#   --kokkos_cuda_options=<COPT>  `Kokkos` Cuda options
+#   --kokkos_loop=[...]           `Kokkos` loop layout
+#   --kokkos_vector_length=<VLEN> `Kokkos` vector length
 # ----------------------------------------------------------------------------------------
 
 import argparse
@@ -50,10 +56,42 @@ parser.add_argument('-debug',
                     default=False,
                     help='compile in `debug` mode')
 
+# `Kokkos` specific arguments -- >
 parser.add_argument('-kokkos',
                     action='store_true',
                     default=False,
                     help='compile with `Kokkos` support')
+
+parser.add_argument('--kokkos_arch',
+                    default='',
+                    help='`Kokkos` architecture')
+
+parser.add_argument('--kokkos_devices',
+                    type=str,
+                    default='',
+                    help='`Kokkos` devices')
+
+parser.add_argument('--kokkos_options',
+                    type=str,
+                    default='',
+                    help='`Kokkos` options')
+
+parser.add_argument('--kokkos_cuda_options',
+                    type=str,
+                    default='',
+                    help='`Kokkos` CUDA options')
+
+parser.add_argument('--kokkos_loop',
+                    default='default',
+                    choices=['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for'],
+                    help='`Kokkos` loop layout')
+
+parser.add_argument('--kokkos_vector_length',
+                    default=-1,
+                    type=int,
+                    help='`Kokkos` vector length')
+
+# < -- `Kokkos` specific arguments
 
 args = vars(parser.parse_args())
 
@@ -71,9 +109,52 @@ if args['cluster']:
 
 # Settings
 makefile_options['DEBUGMODE'] = ('y' if args['debug'] else 'n')
+
+# `Kokkos` settings
 makefile_options['USEKOKKOS'] = ('y' if args['kokkos'] else 'n')
+Kokkos_details = ''
 if args['kokkos']:
   makefile_options['KOKKOS_FLAG'] = "-D KOKKOS"
+  makefile_options['KOKKOS_ARCH'] = args['kokkos_arch']
+  makefile_options['KOKKOS_DEVICES'] = args['kokkos_devices']
+  makefile_options['KOKKOS_OPTIONS'] = args['kokkos_options']
+  # always disable deprecated Kokkos code
+  if makefile_options['KOKKOS_OPTIONS'] != '':
+    makefile_options['KOKKOS_OPTIONS'] += ','
+  makefile_options['KOKKOS_OPTIONS'] += 'disable_deprecated_code'
+  makefile_options['KOKKOS_CUDA_OPTIONS'] = args['kokkos_cuda_options']
+  # this needs to be rewritten (also added to the Makefile.in)
+  # TODO
+  makefile_options['KOKKOS_VECTOR_LENGTH'] = '-1'
+  if args['kokkos_loop'] == 'default':
+    args['kokkos_loop'] = '1DRange' if 'Cuda' in args['kokkos_devices'] else 'for'
+    makefile_options['KOKKOS_VECTOR_LENGTH'] = '-1'
+  if args['kokkos_loop'] == '1DRange':
+    makefile_options['KOKKOS_LOOP_LAYOUT'] = 'MANUAL1D_LOOP'
+  elif args['kokkos_loop'] == 'MDRange':
+    makefile_options['KOKKOS_LOOP_LAYOUT'] = 'MDRANGE_LOOP'
+  elif args['kokkos_loop'] == 'for':
+    makefile_options['KOKKOS_LOOP_LAYOUT'] = 'FOR_LOOP'
+  #  elif args['kokkos_loop'] == 'TP-TVR':
+    #  makefile_options['KOKKOS_LOOP_LAYOUT'] = 'TP_INNERX_LOOP\n#define INNER_TVR_LOOP'
+    #  makefile_options['KOKKOS_VECTOR_LENGTH'] = ('32' if args['kokkos_vector_length'] == -1
+                                           #  else str(args['kokkos_vector_length']))
+  #  elif args['kokkos_loop'] == 'TP-TTR':
+    #  makefile_options['KOKKOS_LOOP_LAYOUT'] = 'TP_INNERX_LOOP\n#define INNER_TTR_LOOP'
+    #  makefile_options['KOKKOS_VECTOR_LENGTH'] = ('1' if args['kokkos_vector_length'] == -1
+                                           #  else str(args['kokkos_vector_length']))
+  #  elif args['kokkos_loop'] == 'TP-TTR-TVR':
+    #  makefile_options['KOKKOS_LOOP_LAYOUT'] = 'TPTTRTVR_LOOP'
+    #  makefile_options['KOKKOS_VECTOR_LENGTH'] = ('32' if args['kokkos_vector_length'] == -1
+                                           #  else str(args['kokkos_vector_length']))
+  Kokkos_details = f'''
+  `Kokkos`:
+    {'Architecture':30} {args['kokkos_arch'] if args['kokkos_arch'] else '-'}
+    {'Devices':30} {args['kokkos_devices'] if args['kokkos_devices'] else '-'}
+    {'Options':30} {args['kokkos_options'] if args['kokkos_options'] else '-'}
+    {'Loop':30} {args['kokkos_loop']}
+    {'Vector length':30} {args['kokkos_vector_length']}
+  '''
 
 # Target names
 makefile_options['NTT_TARGET'] = "ntt.exec"
@@ -150,7 +231,7 @@ Physics ............................................
 Technical details ..................................
   {'Compiler':32} {args['compiler']}
   {'Debug mode':32} {args['debug']}
-
+  {Kokkos_details}
 ====================================================
 '''
 )

@@ -11,7 +11,15 @@ SRC_DIR := @SRC_DIR@
 
 # external libraries
 EXT_DIR := @EXTERN_DIR@
+
+ifeq ($(strip $(USEKOKKOS)), y)
 KOKKOS_PATH := ${EXT_DIR}/kokkos
+KOKKOS_ARCH := @KOKKOS_ARCH@
+KOKKOS_DEVICES := @KOKKOS_DEVICES@
+KOKKOS_OPTIONS := @KOKKOS_OPTIONS@
+KOKKOS_CUDA_OPTIONS := @KOKKOS_CUDA_OPTIONS@
+KOKKOS_CXX_STANDARD := 
+endif
 
 # C++ flags
 CXX := @CXX@
@@ -32,8 +40,8 @@ WARNFLAGS := @WARNING_FLAGS@
 PREPFLAGS := ${PREPFLAGS} @PRECISION@ 
 
 # 3-rd party library configurations
-KOKKOS_CXX_STANDARD := 
-KOKKOS_OPTIONS = disable_deprecated_code
+# ...
+#
 
 BUILD_DIR := ./build
 
