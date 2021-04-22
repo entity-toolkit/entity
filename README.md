@@ -70,4 +70,6 @@ While we try to keep the code as compatible as possible, there are certain strin
 - [ ] `Kokkos` unit tests
 - [x] `timer` library
 
+---
+
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
