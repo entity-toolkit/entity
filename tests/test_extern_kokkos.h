@@ -11,7 +11,7 @@ void test_extern_kokkos(void) {
     Kokkos::initialize();
     Kokkos::finalize();
   #else
-    TEST_CHECK_( true, "`Kokkos` is disabled, so the test is ignored");
+    TEST_CHECK_( true, "-- `Kokkos` is disabled, so the test is ignored");
   #endif
 }
 
