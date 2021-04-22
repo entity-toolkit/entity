@@ -60,26 +60,30 @@ default: all
 all: ntt test
 
 ifeq ($(strip $(USEKOKKOS)), y)
+# using `Kokkos`
 include ${KOKKOS_PATH}/Makefile.kokkos
-CPPFLAGS := ${CPPFLAGS} @KOKKOS_FLAG@
+OBJS := ${OBJS} ${KOKKOS_LINK_DEPENDS}
+CPPFLAGS := ${CPPFLAGS} @KOKKOS_FLAG@ ${KOKKOS_CPPFLAGS}
+CXXFLAGS := ${CXXFLAGS} ${KOKKOS_CXXFLAGS} 
+LDFLAGS := ${LDFLAGS} ${KOKKOS_LDFLAGS} ${KOKKOS_LIBS}
 endif
 
 # linking the main app
 ntt: $(BUILD_DIR)/$(TARGET)
 	
-$(BUILD_DIR)/$(TARGET): $(NTT_OBJS) $(OBJS) $(KOKKOS_LINK_DEPENDS)
-	$(CXX) $(NTT_OBJS) $(OBJS) -o $@ $(LDFLAGS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS)
+$(BUILD_DIR)/$(TARGET): $(NTT_OBJS) $(OBJS)
+	$(CXX) $(NTT_OBJS) $(OBJS) -o $@ $(LDFLAGS)
 
 # linking tests
 test:$(BUILD_DIR)/$(TEST_TARGET)
 
-$(BUILD_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS) $(KOKKOS_LINK_DEPENDS)
-	$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS)
+$(BUILD_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS)
+	$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS) 
 
 # compiling
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: ntt test clean
 
