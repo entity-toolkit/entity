@@ -66,4 +66,4 @@ While we try to keep the code as compatible as possible, there are certain strin
 
 - [ ] parameter reading using `toml`
 - [ ] `Kokkos` unit tests
-- [ ] `timer` library
+- [x] `timer` library
