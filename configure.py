@@ -4,10 +4,10 @@
 # Options:
 #   -h  --help            help message
 #   --cluster             shortcut to choose cluster-specific configurations
-#   --compiler            choose the compiler
-#   --precision           code precision
+#   --compiler            compiler used (can be a valid path to the binary)
+#   --precision           floating point precision used
 #   -debug                compile in `debug` mode
-#   -kokkos               copmile with `Kokkos` support
+#   -kokkos               compile with `Kokkos` support
 # ----------------------------------------------------------------------------------------
 
 import argparse
@@ -108,7 +108,7 @@ makefile_options['DEBUG_CONF_FLAGS'] = ""
 makefile_options['DEBUG_PP_FLAGS'] = "-g -DDEBUG"
 
 # Warning flags (TODO: compiler specific)
-makefile_options['WARNING_FLAGS'] = "-Wall -Wextra"
+makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 
 # Code fonfigurations
 makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D SINGLE_PRECISION")
