@@ -6,13 +6,19 @@
 #endif
 #include "acutest/acutest.h"
 
+#ifdef KOKKOS
 void test_extern_kokkos(void) {
-  #ifdef KOKKOS
+  {
     Kokkos::initialize();
+    TEST_CHECK_ ( true, "`Kokkos` initialize done" );
     Kokkos::finalize();
-  #else
-    TEST_CHECK_( true, "-- `Kokkos` is disabled, so the test is ignored");
-  #endif
+    TEST_CHECK_ ( true, "`Kokkos` finalize done" );
+  }
 }
+#else
+void test_extern_kokkos(void) {
+  TEST_CHECK_( true, "-- `Kokkos` is disabled, so the test is ignored");
+}
+#endif
 
 #endif
