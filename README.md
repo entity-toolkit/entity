@@ -43,7 +43,7 @@ To keep the code clean, readable and easy to debug we employ some of the `c++` b
 
 ## Third-party libraries
 
-All the third-party libraries reside in the `extern` directory. They can be included in the `.cpp` or `.h` files with `#include "<LIBNAME>/<LIB>[.h|.hpp]"`.
+All the third-party libraries reside in the `extern` directory. The ones that are header-only can be included in the `.cpp` or `.h` files with `#include "{LIBNAME}/{LIBHEADER}[.h|.hpp]"`. Compiled libraries such as `Kokkos` are included similar to standard libraries, e.g., `#include <Kokkos_Core.hpp>`.
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability;
 2. [`acutest`](https://github.com/mity/acutest)<sup>h</sup>: for unit testing;
