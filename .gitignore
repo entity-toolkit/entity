@@ -4,6 +4,7 @@
 # Compilation junk
 *.o
 build/
+bin/
 Makefile
 *.tmp
 
