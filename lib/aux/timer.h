@@ -2,12 +2,12 @@
 #define AUX_TIMER_H
 
 #include <string>
-#ifndef OPENMP
+#ifndef _OPENMP
   #include <chrono>
 #endif
 
 namespace timer {
-  #ifndef OPENMP
+  #ifndef _OPENMP
     inline constexpr char BACKEND[] = "Chrono";
   #else
     inline constexpr char BACKEND[] = "OpenMP";
@@ -54,7 +54,7 @@ namespace timer {
     friend class Timer;
   };
 
-  #ifndef OPENMP
+  #ifndef _OPENMP
     typedef std::chrono::time_point<std::chrono::system_clock> TimeContainer;
   #else
     typedef Time TimeContainer;

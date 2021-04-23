@@ -2,7 +2,7 @@
 #include <iostream>
 #include <assert.h>
 
-#ifdef OPENMP
+#ifdef _OPENMP
 # include <omp.h>
 #endif
 
@@ -13,7 +13,7 @@ namespace timer {
     // Timing implementation for different libraries ...
     // ... various implementation are brought to a standard here
     void TimeNow(TimeContainer& time) {
-      #ifndef OPENMP
+      #ifndef _OPENMP
         // use `chrono`
         time = std::chrono::system_clock::now();
       #else
@@ -22,9 +22,9 @@ namespace timer {
       #endif
     }
     void TimeElapsed(TimeContainer& time_start, Time& time_elapsed) {
-      long double dt;
-      #ifndef OPENMP
+      #ifndef _OPENMP
         // use `chrono`
+        long double dt;
         dt = std::chrono::duration<long double>(std::chrono::system_clock::now() - time_start).count();
         time_elapsed = Time(dt, second);
       #else
