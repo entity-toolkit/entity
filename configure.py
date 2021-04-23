@@ -114,11 +114,11 @@ makefile_options['DEBUGMODE'] = ('y' if args['debug'] else 'n')
 makefile_options['USEKOKKOS'] = ('y' if args['kokkos'] else 'n')
 Kokkos_details = ''
 if args['kokkos']:
+  # custom flag to recognize that the code is compiled with `Kokkos`
   makefile_options['KOKKOS_FLAG'] = "-D KOKKOS"
   makefile_options['KOKKOS_ARCH'] = args['kokkos_arch']
   makefile_options['KOKKOS_DEVICES'] = args['kokkos_devices']
   makefile_options['KOKKOS_OPTIONS'] = args['kokkos_options']
-  # always disable deprecated Kokkos code
   if makefile_options['KOKKOS_OPTIONS'] != '':
     makefile_options['KOKKOS_OPTIONS'] += ','
   makefile_options['KOKKOS_OPTIONS'] += 'disable_deprecated_code'
