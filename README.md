@@ -67,7 +67,8 @@ While we try to keep the code as compatible as possible, there are certain strin
 ## To-do list for the near future
 
 - [ ] parameter reading using `toml`
-- [ ] `Kokkos` unit tests
+- [x] `Kokkos` unit tests
+- [ ] `Kokkos` GPU unit tests
 - [x] `timer` library
 
 ---
