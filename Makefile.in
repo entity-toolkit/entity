@@ -44,6 +44,7 @@ PREPFLAGS := ${PREPFLAGS} @PRECISION@
 #
 
 BUILD_DIR := ./build
+BIN_DIR := ./bin
 
 SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -77,20 +78,21 @@ LDFLAGS := ${LDFLAGS} ${KOKKOS_LDFLAGS} ${KOKKOS_LIBS}
 endif
 
 # linking the main app
-ntt: $(BUILD_DIR)/$(TARGET)
+ntt: $(BIN_DIR)/$(TARGET)
 	
-$(BUILD_DIR)/$(TARGET): $(NTT_OBJS) $(OBJS)
+$(BIN_DIR)/$(TARGET): $(NTT_OBJS) $(OBJS)
 	$(CXX) $(NTT_OBJS) $(OBJS) -o $@ $(LDFLAGS)
 
 # linking tests
-test:$(BUILD_DIR)/$(TEST_TARGET)
+test:$(BIN_DIR)/$(TEST_TARGET)
 
-$(BUILD_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS)
+$(BIN_DIR)/$(TEST_TARGET): $(TEST_OBJS) $(OBJS)
 	$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS) 
 
 # compiling
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
+	mkdir -p $(BIN_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: ntt test clean
