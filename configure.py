@@ -27,7 +27,7 @@ import os
 # Global Settings
 # ---------------
 # Default values:
-DEF_compiler = 'icc'
+DEF_compiler = 'g++'
 DEF_cppstandard = 'c++17'
 # Options:
 Precision_options = ['double', 'single']
@@ -103,13 +103,13 @@ def configureKokkos(arg, mopt):
       #  makefile_options['KOKKOS_VECTOR_LENGTH'] = ('32' if args['kokkos_vector_length'] == -1
                                              #  else str(args['kokkos_vector_length']))
     settings = f'''
-                `Kokkos`:
-                  {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
-                  {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] else '-'}
-                  {'Options':30} {arg['kokkos_options'] if arg['kokkos_options'] else '-'}
-                  {'Loop':30} {arg['kokkos_loop']}
-                  {'Vector length':30} {arg['kokkos_vector_length']}
-                '''
+  `Kokkos`:
+    {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
+    {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] else '-'}
+    {'Options':30} {arg['kokkos_options'] if arg['kokkos_options'] else '-'}
+    {'Loop':30} {arg['kokkos_loop']}
+    {'Vector length':30} {arg['kokkos_vector_length']}
+  '''
     return settings
   else:
     return ''
