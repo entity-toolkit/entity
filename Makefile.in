@@ -33,6 +33,7 @@ else
 	HIDE = @
 endif
 
+# 3-rd party library configurations
 ifeq ($(strip $(USEKOKKOS)), y)
 KOKKOS_PATH := ${EXT_DIR}/kokkos
 KOKKOS_BUILD_DIR = $(BUILD_DIR)/kokkos/
@@ -41,12 +42,13 @@ KOKKOS_DEVICES := @KOKKOS_DEVICES@
 KOKKOS_OPTIONS := @KOKKOS_OPTIONS@
 KOKKOS_CUDA_OPTIONS := @KOKKOS_CUDA_OPTIONS@
 KOKKOS_CXX_STANDARD := @CXXSTANDARD@ 
+PREPFLAGS := ${PREPFLAGS} @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
 NVCC_WRAPPER_DEFAULT_COMPILER := @NVCC_WRAPPER_DEFAULT_COMPILER@
 endif
 
 # # # # # Compiler and flags # # # # # # #  
 # 
-CXX := @CXX@
+CXX := @COMPILER@
 CXXSTANDARD := -std=@CXXSTANDARD@
 ifeq ($(strip $(DEBUGMODE)), n)
 	# linker configuration flags (e.g. optimization level)
@@ -63,12 +65,8 @@ WARNFLAGS := @WARNING_FLAGS@
 # custom preprocessor flags
 PREPFLAGS := ${PREPFLAGS} @PRECISION@ 
 
-# 3-rd party library configurations
-# ...
-#
-
 CPPFLAGS = ${INC_FLAGS} ${PREPFLAGS} ${WARNFLAGS} -MMD -MP
-CXXFLAGS := ${CXXFLAGS} ${CXXSTANDARD} ${CONFFLAGS}
+CXXFLAGS := ${CXXFLAGS} ${CONFFLAGS}
 
 # # # # # File collection # # # # # # # # # # # 
 # 
@@ -97,7 +95,7 @@ $(1): $(2)
 	@echo [C]ompiling $(2)
 	$(HIDE)mkdir -p $(BIN_DIR)
 	$(HIDE)mkdir -p $(dir $(1))
-	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(2) -o $(1)
+	$(HIDE)$(CXX) ${CXXSTANDARD} $(CPPFLAGS) $(CXXFLAGS) -c $(2) -o $(1)
 endef
 
 # # # # # Targets # # # # # # # # # # # # # # 
@@ -121,7 +119,7 @@ ntt : $(BIN_DIR)/$(TARGET)
 
 $(BIN_DIR)/$(TARGET) : $(NTT_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
-	$(HIDE)$(CXX) $(NTT_OBJS) $(OBJS) -o $@ $(LDFLAGS)
+	$(HIDE)$(CXX) $(CXXSTANDARD) $(NTT_OBJS) $(OBJS) -o $@ $(LDFLAGS)
 
 # linking tests
 test : $(BIN_DIR)/$(TEST_TARGET)
@@ -129,7 +127,7 @@ test : $(BIN_DIR)/$(TEST_TARGET)
 
 $(BIN_DIR)/$(TEST_TARGET) : $(TEST_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
-	$(HIDE)$(CXX) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS) 
+	$(HIDE)$(CXX) $(CXXSTANDARD) $(TEST_OBJS) $(OBJS) -o $@ $(LDFLAGS) 
 
 # generate compilation rules
 $(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, $(obj), $(ROOT_DIR)/$(subst .o,,$(obj)))))
