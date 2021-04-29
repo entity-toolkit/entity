@@ -22,16 +22,18 @@ _Configure_ the code by running `configure.py` file with the desired specificati
 $ python configure.py -debug --compiler=icc --precision=single
 ```
 
-> To see all the available configuration flags run `python configure.py -h`.
+> To see all the available configuration flags run `python configure.py -h`. 
 
-Once the code is configured, and the `Makefile` is generated, you may _compile_ the desired code regime by running `make <REGIME>`. Currently we support the following regimes:
+Once the code is configured, and the `Makefile` is generated in the specified path (by default it is `build/`), you may _compile_ the desired code regime by going into the `build` directory and running `make <REGIME>`. Currently we support the following regimes:
 
 * `ntt`: main regime for performance runs;
 * `test`: test regime that runs a series of unit tests.
 
 > Running `make all` or `make` will compile all the available regimes.
 
-After the compilation is successfull, you will find the corresponding executable called `<REGIME>.exec` in the `build/` directory. That's it!
+After the compilation is successfull, you will find the corresponding executable called `<REGIME>.exec` in the `bin/` directory (or whatever was specified during the configure). That's it!
+
+> Directories where the temporary compiled objects and executables go can be defined during the configure time using the flags `--build=<DIR>` and `--bin=<DIR>` correspondingly. By default if not specified the configure script assumes `--build=build/` and `--bin=bin/`. Passing the current directory for `--build` is a bad idea, as there are tons of temporary files generated at compile time, especially from `Kokkos` library.  
 
 ## Note for developers
 

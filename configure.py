@@ -5,6 +5,9 @@
 #
 # Options:
 #   -h  --help                    help message
+#   -verbose                      enable verbose compilation mode
+#   --build=<DIR>                 specify building directory
+#   --bin=<DIR>                   specify directory for executables
 #   --compiler=<COMPILER>         compiler used (can be a valid path to the binary)
 #   --precision=[single|double]   floating point precision used
 #   -debug                        compile in `debug` mode
@@ -23,12 +26,20 @@ import glob
 import re
 import subprocess
 import os
+from pathlib import Path
 
 # Global Settings
 # ---------------
 # Default values:
+DEF_build_dir = 'build'
+DEF_bin_dir = 'bin'
 DEF_compiler = 'g++'
 DEF_cppstandard = 'c++17'
+
+# Set template and output filenames
+makefile_input = 'Makefile.in'
+makefile_output = 'Makefile'
+
 # Options:
 Precision_options = ['double', 'single']
 Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for']
@@ -37,6 +48,9 @@ Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-
 def defineOptions():
   parser = argparse.ArgumentParser()
   # system
+  parser.add_argument('-verbose', action='store_true', default=False, help='enable verbose compilation mode')
+  parser.add_argument('--build', default=DEF_build_dir, help='specify building directory')
+  parser.add_argument('--bin', default=DEF_bin_dir, help='specify directory for executables')
   parser.add_argument('--compiler', default=DEF_compiler, help='choose the compiler')
   parser.add_argument('--precision', default='double', choices=Precision_options, help='code precision')
   parser.add_argument('-debug', action='store_true', default=False, help='compile in `debug` mode')
@@ -120,13 +134,9 @@ def createMakefile(m_in, m_out, mopt):
   for key, val in mopt.items():
     makefile_template = re.sub(r'@{0}@'.format(key), val, makefile_template)
   makefile_template = re.sub('# Template for ', '# ', makefile_template)
-  with open(m_out, 'w') as current_file:
+  with open(args['build'] + '/' + m_out, 'w') as current_file:
     current_file.write(makefile_template)
-# <-- auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
-
-# Set template and output filenames
-makefile_input = 'Makefile.in'
-makefile_output = 'Makefile'
+# <-- auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
 # Step 1. Prepare parser, add each of the arguments
 args = defineOptions() 
@@ -136,6 +146,7 @@ args = defineOptions()
 makefile_options = {}
 
 # Settings
+makefile_options['VERBOSE'] = ('y' if args['verbose'] else 'n')
 makefile_options['DEBUGMODE'] = ('y' if args['debug'] else 'n')
 makefile_options['USEKOKKOS'] = ('y' if args['kokkos'] else 'n')
 
@@ -148,10 +159,14 @@ makefile_options['NTT_TARGET'] = "ntt.exec"
 makefile_options['TEST_TARGET'] = "test.exec"
 
 # Paths
-makefile_options['NTT_DIR'] = "ntt"
-makefile_options['TEST_DIR'] = "tests"
-makefile_options['SRC_DIR'] = "lib"
-makefile_options['EXTERN_DIR'] = "extern"
+makefile_options['BUILD_DIR'] = args['build']
+makefile_options['BIN_DIR'] = args['bin']
+makefile_options['NTT_DIR'] = 'ntt'
+makefile_options['TEST_DIR'] = 'tests'
+makefile_options['SRC_DIR'] = 'lib'
+makefile_options['EXTERN_DIR'] = 'extern'
+
+Path(args['build']).mkdir(parents=True, exist_ok=True)
 
 # `Kokkos` settings
 Kokkos_details = configureKokkos(args, makefile_options)
