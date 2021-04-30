@@ -84,7 +84,6 @@ def configureKokkos(arg, mopt):
     # using Kokkos
     # custom flag to recognize that the code is compiled with `Kokkos`
     arg['kokkos_devices'] = parseKokkosDev(arg['kokkos_devices'])
-    mopt['KOKKOS_FLAG'] = "-D KOKKOS"
     mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
     mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
     
