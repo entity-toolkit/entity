@@ -1,0 +1,8 @@
+[grid]
+box_dimension  = [256, 256]
+tile_dimension =   [12, 12]
+
+[algorithm]
+timestep  =
+dajdsaioj = 2
+daskd     = 2
