@@ -179,6 +179,7 @@ makefile_options['NTT_DIR'] = 'ntt'
 makefile_options['TEST_DIR'] = 'tests'
 makefile_options['SRC_DIR'] = 'lib'
 makefile_options['EXTERN_DIR'] = 'extern'
+makefile_options['EXAMPLES_DIR'] = 'examples'
 
 Path(args['build']).mkdir(parents=True, exist_ok=True)
 
