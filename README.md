@@ -27,7 +27,8 @@ $ python configure.py -debug --compiler=icc --precision=single
 Once the code is configured, and the `Makefile` is generated in the specified path (by default it is `build/`), you may _compile_ the desired code regime by going into the `build` directory and running `make <REGIME>`. Currently we support the following regimes:
 
 * `ntt`: main regime for performance runs;
-* `test`: test regime that runs a series of unit tests.
+* `test`: test regime that runs a series of unit tests;
+* `examples`: build multiple executables that contain typical examples to help guide through the code (see `examples/` directory).
 
 > Running `make all` or `make` will compile all the available regimes.
 
