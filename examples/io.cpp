@@ -1,4 +1,4 @@
-#include "input.h"
+#include "cargs.h"
 
 #include <iostream>
 
@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     // ... then access arguments via `.getArgument(<KEY>, <DEFAULT>)`
     // ... `<DEFAULT>` value is used when the `<KEY>` is unspecified
     // ... if no default value provided and key is not found -- throws assertion error
-    using namespace io;
+    using namespace ntt::io;
     cl_args.readCommandLineArguments(argc, argv);
     std::cout << cl_args.getArgument("-input") << "\n"; 
     std::cout << cl_args.getArgument("-output", "my_output") << "\n";

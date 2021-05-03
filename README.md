@@ -73,6 +73,7 @@ While we try to keep the code as compatible as possible, there are certain strin
 - [x] `Kokkos` unit tests
 - [ ] `Kokkos` GPU unit tests
 - [x] `timer` library
+- [ ] make `timer` header-only
 
 ---
 
