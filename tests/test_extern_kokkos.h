@@ -2,7 +2,6 @@
 #define TEST_EXTERN_KOKKOS_H
 
 #include "timer.h"
-#include "math.h"
 
 #ifdef KOKKOS
 #include <Kokkos_Core.hpp>
@@ -19,8 +18,8 @@ void test_extern_kokkos(void) {
     Kokkos::initialize();
     TEST_CHECK_ ( Kokkos::is_initialized(), "`Kokkos` initialize" );
 
-    timer::Timer timer1("kokkos");
-    timer::Timer timer2("serial");
+    ntt::timer::Timer timer1("kokkos");
+    ntt::timer::Timer timer2("serial");
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
@@ -46,7 +45,7 @@ void test_extern_kokkos(void) {
     TEST_CHECK_ ( Check(sum1), "sum1 value is correct" );
     TEST_CHECK_ ( Check(sum2), "sum2 value is correct" );
 
-    auto ms = timer::millisecond;
+    auto ms = ntt::timer::millisecond;
     TEST_CHECK_ ( timer1.getElapsedIn(ms) < timer2.getElapsedIn(ms), "Kokkos is faster" );
 
     Kokkos::finalize();
