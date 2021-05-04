@@ -4,15 +4,22 @@
 #include "global.h"
 
 #include <string>
+#include <map>
 
 // there are 3 global objects that interact with each other: 
 // 1. input params -- all the user defined quantities 
 // 2. simulation -- all the logistics (alloc/dealloc, loop, output, send/recv etc)
 // 3. meshblock -- all the data
+//
+//
+// probably worth making only 1 global object: sim, then define everything inside
 
 namespace ntt {
   class InputParams {
-    // this will be a map
+  private:
+    std::string _InputFile;
+    std::map<std::string, std::string> _params;
+  public:
   };
 
   class Simulation {
