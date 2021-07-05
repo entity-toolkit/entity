@@ -1,5 +1,3 @@
 #include "meshblock.h"
 
-namespace ntt {
-
-}
+namespace ntt {}

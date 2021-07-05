@@ -190,7 +190,7 @@ endif
 .PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
-ALLCODE := $(shell find ${SRC_DIR} -name *.hpp -or -name *.h) $(shell find ${NTT_DIR} -name *.hpp -or -name *.h) $(shell find ${TEST_DIR} -name *.hpp -or -name *.h) $(shell find ${EXAMPLES_DIR} -name *.hpp -or -name *.h)
+ALLCODE := $(SOURCES) $(shell find ${SRC_DIR} -name *.hpp -or -name *.h) $(shell find ${NTT_DIR} -name *.hpp -or -name *.h) $(shell find ${TEST_DIR} -name *.hpp -or -name *.h) $(shell find ${EXAMPLES_DIR} -name *.hpp -or -name *.h)
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 

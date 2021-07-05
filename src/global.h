@@ -5,21 +5,21 @@
 #include <string_view>
 
 namespace ntt {
-  #ifdef SINGLE_PRECISION
-    typedef float real_t;
-  #else
-    typedef double real_t;
-  #endif
+#ifdef SINGLE_PRECISION
+using real_t = float;
+#else
+using real_t = double;
+#endif
 
-  inline constexpr std::size_t N_GHOSTS { 2 };
+inline constexpr std::size_t N_GHOSTS{2};
 
-  enum Dimension { ONE_D, TWO_D, THREE_D };
-  enum CoordinateSystem { CARTESIAN, POLAR, SPHERICAL, LOG_SPHERICAL, CUSTOM };
+enum Dimension { ONE_D, TWO_D, THREE_D };
+enum CoordinateSystem { CARTESIAN, POLAR, SPHERICAL, LOG_SPHERICAL, CUSTOM };
 
-  enum ParticlePusher { BORIS_PUSHER, VAY_PUSHER };
+enum ParticlePusher { BORIS_PUSHER, VAY_PUSHER };
 
-  // defaults
-  constexpr std::string_view DEF_input_filename { "input" };
-}
+// defaults
+constexpr std::string_view DEF_input_filename{"input"};
+} // namespace ntt
 
 #endif
