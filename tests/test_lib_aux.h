@@ -3,18 +3,20 @@
 
 #include "global.h"
 #include "constants.h"
-#include "math.h"
+#include "mathematics.h"
 #include "arrays.h"
 #include "timer.h"
 
-#include "acutest/acutest.h"
+#include <acutest/acutest.h>
 
 #include <cstddef>
 #include <cmath>
 #include <chrono>
 #include <thread>
 
-void test_lib_aux(void) {
+#include <iostream>
+
+void testLibAux(void) {
   using namespace ntt::math;
   using namespace ntt::arrays;
 
@@ -38,23 +40,24 @@ void test_lib_aux(void) {
     OneDArray<double> my1d(25);
 
     double x1 = 1.0;
-    for (std::size_t i { 0 }; i < my1d.getDim(1); ++i) {
+    for (std::size_t i { 0 }; i < my1d.get_size(1); ++i) {
       double x2 = (4.0 / (8 * i + 1) - 2.0 / (8 * i + 4) - 1.0 / (8 * i + 5) - 1.0 / (8 * i + 6));
       my1d.set(i, x1 * x2);
       x1 /= 16.0;
     }
     double sum = 0.0;
-    for (std::size_t i { 0 }; i < my1d.getDim(1); ++i) {
+    for (std::size_t i { 0 }; i < my1d.get_size(1); ++i) {
       sum += my1d.get(i);
     }
     TEST_CHECK ( numbersAreEqual(sum, ntt::constants::PI) );
 
-    my1d.fillWith(4.0);
+    my1d.fillWith(4.0, true);
     sum = 0.0;
-    for (std::size_t i { 0 }; i < my1d.getDim(1); ++i) {
+    for (std::size_t i { 0 }; i < my1d.get_size(1) + 2 * ntt::N_GHOSTS; ++i) {
       sum += my1d.get(i);
     }
-    TEST_CHECK ( numbersAreEqual(sum, 100.0) );
+    TEST_CHECK ( numbersAreEqual(sum, 100.0 + (2 * ntt::N_GHOSTS) * 4.0) );
+    TEST_CHECK ( my1d.getSizeInBytes() == 232 );
   }
 
   // `timer`

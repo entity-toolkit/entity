@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 #-----------------------------------------------------------------------------------------
-# Configure file for the `Entity` code to generate a temporary `Makefile`. 
+# Configure file for the `Entity` code to generate a temporary `Makefile`.
 # ... Parts of the code are adapted from the `K-Athena` MHD code (https://gitlab.com/pgrete/kathena).
 #
 # Options:
@@ -44,7 +44,7 @@ makefile_output = 'Makefile'
 Precision_options = ['double', 'single']
 Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for']
 
-# . . . auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . --> 
+# . . . auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . -->
 def defineOptions():
   parser = argparse.ArgumentParser()
   # system
@@ -69,7 +69,7 @@ def defineOptions():
 def parseKokkosDev(kokkos_dev):
   openmp_proper = 'OpenMP'
   cuda_proper = 'Cuda'
-  aliases = {'omp': openmp_proper, 'openmp': openmp_proper, 'cuda': cuda_proper} 
+  aliases = {'omp': openmp_proper, 'openmp': openmp_proper, 'cuda': cuda_proper}
   def swapAlias(expr, aliases):
     for al in aliases:
       if expr.lower() == al:
@@ -86,15 +86,15 @@ def configureKokkos(arg, mopt):
     arg['kokkos_devices'] = parseKokkosDev(arg['kokkos_devices'])
     mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
     mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
-    
+
     mopt['KOKKOS_OPTIONS'] = arg['kokkos_options']
     if mopt['KOKKOS_OPTIONS'] != '':
       mopt['KOKKOS_OPTIONS'] += ','
     mopt['KOKKOS_OPTIONS'] += 'disable_deprecated_code'
-    
+
     mopt['NVCC_WRAPPER_DEFAULT_COMPILER'] = arg['nvcc_wrapper_cxx']
     mopt['KOKKOS_CUDA_OPTIONS'] = arg['kokkos_cuda_options']
-    
+
     if 'Cuda' in mopt['KOKKOS_DEVICES']:
       # using Cuda
       mopt['KOKKOS_CUDA_OPTIONS'] = arg['kokkos_cuda_options']
@@ -106,7 +106,7 @@ def configureKokkos(arg, mopt):
       mopt['NVCC_WRAPPER_DEFAULT_COMPILER'] = mopt['COMPILER']
       mopt['COMPILER'] = '${KOKKOS_PATH}/bin/nvcc_wrapper'
       # add with MPI here (TODO)
-    
+
     if arg['kokkos_loop'] == 'default':
       arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
 
@@ -153,7 +153,7 @@ def createMakefile(m_in, m_out, mopt):
 # <-- auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
 # Step 1. Prepare parser, add each of the arguments
-args = defineOptions() 
+args = defineOptions()
 
 # Step 2. Set definitions and Makefile options based on above arguments
 
@@ -177,7 +177,7 @@ makefile_options['BUILD_DIR'] = args['build']
 makefile_options['BIN_DIR'] = args['bin']
 makefile_options['NTT_DIR'] = 'ntt'
 makefile_options['TEST_DIR'] = 'tests'
-makefile_options['SRC_DIR'] = 'lib'
+makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 makefile_options['EXAMPLES_DIR'] = 'examples'
 
@@ -206,15 +206,15 @@ createMakefile(makefile_input, makefile_output, makefile_options)
 #  Finish with diagnostic output
 report = f'''
 ====================================================
-                 __        __                   
-                /\ \__  __/\ \__                
-       __    ___\ \  _\/\_\ \  _\  __  __       
-     / __ \/  _  \ \ \/\/\ \ \ \/ /\ \/\ \      
-    /\  __//\ \/\ \ \ \_\ \ \ \ \_\ \ \_\ \  __ 
+                 __        __
+                /\ \__  __/\ \__
+       __    ___\ \  _\/\_\ \  _\  __  __
+     / __ \/  _  \ \ \/\/\ \ \ \/ /\ \/\ \\
+    /\  __//\ \/\ \ \ \_\ \ \ \ \_\ \ \_\ \  __
     \ \____\ \_\ \_\ \__\\\\ \_\ \__\\\\ \____ \/\_\\
      \/____/\/_/\/_/\/__/ \/_/\/__/ \/___/  \/_/
-                                       /\___/   
-                                       \/__/    
+                                       /\___/
+                                       \/__/
 
 ====================================================
 Code has been configured with the following options:

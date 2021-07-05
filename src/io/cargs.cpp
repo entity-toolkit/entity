@@ -30,6 +30,5 @@ namespace ntt {
     bool CommandLineArguments::isSpecified(std::string_view key) {
       return std::find(this->_args.begin(), this->_args.end(), key) != this->_args.end();
     }
-    CommandLineArguments cl_args;
   }
 }

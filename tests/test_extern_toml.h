@@ -1,12 +1,12 @@
 #ifndef TEST_EXTERN_TOML_H
 #define TEST_EXTERN_TOML_H
 
-#include "toml/toml.hpp"
-#include "acutest/acutest.h"
+#include <toml/toml.hpp>
+#include <acutest/acutest.h>
 
 #include <vector>
 
-void test_extern_toml(void) {
+void testExternToml(void) {
   std::string valid_toml = R"TOML(
     title = "brand new code"
     [apple]
@@ -21,11 +21,11 @@ void test_extern_toml(void) {
   )TOML";
   std::istringstream is(valid_toml, std::ios_base::binary | std::ios_base::in);
   auto data = toml::parse(is, "std::string");
-  
+
   std::string title = toml::find_or<std::string>(data, "title", "NA");
-  
+
   TEST_CHECK ( title == "brand new code" );
-  
+
   auto& orange_block = toml::find(data, "orange");
   auto orange_name = toml::find<std::string>(orange_block, "name");
   auto orange_age = toml::find<int>(orange_block, "age");

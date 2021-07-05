@@ -5,15 +5,15 @@
 #include "test_extern_toml.h"
 #include "test_extern_kokkos.h"
 
-#include "acutest/acutest.h"
+#include <acutest/acutest.h>
 
-void test_success(void) {
+void testSuccess(void) {
 }
 
 TEST_LIST = {
-    { "lib/aux", test_lib_aux },
-    { "extern/toml", test_extern_toml },
-    { "extern/kokkos", test_extern_kokkos },
-    { "success", test_success },
-    { NULL, NULL }
+  { "lib/aux", testLibAux },
+  { "extern/toml", testExternToml },
+  { "extern/kokkos", testExternKokkos },
+  { "success", testSuccess },
+  { NULL, NULL }
 };

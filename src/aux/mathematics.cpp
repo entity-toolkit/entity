@@ -1,14 +1,14 @@
-#include "math.h"
+#include "mathematics.h"
 
 #include <algorithm>
 #include <cmath>
 
 namespace ntt {
   namespace math {
-    constexpr double c_DoubleAbsEpsilon { 1e-12 };
-    constexpr double c_DoubleRelEpsilon { 1e-8  };
-    constexpr float  c_FloatAbsEpsilon  { 1e-6f };
-    constexpr float  c_FloatRelEpsilon  { 1e-8f };
+    constexpr double C_DOUBLE_ABS_EPSILON { 1e-12 };
+    constexpr double C_DOUBLE_REL_EPSILON { 1e-8  };
+    constexpr float  C_FLOAT_ABS_EPSILON  { 1e-6f };
+    constexpr float  C_FLOAT_REL_EPSILON  { 1e-8f };
     namespace {
       bool numbersAreEqual(double a, double b, double absEpsilon, double relEpsilon) {
         double diff { std::abs(a - b) };
@@ -31,10 +31,10 @@ namespace ntt {
     }
 
     bool numbersAreEqual(double a, double b) {
-      return numbersAreEqual(a, b, c_DoubleAbsEpsilon, c_DoubleRelEpsilon);
+      return numbersAreEqual(a, b, C_DOUBLE_ABS_EPSILON, C_DOUBLE_REL_EPSILON);
     }
     bool numbersAreEqual(float a, float b) {
-      return numbersAreEqual(a, b, c_FloatAbsEpsilon, c_FloatRelEpsilon);
+      return numbersAreEqual(a, b, C_FLOAT_ABS_EPSILON, C_FLOAT_REL_EPSILON);
     }
   }
 }

@@ -6,14 +6,14 @@
 #ifdef KOKKOS
 #include <Kokkos_Core.hpp>
 #endif
-#include "acutest/acutest.h"
+#include <acutest/acutest.h>
 
 #include <iostream>
 #include <cmath>
 
 #ifdef KOKKOS
 
-void test_extern_kokkos(void) {
+void testExternKokkos(void) {
   {
     Kokkos::initialize();
     TEST_CHECK_ ( Kokkos::is_initialized(), "`Kokkos` initialize" );
@@ -24,7 +24,7 @@ void test_extern_kokkos(void) {
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
     auto Sum = [=] (const int i, double & sum) {
-      sum += 1.0 / static_cast<double>(i + 1); 
+      sum += 1.0 / static_cast<double>(i + 1);
     };
     auto Check = [&] (const double sum) {
       return std::abs(value - sum) < dvalue;
@@ -32,7 +32,7 @@ void test_extern_kokkos(void) {
 
     double sum1 = 0.0;
     timer1.start();
-    Kokkos::parallel_reduce(N, Sum, sum1); 
+    Kokkos::parallel_reduce(N, Sum, sum1);
     timer1.stop();
 
     double sum2 = 0.0;
@@ -53,7 +53,7 @@ void test_extern_kokkos(void) {
   }
 }
 #else
-void test_extern_kokkos(void) {
+void testExternKokkos(void) {
   TEST_CHECK_ ( true, "-- `Kokkos` is disabled, so the test is ignored" );
 }
 #endif
