@@ -17,8 +17,6 @@ namespace ntt {
       std::string_view getArgument (std::string_view key);
       bool isSpecified(std::string_view key);
     };
-    extern CommandLineArguments cl_args;
-    extern std::string_view InputFile;
   }
 }
 

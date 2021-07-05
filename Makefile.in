@@ -1,4 +1,4 @@
-# # # # # Directories # # # # # # # # # # 
+# # # # # Directories # # # # # # # # # #
 #
 ROOT_DIR := $(realpath ${CURDIR}/..)
 # directory for the building
@@ -24,16 +24,16 @@ BUILD_SRC_DIR := @SRC_DIR@
 # external libraries
 EXT_DIR := ${ROOT_DIR}/@EXTERN_DIR@
 
-# # # # # Settings # # # # # # # # # # # # 
-# 
-DEBUGMODE := @DEBUGMODE@ 
+# # # # # Settings # # # # # # # # # # # #
+#
+DEBUGMODE := @DEBUGMODE@
 VERBOSE := @VERBOSE@
 USEKOKKOS := @USEKOKKOS@
 
-DEFINITIONS := 
+DEFINITIONS :=
 
 ifeq ($(strip ${VERBOSE}), y)
-	HIDE = 
+	HIDE =
 else
 	HIDE = @
 endif
@@ -46,14 +46,14 @@ KOKKOS_ARCH := @KOKKOS_ARCH@
 KOKKOS_DEVICES := @KOKKOS_DEVICES@
 KOKKOS_OPTIONS := @KOKKOS_OPTIONS@
 KOKKOS_CUDA_OPTIONS := @KOKKOS_CUDA_OPTIONS@
-KOKKOS_CXX_STANDARD := @CXXSTANDARD@ 
+KOKKOS_CXX_STANDARD := @CXXSTANDARD@
 PREPFLAGS := ${PREPFLAGS} @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
 NVCC_WRAPPER_DEFAULT_COMPILER := @NVCC_WRAPPER_DEFAULT_COMPILER@
 DEFINITIONS := $(DEFINITIONS) -DKOKKOS
 endif
 
-# # # # # Compiler and flags # # # # # # #  
-# 
+# # # # # Compiler and flags # # # # # # #
+#
 CXX := @COMPILER@
 LINK := ${CXX}
 CXXSTANDARD := -std=@CXXSTANDARD@
@@ -70,13 +70,13 @@ endif
 WARNFLAGS := @WARNING_FLAGS@
 
 # custom preprocessor flags
-PREPFLAGS := $(PREPFLAGS) @PRECISION@ 
+PREPFLAGS := $(PREPFLAGS) @PRECISION@
 
-CPPFLAGS = $(WARNFLAGS) $(PREPFLAGS) 
+CPPFLAGS = $(WARNFLAGS) $(PREPFLAGS)
 CXXFLAGS := $(CXXFLAGS) $(CONFFLAGS)
 
-# # # # # File collection # # # # # # # # # # # 
-# 
+# # # # # File collection # # # # # # # # # # #
+#
 # Main core
 SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
@@ -89,13 +89,13 @@ NTT_DEPS := $(NTT_OBJS:.o=.d)
 
 # Tests
 TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
-TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o)) 
+TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
 TEST_DEPS := $(TEST_OBJS:.o=.d)
 
 # Tests
 EXAMPLES_SRCS := $(shell find ${EXAMPLES_DIR} -name *.cpp -or -name *.c)
 EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:.cpp=.exec))
-EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o)) 
+EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
 EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
 
 INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR}
@@ -103,9 +103,28 @@ INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
 
-# # # # # Targets # # # # # # # # # # # # # # 
-# 
-default: all
+# # # # # Targets # # # # # # # # # # # # # #
+#
+default: help
+
+help:
+	@echo "usage: \`make [ntt|test|examples|all]\`"
+	@echo
+	@echo "cleanup: \`make clean\`"
+	@echo
+	@echo "---------------"
+	@echo "for developers:"
+	@echo
+	@echo "use \`make [CLANG_COMMAND]\` to check the code matches with best practices & consistent stylistics"
+	@echo
+	@echo "list of all \`[CLANG_COMMAND]\`-s:"
+	@echo "   clang-tidy-naming       : test if the naming of variables/functionts/etc is consistent"
+	@echo "   clang-format            : test if the code formatting is consistent"
+	@echo "   clang-format-fix        : same as \`clang-format\` except now fix the issues"
+	@echo "   clang-tidy              : check if the code contains any bad practices or other deprecated features"
+	@echo "   clang-tidy-bugprone     : check if the code contains any bug-prone features"
+	@echo "   clang-all               : run \`clang-tidy-naming\`, \`clang-format\` and \`clang-tidy\`"
+	@echo
 
 all: ntt test examples
 
@@ -114,7 +133,7 @@ ifeq ($(strip ${USEKOKKOS}), y)
 include ${KOKKOS_PATH}/Makefile.kokkos
 OBJS := $(OBJS) $(KOKKOS_LINK_DEPENDS)
 CPPFLAGS := $(CPPFLAGS) $(KOKKOS_CPPFLAGS)
-CXXFLAGS := $(CXXFLAGS) $(KOKKOS_CXXFLAGS) 
+CXXFLAGS := $(CXXFLAGS) $(KOKKOS_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS)
 endif
 
@@ -132,7 +151,7 @@ test : ${BIN_DIR}/${TEST_TARGET}
 
 ${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
-	$(HIDE)${LINK} $(LDFLAGS) $(TEST_OBJS) $(OBJS) -o $@ 
+	$(HIDE)${LINK} $(LDFLAGS) $(TEST_OBJS) $(OBJS) -o $@
 
 examples : $(EXAMPLES_TARGETS)
 	@echo [M]aking $@
@@ -156,7 +175,7 @@ $(1): $(2)
 endef
 $(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))
 
-.PHONY: ntt test clean examples
+.PHONY: all help ntt test examples clean
 
 clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR}
@@ -167,3 +186,70 @@ clean: kokkos-clean
 endif
 
 -include $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
+
+.PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
+
+SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
+ALLCODE := $(shell find ${SRC_DIR} -name *.hpp -or -name *.h) $(shell find ${NTT_DIR} -name *.hpp -or -name *.h) $(shell find ${TEST_DIR} -name *.hpp -or -name *.h) $(shell find ${EXAMPLES_DIR} -name *.hpp -or -name *.h)
+
+clang-all : clang-tidy-naming clang-format clang-tidy
+
+clang-tidy-naming:
+	@for src in $(SOURCES) ; do \
+		echo "checking namings in $$src:" ;\
+		clang-tidy -quiet -checks='-*,readability-identifier-naming' \
+		    -config="{CheckOptions: [ \
+		    { key: readability-identifier-naming.NamespaceCase, value: lower_case },\
+		    { key: readability-identifier-naming.ClassCase, value: CamelCase  },\
+		    { key: readability-identifier-naming.StructCase, value: CamelCase  },\
+		    { key: readability-identifier-naming.FunctionCase, value: camelBack },\
+		    { key: readability-identifier-naming.VariableCase, value: lower_case },\
+		    { key: readability-identifier-naming.GlobalConstantCase, value: UPPER_CASE }\
+		    ]}" "$$src" -extra-arg=${CXXSTANDARD} -- $(INCFLAGS);\
+	done
+	@echo "clang-tidy-naming -- done"
+
+clang-format:
+	@for src in $(ALLCODE) ; do \
+		var=`clang-format $$src | diff $$src - | wc -l` ; \
+		if [ $$var -ne 0 ] ; then \
+			diff=`clang-format $$src | diff $$src -` ; \
+			echo "$$src:" ; \
+			echo "$$diff" ; \
+			echo ; \
+		fi ; \
+	done
+	@echo "clang-format -- done"
+
+clang-format-fix:
+	@for src in $(ALLCODE) ; do \
+		var=`clang-format $$src | diff $$src - | wc -l` ; \
+		if [ $$var -ne 0 ] ; then \
+			echo "formatting $$src:" ;\
+			diff=`clang-format $$src | diff $$src -` ; \
+			clang-format -i "$$src" ; \
+			echo "$$diff" ; \
+			echo ; \
+		fi ; \
+	done
+	@echo "clang-format-fix -- done"
+
+clang-tidy:
+	@for src in $(SOURCES) ; do \
+		echo "tidying $$src:" ; \
+		clang-tidy -quiet -checks="-*,\
+			clang-diagnostic-*,clang-analyzer-*,modernize-*,-modernize-avoid-c-arrays*,\
+			readability-*,performance-*,openmp-*,mpi-*,-performance-no-int-to-ptr" \
+			-header-filter="${SRC_DIR}/.*" \
+			"$$src" -extra-arg=${CXXSTANDARD} -- $(INCFLAGS); \
+	done
+	@echo "clang-tidy -- done"
+
+clang-tidy-bugprone:
+	@for src in $(SOURCES) ; do \
+		echo "tidying $$src:" ; \
+		clang-tidy -quiet -checks="-*,bugprone-*",\
+			-header-filter="src/.*" \
+			"$$src" -extra-arg=${CXXSTANDARD} -- $(INCFLAGS); \
+	done
+	@echo "clang-tidy-bugprone -- done"

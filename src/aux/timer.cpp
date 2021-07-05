@@ -1,19 +1,19 @@
-#include <string>
-#include <iostream>
-#include <assert.h>
+#include "timer.h"
 
 #ifdef _OPENMP
 # include <omp.h>
 #endif
 
-#include "timer.h"
+#include <string>
+#include <cassert>
+#include <iostream>
 
 namespace ntt {
   namespace timer {
     namespace { // anonymous namespace
       // Timing implementation for different libraries ...
       // ... various implementation are brought to a standard here
-      void TimeNow(TimeContainer& time) {
+      void timeNow(TimeContainer& time) {
         #ifndef _OPENMP
           // use `chrono`
           time = std::chrono::system_clock::now();
@@ -22,7 +22,7 @@ namespace ntt {
           time = Time(omp_get_wtime(), second);
         #endif
       }
-      void TimeElapsed(TimeContainer& time_start, Time& time_elapsed) {
+      void timeElapsed(TimeContainer& time_start, Time& time_elapsed) {
         #ifndef _OPENMP
           // use `chrono`
           long double dt;
@@ -108,12 +108,12 @@ namespace ntt {
     void Timer::start() {
       init = true;
       on = true;
-      TimeNow(t_start);
+      timeNow(t_start);
     }
     void Timer::check() {
       assert(init && "# Error: timer is not initialized.");
       assert(on && "# Error: timer is not running.");
-      TimeElapsed(t_start, t_elapsed);
+      timeElapsed(t_start, t_elapsed);
     }
     void Timer::stop() {
       check();

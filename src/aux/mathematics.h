@@ -1,5 +1,5 @@
-#ifndef AUX_MATH_H
-#define AUX_MATH_H
+#ifndef AUX_MATHEMATICS_H
+#define AUX_MATHEMATICS_H
 
 namespace ntt {
   namespace math {
