@@ -4,7 +4,7 @@
 #include "timer.h"
 
 #ifdef KOKKOS
-#include <Kokkos_Core.hpp>
+#  include <Kokkos_Core.hpp>
 #endif
 #include <acutest/acutest.h>
 
@@ -16,17 +16,17 @@
 void testExternKokkos(void) {
   {
     Kokkos::initialize();
-    TEST_CHECK_ ( Kokkos::is_initialized(), "`Kokkos` initialize" );
+    TEST_CHECK_(Kokkos::is_initialized(), "`Kokkos` initialize");
 
     ntt::timer::Timer timer1("kokkos");
     ntt::timer::Timer timer2("serial");
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
-    auto Sum = [=] (const int i, double & sum) {
+    auto Sum = [=](const int i, double &sum) {
       sum += 1.0 / static_cast<double>(i + 1);
     };
-    auto Check = [&] (const double sum) {
+    auto Check = [&](const double sum) {
       return std::abs(value - sum) < dvalue;
     };
 
@@ -37,24 +37,25 @@ void testExternKokkos(void) {
 
     double sum2 = 0.0;
     timer2.start();
-    for (int i { 0 }; i < N; ++i) {
+    for (int i{0}; i < N; ++i) {
       Sum(i, sum2);
     }
     timer2.stop();
 
-    TEST_CHECK_ ( Check(sum1), "sum1 value is correct" );
-    TEST_CHECK_ ( Check(sum2), "sum2 value is correct" );
+    TEST_CHECK_(Check(sum1), "sum1 value is correct");
+    TEST_CHECK_(Check(sum2), "sum2 value is correct");
 
     auto ms = ntt::timer::millisecond;
-    TEST_CHECK_ ( timer1.getElapsedIn(ms) < timer2.getElapsedIn(ms), "Kokkos is faster" );
+    TEST_CHECK_(timer1.getElapsedIn(ms) < timer2.getElapsedIn(ms),
+                "Kokkos is faster");
 
     Kokkos::finalize();
-    TEST_CHECK_ ( true, "`Kokkos` finalize" );
+    TEST_CHECK_(true, "`Kokkos` finalize");
   }
 }
 #else
 void testExternKokkos(void) {
-  TEST_CHECK_ ( true, "-- `Kokkos` is disabled, so the test is ignored" );
+  TEST_CHECK_(true, "-- `Kokkos` is disabled, so the test is ignored");
 }
 #endif
 

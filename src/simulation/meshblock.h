@@ -2,8 +2,7 @@
 #define SIMULATION_MESHBLOCK_H
 
 namespace ntt {
-  class Meshblock {
-  };
-}
+class Meshblock {};
+} // namespace ntt
 
 #endif

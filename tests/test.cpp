@@ -7,13 +7,10 @@
 
 #include <acutest/acutest.h>
 
-void testSuccess(void) {
-}
+void testSuccess() {}
 
-TEST_LIST = {
-  { "lib/aux", testLibAux },
-  { "extern/toml", testExternToml },
-  { "extern/kokkos", testExternKokkos },
-  { "success", testSuccess },
-  { NULL, NULL }
-};
+TEST_LIST = {{"lib/aux", testLibAux},
+             {"extern/toml", testExternToml},
+             {"extern/kokkos", testExternKokkos},
+             {"success", testSuccess},
+             {nullptr, nullptr}};

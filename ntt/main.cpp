@@ -9,9 +9,10 @@
 #include <string>
 #include <iostream>
 
-void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
+void initLogger(
+    plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
 
-int main(int argc, char *argv[]) {
+auto main(int argc, char *argv[]) -> int {
   plog::ColorConsoleAppender<plog::TxtFormatter> console_appender;
   initLogger(&console_appender);
 
@@ -20,7 +21,8 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
+void initLogger(
+    plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
   plog::Severity max_severity;
 #ifdef VERBOSE
   max_severity = plog::verbose;
