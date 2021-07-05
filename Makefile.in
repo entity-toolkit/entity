@@ -108,6 +108,9 @@ ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
 default: help
 
 help:
+	@echo "Current configurations:"
+	@cat REPORT
+	@echo
 	@echo "usage: \`make [ntt|test|examples|all]\`"
 	@echo
 	@echo "cleanup: \`make clean\`"
@@ -186,6 +189,8 @@ clean: kokkos-clean
 endif
 
 -include $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
+
+# for developers:
 
 .PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
 
