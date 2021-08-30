@@ -5,6 +5,8 @@
 #include "arrays.h"
 #include "input.h"
 
+#include <toml/toml.hpp>
+
 #include <cstddef>
 #include <string>
 
@@ -14,10 +16,11 @@ protected:
   std::string m_title;
   const Dimension m_dimension;
   const CoordinateSystem m_coord_system;
-  io::InputParams m_input_params;
+  const SimulationType m_simulation_type;
+  toml::value m_inputdata;
 
 public:
-  Simulation(Dimension dim, CoordinateSystem coord_sys);
+  Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType sim_type);
   ~Simulation() = default;
   void set_title(const std::string &title) { m_title = title; }
   [[nodiscard]] auto get_title() const -> std::string { return m_title; }
@@ -31,6 +34,9 @@ public:
 
   void parseInput(int argc, char *argv[]);
 
+  template<typename T>
+  T readFromInput(const std::string &blockname, const std::string &variable);
+
   virtual void initialize() = 0;
   virtual void restart() = 0;
   virtual void mainloop() = 0;
@@ -43,7 +49,7 @@ protected:
   // arrays::OneDArray<real_t> bx1, bx2, bx3;
   // particle system
 public:
-  PICSimulation1D(CoordinateSystem coord_sys) : Simulation{ONE_D, coord_sys} {}
+  PICSimulation1D(CoordinateSystem coord_sys) : Simulation{ONE_D, coord_sys, PIC_SIM} {}
   ~PICSimulation1D() = default;
 
   void initialize() override {}

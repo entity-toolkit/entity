@@ -4,78 +4,30 @@
 #include "global.h"
 
 #include <toml/toml.hpp>
+#include <plog/Log.h>
 
-#include <utility>
-#include <map>
 #include <string>
-#include <string_view>
+#include <exception>
 
 namespace ntt::io {
-class Param {
-  bool m_value_bool;
-  int m_value_int;
-  float m_value_float;
-  double m_value_double;
-  std::string_view m_value_string;
-
-public:
-  const bool *const value_bool;
-  const int *const value_int;
-  const float *const value_float;
-  const double *const value_double;
-  const std::string_view *const value_string;
-  Param(bool value)
-      : m_value_bool(value), value_bool(&m_value_bool), value_int(nullptr),
-        value_float(nullptr), value_double(nullptr), value_string(nullptr){};
-  Param(int value)
-      : m_value_int(value), value_bool(nullptr), value_int(&m_value_int),
-        value_float(nullptr), value_double(nullptr), value_string(nullptr){};
-  Param(float value)
-      : m_value_float(value), value_bool(nullptr), value_int(nullptr),
-        value_float(&m_value_float), value_double(nullptr),
-        value_string(nullptr){};
-  Param(double value)
-      : m_value_double(value), value_bool(nullptr), value_int(nullptr),
-        value_float(nullptr), value_double(&m_value_double),
-        value_string(nullptr){};
-  Param(std::string_view value)
-      : m_value_string(value), value_bool(nullptr), value_int(nullptr),
-        value_float(nullptr), value_double(nullptr),
-        value_string(&m_value_string){};
-  ~Param() = default;
-};
-
-class InputParams {
-private:
-  std::string m_input_filename;
-  std::map<std::pair<std::string_view, std::string_view>, Param *> m_params;
-
-public:
-  void set_parameter(std::string_view block, std::string_view variable,
-                     bool value);
-  void set_parameter(std::string_view block, std::string_view variable,
-                     int value);
-  void set_parameter(std::string_view block, std::string_view variable,
-                     float value);
-  void set_parameter(std::string_view block, std::string_view variable,
-                     double value);
-  void set_parameter(std::string_view block, std::string_view variable,
-                     std::string_view value);
-
-  auto get_parameter(std::string_view block, std::string_view variable)
-      -> Param *;
-
-  void set_input_filename(std::string_view input_filename) {
-    m_input_filename = input_filename;
+void dataExistsInToml(toml::value inputdata, const std::string &blockname, const std::string &variable) {
+  if (inputdata.contains(blockname)) {
+    auto &val_block = toml::find(inputdata, blockname);
+    if (!val_block.contains(variable)) {
+      PLOGE << "Cannot find variable <" << variable << "> from block [" << blockname << "] in the input file.";
+      throw std::invalid_argument("Cannot find variable in input file.");
+    }
+  } else {
+    PLOGE << "Cannot find block [" << blockname << "] in the input file.";
+    throw std::invalid_argument("Cannot find blockname in input file.");
   }
-  [[nodiscard]] auto get_input_filename() const -> std::string_view {
-    return m_input_filename;
-  }
-};
+}
 
-// template<typename T>
-// T readFromInput(std::string_view blockname, std::string_view variable) {
-// }
+template<typename T>
+T readTomlData(toml::value inputdata, const std::string &blockname, const std::string &variable) {
+  auto &val_block = toml::find(inputdata, blockname);
+  return toml::find<T>(val_block, variable);
+}
 } // namespace ntt::io
 
 #endif
