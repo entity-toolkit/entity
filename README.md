@@ -71,11 +71,12 @@ While we try to keep the code as compatible as possible, there are certain strin
 
 ## To-do list for the near future
 
-- [ ] parameter reading using `toml`
+- [x] parameter reading using `toml`
 - [x] `Kokkos` unit tests
 - [ ] `Kokkos` GPU unit tests
 - [x] `timer` library
 - [ ] make `timer` header-only
+- [ ] decide on memory structure (simulation -> meshblock -> fields -> tiles etc)
 
 ---
 
