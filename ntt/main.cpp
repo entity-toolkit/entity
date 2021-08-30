@@ -16,7 +16,7 @@ auto main(int argc, char *argv[]) -> int {
   plog::ColorConsoleAppender<plog::TxtFormatter> console_appender;
   initLogger(&console_appender);
 
-  ntt::PICSimulation1D sim(ntt::CARTESIAN);
+  ntt::PICSimulation1D sim(ntt::CARTESIAN_COORD);
   sim.parseInput(argc, argv);
   return 0;
 }
