@@ -6,7 +6,7 @@ One particle-in-cell code to rule them all.
 _Clone_ this repository with the following command:
 
 ```shell
-git clone --recursive https://github.com/haykh/entity
+git clone --recursive git@github.com:haykh/entity.git
 ```
 
 Notice the `--recursive` flag which ensures that all the dependent libraries (submodules) are also downloaded. In case you already have the cloned repository but missed the submodules (this could happen if you `git clone` without `--recursive`) you may get them by doing
