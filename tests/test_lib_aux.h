@@ -22,20 +22,15 @@ void testLibAux(void) {
 
   // `math`
   {
-    TEST_CHECK_(true, "-- `real_t` uses %d bytes",
-                static_cast<int>(sizeof(ntt::real_t)));
+    TEST_CHECK_(true, "-- `real_t` uses %d bytes", static_cast<int>(sizeof(ntt::real_t)));
     // `double` comparison"
-    TEST_CHECK(numbersAreEqual(
-        0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1, 1.0));
+    TEST_CHECK(numbersAreEqual(0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1 + 0.1, 1.0));
     TEST_CHECK(numbersAreEqual(std::sin(ntt::constants::PI), 0.0));
     TEST_CHECK(!numbersAreEqual(1e14 + 0.1, 1e14));
 
     // `float` comparison"
-    TEST_CHECK(numbersAreEqual(0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f +
-                                   0.1f + 0.1f + 0.1f,
-                               1.0f));
-    TEST_CHECK(numbersAreEqual(static_cast<float>(std::sin(ntt::constants::PI)),
-                               0.0f));
+    TEST_CHECK(numbersAreEqual(0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f + 0.1f, 1.0f));
+    TEST_CHECK(numbersAreEqual(static_cast<float>(std::sin(ntt::constants::PI)), 0.0f));
     TEST_CHECK(!numbersAreEqual(1e6f + 0.1f, 1e6f));
   }
 
@@ -46,8 +41,7 @@ void testLibAux(void) {
 
     double x1 = 1.0;
     for (std::size_t i{0}; i < my1d.get_size(1); ++i) {
-      double x2 = (4.0 / (8 * i + 1) - 2.0 / (8 * i + 4) - 1.0 / (8 * i + 5) -
-                   1.0 / (8 * i + 6));
+      double x2 = (4.0 / (8 * i + 1) - 2.0 / (8 * i + 4) - 1.0 / (8 * i + 5) - 1.0 / (8 * i + 6));
       my1d.set(i, x1 * x2);
       x1 /= 16.0;
     }

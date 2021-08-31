@@ -12,14 +12,9 @@ template <class T> Array<T>::~Array() {
 }
 
 // constructor
-template <class T> OneDArray<T>::OneDArray(std::size_t n1_) {
-  this->allocate(n1_);
-}
-template <class T> TwoDArray<T>::TwoDArray(std::size_t n1_, std::size_t n2_) {
-  this->allocate(n1_, n2_);
-}
-template <class T>
-ThreeDArray<T>::ThreeDArray(std::size_t n1_, std::size_t n2_, std::size_t n3_) {
+template <class T> OneDArray<T>::OneDArray(std::size_t n1_) { this->allocate(n1_); }
+template <class T> TwoDArray<T>::TwoDArray(std::size_t n1_, std::size_t n2_) { this->allocate(n1_, n2_); }
+template <class T> ThreeDArray<T>::ThreeDArray(std::size_t n1_, std::size_t n2_, std::size_t n3_) {
   this->allocate(n1_, n2_, n3_);
 }
 
@@ -31,8 +26,7 @@ template <class T> void OneDArray<T>::allocate(std::size_t n1_) {
   this->m_data = new T[this->n1_full];
   this->m_allocated = true;
 }
-template <class T>
-void TwoDArray<T>::allocate(std::size_t n1_, std::size_t n2_) {
+template <class T> void TwoDArray<T>::allocate(std::size_t n1_, std::size_t n2_) {
   assert(!(this->m_allocated) && "# Error: 2d array already allocated.");
   this->n1 = n1_;
   this->n1_full = n1_ + 2 * N_GHOSTS;
@@ -41,9 +35,7 @@ void TwoDArray<T>::allocate(std::size_t n1_, std::size_t n2_) {
   this->m_data = new T[this->n1_full * this->n2_full];
   this->m_allocated = true;
 }
-template <class T>
-void ThreeDArray<T>::allocate(std::size_t n1_, std::size_t n2_,
-                              std::size_t n3_) {
+template <class T> void ThreeDArray<T>::allocate(std::size_t n1_, std::size_t n2_, std::size_t n3_) {
   assert(!(this->m_allocated) && "# Error: 3d array already allocated.");
   this->n1 = n1_;
   this->n1_full = n1_ + 2 * N_GHOSTS;
@@ -101,15 +93,12 @@ template <class T> void OneDArray<T>::set(std::size_t i1, T value) {
   assert((i1 < this->n1_full) && "# Error: i1 out of range for 1d array.");
   this->m_data[i1] = value;
 }
-template <class T>
-void TwoDArray<T>::set(std::size_t i1, std::size_t i2, T value) {
+template <class T> void TwoDArray<T>::set(std::size_t i1, std::size_t i2, T value) {
   assert((i1 < this->n1_full) && "# Error: i1 out of range for 2d array.");
   assert((i2 < this->n2_full) && "# Error: i2 out of range for 2d array.");
   this->m_data[i1 + (this->n1_full) * i2] = value;
 }
-template <class T>
-void ThreeDArray<T>::set(std::size_t i1, std::size_t i2, std::size_t i3,
-                         T value) {
+template <class T> void ThreeDArray<T>::set(std::size_t i1, std::size_t i2, std::size_t i3, T value) {
   assert((i1 < this->n1_full) && "# Error: i1 out of range for 3d array.");
   assert((i2 < this->n2_full) && "# Error: i2 out of range for 3d array.");
   assert((i3 < this->n3_full) && "# Error: i3 out of range for 3d array.");
@@ -126,8 +115,7 @@ template <class T> auto TwoDArray<T>::get(std::size_t i1, std::size_t i2) -> T {
   assert((i2 < this->n2_full) && "# Error: i2 out of range for 2d array.");
   return this->m_data[i1 + (this->n1_full) * i2];
 }
-template <class T>
-auto ThreeDArray<T>::get(std::size_t i1, std::size_t i2, std::size_t i3) -> T {
+template <class T> auto ThreeDArray<T>::get(std::size_t i1, std::size_t i2, std::size_t i3) -> T {
   assert((i1 < this->n1_full) && "# Error: i1 out of range for 3d array.");
   assert((i2 < this->n2_full) && "# Error: i2 out of range for 3d array.");
   assert((i3 < this->n3_full) && "# Error: i3 out of range for 3d array.");
@@ -140,8 +128,7 @@ template <class T> auto OneDArray<T>::get_size(short int n) -> std::size_t {
   return this->n1;
 }
 template <class T> auto TwoDArray<T>::get_size(short int n) -> std::size_t {
-  assert(((n == 1) || (n == 2)) &&
-         "# Error: there are only 2 dimensions for 2d array.");
+  assert(((n == 1) || (n == 2)) && "# Error: there are only 2 dimensions for 2d array.");
   if (n == 1) {
     return this->n1;
   } else {
@@ -149,8 +136,7 @@ template <class T> auto TwoDArray<T>::get_size(short int n) -> std::size_t {
   }
 }
 template <class T> auto ThreeDArray<T>::get_size(short int n) -> std::size_t {
-  assert(((n == 1) && (n == 2) && (n == 3)) &&
-         "# Error: there are only 3 dimensions for 3d array.");
+  assert(((n == 1) && (n == 2) && (n == 3)) && "# Error: there are only 3 dimensions for 3d array.");
   if (n == 1) {
     return this->n1;
   } else if (n == 2) {

@@ -3,7 +3,7 @@
 
 #include "global.h"
 #include "arrays.h"
-#include "input.h"
+// #include "input.h"
 
 #include <toml/toml.hpp>
 
@@ -17,6 +17,8 @@ protected:
   const Dimension m_dimension;
   const CoordinateSystem m_coord_system;
   const SimulationType m_simulation_type;
+  std::string_view m_inputfilename;
+  std::string_view m_outputpath;
   toml::value m_inputdata;
 
 public:
@@ -24,18 +26,13 @@ public:
   ~Simulation() = default;
   void set_title(const std::string &title) { m_title = title; }
   [[nodiscard]] auto get_title() const -> std::string { return m_title; }
-  [[nodiscard]] auto get_precision() const -> std::size_t {
-    return sizeof(real_t);
-  }
+  [[nodiscard]] auto get_precision() const -> std::size_t { return sizeof(real_t); }
   [[nodiscard]] auto get_dimension() const -> Dimension { return m_dimension; }
-  [[nodiscard]] auto get_coord_system() const -> CoordinateSystem {
-    return m_coord_system;
-  }
+  [[nodiscard]] auto get_coord_system() const -> CoordinateSystem { return m_coord_system; }
 
   void parseInput(int argc, char *argv[]);
 
-  template<typename T>
-  T readFromInput(const std::string &blockname, const std::string &variable);
+  template <typename T> auto readFromInput(const std::string &blockname, const std::string &variable) -> T;
 
   virtual void initialize() = 0;
   virtual void restart() = 0;

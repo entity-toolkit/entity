@@ -23,8 +23,9 @@ void dataExistsInToml(toml::value inputdata, const std::string &blockname, const
   }
 }
 
-template<typename T>
-T readTomlData(toml::value inputdata, const std::string &blockname, const std::string &variable) {
+template <typename T>
+auto readTomlData(toml::value inputdata, const std::string &blockname, const std::string &variable) -> T {
+  dataExistsInToml(inputdata, blockname, variable);
   auto &val_block = toml::find(inputdata, blockname);
   return toml::find<T>(val_block, variable);
 }

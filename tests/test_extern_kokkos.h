@@ -23,12 +23,8 @@ void testExternKokkos(void) {
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
-    auto Sum = [=](const int i, double &sum) {
-      sum += 1.0 / static_cast<double>(i + 1);
-    };
-    auto Check = [&](const double sum) {
-      return std::abs(value - sum) < dvalue;
-    };
+    auto Sum = [=](const int i, double &sum) { sum += 1.0 / static_cast<double>(i + 1); };
+    auto Check = [&](const double sum) { return std::abs(value - sum) < dvalue; };
 
     double sum1 = 0.0;
     timer1.start();
@@ -46,17 +42,14 @@ void testExternKokkos(void) {
     TEST_CHECK_(Check(sum2), "sum2 value is correct");
 
     auto ms = ntt::timer::millisecond;
-    TEST_CHECK_(timer1.getElapsedIn(ms) < timer2.getElapsedIn(ms),
-                "Kokkos is faster");
+    TEST_CHECK_(timer1.getElapsedIn(ms) < timer2.getElapsedIn(ms), "Kokkos is faster");
 
     Kokkos::finalize();
     TEST_CHECK_(true, "`Kokkos` finalize");
   }
 }
 #else
-void testExternKokkos(void) {
-  TEST_CHECK_(true, "-- `Kokkos` is disabled, so the test is ignored");
-}
+void testExternKokkos(void) { TEST_CHECK_(true, "-- `Kokkos` is disabled, so the test is ignored"); }
 #endif
 
 #endif

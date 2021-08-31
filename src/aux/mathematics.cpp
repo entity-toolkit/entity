@@ -9,8 +9,7 @@ constexpr double C_DOUBLE_REL_EPSILON{1e-8};
 constexpr float C_FLOAT_ABS_EPSILON{1e-6f};
 constexpr float C_FLOAT_REL_EPSILON{1e-8f};
 namespace {
-auto numbersAreEqual(double a, double b, double absEpsilon, double relEpsilon)
-    -> bool {
+auto numbersAreEqual(double a, double b, double absEpsilon, double relEpsilon) -> bool {
   double diff{std::abs(a - b)};
   if (diff <= absEpsilon)
     return true;
@@ -21,8 +20,7 @@ auto numbersAreEqual(double a, double b, double absEpsilon, double relEpsilon)
   b -= min;
   return (diff <= (std::max(std::abs(a), std::abs(b)) * relEpsilon));
 }
-auto numbersAreEqual(float a, float b, float absEpsilon, float relEpsilon)
-    -> bool {
+auto numbersAreEqual(float a, float b, float absEpsilon, float relEpsilon) -> bool {
   float diff{std::abs(a - b)};
   if (diff <= absEpsilon)
     return true;

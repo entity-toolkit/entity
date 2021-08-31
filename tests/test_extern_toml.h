@@ -37,8 +37,7 @@ void testExternToml(void) {
   auto apple_name = toml::find<std::string>(apple_block, "name");
   auto apple_age = toml::find_or<int>(apple_block, "age", 0);
   auto apple_married = toml::find<bool>(apple_block, "married");
-  auto apple_friends =
-      toml::find<std::vector<std::string>>(apple_block, "friends");
+  auto apple_friends = toml::find<std::vector<std::string>>(apple_block, "friends");
 
   TEST_CHECK(apple_name == "Mr. Apple");
   TEST_CHECK(apple_age == 0);
