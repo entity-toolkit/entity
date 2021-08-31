@@ -172,6 +172,7 @@ template <class T> auto ThreeDArray<T>::get(std::size_t i1, std::size_t i2, std:
 
 // size getter
 template <class T> auto OneDArray<T>::get_size(short int n) -> std::size_t {
+  UNUSED(n);
   assert(n == 1);
   return this->n1;
 }
