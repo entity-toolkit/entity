@@ -1,5 +1,5 @@
 #include "global.h"
-#include "sim.h"
+#include "pgen.h"
 
 #include <plog/Log.h>
 #include <plog/Init.h>
@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-extern ntt::Simulation* ntt_simulation;
+ProblemGenerator ntt_simulation;
 
 void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
 
@@ -17,8 +17,9 @@ auto main(int argc, char *argv[]) -> int {
   initLogger(&console_appender);
 
   try {
-    ntt_simulation->parseInput(argc, argv);
-    ntt_simulation->run();
+    ntt_simulation.parseInput(argc, argv);
+    ntt_simulation.initialize();
+    ntt_simulation.printDetails();
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
     return -1;
