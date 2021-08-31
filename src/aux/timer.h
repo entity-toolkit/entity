@@ -27,16 +27,13 @@ private:
 
 public:
   TimeUnit() = default;
-  TimeUnit(double mult, std::string unit)
-      : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
+  TimeUnit(double mult, std::string unit) : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
   ~TimeUnit() = default;
   [[nodiscard]] auto getMultiplier() const -> double;
   friend auto operator<<(std::ostream &os, TimeUnit const &v) -> std::ostream &;
 };
 auto TimeUnit::getMultiplier() const -> double { return multiplier; }
-auto operator<<(std::ostream &os, TimeUnit const &v) -> std::ostream & {
-  return os << v.unitname;
-}
+auto operator<<(std::ostream &os, TimeUnit const &v) -> std::ostream & { return os << v.unitname; }
 
 // declaration of s/ms/us/ms
 inline const TimeUnit second(1, "s");
@@ -85,9 +82,7 @@ auto Time::represent(const TimeUnit to) const -> Time {
     return Time(value, to);
   }
 }
-auto operator<<(std::ostream &os, Time const &t) -> std::ostream & {
-  return os << t.value << " " << *(t.unit);
-}
+auto operator<<(std::ostream &os, Time const &t) -> std::ostream & { return os << t.value << " " << *(t.unit); }
 // Time Time::operator=(const Time & rhs) {
 // if(this == &rhs)
 // return *this;
@@ -97,9 +92,7 @@ auto operator<<(std::ostream &os, Time const &t) -> std::ostream & {
 // return *this;
 // }
 // }
-auto Time::operator-() const -> Time {
-  return Time(-(this->value), *(this->unit));
-}
+auto Time::operator-() const -> Time { return Time(-(this->value), *(this->unit)); }
 auto operator+(Time const &t1, Time const &t2) -> Time {
   if (t1.unit == t2.unit) {
     return Time(static_cast<long double>(t1.value + t2.value), *(t1.unit));
@@ -109,18 +102,13 @@ auto operator+(Time const &t1, Time const &t2) -> Time {
       main_unit = t1.unit;
     else
       main_unit = t2.unit;
-    return Time(static_cast<long double>(t1.represent(*main_unit).value +
-                                         t2.represent(*main_unit).value),
+    return Time(static_cast<long double>(t1.represent(*main_unit).value + t2.represent(*main_unit).value),
                 *(main_unit));
   }
 }
 auto operator-(Time const &t1, Time const &t2) -> Time { return (t1 + (-t2)); }
-auto operator*(double x, Time const &t) -> Time {
-  return Time(t.value * x, *(t.unit));
-}
-auto operator*(Time const &t, double x) -> Time {
-  return Time(t.value * x, *(t.unit));
-}
+auto operator*(double x, Time const &t) -> Time { return Time(t.value * x, *(t.unit)); }
+auto operator*(Time const &t, double x) -> Time { return Time(t.value * x, *(t.unit)); }
 
 #ifndef _OPENMP
 using TimeContainer = std::chrono::time_point<std::chrono::system_clock>;
@@ -144,9 +132,7 @@ void timeElapsed(TimeContainer &time_start, Time &time_elapsed) {
 #ifndef _OPENMP
   // use `chrono`
   long double dt;
-  dt = std::chrono::duration<long double>(std::chrono::system_clock::now() -
-                                          time_start)
-           .count();
+  dt = std::chrono::duration<long double>(std::chrono::system_clock::now() - time_start).count();
   time_elapsed = Time(dt, second);
 #else
   // use OpenMP `wtime` function

@@ -6,23 +6,26 @@
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
-#include <string>
 #include <iostream>
 
-void initLogger(
-    plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
+void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
 
 auto main(int argc, char *argv[]) -> int {
   plog::ColorConsoleAppender<plog::TxtFormatter> console_appender;
   initLogger(&console_appender);
 
-  ntt::PICSimulation1D sim(ntt::CARTESIAN_COORD);
-  sim.parseInput(argc, argv);
+  try {
+    ntt::PICSimulation1D sim(ntt::CARTESIAN_COORD);
+    sim.parseInput(argc, argv);
+  } catch (std::exception &err) {
+    std::cerr << err.what() << std::endl;
+    return -1;
+  }
+
   return 0;
 }
 
-void initLogger(
-    plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
+void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
   plog::Severity max_severity;
 #ifdef VERBOSE
   max_severity = plog::verbose;

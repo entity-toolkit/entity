@@ -21,6 +21,7 @@ enum ParticlePusher { BORIS_PUSHER, VAY_PUSHER };
 
 // defaults
 constexpr std::string_view DEF_input_filename{"input"};
+constexpr std::string_view DEF_output_path{"output"};
 } // namespace ntt
 
 #endif
