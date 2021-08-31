@@ -1,6 +1,6 @@
 [simulation]
 title           = "Simulation Title"
-runtime         = 20.0
+runtime         = 1.0
 
 [domain]
 resolution      = [256, 256]

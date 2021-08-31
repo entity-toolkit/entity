@@ -5,6 +5,7 @@
 #include <toml/toml.hpp>
 #include <plog/Log.h>
 
+#include <iostream>
 #include <vector>
 #include <stdexcept>
 
@@ -63,17 +64,24 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
 
 void Simulation::initialize() {
   m_title = readFromInput<std::string>("simulation", "title", "PIC_Sim");
-  m_runtime = readFromInput<std::vector<real_t>>("simulation", "runtime");
+  m_runtime = readFromInput<real_t>("simulation", "runtime");
 
   m_resolution = readFromInput<std::vector<int>>("domain", "resolution");
   m_dimensions = readFromInput<std::vector<real_t>>("domain", "dimensions", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
-  m_timestep = readFromInput<std::vector<real_t>>("domain", "timestep");
+  m_timestep = readFromInput<real_t>("algorithm", "timestep");
+
+  m_initialized = true;
 }
 
-void PICSimulation::run() {
-  initialize();
-  // mainloop();
-  // finalize();
+void Simulation::printDetails(std::ostream& os) {
+  os << "init: " << m_initialized << "\n";
+  os << "[Simulation details]\n";
+  os << "Title: " << m_title << "\n";
+  os << "dt: " << m_timestep << "\n";
 }
+void Simulation::printDetails() {
+  printDetails(std::cout);
+}
+
 } // namespace ntt

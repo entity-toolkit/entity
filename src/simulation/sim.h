@@ -4,7 +4,6 @@
 #include "global.h"
 #include "arrays.h"
 
-#include <plog/Log.h>
 #include <toml/toml.hpp>
 
 #include <vector>
@@ -21,14 +20,16 @@ protected:
   const CoordinateSystem m_coord_system;
   const SimulationType m_simulation_type;
 
+  bool m_initialized { false };
+
   std::string_view m_inputfilename;
   std::string_view m_outputpath;
   toml::value m_inputdata;
 
   std::vector<int> m_resolution;
   std::vector<real_t> m_dimensions;
-  std::vector<real_t> m_runtime;
-  std::vector<real_t> m_timestep;
+  real_t m_runtime;
+  real_t m_timestep;
 
 public:
   Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType sim_type);
@@ -47,32 +48,12 @@ public:
   void run() {};
 
   void initialize();
+
+  void printDetails(std::ostream& os);
+  void printDetails();
   // virtual void restart() = 0;
   // virtual void mainloop() = 0;
   // virtual void finalize() = 0;
-};
-
-class PICSimulation : public Simulation {
-public:
-  PICSimulation(Dimension dim, CoordinateSystem coord) : Simulation{dim, coord, PIC_SIM} {}
-  ~PICSimulation() = default;
-
-  void run();
-
-  void initialize() { Simulation::initialize(); }
-  // void restart() override;
-  // void mainloop() override;
-  // void finalize() override;
-};
-
-class PICSimulation1D : public PICSimulation {
-protected:
-  arrays::OneDArray<real_t> ex1, ex2, ex3;
-  arrays::OneDArray<real_t> bx1, bx2, bx3;
-  // particle system
-public:
-  PICSimulation1D() : PICSimulation{ONE_D, CARTESIAN_COORD} {}
-  ~PICSimulation1D() = default;
 };
 } // namespace ntt
 

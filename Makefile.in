@@ -106,7 +106,7 @@ EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(E
 EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
 EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
 
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR}
+INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${NTT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
