@@ -75,7 +75,7 @@ While we try to keep the code as compatible as possible, there are certain strin
 - [x] `Kokkos` unit tests
 - [ ] `Kokkos` GPU unit tests
 - [x] `timer` library
-- [ ] make `timer` header-only
+- [x] make `timer` header-only
 - [ ] decide on memory structure (simulation -> meshblock -> fields -> tiles etc)
 
 ---

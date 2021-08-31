@@ -14,10 +14,10 @@ Simulation::Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType
     : m_dimension(dim), m_coord_system(coord_sys), m_simulation_type(sim_type) {
   // check compatibility
   try {
-    if (((m_dimension == ONE_D) && (m_coord_system != CARTESIAN)) ||
-        ((m_dimension == TWO_D) && ((m_coord_system == SPHERICAL) ||
-                                    (m_coord_system == LOG_SPHERICAL))) ||
-        ((m_dimension == THREE_D) && (m_coord_system == POLAR))) {
+    if (((m_dimension == ONE_D) && (m_coord_system != CARTESIAN_COORD)) ||
+        ((m_dimension == TWO_D) && ((m_coord_system == SPHERICAL_COORD) ||
+                                    (m_coord_system == LOG_SPHERICAL_COORD))) ||
+        ((m_dimension == THREE_D) && (m_coord_system == POLAR_COORD))) {
       PLOGF << "Incompatibility between the dimension [" << m_dimension
             << "] and the coordinate system [" << m_coord_system << "]";
       throw std::logic_error("");
