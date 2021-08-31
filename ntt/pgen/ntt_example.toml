@@ -1,0 +1,10 @@
+[simulation]
+title           = "Simulation Title"
+runtime         = 20.0
+
+[domain]
+resolution      = [256, 256]
+dimensions      = [-2, 2, -2, 2]
+
+[algorithm]
+timestep        = 0.01
