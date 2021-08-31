@@ -15,7 +15,7 @@ auto main(int argc, char *argv[]) -> int {
   initLogger(&console_appender);
 
   try {
-    ntt::PICSimulation1D sim(ntt::CARTESIAN_COORD);
+    ntt::PICSimulation1D sim(ntt::SPHERICAL_COORD);
     sim.parseInput(argc, argv);
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
