@@ -7,7 +7,7 @@
 #include <plog/Log.h>
 
 #include <string>
-#include <exception>
+#include <stdexcept>
 
 namespace ntt::io {
 void dataExistsInToml(toml::value inputdata, const std::string &blockname, const std::string &variable) {

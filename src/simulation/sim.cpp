@@ -7,7 +7,7 @@
 #include <plog/Log.h>
 
 #include <iostream>
-#include <exception>
+#include <stdexcept>
 
 namespace ntt {
 Simulation::Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType sim_type)
@@ -18,7 +18,7 @@ Simulation::Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType
       ((m_dimension == THREE_D) && (m_coord_system == POLAR_COORD))) {
     PLOGF << "Incompatibility between the dimension [" << m_dimension << "] and the coordinate system ["
           << m_coord_system << "]";
-    throw std::logic_error("Incompatible simulation configurations.");
+    throw std::logic_error("#Error: incompatible simulation configurations.");
   }
 }
 
