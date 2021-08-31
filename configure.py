@@ -1,16 +1,22 @@
-#! /usr/bin/env python3
 #-----------------------------------------------------------------------------------------
 # Configure file for the `Entity` code to generate a temporary `Makefile`.
 # ... Parts of the code are adapted from the `K-Athena` MHD code (https://gitlab.com/pgrete/kathena).
 #
 # Options:
 #   -h  --help                    help message
+#
+# [ Compilation flags ]
 #   -verbose                      enable verbose compilation mode
 #   --build=<DIR>                 specify building directory
 #   --bin=<DIR>                   specify directory for executables
-#   --compiler=<COMPILER>         compiler used (can be a valid path to the binary)
-#   --precision=[single|double]   floating point precision used
 #   -debug                        compile in `debug` mode
+#   --compiler=<COMPILER>         compiler used (can be a valid path to the binary)
+#
+# [ Simulation flags ]
+#   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
+#   --precision=[single|double]   floating point precision used
+#
+# [ Kokkos-specific flags ]
 #   -kokkos                       compile with `Kokkos` support
 #   --kokkos_arch=<ARCH>          `Kokkos` architecture
 #   --kokkos_devices=<DEV>        `Kokkos` devices
@@ -42,19 +48,25 @@ makefile_output = 'Makefile'
 
 # Options:
 Precision_options = ['double', 'single']
+Pgen_options = ['ntt_one', 'ntt_two']
+Pgen_options = [f.replace('.cpp', '') for f in os.listdir('ntt/pgen') if '.cpp' in f]
 Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for']
 
 # . . . auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . -->
 def defineOptions():
   parser = argparse.ArgumentParser()
-  # system
+  # compilation
   parser.add_argument('-verbose', action='store_true', default=False, help='enable verbose compilation mode')
   parser.add_argument('--build', default=DEF_build_dir, help='specify building directory')
   parser.add_argument('--bin', default=DEF_bin_dir, help='specify directory for executables')
   parser.add_argument('--compiler', default=DEF_compiler, help='choose the compiler')
-  parser.add_argument('--precision', default='double', choices=Precision_options, help='code precision')
   parser.add_argument('-debug', action='store_true', default=False, help='compile in `debug` mode')
-  # `Kokkos` specific arguments -- >
+
+  #simulation
+  parser.add_argument('--precision', default='double', choices=Precision_options, help='code precision')
+  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used')
+
+  # `Kokkos` specific
   parser.add_argument('-kokkos', action='store_true', default=False, help='compile with `Kokkos` support')
   parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
   parser.add_argument('--kokkos_devices', default='', help='`Kokkos` devices')
@@ -63,7 +75,6 @@ def defineOptions():
   parser.add_argument('--kokkos_loop', default='default', choices=Kokkos_loop_options, help='`Kokkos` loop layout')
   parser.add_argument('--nvcc_wrapper_cxx', default='g++', help='Sets the `NVCC_WRAPPER_DEFAULT_COMPILER` flag for `Kokkos`')
   parser.add_argument('--kokkos_vector_length', default=-1, type=int, help='`Kokkos` vector length')
-  # < -- `Kokkos` specific arguments
   return vars(parser.parse_args())
 
 def parseKokkosDev(kokkos_dev):
@@ -176,10 +187,13 @@ makefile_options['TEST_TARGET'] = "test.exec"
 makefile_options['BUILD_DIR'] = args['build']
 makefile_options['BIN_DIR'] = args['bin']
 makefile_options['NTT_DIR'] = 'ntt'
+makefile_options['PGEN_DIR'] = 'pgen'
 makefile_options['TEST_DIR'] = 'tests'
 makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 makefile_options['EXAMPLES_DIR'] = 'examples'
+
+makefile_options['PGEN'] = args['pgen']
 
 Path(args['build']).mkdir(parents=True, exist_ok=True)
 
@@ -220,6 +234,7 @@ report = f'''
 Code has been configured with the following options:
 
 Setup configurations ...............................
+  {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
 
 Computational details ..............................
   {'Precision':32} {args['precision']}
