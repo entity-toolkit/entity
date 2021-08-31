@@ -95,9 +95,6 @@ endif
 NTT_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(NTT_SRCS:%=%.o))
 NTT_DEPS := $(NTT_OBJS:.o=.d)
 
-print:
-	@echo $(NTT_SRCS) $(NTT_OBJS)
-
 # Tests
 TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
 TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))

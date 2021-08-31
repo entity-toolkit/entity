@@ -3,6 +3,9 @@ box_dimension  = [256, 256]
 tile_dimension =   [12, 12]
 
 [algorithm]
-timestep  =
+timestep  = 43
 dajdsaioj = 2
 daskd     = 2
+
+[simulation]
+title = "Some silly name"
