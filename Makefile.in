@@ -12,6 +12,11 @@ TEST_TARGET := @TEST_TARGET@
 NTT_DIR := ${ROOT_DIR}/@NTT_DIR@
 BUILD_NTT_DIR := @NTT_DIR@
 
+PGEN_DIR := ${ROOT_DIR}/@NTT_DIR@/@PGEN_DIR@
+BUILD_PGEN_DIR := @PGEN_DIR@
+
+PGEN := @PGEN@
+
 TEST_DIR := ${ROOT_DIR}/@TEST_DIR@
 BUILD_TEST_DIR := @TEST_DIR@
 
@@ -83,9 +88,15 @@ OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
 
 # NTT app
-NTT_SRCS := $(shell find ${NTT_DIR} -name *.cpp -or -name *.c)
+NTT_SRCS := $(shell find ${NTT_DIR} -path ${PGEN_DIR} -prune -false -o -name *.cpp -or -name *.c)
+ifneq (${PGEN},)
+	NTT_SRCS := $(NTT_SRCS) $(addprefix ${PGEN_DIR}/, $(addsuffix .cpp, ${PGEN}))
+endif
 NTT_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(NTT_SRCS:%=%.o))
 NTT_DEPS := $(NTT_OBJS:.o=.d)
+
+print:
+	@echo $(NTT_SRCS) $(NTT_OBJS)
 
 # Tests
 TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
