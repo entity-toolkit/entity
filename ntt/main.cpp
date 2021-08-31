@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+extern ntt::Simulation* ntt_simulation;
+
 void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
 
 auto main(int argc, char *argv[]) -> int {
@@ -15,8 +17,8 @@ auto main(int argc, char *argv[]) -> int {
   initLogger(&console_appender);
 
   try {
-    ntt::PICSimulation1D sim(ntt::SPHERICAL_COORD);
-    sim.parseInput(argc, argv);
+    ntt_simulation->parseInput(argc, argv);
+    ntt_simulation->run();
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
     return -1;
@@ -27,12 +29,12 @@ auto main(int argc, char *argv[]) -> int {
 
 void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
   plog::Severity max_severity;
-#ifdef VERBOSE
+# ifdef VERBOSE
   max_severity = plog::verbose;
-#elif DEBUG
+# elif DEBUG
   max_severity = plog::debug;
-#else
+# else
   max_severity = plog::warning;
-#endif
+# endif
   plog::init(max_severity, console_appender);
 }
