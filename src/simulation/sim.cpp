@@ -43,6 +43,83 @@ void Simulation::parseInput(int argc, char *argv[]) {
   m_inputfilename = cl_args.getArgument("-input", DEF_input_filename);
   m_outputpath = cl_args.getArgument("-output", DEF_output_path);
   m_inputdata = toml::parse(static_cast<std::string>(m_inputfilename));
+
+  m_title = readFromInput<std::string>("simulation", "title", "PIC_Sim");
+  m_runtime = readFromInput<real_t>("simulation", "runtime");
+  m_resolution = readFromInput<std::vector<int>>("domain", "resolution");
+  m_size = readFromInput<std::vector<real_t>>("domain", "size", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
+  // check that everything is defined consistently
+  if (m_dimension == ONE_D) {
+    if (m_resolution.size() > 1) {
+      PLOGW << "1D simulation specified, ignoring extra dimensions in `resolution`.";
+      m_resolution.erase(m_resolution.begin() + 1, m_resolution.end());
+    }
+    if (m_size.size() > 2) {
+      PLOGW << "1D simulation specified, ignoring extra dimensions in `size`.";
+      m_size.erase(m_size.begin() + 2, m_size.end());
+    }
+  } else if (m_dimension == TWO_D) {
+    if (m_resolution.size() > 2) {
+      PLOGW << "2D simulation specified, ignoring extra dimensions in `resolution`.";
+      m_resolution.erase(m_resolution.begin() + 2, m_resolution.end());
+    } else if (m_resolution.size() < 2) {
+      PLOGE << "2D simulation specified, not enough dimensions given in the input.";
+      throw std::invalid_argument("Not enough values in `resolution` input.");
+    }
+    if (m_size.size() > 4) {
+      PLOGW << "2D simulation specified, ignoring extra dimensions in `size`.";
+      m_size.erase(m_size.begin() + 4, m_size.end());
+    } else if (m_size.size() < 4) {
+      PLOGE << "2D simulation specified, not enough dimensions given in the input.";
+      throw std::invalid_argument("Not enough values in `size` input.");
+    }
+  } else if (m_dimension == THREE_D) {
+    if (m_resolution.size() > 3) {
+      PLOGW << "3D simulation specified, ignoring extra dimensions in `resolution`.";
+      m_resolution.erase(m_resolution.begin() + 3, m_resolution.end());
+    } else if (m_resolution.size() < 3) {
+      PLOGE << "3D simulation specified, not enough dimensions given in the input.";
+      throw std::invalid_argument("Not enough values in `resolution` input.");
+    }
+    if (m_size.size() > 6) {
+      PLOGW << "3D simulation specified, ignoring extra dimensions in `size`.";
+      m_size.erase(m_size.begin() + 6, m_size.end());
+    } else if (m_size.size() < 6) {
+      PLOGE << "3D simulation specified, not enough dimensions given in the input.";
+      throw std::invalid_argument("Not enough values in `size` input.");
+    }
+  } else {
+    throw std::runtime_error("# Error: unknown dimension of simulation.");
+  }
+
+  m_timestep = readFromInput<real_t>("algorithm", "timestep");
+}
+
+void Simulation::run() {
+  initialize();
+}
+
+void Simulation::printDetails(std::ostream& os) {
+  os << "[Simulation details]\n";
+  os << "Title: " << m_title << "\n";
+  os << "   type: " << stringifySimulationType(m_simulation_type) << "\n";
+  os << "   dim: " << stringifyDimension(m_dimension) << "\n";
+  os << "   coord: " << stringifyCoordinateSystem(m_coord_system) << "\n\n";
+  os << "   total runtime: " << m_runtime << "\n";
+  os << "   dt: " << m_timestep << " [" << static_cast<int>(m_runtime / m_timestep) << "]\n";
+  os << "   resolution: ";
+  for (auto r: m_resolution) {
+    os << r << " x ";
+  }
+  os << "\b\b  \n";
+  os << "   size: ";
+  for(std::size_t i {0}; i < m_size.size(); i += 2) {
+    os << "[" << m_size[i] << ", " << m_size[i + 1] << "] ";
+  }
+  os << "\n";
+}
+void Simulation::printDetails() {
+  printDetails(std::cout);
 }
 
 template <typename T>
@@ -63,25 +140,12 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
 }
 
 void Simulation::initialize() {
-  m_title = readFromInput<std::string>("simulation", "title", "PIC_Sim");
-  m_runtime = readFromInput<real_t>("simulation", "runtime");
-
-  m_resolution = readFromInput<std::vector<int>>("domain", "resolution");
-  m_dimensions = readFromInput<std::vector<real_t>>("domain", "dimensions", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
-
-  m_timestep = readFromInput<real_t>("algorithm", "timestep");
-
   m_initialized = true;
 }
 
-void Simulation::printDetails(std::ostream& os) {
-  os << "init: " << m_initialized << "\n";
-  os << "[Simulation details]\n";
-  os << "Title: " << m_title << "\n";
-  os << "dt: " << m_timestep << "\n";
-}
-void Simulation::printDetails() {
-  printDetails(std::cout);
+void PICSimulation::printDetails(std::ostream& os) {
+  Simulation::printDetails(os);
+  os << "   particle pusher: " << stringifyParticlePusher(m_pusher) << "\n";
 }
 
 } // namespace ntt
