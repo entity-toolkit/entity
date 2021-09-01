@@ -21,9 +21,14 @@ enum CoordinateSystem { UNDEFINED_COORD, CARTESIAN_COORD, POLAR_COORD, SPHERICAL
 
 enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER };
 
+std::string_view stringifySimulationType(SimulationType sim);
+std::string_view stringifyDimension(Dimension dim);
+std::string_view stringifyCoordinateSystem(CoordinateSystem coord);
+std::string_view stringifyParticlePusher(ParticlePusher pusher);
+
 // defaults
-constexpr std::string_view DEF_input_filename{"input"};
-constexpr std::string_view DEF_output_path{"output"};
+constexpr std::string_view DEF_input_filename {"input"};
+constexpr std::string_view DEF_output_path {"output"};
 } // namespace ntt
 
 #endif
