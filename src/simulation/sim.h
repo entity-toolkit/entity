@@ -31,6 +31,8 @@ protected:
   real_t m_runtime;
   real_t m_timestep;
 
+  arrays::Array<real_t> *ex1;
+
 public:
   Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType sim_type);
   ~Simulation() = default;
