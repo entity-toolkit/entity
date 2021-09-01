@@ -131,9 +131,7 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
 template <typename T>
 auto Simulation::readFromInput(const std::string &blockname, const std::string &variable, const T &defval) -> T {
   try {
-    dataExistsInToml(m_inputdata, blockname, variable);
-    auto &val_block = toml::find(m_inputdata, blockname);
-    return toml::find<T>(val_block, variable);
+    return readFromInput<T>(blockname, variable);
   } catch (std::exception &err) {
     return defval;
   }
@@ -147,5 +145,36 @@ void PICSimulation::printDetails(std::ostream& os) {
   Simulation::printDetails(os);
   os << "   particle pusher: " << stringifyParticlePusher(m_pusher) << "\n";
 }
+
+void PICSimulation1D::initialize() {
+  ex1.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  ex2.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  ex3.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  bx1.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  bx2.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  bx3.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  Simulation::initialize();
+}
+
+void PICSimulation2D::initialize() {
+  ex1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  ex2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  ex3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  bx1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  bx2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  bx3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  Simulation::initialize();
+}
+
+void PICSimulation3D::initialize() {
+  ex1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  ex2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  ex3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  bx1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  bx2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  bx3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  Simulation::initialize();
+}
+
 
 } // namespace ntt

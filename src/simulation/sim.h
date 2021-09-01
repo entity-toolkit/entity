@@ -78,10 +78,33 @@ public:
 };
 
 class PICSimulation1D : public PICSimulation {
+  arrays::OneDArray<real_t> ex1, ex2, ex3;
+  arrays::OneDArray<real_t> bx1, bx2, bx3;
 public:
-  PICSimulation1D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{ONE_D, coord_sys, pusher} {};
-  PICSimulation1D(CoordinateSystem coord_sys) : PICSimulation{ONE_D, coord_sys} {};
+  PICSimulation1D(ParticlePusher pusher) : PICSimulation{ONE_D, CARTESIAN_COORD, pusher} {};
+  PICSimulation1D() : PICSimulation{ONE_D, CARTESIAN_COORD} {};
   ~PICSimulation1D() = default;
+  void initialize();
+};
+
+class PICSimulation2D : public PICSimulation {
+  arrays::TwoDArray<real_t> ex1, ex2, ex3;
+  arrays::TwoDArray<real_t> bx1, bx2, bx3;
+public:
+  PICSimulation2D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{TWO_D, coord_sys, pusher} {};
+  PICSimulation2D(CoordinateSystem coord_sys) : PICSimulation{TWO_D, coord_sys} {};
+  ~PICSimulation2D() = default;
+  void initialize();
+};
+
+class PICSimulation3D : public PICSimulation {
+  arrays::ThreeDArray<real_t> ex1, ex2, ex3;
+  arrays::ThreeDArray<real_t> bx1, bx2, bx3;
+public:
+  PICSimulation3D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{THREE_D, coord_sys, pusher} {};
+  PICSimulation3D(CoordinateSystem coord_sys) : PICSimulation{THREE_D, coord_sys} {};
+  ~PICSimulation3D() = default;
+  void initialize();
 };
 
 } // namespace ntt
