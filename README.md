@@ -72,11 +72,12 @@ While we try to keep the code as compatible as possible, there are certain strin
 ## To-do list for the near future
 
 - [x] parameter reading using `toml`
-- [x] `Kokkos` unit tests
-- [ ] `Kokkos` GPU unit tests
 - [x] `timer` library
 - [x] make `timer` header-only
+- [x] `Kokkos` unit tests
+- [ ] `Kokkos` GPU unit tests
 - [ ] decide on memory structure (simulation -> meshblock -> fields -> tiles etc)
+- [ ] write domain class object and converters from cells to coords and back
 
 ---
 
