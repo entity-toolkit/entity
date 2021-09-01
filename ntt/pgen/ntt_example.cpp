@@ -4,5 +4,5 @@
 #include <iostream>
 
 ProblemGenerator::ProblemGenerator() {
-  simulation = new ntt::PICSimulation1D(ntt::CARTESIAN_COORD);
+  simulation = new ntt::PICSimulation2D(ntt::POLAR_COORD);
 }
