@@ -3,10 +3,16 @@
 
 #include "sim.h"
 
-class ProblemGenerator : public ntt::Simulation {
+class ProblemGenerator {
+  ntt::AbstractSimulation* simulation;
 public:
   ProblemGenerator();
   ~ProblemGenerator() = default;
+  void start(int argc, char *argv[]) {
+    simulation->parseInput(argc, argv);
+    simulation->printDetails();
+    // simulation->run();
+  }
 };
 
 #endif
