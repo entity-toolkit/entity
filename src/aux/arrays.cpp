@@ -9,6 +9,7 @@ template <class T> Array<T>::~Array() {
   if (this->m_allocated) {
     delete[] this->m_data;
   }
+  this->m_allocated = false;
 }
 
 // constructor
