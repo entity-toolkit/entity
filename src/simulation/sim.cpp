@@ -48,6 +48,12 @@ void Simulation::parseInput(int argc, char *argv[]) {
   m_runtime = readFromInput<real_t>("simulation", "runtime");
   m_resolution = readFromInput<std::vector<int>>("domain", "resolution");
   m_size = readFromInput<std::vector<real_t>>("domain", "size", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
+
+  m_timestep = readFromInput<real_t>("algorithm", "timestep");
+
+  // TODO: define the domain object here
+  // define converter functions (cells) -> (coordinates)
+
   // check that everything is defined consistently
   if (m_dimension == ONE_D) {
     if (m_resolution.size() > 1) {
@@ -91,12 +97,6 @@ void Simulation::parseInput(int argc, char *argv[]) {
   } else {
     throw std::runtime_error("# Error: unknown dimension of simulation.");
   }
-
-  m_timestep = readFromInput<real_t>("algorithm", "timestep");
-}
-
-void Simulation::run() {
-  initialize();
 }
 
 void Simulation::printDetails(std::ostream& os) {
@@ -140,6 +140,10 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
 void Simulation::initialize() {
   m_initialized = true;
 }
+void Simulation::finalize() {
+  m_initialized = false;
+}
+void Simulation::mainloop() {}
 
 void PICSimulation::printDetails(std::ostream& os) {
   Simulation::printDetails(os);
@@ -147,34 +151,51 @@ void PICSimulation::printDetails(std::ostream& os) {
 }
 
 void PICSimulation1D::initialize() {
-  ex1.allocate(m_resolution[0] + 2 * N_GHOSTS);
-  ex2.allocate(m_resolution[0] + 2 * N_GHOSTS);
-  ex3.allocate(m_resolution[0] + 2 * N_GHOSTS);
-  bx1.allocate(m_resolution[0] + 2 * N_GHOSTS);
-  bx2.allocate(m_resolution[0] + 2 * N_GHOSTS);
-  bx3.allocate(m_resolution[0] + 2 * N_GHOSTS);
+  ex1.allocate(m_resolution[0]);
+  ex2.allocate(m_resolution[0]);
+  ex3.allocate(m_resolution[0]);
+  bx1.allocate(m_resolution[0]);
+  bx2.allocate(m_resolution[0]);
+  bx3.allocate(m_resolution[0]);
   Simulation::initialize();
 }
 
 void PICSimulation2D::initialize() {
-  ex1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
-  ex2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
-  ex3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
-  bx1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
-  bx2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
-  bx3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS);
+  ex1.allocate(m_resolution[0], m_resolution[1]);
+  ex2.allocate(m_resolution[0], m_resolution[1]);
+  ex3.allocate(m_resolution[0], m_resolution[1]);
+  bx1.allocate(m_resolution[0], m_resolution[1]);
+  bx2.allocate(m_resolution[0], m_resolution[1]);
+  bx3.allocate(m_resolution[0], m_resolution[1]);
   Simulation::initialize();
 }
 
 void PICSimulation3D::initialize() {
-  ex1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
-  ex2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
-  ex3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
-  bx1.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
-  bx2.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
-  bx3.allocate(m_resolution[0] + 2 * N_GHOSTS, m_resolution[1] + 2 * N_GHOSTS, m_resolution[2] + 2 * N_GHOSTS);
+  ex1.allocate(m_resolution[0], m_resolution[1], m_resolution[2]);
+  ex2.allocate(m_resolution[0], m_resolution[1], m_resolution[2]);
+  ex3.allocate(m_resolution[0], m_resolution[1], m_resolution[2]);
+  bx1.allocate(m_resolution[0], m_resolution[1], m_resolution[2]);
+  bx2.allocate(m_resolution[0], m_resolution[1], m_resolution[2]);
+  bx3.allocate(m_resolution[0], m_resolution[1], m_resolution[2]);
   Simulation::initialize();
 }
 
+void PICSimulation1D::finalize() {
+  ex1.~OneDArray<real_t>(); ex2.~OneDArray<real_t>(); ex3.~OneDArray<real_t>();
+  bx1.~OneDArray<real_t>(); bx2.~OneDArray<real_t>(); bx3.~OneDArray<real_t>();
+  Simulation::finalize();
+}
+
+void PICSimulation2D::finalize() {
+  ex1.~TwoDArray<real_t>(); ex2.~TwoDArray<real_t>(); ex3.~TwoDArray<real_t>();
+  bx1.~TwoDArray<real_t>(); bx2.~TwoDArray<real_t>(); bx3.~TwoDArray<real_t>();
+  Simulation::finalize();
+}
+
+void PICSimulation3D::finalize() {
+  ex1.~ThreeDArray<real_t>(); ex2.~ThreeDArray<real_t>(); ex3.~ThreeDArray<real_t>();
+  bx1.~ThreeDArray<real_t>(); bx2.~ThreeDArray<real_t>(); bx3.~ThreeDArray<real_t>();
+  Simulation::finalize();
+}
 
 } // namespace ntt

@@ -11,7 +11,9 @@ public:
   void start(int argc, char *argv[]) {
     simulation->parseInput(argc, argv);
     simulation->printDetails();
-    // simulation->run();
+    simulation->initialize();
+    simulation->mainloop();
+    simulation->finalize();
   }
 };
 
