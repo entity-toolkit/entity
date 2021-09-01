@@ -133,6 +133,7 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
   try {
     return readFromInput<T>(blockname, variable);
   } catch (std::exception &err) {
+    PLOGW << "Variable <" << variable << "> of [" << blockname << "] not found. Falling back to default value.";
     return defval;
   }
 }
@@ -180,21 +181,34 @@ void PICSimulation3D::initialize() {
   Simulation::initialize();
 }
 
+// explicitly calling all the destructors
 void PICSimulation1D::finalize() {
-  ex1.~OneDArray<real_t>(); ex2.~OneDArray<real_t>(); ex3.~OneDArray<real_t>();
-  bx1.~OneDArray<real_t>(); bx2.~OneDArray<real_t>(); bx3.~OneDArray<real_t>();
+  ex1.arrays::OneDArray<real_t>::~OneDArray<real_t>();
+  ex2.arrays::OneDArray<real_t>::~OneDArray<real_t>();
+  ex3.arrays::OneDArray<real_t>::~OneDArray<real_t>();
+  bx1.arrays::OneDArray<real_t>::~OneDArray<real_t>();
+  bx2.arrays::OneDArray<real_t>::~OneDArray<real_t>();
+  bx3.arrays::OneDArray<real_t>::~OneDArray<real_t>();
   Simulation::finalize();
 }
 
 void PICSimulation2D::finalize() {
-  ex1.~TwoDArray<real_t>(); ex2.~TwoDArray<real_t>(); ex3.~TwoDArray<real_t>();
-  bx1.~TwoDArray<real_t>(); bx2.~TwoDArray<real_t>(); bx3.~TwoDArray<real_t>();
+  ex1.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
+  ex2.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
+  ex3.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
+  bx1.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
+  bx2.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
+  bx3.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
   Simulation::finalize();
 }
 
 void PICSimulation3D::finalize() {
-  ex1.~ThreeDArray<real_t>(); ex2.~ThreeDArray<real_t>(); ex3.~ThreeDArray<real_t>();
-  bx1.~ThreeDArray<real_t>(); bx2.~ThreeDArray<real_t>(); bx3.~ThreeDArray<real_t>();
+  ex1.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
+  ex2.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
+  ex3.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
+  bx1.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
+  bx2.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
+  bx3.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
   Simulation::finalize();
 }
 
