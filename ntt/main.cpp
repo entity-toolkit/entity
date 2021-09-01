@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-ProblemGenerator ntt_simulation;
+ProblemGenerator ntt_pgen;
 
 void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
 
@@ -17,9 +17,7 @@ auto main(int argc, char *argv[]) -> int {
   initLogger(&console_appender);
 
   try {
-    ntt_simulation.parseInput(argc, argv);
-    ntt_simulation.initialize();
-    ntt_simulation.printDetails();
+    ntt_pgen.start(argc, argv);
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
     return -1;

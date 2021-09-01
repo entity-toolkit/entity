@@ -4,7 +4,7 @@ runtime         = 1.0
 
 [domain]
 resolution      = [256, 256]
-dimensions      = [-2, 2, -2, 2]
+size            = [-2, 2, -2, 2]
 
 [algorithm]
 timestep        = 0.01
