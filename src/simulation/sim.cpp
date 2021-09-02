@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <cassert>
 
 namespace ntt {
 namespace { // anonymous namespace
@@ -97,9 +98,11 @@ void Simulation::parseInput(int argc, char *argv[]) {
   } else {
     throw std::runtime_error("# Error: unknown dimension of simulation.");
   }
+  m_inputparsed = true;
 }
 
 void Simulation::printDetails(std::ostream& os) {
+  assert(m_inputparsed);
   os << "[Simulation details]\n";
   os << "Title: " << m_title << "\n";
   os << "   type: " << stringifySimulationType(m_simulation_type) << "\n";
@@ -139,12 +142,17 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
 }
 
 void Simulation::initialize() {
+  assert(m_inputparsed);
   m_initialized = true;
 }
 void Simulation::finalize() {
+  assert(m_initialized);
   m_initialized = false;
 }
-void Simulation::mainloop() {}
+void Simulation::mainloop() {
+  assert(m_inputparsed);
+  assert(m_initialized);
+}
 
 void PICSimulation::printDetails(std::ostream& os) {
   Simulation::printDetails(os);

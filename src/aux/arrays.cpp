@@ -101,6 +101,8 @@ template <class T> void ThreeDArray<T>::fillWith(T value, bool fill_ghosts) {
   }
 }
 
+// TODO : modify getters and setters to properly get/set accounting for ghost zones
+
 // element setter
 template <class T> void OneDArray<T>::set(std::size_t i1, T value) {
 # ifdef DEBUG
