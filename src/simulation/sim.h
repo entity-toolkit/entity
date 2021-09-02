@@ -15,6 +15,7 @@ namespace ntt {
 class AbstractSimulation {
 protected:
   bool m_initialized { false };
+  bool m_inputparsed { false };
 public:
   AbstractSimulation() = default;
   ~AbstractSimulation() = default;
