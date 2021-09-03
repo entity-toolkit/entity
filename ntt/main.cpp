@@ -28,12 +28,12 @@ auto main(int argc, char *argv[]) -> int {
 
 void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
   plog::Severity max_severity;
-# ifdef VERBOSE
+#ifdef VERBOSE
   max_severity = plog::verbose;
-# elif DEBUG
+#elif DEBUG
   max_severity = plog::debug;
-# else
+#else
   max_severity = plog::warning;
-# endif
+#endif
   plog::init(max_severity, console_appender);
 }

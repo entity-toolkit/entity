@@ -12,22 +12,21 @@
 
 namespace ntt {
 namespace { // anonymous namespace
-  void dataExistsInToml(toml::value inputdata, const std::string &blockname, const std::string &variable) {
-    if (inputdata.contains(blockname)) {
-      auto &val_block = toml::find(inputdata, blockname);
-      if (!val_block.contains(variable)) {
-        PLOGW << "Cannot find variable <" << variable << "> from block [" << blockname << "] in the input file.";
-        throw std::invalid_argument("Cannot find variable in input file.");
-      }
-    } else {
-      PLOGW << "Cannot find block [" << blockname << "] in the input file.";
-      throw std::invalid_argument("Cannot find blockname in input file.");
+void dataExistsInToml(toml::value inputdata, const std::string &blockname, const std::string &variable) {
+  if (inputdata.contains(blockname)) {
+    auto &val_block = toml::find(inputdata, blockname);
+    if (!val_block.contains(variable)) {
+      PLOGW << "Cannot find variable <" << variable << "> from block [" << blockname << "] in the input file.";
+      throw std::invalid_argument("Cannot find variable in input file.");
     }
+  } else {
+    PLOGW << "Cannot find block [" << blockname << "] in the input file.";
+    throw std::invalid_argument("Cannot find blockname in input file.");
   }
 }
+} // namespace
 
-template <typename T>
-auto Simulation::readFromInput(const std::string &blockname, const std::string &variable) -> T {
+template <typename T> auto Simulation::readFromInput(const std::string &blockname, const std::string &variable) -> T {
   dataExistsInToml(m_inputdata, blockname, variable);
   auto &val_block = toml::find(m_inputdata, blockname);
   return toml::find<T>(val_block, variable);
@@ -48,8 +47,7 @@ Simulation::Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType
   if (((dim == ONE_D) && (coord_sys != CARTESIAN_COORD)) ||
       ((dim == TWO_D) && ((coord_sys == SPHERICAL_COORD) || (coord_sys == LOG_SPHERICAL_COORD))) ||
       ((dim == THREE_D) && (coord_sys == POLAR_COORD))) {
-    PLOGF << "Incompatibility between the dimension [" << dim << "] and the coordinate system ["
-          << coord_sys << "]";
+    PLOGF << "Incompatibility between the dimension [" << dim << "] and the coordinate system [" << coord_sys << "]";
     throw std::logic_error("#Error: incompatible simulation configurations.");
   }
 }
@@ -70,33 +68,30 @@ void Simulation::parseInput(int argc, char *argv[]) {
 
   m_domain.set_extent(extent);
   m_domain.set_resolution(resolution);
+  // TODO: update default boundaries
   m_inputparsed = true;
 }
 
-void Simulation::printDetails(std::ostream& os) {
+void Simulation::printDetails(std::ostream &os) {
   assert(m_inputparsed);
   os << "[Simulation details]\n";
   os << "Title: " << m_title << "\n";
   os << "   type: " << stringifySimulationType(m_simulation_type) << "\n";
-  os << "   dim: " << stringifyDimension(get_dimension()) << "\n";
-  os << "   coord: " << stringifyCoordinateSystem(get_coord_system()) << "\n\n";
   os << "   total runtime: " << m_runtime << "\n";
   os << "   dt: " << m_timestep << " [" << static_cast<int>(m_runtime / m_timestep) << "]\n";
   os << "   resolution: ";
-  for (auto r: get_resolution()) {
+  for (auto r : get_resolution()) {
     os << r << " x ";
   }
   os << "\b\b  \n";
   os << "   size: ";
   auto extent = get_extent();
-  for(std::size_t i {0}; i < extent.size(); i += 2) {
+  for (std::size_t i{0}; i < extent.size(); i += 2) {
     os << "[" << extent[i] << ", " << extent[i + 1] << "] ";
   }
   os << "\n";
 }
-void Simulation::printDetails() {
-  printDetails(std::cout);
-}
+void Simulation::printDetails() { printDetails(std::cout); }
 
 void Simulation::initialize() {
   assert(m_inputparsed);
@@ -111,7 +106,7 @@ void Simulation::mainloop() {
   assert(m_initialized);
 }
 
-void PICSimulation::printDetails(std::ostream& os) {
+void PICSimulation::printDetails(std::ostream &os) {
   Simulation::printDetails(os);
   os << "   particle pusher: " << stringifyParticlePusher(m_pusher) << "\n";
 }
