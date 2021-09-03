@@ -4,6 +4,8 @@
 #include <cstddef>
 
 namespace ntt::arrays {
+
+// abstract array class
 template <class T> class Array {
 protected:
   T *m_data;
@@ -16,6 +18,7 @@ public:
   virtual auto get_size(short int n) -> std::size_t = 0;
 };
 
+// ND array classes
 template <class T> class OneDArray : public Array<T> {
 private:
   std::size_t n1, n1_full;

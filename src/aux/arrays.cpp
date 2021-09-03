@@ -105,26 +105,26 @@ template <class T> void ThreeDArray<T>::fillWith(T value, bool fill_ghosts) {
 
 // element setter
 template <class T> void OneDArray<T>::set(std::size_t i1, T value) {
-# ifdef DEBUG
+#ifdef DEBUG
   if (!(i1 < this->n1_full)) {
     std::out_of_range("# Error: i1 out of range for 1d array.");
   }
-# endif
+#endif
   this->m_data[i1] = value;
 }
 template <class T> void TwoDArray<T>::set(std::size_t i1, std::size_t i2, T value) {
-# ifdef DEBUG
+#ifdef DEBUG
   if (!(i1 < this->n1_full)) {
     std::out_of_range("# Error: i1 out of range for 2d array.");
   }
   if (!(i2 < this->n2_full)) {
     std::out_of_range("# Error: i2 out of range for 2d array.");
   }
-# endif
+#endif
   this->m_data[i1 + (this->n1_full) * i2] = value;
 }
 template <class T> void ThreeDArray<T>::set(std::size_t i1, std::size_t i2, std::size_t i3, T value) {
-# ifdef DEBUG
+#ifdef DEBUG
   if (!(i1 < this->n1_full)) {
     std::out_of_range("# Error: i1 out of range for 3d array.");
   }
@@ -134,32 +134,32 @@ template <class T> void ThreeDArray<T>::set(std::size_t i1, std::size_t i2, std:
   if (!(i3 < this->n3_full)) {
     std::out_of_range("# Error: i3 out of range for 3d array.");
   }
-# endif
+#endif
   this->m_data[i1 + (this->n1_full) * (i2 + (this->n2_full) * i3)] = value;
 }
 
 // element getter
 template <class T> auto OneDArray<T>::get(std::size_t i1) -> T {
-# ifdef DEBUG
+#ifdef DEBUG
   if (!(i1 < this->n1_full)) {
     std::out_of_range("# Error: i1 out of range for 1d array.");
   }
-# endif
+#endif
   return this->m_data[i1];
 }
 template <class T> auto TwoDArray<T>::get(std::size_t i1, std::size_t i2) -> T {
-# ifdef DEBUG
+#ifdef DEBUG
   if (!(i1 < this->n1_full)) {
     std::out_of_range("# Error: i1 out of range for 2d array.");
   }
   if (!(i2 < this->n2_full)) {
     std::out_of_range("# Error: i2 out of range for 2d array.");
   }
-# endif
+#endif
   return this->m_data[i1 + (this->n1_full) * i2];
 }
 template <class T> auto ThreeDArray<T>::get(std::size_t i1, std::size_t i2, std::size_t i3) -> T {
-# ifdef DEBUG
+#ifdef DEBUG
   if (!(i1 < this->n1_full)) {
     std::out_of_range("# Error: i1 out of range for 3d array.");
   }
@@ -169,7 +169,7 @@ template <class T> auto ThreeDArray<T>::get(std::size_t i1, std::size_t i2, std:
   if (!(i3 < this->n3_full)) {
     std::out_of_range("# Error: i3 out of range for 3d array.");
   }
-# endif
+#endif
   return this->m_data[i1 + (this->n1_full) * (i2 + (this->n2_full) * i3)];
 }
 

@@ -4,14 +4,15 @@
 #include "sim.h"
 
 class ProblemGenerator {
-  ntt::AbstractSimulation* simulation;
+  ntt::AbstractSimulation *simulation;
+
 public:
   ProblemGenerator();
   ~ProblemGenerator() = default;
   void start(int argc, char *argv[]) {
     simulation->parseInput(argc, argv);
-    simulation->printDetails();
     simulation->initialize();
+    simulation->printDetails();
     simulation->mainloop();
     simulation->finalize();
   }

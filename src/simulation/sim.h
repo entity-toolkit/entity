@@ -15,8 +15,9 @@
 namespace ntt {
 class AbstractSimulation {
 protected:
-  bool m_initialized { false };
-  bool m_inputparsed { false };
+  bool m_initialized{false};
+  bool m_inputparsed{false};
+
 public:
   AbstractSimulation() = default;
   ~AbstractSimulation() = default;
@@ -24,7 +25,7 @@ public:
   [[nodiscard]] auto is_initialized() const -> bool { return m_initialized; }
 
   virtual void parseInput(int argc, char *argv[]) = 0;
-  virtual void printDetails(std::ostream&) = 0;
+  virtual void printDetails(std::ostream &) = 0;
   virtual void printDetails() = 0;
   virtual void initialize() = 0;
   virtual void mainloop() = 0;
@@ -48,6 +49,7 @@ protected:
 
   real_t m_runtime;
   real_t m_timestep;
+
 public:
   Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType sim_type);
   ~Simulation() = default;
@@ -60,7 +62,7 @@ public:
   [[nodiscard]] auto get_extent() const -> std::vector<real_t> { return m_domain.m_extent; }
 
   void parseInput(int argc, char *argv[]) override;
-  void printDetails(std::ostream& os) override;
+  void printDetails(std::ostream &os) override;
   void printDetails() override;
 
   template <typename T>
@@ -75,49 +77,54 @@ public:
 
 class PICSimulation : public Simulation {
 protected:
-  ParticlePusher m_pusher { UNDEFINED_PUSHER };
+  ParticlePusher m_pusher{UNDEFINED_PUSHER};
+
 public:
-  PICSimulation(Dimension dim, CoordinateSystem coord_sys, ParticlePusher pusher) : Simulation{dim, coord_sys, PIC_SIM}, m_pusher(pusher) {};
+  PICSimulation(Dimension dim, CoordinateSystem coord_sys, ParticlePusher pusher)
+      : Simulation{dim, coord_sys, PIC_SIM}, m_pusher(pusher){};
   PICSimulation(Dimension dim, CoordinateSystem coord_sys) : Simulation{dim, coord_sys, PIC_SIM} {};
   ~PICSimulation() = default;
-  void printDetails(std::ostream& os);
-  void mainloop();
+  void printDetails(std::ostream &os) override;
+  void mainloop() override;
 };
 
 class PICSimulation1D : public PICSimulation {
 protected:
   arrays::OneDArray<real_t> ex1, ex2, ex3;
   arrays::OneDArray<real_t> bx1, bx2, bx3;
+
 public:
   PICSimulation1D(ParticlePusher pusher) : PICSimulation{ONE_D, CARTESIAN_COORD, pusher} {};
   PICSimulation1D() : PICSimulation{ONE_D, CARTESIAN_COORD} {};
   ~PICSimulation1D() = default;
-  void initialize();
-  void finalize();
+  void initialize() override;
+  void finalize() override;
 };
 
 class PICSimulation2D : public PICSimulation {
 protected:
   arrays::TwoDArray<real_t> ex1, ex2, ex3;
   arrays::TwoDArray<real_t> bx1, bx2, bx3;
+
 public:
   PICSimulation2D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{TWO_D, coord_sys, pusher} {};
   PICSimulation2D(CoordinateSystem coord_sys) : PICSimulation{TWO_D, coord_sys} {};
   ~PICSimulation2D() = default;
-  void initialize();
-  void finalize();
+  void initialize() override;
+  void finalize() override;
 };
 
 class PICSimulation3D : public PICSimulation {
 protected:
   arrays::ThreeDArray<real_t> ex1, ex2, ex3;
   arrays::ThreeDArray<real_t> bx1, bx2, bx3;
+
 public:
   PICSimulation3D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{THREE_D, coord_sys, pusher} {};
   PICSimulation3D(CoordinateSystem coord_sys) : PICSimulation{THREE_D, coord_sys} {};
   ~PICSimulation3D() = default;
-  void initialize();
-  void finalize();
+  void initialize() override;
+  void finalize() override;
 };
 
 } // namespace ntt
