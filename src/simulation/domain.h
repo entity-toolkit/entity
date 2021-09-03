@@ -11,14 +11,20 @@ class Domain {
 protected:
   const Dimension m_dimension;
   const CoordinateSystem m_coord_system;
+  std::vector<BoundaryCondition> m_boundary;
 
   std::vector<real_t> m_extent;
   std::vector<int> m_resolution;
+
 public:
   Domain(Dimension dim, CoordinateSystem coord) : m_dimension(dim), m_coord_system(coord) {}
   ~Domain() = default;
   void set_extent(std::vector<real_t> extent);
   void set_resolution(std::vector<int> resolution);
+  void set_boundaries(const std::vector<BoundaryCondition> &bc);
+  void set_boundary_x1(BoundaryCondition bc);
+  void set_boundary_x2(BoundaryCondition bc);
+  void set_boundary_x3(BoundaryCondition bc);
 
   // a bunch of getters to simplify the workflow
   //    extent of each dimension
