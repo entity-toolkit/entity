@@ -16,11 +16,11 @@ void dataExistsInToml(toml::value inputdata, const std::string &blockname, const
   if (inputdata.contains(blockname)) {
     auto &val_block = toml::find(inputdata, blockname);
     if (!val_block.contains(variable)) {
-      PLOGW << "Cannot find variable <" << variable << "> from block [" << blockname << "] in the input file.";
+      PLOGI << "Cannot find variable <" << variable << "> from block [" << blockname << "] in the input file.";
       throw std::invalid_argument("Cannot find variable in input file.");
     }
   } else {
-    PLOGW << "Cannot find block [" << blockname << "] in the input file.";
+    PLOGI << "Cannot find block [" << blockname << "] in the input file.";
     throw std::invalid_argument("Cannot find blockname in input file.");
   }
 }
@@ -36,7 +36,7 @@ auto Simulation::readFromInput(const std::string &blockname, const std::string &
   try {
     return readFromInput<T>(blockname, variable);
   } catch (std::exception &err) {
-    PLOGW << "Variable <" << variable << "> of [" << blockname << "] not found. Falling back to default value.";
+    PLOGI << "Variable <" << variable << "> of [" << blockname << "] not found. Falling back to default value.";
     return defval;
   }
 }

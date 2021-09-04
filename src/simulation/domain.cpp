@@ -8,74 +8,74 @@
 
 namespace ntt {
 
-void Domain::set_extent(std::vector<real_t> extent) {
+void Domain::set_extent(const std::vector<real_t> &extent) {
   // check that everything is defined consistently
-  if (m_dimension == ONE_D) {
-    if (extent.size() > 2) {
-      PLOGW << "1D simulation specified, ignoring extra dimensions in `extent`.";
-      extent.erase(extent.begin() + 2, extent.end());
-    }
-  } else if (m_dimension == TWO_D) {
-    if (extent.size() > 4) {
-      PLOGW << "2D simulation specified, ignoring extra dimensions in `extent`.";
-      extent.erase(extent.begin() + 4, extent.end());
-    } else if (extent.size() < 4) {
-      PLOGE << "2D simulation specified, not enough dimensions given in the input.";
-      throw std::invalid_argument("Not enough values in `extent` input.");
-    }
-  } else if (m_dimension == THREE_D) {
-    if (extent.size() > 6) {
-      PLOGW << "3D simulation specified, ignoring extra dimensions in `extent`.";
-      extent.erase(extent.begin() + 6, extent.end());
-    } else if (extent.size() < 6) {
-      PLOGE << "3D simulation specified, not enough dimensions given in the input.";
-      throw std::invalid_argument("Not enough values in `extent` input.");
-    }
-  } else {
-    throw std::runtime_error("# Error: unknown dimension of simulation.");
-  }
   m_extent = extent;
-}
-void Domain::set_resolution(std::vector<int> resolution) {
-  // check that everything is defined consistently
   if (m_dimension == ONE_D) {
-    if (resolution.size() > 1) {
-      PLOGW << "1D simulation specified, ignoring extra dimensions in `resolution`.";
-      resolution.erase(resolution.begin() + 1, resolution.end());
+    if (m_extent.size() > 2) {
+      PLOGI << "1D simulation specified, ignoring extra dimensions in `extent`.";
+      m_extent.erase(m_extent.begin() + 2, m_extent.end());
     }
   } else if (m_dimension == TWO_D) {
-    if (resolution.size() > 2) {
-      PLOGW << "2D simulation specified, ignoring extra dimensions in `resolution`.";
-      resolution.erase(resolution.begin() + 2, resolution.end());
-    } else if (resolution.size() < 2) {
-      PLOGE << "2D simulation specified, not enough dimensions given in the input.";
+    if (m_extent.size() > 4) {
+      PLOGI << "2D simulation specified, ignoring extra dimensions in `extent`.";
+      m_extent.erase(m_extent.begin() + 4, m_extent.end());
+    } else if (m_extent.size() < 4) {
+      PLOGF << "2D simulation specified, not enough dimensions given in the input.";
+      throw std::invalid_argument("Not enough values in `extent` input.");
+    }
+  } else if (m_dimension == THREE_D) {
+    if (m_extent.size() > 6) {
+      PLOGI << "3D simulation specified, ignoring extra dimensions in `extent`.";
+      m_extent.erase(m_extent.begin() + 6, m_extent.end());
+    } else if (m_extent.size() < 6) {
+      PLOGF << "3D simulation specified, not enough dimensions given in the input.";
+      throw std::invalid_argument("Not enough values in `extent` input.");
+    }
+  } else {
+    throw std::runtime_error("# Error: unknown dimension of simulation.");
+  }
+}
+void Domain::set_resolution(const std::vector<int> &resolution) {
+  // check that everything is defined consistently
+  m_resolution = resolution;
+  if (m_dimension == ONE_D) {
+    if (m_resolution.size() > 1) {
+      PLOGI << "1D simulation specified, ignoring extra dimensions in `resolution`.";
+      m_resolution.erase(m_resolution.begin() + 1, m_resolution.end());
+    }
+  } else if (m_dimension == TWO_D) {
+    if (m_resolution.size() > 2) {
+      PLOGI << "2D simulation specified, ignoring extra dimensions in `resolution`.";
+      m_resolution.erase(m_resolution.begin() + 2, m_resolution.end());
+    } else if (m_resolution.size() < 2) {
+      PLOGF << "2D simulation specified, not enough dimensions given in the input.";
       throw std::invalid_argument("Not enough values in `resolution` input.");
     }
   } else if (m_dimension == THREE_D) {
-    if (resolution.size() > 3) {
-      PLOGW << "3D simulation specified, ignoring extra dimensions in `resolution`.";
-      resolution.erase(resolution.begin() + 3, resolution.end());
-    } else if (resolution.size() < 3) {
-      PLOGE << "3D simulation specified, not enough dimensions given in the input.";
+    if (m_resolution.size() > 3) {
+      PLOGI << "3D simulation specified, ignoring extra dimensions in `resolution`.";
+      m_resolution.erase(m_resolution.begin() + 3, m_resolution.end());
+    } else if (m_resolution.size() < 3) {
+      PLOGF << "3D simulation specified, not enough dimensions given in the input.";
       throw std::invalid_argument("Not enough values in `resolution` input.");
     }
   } else {
     throw std::runtime_error("# Error: unknown dimension of simulation.");
   }
-  m_resolution = resolution;
 }
 
-void Domain::set_boundary_x1(BoundaryCondition bc) {
+void Domain::set_boundary_x1(const BoundaryCondition &bc) {
   assert(m_dimension != UNDEFINED_D);
   assert(m_boundary.size() >= 1);
   m_boundary[0] = bc;
 }
-void Domain::set_boundary_x2(BoundaryCondition bc) {
+void Domain::set_boundary_x2(const BoundaryCondition &bc) {
   assert((m_dimension != UNDEFINED_D) && (m_dimension != ONE_D));
   assert(m_boundary.size() >= 2);
   m_boundary[1] = bc;
 }
-void Domain::set_boundary_x3(BoundaryCondition bc) {
+void Domain::set_boundary_x3(const BoundaryCondition &bc) {
   assert(m_dimension == THREE_D);
   assert(m_boundary.size() == 3);
   m_boundary[2] = bc;
