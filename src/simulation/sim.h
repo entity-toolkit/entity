@@ -23,11 +23,13 @@ public:
   ~AbstractSimulation() = default;
 
   [[nodiscard]] auto is_initialized() const -> bool { return m_initialized; }
+  [[nodiscard]] auto is_inputparsed() const -> bool { return m_inputparsed; }
 
   virtual void parseInput(int argc, char *argv[]) = 0;
   virtual void printDetails(std::ostream &) = 0;
   virtual void printDetails() = 0;
   virtual void initialize() = 0;
+  virtual void verify() = 0;
   virtual void mainloop() = 0;
   virtual void finalize() = 0;
 };
@@ -41,10 +43,6 @@ protected:
   std::string_view m_outputpath;
   toml::value m_inputdata;
 
-  // const Dimension m_dimension;
-  // const CoordinateSystem m_coord_system;
-  // std::vector<int> m_resolution;
-  // std::vector<real_t> m_size;
   Domain m_domain;
 
   real_t m_runtime;
@@ -53,6 +51,7 @@ protected:
 public:
   Simulation(Dimension dim, CoordinateSystem coord_sys, SimulationType sim_type);
   ~Simulation() = default;
+
   [[nodiscard]] auto get_title() const -> std::string { return m_title; }
   [[nodiscard]] auto get_precision() const -> std::size_t { return sizeof(real_t); }
   [[nodiscard]] auto get_simulation_type() const -> SimulationType { return m_simulation_type; }
@@ -71,6 +70,7 @@ public:
   [[nodiscard]] auto readFromInput(const std::string &blockname, const std::string &variable, const T &defval) -> T;
 
   void initialize() override;
+  void verify() override;
   void mainloop() override;
   void finalize() override;
 };
@@ -84,8 +84,14 @@ public:
       : Simulation{dim, coord_sys, PIC_SIM}, m_pusher(pusher){};
   PICSimulation(Dimension dim, CoordinateSystem coord_sys) : Simulation{dim, coord_sys, PIC_SIM} {};
   ~PICSimulation() = default;
+
+  [[nodiscard]] auto get_particle_pusher() const -> ParticlePusher { return m_pusher; }
+
   void printDetails(std::ostream &os) override;
+  void initialize() override;
+  void verify() override;
   void mainloop() override;
+  void finalize() override;
 };
 
 class PICSimulation1D : public PICSimulation {
@@ -98,6 +104,7 @@ public:
   PICSimulation1D() : PICSimulation{ONE_D, CARTESIAN_COORD} {};
   ~PICSimulation1D() = default;
   void initialize() override;
+  void verify() override;
   void finalize() override;
 };
 
@@ -111,6 +118,7 @@ public:
   PICSimulation2D(CoordinateSystem coord_sys) : PICSimulation{TWO_D, coord_sys} {};
   ~PICSimulation2D() = default;
   void initialize() override;
+  void verify() override;
   void finalize() override;
 };
 
@@ -124,6 +132,7 @@ public:
   PICSimulation3D(CoordinateSystem coord_sys) : PICSimulation{THREE_D, coord_sys} {};
   ~PICSimulation3D() = default;
   void initialize() override;
+  void verify() override;
   void finalize() override;
 };
 
