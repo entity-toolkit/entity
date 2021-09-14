@@ -1,5 +1,4 @@
-// test local libraries
-#include "test_lib_aux.h"
+#include "test_src.h"
 
 // test external libraries
 #include "test_extern_toml.h"
@@ -9,7 +8,7 @@
 
 void testSuccess() {}
 
-TEST_LIST = {{"lib/aux", testLibAux},
+TEST_LIST = {{"lib/aux", testSrc},
              {"extern/toml", testExternToml},
              {"extern/kokkos", testExternKokkos},
              {"success", testSuccess},

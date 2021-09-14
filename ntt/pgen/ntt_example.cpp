@@ -11,6 +11,7 @@ public:
     ntt::PICSimulation2D::initialize();
     m_domain.set_boundaries({ntt::PERIODIC_BC, ntt::PERIODIC_BC});
     // user defined initialization goes here
+    std::cout << m_species.getSizeInBytes() << " B\n";
   }
   void finalize() override {}
 };

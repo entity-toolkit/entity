@@ -2,8 +2,9 @@
 #define SIMULATION_SIM_H
 
 #include "global.h"
-#include "arrays.h"
 #include "domain.h"
+#include "fields.h"
+#include "particles.h"
 
 #include <toml/toml.hpp>
 
@@ -78,10 +79,10 @@ public:
 class PICSimulation : public Simulation {
 protected:
   ParticlePusher m_pusher{UNDEFINED_PUSHER};
-
+  particles::ParticleSpecies m_species;
 public:
   PICSimulation(Dimension dim, CoordinateSystem coord_sys, ParticlePusher pusher)
-      : Simulation{dim, coord_sys, PIC_SIM}, m_pusher(pusher){};
+      : Simulation{dim, coord_sys, PIC_SIM}, m_pusher(pusher), m_species() {};
   PICSimulation(Dimension dim, CoordinateSystem coord_sys) : Simulation{dim, coord_sys, PIC_SIM} {};
   ~PICSimulation() = default;
 
@@ -96,8 +97,8 @@ public:
 
 class PICSimulation1D : public PICSimulation {
 protected:
-  arrays::OneDArray<real_t> ex1, ex2, ex3;
-  arrays::OneDArray<real_t> bx1, bx2, bx3;
+  fields::OneDField<real_t> ex1, ex2, ex3;
+  fields::OneDField<real_t> bx1, bx2, bx3;
 
 public:
   PICSimulation1D(ParticlePusher pusher) : PICSimulation{ONE_D, CARTESIAN_COORD, pusher} {};
@@ -110,8 +111,8 @@ public:
 
 class PICSimulation2D : public PICSimulation {
 protected:
-  arrays::TwoDArray<real_t> ex1, ex2, ex3;
-  arrays::TwoDArray<real_t> bx1, bx2, bx3;
+  fields::TwoDField<real_t> ex1, ex2, ex3;
+  fields::TwoDField<real_t> bx1, bx2, bx3;
 
 public:
   PICSimulation2D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{TWO_D, coord_sys, pusher} {};
@@ -124,8 +125,8 @@ public:
 
 class PICSimulation3D : public PICSimulation {
 protected:
-  arrays::ThreeDArray<real_t> ex1, ex2, ex3;
-  arrays::ThreeDArray<real_t> bx1, bx2, bx3;
+  fields::ThreeDField<real_t> ex1, ex2, ex3;
+  fields::ThreeDField<real_t> bx1, bx2, bx3;
 
 public:
   PICSimulation3D(CoordinateSystem coord_sys, ParticlePusher pusher) : PICSimulation{THREE_D, coord_sys, pusher} {};
