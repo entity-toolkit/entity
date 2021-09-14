@@ -69,32 +69,32 @@ void PICSimulation3D::verify() {
 
 // explicitly calling all the destructors
 void PICSimulation1D::finalize() {
-  ex1.arrays::OneDArray<real_t>::~OneDArray<real_t>();
-  ex2.arrays::OneDArray<real_t>::~OneDArray<real_t>();
-  ex3.arrays::OneDArray<real_t>::~OneDArray<real_t>();
-  bx1.arrays::OneDArray<real_t>::~OneDArray<real_t>();
-  bx2.arrays::OneDArray<real_t>::~OneDArray<real_t>();
-  bx3.arrays::OneDArray<real_t>::~OneDArray<real_t>();
+  ex1.fields::OneDField<real_t>::~OneDField<real_t>();
+  ex2.fields::OneDField<real_t>::~OneDField<real_t>();
+  ex3.fields::OneDField<real_t>::~OneDField<real_t>();
+  bx1.fields::OneDField<real_t>::~OneDField<real_t>();
+  bx2.fields::OneDField<real_t>::~OneDField<real_t>();
+  bx3.fields::OneDField<real_t>::~OneDField<real_t>();
   PICSimulation::finalize();
 }
 
 void PICSimulation2D::finalize() {
-  ex1.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
-  ex2.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
-  ex3.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
-  bx1.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
-  bx2.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
-  bx3.arrays::TwoDArray<real_t>::~TwoDArray<real_t>();
+  ex1.fields::TwoDField<real_t>::~TwoDField<real_t>();
+  ex2.fields::TwoDField<real_t>::~TwoDField<real_t>();
+  ex3.fields::TwoDField<real_t>::~TwoDField<real_t>();
+  bx1.fields::TwoDField<real_t>::~TwoDField<real_t>();
+  bx2.fields::TwoDField<real_t>::~TwoDField<real_t>();
+  bx3.fields::TwoDField<real_t>::~TwoDField<real_t>();
   PICSimulation::finalize();
 }
 
 void PICSimulation3D::finalize() {
-  ex1.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
-  ex2.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
-  ex3.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
-  bx1.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
-  bx2.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
-  bx3.arrays::ThreeDArray<real_t>::~ThreeDArray<real_t>();
+  ex1.fields::ThreeDField<real_t>::~ThreeDField<real_t>();
+  ex2.fields::ThreeDField<real_t>::~ThreeDField<real_t>();
+  ex3.fields::ThreeDField<real_t>::~ThreeDField<real_t>();
+  bx1.fields::ThreeDField<real_t>::~ThreeDField<real_t>();
+  bx2.fields::ThreeDField<real_t>::~ThreeDField<real_t>();
+  bx3.fields::ThreeDField<real_t>::~ThreeDField<real_t>();
   PICSimulation::finalize();
 }
 
