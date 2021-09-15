@@ -27,7 +27,7 @@ enum CoordinateSystem {
 };
 enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 
-enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER };
+enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string_view;
 auto stringifyDimension(Dimension dim) -> std::string_view;

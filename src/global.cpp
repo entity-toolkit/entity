@@ -61,6 +61,8 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string_view {
     return "Boris";
   case VAY_PUSHER:
     return "Vay";
+  case PHOTON_PUSHER:
+    return "Photon";
   default:
     return "N/A";
   }

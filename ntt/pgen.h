@@ -12,6 +12,7 @@ public:
   void start(int argc, char *argv[]) {
     simulation->parseInput(argc, argv);
     simulation->initialize();
+    simulation->verify();
     simulation->printDetails();
     simulation->mainloop();
     simulation->finalize();
