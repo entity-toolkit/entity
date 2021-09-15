@@ -79,10 +79,10 @@ public:
   void allocate(std::size_t n1_);
   void fillWith(T value);
   void set(std::size_t i1, T value);
-  auto get(std::size_t i1) -> T;
+  [[nodiscard]] auto get(std::size_t i1) -> T;
 
-  auto get_size(short int n) -> std::size_t override;
-  auto getSizeInBytes() -> std::size_t override;
+  [[nodiscard]] auto get_size(short int n) -> std::size_t override;
+  [[nodiscard]] auto getSizeInBytes() -> std::size_t override;
 };
 
 template <class T> class TwoDArray : public Array<T> {
@@ -97,10 +97,10 @@ public:
   void allocate(std::size_t n1_, std::size_t n2_);
   void fillWith(T value);
   void set(std::size_t i1, std::size_t i2, T value);
-  auto get(std::size_t i1, std::size_t i2) -> T;
+  [[nodiscard]] auto get(std::size_t i1, std::size_t i2) -> T;
 
-  auto get_size(short int n) -> std::size_t override;
-  auto getSizeInBytes() -> std::size_t override;
+  [[nodiscard]] auto get_size(short int n) -> std::size_t override;
+  [[nodiscard]] auto getSizeInBytes() -> std::size_t override;
 };
 
 template <class T> class ThreeDArray : public Array<T> {
@@ -116,10 +116,10 @@ public:
   void allocate(std::size_t n1_, std::size_t n2_, std::size_t n3_);
   void fillWith(T value);
   void set(std::size_t i1, std::size_t i2, std::size_t i3, T value);
-  auto get(std::size_t i1, std::size_t i2, std::size_t i3) -> T;
+  [[nodiscard]] auto get(std::size_t i1, std::size_t i2, std::size_t i3) -> T;
 
-  auto get_size(short int n) -> std::size_t override;
-  auto getSizeInBytes() -> std::size_t override;
+  [[nodiscard]] auto get_size(short int n) -> std::size_t override;
+  [[nodiscard]] auto getSizeInBytes() -> std::size_t override;
 };
 } // namespace ntt::arrays
 
