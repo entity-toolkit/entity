@@ -13,8 +13,8 @@ private:
 
 public:
   void readCommandLineArguments(int argc, char *argv[]);
-  auto getArgument(std::string_view key, std::string_view def) -> std::string_view;
-  auto getArgument(std::string_view key) -> std::string_view;
+  [[nodiscard]] auto getArgument(std::string_view key, std::string_view def) -> std::string_view;
+  [[nodiscard]] auto getArgument(std::string_view key) -> std::string_view;
   auto isSpecified(std::string_view key) -> bool;
 };
 } // namespace ntt::io
