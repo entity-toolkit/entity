@@ -98,6 +98,9 @@ template <class T> void ThreeDArray<T>::fillWith(T value) {
 // element setters
 template <class T> void OneDArray<T>::set(std::size_t i1, T value) {
 # ifdef DEBUG
+  if (!this->m_allocated) {
+    throw std::runtime_error("# Error: 1d array not allocated.");
+  }
   if (!(i1 < this->n1)) {
     throw std::out_of_range("# Error: i1 out of range for 1d array.");
   }
@@ -106,6 +109,9 @@ template <class T> void OneDArray<T>::set(std::size_t i1, T value) {
 }
 template <class T> void TwoDArray<T>::set(std::size_t i1, std::size_t i2, T value) {
 # ifdef DEBUG
+  if (!this->m_allocated) {
+    throw std::runtime_error("# Error: 2d array not allocated.");
+  }
   if (!(i1 < this->n1)) {
     throw std::out_of_range("# Error: i1 out of range for 2d array.");
   }
@@ -117,6 +123,9 @@ template <class T> void TwoDArray<T>::set(std::size_t i1, std::size_t i2, T valu
 }
 template <class T> void ThreeDArray<T>::set(std::size_t i1, std::size_t i2, std::size_t i3, T value) {
 # ifdef DEBUG
+  if (!this->m_allocated) {
+    throw std::runtime_error("# Error: 3d array not allocated.");
+  }
   if (!(i1 < this->n1)) {
     throw std::out_of_range("# Error: i1 out of range for 3d array.");
   }
@@ -133,6 +142,9 @@ template <class T> void ThreeDArray<T>::set(std::size_t i1, std::size_t i2, std:
 // element getters
 template <class T> auto OneDArray<T>::get(std::size_t i1) -> T {
 # ifdef DEBUG
+  if (!this->m_allocated) {
+    throw std::runtime_error("# Error: 1d array not allocated.");
+  }
   if (!(i1 < this->n1)) {
     throw std::out_of_range("# Error: i1 out of range for 1d array.");
   }
@@ -141,6 +153,9 @@ template <class T> auto OneDArray<T>::get(std::size_t i1) -> T {
 }
 template <class T> auto TwoDArray<T>::get(std::size_t i1, std::size_t i2) -> T {
 # ifdef DEBUG
+  if (!this->m_allocated) {
+    throw std::runtime_error("# Error: 2d array not allocated.");
+  }
   if (!(i1 < this->n1)) {
     throw std::out_of_range("# Error: i1 out of range for 2d array.");
   }
@@ -152,6 +167,9 @@ template <class T> auto TwoDArray<T>::get(std::size_t i1, std::size_t i2) -> T {
 }
 template <class T> auto ThreeDArray<T>::get(std::size_t i1, std::size_t i2, std::size_t i3) -> T {
 # ifdef DEBUG
+  if (!this->m_allocated) {
+    throw std::runtime_error("# Error: 3d array not allocated.");
+  }
   if (!(i1 < this->n1)) {
     throw std::out_of_range("# Error: i1 out of range for 3d array.");
   }
