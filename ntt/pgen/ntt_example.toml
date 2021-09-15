@@ -1,10 +1,25 @@
 [simulation]
 title           = "Simulation Title"
-runtime         = 1.0
+runtime         = 0.1
 
 [domain]
 resolution      = [256, 256]
 extent          = [-2.0, 2.0, -2.0, 2.0]
+boundaries      = ["PERIODIC", "PERIODIC"]
+# options are: `PERIODIC`, `OPEN`
 
 [algorithm]
 timestep        = 0.01
+
+[particles]
+n_species       = 2
+
+[species_1]
+mass            = 1.0
+charge          = -1.0
+maxnpart        = 1e4
+
+[species_2]
+mass            = 1.0
+charge          = 1.0
+maxnpart        = 1e4
