@@ -43,6 +43,7 @@ namespace ntt {
    *     nx[1/2/3]()                : get the resolution in particular dimension
    *     x1x2x3_to_ijk()            : convert physical coordinates to cell index
    *     ijk_to_x1x2x3()            : convert cell index to physical coordinates (cell corner)
+   *     printDetails()             : print info about the domain in human-readable form
    *
    *  @example:
    *            ```c++
@@ -107,7 +108,14 @@ public:
   [[nodiscard]] auto x1x2x3_to_ijk(std::vector<real_t> x1x2x3) -> std::vector<int>;
   [[nodiscard]] auto ijk_to_x1x2x3(std::vector<int> ijk) -> std::vector<real_t>;
 
+  void printDetails(std::ostream &);
+  void printDetails();
+
   friend class Simulation;
+  friend class PICSimulation;
+  friend class PICSimulation1D;
+  friend class PICSimulation2D;
+  friend class PICSimulation3D;
 };
 
 } // namespace ntt

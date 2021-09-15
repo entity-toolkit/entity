@@ -5,8 +5,33 @@
 
 #include <cassert>
 #include <vector>
+#include <iostream>
 
 namespace ntt {
+
+void Domain::printDetails(std::ostream &os) {
+  os << ". [domain]\n";
+  os << "   dimension: " << stringifyDimension(m_dimension) << "\n";
+  os << "   coordinate system: " << stringifyCoordinateSystem(m_coord_system) << "\n";
+  os << "   boundary conditions: ";
+  for (auto & b : m_boundary) {
+    os << stringifyBoundaryCondition(b) << " x ";
+  }
+  os << "\b\b  \n";
+  os << "   resolution: ";
+  for (auto & r : m_resolution) {
+    os << r << " x ";
+  }
+  os << "\b\b  \n";
+  os << "   extent: ";
+  auto extent = m_extent;
+  for (std::size_t i{0}; i < extent.size(); i += 2) {
+    os << "[" << extent[i] << ", " << extent[i + 1] << "] ";
+  }
+  os << "\n";
+}
+void Domain::printDetails() { printDetails(std::cout); }
+
 
 void Domain::set_extent(const std::vector<real_t> &extent) {
   // check that everything is defined consistently
