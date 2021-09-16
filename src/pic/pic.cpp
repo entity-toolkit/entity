@@ -1,8 +1,6 @@
 #include "global.h"
 #include "picsim.h"
 
-#include <iostream>
-
 namespace ntt {
 
 void PICSimulation::stepForward(const real_t &time) {

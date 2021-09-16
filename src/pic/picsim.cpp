@@ -4,7 +4,8 @@
 #include "picsim.h"
 #include "input.h"
 
-#include <iostream>
+#include <plog/Log.h>
+
 #include <cstddef>
 
 namespace ntt {
@@ -58,6 +59,7 @@ void TEST_printReport(const timer::Timer &tm) {
 }
 
 void PICSimulation::mainloop() {
+  PLOGD;
   for (real_t time {0}; time < m_runtime; time += m_timestep) {
     stepForward(time);
     TEST_printReport(timer_em);

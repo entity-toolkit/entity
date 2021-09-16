@@ -1,12 +1,12 @@
 #include "global.h"
 #include "picsim.h"
 
-#include <iostream>
+#include <plog/Log.h>
 
 namespace ntt {
 
 void PICSimulation::particlePushSubstep(const real_t &time) {
-  std::cout << stringifyDimension(m_domain.m_dimension) << " pusher " << time << "\n";
+  PLOGD << time;
 }
 
 }
