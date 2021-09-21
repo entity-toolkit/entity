@@ -36,6 +36,11 @@ void PICSimulation::parseInput(int argc, char *argv[]) {
     auto maxnpart = static_cast<std::size_t>(io::readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
     m_species[i].setMaxnpart(maxnpart);
   }
+  m_ppc0 = io::readFromInput<float>(m_inputdata, "algorithm", "ppc0");
+  m_larmor0 = io::readFromInput<real_t>(m_inputdata, "algorithm", "larmor0");
+  m_skindepth0 = io::readFromInput<real_t>(m_inputdata, "algorithm", "skindepth0");
+  m_sigma0 = m_larmor0 * m_larmor0 / (m_skindepth0 * m_skindepth0);
+  m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
 }
 
 void PICSimulation::initialize() {

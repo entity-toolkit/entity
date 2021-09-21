@@ -10,6 +10,9 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
 timestep        = 0.01
+ppc0            = 10.0
+larmor0         = 0.01
+skindepth0      = 0.001
 
 [particles]
 n_species       = 2
