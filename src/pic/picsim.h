@@ -15,6 +15,12 @@ class PICSimulation : public Simulation {
 protected:
   std::vector<particles::ParticleSpecies> m_species;
 
+  float m_ppc0;
+  real_t m_larmor0;
+  real_t m_skindepth0;
+  real_t m_sigma0;
+  real_t m_charge0;
+
   // dedicated timers
   timer::Timer timer_em{"FIELD SOLVER"};
   timer::Timer timer_deposit{"DEPOSIT"};

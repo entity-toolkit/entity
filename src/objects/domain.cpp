@@ -159,6 +159,10 @@ auto Domain::sizexi() const -> std::vector<real_t> {
   return l_sizexi;
 }
 
+auto Domain::dx() const -> real_t {
+  assert(m_coord_system == CARTESIAN_COORD);
+  return sizex1() / nx1();
+}
 auto Domain::dx1() const -> real_t { return sizex1() / nx1(); }
 auto Domain::dx2() const -> real_t { return sizex2() / nx2(); }
 auto Domain::dx3() const -> real_t { return sizex3() / nx3(); }
@@ -169,6 +173,20 @@ auto Domain::dxi() const -> std::vector<real_t> {
     l_dxi.push_back(l_sizexi[p] / static_cast<real_t>(m_resolution[p]));
   }
   return l_dxi;
+}
+
+auto Domain::dVol() const -> real_t {
+  assert(m_dimension != UNDEFINED_D);
+  if (m_coord_system == CARTESIAN_COORD) {
+    if (m_dimension == ONE_D) {
+      return dx();
+    } else if (m_dimension == TWO_D) {
+      return dx() * dx();
+    } else {
+      return dx() * dx() * dx();
+    }
+  }
+  // TODO add different coord systems here
 }
 
 auto Domain::x1x2x3_to_ijk(std::vector<real_t> x1x2x3) -> std::vector<int> {

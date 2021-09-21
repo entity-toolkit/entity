@@ -183,7 +183,7 @@ $(foreach et, $(EXAMPLES_TARGETS), $(eval $(call generateExampleLinkingRules, ${
 # generate compilation rules for all `.o` files
 define generateRules
 $(1): $(2)
-	@echo [C]ompiling $(2)
+	@echo [C]ompiling $(subst ${ROOT_DIR}/,,$(2))
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)mkdir -p ${BIN_DIR}/${BUILD_EXAMPLES_DIR}
 	$(HIDE)mkdir -p $(dir $(1))

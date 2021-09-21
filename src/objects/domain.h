@@ -38,6 +38,8 @@ namespace ntt {
    *     x[1/2/3][min/max]()        : get the corner position in physical units in each of the dimensions
    *     dxi()                      : get the vector of the cell size (in physical units) in each dimension
    *     dx[1/2/3]()                : get the cell size (in physical units) in particular dimension
+   *     dx()                       : get the cell size (in physical units) for cartesian grid only
+   *     dVol()                     : get the fiducial cell volume (in physical units)
    *     sizexi()                   : get the vector of the sizes (in physical units) in each dimension
    *     sizex[1/2/3]()             : get the size (in physical units) in particular dimension
    *     nx[1/2/3]()                : get the resolution in particular dimension
@@ -90,10 +92,13 @@ public:
   [[nodiscard]] auto x3max() const -> real_t;
 
   //    step in each dimension
+  [[nodiscard]] auto dx() const -> real_t;
   [[nodiscard]] auto dxi() const -> std::vector<real_t>;
   [[nodiscard]] auto dx1() const -> real_t;
   [[nodiscard]] auto dx2() const -> real_t;
   [[nodiscard]] auto dx3() const -> real_t;
+
+  [[nodiscard]] auto dVol() const -> real_t;
 
   //    size & resolution in each dimension
   [[nodiscard]] auto sizexi() const -> std::vector<real_t>;
