@@ -3,53 +3,46 @@
 
 #include "timer.h"
 
-#ifdef KOKKOS
-#  include <Kokkos_Core.hpp>
-#endif
+# include <Kokkos_Core.hpp>
+# define KL KOKKOS_LAMBDA
 #include <acutest/acutest.h>
 
 #include <iostream>
+#include <cstddef>
 #include <cmath>
 
-#ifdef KOKKOS
-
 void testExternKokkos(void) {
+  using index_t = const std::size_t;
+  Kokkos::initialize();
   {
-    Kokkos::initialize();
     TEST_CHECK_(Kokkos::is_initialized(), "`Kokkos` initialize");
 
-    ntt::timer::Timer timer1("kokkos");
-    ntt::timer::Timer timer2("serial");
+    ntt::timer::Timer timer("summation");
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
-    auto Sum = [=](const int i, double &sum) { sum += 1.0 / static_cast<double>(i + 1); };
-    auto Check = [&](const double sum) { return std::abs(value - sum) < dvalue; };
+    auto Sum = KL (index_t i, double &sum) { 
+      sum += 1.0 / static_cast<double>(i + 1);
+    };
+    auto Check = [&](const double sum) {
+      return std::abs(value - sum) < dvalue;
+    };
 
-    double sum1 = 0.0;
-    timer1.start();
-    Kokkos::parallel_reduce(N, Sum, sum1);
-    timer1.stop();
+    double sum_var {0.0};
+    timer.start();
+    Kokkos::parallel_reduce("parallel_sum", N,
+      Sum, sum_var
+    );
+    timer.stop();
 
-    double sum2 = 0.0;
-    timer2.start();
-    for (int i{0}; i < N; ++i) {
-      Sum(i, sum2);
-    }
-    timer2.stop();
+    TEST_CHECK_(Check(sum_var), "sum value is correct");
 
-    TEST_CHECK_(Check(sum1), "sum1 value is correct");
-    TEST_CHECK_(Check(sum2), "sum2 value is correct");
+    TEST_CHECK_(true, std::to_string(timer.getElapsedIn(ntt::timer::millisecond)).c_str());
 
-    auto ms = ntt::timer::millisecond;
-    TEST_CHECK_(timer1.getElapsedIn(ms) < timer2.getElapsedIn(ms), "Kokkos is faster");
-
-    Kokkos::finalize();
     TEST_CHECK_(true, "`Kokkos` finalize");
   }
+  Kokkos::finalize();
 }
-#else
-void testExternKokkos(void) { TEST_CHECK_(true, "-- `Kokkos` is disabled, so the test is ignored"); }
-#endif
 
 #endif
+
