@@ -18,21 +18,26 @@
 #
 # [ Kokkos-specific flags ]
 #   -kokkos                       compile with `Kokkos` support
-#   --kokkos_arch=<ARCH>          `Kokkos` architecture
 #   --kokkos_devices=<DEV>        `Kokkos` devices
+#   --kokkos_arch=<ARCH>          `Kokkos` architecture
 #   --kokkos_options=<OPT>        `Kokkos` options
-#   --kokkos_cuda_options=<COPT>  `Kokkos` Cuda options
-#   --kokkos_loop=[...]           `Kokkos` loop layout
 #   --kokkos_vector_length=<VLEN> `Kokkos` vector length
+#   --kokkos_loop=[...]           `Kokkos` loop layout
 #   --nvcc_wrapper_cxx=<COMPILER> `NVCC_WRAPPER_DEFAULT_COMPILER` flag for `Kokkos`
+#   --kokkos_cuda_options=<COPT>  `Kokkos` Cuda options
 # ----------------------------------------------------------------------------------------
+# TODO: maybe remove separate nvcc_wrapper_cxx and inherit from compiler
 
 import argparse
 import glob
 import re
 import subprocess
 import os
+import sys
+import textwrap
 from pathlib import Path
+
+assert sys.version_info >= (3, 7), "Requires python 3.7 or higher"
 
 # Global Settings
 # ---------------
@@ -50,9 +55,18 @@ makefile_output = 'Makefile'
 Precision_options = ['double', 'single']
 Pgen_options = ['ntt_one', 'ntt_two']
 Pgen_options = [f.replace('.cpp', '') for f in os.listdir('ntt/pgen') if '.cpp' in f]
+Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
+Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", "KNC", "KNL", "BGQ", "POWER7", "POWER8", "POWER9"], device=["KEPLER30", "KEPLER32", "KEPLER35", "KEPLER37", "MAXWELL50", "MAXWELL52", "MAXWELL53", "PASCAL60", "PASCAL61", "VOLTA70", "VOLTA72", "TURING75", "AMPERE80", "VEGA900", "VEGA906", "INTEL_GE"])
+Kokkos_devices_options = Kokkos_devices["host"] + Kokkos_devices["device"]
+Kokkos_arch_options = Kokkos_arch["host"] + Kokkos_arch["device"]
 Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for']
 
 # . . . auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . -->
+use_nvcc_wrapper = False
+def findCompiler(compiler):
+  find_command = subprocess.run(['which', compiler], capture_output=True, text=True)
+  return find_command.stdout.strip() if (find_command.returncode == 0) else 'N/A'
+
 def defineOptions():
   parser = argparse.ArgumentParser()
   # compilation
@@ -77,33 +91,23 @@ def defineOptions():
   parser.add_argument('--kokkos_vector_length', default=-1, type=int, help='`Kokkos` vector length')
   return vars(parser.parse_args())
 
-def parseKokkosDev(kokkos_dev):
-  openmp_proper = 'OpenMP'
-  cuda_proper = 'Cuda'
-  aliases = {'omp': openmp_proper, 'openmp': openmp_proper, 'cuda': cuda_proper}
-  def swapAlias(expr, aliases):
-    for al in aliases:
-      if expr.lower() == al:
-        expr = aliases[al]
-    return expr
-  kokkos_dev = [kd.strip() for kd in kokkos_dev.split(',')]
-  kokkos_dev = [swapAlias(kd, aliases) for kd in kokkos_dev]
-  return ','.join(kokkos_dev)
-
 def configureKokkos(arg, mopt):
+  global use_nvcc_wrapper
   if arg['kokkos']:
     # using Kokkos
     # custom flag to recognize that the code is compiled with `Kokkos`
-    arg['kokkos_devices'] = parseKokkosDev(arg['kokkos_devices'])
-    mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
+    # check compatibility between arch and device
+    is_on_host = (arg['kokkos_devices'] in Kokkos_devices['host']) and (arg['kokkos_arch'] in Kokkos_arch['host'])
+    is_on_device = (arg['kokkos_devices'] in Kokkos_devices['device']) and (arg['kokkos_arch'] in Kokkos_arch['device'])
+    assert is_on_host or is_on_device, "Incompatible device & arch specified"
     mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
+    mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
 
     mopt['KOKKOS_OPTIONS'] = arg['kokkos_options']
     if mopt['KOKKOS_OPTIONS'] != '':
       mopt['KOKKOS_OPTIONS'] += ','
     mopt['KOKKOS_OPTIONS'] += 'disable_deprecated_code'
 
-    mopt['NVCC_WRAPPER_DEFAULT_COMPILER'] = arg['nvcc_wrapper_cxx']
     mopt['KOKKOS_CUDA_OPTIONS'] = arg['kokkos_cuda_options']
 
     if 'Cuda' in mopt['KOKKOS_DEVICES']:
@@ -113,9 +117,13 @@ def configureKokkos(arg, mopt):
         mopt['KOKKOS_CUDA_OPTIONS'] += ','
       mopt['KOKKOS_CUDA_OPTIONS'] += 'enable_lambda'
 
+      use_nvcc_wrapper = True
+
       # no MPI (TODO)
-      mopt['NVCC_WRAPPER_DEFAULT_COMPILER'] = mopt['COMPILER']
-      mopt['COMPILER'] = '${KOKKOS_PATH}/bin/nvcc_wrapper'
+      if arg["nvcc_wrapper_cxx"] == '':
+        arg['nvcc_wrapper_cxx'] = arg['compiler']
+      mopt['COMPILER'] = f'NVCC_WRAPPER_DEFAULT_COMPILER={arg["nvcc_wrapper_cxx"]} '\
+                            + '${KOKKOS_PATH}/bin/nvcc_wrapper'
       # add with MPI here (TODO)
 
     if arg['kokkos_loop'] == 'default':
@@ -143,7 +151,6 @@ def configureKokkos(arg, mopt):
     settings = f'''
   `Kokkos`:
     {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
-    {'NVCC wrapper compiler':30} {mopt['NVCC_WRAPPER_DEFAULT_COMPILER']}
     {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] else '-'}
     {'Options':30} {arg['kokkos_options'] if arg['kokkos_options'] else '-'}
     {'Loop':30} {arg['kokkos_loop']}
@@ -217,9 +224,37 @@ makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)
 
+# add some useful notes
+def makeNotes():
+  notes = ''
+  cxx = args['nvcc_wrapper_cxx'] if use_nvcc_wrapper else makefile_options['COMPILER']
+  if use_nvcc_wrapper:
+    notes += f'''
+  * nvcc recognized as:
+    $ {findCompiler("nvcc")}'''
+  notes += f'''
+  * {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:
+    $ {findCompiler(cxx)}'''
+  if args['kokkos'] and 'OpenMP' in args['kokkos_devices']:
+    notes += f'''
+  * when using OpenMP set the following environment variables:
+    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NTHREAD=<INT>
+    '''
+  return notes
+
+short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
+compilation_command = makefile_options['COMPILER'] + '\n\t'\
+                        + f"-std={makefile_options['CXXSTANDARD']}\n\t"\
+                        + (makefile_options['DEBUG_CONF_FLAGS'] + ' ' + makefile_options['DEBUG_PP_FLAGS'] if makefile_options['DEBUGMODE'] else makefile_options['RELEASE_CONF_FLAGS'] + ' ' + makefile_options['RELEASE_PP_FLAGS']).strip() + '\n\t'\
+                        + makefile_options['WARNING_FLAGS'].strip()
+full_command = " ".join(sys.argv[:])
+
+
 #  Finish with diagnostic output
+w = 80
+full_command = ' \\\n'.join(textwrap.wrap(full_command, w, subsequent_indent="      ", initial_indent="  "))
 report = f'''
-====================================================
+{'':=<{w}}
                  __        __
                 /\ \__  __/\ \__
        __    ___\ \  _\/\_\ \  _\  __  __
@@ -230,23 +265,32 @@ report = f'''
                                        /\___/
                                        \/__/
 
-====================================================
+{'':=<{w}}
+{'Full configure command ':.<{w}}
+  {full_command}
+
 Code has been configured with the following options:
 
-Setup configurations ...............................
+{'Setup configurations ':.<{w}}
   {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
-
-Computational details ..............................
   {'Precision':32} {args['precision']}
+
+{'Physics ':.<{w}}
+
+{'Technical details ':.<{w}}
   {'Use `Kokkos` Library':32} {args['kokkos']}
-
-Physics ............................................
-
-Technical details ..................................
-  {'Compiler':32} {makefile_options['COMPILER']}
+  {'Compiler':32} {short_compiler}
   {'Debug mode':32} {args['debug']}
   {Kokkos_details}
-====================================================
+
+{'Compilation command ':.<{w}}
+
+  {compilation_command}
+
+{'Notes ':.<{80}}
+  {makeNotes()}
+
+{'':=<{w}}
 '''
 
 print (report)
