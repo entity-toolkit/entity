@@ -5,7 +5,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace ntt::io {
+namespace ntt {
 void CommandLineArguments::readCommandLineArguments(int argc, char *argv[]) {
   assert(!_initialized && "# Error: command line arguments already parsed.");
   for (int i{1}; i < argc; ++i)
@@ -28,4 +28,4 @@ auto CommandLineArguments::getArgument(std::string_view key) -> std::string_view
 auto CommandLineArguments::isSpecified(std::string_view key) -> bool {
   return std::find(this->_args.begin(), this->_args.end(), key) != this->_args.end();
 }
-} // namespace ntt::io
+}

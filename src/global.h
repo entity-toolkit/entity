@@ -6,7 +6,14 @@
 
 #define UNUSED(x) (void)(x)
 
+#define KL KOKKOS_LAMBDA
+#define AccelMemSpace Kokkos::HostSpace
+#define oneDArray(T) Kokkos::View<T*, AccelMemSpace>
+#define twoDArray(T) Kokkos::View<T**, AccelMemSpace>
+#define threeDArray(T) Kokkos::View<T***, AccelMemSpace>
+
 namespace ntt {
+
 #ifdef SINGLE_PRECISION
 using real_t = float;
 #else
@@ -39,6 +46,7 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string_view;
 // defaults
 constexpr std::string_view DEF_input_filename{"input"};
 constexpr std::string_view DEF_output_path{"output"};
-} // namespace ntt
+
+}
 
 #endif

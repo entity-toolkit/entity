@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace ntt::timer {
+namespace ntt {
 #ifndef _OPENMP
 inline constexpr char BACKEND[] = "Chrono";
 #else
@@ -87,6 +87,6 @@ public:
   void printElapsed() const;
 };
 
-} // namespace ntt::timer
+}
 
 #endif // TIMER_H

@@ -49,9 +49,9 @@ public:
 
 class PICSimulation1D : public PICSimulation {
 protected:
-  fields::OneDField<real_t> ex1, ex2, ex3;
-  fields::OneDField<real_t> bx1, bx2, bx3;
-  fields::OneDField<real_t> jx1, jx2, jx3;
+  oneDArray<real_t> ex1, ex2, ex3;
+  oneDArray<real_t> bx1, bx2, bx3;
+  oneDArray<real_t> jx1, jx2, jx3;
 
 public:
   PICSimulation1D() : PICSimulation{ONE_D, CARTESIAN_COORD} {};
@@ -67,45 +67,45 @@ public:
   [[nodiscard]] auto getSizeInBytes() -> std::size_t;
 };
 
-class PICSimulation2D : public PICSimulation {
-protected:
-  fields::TwoDField<real_t> ex1, ex2, ex3;
-  fields::TwoDField<real_t> bx1, bx2, bx3;
-  fields::TwoDField<real_t> jx1, jx2, jx3;
-
-public:
-  PICSimulation2D(CoordinateSystem coord_sys) : PICSimulation{TWO_D, coord_sys} {};
-  ~PICSimulation2D() = default;
-  void initialize() override;
-  void verify() override;
-
-  void faradayHalfsubstep(const real_t &time) override;
-  void depositSubstep(const real_t &time) override;
-  void ampereSubstep(const real_t &time) override;
-  void addCurrentsSubstep(const real_t &time) override;
-
-  [[nodiscard]] auto getSizeInBytes() -> std::size_t;
-};
-
-class PICSimulation3D : public PICSimulation {
-protected:
-  fields::ThreeDField<real_t> ex1, ex2, ex3;
-  fields::ThreeDField<real_t> bx1, bx2, bx3;
-  fields::ThreeDField<real_t> jx1, jx2, jx3;
-
-public:
-  PICSimulation3D(CoordinateSystem coord_sys) : PICSimulation{THREE_D, coord_sys} {};
-  ~PICSimulation3D() = default;
-  void initialize() override;
-  void verify() override;
-
-  void faradayHalfsubstep(const real_t &time) override;
-  void depositSubstep(const real_t &time) override;
-  void ampereSubstep(const real_t &time) override;
-  void addCurrentsSubstep(const real_t &time) override;
-
-  [[nodiscard]] auto getSizeInBytes() -> std::size_t;
-};
+// class PICSimulation2D : public PICSimulation {
+// protected:
+//   fields::TwoDField<real_t> ex1, ex2, ex3;
+//   fields::TwoDField<real_t> bx1, bx2, bx3;
+//   fields::TwoDField<real_t> jx1, jx2, jx3;
+//
+// public:
+//   PICSimulation2D(CoordinateSystem coord_sys) : PICSimulation{TWO_D, coord_sys} {};
+//   ~PICSimulation2D() = default;
+//   void initialize() override;
+//   void verify() override;
+//
+//   void faradayHalfsubstep(const real_t &time) override;
+//   void depositSubstep(const real_t &time) override;
+//   void ampereSubstep(const real_t &time) override;
+//   void addCurrentsSubstep(const real_t &time) override;
+//
+//   [[nodiscard]] auto getSizeInBytes() -> std::size_t;
+// };
+//
+// class PICSimulation3D : public PICSimulation {
+// protected:
+//   fields::ThreeDField<real_t> ex1, ex2, ex3;
+//   fields::ThreeDField<real_t> bx1, bx2, bx3;
+//   fields::ThreeDField<real_t> jx1, jx2, jx3;
+//
+// public:
+//   PICSimulation3D(CoordinateSystem coord_sys) : PICSimulation{THREE_D, coord_sys} {};
+//   ~PICSimulation3D() = default;
+//   void initialize() override;
+//   void verify() override;
+//
+//   void faradayHalfsubstep(const real_t &time) override;
+//   void depositSubstep(const real_t &time) override;
+//   void ampereSubstep(const real_t &time) override;
+//   void addCurrentsSubstep(const real_t &time) override;
+//
+//   [[nodiscard]] auto getSizeInBytes() -> std::size_t;
+// };
 
 } // namespace ntt
 
