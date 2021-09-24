@@ -150,8 +150,8 @@ def configureKokkos(arg, mopt):
 
     settings = f'''
   `Kokkos`:
-    {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
     {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] else '-'}
+    {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
     {'Options':30} {arg['kokkos_options'] if arg['kokkos_options'] else '-'}
     {'Loop':30} {arg['kokkos_loop']}
     {'Vector length':30} {arg['kokkos_vector_length']}
@@ -255,29 +255,30 @@ w = 80
 full_command = ' \\\n'.join(textwrap.wrap(full_command, w, subsequent_indent="      ", initial_indent="  "))
 report = f'''
 {'':=<{w}}
-                 __        __
-                /\ \__  __/\ \__
-       __    ___\ \  _\/\_\ \  _\  __  __
-     / __ \/  _  \ \ \/\/\ \ \ \/ /\ \/\ \\
-    /\  __//\ \/\ \ \ \_\ \ \ \ \_\ \ \_\ \  __
-    \ \____\ \_\ \_\ \__\\\\ \_\ \__\\\\ \____ \/\_\\
-     \/____/\/_/\/_/\/__/ \/_/\/__/ \/___/  \/_/
-                                       /\___/
-                                       \/__/
+             __        __
+            /\ \__  __/\ \__
+   __    ___\ \  _\/\_\ \  _\  __  __
+ / __ \/  _  \ \ \/\/\ \ \ \/ /\ \/\ \\
+/\  __//\ \/\ \ \ \_\ \ \ \ \_\ \ \_\ \  __
+\ \____\ \_\ \_\ \__\\\\ \_\ \__\\\\ \____ \/\_\\
+ \/____/\/_/\/_/\/__/ \/_/\/__/ \/___/  \/_/
+                                   /\___/
+                                   \/__/
 
 {'':=<{w}}
 {'Full configure command ':.<{w}}
-  {full_command}
 
-Code has been configured with the following options:
+{full_command}
 
 {'Setup configurations ':.<{w}}
+
   {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
   {'Precision':32} {args['precision']}
 
 {'Physics ':.<{w}}
 
 {'Technical details ':.<{w}}
+
   {'Use `Kokkos` Library':32} {args['kokkos']}
   {'Compiler':32} {short_compiler}
   {'Debug mode':32} {args['debug']}
