@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace ntt::io {
+namespace ntt {
 class CommandLineArguments {
 private:
   bool _initialized = false;
@@ -17,6 +17,6 @@ public:
   [[nodiscard]] auto getArgument(std::string_view key) -> std::string_view;
   auto isSpecified(std::string_view key) -> bool;
 };
-} // namespace ntt::io
+}
 
 #endif

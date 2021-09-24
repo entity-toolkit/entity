@@ -6,7 +6,7 @@
 #include <utility>
 #include <iostream>
 
-namespace ntt::timer {
+namespace ntt {
 
 auto TimeUnit::getMultiplier() const -> double { return multiplier; }
 auto operator<<(std::ostream &os, TimeUnit const &v) -> std::ostream & { return os << v.unitname; }

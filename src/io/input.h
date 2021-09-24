@@ -7,7 +7,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace ntt::io {
+namespace ntt {
 namespace { // anonymous namespace
 void dataExistsInToml(const toml::value &inputdata, const std::string &blockname, const std::string &variable) {
   if (inputdata.contains(blockname)) {
@@ -38,6 +38,6 @@ auto readFromInput(const toml::value &inputdata, const std::string &blockname, c
   }
 }
 
-} // namespace ntt::io
+}
 
 #endif

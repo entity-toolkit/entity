@@ -1,14 +1,14 @@
 #include "global.h"
 #include "pgen.h"
 
+#include <Kokkos_Core.hpp>
+
 #include <plog/Log.h>
 #include <plog/Init.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
 #include <iostream>
-
-ProblemGenerator ntt_pgen;
 
 void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
 
@@ -24,12 +24,16 @@ auto main(int argc, char *argv[]) -> int {
   plog::ColorConsoleAppender<plog::TxtFormatter> console_appender;
   initLogger(&console_appender);
 
+  Kokkos::initialize();
   try {
-    ntt_pgen.start(argc, argv);
+    // ProblemGenerator ntt_pgen(argc, argv);
+    // ntt_pgen.start(argc, argv);
+    // ntt_pgen.start(argc, argv);
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
     return -1;
   }
+  Kokkos::finalize();
 
   return 0;
 }
@@ -45,3 +49,7 @@ void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender
 #endif
   plog::init(max_severity, console_appender);
 }
+
+// ProblemGenerator::ProblemGenerator(int argc, char *argv[]); {
+//   simulation = new UserSimulation(argc, argv);
+// }

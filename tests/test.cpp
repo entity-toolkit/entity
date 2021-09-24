@@ -8,8 +8,7 @@
 
 void testSuccess() {}
 
-TEST_LIST = {{"lib/aux", testSrc},
-             {"extern/toml", testExternToml},
+TEST_LIST = {{"extern/toml", testExternToml},
              {"extern/kokkos", testExternKokkos},
              {"success", testSuccess},
              {nullptr, nullptr}};

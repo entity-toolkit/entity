@@ -1,10 +1,10 @@
 #ifndef TEST_EXTERN_KOKKOS_H
 #define TEST_EXTERN_KOKKOS_H
 
+#include "global.h"
 #include "timer.h"
 
-# include <Kokkos_Core.hpp>
-# define KL KOKKOS_LAMBDA
+#include <Kokkos_Core.hpp>
 #include <acutest/acutest.h>
 
 #include <iostream>
@@ -21,7 +21,7 @@ void testExternKokkos(void) {
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
-    auto Sum = KL (index_t i, double &sum) { 
+    auto Sum = KL (index_t i, double &sum) {
       sum += 1.0 / static_cast<double>(i + 1);
     };
     auto Check = [&](const double sum) {
@@ -45,4 +45,3 @@ void testExternKokkos(void) {
 }
 
 #endif
-

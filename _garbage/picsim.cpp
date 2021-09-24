@@ -94,41 +94,41 @@ void PICSimulation1D::initialize() {
   PICSimulation::initialize();
 }
 
-void PICSimulation2D::initialize() {
-  ex1.allocate(m_domain.nx1(), m_domain.nx2());
-  ex2.allocate(m_domain.nx1(), m_domain.nx2());
-  ex3.allocate(m_domain.nx1(), m_domain.nx2());
-  bx1.allocate(m_domain.nx1(), m_domain.nx2());
-  bx2.allocate(m_domain.nx1(), m_domain.nx2());
-  bx3.allocate(m_domain.nx1(), m_domain.nx2());
-  jx1.allocate(m_domain.nx1(), m_domain.nx2());
-  jx2.allocate(m_domain.nx1(), m_domain.nx2());
-  jx3.allocate(m_domain.nx1(), m_domain.nx2());
-  PICSimulation::initialize();
-}
-
-void PICSimulation3D::initialize() {
-  ex1.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  ex2.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  ex3.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  bx1.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  bx2.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  bx3.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  jx1.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  jx2.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  jx3.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
-  PICSimulation::initialize();
-}
+// void PICSimulation2D::initialize() {
+//   ex1.allocate(m_domain.nx1(), m_domain.nx2());
+//   ex2.allocate(m_domain.nx1(), m_domain.nx2());
+//   ex3.allocate(m_domain.nx1(), m_domain.nx2());
+//   bx1.allocate(m_domain.nx1(), m_domain.nx2());
+//   bx2.allocate(m_domain.nx1(), m_domain.nx2());
+//   bx3.allocate(m_domain.nx1(), m_domain.nx2());
+//   jx1.allocate(m_domain.nx1(), m_domain.nx2());
+//   jx2.allocate(m_domain.nx1(), m_domain.nx2());
+//   jx3.allocate(m_domain.nx1(), m_domain.nx2());
+//   PICSimulation::initialize();
+// }
+//
+// void PICSimulation3D::initialize() {
+//   ex1.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   ex2.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   ex3.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   bx1.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   bx2.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   bx3.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   jx1.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   jx2.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   jx3.allocate(m_domain.nx1(), m_domain.nx2(), m_domain.nx3());
+//   PICSimulation::initialize();
+// }
 
 void PICSimulation1D::verify() {
   PICSimulation::verify();
 }
-void PICSimulation2D::verify() {
-  PICSimulation::verify();
-}
-void PICSimulation3D::verify() {
-  PICSimulation::verify();
-}
+// void PICSimulation2D::verify() {
+//   PICSimulation::verify();
+// }
+// void PICSimulation3D::verify() {
+//   PICSimulation::verify();
+// }
 
 auto PICSimulation1D::getSizeInBytes() -> std::size_t {
   std::size_t size_in_bytes {0};
