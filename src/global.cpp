@@ -2,6 +2,8 @@
 
 #include <string_view>
 
+namespace ntt {
+
 auto stringifySimulationType(SimulationType sim) -> std::string_view {
   switch (sim) {
   case PIC_SIM:
@@ -65,4 +67,6 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string_view {
   default:
     return "N/A";
   }
+}
+
 }

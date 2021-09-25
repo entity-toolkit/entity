@@ -33,7 +33,6 @@ EXT_DIR := ${ROOT_DIR}/@EXTERN_DIR@
 #
 DEBUGMODE := @DEBUGMODE@
 VERBOSE := @VERBOSE@
-USEKOKKOS := @USEKOKKOS@
 
 DEFINITIONS :=
 
@@ -44,7 +43,6 @@ else
 endif
 
 # 3-rd party library configurations
-ifeq ($(strip ${USEKOKKOS}), y)
 KOKKOS_PATH := ${EXT_DIR}/kokkos
 KOKKOS_BUILD_DIR = ${BUILD_DIR}/kokkos/
 
@@ -56,8 +54,6 @@ KOKKOS_CUDA_OPTIONS := @KOKKOS_CUDA_OPTIONS@
 KOKKOS_CXX_STANDARD := @CXXSTANDARD@
 
 PREPFLAGS := ${PREPFLAGS} @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
-DEFINITIONS := $(DEFINITIONS) -DKOKKOS
-endif
 
 # # # # # Compiler and flags # # # # # # #
 #
@@ -79,8 +75,9 @@ WARNFLAGS := @WARNING_FLAGS@
 # custom preprocessor flags
 PREPFLAGS := $(PREPFLAGS) @PRECISION@
 
-CPPFLAGS = $(WARNFLAGS) $(PREPFLAGS)
+CPPFLAGS := $(WARNFLAGS) $(PREPFLAGS)
 CXXFLAGS := $(CXXFLAGS) $(CONFFLAGS)
+LIBS :=
 
 # # # # # File collection # # # # # # # # # # #
 #
@@ -108,7 +105,7 @@ EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(E
 EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
 EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
 
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
+INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
@@ -139,14 +136,13 @@ help:
 
 all: ntt test examples
 
-ifeq ($(strip ${USEKOKKOS}), y)
 # using `Kokkos`
 include ${KOKKOS_PATH}/Makefile.kokkos
 OBJS := $(OBJS) $(KOKKOS_LINK_DEPENDS)
 CPPFLAGS := $(CPPFLAGS) $(KOKKOS_CPPFLAGS)
 CXXFLAGS := $(CXXFLAGS) $(KOKKOS_CXXFLAGS)
-LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS)
-endif
+LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS)
+LIBS := $(LIBS) $(KOKKOS_LIBS)
 
 # linking the main app
 ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
@@ -159,7 +155,7 @@ endif
 
 ${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
-	$(HIDE)${LINK} $(LDFLAGS) $(NTT_OBJS) $(OBJS) -o $@
+	$(HIDE)${LINK} $(LDFLAGS) $(NTT_OBJS) $(OBJS) $(LIBS) -o $@
 
 # linking tests
 test : ${BIN_DIR}/${TEST_TARGET}
@@ -167,7 +163,7 @@ test : ${BIN_DIR}/${TEST_TARGET}
 
 ${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
-	$(HIDE)${LINK} $(LDFLAGS) $(TEST_OBJS) $(OBJS) -o $@
+	$(HIDE)${LINK} $(LDFLAGS) $(TEST_OBJS) $(OBJS) $(LIBS) -o $@
 
 examples : $(EXAMPLES_TARGETS)
 	@echo [M]aking $@
@@ -176,7 +172,7 @@ examples : $(EXAMPLES_TARGETS)
 define generateExampleLinkingRules
 $(1): $(2) $(OBJS)
 	@echo [L]inking $(1) from $(2)
-	$(HIDE)${LINK} $(LDFLAGS) $(2) $(OBJS) -o $(1)
+	$(HIDE)${LINK} $(LDFLAGS) $(2) $(OBJS) $(LIBS) -o $(1)
 endef
 $(foreach et, $(EXAMPLES_TARGETS), $(eval $(call generateExampleLinkingRules, ${et}, ${BUILD_EXAMPLES_DIR}/$(notdir $(et:.exec=.cpp.o)))))
 
@@ -197,9 +193,7 @@ clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR}
 	rm -rf ${BIN_DIR}
 
-ifeq ($(strip $(USEKOKKOS)), y)
 clean: kokkos-clean
-endif
 
 -include $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
 
@@ -208,7 +202,7 @@ endif
 .PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
-ALLCODE := $(SOURCES) $(shell find ${SRC_DIR} -name *.hpp -or -name *.h) $(shell find ${NTT_DIR} -name *.hpp -or -name *.h) $(shell find ${TEST_DIR} -name *.hpp -or -name *.h) $(shell find ${EXAMPLES_DIR} -name *.hpp -or -name *.h)
+ALLCODE := $(SOURCES) $(wildcard ${SRC_DIR}/*.hpp) $(wildcard ${SRC_DIR}/*.h) $(wildcard ${NTT_DIR}/*.hpp) $(wildcard ${NTT_DIR}/*.h) $(wildcard ${TEST_DIR}/*.hpp) $(wildcard ${TEST_DIR}/*.h) $(wildcard ${EXAMPLES_DIR}/*.hpp) $(wildcard ${EXAMPLES_DIR}/*.h)
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 

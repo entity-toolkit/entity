@@ -97,7 +97,10 @@ def configureKokkos(arg, mopt):
   # check compatibility between arch and device
   is_on_host = (arg['kokkos_devices'] in Kokkos_devices['host']) and (arg['kokkos_arch'] in Kokkos_arch['host'])
   is_on_device = (arg['kokkos_devices'] in Kokkos_devices['device']) and (arg['kokkos_arch'] in Kokkos_arch['device'])
-  assert is_on_host or is_on_device, "Incompatible device & arch specified"
+  unspecified_device = (arg['kokkos_devices'] == '')
+  unspecified_arch = (arg['kokkos_arch'] == '')
+  if (not (unspecified_device or unspecified_arch)):
+    assert is_on_host or is_on_device, "Incompatible device & arch specified"
   mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
   mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
 

@@ -17,7 +17,7 @@ void testExternKokkos(void) {
   {
     TEST_CHECK_(Kokkos::is_initialized(), "`Kokkos` initialize");
 
-    ntt::timer::Timer timer("summation");
+    ntt::Timer timer("summation");
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
@@ -37,7 +37,7 @@ void testExternKokkos(void) {
 
     TEST_CHECK_(Check(sum_var), "sum value is correct");
 
-    TEST_CHECK_(true, std::to_string(timer.getElapsedIn(ntt::timer::millisecond)).c_str());
+    TEST_CHECK_(true, std::to_string(timer.getElapsedIn(ntt::millisecond)).c_str());
 
     TEST_CHECK_(true, "`Kokkos` finalize");
   }
