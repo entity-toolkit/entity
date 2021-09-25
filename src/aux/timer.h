@@ -2,20 +2,10 @@
 #define AUX_TIMER_H
 
 #include <string>
-#ifndef _OPENMP
-#  include <chrono>
-#else
-#  include <omp.h>
-#endif
-
-#include <string>
+#include <chrono>
+#include <iostream>
 
 namespace ntt {
-#ifndef _OPENMP
-inline constexpr char BACKEND[] = "Chrono";
-#else
-inline constexpr char BACKEND[] = "OpenMP";
-#endif
 // Type to be used for s/ms/us/ms
 class TimeUnit {
 private:
@@ -60,11 +50,7 @@ public:
   friend class Timer;
 };
 
-#ifndef _OPENMP
 using TimeContainer = std::chrono::time_point<std::chrono::system_clock>;
-#else
-using TimeContainer = Time;
-#endif
 
 class Timer {
 private:
@@ -83,8 +69,7 @@ public:
   void stop();
   [[nodiscard]] auto getElapsedIn(TimeUnit const &u) const -> long double;
   [[nodiscard]] auto getName() const -> std::string;
-  void printElapsed(TimeUnit const &u) const;
-  void printElapsed() const;
+  void printElapsed(std::ostream &os = std::cout, TimeUnit const &u = second) const;
 };
 
 }

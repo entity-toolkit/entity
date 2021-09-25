@@ -8,7 +8,6 @@
 #include <stdexcept>
 
 namespace ntt {
-namespace { // anonymous namespace
 void dataExistsInToml(const toml::value &inputdata, const std::string &blockname, const std::string &variable) {
   if (inputdata.contains(blockname)) {
     auto &val_block = toml::find(inputdata, blockname);
@@ -21,7 +20,6 @@ void dataExistsInToml(const toml::value &inputdata, const std::string &blockname
     throw std::invalid_argument("Cannot find blockname in input file.");
   }
 }
-} // namespace
 
 template <typename T> auto readFromInput(const toml::value &inputdata, const std::string &blockname, const std::string &variable) -> T {
   dataExistsInToml(inputdata, blockname, variable);

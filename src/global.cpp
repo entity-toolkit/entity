@@ -17,19 +17,6 @@ auto stringifySimulationType(SimulationType sim) -> std::string_view {
   }
 }
 
-auto stringifyDimension(Dimension dim) -> std::string_view {
-  switch (dim) {
-  case ONE_D:
-    return "1D";
-  case TWO_D:
-    return "2D";
-  case THREE_D:
-    return "3D";
-  default:
-    return "N/A";
-  }
-}
-
 auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string_view {
   switch (coord) {
   case CARTESIAN_COORD:
