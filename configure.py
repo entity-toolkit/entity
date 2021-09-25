@@ -22,10 +22,8 @@
 #   --kokkos_options=<OPT>        `Kokkos` options
 #   --kokkos_vector_length=<VLEN> `Kokkos` vector length
 #   --kokkos_loop=[...]           `Kokkos` loop layout
-#   --nvcc_wrapper_cxx=<COMPILER> `NVCC_WRAPPER_DEFAULT_COMPILER` flag for `Kokkos`
 #   --kokkos_cuda_options=<COPT>  `Kokkos` Cuda options
 # ----------------------------------------------------------------------------------------
-# TODO: maybe remove separate nvcc_wrapper_cxx and inherit from compiler
 
 import argparse
 import glob
@@ -86,7 +84,6 @@ def defineOptions():
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
   parser.add_argument('--kokkos_cuda_options', default='', help='`Kokkos` CUDA options')
   parser.add_argument('--kokkos_loop', default='default', choices=Kokkos_loop_options, help='`Kokkos` loop layout')
-  parser.add_argument('--nvcc_wrapper_cxx', default='g++', help='Sets the `NVCC_WRAPPER_DEFAULT_COMPILER` flag for `Kokkos`')
   parser.add_argument('--kokkos_vector_length', default=-1, type=int, help='`Kokkos` vector length')
   return vars(parser.parse_args())
 
@@ -121,8 +118,7 @@ def configureKokkos(arg, mopt):
     use_nvcc_wrapper = True
 
     # no MPI (TODO)
-    if arg["nvcc_wrapper_cxx"] == '':
-      arg['nvcc_wrapper_cxx'] = arg['compiler']
+    arg['nvcc_wrapper_cxx'] = arg['compiler']
     mopt['COMPILER'] = f'NVCC_WRAPPER_DEFAULT_COMPILER={arg["nvcc_wrapper_cxx"]} '\
                           + '${KOKKOS_PATH}/bin/nvcc_wrapper'
     # add with MPI here (TODO)
