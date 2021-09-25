@@ -1,5 +1,3 @@
-#include "test_src.h"
-
 // test external libraries
 #include "test_extern_toml.h"
 #include "test_extern_kokkos.h"
