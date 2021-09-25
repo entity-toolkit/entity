@@ -58,27 +58,13 @@ auto operator*(double x, Time const &t) -> Time { return Time(t.value * x, *(t.u
 auto operator*(Time const &t, double x) -> Time { return Time(t.value * x, *(t.unit)); }
 
 namespace { // anonymous namespace
-// Timing implementation for different libraries ...
-// ... various implementation are brought to a standard here
 void timeNow(TimeContainer &time) {
-#ifndef _OPENMP
-  // use `chrono`
   time = std::chrono::system_clock::now();
-#else
-  // use OpenMP `wtime` function
-  time = Time(omp_get_wtime(), second);
-#endif
 }
 void timeElapsed(TimeContainer &time_start, Time &time_elapsed) {
-#ifndef _OPENMP
-  // use `chrono`
   long double dt;
   dt = std::chrono::duration<long double>(std::chrono::system_clock::now() - time_start).count();
   time_elapsed = Time(dt, second);
-#else
-  // use OpenMP `wtime` function
-  time_elapsed = Time(omp_get_wtime(), second) - time_start;
-#endif
 }
 } // namespace
 
@@ -101,13 +87,11 @@ auto Timer::getElapsedIn(TimeUnit const &u) const -> long double {
   return t_elapsed.represent(u).value;
 }
 auto Timer::getName() const -> std::string { return name; }
-void Timer::printElapsed(TimeUnit const &u) const {
+void Timer::printElapsed(std::ostream &os, TimeUnit const &u) const {
   assert(init && "# Error: timer is not initialized.");
-  std::cout << "timer `" << name << "` : " << t_elapsed.represent(u);
+  os << "timer `" << name << "` : " << t_elapsed.represent(u);
   if (on)
-    std::cout << " (and running)";
-  std::cout << "\n";
+    os << " (and running)";
 }
-void Timer::printElapsed() const { Timer::printElapsed(second); }
 
 }

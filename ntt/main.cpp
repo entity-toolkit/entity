@@ -1,5 +1,6 @@
 #include "global.h"
 #include "pgen.h"
+#include "meshblock.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -26,6 +27,25 @@ auto main(int argc, char *argv[]) -> int {
 
   Kokkos::initialize();
   try {
+    ntt::Meshblock<ntt::One_D> mblock(100);
+    Kokkos::parallel_for("init", 100,
+      KL (ntt::index_t i) {
+        mblock.ex1(i) = 2.2;
+        mblock.ex2(i) = 2.3;
+      }
+    );
+    Kokkos::parallel_for("run", 100,
+      KL (ntt::index_t i) {
+        mblock.ex3(i) = mblock.ex2(i) - mblock.ex1(i);
+      }
+    );
+    double sum {0.0};
+    Kokkos::parallel_reduce("run", 100,
+      KL (ntt::index_t i, double & sum_) {
+        sum_ += mblock.ex3(i);
+      }, sum
+    );
+    std::cout << sum << "\n";
     // ProblemGenerator ntt_pgen(argc, argv);
     // ntt_pgen.start(argc, argv);
     // ntt_pgen.start(argc, argv);

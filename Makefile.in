@@ -149,9 +149,10 @@ ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
 	@echo [M]aking $@
 
 pgenIsSpecified :
-ifeq (${PGEN},)
-	$(error ERROR: no problem generator specified)
-endif
+	@echo ...
+# ifeq (${PGEN},)
+# 	$(error ERROR: no problem generator specified)
+# endif
 
 ${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
@@ -193,7 +194,8 @@ clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR}
 	rm -rf ${BIN_DIR}
 
-clean: kokkos-clean
+cleanlib: kokkos-clean
+	rm -rf {BUILD_DIR}/Kokkos*
 
 -include $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
 

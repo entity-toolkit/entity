@@ -1,16 +1,16 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <Kokkos_Core.hpp>
+
 #include <cstddef>
 #include <string_view>
 
 #define UNUSED(x) (void)(x)
 
 #define KL KOKKOS_LAMBDA
+#define HostMemSpace Kokkos::HostSpace
 #define AccelMemSpace Kokkos::HostSpace
-#define oneDArray(T) Kokkos::View<T*, AccelMemSpace>
-#define twoDArray(T) Kokkos::View<T**, AccelMemSpace>
-#define threeDArray(T) Kokkos::View<T***, AccelMemSpace>
 
 namespace ntt {
 
@@ -20,10 +20,30 @@ using real_t = float;
 using real_t = double;
 #endif
 
+using index_t = const std::size_t;
+
+template<typename T>
+using NTTArray = Kokkos::View<T, AccelMemSpace>;
+
 inline constexpr std::size_t N_GHOSTS{2};
 
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
-enum Dimension { UNDEFINED_D, ONE_D, TWO_D, THREE_D };
+
+template<typename T>
+struct One_D {
+  using ndtype_t = T*;
+};
+
+template<typename T>
+struct Two_D {
+  using ndtype_t = T**;
+};
+
+template<typename T>
+struct Three_D {
+  using ndtype_t = T***;
+};
+
 enum CoordinateSystem {
   UNDEFINED_COORD,
   CARTESIAN_COORD,
@@ -37,7 +57,6 @@ enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string_view;
-auto stringifyDimension(Dimension dim) -> std::string_view;
 auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string_view;
 auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string_view;
 
