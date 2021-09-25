@@ -17,7 +17,6 @@
 #   --precision=[single|double]   floating point precision used
 #
 # [ Kokkos-specific flags ]
-#   -kokkos                       compile with `Kokkos` support
 #   --kokkos_devices=<DEV>        `Kokkos` devices
 #   --kokkos_arch=<ARCH>          `Kokkos` architecture
 #   --kokkos_options=<OPT>        `Kokkos` options
@@ -93,62 +92,61 @@ def defineOptions():
 
 def configureKokkos(arg, mopt):
   global use_nvcc_wrapper
-  if arg['kokkos']:
-    # using Kokkos
-    # custom flag to recognize that the code is compiled with `Kokkos`
-    # check compatibility between arch and device
-    is_on_host = (arg['kokkos_devices'] in Kokkos_devices['host']) and (arg['kokkos_arch'] in Kokkos_arch['host'])
-    is_on_device = (arg['kokkos_devices'] in Kokkos_devices['device']) and (arg['kokkos_arch'] in Kokkos_arch['device'])
-    assert is_on_host or is_on_device, "Incompatible device & arch specified"
-    mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
-    mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
+  # using Kokkos
+  # custom flag to recognize that the code is compiled with `Kokkos`
+  # check compatibility between arch and device
+  is_on_host = (arg['kokkos_devices'] in Kokkos_devices['host']) and (arg['kokkos_arch'] in Kokkos_arch['host'])
+  is_on_device = (arg['kokkos_devices'] in Kokkos_devices['device']) and (arg['kokkos_arch'] in Kokkos_arch['device'])
+  assert is_on_host or is_on_device, "Incompatible device & arch specified"
+  mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
+  mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
 
-    mopt['KOKKOS_OPTIONS'] = arg['kokkos_options']
-    if mopt['KOKKOS_OPTIONS'] != '':
-      mopt['KOKKOS_OPTIONS'] += ','
-    mopt['KOKKOS_OPTIONS'] += 'disable_deprecated_code'
+  mopt['KOKKOS_OPTIONS'] = arg['kokkos_options']
+  if mopt['KOKKOS_OPTIONS'] != '':
+    mopt['KOKKOS_OPTIONS'] += ','
+  mopt['KOKKOS_OPTIONS'] += 'disable_deprecated_code'
 
+  mopt['KOKKOS_CUDA_OPTIONS'] = arg['kokkos_cuda_options']
+
+  if 'Cuda' in mopt['KOKKOS_DEVICES']:
+    # using Cuda
     mopt['KOKKOS_CUDA_OPTIONS'] = arg['kokkos_cuda_options']
+    if mopt['KOKKOS_CUDA_OPTIONS'] != '':
+      mopt['KOKKOS_CUDA_OPTIONS'] += ','
+    mopt['KOKKOS_CUDA_OPTIONS'] += 'enable_lambda'
 
-    if 'Cuda' in mopt['KOKKOS_DEVICES']:
-      # using Cuda
-      mopt['KOKKOS_CUDA_OPTIONS'] = arg['kokkos_cuda_options']
-      if mopt['KOKKOS_CUDA_OPTIONS'] != '':
-        mopt['KOKKOS_CUDA_OPTIONS'] += ','
-      mopt['KOKKOS_CUDA_OPTIONS'] += 'enable_lambda'
+    use_nvcc_wrapper = True
 
-      use_nvcc_wrapper = True
+    # no MPI (TODO)
+    if arg["nvcc_wrapper_cxx"] == '':
+      arg['nvcc_wrapper_cxx'] = arg['compiler']
+    mopt['COMPILER'] = f'NVCC_WRAPPER_DEFAULT_COMPILER={arg["nvcc_wrapper_cxx"]} '\
+                          + '${KOKKOS_PATH}/bin/nvcc_wrapper'
+    # add with MPI here (TODO)
 
-      # no MPI (TODO)
-      if arg["nvcc_wrapper_cxx"] == '':
-        arg['nvcc_wrapper_cxx'] = arg['compiler']
-      mopt['COMPILER'] = f'NVCC_WRAPPER_DEFAULT_COMPILER={arg["nvcc_wrapper_cxx"]} '\
-                            + '${KOKKOS_PATH}/bin/nvcc_wrapper'
-      # add with MPI here (TODO)
+  if arg['kokkos_loop'] == 'default':
+    arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
 
-    if arg['kokkos_loop'] == 'default':
-      arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
+  mopt['KOKKOS_VECTOR_LENGTH'] = '-1'
+  if arg['kokkos_loop'] == '1DRange':
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-D MANUAL1D_LOOP'
+  elif arg['kokkos_loop'] == 'MDRange':
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-D MDRANGE_LOOP'
+  elif arg['kokkos_loop'] == 'for':
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-D FOR_LOOP'
+  elif arg['kokkos_loop'] == 'TP-TVR':
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TVR_LOOP'
+    mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
+  elif arg['kokkos_loop'] == 'TP-TTR':
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TTR_LOOP'
+    mopt['KOKKOS_VECTOR_LENGTH'] = ('1' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
+  elif arg['kokkos_loop'] == 'TP-TTR-TVR':
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TPTTRTVR_LOOP'
+    mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
 
-    mopt['KOKKOS_VECTOR_LENGTH'] = '-1'
-    if arg['kokkos_loop'] == '1DRange':
-      mopt['KOKKOS_LOOP_LAYOUT'] = '-D MANUAL1D_LOOP'
-    elif arg['kokkos_loop'] == 'MDRange':
-      mopt['KOKKOS_LOOP_LAYOUT'] = '-D MDRANGE_LOOP'
-    elif arg['kokkos_loop'] == 'for':
-      mopt['KOKKOS_LOOP_LAYOUT'] = '-D FOR_LOOP'
-    elif arg['kokkos_loop'] == 'TP-TVR':
-      mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TVR_LOOP'
-      mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
-    elif arg['kokkos_loop'] == 'TP-TTR':
-      mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TTR_LOOP'
-      mopt['KOKKOS_VECTOR_LENGTH'] = ('1' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
-    elif arg['kokkos_loop'] == 'TP-TTR-TVR':
-      mopt['KOKKOS_LOOP_LAYOUT'] = '-D TPTTRTVR_LOOP'
-      mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
+  mopt['KOKKOS_VECTOR_LENGTH'] = '-D KOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
 
-    mopt['KOKKOS_VECTOR_LENGTH'] = '-D KOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
-
-    settings = f'''
+  settings = f'''
   `Kokkos`:
     {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] else '-'}
     {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
@@ -156,9 +154,7 @@ def configureKokkos(arg, mopt):
     {'Loop':30} {arg['kokkos_loop']}
     {'Vector length':30} {arg['kokkos_vector_length']}
   '''
-    return settings
-  else:
-    return ''
+  return settings
 
 def createMakefile(m_in, m_out, mopt):
   with open(m_in, 'r') as current_file:
@@ -180,7 +176,6 @@ makefile_options = {}
 # Settings
 makefile_options['VERBOSE'] = ('y' if args['verbose'] else 'n')
 makefile_options['DEBUGMODE'] = ('y' if args['debug'] else 'n')
-makefile_options['USEKOKKOS'] = ('y' if args['kokkos'] else 'n')
 
 # Compilation commands
 makefile_options['COMPILER'] = args['compiler']
@@ -235,7 +230,7 @@ def makeNotes():
   notes += f'''
   * {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:
     $ {findCompiler(cxx)}'''
-  if args['kokkos'] and 'OpenMP' in args['kokkos_devices']:
+  if 'OpenMP' in args['kokkos_devices']:
     notes += f'''
   * when using OpenMP set the following environment variables:
     $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NTHREAD=<INT>
@@ -279,7 +274,6 @@ report = f'''
 
 {'Technical details ':.<{w}}
 
-  {'Use `Kokkos` Library':32} {args['kokkos']}
   {'Compiler':32} {short_compiler}
   {'Debug mode':32} {args['debug']}
   {Kokkos_details}
