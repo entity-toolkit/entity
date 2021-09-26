@@ -30,10 +30,9 @@ SimulationParams::SimulationParams(int argc, char *argv[], short dim) {
     assert(dim == 1);
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XY") {
-    assert(dim == 2);
+    assert(dim != 3);
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XYZ") {
-    assert(dim == 3);
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "R_PHI") {
     assert(dim == 2);

@@ -71,16 +71,7 @@ While we try to keep the code as compatible as possible, there are certain strin
 
 ## To-do list for the near future
 
-- [x] parameter reading using `toml`
-- [x] `timer` library
-- [x] make `timer` header-only
-- [x] `Kokkos` unit tests
-- [ ] `Kokkos` GPU unit tests
-- [ ] decide on memory structure (simulation -> meshblock -> fields -> tiles etc)
-- [ ] field/array fillers with particular regions `i1min:i1max, i2min:i2max`
-- [ ] in `Domain` add some sort of verifier for extents in particular coordinate systems
-- [x] write domain class object and converters from cells to coords and back
-- [ ] `std::variant`, `std::visit` and `std::get` for parameter lists and for list of particle quantities
+- [ ] offset views are possible with `kokkos` in [experimental branch](https://github.com/kokkos/kokkos/wiki/Offset-View)
 
 ---
 

@@ -9,6 +9,10 @@
 #define UNUSED(x) (void)(x)
 
 #define Lambda KOKKOS_LAMBDA
+
+#define HostExeSpace Kokkos::OpenMP
+#define AccelExeSpace Kokkos::OpenMP
+
 #define HostMemSpace Kokkos::HostSpace
 #define AccelMemSpace Kokkos::HostSpace
 
@@ -25,8 +29,7 @@ using index_t = const std::size_t;
 template<typename T>
 using NTTArray = Kokkos::View<T, AccelMemSpace>;
 
-inline constexpr std::size_t N_GHOSTS{2};
-enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
+using NTTRange = Kokkos::RangePolicy<AccelExeSpace>;
 
 template<typename T>
 struct One_D {
@@ -45,6 +48,9 @@ struct Three_D {
   short dim {3};
   using ndtype_t = T***;
 };
+
+inline constexpr std::size_t N_GHOSTS{2};
+enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 
 enum CoordinateSystem {
   UNDEFINED_COORD,
