@@ -1,10 +1,10 @@
 #include "global.h"
 
-#include <string_view>
+#include <string>
 
 namespace ntt {
 
-auto stringifySimulationType(SimulationType sim) -> std::string_view {
+auto stringifySimulationType(SimulationType sim) -> std::string {
   switch (sim) {
   case PIC_SIM:
     return "PIC";
@@ -17,11 +17,13 @@ auto stringifySimulationType(SimulationType sim) -> std::string_view {
   }
 }
 
-auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string_view {
+auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string {
   switch (coord) {
   case CARTESIAN_COORD:
     return "XYZ";
-  case POLAR_COORD:
+  case POLAR_R_THETA_COORD:
+    return "R_TH";
+  case POLAR_R_PHI_COORD:
     return "R_PHI";
   case SPHERICAL_COORD:
     return "R_TH_PHI";
@@ -32,7 +34,7 @@ auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string_view {
   }
 }
 
-auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string_view {
+auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string {
   switch (bc) {
   case PERIODIC_BC:
     return "Periodic";
@@ -43,7 +45,7 @@ auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string_view {
   }
 }
 
-auto stringifyParticlePusher(ParticlePusher pusher) -> std::string_view {
+auto stringifyParticlePusher(ParticlePusher pusher) -> std::string {
   switch (pusher) {
   case BORIS_PUSHER:
     return "Boris";
