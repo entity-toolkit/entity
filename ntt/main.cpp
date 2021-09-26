@@ -1,56 +1,43 @@
 #include "global.h"
-#include "pgen.h"
-#include "meshblock.h"
+#include "simulation.h"
 
 #include <Kokkos_Core.hpp>
 
 #include <plog/Log.h>
 #include <plog/Init.h>
-#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Formatters/FuncMessageFormatter.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
 #include <iostream>
 
-void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender);
+using plog_t = plog::ColorConsoleAppender<plog::FuncMessageFormatter>;
+
+void initLogger(plog_t *console_appender);
 
 // Logging is done via `plog` library...
 // ... Use the following commands:
-//  `PLOGI << ...` for non-fatal warning messages (development)
+//  `PLOGI << ...` for general info
 //  `PLOGF << ...` for fatal error messages (development)
 //  `PLOGD << ...` for debug messages (development)
 //  `PLOGE << ...` for simple error messages
 //  `PLOGW << ...` for warnings
 
 auto main(int argc, char *argv[]) -> int {
-  plog::ColorConsoleAppender<plog::TxtFormatter> console_appender;
+  plog_t console_appender;
   initLogger(&console_appender);
 
   Kokkos::initialize();
   try {
-    ntt::Meshblock<ntt::One_D> mblock(100);
-    Kokkos::parallel_for("init", 100,
-      KL (ntt::index_t i) {
-        mblock.ex1(i) = 2.2;
-        mblock.ex2(i) = 2.3;
-      }
-    );
-    Kokkos::parallel_for("run", 100,
-      KL (ntt::index_t i) {
-        mblock.ex3(i) = mblock.ex2(i) - mblock.ex1(i);
-      }
-    );
-    double sum {0.0};
-    Kokkos::parallel_reduce("run", 100,
-      KL (ntt::index_t i, double & sum_) {
-        sum_ += mblock.ex3(i);
-      }, sum
-    );
-    std::cout << sum << "\n";
-    // ProblemGenerator ntt_pgen(argc, argv);
-    // ntt_pgen.start(argc, argv);
-    // ntt_pgen.start(argc, argv);
+    ntt::Simulation<ntt::Two_D> sim(argc, argv);
+    sim.initialize();
+    sim.verify();
+    sim.printDetails();
+    // sim.mainloop();
+    sim.finalize();
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
+    Kokkos::finalize();
+
     return -1;
   }
   Kokkos::finalize();
@@ -58,7 +45,7 @@ auto main(int argc, char *argv[]) -> int {
   return 0;
 }
 
-void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender) {
+void initLogger(plog_t *console_appender) {
   plog::Severity max_severity;
 #ifdef VERBOSE
   max_severity = plog::verbose;
@@ -69,7 +56,3 @@ void initLogger(plog::ColorConsoleAppender<plog::TxtFormatter> *console_appender
 #endif
   plog::init(max_severity, console_appender);
 }
-
-// ProblemGenerator::ProblemGenerator(int argc, char *argv[]); {
-//   simulation = new UserSimulation(argc, argv);
-// }
