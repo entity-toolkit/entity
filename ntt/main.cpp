@@ -28,11 +28,11 @@ auto main(int argc, char *argv[]) -> int {
 
   Kokkos::initialize();
   try {
-    ntt::Simulation<ntt::Two_D> sim(argc, argv);
+    ntt::Simulation<ntt::One_D> sim(argc, argv);
     sim.initialize();
     sim.verify();
     sim.printDetails();
-    // sim.mainloop();
+    sim.mainloop();
     sim.finalize();
   } catch (std::exception &err) {
     std::cerr << err.what() << std::endl;
