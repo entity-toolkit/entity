@@ -1,6 +1,0 @@
-[submodule "extern/plog"]
-	path = extern/plog
-	url = git@github.com:SergiusTheBest/plog.git
-[submodule "extern/kokkos"]
-	path = extern/kokkos
-	url = git@github.com:haykh/kokkos.git
