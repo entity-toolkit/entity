@@ -11,10 +11,10 @@
 #define Lambda KOKKOS_LAMBDA
 
 #define HostExeSpace Kokkos::OpenMP
-#define AccelExeSpace Kokkos::Cuda
+#define AccelExeSpace Kokkos::OpenMP
 
 #define HostMemSpace Kokkos::HostSpace
-#define AccelMemSpace Kokkos::CudaSpace
+#define AccelMemSpace Kokkos::HostSpace
 
 namespace ntt {
 
