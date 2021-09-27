@@ -202,7 +202,7 @@ Path(args['build']).mkdir(parents=True, exist_ok=True)
 Kokkos_details = configureKokkos(args, makefile_options)
 
 # Configuration flags for the performance build (TODO: compiler specific)
-makefile_options['RELEASE_CONF_FLAGS'] = "-O3 -Ofast"
+makefile_options['RELEASE_CONF_FLAGS'] = "-O3 "
 makefile_options['RELEASE_PP_FLAGS'] = "-DNDEBUG"
 
 # Configuration flags for the debug build (TODO: compiler specific)
@@ -239,7 +239,7 @@ def makeNotes():
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
 compilation_command = makefile_options['COMPILER'] + '\n\t'\
                         + f"-std={makefile_options['CXXSTANDARD']}\n\t"\
-                        + (makefile_options['DEBUG_CONF_FLAGS'] + ' ' + makefile_options['DEBUG_PP_FLAGS'] if makefile_options['DEBUGMODE'] else makefile_options['RELEASE_CONF_FLAGS'] + ' ' + makefile_options['RELEASE_PP_FLAGS']).strip() + '\n\t'\
+                        + (makefile_options['DEBUG_CONF_FLAGS'] + ' ' + makefile_options['DEBUG_PP_FLAGS'] if args['debug'] else makefile_options['RELEASE_CONF_FLAGS'] + ' ' + makefile_options['RELEASE_PP_FLAGS']).strip() + '\n\t'\
                         + makefile_options['WARNING_FLAGS'].strip()
 full_command = " ".join(sys.argv[:])
 
