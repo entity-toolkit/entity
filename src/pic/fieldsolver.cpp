@@ -9,11 +9,12 @@ template <>
 void Simulation<One_D>::faradayHalfsubstep(const real_t &time) {
   UNUSED(time);
   PLOGD << "1D faraday";
-  const real_t testval {2.0};
+  const real_t testval {-2.0};
+  Meshblock<One_D> &mblock = m_meshblock;
   Kokkos::parallel_for("faraday",
     NTTRange(N_GHOSTS, m_sim_params.m_resolution[0] - N_GHOSTS),
     Lambda (index_t i) {
-      m_meshblock.ex1(i) = time;
+      mblock.ex1(i) = testval;
       // update e,b
     }
   );
@@ -21,7 +22,7 @@ void Simulation<One_D>::faradayHalfsubstep(const real_t &time) {
   Kokkos::parallel_reduce("faraday2",
     NTTRange(N_GHOSTS, m_sim_params.m_resolution[0] - N_GHOSTS),
     Lambda (index_t i, real_t & s) {
-      s += m_meshblock.ex1(i);
+      s += mblock.ex1(i);
       // update e,b
     }, sum
   );

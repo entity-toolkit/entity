@@ -52,7 +52,7 @@ void initLogger(plog_t *console_appender) {
 #elif DEBUG
   max_severity = plog::debug;
 #else
-  max_severity = plog::warning;
+  max_severity = plog::info;
 #endif
   plog::init(max_severity, console_appender);
 }
