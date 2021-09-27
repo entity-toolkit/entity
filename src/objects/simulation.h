@@ -7,7 +7,6 @@
 #include "pgen.h"
 
 #include <string>
-#include <type_traits>
 
 namespace ntt {
 
