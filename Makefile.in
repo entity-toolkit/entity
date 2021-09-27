@@ -53,7 +53,7 @@ KOKKOS_OPTIONS := @KOKKOS_OPTIONS@
 KOKKOS_CUDA_OPTIONS := @KOKKOS_CUDA_OPTIONS@
 KOKKOS_CXX_STANDARD := @CXXSTANDARD@
 
-PREPFLAGS := ${PREPFLAGS} @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
+PREPFLAGS := @PREPFLAGS@ @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
 
 # # # # # Compiler and flags # # # # # # #
 #
@@ -62,11 +62,9 @@ LINK := ${CXX}
 CXXSTANDARD := -std=@CXXSTANDARD@
 ifeq ($(strip ${DEBUGMODE}), n)
 	# linker configuration flags (e.g. optimization level)
-	CONFFLAGS := @RELEASE_CONF_FLAGS@
-	PREPFLAGS := @RELEASE_PP_FLAGS@
+	CFLAGS := @RELEASE_CFLAGS@
 else
-	CONFFLAGS := @DEBUG_CONF_FLAGS@
-	PREPFLAGS := @DEBUG_PP_FLAGS@
+	CFLAGS := @DEBUG_CFLAGS@
 endif
 
 # warning flags
@@ -75,8 +73,7 @@ WARNFLAGS := @WARNING_FLAGS@
 # custom preprocessor flags
 PREPFLAGS := $(PREPFLAGS) @PRECISION@
 
-CPPFLAGS := $(WARNFLAGS) $(PREPFLAGS)
-CXXFLAGS := $(CXXFLAGS) $(CONFFLAGS)
+CFLAGS := $(CFLAGS) $(WARNFLAGS) $(PREPFLAGS)
 LIBS :=
 
 # # # # # File collection # # # # # # # # # # #
@@ -139,8 +136,7 @@ all: ntt test examples
 # using `Kokkos`
 include ${KOKKOS_PATH}/Makefile.kokkos
 OBJS := $(OBJS) $(KOKKOS_LINK_DEPENDS)
-CPPFLAGS := $(CPPFLAGS) $(KOKKOS_CPPFLAGS)
-CXXFLAGS := $(CXXFLAGS) $(KOKKOS_CXXFLAGS)
+CFLAGS := $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS)
 LIBS := $(LIBS) $(KOKKOS_LIBS)
 
@@ -183,7 +179,7 @@ $(1): $(2)
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)mkdir -p ${BIN_DIR}/${BUILD_EXAMPLES_DIR}
 	$(HIDE)mkdir -p $(dir $(1))
-	$(HIDE)${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CPPFLAGS) $(CXXFLAGS) -c $(2) -o $(1)
+	$(HIDE)${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -c $(2) -o $(1)
 endef
 $(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))
 
