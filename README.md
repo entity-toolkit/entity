@@ -3,10 +3,13 @@ One particle-in-cell code to rule them all.
 
 ## Getting started
 
-_Clone_ this repository with the following command:
+_Clone_ this repository and all its dependencies with the following command:
 
 ```shell
-git clone --recursive git@github.com:haykh/entity.git
+git clone git@github.com:haykh/entity.git
+cd entity
+git clone git@github.com:haykh/plog.git extern/plog
+git clone -b develop git@github.com:haykh/kokkos.git extern/kokkos
 ```
 
 Notice the `--recursive` flag which ensures that all the dependent libraries (submodules) are also downloaded. In case you already have the cloned repository but missed the submodules (this could happen if you `git clone` without `--recursive`) you may get them by doing

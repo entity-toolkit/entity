@@ -21,3 +21,5 @@ __pycache__
 # Temporary Kokkos files
 /Kokkos*
 /*.a
+extern/kokkos/
+extern/plog/
