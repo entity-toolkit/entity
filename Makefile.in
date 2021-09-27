@@ -183,7 +183,6 @@ $(1): $(2)
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)mkdir -p ${BIN_DIR}/${BUILD_EXAMPLES_DIR}
 	$(HIDE)mkdir -p $(dir $(1))
-	# $(HIDE)${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -c $(2) -o $(1)
 	$(HIDE)${compile_command} -c $(2) -o $(1)
 endef
 $(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))

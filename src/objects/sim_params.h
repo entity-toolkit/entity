@@ -30,9 +30,6 @@ class SimulationParams {
   real_t m_sigma0;
   real_t m_charge0;
 
-  // NTTArray<real_t[6]> extent;
-  // NTTArray<std::size_t[3]> resolution;
-
   CoordinateSystem m_coord_system{UNDEFINED_COORD};
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
