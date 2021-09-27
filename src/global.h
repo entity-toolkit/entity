@@ -13,7 +13,7 @@
 #define HostExeSpace Kokkos::OpenMP
 #define HostMemSpace Kokkos::HostSpace
 
-#ifndef DGPUACCELERATED
+#ifndef GPUACCELERATED
 #  define AccelExeSpace Kokkos::OpenMP
 #  define AccelMemSpace Kokkos::HostSpace
 #else
