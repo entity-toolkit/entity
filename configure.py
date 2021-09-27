@@ -79,8 +79,8 @@ def defineOptions():
 
   # `Kokkos` specific
   parser.add_argument('-kokkos', action='store_true', default=False, help='compile with `Kokkos` support')
-  parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
-  parser.add_argument('--kokkos_devices', default='', help='`Kokkos` devices')
+  parser.add_argument('--kokkos_arch', default='', choices=Kokkos_arch_options, help='`Kokkos` architecture')
+  parser.add_argument('--kokkos_devices', default='', choices=Kokkos_devices_options, help='`Kokkos` devices')
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
   parser.add_argument('--kokkos_cuda_options', default='', help='`Kokkos` CUDA options')
   parser.add_argument('--kokkos_loop', default='default', choices=Kokkos_loop_options, help='`Kokkos` loop layout')
@@ -99,7 +99,7 @@ def configureKokkos(arg, mopt):
   if (not (unspecified_device or unspecified_arch)):
     assert is_on_host or is_on_device, "Incompatible device & arch specified"
   if (is_on_device):
-    mopt['PREPFLAGS'] += '-DGPUACCELERATED '
+    mopt['DEFINITIONS'] += '-DGPUACCELERATED '
   mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
   mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
 
@@ -196,7 +196,7 @@ makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 makefile_options['EXAMPLES_DIR'] = 'examples'
 
-makefile_options['PREPFLAGS'] = ''
+makefile_options['DEFINITIONS'] = ''
 
 makefile_options['PGEN'] = args['pgen']
 
@@ -220,36 +220,62 @@ makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)
 
+makedemo = subprocess.run(['make', 'demo'], capture_output=True, text=True, cwd=makefile_options['BUILD_DIR']).stdout.strip()
+compiledemo = makedemo.split('\n')[1]
+linkdemo = makedemo.split('\n')[4]
+
+def beautifyCommands(command):
+  i = command.index(' -')
+  cmd = command[:i]
+  flags = list(set(re.sub('<.o> *', '',
+                    re.sub(r'-[I|L|o|c].+?[ |>|$]', '',
+                          re.sub(r'-([I|D|c|o|W|O|L]) ', r'-\1',
+                                 command[i + 1:]))
+                    ).strip().split(' ')))
+  order = ['-std', '-D', '-W', '-l', '']
+  accounted_flags = []
+  ordered_flags = {key: [] for key in order}
+  for o in order:
+    for flag in flags:
+      if (o in flag) and (not flag in accounted_flags):
+        accounted_flags.append(flag)
+        ordered_flags[o].append(re.sub('-D', '-D ', flag))
+  fstring = ""
+  fstring += "  " + cmd + "\n"
+  for o in order:
+    fstring += "      "
+    for f in ordered_flags[o]:
+      fstring += f + " "
+    fstring += "\n"
+  fstring = "".join(filter(str.strip, fstring.splitlines(True)))[:-1]
+  return fstring
+
 # add some useful notes
 def makeNotes():
   notes = ''
   cxx = args['nvcc_wrapper_cxx'] if use_nvcc_wrapper else makefile_options['COMPILER']
   if use_nvcc_wrapper:
-    notes += f'''
-  * nvcc recognized as:
+    notes +=\
+f'''* nvcc recognized as:
     $ {findCompiler("nvcc")}'''
-  notes += f'''
-  * {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:
+  notes +=\
+f'''* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:
     $ {findCompiler(cxx)}'''
   if 'OpenMP' in args['kokkos_devices']:
     notes += f'''
   * when using OpenMP set the following environment variables:
-    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NTHREAD=<INT>
-    '''
+    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NTHREAD=<INT>'''
   return notes
 
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
-compilation_command = makefile_options['COMPILER'] + '\n\t'\
-                        + f"-std={makefile_options['CXXSTANDARD']}\n\t"\
-                        + makefile_options['PREPFLAGS'].strip() + '\n\t' * (makefile_options['PREPFLAGS'].strip() != '')\
-                        + (makefile_options['DEBUG_CFLAGS'] if args['debug'] else makefile_options['RELEASE_CFLAGS']).strip() + '\n\t'\
-                        + makefile_options['WARNING_FLAGS'].strip()
-full_command = " ".join(sys.argv[:])
 
+full_command = " ".join(sys.argv[:])
 
 #  Finish with diagnostic output
 w = 80
-full_command = ' \\\n'.join(textwrap.wrap(full_command, w, subsequent_indent="      ", initial_indent="  "))
+full_command = ' \\\n'.join(textwrap.wrap(full_command, w - 4,
+                                          subsequent_indent="      ",
+                                          initial_indent="  "))
 report = f'''
 {'':=<{w}}
              __        __
@@ -280,12 +306,17 @@ report = f'''
   {'Debug mode':32} {args['debug']}
   {Kokkos_details}
 
+{'Notes ':.<{80}}
+
+  {makeNotes()}
+
 {'Compilation command ':.<{w}}
 
-  {compilation_command}
+{beautifyCommands(compiledemo)}
 
-{'Notes ':.<{80}}
-  {makeNotes()}
+{'Linking command ':.<{w}}
+
+{beautifyCommands(linkdemo)}
 
 {'':=<{w}}
 '''

@@ -12,8 +12,6 @@ git clone git@github.com:haykh/plog.git extern/plog
 git clone -b develop git@github.com:haykh/kokkos.git extern/kokkos
 ```
 
-Notice the `--recursive` flag which ensures that all the dependent libraries (submodules) are also downloaded. In case you already have the cloned repository but missed the submodules (this could happen if you `git clone` without `--recursive`) you may get them by doing
-
 ```shell
 $ git submodule init
 $ git submodule update
@@ -22,7 +20,7 @@ $ git submodule update
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
 
 ```shell
-$ python configure.py -debug --compiler=icc --precision=single
+$ python configure.py -debug --compiler=icpc --precision=single
 ```
 
 > To see all the available configuration flags run `python configure.py -h`.
