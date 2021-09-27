@@ -60,7 +60,6 @@ Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-
 
 # . . . auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . -->
 use_nvcc_wrapper = False
-PP_FLAGS = ""
 def findCompiler(compiler):
   find_command = subprocess.run(['which', compiler], capture_output=True, text=True)
   return find_command.stdout.strip() if (find_command.returncode == 0) else 'N/A'
@@ -89,7 +88,7 @@ def defineOptions():
   return vars(parser.parse_args())
 
 def configureKokkos(arg, mopt):
-  global use_nvcc_wrapper, PP_FLAGS
+  global use_nvcc_wrapper
   # using Kokkos
   # custom flag to recognize that the code is compiled with `Kokkos`
   # check compatibility between arch and device
@@ -100,7 +99,7 @@ def configureKokkos(arg, mopt):
   if (not (unspecified_device or unspecified_arch)):
     assert is_on_host or is_on_device, "Incompatible device & arch specified"
   if (is_on_device):
-    PP_FLAGS += '-DGPUACCELERATED '
+    mopt['PREPFLAGS'] += '-DGPUACCELERATED '
   mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
   mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
 
@@ -197,6 +196,8 @@ makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 makefile_options['EXAMPLES_DIR'] = 'examples'
 
+makefile_options['PREPFLAGS'] = ''
+
 makefile_options['PGEN'] = args['pgen']
 
 Path(args['build']).mkdir(parents=True, exist_ok=True)
@@ -205,12 +206,10 @@ Path(args['build']).mkdir(parents=True, exist_ok=True)
 Kokkos_details = configureKokkos(args, makefile_options)
 
 # Configuration flags for the performance build (TODO: compiler specific)
-makefile_options['RELEASE_CONF_FLAGS'] = "-O3 "
-makefile_options['RELEASE_PP_FLAGS'] = PP_FLAGS + "-DNDEBUG"
+makefile_options['RELEASE_CONF_FLAGS'] = "-O3 -DNDEBUG"
 
 # Configuration flags for the debug build (TODO: compiler specific)
-makefile_options['DEBUG_CONF_FLAGS'] = ""
-makefile_options['DEBUG_PP_FLAGS'] = PP_FLAGS + "-O0 -g -DDEBUG"
+makefile_options['DEBUG_CFLAGS'] = "-O0 -g -DDEBUG"
 
 # Warning flags (TODO: compiler specific)
 makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
@@ -242,7 +241,8 @@ def makeNotes():
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
 compilation_command = makefile_options['COMPILER'] + '\n\t'\
                         + f"-std={makefile_options['CXXSTANDARD']}\n\t"\
-                        + (makefile_options['DEBUG_CONF_FLAGS'] + ' ' + makefile_options['DEBUG_PP_FLAGS'] if args['debug'] else makefile_options['RELEASE_CONF_FLAGS'] + ' ' + makefile_options['RELEASE_PP_FLAGS']).strip() + '\n\t'\
+                        + makefile_options['PREPFLAGS'].strip() + '\n\t' * (makefile_options['PREPFLAGS'].strip() != '')\
+                        + (makefile_options['DEBUG_CFLAGS'] if args['debug'] else makefile_options['RELEASE_CFLAGS']).strip() + '\n\t'\
                         + makefile_options['WARNING_FLAGS'].strip()
 full_command = " ".join(sys.argv[:])
 

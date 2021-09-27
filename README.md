@@ -19,7 +19,7 @@ $ git submodule init
 $ git submodule update
 ```
 
-_Configure_ the code by running `configure.py` file with the desired specifications. This will generat a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
+_Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
 
 ```shell
 $ python configure.py -debug --compiler=icc --precision=single
