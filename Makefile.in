@@ -34,10 +34,11 @@ EXT_DIR := ${ROOT_DIR}/@EXTERN_DIR@
 DEBUGMODE := @DEBUGMODE@
 VERBOSE := @VERBOSE@
 
-DEFINITIONS :=
+DEFINITIONS := @DEFINITIONS@
 
 ifeq ($(strip ${VERBOSE}), y)
 	HIDE =
+	PREPFLAGS = -DVERBOSE
 else
 	HIDE = @
 endif
@@ -53,7 +54,7 @@ KOKKOS_OPTIONS := @KOKKOS_OPTIONS@
 KOKKOS_CUDA_OPTIONS := @KOKKOS_CUDA_OPTIONS@
 KOKKOS_CXX_STANDARD := @CXXSTANDARD@
 
-PREPFLAGS := @PREPFLAGS@ @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
+PREPFLAGS := ${PREPFLAGS} @KOKKOS_LOOP_LAYOUT@ @KOKKOS_VECTOR_LENGTH@
 
 # # # # # Compiler and flags # # # # # # #
 #
@@ -109,11 +110,11 @@ ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
 
 # # # # # Targets # # # # # # # # # # # # # #
 #
-default: help
+default: help demo
 
 help:
 	@echo
-	@echo "usage: \`make [ntt|test|examples|all]\`"
+	@echo "usage: \`make [ntt|test|examples|all|demo]\`"
 	@echo
 	@echo "cleanup: \`make clean\`"
 	@echo
@@ -140,6 +141,9 @@ CFLAGS := $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS)
 LIBS := $(LIBS) $(KOKKOS_LIBS)
 
+compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS)
+link_command := ${LINK} $(LDFLAGS)
+
 # linking the main app
 ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
 	@echo [M]aking $@
@@ -151,7 +155,7 @@ endif
 
 ${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
-	$(HIDE)${LINK} $(LDFLAGS) $(NTT_OBJS) $(OBJS) $(LIBS) -o $@
+	$(HIDE)${link_command} $(NTT_OBJS) $(OBJS) $(LIBS) -o $@
 
 # linking tests
 test : ${BIN_DIR}/${TEST_TARGET}
@@ -159,7 +163,7 @@ test : ${BIN_DIR}/${TEST_TARGET}
 
 ${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
-	$(HIDE)${LINK} $(LDFLAGS) $(TEST_OBJS) $(OBJS) $(LIBS) -o $@
+	$(HIDE)${link_command} $(TEST_OBJS) $(OBJS) $(LIBS) -o $@
 
 examples : $(EXAMPLES_TARGETS)
 	@echo [M]aking $@
@@ -168,7 +172,7 @@ examples : $(EXAMPLES_TARGETS)
 define generateExampleLinkingRules
 $(1): $(2) $(OBJS)
 	@echo [L]inking $(1) from $(2)
-	$(HIDE)${LINK} $(LDFLAGS) $(2) $(OBJS) $(LIBS) -o $(1)
+	$(HIDE)${link_command} $(2) $(OBJS) $(LIBS) -o $(1)
 endef
 $(foreach et, $(EXAMPLES_TARGETS), $(eval $(call generateExampleLinkingRules, ${et}, ${BUILD_EXAMPLES_DIR}/$(notdir $(et:.exec=.cpp.o)))))
 
@@ -179,11 +183,19 @@ $(1): $(2)
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)mkdir -p ${BIN_DIR}/${BUILD_EXAMPLES_DIR}
 	$(HIDE)mkdir -p $(dir $(1))
-	$(HIDE)${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -c $(2) -o $(1)
+	# $(HIDE)${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -c $(2) -o $(1)
+	$(HIDE)${compile_command} -c $(2) -o $(1)
 endef
 $(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))
 
-.PHONY: all help ntt test examples clean
+demo:
+	@echo "[C]ompile command:"
+	@echo ${compile_command} -c \<.cpp\> -o \<.o\>
+	@echo
+	@echo "[L]ink command:"
+	@echo ${link_command} \<.o\> $(LIBS) -o \<EXE\>
+
+.PHONY: all help ntt test examples clean demo
 
 clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR}
