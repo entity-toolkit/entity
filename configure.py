@@ -264,7 +264,7 @@ f'''* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:
   if 'OpenMP' in args['kokkos_devices']:
     notes += f'''
   * when using OpenMP set the following environment variables:
-    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NTHREAD=<INT>'''
+    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=<INT>'''
   return notes
 
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
