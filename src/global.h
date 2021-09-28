@@ -10,15 +10,22 @@
 
 #define Lambda KOKKOS_LAMBDA
 
-#define HostExeSpace Kokkos::OpenMP
-#define HostMemSpace Kokkos::HostSpace
-
-#ifndef GPUACCELERATED
+#if !defined(GPUENABLED) && defined(OMPENABLED)
 #  define AccelExeSpace Kokkos::OpenMP
 #  define AccelMemSpace Kokkos::HostSpace
-#else
+#elif defined(GPUENABLED)
 #  define AccelExeSpace Kokkos::Cuda
 #  define AccelMemSpace Kokkos::CudaSpace
+#else
+#  define AccelExeSpace Kokkos::Serial
+#  define AccelMemSpace Kokkos::HostSpace
+#endif
+
+#define HostMemSpace Kokkos::HostSpace
+#if defined (OMPENABLED)
+#  define HostExeSpace Kokkos::OpenMP
+#else
+#  define HostExeSpace Kokkos::Serial
 #endif
 
 namespace ntt {
@@ -33,8 +40,9 @@ using index_t = const std::size_t;
 
 template<typename T>
 using NTTArray = Kokkos::View<T, AccelMemSpace>;
-
-using NTTRange = Kokkos::RangePolicy<AccelExeSpace>;
+using NTT1DRange = Kokkos::RangePolicy<AccelExeSpace>;
+using NTT2DRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
+using NTT3DRange = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
 
 template<typename T>
 struct One_D {
