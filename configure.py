@@ -79,8 +79,8 @@ def defineOptions():
 
   # `Kokkos` specific
   parser.add_argument('-kokkos', action='store_true', default=False, help='compile with `Kokkos` support')
-  parser.add_argument('--kokkos_arch', default='', choices=Kokkos_arch_options, help='`Kokkos` architecture')
-  parser.add_argument('--kokkos_devices', default='', choices=Kokkos_devices_options, help='`Kokkos` devices')
+  parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], help='`Kokkos` devices')
+  parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
   parser.add_argument('--kokkos_cuda_options', default='', help='`Kokkos` CUDA options')
   parser.add_argument('--kokkos_loop', default='default', choices=Kokkos_loop_options, help='`Kokkos` loop layout')
@@ -92,16 +92,35 @@ def configureKokkos(arg, mopt):
   # using Kokkos
   # custom flag to recognize that the code is compiled with `Kokkos`
   # check compatibility between arch and device
-  is_on_host = (arg['kokkos_devices'] in Kokkos_devices['host']) and (arg['kokkos_arch'] in Kokkos_arch['host'])
-  is_on_device = (arg['kokkos_devices'] in Kokkos_devices['device']) and (arg['kokkos_arch'] in Kokkos_arch['device'])
-  unspecified_device = (arg['kokkos_devices'] == '')
-  unspecified_arch = (arg['kokkos_arch'] == '')
-  if (not (unspecified_device or unspecified_arch)):
-    assert is_on_host or is_on_device, "Incompatible device & arch specified"
-  if (is_on_device):
-    mopt['DEFINITIONS'] += '-DGPUACCELERATED '
+  def parseArchDevice(carg, kokkos_list):
+    _ = carg.split(',')
+    assert len(_) <= 2, "Wrong arch/device specified"
+    if len(_) == 2:
+      _1, _2 = _
+      if _2 in kokkos_list['host']:
+        _1 = _[1]; _2 = _[0]
+      return _1, _2
+    elif len(_) == 1:
+      _1 = _[0]
+      _2 = None
+      if _1 in kokkos_list['device']:
+        # enabling openmp if CUDA is enabled
+        _2 = 'OpenMP'
+      return _1, _2
+    else:
+      return None, None
+  host_d, device_d = parseArchDevice(arg['kokkos_devices'], Kokkos_devices)
+  host_a, device_a = parseArchDevice(arg['kokkos_arch'], Kokkos_arch)
+  assert (host_d is None) or (host_d in Kokkos_devices['host']), 'Wrong CPU device'
+  assert (device_d is None) or (device_d in Kokkos_devices['device']), 'Wrong GPU device'
+  assert (host_a is None) or (host_a in Kokkos_arch['host']), 'Wrong CPU arch'
+  assert (device_a is None) or (device_a in Kokkos_arch['device']), 'Wrong GPU arch'
   mopt['KOKKOS_DEVICES'] = arg['kokkos_devices']
   mopt['KOKKOS_ARCH'] = arg['kokkos_arch']
+  if 'Cuda' in arg['kokkos_devices']:
+    mopt['DEFINITIONS'] += '-DGPUENABLED '
+  if 'OpenMP' in arg['kokkos_devices']:
+    mopt['DEFINITIONS'] += '-DOMPENABLED '
 
   mopt['KOKKOS_OPTIONS'] = arg['kokkos_options']
   if mopt['KOKKOS_OPTIONS'] != '':
@@ -125,9 +144,9 @@ def configureKokkos(arg, mopt):
                           + '${KOKKOS_PATH}/bin/nvcc_wrapper'
     # add with MPI here (TODO)
 
+  # kokkos loop stuff
   if arg['kokkos_loop'] == 'default':
     arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
-
   mopt['KOKKOS_VECTOR_LENGTH'] = '-1'
   if arg['kokkos_loop'] == '1DRange':
     mopt['KOKKOS_LOOP_LAYOUT'] = '-D MANUAL1D_LOOP'
@@ -255,17 +274,11 @@ def makeNotes():
   notes = ''
   cxx = args['nvcc_wrapper_cxx'] if use_nvcc_wrapper else makefile_options['COMPILER']
   if use_nvcc_wrapper:
-    notes +=\
-f'''* nvcc recognized as:
-    $ {findCompiler("nvcc")}'''
-  notes +=\
-f'''* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:
-    $ {findCompiler(cxx)}'''
+    notes += f"* nvcc recognized as:\n    $ {findCompiler('nvcc')}\n  "
+  notes += f"* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:\n    $ {findCompiler(cxx)}\n  "
   if 'OpenMP' in args['kokkos_devices']:
-    notes += f'''
-  * when using OpenMP set the following environment variables:
-    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=<INT>'''
-  return notes
+    notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=<INT>\n"
+  return notes.strip()
 
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
 
