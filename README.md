@@ -12,15 +12,10 @@ git clone git@github.com:haykh/plog.git extern/plog
 git clone -b develop git@github.com:haykh/kokkos.git extern/kokkos
 ```
 
-```shell
-$ git submodule init
-$ git submodule update
-```
-
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
 
 ```shell
-$ python configure.py -debug --compiler=icpc --precision=single
+python configure.py -debug --compiler=icpc --precision=single
 ```
 
 > To see all the available configuration flags run `python configure.py -h`.
@@ -50,11 +45,9 @@ To make debugging and styling the code easier, we implement the standard `clang`
 ## Third-party libraries
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability;
-2. [`acutest`](https://github.com/mity/acutest)<sup>[h]</sup>: for unit testing;
-3. [`toml11`](https://github.com/ToruNiina/toml11)<sup>[h]</sup>: for `toml` file parsing;
-4. [`plog`](https://github.com/SergiusTheBest/plog)<sup>[h]</sup>: for runtime logging.
-
-<sup>[h]</sup> header-only library
+2. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging;
+3. [`acutest`](https://github.com/mity/acutest): for unit testing;
+4. [`toml11`](https://github.com/ToruNiina/toml11): for `toml` file parsing.
 
 > All the third-party libraries reside in the `extern` directory.
 
