@@ -11,7 +11,11 @@ namespace ntt {
 
 template <template <typename T> class D>
 Simulation<D>::Simulation(const toml::value &inputdata)
-    : m_dim{}, m_sim_params{inputdata, m_dim.dim}, m_meshblock{m_sim_params.m_resolution}, m_pGen{m_sim_params} {}
+    : m_dim{}, m_sim_params{inputdata, m_dim.dim}, m_meshblock{m_sim_params.m_resolution}, m_pGen{m_sim_params} {
+    // TODO: meshblock extent can be different from global one
+    m_meshblock.set_extent(m_sim_params.m_extent);
+    m_meshblock.set_coord_system(m_sim_params.m_coord_system);
+  }
 
 template <template <typename T> class D> void Simulation<D>::initialize() {
   m_pGen.userInitFields(m_sim_params, m_meshblock);
@@ -22,6 +26,7 @@ template <template <typename T> class D> void Simulation<D>::verify() {
   assert(m_sim_params.m_simtype != UNDEFINED_SIM);
   assert(m_sim_params.m_coord_system != UNDEFINED_COORD);
   for (auto &b : m_sim_params.m_boundaries) {
+    UNUSED(b);
     assert(b != UNDEFINED_BC);
   }
   // TODO: maybe some other tests
