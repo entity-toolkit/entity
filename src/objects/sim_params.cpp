@@ -17,6 +17,7 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", "PIC_Sim");
   m_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
   m_timestep = readFromInput<real_t>(m_inputdata, "algorithm", "timestep");
+  m_correction = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
 
   // TODO: for now only PIC
   m_simtype = PIC_SIM;
@@ -89,9 +90,10 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
 //   m_resolution.push_back(0);
 // }
 
-// // copy extent and resolution to device (or don't do anything if device == host)
-// NTTArray<real_t[6]>::HostMirror extent_host = Kokkos::create_mirror_view(extent);
-// NTTArray<std::size_t[3]>::HostMirror resolution_host = Kokkos::create_mirror_view(resolution);
+// // copy extent and resolution to device (or don't do anything if device ==
+// host) NTTArray<real_t[6]>::HostMirror extent_host =
+// Kokkos::create_mirror_view(extent); NTTArray<std::size_t[3]>::HostMirror
+// resolution_host = Kokkos::create_mirror_view(resolution);
 //
 // for (short i{0}; i < 3; ++i) {
 //   resolution_host(i) = m_resolution[i];

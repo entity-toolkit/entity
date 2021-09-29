@@ -7,33 +7,32 @@
 
 namespace ntt {
 
-class Faraday1DHalfstep_Cartesian : public FieldSolver1D {
-  using size_type = NTTArray<real_t*>::size_type;
+class Faraday1D_Cartesian : public FieldSolver1D {
 public:
-  Faraday1DHalfstep_Cartesian (const Meshblock<One_D>& m_mblock_, const real_t& coeff_) : FieldSolver1D{m_mblock_, coeff_} {}
+  Faraday1D_Cartesian (const Meshblock<One_D>& m_mblock_, const real_t& coeff_) : FieldSolver1D{m_mblock_, coeff_} {}
   Inline void operator() (const size_type i) const {
-    // m_mblock.ex1(i) = coeff;
-    // ...
+    m_mblock.bx2(i) = m_mblock.bx2(i) + coeff * (m_mblock.ex3(i + 1) - m_mblock.ex3(i));
+    m_mblock.bx3(i) = m_mblock.bx3(i) + coeff * (-m_mblock.ex2(i + 1) + m_mblock.ex2(i));
   }
 };
 
-class Faraday2DHalfstep_Cartesian : public FieldSolver2D {
-  using size_type = NTTArray<real_t**>::size_type;
+class Faraday2D_Cartesian : public FieldSolver2D {
 public:
-  Faraday2DHalfstep_Cartesian (const Meshblock<Two_D>& m_mblock_, const real_t& coeff_) : FieldSolver2D{m_mblock_, coeff_} {}
+  Faraday2D_Cartesian (const Meshblock<Two_D>& m_mblock_, const real_t& coeff_) : FieldSolver2D{m_mblock_, coeff_} {}
   Inline void operator() (const size_type i, const size_type j) const {
-    // m_mblock.ex1(i, j) = coeff;
-    // ...
+    m_mblock.bx1(i, j) = m_mblock.bx1(i, j) + coeff * (-m_mblock.ex3(i, j + 1) + m_mblock.ex3(i, j));
+    m_mblock.bx2(i, j) = m_mblock.bx2(i, j) + coeff * (m_mblock.ex3(i + 1, j) - m_mblock.ex3(i, j));
+    m_mblock.bx3(i, j) = m_mblock.bx3(i, j) + coeff * (m_mblock.ex1(i, j + 1) - m_mblock.ex1(i, j) - m_mblock.ex2(i + 1, j) + m_mblock.ex2(i, j));
   }
 };
 
-class Faraday3DHalfstep_Cartesian : public FieldSolver3D {
-  using size_type = NTTArray<real_t***>::size_type;
+class Faraday3D_Cartesian : public FieldSolver3D {
 public:
-  Faraday3DHalfstep_Cartesian (const Meshblock<Three_D>& m_mblock_, const real_t& coeff_) : FieldSolver3D{m_mblock_, coeff_} {}
+  Faraday3D_Cartesian (const Meshblock<Three_D>& m_mblock_, const real_t& coeff_) : FieldSolver3D{m_mblock_, coeff_} {}
   Inline void operator() (const size_type i, const size_type j, const size_type k) const {
-    // m_mblock.ex1(i, j, k) = coeff;
-    // ...
+    m_mblock.bx1(i, j, k) = m_mblock.bx1(i, j, k) + coeff * (m_mblock.ex2(i, j, k + 1) - m_mblock.ex2(i, j, k) - m_mblock.ex3(i, j + 1, k) + m_mblock.ex3(i, j, k));
+    m_mblock.bx2(i, j, k) = m_mblock.bx2(i, j, k) + coeff * (m_mblock.ex3(i + 1, j, k) - m_mblock.ex3(i, j, k) - m_mblock.ex1(i, j, k + 1) + m_mblock.ex1(i, j, k));
+    m_mblock.bx3(i, j, k) = m_mblock.bx3(i, j, k) + coeff * (m_mblock.ex1(i, j + 1, k) - m_mblock.ex1(i, j, k) - m_mblock.ex2(i + 1, j, k) + m_mblock.ex2(i, j, k));
   }
 };
 
