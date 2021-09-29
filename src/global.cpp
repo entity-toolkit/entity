@@ -20,13 +20,7 @@ auto stringifySimulationType(SimulationType sim) -> std::string {
 auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string {
   switch (coord) {
   case CARTESIAN_COORD:
-    if (dim == 1) {
-      return "X";
-    } else if (dim == 2) {
-      return "XY";
-    } else {
-      return "XYZ";
-    }
+    return ((dim == 1) ? "X" : ((dim == 2) ? "XY" : "XYZ"));
   case POLAR_R_THETA_COORD:
     return "R_TH";
   case POLAR_R_PHI_COORD:
