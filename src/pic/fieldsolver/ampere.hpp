@@ -1,0 +1,6 @@
+#ifndef PIC_FIELDSOLVER_AMPERE_H
+#define PIC_FIELDSOLVER_AMPERE_H
+
+
+
+#endif

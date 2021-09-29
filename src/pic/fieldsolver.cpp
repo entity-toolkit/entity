@@ -1,5 +1,6 @@
 #include "global.h"
 #include "meshblock.h"
+#include "fieldsolver.h"
 #include "simulation.h"
 #include "faraday.hpp"
 
@@ -15,8 +16,9 @@ void Simulation<One_D>::faradayHalfsubstep(const real_t &time) {
   PLOGD << "1D faraday";
   const real_t testval {-2.0};
   auto range = NTT1DRange({N_GHOSTS}, {m_sim_params.m_resolution[0] - N_GHOSTS});
-  // if cartesian:
-  Kokkos::parallel_for("faraday", range, Faraday1DHalfstep_Cartesian(m_meshblock, testval));
+  if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
+    Kokkos::parallel_for("faraday", range, Faraday1DHalfstep_Cartesian(m_meshblock, testval));
+  }
 }
 template <>
 void Simulation<Two_D>::faradayHalfsubstep(const real_t &time) {
@@ -24,8 +26,9 @@ void Simulation<Two_D>::faradayHalfsubstep(const real_t &time) {
   PLOGD << "2D faraday";
   const real_t testval {-2.0};
   auto range = NTT2DRange({N_GHOSTS, N_GHOSTS}, {m_sim_params.m_resolution[0] - N_GHOSTS, m_sim_params.m_resolution[1] - N_GHOSTS});
-  // if cartesian:
-  Kokkos::parallel_for("faraday", range, Faraday2DHalfstep_Cartesian(m_meshblock, testval));
+  if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
+    Kokkos::parallel_for("faraday", range, Faraday2DHalfstep_Cartesian(m_meshblock, testval));
+  }
 }
 template <>
 void Simulation<Three_D>::faradayHalfsubstep(const real_t &time) {
@@ -33,8 +36,9 @@ void Simulation<Three_D>::faradayHalfsubstep(const real_t &time) {
   PLOGD << "3D faraday";
   const real_t testval {-2.0};
   auto range = NTT3DRange({N_GHOSTS, N_GHOSTS, N_GHOSTS}, {m_sim_params.m_resolution[0] - N_GHOSTS, m_sim_params.m_resolution[1] - N_GHOSTS, m_sim_params.m_resolution[2] - N_GHOSTS});
-  // if cartesian:
-  Kokkos::parallel_for("faraday", range, Faraday3DHalfstep_Cartesian(m_meshblock, testval));
+  if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
+    Kokkos::parallel_for("faraday", range, Faraday3DHalfstep_Cartesian(m_meshblock, testval));
+  }
 }
 
 template <>
