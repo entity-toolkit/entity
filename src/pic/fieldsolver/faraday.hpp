@@ -18,7 +18,7 @@ public:
                                const real_t& coeff_) :
                                m_mblock(m_mblock_), coeff(coeff_) {}
   Inline void operator() (const size_type i) const {
-    m_mblock.ex1(i) = coeff;
+    // m_mblock.ex1(i) = coeff;
     // ...
   }
 };
