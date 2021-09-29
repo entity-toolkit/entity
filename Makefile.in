@@ -1,3 +1,7 @@
+# # # # # Scripts # # # # # # # # # # # #
+#
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+
 # # # # # Directories # # # # # # # # # #
 #
 ROOT_DIR := $(realpath ${CURDIR}/..)
@@ -103,6 +107,8 @@ EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(E
 EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
 EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
 
+ALL_DEPS := $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
+
 INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
@@ -141,7 +147,7 @@ CFLAGS := $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS)
 LIBS := $(LIBS) $(KOKKOS_LIBS)
 
-compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS)
+compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -MMD
 link_command := ${LINK} $(LDFLAGS)
 
 # linking the main app
@@ -203,7 +209,7 @@ clean:
 cleanlib: kokkos-clean
 	rm -rf {BUILD_DIR}/Kokkos*
 
--include $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
+-include $(ALL_DEPS)
 
 # for developers:
 
