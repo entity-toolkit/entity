@@ -1,12 +1,15 @@
-#include "global.h"
-#include "pgen.h"
-#include "sim_params.h"
-#include "meshblock.h"
-#include "input.h"
+#ifndef PROBLEM_GENERATOR_H
+#define PROBLEM_GENERATOR_H
 
-#include <plog/Log.h>
+#include "global.h"
+// #include "pgen.h"
+// #include "sim_params.h"
+// #include "meshblock.h"
+// #include "input.h"
 
 namespace ntt {
+
+class MyStuff {};
 
 // class userInitFields {
 //   NTTArray<real_t*> ex1, ex2, ex3;
@@ -30,3 +33,5 @@ namespace ntt {
 // };
 
 }
+
+#endif
