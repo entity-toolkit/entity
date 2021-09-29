@@ -9,6 +9,7 @@
 #define UNUSED(x) (void)(x)
 
 #define Lambda KOKKOS_LAMBDA
+#define Inline KOKKOS_INLINE_FUNCTION
 
 #if !defined(GPUENABLED) && defined(OMPENABLED)
 #  define AccelExeSpace Kokkos::OpenMP
@@ -35,8 +36,6 @@ using real_t = float;
 #else
 using real_t = double;
 #endif
-
-using index_t = const std::size_t;
 
 template<typename T>
 using NTTArray = Kokkos::View<T, AccelMemSpace>;
@@ -79,7 +78,7 @@ enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string;
-auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
+auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string;
 auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
 
 auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;

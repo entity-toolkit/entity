@@ -25,6 +25,9 @@ public:
   friend class Simulation;
 
   friend class ProblemGenerator;
+
+  // methods
+  friend class Faraday1DHalfstep_Cartesian;
 };
 
 }
