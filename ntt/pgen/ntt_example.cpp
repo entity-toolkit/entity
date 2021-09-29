@@ -5,11 +5,10 @@
 #include "input.h"
 
 #include <plog/Log.h>
-#include <Kokkos_Core.hpp>
 
 namespace ntt {
 
-// class UserInitFields {
+// class userInitFields {
 //   NTTArray<real_t*> ex1, ex2, ex3;
 //   NTTArray<real_t*> bx1, bx2, bx3;
 //   using size_type = NTTArray<real_t*>::size_type;
@@ -29,6 +28,5 @@ namespace ntt {
 //     ex1(i) = 0.0;
 //   }
 // };
-
 
 }

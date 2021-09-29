@@ -23,7 +23,7 @@
 #endif
 
 #define HostMemSpace Kokkos::HostSpace
-#if defined (OMPENABLED)
+#if defined(OMPENABLED)
 #  define HostExeSpace Kokkos::OpenMP
 #else
 #  define HostExeSpace Kokkos::Serial
@@ -37,28 +37,24 @@ using real_t = float;
 using real_t = double;
 #endif
 
-template<typename T>
-using NTTArray = Kokkos::View<T, AccelMemSpace>;
+template <typename T> using NTTArray = Kokkos::View<T, AccelMemSpace>;
 using NTT1DRange = Kokkos::RangePolicy<AccelExeSpace>;
 using NTT2DRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
 using NTT3DRange = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
 
-template<typename T>
-struct One_D {
-  short dim {1};
-  using ndtype_t = T*;
+template <typename T> struct One_D {
+  short dim{1};
+  using ndtype_t = T *;
 };
 
-template<typename T>
-struct Two_D {
-  short dim {2};
-  using ndtype_t = T**;
+template <typename T> struct Two_D {
+  short dim{2};
+  using ndtype_t = T **;
 };
 
-template<typename T>
-struct Three_D {
-  short dim {3};
-  using ndtype_t = T***;
+template <typename T> struct Three_D {
+  short dim{3};
+  using ndtype_t = T ***;
 };
 
 inline constexpr std::size_t N_GHOSTS{2};
@@ -87,6 +83,6 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
 constexpr std::string_view DEF_input_filename{"input"};
 constexpr std::string_view DEF_output_path{"output"};
 
-}
+} // namespace ntt
 
 #endif

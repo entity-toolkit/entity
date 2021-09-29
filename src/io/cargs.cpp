@@ -28,4 +28,4 @@ auto CommandLineArguments::getArgument(std::string_view key) -> std::string_view
 auto CommandLineArguments::isSpecified(std::string_view key) -> bool {
   return std::find(this->_args.begin(), this->_args.end(), key) != this->_args.end();
 }
-}
+} // namespace ntt

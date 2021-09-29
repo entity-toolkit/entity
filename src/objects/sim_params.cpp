@@ -50,17 +50,17 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
   m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
-  if ((static_cast<short>(m_resolution.size()) < dim) ||
-      (static_cast<short>(m_extent.size()) < 2 * dim)) {
+  if ((static_cast<short>(m_resolution.size()) < dim) || (static_cast<short>(m_extent.size()) < 2 * dim)) {
     throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
   }
 
   m_resolution.erase(m_resolution.begin() + dim, m_resolution.end());
   m_extent.erase(m_extent.begin() + 2 * dim, m_extent.end());
 
-  auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
-  short b {0};
-  for (auto & bc : boundaries) {
+  auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries",
+                                                            {"PERIODIC", "PERIODIC", "PERIODIC"});
+  short b{0};
+  for (auto &bc : boundaries) {
     if (bc == "PERIODIC") {
       m_boundaries.push_back(PERIODIC_BC);
     } else if (bc == "OPEN") {
@@ -80,7 +80,7 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_sigma0 = m_larmor0 * m_larmor0 / (m_skindepth0 * m_skindepth0);
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
 }
-}
+} // namespace ntt
 
 // for (short i{dim}; i < 3; ++i) {
 //   m_extent.push_back(0.0);

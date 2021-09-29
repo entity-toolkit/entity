@@ -217,6 +217,7 @@ cleanlib: kokkos-clean
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
 ALLCODE := $(SOURCES) $(wildcard ${SRC_DIR}/*.hpp) $(wildcard ${SRC_DIR}/*.h) $(wildcard ${NTT_DIR}/*.hpp) $(wildcard ${NTT_DIR}/*.h) $(wildcard ${TEST_DIR}/*.hpp) $(wildcard ${TEST_DIR}/*.h) $(wildcard ${EXAMPLES_DIR}/*.hpp) $(wildcard ${EXAMPLES_DIR}/*.h)
+flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS)
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 
@@ -231,7 +232,7 @@ clang-tidy-naming:
 		    { key: readability-identifier-naming.FunctionCase, value: camelBack },\
 		    { key: readability-identifier-naming.VariableCase, value: lower_case },\
 		    { key: readability-identifier-naming.GlobalConstantCase, value: UPPER_CASE }\
-		    ]}" "$$src" -extra-arg=${CXXSTANDARD} -- $(INCFLAGS);\
+		    ]}" "$$src" -extra-arg=${CXXSTANDARD} -- $(flags);\
 	done
 	@echo "clang-tidy-naming -- done"
 
@@ -266,8 +267,8 @@ clang-tidy:
 		clang-tidy -quiet -checks="-*,\
 			clang-diagnostic-*,clang-analyzer-*,modernize-*,-modernize-avoid-c-arrays*,\
 			readability-*,performance-*,openmp-*,mpi-*,-performance-no-int-to-ptr" \
-			-header-filter="${SRC_DIR}/.*" \
-			"$$src" -extra-arg=${CXXSTANDARD} -- $(INCFLAGS); \
+			-header-filter=".*\\b(ntt|src|test|examples)\\b\\/(?!lib).*" \
+			"$$src" -extra-arg=${CXXSTANDARD} -- $(flags); \
 	done
 	@echo "clang-tidy -- done"
 
@@ -275,7 +276,7 @@ clang-tidy-bugprone:
 	@for src in $(SOURCES) ; do \
 		echo "tidying $$src:" ; \
 		clang-tidy -quiet -checks="-*,bugprone-*",\
-			-header-filter="src/.*" \
-			"$$src" -extra-arg=${CXXSTANDARD} -- $(INCFLAGS); \
+			-header-filter=".*\\b(ntt|src|test|examples)\\b\\/(?!lib).*" \
+			"$$src" -extra-arg=${CXXSTANDARD} -- $(flags); \
 	done
 	@echo "clang-tidy-bugprone -- done"

@@ -6,8 +6,6 @@
 #include "fieldsolver.h"
 #include "simulation.h"
 
-#include <Kokkos_Core.hpp>
-
 namespace ntt {
 
 class Faraday1DHalfstep_Cartesian : public FieldSolver1D {
