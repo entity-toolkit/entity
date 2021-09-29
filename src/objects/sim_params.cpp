@@ -80,6 +80,7 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_sigma0 = m_larmor0 * m_larmor0 / (m_skindepth0 * m_skindepth0);
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
 }
+
 } // namespace ntt
 
 // for (short i{dim}; i < 3; ++i) {
