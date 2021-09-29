@@ -17,7 +17,7 @@ template <template <typename T> class D> void Simulation<D>::mainloop() {
 
     // particlePushSubstep(time);
 
-    depositSubstep(time);
+    // depositSubstep(time);
 
     // BC particles
     // BC currents
@@ -25,6 +25,7 @@ template <template <typename T> class D> void Simulation<D>::mainloop() {
     faradayHalfsubstep(time);
     ampereSubstep(time);
     addCurrentsSubstep(time);
+    resetCurrentsSubstep(time);
 
     time += m_sim_params.m_timestep;
   }

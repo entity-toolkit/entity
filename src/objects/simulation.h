@@ -34,6 +34,7 @@ public:
   void depositSubstep(const real_t &time);
   void ampereSubstep(const real_t &time);
   void addCurrentsSubstep(const real_t &time);
+  void resetCurrentsSubstep(const real_t &time);
 };
 
 }

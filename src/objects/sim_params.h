@@ -19,6 +19,7 @@ class SimulationParams {
 
   std::string m_title;
   real_t m_timestep;
+  real_t m_correction;
   real_t m_runtime;
 
   // independent params

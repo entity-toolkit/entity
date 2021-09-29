@@ -5,20 +5,54 @@ namespace ntt {
 
 template <>
 Meshblock<One_D>::Meshblock(std::vector<std::size_t> res)
-    : ex1{"Ex1", res[0]}, ex2{"Ex2", res[0]}, ex3{"Ex3", res[0]}, bx1{"Bx1", res[0]}, bx2{"Bx2", res[0]},
-      bx3{"Bx3", res[0]}, jx1{"Jx1", res[0]}, jx2{"Jx2", res[0]}, jx3{"Jx3", res[0]}, m_resolution{res} {}
+    : ex1{"Ex1", res[0] + 2 * N_GHOSTS},
+      ex2{"Ex2", res[0] + 2 * N_GHOSTS},
+      ex3{"Ex3", res[0] + 2 * N_GHOSTS},
+      bx1{"Bx1", res[0] + 2 * N_GHOSTS},
+      bx2{"Bx2", res[0] + 2 * N_GHOSTS},
+      bx3{"Bx3", res[0] + 2 * N_GHOSTS},
+      jx1{"Jx1", res[0] + 2 * N_GHOSTS},
+      jx2{"Jx2", res[0] + 2 * N_GHOSTS},
+      jx3{"Jx3", res[0] + 2 * N_GHOSTS},
+      m_resolution{res} {}
 
 template <>
 Meshblock<Two_D>::Meshblock(std::vector<std::size_t> res)
-    : ex1{"Ex1", res[0], res[1]}, ex2{"Ex2", res[0], res[1]}, ex3{"Ex3", res[0], res[1]}, bx1{"Bx1", res[0], res[1]},
-      bx2{"Bx2", res[0], res[1]}, bx3{"Bx3", res[0], res[1]}, jx1{"Jx1", res[0], res[1]}, jx2{"Jx2", res[0], res[1]},
-      jx3{"Jx3", res[0], res[1]},  m_resolution{res} {}
+    : ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      ex2{"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      ex3{"Ex3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      bx1{"Bx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      bx2{"Bx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      bx3{"Bx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      jx1{"Jx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      m_resolution{res} {}
 
 template <>
 Meshblock<Three_D>::Meshblock(std::vector<std::size_t> res)
-    : ex1{"Ex1", res[0], res[1], res[2]}, ex2{"Ex2", res[0], res[1], res[2]}, ex3{"Ex3", res[0], res[1], res[2]},
-      bx1{"Bx1", res[0], res[1], res[2]}, bx2{"Bx2", res[0], res[1], res[2]}, bx3{"Bx3", res[0], res[1], res[2]},
-      jx1{"Jx1", res[0], res[1], res[2]}, jx2{"Jx2", res[0], res[1], res[2]}, jx3{"Jx3", res[0], res[1], res[2]}, m_resolution{res} {}
+    : ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      ex2{"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      ex3{"Ex3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      bx1{"Bx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      bx2{"Bx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      bx3{"Bx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      jx1{"Jx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      m_resolution{res} {}
+
+auto loopActiveCells(const Meshblock<One_D> &mblock) -> NTT1DRange {
+  return NTT1DRange({mblock.get_imin()}, {mblock.get_imax()});
+}
+auto loopActiveCells(const Meshblock<Two_D> &mblock) -> NTT2DRange {
+  return NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imax(), mblock.get_jmax()});
+}
+auto loopActiveCells(const Meshblock<Three_D> &mblock) -> NTT3DRange {
+  return NTT3DRange({mblock.get_imin(), mblock.get_jmin(), mblock.get_kmin()},
+                    {mblock.get_imax(), mblock.get_jmax(), mblock.get_kmax()});
+}
+
 } // namespace ntt
 
 template class ntt::Meshblock<ntt::One_D>;
