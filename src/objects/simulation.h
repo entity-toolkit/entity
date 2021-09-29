@@ -6,7 +6,10 @@
 #include "meshblock.h"
 #include "pgen.h"
 
+#include <toml/toml.hpp>
+
 #include <string>
+#include <string_view>
 
 namespace ntt {
 
@@ -18,8 +21,9 @@ class Simulation {
   Meshblock<D> m_meshblock;
   ProblemGenerator m_pGen;
 public:
-  Simulation(int argc, char *argv[]);
+  Simulation(const toml::value &inputdata);
   ~Simulation() = default;
+  void setIO(std::string_view infname, std::string_view outdirname);
   void initialize();
   void verify();
   void printDetails();

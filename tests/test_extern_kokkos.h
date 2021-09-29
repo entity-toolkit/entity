@@ -12,7 +12,6 @@
 #include <cmath>
 
 void testExternKokkos(void) {
-  using index_t = const std::size_t;
   Kokkos::initialize();
   {
     TEST_CHECK_(Kokkos::is_initialized(), "`Kokkos` initialize");
@@ -21,7 +20,7 @@ void testExternKokkos(void) {
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
-    auto Sum = KL (index_t i, double &sum) {
+    auto Sum = KL (const int i, double &sum) {
       sum += 1.0 / static_cast<double>(i + 1);
     };
     auto Check = [&](const double sum) {
