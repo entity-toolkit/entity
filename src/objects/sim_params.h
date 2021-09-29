@@ -35,7 +35,7 @@ class SimulationParams {
   std::vector<std::size_t> m_resolution;
   std::vector<BoundaryCondition> m_boundaries;
 public:
-  SimulationParams(int argc, char *argv[], short dim);
+  SimulationParams(const toml::value &inputdata, short dim);
   ~SimulationParams() = default;
 
   template<template<typename T> class D>
