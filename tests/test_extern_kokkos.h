@@ -4,7 +4,6 @@
 #include "global.h"
 #include "timer.h"
 
-#include <Kokkos_Core.hpp>
 #include <acutest/acutest.h>
 
 #include <iostream>
@@ -20,18 +19,12 @@ void testExternKokkos(void) {
 
     int N = 10000000;
     double value = 16.695311, dvalue = 0.0001;
-    auto Sum = KL (const int i, double &sum) {
-      sum += 1.0 / static_cast<double>(i + 1);
-    };
-    auto Check = [&](const double sum) {
-      return std::abs(value - sum) < dvalue;
-    };
+    auto Sum = Lambda(const int i, double &sum) { sum += 1.0 / static_cast<double>(i + 1); };
+    auto Check = [&](const double sum) { return std::abs(value - sum) < dvalue; };
 
-    double sum_var {0.0};
+    double sum_var{0.0};
     timer.start();
-    Kokkos::parallel_reduce("parallel_sum", N,
-      Sum, sum_var
-    );
+    Kokkos::parallel_reduce("parallel_sum", N, Sum, sum_var);
     timer.stop();
 
     TEST_CHECK_(Check(sum_var), "sum value is correct");

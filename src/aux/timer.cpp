@@ -58,9 +58,7 @@ auto operator*(double x, Time const &t) -> Time { return Time(t.value * x, *(t.u
 auto operator*(Time const &t, double x) -> Time { return Time(t.value * x, *(t.unit)); }
 
 namespace { // anonymous namespace
-void timeNow(TimeContainer &time) {
-  time = std::chrono::system_clock::now();
-}
+void timeNow(TimeContainer &time) { time = std::chrono::system_clock::now(); }
 void timeElapsed(TimeContainer &time_start, Time &time_elapsed) {
   long double dt;
   dt = std::chrono::duration<long double>(std::chrono::system_clock::now() - time_start).count();
@@ -94,4 +92,4 @@ void Timer::printElapsed(std::ostream &os, TimeUnit const &u) const {
     os << " (and running)";
 }
 
-}
+} // namespace ntt

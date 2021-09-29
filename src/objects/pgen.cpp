@@ -6,7 +6,6 @@
 #include "input.h"
 
 #include <plog/Log.h>
-#include <Kokkos_Core.hpp>
 
 namespace ntt {
 
@@ -16,8 +15,7 @@ ProblemGenerator::ProblemGenerator(SimulationParams &sim_params) {
   // PLOGD << timestep << "\n";
 }
 
-template <>
-void ProblemGenerator::userInitFields<One_D>(SimulationParams &sim_params, Meshblock<One_D> &mblock) {
+template <> void ProblemGenerator::userInitFields<One_D>(SimulationParams &sim_params, Meshblock<One_D> &mblock) {
   // Kokkos::parallel_for("userInit", sim_params.m_resolution[0],
   //   Lambda (index_t i) {
   //     mblock.ex1(i) = 1.0 / static_cast<real_t>(i + 1);
@@ -27,14 +25,11 @@ void ProblemGenerator::userInitFields<One_D>(SimulationParams &sim_params, Meshb
 }
 
 // TODO: this has to be done better
-template <>
-void ProblemGenerator::userInitFields<Two_D>(SimulationParams &, Meshblock<Two_D>&) {}
-template <>
-void ProblemGenerator::userInitFields<Three_D>(SimulationParams &, Meshblock<Three_D>&) {}
+template <> void ProblemGenerator::userInitFields<Two_D>(SimulationParams &, Meshblock<Two_D> &) {}
+template <> void ProblemGenerator::userInitFields<Three_D>(SimulationParams &, Meshblock<Three_D> &) {}
 
-template void ProblemGenerator::userInitFields<One_D>(SimulationParams &, Meshblock<One_D>&);
-template void ProblemGenerator::userInitFields<Two_D>(SimulationParams &, Meshblock<Two_D>&);
-template void ProblemGenerator::userInitFields<Three_D>(SimulationParams &, Meshblock<Three_D>&);
+template void ProblemGenerator::userInitFields<One_D>(SimulationParams &, Meshblock<One_D> &);
+template void ProblemGenerator::userInitFields<Two_D>(SimulationParams &, Meshblock<Two_D> &);
+template void ProblemGenerator::userInitFields<Three_D>(SimulationParams &, Meshblock<Three_D> &);
 
-
-}
+} // namespace ntt
