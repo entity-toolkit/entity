@@ -5,10 +5,11 @@
 
 namespace ntt {
 
-template<template<typename T> class D>
-void Simulation<D>::mainloop() {
+template <template <typename T> class D> void Simulation<D>::mainloop() {
   PLOGD << "Simulation mainloop started.";
-  for (real_t time {0}; time < m_sim_params.m_runtime; time += m_sim_params.m_timestep) {
+  unsigned long timax{static_cast<unsigned long>(m_sim_params.m_runtime / m_sim_params.m_timestep)};
+  real_t time{0.0};
+  for (unsigned long ti{0}; ti < timax; ++ti) {
     PLOGD << "t = " << time;
     faradayHalfsubstep(time);
 
@@ -20,10 +21,12 @@ void Simulation<D>::mainloop() {
 
     // BC particles
     // BC currents
-    
+
     faradayHalfsubstep(time);
     ampereSubstep(time);
     addCurrentsSubstep(time);
+
+    time += m_sim_params.m_timestep;
   }
   PLOGD << "Simulation mainloop finished.";
 }
@@ -32,4 +35,4 @@ template class ntt::Simulation<ntt::One_D>;
 template class ntt::Simulation<ntt::Two_D>;
 template class ntt::Simulation<ntt::Three_D>;
 
-}
+} // namespace ntt

@@ -10,8 +10,6 @@
 #include <plog/Formatters/FuncMessageFormatter.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
-#include <Kokkos_Core.hpp>
-
 #include <type_traits>
 #include <cassert>
 #include <vector>
@@ -39,7 +37,8 @@ auto main(int argc, char *argv[]) -> int {
     auto inputfilename = cl_args.getArgument("-input", ntt::DEF_input_filename);
     auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
-    short res = ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size();
+    short res =
+        static_cast<short>(ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
     assert((res > 0) && (res < 4));
 
     // TODO: make this prettier

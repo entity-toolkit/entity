@@ -64,4 +64,4 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string {
   }
 }
 
-}
+} // namespace ntt
