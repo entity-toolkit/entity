@@ -1,6 +1,9 @@
 #include "global.h"
+#include "constants.h"
 #include "sim_params.h"
 #include "meshblock.h"
+
+#include <cmath>
 
 namespace ntt {
 
@@ -11,18 +14,35 @@ ProblemGenerator::ProblemGenerator(SimulationParams &sim_params) {
 }
 
 template <> void ProblemGenerator::userInitFields<One_D>(SimulationParams &sim_params, Meshblock<One_D> &mblock) {
-  // Kokkos::parallel_for("userInit", sim_params.m_resolution[0],
-  //   Lambda (index_t i) {
-  //     mblock.ex1(i) = 1.0 / static_cast<real_t>(i + 1);
-  //     mblock.bx2(i) = 1.0 / static_cast<real_t>(i + 1);
-  //   }
-  // );
+  using size_type = NTTArray<real_t*>::size_type;
+  real_t sx1 = mblock.get_x1max() - mblock.get_x1min();
+  real_t dx1_half = mblock.get_dx1() * 0.5;
+  auto range = NTT1DRange({0}, {mblock.get_n1()});
+  Kokkos::parallel_for("userInit", range,
+    Lambda (size_type i) {
+      real_t x1 = convert_iTOx1(mblock, i);
+      mblock.ex2(i) = std::sin(TWO_PI * x1 / sx1);
+      mblock.bx3(i) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
+    }
+  );
 }
 
-// TODO: this has to be done better
-template <> void ProblemGenerator::userInitFields<Two_D>(SimulationParams &, Meshblock<Two_D> &) {}
+template <> void ProblemGenerator::userInitFields<Two_D>(SimulationParams &sim_params, Meshblock<Two_D> &mblock) {
+  using size_type = NTTArray<real_t**>::size_type;
+  real_t sx1 = mblock.get_x1max() - mblock.get_x1min();
+  real_t dx1_half = mblock.get_dx1() * 0.5;
+  auto range = NTT2DRange({0, 0}, {mblock.get_n1(), mblock.get_n2()});
+  Kokkos::parallel_for("userInit", range,
+    Lambda (size_type i, size_type j) {
+      real_t x1 = convert_iTOx1(mblock, i);
+      mblock.ex2(i, j) = std::sin(TWO_PI * x1 / sx1);
+      mblock.bx3(i, j) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
+    }
+  );
+}
 template <> void ProblemGenerator::userInitFields<Three_D>(SimulationParams &, Meshblock<Three_D> &) {}
 
+// TODO: this has to be done better
 template void ProblemGenerator::userInitFields<One_D>(SimulationParams &, Meshblock<One_D> &);
 template void ProblemGenerator::userInitFields<Two_D>(SimulationParams &, Meshblock<Two_D> &);
 template void ProblemGenerator::userInitFields<Three_D>(SimulationParams &, Meshblock<Three_D> &);
