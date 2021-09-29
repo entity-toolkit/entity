@@ -1,7 +1,3 @@
-# # # # # Scripts # # # # # # # # # # # #
-#
-rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
-
 # # # # # Directories # # # # # # # # # #
 #
 ROOT_DIR := $(realpath ${CURDIR}/..)
@@ -80,39 +76,34 @@ PREPFLAGS := $(PREPFLAGS) @PRECISION@
 CFLAGS := $(CFLAGS) $(WARNFLAGS) $(PREPFLAGS)
 LIBS :=
 
-# # # # # File collection # # # # # # # # # # #
-#
-# Main core
-SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
-OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
-DEPS := $(OBJS:.o=.d)
-
-# NTT app
-NTT_SRCS := $(shell find ${NTT_DIR} -path ${PGEN_DIR} -prune -false -o -name *.cpp -or -name *.c)
-NTT_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(NTT_SRCS:%=%.o))
-NTT_DEPS := $(NTT_OBJS:.o=.d)
-
-# Tests
-TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
-TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
-TEST_DEPS := $(TEST_OBJS:.o=.d)
-
-# Tests
-EXAMPLES_SRCS := $(shell find ${EXAMPLES_DIR} -name *.cpp -or -name *.c)
-EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:.cpp=.exec))
-EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
-EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
-
-ALL_DEPS := $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
-
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
-INCFLAGS := $(addprefix -I,${INC_DIRS})
-
-ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
-
 # # # # # Targets # # # # # # # # # # # # # #
 #
+.PHONY: all help ntt test examples clean demo cleanlib pgenIsSpecified
+
 default: help demo
+
+all: ntt test examples
+
+# linking the main app
+ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
+	@echo [M]aking $@
+
+# Problem generator
+pgenIsSpecified:
+ifeq (${PGEN},)
+	$(error ERROR: no problem generator specified)
+endif
+
+ifeq (${PGEN},)
+PGEN := ntt_dummy
+endif
+
+# linking tests
+test : copyPgen ${BIN_DIR}/${TEST_TARGET}
+	@echo [M]aking $@
+
+examples : $(EXAMPLES_TARGETS)
+	@echo [M]aking $@
 
 help:
 	@echo
@@ -134,8 +125,45 @@ help:
 	@echo "   clang-all               : run \`clang-tidy-naming\`, \`clang-format\` and \`clang-tidy\`"
 	@echo
 
-all: ntt test examples
+demo:
+	@echo "[C]ompile command:"
+	@echo ${compile_command} -c \<.cpp\> -o \<.o\>
+	@echo
+	@echo "[L]ink command:"
+	@echo ${link_command} \<.o\> $(LIBS) -o \<EXE\>
 
+# # # # # File collection # # # # # # # # # # #
+#
+# Main core
+SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
+OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
+DEPS := $(OBJS:.o=.d)
+
+# NTT app
+NTT_SRCS := $(shell find ${NTT_DIR} -path ${PGEN_DIR} -prune -false -o -name *.cpp -or -name *.c) ${PGEN_DIR}/${PGEN}.cpp
+NTT_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(NTT_SRCS:%=%.o))
+NTT_DEPS := $(NTT_OBJS:.o=.d)
+
+# Tests
+TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
+TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
+TEST_DEPS := $(TEST_OBJS:.o=.d)
+
+# Tests
+EXAMPLES_SRCS := $(shell find ${EXAMPLES_DIR} -name *.cpp -or -name *.c)
+EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:.cpp=.exec))
+EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
+EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
+
+ALL_DEPS := $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
+
+INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
+INCFLAGS := $(addprefix -I,${INC_DIRS})
+
+ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
+
+# # # # # Link/compile # # # # # # # # # # # # # #
+#
 # using `Kokkos`
 include ${KOKKOS_PATH}/Makefile.kokkos
 OBJS := $(OBJS) $(KOKKOS_LINK_DEPENDS)
@@ -146,33 +174,13 @@ LIBS := $(LIBS) $(KOKKOS_LIBS)
 compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -MMD
 link_command := ${LINK} $(LDFLAGS)
 
-# linking the main app
-ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
-	@echo [M]aking $@
-
-pgenIsSpecified :
-ifeq (${PGEN},)
-	$(error ERROR: no problem generator specified)
-endif
-
-ifeq (${PGEN},)
-PGEN := ntt_dummy
-endif
-
 ${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
 	$(HIDE)${link_command} $(NTT_OBJS) $(OBJS) $(LIBS) -o $@
 
-# linking tests
-test : ${BIN_DIR}/${TEST_TARGET}
-	@echo [M]aking $@
-
 ${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
 	$(HIDE)${link_command} $(TEST_OBJS) $(OBJS) $(LIBS) -o $@
-
-examples : $(EXAMPLES_TARGETS)
-	@echo [M]aking $@
 
 # generate linking rules for example targets
 define generateExampleLinkingRules
@@ -182,39 +190,16 @@ $(1): $(2) $(OBJS)
 endef
 $(foreach et, $(EXAMPLES_TARGETS), $(eval $(call generateExampleLinkingRules, ${et}, ${BUILD_EXAMPLES_DIR}/$(notdir $(et:.exec=.cpp.o)))))
 
-# generate compilation rules for all `.o` files (except for `pgen.cpp`)
+# generate compilation rules for all `.o` files (except for `simulation.cpp`)
 define generateRules
 $(1): $(2)
 	@echo [C]ompiling $(subst ${ROOT_DIR}/,,$(2))
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)mkdir -p ${BIN_DIR}/${BUILD_EXAMPLES_DIR}
 	$(HIDE)mkdir -p $(dir $(1))
-	$(HIDE)${compile_command} -c $(2) -o $(1)
+	$(HIDE)${compile_command} -include ${PGEN_DIR}/${PGEN}.hpp -c $(2) -o $(1)
 endef
-PGEN_SRC := ${SRC_DIR}/objects/pgen.cpp
-PGEN_OBJ := $(subst ${ROOT_DIR}/,,$(addsuffix .o, ${PGEN_SRC}))
-$(foreach obj, $(filter-out ${PGEN_OBJ}, $(ALL_OBJS)), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))
-
-print:
-	@echo ${PGEN_OBJ}
-	@echo $(filter-out ${PGEN_OBJ}, $(ALL_OBJS))
-
-# compiling problem generator separately
-${PGEN_OBJ} : ${PGEN_SRC}
-	@echo [C]ompiling $(subst ${ROOT_DIR}/,,$^)
-	$(HIDE)mkdir -p ${BIN_DIR}
-	$(HIDE)mkdir -p ${BIN_DIR}/${BUILD_EXAMPLES_DIR}
-	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${compile_command} -include ${PGEN_DIR}/${PGEN}.hpp -c $^ -o $@
-
-demo:
-	@echo "[C]ompile command:"
-	@echo ${compile_command} -c \<.cpp\> -o \<.o\>
-	@echo
-	@echo "[L]ink command:"
-	@echo ${link_command} \<.o\> $(LIBS) -o \<EXE\>
-
-.PHONY: all help ntt test examples clean demo
+$(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))
 
 clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR}
@@ -231,7 +216,7 @@ cleanlib: kokkos-clean
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
 ALLCODE := $(SOURCES) $(wildcard ${SRC_DIR}/*.hpp) $(wildcard ${SRC_DIR}/*.h) $(wildcard ${NTT_DIR}/*.hpp) $(wildcard ${NTT_DIR}/*.h) $(wildcard ${TEST_DIR}/*.hpp) $(wildcard ${TEST_DIR}/*.h) $(wildcard ${EXAMPLES_DIR}/*.hpp) $(wildcard ${EXAMPLES_DIR}/*.h)
-flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS)
+flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 
