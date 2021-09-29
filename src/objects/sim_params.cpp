@@ -11,12 +11,8 @@
 #include <vector>
 
 namespace ntt {
-SimulationParams::SimulationParams(int argc, char *argv[], short dim) {
-  CommandLineArguments cl_args;
-  cl_args.readCommandLineArguments(argc, argv);
-  m_inputfilename = cl_args.getArgument("-input", DEF_input_filename);
-  m_outputpath = cl_args.getArgument("-output", DEF_output_path);
-  m_inputdata = toml::parse(static_cast<std::string>(m_inputfilename));
+SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
+  m_inputdata = inputdata;
 
   m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", "PIC_Sim");
   m_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
@@ -62,25 +58,6 @@ SimulationParams::SimulationParams(int argc, char *argv[], short dim) {
   m_resolution.erase(m_resolution.begin() + dim, m_resolution.end());
   m_extent.erase(m_extent.begin() + 2 * dim, m_extent.end());
 
-  // for (short i{dim}; i < 3; ++i) {
-  //   m_extent.push_back(0.0);
-  //   m_extent.push_back(0.0);
-  //   m_resolution.push_back(0);
-  // }
-
-  // // copy extent and resolution to device (or don't do anything if device == host)
-  // NTTArray<real_t[6]>::HostMirror extent_host = Kokkos::create_mirror_view(extent);
-  // NTTArray<std::size_t[3]>::HostMirror resolution_host = Kokkos::create_mirror_view(resolution);
-  //
-  // for (short i{0}; i < 3; ++i) {
-  //   resolution_host(i) = m_resolution[i];
-  //   extent_host(2 * i) = m_extent[2 * i];
-  //   extent_host(2 * i + 1) = m_extent[2 * i + 1];
-  // }
-  //
-  // Kokkos::deep_copy(extent, extent_host);
-  // Kokkos::deep_copy(resolution, resolution_host);
-
   auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
   short b {0};
   for (auto & bc : boundaries) {
@@ -104,3 +81,22 @@ SimulationParams::SimulationParams(int argc, char *argv[], short dim) {
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
 }
 }
+
+// for (short i{dim}; i < 3; ++i) {
+//   m_extent.push_back(0.0);
+//   m_extent.push_back(0.0);
+//   m_resolution.push_back(0);
+// }
+
+// // copy extent and resolution to device (or don't do anything if device == host)
+// NTTArray<real_t[6]>::HostMirror extent_host = Kokkos::create_mirror_view(extent);
+// NTTArray<std::size_t[3]>::HostMirror resolution_host = Kokkos::create_mirror_view(resolution);
+//
+// for (short i{0}; i < 3; ++i) {
+//   resolution_host(i) = m_resolution[i];
+//   extent_host(2 * i) = m_extent[2 * i];
+//   extent_host(2 * i + 1) = m_extent[2 * i + 1];
+// }
+//
+// Kokkos::deep_copy(extent, extent_host);
+// Kokkos::deep_copy(resolution, resolution_host);

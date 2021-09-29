@@ -11,7 +11,7 @@
 namespace ntt {
 
 template<template<typename T> class D>
-Simulation<D>::Simulation(int argc, char *argv[]) : m_dim{}, m_sim_params{argc, argv, m_dim.dim}, m_meshblock{m_sim_params.m_resolution}, m_pGen{m_sim_params} {}
+Simulation<D>::Simulation(const toml::value &inputdata) : m_dim{}, m_sim_params{inputdata, m_dim.dim}, m_meshblock{m_sim_params.m_resolution}, m_pGen{m_sim_params} {}
 
 template<template<typename T> class D>
 void Simulation<D>::initialize() {
@@ -29,6 +29,11 @@ void Simulation<D>::verify() {
   // TODO: maybe some other tests
   PLOGD << "Simulation prerun check passed.";
 }
+template<template<typename T> class D>
+void Simulation<D>::setIO(std::string_view infname, std::string_view outdirname) {
+  m_sim_params.m_outputpath = outdirname;
+  m_sim_params.m_inputfilename = infname;
+}
 
 template<template<typename T> class D>
 void Simulation<D>::printDetails() {
@@ -39,8 +44,8 @@ void Simulation<D>::printDetails() {
   PLOGI << "   dt: " << m_sim_params.m_timestep << " [" << static_cast<int>(m_sim_params.m_runtime / m_sim_params.m_timestep) << " steps]";
 
   PLOGI << "[domain]";
-  // PLOGI << "   dimension: " << stringifyDimension(m_sim_params.m_dimension);
-  PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_sim_params.m_coord_system);
+  PLOGI << "   dimension: " << m_dim.dim << "D";
+  PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_sim_params.m_coord_system, m_dim.dim);
 
   std::string bc {"   boundary conditions: { "};
   for (auto & b : m_sim_params.m_boundaries) {
