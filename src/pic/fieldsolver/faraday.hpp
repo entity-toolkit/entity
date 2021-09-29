@@ -4,7 +4,6 @@
 #include "global.h"
 #include "meshblock.h"
 #include "fieldsolver.h"
-#include "simulation.h"
 
 namespace ntt {
 

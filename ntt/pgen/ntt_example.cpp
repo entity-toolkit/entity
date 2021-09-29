@@ -1,11 +1,6 @@
 #include "global.h"
-#include "pgen.h"
 #include "sim_params.h"
 #include "meshblock.h"
-
-#include "input.h"
-
-#include <plog/Log.h>
 
 namespace ntt {
 
@@ -13,7 +8,6 @@ ProblemGenerator::ProblemGenerator(SimulationParams &sim_params) {
   UNUSED(sim_params);
   // auto timestep = readFromInput<real_t>(sim_params.m_inputdata, "algorithm", "timestep");
   // PLOGD << timestep << "\n";
-  MyStuff mystuff();
 }
 
 template <> void ProblemGenerator::userInitFields<One_D>(SimulationParams &sim_params, Meshblock<One_D> &mblock) {

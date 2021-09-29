@@ -28,3 +28,6 @@ maxnpart        = 1e4
 mass            = 1.0
 charge          = 1.0
 maxnpart        = 1e4
+
+[problem]
+spin            = 2.5
