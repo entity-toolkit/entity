@@ -31,6 +31,7 @@ class SimulationParams {
   // dependent params
   real_t m_sigma0;
   real_t m_charge0;
+  real_t m_B0;
 
   std::vector<ParticleSpecies> m_species;
 

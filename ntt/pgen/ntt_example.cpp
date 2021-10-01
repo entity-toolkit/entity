@@ -29,7 +29,6 @@ template <> void ProblemGenerator::userInitFields<Two_D>(SimulationParams &sim_p
   using size_type = NTTArray<real_t **>::size_type;
   real_t sx1 = mblock.get_x1max() - mblock.get_x1min();
   real_t dx1_half = mblock.get_dx1() * 0.5;
-  auto range = NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imax(), mblock.get_jmax()});
   Kokkos::parallel_for(
       "userInit", loopActiveCells(mblock), Lambda(size_type i, size_type j) {
         real_t x1 = convert_iTOx1(mblock, i);

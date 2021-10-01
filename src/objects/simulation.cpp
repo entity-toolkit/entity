@@ -39,15 +39,13 @@ template <template <typename T> class D> void Simulation<D>::verify() {
   }
   if (m_meshblock.m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
-    if (m_dim.dim == 2) {
-      if (m_meshblock.get_dx1() == m_meshblock.get_dx2()) {
-        throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
-      }
+    if ((m_dim.dim == 2) && (m_meshblock.get_dx1() != m_meshblock.get_dx2())) {
+      throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
+    } else if ((m_dim.dim == 3) && ((m_meshblock.get_dx1() != m_meshblock.get_dx2()) || (m_meshblock.get_dx2() != m_meshblock.get_dx3()))) {
+      throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
     }
-    if (m_dim.dim == 3) {
-      if ((m_meshblock.get_dx1() == m_meshblock.get_dx2()) || (m_meshblock.get_dx2() == m_meshblock.get_dx3())) {
-        throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
-      }
+    if (m_meshblock.get_dx1() <= m_sim_params.m_timestep * 0.45) {
+      throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
     }
   } else {
     throw std::logic_error("ERROR: only cartesian coordinate system is available.");
@@ -99,6 +97,22 @@ template <template <typename T> class D> void Simulation<D>::printDetails() {
     ext += "{" + std::to_string(m_sim_params.m_extent[i]) + ", " + std::to_string(m_sim_params.m_extent[i + 1]) + "} ";
   }
   PLOGI << ext;
+
+  std::string cell{"   cell size: "};
+  real_t effective_dx {0.0};
+  if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
+    cell += "{" + std::to_string(m_meshblock.get_dx1()) + "}";
+    effective_dx = m_meshblock.get_dx1();
+  }
+  PLOGI << cell;
+
+  PLOGI << "[fiducial parameters]";
+  PLOGI << "   ppc0: " << m_sim_params.m_ppc0;
+  PLOGI << "   rho0: " << m_sim_params.m_larmor0 << " [" << m_sim_params.m_larmor0/effective_dx << " dx]";
+  PLOGI << "   c_omp0: " << m_sim_params.m_skindepth0 << " [" << m_sim_params.m_skindepth0/effective_dx << " dx]";
+  PLOGI << "   sigma0: " << m_sim_params.m_sigma0;
+  PLOGI << "   q0: " << m_sim_params.m_charge0;
+  PLOGI << "   B0: " << m_sim_params.m_B0;
 
   PLOGI << "[particles]";
   for (std::size_t i{0}; i < m_meshblock.particles.size(); ++i) {
