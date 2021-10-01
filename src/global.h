@@ -1,10 +1,12 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <plog/Log.h>
 #include <Kokkos_Core.hpp>
 
 #include <cstddef>
 #include <string>
+#include <iomanip>
 
 #define UNUSED(x) (void)(x)
 
@@ -84,5 +86,13 @@ constexpr std::string_view DEF_input_filename{"input"};
 constexpr std::string_view DEF_output_path{"output"};
 
 } // namespace ntt
+
+namespace plog {
+class NTTFormatter {
+public:
+  static util::nstring header();
+  static util::nstring format(const Record& record);
+};
+}
 
 #endif

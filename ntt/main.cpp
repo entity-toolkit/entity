@@ -7,14 +7,13 @@
 
 #include <plog/Log.h>
 #include <plog/Init.h>
-#include <plog/Formatters/FuncMessageFormatter.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
 #include <type_traits>
 #include <cassert>
 #include <vector>
 
-using plog_t = plog::ColorConsoleAppender<plog::FuncMessageFormatter>;
+using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
 
 void initLogger(plog_t *console_appender);
 

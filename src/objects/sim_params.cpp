@@ -2,6 +2,7 @@
 #include "sim_params.h"
 #include "cargs.h"
 #include "input.h"
+#include "particles.h"
 
 #include <toml/toml.hpp>
 
@@ -18,6 +19,26 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
   m_timestep = readFromInput<real_t>(m_inputdata, "algorithm", "timestep");
   m_correction = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
+
+  auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species");
+  for (int i{0}; i < nspec; ++i) {
+    auto label = readFromInput<std::string>(
+        m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
+    auto mass = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "mass");
+    auto charge = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "charge");
+    auto maxnpart =
+        static_cast<std::size_t>(readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
+    auto pusher_ = readFromInput<std::string>(m_inputdata, "species_" + std::to_string(i + 1), "pusher", "Boris");
+    ParticlePusher pusher{UNDEFINED_PUSHER};
+    if ((mass == 0.0) && (charge == 0.0)) {
+      pusher = PHOTON_PUSHER;
+    } else if (pusher_ == "Vay") {
+      pusher = VAY_PUSHER;
+    } else if (pusher_ == "Boris") {
+      pusher = BORIS_PUSHER;
+    }
+    m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
+  }
 
   // TODO: for now only PIC
   m_simtype = PIC_SIM;
@@ -58,8 +79,8 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_resolution.erase(m_resolution.begin() + dim, m_resolution.end());
   m_extent.erase(m_extent.begin() + 2 * dim, m_extent.end());
 
-  auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries",
-                                                            {"PERIODIC", "PERIODIC", "PERIODIC"});
+  auto boundaries = readFromInput<std::vector<std::string>>(
+      m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
   short b{0};
   for (auto &bc : boundaries) {
     if (bc == "PERIODIC") {
