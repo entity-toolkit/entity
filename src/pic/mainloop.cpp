@@ -6,7 +6,8 @@
 
 namespace ntt {
 
-template <template <typename T> class D> void Simulation<D>::mainloop() {
+template <template <typename T> class D>
+void Simulation<D>::mainloop() {
   PLOGD << "Simulation mainloop started.";
   TimerCollection timers({"Field_Solver", "Curr_Deposit", "Prtl_Pusher"});
   unsigned long timax{static_cast<unsigned long>(m_sim_params.m_runtime / m_sim_params.m_timestep)};

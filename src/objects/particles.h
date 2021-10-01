@@ -15,8 +15,15 @@ public:
   std::size_t m_maxnpart;
   ParticlePusher m_pusher;
 
-  ParticleSpecies(const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart, const ParticlePusher& pusher);
-  ParticleSpecies(const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart);
+  ParticleSpecies(const std::string& label,
+                  const float& m,
+                  const float& ch,
+                  const std::size_t& maxnpart,
+                  const ParticlePusher& pusher);
+  ParticleSpecies(const std::string& label,
+                  const float& m,
+                  const float& ch,
+                  const std::size_t& maxnpart);
   ParticleSpecies(const ParticleSpecies& spec);
   ~ParticleSpecies() = default;
 
@@ -27,7 +34,7 @@ public:
   [[nodiscard]] auto get_pusher() const -> ParticlePusher { return m_pusher; }
 };
 
-template<template<typename T = std::nullptr_t> class D>
+template <template <typename T = std::nullptr_t> class D>
 class Particles : public ParticleSpecies {
   D<> m_dim;
 
@@ -36,6 +43,7 @@ class Particles : public ParticleSpecies {
   NTTArray<float*> m_weight;
 
   std::size_t m_npart{0};
+
 public:
   Particles(const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart);
   Particles(const ParticleSpecies& spec);
@@ -44,6 +52,6 @@ public:
   [[nodiscard]] auto get_npart() const -> std::size_t { return m_npart; }
 };
 
-}
+} // namespace ntt
 
 #endif

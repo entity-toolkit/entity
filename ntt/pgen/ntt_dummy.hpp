@@ -5,6 +5,6 @@ namespace ntt {
 
 class MyStuff {};
 
-}
+} // namespace ntt
 
 #endif

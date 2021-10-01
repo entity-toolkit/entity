@@ -10,8 +10,8 @@
 
 #define UNUSED(x) (void)(x)
 
-#define Lambda KOKKOS_LAMBDA
-#define Inline KOKKOS_INLINE_FUNCTION
+#define Lambda    KOKKOS_LAMBDA
+#define Inline    KOKKOS_INLINE_FUNCTION
 
 #if !defined(GPUENABLED) && defined(OMPENABLED)
 #  define AccelExeSpace Kokkos::OpenMP
@@ -39,24 +39,28 @@ using real_t = float;
 using real_t = double;
 #endif
 
-template <typename T> using NTTArray = Kokkos::View<T, AccelMemSpace>;
+template <typename T>
+using NTTArray = Kokkos::View<T, AccelMemSpace>;
 using NTT1DRange = Kokkos::RangePolicy<AccelExeSpace>;
 using NTT2DRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
 using NTT3DRange = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
 
-template <typename T> struct One_D {
+template <typename T>
+struct One_D {
   short dim{1};
-  using ndtype_t = T *;
+  using ndtype_t = T*;
 };
 
-template <typename T> struct Two_D {
+template <typename T>
+struct Two_D {
   short dim{2};
-  using ndtype_t = T **;
+  using ndtype_t = T**;
 };
 
-template <typename T> struct Three_D {
+template <typename T>
+struct Three_D {
   short dim{3};
-  using ndtype_t = T ***;
+  using ndtype_t = T***;
 };
 
 inline constexpr std::size_t N_GHOSTS{2};
@@ -93,6 +97,6 @@ public:
   static util::nstring header();
   static util::nstring format(const Record& record);
 };
-}
+} // namespace plog
 
 #endif
