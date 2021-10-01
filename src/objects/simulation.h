@@ -12,15 +12,16 @@
 
 namespace ntt {
 
-template<template<typename T = std::nullptr_t> class D>
+template <template <typename T = std::nullptr_t> class D>
 class Simulation {
   D<> m_dim;
 
   SimulationParams m_sim_params;
   Meshblock<D> m_meshblock;
   ProblemGenerator m_pGen;
+
 public:
-  Simulation(const toml::value &inputdata);
+  Simulation(const toml::value& inputdata);
   ~Simulation() = default;
   void setIO(std::string_view infname, std::string_view outdirname);
   void initialize();
@@ -30,13 +31,15 @@ public:
 
   void mainloop();
 
-  void faradayHalfsubstep(const real_t &time);
-  void depositSubstep(const real_t &time);
-  void ampereSubstep(const real_t &time);
-  void addCurrentsSubstep(const real_t &time);
-  void resetCurrentsSubstep(const real_t &time);
+  void faradayHalfsubstep(const real_t& time);
+  void depositSubstep(const real_t& time);
+  void ampereSubstep(const real_t& time);
+  void addCurrentsSubstep(const real_t& time);
+  void resetCurrentsSubstep(const real_t& time);
+
+  void boundaryConditions(const real_t& time);
 };
 
-}
+} // namespace ntt
 
 #endif

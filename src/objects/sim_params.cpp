@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace ntt {
-SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
+SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
   m_inputdata = inputdata;
 
   m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", "PIC_Sim");
@@ -24,9 +24,10 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
         m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
     auto mass = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "mass");
     auto charge = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "charge");
-    auto maxnpart =
-        static_cast<std::size_t>(readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
-    auto pusher_ = readFromInput<std::string>(m_inputdata, "species_" + std::to_string(i + 1), "pusher", "Boris");
+    auto maxnpart = static_cast<std::size_t>(
+        readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
+    auto pusher_ = readFromInput<std::string>(
+        m_inputdata, "species_" + std::to_string(i + 1), "pusher", "Boris");
     ParticlePusher pusher{UNDEFINED_PUSHER};
     if ((mass == 0.0) && (charge == 0.0)) {
       pusher = PHOTON_PUSHER;
@@ -43,36 +44,24 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
 
   auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
   if (coords == "X") {
-    if (dim != 1) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
+    if (dim != 1) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XY") {
-    if (dim == 3) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
+    if (dim == 3) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XYZ") {
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "R_PHI") {
-    if (dim != 2) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
+    if (dim != 2) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = POLAR_R_PHI_COORD;
   } else if (coords == "R_THETA") {
-    if (dim != 2) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
+    if (dim != 2) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = POLAR_R_THETA_COORD;
   } else if (coords == "R_THETA_PHI") {
-    if (dim != 3) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
+    if (dim != 3) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = SPHERICAL_COORD;
   } else if (coords == "logR_THETA_PHI") {
-    if (dim != 3) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
+    if (dim != 3) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = LOG_SPHERICAL_COORD;
   } else {
     throw std::invalid_argument("Unknown coordinate system specified in the input.");
@@ -80,9 +69,11 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
 
   // box size/resolution
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
-  m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
+  m_extent = readFromInput<std::vector<real_t>>(
+      m_inputdata, "domain", "extent", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
-  if ((static_cast<short>(m_resolution.size()) < dim) || (static_cast<short>(m_extent.size()) < 2 * dim)) {
+  if ((static_cast<short>(m_resolution.size()) < dim)
+      || (static_cast<short>(m_extent.size()) < 2 * dim)) {
     throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
   }
 
@@ -92,7 +83,7 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   auto boundaries = readFromInput<std::vector<std::string>>(
       m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
   short b{0};
-  for (auto &bc : boundaries) {
+  for (auto& bc : boundaries) {
     if (bc == "PERIODIC") {
       m_boundaries.push_back(PERIODIC_BC);
     } else if (bc == "OPEN") {
@@ -101,9 +92,7 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
       m_boundaries.push_back(UNDEFINED_BC);
     }
     ++b;
-    if (b >= dim) {
-      break;
-    }
+    if (b >= dim) { break; }
   }
   // plasma params
   m_ppc0 = readFromInput<real_t>(m_inputdata, "algorithm", "ppc0");

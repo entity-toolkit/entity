@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-auto main(int argc, char *argv[]) -> int {
+auto main(int argc, char* argv[]) -> int {
   {
     // Example #1: reading command line arguments
     // ... `cl_args` is a global constat that contains all the arguments

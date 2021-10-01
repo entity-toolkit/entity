@@ -15,10 +15,11 @@ private:
 
 public:
   TimeUnit() = default;
-  TimeUnit(double mult, const std::string& unit) : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
+  TimeUnit(double mult, const std::string& unit)
+      : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
   ~TimeUnit() = default;
   [[nodiscard]] auto getMultiplier() const -> double;
-  friend auto operator<<(std::ostream &os, TimeUnit const &v) -> std::ostream &;
+  friend auto operator<<(std::ostream& os, TimeUnit const& v) -> std::ostream&;
 };
 
 // declaration of s/ms/us/ms
@@ -31,11 +32,11 @@ inline const TimeUnit nanosecond(1e-9, "ns");
 class Time {
 private:
   long double value{0.0};
-  const TimeUnit *unit;
+  const TimeUnit* unit;
 
 public:
   Time() = default;
-  Time(long double v, TimeUnit const &u = second);
+  Time(long double v, TimeUnit const& u = second);
   ~Time() = default;
   [[nodiscard]] auto getValue() const -> long double;
   void convert(const TimeUnit to);
@@ -43,11 +44,11 @@ public:
   // Time operator=(const Time & rhs);
   auto operator-() const -> Time;
 
-  friend auto operator+(Time const &, Time const &) -> Time;
-  friend auto operator-(Time const &, Time const &) -> Time;
-  friend auto operator*(double x, Time const &t) -> Time;
-  friend auto operator*(Time const &, double x) -> Time;
-  friend auto operator<<(std::ostream &os, Time const &t) -> std::ostream &;
+  friend auto operator+(Time const&, Time const&) -> Time;
+  friend auto operator-(Time const&, Time const&) -> Time;
+  friend auto operator*(double x, Time const& t) -> Time;
+  friend auto operator*(Time const&, double x) -> Time;
+  friend auto operator<<(std::ostream& os, Time const& t) -> std::ostream&;
   friend class Timer;
 };
 
@@ -56,8 +57,8 @@ using TimeContainer = std::chrono::time_point<std::chrono::system_clock>;
 class Timer {
 private:
   std::string name;
-  bool init {false};
-  bool on {false};
+  bool init{false};
+  bool on{false};
   TimeContainer t_start;
   Time t_elapsed;
 
@@ -68,25 +69,26 @@ public:
   void start();
   void check();
   void stop();
-  [[nodiscard]] auto getElapsedIn(TimeUnit const &u) const -> long double;
+  [[nodiscard]] auto getElapsedIn(TimeUnit const& u) const -> long double;
   [[nodiscard]] auto getName() const -> std::string;
-  void printElapsed(TimeUnit const &u = second) const;
-  void printElapsed(std::ostream &os = std::cout, TimeUnit const &u = second) const;
+  void printElapsed(TimeUnit const& u = second) const;
+  void printElapsed(std::ostream& os = std::cout, TimeUnit const& u = second) const;
 };
 
 class TimerCollection {
 private:
   // TODO: maybe map?
   std::vector<Timer> m_timers;
+
 public:
   TimerCollection(std::vector<std::string> timers);
   ~TimerCollection() = default;
   void start(const int& i);
   void stop(const int& i);
-  void printAll(std::ostream &os = std::cout, TimeUnit const &u = second) const;
-  void printAll(TimeUnit const &u = second) const;
+  void printAll(std::ostream& os = std::cout, TimeUnit const& u = second) const;
+  void printAll(TimeUnit const& u = second) const;
 };
 
-}
+} // namespace ntt
 
 #endif // TIMER_H

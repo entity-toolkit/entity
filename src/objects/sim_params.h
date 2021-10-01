@@ -39,16 +39,17 @@ class SimulationParams {
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
   std::vector<BoundaryCondition> m_boundaries;
+
 public:
-  SimulationParams(const toml::value &inputdata, short dim);
+  SimulationParams(const toml::value& inputdata, short dim);
   ~SimulationParams() = default;
 
-  template<template<typename T> class D>
+  template <template <typename T> class D>
   friend class Simulation;
 
   friend class ProblemGenerator;
 };
 
-}
+} // namespace ntt
 
 #endif
