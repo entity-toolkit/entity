@@ -1,6 +1,12 @@
 #include "global.h"
 
+#include <plog/Log.h>
+#include <Kokkos_Core.hpp>
+
 #include <string>
+#include <cstddef>
+#include <string>
+#include <iomanip>
 
 namespace ntt {
 
@@ -59,3 +65,22 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string {
 }
 
 } // namespace ntt
+
+namespace plog {
+
+util::nstring NTTFormatter::header() {
+  return util::nstring();
+}
+util::nstring NTTFormatter::format(const Record& record) {
+  util::nostringstream ss;
+# ifdef DEBUG
+  if (record.getSeverity() == plog::debug) {
+    ss << PLOG_NSTR("\n") << record.getFunc() << PLOG_NSTR(" @ ") << record.getLine() << PLOG_NSTR("\n");
+  }
+# endif
+  ss << std::setw(9) << std::left << severityToString(record.getSeverity()) << PLOG_NSTR(": ");
+  ss << record.getMessage() << PLOG_NSTR("\n");;
+  return ss.str();
+}
+
+}

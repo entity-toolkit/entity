@@ -6,5 +6,7 @@
 
 void testSuccess() {}
 
-TEST_LIST = {
-    {"extern/toml", testExternToml}, {"extern/kokkos", testExternKokkos}, {"success", testSuccess}, {nullptr, nullptr}};
+TEST_LIST = {{"extern/toml", testExternToml},
+             {"extern/kokkos", testExternKokkos},
+             {"success", testSuccess},
+             {nullptr, nullptr}};

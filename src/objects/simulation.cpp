@@ -11,7 +11,10 @@ namespace ntt {
 
 template <template <typename T> class D>
 Simulation<D>::Simulation(const toml::value &inputdata)
-    : m_dim{}, m_sim_params{inputdata, m_dim.dim}, m_meshblock{m_sim_params.m_resolution}, m_pGen{m_sim_params} {
+    : m_dim{},
+      m_sim_params{inputdata, m_dim.dim},
+      m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species},
+      m_pGen{m_sim_params} {
   // TODO: meshblock extent can be different from global one
   m_meshblock.set_extent(m_sim_params.m_extent);
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);
@@ -40,6 +43,9 @@ template <template <typename T> class D> void Simulation<D>::verify() {
       assert(m_meshblock.get_dx1() == m_meshblock.get_dx2());
       assert(m_meshblock.get_dx2() == m_meshblock.get_dx3());
     }
+  }
+  for (auto &p : m_meshblock.particles) {
+    assert(p.get_pusher() != UNDEFINED_PUSHER);
   }
   // TODO: maybe some other tests
   PLOGD << "Simulation prerun check passed.";
@@ -83,6 +89,17 @@ template <template <typename T> class D> void Simulation<D>::printDetails() {
     ext += "{" + std::to_string(m_sim_params.m_extent[i]) + ", " + std::to_string(m_sim_params.m_extent[i + 1]) + "} ";
   }
   PLOGI << ext;
+
+  PLOGI << "[particles]";
+  for (std::size_t i{0}; i < m_meshblock.particles.size(); ++i) {
+    PLOGI << "   [species #" << i + 1 << "]";
+    PLOGI << "      label: " << m_meshblock.particles[i].get_label();
+    PLOGI << "      mass: " << m_meshblock.particles[i].get_mass();
+    PLOGI << "      charge: " << m_meshblock.particles[i].get_charge();
+    PLOGI << "      pusher: " << stringifyParticlePusher(m_meshblock.particles[i].get_pusher());
+    PLOGI << "      maxnpart: " << m_meshblock.particles[i].get_maxnpart() << " ("
+          << m_meshblock.particles[i].get_npart() << ")";
+  }
 }
 
 template <template <typename T> class D> void Simulation<D>::finalize() { PLOGD << "Simulation finalized."; }
