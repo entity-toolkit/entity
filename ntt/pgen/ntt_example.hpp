@@ -10,13 +10,13 @@ namespace ntt {
 class ProblemGenerator {
 
 public:
-  ProblemGenerator(SimulationParams &sim_params);
+  ProblemGenerator(SimulationParams& sim_params);
   ~ProblemGenerator() = default;
 
-  template<template<typename T> class D>
-  void userInitFields(SimulationParams &sim_params, Meshblock<D> &mblock);
+  template <template <typename T> class D>
+  void userInitFields(SimulationParams& sim_params, Meshblock<D>& mblock);
 };
 
-}
+} // namespace ntt
 
 #endif

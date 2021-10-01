@@ -15,7 +15,7 @@ Meshblock<One_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSp
       jx2{"Jx2", res[0] + 2 * N_GHOSTS},
       jx3{"Jx3", res[0] + 2 * N_GHOSTS},
       m_resolution{res} {
-  for (auto &part : parts) {
+  for (auto& part : parts) {
     particles.emplace_back(part);
   }
 }
@@ -32,7 +32,7 @@ Meshblock<Two_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSp
       jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       m_resolution{res} {
-  for (auto &part : parts) {
+  for (auto& part : parts) {
     particles.emplace_back(part);
   }
 }
@@ -49,18 +49,18 @@ Meshblock<Three_D>::Meshblock(std::vector<std::size_t> res, std::vector<Particle
       jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       m_resolution{res} {
-  for (auto &part : parts) {
+  for (auto& part : parts) {
     particles.emplace_back(part);
   }
 }
 
-auto loopActiveCells(const Meshblock<One_D> &mblock) -> NTT1DRange {
+auto loopActiveCells(const Meshblock<One_D>& mblock) -> NTT1DRange {
   return NTT1DRange({mblock.get_imin()}, {mblock.get_imax()});
 }
-auto loopActiveCells(const Meshblock<Two_D> &mblock) -> NTT2DRange {
+auto loopActiveCells(const Meshblock<Two_D>& mblock) -> NTT2DRange {
   return NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imax(), mblock.get_jmax()});
 }
-auto loopActiveCells(const Meshblock<Three_D> &mblock) -> NTT3DRange {
+auto loopActiveCells(const Meshblock<Three_D>& mblock) -> NTT3DRange {
   return NTT3DRange({mblock.get_imin(), mblock.get_jmin(), mblock.get_kmin()},
                     {mblock.get_imax(), mblock.get_jmax(), mblock.get_kmax()});
 }

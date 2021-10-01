@@ -8,7 +8,7 @@
 
 namespace ntt {
 
-template<template<typename T = std::nullptr_t> class D>
+template <template <typename T = std::nullptr_t> class D>
 class Meshblock {
   // sizes of these arrays is ...
   //   resolution + 2 * N_GHOSTS in every direction
@@ -27,6 +27,7 @@ class Meshblock {
   CoordinateSystem m_coord_system;
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
+
 public:
   Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>&);
   ~Meshblock() = default;
@@ -59,14 +60,14 @@ public:
   [[nodiscard]] auto get_kmin() const -> std::size_t { return N_GHOSTS; }
   [[nodiscard]] auto get_kmax() const -> std::size_t { return N_GHOSTS + m_resolution[2]; }
 
-  template<template<typename T1> class D1>
+  template <template <typename T1> class D1>
   friend auto convert_iTOx1(const Meshblock<D1>&, const std::size_t&) -> real_t;
-  template<template<typename T1> class D1>
+  template <template <typename T1> class D1>
   friend auto convert_jTOx2(const Meshblock<D1>&, const std::size_t&) -> real_t;
-  template<template<typename T1> class D1>
+  template <template <typename T1> class D1>
   friend auto convert_kTOx3(const Meshblock<D1>&, const std::size_t&) -> real_t;
 
-  template<template<typename T1> class D1>
+  template <template <typename T1> class D1>
   friend class Simulation;
 
   friend class ProblemGenerator;
@@ -90,22 +91,28 @@ auto loopActiveCells(const Meshblock<One_D>&) -> NTT1DRange;
 auto loopActiveCells(const Meshblock<Two_D>&) -> NTT2DRange;
 auto loopActiveCells(const Meshblock<Three_D>&) -> NTT3DRange;
 
-template<template<typename T> class D>
-KOKKOS_INLINE_FUNCTION
-auto convert_iTOx1(const Meshblock<D>& mblock, const std::size_t &i) -> real_t {
-  return mblock.m_extent[0] + static_cast<real_t>((i - N_GHOSTS) / mblock.m_resolution[0]) * (mblock.m_extent[1] - mblock.m_extent[0]);
+template <template <typename T> class D>
+KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const std::size_t& i)
+    -> real_t {
+  return mblock.m_extent[0]
+       + static_cast<real_t>((i - N_GHOSTS) / mblock.m_resolution[0])
+             * (mblock.m_extent[1] - mblock.m_extent[0]);
 }
-template<template<typename T> class D>
-KOKKOS_INLINE_FUNCTION
-auto convert_jTOx2(const Meshblock<D>& mblock, const std::size_t& j) -> real_t {
-  return mblock.m_extent[2] + static_cast<real_t>((j - N_GHOSTS) / mblock.m_resolution[1]) * (mblock.m_extent[3] - mblock.m_extent[2]);
+template <template <typename T> class D>
+KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const std::size_t& j)
+    -> real_t {
+  return mblock.m_extent[2]
+       + static_cast<real_t>((j - N_GHOSTS) / mblock.m_resolution[1])
+             * (mblock.m_extent[3] - mblock.m_extent[2]);
 }
-template<template<typename T> class D>
-KOKKOS_INLINE_FUNCTION
-auto convert_kTOx3(const Meshblock<D>& mblock, const std::size_t& k) -> real_t {
-  return mblock.m_extent[4] + static_cast<real_t>((k - N_GHOSTS) / mblock.m_resolution[2]) * (mblock.m_extent[5] - mblock.m_extent[4]);
+template <template <typename T> class D>
+KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const std::size_t& k)
+    -> real_t {
+  return mblock.m_extent[4]
+       + static_cast<real_t>((k - N_GHOSTS) / mblock.m_resolution[2])
+             * (mblock.m_extent[5] - mblock.m_extent[4]);
 }
 
-}
+} // namespace ntt
 
 #endif

@@ -6,23 +6,20 @@
 #include <algorithm>
 
 namespace ntt {
-void CommandLineArguments::readCommandLineArguments(int argc, char *argv[]) {
-  if (_initialized) {
-    throw std::runtime_error("ERROR: command line arguments already parsed.");
-  }
+void CommandLineArguments::readCommandLineArguments(int argc, char* argv[]) {
+  if (_initialized) { throw std::runtime_error("ERROR: command line arguments already parsed."); }
   for (int i{1}; i < argc; ++i)
     this->_args.emplace_back(std::string_view(argv[i]));
   _initialized = true;
 }
-auto CommandLineArguments::getArgument(std::string_view key, std::string_view def) -> std::string_view {
+auto CommandLineArguments::getArgument(std::string_view key, std::string_view def)
+    -> std::string_view {
   if (!_initialized) {
     throw std::runtime_error("ERROR: command line arguments have not been parsed.");
   }
   std::vector<std::string_view>::const_iterator itr;
   itr = std::find(this->_args.begin(), this->_args.end(), key);
-  if (itr != this->_args.end() && ++itr != this->_args.end()) {
-    return *itr;
-  }
+  if (itr != this->_args.end() && ++itr != this->_args.end()) { return *itr; }
   return def;
 }
 auto CommandLineArguments::getArgument(std::string_view key) -> std::string_view {

@@ -15,7 +15,7 @@
 
 using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
 
-void initLogger(plog_t *console_appender);
+void initLogger(plog_t* console_appender);
 
 // Logging is done via `plog` library...
 // ... Use the following commands:
@@ -25,7 +25,7 @@ void initLogger(plog_t *console_appender);
 //  `PLOGE << ...` for simple error messages
 //  `PLOGW << ...` for warnings
 
-auto main(int argc, char *argv[]) -> int {
+auto main(int argc, char* argv[]) -> int {
   plog_t console_appender;
   initLogger(&console_appender);
 
@@ -36,11 +36,9 @@ auto main(int argc, char *argv[]) -> int {
     auto inputfilename = cl_args.getArgument("-input", ntt::DEF_input_filename);
     auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
-    short res =
-        static_cast<short>(ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
-    if (!((res > 0) && (res < 4))) {
-      throw std::logic_error("ERROR: wrong dimension specified.");
-    }
+    short res = static_cast<short>(
+        ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
+    if (!((res > 0) && (res < 4))) { throw std::logic_error("ERROR: wrong dimension specified."); }
 
     // TODO: make this prettier
     if (res == 1) {
@@ -68,7 +66,8 @@ auto main(int argc, char *argv[]) -> int {
       sim.mainloop();
       sim.finalize();
     }
-  } catch (std::exception &err) {
+  }
+  catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();
 
@@ -79,7 +78,7 @@ auto main(int argc, char *argv[]) -> int {
   return 0;
 }
 
-void initLogger(plog_t *console_appender) {
+void initLogger(plog_t* console_appender) {
   plog::Severity max_severity;
 #ifdef DEBUG
   max_severity = plog::verbose;

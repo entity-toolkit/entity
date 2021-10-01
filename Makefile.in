@@ -1,3 +1,6 @@
+# # # # # Scripts # # # # # # # # # # # #
+#
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 # # # # # Directories # # # # # # # # # #
 #
 ROOT_DIR := $(realpath ${CURDIR}/..)
@@ -215,8 +218,11 @@ cleanlib: kokkos-clean
 .PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
-ALLCODE := $(SOURCES) $(wildcard ${SRC_DIR}/*.hpp) $(wildcard ${SRC_DIR}/*.h) $(wildcard ${NTT_DIR}/*.hpp) $(wildcard ${NTT_DIR}/*.h) $(wildcard ${TEST_DIR}/*.hpp) $(wildcard ${TEST_DIR}/*.h) $(wildcard ${EXAMPLES_DIR}/*.hpp) $(wildcard ${EXAMPLES_DIR}/*.h)
+ALLCODE := $(SOURCES) $(call rwildcard, ${SRC_DIR}, *.hpp) $(call rwildcard, ${SRC_DIR}, *.h) $(call rwildcard, ${NTT_DIR}, *.hpp) $(call rwildcard, ${NTT_DIR}, *.h) $(call rwildcard, ${TEST_DIR}, *.hpp) $(call rwildcard, ${TEST_DIR}, *.h) $(call rwildcard, ${EXAMPLES_DIR}, *.hpp) $(call rwildcard, ${EXAMPLES_DIR}, *.h)
 flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp
+
+print:
+	@echo ${ALLCODE}
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 
