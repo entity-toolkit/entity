@@ -35,7 +35,7 @@ private:
 
 public:
   Time() = default;
-  Time(long double v, TimeUnit const &u);
+  Time(long double v, TimeUnit const &u = second);
   ~Time() = default;
   [[nodiscard]] auto getValue() const -> long double;
   void convert(const TimeUnit to);
@@ -55,14 +55,15 @@ using TimeContainer = std::chrono::time_point<std::chrono::system_clock>;
 
 class Timer {
 private:
-  bool on = false;
+  std::string name;
+  bool init {false};
+  bool on {false};
   TimeContainer t_start;
   Time t_elapsed;
-  std::string name;
 
 public:
-  Timer() : name("NULL") {}
-  Timer(const std::string& name) : name(std::move(name)) {}
+  Timer() : name("NULL"), t_elapsed{0.0} {}
+  Timer(const std::string& name) : name(std::move(name)), t_elapsed{0.0} {}
   ~Timer() = default;
   void start();
   void check();

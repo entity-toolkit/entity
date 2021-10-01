@@ -60,10 +60,12 @@ void timeElapsed(TimeContainer &time_start, Time &time_elapsed) {
 } // namespace
 
 void Timer::start() {
+  init = true;
   on = true;
   timeNow(t_start);
 }
 void Timer::check() {
+  assert(init && "# Error: timer is not initialized.");
   assert(on && "# Error: timer is not running.");
   timeElapsed(t_start, t_elapsed);
 }
@@ -72,13 +74,18 @@ void Timer::stop() {
   on = false;
 }
 auto Timer::getElapsedIn(TimeUnit const &u) const -> long double {
-  return t_elapsed.represent(u).value;
+  if (init) {
+    return t_elapsed.represent(u).value;
+  } else {
+    return 0.0;
+  }
 }
 auto Timer::getName() const -> std::string { return name; }
 void Timer::printElapsed(std::ostream &os, TimeUnit const &u) const {
   os << std::setw(25) << std::left << "timer `" + name + "`" << ": " << t_elapsed.represent(u);
-  if (on)
+  if (on) {
     os << " (and running)";
+  }
 }
 void Timer::printElapsed(TimeUnit const &u) const {
   printElapsed(std::cout, u);
