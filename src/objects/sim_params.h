@@ -2,6 +2,7 @@
 #define OBJECTS_SIM_PARAMS_H
 
 #include "global.h"
+#include "particles.h"
 
 #include <toml/toml.hpp>
 
@@ -30,6 +31,8 @@ class SimulationParams {
   // dependent params
   real_t m_sigma0;
   real_t m_charge0;
+
+  std::vector<ParticleSpecies> m_species;
 
   CoordinateSystem m_coord_system{UNDEFINED_COORD};
   std::vector<real_t> m_extent;

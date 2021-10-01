@@ -2,10 +2,13 @@
 #define OBJECTS_MESHBLOCK_H
 
 #include "global.h"
+#include "particles.h"
+
+#include <vector>
 
 namespace ntt {
 
-template<template<typename T> class D>
+template<template<typename T = std::nullptr_t> class D>
 class Meshblock {
   // sizes of these arrays is ...
   //   resolution + 2 * N_GHOSTS in every direction
@@ -19,11 +22,13 @@ class Meshblock {
   NTTArray<typename D<real_t>::ndtype_t> jx2;
   NTTArray<typename D<real_t>::ndtype_t> jx3;
 
+  std::vector<Particles<D>> particles;
+
   CoordinateSystem m_coord_system;
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
 public:
-  Meshblock(std::vector<std::size_t> res);
+  Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies> parts);
   ~Meshblock() = default;
 
   void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
