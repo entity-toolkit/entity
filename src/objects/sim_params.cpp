@@ -16,7 +16,6 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
 
   m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", "PIC_Sim");
   m_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
-  m_timestep = readFromInput<real_t>(m_inputdata, "algorithm", "timestep");
   m_correction = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
 
   auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species");
@@ -112,6 +111,11 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
   m_skindepth0 = readFromInput<real_t>(m_inputdata, "algorithm", "skindepth0");
   m_sigma0 = m_larmor0 * m_larmor0 / (m_skindepth0 * m_skindepth0);
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
+  m_B0 = 1.0 / m_larmor0;
+
+  // TODO: read out timestep or pick the max possible
+  // real_t maxtstep {}
+  m_timestep = readFromInput<real_t>(m_inputdata, "algorithm", "timestep");
 }
 
 } // namespace ntt
