@@ -10,8 +10,8 @@
 #include <plog/Appenders/ColorConsoleAppender.h>
 
 #include <type_traits>
-#include <cassert>
 #include <vector>
+#include <stdexcept>
 
 using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
 
@@ -38,7 +38,9 @@ auto main(int argc, char *argv[]) -> int {
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
     short res =
         static_cast<short>(ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
-    assert((res > 0) && (res < 4));
+    if (!((res > 0) && (res < 4))) {
+      throw std::logic_error("ERROR: wrong dimension specified.");
+    }
 
     // TODO: make this prettier
     if (res == 1) {
@@ -79,10 +81,8 @@ auto main(int argc, char *argv[]) -> int {
 
 void initLogger(plog_t *console_appender) {
   plog::Severity max_severity;
-#ifdef VERBOSE
+#ifdef DEBUG
   max_severity = plog::verbose;
-#elif DEBUG
-  max_severity = plog::debug;
 #else
   max_severity = plog::info;
 #endif

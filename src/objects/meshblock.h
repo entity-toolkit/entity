@@ -28,7 +28,7 @@ class Meshblock {
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
 public:
-  Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies> parts);
+  Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>&);
   ~Meshblock() = default;
 
   void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
