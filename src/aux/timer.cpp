@@ -4,7 +4,9 @@
 #include <string>
 #include <cassert>
 #include <utility>
+#include <vector>
 #include <iostream>
+#include <iomanip>
 
 namespace ntt {
 
@@ -30,15 +32,6 @@ auto Time::represent(const TimeUnit to) const -> Time {
   }
 }
 auto operator<<(std::ostream &os, Time const &t) -> std::ostream & { return os << t.value << " " << *(t.unit); }
-// Time Time::operator=(const Time & rhs) {
-// if(this == &rhs)
-// return *this;
-// else {
-// value = rhs.value;
-// unit = rhs.unit;
-// return *this;
-// }
-// }
 auto Time::operator-() const -> Time { return Time(-(this->value), *(this->unit)); }
 auto operator+(Time const &t1, Time const &t2) -> Time {
   if (t1.unit == t2.unit) {
@@ -67,12 +60,10 @@ void timeElapsed(TimeContainer &time_start, Time &time_elapsed) {
 } // namespace
 
 void Timer::start() {
-  init = true;
   on = true;
   timeNow(t_start);
 }
 void Timer::check() {
-  assert(init && "# Error: timer is not initialized.");
   assert(on && "# Error: timer is not running.");
   timeElapsed(t_start, t_elapsed);
 }
@@ -81,15 +72,43 @@ void Timer::stop() {
   on = false;
 }
 auto Timer::getElapsedIn(TimeUnit const &u) const -> long double {
-  assert(init && "# Error: timer is not initialized.");
   return t_elapsed.represent(u).value;
 }
 auto Timer::getName() const -> std::string { return name; }
 void Timer::printElapsed(std::ostream &os, TimeUnit const &u) const {
-  assert(init && "# Error: timer is not initialized.");
-  os << "timer `" << name << "` : " << t_elapsed.represent(u);
+  os << std::setw(25) << std::left << "timer `" + name + "`" << ": " << t_elapsed.represent(u);
   if (on)
     os << " (and running)";
 }
+void Timer::printElapsed(TimeUnit const &u) const {
+  printElapsed(std::cout, u);
+}
+
+
+TimerCollection::TimerCollection(std::vector<std::string> timers) {
+  for (auto &t : timers) {
+    m_timers.emplace_back(Timer(t));
+  }
+}
+
+void TimerCollection::start(const int& i) {
+  m_timers[i].start();
+}
+
+void TimerCollection::stop(const int& i) {
+  m_timers[i].stop();
+}
+
+void TimerCollection::printAll(std::ostream &os, TimeUnit const &u) const {
+  for (auto &t : m_timers) {
+    t.printElapsed(os, u);
+    os << std::endl;
+  }
+}
+
+void TimerCollection::printAll(TimeUnit const &u) const {
+  printAll(std::cout, u);
+}
+
 
 } // namespace ntt

@@ -5,7 +5,7 @@
 
 #include <plog/Log.h>
 
-#include <cassert>
+#include <stdexcept>
 
 namespace ntt {
 
@@ -26,26 +26,36 @@ template <template <typename T> class D> void Simulation<D>::initialize() {
 }
 
 template <template <typename T> class D> void Simulation<D>::verify() {
-  assert(m_sim_params.m_simtype != UNDEFINED_SIM);
-  assert(m_sim_params.m_coord_system != UNDEFINED_COORD);
-  for (auto &b : m_sim_params.m_boundaries) {
-    UNUSED(b);
-    assert(b != UNDEFINED_BC);
+  if (m_sim_params.m_simtype == UNDEFINED_SIM) {
+    throw std::logic_error("ERROR: simulation type unspecified.");
   }
-  // for now only cartesian
-  assert(m_meshblock.m_coord_system == CARTESIAN_COORD);
+  if (m_sim_params.m_coord_system == UNDEFINED_COORD) {
+    throw std::logic_error("ERROR: coordinate system unspecified.");
+  }
+  for (auto &b : m_sim_params.m_boundaries) {
+    if (b == UNDEFINED_BC) {
+      throw std::logic_error("ERROR: boundary conditions unspecified.");
+    }
+  }
   if (m_meshblock.m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
     if (m_dim.dim == 2) {
-      assert(m_meshblock.get_dx1() == m_meshblock.get_dx2());
+      if (m_meshblock.get_dx1() == m_meshblock.get_dx2()) {
+        throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
+      }
     }
     if (m_dim.dim == 3) {
-      assert(m_meshblock.get_dx1() == m_meshblock.get_dx2());
-      assert(m_meshblock.get_dx2() == m_meshblock.get_dx3());
+      if ((m_meshblock.get_dx1() == m_meshblock.get_dx2()) || (m_meshblock.get_dx2() == m_meshblock.get_dx3())) {
+        throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
+      }
     }
+  } else {
+    throw std::logic_error("ERROR: only cartesian coordinate system is available.");
   }
   for (auto &p : m_meshblock.particles) {
-    assert(p.get_pusher() != UNDEFINED_PUSHER);
+    if (p.get_pusher() == UNDEFINED_PUSHER) {
+      throw std::logic_error("ERROR: undefined particle pusher.");
+    }
   }
   // TODO: maybe some other tests
   PLOGD << "Simulation prerun check passed.";

@@ -6,7 +6,6 @@
 
 #include <toml/toml.hpp>
 
-#include <cassert>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -45,24 +44,36 @@ SimulationParams::SimulationParams(const toml::value &inputdata, short dim) {
 
   auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
   if (coords == "X") {
-    assert(dim == 1);
+    if (dim != 1) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XY") {
-    assert(dim != 3);
+    if (dim == 3) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XYZ") {
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "R_PHI") {
-    assert(dim == 2);
+    if (dim != 2) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = POLAR_R_PHI_COORD;
   } else if (coords == "R_THETA") {
-    assert(dim == 2);
+    if (dim != 2) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = POLAR_R_THETA_COORD;
   } else if (coords == "R_THETA_PHI") {
-    assert(dim == 3);
+    if (dim != 3) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = SPHERICAL_COORD;
   } else if (coords == "logR_THETA_PHI") {
-    assert(dim == 3);
+    if (dim != 3) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = LOG_SPHERICAL_COORD;
   } else {
     throw std::invalid_argument("Unknown coordinate system specified in the input.");
