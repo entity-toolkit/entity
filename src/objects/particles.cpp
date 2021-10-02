@@ -1,31 +1,34 @@
 #include "global.h"
 #include "particles.h"
 
+#include <string>
+#include <cstddef>
+
 namespace ntt {
 
-ParticleSpecies::ParticleSpecies(const std::string& label,
+ParticleSpecies::ParticleSpecies(std::string label,
                                  const float& m,
                                  const float& ch,
                                  const std::size_t& maxnpart,
                                  const ParticlePusher& pusher)
-    : m_label(label), m_mass(m), m_charge(ch), m_maxnpart(maxnpart), m_pusher(pusher) {}
+    : m_label(std::move(label)), m_mass(m), m_charge(ch), m_maxnpart(maxnpart), m_pusher(pusher) {}
 
-ParticleSpecies::ParticleSpecies(const std::string& label,
+ParticleSpecies::ParticleSpecies(std::string label,
                                  const float& m,
                                  const float& ch,
                                  const std::size_t& maxnpart)
-    : m_label(label),
+    : m_label(std::move(label)),
       m_mass(m),
       m_charge(ch),
       m_maxnpart(maxnpart),
       m_pusher((ch == 0.0 ? PHOTON_PUSHER : BORIS_PUSHER)) {}
 
-ParticleSpecies::ParticleSpecies(const ParticleSpecies& spec)
-    : m_label(spec.m_label),
-      m_mass(spec.m_mass),
-      m_charge(spec.m_charge),
-      m_maxnpart(spec.m_maxnpart),
-      m_pusher(spec.m_pusher) {}
+// ParticleSpecies::ParticleSpecies(const ParticleSpecies& spec) = default
+//     : m_label(spec.m_label),
+//       m_mass(spec.m_mass),
+//       m_charge(spec.m_charge),
+//       m_maxnpart(spec.m_maxnpart),
+//       m_pusher(spec.m_pusher) {}
 
 template <>
 Particles<One_D>::Particles(const std::string& label,

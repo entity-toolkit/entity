@@ -65,22 +65,19 @@ auto loopActiveCells(const Meshblock<Two_D>&) -> NTT2DRange;
 auto loopActiveCells(const Meshblock<Three_D>&) -> NTT3DRange;
 
 template <template <typename T> class D>
-KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const long int& i)
-    -> real_t {
+KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const long int& i) -> real_t {
   return mblock.m_extent[0]
        + static_cast<real_t>((i - N_GHOSTS) / mblock.m_resolution[0])
              * (mblock.m_extent[1] - mblock.m_extent[0]);
 }
 template <template <typename T> class D>
-KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const long int& j)
-    -> real_t {
+KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const long int& j) -> real_t {
   return mblock.m_extent[2]
        + static_cast<real_t>((j - N_GHOSTS) / mblock.m_resolution[1])
              * (mblock.m_extent[3] - mblock.m_extent[2]);
 }
 template <template <typename T> class D>
-KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const long int& k)
-    -> real_t {
+KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const long int& k) -> real_t {
   return mblock.m_extent[4]
        + static_cast<real_t>((k - N_GHOSTS) / mblock.m_resolution[2])
              * (mblock.m_extent[5] - mblock.m_extent[4]);

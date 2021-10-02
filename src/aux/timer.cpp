@@ -91,7 +91,7 @@ void Timer::printElapsed(std::ostream& os, TimeUnit const& u) const {
 }
 void Timer::printElapsed(TimeUnit const& u) const { printElapsed(std::cout, u); }
 
-TimerCollection::TimerCollection(std::vector<std::string> timers) {
+TimerCollection::TimerCollection(const std::vector<std::string>& timers) {
   for (auto& t : timers) {
     m_timers.emplace_back(Timer(t));
   }

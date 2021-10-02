@@ -94,8 +94,8 @@ constexpr std::string_view DEF_output_path{"output"};
 namespace plog {
 class NTTFormatter {
 public:
-  static util::nstring header();
-  static util::nstring format(const Record& record);
+  static auto header() -> util::nstring;
+  static auto format(const Record& record) -> util::nstring;
 };
 } // namespace plog
 
