@@ -52,42 +52,34 @@ struct Meshblock {
   [[nodiscard]] auto get_n2() const -> std::size_t { return m_resolution[1]; }
   [[nodiscard]] auto get_n3() const -> std::size_t { return m_resolution[2]; }
 
-  [[nodiscard]] auto get_imin() const -> std::size_t { return N_GHOSTS; }
-  [[nodiscard]] auto get_imax() const -> std::size_t { return N_GHOSTS + m_resolution[0]; }
-  [[nodiscard]] auto get_jmin() const -> std::size_t { return N_GHOSTS; }
-  [[nodiscard]] auto get_jmax() const -> std::size_t { return N_GHOSTS + m_resolution[1]; }
-  [[nodiscard]] auto get_kmin() const -> std::size_t { return N_GHOSTS; }
-  [[nodiscard]] auto get_kmax() const -> std::size_t { return N_GHOSTS + m_resolution[2]; }
+  [[nodiscard]] auto get_imin() const -> long int { return N_GHOSTS; }
+  [[nodiscard]] auto get_imax() const -> long int { return N_GHOSTS + m_resolution[0]; }
+  [[nodiscard]] auto get_jmin() const -> long int { return N_GHOSTS; }
+  [[nodiscard]] auto get_jmax() const -> long int { return N_GHOSTS + m_resolution[1]; }
+  [[nodiscard]] auto get_kmin() const -> long int { return N_GHOSTS; }
+  [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + m_resolution[2]; }
 };
 
 auto loopActiveCells(const Meshblock<One_D>&) -> NTT1DRange;
 auto loopActiveCells(const Meshblock<Two_D>&) -> NTT2DRange;
 auto loopActiveCells(const Meshblock<Three_D>&) -> NTT3DRange;
 
-auto getRange(const Meshblock<One_D>&, std::vector<long int>) -> NTT1DRange;
-auto getRange(const Meshblock<Two_D>&, std::vector<long int>, std::vector<long int>)
-    -> NTT2DRange;
-auto getRange(const Meshblock<Three_D>&,
-              std::vector<long int>,
-              std::vector<long int>,
-              std::vector<long int>) -> NTT3DRange;
-
 template <template <typename T> class D>
-KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const std::size_t& i)
+KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const long int& i)
     -> real_t {
   return mblock.m_extent[0]
        + static_cast<real_t>((i - N_GHOSTS) / mblock.m_resolution[0])
              * (mblock.m_extent[1] - mblock.m_extent[0]);
 }
 template <template <typename T> class D>
-KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const std::size_t& j)
+KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const long int& j)
     -> real_t {
   return mblock.m_extent[2]
        + static_cast<real_t>((j - N_GHOSTS) / mblock.m_resolution[1])
              * (mblock.m_extent[3] - mblock.m_extent[2]);
 }
 template <template <typename T> class D>
-KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const std::size_t& k)
+KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const long int& k)
     -> real_t {
   return mblock.m_extent[4]
        + static_cast<real_t>((k - N_GHOSTS) / mblock.m_resolution[2])
