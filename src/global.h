@@ -63,7 +63,7 @@ struct Three_D {
   using ndtype_t = T***;
 };
 
-inline constexpr std::size_t N_GHOSTS{2};
+inline constexpr int N_GHOSTS{2};
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 
 enum CoordinateSystem {
