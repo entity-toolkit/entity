@@ -9,7 +9,7 @@
 namespace ntt {
 
 template <template <typename T = std::nullptr_t> class D>
-class Meshblock {
+struct Meshblock {
   // sizes of these arrays is ...
   //   resolution + 2 * N_GHOSTS in every direction
   NTTArray<typename D<real_t>::ndtype_t> ex1;
@@ -28,7 +28,6 @@ class Meshblock {
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
 
-public:
   Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>&);
   ~Meshblock() = default;
 
@@ -59,37 +58,19 @@ public:
   [[nodiscard]] auto get_jmax() const -> std::size_t { return N_GHOSTS + m_resolution[1]; }
   [[nodiscard]] auto get_kmin() const -> std::size_t { return N_GHOSTS; }
   [[nodiscard]] auto get_kmax() const -> std::size_t { return N_GHOSTS + m_resolution[2]; }
-
-  template <template <typename T1> class D1>
-  friend auto convert_iTOx1(const Meshblock<D1>&, const std::size_t&) -> real_t;
-  template <template <typename T1> class D1>
-  friend auto convert_jTOx2(const Meshblock<D1>&, const std::size_t&) -> real_t;
-  template <template <typename T1> class D1>
-  friend auto convert_kTOx3(const Meshblock<D1>&, const std::size_t&) -> real_t;
-
-  template <template <typename T1> class D1>
-  friend class Simulation;
-
-  friend class ProblemGenerator;
-
-  // methods
-  friend class Faraday1D_Cartesian;
-  friend class Faraday2D_Cartesian;
-  friend class Faraday3D_Cartesian;
-  friend class Ampere1D_Cartesian;
-  friend class Ampere2D_Cartesian;
-  friend class Ampere3D_Cartesian;
-  friend class AddCurrents1D;
-  friend class AddCurrents2D;
-  friend class AddCurrents3D;
-  friend class ResetCurrents1D;
-  friend class ResetCurrents2D;
-  friend class ResetCurrents3D;
 };
 
 auto loopActiveCells(const Meshblock<One_D>&) -> NTT1DRange;
 auto loopActiveCells(const Meshblock<Two_D>&) -> NTT2DRange;
 auto loopActiveCells(const Meshblock<Three_D>&) -> NTT3DRange;
+
+auto getRange(const Meshblock<One_D>&, std::vector<long int>) -> NTT1DRange;
+auto getRange(const Meshblock<Two_D>&, std::vector<long int>, std::vector<long int>)
+    -> NTT2DRange;
+auto getRange(const Meshblock<Three_D>&,
+              std::vector<long int>,
+              std::vector<long int>,
+              std::vector<long int>) -> NTT3DRange;
 
 template <template <typename T> class D>
 KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const std::size_t& i)

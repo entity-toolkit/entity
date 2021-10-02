@@ -37,7 +37,7 @@ public:
   void addCurrentsSubstep(const real_t& time);
   void resetCurrentsSubstep(const real_t& time);
 
-  void boundaryConditions(const real_t& time);
+  void fieldBoundaryConditions(const real_t& time);
 };
 
 } // namespace ntt

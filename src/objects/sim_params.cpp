@@ -26,14 +26,14 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
     auto charge = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "charge");
     auto maxnpart = static_cast<std::size_t>(
         readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
-    auto pusher_ = readFromInput<std::string>(
+    auto pusher_str = readFromInput<std::string>(
         m_inputdata, "species_" + std::to_string(i + 1), "pusher", "Boris");
     ParticlePusher pusher{UNDEFINED_PUSHER};
     if ((mass == 0.0) && (charge == 0.0)) {
       pusher = PHOTON_PUSHER;
-    } else if (pusher_ == "Vay") {
+    } else if (pusher_str == "Vay") {
       pusher = VAY_PUSHER;
-    } else if (pusher_ == "Boris") {
+    } else if (pusher_str == "Boris") {
       pusher = BORIS_PUSHER;
     }
     m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
