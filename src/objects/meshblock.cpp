@@ -56,11 +56,6 @@ Meshblock<Three_D>::Meshblock(std::vector<std::size_t> res, std::vector<Particle
   }
 }
 
-auto getRange(const Meshblock<One_D>&mblock, std::vector<long int>x1minmax) -> NTT1DRange {
-  assert(x1minmax.size() == 2);
-  auto x1min {x1minmax[0]}, x1max {x1minmax[1]};
-}
-
 auto loopActiveCells(const Meshblock<One_D>& mblock) -> NTT1DRange {
   return NTT1DRange({mblock.get_imin()}, {mblock.get_imax()});
 }
