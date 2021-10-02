@@ -68,8 +68,8 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string {
 
 namespace plog {
 
-util::nstring NTTFormatter::header() { return util::nstring(); }
-util::nstring NTTFormatter::format(const Record& record) {
+auto NTTFormatter::header() -> util::nstring { return util::nstring(); }
+auto NTTFormatter::format(const Record& record) -> util::nstring {
   util::nostringstream ss;
 #ifdef DEBUG
   if (record.getSeverity() == plog::debug) {

@@ -81,7 +81,7 @@ private:
   std::vector<Timer> m_timers;
 
 public:
-  TimerCollection(std::vector<std::string> timers);
+  TimerCollection(const std::vector<std::string>& timers);
   ~TimerCollection() = default;
   void start(const int& i);
   void stop(const int& i);

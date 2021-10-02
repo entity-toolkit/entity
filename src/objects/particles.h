@@ -15,16 +15,16 @@ public:
   std::size_t m_maxnpart;
   ParticlePusher m_pusher;
 
-  ParticleSpecies(const std::string& label,
+  ParticleSpecies(std::string label,
                   const float& m,
                   const float& ch,
                   const std::size_t& maxnpart,
                   const ParticlePusher& pusher);
-  ParticleSpecies(const std::string& label,
+  ParticleSpecies(std::string label,
                   const float& m,
                   const float& ch,
                   const std::size_t& maxnpart);
-  ParticleSpecies(const ParticleSpecies& spec);
+  ParticleSpecies(const ParticleSpecies& spec) = default;
   ~ParticleSpecies() = default;
 
   [[nodiscard]] auto get_label() const -> std::string { return m_label; }
