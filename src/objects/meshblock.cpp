@@ -57,7 +57,8 @@ Meshblock<Three_D>::Meshblock(std::vector<std::size_t> res, std::vector<Particle
 }
 
 auto loopActiveCells(const Meshblock<One_D>& mblock) -> NTT1DRange {
-  return NTT1DRange({mblock.get_imin()}, {mblock.get_imax()});
+  return NTT1DRange({static_cast<std::size_t>(mblock.get_imin())},
+                    {static_cast<std::size_t>(mblock.get_imax())});
 }
 auto loopActiveCells(const Meshblock<Two_D>& mblock) -> NTT2DRange {
   return NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imax(), mblock.get_jmax()});

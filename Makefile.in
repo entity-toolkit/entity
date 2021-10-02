@@ -266,6 +266,8 @@ clang-format-fix:
 	done
 	@echo "clang-format-fix -- done"
 
+# TODO: get rid of KOKKOS and other files in tidy
+
 clang-tidy:
 	@for src in $(SOURCES) ; do \
 		echo "tidying $$src:" ; \
