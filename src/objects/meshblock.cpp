@@ -1,6 +1,8 @@
 #include "global.h"
 #include "meshblock.h"
 
+#include <cassert>
+
 namespace ntt {
 
 template <>
@@ -52,6 +54,11 @@ Meshblock<Three_D>::Meshblock(std::vector<std::size_t> res, std::vector<Particle
   for (auto& part : parts) {
     particles.emplace_back(part);
   }
+}
+
+auto getRange(const Meshblock<One_D>&mblock, std::vector<long int>x1minmax) -> NTT1DRange {
+  assert(x1minmax.size() == 2);
+  auto x1min {x1minmax[0]}, x1max {x1minmax[1]};
 }
 
 auto loopActiveCells(const Meshblock<One_D>& mblock) -> NTT1DRange {
