@@ -97,9 +97,9 @@ TimerCollection::TimerCollection(std::vector<std::string> timers) {
   }
 }
 
-void TimerCollection::start(const int& i) { m_timers[i].start(); }
+void TimerCollection::start(const int& i) { m_timers[i - 1].start(); }
 
-void TimerCollection::stop(const int& i) { m_timers[i].stop(); }
+void TimerCollection::stop(const int& i) { m_timers[i - 1].stop(); }
 
 void TimerCollection::printAll(std::ostream& os, TimeUnit const& u) const {
   for (auto& t : m_timers) {

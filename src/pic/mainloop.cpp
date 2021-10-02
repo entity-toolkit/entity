@@ -9,15 +9,22 @@ namespace ntt {
 template <template <typename T> class D>
 void Simulation<D>::mainloop() {
   PLOGD << "Simulation mainloop started.";
-  TimerCollection timers({"Field_Solver", "Curr_Deposit", "Prtl_Pusher"});
+  TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
   unsigned long timax{static_cast<unsigned long>(m_sim_params.m_runtime / m_sim_params.m_timestep)};
   real_t time{0.0};
   for (unsigned long ti{0}; ti < timax; ++ti) {
     PLOGD << "t = " << time;
-    timers.start(1);
-    faradayHalfsubstep(time);
-    timers.stop(1);
-    // BC b-fields
+    {
+      timers.start(1);
+      faradayHalfsubstep(time);
+      timers.stop(1);
+    }
+
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
 
     // particlePushSubstep(time);
 
@@ -26,12 +33,31 @@ void Simulation<D>::mainloop() {
     // BC particles
     // BC currents
 
-    timers.start(1);
-    faradayHalfsubstep(time);
-    ampereSubstep(time);
-    addCurrentsSubstep(time);
-    resetCurrentsSubstep(time);
-    timers.stop(1);
+    {
+      timers.start(1);
+      faradayHalfsubstep(time);
+      timers.stop(1);
+    }
+
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
+
+    {
+      timers.start(1);
+      ampereSubstep(time);
+      addCurrentsSubstep(time);
+      resetCurrentsSubstep(time);
+      timers.stop(1);
+    }
+
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
 
     timers.printAll(millisecond);
     time += m_sim_params.m_timestep;
