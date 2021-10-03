@@ -60,9 +60,9 @@ struct Meshblock {
   [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + m_resolution[2]; }
 };
 
-auto loopActiveCells(const Meshblock<One_D>&) -> NTT1DRange;
-auto loopActiveCells(const Meshblock<Two_D>&) -> NTT2DRange;
-auto loopActiveCells(const Meshblock<Three_D>&) -> NTT3DRange;
+auto loopActiveCells(const Meshblock<One_D>&) -> ntt_1drange_t;
+auto loopActiveCells(const Meshblock<Two_D>&) -> ntt_2drange_t;
+auto loopActiveCells(const Meshblock<Three_D>&) -> ntt_3drange_t;
 
 template <template <typename T> class D>
 KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const long int& i) -> real_t {

@@ -56,20 +56,20 @@ Meshblock<Three_D>::Meshblock(std::vector<std::size_t> res, std::vector<Particle
   }
 }
 
-auto loopActiveCells(const Meshblock<One_D>& mblock) -> NTT1DRange {
-  return NTT1DRange({static_cast<std::size_t>(mblock.get_imin())},
-                    {static_cast<std::size_t>(mblock.get_imax())});
+auto loopActiveCells(const Meshblock<One_D>& mblock) -> ntt_1drange_t {
+  return NTT1DRange(static_cast<range_t>(mblock.get_imin()),
+                    static_cast<range_t>(mblock.get_imax()));
 }
-auto loopActiveCells(const Meshblock<Two_D>& mblock) -> NTT2DRange {
+auto loopActiveCells(const Meshblock<Two_D>& mblock) -> ntt_2drange_t {
   return NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imax(), mblock.get_jmax()});
 }
-auto loopActiveCells(const Meshblock<Three_D>& mblock) -> NTT3DRange {
+auto loopActiveCells(const Meshblock<Three_D>& mblock) -> ntt_3drange_t {
   return NTT3DRange({mblock.get_imin(), mblock.get_jmin(), mblock.get_kmin()},
                     {mblock.get_imax(), mblock.get_jmax(), mblock.get_kmax()});
 }
 
 } // namespace ntt
 
-template class ntt::Meshblock<ntt::One_D>;
-template class ntt::Meshblock<ntt::Two_D>;
-template class ntt::Meshblock<ntt::Three_D>;
+template struct ntt::Meshblock<ntt::One_D>;
+template struct ntt::Meshblock<ntt::Two_D>;
+template struct ntt::Meshblock<ntt::Three_D>;
