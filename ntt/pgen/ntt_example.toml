@@ -11,7 +11,7 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 # options are: `PERIODIC`, `OPEN`
 
 [algorithm]
-timestep        = 0.001
+cfl             = 0.45
 correction      = 1.025
 ppc0            = 10.0
 larmor0         = 0.1
