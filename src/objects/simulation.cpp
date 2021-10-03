@@ -46,7 +46,7 @@ void Simulation<D>::verify() {
                    || (m_meshblock.get_dx2() != m_meshblock.get_dx3()))) {
       throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
     }
-    if (m_meshblock.get_dx1() <= m_sim_params.m_timestep * 0.45) {
+    if (m_meshblock.get_dx1() * 0.5 <= m_sim_params.m_timestep) {
       throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
     }
   } else {
