@@ -8,6 +8,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <cassert>
 #include <vector>
 
 namespace ntt {
@@ -102,9 +103,12 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
   m_B0 = 1.0 / m_larmor0;
 
-  // TODO: read out timestep or pick the max possible
   // real_t maxtstep {}
-  m_timestep = readFromInput<real_t>(m_inputdata, "algorithm", "timestep");
+  auto cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", 0.45);
+  assert(cfl > 0);
+  // TODO: other coord systems
+  auto cell_size = static_cast<real_t>((m_extent[1] - m_extent[0]) / m_resolution[0]);
+  m_timestep = cell_size / cfl;
 }
 
 } // namespace ntt
