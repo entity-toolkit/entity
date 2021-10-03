@@ -108,7 +108,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
   assert(cfl > 0);
   // TODO: other coord systems
   auto cell_size = static_cast<real_t>((m_extent[1] - m_extent[0]) / m_resolution[0]);
-  m_timestep = cell_size / cfl;
+  m_timestep = cell_size * cfl;
 }
 
 } // namespace ntt
