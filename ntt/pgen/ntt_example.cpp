@@ -44,8 +44,8 @@ template <>
 void ProblemGenerator::userInitFields<Three_D>(SimulationParams&, Meshblock<Three_D>&) {}
 
 // TODO: this has to be done better
-template void ProblemGenerator::userInitFields<One_D>(SimulationParams&, Meshblock<One_D>&);
-template void ProblemGenerator::userInitFields<Two_D>(SimulationParams&, Meshblock<Two_D>&);
-template void ProblemGenerator::userInitFields<Three_D>(SimulationParams&, Meshblock<Three_D>&);
+// template void ProblemGenerator::userInitFields<One_D>(SimulationParams&, Meshblock<One_D>&);
+// template void ProblemGenerator::userInitFields<Two_D>(SimulationParams&, Meshblock<Two_D>&);
+// template void ProblemGenerator::userInitFields<Three_D>(SimulationParams&, Meshblock<Three_D>&);
 
 } // namespace ntt

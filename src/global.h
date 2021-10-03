@@ -39,11 +39,19 @@ using real_t = float;
 using real_t = double;
 #endif
 
+using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
+
 template <typename T>
 using NTTArray = Kokkos::View<T, AccelMemSpace>;
-using NTT1DRange = Kokkos::RangePolicy<AccelExeSpace>;
-using NTT2DRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
-using NTT3DRange = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
+
+using ntt_1drange_t = Kokkos::RangePolicy<AccelExeSpace>;
+using ntt_2drange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
+using ntt_3drange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
+
+auto NTT1DRange(const std::vector<long int>&) -> ntt_1drange_t;
+auto NTT1DRange(const long int&, const long int&) -> ntt_1drange_t;
+auto NTT2DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_2drange_t;
+auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_3drange_t;
 
 template <typename T>
 struct One_D {
