@@ -97,7 +97,7 @@ void Simulation<D>::printDetails() {
   PLOGI << res;
 
   std::string ext{"   extent: "};
-  for (short i{0}; i < m_sim_params.m_extent.size(); i += 2) {
+  for (std::size_t i{0}; i < m_sim_params.m_extent.size(); i += 2) {
     ext += "{" + std::to_string(m_sim_params.m_extent[i]) + ", "
          + std::to_string(m_sim_params.m_extent[i + 1]) + "} ";
   }
@@ -122,7 +122,7 @@ void Simulation<D>::printDetails() {
   PLOGI << "   B0: " << m_sim_params.m_B0;
 
   PLOGI << "[particles]";
-  for (short i{0}; i < m_meshblock.particles.size(); ++i) {
+  for (std::size_t i{0}; i < m_meshblock.particles.size(); ++i) {
     PLOGI << "   [species #" << i + 1 << "]";
     PLOGI << "      label: " << m_meshblock.particles[i].get_label();
     PLOGI << "      mass: " << m_meshblock.particles[i].get_mass();
