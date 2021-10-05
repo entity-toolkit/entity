@@ -114,6 +114,7 @@ help:
 	@echo
 	@echo "cleanup: \`make clean\`"
 	@echo
+	# for developers />
 	@echo "---------------"
 	@echo "for developers:"
 	@echo
@@ -127,6 +128,7 @@ help:
 	@echo "   clang-tidy-bugprone     : check if the code contains any bug-prone features"
 	@echo "   clang-all               : run \`clang-tidy-naming\`, \`clang-format\` and \`clang-tidy\`"
 	@echo
+	# </ for developers
 
 demo:
 	@echo "[C]ompile command:"
@@ -152,7 +154,7 @@ TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
 TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
 TEST_DEPS := $(TEST_OBJS:.o=.d)
 
-# Tests
+# Examples
 EXAMPLES_SRCS := $(shell find ${EXAMPLES_DIR} -name *.cpp -or -name *.c)
 EXAMPLES_TARGETS := $(subst ${EXAMPLES_DIR},${BIN_DIR}/${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:.cpp=.exec))
 EXAMPLES_OBJS := $(subst ${EXAMPLES_DIR},${BUILD_EXAMPLES_DIR},$(EXAMPLES_SRCS:%=%.o))
@@ -216,81 +218,12 @@ cleanlib: kokkos-clean
 # for nttiny />
 
 NTTINY_DIR := @NTTINY_DIR@
-
-include ${NTTINY_DIR}/Makefile
+-include ${NTTINY_DIR}/Makefile
 print :
 	@echo ${NTTINY_DIR} ${NTTINY_LDFLAGS} ${NTTINY_INCFLAGS} ${NTTINY_LIBS}
 
 # </ for nttiny
 
 # for developers />
-.PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
-
-SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
-ALLCODE := $(SOURCES) $(call rwildcard, ${SRC_DIR}, *.hpp) $(call rwildcard, ${SRC_DIR}, *.h) $(call rwildcard, ${NTT_DIR}, *.hpp) $(call rwildcard, ${NTT_DIR}, *.h) $(call rwildcard, ${TEST_DIR}, *.hpp) $(call rwildcard, ${TEST_DIR}, *.h) $(call rwildcard, ${EXAMPLES_DIR}, *.hpp) $(call rwildcard, ${EXAMPLES_DIR}, *.h)
-flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp
-
-clang-all : clang-tidy-naming clang-format clang-tidy
-
-clang-tidy-naming:
-	@for src in $(SOURCES) ; do \
-		echo "checking namings in $$src:" ;\
-		clang-tidy -quiet -checks='-*,readability-identifier-naming' \
-		    -config="{CheckOptions: [ \
-		    { key: readability-identifier-naming.NamespaceCase, value: lower_case },\
-		    { key: readability-identifier-naming.ClassCase, value: CamelCase  },\
-		    { key: readability-identifier-naming.StructCase, value: CamelCase  },\
-		    { key: readability-identifier-naming.FunctionCase, value: camelBack },\
-		    { key: readability-identifier-naming.VariableCase, value: lower_case },\
-		    { key: readability-identifier-naming.GlobalConstantCase, value: UPPER_CASE }\
-		    ]}" "$$src" -extra-arg=${CXXSTANDARD} -- $(flags);\
-	done
-	@echo "clang-tidy-naming -- done"
-
-clang-format:
-	@for src in $(ALLCODE) ; do \
-		var=`clang-format $$src | diff $$src - | wc -l` ; \
-		if [ $$var -ne 0 ] ; then \
-			diff=`clang-format $$src | diff $$src -` ; \
-			echo "$$src:" ; \
-			echo "$$diff" ; \
-			echo ; \
-		fi ; \
-	done
-	@echo "clang-format -- done"
-
-clang-format-fix:
-	@for src in $(ALLCODE) ; do \
-		var=`clang-format $$src | diff $$src - | wc -l` ; \
-		if [ $$var -ne 0 ] ; then \
-			echo "formatting $$src:" ;\
-			diff=`clang-format $$src | diff $$src -` ; \
-			clang-format -i "$$src" ; \
-			echo "$$diff" ; \
-			echo ; \
-		fi ; \
-	done
-	@echo "clang-format-fix -- done"
-
-# TODO: get rid of KOKKOS and other files in tidy
-
-clang-tidy:
-	@for src in $(SOURCES) ; do \
-		echo "tidying $$src:" ; \
-		clang-tidy -quiet -checks="-*,\
-			clang-diagnostic-*,clang-analyzer-*,modernize-*,-modernize-avoid-c-arrays*,\
-			readability-*,performance-*,openmp-*,mpi-*,-performance-no-int-to-ptr" \
-			-header-filter=".*\\b(ntt|src|test|examples)\\b\\/(?!lib).*" \
-			"$$src" -extra-arg=${CXXSTANDARD} -- $(flags); \
-	done
-	@echo "clang-tidy -- done"
-
-clang-tidy-bugprone:
-	@for src in $(SOURCES) ; do \
-		echo "tidying $$src:" ; \
-		clang-tidy -quiet -checks="-*,bugprone-*",\
-			-header-filter=".*\\b(ntt|src|test|examples)\\b\\/(?!lib).*" \
-			"$$src" -extra-arg=${CXXSTANDARD} -- $(flags); \
-	done
-	@echo "clang-tidy-bugprone -- done"
+include ${ROOT_DIR}/Devel.mk
 # </ for developers
