@@ -195,9 +195,9 @@ def createMakefile(m_in, m_out, mopt):
   for key, val in mopt.items():
     makefile_template = re.sub(r'@{0}@'.format(key), val, makefile_template)
   if not args['debug']:
-    makefile_template = re.sub("# for developers />(.*\n*)*</ for developers", '', makefile_template)
+    makefile_template = re.sub("# for developers />[\S\s]*?</ for developers", '', makefile_template)
   if not args['nttiny']:
-    makefile_template = re.sub("# for nttiny />(.*\n*)*</ for nttiny", '', makefile_template)
+    makefile_template = re.sub("# for nttiny />[\S\s]*?</ for nttiny", '', makefile_template)
   with open(args['build'] + '/' + m_out, 'w') as current_file:
     current_file.write(makefile_template)
 # <-- auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
