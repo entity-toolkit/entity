@@ -230,9 +230,12 @@ makefile_options['TEST_DIR'] = 'tests'
 makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 makefile_options['EXAMPLES_DIR'] = 'examples'
-if (args['nttiny_dir']) != '':
-  args['nttiny_dir'] = os.path.abspath(args['nttiny_dir'])
-makefile_options['NTTINY_DIR'] = args['nttiny_dir']
+
+if args['nttiny']:
+  if (args['nttiny_dir']) != '':
+    args['nttiny_dir'] = os.path.abspath(args['nttiny_dir'])
+  makefile_options['NTTINY_DIR'] = args['nttiny_dir']
+  makefile_options['VIS_DIR'] = "vis"
 
 makefile_options['DEFINITIONS'] = ''
 
