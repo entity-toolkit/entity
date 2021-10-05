@@ -144,8 +144,13 @@ SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
 
+# Problem generator
+PGEN_SRCS := ${PGEN_DIR}/${PGEN}.cpp
+PGEN_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(PGEN_SRCS:%=%.o))
+PGEN_DEPS := $(PGEN_OBJS:.o=.d)
+
 # NTT app
-NTT_SRCS := $(shell find ${NTT_DIR} -path ${PGEN_DIR} -prune -false -o -name *.cpp -or -name *.c) ${PGEN_DIR}/${PGEN}.cpp
+NTT_SRCS := $(shell find ${NTT_DIR} -path ${PGEN_DIR} -prune -false -o -name *.cpp -or -name *.c)
 NTT_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(NTT_SRCS:%=%.o))
 NTT_DEPS := $(NTT_OBJS:.o=.d)
 
@@ -165,7 +170,7 @@ ALL_DEPS := $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
 INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
-ALL_OBJS := $(OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
+ALL_OBJS := $(OBJS) $(PGEN_OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)
 
 # # # # # Link/compile # # # # # # # # # # # # # #
 #
@@ -179,23 +184,23 @@ LIBS := $(LIBS) $(KOKKOS_LIBS)
 compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -MMD
 link_command := ${LINK} $(LDFLAGS)
 
-${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(OBJS)
+${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(PGEN_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
-	$(HIDE)${link_command} $(NTT_OBJS) $(OBJS) $(LIBS) -o $@
+	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
-${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
+${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(PGEN_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
-	$(HIDE)${link_command} $(TEST_OBJS) $(OBJS) $(LIBS) -o $@
+	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
 # generate linking rules for example targets
 define generateExampleLinkingRules
 $(1): $(2) $(OBJS)
 	@echo [L]inking $(1) from $(2)
-	$(HIDE)${link_command} $(2) $(OBJS) $(LIBS) -o $(1)
+	$(HIDE)${link_command} $(2) $(OBJS) -o $(1) $(LIBS)
 endef
 $(foreach et, $(EXAMPLES_TARGETS), $(eval $(call generateExampleLinkingRules, ${et}, ${BUILD_EXAMPLES_DIR}/$(notdir $(et:.exec=.cpp.o)))))
 
-# generate compilation rules for all `.o` files (except for `simulation.cpp`)
+# TODO: this can be done more clearly
 define generateRules
 $(1): $(2)
 	@echo [C]ompiling $(subst ${ROOT_DIR}/,,$(2))
@@ -206,24 +211,21 @@ $(1): $(2)
 endef
 $(foreach obj, $(ALL_OBJS), $(eval $(call generateRules, ${obj}, ${ROOT_DIR}/$(subst .o,,$(obj)))))
 
-clean:
-	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR}
-	rm -rf ${BIN_DIR}
-
-cleanlib: kokkos-clean
-	rm -rf {BUILD_DIR}/Kokkos*
-
 -include $(ALL_DEPS)
 
 # for nttiny />
-
 NTTINY_DIR := @NTTINY_DIR@
--include ${NTTINY_DIR}/Makefile
-print :
-	@echo ${NTTINY_DIR} ${NTTINY_LDFLAGS} ${NTTINY_INCFLAGS} ${NTTINY_LIBS}
-
+VIS_DIR := ${ROOT_DIR}/@VIS_DIR@
+include ${ROOT_DIR}/Nttiny.mk
 # </ for nttiny
 
 # for developers />
 include ${ROOT_DIR}/Devel.mk
 # </ for developers
+
+clean:
+	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_EXAMPLES_DIR} ${BUILD_VIS_DIR}
+	rm -rf ${BIN_DIR}
+
+cleanlib: kokkos-clean
+	rm -rf {BUILD_DIR}/Kokkos*
