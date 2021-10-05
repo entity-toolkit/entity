@@ -12,6 +12,10 @@
 #   -debug                        compile in `debug` mode
 #   --compiler=<COMPILER>         compiler used (can be a valid path to the binary)
 #
+# [ Nttiny flags ]
+#   -nttiny                       enable visualizer compilation
+#   --nttiny_dir=<DIR>            specify path for `Nttiny`
+#
 # [ Simulation flags ]
 #   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
 #   --precision=[single|double]   floating point precision used
@@ -64,6 +68,10 @@ def findCompiler(compiler):
   find_command = subprocess.run(['which', compiler], capture_output=True, text=True)
   return find_command.stdout.strip() if (find_command.returncode == 0) else 'N/A'
 
+def pathNotEmpty(path):
+  ls_path = subprocess.run(['ls', path], capture_output=True, text=True)
+  return path if (ls_path.returncode == 0) else 'N/A'
+
 def defineOptions():
   parser = argparse.ArgumentParser()
   # compilation
@@ -73,7 +81,11 @@ def defineOptions():
   parser.add_argument('--compiler', default=DEF_compiler, help='choose the compiler')
   parser.add_argument('-debug', action='store_true', default=False, help='compile in `debug` mode')
 
-  #simulation
+  # visualizer
+  parser.add_argument('-nttiny', action='store_true', default=False, help='enable nttiny visualizer compilation')
+  parser.add_argument('--nttiny_dir', default="extern/nttiny", help='specify path for `Nttiny`')
+
+  # simulation
   parser.add_argument('--precision', default='double', choices=Precision_options, help='code precision')
   parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used')
 
@@ -174,8 +186,7 @@ def configureKokkos(arg, mopt):
     {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
     {'Options':30} {arg['kokkos_options'] if arg['kokkos_options'] else '-'}
     {'Loop':30} {arg['kokkos_loop']}
-    {'Vector length':30} {arg['kokkos_vector_length']}
-  '''
+    {'Vector length':30} {arg['kokkos_vector_length']}'''
   return settings
 
 def createMakefile(m_in, m_out, mopt):
@@ -183,7 +194,10 @@ def createMakefile(m_in, m_out, mopt):
     makefile_template = current_file.read()
   for key, val in mopt.items():
     makefile_template = re.sub(r'@{0}@'.format(key), val, makefile_template)
-  makefile_template = re.sub('# Template for ', '# ', makefile_template)
+  if not args['debug']:
+    makefile_template = re.sub("# for developers />(.*\n*)*</ for developers", '', makefile_template)
+  if not args['nttiny']:
+    makefile_template = re.sub("# for nttiny />(.*\n*)*</ for nttiny", '', makefile_template)
   with open(args['build'] + '/' + m_out, 'w') as current_file:
     current_file.write(makefile_template)
 # <-- auxiliary functions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -216,6 +230,9 @@ makefile_options['TEST_DIR'] = 'tests'
 makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 makefile_options['EXAMPLES_DIR'] = 'examples'
+if (args['nttiny_dir']) != '':
+  args['nttiny_dir'] = os.path.abspath(args['nttiny_dir'])
+makefile_options['NTTINY_DIR'] = args['nttiny_dir']
 
 makefile_options['DEFINITIONS'] = ''
 
@@ -280,6 +297,8 @@ def makeNotes():
   notes += f"* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:\n    $ {findCompiler(cxx)}\n  "
   if 'OpenMP' in args['kokkos_devices']:
     notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=<INT>\n"
+  if args['nttiny']:
+    notes += f"* `nttiny` path:\n    $ {pathNotEmpty(args['nttiny_dir'])}"
   return notes.strip()
 
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])

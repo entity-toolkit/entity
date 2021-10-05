@@ -213,16 +213,22 @@ cleanlib: kokkos-clean
 
 -include $(ALL_DEPS)
 
-# for developers:
+# for nttiny />
 
+NTTINY_DIR := @NTTINY_DIR@
+
+include ${NTTINY_DIR}/Makefile
+print :
+	@echo ${NTTINY_DIR} ${NTTINY_LDFLAGS} ${NTTINY_INCFLAGS} ${NTTINY_LIBS}
+
+# </ for nttiny
+
+# for developers />
 .PHONY: clang-all clang-tidy-naming clang-format-fix clang-format clang-tidy clang-tidy-bugprone
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
 ALLCODE := $(SOURCES) $(call rwildcard, ${SRC_DIR}, *.hpp) $(call rwildcard, ${SRC_DIR}, *.h) $(call rwildcard, ${NTT_DIR}, *.hpp) $(call rwildcard, ${NTT_DIR}, *.h) $(call rwildcard, ${TEST_DIR}, *.hpp) $(call rwildcard, ${TEST_DIR}, *.h) $(call rwildcard, ${EXAMPLES_DIR}, *.hpp) $(call rwildcard, ${EXAMPLES_DIR}, *.h)
 flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp
-
-print:
-	@echo ${ALLCODE}
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 
@@ -287,3 +293,4 @@ clang-tidy-bugprone:
 			"$$src" -extra-arg=${CXXSTANDARD} -- $(flags); \
 	done
 	@echo "clang-tidy-bugprone -- done"
+# </ for developers
