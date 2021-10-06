@@ -1,75 +1,135 @@
 #include "nttiny/vis.h"
 #include "nttiny/api.h"
 
+#include "global.h"
+#include "cargs.h"
+#include "input.h"
+#include "simulation.h"
+
+#include <toml/toml.hpp>
+
 #include <iostream>
 #include <string>
+#include <stdexcept>
+#include <vector>
 
-class FakeSimulation : public nttiny::SimulationAPI<float> {
+class NTTSimulationVis : public nttiny::SimulationAPI<float> {
 public:
-  nttiny::Data<float> ex;
-  nttiny::Data<float> bx;
+  ntt::Simulation<ntt::Two_D>& m_sim;
+  nttiny::Data<float> m_ex;
+  nttiny::Data<float> m_bx;
+  nttiny::Data<float> m_ey;
+  nttiny::Data<float> m_by;
+  nttiny::Data<float> m_ez;
+  nttiny::Data<float> m_bz;
 
-  FakeSimulation(int sx, int sy) : nttiny::SimulationAPI<float>{sx, sy} {
-    this->ex.allocate(sx * sy);
-    this->bx.allocate(sx * sy);
-    this->ex.set_size(0, sx);
-    this->ex.set_size(1, sy);
-    this->bx.set_size(0, sx);
-    this->bx.set_size(1, sy);
-    this->ex.set_dimension(2);
-    this->bx.set_dimension(2);
+  ntt::real_t m_time;
+
+  NTTSimulationVis(ntt::Simulation<ntt::Two_D>& sim)
+    : nttiny::SimulationAPI<float>{0, 0}, m_sim(sim) {
+    m_sx = m_sim.get_params().get_resolution()[0];
+    m_sy = m_sim.get_params().get_resolution()[1];
+
+    m_ex.allocate(m_sx * m_sy);
+    m_bx.allocate(m_sx * m_sy);
+    m_ex.set_size(0, m_sx);
+    m_ex.set_size(1, m_sy);
+    m_bx.set_size(0, m_sx);
+    m_bx.set_size(1, m_sy);
+    m_ex.set_dimension(2);
+    m_bx.set_dimension(2);
+
+    m_ey.allocate(m_sx * m_sy);
+    m_by.allocate(m_sx * m_sy);
+    m_ey.set_size(0, m_sx);
+    m_ey.set_size(1, m_sy);
+    m_by.set_size(0, m_sx);
+    m_by.set_size(1, m_sy);
+    m_ey.set_dimension(2);
+    m_by.set_dimension(2);
+
+    m_ez.allocate(m_sx * m_sy);
+    m_bz.allocate(m_sx * m_sy);
+    m_ez.set_size(0, m_sx);
+    m_ez.set_size(1, m_sy);
+    m_bz.set_size(0, m_sx);
+    m_bz.set_size(1, m_sy);
+    m_ez.set_dimension(2);
+    m_bz.set_dimension(2);
+
+    m_x1x2_extent[0] = static_cast<float>(m_sim.get_params().get_extent()[0]);
+    m_x1x2_extent[1] = static_cast<float>(m_sim.get_params().get_extent()[1]);
+    m_x1x2_extent[2] = static_cast<float>(m_sim.get_params().get_extent()[2]);
+    m_x1x2_extent[3] = static_cast<float>(m_sim.get_params().get_extent()[3]);
+    m_timestep = 0;
+    m_time = 0;
+
+    // TODO: there might be an easier way to map
+    setData();
+    fields.insert({{"ex", &(m_ex)},
+                   {"bx", &(m_bx)},
+                   {"ey", &(m_ey)},
+                   {"by", &(m_by)},
+                   {"ez", &(m_ez)},
+                   {"bz", &(m_bz)}});
   }
-  ~FakeSimulation() = default;
+  ~NTTSimulationVis() = default;
   void setData() override {
-    m_x1x2_extent[0] = 0.0f;
-    m_x1x2_extent[1] = 1.0f;
-    m_x1x2_extent[2] = 0.0f;
-    m_x1x2_extent[3] = 1.5f;
-    this->m_timestep = 0;
-    auto f_sx{static_cast<float>(this->m_sx)};
-    auto f_sy{static_cast<float>(this->m_sy)};
-    for (int j{0}; j < this->m_sy; ++j) {
-      auto f_j{static_cast<float>(j)};
-      for (int i{0}; i < this->m_sx; ++i) {
-        auto f_i{static_cast<float>(i)};
-        this->ex.set(i * this->m_sy + j, 0.5f * (f_i / f_sx) + 0.5f * (f_j / f_sy));
-        this->bx.set(i * this->m_sy + j, (f_i / f_sx) * (f_j / f_sy));
+    for (int j{0}; j < m_sy; ++j) {
+      for (int i{0}; i < m_sx; ++i) {
+        m_ex.set(i * m_sy + j, m_sim.get_meshblock().ex1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_ey.set(i * m_sy + j, m_sim.get_meshblock().ex2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_ez.set(i * m_sy + j, m_sim.get_meshblock().ex3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_bx.set(i * m_sy + j, m_sim.get_meshblock().bx1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_by.set(i * m_sy + j, m_sim.get_meshblock().bx2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_bz.set(i * m_sy + j, m_sim.get_meshblock().bx3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
       }
-    }
-    try {
-      this->fields.insert({{"ex", &(this->ex)}, {"bx", &(this->bx)}});
-    }
-    catch (std::exception err) {
-      std::cerr << err.what();
     }
   }
   void stepFwd() override {
-    ++this->m_timestep;
-    for (int j{0}; j < this->m_sy; ++j) {
-      for (int i{0}; i < this->m_sx; ++i) {
-        this->ex.set(i * this->m_sy + j, this->ex.get(i * this->m_sy + j) + 0.001f);
-        this->bx.set(i * this->m_sy + j, this->bx.get(i * this->m_sy + j) + 0.001f);
-      }
-    }
+    m_sim.step_forward(m_time);
+    setData();
+    ++m_timestep;
+    m_time += m_sim.get_params().get_timestep();
   }
   void stepBwd() override {
-    --this->m_timestep;
-    for (int j{0}; j < this->m_sy; ++j) {
-      for (int i{0}; i < this->m_sx; ++i) {
-        this->ex.set(i * this->m_sy + j, this->ex.get(i * this->m_sy + j) - 0.001f);
-        this->bx.set(i * this->m_sy + j, this->bx.get(i * this->m_sy + j) - 0.001f);
-      }
-    }
+    --m_timestep;
+    // m_sim.step_forward();
+    setData();
   }
 };
 
-auto main() -> int {
-  FakeSimulation sim(100, 150);
-  sim.setData();
+auto main(int argc, char* argv[]) -> int {
+  Kokkos::initialize();
+  try {
+    ntt::CommandLineArguments cl_args;
+    cl_args.readCommandLineArguments(argc, argv);
+    auto inputfilename = cl_args.getArgument("-input", ntt::DEF_input_filename);
+    auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
+    auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
+    auto resolution = ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution");
 
-  nttiny::Visualization<float> vis;
-  vis.setTPSLimit(30.0f);
-  vis.bindSimulation(&sim);
-  vis.loop();
+    ntt::Simulation<ntt::Two_D> sim(inputdata);
+    sim.setIO(inputfilename, outputpath);
+    sim.initialize();
+    sim.verify();
+    // sim.printDetails();
+    // sim.mainloop();
+    // sim.finalize();
+    NTTSimulationVis visApi(sim);
+
+    nttiny::Visualization<float> vis;
+    vis.setTPSLimit(30.0f);
+    vis.bindSimulation(&visApi);
+    vis.loop();
+  }
+  catch (std::exception& err) {
+    std::cerr << err.what() << std::endl;
+    Kokkos::finalize();
+
+    return -1;
+  }
+  Kokkos::finalize();
+
   return 0;
 }
