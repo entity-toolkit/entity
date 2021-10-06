@@ -41,7 +41,7 @@ public:
   void fieldBoundaryConditions(const real_t& time);
 
   [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
-  [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& {return m_meshblock; }
+  [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& { return m_meshblock; }
 };
 
 } // namespace ntt

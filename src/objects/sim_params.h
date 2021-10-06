@@ -50,7 +50,9 @@ public:
   friend class ProblemGenerator;
 
   [[nodiscard]] auto get_extent() const -> const std::vector<real_t>& { return m_extent; }
-  [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& { return m_resolution; }
+  [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& {
+    return m_resolution;
+  }
   [[nodiscard]] auto get_timestep() const -> real_t { return m_timestep; }
 };
 
