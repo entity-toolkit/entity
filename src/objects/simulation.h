@@ -29,6 +29,7 @@ public:
   void printDetails();
   void finalize();
 
+  void step_forward(const real_t&);
   void mainloop();
 
   void faradayHalfsubstep(const real_t& time);
@@ -38,6 +39,9 @@ public:
   void resetCurrentsSubstep(const real_t& time);
 
   void fieldBoundaryConditions(const real_t& time);
+
+  [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
+  [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& {return m_meshblock; }
 };
 
 } // namespace ntt
