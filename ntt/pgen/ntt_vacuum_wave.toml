@@ -37,4 +37,4 @@ pusher          = "Boris"
 [problem]
 amplitude       = 2.5
 nx1             = 5
-nx2             = 2
+nx2             = 5
