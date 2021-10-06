@@ -23,6 +23,7 @@ Simulation<D>::Simulation(const toml::value& inputdata)
 template <template <typename T> class D>
 void Simulation<D>::initialize() {
   m_pGen.userInitFields(m_sim_params, m_meshblock);
+  fieldBoundaryConditions(0.0);
   PLOGD << "Simulation initialized.";
 }
 
