@@ -5,6 +5,7 @@
 #include "cargs.h"
 #include "input.h"
 #include "simulation.h"
+#include "constants.h"
 
 #include <toml/toml.hpp>
 
@@ -32,28 +33,28 @@ public:
 
     m_ex.allocate(m_sx * m_sy);
     m_bx.allocate(m_sx * m_sy);
-    m_ex.set_size(0, m_sx);
-    m_ex.set_size(1, m_sy);
-    m_bx.set_size(0, m_sx);
-    m_bx.set_size(1, m_sy);
+    m_ex.set_size(1, m_sx);
+    m_ex.set_size(0, m_sy);
+    m_bx.set_size(1, m_sx);
+    m_bx.set_size(0, m_sy);
     m_ex.set_dimension(2);
     m_bx.set_dimension(2);
 
     m_ey.allocate(m_sx * m_sy);
     m_by.allocate(m_sx * m_sy);
-    m_ey.set_size(0, m_sx);
-    m_ey.set_size(1, m_sy);
-    m_by.set_size(0, m_sx);
-    m_by.set_size(1, m_sy);
+    m_ey.set_size(1, m_sx);
+    m_ey.set_size(0, m_sy);
+    m_by.set_size(1, m_sx);
+    m_by.set_size(0, m_sy);
     m_ey.set_dimension(2);
     m_by.set_dimension(2);
 
     m_ez.allocate(m_sx * m_sy);
     m_bz.allocate(m_sx * m_sy);
-    m_ez.set_size(0, m_sx);
-    m_ez.set_size(1, m_sy);
-    m_bz.set_size(0, m_sx);
-    m_bz.set_size(1, m_sy);
+    m_ez.set_size(1, m_sx);
+    m_ez.set_size(0, m_sy);
+    m_bz.set_size(1, m_sx);
+    m_bz.set_size(0, m_sy);
     m_ez.set_dimension(2);
     m_bz.set_dimension(2);
 
@@ -64,7 +65,6 @@ public:
     m_timestep = 0;
     m_time = 0;
 
-    // TODO: there might be an easier way to map
     setData();
     fields.insert({{"ex", &(m_ex)},
                    {"bx", &(m_bx)},
@@ -75,14 +75,16 @@ public:
   }
   ~NTTSimulationVis() = default;
   void setData() override {
+    // TODO: there might be an easier way to map
     for (int j{0}; j < m_sy; ++j) {
       for (int i{0}; i < m_sx; ++i) {
-        m_ex.set(i * m_sy + j, m_sim.get_meshblock().ex1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_ey.set(i * m_sy + j, m_sim.get_meshblock().ex2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_ez.set(i * m_sy + j, m_sim.get_meshblock().ex3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_bx.set(i * m_sy + j, m_sim.get_meshblock().bx1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_by.set(i * m_sy + j, m_sim.get_meshblock().bx2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_bz.set(i * m_sy + j, m_sim.get_meshblock().bx3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        int lind{i + j * m_sx};
+        m_ex.set(lind, m_sim.get_meshblock().ex1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_ey.set(lind, m_sim.get_meshblock().ex2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_ez.set(lind, m_sim.get_meshblock().ex3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_bx.set(lind, m_sim.get_meshblock().bx1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_by.set(lind, m_sim.get_meshblock().bx2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_bz.set(lind, m_sim.get_meshblock().bx3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
       }
     }
   }
