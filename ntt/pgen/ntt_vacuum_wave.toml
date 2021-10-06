@@ -5,8 +5,8 @@ runtime         = 0.1
 [domain]
 coord_system    = "XY"
 # options are: `X`, `XY`, `XYZ`, `R_PHI`, `R_THETA`, `R_THETA_PHI`, `logR_THETA_PHI`
-resolution      = [256, 256]
-extent          = [-2.0, 2.0, -2.0, 2.0]
+resolution      = [10, 20]
+extent          = [-2.0, 2.0, -4.0, 4.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 # options are: `PERIODIC`, `OPEN`
 
