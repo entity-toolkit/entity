@@ -15,8 +15,8 @@ void Simulation<One_D>::faradayHalfsubstep(const real_t& time) {
   UNUSED(time);
   PLOGD << "1D faraday";
   if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
-    const real_t coeff{static_cast<real_t>(0.5) * m_sim_params.m_correction * m_sim_params.m_timestep
-                       / m_meshblock.get_dx1()};
+    const real_t coeff{static_cast<real_t>(0.5) * m_sim_params.m_correction
+                       * m_sim_params.m_timestep / m_meshblock.get_dx1()};
     Kokkos::parallel_for(
         "faraday", loopActiveCells(m_meshblock), Faraday1D_Cartesian(m_meshblock, coeff));
   }
@@ -26,8 +26,8 @@ void Simulation<Two_D>::faradayHalfsubstep(const real_t& time) {
   UNUSED(time);
   PLOGD << "2D faraday";
   if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
-    const real_t coeff{static_cast<real_t>(0.5) * m_sim_params.m_correction * m_sim_params.m_timestep
-                       / m_meshblock.get_dx1()};
+    const real_t coeff{static_cast<real_t>(0.5) * m_sim_params.m_correction
+                       * m_sim_params.m_timestep / m_meshblock.get_dx1()};
     Kokkos::parallel_for(
         "faraday", loopActiveCells(m_meshblock), Faraday2D_Cartesian(m_meshblock, coeff));
   }
@@ -37,8 +37,8 @@ void Simulation<Three_D>::faradayHalfsubstep(const real_t& time) {
   UNUSED(time);
   PLOGD << "3D faraday";
   if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
-    const real_t coeff{static_cast<real_t>(0.5) * m_sim_params.m_correction * m_sim_params.m_timestep
-                       / m_meshblock.get_dx1()};
+    const real_t coeff{static_cast<real_t>(0.5) * m_sim_params.m_correction
+                       * m_sim_params.m_timestep / m_meshblock.get_dx1()};
     Kokkos::parallel_for(
         "faraday", loopActiveCells(m_meshblock), Faraday3D_Cartesian(m_meshblock, coeff));
   }
