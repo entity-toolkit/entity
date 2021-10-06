@@ -94,10 +94,16 @@ public:
     ++m_timestep;
     m_time += m_sim.get_params().get_timestep();
   }
-  void stepBwd() override {
-    --m_timestep;
-    // m_sim.step_forward();
+  void reset() override {
+    m_sim.initialize();
     setData();
+    m_time = 0.0;
+    m_timestep = 0;
+  }
+  void stepBwd() override {
+    // --m_timestep;
+    // m_sim.step_forward();
+    // setData();
   }
 };
 
@@ -121,7 +127,7 @@ auto main(int argc, char* argv[]) -> int {
     NTTSimulationVis visApi(sim);
 
     nttiny::Visualization<float> vis;
-    vis.setTPSLimit(30.0f);
+    vis.setTPSLimit(12.0f);
     vis.bindSimulation(&visApi);
     vis.loop();
   }
