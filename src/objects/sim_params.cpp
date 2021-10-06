@@ -107,7 +107,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
   auto cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", 0.45);
   assert(cfl > 0);
   // TODO: other coord systems
-  auto cell_size = static_cast<real_t>((m_extent[1] - m_extent[0]) / m_resolution[0]);
+  auto cell_size = (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
   m_timestep = cell_size * cfl;
 }
 

@@ -34,13 +34,13 @@ struct Meshblock {
   void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
   void set_extent(const std::vector<real_t>& extent) { m_extent = extent; }
   [[nodiscard]] auto get_dx1() const -> real_t {
-    return static_cast<real_t>((m_extent[1] - m_extent[0]) / m_resolution[0]);
+    return (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
   }
   [[nodiscard]] auto get_dx2() const -> real_t {
-    return static_cast<real_t>((m_extent[3] - m_extent[2]) / m_resolution[1]);
+    return (m_extent[3] - m_extent[2]) / static_cast<real_t>(m_resolution[1]);
   }
   [[nodiscard]] auto get_dx3() const -> real_t {
-    return static_cast<real_t>((m_extent[5] - m_extent[4]) / m_resolution[2]);
+    return (m_extent[5] - m_extent[4]) / static_cast<real_t>(m_resolution[2]);
   }
   [[nodiscard]] auto get_x1min() const -> real_t { return m_extent[0]; }
   [[nodiscard]] auto get_x1max() const -> real_t { return m_extent[1]; }
@@ -67,19 +67,19 @@ auto loopActiveCells(const Meshblock<Three_D>&) -> ntt_3drange_t;
 template <template <typename T> class D>
 KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const long int& i) -> real_t {
   return mblock.m_extent[0]
-       + static_cast<real_t>((i - N_GHOSTS) / mblock.m_resolution[0])
+       + (static_cast<real_t>(i - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[0]))
              * (mblock.m_extent[1] - mblock.m_extent[0]);
 }
 template <template <typename T> class D>
 KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const long int& j) -> real_t {
   return mblock.m_extent[2]
-       + static_cast<real_t>((j - N_GHOSTS) / mblock.m_resolution[1])
+       + (static_cast<real_t>(j - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[1]))
              * (mblock.m_extent[3] - mblock.m_extent[2]);
 }
 template <template <typename T> class D>
 KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const long int& k) -> real_t {
   return mblock.m_extent[4]
-       + static_cast<real_t>((k - N_GHOSTS) / mblock.m_resolution[2])
+       + (static_cast<real_t>(k - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[2]))
              * (mblock.m_extent[5] - mblock.m_extent[4]);
 }
 
