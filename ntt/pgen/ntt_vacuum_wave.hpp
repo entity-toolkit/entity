@@ -8,6 +8,8 @@
 namespace ntt {
 
 class ProblemGenerator {
+  int m_nx1, m_nx2;
+  real_t m_amplitude;
 
 public:
   ProblemGenerator(SimulationParams& sim_params);
