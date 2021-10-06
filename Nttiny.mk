@@ -1,6 +1,6 @@
 # to compile visualization app
 #
-
+COMPILER := ${CXX}
 VIS_TARGET := ${BIN_DIR}/vis.exec
 BUILD_VIS_DIR := $(subst ${ROOT_DIR}/,,${VIS_DIR})
 
