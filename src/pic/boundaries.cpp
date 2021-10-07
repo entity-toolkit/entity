@@ -9,8 +9,7 @@
 
 namespace ntt {
 
-template <>
-void Simulation<One_D>::fieldBoundaryConditions(const real_t& time) {
+void Simulation1D::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
   auto nx1 = m_meshblock.get_n1();
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
@@ -23,8 +22,7 @@ void Simulation<One_D>::fieldBoundaryConditions(const real_t& time) {
   }
 }
 
-template <>
-void Simulation<Two_D>::fieldBoundaryConditions(const real_t& time) {
+void Simulation2D::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
   auto nx1 = m_meshblock.get_n1();
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
@@ -50,8 +48,7 @@ void Simulation<Two_D>::fieldBoundaryConditions(const real_t& time) {
   }
 }
 
-template <>
-void Simulation<Three_D>::fieldBoundaryConditions(const real_t& time) {
+void Simulation3D::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
 
@@ -59,9 +56,5 @@ void Simulation<Three_D>::fieldBoundaryConditions(const real_t& time) {
     throw std::logic_error("ERROR: only periodic boundaries are implemented");
   }
 }
-
-template class ntt::Simulation<ntt::One_D>;
-template class ntt::Simulation<ntt::Two_D>;
-template class ntt::Simulation<ntt::Three_D>;
 
 } // namespace ntt

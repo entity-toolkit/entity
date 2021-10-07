@@ -42,7 +42,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // TODO: make this prettier
     if (res == 1) {
-      ntt::Simulation<ntt::One_D> sim(inputdata);
+      ntt::Simulation1D sim(inputdata);
       sim.setIO(inputfilename, outputpath);
       sim.initialize();
       sim.verify();
@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int {
       sim.mainloop();
       sim.finalize();
     } else if (res == 2) {
-      ntt::Simulation<ntt::Two_D> sim(inputdata);
+      ntt::Simulation2D sim(inputdata);
       sim.setIO(inputfilename, outputpath);
       sim.initialize();
       sim.verify();
@@ -58,7 +58,7 @@ auto main(int argc, char* argv[]) -> int {
       sim.mainloop();
       sim.finalize();
     } else {
-      ntt::Simulation<ntt::Three_D> sim(inputdata);
+      ntt::Simulation3D sim(inputdata);
       sim.setIO(inputfilename, outputpath);
       sim.initialize();
       sim.verify();

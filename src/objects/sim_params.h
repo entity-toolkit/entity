@@ -33,7 +33,7 @@ class SimulationParams {
   real_t m_charge0;
   real_t m_B0;
 
-  std::vector<ParticleSpecies> m_species;
+  // std::vector<ParticleSpecies> m_species;
 
   CoordinateSystem m_coord_system{UNDEFINED_COORD};
   std::vector<real_t> m_extent;
@@ -41,13 +41,16 @@ class SimulationParams {
   std::vector<BoundaryCondition> m_boundaries;
 
 public:
-  SimulationParams(const toml::value& inputdata, short dim);
+  SimulationParams(const toml::value& inputdata, Dimension dim);
   ~SimulationParams() = default;
 
-  template <template <typename T> class D>
+  template<Dimension D>
   friend class Simulation;
+  friend class Simulation1D;
+  friend class Simulation2D;
+  friend class Simulation3D;
 
-  friend class ProblemGenerator;
+  // friend class ProblemGenerator;
 
   [[nodiscard]] auto get_extent() const -> const std::vector<real_t>& { return m_extent; }
   [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& {
