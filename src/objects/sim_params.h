@@ -33,7 +33,7 @@ class SimulationParams {
   real_t m_charge0;
   real_t m_B0;
 
-  // std::vector<ParticleSpecies> m_species;
+  std::vector<ParticleSpecies> m_species;
 
   CoordinateSystem m_coord_system{UNDEFINED_COORD};
   std::vector<real_t> m_extent;
@@ -52,6 +52,10 @@ public:
 
   // friend class ProblemGenerator;
 
+  void printDetails();
+  void verify();
+
+  [[nodiscard]] auto get_cell_size() -> real_t;
   [[nodiscard]] auto get_extent() const -> const std::vector<real_t>& { return m_extent; }
   [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& {
     return m_resolution;
