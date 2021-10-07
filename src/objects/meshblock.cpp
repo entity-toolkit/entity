@@ -69,16 +69,16 @@ Meshblock3D::Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpeci
       jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {}
 
-auto loopActiveCells(const Meshblock1D& mblock) -> ntt_1drange_t {
-  return NTT1DRange(static_cast<range_t>(mblock.get_imin()),
-                    static_cast<range_t>(mblock.get_imax()));
+auto Meshblock1D::loopActiveCells() -> ntt_1drange_t {
+  return NTT1DRange(static_cast<range_t>(get_imin()),
+                    static_cast<range_t>(get_imax()));
 }
-auto loopActiveCells(const Meshblock2D& mblock) -> ntt_2drange_t {
-  return NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imax(), mblock.get_jmax()});
+auto Meshblock2D::loopActiveCells() -> ntt_2drange_t {
+  return NTT2DRange({get_imin(), get_jmin()}, {get_imax(), get_jmax()});
 }
-auto loopActiveCells(const Meshblock3D& mblock) -> ntt_3drange_t {
-  return NTT3DRange({mblock.get_imin(), mblock.get_jmin(), mblock.get_kmin()},
-                    {mblock.get_imax(), mblock.get_jmax(), mblock.get_kmax()});
+auto Meshblock3D::loopActiveCells() -> ntt_3drange_t {
+  return NTT3DRange({get_imin(), get_jmin(), get_kmin()},
+                    {get_imax(), get_jmax(), get_kmax()});
 }
 
 void Meshblock1D::verify(const SimulationParams& sim_params) {
