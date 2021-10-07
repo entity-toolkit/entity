@@ -10,23 +10,23 @@ namespace ntt {
 
 class BC1D {
 protected:
-  Meshblock<One_D> m_mblock;
+  Meshblock1D m_mblock;
   const std::size_t nxI;
   using size_type = NTTArray<real_t*>::size_type;
 
 public:
-  BC1D(const Meshblock<One_D>& m_mblock_, const std::size_t& nxI_)
+  BC1D(const Meshblock1D& m_mblock_, const std::size_t& nxI_)
       : m_mblock(m_mblock_), nxI(nxI_) {}
 };
 
 class BC2D {
 protected:
-  Meshblock<Two_D> m_mblock;
+  Meshblock2D m_mblock;
   const std::size_t nxI;
   using size_type = NTTArray<real_t**>::size_type;
 
 public:
-  BC2D(const Meshblock<Two_D>& m_mblock_, const std::size_t& nxI_)
+  BC2D(const Meshblock2D& m_mblock_, const std::size_t& nxI_)
       : m_mblock(m_mblock_), nxI(nxI_) {}
 };
 
