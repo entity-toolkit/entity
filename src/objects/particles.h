@@ -35,6 +35,7 @@ template <template <typename T = std::nullptr_t> class D>
 class Particles : public ParticleSpecies {
   D<> m_dim;
 
+  // TODO: maybe use VPIC-style ND array
   NTTArray<real_t*> m_x1, m_x2, m_x3;
   NTTArray<real_t*> m_ux1, m_ux2, m_ux3;
   NTTArray<float*> m_weight;
