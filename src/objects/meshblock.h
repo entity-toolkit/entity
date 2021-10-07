@@ -79,6 +79,7 @@ struct Meshblock1D : public Meshblock<ONE_D> {
   NTTArray<real_t*> jx1, jx2, jx3;
   Meshblock1D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
   void verify(const SimulationParams& sim_params) override;
+  auto loopActiveCells() -> ntt_1drange_t;
 };
 struct Meshblock2D : public Meshblock<TWO_D> {
   NTTArray<real_t**> ex1, ex2, ex3;
@@ -86,6 +87,7 @@ struct Meshblock2D : public Meshblock<TWO_D> {
   NTTArray<real_t**> jx1, jx2, jx3;
   Meshblock2D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
   void verify(const SimulationParams& sim_params) override;
+  auto loopActiveCells() -> ntt_2drange_t;
 };
 struct Meshblock3D : public Meshblock<THREE_D> {
   NTTArray<real_t***> ex1, ex2, ex3;
@@ -95,11 +97,8 @@ struct Meshblock3D : public Meshblock<THREE_D> {
 public:
   Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
   void verify(const SimulationParams& sim_params) override;
+  auto loopActiveCells() -> ntt_3drange_t;
 };
-
-auto loopActiveCells(const Meshblock1D&) -> ntt_1drange_t;
-auto loopActiveCells(const Meshblock2D&) -> ntt_2drange_t;
-auto loopActiveCells(const Meshblock3D&) -> ntt_3drange_t;
 
 } // namespace ntt
 

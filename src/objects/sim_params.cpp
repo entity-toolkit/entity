@@ -188,23 +188,3 @@ void SimulationParams::printDetails() {
 }
 
 } // namespace ntt
-
-// for (short i{dim}; i < 3; ++i) {
-//   m_extent.push_back(0.0);
-//   m_extent.push_back(0.0);
-//   m_resolution.push_back(0);
-// }
-
-// // copy extent and resolution to device (or don't do anything if device ==
-// host) NTTArray<real_t[6]>::HostMirror extent_host =
-// Kokkos::create_mirror_view(extent); NTTArray<std::size_t[3]>::HostMirror
-// resolution_host = Kokkos::create_mirror_view(resolution);
-//
-// for (short i{0}; i < 3; ++i) {
-//   resolution_host(i) = m_resolution[i];
-//   extent_host(2 * i) = m_extent[2 * i];
-//   extent_host(2 * i + 1) = m_extent[2 * i + 1];
-// }
-//
-// Kokkos::deep_copy(extent, extent_host);
-// Kokkos::deep_copy(resolution, resolution_host);
