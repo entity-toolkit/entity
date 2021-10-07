@@ -12,7 +12,7 @@
 #include <vector>
 
 namespace ntt {
-SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
+SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) {
   m_inputdata = inputdata;
 
   m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", "PIC_Sim");
@@ -37,7 +37,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
     } else if (pusher_str == "Boris") {
       pusher = BORIS_PUSHER;
     }
-    m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
+    // m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
   }
 
   // TODO: for now only PIC
@@ -45,24 +45,24 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
 
   auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
   if (coords == "X") {
-    if (dim != 1) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XY") {
-    if (dim == 3) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim == THREE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XYZ") {
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "R_PHI") {
-    if (dim != 2) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = POLAR_R_PHI_COORD;
   } else if (coords == "R_THETA") {
-    if (dim != 2) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = POLAR_R_THETA_COORD;
   } else if (coords == "R_THETA_PHI") {
-    if (dim != 3) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != THREE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = SPHERICAL_COORD;
   } else if (coords == "logR_THETA_PHI") {
-    if (dim != 3) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != THREE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = LOG_SPHERICAL_COORD;
   } else {
     throw std::invalid_argument("Unknown coordinate system specified in the input.");
@@ -73,13 +73,13 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
   m_extent = readFromInput<std::vector<real_t>>(
       m_inputdata, "domain", "extent", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
-  if ((static_cast<short>(m_resolution.size()) < dim)
-      || (static_cast<short>(m_extent.size()) < 2 * dim)) {
+  if ((static_cast<short>(m_resolution.size()) < static_cast<short>(dim))
+      || (static_cast<short>(m_extent.size()) < 2 * static_cast<short>(dim))) {
     throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
   }
 
-  m_resolution.erase(m_resolution.begin() + dim, m_resolution.end());
-  m_extent.erase(m_extent.begin() + 2 * dim, m_extent.end());
+  m_resolution.erase(m_resolution.begin() + static_cast<short>(dim), m_resolution.end());
+  m_extent.erase(m_extent.begin() + 2 * static_cast<short>(dim), m_extent.end());
 
   auto boundaries = readFromInput<std::vector<std::string>>(
       m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
@@ -93,7 +93,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, short dim) {
       m_boundaries.push_back(UNDEFINED_BC);
     }
     ++b;
-    if (b >= dim) { break; }
+    if (b >= static_cast<short>(dim)) { break; }
   }
   // plasma params
   m_ppc0 = readFromInput<real_t>(m_inputdata, "algorithm", "ppc0");

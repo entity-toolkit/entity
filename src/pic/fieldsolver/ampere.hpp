@@ -5,7 +5,7 @@ namespace ntt {
 
 class Ampere1D_Cartesian : public FieldSolver1D {
 public:
-  Ampere1D_Cartesian(const Meshblock<One_D>& m_mblock_, const real_t& coeff_)
+  Ampere1D_Cartesian(const Meshblock1D& m_mblock_, const real_t& coeff_)
       : FieldSolver1D{m_mblock_, coeff_} {}
   Inline void operator()(const size_type i) const {
     m_mblock.ex2(i) = m_mblock.ex2(i) + coeff * (m_mblock.bx3(i - 1) - m_mblock.bx3(i));
@@ -15,7 +15,7 @@ public:
 
 class Ampere2D_Cartesian : public FieldSolver2D {
 public:
-  Ampere2D_Cartesian(const Meshblock<Two_D>& m_mblock_, const real_t& coeff_)
+  Ampere2D_Cartesian(const Meshblock2D& m_mblock_, const real_t& coeff_)
       : FieldSolver2D{m_mblock_, coeff_} {}
   Inline void operator()(const size_type i, const size_type j) const {
     m_mblock.ex1(i, j)
@@ -30,7 +30,7 @@ public:
 
 class Ampere3D_Cartesian : public FieldSolver3D {
 public:
-  Ampere3D_Cartesian(const Meshblock<Three_D>& m_mblock_, const real_t& coeff_)
+  Ampere3D_Cartesian(const Meshblock3D& m_mblock_, const real_t& coeff_)
       : FieldSolver3D{m_mblock_, coeff_} {}
   Inline void operator()(const size_type i, const size_type j, const size_type k) const {
     m_mblock.ex1(i, j, k) = m_mblock.ex1(i, j, k)
