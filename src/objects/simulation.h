@@ -12,6 +12,7 @@
 
 namespace ntt {
 
+// TODO!: there has to be a better way (e.g. `using`, or `typedef`)
 template <template <typename T = std::nullptr_t> class D>
 class Simulation {
   D<> m_dim;
