@@ -40,31 +40,15 @@ auto main(int argc, char* argv[]) -> int {
         ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
     if (!((res > 0) && (res < 4))) { throw std::logic_error("ERROR: wrong dimension specified."); }
 
-    // TODO: make this prettier
     if (res == 1) {
       ntt::Simulation1D sim(inputdata);
-      sim.setIO(inputfilename, outputpath);
-      sim.initialize();
-      sim.verify();
-      sim.printDetails();
-      sim.mainloop();
-      sim.finalize();
+      sim.run(inputfilename, outputpath);
     } else if (res == 2) {
       ntt::Simulation2D sim(inputdata);
-      sim.setIO(inputfilename, outputpath);
-      sim.initialize();
-      sim.verify();
-      sim.printDetails();
-      sim.mainloop();
-      sim.finalize();
+      sim.run(inputfilename, outputpath);
     } else {
       ntt::Simulation3D sim(inputdata);
-      sim.setIO(inputfilename, outputpath);
-      sim.initialize();
-      sim.verify();
-      sim.printDetails();
-      sim.mainloop();
-      sim.finalize();
+      sim.run(inputfilename, outputpath);
     }
   }
   catch (std::exception& err) {

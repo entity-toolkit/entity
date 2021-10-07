@@ -2,23 +2,26 @@
 #define OBJECTS_MESHBLOCK_H
 
 #include "global.h"
+#include "sim_params.h"
 #include "particles.h"
 
 #include <vector>
 
 namespace ntt {
 
-// TODO!: there has to be a better way (e.g. `using`, or `typedef`)
 template<Dimension D>
 struct Meshblock {
-  // std::vector<Particles<D>> particles;
+  std::vector<Particles<D>> particles;
 
   CoordinateSystem m_coord_system;
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
 
-  Meshblock(std::vector<std::size_t> res);
+  Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
   ~Meshblock() = default;
+
+  virtual void verify(const SimulationParams&) {}
+  void printDetails();
 
   void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
   void set_extent(const std::vector<real_t>& extent) { m_extent = extent; }
@@ -74,20 +77,23 @@ struct Meshblock1D : public Meshblock<ONE_D> {
   NTTArray<real_t*> ex1, ex2, ex3;
   NTTArray<real_t*> bx1, bx2, bx3;
   NTTArray<real_t*> jx1, jx2, jx3;
-  Meshblock1D(std::vector<std::size_t> res);
+  Meshblock1D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
+  void verify(const SimulationParams& sim_params) override;
 };
 struct Meshblock2D : public Meshblock<TWO_D> {
   NTTArray<real_t**> ex1, ex2, ex3;
   NTTArray<real_t**> bx1, bx2, bx3;
   NTTArray<real_t**> jx1, jx2, jx3;
-  Meshblock2D(std::vector<std::size_t> res);
+  Meshblock2D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
+  void verify(const SimulationParams& sim_params) override;
 };
 struct Meshblock3D : public Meshblock<THREE_D> {
   NTTArray<real_t***> ex1, ex2, ex3;
   NTTArray<real_t***> bx1, bx2, bx3;
   NTTArray<real_t***> jx1, jx2, jx3;
 public:
-  Meshblock3D(std::vector<std::size_t> res);
+  Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
+  void verify(const SimulationParams& sim_params) override;
 };
 
 auto loopActiveCells(const Meshblock1D&) -> ntt_1drange_t;
