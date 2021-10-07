@@ -44,7 +44,7 @@ public:
   SimulationParams(const toml::value& inputdata, Dimension dim);
   ~SimulationParams() = default;
 
-  template<Dimension D>
+  template <Dimension D>
   friend class Simulation;
   friend class Simulation1D;
   friend class Simulation2D;

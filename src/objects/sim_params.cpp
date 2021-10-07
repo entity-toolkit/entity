@@ -49,7 +49,9 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
     if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XY") {
-    if (dim == THREE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim == THREE_D) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = CARTESIAN_COORD;
   } else if (coords == "XYZ") {
     m_coord_system = CARTESIAN_COORD;
@@ -60,10 +62,14 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
     if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
     m_coord_system = POLAR_R_THETA_COORD;
   } else if (coords == "R_THETA_PHI") {
-    if (dim != THREE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != THREE_D) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = SPHERICAL_COORD;
   } else if (coords == "logR_THETA_PHI") {
-    if (dim != THREE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+    if (dim != THREE_D) {
+      throw std::logic_error("ERROR: wrong coord system for given dimension.");
+    }
     m_coord_system = LOG_SPHERICAL_COORD;
   } else {
     throw std::invalid_argument("Unknown coordinate system specified in the input.");
@@ -120,9 +126,7 @@ auto SimulationParams::get_cell_size() -> real_t {
 }
 
 void SimulationParams::verify() {
-  if (m_simtype == UNDEFINED_SIM) {
-    throw std::logic_error("ERROR: simulation type unspecified.");
-  }
+  if (m_simtype == UNDEFINED_SIM) { throw std::logic_error("ERROR: simulation type unspecified."); }
   if (m_coord_system == UNDEFINED_COORD) {
     throw std::logic_error("ERROR: coordinate system unspecified.");
   }
@@ -137,14 +141,12 @@ void SimulationParams::printDetails() {
   PLOGI << "   title: " << m_title;
   PLOGI << "   type: " << stringifySimulationType(m_simtype);
   PLOGI << "   total runtime: " << m_runtime;
-  PLOGI << "   dt: " << m_timestep << " ["
-        << static_cast<int>(m_runtime / m_timestep) << " steps]";
+  PLOGI << "   dt: " << m_timestep << " [" << static_cast<int>(m_runtime / m_timestep) << " steps]";
 
   auto dim = static_cast<short>(m_resolution.size());
   PLOGI << "[domain]";
   PLOGI << "   dimension: " << dim << "D";
-  PLOGI << "   coordinate system: "
-        << stringifyCoordinateSystem(m_coord_system, dim);
+  PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_coord_system, dim);
 
   std::string bc{"   boundary conditions: { "};
   for (auto& b : m_boundaries) {
@@ -164,8 +166,7 @@ void SimulationParams::printDetails() {
 
   std::string ext{"   extent: "};
   for (std::size_t i{0}; i < m_extent.size(); i += 2) {
-    ext += "{" + std::to_string(m_extent[i]) + ", "
-         + std::to_string(m_extent[i + 1]) + "} ";
+    ext += "{" + std::to_string(m_extent[i]) + ", " + std::to_string(m_extent[i + 1]) + "} ";
   }
   PLOGI << ext;
 
@@ -179,10 +180,8 @@ void SimulationParams::printDetails() {
 
   PLOGI << "[fiducial parameters]";
   PLOGI << "   ppc0: " << m_ppc0;
-  PLOGI << "   rho0: " << m_larmor0 << " [" << m_larmor0 / effective_dx
-        << " dx]";
-  PLOGI << "   c_omp0: " << m_skindepth0 << " ["
-        << m_skindepth0 / effective_dx << " dx]";
+  PLOGI << "   rho0: " << m_larmor0 << " [" << m_larmor0 / effective_dx << " dx]";
+  PLOGI << "   c_omp0: " << m_skindepth0 << " [" << m_skindepth0 / effective_dx << " dx]";
   PLOGI << "   sigma0: " << m_sigma0;
   PLOGI << "   q0: " << m_charge0;
   PLOGI << "   B0: " << m_B0;
