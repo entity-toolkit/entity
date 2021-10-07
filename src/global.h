@@ -53,23 +53,27 @@ auto NTT1DRange(const long int&, const long int&) -> ntt_1drange_t;
 auto NTT2DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_2drange_t;
 auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_3drange_t;
 
-template <typename T>
-struct One_D {
-  short dim{1};
-  using ndtype_t = T*;
+enum Dimension {
+  ONE_D=1, TWO_D, THREE_D
 };
 
-template <typename T>
-struct Two_D {
-  short dim{2};
-  using ndtype_t = T**;
-};
-
-template <typename T>
-struct Three_D {
-  short dim{3};
-  using ndtype_t = T***;
-};
+// template <typename T>
+// struct One_D {
+//   short dim{1};
+//   using ndtype_t = T*;
+// };
+//
+// template <typename T>
+// struct Two_D {
+//   short dim{2};
+//   using ndtype_t = T**;
+// };
+//
+// template <typename T>
+// struct Three_D {
+//   short dim{3};
+//   using ndtype_t = T***;
+// };
 
 inline constexpr int N_GHOSTS{2};
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
