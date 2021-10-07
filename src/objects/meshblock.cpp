@@ -7,8 +7,9 @@
 
 namespace ntt {
 
-template<Dimension D>
-Meshblock<D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts) : m_resolution{res} {
+template <Dimension D>
+Meshblock<D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
+    : m_resolution{res} {
   for (auto& part : parts) {
     particles.emplace_back(part);
   }
@@ -24,8 +25,8 @@ void Meshblock<D>::printDetails() {
       PLOGI << "      mass: " << particles[i].get_mass();
       PLOGI << "      charge: " << particles[i].get_charge();
       PLOGI << "      pusher: " << stringifyParticlePusher(particles[i].get_pusher());
-      PLOGI << "      maxnpart: " << particles[i].get_maxnpart() << " ("
-            << particles[i].get_npart() << ")";
+      PLOGI << "      maxnpart: " << particles[i].get_maxnpart() << " (" << particles[i].get_npart()
+            << ")";
     }
   } else {
     PLOGI << "[no particles]";
