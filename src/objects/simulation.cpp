@@ -13,21 +13,18 @@ namespace ntt {
 
 template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
-    : m_sim_params{inputdata, m_dim}
-      // m_pGen{m_sim_params}
-      {}
+    : m_sim_params{inputdata, m_dim} // m_pGen{m_sim_params}
+{}
 
 Simulation1D::Simulation1D(const toml::value& inputdata)
-    : Simulation<ONE_D>{inputdata},
-      m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
+    : Simulation<ONE_D>{inputdata}, m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
   // TODO: meshblock extent can be different from global one
   m_meshblock.set_extent(m_sim_params.m_extent);
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);
 }
 
 Simulation2D::Simulation2D(const toml::value& inputdata)
-    : Simulation<TWO_D>{inputdata},
-      m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
+    : Simulation<TWO_D>{inputdata}, m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
   // TODO: meshblock extent can be different from global one
   m_meshblock.set_extent(m_sim_params.m_extent);
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);

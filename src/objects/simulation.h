@@ -12,7 +12,7 @@
 
 namespace ntt {
 
-template<Dimension D>
+template <Dimension D>
 class Simulation {
 protected:
   Dimension m_dim{D};
@@ -46,6 +46,7 @@ public:
 
 class Simulation1D : public Simulation<ONE_D> {
   Meshblock1D m_meshblock;
+
 public:
   Simulation1D(const toml::value& inputdata);
 
@@ -64,6 +65,7 @@ public:
 
 class Simulation2D : public Simulation<TWO_D> {
   Meshblock2D m_meshblock;
+
 public:
   Simulation2D(const toml::value& inputdata);
 
@@ -82,6 +84,7 @@ public:
 
 class Simulation3D : public Simulation<THREE_D> {
   Meshblock3D m_meshblock;
+
 public:
   Simulation3D(const toml::value& inputdata);
 

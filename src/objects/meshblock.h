@@ -9,7 +9,7 @@
 
 namespace ntt {
 
-template<Dimension D>
+template <Dimension D>
 struct Meshblock {
   std::vector<Particles<D>> particles;
 
@@ -91,6 +91,7 @@ struct Meshblock3D : public Meshblock<THREE_D> {
   NTTArray<real_t***> ex1, ex2, ex3;
   NTTArray<real_t***> bx1, bx2, bx3;
   NTTArray<real_t***> jx1, jx2, jx3;
+
 public:
   Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
   void verify(const SimulationParams& sim_params) override;

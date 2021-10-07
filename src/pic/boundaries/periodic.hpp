@@ -10,8 +10,7 @@ namespace ntt {
 // ... x1
 class BC1D_PeriodicX1m : public BC1D {
 public:
-  BC1D_PeriodicX1m(const Meshblock1D& m_mblock_, const std::size_t& nxI_)
-      : BC1D{m_mblock_, nxI_} {}
+  BC1D_PeriodicX1m(const Meshblock1D& m_mblock_, const std::size_t& nxI_) : BC1D{m_mblock_, nxI_} {}
   Inline void operator()(const size_type i) const {
     m_mblock.ex1(i) = m_mblock.ex1(i + nxI);
     m_mblock.ex2(i) = m_mblock.ex2(i + nxI);
@@ -23,8 +22,7 @@ public:
 };
 class BC1D_PeriodicX1p : public BC1D {
 public:
-  BC1D_PeriodicX1p(const Meshblock1D& m_mblock_, const std::size_t& nxI_)
-      : BC1D{m_mblock_, nxI_} {}
+  BC1D_PeriodicX1p(const Meshblock1D& m_mblock_, const std::size_t& nxI_) : BC1D{m_mblock_, nxI_} {}
   Inline void operator()(const size_type i) const {
     m_mblock.ex1(i) = m_mblock.ex1(i - nxI);
     m_mblock.ex2(i) = m_mblock.ex2(i - nxI);
@@ -39,8 +37,7 @@ public:
 // ... x1
 class BC2D_PeriodicX1m : public BC2D {
 public:
-  BC2D_PeriodicX1m(const Meshblock2D& m_mblock_, const std::size_t& nxI_)
-      : BC2D{m_mblock_, nxI_} {}
+  BC2D_PeriodicX1m(const Meshblock2D& m_mblock_, const std::size_t& nxI_) : BC2D{m_mblock_, nxI_} {}
   Inline void operator()(const size_type i, const size_type j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i + nxI, j);
     m_mblock.ex2(i, j) = m_mblock.ex2(i + nxI, j);
@@ -52,8 +49,7 @@ public:
 };
 class BC2D_PeriodicX1p : public BC2D {
 public:
-  BC2D_PeriodicX1p(const Meshblock2D& m_mblock_, const std::size_t& nxI_)
-      : BC2D{m_mblock_, nxI_} {}
+  BC2D_PeriodicX1p(const Meshblock2D& m_mblock_, const std::size_t& nxI_) : BC2D{m_mblock_, nxI_} {}
   Inline void operator()(const size_type i, const size_type j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i - nxI, j);
     m_mblock.ex2(i, j) = m_mblock.ex2(i - nxI, j);
@@ -66,8 +62,7 @@ public:
 // ... x2
 class BC2D_PeriodicX2m : public BC2D {
 public:
-  BC2D_PeriodicX2m(const Meshblock2D& m_mblock_, const std::size_t& nxI_)
-      : BC2D{m_mblock_, nxI_} {}
+  BC2D_PeriodicX2m(const Meshblock2D& m_mblock_, const std::size_t& nxI_) : BC2D{m_mblock_, nxI_} {}
   Inline void operator()(const size_type i, const size_type j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i, j + nxI);
     m_mblock.ex2(i, j) = m_mblock.ex2(i, j + nxI);
@@ -79,8 +74,7 @@ public:
 };
 class BC2D_PeriodicX2p : public BC2D {
 public:
-  BC2D_PeriodicX2p(const Meshblock2D& m_mblock_, const std::size_t& nxI_)
-      : BC2D{m_mblock_, nxI_} {}
+  BC2D_PeriodicX2p(const Meshblock2D& m_mblock_, const std::size_t& nxI_) : BC2D{m_mblock_, nxI_} {}
   Inline void operator()(const size_type i, const size_type j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i, j - nxI);
     m_mblock.ex2(i, j) = m_mblock.ex2(i, j - nxI);
