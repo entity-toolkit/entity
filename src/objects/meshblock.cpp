@@ -8,14 +8,6 @@
 namespace ntt {
 
 template <Dimension D>
-Meshblock<D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : m_resolution{std::move(res)} {
-  for (auto& part : parts) {
-    particles.emplace_back(part);
-  }
-}
-
-template <Dimension D>
 void Meshblock<D>::printDetails() {
   if (particles.size() > 0) {
     PLOGI << "[particles]";
@@ -33,9 +25,9 @@ void Meshblock<D>::printDetails() {
   }
 }
 
-Meshblock1D::Meshblock1D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : Meshblock<ONE_D>{res, parts},
-      ex1{"Ex1", res[0] + 2 * N_GHOSTS},
+template<>
+Meshblock<ONE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
+    : ex1{"Ex1", res[0] + 2 * N_GHOSTS},
       ex2{"Ex2", res[0] + 2 * N_GHOSTS},
       ex3{"Ex3", res[0] + 2 * N_GHOSTS},
       bx1{"Bx1", res[0] + 2 * N_GHOSTS},
@@ -43,11 +35,16 @@ Meshblock1D::Meshblock1D(std::vector<std::size_t> res, std::vector<ParticleSpeci
       bx3{"Bx3", res[0] + 2 * N_GHOSTS},
       jx1{"Jx1", res[0] + 2 * N_GHOSTS},
       jx2{"Jx2", res[0] + 2 * N_GHOSTS},
-      jx3{"Jx3", res[0] + 2 * N_GHOSTS} {}
+      jx3{"Jx3", res[0] + 2 * N_GHOSTS},
+      m_resolution{std::move(res)} {
+  for (auto& part : parts) {
+    particles.emplace_back(part);
+  }
+}
 
-Meshblock2D::Meshblock2D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : Meshblock<TWO_D>{res, parts},
-      ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+template<>
+Meshblock<TWO_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
+    : ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       ex2{"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       ex3{"Ex3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       bx1{"Bx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
@@ -55,11 +52,16 @@ Meshblock2D::Meshblock2D(std::vector<std::size_t> res, std::vector<ParticleSpeci
       bx3{"Bx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       jx1{"Jx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {}
+      jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      m_resolution{std::move(res)} {
+  for (auto& part : parts) {
+    particles.emplace_back(part);
+  }
+}
 
-Meshblock3D::Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : Meshblock<THREE_D>{res, parts},
-      ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+template<>
+Meshblock<THREE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
+    : ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       ex2{"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       ex3{"Ex3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       bx1{"Bx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
@@ -67,19 +69,28 @@ Meshblock3D::Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpeci
       bx3{"Bx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       jx1{"Jx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       jx2{"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {}
+      jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      m_resolution{std::move(res)} {
+  for (auto& part : parts) {
+    particles.emplace_back(part);
+  }
+}
 
-auto Meshblock1D::loopActiveCells() -> ntt_1drange_t {
+template<>
+auto Meshblock<ONE_D>::loopActiveCells() -> ntt_1drange_t {
   return NTT1DRange(static_cast<range_t>(get_imin()), static_cast<range_t>(get_imax()));
 }
-auto Meshblock2D::loopActiveCells() -> ntt_2drange_t {
+template<>
+auto Meshblock<TWO_D>::loopActiveCells() -> ntt_2drange_t {
   return NTT2DRange({get_imin(), get_jmin()}, {get_imax(), get_jmax()});
 }
-auto Meshblock3D::loopActiveCells() -> ntt_3drange_t {
+template<>
+auto Meshblock<THREE_D>::loopActiveCells() -> ntt_3drange_t {
   return NTT3DRange({get_imin(), get_jmin(), get_kmin()}, {get_imax(), get_jmax(), get_kmax()});
 }
 
-void Meshblock1D::verify(const SimulationParams& sim_params) {
+template<>
+void Meshblock<ONE_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
       throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
@@ -94,7 +105,8 @@ void Meshblock1D::verify(const SimulationParams& sim_params) {
   }
 }
 
-void Meshblock2D::verify(const SimulationParams& sim_params) {
+template<>
+void Meshblock<TWO_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
     if (get_dx1() != get_dx2()) {
@@ -113,7 +125,8 @@ void Meshblock2D::verify(const SimulationParams& sim_params) {
   }
 }
 
-void Meshblock3D::verify(const SimulationParams& sim_params) {
+template<>
+void Meshblock<THREE_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
     if ((get_dx1() != get_dx2()) || (get_dx2() != get_dx3())) {

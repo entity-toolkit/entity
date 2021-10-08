@@ -3,19 +3,25 @@
 
 #include "global.h"
 #include "meshblock.h"
+#include "particles.h"
 
 namespace ntt {
 
 template <Dimension D>
 class Pusher {
 protected:
-  MeshblockND<D> m_meshblock;
-  std::size_t m_sp;
-  using size_type = NTTArray<real_t*>::size_type;
+  Meshblock<D> m_meshblock;
+  Particles<D> m_particles;
+  real_t coeff;
+  real_t dt;
+  using index_t = NTTArray<real_t*>::size_type;
 
 public:
-  Pusher(const MeshblockND<D>& m_meshblock_, const std::size_t& m_sp_)
-      : m_meshblock(m_meshblock_), m_sp{m_sp_} {}
+  Pusher(const Meshblock<D>& m_meshblock_,
+         const Particles<D>& m_particles_,
+         const real_t& coeff_,
+         const real_t& dt_)
+      : m_meshblock(m_meshblock_), m_particles(m_particles_), coeff(coeff_), dt(dt_) {}
 };
 
 } // namespace ntt

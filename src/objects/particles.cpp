@@ -66,6 +66,11 @@ template <Dimension D>
 Particles<D>::Particles(const ParticleSpecies& spec)
     : Particles(spec.m_label, spec.m_mass, spec.m_charge, spec.m_maxnpart) {}
 
+template <Dimension D>
+auto Particles<D>::loopParticles() -> ntt_1drange_t {
+  return NTT1DRange(static_cast<range_t>(0), static_cast<range_t>(get_npart()));
+}
+
 } // namespace ntt
 
 template class ntt::Particles<ntt::ONE_D>;

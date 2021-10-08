@@ -20,7 +20,7 @@ protected:
 
   SimulationParams m_sim_params;
   ProblemGenerator<D> m_pGen;
-  MeshblockND<D> m_meshblock;
+  Meshblock<D> m_meshblock;
 
 public:
   Simulation(const toml::value& inputdata);
@@ -45,9 +45,10 @@ public:
   virtual void depositSubstep(const real_t&) {}
   // boundaries
   virtual void fieldBoundaryConditions(const real_t&) {}
+  virtual void particleBoundaryConditions(const real_t&) {}
 
   [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
-  [[nodiscard]] auto get_meshblock() const -> const MeshblockND<D>& { return m_meshblock; }
+  [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& { return m_meshblock; }
 };
 
 struct Simulation1D : public Simulation<ONE_D> {
@@ -62,6 +63,7 @@ struct Simulation1D : public Simulation<ONE_D> {
   void depositSubstep(const real_t& time) override;
 
   void fieldBoundaryConditions(const real_t& time) override;
+  void particleBoundaryConditions(const real_t& time) override;
 };
 
 struct Simulation2D : public Simulation<TWO_D> {
@@ -76,6 +78,7 @@ struct Simulation2D : public Simulation<TWO_D> {
   void depositSubstep(const real_t& time) override;
 
   void fieldBoundaryConditions(const real_t& time) override;
+  void particleBoundaryConditions(const real_t& time) override;
 };
 
 struct Simulation3D : public Simulation<THREE_D> {
@@ -90,6 +93,7 @@ struct Simulation3D : public Simulation<THREE_D> {
   void depositSubstep(const real_t& time) override;
 
   void fieldBoundaryConditions(const real_t& time) override;
+  void particleBoundaryConditions(const real_t& time) override;
 };
 
 } // namespace ntt

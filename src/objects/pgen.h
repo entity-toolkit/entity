@@ -11,8 +11,8 @@ template <Dimension D>
 struct PGen {
   PGen() {}
   PGen(SimulationParams&) {}
-  void userInitFields(SimulationParams&, MeshblockND<D>&) {}
-  void userInitParticles(SimulationParams&, MeshblockND<D>&) {}
+  void userInitFields(SimulationParams&, Meshblock<D>&) {}
+  void userInitParticles(SimulationParams&, Meshblock<D>&) {}
 };
 
 } // namespace ntt
