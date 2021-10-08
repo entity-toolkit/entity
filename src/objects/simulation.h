@@ -34,12 +34,15 @@ public:
   void mainloop();
   void run(std::string_view, std::string_view);
 
+  // fields
   virtual void faradayHalfsubstep(const real_t&) {}
-  virtual void depositSubstep(const real_t&) {}
   virtual void ampereSubstep(const real_t&) {}
   virtual void addCurrentsSubstep(const real_t&) {}
   virtual void resetCurrentsSubstep(const real_t&) {}
-
+  // particles
+  virtual void pushParticlesSubstep(const real_t&) {}
+  virtual void depositSubstep(const real_t&) {}
+  // boundaries
   virtual void fieldBoundaryConditions(const real_t&) {}
 
   [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
@@ -55,12 +58,15 @@ public:
   void verify() override;
   void printDetails() override;
 
-  void fieldBoundaryConditions(const real_t& time) override;
   void faradayHalfsubstep(const real_t& time) override;
-  void depositSubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
   void addCurrentsSubstep(const real_t& time) override;
   void resetCurrentsSubstep(const real_t& time) override;
+
+  void pushParticlesSubstep(const real_t&) override;
+  void depositSubstep(const real_t& time) override;
+
+  void fieldBoundaryConditions(const real_t& time) override;
 
   [[nodiscard]] auto get_meshblock() const -> const Meshblock1D& { return m_meshblock; }
 };
@@ -75,12 +81,15 @@ public:
   void verify() override;
   void printDetails() override;
 
-  void fieldBoundaryConditions(const real_t& time) override;
   void faradayHalfsubstep(const real_t& time) override;
-  void depositSubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
   void addCurrentsSubstep(const real_t& time) override;
   void resetCurrentsSubstep(const real_t& time) override;
+
+  void pushParticlesSubstep(const real_t&) override;
+  void depositSubstep(const real_t& time) override;
+
+  void fieldBoundaryConditions(const real_t& time) override;
 
   [[nodiscard]] auto get_meshblock() const -> const Meshblock2D& { return m_meshblock; }
 };
@@ -95,12 +104,15 @@ public:
   void verify() override;
   void printDetails() override;
 
-  void fieldBoundaryConditions(const real_t& time) override;
   void faradayHalfsubstep(const real_t& time) override;
-  void depositSubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
   void addCurrentsSubstep(const real_t& time) override;
   void resetCurrentsSubstep(const real_t& time) override;
+
+  void pushParticlesSubstep(const real_t&) override;
+  void depositSubstep(const real_t& time) override;
+
+  void fieldBoundaryConditions(const real_t& time) override;
 
   [[nodiscard]] auto get_meshblock() const -> const Meshblock3D& { return m_meshblock; }
 };
