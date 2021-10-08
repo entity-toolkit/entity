@@ -28,8 +28,8 @@ maxnpart        = 1e2
 pusher          = "Boris"
 
 [species_2]
-label           = "positron"
-mass            = 1.0
+label           = "ion"
+mass            = 10.0
 charge          = 1.0
 maxnpart        = 1e2
 pusher          = "Boris"
