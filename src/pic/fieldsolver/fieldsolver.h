@@ -6,7 +6,7 @@
 
 namespace ntt {
 
-template<Dimension D>
+template <Dimension D>
 class FieldSolver {
 protected:
   MeshblockND<D> m_mblock;
