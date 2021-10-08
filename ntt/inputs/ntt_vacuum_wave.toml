@@ -1,0 +1,40 @@
+[simulation]
+title           = "Example"
+runtime         = 0.1
+
+[domain]
+coord_system    = "XY"
+# options are: `X`, `XY`, `XYZ`, `R_PHI`, `R_THETA`, `R_THETA_PHI`, `logR_THETA_PHI`
+resolution      = [256, 256]
+extent          = [-2.0, 2.0, -2.0, 2.0]
+boundaries      = ["PERIODIC", "PERIODIC"]
+# options are: `PERIODIC`, `OPEN`
+
+[algorithm]
+CFL             = 0.45
+correction      = 1.0
+ppc0            = 0.1
+larmor0         = 0.1
+skindepth0      = 0.01
+
+[particles]
+n_species       = 2
+
+[species_1]
+label           = "electron"
+mass            = 1.0
+charge          = -1.0
+maxnpart        = 1e6
+pusher          = "Boris"
+
+[species_2]
+label           = "positron"
+mass            = 1.0
+charge          = 1.0
+maxnpart        = 1e6
+pusher          = "Boris"
+
+[problem]
+amplitude       = 2.5
+nx1             = 5
+nx2             = 5

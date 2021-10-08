@@ -51,6 +51,9 @@ public:
   friend class Simulation2D;
   friend class Simulation3D;
 
+  template <Dimension D>
+  friend class ProblemGenerator;
+
   // friend class ProblemGenerator;
 
   void printDetails();
