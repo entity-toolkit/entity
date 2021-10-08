@@ -13,12 +13,37 @@ namespace ntt {
 
 template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
-    : m_sim_params{inputdata, m_dim}, m_pGen{m_sim_params} {}
+    : m_sim_params{inputdata, m_dim}, m_pGen{m_sim_params},
+      m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
+  m_meshblock.set_extent(m_sim_params.m_extent);
+  m_meshblock.set_coord_system(m_sim_params.m_coord_system);
+}
 
 template <Dimension D>
 void Simulation<D>::setIO(std::string_view infname, std::string_view outdirname) {
   m_sim_params.m_outputpath = outdirname;
   m_sim_params.m_inputfilename = infname;
+}
+
+template <Dimension D>
+void Simulation<D>::userInitialize() {
+  m_pGen.userInitFields(m_sim_params, m_meshblock);
+  fieldBoundaryConditions(0.0);
+  m_pGen.userInitParticles(m_sim_params, m_meshblock);
+  PLOGD << "Simulation initialized.";
+}
+
+template <Dimension D>
+void Simulation<D>::verify() {
+  m_sim_params.verify();
+  m_meshblock.verify(m_sim_params);
+  PLOGD << "Simulation prerun check passed.";
+}
+
+template <Dimension D>
+void Simulation<D>::printDetails() {
+  m_sim_params.printDetails();
+  m_meshblock.printDetails();
 }
 
 template <Dimension D>

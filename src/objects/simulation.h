@@ -20,14 +20,15 @@ protected:
 
   SimulationParams m_sim_params;
   ProblemGenerator<D> m_pGen;
+  MeshblockND<D> m_meshblock;
 
 public:
   Simulation(const toml::value& inputdata);
   ~Simulation() = default;
   void setIO(std::string_view infname, std::string_view outdirname);
-  virtual void userInitialize() {}
-  virtual void verify() {}
-  virtual void printDetails() {}
+  void userInitialize();
+  void verify();
+  void printDetails();
   void finalize();
 
   void step_forward(const real_t&);
@@ -46,17 +47,11 @@ public:
   virtual void fieldBoundaryConditions(const real_t&) {}
 
   [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
+  [[nodiscard]] auto get_meshblock() const -> const MeshblockND<D>& { return m_meshblock; }
 };
 
-class Simulation1D : public Simulation<ONE_D> {
-  Meshblock1D m_meshblock;
-
-public:
-  Simulation1D(const toml::value& inputdata);
-
-  void userInitialize() override;
-  void verify() override;
-  void printDetails() override;
+struct Simulation1D : public Simulation<ONE_D> {
+  Simulation1D(const toml::value& inputdata) : Simulation<ONE_D>{inputdata} {}
 
   void faradayHalfsubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
@@ -67,19 +62,10 @@ public:
   void depositSubstep(const real_t& time) override;
 
   void fieldBoundaryConditions(const real_t& time) override;
-
-  [[nodiscard]] auto get_meshblock() const -> const Meshblock1D& { return m_meshblock; }
 };
 
-class Simulation2D : public Simulation<TWO_D> {
-  Meshblock2D m_meshblock;
-
-public:
-  Simulation2D(const toml::value& inputdata);
-
-  void userInitialize() override;
-  void verify() override;
-  void printDetails() override;
+struct Simulation2D : public Simulation<TWO_D> {
+  Simulation2D(const toml::value& inputdata) : Simulation<TWO_D>{inputdata} {}
 
   void faradayHalfsubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
@@ -90,19 +76,10 @@ public:
   void depositSubstep(const real_t& time) override;
 
   void fieldBoundaryConditions(const real_t& time) override;
-
-  [[nodiscard]] auto get_meshblock() const -> const Meshblock2D& { return m_meshblock; }
 };
 
-class Simulation3D : public Simulation<THREE_D> {
-  Meshblock3D m_meshblock;
-
-public:
-  Simulation3D(const toml::value& inputdata);
-
-  void userInitialize() override;
-  void verify() override;
-  void printDetails() override;
+struct Simulation3D : public Simulation<THREE_D> {
+  Simulation3D(const toml::value& inputdata) : Simulation<THREE_D>{inputdata} {}
 
   void faradayHalfsubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
@@ -113,8 +90,6 @@ public:
   void depositSubstep(const real_t& time) override;
 
   void fieldBoundaryConditions(const real_t& time) override;
-
-  [[nodiscard]] auto get_meshblock() const -> const Meshblock3D& { return m_meshblock; }
 };
 
 } // namespace ntt
