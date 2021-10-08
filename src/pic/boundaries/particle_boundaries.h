@@ -4,20 +4,20 @@
 #include "global.h"
 #include "meshblock.h"
 
-#include <cstddef>
+#include <vector>
 
 namespace ntt {
 
 template <Dimension D>
 class PrtlBC {
 protected:
-  Meshblock<D> m_mblock;
-  Particles<D> m_particles
+  std::vector<real_t> m_extent;
+  Particles<D> m_particles;
   using index_t = typename RealArrND<D>::size_type;
 
 public:
-  PrtlBC(const Meshblock<D>& m_mblock_, const Particles<D>& m_particles_, const std::size_t& nxI_)
-      : m_mblock(m_mblock_), m_particles(m_particles_), nxI(nxI_) {}
+  PrtlBC(const std::vector<real_t>& m_extent_, const Particles<D>& m_particles_)
+      : m_extent(m_extent_), m_particles(m_particles_) {}
 };
 
 } // namespace ntt
