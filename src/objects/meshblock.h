@@ -13,7 +13,8 @@ namespace ntt {
 
 template <Dimension D>
 struct Meshblock {
-
+  // sizes of these arrays is ...
+  //   resolution + 2 * N_GHOSTS in every direction
   RealArrND<D> ex1, ex2, ex3;
   RealArrND<D> bx1, bx2, bx3;
   RealArrND<D> jx1, jx2, jx3;
@@ -79,44 +80,6 @@ KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const long
        + (static_cast<real_t>(k - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[2]))
              * (mblock.m_extent[5] - mblock.m_extent[4]);
 }
-
-// // sizes of these arrays is ...
-// //   resolution + 2 * N_GHOSTS in every direction
-// struct Meshblock<ONE_D> : public Meshblock<ONE_D> {
-//   NTTArray<real_t*> ex1, ex2, ex3;
-//   NTTArray<real_t*> bx1, bx2, bx3;
-//   NTTArray<real_t*> jx1, jx2, jx3;
-//   Meshblock<ONE_D>(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
-//   void verify(const SimulationParams& sim_params) override;
-//   auto loopActiveCells() -> ntt_1drange_t;
-// };
-// struct Meshblock<ONE_D> : public Meshblock<TWO_D> {
-//   NTTArray<real_t**> ex1, ex2, ex3;
-//   NTTArray<real_t**> bx1, bx2, bx3;
-//   NTTArray<real_t**> jx1, jx2, jx3;
-//   Meshblock<ONE_D>(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
-//   void verify(const SimulationParams& sim_params) override;
-//   auto loopActiveCells() -> ntt_2drange_t;
-// };
-// struct Meshblock<THREE_D> : public Meshblock<THREE_D> {
-//   NTTArray<real_t***> ex1, ex2, ex3;
-//   NTTArray<real_t***> bx1, bx2, bx3;
-//   NTTArray<real_t***> jx1, jx2, jx3;
-//
-// public:
-//   Meshblock<THREE_D>(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
-//   void verify(const SimulationParams& sim_params) override;
-//   auto loopActiveCells() -> ntt_3drange_t;
-// };
-//
-// template <Dimension D>
-// using Meshblock = typename std::conditional<
-//     D == ONE_D,
-//     Meshblock<ONE_D>,
-//     typename std::conditional<
-//         D == TWO_D,
-//         Meshblock<ONE_D>,
-//         typename std::conditional<D == THREE_D, Meshblock<THREE_D>, std::nullptr_t>::type>::type>::type;
 
 } // namespace ntt
 
