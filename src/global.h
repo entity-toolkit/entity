@@ -56,22 +56,23 @@ auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> n
 enum Dimension { ONE_D = 1, TWO_D, THREE_D };
 
 template <Dimension D>
-using RealArrND = typename std::conditional<D == ONE_D,
-                      NTTArray<real_t*>,
-                  typename std::conditional<D == TWO_D,
-                      NTTArray<real_t**>,
-                  typename std::conditional<D == THREE_D,
-                      NTTArray<real_t***>,
-                    std::nullptr_t>::type>::type>::type;
+using RealArrND = typename std::conditional<
+    D == ONE_D,
+    NTTArray<real_t*>,
+    typename std::conditional<
+        D == TWO_D,
+        NTTArray<real_t**>,
+        typename std::conditional<D == THREE_D, NTTArray<real_t***>, std::nullptr_t>::type>::type>::
+    type;
 
 template <Dimension D>
-using RangeND = typename std::conditional<D == ONE_D,
-                    ntt_1drange_t,
-                typename std::conditional<D == TWO_D,
-                    ntt_2drange_t,
-                typename std::conditional<D == THREE_D,
-                    ntt_3drange_t,
-                  std::nullptr_t>::type>::type>::type;
+using RangeND = typename std::conditional<
+    D == ONE_D,
+    ntt_1drange_t,
+    typename std::conditional<
+        D == TWO_D,
+        ntt_2drange_t,
+        typename std::conditional<D == THREE_D, ntt_3drange_t, std::nullptr_t>::type>::type>::type;
 
 inline constexpr int N_GHOSTS{2};
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
