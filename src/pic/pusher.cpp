@@ -21,4 +21,4 @@ void Simulation3D::pushParticlesSubstep(const real_t& time) {
   Kokkos::parallel_for("pusher", NTT1DRange(0, 1), Boris3D(m_meshblock, 0));
 }
 
-}
+} // namespace ntt
