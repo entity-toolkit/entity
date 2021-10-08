@@ -117,7 +117,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
 }
 
 auto SimulationParams::get_cell_size() -> real_t {
-  // TODO: modify this
+  // TODO: modify this for arbitrary coord system
   if (m_coord_system == CARTESIAN_COORD) {
     return (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
   } else {
