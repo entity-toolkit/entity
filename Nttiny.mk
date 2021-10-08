@@ -7,8 +7,6 @@ BUILD_VIS_DIR := $(subst ${ROOT_DIR}/,,${VIS_DIR})
 VIS_SRC := $(wildcard ${VIS_DIR}/*.cpp)
 VIS_OBJ := $(subst ${VIS_DIR},${BUILD_VIS_DIR},$(VIS_SRC:%=%.o))
 -include ${NTTINY_DIR}/Makefile
-print :
-	@echo ${VIS_SRC} ${NTTINY_INCFLAGS} ${NTTINY_LINKFLAGS}
 
 vis : nttiny_static ${VIS_TARGET}
 
