@@ -65,21 +65,7 @@ void ProblemGenerator<ONE_D>::userInitParticles(SimulationParams&,
 
 template <>
 void ProblemGenerator<TWO_D>::userInitParticles(SimulationParams& sim_params,
-                                                Meshblock2D& mblock) {
-  UNUSED(sim_params);
-  using size_type = NTTArray<real_t*>::size_type;
-  std::size_t Npart {1000};
-  Kokkos::parallel_for(
-    "userInitPrtls", NTT1DRange(0, Npart), Lambda(size_type p) {
-      mblock.particles[0].m_x1(p) = 1.4;
-      mblock.particles[1].m_x1(p) = 1.4;
-
-      mblock.particles[0].m_x2(p) = -1.4;
-      mblock.particles[1].m_x2(p) = -1.4;
-  });
-  mblock.particles[0].m_npart = Npart;
-  mblock.particles[1].m_npart = Npart;
-}
+                                                Meshblock2D& mblock) {}
 
 template <>
 void ProblemGenerator<THREE_D>::userInitParticles(SimulationParams&,

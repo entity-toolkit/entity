@@ -12,6 +12,7 @@ vis : nttiny_static ${VIS_TARGET}
 
 ${VIS_TARGET}: ${NTTINY_DIR}/build/libnttiny.a $(OBJS) $(PGEN_OBJS) $(VIS_OBJ)
 	@echo [L]inking $@ from $^
+	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ $(NTTINY_LIBS) -o $@ $(NTTINY_LINKFLAGS) $(LIBS)
 
 ${BUILD_VIS_DIR}/%.o : ${VIS_DIR}/%
