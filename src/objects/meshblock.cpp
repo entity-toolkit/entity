@@ -25,7 +25,7 @@ void Meshblock<D>::printDetails() {
   }
 }
 
-template<>
+template <>
 Meshblock<ONE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
     : ex1{"Ex1", res[0] + 2 * N_GHOSTS},
       ex2{"Ex2", res[0] + 2 * N_GHOSTS},
@@ -42,7 +42,7 @@ Meshblock<ONE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSp
   }
 }
 
-template<>
+template <>
 Meshblock<TWO_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
     : ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       ex2{"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
@@ -59,7 +59,7 @@ Meshblock<TWO_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSp
   }
 }
 
-template<>
+template <>
 Meshblock<THREE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
     : ex1{"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       ex2{"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
@@ -76,20 +76,20 @@ Meshblock<THREE_D>::Meshblock(std::vector<std::size_t> res, std::vector<Particle
   }
 }
 
-template<>
+template <>
 auto Meshblock<ONE_D>::loopActiveCells() -> ntt_1drange_t {
   return NTT1DRange(static_cast<range_t>(get_imin()), static_cast<range_t>(get_imax()));
 }
-template<>
+template <>
 auto Meshblock<TWO_D>::loopActiveCells() -> ntt_2drange_t {
   return NTT2DRange({get_imin(), get_jmin()}, {get_imax(), get_jmax()});
 }
-template<>
+template <>
 auto Meshblock<THREE_D>::loopActiveCells() -> ntt_3drange_t {
   return NTT3DRange({get_imin(), get_jmin(), get_kmin()}, {get_imax(), get_jmax(), get_kmax()});
 }
 
-template<>
+template <>
 void Meshblock<ONE_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
@@ -105,7 +105,7 @@ void Meshblock<ONE_D>::verify(const SimulationParams& sim_params) {
   }
 }
 
-template<>
+template <>
 void Meshblock<TWO_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
@@ -125,7 +125,7 @@ void Meshblock<TWO_D>::verify(const SimulationParams& sim_params) {
   }
 }
 
-template<>
+template <>
 void Meshblock<THREE_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid

@@ -62,7 +62,6 @@ public:
   }
 };
 
-
-}
+} // namespace ntt
 
 #endif
