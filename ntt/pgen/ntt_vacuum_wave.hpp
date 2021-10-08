@@ -16,8 +16,8 @@ struct ProblemGenerator : PGen<D> {
   ProblemGenerator(SimulationParams&);
   ~ProblemGenerator() = default;
 
-  void userInitFields(SimulationParams&, MeshblockND<D>&);
-  void userInitParticles(SimulationParams&, MeshblockND<D>&);
+  void userInitFields(SimulationParams&, Meshblock<D>&);
+  void userInitParticles(SimulationParams&, Meshblock<D>&);
 };
 
 } // namespace ntt
