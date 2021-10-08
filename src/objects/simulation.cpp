@@ -13,8 +13,14 @@ namespace ntt {
 
 template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
-    : m_sim_params{inputdata, m_dim} // m_pGen{m_sim_params}
+    : m_sim_params{inputdata, m_dim}, m_pGen{m_sim_params}
 {}
+
+template <Dimension D>
+void Simulation<D>::setIO(std::string_view infname, std::string_view outdirname) {
+  m_sim_params.m_outputpath = outdirname;
+  m_sim_params.m_inputfilename = infname;
+}
 
 Simulation1D::Simulation1D(const toml::value& inputdata)
     : Simulation<ONE_D>{inputdata}, m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
@@ -38,10 +44,22 @@ Simulation3D::Simulation3D(const toml::value& inputdata)
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);
 }
 
-template <Dimension D>
-void Simulation<D>::initialize() {
-  // m_pGen.userInitFields(m_sim_params, m_meshblock);
+void Simulation1D::initialize() {
+  m_pGen.userInitFields(m_sim_params, m_meshblock);
   fieldBoundaryConditions(0.0);
+  m_pGen.userInitParticles(m_sim_params, m_meshblock);
+  PLOGD << "Simulation initialized.";
+}
+void Simulation2D::initialize() {
+  m_pGen.userInitFields(m_sim_params, m_meshblock);
+  fieldBoundaryConditions(0.0);
+  m_pGen.userInitParticles(m_sim_params, m_meshblock);
+  PLOGD << "Simulation initialized.";
+}
+void Simulation3D::initialize() {
+  m_pGen.userInitFields(m_sim_params, m_meshblock);
+  fieldBoundaryConditions(0.0);
+  m_pGen.userInitParticles(m_sim_params, m_meshblock);
   PLOGD << "Simulation initialized.";
 }
 
@@ -59,12 +77,6 @@ void Simulation3D::verify() {
   m_sim_params.verify();
   m_meshblock.verify(m_sim_params);
   PLOGD << "Simulation prerun check passed.";
-}
-
-template <Dimension D>
-void Simulation<D>::setIO(std::string_view infname, std::string_view outdirname) {
-  m_sim_params.m_outputpath = outdirname;
-  m_sim_params.m_inputfilename = infname;
 }
 
 void Simulation1D::printDetails() {

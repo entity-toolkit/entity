@@ -4,6 +4,7 @@
 #include "global.h"
 #include "sim_params.h"
 #include "meshblock.h"
+#include "pgen.h"
 
 #include <toml/toml.hpp>
 
@@ -18,13 +19,13 @@ protected:
   Dimension m_dim{D};
 
   SimulationParams m_sim_params;
-  // ProblemGenerator m_pGen;
+  ProblemGenerator<D> m_pGen;
 
 public:
   Simulation(const toml::value& inputdata);
   ~Simulation() = default;
   void setIO(std::string_view infname, std::string_view outdirname);
-  void initialize();
+  virtual void initialize() {}
   virtual void verify() {}
   virtual void printDetails() {}
   void finalize();
@@ -50,6 +51,7 @@ class Simulation1D : public Simulation<ONE_D> {
 public:
   Simulation1D(const toml::value& inputdata);
 
+  void initialize() override;
   void verify() override;
   void printDetails() override;
 
@@ -69,6 +71,7 @@ class Simulation2D : public Simulation<TWO_D> {
 public:
   Simulation2D(const toml::value& inputdata);
 
+  void initialize() override;
   void verify() override;
   void printDetails() override;
 
@@ -88,6 +91,7 @@ class Simulation3D : public Simulation<THREE_D> {
 public:
   Simulation3D(const toml::value& inputdata);
 
+  void initialize() override;
   void verify() override;
   void printDetails() override;
 

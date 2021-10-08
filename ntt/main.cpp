@@ -9,7 +9,6 @@
 #include <plog/Init.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
-#include <type_traits>
 #include <vector>
 #include <stdexcept>
 
