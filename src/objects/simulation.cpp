@@ -13,7 +13,8 @@ namespace ntt {
 
 template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
-    : m_sim_params{inputdata, m_dim}, m_pGen{m_sim_params},
+    : m_sim_params{inputdata, m_dim},
+      m_pGen{m_sim_params},
       m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
   m_meshblock.set_extent(m_sim_params.m_extent);
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);
