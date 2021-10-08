@@ -24,11 +24,11 @@ void ProblemGenerator<ONE_D>::userInitFields(SimulationParams& sim_params,
   real_t sx1 = mblock.get_x1max() - mblock.get_x1min();
   real_t dx1_half = mblock.get_dx1() * 0.5;
   Kokkos::parallel_for(
-      "userInit", mblock.loopActiveCells(), Lambda(size_type i) {
-        real_t x1 = convert_iTOx1(mblock, i);
-        mblock.ex2(i) = std::sin(TWO_PI * x1 / sx1);
-        mblock.bx3(i) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
-      });
+    "userInitFlds", mblock.loopActiveCells(), Lambda(size_type i) {
+      real_t x1 = convert_iTOx1(mblock, i);
+      mblock.ex2(i) = std::sin(TWO_PI * x1 / sx1);
+      mblock.bx3(i) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
+  });
 }
 
 template <>
@@ -46,19 +46,44 @@ void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
   ex1_ampl = m_amplitude * ex1_ampl / std::sqrt(ex1_ampl * ex1_ampl + ex2_ampl * ex2_ampl);
   ex2_ampl = m_amplitude * ex2_ampl / std::sqrt(ex1_ampl * ex1_ampl + ex2_ampl * ex2_ampl);
   Kokkos::parallel_for(
-      "userInit", mblock.loopActiveCells(), Lambda(size_type i, size_type j) {
-        real_t x1 = convert_iTOx1(mblock, i);
-        real_t x2 = convert_jTOx2(mblock, j);
-        mblock.ex1(i, j) = ex1_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * x2);
-        mblock.ex2(i, j) = ex2_ampl * std::sin(kx1 * x1 + kx2 * (x2 + dx2_half));
-        mblock.bx3(i, j) = bx3_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * (x2 + dx2_half));
-      });
+    "userInitFlds", mblock.loopActiveCells(), Lambda(size_type i, size_type j) {
+      real_t x1 = convert_iTOx1(mblock, i);
+      real_t x2 = convert_jTOx2(mblock, j);
+      mblock.ex1(i, j) = ex1_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * x2);
+      mblock.ex2(i, j) = ex2_ampl * std::sin(kx1 * x1 + kx2 * (x2 + dx2_half));
+      mblock.bx3(i, j) = bx3_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * (x2 + dx2_half));
+  });
 }
 
 template <>
 void ProblemGenerator<THREE_D>::userInitFields(SimulationParams&,
                                                Meshblock3D&) {}
 
+template <>
+void ProblemGenerator<ONE_D>::userInitParticles(SimulationParams&,
+                                                Meshblock1D&) {}
+
+template <>
+void ProblemGenerator<TWO_D>::userInitParticles(SimulationParams& sim_params,
+                                                Meshblock2D& mblock) {
+  UNUSED(sim_params);
+  using size_type = NTTArray<real_t*>::size_type;
+  std::size_t Npart {1000};
+  Kokkos::parallel_for(
+    "userInitPrtls", NTT1DRange(0, Npart), Lambda(size_type p) {
+      mblock.particles[0].m_x1(p) = 1.4;
+      mblock.particles[1].m_x1(p) = 1.4;
+
+      mblock.particles[0].m_x2(p) = -1.4;
+      mblock.particles[1].m_x2(p) = -1.4;
+  });
+  mblock.particles[0].m_npart = Npart;
+  mblock.particles[1].m_npart = Npart;
+}
+
+template <>
+void ProblemGenerator<THREE_D>::userInitParticles(SimulationParams&,
+                                                  Meshblock3D&) {}
 } // namespace ntt
 
 template struct ntt::ProblemGenerator<ntt::ONE_D>;

@@ -9,7 +9,7 @@ namespace ntt {
 
 template <Dimension D>
 Meshblock<D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : m_resolution{res} {
+    : m_resolution{std::move(res)} {
   for (auto& part : parts) {
     particles.emplace_back(part);
   }
@@ -70,15 +70,13 @@ Meshblock3D::Meshblock3D(std::vector<std::size_t> res, std::vector<ParticleSpeci
       jx3{"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {}
 
 auto Meshblock1D::loopActiveCells() -> ntt_1drange_t {
-  return NTT1DRange(static_cast<range_t>(get_imin()),
-                    static_cast<range_t>(get_imax()));
+  return NTT1DRange(static_cast<range_t>(get_imin()), static_cast<range_t>(get_imax()));
 }
 auto Meshblock2D::loopActiveCells() -> ntt_2drange_t {
   return NTT2DRange({get_imin(), get_jmin()}, {get_imax(), get_jmax()});
 }
 auto Meshblock3D::loopActiveCells() -> ntt_3drange_t {
-  return NTT3DRange({get_imin(), get_jmin(), get_kmin()},
-                    {get_imax(), get_jmax(), get_kmax()});
+  return NTT3DRange({get_imin(), get_jmin(), get_kmin()}, {get_imax(), get_jmax(), get_kmax()});
 }
 
 void Meshblock1D::verify(const SimulationParams& sim_params) {

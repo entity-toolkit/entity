@@ -13,8 +13,7 @@ namespace ntt {
 
 template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
-    : m_sim_params{inputdata, m_dim}, m_pGen{m_sim_params}
-{}
+    : m_sim_params{inputdata, m_dim}, m_pGen{m_sim_params} {}
 
 template <Dimension D>
 void Simulation<D>::setIO(std::string_view infname, std::string_view outdirname) {
@@ -44,19 +43,19 @@ Simulation3D::Simulation3D(const toml::value& inputdata)
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);
 }
 
-void Simulation1D::initialize() {
+void Simulation1D::userInitialize() {
   m_pGen.userInitFields(m_sim_params, m_meshblock);
   fieldBoundaryConditions(0.0);
   m_pGen.userInitParticles(m_sim_params, m_meshblock);
   PLOGD << "Simulation initialized.";
 }
-void Simulation2D::initialize() {
+void Simulation2D::userInitialize() {
   m_pGen.userInitFields(m_sim_params, m_meshblock);
   fieldBoundaryConditions(0.0);
   m_pGen.userInitParticles(m_sim_params, m_meshblock);
   PLOGD << "Simulation initialized.";
 }
-void Simulation3D::initialize() {
+void Simulation3D::userInitialize() {
   m_pGen.userInitFields(m_sim_params, m_meshblock);
   fieldBoundaryConditions(0.0);
   m_pGen.userInitParticles(m_sim_params, m_meshblock);
@@ -163,12 +162,12 @@ void Simulation<D>::mainloop() {
 
 template <Dimension D>
 void Simulation<D>::run(std::string_view infname, std::string_view outdirname) {
-  this->setIO(infname, outdirname);
-  this->initialize();
-  this->verify();
-  this->printDetails();
-  this->mainloop();
-  this->finalize();
+  setIO(infname, outdirname);
+  userInitialize();
+  verify();
+  printDetails();
+  mainloop();
+  finalize();
 }
 
 } // namespace ntt

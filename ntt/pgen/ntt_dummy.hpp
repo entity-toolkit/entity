@@ -3,9 +3,8 @@
 
 namespace ntt {
 
-template<Dimension D>
-struct ProblemGenerator : PGen<D> {
-};
+template <Dimension D>
+struct ProblemGenerator : PGen<D> {};
 
 } // namespace ntt
 

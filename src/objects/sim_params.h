@@ -41,7 +41,7 @@ class SimulationParams {
 
 public:
   toml::value m_inputdata;
-  
+
   SimulationParams(const toml::value& inputdata, Dimension dim);
   ~SimulationParams() = default;
 

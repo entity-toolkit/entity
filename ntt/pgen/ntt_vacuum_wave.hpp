@@ -8,7 +8,7 @@
 
 namespace ntt {
 
-template<Dimension D>
+template <Dimension D>
 struct ProblemGenerator : PGen<D> {
   int m_nx1, m_nx2;
   real_t m_amplitude;
@@ -17,6 +17,7 @@ struct ProblemGenerator : PGen<D> {
   ~ProblemGenerator() = default;
 
   void userInitFields(SimulationParams&, MeshblockND<D>&);
+  void userInitParticles(SimulationParams&, MeshblockND<D>&);
 };
 
 } // namespace ntt
