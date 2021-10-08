@@ -102,15 +102,14 @@ public:
   auto loopActiveCells() -> ntt_3drange_t;
 };
 
-template<Dimension D>
-using MeshblockND =
-  typename std::conditional<
-                    D == ONE_D, Meshblock1D,
-             typename std::conditional<
-                    D == TWO_D, Meshblock2D,
-             typename std::conditional<
-                    D == THREE_D, Meshblock3D, std::nullptr_t
-             >::type>::type>::type;
+template <Dimension D>
+using MeshblockND = typename std::conditional<
+    D == ONE_D,
+    Meshblock1D,
+    typename std::conditional<
+        D == TWO_D,
+        Meshblock2D,
+        typename std::conditional<D == THREE_D, Meshblock3D, std::nullptr_t>::type>::type>::type;
 
 } // namespace ntt
 
