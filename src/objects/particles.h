@@ -45,6 +45,7 @@ struct Particles : ParticleSpecies {
   Particles(const ParticleSpecies& spec);
   ~Particles() = default;
 
+  auto loopParticles() -> ntt_1drange_t;
   [[nodiscard]] auto get_npart() const -> std::size_t { return m_npart; }
 };
 

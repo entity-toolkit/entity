@@ -18,13 +18,13 @@ ProblemGenerator<D>::ProblemGenerator(SimulationParams& sim_params) {
 
 template <>
 void ProblemGenerator<ONE_D>::userInitFields(SimulationParams& sim_params,
-                                             Meshblock1D& mblock) {
+                                             Meshblock<ONE_D>& mblock) {
   UNUSED(sim_params);
-  using size_type = NTTArray<real_t*>::size_type;
+  using index_t = NTTArray<real_t*>::size_type;
   real_t sx1 = mblock.get_x1max() - mblock.get_x1min();
   real_t dx1_half = mblock.get_dx1() * 0.5;
   Kokkos::parallel_for(
-    "userInitFlds", mblock.loopActiveCells(), Lambda(size_type i) {
+    "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
       real_t x1 = convert_iTOx1(mblock, i);
       mblock.ex2(i) = std::sin(TWO_PI * x1 / sx1);
       mblock.bx3(i) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
@@ -33,9 +33,9 @@ void ProblemGenerator<ONE_D>::userInitFields(SimulationParams& sim_params,
 
 template <>
 void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
-                                             Meshblock2D& mblock) {
+                                             Meshblock<TWO_D>& mblock) {
   UNUSED(sim_params);
-  using size_type = NTTArray<real_t**>::size_type;
+  using index_t = NTTArray<real_t**>::size_type;
   real_t dx1_half = mblock.get_dx1() * 0.5;
   real_t dx2_half = mblock.get_dx2() * 0.5;
   auto kx1 {TWO_PI * m_nx1 / (mblock.get_x1max() - mblock.get_x1min())};
@@ -46,7 +46,7 @@ void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
   ex1_ampl = m_amplitude * ex1_ampl / std::sqrt(ex1_ampl * ex1_ampl + ex2_ampl * ex2_ampl);
   ex2_ampl = m_amplitude * ex2_ampl / std::sqrt(ex1_ampl * ex1_ampl + ex2_ampl * ex2_ampl);
   Kokkos::parallel_for(
-    "userInitFlds", mblock.loopActiveCells(), Lambda(size_type i, size_type j) {
+    "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
       real_t x1 = convert_iTOx1(mblock, i);
       real_t x2 = convert_jTOx2(mblock, j);
       mblock.ex1(i, j) = ex1_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * x2);
@@ -57,19 +57,19 @@ void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
 
 template <>
 void ProblemGenerator<THREE_D>::userInitFields(SimulationParams&,
-                                               Meshblock3D&) {}
+                                               Meshblock<THREE_D>&) {}
 
 template <>
 void ProblemGenerator<ONE_D>::userInitParticles(SimulationParams&,
-                                                Meshblock1D&) {}
+                                                Meshblock<ONE_D>&) {}
 
 template <>
-void ProblemGenerator<TWO_D>::userInitParticles(SimulationParams& sim_params,
-                                                Meshblock2D& mblock) {}
+void ProblemGenerator<TWO_D>::userInitParticles(SimulationParams&,
+                                                Meshblock<TWO_D>&) {}
 
 template <>
 void ProblemGenerator<THREE_D>::userInitParticles(SimulationParams&,
-                                                  Meshblock3D&) {}
+                                                  Meshblock<THREE_D>&) {}
 } // namespace ntt
 
 template struct ntt::ProblemGenerator<ntt::ONE_D>;

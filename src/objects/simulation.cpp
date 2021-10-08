@@ -75,7 +75,11 @@ void Simulation<D>::step_forward(const real_t& time) {
 
   // depositSubstep(time);
 
-  // BC particles
+  {
+    timers.start(2);
+    particleBoundaryConditions(time);
+    timers.stop(2);
+  }
   // BC currents
 
   {
