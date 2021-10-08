@@ -3,7 +3,9 @@
 
 namespace ntt {
 
-class MyStuff {};
+template<Dimension D>
+struct ProblemGenerator : PGen<D> {
+};
 
 } // namespace ntt
 

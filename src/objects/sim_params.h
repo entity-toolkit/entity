@@ -14,7 +14,6 @@ namespace ntt {
 class SimulationParams {
   std::string_view m_inputfilename;
   std::string_view m_outputpath;
-  toml::value m_inputdata;
 
   SimulationType m_simtype{UNDEFINED_SIM};
 
@@ -41,6 +40,8 @@ class SimulationParams {
   std::vector<BoundaryCondition> m_boundaries;
 
 public:
+  toml::value m_inputdata;
+  
   SimulationParams(const toml::value& inputdata, Dimension dim);
   ~SimulationParams() = default;
 
