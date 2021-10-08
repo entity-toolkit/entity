@@ -7,20 +7,20 @@
 
 namespace ntt {
 
-class Faraday1D_Cartesian : public FieldSolver1D {
+class Faraday1D_Cartesian : public FieldSolver<ONE_D> {
 public:
   Faraday1D_Cartesian(const Meshblock1D& m_mblock_, const real_t& coeff_)
-      : FieldSolver1D{m_mblock_, coeff_} {}
+      : FieldSolver<ONE_D>{m_mblock_, coeff_} {}
   Inline void operator()(const size_type i) const {
     m_mblock.bx2(i) = m_mblock.bx2(i) + coeff * (m_mblock.ex3(i + 1) - m_mblock.ex3(i));
     m_mblock.bx3(i) = m_mblock.bx3(i) + coeff * (-m_mblock.ex2(i + 1) + m_mblock.ex2(i));
   }
 };
 
-class Faraday2D_Cartesian : public FieldSolver2D {
+class Faraday2D_Cartesian : public FieldSolver<TWO_D> {
 public:
   Faraday2D_Cartesian(const Meshblock2D& m_mblock_, const real_t& coeff_)
-      : FieldSolver2D{m_mblock_, coeff_} {}
+      : FieldSolver<TWO_D>{m_mblock_, coeff_} {}
   Inline void operator()(const size_type i, const size_type j) const {
     m_mblock.bx1(i, j)
         = m_mblock.bx1(i, j) + coeff * (-m_mblock.ex3(i, j + 1) + m_mblock.ex3(i, j));
@@ -32,10 +32,10 @@ public:
   }
 };
 
-class Faraday3D_Cartesian : public FieldSolver3D {
+class Faraday3D_Cartesian : public FieldSolver<THREE_D> {
 public:
   Faraday3D_Cartesian(const Meshblock3D& m_mblock_, const real_t& coeff_)
-      : FieldSolver3D{m_mblock_, coeff_} {}
+      : FieldSolver<THREE_D>{m_mblock_, coeff_} {}
   Inline void operator()(const size_type i, const size_type j, const size_type k) const {
     m_mblock.bx1(i, j, k) = m_mblock.bx1(i, j, k)
                           + coeff
