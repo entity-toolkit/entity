@@ -8,8 +8,7 @@
 
 namespace ntt {
 
-class ParticleSpecies {
-public:
+struct ParticleSpecies {
   std::string m_label;
   float m_mass, m_charge;
   std::size_t m_maxnpart;
@@ -32,7 +31,7 @@ public:
 };
 
 template <Dimension D>
-class Particles : public ParticleSpecies {
+struct Particles : ParticleSpecies {
   Dimension m_dim{D};
 
   // TODO: maybe use VPIC-style ND array
@@ -42,7 +41,6 @@ class Particles : public ParticleSpecies {
 
   std::size_t m_npart{0};
 
-public:
   Particles(const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart);
   Particles(const ParticleSpecies& spec);
   ~Particles() = default;

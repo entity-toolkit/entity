@@ -7,7 +7,7 @@
 
 namespace ntt {
 
-template<Dimension D>
+template <Dimension D>
 struct PGen {
   PGen() {}
   PGen(SimulationParams&) {}
@@ -15,6 +15,6 @@ struct PGen {
   void userInitParticles(SimulationParams&, MeshblockND<D>&) {}
 };
 
-}
+} // namespace ntt
 
 #endif
