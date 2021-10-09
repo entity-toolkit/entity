@@ -74,7 +74,7 @@ using RangeND = typename std::conditional<
         ntt_2drange_t,
         typename std::conditional<D == THREE_D, ntt_3drange_t, std::nullptr_t>::type>::type>::type;
 
-inline constexpr int N_GHOSTS{2};
+inline constexpr int N_GHOSTS {2};
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 
 enum CoordinateSystem {
@@ -97,8 +97,8 @@ auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
 auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
 
 // defaults
-constexpr std::string_view DEF_input_filename{"input"};
-constexpr std::string_view DEF_output_path{"output"};
+constexpr std::string_view DEF_input_filename {"input"};
+constexpr std::string_view DEF_output_path {"output"};
 
 } // namespace ntt
 

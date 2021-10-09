@@ -8,7 +8,7 @@
 namespace ntt {
 void CommandLineArguments::readCommandLineArguments(int argc, char* argv[]) {
   if (_initialized) { throw std::runtime_error("ERROR: command line arguments already parsed."); }
-  for (int i{1}; i < argc; ++i)
+  for (int i {1}; i < argc; ++i)
     this->_args.emplace_back(std::string_view(argv[i]));
   _initialized = true;
 }
