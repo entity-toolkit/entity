@@ -56,9 +56,6 @@ public:
       f.second->set_dimension(2);
     }
 
-    auto n_electrons {m_sim.get_meshblock().particles[0].get_npart()};
-    auto n_positrons {m_sim.get_meshblock().particles[1].get_npart()};
-
     particles.insert({{"electrons",
                       {&(this->electrons_x),
                        &(this->electrons_y)}
@@ -67,16 +64,17 @@ public:
                        {&(this->positrons_x),
                         &(this->positrons_y)}
                      }});
+    // particle data is simply pointing at raw pointers of Kokkos arrays
+    // ... (will not work if data is on GPU, use mirror?)
+    particles["electrons"].first->m_data = m_sim.get_meshblock().particles[0].m_x1.data();
+    particles["electrons"].second->m_data = m_sim.get_meshblock().particles[0].m_x2.data();
+    particles["positrons"].first->m_data = m_sim.get_meshblock().particles[1].m_x1.data();
+    particles["positrons"].second->m_data = m_sim.get_meshblock().particles[1].m_x2.data();
 
-    particles["electrons"].first->allocate(n_electrons);
-    particles["electrons"].second->allocate(n_electrons);
-    particles["positrons"].first->allocate(n_positrons);
-    particles["positrons"].second->allocate(n_positrons);
-
-    particles["electrons"].first->set_size(0, n_electrons);
-    particles["electrons"].second->set_size(0, n_electrons);
-    particles["positrons"].first->set_size(0, n_positrons);
-    particles["positrons"].second->set_size(0, n_positrons);
+    particles["electrons"].first->set_size(0, m_sim.get_meshblock().particles[0].get_npart());
+    particles["electrons"].second->set_size(0, m_sim.get_meshblock().particles[0].get_npart());
+    particles["positrons"].first->set_size(0, m_sim.get_meshblock().particles[1].get_npart());
+    particles["positrons"].second->set_size(0, m_sim.get_meshblock().particles[1].get_npart());
 
     setData();
   }
@@ -93,16 +91,6 @@ public:
         m_by.set(lind, m_sim.get_meshblock().bx2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
         m_bz.set(lind, m_sim.get_meshblock().bx3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
       }
-    }
-    auto n_electrons {m_sim.get_meshblock().particles[0].get_npart()};
-    auto n_positrons {m_sim.get_meshblock().particles[1].get_npart()};
-    for (std::size_t p{0}; p < n_electrons; ++p) {
-      electrons_x.set(p, m_sim.get_meshblock().particles[0].m_x1(p));
-      electrons_y.set(p, m_sim.get_meshblock().particles[0].m_x2(p));
-    }
-    for (std::size_t p{0}; p < n_positrons; ++p) {
-      positrons_x.set(p, m_sim.get_meshblock().particles[1].m_x1(p));
-      positrons_y.set(p, m_sim.get_meshblock().particles[1].m_x2(p));
     }
   }
   void stepFwd() override {
