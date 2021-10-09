@@ -31,7 +31,7 @@ inline const TimeUnit nanosecond(1e-9, "ns");
 // Type to keep track of timestamp
 class Time {
 private:
-  long double value{0.0};
+  long double value {0.0};
   const TimeUnit* unit;
 
 public:
@@ -57,14 +57,14 @@ using TimeContainer = std::chrono::time_point<std::chrono::system_clock>;
 class Timer {
 private:
   std::string name;
-  bool init{false};
-  bool on{false};
+  bool init {false};
+  bool on {false};
   TimeContainer t_start;
   Time t_elapsed;
 
 public:
-  Timer() : name("NULL"), t_elapsed{0.0} {}
-  Timer(const std::string& name) : name(std::move(name)), t_elapsed{0.0} {}
+  Timer() : name("NULL"), t_elapsed {0.0} {}
+  Timer(const std::string& name) : name(std::move(name)), t_elapsed {0.0} {}
   ~Timer() = default;
   void start();
   void check();

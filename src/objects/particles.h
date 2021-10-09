@@ -32,14 +32,14 @@ struct ParticleSpecies {
 
 template <Dimension D>
 struct Particles : ParticleSpecies {
-  Dimension m_dim{D};
+  Dimension m_dim {D};
 
   // TODO: maybe use VPIC-style ND array
   NTTArray<real_t*> m_x1, m_x2, m_x3;
   NTTArray<real_t*> m_ux1, m_ux2, m_ux3;
   NTTArray<float*> m_weight;
 
-  std::size_t m_npart{0};
+  std::size_t m_npart {0};
 
   Particles(const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart);
   Particles(const ParticleSpecies& spec);

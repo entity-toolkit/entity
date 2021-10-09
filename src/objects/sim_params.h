@@ -15,7 +15,7 @@ class SimulationParams {
   std::string_view m_inputfilename;
   std::string_view m_outputpath;
 
-  SimulationType m_simtype{UNDEFINED_SIM};
+  SimulationType m_simtype {UNDEFINED_SIM};
 
   std::string m_title;
   real_t m_timestep;
@@ -34,7 +34,7 @@ class SimulationParams {
 
   std::vector<ParticleSpecies> m_species;
 
-  CoordinateSystem m_coord_system{UNDEFINED_COORD};
+  CoordinateSystem m_coord_system {UNDEFINED_COORD};
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
   std::vector<BoundaryCondition> m_boundaries;
