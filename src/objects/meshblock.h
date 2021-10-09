@@ -14,8 +14,9 @@ namespace ntt {
 
 template <Dimension D>
 struct Meshblock {
-  // sizes of these arrays is ...
+  // sizes of these arrays are ...
   //   resolution + 2 * N_GHOSTS in every direction
+  // TESTPERF: maybe use VPIC-style ND array
   RealArrND<D> ex1, ex2, ex3;
   RealArrND<D> bx1, bx2, bx3;
   RealArrND<D> jx1, jx2, jx3;
