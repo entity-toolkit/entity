@@ -86,7 +86,7 @@ def defineOptions():
   parser.add_argument('--nttiny_dir', default="extern/nttiny", help='specify path for `Nttiny`')
 
   # simulation
-  parser.add_argument('--precision', default='double', choices=Precision_options, help='code precision')
+  parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision')
   parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used')
 
   # `Kokkos` specific
