@@ -21,7 +21,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   m_correction = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
 
   auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species");
-  for (int i{0}; i < nspec; ++i) {
+  for (int i {0}; i < nspec; ++i) {
     auto label = readFromInput<std::string>(
         m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
     auto mass = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "mass");
@@ -30,7 +30,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
         readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
     auto pusher_str = readFromInput<std::string>(
         m_inputdata, "species_" + std::to_string(i + 1), "pusher", "Boris");
-    ParticlePusher pusher{UNDEFINED_PUSHER};
+    ParticlePusher pusher {UNDEFINED_PUSHER};
     if ((mass == 0.0) && (charge == 0.0)) {
       pusher = PHOTON_PUSHER;
     } else if (pusher_str == "Vay") {
@@ -90,7 +90,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
 
   auto boundaries = readFromInput<std::vector<std::string>>(
       m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
-  short b{0};
+  short b {0};
   for (auto& bc : boundaries) {
     if (bc == "PERIODIC") {
       m_boundaries.push_back(PERIODIC_BC);
@@ -148,7 +148,7 @@ void SimulationParams::printDetails() {
   PLOGI << "   dimension: " << dim << "D";
   PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_coord_system, dim);
 
-  std::string bc{"   boundary conditions: { "};
+  std::string bc {"   boundary conditions: { "};
   for (auto& b : m_boundaries) {
     bc += stringifyBoundaryCondition(b) + " x ";
   }
@@ -156,7 +156,7 @@ void SimulationParams::printDetails() {
   bc += " }";
   PLOGI << bc;
 
-  std::string res{"   resolution: { "};
+  std::string res {"   resolution: { "};
   for (auto& r : m_resolution) {
     res += std::to_string(r) + " x ";
   }
@@ -164,14 +164,14 @@ void SimulationParams::printDetails() {
   res += " }";
   PLOGI << res;
 
-  std::string ext{"   extent: "};
-  for (std::size_t i{0}; i < m_extent.size(); i += 2) {
+  std::string ext {"   extent: "};
+  for (std::size_t i {0}; i < m_extent.size(); i += 2) {
     ext += "{" + std::to_string(m_extent[i]) + ", " + std::to_string(m_extent[i + 1]) + "} ";
   }
   PLOGI << ext;
 
-  std::string cell{"   cell size: "};
-  real_t effective_dx{0.0};
+  std::string cell {"   cell size: "};
+  real_t effective_dx {0.0};
   if (m_coord_system == CARTESIAN_COORD) {
     cell += "{" + std::to_string(get_cell_size()) + "}";
     effective_dx = get_cell_size();

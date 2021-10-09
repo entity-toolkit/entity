@@ -22,7 +22,7 @@ void testExternKokkos(void) {
     auto Sum = Lambda(const int i, double& sum) { sum += 1.0 / static_cast<double>(i + 1); };
     auto Check = [&](const double sum) { return std::abs(value - sum) < dvalue; };
 
-    double sum_var{0.0};
+    double sum_var {0.0};
     timer.start();
     Kokkos::parallel_reduce("parallel_sum", N, Sum, sum_var);
     timer.stop();

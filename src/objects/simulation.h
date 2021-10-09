@@ -16,7 +16,7 @@ namespace ntt {
 template <Dimension D>
 class Simulation {
 protected:
-  Dimension m_dim{D};
+  Dimension m_dim {D};
 
   SimulationParams m_sim_params;
   ProblemGenerator<D> m_pGen;
@@ -52,7 +52,7 @@ public:
 };
 
 struct Simulation1D : public Simulation<ONE_D> {
-  Simulation1D(const toml::value& inputdata) : Simulation<ONE_D>{inputdata} {}
+  Simulation1D(const toml::value& inputdata) : Simulation<ONE_D> {inputdata} {}
 
   void faradayHalfsubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
@@ -67,7 +67,7 @@ struct Simulation1D : public Simulation<ONE_D> {
 };
 
 struct Simulation2D : public Simulation<TWO_D> {
-  Simulation2D(const toml::value& inputdata) : Simulation<TWO_D>{inputdata} {}
+  Simulation2D(const toml::value& inputdata) : Simulation<TWO_D> {inputdata} {}
 
   void faradayHalfsubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
@@ -82,7 +82,7 @@ struct Simulation2D : public Simulation<TWO_D> {
 };
 
 struct Simulation3D : public Simulation<THREE_D> {
-  Simulation3D(const toml::value& inputdata) : Simulation<THREE_D>{inputdata} {}
+  Simulation3D(const toml::value& inputdata) : Simulation<THREE_D> {inputdata} {}
 
   void faradayHalfsubstep(const real_t& time) override;
   void ampereSubstep(const real_t& time) override;
