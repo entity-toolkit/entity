@@ -11,7 +11,7 @@ namespace ntt {
 class FldBC1D_PeriodicX1m : public FldBC<ONE_D> {
 public:
   FldBC1D_PeriodicX1m(const Meshblock<ONE_D>& m_mblock_, const std::size_t& nxI_)
-      : FldBC<ONE_D>{m_mblock_, nxI_} {}
+      : FldBC<ONE_D> {m_mblock_, nxI_} {}
   Inline void operator()(const index_t i) const {
     m_mblock.ex1(i) = m_mblock.ex1(i + nxI);
     m_mblock.ex2(i) = m_mblock.ex2(i + nxI);
@@ -24,7 +24,7 @@ public:
 class FldBC1D_PeriodicX1p : public FldBC<ONE_D> {
 public:
   FldBC1D_PeriodicX1p(const Meshblock<ONE_D>& m_mblock_, const std::size_t& nxI_)
-      : FldBC<ONE_D>{m_mblock_, nxI_} {}
+      : FldBC<ONE_D> {m_mblock_, nxI_} {}
   Inline void operator()(const index_t i) const {
     m_mblock.ex1(i) = m_mblock.ex1(i - nxI);
     m_mblock.ex2(i) = m_mblock.ex2(i - nxI);
@@ -40,7 +40,7 @@ public:
 class FldBC2D_PeriodicX1m : public FldBC<TWO_D> {
 public:
   FldBC2D_PeriodicX1m(const Meshblock<TWO_D>& m_mblock_, const std::size_t& nxI_)
-      : FldBC<TWO_D>{m_mblock_, nxI_} {}
+      : FldBC<TWO_D> {m_mblock_, nxI_} {}
   Inline void operator()(const index_t i, const index_t j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i + nxI, j);
     m_mblock.ex2(i, j) = m_mblock.ex2(i + nxI, j);
@@ -53,7 +53,7 @@ public:
 class FldBC2D_PeriodicX1p : public FldBC<TWO_D> {
 public:
   FldBC2D_PeriodicX1p(const Meshblock<TWO_D>& m_mblock_, const std::size_t& nxI_)
-      : FldBC<TWO_D>{m_mblock_, nxI_} {}
+      : FldBC<TWO_D> {m_mblock_, nxI_} {}
   Inline void operator()(const index_t i, const index_t j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i - nxI, j);
     m_mblock.ex2(i, j) = m_mblock.ex2(i - nxI, j);
@@ -67,7 +67,7 @@ public:
 class FldBC2D_PeriodicX2m : public FldBC<TWO_D> {
 public:
   FldBC2D_PeriodicX2m(const Meshblock<TWO_D>& m_mblock_, const std::size_t& nxI_)
-      : FldBC<TWO_D>{m_mblock_, nxI_} {}
+      : FldBC<TWO_D> {m_mblock_, nxI_} {}
   Inline void operator()(const index_t i, const index_t j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i, j + nxI);
     m_mblock.ex2(i, j) = m_mblock.ex2(i, j + nxI);
@@ -80,7 +80,7 @@ public:
 class FldBC2D_PeriodicX2p : public FldBC<TWO_D> {
 public:
   FldBC2D_PeriodicX2p(const Meshblock<TWO_D>& m_mblock_, const std::size_t& nxI_)
-      : FldBC<TWO_D>{m_mblock_, nxI_} {}
+      : FldBC<TWO_D> {m_mblock_, nxI_} {}
   Inline void operator()(const index_t i, const index_t j) const {
     m_mblock.ex1(i, j) = m_mblock.ex1(i, j - nxI);
     m_mblock.ex2(i, j) = m_mblock.ex2(i, j - nxI);

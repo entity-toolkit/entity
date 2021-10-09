@@ -13,9 +13,9 @@ namespace ntt {
 
 template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
-    : m_sim_params{inputdata, m_dim},
-      m_pGen{m_sim_params},
-      m_meshblock{m_sim_params.m_resolution, m_sim_params.m_species} {
+    : m_sim_params {inputdata, m_dim},
+      m_pGen {m_sim_params},
+      m_meshblock {m_sim_params.m_resolution, m_sim_params.m_species} {
   m_meshblock.set_extent(m_sim_params.m_extent);
   m_meshblock.set_coord_system(m_sim_params.m_coord_system);
 }
@@ -114,9 +114,10 @@ template <Dimension D>
 void Simulation<D>::mainloop() {
   PLOGD << "Simulation mainloop started.";
 
-  unsigned long timax{static_cast<unsigned long>(m_sim_params.m_runtime / m_sim_params.m_timestep)};
-  real_t time{0.0};
-  for (unsigned long ti{0}; ti < timax; ++ti) {
+  unsigned long timax {
+      static_cast<unsigned long>(m_sim_params.m_runtime / m_sim_params.m_timestep)};
+  real_t time {0.0};
+  for (unsigned long ti {0}; ti < timax; ++ti) {
     PLOGD << "t = " << time;
     step_forward(time);
     time += m_sim_params.m_timestep;

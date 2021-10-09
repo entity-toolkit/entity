@@ -8,6 +8,7 @@
 #include <vector>
 #include <type_traits>
 #include <typeinfo>
+#include <cmath>
 
 namespace ntt {
 
@@ -65,20 +66,52 @@ struct Meshblock {
 template <Dimension D>
 KOKKOS_INLINE_FUNCTION auto convert_iTOx1(const Meshblock<D>& mblock, const long int& i) -> real_t {
   return mblock.m_extent[0]
-       + (static_cast<real_t>(i - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[0]))
-             * (mblock.m_extent[1] - mblock.m_extent[0]);
+         + (static_cast<real_t>(i - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[0]))
+               * (mblock.m_extent[1] - mblock.m_extent[0]);
 }
 template <Dimension D>
 KOKKOS_INLINE_FUNCTION auto convert_jTOx2(const Meshblock<D>& mblock, const long int& j) -> real_t {
   return mblock.m_extent[2]
-       + (static_cast<real_t>(j - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[1]))
-             * (mblock.m_extent[3] - mblock.m_extent[2]);
+         + (static_cast<real_t>(j - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[1]))
+               * (mblock.m_extent[3] - mblock.m_extent[2]);
 }
 template <Dimension D>
 KOKKOS_INLINE_FUNCTION auto convert_kTOx3(const Meshblock<D>& mblock, const long int& k) -> real_t {
   return mblock.m_extent[4]
-       + (static_cast<real_t>(k - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[2]))
-             * (mblock.m_extent[5] - mblock.m_extent[4]);
+         + (static_cast<real_t>(k - N_GHOSTS) / static_cast<real_t>(mblock.m_resolution[2]))
+               * (mblock.m_extent[5] - mblock.m_extent[4]);
+}
+
+template <Dimension D>
+KOKKOS_INLINE_FUNCTION auto convert_x1TOidx1(const Meshblock<D>& mblock, const real_t& x1)
+    -> std::pair<long int, float> {
+  // TESTPERF: floor vs something else
+  real_t dx1 {
+      (x1 - mblock.m_extent[0])
+      / ((mblock.m_extent[1] - mblock.m_extent[0]) / static_cast<real_t>(mblock.m_resolution[0]))};
+  long int i {static_cast<long int>(std::floor(dx1))};
+  dx1 = dx1 - static_cast<real_t>(i);
+  return {i + N_GHOSTS, dx1};
+}
+template <Dimension D>
+KOKKOS_INLINE_FUNCTION auto convert_x2TOjdx2(const Meshblock<D>& mblock, const real_t& x2)
+    -> std::pair<long int, float> {
+  real_t dx2 {
+      (x2 - mblock.m_extent[2])
+      / ((mblock.m_extent[3] - mblock.m_extent[2]) / static_cast<real_t>(mblock.m_resolution[1]))};
+  long int j {static_cast<long int>(std::floor(dx2))};
+  dx2 = dx2 - static_cast<real_t>(j);
+  return {j + N_GHOSTS, dx2};
+}
+template <Dimension D>
+KOKKOS_INLINE_FUNCTION auto convert_x3TOkdx3(const Meshblock<D>& mblock, const real_t& x3)
+    -> std::pair<long int, float> {
+  real_t dx3 {
+      (x3 - mblock.m_extent[4])
+      / ((mblock.m_extent[5] - mblock.m_extent[4]) / static_cast<real_t>(mblock.m_resolution[2]))};
+  long int k {static_cast<long int>(std::floor(dx3))};
+  dx3 = dx3 - static_cast<real_t>(k);
+  return {k + N_GHOSTS, dx3};
 }
 
 } // namespace ntt
