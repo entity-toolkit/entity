@@ -4,7 +4,7 @@
 #include "global.h"
 #include "timer.h"
 
-#include <acutest/acutest.h>
+#include <acutest.h>
 
 #include <iostream>
 #include <cstddef>

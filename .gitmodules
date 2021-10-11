@@ -1,0 +1,13 @@
+[submodule "extern/kokkos"]
+	path = extern/kokkos
+	url = git@github.com:haykh/kokkos.git
+	branch = develop
+[submodule "extern/plog"]
+	path = extern/plog
+	url = git@github.com:haykh/plog.git
+[submodule "extern/toml"]
+	path = extern/toml
+	url = git@github.com:ToruNiina/toml11.git
+[submodule "extern/acutest"]
+	path = extern/acutest
+	url = git@github.com:mity/acutest.git

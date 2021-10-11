@@ -6,10 +6,9 @@ One particle-in-cell code to rule them all.
 _Clone_ this repository and all its dependencies with the following command:
 
 ```shell
-git clone git@github.com:haykh/entity.git
-cd entity
-git clone git@github.com:haykh/plog.git extern/plog
-git clone -b develop git@github.com:haykh/kokkos.git extern/kokkos
+git clone --recursive git@github.com:haykh/entity.git
+# to update submodules
+git submodule update --remote
 ```
 
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
