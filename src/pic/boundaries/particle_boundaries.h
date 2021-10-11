@@ -13,7 +13,6 @@ class PrtlBC {
 protected:
   std::vector<real_t> m_extent;
   Particles<D> m_particles;
-  using index_t = typename RealArrND<D>::size_type;
 
 public:
   PrtlBC(const std::vector<real_t>& m_extent_, const Particles<D>& m_particles_)
