@@ -102,7 +102,7 @@ PGEN := ntt_dummy
 endif
 
 # linking tests
-test : copyPgen ${BIN_DIR}/${TEST_TARGET}
+test : ${BIN_DIR}/${TEST_TARGET}
 	@echo [M]aking $@
 
 examples : $(EXAMPLES_TARGETS)
@@ -167,7 +167,7 @@ EXAMPLES_DEPS := $(EXAMPLES_OBJS:.o=.d)
 
 ALL_DEPS := $(DEPS) $(NTT_DEPS) $(TEST_DEPS) $(EXAMPLES_DEPS)
 
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR} ${EXT_DIR}/plog/include ${NTT_DIR}
+INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR}/plog/include ${EXT_DIR}/acutest/include ${EXT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 ALL_OBJS := $(OBJS) $(PGEN_OBJS) $(NTT_OBJS) $(TEST_OBJS) $(EXAMPLES_OBJS)

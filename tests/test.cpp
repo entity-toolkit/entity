@@ -2,7 +2,7 @@
 #include "test_extern_toml.h"
 #include "test_extern_kokkos.h"
 
-#include <acutest/acutest.h>
+#include <acutest.h>
 
 void testSuccess() {}
 
