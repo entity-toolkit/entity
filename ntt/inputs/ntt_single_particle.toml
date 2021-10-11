@@ -18,7 +18,7 @@ larmor0         = 0.1
 skindepth0      = 0.01
 
 [particles]
-n_species       = 2
+n_species       = 3
 
 [species_1]
 label           = "electron"
@@ -28,6 +28,13 @@ maxnpart        = 1e2
 pusher          = "Boris"
 
 [species_2]
+label           = "positron"
+mass            = 1.0
+charge          = 1.0
+maxnpart        = 1e2
+pusher          = "Boris"
+
+[species_3]
 label           = "ion"
 mass            = 10.0
 charge          = 1.0
