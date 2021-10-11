@@ -65,6 +65,7 @@ While we try to keep the code as compatible as possible, there are certain strin
 ## To-do list for the near future
 
 - [ ] offset views are possible with `kokkos` in [experimental branch](https://github.com/kokkos/kokkos/wiki/Offset-View)
+- [ ] template field-solvers and field-bcs similar to particles
 
 ---
 

@@ -68,8 +68,8 @@ auto stringifyParticlePusher(ParticlePusher pusher) -> std::string {
 auto NTT1DRange(const std::vector<long int>& r1, const std::vector<long int>& r2) -> ntt_1drange_t {
   assert(r1.size() == 1);
   assert(r2.size() == 1);
-  return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(r1[0]),
-                                            static_cast<range_t>(r2[0]));
+  return Kokkos::RangePolicy<AccelExeSpace>(
+      static_cast<range_t>(r1[0]), static_cast<range_t>(r2[0]));
 }
 auto NTT1DRange(const long int& r1, const long int& r2) -> ntt_1drange_t {
   return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(r1), static_cast<range_t>(r2));

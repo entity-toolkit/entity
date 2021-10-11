@@ -6,17 +6,16 @@
 
 namespace ntt {
 
-ParticleSpecies::ParticleSpecies(std::string label,
-                                 const float& m,
-                                 const float& ch,
-                                 const std::size_t& maxnpart,
-                                 const ParticlePusher& pusher)
+ParticleSpecies::ParticleSpecies(
+    std::string label,
+    const float& m,
+    const float& ch,
+    const std::size_t& maxnpart,
+    const ParticlePusher& pusher)
     : m_label(std::move(label)), m_mass(m), m_charge(ch), m_maxnpart(maxnpart), m_pusher(pusher) {}
 
-ParticleSpecies::ParticleSpecies(std::string label,
-                                 const float& m,
-                                 const float& ch,
-                                 const std::size_t& maxnpart)
+ParticleSpecies::ParticleSpecies(
+    std::string label, const float& m, const float& ch, const std::size_t& maxnpart)
     : m_label(std::move(label)),
       m_mass(m),
       m_charge(ch),
@@ -24,10 +23,8 @@ ParticleSpecies::ParticleSpecies(std::string label,
       m_pusher((ch == 0.0 ? PHOTON_PUSHER : BORIS_PUSHER)) {}
 
 template <>
-Particles<ONE_D>::Particles(const std::string& label,
-                            const float& m,
-                            const float& ch,
-                            const std::size_t& maxnpart)
+Particles<ONE_D>::Particles(
+    const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart)
     : ParticleSpecies {label, m, ch, maxnpart},
       m_x1 {label + "_x1", maxnpart},
       m_ux1 {label + "_ux1", maxnpart},
@@ -36,10 +33,8 @@ Particles<ONE_D>::Particles(const std::string& label,
       m_weight {label + "_w", maxnpart} {}
 
 template <>
-Particles<TWO_D>::Particles(const std::string& label,
-                            const float& m,
-                            const float& ch,
-                            const std::size_t& maxnpart)
+Particles<TWO_D>::Particles(
+    const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart)
     : ParticleSpecies {label, m, ch, maxnpart},
       m_x1 {label + "_x1", maxnpart},
       m_x2 {label + "_x2", maxnpart},
@@ -49,10 +44,8 @@ Particles<TWO_D>::Particles(const std::string& label,
       m_weight {label + "_w", maxnpart} {}
 
 template <>
-Particles<THREE_D>::Particles(const std::string& label,
-                              const float& m,
-                              const float& ch,
-                              const std::size_t& maxnpart)
+Particles<THREE_D>::Particles(
+    const std::string& label, const float& m, const float& ch, const std::size_t& maxnpart)
     : ParticleSpecies {label, m, ch, maxnpart},
       m_x1 {label + "_x1", maxnpart},
       m_x2 {label + "_x2", maxnpart},
