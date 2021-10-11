@@ -2,7 +2,7 @@
 #define TEST_EXTERN_TOML_H
 
 #include <toml/toml.hpp>
-#include <acutest/acutest.h>
+#include <acutest.h>
 
 #include <vector>
 
