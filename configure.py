@@ -229,7 +229,6 @@ makefile_options['PGEN_DIR'] = 'pgen'
 makefile_options['TEST_DIR'] = 'tests'
 makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
-makefile_options['EXAMPLES_DIR'] = 'examples'
 
 if args['nttiny']:
   if (args['nttiny_dir']) != '':
