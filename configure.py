@@ -266,7 +266,7 @@ try:
   compiledemo = makedemo.split('\n')[1]
   linkdemo = makedemo.split('\n')[4]
 except:
-  print (makedemo, linkdemo)
+  print (makedemo)
 
 def beautifyCommands(command):
   i = command.index(' -')
