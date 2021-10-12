@@ -262,8 +262,11 @@ makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D 
 createMakefile(makefile_input, makefile_output, makefile_options)
 
 makedemo = subprocess.run(['make', 'demo'], capture_output=True, text=True, cwd=makefile_options['BUILD_DIR']).stdout.strip()
-compiledemo = makedemo.split('\n')[1]
-linkdemo = makedemo.split('\n')[4]
+try:
+  compiledemo = makedemo.split('\n')[1]
+  linkdemo = makedemo.split('\n')[4]
+except:
+  print (makedemo, linkdemo)
 
 def beautifyCommands(command):
   i = command.index(' -')
