@@ -12,8 +12,7 @@ protected:
   Meshblock<D> m_mblock;
 
 public:
-  FieldSolver(const Meshblock<D>& m_mblock_)
-      : m_mblock(m_mblock_) {}
+  FieldSolver(const Meshblock<D>& m_mblock_) : m_mblock(m_mblock_) {}
 };
 
 } // namespace ntt
