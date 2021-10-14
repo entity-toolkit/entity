@@ -14,6 +14,7 @@ namespace ntt {
 template <Dimension D>
 class Boris : public Pusher<D> {
   using index_t = typename Pusher<D>::index_t;
+
 public:
   Boris(
       const Meshblock<D>& m_meshblock_,
