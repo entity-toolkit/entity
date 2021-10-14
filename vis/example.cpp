@@ -16,7 +16,7 @@
 
 class NTTSimulationVis : public nttiny::SimulationAPI<float> {
 public:
-  ntt::Simulation2D& m_sim;
+  ntt::Simulation<ntt::TWO_D>& m_sim;
   nttiny::Data<float> m_ex;
   nttiny::Data<float> m_bx;
   nttiny::Data<float> m_ey;
@@ -33,7 +33,7 @@ public:
   // nttiny::Data<float> positrons_x;
   // nttiny::Data<float> positrons_y;
 
-  NTTSimulationVis(ntt::Simulation2D& sim)
+  NTTSimulationVis(ntt::Simulation<ntt::TWO_D>& sim)
     : nttiny::SimulationAPI<float>{0, 0}, m_sim(sim) {
     m_sx = m_sim.get_params().get_resolution()[0];
     m_sy = m_sim.get_params().get_resolution()[1];
@@ -119,7 +119,7 @@ auto main(int argc, char* argv[]) -> int {
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
     auto resolution = ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution");
 
-    ntt::Simulation2D sim(inputdata);
+    ntt::Simulation<ntt::TWO_D> sim(inputdata);
     sim.setIO(inputfilename, outputpath);
     sim.userInitialize();
     sim.verify();

@@ -9,7 +9,8 @@
 
 namespace ntt {
 
-void Simulation1D::fieldBoundaryConditions(const real_t& time) {
+template <>
+void Simulation<ONE_D>::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
   auto nx1 = m_meshblock.get_n1();
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
@@ -22,7 +23,8 @@ void Simulation1D::fieldBoundaryConditions(const real_t& time) {
   }
 }
 
-void Simulation2D::fieldBoundaryConditions(const real_t& time) {
+template <>
+void Simulation<TWO_D>::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
   auto nx1 = m_meshblock.get_n1();
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
@@ -49,7 +51,8 @@ void Simulation2D::fieldBoundaryConditions(const real_t& time) {
   }
 }
 
-void Simulation3D::fieldBoundaryConditions(const real_t& time) {
+template <>
+void Simulation<THREE_D>::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
 
@@ -59,3 +62,7 @@ void Simulation3D::fieldBoundaryConditions(const real_t& time) {
 }
 
 } // namespace ntt
+
+template class ntt::Simulation<ntt::ONE_D>;
+template class ntt::Simulation<ntt::TWO_D>;
+template class ntt::Simulation<ntt::THREE_D>;
