@@ -33,6 +33,7 @@ class SimulationParams {
   real_t m_B0;
 
   std::vector<ParticleSpecies> m_species;
+  short m_prtl_shape;
 
   CoordinateSystem m_coord_system {UNDEFINED_COORD};
   std::vector<real_t> m_extent;
