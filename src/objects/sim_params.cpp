@@ -44,36 +44,39 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   // TODO: for now only PIC
   m_simtype = PIC_SIM;
 
-  auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
-  if (coords == "X") {
-    if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
-    m_coord_system = CARTESIAN_COORD;
-  } else if (coords == "XY") {
-    if (dim == THREE_D) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
-    m_coord_system = CARTESIAN_COORD;
-  } else if (coords == "XYZ") {
-    m_coord_system = CARTESIAN_COORD;
-  } else if (coords == "R_PHI") {
-    if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
-    m_coord_system = POLAR_R_PHI_COORD;
-  } else if (coords == "R_THETA") {
-    if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
-    m_coord_system = POLAR_R_THETA_COORD;
-  } else if (coords == "R_THETA_PHI") {
-    if (dim != THREE_D) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
-    m_coord_system = SPHERICAL_COORD;
-  } else if (coords == "logR_THETA_PHI") {
-    if (dim != THREE_D) {
-      throw std::logic_error("ERROR: wrong coord system for given dimension.");
-    }
-    m_coord_system = LOG_SPHERICAL_COORD;
-  } else {
-    throw std::invalid_argument("Unknown coordinate system specified in the input.");
-  }
+  // TODO: hardcoded coord system
+  m_coord_system = CARTESIAN_COORD;
+
+  // auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
+  // if (coords == "X") {
+  //   if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+  //   m_coord_system = CARTESIAN_COORD;
+  // } else if (coords == "XY") {
+  //   if (dim == THREE_D) {
+  //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
+  //   }
+  //   m_coord_system = CARTESIAN_COORD;
+  // } else if (coords == "XYZ") {
+  //   m_coord_system = CARTESIAN_COORD;
+  // } else if (coords == "R_PHI") {
+  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+  //   m_coord_system = POLAR_R_PHI_COORD;
+  // } else if (coords == "R_THETA") {
+  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
+  //   m_coord_system = POLAR_R_THETA_COORD;
+  // } else if (coords == "R_THETA_PHI") {
+  //   if (dim != THREE_D) {
+  //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
+  //   }
+  //   m_coord_system = SPHERICAL_COORD;
+  // } else if (coords == "logR_THETA_PHI") {
+  //   if (dim != THREE_D) {
+  //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
+  //   }
+  //   m_coord_system = LOG_SPHERICAL_COORD;
+  // } else {
+  //   throw std::invalid_argument("Unknown coordinate system specified in the input.");
+  // }
 
   // box size/resolution
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
