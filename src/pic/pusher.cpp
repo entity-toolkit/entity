@@ -2,7 +2,9 @@
 #include "simulation.h"
 #include "particles.h"
 
+#include "pusher.h"
 #include "boris.hpp"
+#include "photon_pusher.hpp"
 
 #include <stdexcept>
 
@@ -21,6 +23,11 @@ void Simulation<D>::pushParticlesSubstep(const real_t& time) {
           "pusher",
           species.loopParticles(),
           Boris<D>(m_meshblock, species, coeff, m_sim_params.m_timestep));
+    } else if (species.m_pusher == PHOTON_PUSHER) {
+      Kokkos::parallel_for(
+          "pusher",
+          species.loopParticles(),
+          PhotonPusher<D>(m_meshblock, species, coeff, m_sim_params.m_timestep));
     } else {
       throw std::logic_error("ERROR: only Boris pusher is implemented");
     }

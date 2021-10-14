@@ -47,40 +47,51 @@ public:
   // clang-format on
 };
 
+// * * * * Position update * * * * * * * * * * * * * *
 template <>
 void Pusher<ONE_D>::positionUpdate(const index_t& p) const {
   // TESTPERF: faster sqrt?
+  // clang-format off
   real_t inv_gamma0 {
-      static_cast<real_t>(1.0) / std::sqrt(static_cast<real_t>(1.0)
+      ONE / std::sqrt(ONE
           + m_particles.m_ux1(p) * m_particles.m_ux1(p)
           + m_particles.m_ux2(p) * m_particles.m_ux2(p)
-          + m_particles.m_ux3(p) * m_particles.m_ux3(p))};
+          + m_particles.m_ux3(p) * m_particles.m_ux3(p))
+        };
+  // clang-format on
   m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
 }
 
 template <>
 void Pusher<TWO_D>::positionUpdate(const index_t& p) const {
+  // clang-format off
   real_t inv_gamma0 {
-      static_cast<real_t>(1.0) / std::sqrt(static_cast<real_t>(1.0)
+      ONE / std::sqrt(ONE
           + m_particles.m_ux1(p) * m_particles.m_ux1(p)
           + m_particles.m_ux2(p) * m_particles.m_ux2(p)
-          + m_particles.m_ux3(p) * m_particles.m_ux3(p))};
+          + m_particles.m_ux3(p) * m_particles.m_ux3(p))
+        };
+  // clang-format on
   m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
   m_particles.m_x2(p) += dt * m_particles.m_ux2(p) * inv_gamma0;
 }
 
 template <>
 void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
+  // clang-format off
   real_t inv_gamma0 {
-      static_cast<real_t>(1.0) / std::sqrt(static_cast<real_t>(1.0)
+      ONE / std::sqrt(ONE
           + m_particles.m_ux1(p) * m_particles.m_ux1(p)
           + m_particles.m_ux2(p) * m_particles.m_ux2(p)
-          + m_particles.m_ux3(p) * m_particles.m_ux3(p))};
+          + m_particles.m_ux3(p) * m_particles.m_ux3(p))
+        };
+  // clang-format on
   m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
   m_particles.m_x2(p) += dt * m_particles.m_ux2(p) * inv_gamma0;
   m_particles.m_x3(p) += dt * m_particles.m_ux3(p) * inv_gamma0;
 }
 
+// * * * * Field interpolation * * * * * * * * * * * * 
 template <>
 Inline void Pusher<ONE_D>::interpolateFields(
     const index_t& p,
