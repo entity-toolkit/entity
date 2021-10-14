@@ -106,9 +106,9 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
     if (b >= static_cast<short>(dim)) { break; }
   }
   // plasma params
-  m_ppc0 = readFromInput<real_t>(m_inputdata, "algorithm", "ppc0");
-  m_larmor0 = readFromInput<real_t>(m_inputdata, "algorithm", "larmor0");
-  m_skindepth0 = readFromInput<real_t>(m_inputdata, "algorithm", "skindepth0");
+  m_ppc0 = readFromInput<real_t>(m_inputdata, "units", "ppc0");
+  m_larmor0 = readFromInput<real_t>(m_inputdata, "units", "larmor0");
+  m_skindepth0 = readFromInput<real_t>(m_inputdata, "units", "skindepth0");
   m_sigma0 = m_larmor0 * m_larmor0 / (m_skindepth0 * m_skindepth0);
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
   m_B0 = 1.0 / m_larmor0;

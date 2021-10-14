@@ -13,6 +13,8 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 [algorithm]
 CFL             = 0.45
 correction      = 1.0
+
+[units]
 ppc0            = 0.1
 larmor0         = 0.1
 skindepth0      = 0.01

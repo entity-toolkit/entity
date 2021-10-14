@@ -16,7 +16,6 @@ class Faraday : public FieldSolver<D> {
 public:
   Faraday(const Meshblock<D>& m_mblock_, const real_t& coeff_)
       : FieldSolver<D> {m_mblock_}, coeff(coeff_) {}
-  // TODO: change this
   Inline void operator()(const index_t) const;
   Inline void operator()(const index_t, const index_t) const;
   Inline void operator()(const index_t, const index_t, const index_t) const;
