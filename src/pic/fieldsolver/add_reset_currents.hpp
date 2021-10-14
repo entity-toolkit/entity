@@ -11,6 +11,7 @@ namespace ntt {
 template <Dimension D>
 class AddCurrents : public FieldSolver<D> {
   using index_t = typename RealArrND<D>::size_type;
+
 public:
   AddCurrents(const Meshblock<D>& m_mblock_) : FieldSolver<D> {m_mblock_} {}
   Inline void operator()(const index_t) const;
@@ -47,7 +48,6 @@ class ResetCurrents : public FieldSolver<D> {
 
 public:
   ResetCurrents(const Meshblock<D>& m_mblock_) : FieldSolver<D> {m_mblock_} {}
-  // TODO: change this
   Inline void operator()(const index_t) const;
   Inline void operator()(const index_t, const index_t) const;
   Inline void operator()(const index_t, const index_t, const index_t) const;
