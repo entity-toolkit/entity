@@ -89,15 +89,14 @@ enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 enum CoordinateSystem {
   UNDEFINED_COORD,
   CARTESIAN_COORD,
-  POLAR_R_THETA_COORD,
-  POLAR_R_PHI_COORD,
-  SPHERICAL_COORD,
-  LOG_SPHERICAL_COORD,
+  POLAR_COORD,
   CUSTOM_COORD
 };
 enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 
 enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };
+
+enum ParticleShape { ZEROTH_ORDER = 0, FIRST_ORDER, SECOND_ORDER, THIRD_ORDER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string;
 auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string;
