@@ -37,17 +37,18 @@ auto main(int argc, char* argv[]) -> int {
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
     short res = static_cast<short>(
         ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
-    if (!((res > 0) && (res < 4))) { throw std::logic_error("ERROR: wrong dimension specified."); }
 
     if (res == 1) {
-      ntt::Simulation1D sim(inputdata);
+      ntt::Simulation<ntt::ONE_D> sim(inputdata);
       sim.run(inputfilename, outputpath);
     } else if (res == 2) {
-      ntt::Simulation2D sim(inputdata);
+      ntt::Simulation<ntt::TWO_D> sim(inputdata);
+      sim.run(inputfilename, outputpath);
+    } else if (res == 3) {
+      ntt::Simulation<ntt::THREE_D> sim(inputdata);
       sim.run(inputfilename, outputpath);
     } else {
-      ntt::Simulation3D sim(inputdata);
-      sim.run(inputfilename, outputpath);
+      throw std::logic_error("ERROR: wrong dimension specified.");
     }
   }
   catch (std::exception& err) {

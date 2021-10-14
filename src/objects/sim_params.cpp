@@ -49,8 +49,8 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
 
   // auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
   // if (coords == "X") {
-  //   if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
-  //   m_coord_system = CARTESIAN_COORD;
+  //   if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension.");
+  //   } m_coord_system = CARTESIAN_COORD;
   // } else if (coords == "XY") {
   //   if (dim == THREE_D) {
   //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
@@ -59,11 +59,11 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   // } else if (coords == "XYZ") {
   //   m_coord_system = CARTESIAN_COORD;
   // } else if (coords == "R_PHI") {
-  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
-  //   m_coord_system = POLAR_R_PHI_COORD;
+  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension.");
+  //   } m_coord_system = POLAR_R_PHI_COORD;
   // } else if (coords == "R_THETA") {
-  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension."); }
-  //   m_coord_system = POLAR_R_THETA_COORD;
+  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension.");
+  //   } m_coord_system = POLAR_R_THETA_COORD;
   // } else if (coords == "R_THETA_PHI") {
   //   if (dim != THREE_D) {
   //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
