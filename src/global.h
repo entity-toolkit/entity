@@ -86,12 +86,7 @@ using RangeND = typename
 inline constexpr int N_GHOSTS {2};
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 
-enum CoordinateSystem {
-  UNDEFINED_COORD,
-  CARTESIAN_COORD,
-  POLAR_COORD,
-  CUSTOM_COORD
-};
+enum CoordinateSystem { UNDEFINED_COORD, CARTESIAN_COORD, POLAR_COORD, CUSTOM_COORD };
 enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 
 enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };

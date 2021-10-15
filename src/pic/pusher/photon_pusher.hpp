@@ -23,9 +23,7 @@ public:
 
   void velocityUpdate(
       const index_t&, real_t&, real_t&, real_t&, real_t&, real_t&, real_t&) const override {}
-  Inline void operator()(const index_t p) const {
-    Pusher<D>::positionUpdate(p);
-  }
+  Inline void operator()(const index_t p) const { Pusher<D>::positionUpdate(p); }
 };
 
 } // namespace ntt
