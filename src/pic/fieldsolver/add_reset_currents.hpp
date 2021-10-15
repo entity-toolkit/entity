@@ -21,24 +21,24 @@ public:
 
 template <>
 Inline void AddCurrents<ONE_D>::operator()(const index_t i) const {
-  m_mblock.ex1(i) = m_mblock.ex1(i) + m_mblock.jx1(i);
-  m_mblock.ex2(i) = m_mblock.ex2(i) + m_mblock.jx2(i);
-  m_mblock.ex3(i) = m_mblock.ex3(i) + m_mblock.jx3(i);
+  m_mblock.ex1(i) += m_mblock.jx1(i);
+  m_mblock.ex2(i) += m_mblock.jx2(i);
+  m_mblock.ex3(i) += m_mblock.jx3(i);
 }
 
 template <>
 Inline void AddCurrents<TWO_D>::operator()(const index_t i, const index_t j) const {
-  m_mblock.ex1(i, j) = m_mblock.ex1(i, j) + m_mblock.jx1(i, j);
-  m_mblock.ex2(i, j) = m_mblock.ex2(i, j) + m_mblock.jx2(i, j);
-  m_mblock.ex3(i, j) = m_mblock.ex3(i, j) + m_mblock.jx3(i, j);
+  m_mblock.ex1(i, j) += m_mblock.jx1(i, j);
+  m_mblock.ex2(i, j) += m_mblock.jx2(i, j);
+  m_mblock.ex3(i, j) += m_mblock.jx3(i, j);
 }
 
 template <>
 Inline void
 AddCurrents<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-  m_mblock.ex1(i, j, k) = m_mblock.ex1(i, j, k) + m_mblock.jx1(i, j, k);
-  m_mblock.ex2(i, j, k) = m_mblock.ex2(i, j, k) + m_mblock.jx2(i, j, k);
-  m_mblock.ex3(i, j, k) = m_mblock.ex3(i, j, k) + m_mblock.jx3(i, j, k);
+  m_mblock.ex1(i, j, k) += m_mblock.jx1(i, j, k);
+  m_mblock.ex2(i, j, k) += m_mblock.jx2(i, j, k);
+  m_mblock.ex3(i, j, k) += m_mblock.jx3(i, j, k);
 }
 
 // * * * * Reset currents * * * * * * * * * * * * * * *

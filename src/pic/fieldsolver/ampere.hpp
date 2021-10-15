@@ -23,34 +23,32 @@ public:
 
 template <>
 Inline void Ampere<ONE_D>::operator()(const index_t i) const {
-  m_mblock.ex2(i) = m_mblock.ex2(i) + coeff * (m_mblock.bx3(i - 1) - m_mblock.bx3(i));
-  m_mblock.ex3(i) = m_mblock.ex3(i) + coeff * (-m_mblock.bx2(i - 1) + m_mblock.bx2(i));
+  // clang-format off
+  m_mblock.ex2(i) += coeff * ( m_mblock.bx3(i - 1) - m_mblock.bx3(i));
+  m_mblock.ex3(i) += coeff * (-m_mblock.bx2(i - 1) + m_mblock.bx2(i));
+  // clang-format on
 }
 
 template <>
 Inline void Ampere<TWO_D>::operator()(const index_t i, const index_t j) const {
-  m_mblock.ex1(i, j) = m_mblock.ex1(i, j) + coeff * (-m_mblock.bx3(i, j - 1) + m_mblock.bx3(i, j));
-  m_mblock.ex2(i, j) = m_mblock.ex2(i, j) + coeff * (m_mblock.bx3(i - 1, j) - m_mblock.bx3(i, j));
-  m_mblock.ex3(i, j) = m_mblock.ex3(i, j)
-                       + coeff
-                             * (m_mblock.bx1(i, j - 1) - m_mblock.bx1(i, j) - m_mblock.bx2(i - 1, j)
-                                + m_mblock.bx2(i, j));
+  // clang-format off
+  m_mblock.ex1(i, j) += coeff * (-m_mblock.bx3(    i, j - 1) + m_mblock.bx3(    i,     j));
+  m_mblock.ex2(i, j) += coeff * ( m_mblock.bx3(i - 1,     j) - m_mblock.bx3(    i,     j));
+  m_mblock.ex3(i, j) += coeff * ( m_mblock.bx1(    i, j - 1) - m_mblock.bx1(    i,     j)
+                                - m_mblock.bx2(i - 1,     j) + m_mblock.bx2(    i,     j));
+  // clang-format on
 }
 
 template <>
 Inline void Ampere<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-  m_mblock.ex1(i, j, k) = m_mblock.ex1(i, j, k)
-                          + coeff
-                                * (m_mblock.bx2(i, j, k - 1) - m_mblock.bx2(i, j, k)
-                                   - m_mblock.bx3(i, j - 1, k) + m_mblock.bx3(i, j, k));
-  m_mblock.ex2(i, j, k) = m_mblock.ex2(i, j, k)
-                          + coeff
-                                * (m_mblock.bx3(i - 1, j, k) - m_mblock.bx3(i, j, k)
-                                   - m_mblock.bx1(i, j, k - 1) + m_mblock.bx1(i, j, k));
-  m_mblock.ex3(i, j, k) = m_mblock.ex3(i, j, k)
-                          + coeff
-                                * (m_mblock.bx1(i, j - 1, k) - m_mblock.bx1(i, j, k)
-                                   - m_mblock.bx2(i - 1, j, k) + m_mblock.bx2(i, j, k));
+  // clang-format off
+  m_mblock.ex1(i, j, k) += coeff * ( m_mblock.bx2(    i,     j, k - 1) - m_mblock.bx2(    i,     j,     k)
+                                   - m_mblock.bx3(    i, j - 1,     k) + m_mblock.bx3(    i,     j,     k));
+  m_mblock.ex2(i, j, k) += coeff * ( m_mblock.bx3(i - 1,     j,     k) - m_mblock.bx3(    i,     j,     k)
+                                   - m_mblock.bx1(    i,     j, k - 1) + m_mblock.bx1(    i,     j,     k));
+  m_mblock.ex3(i, j, k) += coeff * ( m_mblock.bx1(    i, j - 1,     k) - m_mblock.bx1(    i,     j,     k)
+                                   - m_mblock.bx2(i - 1,     j,     k) + m_mblock.bx2(    i,     j,     k));
+  // clang-format on
 }
 
 } // namespace ntt
