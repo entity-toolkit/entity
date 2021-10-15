@@ -36,6 +36,13 @@ public:
   Inline void operator()(const index_t p) const {
     real_t e0_x1, e0_x2, e0_x3;
     real_t b0_x1, b0_x2, b0_x3;
+    // TODO:
+    // fix this to cartesian
+    // 1. interpolate fields
+    // 2. convert E,B and X,U to cartesian
+    // 3. update U
+    // 4. update X
+    // 5. convert back
     interpolateFields(p,
                       e0_x1, e0_x2, e0_x3,
                       b0_x1, b0_x2, b0_x3);
@@ -126,6 +133,7 @@ Inline void Pusher<TWO_D>::interpolateFields(
   // first order
   real_t c000, c100, c010, c110, c00, c10;
 
+  // clang-format off
   // Ex1
   // interpolate to nodes
   c000 = 0.5 * (m_meshblock.ex1(    i,     j) + m_meshblock.ex1(i - 1,     j));
@@ -177,6 +185,7 @@ Inline void Pusher<TWO_D>::interpolateFields(
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   b0_x3 = c00 * (ONE - dx2) + c10 * dx2;
+  // clang-format on
 }
 
 template <>
