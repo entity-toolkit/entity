@@ -28,14 +28,8 @@ auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string
   switch (coord) {
   case CARTESIAN_COORD:
     return ((dim == 1) ? "X" : ((dim == 2) ? "XY" : "XYZ"));
-  case POLAR_R_THETA_COORD:
-    return "R_TH";
-  case POLAR_R_PHI_COORD:
-    return "R_PHI";
-  case SPHERICAL_COORD:
-    return "R_TH_PHI";
-  case LOG_SPHERICAL_COORD:
-    return "logR_TH_PHI";
+  case POLAR_COORD:
+    return "polar";
   default:
     return "N/A";
   }
