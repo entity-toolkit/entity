@@ -13,14 +13,21 @@
 
 namespace ntt {
 
+namespace fld {
+
+  enum FieldSelector { ex1 = 0, ex2, ex3, bx1, bx2, bx3 };
+
+  enum CurrSelector { jx1 = 0, jx2, jx3 };
+
+} // namespace fld
+
 template <Dimension D>
 struct Meshblock {
   // sizes of these arrays are ...
   //   resolution + 2 * N_GHOSTS in every direction
   // TESTPERF: maybe use VPIC-style ND array
-  RealArrND<D> ex1, ex2, ex3;
-  RealArrND<D> bx1, bx2, bx3;
-  RealArrND<D> jx1, jx2, jx3;
+  RealFieldND<D, 6> em_fields;
+  RealFieldND<D, 3> j_fields;
 
   std::vector<Particles<D>> particles;
 

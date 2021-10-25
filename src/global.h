@@ -58,16 +58,16 @@ auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> n
 enum Dimension { ONE_D = 1, TWO_D, THREE_D };
 
 // clang-format off
-template <Dimension D>
-using RealArrND = typename
+template <Dimension D, int N>
+using RealFieldND = typename
                   std::conditional<D == ONE_D,
-                    NTTArray<real_t*>,
+                    NTTArray<real_t*[N]>,
                   typename
                   std::conditional<D == TWO_D,
-                    NTTArray<real_t**>,
+                    NTTArray<real_t**[N]>,
                   typename
                   std::conditional<D == THREE_D,
-                    NTTArray<real_t***>,
+                    NTTArray<real_t***[N]>,
                   std::nullptr_t>::type>::type>::type;
 
 template <Dimension D>
