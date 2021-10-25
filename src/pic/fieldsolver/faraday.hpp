@@ -10,7 +10,7 @@ namespace ntt {
 // * * * * Faraday's law * * * * * * * * * * * * * * *
 template <Dimension D>
 class Faraday : public FieldSolver<D> {
-  using index_t = typename RealArrND<D>::size_type;
+  using index_t = typename RealFieldND<D, 3>::size_type;
   real_t coeff;
 
 public:
@@ -23,32 +23,38 @@ public:
 
 template <>
 Inline void Faraday<ONE_D>::operator()(const index_t i) const {
-  // clang-format off
-  m_mblock.bx2(i) += coeff * ( m_mblock.ex3(i + 1) - m_mblock.ex3(i));
-  m_mblock.bx3(i) += coeff * (-m_mblock.ex2(i + 1) + m_mblock.ex2(i));
-  // clang-format on
+  m_mblock.em_fields(i, fld::bx2)
+      += coeff * (m_mblock.em_fields(i + 1, fld::ex3) - m_mblock.em_fields(i, fld::ex3));
+  m_mblock.em_fields(i, fld::bx3)
+      += coeff * (-m_mblock.em_fields(i + 1, fld::ex2) + m_mblock.em_fields(i, fld::ex2));
 }
 
 template <>
 Inline void Faraday<TWO_D>::operator()(const index_t i, const index_t j) const {
-  // clang-format off
-  m_mblock.bx1(i, j) += coeff * (-m_mblock.ex3(    i, j + 1) + m_mblock.ex3(    i,    j));
-  m_mblock.bx2(i, j) += coeff * ( m_mblock.ex3(i + 1,     j) - m_mblock.ex3(    i,    j));
-  m_mblock.bx3(i, j) += coeff * ( m_mblock.ex1(    i, j + 1) - m_mblock.ex1(    i,    j)
-                                - m_mblock.ex2(i + 1,     j) + m_mblock.ex2(    i,    j));
-  // clang-format on
+  m_mblock.em_fields(i, j, fld::bx1)
+      += coeff * (-m_mblock.em_fields(i, j + 1, fld::ex3) + m_mblock.em_fields(i, j, fld::ex3));
+  m_mblock.em_fields(i, j, fld::bx2)
+      += coeff * (m_mblock.em_fields(i + 1, j, fld::ex3) - m_mblock.em_fields(i, j, fld::ex3));
+  m_mblock.em_fields(i, j, fld::bx3)
+      += coeff
+         * (m_mblock.em_fields(i, j + 1, fld::ex1) - m_mblock.em_fields(i, j, fld::ex1)
+            - m_mblock.em_fields(i + 1, j, fld::ex2) + m_mblock.em_fields(i, j, fld::ex2));
 }
 
 template <>
 Inline void Faraday<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-  // clang-format off
-  m_mblock.bx1(i, j, k) += coeff * (m_mblock.ex2(    i,     j, k + 1) - m_mblock.ex2(    i,     j,     k)
-                                  - m_mblock.ex3(    i, j + 1,     k) + m_mblock.ex3(    i,     j,     k));
-  m_mblock.bx2(i, j, k) += coeff * (m_mblock.ex3(i + 1,     j,     k) - m_mblock.ex3(    i,     j,     k)
-                                  - m_mblock.ex1(    i,     j, k + 1) + m_mblock.ex1(    i,     j,     k));
-  m_mblock.bx3(i, j, k) += coeff * (m_mblock.ex1(    i, j + 1,     k) - m_mblock.ex1(    i,     j,     k)
-                                  - m_mblock.ex2(i + 1,     j,     k) + m_mblock.ex2(    i,     j,     k));
-  // clang-format on
+  m_mblock.em_fields(i, j, k, fld::bx1)
+      += coeff
+         * (m_mblock.em_fields(i, j, k + 1, fld::ex2) - m_mblock.em_fields(i, j, k, fld::ex2)
+            - m_mblock.em_fields(i, j + 1, k, fld::ex3) + m_mblock.em_fields(i, j, k, fld::ex3));
+  m_mblock.em_fields(i, j, k, fld::bx2)
+      += coeff
+         * (m_mblock.em_fields(i + 1, j, k, fld::ex3) - m_mblock.em_fields(i, j, k, fld::ex3)
+            - m_mblock.em_fields(i, j, k + 1, fld::ex1) + m_mblock.em_fields(i, j, k, fld::ex1));
+  m_mblock.em_fields(i, j, k, fld::bx3)
+      += coeff
+         * (m_mblock.em_fields(i, j + 1, k, fld::ex1) - m_mblock.em_fields(i, j, k, fld::ex1)
+            - m_mblock.em_fields(i + 1, j, k, fld::ex2) + m_mblock.em_fields(i, j, k, fld::ex2));
 }
 
 } // namespace ntt

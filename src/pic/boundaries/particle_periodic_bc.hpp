@@ -10,7 +10,7 @@ namespace ntt {
 
 template <Dimension D>
 class PrtlBC_Periodic : public PrtlBC<D> {
-  using index_t = typename RealArrND<D>::size_type;
+  using index_t = typename NTTArray<real_t*>::size_type;
 
 public:
   PrtlBC_Periodic(const std::vector<real_t>& m_extent_, const Particles<D>& m_particles_)

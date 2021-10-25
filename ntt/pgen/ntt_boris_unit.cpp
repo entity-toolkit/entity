@@ -19,8 +19,8 @@ void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
   using index_t = NTTArray<real_t**>::size_type;
   Kokkos::parallel_for(
     "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-      mblock.ex2(i, j) = 0.1;
-      mblock.bx3(i, j) = 1.0;
+      mblock.em_fields(i, j, fld::ex2) = 0.1;
+      mblock.em_fields(i, j, fld::bx3) = 1.0;
   });
 }
 
