@@ -10,7 +10,7 @@ namespace ntt {
 // * * * * Add currents * * * * * * * * * * * * * * * *
 template <Dimension D>
 class AddCurrents : public FieldSolver<D> {
-  using index_t = typename RealArrND<D>::size_type;
+  using index_t = typename RealFieldND<D, 3>::size_type;
 
 public:
   AddCurrents(const Meshblock<D>& m_mblock_) : FieldSolver<D> {m_mblock_} {}
@@ -21,30 +21,30 @@ public:
 
 template <>
 Inline void AddCurrents<ONE_D>::operator()(const index_t i) const {
-  m_mblock.ex1(i) += m_mblock.jx1(i);
-  m_mblock.ex2(i) += m_mblock.jx2(i);
-  m_mblock.ex3(i) += m_mblock.jx3(i);
+  m_mblock.em_fields(i, fld::ex1) += m_mblock.j_fields(i, fld::jx1);
+  m_mblock.em_fields(i, fld::ex2) += m_mblock.j_fields(i, fld::jx2);
+  m_mblock.em_fields(i, fld::ex3) += m_mblock.j_fields(i, fld::jx3);
 }
 
 template <>
 Inline void AddCurrents<TWO_D>::operator()(const index_t i, const index_t j) const {
-  m_mblock.ex1(i, j) += m_mblock.jx1(i, j);
-  m_mblock.ex2(i, j) += m_mblock.jx2(i, j);
-  m_mblock.ex3(i, j) += m_mblock.jx3(i, j);
+  m_mblock.em_fields(i, j, fld::ex1) += m_mblock.j_fields(i, j, fld::jx1);
+  m_mblock.em_fields(i, j, fld::ex2) += m_mblock.j_fields(i, j, fld::jx2);
+  m_mblock.em_fields(i, j, fld::ex3) += m_mblock.j_fields(i, j, fld::jx3);
 }
 
 template <>
 Inline void
 AddCurrents<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-  m_mblock.ex1(i, j, k) += m_mblock.jx1(i, j, k);
-  m_mblock.ex2(i, j, k) += m_mblock.jx2(i, j, k);
-  m_mblock.ex3(i, j, k) += m_mblock.jx3(i, j, k);
+  m_mblock.em_fields(i, j, k, fld::ex1) += m_mblock.j_fields(i, j, k, fld::jx1);
+  m_mblock.em_fields(i, j, k, fld::ex2) += m_mblock.j_fields(i, j, k, fld::jx2);
+  m_mblock.em_fields(i, j, k, fld::ex3) += m_mblock.j_fields(i, j, k, fld::jx3);
 }
 
 // * * * * Reset currents * * * * * * * * * * * * * * *
 template <Dimension D>
 class ResetCurrents : public FieldSolver<D> {
-  using index_t = typename RealArrND<D>::size_type;
+  using index_t = typename RealFieldND<D, 3>::size_type;
 
 public:
   ResetCurrents(const Meshblock<D>& m_mblock_) : FieldSolver<D> {m_mblock_} {}
@@ -55,24 +55,24 @@ public:
 
 template <>
 Inline void ResetCurrents<ONE_D>::operator()(const index_t i) const {
-  m_mblock.jx1(i) = 0.0;
-  m_mblock.jx2(i) = 0.0;
-  m_mblock.jx3(i) = 0.0;
+  m_mblock.j_fields(i, fld::jx1) = 0.0;
+  m_mblock.j_fields(i, fld::jx2) = 0.0;
+  m_mblock.j_fields(i, fld::jx3) = 0.0;
 }
 
 template <>
 Inline void ResetCurrents<TWO_D>::operator()(const index_t i, const index_t j) const {
-  m_mblock.jx1(i, j) = 0.0;
-  m_mblock.jx2(i, j) = 0.0;
-  m_mblock.jx3(i, j) = 0.0;
+  m_mblock.j_fields(i, j, fld::jx1) = 0.0;
+  m_mblock.j_fields(i, j, fld::jx2) = 0.0;
+  m_mblock.j_fields(i, j, fld::jx3) = 0.0;
 }
 
 template <>
 Inline void
 ResetCurrents<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-  m_mblock.jx1(i, j, k) = 0.0;
-  m_mblock.jx2(i, j, k) = 0.0;
-  m_mblock.jx3(i, j, k) = 0.0;
+  m_mblock.j_fields(i, j, k, fld::jx1) = 0.0;
+  m_mblock.j_fields(i, j, k, fld::jx2) = 0.0;
+  m_mblock.j_fields(i, j, k, fld::jx3) = 0.0;
 }
 
 } // namespace ntt

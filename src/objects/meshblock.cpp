@@ -27,15 +27,8 @@ void Meshblock<D>::printDetails() {
 
 template <>
 Meshblock<ONE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : ex1 {"Ex1", res[0] + 2 * N_GHOSTS},
-      ex2 {"Ex2", res[0] + 2 * N_GHOSTS},
-      ex3 {"Ex3", res[0] + 2 * N_GHOSTS},
-      bx1 {"Bx1", res[0] + 2 * N_GHOSTS},
-      bx2 {"Bx2", res[0] + 2 * N_GHOSTS},
-      bx3 {"Bx3", res[0] + 2 * N_GHOSTS},
-      jx1 {"Jx1", res[0] + 2 * N_GHOSTS},
-      jx2 {"Jx2", res[0] + 2 * N_GHOSTS},
-      jx3 {"Jx3", res[0] + 2 * N_GHOSTS},
+    : em_fields {"EM", res[0] + 2 * N_GHOSTS},
+      j_fields {"J", res[0] + 2 * N_GHOSTS},
       m_resolution {std::move(res)} {
   for (auto& part : parts) {
     particles.emplace_back(part);
@@ -44,15 +37,8 @@ Meshblock<ONE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSp
 
 template <>
 Meshblock<TWO_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : ex1 {"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      ex2 {"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      ex3 {"Ex3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      bx1 {"Bx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      bx2 {"Bx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      bx3 {"Bx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      jx1 {"Jx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      jx2 {"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      jx3 {"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+    : em_fields {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      j_fields {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       m_resolution {std::move(res)} {
   for (auto& part : parts) {
     particles.emplace_back(part);
@@ -61,15 +47,8 @@ Meshblock<TWO_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSp
 
 template <>
 Meshblock<THREE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : ex1 {"Ex1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      ex2 {"Ex2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      ex3 {"Ex3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      bx1 {"Bx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      bx2 {"Bx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      bx3 {"Bx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      jx1 {"Jx1", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      jx2 {"Jx2", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      jx3 {"Jx3", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+    : em_fields {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      j_fields {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       m_resolution {std::move(res)} {
   for (auto& part : parts) {
     particles.emplace_back(part);
