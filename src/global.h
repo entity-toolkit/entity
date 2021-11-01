@@ -89,7 +89,7 @@ enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 enum CoordinateSystem {
   UNDEFINED_COORD,
   CARTESIAN_COORD,
-  POLAR_COORD,
+  SPHERICAL_COORD,
   CUSTOM_COORD
 };
 enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };

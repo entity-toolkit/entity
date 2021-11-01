@@ -28,11 +28,6 @@ public:
 
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
 
-  // nttiny::Data<float> electrons_x;
-  // nttiny::Data<float> electrons_y;
-  // nttiny::Data<float> positrons_x;
-  // nttiny::Data<float> positrons_y;
-
   NTTSimulationVis(ntt::Simulation<ntt::TWO_D>& sim)
     : nttiny::SimulationAPI<float>{0, 0}, m_sim(sim) {
     m_sx = m_sim.get_params().get_resolution()[0];

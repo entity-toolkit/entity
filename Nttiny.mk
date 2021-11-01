@@ -16,5 +16,6 @@ ${VIS_TARGET}: ${NTTINY_DIR}/build/libnttiny.a $(OBJS) $(PGEN_OBJS) $(VIS_OBJ)
 	$(HIDE)${link_command} $^ $(NTTINY_LIBS) -o $@ $(NTTINY_LINKFLAGS) $(LIBS)
 
 ${BUILD_VIS_DIR}/%.o : ${VIS_DIR}/%
+	@echo [C]ompiling \`vis\`: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${compile_command} $(NTTINY_INCFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp -c $^ -o $@
