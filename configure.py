@@ -14,7 +14,7 @@
 #
 # [ Nttiny flags ]
 #   -nttiny                       enable visualizer compilation
-#   --nttiny_dir=<DIR>            specify path for `Nttiny`
+#   --nttiny_path=<DIR>           specify path for `Nttiny`
 #
 # [ Simulation flags ]
 #   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
@@ -83,7 +83,7 @@ def defineOptions():
 
   # visualizer
   parser.add_argument('-nttiny', action='store_true', default=False, help='enable nttiny visualizer compilation')
-  parser.add_argument('--nttiny_dir', default="extern/nttiny", help='specify path for `Nttiny`')
+  parser.add_argument('--nttiny_path', default="extern/nttiny", help='specify path for `Nttiny`')
 
   # simulation
   parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision')
@@ -231,9 +231,9 @@ makefile_options['SRC_DIR'] = 'src'
 makefile_options['EXTERN_DIR'] = 'extern'
 
 if args['nttiny']:
-  if (args['nttiny_dir']) != '':
-    args['nttiny_dir'] = os.path.abspath(args['nttiny_dir'])
-  makefile_options['NTTINY_DIR'] = args['nttiny_dir']
+  if (args['nttiny_path']) != '':
+    args['nttiny_path'] = os.path.abspath(args['nttiny_path'])
+  makefile_options['NTTINY_DIR'] = args['nttiny_path']
   makefile_options['VIS_DIR'] = "vis"
 
 makefile_options['DEFINITIONS'] = ''
@@ -301,9 +301,9 @@ def makeNotes():
     notes += f"* nvcc recognized as:\n    $ {findCompiler('nvcc')}\n  "
   notes += f"* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:\n    $ {findCompiler(cxx)}\n  "
   if 'OpenMP' in args['kokkos_devices']:
-    notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=<INT>\n"
+    notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_NUM_THREADS=<INT>\n  "
   if args['nttiny']:
-    notes += f"* `nttiny` path:\n    $ {pathNotEmpty(args['nttiny_dir'])}"
+    notes += f"* `nttiny` path:\n    $ {pathNotEmpty(args['nttiny_path'])}"
   return notes.strip()
 
 short_compiler = (f"nvcc_wrapper [{args['nvcc_wrapper_cxx']}]" if use_nvcc_wrapper else makefile_options['COMPILER'])
