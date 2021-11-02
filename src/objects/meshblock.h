@@ -39,14 +39,14 @@ struct Meshblock {
     return (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
   }
   [[nodiscard]] auto get_dx2() const -> real_t {
-    if constexpr(D == ONE_D) {
+    if constexpr (D == ONE_D) {
       return 0.0;
     } else {
       return (m_extent[3] - m_extent[2]) / static_cast<real_t>(m_resolution[1]);
     }
   }
   [[nodiscard]] auto get_dx3() const -> real_t {
-    if constexpr(D != THREE_D) {
+    if constexpr (D != THREE_D) {
       return 0.0;
     } else {
       return (m_extent[5] - m_extent[4]) / static_cast<real_t>(m_resolution[2]);

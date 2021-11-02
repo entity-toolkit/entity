@@ -14,11 +14,15 @@ template <Dimension D>
 void Simulation<D>::faradayHalfsubstep(const real_t& time) {
   UNUSED(time);
   PLOGD << D << "D faraday";
-  const real_t coeff {static_cast<real_t>(0.5) * m_sim_params.m_correction * m_sim_params.m_timestep};
+  const real_t coeff {
+      static_cast<real_t>(0.5) * m_sim_params.m_correction * m_sim_params.m_timestep};
   const real_t coeff_x1 {(m_meshblock.get_dx1() != ZERO) ? coeff / m_meshblock.get_dx1() : ZERO};
   const real_t coeff_x2 {(m_meshblock.get_dx2() != ZERO) ? coeff / m_meshblock.get_dx2() : ZERO};
   const real_t coeff_x3 {(m_meshblock.get_dx3() != ZERO) ? coeff / m_meshblock.get_dx3() : ZERO};
-  Kokkos::parallel_for("faraday", m_meshblock.loopActiveCells(), Faraday<D>(m_meshblock, coeff_x1, coeff_x2, coeff_x3));
+  Kokkos::parallel_for(
+      "faraday",
+      m_meshblock.loopActiveCells(),
+      Faraday<D>(m_meshblock, coeff_x1, coeff_x2, coeff_x3));
 }
 // solve dE/dt
 template <Dimension D>
@@ -29,7 +33,10 @@ void Simulation<D>::ampereSubstep(const real_t& time) {
   const real_t coeff_x1 {(m_meshblock.get_dx1() != ZERO) ? coeff / m_meshblock.get_dx1() : ZERO};
   const real_t coeff_x2 {(m_meshblock.get_dx2() != ZERO) ? coeff / m_meshblock.get_dx2() : ZERO};
   const real_t coeff_x3 {(m_meshblock.get_dx3() != ZERO) ? coeff / m_meshblock.get_dx3() : ZERO};
-  Kokkos::parallel_for("ampere", m_meshblock.loopActiveCells(), Ampere<D>(m_meshblock, coeff_x1, coeff_x2, coeff_x3));
+  Kokkos::parallel_for(
+      "ampere",
+      m_meshblock.loopActiveCells(),
+      Ampere<D>(m_meshblock, coeff_x1, coeff_x2, coeff_x3));
 }
 
 // add currents to E
