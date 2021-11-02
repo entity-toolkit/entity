@@ -30,6 +30,8 @@ auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string
     return ((dim == 1) ? "X" : ((dim == 2) ? "XY" : "XYZ"));
   case SPHERICAL_COORD:
     return "spherical";
+  case CYLINDRICAL_COORD:
+    return "cylindrical";
   default:
     return "N/A";
   }
