@@ -32,7 +32,6 @@ struct Meshblock {
   ~Meshblock() = default;
 
   void verify(const SimulationParams&);
-  void printDetails();
 
   void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
   void set_extent(const std::vector<real_t>& extent) { m_extent = extent; }
@@ -40,10 +39,18 @@ struct Meshblock {
     return (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
   }
   [[nodiscard]] auto get_dx2() const -> real_t {
-    return (m_extent[3] - m_extent[2]) / static_cast<real_t>(m_resolution[1]);
+    if constexpr(D == ONE_D) {
+      return 0.0;
+    } else {
+      return (m_extent[3] - m_extent[2]) / static_cast<real_t>(m_resolution[1]);
+    }
   }
   [[nodiscard]] auto get_dx3() const -> real_t {
-    return (m_extent[5] - m_extent[4]) / static_cast<real_t>(m_resolution[2]);
+    if constexpr(D != THREE_D) {
+      return 0.0;
+    } else {
+      return (m_extent[5] - m_extent[4]) / static_cast<real_t>(m_resolution[2]);
+    }
   }
   [[nodiscard]] auto get_x1min() const -> real_t { return m_extent[0]; }
   [[nodiscard]] auto get_x1max() const -> real_t { return m_extent[1]; }

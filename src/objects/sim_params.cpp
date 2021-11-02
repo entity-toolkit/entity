@@ -115,18 +115,8 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   m_B0 = 1.0 / m_larmor0;
 
   // real_t maxtstep {}
-  auto cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", 0.45);
-  assert(cfl > 0);
-  m_timestep = get_cell_size() * cfl;
-}
-
-auto SimulationParams::get_cell_size() -> real_t {
-  // TODO: modify this for arbitrary coord system
-  if (m_coord_system == CARTESIAN_COORD) {
-    return (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
-  } else {
-    throw std::logic_error("ERROR: Cannot determine the cell size.");
-  }
+  m_cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", 0.95);
+  assert(m_cfl > 0);
 }
 
 void SimulationParams::verify() {
@@ -138,57 +128,6 @@ void SimulationParams::verify() {
     if (b == UNDEFINED_BC) { throw std::logic_error("ERROR: boundary conditions unspecified."); }
   }
   // TODO: maybe some other tests
-}
-
-void SimulationParams::printDetails() {
-  PLOGI << "[Simulation details]";
-  PLOGI << "   title: " << m_title;
-  PLOGI << "   type: " << stringifySimulationType(m_simtype);
-  PLOGI << "   total runtime: " << m_runtime;
-  PLOGI << "   dt: " << m_timestep << " [" << static_cast<int>(m_runtime / m_timestep) << " steps]";
-
-  auto dim = static_cast<short>(m_resolution.size());
-  PLOGI << "[domain]";
-  PLOGI << "   dimension: " << dim << "D";
-  PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_coord_system, dim);
-
-  std::string bc {"   boundary conditions: { "};
-  for (auto& b : m_boundaries) {
-    bc += stringifyBoundaryCondition(b) + " x ";
-  }
-  bc.erase(bc.size() - 3);
-  bc += " }";
-  PLOGI << bc;
-
-  std::string res {"   resolution: { "};
-  for (auto& r : m_resolution) {
-    res += std::to_string(r) + " x ";
-  }
-  res.erase(res.size() - 3);
-  res += " }";
-  PLOGI << res;
-
-  std::string ext {"   extent: "};
-  for (std::size_t i {0}; i < m_extent.size(); i += 2) {
-    ext += "{" + std::to_string(m_extent[i]) + ", " + std::to_string(m_extent[i + 1]) + "} ";
-  }
-  PLOGI << ext;
-
-  std::string cell {"   cell size: "};
-  real_t effective_dx {0.0};
-  if (m_coord_system == CARTESIAN_COORD) {
-    cell += "{" + std::to_string(get_cell_size()) + "}";
-    effective_dx = get_cell_size();
-  }
-  PLOGI << cell;
-
-  PLOGI << "[fiducial parameters]";
-  PLOGI << "   ppc0: " << m_ppc0;
-  PLOGI << "   rho0: " << m_larmor0 << " [" << m_larmor0 / effective_dx << " dx]";
-  PLOGI << "   c_omp0: " << m_skindepth0 << " [" << m_skindepth0 / effective_dx << " dx]";
-  PLOGI << "   sigma0: " << m_sigma0;
-  PLOGI << "   q0: " << m_charge0;
-  PLOGI << "   B0: " << m_B0;
 }
 
 } // namespace ntt

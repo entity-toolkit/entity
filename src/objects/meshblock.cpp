@@ -7,24 +7,6 @@
 
 namespace ntt {
 
-template <Dimension D>
-void Meshblock<D>::printDetails() {
-  if (particles.size() > 0) {
-    PLOGI << "[particles]";
-    for (std::size_t i {0}; i < particles.size(); ++i) {
-      PLOGI << "   [species #" << i + 1 << "]";
-      PLOGI << "      label: " << particles[i].get_label();
-      PLOGI << "      mass: " << particles[i].get_mass();
-      PLOGI << "      charge: " << particles[i].get_charge();
-      PLOGI << "      pusher: " << stringifyParticlePusher(particles[i].get_pusher());
-      PLOGI << "      maxnpart: " << particles[i].get_maxnpart() << " (" << particles[i].get_npart()
-            << ")";
-    }
-  } else {
-    PLOGI << "[no particles]";
-  }
-}
-
 template <>
 Meshblock<ONE_D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
     : ex1 {"Ex1", res[0] + 2 * N_GHOSTS},
@@ -109,9 +91,6 @@ template <>
 void Meshblock<TWO_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
-    if (get_dx1() != get_dx2()) {
-      throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
-    }
     if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
       throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
     }
@@ -129,9 +108,6 @@ template <>
 void Meshblock<THREE_D>::verify(const SimulationParams& sim_params) {
   if (m_coord_system == CARTESIAN_COORD) {
     // uniform cartesian grid
-    if ((get_dx1() != get_dx2()) || (get_dx2() != get_dx3())) {
-      throw std::logic_error("ERROR: unequal cell size on a cartesian grid.");
-    }
     if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
       throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
     }
