@@ -11,10 +11,8 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 # options are: `PERIODIC`, `OPEN`
 
 [algorithm]
-CFL             = 0.45
+CFL             = 0.95
 correction      = 1.0
-particle_shape  = 1
-# options are: 0, 1, 2, 3
 
 [units]
 ppc0            = 0.1
