@@ -14,7 +14,11 @@ class Faraday : public FieldSolver<D> {
   real_t coeff_x1, coeff_x2, coeff_x3;
 
 public:
-  Faraday(const Meshblock<D>& m_mblock_, const real_t& coeff_x1_, const real_t& coeff_x2_, const real_t& coeff_x3_)
+  Faraday(
+      const Meshblock<D>& m_mblock_,
+      const real_t& coeff_x1_,
+      const real_t& coeff_x2_,
+      const real_t& coeff_x3_)
       : FieldSolver<D> {m_mblock_}, coeff_x1(coeff_x1_), coeff_x2(coeff_x2_), coeff_x3(coeff_x3_) {}
   Inline void operator()(const index_t) const;
   Inline void operator()(const index_t, const index_t) const;
@@ -29,10 +33,12 @@ Inline void Faraday<ONE_D>::operator()(const index_t i) const {
 
 template <>
 Inline void Faraday<TWO_D>::operator()(const index_t i, const index_t j) const {
-  m_mblock.bx1(i, j) = m_mblock.bx1(i, j) + coeff_x2 * (-m_mblock.ex3(i, j + 1) + m_mblock.ex3(i, j));
-  m_mblock.bx2(i, j) = m_mblock.bx2(i, j) + coeff_x1 * (m_mblock.ex3(i + 1, j) - m_mblock.ex3(i, j));
+  m_mblock.bx1(i, j)
+      = m_mblock.bx1(i, j) + coeff_x2 * (-m_mblock.ex3(i, j + 1) + m_mblock.ex3(i, j));
+  m_mblock.bx2(i, j)
+      = m_mblock.bx2(i, j) + coeff_x1 * (m_mblock.ex3(i + 1, j) - m_mblock.ex3(i, j));
   m_mblock.bx3(i, j) = m_mblock.bx3(i, j) + coeff_x2 * (m_mblock.ex1(i, j + 1) - m_mblock.ex1(i, j))
-                                          + coeff_x1 * (-m_mblock.ex2(i + 1, j) + m_mblock.ex2(i, j));
+                       + coeff_x1 * (-m_mblock.ex2(i + 1, j) + m_mblock.ex2(i, j));
 }
 
 template <>

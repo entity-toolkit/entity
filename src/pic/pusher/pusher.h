@@ -128,52 +128,60 @@ Inline void Pusher<TWO_D>::interpolateFields(
 
   // Ex1
   // interpolate to nodes
-  c000 = 0.5 * (m_meshblock.ex1(    i,     j) + m_meshblock.ex1(i - 1,     j));
-  c100 = 0.5 * (m_meshblock.ex1(    i,     j) + m_meshblock.ex1(i + 1,     j));
-  c010 = 0.5 * (m_meshblock.ex1(    i, j + 1) + m_meshblock.ex1(i - 1, j + 1));
-  c110 = 0.5 * (m_meshblock.ex1(    i, j + 1) + m_meshblock.ex1(i + 1, j + 1));
+  c000 = 0.5 * (m_meshblock.ex1(i, j) + m_meshblock.ex1(i - 1, j));
+  c100 = 0.5 * (m_meshblock.ex1(i, j) + m_meshblock.ex1(i + 1, j));
+  c010 = 0.5 * (m_meshblock.ex1(i, j + 1) + m_meshblock.ex1(i - 1, j + 1));
+  c110 = 0.5 * (m_meshblock.ex1(i, j + 1) + m_meshblock.ex1(i + 1, j + 1));
   // interpolate from nodes to the particle position
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   e0_x1 = c00 * (ONE - dx2) + c10 * dx2;
   // Ex2
-  c000 = 0.5 * (m_meshblock.ex2(    i,     j) + m_meshblock.ex2(    i, j - 1));
-  c100 = 0.5 * (m_meshblock.ex2(i + 1,     j) + m_meshblock.ex2(i + 1, j - 1));
-  c010 = 0.5 * (m_meshblock.ex2(    i,     j) + m_meshblock.ex2(    i, j + 1));
-  c110 = 0.5 * (m_meshblock.ex2(i + 1,     j) + m_meshblock.ex2(i + 1, j + 1));
+  c000 = 0.5 * (m_meshblock.ex2(i, j) + m_meshblock.ex2(i, j - 1));
+  c100 = 0.5 * (m_meshblock.ex2(i + 1, j) + m_meshblock.ex2(i + 1, j - 1));
+  c010 = 0.5 * (m_meshblock.ex2(i, j) + m_meshblock.ex2(i, j + 1));
+  c110 = 0.5 * (m_meshblock.ex2(i + 1, j) + m_meshblock.ex2(i + 1, j + 1));
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   e0_x2 = c00 * (ONE - dx2) + c10 * dx2;
   // Ex3
-  c000 = m_meshblock.ex3(    i,     j);
-  c100 = m_meshblock.ex3(i + 1,     j);
-  c010 = m_meshblock.ex3(    i, j + 1);
+  c000 = m_meshblock.ex3(i, j);
+  c100 = m_meshblock.ex3(i + 1, j);
+  c010 = m_meshblock.ex3(i, j + 1);
   c110 = m_meshblock.ex3(i + 1, j + 1);
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   e0_x3 = c00 * (ONE - dx2) + c10 * dx2;
 
   // Bx1
-  c000 = 0.5 * (m_meshblock.bx1(    i,     j) + m_meshblock.bx1(    i, j - 1));
-  c100 = 0.5 * (m_meshblock.bx1(i + 1,     j) + m_meshblock.bx1(i + 1, j - 1));
-  c010 = 0.5 * (m_meshblock.bx1(    i,     j) + m_meshblock.bx1(    i, j + 1));
-  c110 = 0.5 * (m_meshblock.bx1(i + 1,     j) + m_meshblock.bx1(i + 1, j + 1));
+  c000 = 0.5 * (m_meshblock.bx1(i, j) + m_meshblock.bx1(i, j - 1));
+  c100 = 0.5 * (m_meshblock.bx1(i + 1, j) + m_meshblock.bx1(i + 1, j - 1));
+  c010 = 0.5 * (m_meshblock.bx1(i, j) + m_meshblock.bx1(i, j + 1));
+  c110 = 0.5 * (m_meshblock.bx1(i + 1, j) + m_meshblock.bx1(i + 1, j + 1));
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   b0_x1 = c00 * (ONE - dx2) + c10 * dx2;
   // Bx2
-  c000 = 0.5 * (m_meshblock.bx2(i - 1,     j) + m_meshblock.bx2(    i,     j));
-  c100 = 0.5 * (m_meshblock.bx2(    i,     j) + m_meshblock.bx2(i + 1,     j));
-  c010 = 0.5 * (m_meshblock.bx2(i - 1, j + 1) + m_meshblock.bx2(    i, j + 1));
-  c110 = 0.5 * (m_meshblock.bx2(    i, j + 1) + m_meshblock.bx2(i + 1, j + 1));
+  c000 = 0.5 * (m_meshblock.bx2(i - 1, j) + m_meshblock.bx2(i, j));
+  c100 = 0.5 * (m_meshblock.bx2(i, j) + m_meshblock.bx2(i + 1, j));
+  c010 = 0.5 * (m_meshblock.bx2(i - 1, j + 1) + m_meshblock.bx2(i, j + 1));
+  c110 = 0.5 * (m_meshblock.bx2(i, j + 1) + m_meshblock.bx2(i + 1, j + 1));
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   b0_x2 = c00 * (ONE - dx2) + c10 * dx2;
   // Bx3
-  c000 = 0.25 * (m_meshblock.bx3(i - 1, j - 1) + m_meshblock.bx3(i - 1,     j) + m_meshblock.bx3(    i, j - 1) + m_meshblock.bx3(    i,     j));
-  c100 = 0.25 * (m_meshblock.bx3(    i, j - 1) + m_meshblock.bx3(    i,     j) + m_meshblock.bx3(i + 1, j - 1) + m_meshblock.bx3(i + 1,     j));
-  c010 = 0.25 * (m_meshblock.bx3(i - 1,     j) + m_meshblock.bx3(i - 1, j + 1) + m_meshblock.bx3(    i,     j) + m_meshblock.bx3(    i, j + 1));
-  c110 = 0.25 * (m_meshblock.bx3(    i,     j) + m_meshblock.bx3(    i, j + 1) + m_meshblock.bx3(i + 1,     j) + m_meshblock.bx3(i + 1, j + 1));
+  c000 = 0.25
+         * (m_meshblock.bx3(i - 1, j - 1) + m_meshblock.bx3(i - 1, j) + m_meshblock.bx3(i, j - 1)
+            + m_meshblock.bx3(i, j));
+  c100 = 0.25
+         * (m_meshblock.bx3(i, j - 1) + m_meshblock.bx3(i, j) + m_meshblock.bx3(i + 1, j - 1)
+            + m_meshblock.bx3(i + 1, j));
+  c010 = 0.25
+         * (m_meshblock.bx3(i - 1, j) + m_meshblock.bx3(i - 1, j + 1) + m_meshblock.bx3(i, j)
+            + m_meshblock.bx3(i, j + 1));
+  c110 = 0.25
+         * (m_meshblock.bx3(i, j) + m_meshblock.bx3(i, j + 1) + m_meshblock.bx3(i + 1, j)
+            + m_meshblock.bx3(i + 1, j + 1));
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   b0_x3 = c00 * (ONE - dx2) + c10 * dx2;
