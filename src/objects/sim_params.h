@@ -18,7 +18,7 @@ class SimulationParams {
   SimulationType m_simtype {UNDEFINED_SIM};
 
   std::string m_title;
-  real_t m_timestep;
+  real_t m_cfl, m_timestep, m_min_cell_size;
   real_t m_correction;
   real_t m_runtime;
 
@@ -55,12 +55,10 @@ public:
   template <Dimension D>
   friend class ProblemGenerator;
 
-  // friend class ProblemGenerator;
-
   void printDetails();
   void verify();
 
-  [[nodiscard]] auto get_cell_size() -> real_t;
+  [[nodiscard]] auto get_min_timestep() -> real_t;
   [[nodiscard]] auto get_extent() const -> const std::vector<real_t>& { return m_extent; }
   [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& {
     return m_resolution;
