@@ -36,9 +36,11 @@ namespace ntt {
 #ifdef SINGLE_PRECISION
 using real_t = float;
 inline constexpr float ONE {1.0f};
+inline constexpr float ZERO {0.0f};
 #else
 using real_t = double;
 inline constexpr double ONE {1.0};
+inline constexpr double ZERO {0.0};
 #endif
 
 using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
