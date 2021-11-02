@@ -3,8 +3,8 @@ title           = "Example"
 runtime         = 0.1
 
 [domain]
-coord_system    = "XY"
-# options are: `X`, `XY`, `XYZ`, `R_PHI`, `R_THETA`, `R_THETA_PHI`, `logR_THETA_PHI`
+coord_system    = "Cartesian"
+# options are: `Cartesian`, `Spherical`, `Cylindrical`
 resolution      = [256, 256]
 extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]

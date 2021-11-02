@@ -42,47 +42,23 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   }
   m_prtl_shape = readFromInput<short>(m_inputdata, "algorithm", "particle_shape", 1);
 
-  // TODO: for now only PIC
+  // hardcoded PIC regime
   m_simtype = PIC_SIM;
 
-  // TODO: hardcoded coord system
-  m_coord_system = CARTESIAN_COORD;
-
-  // auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "XYZ");
-  // if (coords == "X") {
-  //   if (dim != ONE_D) { throw std::logic_error("ERROR: wrong coord system for given dimension.");
-  //   } m_coord_system = CARTESIAN_COORD;
-  // } else if (coords == "XY") {
-  //   if (dim == THREE_D) {
-  //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
-  //   }
-  //   m_coord_system = CARTESIAN_COORD;
-  // } else if (coords == "XYZ") {
-  //   m_coord_system = CARTESIAN_COORD;
-  // } else if (coords == "R_PHI") {
-  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension.");
-  //   } m_coord_system = POLAR_R_PHI_COORD;
-  // } else if (coords == "R_THETA") {
-  //   if (dim != TWO_D) { throw std::logic_error("ERROR: wrong coord system for given dimension.");
-  //   } m_coord_system = POLAR_R_THETA_COORD;
-  // } else if (coords == "R_THETA_PHI") {
-  //   if (dim != THREE_D) {
-  //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
-  //   }
-  //   m_coord_system = SPHERICAL_COORD;
-  // } else if (coords == "logR_THETA_PHI") {
-  //   if (dim != THREE_D) {
-  //     throw std::logic_error("ERROR: wrong coord system for given dimension.");
-  //   }
-  //   m_coord_system = LOG_SPHERICAL_COORD;
-  // } else {
-  //   throw std::invalid_argument("Unknown coordinate system specified in the input.");
-  // }
+  auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "Cartesian");
+  if (coords == "Cartesian") {
+    m_coord_system = CARTESIAN_COORD;
+  } else if (coords == "Spherical") {
+    m_coord_system = SPHERICAL_COORD;
+  } else if (coords == "Cylindrical") {
+    m_coord_system = CYLINDRICAL_COORD;
+  } else {
+    throw std::invalid_argument("Unknown coordinate system specified in the input.");
+  }
 
   // box size/resolution
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
-  m_extent = readFromInput<std::vector<real_t>>(
-      m_inputdata, "domain", "extent", {0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
+  m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
 
   if ((static_cast<short>(m_resolution.size()) < static_cast<short>(dim))
       || (static_cast<short>(m_extent.size()) < 2 * static_cast<short>(dim))) {
@@ -92,8 +68,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   m_resolution.erase(m_resolution.begin() + static_cast<short>(dim), m_resolution.end());
   m_extent.erase(m_extent.begin() + 2 * static_cast<short>(dim), m_extent.end());
 
-  auto boundaries = readFromInput<std::vector<std::string>>(
-      m_inputdata, "domain", "boundaries", {"PERIODIC", "PERIODIC", "PERIODIC"});
+  auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
   short b {0};
   for (auto& bc : boundaries) {
     if (bc == "PERIODIC") {
