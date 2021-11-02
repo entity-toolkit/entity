@@ -33,7 +33,8 @@ Simulation<D>::Simulation(const toml::value& inputdata)
       real_t dx1 = m_meshblock.get_dx1();
       real_t dx2 = m_meshblock.get_dx2();
       real_t dx3 = m_meshblock.get_dx3();
-      m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
+      m_sim_params.m_min_cell_size
+          = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
     }
   }
   m_sim_params.m_timestep = m_sim_params.m_cfl * m_sim_params.m_min_cell_size;
@@ -66,11 +67,13 @@ void Simulation<D>::printDetails() {
   PLOGI << "   title: " << m_sim_params.m_title;
   PLOGI << "   type: " << stringifySimulationType(m_sim_params.m_simtype);
   PLOGI << "   total runtime: " << m_sim_params.m_runtime;
-  PLOGI << "   dt: " << m_sim_params.m_timestep << " [" << static_cast<int>(m_sim_params.m_runtime / m_sim_params.m_timestep) << " steps]";
+  PLOGI << "   dt: " << m_sim_params.m_timestep << " ["
+        << static_cast<int>(m_sim_params.m_runtime / m_sim_params.m_timestep) << " steps]";
 
   PLOGI << "[domain]";
   PLOGI << "   dimension: " << m_dim << "D";
-  PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_sim_params.m_coord_system, m_dim);
+  PLOGI << "   coordinate system: "
+        << stringifyCoordinateSystem(m_sim_params.m_coord_system, m_dim);
 
   std::string bc {"   boundary conditions: { "};
   for (auto& b : m_sim_params.m_boundaries) {
@@ -90,7 +93,8 @@ void Simulation<D>::printDetails() {
 
   std::string ext {"   extent: "};
   for (std::size_t i {0}; i < m_sim_params.m_extent.size(); i += 2) {
-    ext += "{" + std::to_string(m_sim_params.m_extent[i]) + ", " + std::to_string(m_sim_params.m_extent[i + 1]) + "} ";
+    ext += "{" + std::to_string(m_sim_params.m_extent[i]) + ", "
+           + std::to_string(m_sim_params.m_extent[i + 1]) + "} ";
   }
   PLOGI << ext;
 
@@ -99,16 +103,16 @@ void Simulation<D>::printDetails() {
   if ((m_dim == TWO_D) || (m_dim == THREE_D)) {
     cell += ", " + std::to_string(m_meshblock.get_dx2());
   }
-  if (m_dim == THREE_D) {
-    cell += ", " + std::to_string(m_meshblock.get_dx3());
-  }
+  if (m_dim == THREE_D) { cell += ", " + std::to_string(m_meshblock.get_dx3()); }
   cell += "}";
   PLOGI << cell;
 
   PLOGI << "[fiducial parameters]";
   PLOGI << "   ppc0: " << m_sim_params.m_ppc0;
-  PLOGI << "   rho0: " << m_sim_params.m_larmor0 << " [" << m_sim_params.m_larmor0 / m_sim_params.m_min_cell_size << " d_min]";
-  PLOGI << "   c_omp0: " << m_sim_params.m_skindepth0 << " [" << m_sim_params.m_skindepth0 / m_sim_params.m_min_cell_size << " d_min]";
+  PLOGI << "   rho0: " << m_sim_params.m_larmor0 << " ["
+        << m_sim_params.m_larmor0 / m_sim_params.m_min_cell_size << " d_min]";
+  PLOGI << "   c_omp0: " << m_sim_params.m_skindepth0 << " ["
+        << m_sim_params.m_skindepth0 / m_sim_params.m_min_cell_size << " d_min]";
   PLOGI << "   sigma0: " << m_sim_params.m_sigma0;
   PLOGI << "   q0: " << m_sim_params.m_charge0;
   PLOGI << "   B0: " << m_sim_params.m_B0;
@@ -121,8 +125,8 @@ void Simulation<D>::printDetails() {
       PLOGI << "      mass: " << m_meshblock.particles[i].get_mass();
       PLOGI << "      charge: " << m_meshblock.particles[i].get_charge();
       PLOGI << "      pusher: " << stringifyParticlePusher(m_meshblock.particles[i].get_pusher());
-      PLOGI << "      maxnpart: " << m_meshblock.particles[i].get_maxnpart() << " (" << m_meshblock.particles[i].get_npart()
-            << ")";
+      PLOGI << "      maxnpart: " << m_meshblock.particles[i].get_maxnpart() << " ("
+            << m_meshblock.particles[i].get_npart() << ")";
     }
   } else {
     PLOGI << "[no particles]";
