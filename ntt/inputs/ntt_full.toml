@@ -9,7 +9,7 @@ extent          = <array of float of size 2, 4 or 6> [x1min, x1max, x2min, x2max
 boundaries      = <array of strings of size 1, 2 or 3> { PERIODIC | OPEN }
 
 [algorithm]
-CFL             = <float: 0 < ... < 0.5>
+CFL             = <float: 0.0 < ... < 1.0>
 correction      = <float: ~1>
 particle_shape  = <int> { 0 | 1 | 2 | 3 }
 
