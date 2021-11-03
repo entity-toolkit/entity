@@ -72,14 +72,7 @@ auto Meshblock<THREE_D>::loopActiveCells() -> ntt_3drange_t {
 }
 
 template <>
-void Meshblock<ONE_D>::verify(const SimulationParams& sim_params) {
-  if (m_coord_system == CARTESIAN_COORD) {
-    if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
-      throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
-    }
-  } else {
-    throw std::logic_error("ERROR: only cartesian coordinate system is available.");
-  }
+void Meshblock<ONE_D>::verify(const SimulationParams&) {
   for (auto& p : particles) {
     if (p.get_pusher() == UNDEFINED_PUSHER) {
       throw std::logic_error("ERROR: undefined particle pusher.");
@@ -88,15 +81,7 @@ void Meshblock<ONE_D>::verify(const SimulationParams& sim_params) {
 }
 
 template <>
-void Meshblock<TWO_D>::verify(const SimulationParams& sim_params) {
-  if (m_coord_system == CARTESIAN_COORD) {
-    // uniform cartesian grid
-    if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
-      throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
-    }
-  } else {
-    throw std::logic_error("ERROR: only cartesian coordinate system is available.");
-  }
+void Meshblock<TWO_D>::verify(const SimulationParams&) {
   for (auto& p : particles) {
     if (p.get_pusher() == UNDEFINED_PUSHER) {
       throw std::logic_error("ERROR: undefined particle pusher.");
@@ -105,15 +90,7 @@ void Meshblock<TWO_D>::verify(const SimulationParams& sim_params) {
 }
 
 template <>
-void Meshblock<THREE_D>::verify(const SimulationParams& sim_params) {
-  if (m_coord_system == CARTESIAN_COORD) {
-    // uniform cartesian grid
-    if (get_dx1() * 0.5 <= sim_params.get_timestep()) {
-      throw std::logic_error("ERROR: timestep is too large (CFL not satisfied).");
-    }
-  } else {
-    throw std::logic_error("ERROR: only cartesian coordinate system is available.");
-  }
+void Meshblock<THREE_D>::verify(const SimulationParams&) {
   for (auto& p : particles) {
     if (p.get_pusher() == UNDEFINED_PUSHER) {
       throw std::logic_error("ERROR: undefined particle pusher.");
