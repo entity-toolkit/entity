@@ -40,7 +40,8 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
     }
     m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
   }
-  m_prtl_shape = readFromInput<short>(m_inputdata, "algorithm", "particle_shape", 1);
+  m_prtl_shape = static_cast<ParticleShape>(
+      readFromInput<short>(m_inputdata, "algorithm", "particle_shape", FIRST_ORDER));
 
   // hardcoded PIC regime
   m_simtype = PIC_SIM;

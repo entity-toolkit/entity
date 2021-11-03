@@ -2,14 +2,14 @@
 
 SOURCES := $(SRCS) $(NTT_SRCS) $(TEST_SRCS) $(EXAMPLES_SRCS)
 ALLCODE := $(SOURCES) $(call rwildcard, ${SRC_DIR}, *.hpp) $(call rwildcard, ${SRC_DIR}, *.h) $(call rwildcard, ${NTT_DIR}, *.hpp) $(call rwildcard, ${NTT_DIR}, *.h) $(call rwildcard, ${TEST_DIR}, *.hpp) $(call rwildcard, ${TEST_DIR}, *.h) $(call rwildcard, ${EXAMPLES_DIR}, *.hpp) $(call rwildcard, ${EXAMPLES_DIR}, *.h)
-flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) $(INCFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp
+flags := $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -include ${PGEN_DIR}/${PGEN}.hpp
 
 clang-all : clang-tidy-naming clang-format clang-tidy
 
 clang-tidy-naming:
 	@for src in $(SOURCES) ; do \
 		echo "checking namings in $$src:" ;\
-		clang-tidy -quiet -checks='-*,readability-identifier-naming' \
+		clang-tidy --quiet -checks='-*,readability-identifier-naming' \
 		    -config="{CheckOptions: [ \
 		    { key: readability-identifier-naming.NamespaceCase, value: lower_case },\
 		    { key: readability-identifier-naming.ClassCase, value: CamelCase  },\
