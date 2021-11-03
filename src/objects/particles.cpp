@@ -66,6 +66,6 @@ auto Particles<D>::loopParticles() -> ntt_1drange_t {
 
 } // namespace ntt
 
-template class ntt::Particles<ntt::ONE_D>;
-template class ntt::Particles<ntt::TWO_D>;
-template class ntt::Particles<ntt::THREE_D>;
+template struct ntt::Particles<ntt::ONE_D>;
+template struct ntt::Particles<ntt::TWO_D>;
+template struct ntt::Particles<ntt::THREE_D>;
