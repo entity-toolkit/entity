@@ -48,7 +48,7 @@ auto main(int argc, char* argv[]) -> int {
       ntt::Simulation<ntt::THREE_D> sim(inputdata);
       sim.run(inputfilename, outputpath);
     } else {
-      throw std::logic_error("ERROR: wrong dimension specified.");
+      throw std::logic_error("# Error: wrong dimension specified.");
     }
   }
   catch (std::exception& err) {

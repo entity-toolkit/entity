@@ -54,7 +54,7 @@ template <>
 void Meshblock<ONE_D>::verify(const SimulationParams&) {
   for (auto& p : particles) {
     if (p.get_pusher() == UNDEFINED_PUSHER) {
-      throw std::logic_error("ERROR: undefined particle pusher.");
+      throw std::logic_error("# Error: undefined particle pusher.");
     }
   }
 }
@@ -63,7 +63,7 @@ template <>
 void Meshblock<TWO_D>::verify(const SimulationParams&) {
   for (auto& p : particles) {
     if (p.get_pusher() == UNDEFINED_PUSHER) {
-      throw std::logic_error("ERROR: undefined particle pusher.");
+      throw std::logic_error("# Error: undefined particle pusher.");
     }
   }
 }
@@ -72,7 +72,7 @@ template <>
 void Meshblock<THREE_D>::verify(const SimulationParams&) {
   for (auto& p : particles) {
     if (p.get_pusher() == UNDEFINED_PUSHER) {
-      throw std::logic_error("ERROR: undefined particle pusher.");
+      throw std::logic_error("# Error: undefined particle pusher.");
     }
   }
 }

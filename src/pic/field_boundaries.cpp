@@ -19,7 +19,7 @@ void Simulation<ONE_D>::fieldBoundaryConditions(const real_t& time) {
     Kokkos::parallel_for("1d_bc_x1m", range_m, FldBC1D_PeriodicX1m(m_meshblock, nx1));
     Kokkos::parallel_for("1d_bc_x1p", range_p, FldBC1D_PeriodicX1p(m_meshblock, nx1));
   } else {
-    throw std::logic_error("ERROR: only periodic boundaries are implemented");
+    throw std::logic_error("# Error: only periodic boundaries are implemented");
   }
 }
 
@@ -35,7 +35,7 @@ void Simulation<TWO_D>::fieldBoundaryConditions(const real_t& time) {
     Kokkos::parallel_for("2d_bc_x1m", range_m, FldBC2D_PeriodicX1m(m_meshblock, nx1));
     Kokkos::parallel_for("2d_bc_x1p", range_p, FldBC2D_PeriodicX1p(m_meshblock, nx1));
   } else {
-    throw std::logic_error("ERROR: only periodic boundaries are implemented");
+    throw std::logic_error("# Error: only periodic boundaries are implemented");
   }
   // corners are included in x2
   auto nx2 = m_meshblock.get_n2();
@@ -47,7 +47,7 @@ void Simulation<TWO_D>::fieldBoundaryConditions(const real_t& time) {
     Kokkos::parallel_for("2d_bc_x2m", range_m, FldBC2D_PeriodicX2m(m_meshblock, nx2));
     Kokkos::parallel_for("2d_bc_x2p", range_p, FldBC2D_PeriodicX2p(m_meshblock, nx2));
   } else {
-    throw std::logic_error("ERROR: only periodic boundaries are implemented");
+    throw std::logic_error("# Error: only periodic boundaries are implemented");
   }
 }
 
@@ -57,7 +57,7 @@ void Simulation<THREE_D>::fieldBoundaryConditions(const real_t& time) {
   if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
 
   } else {
-    throw std::logic_error("ERROR: only periodic boundaries are implemented");
+    throw std::logic_error("# Error: only periodic boundaries are implemented");
   }
 }
 

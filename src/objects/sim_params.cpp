@@ -96,12 +96,12 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
 }
 
 void SimulationParams::verify() {
-  if (m_simtype == UNDEFINED_SIM) { throw std::logic_error("ERROR: simulation type unspecified."); }
+  if (m_simtype == UNDEFINED_SIM) { throw std::logic_error("# Error: simulation type unspecified."); }
   if (m_coord_system == UNDEFINED_COORD) {
-    throw std::logic_error("ERROR: coordinate system unspecified.");
+    throw std::logic_error("# Error: coordinate system unspecified.");
   }
   for (auto& b : m_boundaries) {
-    if (b == UNDEFINED_BC) { throw std::logic_error("ERROR: boundary conditions unspecified."); }
+    if (b == UNDEFINED_BC) { throw std::logic_error("# Error: boundary conditions unspecified."); }
   }
   // TODO: maybe some other tests
 }
