@@ -27,11 +27,17 @@ auto stringifySimulationType(SimulationType sim) -> std::string {
 auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string {
   switch (coord) {
   case CARTESIAN_COORD:
-    return ((dim == 1) ? "X" : ((dim == 2) ? "XY" : "XYZ"));
+    return "cartesian";
   case SPHERICAL_COORD:
     return "spherical";
   case CYLINDRICAL_COORD:
     return "cylindrical";
+  case CARTESIAN_LIKE_COORD:
+    return "cartesian-like";
+  case SPHERICAL_LIKE_COORD:
+    return "spherical-like";
+  case CYLINDRICAL_LIKE_COORD:
+    return "cylindrical-like";
   default:
     return "N/A";
   }
