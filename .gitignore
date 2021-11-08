@@ -1,5 +1,6 @@
 # Filesystem specific
 .DS_Store
+.vscode/
 
 # Compilation junk
 *.o
