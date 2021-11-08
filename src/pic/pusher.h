@@ -13,12 +13,10 @@ template <Dimension D>
 class Pusher {
 public:
   struct Boris_Cartesian_t {};
-  struct Boris_Spherical_t {};
-  struct Boris_Cylindrical_t {};
+  struct Boris_Curvilinear_t {};
 
   struct Photon_Cartesian_t {};
-  struct Photon_Spherical_t {};
-  struct Photon_Cylindrical_t {};
+  struct Photon_Curvilinear_t {};
 
   Meshblock<D> m_meshblock;
   Particles<D> m_particles;
@@ -34,9 +32,32 @@ public:
       : m_meshblock(m_meshblock_), m_particles(m_particles_), coeff(coeff_), dt(dt_) {}
 
   void pushAllParticles() {
-    auto range_policy
-        = Kokkos::RangePolicy<AccelExeSpace, Boris_Cartesian_t>(0, m_particles.get_npart());
-    Kokkos::parallel_for("pusher", range_policy, *this);
+    // TODO: call different options
+    if (m_particles.get_mass() == 0) {
+      if (m_meshblock.m_coord_system == CARTESIAN_COORD) {
+        auto range_policy
+            = Kokkos::RangePolicy<AccelExeSpace, Photon_Cartesian_t>(0, m_particles.get_npart());
+        Kokkos::parallel_for("pusher", range_policy, *this);
+      } else {
+        throw std::runtime_error("# Error: Curvilinear pusher not implemented.");
+        // auto range_policy
+        //     = Kokkos::RangePolicy<AccelExeSpace, Photon_Curvilinear_t>(0,
+        //     m_particles.get_npart());
+        // Kokkos::parallel_for("pusher", range_policy, *this);
+      }
+    } else if (m_particles.get_mass() != 0) {
+      if (m_meshblock.m_coord_system == CARTESIAN_COORD) {
+        auto range_policy
+            = Kokkos::RangePolicy<AccelExeSpace, Boris_Cartesian_t>(0, m_particles.get_npart());
+        Kokkos::parallel_for("pusher", range_policy, *this);
+      } else {
+        throw std::runtime_error("# Error: Curvilinear pusher not implemented.");
+        // auto range_policy
+        //     = Kokkos::RangePolicy<AccelExeSpace, Boris_Curvilinear_t>(0,
+        //     m_particles.get_npart());
+        // Kokkos::parallel_for("pusher", range_policy, *this);
+      }
+    }
   }
 
   // clang-format off
@@ -130,7 +151,7 @@ Inline void Pusher<ONE_D>::interpolateFields(
     real_t& b0_x1,
     real_t& b0_x2,
     real_t& b0_x3) const {
-  const auto [i, dx1] = convert_x1TOidx1(m_meshblock, m_particles.m_x1(p));
+  const auto [i, dx1] = m_meshblock.convert_x1TOidx1(m_particles.m_x1(p));
 
   // first order
   real_t c0, c1;
@@ -174,8 +195,8 @@ Inline void Pusher<TWO_D>::interpolateFields(
     real_t& b0_x2,
     real_t& b0_x3) const {
   // dx1, dx2 are normalized to cell sizes
-  const auto [i, dx1] = convert_x1TOidx1(m_meshblock, m_particles.m_x1(p));
-  const auto [j, dx2] = convert_x2TOjdx2(m_meshblock, m_particles.m_x2(p));
+  const auto [i, dx1] = m_meshblock.convert_x1TOidx1(m_particles.m_x1(p));
+  const auto [j, dx2] = m_meshblock.convert_x2TOjdx2(m_particles.m_x2(p));
 
   // first order
   real_t c000, c100, c010, c110, c00, c10;
@@ -252,9 +273,9 @@ Inline void Pusher<THREE_D>::interpolateFields(
     real_t& b0_x1,
     real_t& b0_x2,
     real_t& b0_x3) const {
-  const auto [i, dx1] = convert_x1TOidx1(m_meshblock, m_particles.m_x1(p));
-  const auto [j, dx2] = convert_x2TOjdx2(m_meshblock, m_particles.m_x2(p));
-  const auto [k, dx3] = convert_x3TOkdx3(m_meshblock, m_particles.m_x3(p));
+  const auto [i, dx1] = m_meshblock.convert_x1TOidx1(m_particles.m_x1(p));
+  const auto [j, dx2] = m_meshblock.convert_x2TOjdx2(m_particles.m_x2(p));
+  const auto [k, dx3] = m_meshblock.convert_x3TOkdx3(m_particles.m_x3(p));
 
   // first order
   real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01, c11, c0, c1;
