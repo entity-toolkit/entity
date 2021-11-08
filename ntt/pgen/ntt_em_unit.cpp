@@ -26,8 +26,8 @@ void ProblemGenerator<ONE_D>::userInitFields(SimulationParams& sim_params,
   Kokkos::parallel_for(
     "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
       real_t x1 = convert_iTOx1(mblock, i);
-      mblock.ex2(i) = std::sin(TWO_PI * x1 / sx1);
-      mblock.bx3(i) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
+      mblock.em_fields(i, fld::ex2) = std::sin(TWO_PI * x1 / sx1);
+      mblock.em_fields(i, fld::bx3) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
   });
 }
 
@@ -49,9 +49,9 @@ void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
     "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
       real_t x1 = convert_iTOx1(mblock, i);
       real_t x2 = convert_jTOx2(mblock, j);
-      mblock.ex1(i, j) = ex1_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * x2);
-      mblock.ex2(i, j) = ex2_ampl * std::sin(kx1 * x1 + kx2 * (x2 + dx2_half));
-      mblock.bx3(i, j) = bx3_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * (x2 + dx2_half));
+      mblock.em_fields(i, j, fld::ex1) = ex1_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * x2);
+      mblock.em_fields(i, j, fld::ex2) = ex2_ampl * std::sin(kx1 * x1 + kx2 * (x2 + dx2_half));
+      mblock.em_fields(i, j, fld::bx3) = bx3_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * (x2 + dx2_half));
   });
 }
 

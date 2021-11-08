@@ -13,7 +13,7 @@ class FldBC {
 protected:
   Meshblock<D> m_mblock;
   const std::size_t nxI;
-  using index_t = typename RealArrND<D>::size_type;
+  using index_t = typename RealFieldND<D, static_cast<int>(D)>::size_type;
 
 public:
   FldBC(const Meshblock<D>& m_mblock_, const std::size_t& nxI_) : m_mblock(m_mblock_), nxI(nxI_) {}
