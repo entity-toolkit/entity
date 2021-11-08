@@ -76,12 +76,12 @@ public:
     for (int j{0}; j < m_sy; ++j) {
       for (int i{0}; i < m_sx; ++i) {
         int lind{i + j * m_sx};
-        m_ex.set(lind, m_sim.get_meshblock().ex1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_ey.set(lind, m_sim.get_meshblock().ex2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_ez.set(lind, m_sim.get_meshblock().ex3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_bx.set(lind, m_sim.get_meshblock().bx1(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_by.set(lind, m_sim.get_meshblock().bx2(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
-        m_bz.set(lind, m_sim.get_meshblock().bx3(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS));
+        m_ex.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex1));
+        m_ey.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex2));
+        m_ez.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex3));
+        m_bx.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx1));
+        m_by.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx2));
+        m_bz.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx3));
       }
     }
   }

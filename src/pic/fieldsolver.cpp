@@ -52,9 +52,7 @@ template <Dimension D>
 void Simulation<D>::resetCurrentsSubstep(const real_t& time) {
   UNUSED(time);
   PLOGD << D << "D reset current";
-  Kokkos::deep_copy(m_meshblock.jx1, 0.0);
-  Kokkos::deep_copy(m_meshblock.jx2, 0.0);
-  Kokkos::deep_copy(m_meshblock.jx3, 0.0);
+  Kokkos::deep_copy(m_meshblock.j_fields, 0.0);
 }
 
 } // namespace ntt
