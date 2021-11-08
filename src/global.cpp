@@ -24,7 +24,7 @@ auto stringifySimulationType(SimulationType sim) -> std::string {
   }
 }
 
-auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string {
+auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string {
   switch (coord) {
   case CARTESIAN_COORD:
     return "cartesian";
