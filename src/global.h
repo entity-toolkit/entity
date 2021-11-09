@@ -97,6 +97,8 @@ enum CoordinateSystem {
   CYLINDRICAL_COORD,
   CYLINDRICAL_LIKE_COORD
 };
+auto getCoordinateSystem() -> CoordinateSystem;
+
 enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 
 enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };
@@ -104,7 +106,7 @@ enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER 
 enum ParticleShape { ZEROTH_ORDER = 0, FIRST_ORDER, SECOND_ORDER, THIRD_ORDER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string;
-auto stringifyCoordinateSystem(CoordinateSystem coord, short dim) -> std::string;
+auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
 auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
 
 auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;

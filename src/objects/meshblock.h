@@ -75,15 +75,22 @@ struct Meshblock {
   [[nodiscard]] auto get_kmin() const -> long int { return N_GHOSTS; }
   [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + m_resolution[2]; }
 
-  Inline auto convert_iTOx1(const long int& i) const -> real_t;
-  Inline auto convert_jTOx2(const long int& j) const -> real_t;
-  Inline auto convert_kTOx3(const long int& k) const -> real_t;
+  Inline auto convert_iTOx1(const long int&) const -> real_t;
+  Inline auto convert_jTOx2(const long int&) const -> real_t;
+  Inline auto convert_kTOx3(const long int&) const -> real_t;
 
   // Accepts coordinate and returns the corresponding cell + ...
   // .. shift from the corner (normalized to cell size)
-  Inline auto convert_x1TOidx1(const real_t& x1) const -> std::pair<long int, float>;
-  Inline auto convert_x2TOjdx2(const real_t& x2) const -> std::pair<long int, float>;
-  Inline auto convert_x3TOkdx3(const real_t& x3) const -> std::pair<long int, float>;
+  Inline auto convert_x1TOidx1(const real_t&) const -> std::pair<long int, float>;
+  Inline auto convert_x2TOjdx2(const real_t&) const -> std::pair<long int, float>;
+  Inline auto convert_x3TOkdx3(const real_t&) const -> std::pair<long int, float>;
+
+  // curvilinear-specific conversions
+# ifndef HARDCODE_FLAT_COORDS
+  Inline auto convert_x1TOx(const real_t&) const -> real_t;
+  Inline auto convert_x1x2TOxy(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
+  Inline auto convert_x1x2x3TOxyz(const real_t&, const real_t&, const real_t&) const -> std::tuple<real_t, real_t, real_t>;
+# endif
 
   auto loopActiveCells() -> RangeND<D>;
 };
@@ -125,6 +132,35 @@ Inline auto Meshblock<D>::convert_x3TOkdx3(const real_t& x3) const -> std::pair<
   dx3 = dx3 - static_cast<real_t>(k);
   return {k + N_GHOSTS, dx3};
 }
+
+// curvilinear-specific conversions
+#ifndef HARDCODE_FLAT_COORDS
+
+template <>
+Inline auto Meshblock<TWO_D>::convert_x1x2TOxy(const real_t& x1, const real_t& x2) const -> std::tuple<real_t, real_t> {
+# ifdef HARDCODE_SPHERICAL_COORDS
+  return {x1 * std::cos(x2), x1 * std::sin(x2)};
+# elif HARDCODE_CYLINDRICAL_COORDS
+  return {x1 * std::cos(x2), x1 * std::sin(x2)};
+# elif HARDCODE_CARTESIAN_LIKE_COORDS
+# elif HARDCODE_SPHERICAL_LIKE_COORDS
+# elif HARDCODE_CYLINDRICAL_LIKE_COORDS
+# endif
+}
+
+template <>
+Inline auto Meshblock<THREE_D>::convert_x1x2x3TOxyz(const real_t& x1, const real_t& x2, const real_t& x3) const -> std::tuple<real_t, real_t, real_t> {
+# ifdef HARDCODE_SPHERICAL_COORDS
+  return {x1 * std::sin(x2) * std::cos(x3), x1 * std::sin(x2) * std::sin(x3), x1 * std::cos(x2)};
+# elif HARDCODE_CYLINDRICAL_COORDS
+  return {x1 * std::cos(x2), x1 * std::sin(x2), x3};
+# elif HARDCODE_CARTESIAN_LIKE_COORDS
+# elif HARDCODE_SPHERICAL_LIKE_COORDS
+# elif HARDCODE_CYLINDRICAL_LIKE_COORDS
+# endif
+}
+
+#endif
 
 } // namespace ntt
 
