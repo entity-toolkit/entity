@@ -91,6 +91,24 @@ auto NTT3DRange(const std::vector<long int>& r1, const std::vector<long int>& r2
       {static_cast<range_t>(r2[0]), static_cast<range_t>(r2[1]), static_cast<range_t>(r2[2])});
 }
 
+auto getCoordinateSystem() -> CoordinateSystem {
+# ifdef HARDCODE_FLAT_COORDS
+  return CARTESIAN_COORD;
+# elif HARDCODE_SPHERICAL_COORDS
+  return SPHERICAL_COORD;
+# elif HARDCODE_CYLINDRICAL_COORDS
+  return CYLINDRICAL_COORD;
+# elif HARDCODE_CARTESIAN_LIKE_COORDS
+  return CARTESIAN_LIKE_COORD;
+# elif HARDCODE_SPHERICAL_LIKE_COORDS
+  return SPHERICAL_LIKE_COORD;
+# elif HARDCODE_CYLINDRICAL_LIKE_COORDS
+  return CYLINDRICAL_LIKE_COORD;
+# else
+  return UNDEFINED_COORD;
+# endif
+}
+
 } // namespace ntt
 
 namespace plog {
