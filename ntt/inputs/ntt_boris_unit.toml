@@ -3,8 +3,6 @@ title           = "Example"
 runtime         = 0.1
 
 [domain]
-coord_system    = "Cartesian"
-# options are: `Cartesian`, `Spherical`, `Cylindrical`
 resolution      = [256, 64]
 extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]

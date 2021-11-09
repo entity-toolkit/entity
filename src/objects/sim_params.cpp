@@ -10,6 +10,7 @@
 #include <string>
 #include <cassert>
 #include <vector>
+#include <iostream>
 
 namespace ntt {
 
@@ -46,16 +47,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   // hardcoded PIC regime
   m_simtype = PIC_SIM;
 
-  auto coords = readFromInput<std::string>(m_inputdata, "domain", "coord_system", "Cartesian");
-  if (coords == "Cartesian") {
-    m_coord_system = CARTESIAN_COORD;
-  } else if (coords == "Spherical") {
-    m_coord_system = SPHERICAL_COORD;
-  } else if (coords == "Cylindrical") {
-    m_coord_system = CYLINDRICAL_COORD;
-  } else {
-    throw std::invalid_argument("Unknown coordinate system specified in the input.");
-  }
+  m_coord_system = getCoordinateSystem();
 
   // box size/resolution
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
