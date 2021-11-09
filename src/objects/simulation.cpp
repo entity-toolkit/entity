@@ -56,6 +56,11 @@ void Simulation<D>::userInitialize() {
 
 template <Dimension D>
 void Simulation<D>::verify() {
+  if constexpr (D == ONE_D) {
+    if ((m_sim_params.m_coord_system != CARTESIAN_COORD) || (m_sim_params.m_coord_system != CARTESIAN_LIKE_COORD)) {
+      throw std::invalid_argument("# Error: dimension vs coord system incompatible.");
+    }
+  }
   m_sim_params.verify();
   m_meshblock.verify(m_sim_params);
   PLOGD << "Simulation prerun check passed.";
@@ -73,7 +78,7 @@ void Simulation<D>::printDetails() {
   PLOGI << "[domain]";
   PLOGI << "   dimension: " << m_dim << "D";
   PLOGI << "   coordinate system: "
-        << stringifyCoordinateSystem(m_sim_params.m_coord_system, m_dim);
+        << stringifyCoordinateSystem(m_sim_params.m_coord_system);
 
   std::string bc {"   boundary conditions: { "};
   for (auto& b : m_sim_params.m_boundaries) {
