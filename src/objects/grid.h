@@ -69,12 +69,15 @@ struct Grid {
 
   // 1d
   Inline auto Jacobian_h1(const real_t&) const -> real_t;
+  Inline auto Jacobian_h2(const real_t&) const -> real_t;
+  Inline auto Jacobian_h3(const real_t&) const -> real_t;
 
   Inline auto Jacobian_11(const real_t&) const -> real_t;
 
   // 2d
   Inline auto Jacobian_h1(const real_t&, const real_t&) const -> real_t;
   Inline auto Jacobian_h2(const real_t&, const real_t&) const -> real_t;
+  Inline auto Jacobian_h3(const real_t&, const real_t&) const -> real_t;
 
   Inline auto Jacobian_11(const real_t&, const real_t&) const -> real_t;
   Inline auto Jacobian_12(const real_t&, const real_t&) const -> real_t;
@@ -253,6 +256,27 @@ Inline auto Grid<ONE_D>::Jacobian_h1(const real_t& x1) const -> real_t {
 #  endif
 }
 
+template <>
+Inline auto Grid<ONE_D>::Jacobian_h2(const real_t& x1) const -> real_t {
+#  ifdef HARDCODE_CARTESIAN_LIKE_COORDS
+  throw std::logic_error("# NOT IMPLEMENTED.");
+#  else
+  UNUSED(x1);
+  throw std::runtime_error("# Error: dimensionality and coord system incompatible.");
+#  endif
+}
+
+template <>
+Inline auto Grid<ONE_D>::Jacobian_h3(const real_t& x1) const -> real_t {
+#  ifdef HARDCODE_CARTESIAN_LIKE_COORDS
+  throw std::logic_error("# NOT IMPLEMENTED.");
+#  else
+  UNUSED(x1);
+  throw std::runtime_error("# Error: dimensionality and coord system incompatible.");
+#  endif
+}
+
+
 // 2d
 template <>
 Inline auto Grid<TWO_D>::Jacobian_h1(const real_t& x1, const real_t& x2) const -> real_t {
@@ -281,6 +305,23 @@ Inline auto Grid<TWO_D>::Jacobian_h2(const real_t& x1, const real_t& x2) const -
 #  elif HARDCODE_CYLINDRICAL_COORDS
   UNUSED(x2);
   return x1;
+#  elif HARDCODE_CARTESIAN_LIKE_COORDS
+  throw std::logic_error("# NOT IMPLEMENTED.");
+#  elif HARDCODE_SPHERICAL_LIKE_COORDS
+  throw std::logic_error("# NOT IMPLEMENTED.");
+#  elif HARDCODE_CYLINDRICAL_LIKE_COORDS
+  throw std::logic_error("# NOT IMPLEMENTED.");
+#  endif
+}
+
+template <>
+Inline auto Grid<TWO_D>::Jacobian_h3(const real_t& x1, const real_t& x2) const
+    -> real_t {
+#  ifdef HARDCODE_SPHERICAL_COORDS
+  return x1 * std::sin(x2);
+#  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x2);
+  return ONE;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
 #  elif HARDCODE_SPHERICAL_LIKE_COORDS
