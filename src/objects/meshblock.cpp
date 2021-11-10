@@ -9,7 +9,7 @@ namespace ntt {
 
 template <Dimension D>
 Meshblock<D>::Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts)
-    : Grid<D>(res), Fields<D>(res) {
+    : Fields<D>(res) {
   for (auto& part : parts) {
     particles.emplace_back(part);
   }
