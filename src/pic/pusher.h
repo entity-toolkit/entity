@@ -12,11 +12,8 @@ namespace ntt {
 template <Dimension D>
 class Pusher {
 public:
-  struct Boris_Cartesian_t {};
-  struct Boris_Curvilinear_t {};
-
-  struct Photon_Cartesian_t {};
-  struct Photon_Curvilinear_t {};
+  struct Boris_t {};
+  struct Photon_t {};
 
   Meshblock<D> m_meshblock;
   Particles<D> m_particles;
@@ -34,68 +31,115 @@ public:
   void pushAllParticles() {
     // TODO: call different options
     if (m_particles.get_mass() == 0) {
-      if (m_meshblock.m_coord_system == CARTESIAN_COORD) {
-        auto range_policy
-            = Kokkos::RangePolicy<AccelExeSpace, Photon_Cartesian_t>(0, m_particles.get_npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else {
-        throw std::runtime_error("# Error: Curvilinear pusher not implemented.");
-        // auto range_policy
-        //     = Kokkos::RangePolicy<AccelExeSpace, Photon_Curvilinear_t>(0,
-        //     m_particles.get_npart());
-        // Kokkos::parallel_for("pusher", range_policy, *this);
-      }
+      auto range_policy
+          = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.get_npart());
+      Kokkos::parallel_for("pusher", range_policy, *this);
     } else if (m_particles.get_mass() != 0) {
-      if (m_meshblock.m_coord_system == CARTESIAN_COORD) {
-        auto range_policy
-            = Kokkos::RangePolicy<AccelExeSpace, Boris_Cartesian_t>(0, m_particles.get_npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else {
-        throw std::runtime_error("# Error: Curvilinear pusher not implemented.");
-        // auto range_policy
-        //     = Kokkos::RangePolicy<AccelExeSpace, Boris_Curvilinear_t>(0,
-        //     m_particles.get_npart());
-        // Kokkos::parallel_for("pusher", range_policy, *this);
-      }
+      auto range_policy
+          = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.get_npart());
+      Kokkos::parallel_for("pusher", range_policy, *this);
     }
   }
 
   // clang-format off
   // * * * common operations * * *
-  void interpolateFields(const index_t&,
-                         real_t&, real_t&, real_t&,
-                         real_t&, real_t&, real_t&) const;
-  void positionUpdate(const index_t&) const;
+  Inline void interpolateFields(const index_t&,
+                                real_t&, real_t&, real_t&,
+                                real_t&, real_t&, real_t&) const;
+  Inline void positionUpdate(const index_t&) const;
 
-  Inline void operator()(const Boris_Cartesian_t&, const index_t p) const {
+  Inline void operator()(const Boris_t&, const index_t p) const {
     real_t e0_x1, e0_x2, e0_x3;
     real_t b0_x1, b0_x2, b0_x3;
-    // TODO:
-    // fix this to cartesian
-    // 1. interpolate fields
-    // 2. convert E,B and X,U to cartesian
-    // 3. update U
-    // 4. update X
-    // 5. convert back
     interpolateFields(p,
                       e0_x1, e0_x2, e0_x3,
                       b0_x1, b0_x2, b0_x3);
+    convertToCartesian(p);
     BorisUpdate(p,
                 e0_x1, e0_x2, e0_x3,
                 b0_x1, b0_x2, b0_x3);
     positionUpdate(p);
+    convertFromCartesian(p);
   }
 
-  Inline void operator()(const Photon_Cartesian_t&, const index_t p) const {
+  Inline void convertToCartesian(const index_t&) const;
+  Inline void convertFromCartesian(const index_t&) const;
+
+  Inline void operator()(const Photon_t&, const index_t p) const {
     positionUpdate(p);
   }
 
   // velocity updaters
-  void BorisUpdate(const index_t&,
-                   real_t&, real_t&, real_t&,
-                   real_t&, real_t&, real_t&) const;
+  Inline void BorisUpdate(const index_t&,
+                          real_t&, real_t&, real_t&,
+                          real_t&, real_t&, real_t&) const;
   // clang-format on
 };
+
+// * * * * Coordinate converters * * * * * * * * * * *
+template <>
+Inline void Pusher<ONE_D>::convertToCartesian(const index_t&) const {
+#ifndef HARDCODE_FLAT_COORDS
+# ifdef HARDCODE_CARTESIAN_LIKE_COORDS
+# else
+  throw std::runtime_error("# Error: dimension incompatible with coord system.");
+# endif
+#endif
+}
+
+template <>
+Inline void Pusher<TWO_D>::convertToCartesian(const index_t& p) const {
+#ifndef HARDCODE_FLAT_COORDS
+   real_t p_x, p_y;
+   [p_x, p_y] = m_meshblock.convert_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
+   m_particles.m_x1(p) = p_x;
+   m_particles.m_x2(p) = p_y;
+#endif
+}
+
+template <>
+Inline void Pusher<THREE_D>::convertToCartesian(const index_t& p) const {
+#ifndef HARDCODE_FLAT_COORDS
+  real_t p_x, p_y, p_z;
+  [p_x, p_y, p_z] = m_meshblock.convert_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  m_particles.m_x1(p) = p_x;
+  m_particles.m_x2(p) = p_y;
+  m_particles.m_x3(p) = p_z;
+#endif
+}
+
+template <>
+Inline void Pusher<ONE_D>::convertFromCartesian(const index_t&) const {
+#ifndef HARDCODE_FLAT_COORDS
+# ifdef HARDCODE_CARTESIAN_LIKE_COORDS
+# else
+  throw std::runtime_error("# Error: dimension incompatible with coord system.");
+# endif
+#endif
+}
+
+template <>
+Inline void Pusher<TWO_D>::convertFromCartesian(const index_t& p) const {
+#ifndef HARDCODE_FLAT_COORDS
+  real_t p_x1, p_x2;
+  [p_x1, p_x2] = m_meshblock.convert_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  m_particles.m_x1(p) = p_x1;
+  m_particles.m_x2(p) = p_x2;
+  m_particles.m_x3(p) = p_x3;
+#endif
+}
+
+template <>
+Inline void Pusher<THREE_D>::convertFromCartesian(const index_t& p) const {
+#ifndef HARDCODE_FLAT_COORDS
+  real_t p_x1, p_x2, p_x3;
+  [p_x1, p_x2, p_x3] = m_meshblock.convert_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  m_particles.m_x1(p) = p_x1;
+  m_particles.m_x2(p) = p_x2;
+  m_particles.m_x3(p) = p_x3;
+#endif
+}
+
 
 // * * * * Position update * * * * * * * * * * * * * *
 template <>
