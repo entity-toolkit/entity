@@ -88,7 +88,9 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
 }
 
 void SimulationParams::verify() {
-  if (m_simtype == UNDEFINED_SIM) { throw std::logic_error("# Error: simulation type unspecified."); }
+  if (m_simtype == UNDEFINED_SIM) {
+    throw std::logic_error("# Error: simulation type unspecified.");
+  }
   if (m_coord_system == UNDEFINED_COORD) {
     throw std::logic_error("# Error: coordinate system unspecified.");
   }

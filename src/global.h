@@ -43,6 +43,9 @@ inline constexpr double ONE {1.0};
 inline constexpr double ZERO {0.0};
 #endif
 
+#define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
+#define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
+
 using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
 
 template <typename T>

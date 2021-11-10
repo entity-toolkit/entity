@@ -352,6 +352,7 @@ report = f'''
 
   {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
   {'Precision':32} {args['precision']}
+  {'Grid':32} {args['coords']}
 
 {'Physics ':.<{w}}
 
