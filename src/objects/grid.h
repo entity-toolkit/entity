@@ -13,10 +13,8 @@ struct Grid {
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
 
-  Grid(std::vector<std::size_t> res);
+  Grid(std::vector<std::size_t>);
   ~Grid() = default;
-
-  auto loopActiveCells() -> RangeND<D>;
 
   void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
   void set_extent(const std::vector<real_t>& extent) { m_extent = extent; }
@@ -46,13 +44,6 @@ struct Grid {
   [[nodiscard]] auto get_n1() const -> std::size_t { return m_resolution[0]; }
   [[nodiscard]] auto get_n2() const -> std::size_t { return m_resolution[1]; }
   [[nodiscard]] auto get_n3() const -> std::size_t { return m_resolution[2]; }
-
-  [[nodiscard]] auto get_imin() const -> long int { return N_GHOSTS; }
-  [[nodiscard]] auto get_imax() const -> long int { return N_GHOSTS + m_resolution[0]; }
-  [[nodiscard]] auto get_jmin() const -> long int { return N_GHOSTS; }
-  [[nodiscard]] auto get_jmax() const -> long int { return N_GHOSTS + m_resolution[1]; }
-  [[nodiscard]] auto get_kmin() const -> long int { return N_GHOSTS; }
-  [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + m_resolution[2]; }
 
   Inline auto convert_iTOx1(const long int&) const -> real_t;
   Inline auto convert_jTOx2(const long int&) const -> real_t;
