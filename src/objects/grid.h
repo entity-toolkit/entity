@@ -154,6 +154,7 @@ Inline auto Grid<ONE_D>::convert_x1TOx(const real_t& x1) const -> real_t {
 #  ifdef HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
 #  else
+  UNUSED(x1);
   throw std::runtime_error("# Error: dimensionality and coord system incompatible.");
 #  endif
 }
@@ -197,6 +198,7 @@ Inline auto Grid<ONE_D>::convert_xTOx1(const real_t& x) const -> real_t {
 #  ifdef HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
 #  else
+  UNUSED(x);
   throw std::runtime_error("# Error: dimensionality and coord system incompatible.");
 #  endif
 }
@@ -246,6 +248,7 @@ Inline auto Grid<ONE_D>::Jacobian_h1(const real_t& x1) const -> real_t {
 #  ifdef HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
 #  else
+  UNUSED(x1);
   throw std::runtime_error("# Error: dimensionality and coord system incompatible.");
 #  endif
 }
@@ -254,8 +257,12 @@ Inline auto Grid<ONE_D>::Jacobian_h1(const real_t& x1) const -> real_t {
 template <>
 Inline auto Grid<TWO_D>::Jacobian_h1(const real_t& x1, const real_t& x2) const -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
   return ONE;
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
   return ONE;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -269,8 +276,10 @@ Inline auto Grid<TWO_D>::Jacobian_h1(const real_t& x1, const real_t& x2) const -
 template <>
 Inline auto Grid<TWO_D>::Jacobian_h2(const real_t& x1, const real_t& x2) const -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x2);
   return x1;
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x2);
   return x1;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -286,8 +295,14 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_h1(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ONE;
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ONE;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -302,8 +317,12 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_h2(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x2);
+  UNUSED(x3);
   return x1;
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x2);
+  UNUSED(x3);
   return x1;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -318,8 +337,12 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_h3(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x3);
   return x1 * std::sin(x2);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ONE;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -337,6 +360,7 @@ Inline auto Grid<ONE_D>::Jacobian_11(const real_t& x1) const -> real_t {
 #  ifdef HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
 #  else
+  UNUSED(x1);
   throw std::runtime_error("# Error: dimensionality and coord system incompatible.");
 #  endif
 }
@@ -345,8 +369,10 @@ Inline auto Grid<ONE_D>::Jacobian_11(const real_t& x1) const -> real_t {
 template <>
 Inline auto Grid<TWO_D>::Jacobian_11(const real_t& x1, const real_t& x2) const -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
   return std::sin(x2);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
   return std::cos(x2);
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -375,8 +401,10 @@ Inline auto Grid<TWO_D>::Jacobian_12(const real_t& x1, const real_t& x2) const -
 template <>
 Inline auto Grid<TWO_D>::Jacobian_21(const real_t& x1, const real_t& x2) const -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
   return std::sin(x2);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
   return std::sin(x2);
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -407,8 +435,11 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_11(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
   return std::sin(x2) * std::cos(x3);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x3);
   return std::cos(x2);
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -425,6 +456,7 @@ Inline auto Grid<THREE_D>::Jacobian_12(const real_t& x1, const real_t& x2, const
 #  ifdef HARDCODE_SPHERICAL_COORDS
   return x1 * std::cos(x2) * std::cos(x3);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x3);
   return -x1 * std::sin(x2);
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -441,6 +473,9 @@ Inline auto Grid<THREE_D>::Jacobian_13(const real_t& x1, const real_t& x2, const
 #  ifdef HARDCODE_SPHERICAL_COORDS
   return -x1 * std::sin(x2) * std::sin(x3);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ZERO;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -455,8 +490,11 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_21(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
   return std::sin(x2) * std::sin(x3);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x3);
   return std::sin(x2);
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -473,6 +511,7 @@ Inline auto Grid<THREE_D>::Jacobian_22(const real_t& x1, const real_t& x2, const
 #  ifdef HARDCODE_SPHERICAL_COORDS
   return x1 * std::cos(x2) * std::sin(x3);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x3);
   return x1 * std::cos(x2);
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -489,6 +528,9 @@ Inline auto Grid<THREE_D>::Jacobian_23(const real_t& x1, const real_t& x2, const
 #  ifdef HARDCODE_SPHERICAL_COORDS
   return x1 * std::sin(x2) * std::cos(x3);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ZERO;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -503,8 +545,13 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_31(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x3);
   return std::cos(x2);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ZERO;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -519,8 +566,12 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_32(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x3);
   return -x1 * std::sin(x2);
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ZERO;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");
@@ -535,8 +586,14 @@ template <>
 Inline auto Grid<THREE_D>::Jacobian_33(const real_t& x1, const real_t& x2, const real_t& x3) const
     -> real_t {
 #  ifdef HARDCODE_SPHERICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ZERO;
 #  elif HARDCODE_CYLINDRICAL_COORDS
+  UNUSED(x1);
+  UNUSED(x2);
+  UNUSED(x3);
   return ONE;
 #  elif HARDCODE_CARTESIAN_LIKE_COORDS
   throw std::logic_error("# NOT IMPLEMENTED.");

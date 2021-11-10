@@ -10,8 +10,7 @@
 namespace ntt {
 
 template <Dimension D>
-class Pusher {
-public:
+struct Pusher {
   struct Boris_t {};
   struct Photon_t {};
 
@@ -90,8 +89,7 @@ Inline void Pusher<ONE_D>::convertToCartesian(const index_t&) const {
 template <>
 Inline void Pusher<TWO_D>::convertToCartesian(const index_t& p) const {
 #ifndef HARDCODE_FLAT_COORDS
-   real_t p_x, p_y;
-   [p_x, p_y] = m_meshblock.convert_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
+   auto [p_x, p_y] = m_meshblock.convert_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
    m_particles.m_x1(p) = p_x;
    m_particles.m_x2(p) = p_y;
 #endif
@@ -100,8 +98,7 @@ Inline void Pusher<TWO_D>::convertToCartesian(const index_t& p) const {
 template <>
 Inline void Pusher<THREE_D>::convertToCartesian(const index_t& p) const {
 #ifndef HARDCODE_FLAT_COORDS
-  real_t p_x, p_y, p_z;
-  [p_x, p_y, p_z] = m_meshblock.convert_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  auto [p_x, p_y, p_z] = m_meshblock.convert_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
   m_particles.m_x1(p) = p_x;
   m_particles.m_x2(p) = p_y;
   m_particles.m_x3(p) = p_z;
@@ -121,19 +118,16 @@ Inline void Pusher<ONE_D>::convertFromCartesian(const index_t&) const {
 template <>
 Inline void Pusher<TWO_D>::convertFromCartesian(const index_t& p) const {
 #ifndef HARDCODE_FLAT_COORDS
-  real_t p_x1, p_x2;
-  [p_x1, p_x2] = m_meshblock.convert_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  auto [p_x1, p_x2] = m_meshblock.convert_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
   m_particles.m_x1(p) = p_x1;
   m_particles.m_x2(p) = p_x2;
-  m_particles.m_x3(p) = p_x3;
 #endif
 }
 
 template <>
 Inline void Pusher<THREE_D>::convertFromCartesian(const index_t& p) const {
 #ifndef HARDCODE_FLAT_COORDS
-  real_t p_x1, p_x2, p_x3;
-  [p_x1, p_x2, p_x3] = m_meshblock.convert_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  auto [p_x1, p_x2, p_x3] = m_meshblock.convert_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
   m_particles.m_x1(p) = p_x1;
   m_particles.m_x2(p) = p_x2;
   m_particles.m_x3(p) = p_x3;
@@ -607,8 +601,8 @@ Inline void Pusher<D>::BorisUpdate(
 
 } // namespace ntt
 
-template class ntt::Pusher<ntt::ONE_D>;
-template class ntt::Pusher<ntt::TWO_D>;
-template class ntt::Pusher<ntt::THREE_D>;
+template struct ntt::Pusher<ntt::ONE_D>;
+template struct ntt::Pusher<ntt::TWO_D>;
+template struct ntt::Pusher<ntt::THREE_D>;
 
 #endif
