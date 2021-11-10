@@ -4,7 +4,6 @@
 #include "global.h"
 #include "constants.h"
 #include "fields.h"
-#include "grid.h"
 #include "sim_params.h"
 #include "particles.h"
 
@@ -17,10 +16,10 @@
 namespace ntt {
 
 template <Dimension D>
-struct Meshblock : public Grid<D>, public Fields<D> {
+struct Meshblock : public Fields<D> {
   std::vector<Particles<D>> particles;
 
-  Meshblock(std::vector<std::size_t> res, std::vector<ParticleSpecies>& parts);
+  Meshblock(std::vector<std::size_t>, std::vector<ParticleSpecies>&);
   ~Meshblock() = default;
 
   void verify(const SimulationParams&);
