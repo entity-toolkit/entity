@@ -33,13 +33,13 @@ public:
 template <>
 Inline void Ampere<ONE_D>::operator()(const index_t i) const {
   m_mblock.em_fields(i, fld::ex2) += coeff_x1 * (
-              m_mblock.em_fields(i - 1, fld::bx3) -
-              m_mblock.em_fields(i, fld::bx3)
-            );
+                m_mblock.em_fields(i - 1, fld::bx3) -
+                m_mblock.em_fields(i, fld::bx3)
+              );
   m_mblock.em_fields(i, fld::ex3) += coeff_x1 * (
-              m_mblock.em_fields(i, fld::bx2) -
-              m_mblock.em_fields(i - 1, fld::bx2)
-            );
+                m_mblock.em_fields(i, fld::bx2) -
+                m_mblock.em_fields(i - 1, fld::bx2)
+              );
 }
 
 template <>
@@ -103,13 +103,13 @@ Inline void Ampere<ONE_D>::operator()(const index_t i) const {
   real_t hx2_iM {m_mblock.Jacobian_h2(x1 - 0.5 * dx1)};
 
   m_mblock.em_fields(i, fld::ex2) += coeff_x1 * (
-              hx3_iM * m_mblock.em_fields(i - 1, fld::bx3) -
-              hx3_iP * m_mblock.em_fields(i, fld::bx3)
-            ) / (hx1_i * hx3_i);
+                hx3_iM * m_mblock.em_fields(i - 1, fld::bx3) -
+                hx3_iP * m_mblock.em_fields(i, fld::bx3)
+              ) / (hx1_i * hx3_i);
   m_mblock.em_fields(i, fld::ex3) += coeff_x1 * (
-              hx2_iP * m_mblock.em_fields(i, fld::bx2) -
-              hx2_iM * m_mblock.em_fields(i - 1, fld::bx2)
-            ) / (hx1_i * hx2_i);
+                hx2_iP * m_mblock.em_fields(i, fld::bx2) -
+                hx2_iM * m_mblock.em_fields(i - 1, fld::bx2)
+              ) / (hx1_i * hx2_i);
 }
 
 template <>
@@ -137,22 +137,22 @@ Inline void Ampere<TWO_D>::operator()(const index_t i, const index_t j) const {
   real_t hx2_iMj {m_mblock.Jacobian_h2(x1 - 0.5 * dx1, x2)};
 
   m_mblock.em_fields(i, j, fld::ex1) += coeff_x2 * (
-          hx3_iPjP * m_mblock.em_fields(i, j, fld::bx3) -
-          hx3_iPjM * m_mblock.em_fields(i, j - 1, fld::bx3)
-        ) / (hx2_iPj * hx3_iPj);
+                hx3_iPjP * m_mblock.em_fields(i, j, fld::bx3) -
+                hx3_iPjM * m_mblock.em_fields(i, j - 1, fld::bx3)
+              ) / (hx2_iPj * hx3_iPj);
 
   m_mblock.em_fields(i, j, fld::ex2) += coeff_x1 * (
-          hx3_iMjP * m_mblock.em_fields(i - 1, j, fld::bx3) -
-          hx3_iPjP * m_mblock.em_fields(i, j, fld::bx3)
-        ) / (hx1_ijP * hx3_ijP);
+                hx3_iMjP * m_mblock.em_fields(i - 1, j, fld::bx3) -
+                hx3_iPjP * m_mblock.em_fields(i, j, fld::bx3)
+              ) / (hx1_ijP * hx3_ijP);
 
   m_mblock.em_fields(i, j, fld::ex3) += (coeff_x2 * (
-            hx1_ijM * m_mblock.em_fields(i, j - 1, fld::bx1) -
-            hx1_ijP * m_mblock.em_fields(i, j, fld::bx1)
-          ) + coeff_x1 * (
-            hx2_iPj * m_mblock.em_fields(i, j, fld::bx2) -
-            hx2_iMj * m_mblock.em_fields(i - 1, j, fld::bx2))
-        ) / (hx1_ij * hx2_ij);
+                hx1_ijM * m_mblock.em_fields(i, j - 1, fld::bx1) -
+                hx1_ijP * m_mblock.em_fields(i, j, fld::bx1)
+              ) + coeff_x1 * (
+                hx2_iPj * m_mblock.em_fields(i, j, fld::bx2) -
+                hx2_iMj * m_mblock.em_fields(i - 1, j, fld::bx2))
+            ) / (hx1_ij * hx2_ij);
 }
 
 template <>
