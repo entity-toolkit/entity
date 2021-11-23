@@ -47,6 +47,8 @@ struct Pusher {
                                 real_t&, real_t&, real_t&) const;
   Inline void positionUpdate(const index_t&) const;
 
+  // TODO add field and velocity conversion (to cartesian)
+
   Inline void operator()(const Boris_t&, const index_t p) const {
     real_t e0_x1, e0_x2, e0_x3;
     real_t b0_x1, b0_x2, b0_x3;
