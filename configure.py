@@ -1,6 +1,5 @@
 #-----------------------------------------------------------------------------------------
 # Configure file for the `Entity` code to generate a temporary `Makefile`.
-# ... Parts of the code are adapted from the `K-Athena` MHD code (https://gitlab.com/pgrete/kathena).
 #
 # Options:
 #   -h  --help                    help message

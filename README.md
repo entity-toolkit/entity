@@ -14,7 +14,7 @@ git submodule update --remote
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
 
 ```shell
-python configure.py -debug --compiler=icpc --precision=single
+python configure.py -debug --compiler=icpc --precision=single --pgen=ntt_boris_unit
 ```
 
 > To see all the available configuration flags run `python configure.py -h`.
@@ -65,7 +65,7 @@ While we try to keep the code as compatible as possible, there are certain strin
 ## To-do list for the near future
 
 - [ ] offset views are possible with `kokkos` in [experimental branch](https://github.com/kokkos/kokkos/wiki/Offset-View)
-- [ ] template field-solvers and field-bcs similar to particles
+- [ ] curvilinear pusher
 
 ---
 

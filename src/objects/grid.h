@@ -57,6 +57,7 @@ struct Grid {
 
   // curvilinear-specific conversions
 #ifndef HARDCODE_FLAT_COORDS
+  // coordinate conversion
   Inline auto convert_x1TOx(const real_t&) const -> real_t;
   Inline auto convert_x1x2TOxy(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
   Inline auto convert_x1x2x3TOxyz(const real_t&, const real_t&, const real_t&) const
@@ -67,6 +68,18 @@ struct Grid {
   Inline auto convert_xyzTOx1x2x3(const real_t&, const real_t&, const real_t&) const
       -> std::tuple<real_t, real_t, real_t>;
 
+  // velocity conversion
+  Inline auto convert_ux1TOux(const real_t&) const -> real_t;
+  Inline auto convert_ux1ux2TOuxuy(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
+  Inline auto convert_ux1ux2ux3TOuxuyuz(const real_t&, const real_t&, const real_t&) const
+      -> std::tuple<real_t, real_t, real_t>;
+
+  Inline auto convert_uxTOux1(const real_t&) const -> real_t;
+  Inline auto convert_uxuyTOux1ux2(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
+  Inline auto convert_uxuyuzTOux1ux2ux3(const real_t&, const real_t&, const real_t&) const
+      -> std::tuple<real_t, real_t, real_t>;
+
+  // Jacobian
   // 1d
   Inline auto Jacobian_h1(const real_t&) const -> real_t;
   Inline auto Jacobian_h2(const real_t&) const -> real_t;
