@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "config_boris",
+      "command": "python3",
+      "args": [
+        "configure.py",
+        "--pgen=ntt_boris_unit",
+        "--compiler=g++-10",
+        "-nttiny",
+        "--nttiny_path=../nttiny",
+        "--kokkos_arch=HSW",
+        "--kokkos_devices=OpenMP",
+        "-verbose",
+        "-debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "none"
+    },
+    {
+      "type": "shell",
+      "label": "ntt",
+      "command": "make",
+      "args": [
+        "ntt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "group": "build"
+    },
+    {
+      "type": "shell",
+      "label": "clean",
+      "command": "make",
+      "args": [
+        "clean"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "group": "none"
+    },
+    {
+      "type": "shell",
+      "label": "cleanlib",
+      "command": "make",
+      "args": [
+        "cleanlib"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "group": "none"
+    },
+    // running
+    {
+      "type": "shell",
+      "label": "run_boris",
+      "command": "./bin/ntt.exec",
+      "args": [
+        "-input",
+        "ntt/inputs/ntt_boris_unit.toml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "none"
+    },
+  ]
+}
