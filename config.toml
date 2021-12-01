@@ -5,18 +5,12 @@ theme = 'hugo-geekdoc'
 
 pluralizeListTitles = false
 
-# Geekdoc required configuration
 pygmentsUseClasses = true
 pygmentsCodeFences = true
 disablePathToLower = true
 
-# Required if you want to render robots.txt template
-# enableRobotsTXT = true
-
-# Needed for mermaid shortcodes
 [markup]
   [markup.goldmark.renderer]
-    # Needed for mermaid shortcode
     unsafe = true
   [markup.tableOfContents]
     startLevel = 1
@@ -27,20 +21,3 @@ disablePathToLower = true
 
 [params]
   geekdocMenuBundle = true
-
-# regex to paste from notion
-#
-# 1. for block math
-# find:
-# \$\$((.|\n)*?)\$\$
-#
-# replace:
-# {{< katex display >}}
-# $1
-# {{< /katex >}}
-#
-# 2. for inline math
-# find: \$(.*?)\$
-#
-# replace:
-# {{< katex >}}$1{{< /katex >}}
