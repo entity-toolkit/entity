@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>&#34;Entity&#34; Particle-in-cell Code</title>
+    <link>http://example.org/algorithms/</link>
+    <description>Recent content on &#34;Entity&#34; Particle-in-cell Code</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="http://example.org/algorithms/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Coordinate systems</title>
+      <link>http://example.org/algorithms/coordsys/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/algorithms/coordsys/</guid>
+      <description>Note on curvilinear coordinates    Suppose an arbitrary transformation from a cartesian    \(\bm{r}=(x,y,z)\)  to an arbitrary orthogonal curvilinear coordinate space \(\bm{\rho}=(\xi,\eta,\zeta)\)  , where \(x = f_x(\xi,\eta,\zeta)\)  , \(y = f_y(\xi,\eta,\zeta)\)  and \(z = f_z(\xi,\eta,\zeta)\)  . We define
+\[h_\xi = \left|\frac{\partial\bm{r}}{\partial\xi}\right|,~~~ h_\eta = \left|\frac{\partial\bm{r}}{\partial\eta}\right|,~~~ h_\zeta = \left|\frac{\partial\bm{r}}{\partial\zeta}\right|\]  and the unit vectors in the new coordinate system:
+\[\hat{\bm{e}}_\xi=\frac{1}{h_\xi}\frac{\partial\bm{r}}{\partial\xi},~~~ \hat{\bm{e}}_\eta=\frac{1}{h_\eta}\frac{\partial\bm{r}}{\partial\eta},~~~ \hat{\bm{e}}_\zeta=\frac{1}{h_\zeta}\frac{\partial\bm{r}}{\partial\zeta}\]  Velocities (or any other vector) can be converted (from curvilinear to Cartesian) via:</description>
+    </item>
+    
+    <item>
+      <title>Current deposition</title>
+      <link>http://example.org/algorithms/deposit/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/algorithms/deposit/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Field solvers</title>
+      <link>http://example.org/algorithms/fieldsolver/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/algorithms/fieldsolver/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Particle pusher</title>
+      <link>http://example.org/algorithms/pusher/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/algorithms/pusher/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
