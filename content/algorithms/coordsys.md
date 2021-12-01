@@ -2,9 +2,28 @@
 title: Coordinate systems
 ---
 
-## Note on curvilinear coordinates
+{{< hint info >}}
+**On notations**\
+To familiarize with the notations we use as well as find useful calculus formulae for curvilinear coordinate systems see the section [below]({{< relref "coordsys.md#notes" >}}).
+{{< /hint >}}
 
-Suppose an arbitrary transformation from a cartesian {{< katex >}}\bm{r}=(x,y,z){{< /katex >}} to an arbitrary orthogonal curvilinear coordinate space {{< katex >}}\bm{\rho}=(\xi,\eta,\zeta){{< /katex >}}, where {{< katex >}}x = f_x(\xi,\eta,\zeta){{< /katex >}}, {{< katex >}}y = f_y(\xi,\eta,\zeta){{< /katex >}} and {{< katex >}}z = f_z(\xi,\eta,\zeta){{< /katex >}}. We define
+At the moment the code supports several flat space (non-GR) coordinate systems: 1D/2D/3D _Cartesian/quasi-Cartesian_, and 2D _spherical_/_quasi-spherical_ (axisymmetric).
+
+In the former case the orthogonal coordinates {{< katex >}}(\xi, \eta, \zeta){{</katex>}} are given by stretching the corresponding Cartesian coordinates.
+
+{{< katex display >}}
+\begin{aligned}
+x&=f_x(\xi)\\
+y&=f_y(\eta)\\
+z&=f_z(\zeta)
+\end{aligned}
+{{< /katex >}}
+
+The trivial case of Cartesian coordinates is handled separately in the code. In _quasi-Cartesian_ 3D case we define three separate functions, {{< katex >}}f_x{{</katex>}}, {{< katex >}}f_y{{</katex>}}, {{< katex >}}f_z{{</katex>}}, their inverses, {{< katex >}}f_x^{-1}{{</katex>}}, {{< katex >}}f_y^{-1}{{</katex>}}, {{< katex >}}f_z^{-1}{{</katex>}}, and three non-zero Jacobian coefficients {{< katex >}}\partial f_x/\partial\xi{{</katex>}}, {{< katex >}}\partial f_y/\partial\eta{{</katex>}}, {{< katex >}}\partial f_z/\partial\zeta{{</katex>}}.
+
+## Note on curvilinear coordinates {#notes}
+
+Suppose a transformation from Cartesian {{< katex >}}\bm{r}=(x,y,z){{< /katex >}} to an arbitrary orthogonal curvilinear coordinate space {{< katex >}}\bm{\rho}=(\xi,\eta,\zeta){{< /katex >}}, where {{< katex >}}x = f_x(\xi,\eta,\zeta){{< /katex >}}, {{< katex >}}y = f_y(\xi,\eta,\zeta){{< /katex >}} and {{< katex >}}z = f_z(\xi,\eta,\zeta){{< /katex >}}. We define
 
 {{< katex display >}}
 h_\xi = \left|\frac{\partial\bm{r}}{\partial\xi}\right|,~~~
