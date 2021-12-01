@@ -3,6 +3,7 @@ languageCode = 'en-us'
 title = '"Entity" Particle-in-cell Code'
 theme = 'hugo-geekdoc'
 
+
 pluralizeListTitles = false
 
 # Geekdoc required configuration
