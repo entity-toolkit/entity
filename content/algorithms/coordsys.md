@@ -2,102 +2,211 @@
 title: Coordinate systems
 ---
 
+{{< mathjaxheader >}}
+
 {{< hint info >}}
 **On notations**\
 To familiarize with the notations we use as well as find useful calculus formulae for curvilinear coordinate systems see the section [below]({{< relref "coordsys.md#notes" >}}).
 {{< /hint >}}
 
+{{< expand "Code insight" >}}
+If the code is compiled with anything other than simple Cartesian coordinate system, the `HARDCODE_FLAT_COORDS` is defined. All different options for the coordinate systems are enumerated as an enum-class in `src/global.h` (some of the enumerated may not yet be implemented in which case the code will throw an error).
+```c++
+enum CoordinateSystem {
+  UNDEFINED_COORD,
+  CARTESIAN_COORD,
+  CARTESIAN_LIKE_COORD,
+  SPHERICAL_COORD,
+  SPHERICAL_LIKE_COORD,
+  CYLINDRICAL_COORD,
+  CYLINDRICAL_LIKE_COORD
+};
+```
+In general some of the algorithms (such as boundary conditions) may be handled differently for different coordinate systems. All the information about the coordinate system is contained in the `Grid` structure (inherited by `Meshblock::Fields`, see `src/objects/grid.h`).
+```c++
+template <Dimension D>
+struct Grid {
+  // coordinate system
+  CoordinateSystem m_coord_system;
+  // forward transformations
+  Inline auto convert_x1TOx(const real_t&) const -> real_t;
+  // ...
+  // inverse transformations
+  Inline auto convert_xTOx1(const real_t&) const -> real_t;
+  // ...
+  // forward vector transformations
+  Inline auto convert_ux1TOux(const real_t&) const -> real_t;
+  // ...
+  // inverse vector transformations:
+  Inline auto convert_uxTOux1(const real_t&) const -> real_t;
+  // ...
+  // h-coefficients
+  Inline auto Jacobian_h1(const real_t&) const -> real_t;
+  // ...
+  // Jacobian coefficients
+  Inline auto Jacobian_11(const real_t&, const real_t&) const -> real_t;
+  // ...
+};
+```
+Since `Grid` is a template structure, implementations of, say, `Grid<ONE_D>::Jacobian_h1` and `Grid<THREE_D>Jacobian_h1` are different (since they accept different number of arguments, they are also overloaded).
+{{< /expand >}}
+
 At the moment the code supports several flat space (non-GR) coordinate systems: 1D/2D/3D _Cartesian/quasi-Cartesian_, and 2D _spherical_/_quasi-spherical_ (axisymmetric).
 
-In the former case the orthogonal coordinates {{< katex >}}(\xi, \eta, \zeta){{</katex>}} are given by stretching the corresponding Cartesian coordinates.
+### Cartesian/quasi-Cartesian
 
-{{< katex display >}}
+In the former case the orthogonal coordinates $(x_1, x_2, x_3)$ (we use the same variables used in the code) are given by stretching the corresponding Cartesian coordinates.
+
+$$
 \begin{aligned}
-x&=f_x(\xi)\\
-y&=f_y(\eta)\\
-z&=f_z(\zeta)
+x=f_x(x_1),\\\\
+y=f_y(x_2),\\\\
+z=f_z(x_3).
 \end{aligned}
-{{< /katex >}}
+$$
 
-The trivial case of Cartesian coordinates is handled separately in the code. In _quasi-Cartesian_ 3D case we define three separate functions, {{< katex >}}f_x{{</katex>}}, {{< katex >}}f_y{{</katex>}}, {{< katex >}}f_z{{</katex>}}, their inverses, {{< katex >}}f_x^{-1}{{</katex>}}, {{< katex >}}f_y^{-1}{{</katex>}}, {{< katex >}}f_z^{-1}{{</katex>}}, and three non-zero Jacobian coefficients {{< katex >}}\partial f_x/\partial\xi{{</katex>}}, {{< katex >}}\partial f_y/\partial\eta{{</katex>}}, {{< katex >}}\partial f_z/\partial\zeta{{</katex>}}.
+The trivial case of _Cartesian_ coordinates is handled separately in the code. In _quasi-Cartesian_ 3D case we define three separate functions, $f_x$, $f_y$, $f_z$, their inverses, $f_x^{-1}$, $f_y^{-1}$, $f_z^{-1}$, and three non-zero Jacobian coefficients $\partial f_x/\partial x_1$, $\partial f_y/\partial x_2$, $\partial f_z/\partial x_3$.
+
+TODO: any particular interesting cases?
+
+### Axisymmetric
+
+In conventional spherical (axisymmetric 2D) coordinate system we employ regular spherical coordinates $(x_1, x_2)=(r, \theta)$. In that case conversion to Cartesian is given by the following relations:
+
+$$
+x = x_1\sin{x_2},~~~y = x_1\cos{x_2},
+$$
+
+while the backwards conversion can be written as
+
+$$
+x_1 = \sqrt{x^2+y^2},~~~x_2 = \arccos{\left(\frac{y}{\sqrt{x^2+y^2}}\right)}.
+$$
+
+Additionally to convert the basis vectors we need to define the Jacobian elements, as well as the $h$-coefficients:
+
+$$
+\begin{aligned}
+J &= \begin{bmatrix}
+\sin{x_2} & x_1\cos{x_2} & 0\\\\[0.5em]
+\cos{x_2}
+&
+-x_1\sin{x_2}
+&
+0\\\\[0.5em]
+0
+&
+0
+&
+x_1\sin{x_2}
+\end{bmatrix},\\\\[1em]
+&h_1 = 1,~~~ h_2 = x_1,~~~ h_3 = x_1\sin{x_2}.
+\end{aligned}
+$$
+
+In the quasi-spherical case the coordinates $(x_1, x_2)$ are orthogonal to conventional spherical coordinates $(r, \theta)$, but are stretched. Particularly we implement the following transformation functions (see [Porth+ 2017](https://link.springer.com/article/10.1186%2Fs40668-017-0020-2)):
+
+$$
+r = f_r(x_1)= r_0 \exp{\left(\frac{x_1}{r_0}\right)},~~~ \theta = f_\theta(x_2)= x_2 + \frac{2h x_2}{\pi^2}(\pi-2 x_2)(\pi-x_2),
+$$
+
+where $x = r\sin{\theta}$, and $y = r\cos{\theta}$. $r_0$ is the dimensional radial scaling factor, and $h$ is a parameter that defines the amount of squeezing of the grid ($h=0$ is uniform in $\theta$) towards the equator (equator is defined at $\theta=\pi/2$). Backwards transformation in this case is less trivial owing to the presence of a cubic term in the second relation:
+
+$$
+x_1 = f_r^{-1}(r)=  r_0 \ln{\left(\frac{r}{r_0}\right)},~~~ x_2 = f_\theta^{-1}(\theta) = ...\theta...,
+$$
+
+with $r = \sqrt{x^2+y^2}$, and $\theta = \arccos{\left(y/r\right)}$. We also have
+
+$$
+\begin{aligned}
+J &= e^{x_1/r_0}\cdot\begin{bmatrix}
+\sin{f_\theta(x_2)} & r_0 f_\theta'(x_2) \cos{f_\theta(x_2)} & 0\\\\[0.5em]
+\cos{f_\theta(x_2)} & -r_0 f_\theta'(x_2)\sin{f_\theta(x_2)} & 0\\\\[0.5em]
+0 & 0 & r_0\sin{f_\theta(x_2)}
+\end{bmatrix},\\\\[1em]
+&h_1 = e^{x_1/r_0},~~~ h_2 = r_0 e^{x_1/r_0} f_\theta'(x_2),~~~ h_3 = r_0 e^{x_1/r_0}\sin{f_\theta(x_2)},
+\end{aligned}
+$$
+
+where $f_\theta'(x_2) = 1 + 2h + 12h((x_2/\pi)^2-x_2/\pi)$.
+
+---
 
 ## Note on curvilinear coordinates {#notes}
 
-Suppose a transformation from Cartesian {{< katex >}}\bm{r}=(x,y,z){{< /katex >}} to an arbitrary orthogonal curvilinear coordinate space {{< katex >}}\bm{\rho}=(\xi,\eta,\zeta){{< /katex >}}, where {{< katex >}}x = f_x(\xi,\eta,\zeta){{< /katex >}}, {{< katex >}}y = f_y(\xi,\eta,\zeta){{< /katex >}} and {{< katex >}}z = f_z(\xi,\eta,\zeta){{< /katex >}}. We define
+Suppose a transformation from Cartesian $\boldsymbol{r}=(x,y,z)$ to an arbitrary orthonormal curvilinear coordinate space $\boldsymbol{\rho}=(\xi,\eta,\zeta)$, where $x = f_x(\xi,\eta,\zeta)$, $y = f_y(\xi,\eta,\zeta)$ and $z = f_z(\xi,\eta,\zeta)$. We define
 
-{{< katex display >}}
-h_\xi = \left|\frac{\partial\bm{r}}{\partial\xi}\right|,~~~
-h_\eta = \left|\frac{\partial\bm{r}}{\partial\eta}\right|,~~~
-h_\zeta = \left|\frac{\partial\bm{r}}{\partial\zeta}\right|
-{{< /katex >}}
+$$
+h_\xi = \left|\frac{\partial\boldsymbol{r}}{\partial\xi}\right|,~~~
+h_\eta = \left|\frac{\partial\boldsymbol{r}}{\partial\eta}\right|,~~~
+h_\zeta = \left|\frac{\partial\boldsymbol{r}}{\partial\zeta}\right|
+$$
 
 and the unit vectors in the new coordinate system:
 
-{{< katex display >}}
-\hat{\bm{e}}_\xi=\frac{1}{h_\xi}\frac{\partial\bm{r}}{\partial\xi},~~~
-\hat{\bm{e}}_\eta=\frac{1}{h_\eta}\frac{\partial\bm{r}}{\partial\eta},~~~
-\hat{\bm{e}}_\zeta=\frac{1}{h_\zeta}\frac{\partial\bm{r}}{\partial\zeta}
-{{< /katex >}}
+$$
+\hat{\boldsymbol{e}}\_\xi=\frac{1}{h\_\xi}\frac{\partial\boldsymbol{r}}{\partial\xi},~~~ \hat{\boldsymbol{e}}\_\eta=\frac{1}{h\_\eta}\frac{\partial\boldsymbol{r}}{\partial\eta},~~~ \hat{\boldsymbol{e}}\_\zeta=\frac{1}{h\_\zeta}\frac{\partial\boldsymbol{r}}{\partial\zeta}
+$$
 
 Velocities (or any other vector) can be converted (from curvilinear to Cartesian) via:
 
-{{< katex display >}}
-\bm{v} = v_\xi \frac{\partial \bm{r}}{\partial \xi} + v_\eta \frac{\partial \bm{r}}{\partial \eta}+v_\zeta \frac{\partial \bm{r}}{\partial \zeta}
-{{< /katex >}}
+$$
+\boldsymbol{v} = v_\xi \frac{\partial \boldsymbol{r}}{\partial \xi} + v_\eta \frac{\partial \boldsymbol{r}}{\partial \eta}+v_\zeta \frac{\partial \boldsymbol{r}}{\partial \zeta}
+$$
 
-These {{< katex >}}\partial\bm{r}/\partial\xi{{< /katex >}} etc are just the columns of the Jacobi matrix:
+These $\partial\boldsymbol{r}/\partial\xi$ etc are just the columns of the Jacobi matrix:
 
-{{< katex display >}}
-J=\begin{bmatrix}
-\frac{\partial\bm{r}}{\partial\xi}
+$$
+J = \begin{bmatrix}
+\frac{\partial\boldsymbol{r}}{\partial\xi}
 &
-\frac{\partial\bm{r}}{\partial\eta}
+\frac{\partial\boldsymbol{r}}{\partial\eta}
 &
-\frac{\partial\bm{r}}{\partial\zeta}
+\frac{\partial\boldsymbol{r}}{\partial\zeta}
 \end{bmatrix}
 =\begin{bmatrix}
 \frac{\partial x}{\partial\xi}
 &
 \frac{\partial x}{\partial\eta}
 &
-\frac{\partial x}{\partial\zeta}\\[0.5em]
+\frac{\partial x}{\partial\zeta}\\\\[0.5em]
 \frac{\partial y}{\partial\xi}
 &
 \frac{\partial y}{\partial\eta}
 &
-\frac{\partial y}{\partial\zeta}\\[0.5em]
+\frac{\partial y}{\partial\zeta}\\\\[0.5em]
 \frac{\partial z}{\partial\xi}
 &
 \frac{\partial z}{\partial\eta}
 &
 \frac{\partial z}{\partial\zeta}
-
 \end{bmatrix}
-{{< /katex >}}
+$$
 
-Gradient of a scalar function {{< katex >}}f{{< /katex >}} in the new coordinate system:
+Gradient of a scalar function $f$ in the new coordinate system:
 
-{{< katex display >}}
+$$
 \nabla f=
-\frac{1}{h_\xi}\frac{\partial f}{\partial\xi}\hat{\bm{e}}_\xi+
-\frac{1}{h_\eta}\frac{\partial f}{\partial\eta}\hat{\bm{e}}_\eta+
-\frac{1}{h_\zeta}\frac{\partial f}{\partial\zeta}\hat{\bm{e}}_\zeta
-{{< /katex >}}
+\frac{1}{h\_\xi}\frac{\partial f}{\partial\xi}\hat{\boldsymbol{e}}\_\xi+
+\frac{1}{h\_\eta}\frac{\partial f}{\partial\eta}\hat{\boldsymbol{e}}\_\eta+
+\frac{1}{h\_\zeta}\frac{\partial f}{\partial\zeta}\hat{\boldsymbol{e}}\_\zeta
+$$
 
-Divergence of a vector function {{< katex >}}\bm{v}{{< /katex >}}:
+Divergence of a vector function $\boldsymbol{v}$:
 
-{{< katex display >}}
-\nabla\cdot\bm{v}=
-\frac{1}{h_\xi h_\eta h_\zeta}\left[
-\frac{\partial}{\partial\xi}\left(v_\xi h_\eta h_\zeta\right)+
-\frac{\partial}{\partial\eta}\left(v_\eta h_\xi h_\zeta\right)+
-\frac{\partial}{\partial\zeta}\left(v_\zeta h_\xi h_\eta\right)
+$$
+\nabla\cdot\boldsymbol{v}=
+\frac{1}{h_{\xi} h_{\eta} h_{\zeta}}\left[
+\frac{\partial}{\partial\xi}\left(v_{\xi} h_{\eta} h_{\zeta}\right)+
+\frac{\partial}{\partial\eta}\left(v_{\eta} h_{\xi} h_{\zeta}\right)+
+\frac{\partial}{\partial\zeta}\left(v_{\zeta} h_{\xi} h_{\eta}\right)
 \right]
-{{< /katex >}}
+$$
 
-Laplacian of a scalar function {{< katex >}}f{{< /katex >}}:
+Laplacian of a scalar function $f$:
 
-{{< katex display >}}
+$$
 \Delta f=\frac{1}{h_\xi h_\eta h_\zeta}\left[
 \frac{\partial}{\partial \xi}
 \left(\frac{h_\eta h_\zeta}{h_\xi}\frac{\partial f}{\partial\xi}\right)+
@@ -105,23 +214,22 @@ Laplacian of a scalar function {{< katex >}}f{{< /katex >}}:
 \left(\frac{h_\xi h_\zeta}{h_\eta}\frac{\partial f}{\partial\eta}\right)+
 \frac{\partial}{\partial \zeta}
 \left(\frac{h_\xi h_\eta}{h_\zeta}\frac{\partial f}{\partial\zeta}\right)
-
 \right]
-{{< /katex >}}
+$$
 
-Curl of a vector function {{< katex >}}\bm{v}{{< /katex >}}:
+Curl of a vector function $\boldsymbol{v}$:
 
-{{< katex display >}}
+$$
 \begin{split}
-\nabla\times\bm{v}=&\frac{1}{h_\xi h_\eta h_\zeta}\cdot
-\\[0.5em]
-\cdot\Biggl[&h_\xi \hat{\bm{e}}_\xi
-\left\{\frac{\partial}{\partial\eta}\left(h_\zeta v_\zeta\right)-\frac{\partial}{\partial\zeta}\left(h_\eta v_\eta\right)\right\}
-\\[0.5em]
--&h_\eta \hat{\bm{e}}_\eta
-\left\{\frac{\partial}{\partial\xi}\left(h_\zeta v_\zeta\right)-\frac{\partial}{\partial\zeta}\left(h_\xi v_\xi\right)\right\}
-\\[0.5em]
-&h_\zeta \hat{\bm{e}}_\zeta
-\left\{\frac{\partial}{\partial\xi}\left(h_\eta v_\eta\right)-\frac{\partial}{\partial\eta}\left(h_\xi v_\xi\right)\right\}\Biggr]
+\nabla\times\boldsymbol{v}=&\frac{1}{h_\xi h_\eta h_\zeta}\cdot
+\\\\[0.5em]
+\cdot\Biggl[&h_\xi \hat{\boldsymbol{e}}\_\xi
+\left\\{\frac{\partial}{\partial\eta}\left(h_\zeta v_\zeta\right)-\frac{\partial}{\partial\zeta}\left(h_\eta v_\eta\right)\right\\}
+\\\\[0.5em]
+-&h_\eta \hat{\boldsymbol{e}}\_\eta
+\left\\{\frac{\partial}{\partial\xi}\left(h_\zeta v_\zeta\right)-\frac{\partial}{\partial\zeta}\left(h_\xi v_\xi\right)\right\\}
+\\\\[0.5em]
+&h_\zeta \hat{\boldsymbol{e}}\_\zeta
+\left\\{\frac{\partial}{\partial\xi}\left(h_\eta v_\eta\right)-\frac{\partial}{\partial\eta}\left(h_\xi v_\xi\right)\right\\}\Biggr]
 \end{split}
-{{< /katex >}}
+$$

@@ -1,0 +1,30 @@
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-simple-slider@1.10.4/dist/d3-simple-slider.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Mono&display=swap" rel="stylesheet">
+
+<style>
+  svg .axes, svg text {
+    font-family: 'PT Mono', monospace;
+    font-size: 14px;
+  }
+  svg .axes-grid {
+    stroke: black;
+    opacity: 0.1;
+  }
+  .svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* aspect ratio */
+    vertical-align: top;
+    overflow: hidden;
+  }
+  .svg-content-responsive {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
+  }
+</style>

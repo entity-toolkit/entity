@@ -13,6 +13,8 @@ main:
         ref: "/algorithms/pusher"
       - name: Current deposition
         ref: "/algorithms/deposit"
+      - name: Full PIC
+        ref: "/algorithms/pic"
 
   - name: 'For developers'
     # ref: "/dev"
