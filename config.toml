@@ -1,8 +1,7 @@
-baseURL = 'https://haykh.github.io/entity'
+baseURL = "https://haykh.github.io/entity"
 languageCode = 'en-us'
 title = '"Entity" Particle-in-cell Code'
 theme = 'hugo-geekdoc'
-
 
 pluralizeListTitles = false
 
@@ -12,7 +11,7 @@ pygmentsCodeFences = true
 disablePathToLower = true
 
 # Required if you want to render robots.txt template
-enableRobotsTXT = true
+# enableRobotsTXT = true
 
 # Needed for mermaid shortcodes
 [markup]
@@ -28,7 +27,6 @@ enableRobotsTXT = true
 
 [params]
   geekdocMenuBundle = true
-
 
 # regex to paste from notion
 #
