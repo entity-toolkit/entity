@@ -1,4 +1,4 @@
-baseURL = 'http://example.org/'
+baseURL = 'https://haykh.github.io/entity'
 languageCode = 'en-us'
 title = '"Entity" Particle-in-cell Code'
 theme = 'hugo-geekdoc'
