@@ -1,0 +1,6 @@
+---
+more:
+  - name: "View Source"
+    ref: "https://github.com/haykh/entity"
+    external: true
+    icon: "gdoc_github"
