@@ -87,7 +87,7 @@ Additionally to convert the basis vectors we need to define the Jacobian element
 
 $$
 \begin{aligned}
-J &= \begin{bmatrix}
+\mathcal{J} &= \begin{bmatrix}
 \sin{x_2} & x_1\cos{x_2} & 0\\\\[0.5em]
 \cos{x_2}
 &
@@ -120,7 +120,7 @@ with $r = \sqrt{x^2+y^2}$, and $\theta = \arccos{\left(y/r\right)}$. We also hav
 
 $$
 \begin{aligned}
-J &= e^{x_1/r_0}\cdot\begin{bmatrix}
+\mathcal{J} &= e^{x_1/r_0}\cdot\begin{bmatrix}
 \sin{f_\theta(x_2)} & r_0 f_\theta'(x_2) \cos{f_\theta(x_2)} & 0\\\\[0.5em]
 \cos{f_\theta(x_2)} & -r_0 f_\theta'(x_2)\sin{f_\theta(x_2)} & 0\\\\[0.5em]
 0 & 0 & r_0\sin{f_\theta(x_2)}
@@ -158,7 +158,7 @@ $$
 These $\partial\boldsymbol{r}/\partial\xi$ etc are just the columns of the Jacobi matrix:
 
 $$
-J = \begin{bmatrix}
+\mathcal{J} = \begin{bmatrix}
 \frac{\partial\boldsymbol{r}}{\partial\xi}
 &
 \frac{\partial\boldsymbol{r}}{\partial\eta}

@@ -4,10 +4,37 @@ const C2_color = "#06b15c"
 const C3_color = "#fab54e"
 const C4_color = "#9d67a2"
 const C5_color = "#545e56"
+const C6_color = "#e22850"
+
+const C0_color_light = "#8bc6e4"
+const C1_color_light = "#f48a7c"
+const C2_color_light = "#3af899"
+const C3_color_light = "#fccd88"
+const C4_color_light = "#be9ac1"
+const C5_color_light = "#7d8c80"
+const C6_color_light = "#e95d7c"
 
 window.onload = function() {
-  new Step0("#plot1", 600, 40, {top: 10, right: 30, bottom: 30, left: 30});
-  new Step1("#plot2", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  new Step0("#plot0", 600, 40, {top: 10, right: 30, bottom: 30, left: 30});
+
+  new Step1("#plot1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+
+  new Step2_1("#plot2_1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  new Step2_2("#plot2_2", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
+  new Step2_3("#plot2_3", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
+  new Step2_4("#plot2_4", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
+  new Step2_5("#plot2_5", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+
+  new Step3_1("#plot3_1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  new Step3_2("#plot3_2", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  new Step3_3("#plot3_3", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  new Step3_4("#plot3_4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+
+  new Step4("#plot4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+
+  new Step5("#plot5", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+
+  new Step6("#plot6", 600, 40, {top: 10, right: 30, bottom: 30, left: 30});
 };
 
 var linspace = function(start, stop, nsteps){
@@ -40,12 +67,12 @@ class Steps {
 
     // build scales
     this.xScale = d3.scaleLinear()
-      .domain([-2, 2])
+      .domain([-1.5, 1.5])
       .range([0, this.ax_width])
 
     var xAxis = d3
                 .axisBottom(this.xScale)
-                  .tickValues(d3.range(-2, 3))
+                  .tickValues(d3.range(-1, 3))
                   .tickFormat(x => (x == 0 ? 'n' : (x < 0) ? 'n' + x : 'n+' + x))
     this.svg
       .append("g")
@@ -55,7 +82,7 @@ class Steps {
 
     var xAxisFields = d3
                 .axisBottom(this.xScale)
-                  .tickValues(d3.range(-2, 3))
+                  .tickValues(d3.range(-1, 3))
                   .tickFormat(x => '')
     this.svg
       .append("g")
@@ -63,16 +90,21 @@ class Steps {
         .attr("transform", "translate(0," + this.upY + ")")
         .call(xAxisFields)
   }
+  addText(x, y, text, opacity=1.0, align="middle") {
+    text = this.svg
+      .append("text")
+        .classed("label", true)
+        .html(text)
+        .style("text-anchor", align)
+        .style("opacity", opacity)
+        .attr("transform", "translate(" + this.xScale(x) + "," + y + ")")
+    return text
+  }
+
   addPoint(x, y, symbol, color, size, label=null, opacity=1.0, dy=-10) {
     var text = null
     if (label != null) {
-      text = this.svg
-        .append("text")
-          .classed("label", true)
-          .html(label)
-          .style("text-anchor", "middle")
-          .style("opacity", opacity)
-          .attr("transform", "translate(" + this.xScale(x) + "," + (y + dy) + ")")
+      text = this.addText(x, y + dy, label, opacity)
     }
     var symbol = this.svg
       .append("path")
@@ -81,6 +113,50 @@ class Steps {
         .style("fill", color)
         .style("opacity", opacity)
     return [text, symbol]
+  }
+  addArrow(x1, y1, x2, y2, color="black", type="arced") {
+    this.svg.append("svg:defs").selectAll("marker")
+      .data(["arrowhead" + color])
+    .enter().append("svg:marker")
+      .attr("id", String)
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 7)
+      .attr("markerHeight", 7)
+      .attr("orient", "auto")
+      .style("fill", color)
+    .append("svg:path")
+      .attr("d", "M0,-5L10,0L0,5");
+    let _self = this;
+    this.svg
+      .append('path')
+        .attr('d', function (d) {
+          var source = {
+            "x" : _self.xScale(x1),
+            "y" : y1
+          };
+          var target = {
+            "x" : _self.xScale(x2),
+            "y" : y2
+          };
+          var dx = target.x - source.x;
+          var dy = target.y - source.y;
+          var dr = Math.sqrt(dx * dx + dy * dy);
+          if (type == "arced") {
+            return "M" + source["x"] + "," + source["y"] +
+                   "A" + dr + "," + dr + " 0 0,1 " + target["x"] + "," + target["y"]
+          } else if (type == "arced_r") {
+            return "M" + source["x"] + "," + source["y"] +
+                   "A" + dr + "," + dr + " 0 0,0 " + target["x"] + "," + target["y"]
+          } else {
+            return "M" + source["x"] + "," + source["y"] +
+                   "L" + target["x"] + "," + target["y"]
+          }
+        })
+      .attr('marker-end', 'url(#arrowhead' + color +')')
+      .style("fill", "none")
+      .attr("stroke", color)
   }
 }
 
@@ -103,33 +179,201 @@ class Step1 extends Steps {
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
 
     var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)")
-    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")");
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    this.addArrow(-0.5, this.upY, 0.0, this.upY, C1_color_light, "arced_r")
+  }
+}
 
-    let _self = this;
-    this.svg
-      .append('path')
-        .attr('d', function (d) {
-          var source = {
-            "x" : _self.xScale(-0.5),
-            "y" : _self.upY
-          };
-          var target = {
-            "x" : _self.xScale(0),
-            "y" : _self.upY
-          };
-          var dx = target.x - source.x;
-          var dy = target.y - source.y;
-          var dr = Math.sqrt(dx * dx + dy * dy);
-          return "M" +
-              source["x"] + "," +
-              source["y"] + "A" +
-              dr + "," + dr + " 0 0,1 " +
-              target["x"] + "," +
-              target["y"]}
-            )
-      .attr('marker-end', 'url(#arrow)')
-      .style("fill", "none")
-      .attr("stroke", "black")
+class Step2_1 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)")
+    this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)")
 
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)")
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    this.addArrow(0.0, this.upY, 0.0, this.downY, C4_color_light, "arced_r")
+
+    this.addText(0.1, 0.5 * (this.upY + this.downY), "E(x), B(x)", 1.0, "left")
+  }
+}
+
+class Step2_2 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)")
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+
+    this.addText(0.1, 0.5 * (this.upY + this.downY), "E(x), B(x)", 1.0, "left")
+
+    this.addArrow(-0.5, this.downY, -0.5, this.downY + 25, C2_color_light, "straight")
+    this.addArrow(0.35, 0.5 * (this.upY + this.downY) + 5, 0.1, 0.5 * (this.upY + this.downY) + 45, C4_color_light, "straight")
+
+    this.addText(-0.5, this.downY + 35, "uc(n-1/2)", 1.0, "middle")
+    this.addText(0.0, this.downY + 35, "Ec(x)", 1.0, "middle")
+    this.addText(0.0, this.downY + 50, "Bc(x)", 1.0, "middle")
+  }
+}
+
+class Step2_3 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+
+    this.addArrow(-0.5, this.downY + 20, 0.5, this.downY + 20, C2_color_light)
+
+    this.addText(-0.5, this.downY + 35, "uc(n-1/2)", 1.0, "middle")
+    this.addText(0.0, this.downY + 35, "Ec(x)", 1.0, "middle")
+    this.addText(0.0, this.downY + 50, "Bc(x)", 1.0, "middle")
+
+    this.addText(0.5, this.downY + 35, "uc(n+1/2)", 1.0, "middle")
+  }
+}
+
+class Step2_4 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    // this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+
+    this.addArrow(0.5, this.downY + 20, 0.5, this.downY, C2_color_light, "straight")
+
+    // this.addText(-0.5, this.downY + 35, "uc(n-1/2)", 1.0, "middle")
+    // this.addText(0.0, this.downY + 35, "Ec(x)", 1.0, "middle")
+    // this.addText(0.0, this.downY + 50, "Bc(x)", 1.0, "middle")
+
+    this.addText(0.5, this.downY + 35, "uc(n+1/2)", 1.0, "middle")
+  }
+}
+
+class Step2_5 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    // this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)")
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    this.addArrow(0, this.downY, 1, this.downY, C3_color_light, "arced_r")
+  }
+}
+
+class Step3_1 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x~(n)")
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    this.addArrow(1, this.downY, 0, this.downY, C3_color_light, "arced")
+  }
+}
+
+class Step3_2 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x~(n)")
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    // this.addArrow(1, this.downY, 0, this.downY, C3_color_light, "arced")
+
+    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "j~(n+1/2)")
+    this.addArrow(0, this.downY, 0.5, this.upY, C6_color_light, "straight")
+    this.addArrow(1, this.downY, 0.5, this.upY, C6_color_light, "straight")
+  }
+}
+
+class Step3_3 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "j(n+1/2)")
+  }
+}
+
+class Step3_4 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "J(n+1/2)")
+  }
+}
+
+
+class Step4 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)")
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
+
+    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 1.0)
+    t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+
+    var t = this.addPoint(0.5, this.upY, d3.symbolCircle, C1_color, 30, "B(n+1/2)", 1.0)
+    t[0].attr("transform", "translate(" + this.xScale(0.5) + "," + (this.upY-25) + ")")
+    this.addArrow(0.0, this.upY, 0.5, this.upY, C1_color_light, "arced_r")
+    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "J(n+1/2)", 0.3)
+  }
+}
+
+
+class Step5 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)")
+    this.addPoint(1, this.upY, d3.symbolCircle, C0_color, 30, "E(n+1)")
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
+
+    var t = this.addPoint(0.5, this.upY, d3.symbolCircle, C1_color, 30, "B(n+1/2)", 1.0)
+    t[0].attr("transform", "translate(" + this.xScale(0.5) + "," + (this.upY-25) + ")")
+    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "J(n+1/2)")
+    this.addArrow(0.0, this.upY, 1.0, this.upY, C0_color_light, "arced_r")
+  }
+}
+
+class Step6 extends Steps {
+  constructor(parent, w, h, margins) {
+    super(parent, w, h, margins);
+    this.addPoint(1, this.upY, d3.symbolCircle, C0_color, 30, "E(n+1)")
+    this.addPoint(+0.5, this.upY, d3.symbolCircle, C1_color, 30, "B(n+1/2)")
+    this.addPoint(+0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
   }
 }
