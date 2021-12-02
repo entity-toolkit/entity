@@ -5,8 +5,8 @@ theme = 'hugo-geekdoc'
 
 pluralizeListTitles = false
 
-pygmentsUseClasses = true
-pygmentsCodeFences = true
+# pygmentsUseClasses = true
+# pygmentsCodeFences = true
 disablePathToLower = true
 
 [markup]
@@ -15,6 +15,10 @@ disablePathToLower = true
   [markup.tableOfContents]
     startLevel = 1
     endLevel = 9
+  [markup.highlight]
+    codeFences = true
+    noClasses = true
+    style = 'native'
 
 [taxonomies]
    tag = "tags"
