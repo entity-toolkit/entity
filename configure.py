@@ -280,7 +280,7 @@ try:
   compiledemo = makedemo.split('\n')[1]
   linkdemo = makedemo.split('\n')[4]
 except:
-  print (makedemo)
+  print ('ERROR', makedemo)
 
 def beautifyCommands(command):
   i = command.index(' -')

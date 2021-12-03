@@ -17,7 +17,7 @@ namespace fld {
 } // namespace fld
 
 template <Dimension D>
-struct Fields : public Grid<D> {
+struct Fields {
   // sizes of these arrays are ...
   //   resolution + 2 * N_GHOSTS in every direction
   RealFieldND<D, 6> em_fields;
