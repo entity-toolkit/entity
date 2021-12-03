@@ -284,7 +284,7 @@ $$
 #### 4.3. intermediate current interpolation
 
 $$
-J^{(n)} = \frac{1}{2}\left(J^{(n-1)}+J^{(n+1/2)}\right)
+J^{(n)} = \frac{1}{2}\left(J^{(n-1/2)}+J^{(n+1/2)}\right)
 $$
 
 <div id="grplot4_3"></div>
