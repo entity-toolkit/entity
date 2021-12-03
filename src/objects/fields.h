@@ -25,15 +25,6 @@ struct Fields {
 
   Fields(std::vector<std::size_t> res);
   ~Fields() = default;
-
-  [[nodiscard]] auto get_imin() const -> long int { return N_GHOSTS; }
-  [[nodiscard]] auto get_imax() const -> long int { return N_GHOSTS + this->m_resolution[0]; }
-  [[nodiscard]] auto get_jmin() const -> long int { return N_GHOSTS; }
-  [[nodiscard]] auto get_jmax() const -> long int { return N_GHOSTS + this->m_resolution[1]; }
-  [[nodiscard]] auto get_kmin() const -> long int { return N_GHOSTS; }
-  [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + this->m_resolution[2]; }
-
-  auto loopActiveCells() -> RangeND<D>;
 };
 
 } // namespace ntt

@@ -16,7 +16,7 @@
 namespace ntt {
 
 template <Dimension D>
-struct Meshblock : public Fields<D>, public Grid<D> {
+struct Meshblock : Fields<D>, Grid<D> {
   std::vector<Particles<D>> particles;
 
   Meshblock(std::vector<std::size_t>, std::vector<ParticleSpecies>&);
