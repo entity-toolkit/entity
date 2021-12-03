@@ -55,6 +55,15 @@ struct Grid {
   Inline auto convert_x2TOjdx2(const real_t&) const -> std::pair<long int, float>;
   Inline auto convert_x3TOkdx3(const real_t&) const -> std::pair<long int, float>;
 
+  [[nodiscard]] auto get_imin() const -> long int { return N_GHOSTS; }
+  [[nodiscard]] auto get_imax() const -> long int { return N_GHOSTS + m_resolution[0]; }
+  [[nodiscard]] auto get_jmin() const -> long int { return N_GHOSTS; }
+  [[nodiscard]] auto get_jmax() const -> long int { return N_GHOSTS + m_resolution[1]; }
+  [[nodiscard]] auto get_kmin() const -> long int { return N_GHOSTS; }
+  [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + m_resolution[2]; }
+
+  auto loopActiveCells() -> RangeND<D>;
+
   // curvilinear-specific conversions
 #ifndef HARDCODE_FLAT_COORDS
   // coordinate conversion
