@@ -14,28 +14,39 @@ const C4_color_light = "#be9ac1"
 const C5_color_light = "#7d8c80"
 const C6_color_light = "#e95d7c"
 
-window.onload = function() {
+function makeid(length) {
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() *
+ charactersLength));
+   }
+   return result;
+}
+
+window.addEventListener("load", function(event) {
   new Step0("#plot0", 600, 40, {top: 10, right: 30, bottom: 30, left: 30});
 
   new Step1("#plot1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step2_1("#plot2_1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
   new Step2_2("#plot2_2", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
-  new Step2_3("#plot2_3", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
-  new Step2_4("#plot2_4", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
-  new Step2_5("#plot2_5", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  // new Step2_3("#plot2_3", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
+  // new Step2_4("#plot2_4", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
+  // new Step2_5("#plot2_5", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step3_1("#plot3_1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
   new Step3_2("#plot3_2", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
-  new Step3_3("#plot3_3", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
-  new Step3_4("#plot3_4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  // new Step3_3("#plot3_3", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
+  // new Step3_4("#plot3_4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step4("#plot4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step5("#plot5", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step6("#plot6", 600, 40, {top: 10, right: 30, bottom: 30, left: 30});
-};
+}, false);
 
 var linspace = function(start, stop, nsteps){
   delta = (stop-start)/(nsteps-1)
@@ -115,8 +126,9 @@ class Steps {
     return [text, symbol]
   }
   addArrow(x1, y1, x2, y2, color="black", type="arced") {
+    var name = makeid(10)
     this.svg.append("svg:defs").selectAll("marker")
-      .data(["arrowhead" + color])
+      .data(["arrowhead" + name])
     .enter().append("svg:marker")
       .attr("id", String)
       .attr("viewBox", "0 -5 10 10")
@@ -154,7 +166,7 @@ class Steps {
                    "L" + target["x"] + "," + target["y"]
           }
         })
-      .attr('marker-end', 'url(#arrowhead' + color +')')
+      .attr('marker-end', 'url(#arrowhead' + name +')')
       .style("fill", "none")
       .attr("stroke", color)
   }
@@ -178,45 +190,73 @@ class Step1 extends Steps {
     this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)")
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)")
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
     this.addArrow(-0.5, this.upY, 0.0, this.upY, C1_color_light, "arced_r")
   }
 }
 
+// class Step2_1 extends Steps {
+//   constructor(parent, w, h, margins) {
+//     super(parent, w, h, margins);
+//     this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)")
+//     this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
+//     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)")
+//
+//     var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)")
+//     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+//     this.addArrow(0.0, this.upY, 0.0, this.downY, C4_color_light, "arced_r")
+//
+//     this.addText(0.1, 0.5 * (this.upY + this.downY), "E(x), B(x)", 1.0, "left")
+//   }
+// }
+
 class Step2_1 extends Steps {
   constructor(parent, w, h, margins) {
     super(parent, w, h, margins);
     this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)")
-    this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
-    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)")
+    this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)")
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)")
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)")
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
-    this.addArrow(0.0, this.upY, 0.0, this.downY, C4_color_light, "arced_r")
-
-    this.addText(0.1, 0.5 * (this.upY + this.downY), "E(x), B(x)", 1.0, "left")
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+    this.addArrow(-0.5, this.downY, 0.5, this.downY, C2_color_light, "arced_r")
   }
 }
+
+// class Step2_2 extends Steps {
+//   constructor(parent, w, h, margins) {
+//     super(parent, w, h, margins);
+//     this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+//     this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)")
+//     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
+//
+//     var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
+//     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+//
+//     this.addText(0.1, 0.5 * (this.upY + this.downY), "E(x), B(x)", 1.0, "left")
+//
+//     this.addArrow(-0.5, this.downY, -0.5, this.downY + 25, C2_color_light, "straight")
+//     this.addArrow(0.35, 0.5 * (this.upY + this.downY) + 5, 0.1, 0.5 * (this.upY + this.downY) + 45, C4_color_light, "straight")
+//
+//     this.addText(-0.5, this.downY + 35, "uc(n-1/2)", 1.0, "middle")
+//     this.addText(0.0, this.downY + 35, "Ec(x)", 1.0, "middle")
+//     this.addText(0.0, this.downY + 50, "Bc(x)", 1.0, "middle")
+//   }
+// }
 
 class Step2_2 extends Steps {
   constructor(parent, w, h, margins) {
     super(parent, w, h, margins);
     this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
-    this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)")
-    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
+    this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)")
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
-
-    this.addText(0.1, 0.5 * (this.upY + this.downY), "E(x), B(x)", 1.0, "left")
-
-    this.addArrow(-0.5, this.downY, -0.5, this.downY + 25, C2_color_light, "straight")
-    this.addArrow(0.35, 0.5 * (this.upY + this.downY) + 5, 0.1, 0.5 * (this.upY + this.downY) + 45, C4_color_light, "straight")
-
-    this.addText(-0.5, this.downY + 35, "uc(n-1/2)", 1.0, "middle")
-    this.addText(0.0, this.downY + 35, "Ec(x)", 1.0, "middle")
-    this.addText(0.0, this.downY + 50, "Bc(x)", 1.0, "middle")
+    this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+    this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
+    this.addArrow(0, this.downY, 1, this.downY, C3_color_light, "arced_r")
   }
 }
 
@@ -227,7 +267,7 @@ class Step2_3 extends Steps {
     this.addPoint(-0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n-1/2)", 0.3)
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
 
     this.addArrow(-0.5, this.downY + 20, 0.5, this.downY + 20, C2_color_light)
@@ -248,7 +288,7 @@ class Step2_4 extends Steps {
     this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
 
     this.addArrow(0.5, this.downY + 20, 0.5, this.downY, C2_color_light, "straight")
@@ -270,7 +310,7 @@ class Step2_5 extends Steps {
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x(n)")
     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
     this.addArrow(0, this.downY, 1, this.downY, C3_color_light, "arced_r")
   }
@@ -284,7 +324,7 @@ class Step3_1 extends Steps {
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x~(n)")
     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
     this.addArrow(1, this.downY, 0, this.downY, C3_color_light, "arced")
   }
@@ -298,15 +338,47 @@ class Step3_2 extends Steps {
     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x~(n)")
     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
     // this.addArrow(1, this.downY, 0, this.downY, C3_color_light, "arced")
 
-    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "j~(n+1/2)")
+    this.addPoint(0.5, this.upY, d3.symbolCircle, C6_color, 30, "J(n+1/2)")
     this.addArrow(0, this.downY, 0.5, this.upY, C6_color_light, "straight")
     this.addArrow(1, this.downY, 0.5, this.upY, C6_color_light, "straight")
   }
 }
+
+// class Step3_1 extends Steps {
+//   constructor(parent, w, h, margins) {
+//     super(parent, w, h, margins);
+//     this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+//     this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)")
+//     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x~(n)")
+//     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
+//
+//     var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
+//     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+//     this.addArrow(1, this.downY, 0, this.downY, C3_color_light, "arced")
+//   }
+// }
+//
+// class Step3_2 extends Steps {
+//   constructor(parent, w, h, margins) {
+//     super(parent, w, h, margins);
+//     this.addPoint(0, this.upY, d3.symbolCircle, C0_color, 30, "E(n)", 0.3)
+//     this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
+//     this.addPoint(0, this.downY, d3.symbolSquare, C3_color, 30, "x~(n)")
+//     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)")
+//
+//     var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
+//     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
+//     // this.addArrow(1, this.downY, 0, this.downY, C3_color_light, "arced")
+//
+//     this.addPoint(0.5, this.upY, d3.symbolCircle, C6_color, 30, "j~(n+1/2)")
+//     this.addArrow(0, this.downY, 0.5, this.upY, C6_color_light, "straight")
+//     this.addArrow(1, this.downY, 0.5, this.upY, C6_color_light, "straight")
+//   }
+// }
 
 class Step3_3 extends Steps {
   constructor(parent, w, h, margins) {
@@ -315,9 +387,9 @@ class Step3_3 extends Steps {
     this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
-    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "j(n+1/2)")
+    this.addPoint(0.5, this.upY, d3.symbolCircle, C6_color, 30, "j(n+1/2)")
   }
 }
 
@@ -328,9 +400,9 @@ class Step3_4 extends Steps {
     this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 0.3)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 0.3)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
-    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "J(n+1/2)")
+    this.addPoint(0.5, this.upY, d3.symbolCircle, C6_color, 30, "J(n+1/2)")
   }
 }
 
@@ -342,13 +414,13 @@ class Step4 extends Steps {
     this.addPoint(0.5, this.downY, d3.symbolSquare, C2_color, 30, "u(n+1/2)", 0.3)
     this.addPoint(1, this.downY, d3.symbolSquare, C3_color, 30, "x(n+1)", 0.3)
 
-    var t = this.addPoint(0, this.upY, d3.symbolStar, C1_color, 30, "B(n)", 1.0)
+    var t = this.addPoint(0, this.upY, d3.symbolCircle, C1_color, 30, "B(n)", 1.0)
     t[0].attr("transform", "translate(" + this.xScale(0) + "," + (this.upY-25) + ")")
 
     var t = this.addPoint(0.5, this.upY, d3.symbolCircle, C1_color, 30, "B(n+1/2)", 1.0)
     t[0].attr("transform", "translate(" + this.xScale(0.5) + "," + (this.upY-25) + ")")
     this.addArrow(0.0, this.upY, 0.5, this.upY, C1_color_light, "arced_r")
-    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "J(n+1/2)", 0.3)
+    this.addPoint(0.5, this.upY, d3.symbolCircle, C6_color, 30, "J(n+1/2)", 0.3)
   }
 }
 
@@ -363,7 +435,7 @@ class Step5 extends Steps {
 
     var t = this.addPoint(0.5, this.upY, d3.symbolCircle, C1_color, 30, "B(n+1/2)", 1.0)
     t[0].attr("transform", "translate(" + this.xScale(0.5) + "," + (this.upY-25) + ")")
-    this.addPoint(0.5, this.upY, d3.symbolStar, C6_color, 30, "J(n+1/2)")
+    this.addPoint(0.5, this.upY, d3.symbolCircle, C6_color, 30, "J(n+1/2)")
     this.addArrow(0.0, this.upY, 1.0, this.upY, C0_color_light, "arced_r")
   }
 }
