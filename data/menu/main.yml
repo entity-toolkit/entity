@@ -1,7 +1,9 @@
 ---
 main:
   - name: 'Getting started'
-    # ref: "/start"
+    sub:
+      - name: Code units
+        ref: "/start/units"
   - name: 'Algorithms'
     # ref: "/algorithms"
     sub:
