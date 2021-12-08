@@ -16,22 +16,22 @@
 
 class NTTSimulationVis : public nttiny::SimulationAPI<float> {
 public:
+  int nx1, nx2;
   ntt::Simulation<ntt::TWO_D>& m_sim;
-  nttiny::Data<float> m_ex;
-  nttiny::Data<float> m_bx;
-  nttiny::Data<float> m_ey;
-  nttiny::Data<float> m_by;
-  nttiny::Data<float> m_ez;
-  nttiny::Data<float> m_bz;
+  nttiny::Data<float> m_ex1, m_ex2, m_ex3;
+  nttiny::Data<float> m_bx1, m_bx2, m_bx3;
 
   ntt::real_t m_time;
 
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
 
   NTTSimulationVis(ntt::Simulation<ntt::TWO_D>& sim)
-    : nttiny::SimulationAPI<float>{0, 0}, m_sim(sim) {
-    m_sx = m_sim.get_params().get_resolution()[0];
-    m_sy = m_sim.get_params().get_resolution()[1];
+    : nttiny::SimulationAPI<float>{"cartesian"},
+      nx1(sim.get_meshblock().get_n1()),
+      nx2(sim.get_meshblock().get_n2()),
+      m_sim(sim),
+      m_ex1{nx1, nx2}, m_ex2{nx1, nx2}, m_ex3{nx1, nx2},
+      m_bx1{nx1, nx2}, m_bx2{nx1, nx2}, m_bx3{nx1, nx2} {
 
     m_x1x2_extent[0] = static_cast<float>(m_sim.get_params().get_extent()[0]);
     m_x1x2_extent[1] = static_cast<float>(m_sim.get_params().get_extent()[1]);
@@ -40,27 +40,19 @@ public:
     m_timestep = 0;
     m_time = 0;
 
-    fields.insert({{"ex", &(m_ex)},
-                   {"bx", &(m_bx)},
-                   {"ey", &(m_ey)},
-                   {"by", &(m_by)},
-                   {"ez", &(m_ez)},
-                   {"bz", &(m_bz)}});
-    for (auto &f : fields) {
-      f.second->allocate(m_sx * m_sy);
-      f.second->set_size(1, m_sx);
-      f.second->set_size(0, m_sy);
-      f.second->set_dimension(2);
-    }
-
+    fields.insert({{"ex1", &(m_ex1)},
+                   {"bx1", &(m_bx1)},
+                   {"ex2", &(m_ex2)},
+                   {"bx2", &(m_bx2)},
+                   {"ex3", &(m_ex3)},
+                   {"bx3", &(m_bx3)}});
     int i{0};
     for (auto& species : m_sim.get_meshblock().particles) {
-      auto x_prtl {std::make_unique<nttiny::Data<float>>()};
-      auto y_prtl {std::make_unique<nttiny::Data<float>>()};
+      auto nprt { m_sim.get_meshblock().particles[i / 2].get_npart() };
+      auto x_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
+      auto y_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
       x_prtl->m_data = m_sim.get_meshblock().particles[i / 2].m_x1.data();
       y_prtl->m_data = m_sim.get_meshblock().particles[i / 2].m_x2.data();
-      x_prtl->set_size(0, m_sim.get_meshblock().particles[i / 2].get_npart());
-      y_prtl->set_size(0, m_sim.get_meshblock().particles[i / 2].get_npart());
       this->prtl_pointers.push_back(std::move(x_prtl));
       this->prtl_pointers.push_back(std::move(y_prtl));
       this->particles.insert({species.m_label,
@@ -73,15 +65,14 @@ public:
   ~NTTSimulationVis() = default;
   void setData() override {
     // TODO: there might be an easier way to map
-    for (int j{0}; j < m_sy; ++j) {
-      for (int i{0}; i < m_sx; ++i) {
-        int lind{i + j * m_sx};
-        m_ex.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex1));
-        m_ey.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex2));
-        m_ez.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex3));
-        m_bx.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx1));
-        m_by.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx2));
-        m_bz.set(lind, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx3));
+    for (int j{0}; j < nx2; ++j) {
+      for (int i{0}; i < nx1; ++i) {
+        m_ex1.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex1));
+        m_ex2.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex2));
+        m_ex3.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex3));
+        m_bx1.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx1));
+        m_bx2.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx2));
+        m_bx3.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx3));
       }
     }
   }
