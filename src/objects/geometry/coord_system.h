@@ -3,6 +3,7 @@
 
 #include "global.h"
 
+#include <tuple>
 #include <string>
 
 namespace ntt {
