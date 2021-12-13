@@ -5,12 +5,13 @@
 #include "coord_system.h"
 
 #include <vector>
+#include <memory>
 
 namespace ntt {
 
 template <Dimension D>
 struct Grid {
-  CoordinateSystem<D> m_coord_system;
+  std::shared_ptr<CoordinateSystem<D>> m_coord_system;
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
 

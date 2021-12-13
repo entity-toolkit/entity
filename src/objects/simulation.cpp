@@ -10,6 +10,7 @@
 #include <plog/Log.h>
 #include <toml/toml.hpp>
 
+#include <memory>
 #include <cmath>
 #include <stdexcept>
 
@@ -22,7 +23,7 @@ Simulation<D>::Simulation(const toml::value& inputdata)
       m_meshblock {m_sim_params.m_resolution, m_sim_params.m_species} {
   m_meshblock.set_extent(m_sim_params.m_extent);
   if (m_sim_params.m_coord_system == "cartesian") {
-    m_meshblock.m_coord_system = CartesianSystem<D>();
+    m_meshblock.m_coord_system = std::make_unique<CartesianSystem<D>>();
   } else {
     throw std::logic_error("# NOT IMPLEMENTED.");
   }
@@ -79,7 +80,7 @@ void Simulation<D>::printDetails() {
 
   PLOGI << "[domain]";
   PLOGI << "   dimension: " << m_dim << "D";
-  PLOGI << "   coordinate system: " << (m_meshblock.m_coord_system.get_label());
+  PLOGI << "   coordinate system: " << (m_meshblock.m_coord_system->get_label());
 
   std::string bc {"   boundary conditions: { "};
   for (auto& b : m_sim_params.m_boundaries) {
