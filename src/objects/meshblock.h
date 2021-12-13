@@ -20,6 +20,7 @@ struct Meshblock : Fields<D>, Grid<D> {
   std::vector<Particles<D>> particles;
 
   Meshblock(std::vector<std::size_t>, std::vector<ParticleSpecies>&);
+
   ~Meshblock() = default;
 
   void verify(const SimulationParams&);
