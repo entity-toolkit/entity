@@ -35,10 +35,11 @@ class SimulationParams {
   std::vector<ParticleSpecies> m_species;
   ParticleShape m_prtl_shape;
 
-  CoordinateSystem m_coord_system {UNDEFINED_COORD};
   std::vector<real_t> m_extent;
   std::vector<std::size_t> m_resolution;
   std::vector<BoundaryCondition> m_boundaries;
+
+  std::string m_coord_system;
 
 public:
   toml::value m_inputdata;
@@ -48,9 +49,6 @@ public:
 
   template <Dimension D>
   friend class Simulation;
-  friend class Simulation1D;
-  friend class Simulation2D;
-  friend class Simulation3D;
 
   template <Dimension D>
   friend struct ProblemGenerator;

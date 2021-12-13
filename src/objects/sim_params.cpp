@@ -47,7 +47,11 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   // hardcoded PIC regime
   m_simtype = PIC_SIM;
 
-  m_coord_system = getCoordinateSystem();
+# ifndef CURVILINEAR_COORDS
+  m_coord_system = "cartesian";
+# else
+  m_coord_system = readFromInput<std::string>(m_inputdata, "domain", "coord_sys");
+# endif
 
   // box size/resolution
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
@@ -82,7 +86,6 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   m_charge0 = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
   m_B0 = 1.0 / m_larmor0;
 
-  // real_t maxtstep {}
   m_cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", 0.95);
   assert(m_cfl > 0);
 }
@@ -90,9 +93,6 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
 void SimulationParams::verify() {
   if (m_simtype == UNDEFINED_SIM) {
     throw std::logic_error("# Error: simulation type unspecified.");
-  }
-  if (m_coord_system == UNDEFINED_COORD) {
-    throw std::logic_error("# Error: coordinate system unspecified.");
   }
   for (auto& b : m_boundaries) {
     if (b == UNDEFINED_BC) { throw std::logic_error("# Error: boundary conditions unspecified."); }

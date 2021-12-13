@@ -91,16 +91,16 @@ using RangeND = typename
 inline constexpr int N_GHOSTS {2};
 enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
 
-enum CoordinateSystem {
-  UNDEFINED_COORD,
-  CARTESIAN_COORD,
-  CARTESIAN_LIKE_COORD,
-  SPHERICAL_COORD,
-  SPHERICAL_LIKE_COORD,
-  CYLINDRICAL_COORD,
-  CYLINDRICAL_LIKE_COORD
-};
-auto getCoordinateSystem() -> CoordinateSystem;
+// enum CoordinateSystem {
+//   UNDEFINED_COORD,
+//   CARTESIAN_COORD,
+//   CARTESIAN_LIKE_COORD,
+//   SPHERICAL_COORD,
+//   SPHERICAL_LIKE_COORD,
+//   CYLINDRICAL_COORD,
+//   CYLINDRICAL_LIKE_COORD
+// };
+// auto getCoordinateSystem() -> CoordinateSystem;
 
 enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
 
@@ -109,7 +109,7 @@ enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER 
 enum ParticleShape { ZEROTH_ORDER = 0, FIRST_ORDER, SECOND_ORDER, THIRD_ORDER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string;
-auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
+// auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
 auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
 
 auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;

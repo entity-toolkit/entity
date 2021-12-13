@@ -4,6 +4,9 @@
 #include "sim_params.h"
 #include "meshblock.h"
 
+#include "coord_system.h"
+#include "cartesian.h"
+
 #include <plog/Log.h>
 #include <toml/toml.hpp>
 
@@ -18,25 +21,29 @@ Simulation<D>::Simulation(const toml::value& inputdata)
       m_pGen {m_sim_params},
       m_meshblock {m_sim_params.m_resolution, m_sim_params.m_species} {
   m_meshblock.set_extent(m_sim_params.m_extent);
-  m_meshblock.set_coord_system(m_sim_params.m_coord_system);
+  if (m_sim_params.m_coord_system == "cartesian") {
+    m_meshblock.m_coord_system = CartesianSystem<D>();
+  } else {
+    throw std::logic_error("# NOT IMPLEMENTED.");
+  }
 
   // find timestep and effective cell size
-  if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
-    if (m_dim == ONE_D) {
-      real_t dx1 = m_meshblock.get_dx1();
-      m_sim_params.m_min_cell_size = dx1;
-    } else if (m_dim == TWO_D) {
-      real_t dx1 = m_meshblock.get_dx1();
-      real_t dx2 = m_meshblock.get_dx2();
-      m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
-    } else if (m_dim == TWO_D) {
-      real_t dx1 = m_meshblock.get_dx1();
-      real_t dx2 = m_meshblock.get_dx2();
-      real_t dx3 = m_meshblock.get_dx3();
-      m_sim_params.m_min_cell_size
-          = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
-    }
-  }
+  // if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
+  //   if (m_dim == ONE_D) {
+  real_t dx1 = m_meshblock.get_dx1();
+  m_sim_params.m_min_cell_size = dx1;
+  //   } else if (m_dim == TWO_D) {
+  //     real_t dx1 = m_meshblock.get_dx1();
+  //     real_t dx2 = m_meshblock.get_dx2();
+  //     m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
+  //   } else if (m_dim == TWO_D) {
+  //     real_t dx1 = m_meshblock.get_dx1();
+  //     real_t dx2 = m_meshblock.get_dx2();
+  //     real_t dx3 = m_meshblock.get_dx3();
+  //     m_sim_params.m_min_cell_size
+  //         = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
+  //   }
+  // }
   m_sim_params.m_timestep = m_sim_params.m_cfl * m_sim_params.m_min_cell_size;
 }
 
@@ -56,12 +63,6 @@ void Simulation<D>::userInitialize() {
 
 template <Dimension D>
 void Simulation<D>::verify() {
-  if constexpr (D == ONE_D) {
-    if ((m_sim_params.m_coord_system != CARTESIAN_COORD)
-        || (m_sim_params.m_coord_system != CARTESIAN_LIKE_COORD)) {
-      throw std::invalid_argument("# Error: dimension vs coord system incompatible.");
-    }
-  }
   m_sim_params.verify();
   m_meshblock.verify(m_sim_params);
   PLOGD << "Simulation prerun check passed.";
@@ -78,7 +79,7 @@ void Simulation<D>::printDetails() {
 
   PLOGI << "[domain]";
   PLOGI << "   dimension: " << m_dim << "D";
-  PLOGI << "   coordinate system: " << stringifyCoordinateSystem(m_sim_params.m_coord_system);
+  PLOGI << "   coordinate system: " << (m_meshblock.m_coord_system.get_label());
 
   std::string bc {"   boundary conditions: { "};
   for (auto& b : m_sim_params.m_boundaries) {
