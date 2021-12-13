@@ -84,19 +84,23 @@ Inline void Pusher<ONE_D>::convertToCartesian(const index_t&) const {}
 template <>
 Inline void Pusher<TWO_D>::convertToCartesian(const index_t& p) const {
 #ifdef CURVILINEAR_COORDS
-  auto [p_x, p_y] = m_meshblock.convert_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
+  auto [p_x, p_y] = m_meshblock.m_coord_system.transform_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
   m_particles.m_x1(p) = p_x;
   m_particles.m_x2(p) = p_y;
+#else
+  UNUSED(p);
 #endif
 }
 
 template <>
 Inline void Pusher<THREE_D>::convertToCartesian(const index_t& p) const {
 #ifdef CURVILINEAR_COORDS
-  auto [p_x, p_y, p_z] = m_meshblock.convert_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  auto [p_x, p_y, p_z] = m_meshblock.m_coord_system.transform_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
   m_particles.m_x1(p) = p_x;
   m_particles.m_x2(p) = p_y;
   m_particles.m_x3(p) = p_z;
+#else
+  UNUSED(p);
 #endif
 }
 
@@ -106,19 +110,23 @@ Inline void Pusher<ONE_D>::convertFromCartesian(const index_t&) const {}
 template <>
 Inline void Pusher<TWO_D>::convertFromCartesian(const index_t& p) const {
 #ifdef CURVILINEAR_COORDS
-  auto [p_x1, p_x2] = m_meshblock.convert_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
+  auto [p_x1, p_x2] = m_meshblock.m_coord_system.transform_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
   m_particles.m_x1(p) = p_x1;
   m_particles.m_x2(p) = p_x2;
+#else
+  UNUSED(p);
 #endif
 }
 
 template <>
 Inline void Pusher<THREE_D>::convertFromCartesian(const index_t& p) const {
 #ifdef CURVILINEAR_COORDS
-  auto [p_x1, p_x2, p_x3] = m_meshblock.convert_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+  auto [p_x1, p_x2, p_x3] = m_meshblock.m_coord_system.transform_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
   m_particles.m_x1(p) = p_x1;
   m_particles.m_x2(p) = p_x2;
   m_particles.m_x3(p) = p_x3;
+#else
+  UNUSED(p);
 #endif
 }
 
