@@ -3,6 +3,7 @@ title           = <string>
 runtime         = <float>
 
 [domain]
+coord_sys       = <string> { cartesian }
 resolution      = <array of int of size 1, 2 or 3>
 extent          = <array of float of size 2, 4 or 6> [x1min, x1max, x2min, x2max, x3min, x3max]
 boundaries      = <array of strings of size 1, 2 or 3> { PERIODIC | OPEN }

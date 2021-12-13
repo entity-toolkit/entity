@@ -18,7 +18,7 @@
 # [ Simulation flags ]
 #   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
 #   --precision=[single|double]   floating point precision used
-#   --coords=<COORD_SYSTEM>       floating point precision used
+#   -curv                         use curvilinear coordinates
 #
 # [ Kokkos-specific flags ]
 #   --kokkos_devices=<DEV>        `Kokkos` devices
@@ -54,7 +54,7 @@ makefile_output = 'Makefile'
 
 # Options:
 Precision_options = ['double', 'single']
-Coord_options = ['xyz', 'sph', 'cyl', 'qxyz', 'qsph', 'qcyl']
+# Coord_options = ['xyz', 'sph', 'cyl', 'qxyz', 'qsph', 'qcyl']
 
 Pgen_options = ['ntt_one', 'ntt_two']
 Pgen_options = [f.replace('.hpp', '') for f in os.listdir('ntt/pgen') if '.hpp' in f]
@@ -89,7 +89,8 @@ def defineOptions():
 
   # simulation
   parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision')
-  parser.add_argument('--coords', default=Coord_options[0], choices=Coord_options, help='coordinate system')
+  # parser.add_argument('--coords', default=Coord_options[0], choices=Coord_options, help='coordinate system')
+  parser.add_argument('-curv', action='store_true', default=False, help='use curvilinear coordinates')
   parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used')
 
   # `Kokkos` specific
@@ -259,18 +260,20 @@ makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 
 # Code configurations
 makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D SINGLE_PRECISION")
-if (args['coords'] == 'xyz'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_FLAT_COORDS"
-elif (args['coords'] =='sph'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_SPHERICAL_COORDS"
-elif (args['coords'] =='cyl'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_CYLINDRICAL_COORDS"
-elif (args['coords'] =='qxyz'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_CARTESIAN_LIKE_COORDS"
-elif (args['coords'] =='qsph'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_SPHERICAL_LIKE_COORDS"
-elif (args['coords'] =='qcyl'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_CYLINDRICAL_LIKE_COORDS"
+if (args['curv']):
+  makefile_options['COORDSYSTEM'] = "-D CURVILINEAR_COORDS"
+else:
+  makefile_options['COORDSYSTEM'] = ""
+# elif (args['coords'] =='sph'):
+#   makefile_options['COORDSYSTEM'] = "-D HARDCODE_SPHERICAL_COORDS"
+# elif (args['coords'] =='cyl'):
+#   makefile_options['COORDSYSTEM'] = "-D HARDCODE_CYLINDRICAL_COORDS"
+# elif (args['coords'] =='qxyz'):
+#   makefile_options['COORDSYSTEM'] = "-D HARDCODE_CARTESIAN_LIKE_COORDS"
+# elif (args['coords'] =='qsph'):
+#   makefile_options['COORDSYSTEM'] = "-D HARDCODE_SPHERICAL_LIKE_COORDS"
+# elif (args['coords'] =='qcyl'):
+#   makefile_options['COORDSYSTEM'] = "-D HARDCODE_CYLINDRICAL_LIKE_COORDS"
 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)
@@ -351,7 +354,7 @@ report = f'''
 
   {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
   {'Precision':32} {args['precision']}
-  {'Grid':32} {args['coords']}
+  {'Grid':32} {'curvilinear' if args['curv'] else 'cartesian'}
 
 {'Physics ':.<{w}}
 

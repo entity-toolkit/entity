@@ -27,7 +27,7 @@ public:
 
 // clang-format off
 
-#ifdef HARDCODE_FLAT_COORDS
+#ifndef CURVILINEAR_COORDS
 // flat cartesian system
 
 template <>
