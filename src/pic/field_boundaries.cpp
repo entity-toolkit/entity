@@ -28,7 +28,7 @@ void Simulation<ONE_D>::fieldBoundaryConditions(const real_t& time) {
 template <>
 void Simulation<TWO_D>::fieldBoundaryConditions(const real_t& time) {
   UNUSED(time);
-  if ((m_sim_params.m_coord_system == CARTESIAN_COORD) || (m_sim_params.m_coord_system == CARTESIAN_LIKE_COORD)) {
+  // if ((m_sim_params.m_coord_system == CARTESIAN_COORD) || (m_sim_params.m_coord_system == CARTESIAN_LIKE_COORD)) {
     // cartesian-like grid
     auto nx1 = m_meshblock.get_n1();
     if (m_sim_params.m_boundaries[0] == PERIODIC_BC) {
@@ -59,10 +59,10 @@ void Simulation<TWO_D>::fieldBoundaryConditions(const real_t& time) {
     } else {
       throw std::logic_error("# NOT IMPLEMENTED.");
     }
-  } else if ((m_sim_params.m_coord_system == SPHERICAL_COORD) || (m_sim_params.m_coord_system == SPHERICAL_LIKE_COORD)) {
-    // axisymmetric-like grid
-    
-  }
+  // } else if ((m_sim_params.m_coord_system == SPHERICAL_COORD) || (m_sim_params.m_coord_system == SPHERICAL_LIKE_COORD)) {
+  //   // axisymmetric-like grid
+  //
+  // }
 }
 
 // 3d
@@ -82,7 +82,7 @@ template class ntt::Simulation<ntt::ONE_D>;
 template class ntt::Simulation<ntt::TWO_D>;
 template class ntt::Simulation<ntt::THREE_D>;
 
-
+/*
 // this is what 1D periodic boundaries do:
 //
 //    ghosts                  reals                     ghosts
@@ -112,3 +112,4 @@ template class ntt::Simulation<ntt::THREE_D>;
 //     \___\____\___\_________________________/___/    /   /
 //               \___\________________________________/___/
 //
+*/
