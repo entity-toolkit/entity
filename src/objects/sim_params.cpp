@@ -21,7 +21,7 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   m_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
   m_correction = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
 
-  auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species");
+  auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species", 0);
   for (int i {0}; i < nspec; ++i) {
     auto label = readFromInput<std::string>(
         m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
@@ -47,37 +47,57 @@ SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) 
   // hardcoded PIC regime
   m_simtype = PIC_SIM;
 
-# ifndef CURVILINEAR_COORDS
+#ifndef CURVILINEAR_COORDS
   m_coord_system = "cartesian";
-# else
+#else
   m_coord_system = readFromInput<std::string>(m_inputdata, "domain", "coord_sys");
-# endif
+#endif
 
   // box size/resolution
   m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
   m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
-
-  if ((static_cast<short>(m_resolution.size()) < static_cast<short>(dim))
-      || (static_cast<short>(m_extent.size()) < 2 * static_cast<short>(dim))) {
-    throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
-  }
-
-  m_resolution.erase(m_resolution.begin() + static_cast<short>(dim), m_resolution.end());
-  m_extent.erase(m_extent.begin() + 2 * static_cast<short>(dim), m_extent.end());
-
-  auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
-  short b {0};
-  for (auto& bc : boundaries) {
-    if (bc == "PERIODIC") {
-      m_boundaries.push_back(PERIODIC_BC);
-    } else if (bc == "OPEN") {
-      m_boundaries.push_back(OPEN_BC);
-    } else {
-      m_boundaries.push_back(UNDEFINED_BC);
+  if (m_coord_system == "cartesian") {
+    if ((static_cast<short>(m_resolution.size()) < static_cast<short>(dim))
+        || (static_cast<short>(m_extent.size()) < 2 * static_cast<short>(dim))) {
+      throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
     }
-    ++b;
-    if (b >= static_cast<short>(dim)) { break; }
+  } else if (m_coord_system == "spherical") {
+    if (m_extent.size() < 2) {
+      throw std::invalid_argument("Not enough values in `extent` input.");
+    }
+    m_extent.erase(m_extent.begin() + 2, m_extent.end());
+    m_extent.push_back(0.0);
+    m_extent.push_back(PI);
+    m_extent.push_back(0.0);
+    m_extent.push_back(TWO_PI);
   }
+  m_extent.erase(m_extent.begin() + 2 * static_cast<short>(dim), m_extent.end());
+  m_resolution.erase(m_resolution.begin() + static_cast<short>(dim), m_resolution.end());
+
+  if (m_coord_system == "cartesian") {
+    auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
+    short b {0};
+    for (auto& bc : boundaries) {
+      if (bc == "PERIODIC") {
+        m_boundaries.push_back(PERIODIC_BC);
+      } else if (bc == "OPEN") {
+        m_boundaries.push_back(OPEN_BC);
+      } else if (bc == "USER") {
+        m_boundaries.push_back(USER_BC);
+      } else {
+        m_boundaries.push_back(UNDEFINED_BC);
+      }
+      ++b;
+      if (b >= static_cast<short>(dim)) { break; }
+    }
+  } else if (m_coord_system == "spherical") {
+    // rmin, rmax boundaries only
+    m_boundaries.push_back(USER_BC);
+    m_boundaries.push_back(USER_BC);
+  } else {
+    throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
+  }
+
   // plasma params
   m_ppc0 = readFromInput<real_t>(m_inputdata, "units", "ppc0");
   m_larmor0 = readFromInput<real_t>(m_inputdata, "units", "larmor0");
