@@ -31,13 +31,13 @@ public:
   void printDetails();
   void finalize();
 
-  void step_forward(const real_t&);
+  void step(const real_t&, const short&);
   void mainloop();
   void run(std::string_view, std::string_view);
 
   // fields
-  void faradayHalfsubstep(const real_t&);
-  void ampereSubstep(const real_t&);
+  void faradaySubstep(const real_t&, const real_t&);
+  void ampereSubstep(const real_t&, const real_t&);
   void addCurrentsSubstep(const real_t&);
   void resetCurrentsSubstep(const real_t&);
   // particles

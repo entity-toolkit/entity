@@ -1,0 +1,18 @@
+[simulation]
+title           = "Polar_example"
+runtime         = 0.1
+
+[domain]
+coord_sys       = "spherical"
+resolution      = [32, 64]
+extent          = [1.0, 5.0]
+boundaries      = ["USER", "USER"]
+
+[algorithm]
+CFL             = 0.3
+correction      = 1.0
+
+[units]
+ppc0            = 0.1
+larmor0         = 0.1
+skindepth0      = 0.01

@@ -13,6 +13,9 @@ struct PGen {
   PGen(SimulationParams&) {}
   void userInitFields(SimulationParams&, Meshblock<D>&) {}
   void userInitParticles(SimulationParams&, Meshblock<D>&) {}
+
+  void userBCFields_x1min(SimulationParams&, Meshblock<D>&) {}
+  void userBCFields_x1max(SimulationParams&, Meshblock<D>&) {}
 };
 
 } // namespace ntt

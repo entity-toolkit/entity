@@ -10,9 +10,16 @@ namespace ntt {
 
 namespace fld {
 
-  enum FieldSelector { ex1 = 0, ex2, ex3, bx1, bx2, bx3 };
+  enum FieldSelector { ex1 = 0,
+                       ex2,
+                       ex3,
+                       bx1,
+                       bx2,
+                       bx3 };
 
-  enum CurrSelector { jx1 = 0, jx2, jx3 };
+  enum CurrSelector { jx1 = 0,
+                      jx2,
+                      jx3 };
 
 } // namespace fld
 

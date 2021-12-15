@@ -6,6 +6,7 @@
 
 #include "coord_system.h"
 #include "cartesian.h"
+#include "spherical.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -20,31 +21,60 @@ template <Dimension D>
 Simulation<D>::Simulation(const toml::value& inputdata)
     : m_sim_params {inputdata, m_dim},
       m_pGen {m_sim_params},
-      m_meshblock {m_sim_params.m_resolution, m_sim_params.m_species} {
-  m_meshblock.set_extent(m_sim_params.m_extent);
+      m_meshblock {m_sim_params.m_extent, m_sim_params.m_resolution, m_sim_params.m_species} {
   if (m_sim_params.m_coord_system == "cartesian") {
     m_meshblock.m_coord_system = std::make_unique<CartesianSystem<D>>();
+  } else if (m_sim_params.m_coord_system == "spherical") {
+    m_meshblock.m_coord_system = std::make_unique<SphericalSystem<D>>();
   } else {
-    throw std::logic_error("# NOT IMPLEMENTED.");
+    throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
   }
 
   // find timestep and effective cell size
-  // if (m_sim_params.m_coord_system == CARTESIAN_COORD) {
-  //   if (m_dim == ONE_D) {
-  real_t dx1 = m_meshblock.get_dx1();
-  m_sim_params.m_min_cell_size = dx1;
-  //   } else if (m_dim == TWO_D) {
-  //     real_t dx1 = m_meshblock.get_dx1();
-  //     real_t dx2 = m_meshblock.get_dx2();
-  //     m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
-  //   } else if (m_dim == TWO_D) {
-  //     real_t dx1 = m_meshblock.get_dx1();
-  //     real_t dx2 = m_meshblock.get_dx2();
-  //     real_t dx3 = m_meshblock.get_dx3();
-  //     m_sim_params.m_min_cell_size
-  //         = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
-  //   }
-  // }
+  if (m_sim_params.m_coord_system == "cartesian") {
+    if (m_dim == ONE_D) {
+      real_t dx1 = m_meshblock.get_dx1();
+      m_sim_params.m_min_cell_size = dx1;
+    } else if (m_dim == TWO_D) {
+      real_t dx1 = m_meshblock.get_dx1();
+      real_t dx2 = m_meshblock.get_dx2();
+      m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
+    } else if (m_dim == TWO_D) {
+      real_t dx1 = m_meshblock.get_dx1();
+      real_t dx2 = m_meshblock.get_dx2();
+      real_t dx3 = m_meshblock.get_dx3();
+      m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
+    }
+  } else if (m_sim_params.m_coord_system == "spherical") {
+    if (m_dim == TWO_D) {
+      using index_t = NTTArray<real_t**>::size_type;
+      real_t min_dx {-1.0};
+      for (index_t i {0}; i < m_meshblock.m_resolution[0]; ++i) {
+        for (index_t j {0}; j < m_meshblock.m_resolution[1]; ++j) {
+          auto x1 = m_meshblock.convert_iTOx1(i);
+          auto x2 = m_meshblock.convert_jTOx2(j);
+          real_t dx1_ {m_meshblock.m_coord_system->hx1(x1, x2) * m_meshblock.get_dx1() * m_meshblock.get_dx1()};
+          real_t dx2_ {m_meshblock.m_coord_system->hx2(x1, x2) * m_meshblock.get_dx2() * m_meshblock.get_dx2()};
+          real_t dx = 1.0 / std::sqrt(1.0 / dx1_ + 1.0 / dx2_);
+          if ((min_dx >= dx) || (min_dx < 0.0)) {
+            min_dx = dx;
+          }
+        }
+      }
+      // // Kokkos::Min<real_t> min_reducer(min_dx);
+      // // Kokkos::parallel_reduce(
+      //   "CFL_2d_spherical",
+      //   m_meshblock.loopActiveCells(),
+      //   Lambda (index_t i, real_t& dxmin) {
+      //     min_reducer.join(dxmin, dx);
+      //   }, min_reducer);
+      m_sim_params.m_min_cell_size = min_dx;
+    } else {
+      throw std::logic_error("# Error: CFL finding not implemented for 3D spherical.");
+    }
+  } else {
+    throw std::logic_error("# Error: CFL finding not implemented for this coordinate system.");
+  }
   m_sim_params.m_timestep = m_sim_params.m_cfl * m_sim_params.m_min_cell_size;
 }
 
@@ -146,11 +176,11 @@ void Simulation<D>::finalize() {
 }
 
 template <Dimension D>
-void Simulation<D>::step_forward(const real_t& time) {
+void Simulation<D>::step(const real_t& time, const short& direction) {
   TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
   {
     timers.start(1);
-    faradayHalfsubstep(time);
+    faradaySubstep(time, (real_t)(direction) * 0.5);
     timers.stop(1);
   }
 
@@ -177,7 +207,7 @@ void Simulation<D>::step_forward(const real_t& time) {
 
   {
     timers.start(1);
-    faradayHalfsubstep(time);
+    faradaySubstep(time, (real_t)(direction) * 0.5);
     timers.stop(1);
   }
 
@@ -189,7 +219,7 @@ void Simulation<D>::step_forward(const real_t& time) {
 
   {
     timers.start(1);
-    ampereSubstep(time);
+    ampereSubstep(time, (real_t)(direction) * 1.0);
     addCurrentsSubstep(time);
     resetCurrentsSubstep(time);
     timers.stop(1);
@@ -212,7 +242,7 @@ void Simulation<D>::mainloop() {
   real_t time {0.0};
   for (unsigned long ti {0}; ti < timax; ++ti) {
     PLOGD << "t = " << time;
-    step_forward(time);
+    step(time, 1);
     time += m_sim_params.m_timestep;
   }
   PLOGD << "Simulation mainloop finished.";
