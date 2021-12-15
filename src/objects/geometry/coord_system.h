@@ -11,7 +11,7 @@ namespace ntt {
 template <Dimension D>
 struct CoordinateSystem {
   CoordinateSystem() = default;
-  CoordinateSystem(const std::string& label) : m_label{label} {}
+  CoordinateSystem(const std::string& label) : m_label {label} {}
   [[nodiscard]] auto get_label() const -> std::string { return m_label; }
   virtual ~CoordinateSystem() = default;
 
@@ -31,11 +31,27 @@ struct CoordinateSystem {
   virtual Inline auto transform_uxTOux1(const real_t&) const -> real_t { return -1.0; }
   virtual Inline auto transform_uxuyTOux1ux2(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> { return {-1.0, -1.0}; };
   virtual Inline auto transform_uxuyuzTOux1ux2ux3(const real_t&, const real_t&, const real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
+
+  virtual Inline auto hx1(const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto hx1(const real_t&, const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto hx1(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+  virtual Inline auto hx2(const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto hx2(const real_t&, const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto hx2(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+  virtual Inline auto hx3(const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto hx3(const real_t&, const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto hx3(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+  virtual Inline auto sqrt_det_h(const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto sqrt_det_h(const real_t&, const real_t&) const -> real_t { return -1.0; }
+  virtual Inline auto sqrt_det_h(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
 protected:
   std::string m_label;
 };
 
-}
-
+} // namespace ntt
 
 #endif

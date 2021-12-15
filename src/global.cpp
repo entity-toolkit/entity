@@ -24,31 +24,14 @@ auto stringifySimulationType(SimulationType sim) -> std::string {
   }
 }
 
-// auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string {
-//   switch (coord) {
-//   case CARTESIAN_COORD:
-//     return "cartesian";
-//   case SPHERICAL_COORD:
-//     return "spherical";
-//   case CYLINDRICAL_COORD:
-//     return "cylindrical";
-//   case CARTESIAN_LIKE_COORD:
-//     return "cartesian-like";
-//   case SPHERICAL_LIKE_COORD:
-//     return "spherical-like";
-//   case CYLINDRICAL_LIKE_COORD:
-//     return "cylindrical-like";
-//   default:
-//     return "N/A";
-//   }
-// }
-
 auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string {
   switch (bc) {
   case PERIODIC_BC:
     return "Periodic";
   case OPEN_BC:
     return "Open";
+  case USER_BC:
+    return "User";
   default:
     return "N/A";
   }

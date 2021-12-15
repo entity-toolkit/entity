@@ -30,21 +30,16 @@ struct Pusher {
   void pushAllParticles() {
     // TODO: call different options
     if (m_particles.get_mass() == 0) {
-      auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.get_npart());
+      auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.get_npart());
       Kokkos::parallel_for("pusher", range_policy, *this);
     } else if (m_particles.get_mass() != 0) {
-      auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.get_npart());
+      auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.get_npart());
       Kokkos::parallel_for("pusher", range_policy, *this);
     }
   }
 
-  // clang-format off
   // * * * common operations * * *
-  Inline void interpolateFields(const index_t&,
-                                real_t&, real_t&, real_t&,
-                                real_t&, real_t&, real_t&) const;
+  Inline void interpolateFields(const index_t&, real_t&, real_t&, real_t&, real_t&, real_t&, real_t&) const;
   Inline void positionUpdate(const index_t&) const;
 
   // TODO add field and velocity conversion (to cartesian)
@@ -52,13 +47,9 @@ struct Pusher {
   Inline void operator()(const Boris_t&, const index_t p) const {
     real_t e0_x1, e0_x2, e0_x3;
     real_t b0_x1, b0_x2, b0_x3;
-    interpolateFields(p,
-                      e0_x1, e0_x2, e0_x3,
-                      b0_x1, b0_x2, b0_x3);
+    interpolateFields(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
     transformToCartesian(p);
-    BorisUpdate(p,
-                e0_x1, e0_x2, e0_x3,
-                b0_x1, b0_x2, b0_x3);
+    BorisUpdate(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
     positionUpdate(p);
     transformFromCartesian(p);
   }
@@ -71,10 +62,7 @@ struct Pusher {
   }
 
   // velocity updaters
-  Inline void BorisUpdate(const index_t&,
-                          real_t&, real_t&, real_t&,
-                          real_t&, real_t&, real_t&) const;
-  // clang-format on
+  Inline void BorisUpdate(const index_t&, real_t&, real_t&, real_t&, real_t&, real_t&, real_t&) const;
 };
 
 // * * * * Coordinate converters * * * * * * * * * * *
@@ -83,21 +71,21 @@ Inline void Pusher<ONE_D>::transformToCartesian(const index_t&) const {}
 
 template <>
 Inline void Pusher<TWO_D>::transformToCartesian(const index_t& p) const {
-// #ifdef CURVILINEAR_COORDS
+#ifdef CURVILINEAR_COORDS
   auto [p_x, p_y] = m_meshblock.m_coord_system->transform_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
   auto [p_ux, p_uy] = m_meshblock.m_coord_system->transform_ux1ux2TOuxuy(m_particles.m_ux1(p), m_particles.m_ux2(p));
   m_particles.m_x1(p) = p_x;
   m_particles.m_x2(p) = p_y;
   m_particles.m_ux1(p) = p_ux;
   m_particles.m_ux2(p) = p_uy;
-// #else
-//   UNUSED(p);
-// #endif
+#else
+  UNUSED(p);
+#endif
 }
 
 template <>
 Inline void Pusher<THREE_D>::transformToCartesian(const index_t& p) const {
-// #ifdef CURVILINEAR_COORDS
+#ifdef CURVILINEAR_COORDS
   auto [p_x, p_y, p_z] = m_meshblock.m_coord_system->transform_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
   auto [p_ux, p_uy, p_uz] = m_meshblock.m_coord_system->transform_ux1ux2ux3TOuxuyuz(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
   m_particles.m_x1(p) = p_x;
@@ -106,9 +94,9 @@ Inline void Pusher<THREE_D>::transformToCartesian(const index_t& p) const {
   m_particles.m_ux1(p) = p_ux;
   m_particles.m_ux2(p) = p_uy;
   m_particles.m_ux3(p) = p_uz;
-// #else
-//   UNUSED(p);
-// #endif
+#else
+  UNUSED(p);
+#endif
 }
 
 template <>
@@ -116,21 +104,21 @@ Inline void Pusher<ONE_D>::transformFromCartesian(const index_t&) const {}
 
 template <>
 Inline void Pusher<TWO_D>::transformFromCartesian(const index_t& p) const {
-// #ifdef CURVILINEAR_COORDS
+#ifdef CURVILINEAR_COORDS
   auto [p_x1, p_x2] = m_meshblock.m_coord_system->transform_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
   auto [p_ux1, p_ux2] = m_meshblock.m_coord_system->transform_uxuyTOux1ux2(m_particles.m_ux1(p), m_particles.m_ux2(p));
   m_particles.m_x1(p) = p_x1;
   m_particles.m_x2(p) = p_x2;
   m_particles.m_ux1(p) = p_ux1;
   m_particles.m_ux2(p) = p_ux2;
-// #else
-//   UNUSED(p);
-// #endif
+#else
+  UNUSED(p);
+#endif
 }
 
 template <>
 Inline void Pusher<THREE_D>::transformFromCartesian(const index_t& p) const {
-// #ifdef CURVILINEAR_COORDS
+#ifdef CURVILINEAR_COORDS
   auto [p_x1, p_x2, p_x3] = m_meshblock.m_coord_system->transform_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
   auto [p_ux1, p_ux2, p_ux3] = m_meshblock.m_coord_system->transform_uxuyuzTOux1ux2ux3(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
   m_particles.m_x1(p) = p_x1;
@@ -139,11 +127,10 @@ Inline void Pusher<THREE_D>::transformFromCartesian(const index_t& p) const {
   m_particles.m_ux1(p) = p_ux1;
   m_particles.m_ux2(p) = p_ux2;
   m_particles.m_ux3(p) = p_ux3;
-// #else
-//   UNUSED(p);
-// #endif
+#else
+  UNUSED(p);
+#endif
 }
-
 
 // * * * * Position update * * * * * * * * * * * * * *
 template <>
@@ -156,7 +143,6 @@ Inline void Pusher<ONE_D>::positionUpdate(const index_t& p) const {
           + m_particles.m_ux2(p) * m_particles.m_ux2(p)
           + m_particles.m_ux3(p) * m_particles.m_ux3(p))
         };
-  // clang-format on
   m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
 }
 
@@ -169,21 +155,18 @@ Inline void Pusher<TWO_D>::positionUpdate(const index_t& p) const {
           + m_particles.m_ux2(p) * m_particles.m_ux2(p)
           + m_particles.m_ux3(p) * m_particles.m_ux3(p))
         };
-  // clang-format on
   m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
   m_particles.m_x2(p) += dt * m_particles.m_ux2(p) * inv_gamma0;
 }
 
 template <>
 Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
-  // clang-format off
   real_t inv_gamma0 {
       ONE / std::sqrt(ONE
           + m_particles.m_ux1(p) * m_particles.m_ux1(p)
           + m_particles.m_ux2(p) * m_particles.m_ux2(p)
           + m_particles.m_ux3(p) * m_particles.m_ux3(p))
         };
-  // clang-format on
   m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
   m_particles.m_x2(p) += dt * m_particles.m_ux2(p) * inv_gamma0;
   m_particles.m_x3(p) += dt * m_particles.m_ux3(p) * inv_gamma0;
@@ -309,7 +292,6 @@ Inline void Pusher<TWO_D>::interpolateFields(
   c00 = c000 * (ONE - dx1) + c100 * dx1;
   c10 = c010 * (ONE - dx1) + c110 * dx1;
   b0_x3 = c00 * (ONE - dx2) + c10 * dx2;
-  // clang-format on
 }
 
 template <>
