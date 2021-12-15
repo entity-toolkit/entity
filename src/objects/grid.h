@@ -12,14 +12,12 @@ namespace ntt {
 template <Dimension D>
 struct Grid {
   std::shared_ptr<CoordinateSystem<D>> m_coord_system;
-  std::vector<real_t> m_extent;
-  std::vector<std::size_t> m_resolution;
+  const std::vector<real_t> m_extent;
+  const std::vector<std::size_t> m_resolution;
 
-  Grid(std::vector<std::size_t>);
+  Grid(std::vector<real_t>, std::vector<std::size_t>);
   ~Grid() = default;
 
-  // void set_coord_system(const CoordinateSystem& coord_system) { m_coord_system = coord_system; }
-  void set_extent(const std::vector<real_t>& extent) { m_extent = extent; }
   [[nodiscard]] auto get_dx1() const -> real_t {
     return (m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]);
   }
@@ -47,6 +45,7 @@ struct Grid {
   [[nodiscard]] auto get_n2() const -> std::size_t { return m_resolution[1]; }
   [[nodiscard]] auto get_n3() const -> std::size_t { return m_resolution[2]; }
 
+  // this implies uniform grid in (x1, x2, x3)
   Inline auto convert_iTOx1(const long int&) const -> real_t;
   Inline auto convert_jTOx2(const long int&) const -> real_t;
   Inline auto convert_kTOx3(const long int&) const -> real_t;
@@ -65,64 +64,17 @@ struct Grid {
   [[nodiscard]] auto get_kmax() const -> long int { return N_GHOSTS + m_resolution[2]; }
 
   auto loopActiveCells() -> RangeND<D>;
-//
-//   // curvilinear-specific conversions
-// #ifndef HARDCODE_FLAT_COORDS
-//   // coordinate conversion
-//   Inline auto convert_x1TOx(const real_t&) const -> real_t;
-//   Inline auto convert_x1x2TOxy(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
-//   Inline auto convert_x1x2x3TOxyz(const real_t&, const real_t&, const real_t&) const
-//       -> std::tuple<real_t, real_t, real_t>;
-//
-//   Inline auto convert_xTOx1(const real_t&) const -> real_t;
-//   Inline auto convert_xyTOx1x2(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
-//   Inline auto convert_xyzTOx1x2x3(const real_t&, const real_t&, const real_t&) const
-//       -> std::tuple<real_t, real_t, real_t>;
-//
-//   // velocity conversion
-//   Inline auto convert_ux1TOux(const real_t&) const -> real_t;
-//   Inline auto convert_ux1ux2TOuxuy(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
-//   Inline auto convert_ux1ux2ux3TOuxuyuz(const real_t&, const real_t&, const real_t&) const
-//       -> std::tuple<real_t, real_t, real_t>;
-//
-//   Inline auto convert_uxTOux1(const real_t&) const -> real_t;
-//   Inline auto convert_uxuyTOux1ux2(const real_t&, const real_t&) const -> std::tuple<real_t, real_t>;
-//   Inline auto convert_uxuyuzTOux1ux2ux3(const real_t&, const real_t&, const real_t&) const
-//       -> std::tuple<real_t, real_t, real_t>;
-//
-//   // Jacobian
-//   // 1d
-//   Inline auto Jacobian_h1(const real_t&) const -> real_t;
-//   Inline auto Jacobian_h2(const real_t&) const -> real_t;
-//   Inline auto Jacobian_h3(const real_t&) const -> real_t;
-//
-//   Inline auto Jacobian_11(const real_t&) const -> real_t;
-//
-//   // 2d
-//   Inline auto Jacobian_h1(const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_h2(const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_h3(const real_t&, const real_t&) const -> real_t;
-//
-//   Inline auto Jacobian_11(const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_12(const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_21(const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_22(const real_t&, const real_t&) const -> real_t;
-//
-//   // 3d
-//   Inline auto Jacobian_h1(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_h2(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_h3(const real_t&, const real_t&, const real_t&) const -> real_t;
-//
-//   Inline auto Jacobian_11(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_12(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_13(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_21(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_22(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_23(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_31(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_32(const real_t&, const real_t&, const real_t&) const -> real_t;
-//   Inline auto Jacobian_33(const real_t&, const real_t&, const real_t&) const -> real_t;
-// #endif
+  auto loopAllCells() -> RangeND<D>;
+
+  // all ghosts below active x1 including first active x1
+  auto loopX1MinCells() -> RangeND<D>;
+  // all ghosts above active x1 excluding last active x1
+  auto loopX1MaxCells() -> RangeND<D>;
+  // TODO: X2 and X3
+
+  auto loopCells(const long int&, const long int&) -> RangeND<D>;
+  auto loopCells(const long int&, const long int&, const long int&, const long int&) -> RangeND<D>;
+  auto loopCells(const long int&, const long int&, const long int&, const long int&, const long int&, const long int&) -> RangeND<D>;
 };
 
 template <Dimension D>
@@ -149,24 +101,21 @@ Inline auto Grid<D>::convert_kTOx3(const long int& k) const -> real_t {
 template <Dimension D>
 Inline auto Grid<D>::convert_x1TOidx1(const real_t& x1) const -> std::pair<long int, float> {
   // TESTPERF: floor vs something else
-  real_t dx1 {
-      (x1 - m_extent[0]) / ((m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]))};
+  real_t dx1 {(x1 - m_extent[0]) / ((m_extent[1] - m_extent[0]) / static_cast<real_t>(m_resolution[0]))};
   long int i {static_cast<long int>(std::floor(dx1))};
   dx1 = dx1 - static_cast<real_t>(i);
   return {i + N_GHOSTS, dx1};
 }
 template <Dimension D>
 Inline auto Grid<D>::convert_x2TOjdx2(const real_t& x2) const -> std::pair<long int, float> {
-  real_t dx2 {
-      (x2 - m_extent[2]) / ((m_extent[3] - m_extent[2]) / static_cast<real_t>(m_resolution[1]))};
+  real_t dx2 {(x2 - m_extent[2]) / ((m_extent[3] - m_extent[2]) / static_cast<real_t>(m_resolution[1]))};
   long int j {static_cast<long int>(std::floor(dx2))};
   dx2 = dx2 - static_cast<real_t>(j);
   return {j + N_GHOSTS, dx2};
 }
 template <Dimension D>
 Inline auto Grid<D>::convert_x3TOkdx3(const real_t& x3) const -> std::pair<long int, float> {
-  real_t dx3 {
-      (x3 - m_extent[4]) / ((m_extent[5] - m_extent[4]) / static_cast<real_t>(m_resolution[2]))};
+  real_t dx3 {(x3 - m_extent[4]) / ((m_extent[5] - m_extent[4]) / static_cast<real_t>(m_resolution[2]))};
   long int k {static_cast<long int>(std::floor(dx3))};
   dx3 = dx3 - static_cast<real_t>(k);
   return {k + N_GHOSTS, dx3};

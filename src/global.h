@@ -60,53 +60,36 @@ auto NTT1DRange(const long int&, const long int&) -> ntt_1drange_t;
 auto NTT2DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_2drange_t;
 auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_3drange_t;
 
-enum Dimension { ONE_D = 1, TWO_D, THREE_D };
+enum Dimension { ONE_D = 1,
+                 TWO_D,
+                 THREE_D };
 
-// clang-format off
 template <Dimension D, int N>
-using RealFieldND = typename
-                  std::conditional<D == ONE_D,
-                    NTTArray<real_t*[N]>,
-                  typename
-                  std::conditional<D == TWO_D,
-                    NTTArray<real_t**[N]>,
-                  typename
-                  std::conditional<D == THREE_D,
-                    NTTArray<real_t***[N]>,
-                  std::nullptr_t>::type>::type>::type;
+using RealFieldND = typename std::conditional<D == ONE_D, NTTArray<real_t* [N]>, typename std::conditional<D == TWO_D, NTTArray<real_t** [N]>, typename std::conditional<D == THREE_D, NTTArray<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
 
 template <Dimension D>
-using RangeND = typename
-                std::conditional<D == ONE_D,
-                  ntt_1drange_t,
-                typename
-                std::conditional<D == TWO_D,
-                  ntt_2drange_t,
-                typename
-                std::conditional<D == THREE_D,
-                  ntt_3drange_t,
-                std::nullptr_t>::type>::type>::type;
-// clang-format on
+using RangeND = typename std::conditional<D == ONE_D, ntt_1drange_t, typename std::conditional<D == TWO_D, ntt_2drange_t, typename std::conditional<D == THREE_D, ntt_3drange_t, std::nullptr_t>::type>::type>::type;
 
 inline constexpr int N_GHOSTS {2};
-enum SimulationType { UNDEFINED_SIM, PIC_SIM, FORCE_FREE_SIM, MHD_SIM };
+enum SimulationType { UNDEFINED_SIM,
+                      PIC_SIM,
+                      FORCE_FREE_SIM,
+                      MHD_SIM };
 
-// enum CoordinateSystem {
-//   UNDEFINED_COORD,
-//   CARTESIAN_COORD,
-//   CARTESIAN_LIKE_COORD,
-//   SPHERICAL_COORD,
-//   SPHERICAL_LIKE_COORD,
-//   CYLINDRICAL_COORD,
-//   CYLINDRICAL_LIKE_COORD
-// };
-// auto getCoordinateSystem() -> CoordinateSystem;
+enum BoundaryCondition { UNDEFINED_BC,
+                         PERIODIC_BC,
+                         USER_BC,
+                         OPEN_BC };
 
-enum BoundaryCondition { UNDEFINED_BC, PERIODIC_BC, OPEN_BC };
+enum ParticlePusher { UNDEFINED_PUSHER,
+                      BORIS_PUSHER,
+                      VAY_PUSHER,
+                      PHOTON_PUSHER };
 
-enum ParticlePusher { UNDEFINED_PUSHER, BORIS_PUSHER, VAY_PUSHER, PHOTON_PUSHER };
-
-enum ParticleShape { ZEROTH_ORDER = 0, FIRST_ORDER, SECOND_ORDER, THIRD_ORDER };
+enum ParticleShape { ZEROTH_ORDER = 0,
+                     FIRST_ORDER,
+                     SECOND_ORDER,
+                     THIRD_ORDER };
 
 auto stringifySimulationType(SimulationType sim) -> std::string;
 // auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
