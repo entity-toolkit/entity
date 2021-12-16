@@ -8,15 +8,15 @@
 
 namespace ntt {
 
-template <Dimension D>
-struct ProblemGenerator : PGen<D> {
-  ProblemGenerator(SimulationParams&);
-  ~ProblemGenerator() = default;
+  template <Dimension D>
+  struct ProblemGenerator : PGen<D> {
+    ProblemGenerator(SimulationParams&);
+    ~ProblemGenerator() = default;
 
-  void userInitFields(SimulationParams&, Meshblock<D>&);
-  void userBCFields_x1min(SimulationParams&, Meshblock<D>&);
-  void userBCFields_x1max(SimulationParams&, Meshblock<D>&);
-};
+    void userInitFields(SimulationParams&, Meshblock<D>&);
+    void userBCFields_x1min(SimulationParams&, Meshblock<D>&);
+    void userBCFields_x1max(SimulationParams&, Meshblock<D>&);
+  };
 
 } // namespace ntt
 
