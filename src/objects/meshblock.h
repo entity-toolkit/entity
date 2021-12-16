@@ -15,16 +15,16 @@
 
 namespace ntt {
 
-template <Dimension D>
-struct Meshblock : Fields<D>, Grid<D> {
-  std::vector<Particles<D>> particles;
+  template <Dimension D>
+  struct Meshblock : Fields<D>, Grid<D> {
+    std::vector<Particles<D>> particles;
 
-  Meshblock(std::vector<real_t>, std::vector<std::size_t>, std::vector<ParticleSpecies>&);
+    Meshblock(std::vector<real_t>, std::vector<std::size_t>, std::vector<ParticleSpecies>&);
 
-  ~Meshblock() = default;
+    ~Meshblock() = default;
 
-  void verify(const SimulationParams&);
-};
+    void verify(const SimulationParams&);
+  };
 
 } // namespace ntt
 
