@@ -6,14 +6,14 @@
 
 namespace ntt {
 
-template <Dimension D>
-class FieldSolver {
-protected:
-  Meshblock<D> m_mblock;
+  template <Dimension D>
+  class FieldSolver {
+  protected:
+    Meshblock<D> m_mblock;
 
-public:
-  FieldSolver(const Meshblock<D>& m_mblock_) : m_mblock(m_mblock_) {}
-};
+  public:
+    FieldSolver(const Meshblock<D>& m_mblock_) : m_mblock(m_mblock_) {}
+  };
 
 } // namespace ntt
 
