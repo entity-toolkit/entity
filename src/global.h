@@ -34,81 +34,81 @@
 namespace ntt {
 
 #ifdef SINGLE_PRECISION
-using real_t = float;
-inline constexpr float ONE {1.0f};
-inline constexpr float ZERO {0.0f};
+  using real_t = float;
+  inline constexpr float ONE {1.0f};
+  inline constexpr float ZERO {0.0f};
 #else
-using real_t = double;
-inline constexpr double ONE {1.0};
-inline constexpr double ZERO {0.0};
+  using real_t = double;
+  inline constexpr double ONE {1.0};
+  inline constexpr double ZERO {0.0};
 #endif
 
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
 #define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
 
-using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
+  using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
 
-template <typename T>
-using NTTArray = Kokkos::View<T, AccelMemSpace>;
+  template <typename T>
+  using NTTArray = Kokkos::View<T, AccelMemSpace>;
 
-using ntt_1drange_t = Kokkos::RangePolicy<AccelExeSpace>;
-using ntt_2drange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
-using ntt_3drange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
+  using ntt_1drange_t = Kokkos::RangePolicy<AccelExeSpace>;
+  using ntt_2drange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
+  using ntt_3drange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
 
-auto NTT1DRange(const std::vector<long int>&) -> ntt_1drange_t;
-auto NTT1DRange(const long int&, const long int&) -> ntt_1drange_t;
-auto NTT2DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_2drange_t;
-auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_3drange_t;
+  auto NTT1DRange(const std::vector<long int>&) -> ntt_1drange_t;
+  auto NTT1DRange(const long int&, const long int&) -> ntt_1drange_t;
+  auto NTT2DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_2drange_t;
+  auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_3drange_t;
 
-enum Dimension { ONE_D = 1,
-                 TWO_D,
-                 THREE_D };
+  enum Dimension { ONE_D = 1,
+                   TWO_D,
+                   THREE_D };
 
-template <Dimension D, int N>
-using RealFieldND = typename std::conditional<D == ONE_D, NTTArray<real_t* [N]>, typename std::conditional<D == TWO_D, NTTArray<real_t** [N]>, typename std::conditional<D == THREE_D, NTTArray<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
+  template <Dimension D, int N>
+  using RealFieldND = typename std::conditional<D == ONE_D, NTTArray<real_t* [N]>, typename std::conditional<D == TWO_D, NTTArray<real_t** [N]>, typename std::conditional<D == THREE_D, NTTArray<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
 
-template <Dimension D>
-using RangeND = typename std::conditional<D == ONE_D, ntt_1drange_t, typename std::conditional<D == TWO_D, ntt_2drange_t, typename std::conditional<D == THREE_D, ntt_3drange_t, std::nullptr_t>::type>::type>::type;
+  template <Dimension D>
+  using RangeND = typename std::conditional<D == ONE_D, ntt_1drange_t, typename std::conditional<D == TWO_D, ntt_2drange_t, typename std::conditional<D == THREE_D, ntt_3drange_t, std::nullptr_t>::type>::type>::type;
 
-inline constexpr int N_GHOSTS {2};
-enum SimulationType { UNDEFINED_SIM,
-                      PIC_SIM,
-                      FORCE_FREE_SIM,
-                      MHD_SIM };
+  inline constexpr int N_GHOSTS {2};
+  enum SimulationType { UNDEFINED_SIM,
+                        PIC_SIM,
+                        FORCE_FREE_SIM,
+                        MHD_SIM };
 
-enum BoundaryCondition { UNDEFINED_BC,
-                         PERIODIC_BC,
-                         USER_BC,
-                         OPEN_BC };
+  enum BoundaryCondition { UNDEFINED_BC,
+                           PERIODIC_BC,
+                           USER_BC,
+                           OPEN_BC };
 
-enum ParticlePusher { UNDEFINED_PUSHER,
-                      BORIS_PUSHER,
-                      VAY_PUSHER,
-                      PHOTON_PUSHER };
+  enum ParticlePusher { UNDEFINED_PUSHER,
+                        BORIS_PUSHER,
+                        VAY_PUSHER,
+                        PHOTON_PUSHER };
 
-enum ParticleShape { ZEROTH_ORDER = 0,
-                     FIRST_ORDER,
-                     SECOND_ORDER,
-                     THIRD_ORDER };
+  enum ParticleShape { ZEROTH_ORDER = 0,
+                       FIRST_ORDER,
+                       SECOND_ORDER,
+                       THIRD_ORDER };
 
-auto stringifySimulationType(SimulationType sim) -> std::string;
-// auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
-auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
+  auto stringifySimulationType(SimulationType sim) -> std::string;
+  // auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
+  auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
 
-auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
+  auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
 
-// defaults
-constexpr std::string_view DEF_input_filename {"input"};
-constexpr std::string_view DEF_output_path {"output"};
+  // defaults
+  constexpr std::string_view DEF_input_filename {"input"};
+  constexpr std::string_view DEF_output_path {"output"};
 
 } // namespace ntt
 
 namespace plog {
-class NTTFormatter {
-public:
-  static auto header() -> util::nstring;
-  static auto format(const Record& record) -> util::nstring;
-};
+  class NTTFormatter {
+  public:
+    static auto header() -> util::nstring;
+    static auto format(const Record& record) -> util::nstring;
+  };
 } // namespace plog
 
 #endif
