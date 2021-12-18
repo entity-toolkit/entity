@@ -27,15 +27,18 @@ public:
 
   NTTSimulationVis(ntt::Simulation<ntt::TWO_D>& sim)
     : nttiny::SimulationAPI<float>{"polar"},
-      nx1(sim.get_meshblock().get_n1()),
-      nx2(sim.get_meshblock().get_n2()),
+      nx1(sim.get_meshblock().get_n1() + 2 * ntt::N_GHOSTS),
+      nx2(sim.get_meshblock().get_n2() + 2 * ntt::N_GHOSTS),
       m_sim(sim),
       m_ex1{nx1, nx2}, m_ex2{nx1, nx2}, m_ex3{nx1, nx2},
       m_bx1{nx1, nx2}, m_bx2{nx1, nx2}, m_bx3{nx1, nx2} {
     this->m_timestep = 0;
-    for (int i {0}; i < 4; ++i) {
-      m_x1x2_extent[i] = m_sim.get_meshblock().m_extent[i];
-    }
+    // for (int i {0}; i < 4; ++i) {
+    m_x1x2_extent[0] = m_sim.get_meshblock().m_extent[0] - m_sim.get_meshblock().get_dx1() * ntt::N_GHOSTS;
+    m_x1x2_extent[1] = m_sim.get_meshblock().m_extent[1] + m_sim.get_meshblock().get_dx1() * ntt::N_GHOSTS;
+    m_x1x2_extent[2] = m_sim.get_meshblock().m_extent[2] - m_sim.get_meshblock().get_dx2() * ntt::N_GHOSTS;
+    m_x1x2_extent[3] = m_sim.get_meshblock().m_extent[3] + m_sim.get_meshblock().get_dx2() * ntt::N_GHOSTS;
+    // }
 
     for (int i {0}; i <= nx1; ++i) {
       m_ex1.grid_x1[i] = m_x1x2_extent[0] + (m_x1x2_extent[1] - m_x1x2_extent[0]) * (double)(i) / (double)(nx1);
@@ -60,6 +63,7 @@ public:
         arr->grid_x2[i] = m_ex1.grid_x2[i];
       }
     }
+    setData();
   }
 
   ~NTTSimulationVis() = default;
@@ -67,14 +71,25 @@ public:
     // TODO: there might be an easier way to map
     for (int j{0}; j < nx2; ++j) {
       for (int i{0}; i < nx1; ++i) {
-        m_ex1.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex1));
-        m_ex2.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex2));
-        m_ex3.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex3));
-        m_bx1.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx1));
-        m_bx2.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx2));
-        m_bx3.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx3));
+        m_ex1.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex1));
+        m_ex2.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex2));
+        m_ex3.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex3));
+        m_bx1.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx1));
+        m_bx2.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx2));
+        m_bx3.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx3));
       }
     }
+
+    // for (int j{0}; j < nx2; ++j) {
+    //   for (int i{0}; i < nx1; ++i) {
+    //     m_ex1.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex1));
+    //     m_ex2.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex2));
+    //     m_ex3.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::ex3));
+    //     m_bx1.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx1));
+    //     m_bx2.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx2));
+    //     m_bx3.set(i, j, m_sim.get_meshblock().em_fields(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::fld::bx3));
+    //   }
+    // }
   }
   void stepFwd() override {
     m_sim.step(m_time, 1);

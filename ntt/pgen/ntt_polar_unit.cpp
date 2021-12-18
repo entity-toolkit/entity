@@ -29,10 +29,15 @@ void ProblemGenerator<TWO_D>::userInitFields(SimulationParams& sim_params,
     "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
       mblock.em_fields(i, j, fld::ex1) = 0.0;
       mblock.em_fields(i, j, fld::ex2) = 0.0;
+
       mblock.em_fields(i, j, fld::ex3) = 0.0;
-      mblock.em_fields(i, j, fld::bx1) = 0.0;
+
       mblock.em_fields(i, j, fld::bx2) = 0.0;
       mblock.em_fields(i, j, fld::bx3) = 0.0;
+
+      real_t rr {mblock.convert_iTOx1(i)};
+      real_t r0 {mblock.convert_iTOx1(N_GHOSTS)};
+      mblock.em_fields(i, j, fld::bx1) = ONE * r0 * r0 / (rr * rr);
   });
 }
 
@@ -54,7 +59,13 @@ void ProblemGenerator<TWO_D>::userBCFields_x1min(SimulationParams& sim_params,
   using index_t = NTTArray<real_t**>::size_type;
   Kokkos::parallel_for(
     "userBcFlds", mblock.loopX1MinCells(), Lambda(index_t i, index_t j) {
-      mblock.em_fields(i, j, fld::bx3) = 1.0;
+      mblock.em_fields(i, j, fld::ex3) = 0.0;
+
+      real_t theta {mblock.convert_jTOx2(j)};
+      real_t dtheta {(mblock.m_extent[3] - mblock.m_extent[2]) / static_cast<real_t>(mblock.m_resolution[1])};
+      mblock.em_fields(i, j, fld::ex2) = std::sin(theta + dtheta * 0.5);
+
+      mblock.em_fields(i, j, fld::bx1) = 1.0;
   });
 }
 
@@ -73,7 +84,9 @@ void ProblemGenerator<TWO_D>::userBCFields_x1max(SimulationParams& sim_params,
   using index_t = NTTArray<real_t**>::size_type;
   Kokkos::parallel_for(
     "userBcFlds", mblock.loopX1MaxCells(), Lambda(index_t i, index_t j) {
-      mblock.em_fields(i, j, fld::bx3) = 1.0;
+      mblock.em_fields(i, j, fld::ex3) = 0.0;
+      mblock.em_fields(i, j, fld::ex2) = 0.0;
+      mblock.em_fields(i, j, fld::bx1) = 0.0;
   });
 }
 
