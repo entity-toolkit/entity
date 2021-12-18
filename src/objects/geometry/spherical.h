@@ -111,6 +111,11 @@ namespace ntt {
     Inline auto sqrt_det_h(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
       return x1 * x1 * std::sin(x2);
     }
+
+    // area at poles
+    Inline auto polar_area(const real_t& x1, const real_t& dx2) const -> real_t {
+      return x1 * x1 * (ONE - std::cos(dx2 * 0.5));
+    }
   };
 
 } // namespace ntt

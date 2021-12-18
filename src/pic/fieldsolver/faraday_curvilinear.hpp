@@ -1,5 +1,5 @@
-#ifndef PIC_FIELDSOLVER_FARADAY_H
-#define PIC_FIELDSOLVER_FARADAY_H
+#ifndef PIC_FIELDSOLVER_FARADAY_CURVILINEAR_H
+#define PIC_FIELDSOLVER_FARADAY_CURVILINEAR_H
 
 #include "global.h"
 #include "meshblock.h"
@@ -7,14 +7,14 @@
 
 namespace ntt {
 
-  // * * * * Faraday's law * * * * * * * * * * * * * * *
+  // * * * * Curvilinear Faraday's law * * * * * * * * * * * * * * *
   template <Dimension D>
-  class Faraday : public FieldSolver<D> {
+  class FaradayCurvilinear : public FieldSolver<D> {
     using index_t = typename RealFieldND<D, 1>::size_type;
     real_t coeff_x1, coeff_x2, coeff_x3;
 
   public:
-    Faraday(
+    FaradayCurvilinear(
         const Meshblock<D>& m_mblock_,
         const real_t& coeff_x1_,
         const real_t& coeff_x2_,
@@ -26,11 +26,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void Faraday<ONE_D>::operator()(const index_t i) const {
-#ifndef CURVILINEAR_COORDS
-    m_mblock.em_fields(i, fld::bx2) += coeff_x1 * (m_mblock.em_fields(i + 1, fld::ex3) - m_mblock.em_fields(i, fld::ex3));
-    m_mblock.em_fields(i, fld::bx3) += coeff_x1 * (m_mblock.em_fields(i, fld::ex2) - m_mblock.em_fields(i + 1, fld::ex2));
-#else
+  Inline void FaradayCurvilinear<ONE_D>::operator()(const index_t i) const {
     real_t x1 {m_mblock.convert_iTOx1(i)};
     real_t dx1 {(m_mblock.m_extent[1] - m_mblock.m_extent[0]) / static_cast<real_t>(m_mblock.m_resolution[0])};
 
@@ -42,16 +38,10 @@ namespace ntt {
 
     m_mblock.em_fields(i, fld::bx2) += inv_sqrt_detH_iP * coeff_x1 * (h3_iP1 * m_mblock.em_fields(i + 1, fld::ex3) - h3_i * m_mblock.em_fields(i, fld::ex3));
     m_mblock.em_fields(i, fld::bx3) += inv_sqrt_detH_iP * coeff_x1 * (h2_i * m_mblock.em_fields(i, fld::ex2) - h2_iP1 * m_mblock.em_fields(i + 1, fld::ex2));
-#endif
   }
 
   template <>
-  Inline void Faraday<TWO_D>::operator()(const index_t i, const index_t j) const {
-#ifndef CURVILINEAR_COORDS
-    m_mblock.em_fields(i, j, fld::bx1) += coeff_x2 * (m_mblock.em_fields(i, j, fld::ex3) - m_mblock.em_fields(i, j + 1, fld::ex3));
-    m_mblock.em_fields(i, j, fld::bx2) += coeff_x1 * (m_mblock.em_fields(i + 1, j, fld::ex3) - m_mblock.em_fields(i, j, fld::ex3));
-    m_mblock.em_fields(i, j, fld::bx3) += coeff_x2 * (m_mblock.em_fields(i, j + 1, fld::ex1) - m_mblock.em_fields(i, j, fld::ex1)) + coeff_x1 * (m_mblock.em_fields(i, j, fld::ex2) - m_mblock.em_fields(i + 1, j, fld::ex2));
-#else
+  Inline void FaradayCurvilinear<TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t x1 {m_mblock.convert_iTOx1(i)};
     real_t x2 {m_mblock.convert_jTOx2(j)};
     real_t dx1 {(m_mblock.m_extent[1] - m_mblock.m_extent[0]) / static_cast<real_t>(m_mblock.m_resolution[0])};
@@ -71,16 +61,10 @@ namespace ntt {
     m_mblock.em_fields(i, j, fld::bx1) += inv_sqrt_detH_ijP * coeff_x2 * (h3_ij * m_mblock.em_fields(i, j, fld::ex3) - h3_ijP1 * m_mblock.em_fields(i, j + 1, fld::ex3));
     m_mblock.em_fields(i, j, fld::bx2) += inv_sqrt_detH_iPj * coeff_x1 * (h3_iP1j * m_mblock.em_fields(i + 1, j, fld::ex3) - h3_ij * m_mblock.em_fields(i, j, fld::ex3));
     m_mblock.em_fields(i, j, fld::bx3) += inv_sqrt_detH_iPjP * (coeff_x2 * (h1_iPjP1 * m_mblock.em_fields(i, j + 1, fld::ex1) - h1_iPj * m_mblock.em_fields(i, j, fld::ex1)) + coeff_x1 * (h2_ijP * m_mblock.em_fields(i, j, fld::ex2) - h2_iP1jP * m_mblock.em_fields(i + 1, j, fld::ex2)));
-#endif
   }
 
   template <>
-  Inline void Faraday<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-#ifndef CURVILINEAR_COORDS
-    m_mblock.em_fields(i, j, k, fld::bx1) += coeff_x3 * (m_mblock.em_fields(i, j, k + 1, fld::ex2) - m_mblock.em_fields(i, j, k, fld::ex2)) + coeff_x2 * (m_mblock.em_fields(i, j, k, fld::ex3) - m_mblock.em_fields(i, j + 1, k, fld::ex3));
-    m_mblock.em_fields(i, j, k, fld::bx2) += coeff_x1 * (m_mblock.em_fields(i + 1, j, k, fld::ex3) - m_mblock.em_fields(i, j, k, fld::ex3)) + coeff_x3 * (m_mblock.em_fields(i, j, k, fld::ex1) - m_mblock.em_fields(i, j, k + 1, fld::ex1));
-    m_mblock.em_fields(i, j, k, fld::bx3) += coeff_x2 * (m_mblock.em_fields(i, j + 1, k, fld::ex1) - m_mblock.em_fields(i, j, k, fld::ex1)) + coeff_x1 * (m_mblock.em_fields(i, j, k, fld::ex2) - m_mblock.em_fields(i + 1, j, k, fld::ex2));
-#else
+  Inline void FaradayCurvilinear<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
     UNUSED(i);
     UNUSED(j);
     UNUSED(k);
@@ -99,12 +83,11 @@ namespace ntt {
     // m_mblock.em_fields(i, j, k, fld::bx1) += inv_sqrt_detH_ijPkP * (coeff_x3 * (m_mblock.em_fields(i, j, k + 1, fld::ex2) - m_mblock.em_fields(i, j, k, fld::ex2)) + coeff_x2 * (m_mblock.em_fields(i, j, k, fld::ex3) - m_mblock.em_fields(i, j + 1, k, fld::ex3)));
     // m_mblock.em_fields(i, j, k, fld::bx2) += inv_sqrt_detH_iPjkP * (coeff_x1 * (m_mblock.em_fields(i + 1, j, k, fld::ex3) - m_mblock.em_fields(i, j, k, fld::ex3)) + coeff_x3 * (m_mblock.em_fields(i, j, k, fld::ex1) - m_mblock.em_fields(i, j, k + 1, fld::ex1)));
     // m_mblock.em_fields(i, j, k, fld::bx3) += inv_sqrt_detH_iPjPk * (coeff_x2 * (m_mblock.em_fields(i, j + 1, k, fld::ex1) - m_mblock.em_fields(i, j, k, fld::ex1)) + coeff_x1 * (m_mblock.em_fields(i, j, k, fld::ex2) - m_mblock.em_fields(i + 1, j, k, fld::ex2)));
-#endif
   }
 } // namespace ntt
 
-template class ntt::Faraday<ntt::ONE_D>;
-template class ntt::Faraday<ntt::TWO_D>;
-template class ntt::Faraday<ntt::THREE_D>;
+template class ntt::FaradayCurvilinear<ntt::ONE_D>;
+template class ntt::FaradayCurvilinear<ntt::TWO_D>;
+template class ntt::FaradayCurvilinear<ntt::THREE_D>;
 
 #endif
