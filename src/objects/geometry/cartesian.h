@@ -50,6 +50,8 @@ namespace ntt {
     Inline auto sqrt_det_h(const real_t&) const -> real_t { return 1.0; }
     Inline auto sqrt_det_h(const real_t&, const real_t&) const -> real_t { return 1.0; }
     Inline auto sqrt_det_h(const real_t&, const real_t&, const real_t&) const -> real_t { return 1.0; }
+
+    Inline auto polar_area(const real_t&, const real_t&) const -> real_t { return 1.0; }
   };
 
 } // namespace ntt
