@@ -76,7 +76,7 @@ namespace ntt {
         // non-periodic
         throw std::logic_error("# 2d boundary condition NOT IMPLEMENTED.");
       }
-    } else if (m_sim_params.m_coord_system == "spherical") {
+    } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
       // * * * * * * * * * * * *
       // axisymmetric spherical grid
       // * * * * * * * * * * * *

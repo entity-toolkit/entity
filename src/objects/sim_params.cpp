@@ -61,11 +61,17 @@ namespace ntt {
           || (static_cast<short>(m_extent.size()) < 2 * static_cast<short>(dim))) {
         throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
       }
-    } else if (m_coord_system == "spherical") {
+    } else if ((m_coord_system == "spherical") || (m_coord_system == "qspherical")) {
       if (m_extent.size() < 2) {
         throw std::invalid_argument("Not enough values in `extent` input.");
       }
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
+      if (m_coord_system == "qspherical") {
+        m_coord_parameters[0] = m_extent[0];
+        m_coord_parameters[1] = readFromInput<real_t>(inputdata, "domain", "theta_h");
+        m_extent[1] = m_extent[0] * std::log(m_extent[1] / m_extent[0]);
+        m_extent[0] = 0.0;
+      }
       m_extent.push_back(0.0);
       m_extent.push_back(PI);
       m_extent.push_back(0.0);
@@ -90,7 +96,7 @@ namespace ntt {
         ++b;
         if (b >= static_cast<short>(dim)) { break; }
       }
-    } else if (m_coord_system == "spherical") {
+    } else if ((m_coord_system == "spherical") || (m_coord_system == "qspherical")) {
       // rmin, rmax boundaries only
       m_boundaries.push_back(USER_BC);
       m_boundaries.push_back(USER_BC);

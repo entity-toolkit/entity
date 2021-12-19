@@ -31,7 +31,8 @@ namespace ntt {
     void printDetails();
     void finalize();
 
-    void step(const real_t&, const short&);
+    void step_forward(const real_t&);
+    void step_backward(const real_t&);
     void mainloop();
     void run(std::string_view, std::string_view);
 

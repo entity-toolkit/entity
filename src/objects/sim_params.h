@@ -40,7 +40,7 @@ namespace ntt {
     std::vector<BoundaryCondition> m_boundaries;
 
     std::string m_coord_system;
-
+    real_t m_coord_parameters[10];
   public:
     toml::value m_inputdata;
 
