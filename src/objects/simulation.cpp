@@ -3,6 +3,7 @@
 #include "simulation.h"
 #include "sim_params.h"
 #include "meshblock.h"
+#include "input.h"
 
 #include "coord_system.h"
 #include "cartesian.h"
@@ -26,6 +27,10 @@ namespace ntt {
       m_meshblock.m_coord_system = std::make_unique<CartesianSystem<D>>();
     } else if (m_sim_params.m_coord_system == "spherical") {
       m_meshblock.m_coord_system = std::make_unique<SphericalSystem<D>>();
+    } else if (m_sim_params.m_coord_system == "qspherical") {
+      auto h {m_sim_params.m_coord_parameters[1]};
+      auto r0 {m_sim_params.m_coord_parameters[0]};
+      m_meshblock.m_coord_system = std::make_unique<QSphericalSystem<D>>(r0, h);
     } else {
       throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
     }
@@ -45,7 +50,7 @@ namespace ntt {
         real_t dx3 = m_meshblock.get_dx3();
         m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
       }
-    } else if (m_sim_params.m_coord_system == "spherical") {
+    } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
       if (m_dim == TWO_D) {
         using index_t = NTTArray<real_t**>::size_type;
         real_t min_dx {-1.0};
@@ -61,13 +66,6 @@ namespace ntt {
             }
           }
         }
-        // // Kokkos::Min<real_t> min_reducer(min_dx);
-        // // Kokkos::parallel_reduce(
-        //   "CFL_2d_spherical",
-        //   m_meshblock.loopActiveCells(),
-        //   Lambda (index_t i, real_t& dxmin) {
-        //     min_reducer.join(dxmin, dx);
-        //   }, min_reducer);
         m_sim_params.m_min_cell_size = min_dx;
       } else {
         throw std::logic_error("# Error: CFL finding not implemented for 3D spherical.");
@@ -176,11 +174,11 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void Simulation<D>::step(const real_t& time, const short& direction) {
+  void Simulation<D>::step_forward(const real_t& time) {
     TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
     {
       timers.start(1);
-      faradaySubstep(time, (real_t)(direction)*0.5);
+      faradaySubstep(time, 0.5);
       timers.stop(1);
     }
 
@@ -207,7 +205,7 @@ namespace ntt {
 
     {
       timers.start(1);
-      faradaySubstep(time, (real_t)(direction)*0.5);
+      faradaySubstep(time, 0.5);
       timers.stop(1);
     }
 
@@ -219,9 +217,38 @@ namespace ntt {
 
     {
       timers.start(1);
-      ampereSubstep(time, (real_t)(direction)*1.0);
+      ampereSubstep(time, 1.0);
       addCurrentsSubstep(time);
       resetCurrentsSubstep(time);
+      timers.stop(1);
+    }
+
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
+    timers.printAll(millisecond);
+  }
+
+  template <Dimension D>
+  void Simulation<D>::step_backward(const real_t& time) {
+    TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
+    {
+      timers.start(1);
+      ampereSubstep(time, -1.0);
+      timers.stop(1);
+    }
+
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
+
+    {
+      timers.start(1);
+      faradaySubstep(time, -1.0);
       timers.stop(1);
     }
 
@@ -242,7 +269,7 @@ namespace ntt {
     real_t time {0.0};
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
-      step(time, 1);
+      step_forward(time);
       time += m_sim_params.m_timestep;
     }
     PLOGD << "Simulation mainloop finished.";
