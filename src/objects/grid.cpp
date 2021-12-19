@@ -52,33 +52,33 @@ namespace ntt {
     return loopCells(-N_GHOSTS, N_GHOSTS, -N_GHOSTS, N_GHOSTS, -N_GHOSTS, N_GHOSTS);
   }
 
-  // # # # # # # # # # # # # # # # #
-  template <>
-  auto Grid<ONE_D>::loopX1MinCells() -> ntt_1drange_t {
-    return NTT1DRange(0, static_cast<range_t>(get_imin() + 1));
-  }
-  template <>
-  auto Grid<TWO_D>::loopX1MinCells() -> ntt_2drange_t {
-    return NTT2DRange({0, 0}, {get_imin() + 1, get_jmax() + N_GHOSTS});
-  }
-  template <>
-  auto Grid<THREE_D>::loopX1MinCells() -> ntt_3drange_t {
-    return NTT3DRange({0, 0, 0}, {get_imin() + 1, get_jmax() + N_GHOSTS, get_kmax() + N_GHOSTS});
-  }
+  // // # # # # # # # # # # # # # # # #
+  // template <>
+  // auto Grid<ONE_D>::loopX1MinCells() -> ntt_1drange_t {
+  //   return NTT1DRange(0, static_cast<range_t>(get_imin() + 1));
+  // }
+  // template <>
+  // auto Grid<TWO_D>::loopX1MinCells() -> ntt_2drange_t {
+  //   return NTT2DRange({0, 0}, {get_imin() + 1, get_jmax() + N_GHOSTS});
+  // }
+  // template <>
+  // auto Grid<THREE_D>::loopX1MinCells() -> ntt_3drange_t {
+  //   return NTT3DRange({0, 0, 0}, {get_imin() + 1, get_jmax() + N_GHOSTS, get_kmax() + N_GHOSTS});
+  // }
 
-  // # # # # # # # # # # # # # # # #
-  template <>
-  auto Grid<ONE_D>::loopX1MaxCells() -> ntt_1drange_t {
-    return NTT1DRange(static_cast<range_t>(get_imax()), static_cast<range_t>(get_imax() + N_GHOSTS));
-  }
-  template <>
-  auto Grid<TWO_D>::loopX1MaxCells() -> ntt_2drange_t {
-    return NTT2DRange({get_imax(), 0}, {get_imax() + N_GHOSTS, get_jmax() + N_GHOSTS});
-  }
-  template <>
-  auto Grid<THREE_D>::loopX1MaxCells() -> ntt_3drange_t {
-    return NTT3DRange({get_imax(), 0, 0}, {get_imax() + N_GHOSTS, get_jmax() + N_GHOSTS, get_kmax() + N_GHOSTS});
-  }
+  // // # # # # # # # # # # # # # # # #
+  // template <>
+  // auto Grid<ONE_D>::loopX1MaxCells() -> ntt_1drange_t {
+  //   return NTT1DRange(static_cast<range_t>(get_imax()), static_cast<range_t>(get_imax() + N_GHOSTS));
+  // }
+  // template <>
+  // auto Grid<TWO_D>::loopX1MaxCells() -> ntt_2drange_t {
+  //   return NTT2DRange({get_imax(), 0}, {get_imax() + N_GHOSTS, get_jmax() + N_GHOSTS});
+  // }
+  // template <>
+  // auto Grid<THREE_D>::loopX1MaxCells() -> ntt_3drange_t {
+  //   return NTT3DRange({get_imax(), 0, 0}, {get_imax() + N_GHOSTS, get_jmax() + N_GHOSTS, get_kmax() + N_GHOSTS});
+  // }
 
 } // namespace ntt
 
