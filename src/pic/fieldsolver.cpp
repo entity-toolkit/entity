@@ -9,9 +9,9 @@
 
 // axisymmetric-specific
 #include "ampere_ax_poles.hpp"
-#include "ampere_ax_rmin.hpp"
-#include "faraday_ax_rmin.hpp"
-#include "faraday_ax_poles.hpp"
+// #include "ampere_ax_rmin.hpp"
+// #include "faraday_ax_rmin.hpp"
+// #include "faraday_ax_poles.hpp"
 
 #include "add_currents.hpp"
 
@@ -48,21 +48,22 @@ namespace ntt {
           "faraday",
           m_meshblock.loopActiveCells(),
           FaradayCartesian<TWO_D>(m_meshblock, coeff_x1, coeff_x2, ZERO));
-    } else if (m_sim_params.m_coord_system == "spherical") {
+    } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
       Kokkos::parallel_for(
           "faraday",
-          m_meshblock.loopCells(1, 0, 1, 0),
+          // m_meshblock.loopCells(0, 0, 0, 0),
+          m_meshblock.loopActiveCells(),
           FaradayCurvilinear<TWO_D>(m_meshblock, coeff_x1, coeff_x2, ZERO));
-      // evolve B2, B3 at i = imin + 1/2
-      Kokkos::parallel_for(
-          "faraday_sphere",
-          NTT1DRange(m_meshblock.get_jmin(), m_meshblock.get_jmax()),
-          FaradayAxisymmetricRmin<TWO_D>(m_meshblock, coeff_x1, coeff_x2));
-      // evolve B1, B3 at j = jmin + 1/2
-      Kokkos::parallel_for(
-          "faraday_pole",
-          NTT1DRange(m_meshblock.get_imin() + 1, m_meshblock.get_imax()),
-          FaradayAxisymmetricPoles<TWO_D>(m_meshblock, coeff_x1, coeff_x2));
+      // // evolve B2, B3 at i = imin + 1/2
+      // Kokkos::parallel_for(
+      //     "faraday_sphere",
+      //     NTT1DRange(m_meshblock.get_jmin(), m_meshblock.get_jmax()),
+      //     FaradayAxisymmetricRmin<TWO_D>(m_meshblock, coeff_x1, coeff_x2));
+      // // evolve B1, B3 at j = jmin + 1/2
+      // Kokkos::parallel_for(
+      //     "faraday_pole",
+      //     NTT1DRange(m_meshblock.get_imin() + 1, m_meshblock.get_imax()),
+      //     FaradayAxisymmetricPoles<TWO_D>(m_meshblock, coeff_x1, coeff_x2));
     } else {
       throw std::logic_error("# Error: 2D faraday for the coordinate system not implemented.");
     }
@@ -115,21 +116,16 @@ namespace ntt {
           "ampere",
           m_meshblock.loopActiveCells(),
           AmpereCartesian<TWO_D>(m_meshblock, coeff_x1, coeff_x2, ZERO));
-    } else if (m_sim_params.m_coord_system == "spherical") {
+    } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
       Kokkos::parallel_for(
           "ampere",
-          m_meshblock.loopCells(1, 0, 1, 0),
+          m_meshblock.loopCells(0, 0, 1, 0),
           AmpereCurvilinear<TWO_D>(m_meshblock, coeff_x1, coeff_x2, ZERO));
       // evolve E1 near polar axes
       Kokkos::parallel_for(
           "ampere_pole",
           NTT1DRange(m_meshblock.get_imin(), m_meshblock.get_imax()),
           AmpereAxisymmetricPoles<TWO_D>(m_meshblock, coeff, coeff_x1));
-      // evolve E1 at i = imin + 1/2
-      Kokkos::parallel_for(
-          "ampere_sphere",
-          NTT1DRange(m_meshblock.get_jmin() + 1, m_meshblock.get_jmax()),
-          AmpereAxisymmetricRmin<TWO_D>(m_meshblock, coeff_x2));
     } else {
       throw std::logic_error("# Error: 2D ampere for the coordinate system not implemented.");
     }

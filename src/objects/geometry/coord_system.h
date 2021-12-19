@@ -10,6 +10,8 @@ namespace ntt {
 
   template <Dimension D>
   struct CoordinateSystem {
+    real_t m_parameters[10];
+
     CoordinateSystem() = default;
     CoordinateSystem(const std::string& label) : m_label {label} {}
     [[nodiscard]] auto get_label() const -> std::string { return m_label; }
