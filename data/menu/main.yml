@@ -7,14 +7,14 @@ main:
   - name: 'Algorithms'
     # ref: "/algorithms"
     sub:
-      - name: Coordinate systems
-        ref: "/algorithms/coordsys"
-      - name: Field solver
-        ref: "/algorithms/fieldsolver"
-      - name: Particle pusher
-        ref: "/algorithms/pusher"
-      - name: Current deposition
-        ref: "/algorithms/deposit"
+      - name: 3+1 formulation
+        ref: "/algorithms/3p1"
+      # - name: Field solver
+      #   ref: "/algorithms/fieldsolver"
+      # - name: Particle pusher
+      #   ref: "/algorithms/pusher"
+      # - name: Current deposition
+      #   ref: "/algorithms/deposit"
       - name: Full PIC
         ref: "/algorithms/pic"
 
