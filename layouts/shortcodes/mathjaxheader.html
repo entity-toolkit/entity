@@ -1,7 +1,11 @@
 <script>
   MathJax = {
     tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']]
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      packages: {'[+]': ['mathtools']}
+    },
+    loader: {
+      load: ['[tex]/mathtools']
     }
   };
 </script>

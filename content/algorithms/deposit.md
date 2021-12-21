@@ -1,3 +1,3 @@
 ---
-title: Current deposition
+title: Discretization
 ---
