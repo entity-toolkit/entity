@@ -18,7 +18,10 @@ namespace ntt {
         const Meshblock<D>& m_mblock_,
         const real_t& coeff_,
         const real_t& coeff_x1_)
-        : FieldSolver<D> {m_mblock_}, coeff(coeff_), coeff_x1(coeff_x1_) {}
+        : FieldSolver<D> {m_mblock_},
+          coeff(coeff_),
+          coeff_x1(coeff_x1_)
+        {}
     Inline void operator()(const index_t) const;
   };
 
@@ -50,7 +53,6 @@ namespace ntt {
     // j = jmin + 1/2
     m_mblock.em_fields(i, j_min, fld::ex2) += inv_sqrt_detH_ijP * coeff_x1 * (h3_min_iMjP * m_mblock.em_fields(i - 1, j_min, fld::bx3) - h3_min_iPjP * m_mblock.em_fields(i, j_min, fld::bx3));
   }
-
 
 } // namespace ntt
 

@@ -8,6 +8,7 @@
 #include "coord_system.h"
 #include "cartesian.h"
 #include "spherical.h"
+#include "qspherical.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -28,8 +29,8 @@ namespace ntt {
     } else if (m_sim_params.m_coord_system == "spherical") {
       m_meshblock.m_coord_system = std::make_unique<SphericalSystem<D>>();
     } else if (m_sim_params.m_coord_system == "qspherical") {
-      auto h {m_sim_params.m_coord_parameters[1]};
       auto r0 {m_sim_params.m_coord_parameters[0]};
+      auto h {m_sim_params.m_coord_parameters[1]};
       m_meshblock.m_coord_system = std::make_unique<QSphericalSystem<D>>(r0, h);
     } else {
       throw std::logic_error("# coordinate system NOT IMPLEMENTED.");

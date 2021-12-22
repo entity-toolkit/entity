@@ -39,7 +39,6 @@ namespace ntt {
   // # # # # # # # # # # # # # # # #
   template <>
   void Simulation<TWO_D>::fieldBoundaryConditions(const real_t& time) {
-    UNUSED(time);
     using index_t = NTTArray<real_t**>::size_type;
     if (m_sim_params.m_coord_system == "cartesian") {
       // * * * * * * * * * * * *
@@ -77,18 +76,11 @@ namespace ntt {
         throw std::logic_error("# 2d boundary condition NOT IMPLEMENTED.");
       }
     } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
-      // * * * * * * * * * * * *
+      // * * * * * * * * * * * * * * * *
       // axisymmetric spherical grid
-      // * * * * * * * * * * * *
-      // rmin boundary
+      // * * * * * * * * * * * * * * * *
       if (m_sim_params.m_boundaries[0] == USER_BC) {
-        m_pGen.userBCFields_x1min(m_sim_params, m_meshblock);
-      } else {
-        throw std::logic_error("# 2d non-user boundary condition NOT IMPLEMENTED.");
-      }
-      // rmax boundary
-      if (m_sim_params.m_boundaries[1] == USER_BC) {
-        m_pGen.userBCFields_x1max(m_sim_params, m_meshblock);
+        m_pGen.userBCFields(time, m_sim_params, m_meshblock);
       } else {
         throw std::logic_error("# 2d non-user boundary condition NOT IMPLEMENTED.");
       }
