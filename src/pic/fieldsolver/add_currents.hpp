@@ -34,8 +34,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void
-  AddCurrents<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
+  Inline void AddCurrents<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
     m_mblock.em_fields(i, j, k, fld::ex1) += m_mblock.j_fields(i, j, k, fld::jx1);
     m_mblock.em_fields(i, j, k, fld::ex2) += m_mblock.j_fields(i, j, k, fld::jx2);
     m_mblock.em_fields(i, j, k, fld::ex3) += m_mblock.j_fields(i, j, k, fld::jx3);

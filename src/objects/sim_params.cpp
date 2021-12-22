@@ -23,14 +23,23 @@ namespace ntt {
 
     auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species", 0);
     for (int i {0}; i < nspec; ++i) {
-      auto label = readFromInput<std::string>(
-          m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
-      auto mass = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "mass");
-      auto charge = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "charge");
-      auto maxnpart = static_cast<std::size_t>(
-          readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
-      auto pusher_str = readFromInput<std::string>(
-          m_inputdata, "species_" + std::to_string(i + 1), "pusher", "Boris");
+      auto label = readFromInput<std::string>(m_inputdata,
+                                              "species_" + std::to_string(i + 1),
+                                              "label",
+                                              "s" + std::to_string(i + 1));
+      auto mass = readFromInput<float>(m_inputdata,
+                                       "species_" + std::to_string(i + 1),
+                                       "mass");
+      auto charge = readFromInput<float>(m_inputdata,
+                                         "species_" + std::to_string(i + 1),
+                                         "charge");
+      auto maxnpart = (std::size_t)(readFromInput<double>(m_inputdata,
+                                                          "species_" + std::to_string(i + 1),
+                                                          "maxnpart"));
+      auto pusher_str = readFromInput<std::string>(m_inputdata,
+                                                   "species_" + std::to_string(i + 1),
+                                                   "pusher",
+                                                   "Boris");
       ParticlePusher pusher {UNDEFINED_PUSHER};
       if ((mass == 0.0) && (charge == 0.0)) {
         pusher = PHOTON_PUSHER;
@@ -41,8 +50,10 @@ namespace ntt {
       }
       m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
     }
-    m_prtl_shape = static_cast<ParticleShape>(
-        readFromInput<short>(m_inputdata, "algorithm", "particle_shape", FIRST_ORDER));
+    m_prtl_shape = (ParticleShape)(readFromInput<short>(m_inputdata,
+                                                        "algorithm",
+                                                        "particle_shape",
+                                                        FIRST_ORDER));
 
     // hardcoded PIC regime
     m_simtype = PIC_SIM;
@@ -57,28 +68,29 @@ namespace ntt {
     m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
     m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
     if (m_coord_system == "cartesian") {
-      if ((static_cast<short>(m_resolution.size()) < static_cast<short>(dim))
-          || (static_cast<short>(m_extent.size()) < 2 * static_cast<short>(dim))) {
+      if (((short)(m_resolution.size()) < (short)(dim)) ||
+          ((short)(m_extent.size()) < 2 * (short)(dim))) {
         throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
       }
-    } else if ((m_coord_system == "spherical") || (m_coord_system == "qspherical")) {
+    } else if ((m_coord_system == "spherical") ||
+               (m_coord_system == "qspherical")) {
       if (m_extent.size() < 2) {
         throw std::invalid_argument("Not enough values in `extent` input.");
       }
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
       if (m_coord_system == "qspherical") {
-        m_coord_parameters[0] = m_extent[0];
-        m_coord_parameters[1] = readFromInput<real_t>(inputdata, "domain", "theta_h");
-        m_extent[1] = m_extent[0] * std::log(m_extent[1] / m_extent[0]);
-        m_extent[0] = 0.0;
+        m_coord_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
+        m_coord_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
+        m_extent[0] = std::log(m_extent[0] - m_coord_parameters[0]);
+        m_extent[1] = std::log(m_extent[1] - m_coord_parameters[0]);
       }
       m_extent.push_back(0.0);
       m_extent.push_back(PI);
       m_extent.push_back(0.0);
       m_extent.push_back(TWO_PI);
     }
-    m_extent.erase(m_extent.begin() + 2 * static_cast<short>(dim), m_extent.end());
-    m_resolution.erase(m_resolution.begin() + static_cast<short>(dim), m_resolution.end());
+    m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
+    m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
     if (m_coord_system == "cartesian") {
       auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
@@ -94,7 +106,7 @@ namespace ntt {
           m_boundaries.push_back(UNDEFINED_BC);
         }
         ++b;
-        if (b >= static_cast<short>(dim)) { break; }
+        if (b >= (short)(dim)) { break; }
       }
     } else if ((m_coord_system == "spherical") || (m_coord_system == "qspherical")) {
       // rmin, rmax boundaries only
