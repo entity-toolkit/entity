@@ -14,7 +14,9 @@ namespace ntt {
     UNUSED(time);
     for (auto& species : m_meshblock.particles) {
       Kokkos::parallel_for(
-          "prtl_bc", species.loopParticles(), PrtlBC_Periodic<D>(m_meshblock.m_extent, species));
+          "prtl_bc",
+          species.loopParticles(),
+          PrtlBC_Periodic<D>(m_meshblock.m_extent, species));
     }
   }
 

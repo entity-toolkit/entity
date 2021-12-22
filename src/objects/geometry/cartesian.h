@@ -52,6 +52,20 @@ namespace ntt {
     Inline auto sqrt_det_h(const real_t&, const real_t&, const real_t&) const -> real_t { return 1.0; }
 
     Inline auto polar_area(const real_t&, const real_t&) const -> real_t { return 1.0; }
+
+    // conversion to spherical
+    // TODO: not implemented yet
+    Inline auto getSpherical_r(const real_t&) const -> real_t { return -1.0; }
+    Inline auto getSpherical_r(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    Inline auto getSpherical_r(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+    Inline auto getSpherical_theta(const real_t&) const -> real_t { return -1.0; }
+    Inline auto getSpherical_theta(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    Inline auto getSpherical_theta(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+    Inline auto getSpherical_phi(const real_t&) const -> real_t { return -1.0; }
+    Inline auto getSpherical_phi(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    Inline auto getSpherical_phi(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
   };
 
 } // namespace ntt

@@ -52,6 +52,85 @@ namespace ntt {
 
     virtual Inline auto polar_area(const real_t&, const real_t&) const -> real_t { return -1.0; }
 
+    // conversion to spherical
+    virtual Inline auto getSpherical_r(const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto getSpherical_r(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto getSpherical_r(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+    virtual Inline auto getSpherical_theta(const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto getSpherical_theta(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto getSpherical_theta(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+    virtual Inline auto getSpherical_phi(const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto getSpherical_phi(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto getSpherical_phi(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
+
+    // CNT -> contravariant (upper index)
+    // CVR -> covariant (lower index)
+    // LOC -> local orthonormal (hatted index)
+    //
+    // CNT -> LOC
+    Inline auto convert_CNT_to_LOC_x1(const real_t& ax1, const real_t& x1) -> real_t {
+      return std::sqrt(hx1(x1)) * ax1;
+    }
+    Inline auto convert_CNT_to_LOC_x1(const real_t& ax1, const real_t& x1, const real_t& x2) -> real_t {
+      return std::sqrt(hx1(x1, x2)) * ax1;
+    }
+    Inline auto convert_CNT_to_LOC_x1(const real_t& ax1, const real_t& x1, const real_t& x2, const real_t& x3) -> real_t {
+      return std::sqrt(hx1(x1, x2, x3)) * ax1;
+    }
+
+    Inline auto convert_CNT_to_LOC_x2(const real_t& ax2, const real_t& x1) -> real_t {
+      return std::sqrt(hx2(x1)) * ax2;
+    }
+    Inline auto convert_CNT_to_LOC_x2(const real_t& ax2, const real_t& x1, const real_t& x2) -> real_t {
+      return std::sqrt(hx2(x1, x2)) * ax2;
+    }
+    Inline auto convert_CNT_to_LOC_x2(const real_t& ax2, const real_t& x1, const real_t& x2, const real_t& x3) -> real_t {
+      return std::sqrt(hx2(x1, x2, x3)) * ax2;
+    }
+
+    Inline auto convert_CNT_to_LOC_x3(const real_t& ax3, const real_t& x1) -> real_t {
+      return std::sqrt(hx3(x1)) * ax3;
+    }
+    Inline auto convert_CNT_to_LOC_x3(const real_t& ax3, const real_t& x1, const real_t& x2) -> real_t {
+      return std::sqrt(hx3(x1, x2)) * ax3;
+    }
+    Inline auto convert_CNT_to_LOC_x3(const real_t& ax3, const real_t& x1, const real_t& x2, const real_t& x3) -> real_t {
+      return std::sqrt(hx3(x1, x2, x3)) * ax3;
+    }
+
+    // LOC -> CNT
+    Inline auto convert_LOC_to_CNT_x1(const real_t& ax1, const real_t& x1) -> real_t {
+      return ax1 / std::sqrt(hx1(x1));
+    }
+    Inline auto convert_LOC_to_CNT_x1(const real_t& ax1, const real_t& x1, const real_t& x2) -> real_t {
+      return ax1 / std::sqrt(hx1(x1, x2));
+    }
+    Inline auto convert_LOC_to_CNT_x1(const real_t& ax1, const real_t& x1, const real_t& x2, const real_t& x3) -> real_t {
+      return ax1 / std::sqrt(hx1(x1, x2, x3));
+    }
+
+    Inline auto convert_LOC_to_CNT_x2(const real_t& ax2, const real_t& x1) -> real_t {
+      return ax2 / std::sqrt(hx2(x1));
+    }
+    Inline auto convert_LOC_to_CNT_x2(const real_t& ax2, const real_t& x1, const real_t& x2) -> real_t {
+      return ax2 / std::sqrt(hx2(x1, x2));
+    }
+    Inline auto convert_LOC_to_CNT_x2(const real_t& ax2, const real_t& x1, const real_t& x2, const real_t& x3) -> real_t {
+      return ax2 / std::sqrt(hx2(x1, x2, x3));
+    }
+
+    Inline auto convert_LOC_to_CNT_x3(const real_t& ax3, const real_t& x1) -> real_t {
+      return ax3 / std::sqrt(hx3(x1));
+    }
+    Inline auto convert_LOC_to_CNT_x3(const real_t& ax3, const real_t& x1, const real_t& x2) -> real_t {
+      return ax3 / std::sqrt(hx3(x1, x2));
+    }
+    Inline auto convert_LOC_to_CNT_x3(const real_t& ax3, const real_t& x1, const real_t& x2, const real_t& x3) -> real_t {
+      return ax3 / std::sqrt(hx3(x1, x2, x3));
+    }
+
   protected:
     std::string m_label;
   };
