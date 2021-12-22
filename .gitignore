@@ -26,3 +26,6 @@ __pycache__
 extern/kokkos/
 extern/plog/
 extern/nttiny/
+
+# Trash files
+.trash/

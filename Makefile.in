@@ -108,21 +108,6 @@ help:
 	@echo
 	@echo "cleanup: \`make clean\`"
 	@echo
-	# for developers />
-	@echo "---------------"
-	@echo "for developers:"
-	@echo
-	@echo "use \`make [CLANG_COMMAND]\` to check the code matches with best practices & consistent stylistics"
-	@echo
-	@echo "list of all \`[CLANG_COMMAND]\`-s:"
-	@echo "   clang-tidy-naming       : test if the naming of variables/functionts/etc is consistent"
-	@echo "   clang-format            : test if the code formatting is consistent"
-	@echo "   clang-format-fix        : same as \`clang-format\` except now fix the issues"
-	@echo "   clang-tidy              : check if the code contains any bad practices or other deprecated features"
-	@echo "   clang-tidy-bugprone     : check if the code contains any bug-prone features"
-	@echo "   clang-all               : run \`clang-tidy-naming\`, \`clang-format\` and \`clang-tidy\`"
-	@echo
-	# </ for developers
 
 demo:
 	@echo "[C]ompile command:"
@@ -204,10 +189,6 @@ NTTINY_DIR := @NTTINY_DIR@
 VIS_DIR := ${ROOT_DIR}/@VIS_DIR@
 include ${ROOT_DIR}/Nttiny.mk
 # </ for nttiny
-
-# for developers />
-include ${ROOT_DIR}/Devel.mk
-# </ for developers
 
 clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}

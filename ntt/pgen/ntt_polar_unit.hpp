@@ -14,8 +14,7 @@ namespace ntt {
     ~ProblemGenerator() = default;
 
     void userInitFields(SimulationParams&, Meshblock<D>&);
-    void userBCFields_x1min(SimulationParams&, Meshblock<D>&);
-    void userBCFields_x1max(SimulationParams&, Meshblock<D>&);
+    void userBCFields(const real_t&, SimulationParams&, Meshblock<D>&);
   };
 
 } // namespace ntt

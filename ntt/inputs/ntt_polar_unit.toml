@@ -3,14 +3,15 @@ title           = "Polar_example"
 runtime         = 0.1
 
 [domain]
-coord_sys       = "spherical"
-theta_h         = 0.0
-resolution      = [64, 64]
-extent          = [1.0, 5.0]
+coord_sys       = "qspherical"
+qsph_r0         = 0.3
+qsph_h          = 0.9
+resolution      = [256, 56]
+extent          = [1.0, 10.0]
 boundaries      = ["USER", "USER"]
 
 [algorithm]
-CFL             = 0.2
+CFL             = 1.01
 correction      = 1.025
 
 [units]

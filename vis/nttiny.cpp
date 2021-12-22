@@ -33,6 +33,7 @@ public:
       m_ex1{nx1, nx2}, m_ex2{nx1, nx2}, m_ex3{nx1, nx2},
       m_bx1{nx1, nx2}, m_bx2{nx1, nx2}, m_bx3{nx1, nx2} {
     this->m_timestep = 0;
+    this->m_time = 0.0;
 
     if (this->coords == "qspherical") {
       m_x1x2_extent[0] = m_sim.get_meshblock().m_extent[0];
@@ -40,9 +41,8 @@ public:
 
       int j {0};
       for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
-        double xi {m_x1x2_extent[0] + (m_x1x2_extent[1] - m_x1x2_extent[0]) * (double)(j) / (double)(nx1 - 2 * ntt::N_GHOSTS)};
-        double r0 {m_sim.get_meshblock().m_coord_system->m_parameters[0]};
-        m_ex1.grid_x1[i] = r0 * std::exp(xi / r0);
+        double x1 {m_x1x2_extent[0] + (m_x1x2_extent[1] - m_x1x2_extent[0]) * (double)(j) / (double)(nx1 - 2 * ntt::N_GHOSTS)};
+        m_ex1.grid_x1[i] = m_sim.get_meshblock().m_coord_system->getSpherical_r(x1, 0.0);
         ++j;
       }
       for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
@@ -57,11 +57,11 @@ public:
       m_x1x2_extent[2] = m_sim.get_meshblock().m_extent[2] - m_sim.get_meshblock().get_dx2() * ntt::N_GHOSTS;
       m_x1x2_extent[3] = m_sim.get_meshblock().m_extent[3] + m_sim.get_meshblock().get_dx2() * ntt::N_GHOSTS;
       for (int j {0}; j <= nx2; ++j) {
-        double eta {m_x1x2_extent[2] + (m_x1x2_extent[3] - m_x1x2_extent[2]) * (double)(j) / (double)(nx2)};
-        double h {m_sim.get_meshblock().m_coord_system->m_parameters[1]};
-        m_ex1.grid_x2[j] = eta + 2.0 * h * eta * (M_PI - 2.0 * eta) * (M_PI - eta) / (M_PI * M_PI);
+        double x2 {m_x1x2_extent[2] + (m_x1x2_extent[3] - m_x1x2_extent[2]) * (double)(j) / (double)(nx2)};
+        m_ex1.grid_x2[j] = m_sim.get_meshblock().m_coord_system->getSpherical_theta(0.0, x2);
       }
-      std::cout << m_x1x2_extent[2] << " : " << m_x1x2_extent[3] << std::endl;
+      m_x1x2_extent[2] = m_sim.get_meshblock().m_coord_system->getSpherical_theta(0.0, m_x1x2_extent[2]);
+      m_x1x2_extent[3] = m_sim.get_meshblock().m_coord_system->getSpherical_theta(0.0, m_x1x2_extent[3]);
     } else {
       m_x1x2_extent[0] = m_sim.get_meshblock().m_extent[0] - m_sim.get_meshblock().get_dx1() * ntt::N_GHOSTS;
       m_x1x2_extent[1] = m_sim.get_meshblock().m_extent[1] + m_sim.get_meshblock().get_dx1() * ntt::N_GHOSTS;
@@ -96,14 +96,31 @@ public:
 
   ~NTTSimulationVis() = default;
   void setData() override {
+    auto dx1 {m_sim.get_meshblock().get_dx1()};
+    auto dx2 {m_sim.get_meshblock().get_dx2()};
     for (int j{0}; j < nx2; ++j) {
       for (int i{0}; i < nx1; ++i) {
-        m_ex1.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex1));
-        m_ex2.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex2));
-        m_ex3.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex3));
-        m_bx1.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx1));
-        m_bx2.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx2));
-        m_bx3.set(i, j, m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx3));
+        auto x1 {m_sim.get_meshblock().convert_iTOx1(i)};
+        auto x2 {m_sim.get_meshblock().convert_jTOx2(j)};
+        // convert from contravariant components to local orthonormal basis
+
+        auto ex1 {m_sim.get_meshblock().m_coord_system->convert_CNT_to_LOC_x1(m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex1), x1 + 0.5 * dx1, x2)};
+        m_ex1.set(i, j, ex1);
+
+        auto ex2 {m_sim.get_meshblock().m_coord_system->convert_CNT_to_LOC_x2(m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex2), x1, x2 + 0.5 * dx2)};
+        m_ex2.set(i, j, ex2);
+
+        auto ex3 {m_sim.get_meshblock().m_coord_system->convert_CNT_to_LOC_x3(m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex3), x1, x2)};
+        m_ex3.set(i, j, ex3);
+
+        auto bx1 {m_sim.get_meshblock().m_coord_system->convert_CNT_to_LOC_x1(m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx1), x1, x2 + 0.5 * dx2)};
+        m_bx1.set(i, j, bx1);
+
+        auto bx2 {m_sim.get_meshblock().m_coord_system->convert_CNT_to_LOC_x2(m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx2), x1 + 0.5 * dx1, x2)};
+        m_bx2.set(i, j, bx2);
+
+        auto bx3 {m_sim.get_meshblock().m_coord_system->convert_CNT_to_LOC_x3(m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx3), x1 + 0.5 * dx1, x2 + 0.5 * dx2)};
+        m_bx3.set(i, j, bx3);
       }
     }
   }

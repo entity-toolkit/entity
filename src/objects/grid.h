@@ -67,12 +67,6 @@ namespace ntt {
     auto loopActiveCells() -> RangeND<D>;
     auto loopAllCells() -> RangeND<D>;
 
-    // all ghosts below active x1 including first active x1
-    auto loopX1MinCells() -> RangeND<D>;
-    // all ghosts above active x1 excluding last active x1
-    auto loopX1MaxCells() -> RangeND<D>;
-    // TODO: X2 and X3
-
     auto loopCells(const long int&, const long int&) -> RangeND<D>;
     auto loopCells(const long int&, const long int&, const long int&, const long int&) -> RangeND<D>;
     auto loopCells(const long int&, const long int&, const long int&, const long int&, const long int&, const long int&) -> RangeND<D>;
@@ -80,21 +74,21 @@ namespace ntt {
 
   template <Dimension D>
   Inline auto Grid<D>::convert_iTOx1(const long int& i) const -> real_t {
-    return m_extent[0]
-           + (static_cast<real_t>(i - N_GHOSTS) / static_cast<real_t>(m_resolution[0]))
-                 * (m_extent[1] - m_extent[0]);
+    return m_extent[0] + (
+              static_cast<real_t>(i - N_GHOSTS) / static_cast<real_t>(m_resolution[0])
+              ) * (m_extent[1] - m_extent[0]);
   }
   template <Dimension D>
   Inline auto Grid<D>::convert_jTOx2(const long int& j) const -> real_t {
-    return m_extent[2]
-           + (static_cast<real_t>(j - N_GHOSTS) / static_cast<real_t>(m_resolution[1]))
-                 * (m_extent[3] - m_extent[2]);
+    return m_extent[2] + (
+              static_cast<real_t>(j - N_GHOSTS) / static_cast<real_t>(m_resolution[1])
+              ) * (m_extent[3] - m_extent[2]);
   }
   template <Dimension D>
   Inline auto Grid<D>::convert_kTOx3(const long int& k) const -> real_t {
-    return m_extent[4]
-           + (static_cast<real_t>(k - N_GHOSTS) / static_cast<real_t>(m_resolution[2]))
-                 * (m_extent[5] - m_extent[4]);
+    return m_extent[4] + (
+              static_cast<real_t>(k - N_GHOSTS) / static_cast<real_t>(m_resolution[2])
+              ) * (m_extent[5] - m_extent[4]);
   }
 
   // Accepts coordinate and returns the corresponding cell + ...
