@@ -39,7 +39,7 @@ namespace ntt {
         auto rr {mblock.m_coord_system->getSpherical_r(x1, ZERO)};
 
         auto bx1 {ONE * r0 * r0 / (rr * rr)};
-        bx1 = mblock.m_coord_system->convert_LOC_to_CNT_x1(bx1, x1, x2 + 0.5 * dx1);
+        bx1 = mblock.m_coord_system->convert_LOC_to_CNT_x1(bx1, x1, x2 + 0.5 * dx2);
         mblock.em_fields(i, j, fld::bx1) = bx1;
     });
   }
