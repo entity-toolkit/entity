@@ -15,6 +15,12 @@ namespace ntt {
     void userInitParticles(SimulationParams&, Meshblock<D>&) {}
 
     void userBCFields(const real_t&, SimulationParams&, Meshblock<D>&) {}
+
+    Inline auto userTargetField_bx1(Meshblock<D>&, const real_t&) const -> real_t { return ZERO; }
+
+    Inline auto userTargetField_bx1(Meshblock<D>&, const real_t&, const real_t&) const -> real_t { return ZERO; }
+
+    Inline auto userTargetField_bx1(Meshblock<D>&, const real_t&, const real_t&, const real_t&) const -> real_t { return ZERO; }
   };
 
 } // namespace ntt

@@ -64,12 +64,12 @@ namespace ntt {
     using index_t = NTTArray<real_t**>::size_type;
     real_t dx1 {mblock.get_dx1()};
     real_t dx2 {mblock.get_dx2()};
-    real_t omega {0.1 * std::sin(time)};
-    // if (time < 0.5) {
-    //   omega = time / 10.0;
-    // } else {
-    //   omega = 0.05;
-    // }
+    real_t omega;
+    if (time < 0.5) {
+      omega = time / 10.0;
+    } else {
+      omega = 0.05;
+    }
     Kokkos::parallel_for(
       "userBcFlds_rmax",
       NTT2DRange({mblock.get_imin(), mblock.get_jmin()}, {mblock.get_imin() + 1, mblock.get_jmax()}),
