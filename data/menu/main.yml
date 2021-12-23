@@ -4,19 +4,18 @@ main:
     sub:
       - name: Code units
         ref: "/start/units"
-  - name: 'Algorithms'
-    # ref: "/algorithms"
+  - name: 'How it works'
     sub:
       - name: 3+1 formulation
-        ref: "/algorithms/3p1"
-      # - name: Field solver
-      #   ref: "/algorithms/fieldsolver"
+        ref: "/how_it_works/3p1"
+      - name: Coordinate system
+        ref: "/how_it_works/coordinate_system"
       # - name: Particle pusher
       #   ref: "/algorithms/pusher"
       # - name: Current deposition
       #   ref: "/algorithms/deposit"
       - name: Full PIC
-        ref: "/algorithms/pic"
+        ref: "/how_it_works/pic"
 
   - name: 'For developers'
     # ref: "/dev"
