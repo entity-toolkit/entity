@@ -2,7 +2,7 @@
 title: Particle-in-cell
 ---
 
-{{< toc >}}
+{{<toc>}}
 
 {{<d3header>}}
 {{<mathjaxheader>}}
@@ -203,7 +203,7 @@ Simulation::Meshblock.em_fields(i, j, k, fld::ex3);
 
 <div id="plot6"></div>
 
-{{<jsfile "nongr.js">}}
+{{<jsfile "pic_nongr.js">}}
 
 ---
 <!--
@@ -317,4 +317,4 @@ $$
 
 <div id="grplot5"></div>
 
-{{<jsfile "gr.js">}}
+{{<jsfile "pic_gr.js">}}

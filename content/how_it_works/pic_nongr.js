@@ -32,14 +32,9 @@ window.addEventListener("load", function(event) {
 
   new Step2_1("#plot2_1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
   new Step2_2("#plot2_2", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
-  // new Step2_3("#plot2_3", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
-  // new Step2_4("#plot2_4", 600, 40, {top: 30, right: 30, bottom: 60, left: 30});
-  // new Step2_5("#plot2_5", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step3_1("#plot3_1", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
   new Step3_2("#plot3_2", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
-  // new Step3_3("#plot3_3", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
-  // new Step3_4("#plot3_4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
   new Step4("#plot4", 600, 40, {top: 30, right: 30, bottom: 30, left: 30});
 
