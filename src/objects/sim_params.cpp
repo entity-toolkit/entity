@@ -84,6 +84,7 @@ namespace ntt {
         m_extent[0] = std::log(m_extent[0] - m_coord_parameters[0]);
         m_extent[1] = std::log(m_extent[1] - m_coord_parameters[0]);
       }
+      m_coord_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_extent.push_back(0.0);
       m_extent.push_back(PI);
       m_extent.push_back(0.0);
