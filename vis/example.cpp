@@ -5,7 +5,6 @@
 #include "cargs.h"
 #include "input.h"
 #include "simulation.h"
-#include "constants.h"
 
 #include <toml/toml.hpp>
 
