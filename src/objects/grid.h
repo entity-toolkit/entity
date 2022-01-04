@@ -11,7 +11,10 @@ namespace ntt {
 
   template <Dimension D>
   struct Grid {
-    // TODO: add cell edges
+    NTTArray<real_t*> grid_x1;
+    NTTArray<real_t*> grid_x2;
+    NTTArray<real_t*> grid_x3;
+
     std::shared_ptr<CoordinateSystem<D>> m_coord_system;
     const std::vector<real_t> m_extent;
     const std::vector<std::size_t> m_resolution;

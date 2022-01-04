@@ -24,6 +24,7 @@ namespace ntt {
       : m_sim_params {inputdata, m_dim},
         m_pGen {m_sim_params},
         m_meshblock {m_sim_params.m_extent, m_sim_params.m_resolution, m_sim_params.m_species} {
+    // pick the coordinate system
     if (m_sim_params.m_coord_system == "cartesian") {
       m_meshblock.m_coord_system = std::make_unique<CartesianSystem<D>>();
     } else if (m_sim_params.m_coord_system == "spherical") {
