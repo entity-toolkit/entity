@@ -68,12 +68,28 @@ namespace ntt {
     m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
     m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
     if (m_coord_system == "cartesian") {
+      // cartesian grid
       if (((short)(m_resolution.size()) < (short)(dim)) ||
           ((short)(m_extent.size()) < 2 * (short)(dim))) {
         throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
       }
+      // enforce dx = dy = dz
+      auto dx = (m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0]);
+      if (m_resolution.size() > 1) {
+        auto dy = (m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1]);
+        if (dx != dy) {
+          throw std::invalid_argument("dx != dy in cartesian");
+        }
+      }
+      if (m_resolution.size() > 2) {
+        auto dz = (m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2]);
+        if (dx != dz) {
+          throw std::invalid_argument("dx != dz in cartesian");
+        }
+      }
     } else if ((m_coord_system == "spherical") ||
                (m_coord_system == "qspherical")) {
+      // spherical (quasi-spherical) grid
       if (m_extent.size() < 2) {
         throw std::invalid_argument("Not enough values in `extent` input.");
       }
