@@ -2,7 +2,6 @@
 #define OBJECTS_MESHBLOCK_H
 
 #include "global.h"
-#include "constants.h"
 #include "fields.h"
 #include "sim_params.h"
 #include "particles.h"
