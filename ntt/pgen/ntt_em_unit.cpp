@@ -1,5 +1,4 @@
 #include "global.h"
-#include "constants.h"
 #include "input.h"
 #include "sim_params.h"
 #include "meshblock.h"
