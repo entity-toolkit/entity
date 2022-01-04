@@ -23,6 +23,7 @@ window.addEventListener("load", function(event) {
   var sketch = function(p) {
     var cnv;
     var panel;
+    var savePNGbutton;
 
     var slider_nx1, slider_nx2;
     var slider_r0, slider_h;
@@ -39,7 +40,17 @@ window.addEventListener("load", function(event) {
       p.stroke(color);
       p.textAlign(p.LEFT, p.CENTER);
       p.textFont('monospace');
+      p.smooth();
 
+      savePNGbutton = p.createButton('Save as png');
+      savePNGbutton.parent('plot_ax_01');
+      savePNGbutton.style('width', '120px');
+      savePNGbutton.mousePressed(() => {
+        p.pixelDensity(3.0);
+        frame();
+        p.save("ax_grid.png");
+        p.pixelDensity();
+      });
 
       let slider_nx1_div = p.createDiv('nx1:');
       slider_nx1_div.parent(panel);
@@ -76,6 +87,10 @@ window.addEventListener("load", function(event) {
     };
 
     p.draw = function() {
+      frame()
+    };
+
+    function frame() {
       var nx1 = slider_nx1.value();
       var nx2 = slider_nx2.value();
       var r0 = slider_r0.value();
@@ -136,7 +151,7 @@ window.addEventListener("load", function(event) {
       p.text('nx1: ' + String(nx1) + ', nx2: ' + String(nx2), 20, 20);
       p.text('r0/r_min: ' + String(parseFloat(String(r0)).toFixed(2)), 2 * width / 3, 20);
       p.text('h: ' + String(h), 2 * width / 3, 45);
-    };
+    }
   };
 
   const myp5 = new p5(sketch);
