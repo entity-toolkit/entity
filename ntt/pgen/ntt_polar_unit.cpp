@@ -1,8 +1,9 @@
 #include "global.h"
-#include "constants.h"
 #include "input.h"
 #include "sim_params.h"
 #include "meshblock.h"
+
+#include "ntt_polar_unit.hpp"
 
 #include <cmath>
 
