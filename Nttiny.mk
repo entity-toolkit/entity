@@ -7,7 +7,7 @@ BUILD_VIS_DIR := $(subst ${ROOT_DIR}/,,${VIS_DIR})
 # VIS_SRC := $(subst ntt,nttiny,${VIS_DIR}/${PGEN}.cpp)
 VIS_SRC := ${VIS_DIR}/nttiny.cpp
 VIS_OBJ := $(subst ${VIS_DIR},${BUILD_VIS_DIR},$(VIS_SRC:%=%.o))
-export COMPILE_GLFW := n
+export COMPILE_GLFW := y
 export DEBUG := ${DEBUGMODE}
 export VERBOSE := ${VERBOSE}
 export COMPILER := ${CXX}
