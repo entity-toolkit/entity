@@ -34,8 +34,8 @@ namespace ntt {
   // custom range
   template <>
   auto Grid<ONE_D>::loopCells(const long int& i1, const long int& i2) -> ntt_1drange_t {
-    return NTT1DRange({  (range_t)(N_GHOSTS + i1)},
-                      {(range_t)(get_imax() + i2)});
+    return NTT1DRange(  (range_t)(N_GHOSTS + i1),
+                      (range_t)(get_imax() + i2));
   }
   template <>
   auto Grid<TWO_D>::loopCells(const long int& i1, const long int& i2,
