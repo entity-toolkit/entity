@@ -1,6 +1,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include "constants.h"
+
 #include <plog/Log.h>
 #include <Kokkos_Core.hpp>
 
