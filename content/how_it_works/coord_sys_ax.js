@@ -27,8 +27,22 @@ window.addEventListener("load", function(event) {
 
     var slider_nx1, slider_nx2;
     var slider_r0, slider_h;
+    var input_nx1, input_nx2;
+    var input_r0, input_h;
 
     var [oX, oY] = XY2PX(0, 0);
+    function r0_UPScale(r0) {
+      if (r0 < -0.1) {
+        r0 = -0.1 * Math.exp(-8.0 * r0) / Math.exp(8.0 * 0.1);
+      }
+      return r0;
+    }
+    function r0_DWNScale(r0) {
+      if (r0 < -0.1) {
+        r0 = -Math.log(-r0 * Math.exp(8.0 * 0.1) / 0.1) / 8.0;
+      }
+      return r0;
+    }
 
     p.setup = function() {
       panel = p.createDiv()
@@ -52,53 +66,104 @@ window.addEventListener("load", function(event) {
         p.pixelDensity();
       });
 
-      let slider_nx1_div = p.createDiv('nx1:');
+      var slider_nx1_div = p.createDiv('nx1:');
       slider_nx1_div.parent(panel);
-      slider_nx1_div.style('display', 'inline');
-      slider_nx1_div.style('margin-right', '15px');
-      let slider_nx2_div = p.createDiv('nx2:');
+      slider_nx1_div.style('display', 'block');
+      // slider_nx1_div.style('margin-right', '15px');
+      var slider_nx2_div = p.createDiv('nx2:');
       slider_nx2_div.parent(panel)
-      slider_nx2_div.style('display', 'inline');
-      slider_nx2_div.style('margin-right', '15px');
-      let slider_r0_div = p.createDiv('r0:');
+      slider_nx2_div.style('display', 'block');
+      // slider_nx2_div.style('margin-right', '15px');
+      var slider_r0_div = p.createDiv('r0:');
       slider_r0_div.parent(panel)
-      slider_r0_div.style('display', 'inline');
-      slider_r0_div.style('margin-right', '15px');
-      let slider_h_div = p.createDiv('h:');
+      slider_r0_div.style('display', 'block');
+      // slider_r0_div.style('margin-right', '15px');
+      var slider_h_div = p.createDiv('h:');
       slider_h_div.parent(panel)
-      slider_h_div.style('display', 'inline');
-      slider_h_div.style('margin-right', '15px');
+      slider_h_div.style('display', 'block');
+      // slider_h_div.style('margin-right', '15px');
+
+      input_nx1 = p.createInput('32', 'number');
+      input_nx1.style('width', '80px');
+      input_nx1.parent(slider_nx1_div);
+      input_nx1.style('margin-right', '15px');
 
       slider_nx1 = p.createSlider(2, 100, 32, 1);
       slider_nx1.style('width', '80px');
       slider_nx1.parent(slider_nx1_div);
 
+      input_nx2 = p.createInput('64', 'number');
+      input_nx2.style('width', '80px');
+      input_nx2.parent(slider_nx2_div);
+      input_nx2.style('margin-right', '15px');
+
       slider_nx2 = p.createSlider(2, 64, 16, 1);
       slider_nx2.style('width', '80px');
       slider_nx2.parent(slider_nx2_div);
+
+      input_r0 = p.createInput('0.0', 'number');
+      input_r0.style('width', '80px');
+      input_r0.parent(slider_r0_div);
+      input_r0.style('margin-right', '15px');
 
       slider_r0 = p.createSlider(-1, 0.99, 0.0, 0.01);
       slider_r0.style('width', '80px');
       slider_r0.parent(slider_r0_div);
 
+      input_h = p.createInput('0.4', 'number');
+      input_h.style('width', '80px');
+      input_h.parent(slider_h_div);
+      input_h.style('margin-right', '15px');
+
       slider_h = p.createSlider(-0.5, 0.99, 0.4, 0.01);
       slider_h.style('width', '80px');
       slider_h.parent(slider_h_div);
+
+      input_nx1.input(() => {
+        slider_nx1.value(input_nx1.value());
+        frame();
+      });
+      slider_nx1.input(() => {
+        input_nx1.value(slider_nx1.value());
+        frame();
+      });
+      input_nx2.input(() => {
+        slider_nx2.value(input_nx2.value());
+        frame();
+      });
+      slider_nx2.input(() => {
+        input_nx2.value(slider_nx2.value());
+        frame();
+      });
+      input_r0.input(() => {
+        slider_r0.value(r0_DWNScale(input_r0.value()));
+        frame(undefined, undefined, Number(input_r0.value()), undefined);
+      });
+      slider_r0.input(() => {
+        input_r0.value(r0_UPScale(slider_r0.value()));
+        frame();
+      });
+      input_h.input(() => {
+        slider_h.value(input_h.value());
+        frame();
+      });
+      slider_h.input(() => {
+        input_h.value(slider_h.value());
+        frame();
+      });
+      frame();
     };
 
-    p.draw = function() {
-      frame()
-    };
-
-    function frame() {
-      var nx1 = slider_nx1.value();
-      var nx2 = slider_nx2.value();
-      var r0 = slider_r0.value();
-      var h = slider_h.value();
-
-      if (r0 < -0.1) {
-        r0 = -0.1 * Math.exp(-8.0 * r0) / Math.exp(8.0 * 0.1);
-      }
+    function frame(nx1 = slider_nx1.value(),
+                   nx2 = slider_nx2.value(),
+                   r0 = r0_UPScale(slider_r0.value()),
+                   h = slider_h.value()) {
+      // var nx1 = slider_nx1.value();
+      // var nx2 = slider_nx2.value();
+      // var r0 = slider_r0.value();
+      // var h = slider_h.value();
+      //
+      // r0 = r0_UPScale(r0);
 
       var x1_min = Math.log(rmin - r0)
       var x1_max = Math.log(rmax - r0)
