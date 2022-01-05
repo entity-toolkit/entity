@@ -31,8 +31,8 @@ namespace ntt {
   void Simulation<D>::initialize() {
     // pick the coordinate system
     if (m_sim_params.m_coord_system == "cartesian") {
-      m_sim_params.m_min_cell_size
-          = {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
+      auto dx {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
+      m_sim_params.m_min_cell_size = dx / std::sqrt(static_cast<real_t>(D));
       m_meshblock.m_coord_system
           = std::make_unique<CartesianSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
       // } else if (m_sim_params.m_coord_system == "spherical") {
