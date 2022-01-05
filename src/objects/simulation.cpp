@@ -7,7 +7,7 @@
 
 // #include "grid.h"
 #include "cartesian.h"
-// #include "spherical.h"
+#include "spherical.h"
 // #include "qspherical.h"
 
 #include <plog/Log.h>
@@ -31,12 +31,11 @@ namespace ntt {
   void Simulation<D>::initialize() {
     // pick the coordinate system
     if (m_sim_params.m_coord_system == "cartesian") {
-      auto dx {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
-      m_sim_params.m_min_cell_size = dx / std::sqrt(static_cast<real_t>(D));
       m_meshblock.m_coord_system
-          = std::make_unique<CartesianSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
-      // } else if (m_sim_params.m_coord_system == "spherical") {
-      //   m_meshblock.m_coord_system = std::make_unique<SphericalSystem<D>>();
+        = std::make_unique<CartesianSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
+    } else if (m_sim_params.m_coord_system == "spherical") {
+      m_meshblock.m_coord_system
+        = std::make_unique<SphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
       // } else if (m_sim_params.m_coord_system == "qspherical") {
       //   auto r0 {m_sim_params.m_coord_parameters[0]};
       //   auto h {m_sim_params.m_coord_parameters[1]};
@@ -46,42 +45,26 @@ namespace ntt {
     }
 
     // find timestep and effective cell size
-    // if (m_sim_params.m_coord_system == "cartesian") {
-
-    //   // if (m_dim == ONE_D) {
-    //   //   real_t dx1 = m_meshblock.get_dx1();
-    //   //   m_sim_params.m_min_cell_size = dx1;
-    //   // } else if (m_dim == TWO_D) {
-    //   //   real_t dx1 = m_meshblock.get_dx1();
-    //   //   real_t dx2 = m_meshblock.get_dx2();
-    //   //   m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
-    //   // } else if (m_dim == TWO_D) {
-    //   //   real_t dx1 = m_meshblock.get_dx1();
-    //   //   real_t dx2 = m_meshblock.get_dx2();
-    //   //   real_t dx3 = m_meshblock.get_dx3();
-    //   //   m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2) + 1.0 / (dx3 * dx3));
-    //   // }
-    // // } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
-    // //   if (m_dim == TWO_D) {
-    // //     using index_t = NTTArray<real_t**>::size_type;
-    // //     real_t min_dx {-1.0};
-    // //     for (index_t i {0}; i < m_meshblock.m_resolution[0]; ++i) {
-    // //       for (index_t j {0}; j < m_meshblock.m_resolution[1]; ++j) {
-    // //         auto x1 = m_meshblock.convert_iTOx1(i);
-    // //         auto x2 = m_meshblock.convert_jTOx2(j);
-    // //         real_t dx1_ {m_meshblock.m_coord_system->hx1(x1, x2) * m_meshblock.get_dx1() * m_meshblock.get_dx1()};
-    // //         real_t dx2_ {m_meshblock.m_coord_system->hx2(x1, x2) * m_meshblock.get_dx2() * m_meshblock.get_dx2()};
-    // //         real_t dx = 1.0 / std::sqrt(1.0 / dx1_ + 1.0 / dx2_);
-    // //         if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
-    // //       }
-    // //     }
-    // //     m_sim_params.m_min_cell_size = min_dx;
-    // //   } else {
-    // //     throw std::logic_error("# Error: CFL finding not implemented for 3D spherical.");
-    // //   }
-    // } else {
-    //   throw std::logic_error("# Error: CFL finding not implemented for this coordinate system.");
-    // }
+    if (m_sim_params.m_coord_system == "cartesian") {
+      auto dx {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
+      m_sim_params.m_min_cell_size = dx / std::sqrt(static_cast<real_t>(D));
+    } else if (m_sim_params.m_coord_system == "spherical") {
+      if constexpr (D == ONE_D) { 
+        throw std::logic_error("# 1d spherical not possible.");
+      }
+      auto rmin {m_sim_params.m_extent[0]};
+      auto dr {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
+      auto dtheta {(m_sim_params.m_extent[3] - m_sim_params.m_extent[2]) / (real_t)(m_sim_params.m_resolution[1])};
+      if constexpr (D == TWO_D) {
+        auto dx1 {dr};
+        auto dx2 {rmin * dtheta};
+        m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
+      } else {
+        throw std::logic_error("# Error: min cell finding not implemented for 3D spherical.");
+      }
+    } else {
+      throw std::logic_error("# Error: min cell finding not implemented for this coordinate system.");
+    }
     m_sim_params.m_timestep = m_sim_params.m_cfl * m_sim_params.m_min_cell_size;
   }
 
