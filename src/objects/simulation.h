@@ -29,6 +29,7 @@ namespace ntt {
     void userInitialize();
     void verify();
     void printDetails();
+    void initialize();
     void finalize();
 
     void step_forward(const real_t&);

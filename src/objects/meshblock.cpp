@@ -11,8 +11,7 @@ namespace ntt {
   Meshblock<D>::Meshblock(std::vector<real_t> ext,
                           std::vector<std::size_t> res,
                           std::vector<ParticleSpecies>& parts)
-      : Fields<D>(res),
-        Grid<D>(ext, res) {
+      : Fields<D>(res) {
     for (auto& part : parts) {
       particles.emplace_back(part);
     }
@@ -20,11 +19,10 @@ namespace ntt {
 
   template <Dimension D>
   void Meshblock<D>::verify(const SimulationParams&) {
-    if (this->m_extent.size() != 2 * static_cast<short>(D)) {
-      throw std::logic_error("# Error: not enough values in extent.");
-    }
-    if (this->m_resolution.size() != static_cast<short>(D)) {
-      throw std::logic_error("# Error: not enough values in resolution.");
+    if ((this->Ni == 1) || 
+       ((this->Nj > 1) && (static_cast<short>(D) < 2)) || 
+       ((this->Nk > 1) && (static_cast<short>(D) < 3))) {
+      throw std::logic_error("# Error: wrong dimension inferred in Meshblock.");
     }
     for (auto& p : particles) {
       if (p.get_pusher() == UNDEFINED_PUSHER) {
