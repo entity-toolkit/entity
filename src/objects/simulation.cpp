@@ -41,13 +41,13 @@ namespace ntt {
       //   auto r0 {m_sim_params.m_coord_parameters[0]};
       //   auto h {m_sim_params.m_coord_parameters[1]};
       //   m_meshblock.m_coord_system = std::make_unique<QSphericalSystem<D>>(r0, h);
-      // } else {
+    } else {
       throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
     }
 
     // find timestep and effective cell size
     // if (m_sim_params.m_coord_system == "cartesian") {
-      
+
     //   // if (m_dim == ONE_D) {
     //   //   real_t dx1 = m_meshblock.get_dx1();
     //   //   m_sim_params.m_min_cell_size = dx1;
@@ -117,7 +117,7 @@ namespace ntt {
 
     PLOGI << "[domain]";
     PLOGI << "   dimension: " << m_dim << "D";
-    PLOGI << "   coordinate system: " << (m_meshblock.m_coord_system->label());
+    PLOGI << "   coordinate system: " << (m_meshblock.m_coord_system->label);
 
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.m_boundaries) {

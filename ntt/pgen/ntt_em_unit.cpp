@@ -22,7 +22,7 @@ namespace ntt {
                                                Meshblock<ONE_D>& mblock) {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t*>::size_type;
-    real_t sx = mblock.m_coord_system->x1max_PHU() - mblock.m_coord_system->x1min_PHU();
+    real_t sx = mblock.m_coord_system->x1_max - mblock.m_coord_system->x1_min;
     Kokkos::parallel_for(
         "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
           auto i_ {(real_t)(i)}, i_half {(real_t)(i + 0.5)};
@@ -43,8 +43,8 @@ namespace ntt {
                                                Meshblock<TWO_D>& mblock) {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t**>::size_type;
-    real_t sx = mblock.m_coord_system->x1max_PHU() - mblock.m_coord_system->x1min_PHU();
-    real_t sy = mblock.m_coord_system->x2max_PHU() - mblock.m_coord_system->x2min_PHU();
+    real_t sx = mblock.m_coord_system->x1_max - mblock.m_coord_system->x1_min;
+    real_t sy = mblock.m_coord_system->x2_max - mblock.m_coord_system->x2_min;
 
     auto kx {TWO_PI * m_nx1 / sx};
     auto ky {TWO_PI * m_nx2 / sy};
@@ -66,7 +66,7 @@ namespace ntt {
           auto bz_hat = bz_ampl * std::sin(kx * x_half + ky * y_half);
 
           mblock.em_fields(i, j, fld::ex1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(ex_hat, i_half, j_);
-          mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ex_hat, i_, j_half);
+          mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ey_hat, i_, j_half);
           mblock.em_fields(i, j, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_half, j_half);
         });
   }
@@ -86,7 +86,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<THREE_D>::userInitParticles(SimulationParams&,
                                                     Meshblock<THREE_D>&) {}
-                                                    
+
 } // namespace ntt
 
 template struct ntt::ProblemGenerator<ntt::ONE_D>;
