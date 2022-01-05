@@ -4,9 +4,9 @@
 #include "faraday_cartesian.hpp"
 #include "ampere_cartesian.hpp"
 
-// #include "faraday_curvilinear.hpp"
-// #include "ampere_curvilinear.hpp"
-// #include "ampere_ax_poles.hpp"
+#include "faraday_curvilinear.hpp"
+#include "ampere_curvilinear.hpp"
+#include "ampere_ax_poles.hpp"
 
 #include "add_currents.hpp"
 
@@ -22,7 +22,6 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "1D faraday";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-
     if (m_meshblock.m_coord_system->label == "cartesian") {
       const auto dx {(m_meshblock.m_coord_system->x1_max - m_meshblock.m_coord_system->x1_min) / (real_t)(m_meshblock.m_coord_system->Nx1)};
       Kokkos::parallel_for("faraday", m_meshblock.loopActiveCells(), FaradayCartesian<ONE_D>(m_meshblock, coeff / dx));
@@ -39,11 +38,11 @@ namespace ntt {
     if (m_meshblock.m_coord_system->label == "cartesian") {
       const auto dx {(m_meshblock.m_coord_system->x1_max - m_meshblock.m_coord_system->x1_min) / (real_t)(m_meshblock.m_coord_system->Nx1)};
       Kokkos::parallel_for("faraday", m_meshblock.loopActiveCells(), FaradayCartesian<TWO_D>(m_meshblock, coeff / dx));
-      // } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
-      //   Kokkos::parallel_for(
-      //       "faraday",
-      //       m_meshblock.loopActiveCells(),
-      //       FaradayCurvilinear<TWO_D>(m_meshblock, coeff_x1, coeff_x2, ZERO));
+    } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
+      Kokkos::parallel_for(
+          "faraday",
+          m_meshblock.loopActiveCells(),
+          FaradayCurvilinear<TWO_D>(m_meshblock, coeff));
     } else {
       throw std::logic_error("# Error: 2D faraday for the coordinate system not implemented.");
     }
@@ -86,16 +85,16 @@ namespace ntt {
     if (m_meshblock.m_coord_system->label == "cartesian") {
       const auto dx {(m_meshblock.m_coord_system->x1_max - m_meshblock.m_coord_system->x1_min) / (real_t)(m_meshblock.m_coord_system->Nx1)};
       Kokkos::parallel_for("ampere", m_meshblock.loopActiveCells(), AmpereCartesian<TWO_D>(m_meshblock, coeff / dx));
-      // } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
-      //   Kokkos::parallel_for(
-      //       "ampere",
-      //       m_meshblock.loopCells(0, 0, 1, 0),
-      //       AmpereCurvilinear<TWO_D>(m_meshblock, coeff_x1, coeff_x2, ZERO));
-      //   // evolve E1, E2 near polar axes
-      //   Kokkos::parallel_for(
-      //       "ampere_pole",
-      //       NTT1DRange(m_meshblock.get_imin(), m_meshblock.get_imax()),
-      //       AmpereAxisymmetricPoles<TWO_D>(m_meshblock, coeff, coeff_x1));
+      } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
+        Kokkos::parallel_for(
+            "ampere",
+            m_meshblock.loopCells(0, 0, 1, 0),
+            AmpereCurvilinear<TWO_D>(m_meshblock, coeff));
+        // // evolve E1, E2 near polar axes
+        // Kokkos::parallel_for(
+        //     "ampere_pole",
+        //     NTT1DRange(m_meshblock.get_imin(), m_meshblock.get_imax()),
+        //     AmpereAxisymmetricPoles<TWO_D>(m_meshblock, coeff, coeff_x1));
     } else {
       throw std::logic_error("# Error: 2D ampere for the coordinate system not implemented.");
     }

@@ -39,10 +39,12 @@ namespace ntt {
   using real_t = float;
   inline constexpr float ONE {1.0f};
   inline constexpr float ZERO {0.0f};
+  inline constexpr float HALF {0.5f};
 #else
   using real_t = double;
   inline constexpr double ONE {1.0};
   inline constexpr double ZERO {0.0};
+  inline constexpr double HALF {0.5};
 #endif
 
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
