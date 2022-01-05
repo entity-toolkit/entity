@@ -44,8 +44,7 @@ namespace ntt {
                                             m_mblock.em_fields(i + 1, j, fld::ex3) - m_mblock.em_fields(i, j, fld::ex3)
                                           );
     m_mblock.em_fields(i, j, fld::bx3) += coeff * (
-                                            m_mblock.em_fields(i, j + 1, fld::ex1) - m_mblock.em_fields(i, j, fld::ex1)
-                                          ) + coeff * (
+                                            m_mblock.em_fields(i, j + 1, fld::ex1) - m_mblock.em_fields(i, j, fld::ex1) +
                                             m_mblock.em_fields(i, j, fld::ex2) - m_mblock.em_fields(i + 1, j, fld::ex2)
                                           );
   }
@@ -53,18 +52,15 @@ namespace ntt {
   template <>
   Inline void FaradayCartesian<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
     m_mblock.em_fields(i, j, k, fld::bx1) += coeff * (
-                                                m_mblock.em_fields(i, j, k + 1, fld::ex2) - m_mblock.em_fields(i, j, k, fld::ex2)
-                                              ) + coeff * (
+                                                m_mblock.em_fields(i, j, k + 1, fld::ex2) - m_mblock.em_fields(i, j, k, fld::ex2) +
                                                 m_mblock.em_fields(i, j, k, fld::ex3) - m_mblock.em_fields(i, j + 1, k, fld::ex3)
                                               );
     m_mblock.em_fields(i, j, k, fld::bx2) += coeff * (
-                                                m_mblock.em_fields(i + 1, j, k, fld::ex3) - m_mblock.em_fields(i, j, k, fld::ex3)
-                                              ) + coeff * (
+                                                m_mblock.em_fields(i + 1, j, k, fld::ex3) - m_mblock.em_fields(i, j, k, fld::ex3) +
                                                 m_mblock.em_fields(i, j, k, fld::ex1) - m_mblock.em_fields(i, j, k + 1, fld::ex1)
                                               );
     m_mblock.em_fields(i, j, k, fld::bx3) += coeff * (
-                                                m_mblock.em_fields(i, j + 1, k, fld::ex1) - m_mblock.em_fields(i, j, k, fld::ex1)
-                                              ) + coeff * (
+                                                m_mblock.em_fields(i, j + 1, k, fld::ex1) - m_mblock.em_fields(i, j, k, fld::ex1) +
                                                 m_mblock.em_fields(i, j, k, fld::ex2) - m_mblock.em_fields(i + 1, j, k, fld::ex2)
                                               );
   }
