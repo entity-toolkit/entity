@@ -3,6 +3,8 @@
 #include "sim_params.h"
 #include "meshblock.h"
 
+#include "ntt_em_unit.hpp"
+
 #include <cmath>
 
 namespace ntt {
@@ -20,14 +22,20 @@ namespace ntt {
                                                Meshblock<ONE_D>& mblock) {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t*>::size_type;
-    real_t sx1 = mblock.get_x1max() - mblock.get_x1min();
-    real_t dx1_half = mblock.get_dx1() * 0.5;
+    real_t sx = mblock.m_coord_system->x1max_PHU() - mblock.m_coord_system->x1min_PHU();
     Kokkos::parallel_for(
-      "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
-        real_t x1 = mblock.convert_iTOx1(i);
-        mblock.em_fields(i, fld::ex2) = std::sin(TWO_PI * x1 / sx1);
-        mblock.em_fields(i, fld::bx3) = std::sin(TWO_PI * (x1 + dx1_half) / sx1);
-    });
+        "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
+          auto i_ {(real_t)(i)}, i_half {(real_t)(i + 0.5)};
+
+          real_t x_ {mblock.m_coord_system->coord_CU_to_Cart(i_)};
+          real_t x_half {mblock.m_coord_system->coord_CU_to_Cart(i_half)};
+
+          auto ey_hat {std::sin(TWO_PI * x_ / sx)};
+          auto bz_hat {std::sin(TWO_PI * x_half / sx)};
+
+          mblock.em_fields(i, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ey_hat, i_);
+          mblock.em_fields(i, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_half);
+        });
   }
 
   template <>
@@ -35,23 +43,32 @@ namespace ntt {
                                                Meshblock<TWO_D>& mblock) {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t**>::size_type;
-    real_t dx1_half = mblock.get_dx1() * 0.5;
-    real_t dx2_half = mblock.get_dx2() * 0.5;
-    auto kx1 {TWO_PI * m_nx1 / (mblock.get_x1max() - mblock.get_x1min())};
-    auto kx2 {TWO_PI * m_nx2 / (mblock.get_x2max() - mblock.get_x2min())};
-    real_t ex1_ampl, ex2_ampl, bx3_ampl {m_amplitude};
-    ex1_ampl = -kx2;
-    ex2_ampl = kx1;
-    ex1_ampl = m_amplitude * ex1_ampl / std::sqrt(ex1_ampl * ex1_ampl + ex2_ampl * ex2_ampl);
-    ex2_ampl = m_amplitude * ex2_ampl / std::sqrt(ex1_ampl * ex1_ampl + ex2_ampl * ex2_ampl);
+    real_t sx = mblock.m_coord_system->x1max_PHU() - mblock.m_coord_system->x1min_PHU();
+    real_t sy = mblock.m_coord_system->x2max_PHU() - mblock.m_coord_system->x2min_PHU();
+
+    auto kx {TWO_PI * m_nx1 / sx};
+    auto ky {TWO_PI * m_nx2 / sy};
+    real_t ex_ampl, ey_ampl, bz_ampl {m_amplitude};
+    ex_ampl = -ky;
+    ey_ampl = kx;
+    ex_ampl = m_amplitude * ex_ampl / std::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
+    ey_ampl = m_amplitude * ey_ampl / std::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
     Kokkos::parallel_for(
-      "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        real_t x1 = mblock.convert_iTOx1(i);
-        real_t x2 = mblock.convert_jTOx2(j);
-        mblock.em_fields(i, j, fld::ex1) = ex1_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * x2);
-        mblock.em_fields(i, j, fld::ex2) = ex2_ampl * std::sin(kx1 * x1 + kx2 * (x2 + dx2_half));
-        mblock.em_fields(i, j, fld::bx3) = bx3_ampl * std::sin(kx1 * (x1 + dx1_half) + kx2 * (x2 + dx2_half));
-    });
+        "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+          auto i_ {(real_t)(i)}, j_ {(real_t)(j)};
+          auto i_half {(real_t)(i + 0.5)}, j_half {(real_t)(j + 0.5)};
+
+          auto [x_, y_] = mblock.m_coord_system->coord_CU_to_Cart(i_, j_);
+          auto [x_half, y_half] = mblock.m_coord_system->coord_CU_to_Cart(i_half, j_half);
+
+          auto ex_hat = ex_ampl * std::sin(kx * x_half + ky * y_);
+          auto ey_hat = ey_ampl * std::sin(kx * x_ + ky * y_half);
+          auto bz_hat = bz_ampl * std::sin(kx * x_half + ky * y_half);
+
+          mblock.em_fields(i, j, fld::ex1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(ex_hat, i_half, j_);
+          mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ex_hat, i_, j_half);
+          mblock.em_fields(i, j, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_half, j_half);
+        });
   }
 
   template <>
