@@ -26,6 +26,9 @@ namespace ntt {
   inline constexpr double INV_SQRT2 {
     0.70710678118654752440
   };
+  inline constexpr double SQRT3 {
+    1.73205080756887729352
+  };
 } // namespace ntt
 
 #endif
