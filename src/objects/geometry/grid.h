@@ -10,52 +10,35 @@ namespace ntt {
 
   template <Dimension D>
   struct CoordinateGrid {
-  protected:
-    std::string m_label;
-    std::vector<std::size_t> m_resolution;
-    std::vector<real_t> m_extent_PHU;
+    const std::string label;
+    const long int Nx1, Nx2, Nx3;
+    const real_t x1_min, x1_max;
+    const real_t x2_min, x2_max;
+    const real_t x3_min, x3_max;
 
-  public:
-    // real_t m_parameters[10];
-
-    CoordinateGrid(const std::string& label, std::vector<std::size_t> resolution, std::vector<real_t> extent)
-        : m_label {label}, m_resolution {resolution}, m_extent_PHU {extent} {}
+    CoordinateGrid(const std::string& label_,
+                   std::vector<std::size_t> resolution,
+                   std::vector<real_t> extent)
+        : label {label_},
+          Nx1 {resolution.size() > 0 ? resolution[0] : 1},
+          Nx2 {resolution.size() > 1 ? resolution[1] : 1},
+          Nx3 {resolution.size() > 2 ? resolution[2] : 1},
+          x1_min {resolution.size() > 0 ? extent[0] : ZERO},
+          x1_max {resolution.size() > 0 ? extent[1] : ZERO},
+          x2_min {resolution.size() > 1 ? extent[2] : ZERO},
+          x2_max {resolution.size() > 1 ? extent[3] : ZERO},
+          x3_min {resolution.size() > 2 ? extent[4] : ZERO},
+          x3_max {resolution.size() > 2 ? extent[5] : ZERO} {}
     virtual ~CoordinateGrid() = default;
 
-    // getters
-    Inline auto label() const -> std::string { 
-      return m_label;
-    }
-    Inline auto x1min_PHU() const -> real_t { 
-      return m_extent_PHU[0];
-    }
-    Inline auto x1max_PHU() const -> real_t { 
-      return m_extent_PHU[1];
-    }
-    Inline auto x2min_PHU() const -> real_t { 
-      return m_extent_PHU[2];
-    }
-    Inline auto x2max_PHU() const -> real_t { 
-      return m_extent_PHU[3];
-    }
-    Inline auto x3min_PHU() const -> real_t { 
-      return m_extent_PHU[4];
-    }
-    Inline auto x3max_PHU() const -> real_t { 
-      return m_extent_PHU[5];
-    }
-
-    // Inline auto Nx1() const -> std::size_t { 
-    //   return m_resolution[0];
-    // }
-    // Inline auto Nx2() const -> std::size_t { 
-    //   return m_resolution[1];
-    // }
-    // Inline auto Nx3() const -> std::size_t { 
-    //   return m_resolution[2];
-    // }
-
     // coordinate transformations
+    Inline auto CU_to_Idi(const real_t& xi) const -> std::pair<long int, float> {
+      // TODO: this is a hack
+      auto i {static_cast<long int>(xi + N_GHOSTS)};
+      float di {static_cast<float>(xi) - static_cast<float>(i)};
+      return {i, di};
+    }
+
     // conversion from code units (CU) to cartesian (Cart)
     virtual Inline auto coord_CU_to_Cart(const real_t&) const -> real_t { return -1.0; }
     virtual Inline auto coord_CU_to_Cart(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> {
@@ -70,13 +53,6 @@ namespace ntt {
     // conversion from code units (CU) to spherical (Sph)
     virtual Inline auto coord_CU_to_Sph(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> { return {-1.0, -1.0}; }
     virtual Inline auto coord_CU_to_Sph(const real_t&, const real_t&, const real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
-
-    Inline auto CU_to_Idi(const real_t& xi) const -> std::pair<long int, float> {
-      // TODO: this is a hack
-      auto i {static_cast<long int>(xi + N_GHOSTS)};
-      float di {static_cast<float>(xi) - static_cast<float>(i)};
-      return {i, di};
-    }
 
     // // velocity conversion
     // virtual Inline auto transform_ux1TOux(const real_t&) const -> real_t { return -1.0; }
