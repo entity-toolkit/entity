@@ -45,10 +45,10 @@ namespace ntt {
       return {-1.0, -1.0}; }
     virtual Inline auto coord_CU_to_Cart(const real_t&, const real_t&, const real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
 
-    // conversion from cartesian (Cart) to code units (CU)
-    virtual Inline auto coord_CART_to_CU(const real_t&) const -> real_t { return -1.0; }
-    virtual Inline auto coord_CART_to_CU(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> { return {-1.0, -1.0}; }
-    virtual Inline auto coord_CART_to_CU(const real_t&, const real_t&, const real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
+    // // conversion from cartesian (Cart) to code units (CU)
+    // virtual Inline auto coord_CART_to_CU(const real_t&) const -> real_t { return -1.0; }
+    // virtual Inline auto coord_CART_to_CU(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> { return {-1.0, -1.0}; }
+    // virtual Inline auto coord_CART_to_CU(const real_t&, const real_t&, const real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
 
     // conversion from code units (CU) to spherical (Sph)
     virtual Inline auto coord_CU_to_Sph(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> { return {-1.0, -1.0}; }
