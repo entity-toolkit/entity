@@ -2,6 +2,7 @@
 #define OBJECTS_MESHBLOCK_H
 
 #include "global.h"
+#include "grid.h"
 #include "fields.h"
 #include "sim_params.h"
 #include "particles.h"
@@ -15,8 +16,9 @@
 namespace ntt {
 
   template <Dimension D>
-  struct Meshblock : Fields<D>, Grid<D> {
+  struct Meshblock : Fields<D> {
     std::vector<Particles<D>> particles;
+    std::shared_ptr<CoordinateGrid<D>> m_coord_system;
 
     Meshblock(std::vector<real_t>, std::vector<std::size_t>, std::vector<ParticleSpecies>&);
 

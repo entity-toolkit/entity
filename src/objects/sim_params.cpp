@@ -21,6 +21,7 @@ namespace ntt {
     m_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
     m_correction = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
 
+    // particle parameters
     auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species", 0);
     for (int i {0}; i < nspec; ++i) {
       auto label = readFromInput<std::string>(m_inputdata,
@@ -74,15 +75,15 @@ namespace ntt {
         throw std::invalid_argument("Not enough values in `extent` or `resolution` input.");
       }
       // enforce dx = dy = dz
-      auto dx = (m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0]);
+      auto dx {(m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0])};
       if (m_resolution.size() > 1) {
-        auto dy = (m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1]);
+        auto dy {(m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1])};
         if (dx != dy) {
           throw std::invalid_argument("dx != dy in cartesian");
         }
       }
       if (m_resolution.size() > 2) {
-        auto dz = (m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2]);
+        auto dz {(m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2])};
         if (dx != dz) {
           throw std::invalid_argument("dx != dz in cartesian");
         }
