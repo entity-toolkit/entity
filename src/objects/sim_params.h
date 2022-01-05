@@ -18,7 +18,7 @@ namespace ntt {
     SimulationType m_simtype {UNDEFINED_SIM};
 
     std::string m_title;
-    real_t m_cfl, m_timestep, m_min_cell_size;
+    real_t m_timestep, m_cfl, m_min_cell_size;
     real_t m_correction;
     real_t m_runtime;
 
@@ -57,12 +57,19 @@ namespace ntt {
     void printDetails();
     void verify();
 
-    [[nodiscard]] auto get_min_timestep() -> real_t;
-    [[nodiscard]] auto get_extent() const -> const std::vector<real_t>& { return m_extent; }
-    [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& {
-      return m_resolution;
+    // [[nodiscard]] auto get_min_timestep() -> real_t;
+    // [[nodiscard]] auto get_extent() const -> const std::vector<real_t>& { 
+    //   return m_extent; 
+    // }
+    // [[nodiscard]] auto get_resolution() const -> const std::vector<std::size_t>& {
+    //   return m_resolution;
+    // }
+    [[nodiscard]] auto get_cell_size() const -> real_t { 
+      return m_min_cell_size; 
     }
-    [[nodiscard]] auto get_timestep() const -> real_t { return m_timestep; }
+    [[nodiscard]] auto get_timestep() const -> real_t { 
+      return m_timestep; 
+    }
   };
 
 } // namespace ntt

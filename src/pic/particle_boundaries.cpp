@@ -12,12 +12,12 @@ namespace ntt {
   template <Dimension D>
   void Simulation<D>::particleBoundaryConditions(const real_t& time) {
     UNUSED(time);
-    for (auto& species : m_meshblock.particles) {
-      Kokkos::parallel_for(
-          "prtl_bc",
-          species.loopParticles(),
-          PrtlBC_Periodic<D>(m_meshblock.m_extent, species));
-    }
+    // for (auto& species : m_meshblock.particles) {
+    //   Kokkos::parallel_for(
+    //       "prtl_bc",
+    //       species.loopParticles(),
+    //       PrtlBC_Periodic<D>(m_meshblock.m_extent, species));
+    // }
   }
 
 } // namespace ntt
