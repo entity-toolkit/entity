@@ -61,6 +61,9 @@ namespace ntt {
 
 #ifndef CURVILINEAR_COORDS
     m_coord_system = "cartesian";
+    if (readFromInput<std::string>(m_inputdata, "domain", "coord_sys", "cartesian") != "cartesian") {
+      throw std::invalid_argument("Non-cartesian coordinates specified but the code is not compiled with the `-curv` flag.");
+    }
 #else
     m_coord_system = readFromInput<std::string>(m_inputdata, "domain", "coord_sys");
 #endif
