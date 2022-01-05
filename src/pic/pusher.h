@@ -71,32 +71,32 @@ namespace ntt {
 
   template <>
   Inline void Pusher<TWO_D>::transformToCartesian(const index_t& p) const {
-#ifdef CURVILINEAR_COORDS
-    auto [p_x, p_y] = m_meshblock.m_coord_system->transform_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
-    auto [p_ux, p_uy] = m_meshblock.m_coord_system->transform_ux1ux2TOuxuy(m_particles.m_ux1(p), m_particles.m_ux2(p));
-    m_particles.m_x1(p) = p_x;
-    m_particles.m_x2(p) = p_y;
-    m_particles.m_ux1(p) = p_ux;
-    m_particles.m_ux2(p) = p_uy;
-#else
-    UNUSED(p);
-#endif
+// #ifdef CURVILINEAR_COORDS
+//     auto [p_x, p_y] = m_meshblock.m_coord_system->transform_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
+//     auto [p_ux, p_uy] = m_meshblock.m_coord_system->transform_ux1ux2TOuxuy(m_particles.m_ux1(p), m_particles.m_ux2(p));
+//     m_particles.m_x1(p) = p_x;
+//     m_particles.m_x2(p) = p_y;
+//     m_particles.m_ux1(p) = p_ux;
+//     m_particles.m_ux2(p) = p_uy;
+// #else
+//     UNUSED(p);
+// #endif
   }
 
   template <>
   Inline void Pusher<THREE_D>::transformToCartesian(const index_t& p) const {
-#ifdef CURVILINEAR_COORDS
-    auto [p_x, p_y, p_z] = m_meshblock.m_coord_system->transform_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
-    auto [p_ux, p_uy, p_uz] = m_meshblock.m_coord_system->transform_ux1ux2ux3TOuxuyuz(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
-    m_particles.m_x1(p) = p_x;
-    m_particles.m_x2(p) = p_y;
-    m_particles.m_x3(p) = p_z;
-    m_particles.m_ux1(p) = p_ux;
-    m_particles.m_ux2(p) = p_uy;
-    m_particles.m_ux3(p) = p_uz;
-#else
-    UNUSED(p);
-#endif
+// #ifdef CURVILINEAR_COORDS
+//     auto [p_x, p_y, p_z] = m_meshblock.m_coord_system->transform_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+//     auto [p_ux, p_uy, p_uz] = m_meshblock.m_coord_system->transform_ux1ux2ux3TOuxuyuz(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
+//     m_particles.m_x1(p) = p_x;
+//     m_particles.m_x2(p) = p_y;
+//     m_particles.m_x3(p) = p_z;
+//     m_particles.m_ux1(p) = p_ux;
+//     m_particles.m_ux2(p) = p_uy;
+//     m_particles.m_ux3(p) = p_uz;
+// #else
+//     UNUSED(p);
+// #endif
   }
 
   template <>
@@ -104,32 +104,32 @@ namespace ntt {
 
   template <>
   Inline void Pusher<TWO_D>::transformFromCartesian(const index_t& p) const {
-#ifdef CURVILINEAR_COORDS
-    auto [p_x1, p_x2] = m_meshblock.m_coord_system->transform_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
-    auto [p_ux1, p_ux2] = m_meshblock.m_coord_system->transform_uxuyTOux1ux2(m_particles.m_ux1(p), m_particles.m_ux2(p));
-    m_particles.m_x1(p) = p_x1;
-    m_particles.m_x2(p) = p_x2;
-    m_particles.m_ux1(p) = p_ux1;
-    m_particles.m_ux2(p) = p_ux2;
-#else
-    UNUSED(p);
-#endif
+// #ifdef CURVILINEAR_COORDS
+//     auto [p_x1, p_x2] = m_meshblock.m_coord_system->transform_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
+//     auto [p_ux1, p_ux2] = m_meshblock.m_coord_system->transform_uxuyTOux1ux2(m_particles.m_ux1(p), m_particles.m_ux2(p));
+//     m_particles.m_x1(p) = p_x1;
+//     m_particles.m_x2(p) = p_x2;
+//     m_particles.m_ux1(p) = p_ux1;
+//     m_particles.m_ux2(p) = p_ux2;
+// #else
+//     UNUSED(p);
+// #endif
   }
 
   template <>
   Inline void Pusher<THREE_D>::transformFromCartesian(const index_t& p) const {
-#ifdef CURVILINEAR_COORDS
-    auto [p_x1, p_x2, p_x3] = m_meshblock.m_coord_system->transform_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
-    auto [p_ux1, p_ux2, p_ux3] = m_meshblock.m_coord_system->transform_uxuyuzTOux1ux2ux3(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
-    m_particles.m_x1(p) = p_x1;
-    m_particles.m_x2(p) = p_x2;
-    m_particles.m_x3(p) = p_x3;
-    m_particles.m_ux1(p) = p_ux1;
-    m_particles.m_ux2(p) = p_ux2;
-    m_particles.m_ux3(p) = p_ux3;
-#else
-    UNUSED(p);
-#endif
+// #ifdef CURVILINEAR_COORDS
+//     auto [p_x1, p_x2, p_x3] = m_meshblock.m_coord_system->transform_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
+//     auto [p_ux1, p_ux2, p_ux3] = m_meshblock.m_coord_system->transform_uxuyuzTOux1ux2ux3(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
+//     m_particles.m_x1(p) = p_x1;
+//     m_particles.m_x2(p) = p_x2;
+//     m_particles.m_x3(p) = p_x3;
+//     m_particles.m_ux1(p) = p_ux1;
+//     m_particles.m_ux2(p) = p_ux2;
+//     m_particles.m_ux3(p) = p_ux3;
+// #else
+//     UNUSED(p);
+// #endif
   }
 
   // * * * * Position update * * * * * * * * * * * * * *
