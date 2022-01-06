@@ -22,7 +22,7 @@ namespace ntt {
   Simulation<D>::Simulation(const toml::value& inputdata)
       : m_sim_params {inputdata, m_dim},
         m_pGen {m_sim_params},
-        m_meshblock {m_sim_params.m_extent, m_sim_params.m_resolution, m_sim_params.m_species} {
+        m_meshblock {m_sim_params.m_resolution, m_sim_params.m_species} {
     initialize();
   }
 

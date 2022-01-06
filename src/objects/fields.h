@@ -32,7 +32,7 @@ namespace ntt {
     const long int i_min, i_max;
     const long int j_min, j_max;
     const long int k_min, k_max;
-    const long int Ni, Nj, Nk;
+    const std::size_t Ni, Nj, Nk;
 
     Fields(std::vector<std::size_t> res);
     ~Fields() = default;
