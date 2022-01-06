@@ -12,10 +12,8 @@ namespace ntt {
   // xi, eta, phi = log(r-r0), f(h, theta), phi
   template <Dimension D>
   struct QSphericalSystem : public Grid<D> {
-    const real_t r0;
-    const real_t h;
+    const real_t r0, h, xi_min;
     const real_t dxi, deta, dphi;
-    const real_t xi_min;
     const real_t dxi_sqr, deta_sqr, dphi_sqr;
 
     QSphericalSystem(std::vector<std::size_t> resolution,

@@ -8,8 +8,7 @@
 namespace ntt {
 
   template <Dimension D>
-  Meshblock<D>::Meshblock(std::vector<real_t> ext,
-                          std::vector<std::size_t> res,
+  Meshblock<D>::Meshblock(std::vector<std::size_t> res,
                           std::vector<ParticleSpecies>& parts)
       : Fields<D>(res) {
     for (auto& part : parts) {
@@ -19,8 +18,8 @@ namespace ntt {
 
   template <Dimension D>
   void Meshblock<D>::verify(const SimulationParams&) {
-    if ((this->Ni == 1) || 
-       ((this->Nj > 1) && (static_cast<short>(D) < 2)) || 
+    if ((this->Ni == 1) ||
+       ((this->Nj > 1) && (static_cast<short>(D) < 2)) ||
        ((this->Nk > 1) && (static_cast<short>(D) < 3))) {
       throw std::logic_error("# Error: wrong dimension inferred in Meshblock.");
     }

@@ -20,8 +20,7 @@ namespace ntt {
     std::vector<Particles<D>> particles;
     std::shared_ptr<Grid<D>> grid;
 
-    Meshblock(std::vector<real_t>, std::vector<std::size_t>, std::vector<ParticleSpecies>&);
-
+    Meshblock(std::vector<std::size_t>, std::vector<ParticleSpecies>&);
     ~Meshblock() = default;
 
     void verify(const SimulationParams&);
