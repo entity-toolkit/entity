@@ -62,10 +62,14 @@ public:
       // m_x1x2_extent[2] = m_sim.get_meshblock().m_coord_system->getSpherical_theta(0.0, m_x1x2_extent[2]);
       // m_x1x2_extent[3] = m_sim.get_meshblock().m_coord_system->getSpherical_theta(0.0, m_x1x2_extent[3]);
     } else {
-      m_x1x2_extent[0] = m_sim.get_meshblock().m_coord_system->x1_min - m_sim.get_params().get_cell_size() * ntt::N_GHOSTS;
-      m_x1x2_extent[1] = m_sim.get_meshblock().m_coord_system->x1_max + m_sim.get_params().get_cell_size() * ntt::N_GHOSTS;
-      m_x1x2_extent[2] = m_sim.get_meshblock().m_coord_system->x2_min - m_sim.get_params().get_cell_size() * ntt::N_GHOSTS;
-      m_x1x2_extent[3] = m_sim.get_meshblock().m_coord_system->x2_max + m_sim.get_params().get_cell_size() * ntt::N_GHOSTS;
+      auto sx1 {m_sim.get_meshblock().m_coord_system->x1_max - m_sim.get_meshblock().m_coord_system->x1_min};
+      auto dx1 {sx1 / (ntt::real_t)(m_sim.get_meshblock().m_coord_system->Nx1)};
+      auto sx2 {m_sim.get_meshblock().m_coord_system->x2_max - m_sim.get_meshblock().m_coord_system->x2_min};
+      auto dx2 {sx2 / (ntt::real_t)(m_sim.get_meshblock().m_coord_system->Nx2)};
+      m_x1x2_extent[0] = m_sim.get_meshblock().m_coord_system->x1_min - dx1 * ntt::N_GHOSTS;
+      m_x1x2_extent[1] = m_sim.get_meshblock().m_coord_system->x1_max + dx1 * ntt::N_GHOSTS;
+      m_x1x2_extent[2] = m_sim.get_meshblock().m_coord_system->x2_min - dx2 * ntt::N_GHOSTS;
+      m_x1x2_extent[3] = m_sim.get_meshblock().m_coord_system->x2_max + dx2 * ntt::N_GHOSTS;
       for (int i {0}; i <= nx1; ++i) {
         m_ex1.grid_x1[i] = m_x1x2_extent[0] + (m_x1x2_extent[1] - m_x1x2_extent[0]) * (double)(i) / (double)(nx1);
       }
@@ -95,14 +99,10 @@ public:
 
   ~NTTSimulationVis() = default;
   void setData() override {
-    // auto dx1 {m_sim.get_meshblock().get_dx1()};
-    // auto dx2 {m_sim.get_meshblock().get_dx2()};
     for (int j{0}; j < nx2; ++j) {
       for (int i{0}; i < nx1; ++i) {
-        auto i_ {(ntt::real_t)(i)};
-        auto j_ {(ntt::real_t)(j)};
-        auto i_half {(ntt::real_t)(i) + 0.5};
-        auto j_half{(ntt::real_t)(j) + 0.5};
+        auto i_ {(ntt::real_t)(i - ntt::N_GHOSTS)};
+        auto j_ {(ntt::real_t)(j - ntt::N_GHOSTS)};
 
         auto ex1_CNT {m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex1)};
         auto ex2_CNT {m_sim.get_meshblock().em_fields(i, j, ntt::fld::ex2)};
@@ -112,12 +112,13 @@ public:
         auto bx3_CNT {m_sim.get_meshblock().em_fields(i, j, ntt::fld::bx3)};
 
         // convert from contravariant to hatted
-        m_ex1.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x1(ex1_CNT, i_half, j_));
-        m_ex2.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x2(ex2_CNT, i_, j_half));
+        m_ex1.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x1(ex1_CNT, i_ + 0.5, j_));
+        m_ex2.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x2(ex2_CNT, i_, j_ + 0.5));
         m_ex3.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x3(ex3_CNT, i_, j_));
-        m_bx1.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x1(bx1_CNT, i_, j_half));
-        m_bx2.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x2(bx2_CNT, i_half, j_));
-        m_bx3.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x3(bx3_CNT, i_half, j_half));
+        m_bx1.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x1(bx1_CNT, i_, j_ + 0.5));
+        m_bx2.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x2(bx2_CNT, i_ + 0.5, j_));
+        m_bx3.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x3(bx3_CNT, i_ + 0.5, j_ + 0.5));
+        // m_bx3.set(i, j, bx3_CNT);
       }
     }
   }
