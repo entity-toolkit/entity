@@ -80,6 +80,7 @@ namespace ntt {
     virtual Inline auto sqrt_det_h(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
 
     virtual Inline auto polar_area(const real_t&, const real_t&) const -> real_t { return -1.0; }
+    virtual Inline auto polar_area(const real_t&, const real_t&, const real_t&) const -> real_t { return -1.0; }
 
     // CNT -> contravariant (upper index)
     // CVR -> covariant (lower index)
