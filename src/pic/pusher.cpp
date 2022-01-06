@@ -12,11 +12,11 @@ namespace ntt {
   void Simulation<D>::pushParticlesSubstep(const real_t& time) {
     UNUSED(time);
     PLOGD << D << "1D pusher";
-    for (auto& species : m_meshblock.particles) {
+    for (auto& species : mblock.particles) {
       const real_t coeff {
         (species.m_charge / species.m_mass) * HALF * m_sim_params.m_timestep / m_sim_params.m_larmor0
       };
-      Pusher<D> particle_pusher(m_meshblock, species, coeff, m_sim_params.m_timestep);
+      Pusher<D> particle_pusher(mblock, species, coeff, m_sim_params.m_timestep);
       particle_pusher.pushAllParticles();
     }
   }
