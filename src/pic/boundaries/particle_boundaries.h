@@ -12,11 +12,11 @@ namespace ntt {
   class PrtlBC {
   protected:
     std::vector<real_t> m_extent;
-    Particles<D> m_particles;
+    Particles<D> prtls;
 
   public:
-    PrtlBC(const std::vector<real_t>& m_extent_, const Particles<D>& m_particles_)
-        : m_extent(m_extent_), m_particles(m_particles_) {}
+    PrtlBC(const std::vector<real_t>& m_extent_, const Particles<D>& prtls_)
+        : m_extent(m_extent_), prtls(prtls_) {}
   };
 
 } // namespace ntt
