@@ -16,11 +16,11 @@ namespace ntt {
 
     void userBCFields(const real_t&, SimulationParams&, Meshblock<D>&) {}
 
-    Inline auto userTargetField_bx1(Meshblock<D>&, const real_t&) const -> real_t { return ZERO; }
-
-    Inline auto userTargetField_bx1(Meshblock<D>&, const real_t&, const real_t&) const -> real_t { return ZERO; }
-
-    Inline auto userTargetField_bx1(Meshblock<D>&, const real_t&, const real_t&, const real_t&) const -> real_t { return ZERO; }
+    Inline auto userTargetField_br_HAT(Meshblock<D>&, const real_t&) const -> real_t { return ZERO; }
+    Inline auto userTargetField_br_HAT(Meshblock<D>&, const real_t&, const real_t&) const -> real_t { return ZERO; }
+    Inline auto userTargetField_br_HAT(Meshblock<D>&, const real_t&, const real_t&, const real_t&) const -> real_t {
+      return ZERO;
+    }
   };
 
 } // namespace ntt

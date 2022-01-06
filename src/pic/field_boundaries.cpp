@@ -101,33 +101,35 @@ namespace ntt {
             m_meshblock.em_fields(i, j, fld::ex3) = 0.0;
           });
 
-      // auto r_absorb {m_sim_params.m_coord_parameters[2]};
-      // auto r_max {m_meshblock.grid->x1_max};
+      auto r_absorb {m_sim_params.m_coord_parameters[2]};
+      auto r_max {m_meshblock.grid->x1_max};
       // auto dx1 {m_meshblock.get_dx1()};
       // auto dx2 {m_meshblock.get_dx2()};
-      // Kokkos::parallel_for(
-      //     "2d_absorbing bc",
-      //     m_meshblock.loopActiveCells(),
-      //     Lambda(index_t i, index_t j) {
-      //       auto x1 {m_meshblock.convert_iTOx1(i)};
-      //       auto x2 {m_meshblock.convert_jTOx2(j)};
-      //       real_t r, delta_r, sigma_r;
-      //       real_t bx1_target {m_pGen.userTargetField_bx1(m_meshblock, x1, x2 + 0.5 * dx2)};
-      //       r = m_meshblock.grid->getSpherical_r(x1 + 0.5 * dx1, ZERO);
-      //       delta_r = (r - r_absorb) / (r_max - r_absorb);
-      //       sigma_r = HEAVISIDE(delta_r) * delta_r * delta_r * delta_r;
-      //       m_meshblock.em_fields(i, j, fld::ex1) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::ex1);
-      //       m_meshblock.em_fields(i, j, fld::bx2) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::bx2);
+      Kokkos::parallel_for(
+          "2d_absorbing bc",
+          m_meshblock.loopActiveCells(),
+          Lambda(index_t i, index_t j) {
+            auto i_ {static_cast<real_t>(i)};
+            auto j_ {static_cast<real_t>(j)};
+            auto br_hat_target {m_pGen.userTargetField_br_HAT(m_meshblock, i_, j_ + HALF)};
+            auto bx1_target {m_meshblock.grid->vec_HAT_to_CNT_x1(br_hat_target, i_, j_ + HALF)};
+            
+            auto [r1_, th1_] = m_meshblock.grid->coord_CU_to_Sph(i_, ZERO);
+            auto delta_r1 {(r1_ - r_absorb) / (r_max - r_absorb)};
+            auto sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
+            m_meshblock.em_fields(i, j, fld::ex1) = (1.0 - sigma_r1) * m_meshblock.em_fields(i, j, fld::ex1);
+            m_meshblock.em_fields(i, j, fld::bx2) = (1.0 - sigma_r1) * m_meshblock.em_fields(i, j, fld::bx2);
 
-      //       m_meshblock.em_fields(i, j, fld::bx3) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::bx3);
+            m_meshblock.em_fields(i, j, fld::bx3) = (1.0 - sigma_r1) * m_meshblock.em_fields(i, j, fld::bx3);
 
-      //       r = m_meshblock.grid->getSpherical_r(x1, ZERO);
-      //       delta_r = (r - r_absorb) / (r_max - r_absorb);
-      //       sigma_r = HEAVISIDE(delta_r) * delta_r * delta_r * delta_r;
-      //       m_meshblock.em_fields(i, j, fld::bx1) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::bx1) + sigma_r * bx1_target;
-      //       m_meshblock.em_fields(i, j, fld::ex2) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::ex2);
-      //       m_meshblock.em_fields(i, j, fld::ex3) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::ex3);
-      //     });
+            auto [r2_, th2_] = m_meshblock.grid->coord_CU_to_Sph(i_ + HALF, ZERO);
+            auto delta_r2 {(r2_ - r_absorb) / (r_max - r_absorb)};
+            auto sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
+            m_meshblock.em_fields(i, j, fld::bx1)
+              = (1.0 - sigma_r2) * m_meshblock.em_fields(i, j, fld::bx1) + sigma_r2 * bx1_target;
+            m_meshblock.em_fields(i, j, fld::ex2) = (1.0 - sigma_r2) * m_meshblock.em_fields(i, j, fld::ex2);
+            m_meshblock.em_fields(i, j, fld::ex3) = (1.0 - sigma_r2) * m_meshblock.em_fields(i, j, fld::ex3);
+          });
     } else {
       throw std::logic_error("# 2d boundary condition for coordinate system NOT IMPLEMENTED.");
     }
