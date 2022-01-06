@@ -84,7 +84,7 @@ namespace ntt {
     Inline auto polar_area(const real_t& x1, const real_t& x2) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto del_theta {x2 * dtheta};
-      return r * r * (ONE - std::cos(del_theta));
+      return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
     }
 
     // * * * * * * * * * * * * * * *
@@ -136,7 +136,7 @@ namespace ntt {
     Inline auto polar_area(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto del_theta {x2 * dtheta};
-      return r * r * (ONE - std::cos(del_theta));
+      return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
     }
   };
 } // namespace ntt
