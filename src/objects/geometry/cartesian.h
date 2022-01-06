@@ -45,6 +45,15 @@ namespace ntt {
     Inline auto sqrt_det_h(const real_t&) const -> real_t {
       return dx * dx * dx;
     }
+    // conversion to global cartesian basis
+    Inline auto vec_LOC_to_HAT(const real_t& ax, const real_t& ay, const real_t& az, const real_t&)
+      -> std::tuple<real_t, real_t, real_t> {
+      return {ax, ay, az};
+    }
+    Inline auto vec_HAT_to_LOC(const real_t& ax1, const real_t& ax2, const real_t& ax3, const real_t&)
+      -> std::tuple<real_t, real_t, real_t> {
+      return {ax1, ax2, ax3};
+    }
 
     // * * * * * * * * * * * * * * *
     // 2D:
@@ -66,6 +75,15 @@ namespace ntt {
     Inline auto sqrt_det_h(const real_t&, const real_t&) const -> real_t {
       return dx * dx * dx;
     }
+    // conversion to global cartesian basis
+    Inline auto vec_LOC_to_HAT(const real_t& ax, const real_t& ay, const real_t& az, const real_t&, const real_t&)
+      -> std::tuple<real_t, real_t, real_t> {
+      return {ax, ay, az};
+    }
+    Inline auto vec_HAT_to_LOC(const real_t& ax1, const real_t& ax2, const real_t& ax3, const real_t&, const real_t&)
+      -> std::tuple<real_t, real_t, real_t> {
+      return {ax1, ax2, ax3};
+    }
 
     // * * * * * * * * * * * * * * *
     // 3D:
@@ -86,6 +104,17 @@ namespace ntt {
     }
     Inline auto sqrt_det_h(const real_t&, const real_t&, const real_t&) const -> real_t {
       return dx * dx * dx;
+    }
+    // conversion to global cartesian basis
+    Inline auto
+    vec_LOC_to_HAT(const real_t& ax, const real_t& ay, const real_t& az, const real_t&, const real_t&, const real_t&)
+      -> std::tuple<real_t, real_t, real_t> {
+      return {ax, ay, az};
+    }
+    Inline auto
+    vec_HAT_to_LOC(const real_t& ax1, const real_t& ax2, const real_t& ax3, const real_t&, const real_t&, const real_t&)
+      -> std::tuple<real_t, real_t, real_t> {
+      return {ax1, ax2, ax3};
     }
   };
 

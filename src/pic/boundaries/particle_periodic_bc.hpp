@@ -13,50 +13,50 @@ namespace ntt {
     using index_t = typename NTTArray<real_t*>::size_type;
 
   public:
-    PrtlBC_Periodic(const std::vector<real_t>& m_extent_, const Particles<D>& m_particles_)
-        : PrtlBC<D> {m_extent_, m_particles_} {}
+    PrtlBC_Periodic(const std::vector<real_t>& m_extent_, const Particles<D>& prtls_)
+        : PrtlBC<D> {m_extent_, prtls_} {}
     Inline void operator()(const index_t) const;
   };
 
   template <>
   Inline void PrtlBC_Periodic<ONE_D>::operator()(const index_t p) const {
-    if (m_particles.m_x1(p) >= m_extent[1]) {
-      m_particles.m_x1(p) -= m_extent[1] - m_extent[0];
-    } else if (m_particles.m_x1(p) < m_extent[0]) {
-      m_particles.m_x1(p) += m_extent[1] - m_extent[0];
+    if (prtls.x1(p) >= m_extent[1]) {
+      prtls.x1(p) -= m_extent[1] - m_extent[0];
+    } else if (prtls.x1(p) < m_extent[0]) {
+      prtls.x1(p) += m_extent[1] - m_extent[0];
     }
   }
 
   template <>
   Inline void PrtlBC_Periodic<TWO_D>::operator()(const index_t p) const {
-    if (m_particles.m_x1(p) >= m_extent[1]) {
-      m_particles.m_x1(p) -= m_extent[1] - m_extent[0];
-    } else if (m_particles.m_x1(p) < m_extent[0]) {
-      m_particles.m_x1(p) += m_extent[1] - m_extent[0];
+    if (prtls.x1(p) >= m_extent[1]) {
+      prtls.x1(p) -= m_extent[1] - m_extent[0];
+    } else if (prtls.x1(p) < m_extent[0]) {
+      prtls.x1(p) += m_extent[1] - m_extent[0];
     }
-    if (m_particles.m_x2(p) >= m_extent[3]) {
-      m_particles.m_x2(p) -= m_extent[3] - m_extent[2];
-    } else if (m_particles.m_x2(p) < m_extent[2]) {
-      m_particles.m_x2(p) += m_extent[3] - m_extent[2];
+    if (prtls.x2(p) >= m_extent[3]) {
+      prtls.x2(p) -= m_extent[3] - m_extent[2];
+    } else if (prtls.x2(p) < m_extent[2]) {
+      prtls.x2(p) += m_extent[3] - m_extent[2];
     }
   }
 
   template <>
   Inline void PrtlBC_Periodic<THREE_D>::operator()(const index_t p) const {
-    if (m_particles.m_x1(p) >= m_extent[1]) {
-      m_particles.m_x1(p) -= m_extent[1] - m_extent[0];
-    } else if (m_particles.m_x1(p) < m_extent[0]) {
-      m_particles.m_x1(p) += m_extent[1] - m_extent[0];
+    if (prtls.x1(p) >= m_extent[1]) {
+      prtls.x1(p) -= m_extent[1] - m_extent[0];
+    } else if (prtls.x1(p) < m_extent[0]) {
+      prtls.x1(p) += m_extent[1] - m_extent[0];
     }
-    if (m_particles.m_x2(p) >= m_extent[3]) {
-      m_particles.m_x2(p) -= m_extent[3] - m_extent[2];
-    } else if (m_particles.m_x2(p) < m_extent[2]) {
-      m_particles.m_x2(p) += m_extent[3] - m_extent[2];
+    if (prtls.x2(p) >= m_extent[3]) {
+      prtls.x2(p) -= m_extent[3] - m_extent[2];
+    } else if (prtls.x2(p) < m_extent[2]) {
+      prtls.x2(p) += m_extent[3] - m_extent[2];
     }
-    if (m_particles.m_x3(p) >= m_extent[5]) {
-      m_particles.m_x3(p) -= m_extent[5] - m_extent[4];
-    } else if (m_particles.m_x3(p) < m_extent[4]) {
-      m_particles.m_x3(p) += m_extent[5] - m_extent[4];
+    if (prtls.x3(p) >= m_extent[5]) {
+      prtls.x3(p) -= m_extent[5] - m_extent[4];
+    } else if (prtls.x3(p) < m_extent[4]) {
+      prtls.x3(p) += m_extent[5] - m_extent[4];
     }
   }
 

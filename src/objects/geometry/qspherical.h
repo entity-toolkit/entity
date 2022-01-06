@@ -63,30 +63,24 @@ namespace ntt {
       auto [r, theta] = coord_CU_to_Sph(x1, x2);
       return {r * std::sin(theta), r * std::cos(theta)};
     }
-
     // conversion to spherical
     Inline auto coord_CU_to_Sph(const real_t& x1, const real_t& x2) const -> std::tuple<real_t, real_t> {
       auto xi {x1 * dxi + xi_min};
       auto eta {x2 * deta};
       return {r0 + std::exp(xi), eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
     }
-
     // metric coefficients
     Inline auto h11(const real_t& x1, const real_t&) const -> real_t {
       auto xi {x1 * dxi + xi_min};
       return dxi_sqr * std::exp(2.0 * xi);
     }
-
     Inline auto h22(const real_t& x1, const real_t& x2) const -> real_t {
       auto xi {x1 * dxi + xi_min};
       auto r {r0 + std::exp(xi)};
-
       auto eta {x2 * deta};
       auto dtheta_deta {(ONE + 2.0 * h + 12.0 * h * (eta * INV_PI) * ((eta * INV_PI) - ONE))};
-
       return deta_sqr * r * r * dtheta_deta * dtheta_deta;
     }
-
     Inline auto h33(const real_t& x1, const real_t& x2) const -> real_t {
       auto xi {x1 * dxi + xi_min};
       auto r {r0 + std::exp(xi)};
@@ -95,7 +89,6 @@ namespace ntt {
       auto sin_theta {std::sin(theta)};
       return r * r * sin_theta * sin_theta;
     }
-
     // det of metric
     Inline auto sqrt_det_h(const real_t& x1, const real_t& x2) const -> real_t {
       auto xi {x1 * dxi + xi_min};
@@ -106,7 +99,6 @@ namespace ntt {
       auto dtheta_deta {(ONE + 2.0 * h + 12.0 * h * (eta * INV_PI) * ((eta * INV_PI) - ONE))};
       return dxi * deta * std::exp(xi) * r * r * sin_theta * dtheta_deta;
     }
-
     // area at poles
     Inline auto polar_area(const real_t& x1, const real_t& x2) const -> real_t {
       auto xi {x1 * dxi + xi_min};
@@ -114,6 +106,28 @@ namespace ntt {
       auto eta {x2 * deta};
       auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
       return deta * std::exp(xi) * r * r * (ONE - std::cos(theta));
+    }
+    // conversion to global cartesian basis
+    Inline auto vec_LOC_to_HAT(const real_t& ax, const real_t& ay, const real_t& az, const real_t& x1, const real_t& x2)
+      -> std::tuple<real_t, real_t, real_t> {
+      auto xi {x1 * dxi + xi_min};
+      auto r {r0 + std::exp(xi)};
+      auto eta {x2 * deta};
+      auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
+      auto sin_theta {std::sin(theta)};
+      auto cos_theta {std::cos(theta)};
+      return {ax * sin_theta + az * cos_theta, ax * cos_theta - az * sin_theta, ay};
+    }
+    Inline auto
+    vec_HAT_to_LOC(const real_t& ax1, const real_t& ax2, const real_t& ax3, const real_t& x1, const real_t& x2)
+      -> std::tuple<real_t, real_t, real_t> {
+      auto xi {x1 * dxi + xi_min};
+      auto r {r0 + std::exp(xi)};
+      auto eta {x2 * deta};
+      auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
+      auto sin_theta {std::sin(theta)};
+      auto cos_theta {std::cos(theta)};
+      return {ax1 * sin_theta + ax2 * cos_theta, ax3, ax1 * cos_theta - ax2 * sin_theta};
     }
 
     // * * * * * * * * * * * * * * *

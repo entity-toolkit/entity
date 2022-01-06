@@ -15,25 +15,25 @@ namespace ntt {
     struct Photon_t {};
 
     Meshblock<D> mblock;
-    Particles<D> m_particles;
+    Particles<D> prtls;
     real_t coeff;
     real_t dt;
     using index_t = NTTArray<real_t*>::size_type;
 
     Pusher(
         const Meshblock<D>& mblock_,
-        const Particles<D>& m_particles_,
+        const Particles<D>& prtls_,
         const real_t& coeff_,
         const real_t& dt_)
-        : mblock(mblock_), m_particles(m_particles_), coeff(coeff_), dt(dt_) {}
+        : mblock(mblock_), prtls(prtls_), coeff(coeff_), dt(dt_) {}
 
     void pushAllParticles() {
       // TODO: call different options
-      if (m_particles.get_mass() == 0) {
-        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.get_npart());
+      if (prtls.get_mass() == 0) {
+        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, prtls.get_npart());
         Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.get_mass() != 0) {
-        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.get_npart());
+      } else if (prtls.get_mass() != 0) {
+        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, prtls.get_npart());
         Kokkos::parallel_for("pusher", range_policy, *this);
       }
     }
@@ -62,7 +62,7 @@ namespace ntt {
     }
 
     // velocity updaters
-    // Inline void BorisUpdate(const index_t&, real_t&, real_t&, real_t&, real_t&, real_t&, real_t&) const;
+    Inline void BorisUpdate(const index_t&, real_t&, real_t&, real_t&, real_t&, real_t&, real_t&) const;
   };
 
   // * * * * Coordinate converters * * * * * * * * * * *
@@ -72,12 +72,12 @@ namespace ntt {
   template <>
   Inline void Pusher<TWO_D>::transformToCartesian(const index_t& p) const {
 // #ifdef CURVILINEAR_COORDS
-//     auto [p_x, p_y] = mblock.grid->transform_x1x2TOxy(m_particles.m_x1(p), m_particles.m_x2(p));
-//     auto [p_ux, p_uy] = mblock.grid->transform_ux1ux2TOuxuy(m_particles.m_ux1(p), m_particles.m_ux2(p));
-//     m_particles.m_x1(p) = p_x;
-//     m_particles.m_x2(p) = p_y;
-//     m_particles.m_ux1(p) = p_ux;
-//     m_particles.m_ux2(p) = p_uy;
+//     auto [p_x, p_y] = mblock.grid->transforx1x2TOxy(prtls.x1(p), prtls.x2(p));
+//     auto [p_ux, p_uy] = mblock.grid->transforux1ux2TOuxuy(prtls.ux1(p), prtls.ux2(p));
+//     prtls.x1(p) = p_x;
+//     prtls.x2(p) = p_y;
+//     prtls.ux1(p) = p_ux;
+//     prtls.ux2(p) = p_uy;
 // #else
     UNUSED(p);
 // #endif
@@ -86,14 +86,14 @@ namespace ntt {
   template <>
   Inline void Pusher<THREE_D>::transformToCartesian(const index_t& p) const {
 // #ifdef CURVILINEAR_COORDS
-//     auto [p_x, p_y, p_z] = mblock.grid->transform_x1x2x3TOxyz(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
-//     auto [p_ux, p_uy, p_uz] = mblock.grid->transform_ux1ux2ux3TOuxuyuz(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
-//     m_particles.m_x1(p) = p_x;
-//     m_particles.m_x2(p) = p_y;
-//     m_particles.m_x3(p) = p_z;
-//     m_particles.m_ux1(p) = p_ux;
-//     m_particles.m_ux2(p) = p_uy;
-//     m_particles.m_ux3(p) = p_uz;
+//     auto [p_x, p_y, p_z] = mblock.grid->transforx1x2x3TOxyz(prtls.x1(p), prtls.x2(p), prtls.x3(p));
+//     auto [p_ux, p_uy, p_uz] = mblock.grid->transforux1ux2ux3TOuxuyuz(prtls.ux1(p), prtls.ux2(p), prtls.ux3(p));
+//     prtls.x1(p) = p_x;
+//     prtls.x2(p) = p_y;
+//     prtls.x3(p) = p_z;
+//     prtls.ux1(p) = p_ux;
+//     prtls.ux2(p) = p_uy;
+//     prtls.ux3(p) = p_uz;
 // #else
     UNUSED(p);
 // #endif
@@ -105,12 +105,12 @@ namespace ntt {
   template <>
   Inline void Pusher<TWO_D>::transformFromCartesian(const index_t& p) const {
 // #ifdef CURVILINEAR_COORDS
-//     auto [p_x1, p_x2] = mblock.grid->transform_xyTOx1x2(m_particles.m_x1(p), m_particles.m_x2(p));
-//     auto [p_ux1, p_ux2] = mblock.grid->transform_uxuyTOux1ux2(m_particles.m_ux1(p), m_particles.m_ux2(p));
-//     m_particles.m_x1(p) = p_x1;
-//     m_particles.m_x2(p) = p_x2;
-//     m_particles.m_ux1(p) = p_ux1;
-//     m_particles.m_ux2(p) = p_ux2;
+//     auto [p_x1, p_x2] = mblock.grid->transform_xyTOx1x2(prtls.x1(p), prtls.x2(p));
+//     auto [p_ux1, p_ux2] = mblock.grid->transform_uxuyTOux1ux2(prtls.ux1(p), prtls.ux2(p));
+//     prtls.x1(p) = p_x1;
+//     prtls.x2(p) = p_x2;
+//     prtls.ux1(p) = p_ux1;
+//     prtls.ux2(p) = p_ux2;
 // #else
     UNUSED(p);
 // #endif
@@ -119,14 +119,14 @@ namespace ntt {
   template <>
   Inline void Pusher<THREE_D>::transformFromCartesian(const index_t& p) const {
 // #ifdef CURVILINEAR_COORDS
-//     auto [p_x1, p_x2, p_x3] = mblock.grid->transform_xyzTOx1x2x3(m_particles.m_x1(p), m_particles.m_x2(p), m_particles.m_x3(p));
-//     auto [p_ux1, p_ux2, p_ux3] = mblock.grid->transform_uxuyuzTOux1ux2ux3(m_particles.m_ux1(p), m_particles.m_ux2(p), m_particles.m_ux3(p));
-//     m_particles.m_x1(p) = p_x1;
-//     m_particles.m_x2(p) = p_x2;
-//     m_particles.m_x3(p) = p_x3;
-//     m_particles.m_ux1(p) = p_ux1;
-//     m_particles.m_ux2(p) = p_ux2;
-//     m_particles.m_ux3(p) = p_ux3;
+//     auto [p_x1, p_x2, p_x3] = mblock.grid->transform_xyzTOx1x2x3(prtls.x1(p), prtls.x2(p), prtls.x3(p));
+//     auto [p_ux1, p_ux2, p_ux3] = mblock.grid->transform_uxuyuzTOux1ux2ux3(prtls.ux1(p), prtls.ux2(p), prtls.ux3(p));
+//     prtls.x1(p) = p_x1;
+//     prtls.x2(p) = p_x2;
+//     prtls.x3(p) = p_x3;
+//     prtls.ux1(p) = p_ux1;
+//     prtls.ux2(p) = p_ux2;
+//     prtls.ux3(p) = p_ux3;
 // #else
     UNUSED(p);
 // #endif
@@ -136,40 +136,74 @@ namespace ntt {
   template <>
   Inline void Pusher<ONE_D>::positionUpdate(const index_t& p) const {
     // TESTPERF: faster sqrt?
-    // clang-format off
-  real_t inv_gamma0 {
+    auto inv_gamma0 {
       ONE / std::sqrt(ONE
-          + m_particles.m_ux1(p) * m_particles.m_ux1(p)
-          + m_particles.m_ux2(p) * m_particles.m_ux2(p)
-          + m_particles.m_ux3(p) * m_particles.m_ux3(p))
+          + prtls.ux1(p) * prtls.ux1(p)
+          + prtls.ux2(p) * prtls.ux2(p)
+          + prtls.ux3(p) * prtls.ux3(p))
         };
-  m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
-}
+    real_t temp_i, temp_r;
+    prtls.dx1(p) += dt * prtls.ux1(p) * inv_gamma0;
+    temp_i = static_cast<int>(prtls.dx1(p));
+    temp_r = std::max(SIGN(prtls.dx1(p)) + static_cast<real_t>(temp_i), static_cast<real_t>(temp_i)) - ONE;
+    temp_i = static_cast<int>(temp_r);
+    prtls.x1(p) += temp_i;
+    prtls.dx1(p) -= temp_r;
+  }
 
 template <>
 Inline void Pusher<TWO_D>::positionUpdate(const index_t& p) const {
-  // clang-format off
   real_t inv_gamma0 {
       ONE / std::sqrt(ONE
-          + m_particles.m_ux1(p) * m_particles.m_ux1(p)
-          + m_particles.m_ux2(p) * m_particles.m_ux2(p)
-          + m_particles.m_ux3(p) * m_particles.m_ux3(p))
+          + prtls.ux1(p) * prtls.ux1(p)
+          + prtls.ux2(p) * prtls.ux2(p)
+          + prtls.ux3(p) * prtls.ux3(p))
         };
-  m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
-  m_particles.m_x2(p) += dt * m_particles.m_ux2(p) * inv_gamma0;
+  real_t temp_i, temp_r;
+  prtls.dx1(p) += dt * prtls.ux1(p) * inv_gamma0;
+  temp_i = static_cast<int>(prtls.dx1(p));
+  temp_r = std::max(SIGN(prtls.dx1(p)) + static_cast<real_t>(temp_i), static_cast<real_t>(temp_i)) - ONE;
+  temp_i = static_cast<int>(temp_r);
+  prtls.x1(p) += temp_i;
+  prtls.dx1(p) -= temp_r;
+
+  prtls.dx2(p) += dt * prtls.ux2(p) * inv_gamma0;
+  temp_i = static_cast<int>(prtls.dx2(p));
+  temp_r = std::max(SIGN(prtls.dx2(p)) + static_cast<real_t>(temp_i), static_cast<real_t>(temp_i)) - ONE;
+  temp_i = static_cast<int>(temp_r);
+  prtls.x2(p) += temp_i;
+  prtls.dx2(p) -= temp_r;
 }
 
 template <>
 Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
   real_t inv_gamma0 {
       ONE / std::sqrt(ONE
-          + m_particles.m_ux1(p) * m_particles.m_ux1(p)
-          + m_particles.m_ux2(p) * m_particles.m_ux2(p)
-          + m_particles.m_ux3(p) * m_particles.m_ux3(p))
+          + prtls.ux1(p) * prtls.ux1(p)
+          + prtls.ux2(p) * prtls.ux2(p)
+          + prtls.ux3(p) * prtls.ux3(p))
         };
-  m_particles.m_x1(p) += dt * m_particles.m_ux1(p) * inv_gamma0;
-  m_particles.m_x2(p) += dt * m_particles.m_ux2(p) * inv_gamma0;
-  m_particles.m_x3(p) += dt * m_particles.m_ux3(p) * inv_gamma0;
+  real_t temp_i, temp_r;
+  prtls.dx1(p) += dt * prtls.ux1(p) * inv_gamma0;
+  temp_i = static_cast<int>(prtls.dx1(p));
+  temp_r = std::max(SIGN(prtls.dx1(p)) + static_cast<real_t>(temp_i), static_cast<real_t>(temp_i)) - ONE;
+  temp_i = static_cast<int>(temp_r);
+  prtls.x1(p) += temp_i;
+  prtls.dx1(p) -= temp_r;
+
+  prtls.dx2(p) += dt * prtls.ux2(p) * inv_gamma0;
+  temp_i = static_cast<int>(prtls.dx2(p));
+  temp_r = std::max(SIGN(prtls.dx2(p)) + static_cast<real_t>(temp_i), static_cast<real_t>(temp_i)) - ONE;
+  temp_i = static_cast<int>(temp_r);
+  prtls.x2(p) += temp_i;
+  prtls.dx2(p) -= temp_r;
+
+  prtls.dx3(p) += dt * prtls.ux3(p) * inv_gamma0;
+  temp_i = static_cast<int>(prtls.dx3(p));
+  temp_r = std::max(SIGN(prtls.dx3(p)) + static_cast<real_t>(temp_i), static_cast<real_t>(temp_i)) - ONE;
+  temp_i = static_cast<int>(temp_r);
+  prtls.x3(p) += temp_i;
+  prtls.dx3(p) -= temp_r;
 }
 
 // // * * * * Field interpolation * * * * * * * * * * * *
@@ -182,7 +216,7 @@ Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
 //     real_t& b0_x1,
 //     real_t& b0_x2,
 //     real_t& b0_x3) const {
-//   const auto [i, dx1] = mblock.convert_x1TOidx1(m_particles.m_x1(p));
+//   const auto [i, dx1] = mblock.convert_x1TOidx1(prtls.x1(p));
 
 //   // first order
 //   real_t c0, c1;
@@ -226,13 +260,12 @@ Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
 //     real_t& b0_x2,
 //     real_t& b0_x3) const {
 //   // dx1, dx2 are normalized to cell sizes
-//   const auto [i, dx1] = mblock.convert_x1TOidx1(m_particles.m_x1(p));
-//   const auto [j, dx2] = mblock.convert_x2TOjdx2(m_particles.m_x2(p));
+//   const auto [i, dx1] = mblock.convert_x1TOidx1(prtls.x1(p));
+//   const auto [j, dx2] = mblock.convert_x2TOjdx2(prtls.x2(p));
 
 //   // first order
 //   real_t c000, c100, c010, c110, c00, c10;
 
-//   // clang-format off
 //   // Ex1
 //   // interpolate to nodes
 //   c000 = 0.5 * (mblock.em_fields(i, j, fld::ex1) + mblock.em_fields(i - 1, j, fld::ex1));
@@ -303,9 +336,9 @@ Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
 //     real_t& b0_x1,
 //     real_t& b0_x2,
 //     real_t& b0_x3) const {
-//   const auto [i, dx1] = mblock.convert_x1TOidx1(m_particles.m_x1(p));
-//   const auto [j, dx2] = mblock.convert_x2TOjdx2(m_particles.m_x2(p));
-//   const auto [k, dx3] = mblock.convert_x3TOkdx3(m_particles.m_x3(p));
+//   const auto [i, dx1] = mblock.convert_x1TOidx1(prtls.x1(p));
+//   const auto [j, dx2] = mblock.convert_x2TOjdx2(prtls.x2(p));
+//   const auto [k, dx3] = mblock.convert_x3TOkdx3(prtls.x3(p));
 
 //   // first order
 //   real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01, c11, c0, c1;
@@ -568,9 +601,9 @@ Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
 //   e0_x2 *= COEFF;
 //   e0_x3 *= COEFF;
 
-//   real_t u0_x1 {m_particles.m_ux1(p) + e0_x1};
-//   real_t u0_x2 {m_particles.m_ux2(p) + e0_x2};
-//   real_t u0_x3 {m_particles.m_ux3(p) + e0_x3};
+//   real_t u0_x1 {prtls.ux1(p) + e0_x1};
+//   real_t u0_x2 {prtls.ux2(p) + e0_x2};
+//   real_t u0_x3 {prtls.ux3(p) + e0_x3};
 
 //   // TESTPERF: faster sqrt?
 //   COEFF *= 1.0 / std::sqrt(1.0 + u0_x1 * u0_x1 + u0_x2 * u0_x2 + u0_x3 * u0_x3);
@@ -586,9 +619,9 @@ Inline void Pusher<THREE_D>::positionUpdate(const index_t& p) const {
 //   u0_x2 += u1_x3 * b0_x1 - u1_x1 * b0_x3 + e0_x2;
 //   u0_x3 += u1_x1 * b0_x2 - u1_x2 * b0_x1 + e0_x3;
 
-//   m_particles.m_ux1(p) = u0_x1;
-//   m_particles.m_ux2(p) = u0_x2;
-//   m_particles.m_ux3(p) = u0_x3;
+//   prtls.ux1(p) = u0_x1;
+//   prtls.ux2(p) = u0_x2;
+//   prtls.ux3(p) = u0_x3;
 // }
 
 } // namespace ntt
