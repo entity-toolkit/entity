@@ -47,98 +47,108 @@ namespace ntt {
       auto theta {x2 * dtheta};
       return {r * std::sin(theta), r * std::cos(theta)};
     }
-
-    // // conversion from cartesian (Cart) to code units (CU)
-    // Inline auto coord_CART_to_CU(const real_t& x, const real_t& y) const -> std::tuple<real_t, real_t> override {
-    //   return {x, y};
-    // }
-
     // conversion to spherical
     Inline auto coord_CU_to_Sph(const real_t& x1, const real_t& x2) const -> std::tuple<real_t, real_t> {
       return {x1 * dr + this->x1_min, x2 * dtheta};
     }
-
     // metric coefficients
     Inline auto h11(const real_t&, const real_t&) const -> real_t { return dr_sqr; }
-
     Inline auto h22(const real_t& x1, const real_t&) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       return dtheta_sqr * r * r;
     }
-
     Inline auto h33(const real_t& x1, const real_t& x2) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto theta {x2 * dtheta};
       auto sin_theta {std::sin(theta)};
       return r * r * sin_theta * sin_theta;
     }
-
     // det of metric
     Inline auto sqrt_det_h(const real_t& x1, const real_t& x2) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto theta {x2 * dtheta};
       return dr * dtheta * r * r * std::sin(theta);
     }
-
     // area at poles
     Inline auto polar_area(const real_t& x1, const real_t& x2) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto del_theta {x2 * dtheta};
       return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
     }
+    // conversion to global cartesian basis
+    Inline auto vec_LOC_to_HAT(const real_t& ax, const real_t& ay, const real_t& az, const real_t& x1, const real_t& x2)
+      -> std::tuple<real_t, real_t, real_t> {
+      auto r {x1 * dr + this->x1_min};
+      auto theta {x2 * dtheta};
+      auto sin_theta {std::sin(theta)};
+      auto cos_theta {std::cos(theta)};
+      return {ax * sin_theta + az * cos_theta, ax * cos_theta - az * sin_theta, ay};
+    }
+    Inline auto
+    vec_HAT_to_LOC(const real_t& ax1, const real_t& ax2, const real_t& ax3, const real_t& x1, const real_t& x2)
+      -> std::tuple<real_t, real_t, real_t> {
+      auto r {x1 * dr + this->x1_min};
+      auto theta {x2 * dtheta};
+      auto sin_theta {std::sin(theta)};
+      auto cos_theta {std::cos(theta)};
+      return {ax1 * sin_theta + ax2 * cos_theta, ax3, ax1 * cos_theta - ax2 * sin_theta};
+    }
 
     // * * * * * * * * * * * * * * *
     // 3D:
     // * * * * * * * * * * * * * * *
-    // coordinate transformations
-    // conversion from code units (CU) to cartesian (Cart)
-    Inline auto coord_CU_to_Cart(const real_t& x1, const real_t& x2, const real_t& x3) const
-      -> std::tuple<real_t, real_t, real_t> override {
-      auto r {x1 * dr + this->x1_min};
-      auto theta {x2 * dtheta};
-      auto phi {x3 * dphi};
-      return {r * std::sin(theta) * std::cos(phi), r * std::sin(theta) * std::sin(phi), r * std::cos(theta)};
-    }
-
-    // // conversion from cartesian (Cart) to code units (CU)
-    // Inline auto coord_CART_to_CU(const real_t& x, const real_t& y, const real_t& z) const
-    //     -> std::tuple<real_t, real_t, real_t> override {
-    //   return {x, y, z};
-    // }
-
-    // conversion to spherical
-    Inline auto coord_CU_to_Sph(const real_t& x1, const real_t& x2, const real_t& x3) const
-      -> std::tuple<real_t, real_t, real_t> {
-      return {x1 * dr + this->x1_min, x2 * dtheta, x3 * dphi};
-    }
-
-    // metric coefficients
-    Inline auto h11(const real_t&, const real_t&, const real_t&) const -> real_t { return dr_sqr; }
-    Inline auto h22(const real_t& x1, const real_t&, const real_t&) const -> real_t {
-      auto r {x1 * dr + this->x1_min};
-      return dtheta_sqr * r * r;
-    }
-    Inline auto h33(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
-      auto r {x1 * dr + this->x1_min};
-      auto theta {x2 * dtheta};
-      auto sin_theta {std::sin(theta)};
-      return dphi_sqr * r * r * sin_theta * sin_theta;
-    }
-
-    // det of metric
-    Inline auto sqrt_det_h(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
-      auto r {x1 * dr + this->x1_min};
-      auto theta {x2 * dtheta};
-      return dr * dtheta * dphi * r * r * std::sin(theta);
-    }
-
-    // area at poles
-    Inline auto polar_area(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
-      auto r {x1 * dr + this->x1_min};
-      auto del_theta {x2 * dtheta};
-      return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
-    }
+    // TODO
+    // - - - - - - - - - - - - - - -
   };
 } // namespace ntt
 
 #endif
+
+// // coordinate transformations
+// // conversion from code units (CU) to cartesian (Cart)
+// Inline auto coord_CU_to_Cart(const real_t& x1, const real_t& x2, const real_t& x3) const
+//   -> std::tuple<real_t, real_t, real_t> override {
+//   auto r {x1 * dr + this->x1_min};
+//   auto theta {x2 * dtheta};
+//   auto phi {x3 * dphi};
+//   return {r * std::sin(theta) * std::cos(phi), r * std::sin(theta) * std::sin(phi), r * std::cos(theta)};
+// }
+
+// // // conversion from cartesian (Cart) to code units (CU)
+// // Inline auto coord_CART_to_CU(const real_t& x, const real_t& y, const real_t& z) const
+// //     -> std::tuple<real_t, real_t, real_t> override {
+// //   return {x, y, z};
+// // }
+
+// // conversion to spherical
+// Inline auto coord_CU_to_Sph(const real_t& x1, const real_t& x2, const real_t& x3) const
+//   -> std::tuple<real_t, real_t, real_t> {
+//   return {x1 * dr + this->x1_min, x2 * dtheta, x3 * dphi};
+// }
+
+// // metric coefficients
+// Inline auto h11(const real_t&, const real_t&, const real_t&) const -> real_t { return dr_sqr; }
+// Inline auto h22(const real_t& x1, const real_t&, const real_t&) const -> real_t {
+//   auto r {x1 * dr + this->x1_min};
+//   return dtheta_sqr * r * r;
+// }
+// Inline auto h33(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
+//   auto r {x1 * dr + this->x1_min};
+//   auto theta {x2 * dtheta};
+//   auto sin_theta {std::sin(theta)};
+//   return dphi_sqr * r * r * sin_theta * sin_theta;
+// }
+
+// // det of metric
+// Inline auto sqrt_det_h(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
+//   auto r {x1 * dr + this->x1_min};
+//   auto theta {x2 * dtheta};
+//   return dr * dtheta * dphi * r * r * std::sin(theta);
+// }
+
+// // area at poles
+// Inline auto polar_area(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
+//   auto r {x1 * dr + this->x1_min};
+//   auto del_theta {x2 * dtheta};
+//   return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
+// }
