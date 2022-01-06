@@ -60,12 +60,12 @@ namespace ntt {
                                              Meshblock<TWO_D>& mblock) {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t**>::size_type;
-    real_t omega {0.1};
-    // if (time < 0.5) {
-    //   omega = time / 10.0;
-    // } else {
-    //   omega = 0.05;
-    // }
+    real_t omega;
+    if (time < 0.5) {
+      omega = time / 10.0;
+    } else {
+      omega = 0.05;
+    }
     Kokkos::parallel_for(
       "userBcFlds_rmin",
       NTT2DRange({mblock.i_min, mblock.j_min}, {mblock.i_min + 1, mblock.j_max}),
