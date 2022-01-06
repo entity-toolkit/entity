@@ -27,6 +27,16 @@ namespace ntt {
         dphi_sqr(dphi * dphi) {}
     ~SphericalSystem() = default;
 
+    auto findSmallestCell() const -> real_t {
+      if constexpr (D == TWO_D) {
+        auto dx1 {dr};
+        auto dx2 {this->x1_min * dtheta};
+        return ONE / std::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
+      } else {
+        throw std::logic_error("# Error: min cell finding not implemented for 3D spherical.");
+      }
+    }
+
     // * * * * * * * * * * * * * * *
     // 2D:
     // * * * * * * * * * * * * * * *

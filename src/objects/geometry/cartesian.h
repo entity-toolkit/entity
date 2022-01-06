@@ -21,83 +21,71 @@ namespace ntt {
           inv_dx(ONE / dx) {}
     ~CartesianSystem() = default;
 
+    auto findSmallestCell() const -> real_t {
+      return dx / std::sqrt(static_cast<real_t>(D));
+    }
+
+    // * * * * * * * * * * * * * * *
+    // 1D:
+    // * * * * * * * * * * * * * * *
     // coordinate transformations
     // conversion from code units (CU) to cartesian (Cart)
     Inline auto coord_CU_to_Cart(const real_t &x1) const -> real_t override {
       return x1 * dx + this->x1_min;
     }
+    Inline auto h11(const real_t&) const -> real_t {
+      return dx_sqr;
+    }
+    Inline auto h22(const real_t&) const -> real_t {
+      return dx_sqr;
+    }
+    Inline auto h33(const real_t&) const -> real_t {
+      return dx_sqr;
+    }
+    Inline auto sqrt_det_h(const real_t&) const -> real_t {
+      return dx * dx * dx;
+    }
+
+    // * * * * * * * * * * * * * * *
+    // 2D:
+    // * * * * * * * * * * * * * * *
+    // coordinate transformations
+    // conversion from code units (CU) to cartesian (Cart)
     Inline auto coord_CU_to_Cart(const real_t &x1, const real_t &x2) const -> std::tuple<real_t, real_t> override {
       return {x1 * dx + this->x1_min, x2 * dx + this->x2_min};
     }
-    Inline auto coord_CU_to_Cart(const real_t &x1, const real_t &x2, const real_t &x3) const -> std::tuple<real_t, real_t, real_t> override {
-      return {x1 * dx + this->x1_min, x2 * dx + this->x2_min, x3 * dx + this->x3_min};
-    }
-
-    // // conversion from cartesian (Cart) to code units (CU)
-    // Inline auto coord_CART_to_CU(const real_t &x) const -> real_t override {
-    //   return (x - this->x1_min) * inv_dx;
-    // }
-    // Inline auto coord_CART_to_CU(const real_t &x, const real_t &y) const -> std::tuple<real_t, real_t> override {
-    //   return {(x - this->x1_min) * inv_dx, (y - this->x2_min) * inv_dx};
-    // }
-    // Inline auto coord_CART_to_CU(const real_t &x, const real_t &y, const real_t &z) const -> std::tuple<real_t, real_t, real_t> override {
-    //   return {(x - this->x1_min) * inv_dx, (y - this->x2_min) * inv_dx, (z - this->x3_min) * inv_dx};
-    // }
-
-    // // vector transformations
-    // // ... curvilinear -> cartesian
-    // Inline auto transform_ux1TOux(const real_t& ux1) const -> real_t override { return ux1; }
-    // Inline auto transform_ux1ux2TOuxuy(const real_t& ux1, const real_t& ux2) const -> std::tuple<real_t, real_t> override { return {ux1, ux2}; }
-    // Inline auto transform_ux1ux2ux3TOuxuyuz(const real_t& ux1, const real_t& ux2, const real_t& ux3) const -> std::tuple<real_t, real_t, real_t> override { return {ux1, ux2, ux3}; }
-
-    // // ... cartesian -> curvilinear
-    // Inline auto transform_uxTOux1(const real_t& ux) const -> real_t override { return ux; }
-    // Inline auto transform_uxuyTOux1ux2(const real_t& ux, const real_t& uy) const -> std::tuple<real_t, real_t> override { return {ux, uy}; }
-    // Inline auto transform_uxuyuzTOux1ux2ux3(const real_t& ux, const real_t& uy, const real_t& uz) const -> std::tuple<real_t, real_t, real_t> override { return {ux, uy, uz}; }
-
-    Inline auto h11(const real_t &) const -> real_t {
-      return dx_sqr;
-    }
-    Inline auto h11(const real_t &, const real_t &) const -> real_t {
-      return dx_sqr;
-    }
-    Inline auto h11(const real_t &, const real_t &, const real_t &) const -> real_t {
-      return dx_sqr;
-    }
-
-    Inline auto h22(const real_t&) const -> real_t {
+    Inline auto h11(const real_t&, const real_t&) const -> real_t {
       return dx_sqr;
     }
     Inline auto h22(const real_t&, const real_t&) const -> real_t {
       return dx_sqr;
     }
-    Inline auto h22(const real_t&, const real_t&, const real_t&) const -> real_t {
+    Inline auto h33(const real_t&, const real_t&) const -> real_t {
       return dx_sqr;
+    }
+    Inline auto sqrt_det_h(const real_t&, const real_t&) const -> real_t {
+      return dx * dx * dx;
     }
 
-    Inline auto h33(const real_t&) const -> real_t {
+    // * * * * * * * * * * * * * * *
+    // 3D:
+    // * * * * * * * * * * * * * * *
+    // coordinate transformations
+    // conversion from code units (CU) to cartesian (Cart)
+    Inline auto coord_CU_to_Cart(const real_t &x1, const real_t &x2, const real_t &x3) const -> std::tuple<real_t, real_t, real_t> override {
+      return {x1 * dx + this->x1_min, x2 * dx + this->x2_min, x3 * dx + this->x3_min};
+    }
+    Inline auto h11(const real_t&, const real_t&, const real_t&) const -> real_t {
       return dx_sqr;
     }
-    Inline auto h33(const real_t&, const real_t&) const -> real_t {
+    Inline auto h22(const real_t&, const real_t&, const real_t&) const -> real_t {
       return dx_sqr;
     }
     Inline auto h33(const real_t&, const real_t&, const real_t&) const -> real_t {
       return dx_sqr;
     }
-
-    Inline auto sqrt_det_h(const real_t&) const -> real_t {
-      return dx * dx * dx;
-    }
-    Inline auto sqrt_det_h(const real_t&, const real_t&) const -> real_t {
-      return dx * dx * dx;
-    }
     Inline auto sqrt_det_h(const real_t&, const real_t&, const real_t&) const -> real_t {
       return dx * dx * dx;
-    }
-
-    Inline auto polar_area(const real_t&, const real_t&) const -> real_t {
-      assert(false);
-      return -1.0;
     }
   };
 
