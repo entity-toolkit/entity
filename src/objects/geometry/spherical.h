@@ -69,7 +69,7 @@ namespace ntt {
     Inline auto h33(const real_t& x1, const real_t& x2) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto theta {x2 * dtheta};
-      real_t sin_theta {std::sin(theta)};
+      auto sin_theta {std::sin(theta)};
       return r * r * sin_theta * sin_theta;
     }
 
