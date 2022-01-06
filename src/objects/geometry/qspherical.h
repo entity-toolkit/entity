@@ -115,7 +115,7 @@ namespace ntt {
       auto r {r0 + std::exp(xi)};
       auto eta {x2 * deta};
       auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
-      return std::exp(xi) * r * r * (ONE - std::cos(theta));
+      return deta * std::exp(xi) * r * r * (ONE - std::cos(theta));
     }
 
     // * * * * * * * * * * * * * * *
