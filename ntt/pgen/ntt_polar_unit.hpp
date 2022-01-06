@@ -18,10 +18,10 @@ namespace ntt {
 
     Inline auto userTargetField_bx1(Meshblock<D>& mblock,
                                     const real_t& x1, const real_t& x2) const -> real_t {
-      auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(x1, x2 + HALF);
-      auto r_min {mblock.m_coord_system->x1_min};
+      auto [r_, th_] = mblock.grid->coord_CU_to_Sph(x1, x2 + HALF);
+      auto r_min {mblock.grid->x1_min};
       auto br_hat {ONE * r_min * r_min / (r_ * r_)};
-      return mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, x1, x2 + HALF);
+      return mblock.grid->vec_HAT_to_CNT_x1(br_hat, x1, x2 + HALF);
     }
 
   };

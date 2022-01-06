@@ -27,7 +27,7 @@ namespace ntt {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t**>::size_type;
     Kokkos::deep_copy(mblock.em_fields, 0.0);
-    real_t r_min {mblock.m_coord_system->x1_min};
+    real_t r_min {mblock.grid->x1_min};
     Kokkos::parallel_for(
       "userInitFlds",
       mblock.loopActiveCells(),
@@ -35,10 +35,10 @@ namespace ntt {
         auto i_ {static_cast<real_t>(i - N_GHOSTS)};
         auto j_ {static_cast<real_t>(j - N_GHOSTS)};
 
-        auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_ + HALF);
+        auto [r_, th_] = mblock.grid->coord_CU_to_Sph(i_, j_ + HALF);
 
         auto br_hat {ONE * r_min * r_min / (r_ * r_)};
-        mblock.em_fields(i, j, fld::bx1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, i_, j_ + HALF);
+        mblock.em_fields(i, j, fld::bx1) = mblock.grid->vec_HAT_to_CNT_x1(br_hat, i_, j_ + HALF);
     });
   }
 
@@ -73,14 +73,14 @@ namespace ntt {
         auto i_ {static_cast<real_t>(i - N_GHOSTS)};
         auto j_ {static_cast<real_t>(j - N_GHOSTS)};
 
-        auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_ + HALF);
+        auto [r_, th_] = mblock.grid->coord_CU_to_Sph(i_, j_ + HALF);
         auto etheta_hat = omega * std::sin(th_);
 
         mblock.em_fields(i, j, fld::ex3) = 0.0;
-        mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(etheta_hat, i_, j_ + HALF);
+        mblock.em_fields(i, j, fld::ex2) = mblock.grid->vec_HAT_to_CNT_x2(etheta_hat, i_, j_ + HALF);
 
         auto br_hat {ONE};
-        mblock.em_fields(i, j, fld::bx1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, i_, j_ + HALF);
+        mblock.em_fields(i, j, fld::bx1) = mblock.grid->vec_HAT_to_CNT_x1(br_hat, i_, j_ + HALF);
       });
 
     Kokkos::parallel_for(
