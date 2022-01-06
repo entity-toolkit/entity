@@ -9,13 +9,13 @@
 namespace ntt {
   // in cartesian system dx = dy = dz always
   template <Dimension D>
-  struct CartesianSystem : public CoordinateGrid<D> {
+  struct CartesianSystem : public Grid<D> {
   protected:
     const real_t dx, dx_sqr, inv_dx;
 
   public:
     CartesianSystem(std::vector<std::size_t> resolution, std::vector<real_t> extent)
-        : CoordinateGrid<D> {"cartesian", resolution, extent},
+        : Grid<D> {"cartesian", resolution, extent},
           dx((this->x1_max - this->x1_min) / (real_t)(this->Nx1)),
           dx_sqr(dx * dx),
           inv_dx(ONE / dx) {}

@@ -101,8 +101,6 @@ namespace ntt {
       if (m_coord_system == "qspherical") {
         m_coord_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
         m_coord_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
-        m_extent[0] = std::log(m_extent[0] - m_coord_parameters[0]);
-        m_extent[1] = std::log(m_extent[1] - m_coord_parameters[0]);
       }
       m_coord_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_extent.push_back(0.0);
