@@ -15,9 +15,9 @@ namespace ntt {
 
   public:
     FaradayCartesian(
-        const Meshblock<D>& m_mblock_,
+        const Meshblock<D>& mblock_,
         const real_t& coeff_)
-        : FieldSolver<D> {m_mblock_},
+        : FieldSolver<D> {mblock_},
           coeff(coeff_)
         {}
     Inline void operator()(const index_t) const;
@@ -27,41 +27,41 @@ namespace ntt {
 
   template <>
   Inline void FaradayCartesian<ONE_D>::operator()(const index_t i) const {
-    m_mblock.em_fields(i, fld::bx2) += coeff * (
-                                          m_mblock.em_fields(i + 1, fld::ex3) - m_mblock.em_fields(i, fld::ex3)
+    mblock.em_fields(i, fld::bx2) += coeff * (
+                                          mblock.em_fields(i + 1, fld::ex3) - mblock.em_fields(i, fld::ex3)
                                         );
-    m_mblock.em_fields(i, fld::bx3) += coeff * (
-                                          m_mblock.em_fields(i, fld::ex2) - m_mblock.em_fields(i + 1, fld::ex2)
+    mblock.em_fields(i, fld::bx3) += coeff * (
+                                          mblock.em_fields(i, fld::ex2) - mblock.em_fields(i + 1, fld::ex2)
                                         );
   }
 
   template <>
   Inline void FaradayCartesian<TWO_D>::operator()(const index_t i, const index_t j) const {
-    m_mblock.em_fields(i, j, fld::bx1) += coeff * (
-                                            m_mblock.em_fields(i, j, fld::ex3) - m_mblock.em_fields(i, j + 1, fld::ex3)
+    mblock.em_fields(i, j, fld::bx1) += coeff * (
+                                            mblock.em_fields(i, j, fld::ex3) - mblock.em_fields(i, j + 1, fld::ex3)
                                           );
-    m_mblock.em_fields(i, j, fld::bx2) += coeff * (
-                                            m_mblock.em_fields(i + 1, j, fld::ex3) - m_mblock.em_fields(i, j, fld::ex3)
+    mblock.em_fields(i, j, fld::bx2) += coeff * (
+                                            mblock.em_fields(i + 1, j, fld::ex3) - mblock.em_fields(i, j, fld::ex3)
                                           );
-    m_mblock.em_fields(i, j, fld::bx3) += coeff * (
-                                            m_mblock.em_fields(i, j + 1, fld::ex1) - m_mblock.em_fields(i, j, fld::ex1) +
-                                            m_mblock.em_fields(i, j, fld::ex2) - m_mblock.em_fields(i + 1, j, fld::ex2)
+    mblock.em_fields(i, j, fld::bx3) += coeff * (
+                                            mblock.em_fields(i, j + 1, fld::ex1) - mblock.em_fields(i, j, fld::ex1) +
+                                            mblock.em_fields(i, j, fld::ex2) - mblock.em_fields(i + 1, j, fld::ex2)
                                           );
   }
 
   template <>
   Inline void FaradayCartesian<THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-    m_mblock.em_fields(i, j, k, fld::bx1) += coeff * (
-                                                m_mblock.em_fields(i, j, k + 1, fld::ex2) - m_mblock.em_fields(i, j, k, fld::ex2) +
-                                                m_mblock.em_fields(i, j, k, fld::ex3) - m_mblock.em_fields(i, j + 1, k, fld::ex3)
+    mblock.em_fields(i, j, k, fld::bx1) += coeff * (
+                                                mblock.em_fields(i, j, k + 1, fld::ex2) - mblock.em_fields(i, j, k, fld::ex2) +
+                                                mblock.em_fields(i, j, k, fld::ex3) - mblock.em_fields(i, j + 1, k, fld::ex3)
                                               );
-    m_mblock.em_fields(i, j, k, fld::bx2) += coeff * (
-                                                m_mblock.em_fields(i + 1, j, k, fld::ex3) - m_mblock.em_fields(i, j, k, fld::ex3) +
-                                                m_mblock.em_fields(i, j, k, fld::ex1) - m_mblock.em_fields(i, j, k + 1, fld::ex1)
+    mblock.em_fields(i, j, k, fld::bx2) += coeff * (
+                                                mblock.em_fields(i + 1, j, k, fld::ex3) - mblock.em_fields(i, j, k, fld::ex3) +
+                                                mblock.em_fields(i, j, k, fld::ex1) - mblock.em_fields(i, j, k + 1, fld::ex1)
                                               );
-    m_mblock.em_fields(i, j, k, fld::bx3) += coeff * (
-                                                m_mblock.em_fields(i, j + 1, k, fld::ex1) - m_mblock.em_fields(i, j, k, fld::ex1) +
-                                                m_mblock.em_fields(i, j, k, fld::ex2) - m_mblock.em_fields(i + 1, j, k, fld::ex2)
+    mblock.em_fields(i, j, k, fld::bx3) += coeff * (
+                                                mblock.em_fields(i, j + 1, k, fld::ex1) - mblock.em_fields(i, j, k, fld::ex1) +
+                                                mblock.em_fields(i, j, k, fld::ex2) - mblock.em_fields(i + 1, j, k, fld::ex2)
                                               );
   }
 } // namespace ntt

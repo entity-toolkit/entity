@@ -15,9 +15,9 @@ namespace ntt {
 
   public:
     FaradayCurvilinear(
-        const Meshblock<D>& m_mblock_,
+        const Meshblock<D>& mblock_,
         const real_t& coeff_)
-        : FieldSolver<D> {m_mblock_},
+        : FieldSolver<D> {mblock_},
           coeff(coeff_) {}
     Inline void operator()(const index_t) const;
     Inline void operator()(const index_t, const index_t) const;
@@ -35,45 +35,45 @@ namespace ntt {
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
     real_t inv_sqrt_detH_iPj {
-      ONE / m_mblock.grid->sqrt_det_h(i_ + HALF, j_)
+      ONE / mblock.grid->sqrt_det_h(i_ + HALF, j_)
     };
     real_t inv_sqrt_detH_ijP {
-      ONE / m_mblock.grid->sqrt_det_h(i_, j_ + HALF)
+      ONE / mblock.grid->sqrt_det_h(i_, j_ + HALF)
     };
     real_t inv_sqrt_detH_iPjP {
-      ONE / m_mblock.grid->sqrt_det_h(i_ + HALF, j_ + HALF)
+      ONE / mblock.grid->sqrt_det_h(i_ + HALF, j_ + HALF)
     };
     real_t h1_iPjP1 {
-      m_mblock.grid->h11(i_ + HALF, j_ + ONE)
+      mblock.grid->h11(i_ + HALF, j_ + ONE)
     };
     real_t h1_iPj {
-      m_mblock.grid->h11(i_ + HALF, j_)
+      mblock.grid->h11(i_ + HALF, j_)
     };
     real_t h2_iP1jP {
-      m_mblock.grid->h22(i_ + ONE, j_ + HALF)
+      mblock.grid->h22(i_ + ONE, j_ + HALF)
     };
     real_t h2_ijP {
-      m_mblock.grid->h22(i_, j_ + HALF)
+      mblock.grid->h22(i_, j_ + HALF)
     };
     real_t h3_ij {
-      m_mblock.grid->h33(i_, j_)
+      mblock.grid->h33(i_, j_)
     };
     real_t h3_iP1j {
-      m_mblock.grid->h33(i_ + ONE, j_)
+      mblock.grid->h33(i_ + ONE, j_)
     };
     real_t h3_ijP1 {
-      m_mblock.grid->h33(i_, j_ + ONE)
+      mblock.grid->h33(i_, j_ + ONE)
     };
 
-    m_mblock.em_fields(i, j, fld::bx1) += coeff * inv_sqrt_detH_ijP * (
-                                              h3_ij * m_mblock.em_fields(i, j, fld::ex3) - h3_ijP1 * m_mblock.em_fields(i, j + 1, fld::ex3)
+    mblock.em_fields(i, j, fld::bx1) += coeff * inv_sqrt_detH_ijP * (
+                                              h3_ij * mblock.em_fields(i, j, fld::ex3) - h3_ijP1 * mblock.em_fields(i, j + 1, fld::ex3)
                                             );
-    m_mblock.em_fields(i, j, fld::bx2) += coeff * inv_sqrt_detH_iPj * (
-                                              h3_iP1j * m_mblock.em_fields(i + 1, j, fld::ex3) - h3_ij * m_mblock.em_fields(i, j, fld::ex3)
+    mblock.em_fields(i, j, fld::bx2) += coeff * inv_sqrt_detH_iPj * (
+                                              h3_iP1j * mblock.em_fields(i + 1, j, fld::ex3) - h3_ij * mblock.em_fields(i, j, fld::ex3)
                                             );
-    m_mblock.em_fields(i, j, fld::bx3) += coeff * inv_sqrt_detH_iPjP * (
-                                              h1_iPjP1 * m_mblock.em_fields(i, j + 1, fld::ex1) - h1_iPj * m_mblock.em_fields(i, j, fld::ex1) +
-                                              h2_ijP * m_mblock.em_fields(i, j, fld::ex2) - h2_iP1jP * m_mblock.em_fields(i + 1, j, fld::ex2)
+    mblock.em_fields(i, j, fld::bx3) += coeff * inv_sqrt_detH_iPjP * (
+                                              h1_iPjP1 * mblock.em_fields(i, j + 1, fld::ex1) - h1_iPj * mblock.em_fields(i, j, fld::ex1) +
+                                              h2_ijP * mblock.em_fields(i, j, fld::ex2) - h2_iP1jP * mblock.em_fields(i + 1, j, fld::ex2)
                                             );
   }
 

@@ -9,10 +9,10 @@ namespace ntt {
   template <Dimension D>
   class FieldSolver {
   protected:
-    Meshblock<D> m_mblock;
+    Meshblock<D> mblock;
 
   public:
-    FieldSolver(const Meshblock<D>& m_mblock_) : m_mblock(m_mblock_) {}
+    FieldSolver(const Meshblock<D>& mblock_) : mblock(mblock_) {}
   };
 
 } // namespace ntt
