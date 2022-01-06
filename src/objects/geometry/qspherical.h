@@ -34,6 +34,28 @@ namespace ntt {
         dphi_sqr(dphi * dphi) {}
     ~QSphericalSystem() = default;
 
+    auto findSmallestCell() const -> real_t {
+      if constexpr (D == TWO_D) {
+        using index_t = NTTArray<real_t**>::size_type;
+        real_t min_dx {-1.0};
+        for (index_t i {0}; i < this->Nx1; ++i) {
+          for (index_t j {0}; j < this->Nx2; ++j) {
+            auto i_ {(real_t)(i)};
+            auto j_ {(real_t)(j)};
+            real_t dx1_ {this->h11(i_, j_)};
+            real_t dx2_ {this->h22(i_, j_)};
+            real_t dx = 1.0 / std::sqrt(1.0 / dx1_ + 1.0 / dx2_);
+            if ((min_dx >= dx) || (min_dx < 0.0)) {
+              min_dx = dx;
+            }
+          }
+        }
+        return min_dx;
+      } else {
+        throw std::logic_error("# Error: min cell finding not implemented for 3D qspherical.");
+      }
+    }
+
     // * * * * * * * * * * * * * * *
     // 2D:
     // * * * * * * * * * * * * * * *
