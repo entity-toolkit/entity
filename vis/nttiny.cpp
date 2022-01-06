@@ -37,14 +37,12 @@ public:
     if (this->coords == "qspherical") {
       m_x1x2_extent[0] = m_sim.get_meshblock().grid->x1_min;
       m_x1x2_extent[1] = m_sim.get_meshblock().grid->x1_max;
-      
-      int j {0};
+
       for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
         auto i_ {(ntt::real_t)(i - ntt::N_GHOSTS)};
         auto j_ {ntt::ZERO};
         auto [r_, th_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(i_, j_);
         m_ex1.grid_x1[i] = r_;
-        ++j;
       }
       for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
         m_ex1.grid_x1[i] = m_ex1.grid_x1[i + 1] - (m_ex1.grid_x1[ntt::N_GHOSTS + 1] - m_ex1.grid_x1[ntt::N_GHOSTS]);
