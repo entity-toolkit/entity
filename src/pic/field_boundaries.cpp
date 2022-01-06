@@ -102,7 +102,7 @@ namespace ntt {
           });
 
       // auto r_absorb {m_sim_params.m_coord_parameters[2]};
-      // auto r_max {m_meshblock.m_coord_system->x1_max};
+      // auto r_max {m_meshblock.grid->x1_max};
       // auto dx1 {m_meshblock.get_dx1()};
       // auto dx2 {m_meshblock.get_dx2()};
       // Kokkos::parallel_for(
@@ -113,7 +113,7 @@ namespace ntt {
       //       auto x2 {m_meshblock.convert_jTOx2(j)};
       //       real_t r, delta_r, sigma_r;
       //       real_t bx1_target {m_pGen.userTargetField_bx1(m_meshblock, x1, x2 + 0.5 * dx2)};
-      //       r = m_meshblock.m_coord_system->getSpherical_r(x1 + 0.5 * dx1, ZERO);
+      //       r = m_meshblock.grid->getSpherical_r(x1 + 0.5 * dx1, ZERO);
       //       delta_r = (r - r_absorb) / (r_max - r_absorb);
       //       sigma_r = HEAVISIDE(delta_r) * delta_r * delta_r * delta_r;
       //       m_meshblock.em_fields(i, j, fld::ex1) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::ex1);
@@ -121,7 +121,7 @@ namespace ntt {
 
       //       m_meshblock.em_fields(i, j, fld::bx3) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::bx3);
 
-      //       r = m_meshblock.m_coord_system->getSpherical_r(x1, ZERO);
+      //       r = m_meshblock.grid->getSpherical_r(x1, ZERO);
       //       delta_r = (r - r_absorb) / (r_max - r_absorb);
       //       sigma_r = HEAVISIDE(delta_r) * delta_r * delta_r * delta_r;
       //       m_meshblock.em_fields(i, j, fld::bx1) = (1.0 - sigma_r) * m_meshblock.em_fields(i, j, fld::bx1) + sigma_r * bx1_target;

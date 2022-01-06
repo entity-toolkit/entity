@@ -31,15 +31,15 @@ namespace ntt {
   void Simulation<D>::initialize() {
     // pick the coordinate system
     if (m_sim_params.m_coord_system == "cartesian") {
-      m_meshblock.m_coord_system
+      m_meshblock.grid
         = std::make_unique<CartesianSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
     } else if (m_sim_params.m_coord_system == "spherical") {
-      m_meshblock.m_coord_system
+      m_meshblock.grid
         = std::make_unique<SphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
       // } else if (m_sim_params.m_coord_system == "qspherical") {
       //   auto r0 {m_sim_params.m_coord_parameters[0]};
       //   auto h {m_sim_params.m_coord_parameters[1]};
-      //   m_meshblock.m_coord_system = std::make_unique<QSphericalSystem<D>>(r0, h);
+      //   m_meshblock.grid = std::make_unique<QSphericalSystem<D>>(r0, h);
     } else {
       throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
     }
@@ -100,7 +100,7 @@ namespace ntt {
 
     PLOGI << "[domain]";
     PLOGI << "   dimension: " << m_dim << "D";
-    PLOGI << "   coordinate system: " << (m_meshblock.m_coord_system->label);
+    PLOGI << "   coordinate system: " << (m_meshblock.grid->label);
 
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.m_boundaries) {

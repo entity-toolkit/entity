@@ -18,7 +18,7 @@ namespace ntt {
   template <Dimension D>
   struct Meshblock : Fields<D> {
     std::vector<Particles<D>> particles;
-    std::shared_ptr<CoordinateGrid<D>> m_coord_system;
+    std::shared_ptr<CoordinateGrid<D>> grid;
 
     Meshblock(std::vector<real_t>, std::vector<std::size_t>, std::vector<ParticleSpecies>&);
 
