@@ -107,7 +107,7 @@ namespace ntt {
     // }
     Inline auto h22(const real_t& x1, const real_t&) const -> real_t {
       auto r {x1 * dr + this->x1_min};
-      return dtheta_sqr * r * r; 
+      return dtheta_sqr * r * r;
     }
     Inline auto h22(const real_t& x1, const real_t&, const real_t&) const -> real_t {
       auto r {x1 * dr + this->x1_min};
@@ -151,12 +151,12 @@ namespace ntt {
     Inline auto polar_area(const real_t& x1, const real_t& x2) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto del_theta {x2 * dtheta + this->x2_min};
-      return dr * dtheta * r * r * (ONE - std::cos(del_theta));
+      return r * r * (ONE - std::cos(del_theta));
     }
     Inline auto polar_area(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
       auto r {x1 * dr + this->x1_min};
       auto del_theta {x2 * dtheta + this->x2_min};
-      return dr * dtheta * dphi * r * r * (ONE - std::cos(del_theta));
+      return dphi * r * r * (ONE - std::cos(del_theta));
     }
   };
 } // namespace ntt
