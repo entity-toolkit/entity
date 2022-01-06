@@ -1,184 +1,108 @@
-// #ifndef OBJECTS_GEOMETRY_QSPHERICAL_H
-// #define OBJECTS_GEOMETRY_QSPHERICAL_H
+#ifndef OBJECTS_GEOMETRY_QSPHERICAL_H
+#define OBJECTS_GEOMETRY_QSPHERICAL_H
 
-// #include "global.h"
-// #include "coord_system.h"
+#include "global.h"
+#include "grid.h"
 
-// #include <tuple>
-// #include <cassert>
+#include <tuple>
+#include <cassert>
 
-// namespace ntt {
+namespace ntt {
 
-//   template <Dimension D>
-//   struct QSphericalSystem : public CoordinateSystem<D> {
-//     const real_t m_r0;
-//     const real_t m_h;
+  // xi, eta, phi = log(r-r0), f(h, theta), phi
+  template <Dimension D>
+  struct QSphericalSystem : public Grid<D> {
+    const real_t r0;
+    const real_t h;
+    const real_t dxi, deta, dphi;
+    const real_t xi_min;
+    const real_t dxi_sqr, deta_sqr, dphi_sqr;
 
-//     QSphericalSystem(const real_t& r0_, const real_t& h_) : CoordinateSystem<D> {"qspherical"}, m_r0 {r0_}, m_h {h_} {
-//       this->m_parameters[0] = m_r0;
-//       this->m_parameters[1] = m_h;
-//     }
-//     ~QSphericalSystem() = default;
+    QSphericalSystem(std::vector<std::size_t> resolution,
+                     std::vector<real_t> extent,
+                     const real_t& r0_,
+                     const real_t& h_)
+      : Grid<D> {"qspherical", resolution, extent},
+        r0 {r0_},
+        h {h_},
+        xi_min {std::log(this->x1_min - r0)},
+        dxi((std::log(this->x1_max - r0) - xi_min) / (real_t)(this->Nx1)),
+        deta(PI / (real_t)(this->Nx2)),
+        dphi(TWO_PI / (real_t)(this->Nx3)),
+        dxi_sqr(dxi * dxi),
+        deta_sqr(deta * deta),
+        dphi_sqr(dphi * dphi) {}
+    ~QSphericalSystem() = default;
 
-//     // coordinate transformations
-//     // ... curvilinear -> cartesian
-//     Inline auto transform_x1TOx(const real_t&) const -> real_t override {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto transform_x1x2TOxy(const real_t& x1, const real_t& x2) const -> std::tuple<real_t, real_t> override {
-//       assert(false);
-//       return {x1, x2};
-//     }
-//     Inline auto transform_x1x2x3TOxyz(const real_t& x1, const real_t& x2, const real_t& x3) const -> std::tuple<real_t, real_t, real_t> override {
-//       assert(false);
-//       return {x1, x2, x3};
-//     }
+    // * * * * * * * * * * * * * * *
+    // 2D:
+    // * * * * * * * * * * * * * * *
+    // coordinate transformations
+    // conversion from code units (CU) to cartesian (Cart)
+    Inline auto coord_CU_to_Cart(const real_t& x1, const real_t& x2) const -> std::tuple<real_t, real_t> override {
+      auto [r, theta] = coord_CU_to_Sph(x1, x2);
+      return {r * std::sin(theta), r * std::cos(theta)};
+    }
 
-//     // ... cartesian -> curvilinear
-//     Inline auto transform_xTOx1(const real_t&) const -> real_t override {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto transform_xyTOx1x2(const real_t& x, const real_t& y) const -> std::tuple<real_t, real_t> override {
-//       assert(false);
-//       return {x, y};
-//     }
-//     Inline auto transform_xyzTOx1x2x3(const real_t& x, const real_t& y, const real_t& z) const -> std::tuple<real_t, real_t, real_t> override {
-//       assert(false);
-//       return {x, y, z};
-//     }
+    // conversion to spherical
+    Inline auto coord_CU_to_Sph(const real_t& x1, const real_t& x2) const -> std::tuple<real_t, real_t> {
+      auto xi {x1 * dxi + xi_min};
+      auto eta {x2 * deta};
+      return {r0 + std::exp(xi), eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
+    }
 
-//     // vector transformations
-//     // ... curvilinear -> cartesian
-//     Inline auto transform_ux1TOux(const real_t&) const -> real_t override {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto transform_ux1ux2TOuxuy(const real_t& ux1, const real_t& ux2) const -> std::tuple<real_t, real_t> override {
-//       assert(false);
-//       return {ux1, ux2};
-//     }
-//     Inline auto transform_ux1ux2ux3TOuxuyuz(const real_t& ux1, const real_t& ux2, const real_t& ux3) const -> std::tuple<real_t, real_t, real_t> override {
-//       assert(false);
-//       return {ux1, ux2, ux3};
-//     }
+    // metric coefficients
+    Inline auto h11(const real_t& x1, const real_t&) const -> real_t {
+      auto xi {x1 * dxi + xi_min};
+      return dxi_sqr * std::exp(2.0 * xi);
+    }
 
-//     // ... cartesian -> curvilinear
-//     Inline auto transform_uxTOux1(const real_t&) const -> real_t override {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto transform_uxuyTOux1ux2(const real_t& ux, const real_t& uy) const -> std::tuple<real_t, real_t> override {
-//       assert(false);
-//       return {ux, uy};
-//     }
-//     Inline auto transform_uxuyuzTOux1ux2ux3(const real_t& ux, const real_t& uy, const real_t& uz) const -> std::tuple<real_t, real_t, real_t> override {
-//       assert(false);
-//       return {ux, uy, uz};
-//     }
+    Inline auto h22(const real_t& x1, const real_t& x2) const -> real_t {
+      auto xi {x1 * dxi + xi_min};
+      auto r {r0 + std::exp(xi)};
 
-//     // metric coefficients
-//     Inline auto hx1(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto hx1(const real_t& x1, const real_t&) const -> real_t {
-//       return std::exp(2.0 * x1);
-//     }
-//     Inline auto hx1(const real_t& x1, const real_t&, const real_t&) const -> real_t {
-//       return std::exp(2.0 * x1);
-//     }
+      auto eta {x2 * deta};
+      auto dtheta_deta {(ONE + 2.0 * h + 12.0 * h * (eta * INV_PI) * ((eta * INV_PI) - ONE))};
 
-//     Inline auto hx2(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto hx2(const real_t& x1, const real_t& x2) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       real_t dtheta_dx2 {(ONE + 2.0 * m_h + 12.0 * m_h * (x2 * INV_PI) * ((x2 * INV_PI) - ONE))};
-//       return r * r * dtheta_dx2 * dtheta_dx2;
-//     }
-//     Inline auto hx2(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       real_t dtheta_dx2 {(ONE + 2.0 * m_h + 12.0 * m_h * (x2 * INV_PI) * ((x2 * INV_PI) - ONE))};
-//       return r * r * dtheta_dx2 * dtheta_dx2;
-//     }
+      return deta_sqr * r * r * dtheta_deta * dtheta_deta;
+    }
 
-//     Inline auto hx3(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto hx3(const real_t& x1, const real_t& x2) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       real_t sin_theta {std::sin(x2 + 2.0 * m_h * x2 * (PI - 2.0 * x2) * (PI - x2) * INV_PI_SQR)};
-//       return r * r * sin_theta * sin_theta;
-//     }
-//     Inline auto hx3(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       real_t sin_theta {std::sin(x2 + 2.0 * m_h * x2 * (PI - 2.0 * x2) * (PI - x2) * INV_PI_SQR)};
-//       return r * r * sin_theta * sin_theta;
-//     }
+    Inline auto h33(const real_t& x1, const real_t& x2) const -> real_t {
+      auto xi {x1 * dxi + xi_min};
+      auto r {r0 + std::exp(xi)};
+      auto eta {x2 * deta};
+      auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
+      auto sin_theta {std::sin(theta)};
+      return r * r * sin_theta * sin_theta;
+    }
 
-//     // det of metric
-//     Inline auto sqrt_det_h(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto sqrt_det_h(const real_t& x1, const real_t& x2) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       real_t sin_theta {std::sin(x2 + 2.0 * m_h * x2 * (PI - 2.0 * x2) * (PI - x2) * INV_PI_SQR)};
-//       real_t dtheta_dx2 {(ONE + 2.0 * m_h + 12.0 * m_h * (x2 * INV_PI) * ((x2 * INV_PI) - ONE))};
-//       return std::exp(x1) * r * r * sin_theta * dtheta_dx2;
-//     }
-//     Inline auto sqrt_det_h(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       real_t sin_theta {std::sin(x2 + 2.0 * m_h * x2 * (PI - 2.0 * x2) * (PI - x2) * INV_PI_SQR)};
-//       real_t dtheta_dx2 {(ONE + 2.0 * m_h + 12.0 * m_h * (x2 * INV_PI) * ((x2 * INV_PI) - ONE))};
-//       return std::exp(x1) * r * r * sin_theta * dtheta_dx2;
-//     }
+    // det of metric
+    Inline auto sqrt_det_h(const real_t& x1, const real_t& x2) const -> real_t {
+      auto xi {x1 * dxi + xi_min};
+      auto r {r0 + std::exp(xi)};
+      auto eta {x2 * deta};
+      auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
+      auto sin_theta {std::sin(theta)};
+      auto dtheta_deta {(ONE + 2.0 * h + 12.0 * h * (eta * INV_PI) * ((eta * INV_PI) - ONE))};
+      return dxi * deta * std::exp(xi) * r * r * sin_theta * dtheta_deta;
+    }
 
-//     // area at poles
-//     Inline auto polar_area(const real_t& x1, const real_t& dx2) const -> real_t {
-//       real_t r {m_r0 + std::exp(x1)};
-//       return std::exp(x1) * r * r * (ONE - std::cos(0.5 * dx2 + m_h * dx2 * (PI - dx2) * (PI - 0.5 * dx2) * INV_PI_SQR));
-//     }
+    // area at poles
+    Inline auto polar_area(const real_t& x1, const real_t& x2) const -> real_t {
+      auto xi {x1 * dxi + xi_min};
+      auto r {r0 + std::exp(xi)};
+      auto eta {x2 * deta};
+      auto theta {eta + 2.0 * h * eta * (PI - 2.0 * eta) * (PI - eta) * INV_PI_SQR};
+      return std::exp(xi) * r * r * (ONE - std::cos(theta));
+    }
 
-//     // conversion to spherical
-//     Inline auto getSpherical_r(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto getSpherical_r(const real_t& x1, const real_t&) const -> real_t {
-//       return m_r0 + std::exp(x1);
-//     }
-//     Inline auto getSpherical_r(const real_t& x1, const real_t&, const real_t&) const -> real_t {
-//       return m_r0 + std::exp(x1);
-//     }
+    // * * * * * * * * * * * * * * *
+    // 3D:
+    // * * * * * * * * * * * * * * *
+    // TODO
+    // - - - - - - - - - - - - - - -
+  };
 
-//     Inline auto getSpherical_theta(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto getSpherical_theta(const real_t&, const real_t& x2) const -> real_t {
-//       return x2 + 2.0 * m_h * x2 * (PI - 2.0 * x2) * (PI - x2) * INV_PI_SQR;
-//     }
-//     Inline auto getSpherical_theta(const real_t&, const real_t& x2, const real_t&) const -> real_t {
-//       return x2 + 2.0 * m_h * x2 * (PI - 2.0 * x2) * (PI - x2) * INV_PI_SQR;
-//     }
+} // namespace ntt
 
-//     Inline auto getSpherical_phi(const real_t&) const -> real_t {
-//       assert(false);
-//       return -1.0;
-//     }
-//     Inline auto getSpherical_phi(const real_t&, const real_t&) const -> real_t {
-//       return 0.0;
-//     }
-//     Inline auto getSpherical_phi(const real_t&, const real_t&, const real_t& x3) const -> real_t {
-//       return x3;
-//     }
-//   };
-
-// } // namespace ntt
-
-// #endif
+#endif

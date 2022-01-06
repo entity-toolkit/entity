@@ -35,32 +35,34 @@ public:
     this->m_time = 0.0;
 
     if (this->coords == "qspherical") {
-      // m_x1x2_extent[0] = m_sim.get_meshblock().grid->x1min_PHU();
-      // m_x1x2_extent[1] = m_sim.get_meshblock().grid->x1max_PHU();
-      //
-      // int j {0};
-      // for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
-      //   double x1 {m_x1x2_extent[0] + (m_x1x2_extent[1] - m_x1x2_extent[0]) * (double)(j) / (double)(nx1 - 2 * ntt::N_GHOSTS)};
-      //   m_ex1.grid_x1[i] = m_sim.get_meshblock().grid->getSpherical_r(x1, 0.0);
-      //   ++j;
-      // }
-      // for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
-      //   m_ex1.grid_x1[i] = m_ex1.grid_x1[i + 1] - (m_ex1.grid_x1[ntt::N_GHOSTS + 1] - m_ex1.grid_x1[ntt::N_GHOSTS]);
-      // }
-      // for (int i {nx1 - ntt::N_GHOSTS + 1}; i <= nx1; ++i) {
-      //   m_ex1.grid_x1[i] = m_ex1.grid_x1[i - 1] + (m_ex1.grid_x1[nx1 - ntt::N_GHOSTS] - m_ex1.grid_x1[nx1 - ntt::N_GHOSTS - 1]);
-      // }
-      // m_x1x2_extent[0] = std::exp(m_sim.get_meshblock().m_extent[0]);
-      // m_x1x2_extent[1] = std::exp(m_sim.get_meshblock().m_extent[1]);
-      //
-      // m_x1x2_extent[2] = m_sim.get_meshblock().m_extent[2] - m_sim.get_meshblock().get_dx2() * ntt::N_GHOSTS;
-      // m_x1x2_extent[3] = m_sim.get_meshblock().m_extent[3] + m_sim.get_meshblock().get_dx2() * ntt::N_GHOSTS;
-      // for (int j {0}; j <= nx2; ++j) {
-      //   double x2 {m_x1x2_extent[2] + (m_x1x2_extent[3] - m_x1x2_extent[2]) * (double)(j) / (double)(nx2)};
-      //   m_ex1.grid_x2[j] = m_sim.get_meshblock().grid->getSpherical_theta(0.0, x2);
-      // }
-      // m_x1x2_extent[2] = m_sim.get_meshblock().grid->getSpherical_theta(0.0, m_x1x2_extent[2]);
-      // m_x1x2_extent[3] = m_sim.get_meshblock().grid->getSpherical_theta(0.0, m_x1x2_extent[3]);
+      m_x1x2_extent[0] = m_sim.get_meshblock().grid->x1_min;
+      m_x1x2_extent[1] = m_sim.get_meshblock().grid->x1_max;
+      
+      int j {0};
+      for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
+        auto i_ {(ntt::real_t)(i - ntt::N_GHOSTS)};
+        auto j_ {ntt::ZERO};
+        auto [r_, th_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(i_, j_);
+        m_ex1.grid_x1[i] = r_;
+        ++j;
+      }
+      for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
+        m_ex1.grid_x1[i] = m_ex1.grid_x1[i + 1] - (m_ex1.grid_x1[ntt::N_GHOSTS + 1] - m_ex1.grid_x1[ntt::N_GHOSTS]);
+      }
+      for (int i {nx1 - ntt::N_GHOSTS + 1}; i <= nx1; ++i) {
+        m_ex1.grid_x1[i] = m_ex1.grid_x1[i - 1] + (m_ex1.grid_x1[nx1 - ntt::N_GHOSTS] - m_ex1.grid_x1[nx1 - ntt::N_GHOSTS - 1]);
+      }
+
+      for (int j {0}; j <= nx2; ++j) {
+        auto i_ {ntt::ZERO};
+        auto j_ {(ntt::real_t)(j - ntt::N_GHOSTS)};
+        auto [r_, th_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(i_, j_);
+        m_ex1.grid_x2[j] = th_;
+      }
+      auto [r1_, th1_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(ntt::ZERO, (ntt::real_t)(-ntt::N_GHOSTS));
+      auto [r2_, th2_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(ntt::ZERO, (ntt::real_t)(nx2 - ntt::N_GHOSTS));
+      m_x1x2_extent[2] = th1_;
+      m_x1x2_extent[3] = th2_;
     } else {
       auto sx1 {m_sim.get_meshblock().grid->x1_max - m_sim.get_meshblock().grid->x1_min};
       auto dx1 {sx1 / (ntt::real_t)(m_sim.get_meshblock().grid->Nx1)};

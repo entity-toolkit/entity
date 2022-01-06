@@ -5,10 +5,9 @@
 #include "meshblock.h"
 #include "input.h"
 
-// #include "grid.h"
 #include "cartesian.h"
 #include "spherical.h"
-// #include "qspherical.h"
+#include "qspherical.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -36,10 +35,10 @@ namespace ntt {
     } else if (m_sim_params.m_coord_system == "spherical") {
       m_meshblock.grid
         = std::make_unique<SphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
-      // } else if (m_sim_params.m_coord_system == "qspherical") {
-      //   auto r0 {m_sim_params.m_coord_parameters[0]};
-      //   auto h {m_sim_params.m_coord_parameters[1]};
-      //   m_meshblock.grid = std::make_unique<QSphericalSystem<D>>(r0, h);
+    } else if (m_sim_params.m_coord_system == "qspherical") {
+      auto r0 {m_sim_params.m_coord_parameters[0]};
+      auto h {m_sim_params.m_coord_parameters[1]};
+      m_meshblock.grid = std::make_unique<QSphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent, r0, h);
     } else {
       throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
     }
