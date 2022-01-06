@@ -32,8 +32,8 @@ namespace ntt {
       "userInitFlds",
       mblock.loopActiveCells(),
       Lambda(index_t i, index_t j) {
-        auto i_ {static_cast<real_t>(i)};
-        auto j_half {static_cast<real_t>(j) + HALF};
+        auto i_ {static_cast<real_t>(i - N_GHOSTS)};
+        auto j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
 
         auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_half);
 
@@ -70,8 +70,8 @@ namespace ntt {
       "userBcFlds_rmin",
       NTT2DRange({mblock.i_min, mblock.j_min}, {mblock.i_min + 1, mblock.j_max}),
       Lambda(index_t i, index_t j) {
-        auto i_ {static_cast<real_t>(i)};
-        auto j_half {static_cast<real_t>(j) + HALF};
+        auto i_ {static_cast<real_t>(i - N_GHOSTS)};
+        auto j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
 
         auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_half);
         auto etheta_hat = omega * std::sin(th_);
