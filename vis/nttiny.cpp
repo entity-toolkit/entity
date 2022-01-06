@@ -118,7 +118,6 @@ public:
         m_bx1.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x1(bx1_CNT, i_, j_ + 0.5));
         m_bx2.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x2(bx2_CNT, i_ + 0.5, j_));
         m_bx3.set(i, j, m_sim.get_meshblock().m_coord_system->vec_CNT_to_HAT_x3(bx3_CNT, i_ + 0.5, j_ + 0.5));
-        // m_bx3.set(i, j, bx3_CNT);
       }
     }
   }

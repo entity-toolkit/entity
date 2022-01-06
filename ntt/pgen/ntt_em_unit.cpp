@@ -25,16 +25,16 @@ namespace ntt {
     real_t sx = mblock.m_coord_system->x1_max - mblock.m_coord_system->x1_min;
     Kokkos::parallel_for(
         "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
-          auto i_ {(real_t)(i - N_GHOSTS)}, i_half {(real_t)(i - N_GHOSTS) + HALF};
+          auto i_ {(real_t)(i - N_GHOSTS)};
 
           real_t x_ {mblock.m_coord_system->coord_CU_to_Cart(i_)};
-          real_t x_half {mblock.m_coord_system->coord_CU_to_Cart(i_half)};
+          real_t x_half {mblock.m_coord_system->coord_CU_to_Cart(i_ + HALF)};
 
           auto ey_hat {std::sin(TWO_PI * x_ / sx)};
           auto bz_hat {std::sin(TWO_PI * x_half / sx)};
 
           mblock.em_fields(i, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ey_hat, i_);
-          mblock.em_fields(i, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_half);
+          mblock.em_fields(i, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_ + HALF);
         });
   }
 
@@ -56,18 +56,17 @@ namespace ntt {
     Kokkos::parallel_for(
         "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
           auto i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
-          auto i_half {(real_t)(i - N_GHOSTS) + HALF}, j_half {(real_t)(j - N_GHOSTS) + HALF};
 
           auto [x_, y_] = mblock.m_coord_system->coord_CU_to_Cart(i_, j_);
-          auto [x_half, y_half] = mblock.m_coord_system->coord_CU_to_Cart(i_half, j_half);
+          auto [x_half, y_half] = mblock.m_coord_system->coord_CU_to_Cart(i_ + HALF, j_ + HALF);
 
           auto ex_hat = ex_ampl * std::sin(kx * x_half + ky * y_);
           auto ey_hat = ey_ampl * std::sin(kx * x_ + ky * y_half);
           auto bz_hat = bz_ampl * std::sin(kx * x_half + ky * y_half);
 
-          mblock.em_fields(i, j, fld::ex1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(ex_hat, i_half, j_);
-          mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ey_hat, i_, j_half);
-          mblock.em_fields(i, j, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_half, j_half);
+          mblock.em_fields(i, j, fld::ex1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(ex_hat, i_ + HALF, j_);
+          mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(ey_hat, i_, j_ + HALF);
+          mblock.em_fields(i, j, fld::bx3) = mblock.m_coord_system->vec_HAT_to_CNT_x3(bz_hat, i_ + HALF, j_ + HALF);
         });
   }
 

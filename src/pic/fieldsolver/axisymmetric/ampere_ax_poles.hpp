@@ -25,16 +25,14 @@ namespace ntt {
     index_t j_max {m_mblock.Nj + N_GHOSTS - 1};
 
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t i_half {static_cast<real_t>(i - N_GHOSTS) + HALF};
-    real_t i_Mhalf {static_cast<real_t>(i - N_GHOSTS) - HALF};
-    real_t j_max_half {static_cast<real_t>(j_max - N_GHOSTS) + HALF};
+    real_t j_max_ {static_cast<real_t>(j_max - N_GHOSTS)};
 
-    real_t inv_polar_area_iPj {ONE / m_mblock.m_coord_system->polar_area(i_half, HALF)};
-    real_t h3_min_iPjP {m_mblock.m_coord_system->h33(i_half, HALF)};
-    real_t h3_max_iPjP {m_mblock.m_coord_system->h33(i_half, j_max_half)};
+    real_t inv_polar_area_iPj {ONE / m_mblock.m_coord_system->polar_area(i_ + HALF, HALF)};
+    real_t h3_min_iPjP {m_mblock.m_coord_system->h33(i_ + HALF, HALF)};
+    real_t h3_max_iPjP {m_mblock.m_coord_system->h33(i_ + HALF, j_max_ + HALF)};
 
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.m_coord_system->sqrt_det_h(i_, HALF)};
-    real_t h3_min_iMjP {m_mblock.m_coord_system->h33(i_Mhalf, HALF)};
+    real_t h3_min_iMjP {m_mblock.m_coord_system->h33(i_ - HALF, HALF)};
 
     // theta = 0
     m_mblock.em_fields(i, j_min, fld::ex1) += inv_polar_area_iPj * coeff * (h3_min_iPjP * m_mblock.em_fields(i, j_min, fld::bx3));
