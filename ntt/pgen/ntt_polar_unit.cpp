@@ -33,12 +33,12 @@ namespace ntt {
       mblock.loopActiveCells(),
       Lambda(index_t i, index_t j) {
         auto i_ {static_cast<real_t>(i - N_GHOSTS)};
-        auto j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
+        auto j_ {static_cast<real_t>(j - N_GHOSTS)};
 
-        auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_half);
+        auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_ + HALF);
 
         auto br_hat {ONE * r_min * r_min / (r_ * r_)};
-        mblock.em_fields(i, j, fld::bx1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, i_, j_half);
+        mblock.em_fields(i, j, fld::bx1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, i_, j_ + HALF);
     });
   }
 
