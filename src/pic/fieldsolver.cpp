@@ -90,11 +90,11 @@ namespace ntt {
             "ampere",
             m_meshblock.loopCells(0, 0, 1, 0),
             AmpereCurvilinear<TWO_D>(m_meshblock, coeff));
-        // // evolve E1, E2 near polar axes
-        // Kokkos::parallel_for(
-        //     "ampere_pole",
-        //     NTT1DRange(m_meshblock.get_imin(), m_meshblock.get_imax()),
-        //     AmpereAxisymmetricPoles<TWO_D>(m_meshblock, coeff, coeff_x1));
+        // evolve E1, E2 near polar axes
+        Kokkos::parallel_for(
+            "ampere_pole",
+            NTT1DRange(m_meshblock.i_min, m_meshblock.i_max),
+            AmpereAxisymmetricPoles<TWO_D>(m_meshblock, coeff));
     } else {
       throw std::logic_error("# Error: 2D ampere for the coordinate system not implemented.");
     }

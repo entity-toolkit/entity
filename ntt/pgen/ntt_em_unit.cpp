@@ -25,7 +25,7 @@ namespace ntt {
     real_t sx = mblock.m_coord_system->x1_max - mblock.m_coord_system->x1_min;
     Kokkos::parallel_for(
         "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i) {
-          auto i_ {(real_t)(i)}, i_half {(real_t)(i) + HALF};
+          auto i_ {(real_t)(i - N_GHOSTS)}, i_half {(real_t)(i - N_GHOSTS) + HALF};
 
           real_t x_ {mblock.m_coord_system->coord_CU_to_Cart(i_)};
           real_t x_half {mblock.m_coord_system->coord_CU_to_Cart(i_half)};
@@ -55,8 +55,8 @@ namespace ntt {
     ey_ampl = m_amplitude * ey_ampl / std::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
     Kokkos::parallel_for(
         "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-          auto i_ {(real_t)(i)}, j_ {(real_t)(j)};
-          auto i_half {(real_t)(i) + HALF}, j_half {(real_t)(j) + HALF};
+          auto i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
+          auto i_half {(real_t)(i - N_GHOSTS) + HALF}, j_half {(real_t)(j - N_GHOSTS) + HALF};
 
           auto [x_, y_] = mblock.m_coord_system->coord_CU_to_Cart(i_, j_);
           auto [x_half, y_half] = mblock.m_coord_system->coord_CU_to_Cart(i_half, j_half);
