@@ -33,43 +33,37 @@ namespace ntt {
   template <>
   Inline void AmpereCurvilinear<TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t i_half {static_cast<real_t>(i - N_GHOSTS) + HALF};
-    real_t i_M_half {static_cast<real_t>(i - N_GHOSTS) - HALF};
-    real_t i_one {static_cast<real_t>(i - N_GHOSTS) + ONE};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-    real_t j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
-    real_t j_M_half {static_cast<real_t>(j - N_GHOSTS) - HALF};
-    real_t j_one {static_cast<real_t>(j - N_GHOSTS) + ONE};
 
     real_t inv_sqrt_detH_ij {
       ONE / m_mblock.m_coord_system->sqrt_det_h(i_, j_)
     };
     real_t inv_sqrt_detH_iPj {
-      ONE / m_mblock.m_coord_system->sqrt_det_h(i_half, j_)
+      ONE / m_mblock.m_coord_system->sqrt_det_h(i_ + HALF, j_)
     };
     real_t inv_sqrt_detH_ijP {
-      ONE / m_mblock.m_coord_system->sqrt_det_h(i_, j_half)
+      ONE / m_mblock.m_coord_system->sqrt_det_h(i_, j_ + HALF)
     };
     real_t h1_ijM {
-      m_mblock.m_coord_system->h11(i_, j_M_half)
+      m_mblock.m_coord_system->h11(i_, j_ - HALF)
     };
     real_t h1_ijP {
-      m_mblock.m_coord_system->h11(i_, j_half)
+      m_mblock.m_coord_system->h11(i_, j_ + HALF)
     };
     real_t h2_iPj {
-      m_mblock.m_coord_system->h22(i_half, j_)
+      m_mblock.m_coord_system->h22(i_ + HALF, j_)
     };
     real_t h2_iMj {
-      m_mblock.m_coord_system->h22(i_M_half, j_)
+      m_mblock.m_coord_system->h22(i_ - HALF, j_)
     };
     real_t h3_iMjP {
-      m_mblock.m_coord_system->h33(i_M_half, j_half)
+      m_mblock.m_coord_system->h33(i_ - HALF, j_ + HALF)
     };
     real_t h3_iPjM {
-      m_mblock.m_coord_system->h33(i_half, j_M_half)
+      m_mblock.m_coord_system->h33(i_ + HALF, j_ - HALF)
     };
     real_t h3_iPjP {
-      m_mblock.m_coord_system->h33(i_half, j_half)
+      m_mblock.m_coord_system->h33(i_ + HALF, j_ + HALF)
     };
 
     m_mblock.em_fields(i, j, fld::ex1) += coeff * inv_sqrt_detH_iPj * (

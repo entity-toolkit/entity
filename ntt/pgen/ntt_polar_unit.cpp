@@ -60,27 +60,27 @@ namespace ntt {
                                              Meshblock<TWO_D>& mblock) {
     UNUSED(sim_params);
     using index_t = NTTArray<real_t**>::size_type;
-    real_t omega;
-    if (time < 0.5) {
-      omega = time / 10.0;
-    } else {
-      omega = 0.05;
-    }
+    real_t omega {0.1};
+    // if (time < 0.5) {
+    //   omega = time / 10.0;
+    // } else {
+    //   omega = 0.05;
+    // }
     Kokkos::parallel_for(
       "userBcFlds_rmin",
       NTT2DRange({mblock.i_min, mblock.j_min}, {mblock.i_min + 1, mblock.j_max}),
       Lambda(index_t i, index_t j) {
         auto i_ {static_cast<real_t>(i - N_GHOSTS)};
-        auto j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
+        auto j_ {static_cast<real_t>(j - N_GHOSTS)};
 
-        auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_half);
+        auto [r_, th_] = mblock.m_coord_system->coord_CU_to_Sph(i_, j_ + HALF);
         auto etheta_hat = omega * std::sin(th_);
 
         mblock.em_fields(i, j, fld::ex3) = 0.0;
-        mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(etheta_hat, i_, j_half);
+        mblock.em_fields(i, j, fld::ex2) = mblock.m_coord_system->vec_HAT_to_CNT_x2(etheta_hat, i_, j_ + HALF);
 
         auto br_hat {ONE};
-        mblock.em_fields(i, j, fld::bx1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, i_, j_half);
+        mblock.em_fields(i, j, fld::bx1) = mblock.m_coord_system->vec_HAT_to_CNT_x1(br_hat, i_, j_ + HALF);
       });
 
     Kokkos::parallel_for(

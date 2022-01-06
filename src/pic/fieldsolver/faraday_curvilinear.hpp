@@ -32,41 +32,37 @@ namespace ntt {
   template <>
   Inline void FaradayCurvilinear<TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t i_half {static_cast<real_t>(i - N_GHOSTS) + HALF};
-    real_t i_one {static_cast<real_t>(i - N_GHOSTS) + ONE};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-    real_t j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
-    real_t j_one {static_cast<real_t>(j - N_GHOSTS) + ONE};
 
     real_t inv_sqrt_detH_iPj {
-      ONE / m_mblock.m_coord_system->sqrt_det_h(i_half, j_)
+      ONE / m_mblock.m_coord_system->sqrt_det_h(i_ + HALF, j_)
     };
     real_t inv_sqrt_detH_ijP {
-      ONE / m_mblock.m_coord_system->sqrt_det_h(i_, j_half)
+      ONE / m_mblock.m_coord_system->sqrt_det_h(i_, j_ + HALF)
     };
     real_t inv_sqrt_detH_iPjP {
-      ONE / m_mblock.m_coord_system->sqrt_det_h(i_half, j_half)
+      ONE / m_mblock.m_coord_system->sqrt_det_h(i_ + HALF, j_ + HALF)
     };
     real_t h1_iPjP1 {
-      m_mblock.m_coord_system->h11(i_half, j_one)
+      m_mblock.m_coord_system->h11(i_ + HALF, j_ + ONE)
     };
     real_t h1_iPj {
-      m_mblock.m_coord_system->h11(i_half, j_)
+      m_mblock.m_coord_system->h11(i_ + HALF, j_)
     };
     real_t h2_iP1jP {
-      m_mblock.m_coord_system->h22(i_one, j_half)
+      m_mblock.m_coord_system->h22(i_ + ONE, j_ + HALF)
     };
     real_t h2_ijP {
-      m_mblock.m_coord_system->h22(i_, j_half)
+      m_mblock.m_coord_system->h22(i_, j_ + HALF)
     };
     real_t h3_ij {
       m_mblock.m_coord_system->h33(i_, j_)
     };
     real_t h3_iP1j {
-      m_mblock.m_coord_system->h33(i_one, j_)
+      m_mblock.m_coord_system->h33(i_ + ONE, j_)
     };
     real_t h3_ijP1 {
-      m_mblock.m_coord_system->h33(i_, j_one)
+      m_mblock.m_coord_system->h33(i_, j_ + ONE)
     };
 
     m_mblock.em_fields(i, j, fld::bx1) += coeff * inv_sqrt_detH_ijP * (
