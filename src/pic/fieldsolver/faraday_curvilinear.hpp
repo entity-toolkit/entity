@@ -31,12 +31,12 @@ namespace ntt {
 
   template <>
   Inline void FaradayCurvilinear<TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i)};
-    real_t i_half {static_cast<real_t>(i) + HALF};
-    real_t i_one {static_cast<real_t>(i) + ONE};
-    real_t j_ {static_cast<real_t>(j)};
-    real_t j_half {static_cast<real_t>(j) + HALF};
-    real_t j_one {static_cast<real_t>(j) + ONE};
+    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+    real_t i_half {static_cast<real_t>(i - N_GHOSTS) + HALF};
+    real_t i_one {static_cast<real_t>(i - N_GHOSTS) + ONE};
+    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t j_half {static_cast<real_t>(j - N_GHOSTS) + HALF};
+    real_t j_one {static_cast<real_t>(j - N_GHOSTS) + ONE};
 
     real_t inv_sqrt_detH_iPj {
       ONE / m_mblock.m_coord_system->sqrt_det_h(i_half, j_)

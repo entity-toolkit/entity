@@ -148,8 +148,15 @@ namespace ntt {
     }
 
     // area at poles
-    Inline auto polar_area(const real_t& x1, const real_t& dx2) const -> real_t {
-      return x1 * x1 * (ONE - std::cos(dx2 * 0.5));
+    Inline auto polar_area(const real_t& x1, const real_t& x2) const -> real_t {
+      auto r {x1 * dr + this->x1_min};
+      auto del_theta {x2 * dtheta + this->x2_min};
+      return dr * dtheta * r * r * (ONE - std::cos(del_theta));
+    }
+    Inline auto polar_area(const real_t& x1, const real_t& x2, const real_t&) const -> real_t {
+      auto r {x1 * dr + this->x1_min};
+      auto del_theta {x2 * dtheta + this->x2_min};
+      return dr * dtheta * dphi * r * r * (ONE - std::cos(del_theta));
     }
   };
 } // namespace ntt
