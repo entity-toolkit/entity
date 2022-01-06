@@ -29,6 +29,9 @@ namespace ntt {
         x3_max {resolution.size() > 2 ? extent[5] : ZERO} {}
     virtual ~Grid() = default;
 
+    // find minimum cell size
+    virtual auto findSmallestCell() const -> real_t { return -1.0; }
+
     // coordinate transformations
     Inline auto CU_to_Idi(const real_t& xi) const -> std::pair<long int, float> {
       // TODO: this is a hack
@@ -47,12 +50,6 @@ namespace ntt {
       return {-1.0, -1.0, -1.0};
     }
 
-    // // conversion from cartesian (Cart) to code units (CU)
-    // virtual Inline auto coord_CART_to_CU(const real_t&) const -> real_t { return -1.0; }
-    // virtual Inline auto coord_CART_to_CU(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> { return
-    // {-1.0, -1.0}; } virtual Inline auto coord_CART_to_CU(const real_t&, const real_t&, const real_t&) const ->
-    // std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
-
     // conversion from code units (CU) to spherical (Sph)
     virtual Inline auto coord_CU_to_Sph(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> {
       return {-1.0, -1.0};
@@ -61,17 +58,6 @@ namespace ntt {
       -> std::tuple<real_t, real_t, real_t> {
       return {-1.0, -1.0, -1.0};
     }
-
-    // // velocity conversion
-    // virtual Inline auto transform_ux1TOux(const real_t&) const -> real_t { return -1.0; }
-    // virtual Inline auto transform_ux1ux2TOuxuy(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> {
-    // return {-1.0, -1.0}; } virtual Inline auto transform_ux1ux2ux3TOuxuyuz(const real_t&, const real_t&, const
-    // real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
-
-    // virtual Inline auto transform_uxTOux1(const real_t&) const -> real_t { return -1.0; }
-    // virtual Inline auto transform_uxuyTOux1ux2(const real_t&, const real_t&) const -> std::tuple<real_t, real_t> {
-    // return {-1.0, -1.0}; }; virtual Inline auto transform_uxuyuzTOux1ux2ux3(const real_t&, const real_t&, const
-    // real_t&) const -> std::tuple<real_t, real_t, real_t> { return {-1.0, -1.0, -1.0}; }
 
     virtual Inline auto h11(const real_t&) const -> real_t { return -1.0; }
     virtual Inline auto h11(const real_t&, const real_t&) const -> real_t { return -1.0; }

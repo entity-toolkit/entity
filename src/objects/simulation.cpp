@@ -44,26 +44,7 @@ namespace ntt {
     }
 
     // find timestep and effective cell size
-    if (m_sim_params.m_coord_system == "cartesian") {
-      auto dx {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
-      m_sim_params.m_min_cell_size = dx / std::sqrt(static_cast<real_t>(D));
-    } else if (m_sim_params.m_coord_system == "spherical") {
-      if constexpr (D == ONE_D) { 
-        throw std::logic_error("# 1d spherical not possible.");
-      }
-      auto rmin {m_sim_params.m_extent[0]};
-      auto dr {(m_sim_params.m_extent[1] - m_sim_params.m_extent[0]) / (real_t)(m_sim_params.m_resolution[0])};
-      auto dtheta {(m_sim_params.m_extent[3] - m_sim_params.m_extent[2]) / (real_t)(m_sim_params.m_resolution[1])};
-      if constexpr (D == TWO_D) {
-        auto dx1 {dr};
-        auto dx2 {rmin * dtheta};
-        m_sim_params.m_min_cell_size = 1.0 / std::sqrt(1.0 / (dx1 * dx1) + 1.0 / (dx2 * dx2));
-      } else {
-        throw std::logic_error("# Error: min cell finding not implemented for 3D spherical.");
-      }
-    } else {
-      throw std::logic_error("# Error: min cell finding not implemented for this coordinate system.");
-    }
+    m_sim_params.m_min_cell_size = m_meshblock.grid->findSmallestCell();
     m_sim_params.m_timestep = m_sim_params.m_cfl * m_sim_params.m_min_cell_size;
   }
 
