@@ -22,7 +22,7 @@ namespace ntt {
   Simulation<D>::Simulation(const toml::value& inputdata)
       : m_sim_params {inputdata, m_dim},
         m_pGen {m_sim_params},
-        m_meshblock {m_sim_params.m_resolution, m_sim_params.m_species} {
+        mblock {m_sim_params.m_resolution, m_sim_params.m_species} {
     initialize();
   }
 
@@ -30,21 +30,21 @@ namespace ntt {
   void Simulation<D>::initialize() {
     // pick the coordinate system
     if (m_sim_params.m_coord_system == "cartesian") {
-      m_meshblock.grid
+      mblock.grid
         = std::make_unique<CartesianSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
     } else if (m_sim_params.m_coord_system == "spherical") {
-      m_meshblock.grid
+      mblock.grid
         = std::make_unique<SphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent);
     } else if (m_sim_params.m_coord_system == "qspherical") {
       auto r0 {m_sim_params.m_coord_parameters[0]};
       auto h {m_sim_params.m_coord_parameters[1]};
-      m_meshblock.grid = std::make_unique<QSphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent, r0, h);
+      mblock.grid = std::make_unique<QSphericalSystem<D>>(m_sim_params.m_resolution, m_sim_params.m_extent, r0, h);
     } else {
       throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
     }
 
     // find timestep and effective cell size
-    m_sim_params.m_min_cell_size = m_meshblock.grid->findSmallestCell();
+    m_sim_params.m_min_cell_size = mblock.grid->findSmallestCell();
     m_sim_params.m_timestep = m_sim_params.m_cfl * m_sim_params.m_min_cell_size;
   }
 
@@ -56,16 +56,16 @@ namespace ntt {
 
   template <Dimension D>
   void Simulation<D>::userInitialize() {
-    m_pGen.userInitFields(m_sim_params, m_meshblock);
+    m_pGen.userInitFields(m_sim_params, mblock);
     fieldBoundaryConditions(0.0);
-    m_pGen.userInitParticles(m_sim_params, m_meshblock);
+    m_pGen.userInitParticles(m_sim_params, mblock);
     PLOGD << "Simulation initialized.";
   }
 
   template <Dimension D>
   void Simulation<D>::verify() {
     m_sim_params.verify();
-    m_meshblock.verify(m_sim_params);
+    mblock.verify(m_sim_params);
     PLOGD << "Simulation prerun check passed.";
   }
 
@@ -80,7 +80,7 @@ namespace ntt {
 
     PLOGI << "[domain]";
     PLOGI << "   dimension: " << m_dim << "D";
-    PLOGI << "   coordinate system: " << (m_meshblock.grid->label);
+    PLOGI << "   coordinate system: " << (mblock.grid->label);
 
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.m_boundaries) {
@@ -119,16 +119,16 @@ namespace ntt {
     PLOGI << "   q0: " << m_sim_params.m_charge0;
     PLOGI << "   B0: " << m_sim_params.m_B0;
 
-    if (m_meshblock.particles.size() > 0) {
+    if (mblock.particles.size() > 0) {
       PLOGI << "[particles]";
-      for (std::size_t i {0}; i < m_meshblock.particles.size(); ++i) {
+      for (std::size_t i {0}; i < mblock.particles.size(); ++i) {
         PLOGI << "   [species #" << i + 1 << "]";
-        PLOGI << "      label: " << m_meshblock.particles[i].get_label();
-        PLOGI << "      mass: " << m_meshblock.particles[i].get_mass();
-        PLOGI << "      charge: " << m_meshblock.particles[i].get_charge();
-        PLOGI << "      pusher: " << stringifyParticlePusher(m_meshblock.particles[i].get_pusher());
-        PLOGI << "      maxnpart: " << m_meshblock.particles[i].get_maxnpart() << " ("
-              << m_meshblock.particles[i].get_npart() << ")";
+        PLOGI << "      label: " << mblock.particles[i].get_label();
+        PLOGI << "      mass: " << mblock.particles[i].get_mass();
+        PLOGI << "      charge: " << mblock.particles[i].get_charge();
+        PLOGI << "      pusher: " << stringifyParticlePusher(mblock.particles[i].get_pusher());
+        PLOGI << "      maxnpart: " << mblock.particles[i].get_maxnpart() << " ("
+              << mblock.particles[i].get_npart() << ")";
       }
     } else {
       PLOGI << "[no particles]";

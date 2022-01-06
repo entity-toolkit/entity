@@ -22,9 +22,9 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "1D faraday";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-    if (m_meshblock.grid->label == "cartesian") {
-      const auto dx {(m_meshblock.grid->x1_max - m_meshblock.grid->x1_min) / (real_t)(m_meshblock.grid->Nx1)};
-      Kokkos::parallel_for("faraday", m_meshblock.loopActiveCells(), FaradayCartesian<ONE_D>(m_meshblock, coeff / dx));
+    if (mblock.grid->label == "cartesian") {
+      const auto dx {(mblock.grid->x1_max - mblock.grid->x1_min) / (real_t)(mblock.grid->Nx1)};
+      Kokkos::parallel_for("faraday", mblock.loopActiveCells(), FaradayCartesian<ONE_D>(mblock, coeff / dx));
     } else {
       throw std::logic_error("# Error: wrong coordinate system for 1D.");
     }
@@ -35,14 +35,14 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "2D faraday";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-    if (m_meshblock.grid->label == "cartesian") {
-      const auto dx {(m_meshblock.grid->x1_max - m_meshblock.grid->x1_min) / (real_t)(m_meshblock.grid->Nx1)};
-      Kokkos::parallel_for("faraday", m_meshblock.loopActiveCells(), FaradayCartesian<TWO_D>(m_meshblock, coeff / dx));
+    if (mblock.grid->label == "cartesian") {
+      const auto dx {(mblock.grid->x1_max - mblock.grid->x1_min) / (real_t)(mblock.grid->Nx1)};
+      Kokkos::parallel_for("faraday", mblock.loopActiveCells(), FaradayCartesian<TWO_D>(mblock, coeff / dx));
     } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
       Kokkos::parallel_for(
           "faraday",
-          m_meshblock.loopActiveCells(),
-          FaradayCurvilinear<TWO_D>(m_meshblock, coeff));
+          mblock.loopActiveCells(),
+          FaradayCurvilinear<TWO_D>(mblock, coeff));
     } else {
       throw std::logic_error("# Error: 2D faraday for the coordinate system not implemented.");
     }
@@ -53,9 +53,9 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "3D faraday";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-    if (m_meshblock.grid->label == "cartesian") {
-      const auto dx {(m_meshblock.grid->x1_max - m_meshblock.grid->x1_min) / (real_t)(m_meshblock.grid->Nx1)};
-      Kokkos::parallel_for("faraday", m_meshblock.loopActiveCells(), FaradayCartesian<THREE_D>(m_meshblock, coeff / dx));
+    if (mblock.grid->label == "cartesian") {
+      const auto dx {(mblock.grid->x1_max - mblock.grid->x1_min) / (real_t)(mblock.grid->Nx1)};
+      Kokkos::parallel_for("faraday", mblock.loopActiveCells(), FaradayCartesian<THREE_D>(mblock, coeff / dx));
     } else {
       throw std::logic_error("# Error: 3D faraday for the coordinate system not implemented.");
     }
@@ -69,9 +69,9 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "1D ampere";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-    if (m_meshblock.grid->label == "cartesian") {
-      const auto dx {(m_meshblock.grid->x1_max - m_meshblock.grid->x1_min) / (real_t)(m_meshblock.grid->Nx1)};
-      Kokkos::parallel_for("ampere", m_meshblock.loopActiveCells(), AmpereCartesian<ONE_D>(m_meshblock, coeff / dx));
+    if (mblock.grid->label == "cartesian") {
+      const auto dx {(mblock.grid->x1_max - mblock.grid->x1_min) / (real_t)(mblock.grid->Nx1)};
+      Kokkos::parallel_for("ampere", mblock.loopActiveCells(), AmpereCartesian<ONE_D>(mblock, coeff / dx));
     } else {
       throw std::logic_error("# Error: wrong coordinate system for 1D.");
     }
@@ -82,19 +82,19 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "2D ampere";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-    if (m_meshblock.grid->label == "cartesian") {
-      const auto dx {(m_meshblock.grid->x1_max - m_meshblock.grid->x1_min) / (real_t)(m_meshblock.grid->Nx1)};
-      Kokkos::parallel_for("ampere", m_meshblock.loopActiveCells(), AmpereCartesian<TWO_D>(m_meshblock, coeff / dx));
+    if (mblock.grid->label == "cartesian") {
+      const auto dx {(mblock.grid->x1_max - mblock.grid->x1_min) / (real_t)(mblock.grid->Nx1)};
+      Kokkos::parallel_for("ampere", mblock.loopActiveCells(), AmpereCartesian<TWO_D>(mblock, coeff / dx));
       } else if ((m_sim_params.m_coord_system == "spherical") || (m_sim_params.m_coord_system == "qspherical")) {
         Kokkos::parallel_for(
             "ampere",
-            m_meshblock.loopCells(0, 0, 1, 0),
-            AmpereCurvilinear<TWO_D>(m_meshblock, coeff));
+            mblock.loopCells(0, 0, 1, 0),
+            AmpereCurvilinear<TWO_D>(mblock, coeff));
         // evolve E1, E2 near polar axes
         Kokkos::parallel_for(
             "ampere_pole",
-            NTT1DRange(m_meshblock.i_min, m_meshblock.i_max),
-            AmpereAxisymmetricPoles<TWO_D>(m_meshblock, coeff));
+            NTT1DRange(mblock.i_min, mblock.i_max),
+            AmpereAxisymmetricPoles<TWO_D>(mblock, coeff));
     } else {
       throw std::logic_error("# Error: 2D ampere for the coordinate system not implemented.");
     }
@@ -105,9 +105,9 @@ namespace ntt {
     UNUSED(time);
     PLOGD << "3D ampere";
     const real_t coeff {fraction * m_sim_params.m_correction * m_sim_params.m_timestep};
-    if (m_meshblock.grid->label == "cartesian") {
-      const auto dx {(m_meshblock.grid->x1_max - m_meshblock.grid->x1_min) / (real_t)(m_meshblock.grid->Nx1)};
-      Kokkos::parallel_for("ampere", m_meshblock.loopActiveCells(), AmpereCartesian<THREE_D>(m_meshblock, coeff / dx));
+    if (mblock.grid->label == "cartesian") {
+      const auto dx {(mblock.grid->x1_max - mblock.grid->x1_min) / (real_t)(mblock.grid->Nx1)};
+      Kokkos::parallel_for("ampere", mblock.loopActiveCells(), AmpereCartesian<THREE_D>(mblock, coeff / dx));
     } else {
       throw std::logic_error("# Error: 3D ampere for the coordinate system not implemented.");
     }
@@ -120,7 +120,7 @@ namespace ntt {
   void Simulation<D>::addCurrentsSubstep(const real_t& time) {
     UNUSED(time);
     PLOGD << D << "D add current";
-    Kokkos::parallel_for("addcurrs", m_meshblock.loopActiveCells(), AddCurrents<D>(m_meshblock));
+    Kokkos::parallel_for("addcurrs", mblock.loopActiveCells(), AddCurrents<D>(mblock));
   }
 
   // # # # # # # # # # # # # # # # #
@@ -130,7 +130,7 @@ namespace ntt {
   void Simulation<D>::resetCurrentsSubstep(const real_t& time) {
     UNUSED(time);
     PLOGD << D << "D reset current";
-    Kokkos::deep_copy(m_meshblock.j_fields, 0.0);
+    Kokkos::deep_copy(mblock.j_fields, 0.0);
   }
 
 } // namespace ntt

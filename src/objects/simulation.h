@@ -20,7 +20,7 @@ namespace ntt {
 
     SimulationParams m_sim_params;
     ProblemGenerator<D> m_pGen;
-    Meshblock<D> m_meshblock;
+    Meshblock<D> mblock;
 
   public:
     Simulation(const toml::value& inputdata);
@@ -50,7 +50,7 @@ namespace ntt {
     void particleBoundaryConditions(const real_t&);
 
     [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
-    [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& { return m_meshblock; }
+    [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& { return mblock; }
   };
 
 } // namespace ntt
