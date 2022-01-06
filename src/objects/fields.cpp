@@ -10,42 +10,42 @@ namespace ntt {
       : em_fields {"EM", res[0] + 2 * N_GHOSTS},
         j_fields {"J", res[0] + 2 * N_GHOSTS},
         i_min {N_GHOSTS},
-        i_max {N_GHOSTS + res[0]},
+        i_max {N_GHOSTS + (long int)(res[0])},
         j_min {0},
         j_max {1},
         k_min {0},
         k_max {1},
-        Ni {i_max - i_min},
-        Nj {j_max - j_min},
-        Nk {k_max - k_min} {}
+        Ni {res[0]},
+        Nj {1},
+        Nk {1} {}
 
   template <>
   Fields<TWO_D>::Fields(std::vector<std::size_t> res)
       : em_fields {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
         j_fields {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
         i_min {N_GHOSTS},
-        i_max {N_GHOSTS + res[0]},
+        i_max {N_GHOSTS + (long int)(res[0])},
         j_min {N_GHOSTS},
-        j_max {N_GHOSTS + res[1]},
+        j_max {N_GHOSTS + (long int)(res[1])},
         k_min {0},
         k_max {1},
-        Ni {i_max - i_min},
-        Nj {j_max - j_min},
-        Nk {k_max - k_min} {}
+        Ni {res[0]},
+        Nj {res[1]},
+        Nk {1} {}
 
   template <>
   Fields<THREE_D>::Fields(std::vector<std::size_t> res)
       : em_fields {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
         j_fields {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
         i_min {N_GHOSTS},
-        i_max {N_GHOSTS + res[0]},
+        i_max {N_GHOSTS + (long int)(res[0])},
         j_min {N_GHOSTS},
-        j_max {N_GHOSTS + res[1]},
+        j_max {N_GHOSTS + (long int)(res[1])},
         k_min {N_GHOSTS},
-        k_max {N_GHOSTS + res[2]},
-        Ni {i_max - i_min},
-        Nj {j_max - j_min},
-        Nk {k_max - k_min} {}
+        k_max {N_GHOSTS + (long int)(res[2])},
+        Ni {res[0]},
+        Nj {res[1]},
+        Nk {res[2]} {}
 
   // # # # # # # # # # # # # # # # #
   // custom range

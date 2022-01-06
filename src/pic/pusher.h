@@ -45,8 +45,8 @@ namespace ntt {
     // TODO add field and velocity conversion (to cartesian)
 
     Inline void operator()(const Boris_t&, const index_t p) const {
-      real_t e0_x1, e0_x2, e0_x3;
-      real_t b0_x1, b0_x2, b0_x3;
+      // real_t e0_x1, e0_x2, e0_x3;
+      // real_t b0_x1, b0_x2, b0_x3;
       // interpolateFields(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
       transformToCartesian(p);
       // BorisUpdate(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
@@ -79,7 +79,7 @@ namespace ntt {
 //     m_particles.m_ux1(p) = p_ux;
 //     m_particles.m_ux2(p) = p_uy;
 // #else
-//     UNUSED(p);
+    UNUSED(p);
 // #endif
   }
 
@@ -95,7 +95,7 @@ namespace ntt {
 //     m_particles.m_ux2(p) = p_uy;
 //     m_particles.m_ux3(p) = p_uz;
 // #else
-//     UNUSED(p);
+    UNUSED(p);
 // #endif
   }
 
@@ -112,7 +112,7 @@ namespace ntt {
 //     m_particles.m_ux1(p) = p_ux1;
 //     m_particles.m_ux2(p) = p_ux2;
 // #else
-//     UNUSED(p);
+    UNUSED(p);
 // #endif
   }
 
@@ -128,7 +128,7 @@ namespace ntt {
 //     m_particles.m_ux2(p) = p_ux2;
 //     m_particles.m_ux3(p) = p_ux3;
 // #else
-//     UNUSED(p);
+    UNUSED(p);
 // #endif
   }
 

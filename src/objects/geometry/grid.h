@@ -11,7 +11,7 @@ namespace ntt {
   template <Dimension D>
   struct Grid {
     const std::string label;
-    const long int Nx1, Nx2, Nx3;
+    const std::size_t Nx1, Nx2, Nx3;
     const real_t x1_min, x1_max;
     const real_t x2_min, x2_max;
     const real_t x3_min, x3_max;
