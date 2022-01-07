@@ -50,30 +50,26 @@ namespace ntt {
     }
   }
 
-  auto NTT1DRange(const std::vector<long int>& r1, const std::vector<long int>& r2) -> ntt_1drange_t {
-    assert(r1.size() == 1);
-    assert(r2.size() == 1);
-    return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(r1[0]), static_cast<range_t>(r2[0]));
-  }
-  auto NTT1DRange(const long int& r1, const long int& r2) -> ntt_1drange_t {
-    return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(r1), static_cast<range_t>(r2));
-  }
-  auto NTT2DRange(const std::vector<long int>& r1, const std::vector<long int>& r2) -> ntt_2drange_t {
-    assert(r1.size() == 2);
-    assert(r2.size() == 2);
-    return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
-      {static_cast<range_t>(r1[0]), static_cast<range_t>(r1[1])},
-      {static_cast<range_t>(r2[0]), static_cast<range_t>(r2[1])});
-  }
-  auto NTT3DRange(const std::vector<long int>& r1, const std::vector<long int>& r2) -> ntt_3drange_t {
-    assert(r1.size() == 3);
-    assert(r2.size() == 3);
-    return Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>(
-      {static_cast<range_t>(r1[0]), static_cast<range_t>(r1[1]), static_cast<range_t>(r1[2])},
-      {static_cast<range_t>(r2[0]), static_cast<range_t>(r2[1]), static_cast<range_t>(r2[2])});
+  template <>
+  auto NTTRange<Dimension::ONE_D>(const long int (&i1)[1],
+                                  const long int (&i2)[1]) -> RangeND<Dimension::ONE_D> {
+    return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(i1[0]), static_cast<range_t>(i2[0]));
   }
 
-} // namespace ntt
+  template <>
+  auto NTTRange<Dimension::TWO_D>(const long int (&i1)[2], const long int (&i2)[2]) -> RangeND<Dimension::TWO_D> {
+    return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
+      {static_cast<range_t>(i1[0]), static_cast<range_t>(i1[1])},
+      {static_cast<range_t>(i2[0]), static_cast<range_t>(i2[1])});
+  }
+  template <>
+  auto NTTRange<Dimension::THREE_D>(const long int (&i1)[3], const long int (&i2)[3]) -> RangeND<Dimension::THREE_D> {
+    return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
+      {static_cast<range_t>(i1[0]), static_cast<range_t>(i1[1]), static_cast<range_t>(i1[2])},
+      {static_cast<range_t>(i2[0]), static_cast<range_t>(i2[1]), static_cast<range_t>(i2[2])});
+  }
+
+  } // namespace ntt
 
 namespace plog {
 
