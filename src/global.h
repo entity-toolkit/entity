@@ -64,41 +64,46 @@ namespace ntt {
   auto NTT2DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_2drange_t;
   auto NTT3DRange(const std::vector<long int>&, const std::vector<long int>&) -> ntt_3drange_t;
 
-  enum Dimension { ONE_D = 1,
-                   TWO_D,
-                   THREE_D };
+  enum class Dimension { ONE_D = 1,
+                         TWO_D = 2,
+                         THREE_D = 3 };
 
   template <Dimension D, int N>
-  using RealFieldND = typename std::conditional<D == ONE_D, NTTArray<real_t* [N]>, typename std::conditional<D == TWO_D, NTTArray<real_t** [N]>, typename std::conditional<D == THREE_D, NTTArray<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
+  using RealFieldND = typename std::conditional<D == Dimension::ONE_D, NTTArray<real_t* [N]>,
+                        typename std::conditional<D == Dimension::TWO_D, NTTArray<real_t** [N]>, 
+                          typename std::conditional<D == Dimension::THREE_D, NTTArray<real_t*** [N]>, 
+                            std::nullptr_t>
+                          ::type>
+                        ::type>
+                      ::type;
 
   template <Dimension D>
-  using RangeND = typename std::conditional<D == ONE_D, ntt_1drange_t, typename std::conditional<D == TWO_D, ntt_2drange_t, typename std::conditional<D == THREE_D, ntt_3drange_t, std::nullptr_t>::type>::type>::type;
+  using RangeND = typename std::conditional<D == Dimension::ONE_D, ntt_1drange_t, 
+                    typename std::conditional<D == Dimension::TWO_D, ntt_2drange_t, 
+                      typename std::conditional<D == Dimension::THREE_D, ntt_3drange_t, 
+                        std::nullptr_t>
+                      ::type>
+                    ::type>
+                  ::type;
 
   inline constexpr int N_GHOSTS {2};
-  enum SimulationType { UNDEFINED_SIM,
-                        PIC_SIM,
-                        FORCE_FREE_SIM,
-                        MHD_SIM };
+  enum class SimulationType { UNDEFINED,
+                              PIC,
+                              FORCE_FREE,
+                              MHD };
 
-  enum BoundaryCondition { UNDEFINED_BC,
-                           PERIODIC_BC,
-                           USER_BC,
-                           OPEN_BC };
+  enum class BoundaryCondition { UNDEFINED,
+                                 PERIODIC,
+                                 USER,
+                                 OPEN };
 
-  enum ParticlePusher { UNDEFINED_PUSHER,
-                        BORIS_PUSHER,
-                        VAY_PUSHER,
-                        PHOTON_PUSHER };
-
-  enum ParticleShape { ZEROTH_ORDER = 0,
-                       FIRST_ORDER,
-                       SECOND_ORDER,
-                       THIRD_ORDER };
+  enum class ParticlePusher { UNDEFINED,
+                              BORIS,
+                              VAY,
+                              PHOTON };
 
   auto stringifySimulationType(SimulationType sim) -> std::string;
-  // auto stringifyCoordinateSystem(CoordinateSystem coord) -> std::string;
   auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
-
   auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
 
   // defaults
