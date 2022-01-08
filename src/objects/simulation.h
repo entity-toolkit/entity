@@ -9,48 +9,60 @@
 #include <toml/toml.hpp>
 
 #include <string>
-#include <string_view>
 
 namespace ntt {
-
-  template <Dimension D>
+  /**
+   * Main class of the simulation containing all the necessary methods and configurations.
+   *
+   * @tparam D dimension.
+   * @tparam S simulation type.
+   */
+  template <Dimension D, SimulationType S>
   class Simulation {
-  protected:
-    Dimension m_dim {D};
-
     SimulationParams m_sim_params;
-    ProblemGenerator<D> m_pGen;
-    Meshblock<D> mblock;
+    PGen<D, S> m_pGen;
+    Meshblock<D, S> m_mblock;
 
   public:
+    /**
+     * Constructor for simulation class.
+     *
+     * @param inputdata toml-object with parsed toml parameters.
+     */
     Simulation(const toml::value& inputdata);
     ~Simulation() = default;
-    void setIO(std::string_view infname, std::string_view outdirname);
-    void userInitialize();
+    
+    /**
+     * Initialize / allocate all the simulation objects based on the `m_sim_params`
+     *
+     * @param inputdata toml-object with parsed toml parameters.
+     */
+    void initialize();
+    // void userInitialize();
     void verify();
     void printDetails();
-    void initialize();
-    void finalize();
+    // void finalize();
 
-    void step_forward(const real_t&);
-    void step_backward(const real_t&);
-    void mainloop();
-    void run(std::string_view, std::string_view);
+    // void step_forward(const real_t&);
+    // void step_backward(const real_t&);
+    // void mainloop();
 
-    // fields
-    void faradaySubstep(const real_t&, const real_t&);
-    void ampereSubstep(const real_t&, const real_t&);
-    void addCurrentsSubstep(const real_t&);
-    void resetCurrentsSubstep(const real_t&);
-    // particles
-    void pushParticlesSubstep(const real_t&);
-    void depositSubstep(const real_t&);
-    // boundaries
-    void fieldBoundaryConditions(const real_t&);
-    void particleBoundaryConditions(const real_t&);
+    void run();
 
-    [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
-    [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& { return mblock; }
+    // // fields
+    // void faradaySubstep(const real_t&, const real_t&);
+    // void ampereSubstep(const real_t&, const real_t&);
+    // void addCurrentsSubstep(const real_t&);
+    // void resetCurrentsSubstep(const real_t&);
+    // // particles
+    // void pushParticlesSubstep(const real_t&);
+    // void depositSubstep(const real_t&);
+    // // boundaries
+    // void fieldBoundaryConditions(const real_t&);
+    // void particleBoundaryConditions(const real_t&);
+
+    // [[nodiscard]] auto get_params() const -> const SimulationParams& { return m_sim_params; }
+    // [[nodiscard]] auto get_meshblock() const -> const Meshblock<D>& { return mblock; }
   };
 
 } // namespace ntt
