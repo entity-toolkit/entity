@@ -51,25 +51,24 @@ namespace ntt {
   }
 
   template <>
-  auto NTTRange<Dimension::ONE_D>(const long int (&i1)[1],
-                                  const long int (&i2)[1]) -> RangeND<Dimension::ONE_D> {
+  auto NTTRange<Dimension::ONE_D>(const int (&i1)[1], const int (&i2)[1]) -> RangeND<Dimension::ONE_D> {
     return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(i1[0]), static_cast<range_t>(i2[0]));
   }
 
   template <>
-  auto NTTRange<Dimension::TWO_D>(const long int (&i1)[2], const long int (&i2)[2]) -> RangeND<Dimension::TWO_D> {
+  auto NTTRange<Dimension::TWO_D>(const int (&i1)[2], const int (&i2)[2]) -> RangeND<Dimension::TWO_D> {
     return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
       {static_cast<range_t>(i1[0]), static_cast<range_t>(i1[1])},
       {static_cast<range_t>(i2[0]), static_cast<range_t>(i2[1])});
   }
   template <>
-  auto NTTRange<Dimension::THREE_D>(const long int (&i1)[3], const long int (&i2)[3]) -> RangeND<Dimension::THREE_D> {
-    return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
+  auto NTTRange<Dimension::THREE_D>(const int (&i1)[3], const int (&i2)[3]) -> RangeND<Dimension::THREE_D> {
+    return Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>(
       {static_cast<range_t>(i1[0]), static_cast<range_t>(i1[1]), static_cast<range_t>(i1[2])},
       {static_cast<range_t>(i2[0]), static_cast<range_t>(i2[1]), static_cast<range_t>(i2[2])});
   }
 
-  } // namespace ntt
+} // namespace ntt
 
 namespace plog {
 
@@ -78,8 +77,7 @@ namespace plog {
     util::nostringstream ss;
 #ifdef DEBUG
     if (record.getSeverity() == plog::debug) {
-      ss << PLOG_NSTR("\n") << record.getFunc() << PLOG_NSTR(" @ ") << record.getLine()
-         << PLOG_NSTR("\n");
+      ss << PLOG_NSTR("\n") << record.getFunc() << PLOG_NSTR(" @ ") << record.getLine() << PLOG_NSTR("\n");
     }
 #endif
     ss << std::setw(9) << std::left << severityToString(record.getSeverity()) << PLOG_NSTR(": ");
