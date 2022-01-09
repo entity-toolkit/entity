@@ -37,7 +37,7 @@ DEFINITIONS := @DEFINITIONS@
 
 ifeq ($(strip ${VERBOSE}), y)
 	HIDE =
-	PREPFLAGS = -DVERBOSE
+	PREPFLAGS = -DVERBOSE -Werror
 else
 	HIDE = @
 endif
@@ -90,9 +90,10 @@ ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
 
 # Problem generator
 pgenIsSpecified:
-ifeq (${PGEN},)
-	$(error ERROR: no problem generator specified)
-endif
+	@echo ${PGEN}
+# ifeq (${PGEN},)
+# 	$(error ERROR: no problem generator specified)
+# endif
 
 ifeq (${PGEN},)
 PGEN := ntt_dummy
