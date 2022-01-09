@@ -9,6 +9,7 @@
 #include <plog/Init.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 
+#include <iostream>
 #include <vector>
 #include <stdexcept>
 
@@ -32,23 +33,23 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto inputfilename = cl_args.getArgument("-input", ntt::DEF_input_filename);
-    auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
+    auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
+    // auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
-    short res = static_cast<short>(
-        ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
+    short res
+      = static_cast<short>(ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
 
     if (res == 1) {
-      ntt::Simulation<ntt::ONE_D> sim(inputdata);
-      sim.run(inputfilename, outputpath);
+      ntt::Simulation<ntt::Dimension::ONE_D, ntt::SimulationType::PIC> sim(inputdata);
+      sim.run();
     } else if (res == 2) {
-      ntt::Simulation<ntt::TWO_D> sim(inputdata);
-      sim.run(inputfilename, outputpath);
+      ntt::Simulation<ntt::Dimension::TWO_D, ntt::SimulationType::PIC> sim(inputdata);
+      sim.run();
     } else if (res == 3) {
-      ntt::Simulation<ntt::THREE_D> sim(inputdata);
-      sim.run(inputfilename, outputpath);
+      ntt::Simulation<ntt::Dimension::THREE_D, ntt::SimulationType::PIC> sim(inputdata);
+      sim.run();
     } else {
-      throw std::logic_error("# Error: wrong dimension specified.");
+      NTTError("wrong dimension specified");
     }
   }
   catch (std::exception& err) {
