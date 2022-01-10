@@ -1,5 +1,5 @@
-#ifndef OBJECTS_PARTICLES_H
-#define OBJECTS_PARTICLES_H
+#ifndef FRAMEWORK_PARTICLES_H
+#define FRAMEWORK_PARTICLES_H
 
 #include "global.h"
 

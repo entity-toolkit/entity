@@ -12,7 +12,7 @@ namespace ntt {
     const std::string title {"PIC_Sim"};
     const int n_species {0};
     const std::string pusher {"Boris"};
-    const std::string coordinate_system {"cartesian"};
+    const std::string metric {"minkowski"};
 
     const real_t cfl {0.95};
   }
