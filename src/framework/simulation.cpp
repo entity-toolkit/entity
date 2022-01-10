@@ -1,47 +1,35 @@
 #include "global.h"
-#include "timer.h"
 #include "simulation.h"
-#include "sim_params.h"
-// #include "meshblock.h"
-#include "input.h"
-
-// #include "cartesian.h"
-// #include "spherical.h"
-// #include "qspherical.h"
+#include "minkowski.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
-
-#include <memory>
-#include <cmath>
-#include <stdexcept>
 
 namespace ntt {
 
   template <Dimension D, SimulationType S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
-    : m_sim_params {inputdata, D}, m_pGen {m_sim_params}, m_mblock {m_sim_params.resolution(), m_sim_params.species()} {
-    initialize();
-  }
+    : m_sim_params {inputdata, D}, m_pGen {m_sim_params}, m_mblock {m_sim_params.resolution(), m_sim_params.species()} {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-    // // pick the coordinate system
-    // if (m_sim_params.coord_system() == "cartesian") {
-    //   m_mblock.grid = std::make_unique<CartesianSystem<D>>(m_sim_params.resolution(), m_sim_params.extent());
+    if (m_sim_params.metric() == "cartesian") {
+      m_mblock.metric = std::make_unique<Minkowski<D>>(m_sim_params.resolution(), m_sim_params.extent());
+    } else {
+      NTTError("metric not implemented");
+    }
+
     // } else if (m_sim_params.coord_system() == "spherical") {
     //   m_mblock.grid = std::make_unique<SphericalSystem<D>>(m_sim_params.resolution(), m_sim_params.extent());
     // } else if (m_sim_params.coord_system() == "qspherical") {
     //   auto r0 {m_sim_params.coord_parameters(0)};
     //   auto h {m_sim_params.coord_parameters(1)};
-    //   m_mblock.grid = std::make_unique<QSphericalSystem<D>>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
-    // } else {
-    //   throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
-    // }
+    //   m_mblock.grid = std::make_unique<QSphericalSystem<D>>(m_sim_params.resolution(), m_sim_params.extent(), r0,
+    //   h);
 
     // find timestep and effective cell size
-    m_mblock.set_min_cell_size(1.0);
-    m_mblock.set_timestep(1.0);
+    m_mblock.set_min_cell_size(m_mblock.metric->findSmallestCell());
+    m_mblock.set_timestep(m_sim_params.cfl() * m_mblock.min_cell_size());
   }
 
   // template <Dimension D>
@@ -131,123 +119,36 @@ namespace ntt {
     }
   }
 
-  // template <Dimension D>
-  // void Simulation<D>::finalize() {
-  //   PLOGD << "Simulation finalized.";
-  // }
-
-  // template <Dimension D>
-  // void Simulation<D>::step_forward(const real_t& time) {
-  //   TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
-  //   {
-  //     timers.start(1);
-  //     faradaySubstep(time, 0.5);
-  //     timers.stop(1);
-  //   }
-
-  //   {
-  //     timers.start(2);
-  //     fieldBoundaryConditions(time);
-  //     timers.stop(2);
-  //   }
-
-  //   {
-  //     timers.start(4);
-  //     pushParticlesSubstep(time);
-  //     timers.stop(4);
-  //   }
-
-  //   // depositSubstep(time);
-
-  //   {
-  //     timers.start(2);
-  //     particleBoundaryConditions(time);
-  //     timers.stop(2);
-  //   }
-  //   // BC currents
-
-  //   {
-  //     timers.start(1);
-  //     faradaySubstep(time, 0.5);
-  //     timers.stop(1);
-  //   }
-
-  //   {
-  //     timers.start(2);
-  //     fieldBoundaryConditions(time);
-  //     timers.stop(2);
-  //   }
-
-  //   {
-  //     timers.start(1);
-  //     ampereSubstep(time, 1.0);
-  //     addCurrentsSubstep(time);
-  //     resetCurrentsSubstep(time);
-  //     timers.stop(1);
-  //   }
-
-  //   {
-  //     timers.start(2);
-  //     fieldBoundaryConditions(time);
-  //     timers.stop(2);
-  //   }
-  //   timers.printAll(millisecond);
-  // }
-
-  // template <Dimension D>
-  // void Simulation<D>::step_backward(const real_t& time) {
-  //   TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
-  //   {
-  //     timers.start(1);
-  //     ampereSubstep(time, -1.0);
-  //     timers.stop(1);
-  //   }
-
-  //   {
-  //     timers.start(2);
-  //     fieldBoundaryConditions(time);
-  //     timers.stop(2);
-  //   }
-
-  //   {
-  //     timers.start(1);
-  //     faradaySubstep(time, -1.0);
-  //     timers.stop(1);
-  //   }
-
-  //   {
-  //     timers.start(2);
-  //     fieldBoundaryConditions(time);
-  //     timers.stop(2);
-  //   }
-  //   timers.printAll(millisecond);
-  // }
-
-  // template <Dimension D>
-  // void Simulation<D>::mainloop() {
-  //   PLOGD << "Simulation mainloop started.";
-
-  //   unsigned long timax {
-  //       static_cast<unsigned long>(m_sim_params.m_runtime / m_sim_params.m_timestep)};
-  //   real_t time {0.0};
-  //   for (unsigned long ti {0}; ti < timax; ++ti) {
-  //     PLOGD << "t = " << time;
-  //     step_forward(time);
-  //     time += m_sim_params.m_timestep;
-  //   }
-  //   PLOGD << "Simulation mainloop finished.";
-  // }
+  template <Dimension D, SimulationType S>
+  void Simulation<D, S>::finalize() {
+    PLOGD << "Simulation finalized.";
+  }
 
   template <Dimension D, SimulationType S>
-  void Simulation<D, S>::run() {
+  void Simulation<D, S>::mainloop() {
+    PLOGD << "Simulation mainloop started.";
+
+    unsigned long timax {static_cast<unsigned long>(m_sim_params.total_runtime() / m_mblock.timestep())};
+    real_t time {0.0};
+    for (unsigned long ti {0}; ti < timax; ++ti) {
+      PLOGD << "t = " << time;
+      step_forward(time);
+      time += m_mblock.timestep();
+    }
+    PLOGD << "Simulation mainloop finished.";
+  }
+
+  template <Dimension D, SimulationType S>
+  void Simulation<D, S>::process() {
+    initialize();
     // setIO(infname, outdirname);
     // userInitialize();
     verify();
     PLOGD << "Prerun check passed";
     printDetails();
     PLOGD << "Simulation details printed";
-    // mainloop();
-    // finalize();
+    mainloop();
+    finalize();
   }
 
 } // namespace ntt
