@@ -1,11 +1,11 @@
-#ifndef OBJECTS_FIELDS_H
-#define OBJECTS_FIELDS_H
+#ifndef FRAMEWORK_FIELDS_H
+#define FRAMEWORK_FIELDS_H
 
 #include "global.h"
 
 namespace ntt {
-  enum class em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
-  enum class cur { jx1 = 0, jx2 = 1, jx3 = 2 };
+  enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
+  enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
 
   /**
    * Container for the fields. Used a parent class for the Meshblock.

@@ -41,20 +41,19 @@ namespace ntt {
     }
 
     // reading coordinate system info
-#ifndef CURVILINEAR_COORDS
-    m_coord_system = "cartesian";
-    if (readFromInput<std::string>(m_inputdata, "domain", "coord_sys", defaults::coordinate_system) != "cartesian") {
-      throw std::invalid_argument(
-        "Non-cartesian coordinates specified but the code is not compiled with the `-curv` flag.");
+#ifndef CURVILINEAR
+    m_metric = "minkowski";
+    if (readFromInput<std::string>(m_inputdata, "domain", "metric", defaults::metric) != "minkowski") {
+      NTTError("non-minkowski metric specified, but the code is not compiled with the `-curv` flag");
     }
 #else
-    m_coord_system = readFromInput<std::string>(m_inputdata, "domain", "coord_sys");
+    m_metric = readFromInput<std::string>(m_inputdata, "domain", "metric");
 #endif
 
     // domain size / resolution
     m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
     m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
-    if (m_coord_system == "cartesian") {
+    if (m_metric == "cartesian") {
       // cartesian grid
       if (((short)(m_resolution.size()) < (short)(dim)) || ((short)(m_extent.size()) < 2 * (short)(dim))) {
         NTTError("not enough values in `extent` or `resolution` input");
@@ -69,15 +68,15 @@ namespace ntt {
         auto dz {(m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2])};
         if (dx != dz) { NTTError("dx != dz in cartesian"); }
       }
-    } else if ((m_coord_system == "spherical") || (m_coord_system == "qspherical")) {
+    } else if ((m_metric == "spherical") || (m_metric == "qspherical")) {
       // spherical (quasi-spherical) grid
       if (m_extent.size() < 2) { throw std::invalid_argument("Not enough values in `extent` input."); }
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
-      if (m_coord_system == "qspherical") {
-        m_coord_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
-        m_coord_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
+      if (m_metric == "qspherical") {
+        m_metric[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
+        m_metric[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
       }
-      m_coord_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
+      m_metric[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_extent.push_back(0.0);
       m_extent.push_back(constant::PI);
       m_extent.push_back(0.0);
@@ -87,7 +86,7 @@ namespace ntt {
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
     m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
-    if (m_coord_system == "cartesian") {
+    if (m_metric == "cartesian") {
       auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
       short b {0};
       for (auto& bc : boundaries) {
@@ -103,7 +102,7 @@ namespace ntt {
         ++b;
         if (b >= (short)(dim)) { break; }
       }
-    } else if ((m_coord_system == "spherical") || (m_coord_system == "qspherical")) {
+    } else if ((m_metric == "spherical") || (m_metric == "qspherical")) {
       // rmin, rmax boundaries only
       m_boundaries.push_back(BoundaryCondition::USER);
       m_boundaries.push_back(BoundaryCondition::USER);

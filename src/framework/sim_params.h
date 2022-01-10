@@ -1,5 +1,5 @@
-#ifndef OBJECTS_SIM_PARAMS_H
-#define OBJECTS_SIM_PARAMS_H
+#ifndef FRAMEWORK_SIM_PARAMS_H
+#define FRAMEWORK_SIM_PARAMS_H
 
 #include "global.h"
 #include "particles.h"
@@ -38,10 +38,10 @@ namespace ntt {
     std::vector<std::size_t> m_resolution;
     // User-defined boundary conditions.
     std::vector<BoundaryCondition> m_boundaries;
-    // User-defined coordinate system.
-    std::string m_coord_system;
-    // User-defined real-valued parameters for the coordinate system [10 max].
-    real_t m_coord_parameters[10];
+    // User-defined metric.
+    std::string m_metric;
+    // User-defined real-valued parameters for the metric [10 max].
+    real_t m_metric_parameters[10];
 
     // Container with data from the parsed input file.
     toml::value m_inputdata;
@@ -73,8 +73,8 @@ namespace ntt {
     [[nodiscard]] auto extent() const -> const std::vector<real_t>& { return m_extent; }
     [[nodiscard]] auto resolution() const -> const std::vector<std::size_t>& { return m_resolution; }
     [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& { return m_boundaries; }
-    [[nodiscard]] auto coord_system() const -> const std::string& { return m_coord_system; }
-    [[nodiscard]] auto coord_parameters(const int& i) const -> const real_t& { return m_coord_parameters[i]; }
+    [[nodiscard]] auto metric() const -> const std::string& { return m_metric; }
+    [[nodiscard]] auto metric_parameters(const int& i) const -> const real_t& { return m_metric_parameters[i]; }
   };
 
 } // namespace ntt

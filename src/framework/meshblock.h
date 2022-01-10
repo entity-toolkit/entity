@@ -1,8 +1,8 @@
-#ifndef OBJECTS_MESHBLOCK_H
-#define OBJECTS_MESHBLOCK_H
+#ifndef FRAMEWORK_MESHBLOCK_H
+#define FRAMEWORK_MESHBLOCK_H
 
 #include "global.h"
-// #include "grid.h"
+#include "metric.h"
 #include "fields.h"
 #include "particles.h"
 
@@ -27,6 +27,9 @@ namespace ntt {
     const std::size_t Ni, Nj, Nk;
 
   public:
+    // Metric of the grid.
+    std::shared_ptr<Metric<D>> metric;
+    
     /**
      * Constructor for the mesh container, sets the active cell sizes and ranges.
      *
@@ -56,7 +59,7 @@ namespace ntt {
    * @tparam S Simulation type.
    */
   template <Dimension D, SimulationType S>
-  class Meshblock : Mesh<D>, Fields<D, S> {
+  class Meshblock : public Mesh<D>, public Fields<D, S> {
   private:
     // Timestep duration in physical units defined at the meshblock.
     real_t m_timestep;
@@ -64,8 +67,8 @@ namespace ntt {
     real_t m_min_cell_size;
 
   public:
+    // Vector of particles species.
     std::vector<Particles<D, S>> particles;
-    // std::shared_ptr<Grid<D>> grid;
 
     /**
      * Constructor for the meshblock.

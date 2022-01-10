@@ -1,5 +1,5 @@
-#ifndef OBJECTS_PGEN_H
-#define OBJECTS_PGEN_H
+#ifndef FRAMEWORK_PGEN_H
+#define FRAMEWORK_PGEN_H
 
 #include "global.h"
 #include "sim_params.h"
