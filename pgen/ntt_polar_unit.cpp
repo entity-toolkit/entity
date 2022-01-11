@@ -65,7 +65,6 @@ namespace ntt {
       } else {
         omega = 0.05;
       }
-      omega = 0.05;
       Kokkos::parallel_for(
         "userBcFlds_rmin",
         NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
