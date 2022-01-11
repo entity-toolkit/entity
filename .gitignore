@@ -29,3 +29,6 @@ extern/nttiny/
 
 # Trash files
 .trash/
+
+# Problem generator template
+src/problem_generator.*
