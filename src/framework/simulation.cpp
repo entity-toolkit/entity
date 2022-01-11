@@ -1,7 +1,9 @@
 #include "global.h"
 #include "simulation.h"
+
 #include "minkowski.h"
 #include "spherical.h"
+#include "qspherical.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -22,17 +24,14 @@ namespace ntt {
       m_mblock.metric = std::make_unique<Minkowski<D>>(m_sim_params.resolution(), m_sim_params.extent());
     } else if (m_sim_params.metric() == "spherical") {
       m_mblock.metric = std::make_unique<Spherical<D>>(m_sim_params.resolution(), m_sim_params.extent());
+    } else if (m_sim_params.metric() == "qspherical") {
+      auto r0 {m_sim_params.metric_parameters(0)};
+      auto h {m_sim_params.metric_parameters(1)};
+      m_mblock.metric = std::make_unique<QSpherical<D>>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
     } else {
       NTTError("metric not implemented");
     }
     m_mblock.boundaries = m_sim_params.boundaries();
-
-    
-    // } else if (m_sim_params.coord_system() == "qspherical") {
-    //   auto r0 {m_sim_params.coord_parameters(0)};
-    //   auto h {m_sim_params.coord_parameters(1)};
-    //   m_mblock.grid = std::make_unique<QSphericalSystem<D>>(m_sim_params.resolution(), m_sim_params.extent(), r0,
-    //   h);
 
     // find timestep and effective cell size
     m_mblock.set_min_cell_size(m_mblock.metric->findSmallestCell());
