@@ -146,36 +146,38 @@ namespace ntt {
           m_mblock.em(i, j, em::ex3) = 0.0;
         });
 
-      // auto r_absorb {m_sim_params.m_coord_parameters[2]};
-      // auto r_max {mblock.grid->x1_max};
-      // // auto dx1 {mblock.get_dx1()};
-      // // auto dx2 {mblock.get_dx2()};
-      // Kokkos::parallel_for(
-      //   "2d_absorbing bc", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-      //     auto i_ {static_cast<real_t>(i)};
-      //     auto j_ {static_cast<real_t>(j)};
+      auto r_absorb {m_sim_params.metric_parameters(2)};
+      auto r_max {m_mblock.metric->x1_max};
+      Kokkos::parallel_for(
+        "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+          real_t i_ {static_cast<real_t>(i)};
+          real_t j_ {static_cast<real_t>(j)};
 
-      //     // i
-      //     auto [r1_, th1_] = mblock.grid->coord_CU_to_Sph(i_, ZERO);
-      //     auto delta_r1 {(r1_ - r_absorb) / (r_max - r_absorb)};
-      //     auto sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
-      //     // i + 1/2
-      //     auto [r2_, th2_] = mblock.grid->coord_CU_to_Sph(i_ + HALF, ZERO);
-      //     auto delta_r2 {(r2_ - r_absorb) / (r_max - r_absorb)};
-      //     auto sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
+          // i
+          vec_t<Dimension::TWO_D> rth_;
+          m_mblock.metric->x_Code2Sph({i_, j_}, rth_);
+          real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+          real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
+          // i + 1/2
+          m_mblock.metric->x_Code2Sph({i_ + HALF, j_}, rth_);
+          real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+          real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
 
-      //     mblock.em_fields(i, j, fld::ex1) = (1.0 - sigma_r1) * mblock.em_fields(i, j, fld::ex1);
-      //     mblock.em_fields(i, j, fld::bx2) = (1.0 - sigma_r1) * mblock.em_fields(i, j, fld::bx2);
-      //     mblock.em_fields(i, j, fld::bx3) = (1.0 - sigma_r1) * mblock.em_fields(i, j, fld::bx3);
+          m_mblock.em(i, j, em::ex1) = (ONE - sigma_r1) * m_mblock.em(i, j, em::ex1);
+          m_mblock.em(i, j, em::bx2) = (ONE - sigma_r1) * m_mblock.em(i, j, em::bx2);
+          m_mblock.em(i, j, em::bx3) = (ONE - sigma_r1) * m_mblock.em(i, j, em::bx3);
 
-      //     auto br_hat_target {m_pGen.userTargetField_br_HAT(mblock, i_, j_ + HALF)};
-      //     auto bx1_source {mblock.em_fields(i, j, fld::bx1)};
-      //     auto br_hat_source {mblock.grid->vec_CNT_to_HAT_x1(bx1_source, i_, j_ + HALF)};
-      //     auto bx1_hat_interm {(1.0 - sigma_r2) * br_hat_source + sigma_r2 * br_hat_target};
-      //     mblock.em_fields(i, j, fld::bx1) = mblock.grid->vec_HAT_to_CNT_x1(bx1_hat_interm, i_, j_ + HALF);
-      //     mblock.em_fields(i, j, fld::ex2) = (1.0 - sigma_r2) * mblock.em_fields(i, j, fld::ex2);
-      //     mblock.em_fields(i, j, fld::ex3) = (1.0 - sigma_r2) * mblock.em_fields(i, j, fld::ex3);
-      //   });
+          real_t br_target_hat {m_pGen.userTargetField_br_hat(m_mblock, {i_, j_ + HALF})};
+          real_t bx1_source_cntr {m_mblock.em(i, j, em::bx1)};
+          vec_t<Dimension::THREE_D> br_source_hat;
+          m_mblock.metric->v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
+          real_t br_interm_hat {(ONE - sigma_r2) * br_source_hat[0] + sigma_r2 * br_target_hat};
+          vec_t<Dimension::THREE_D> br_interm_cntr;
+          m_mblock.metric->v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
+          m_mblock.em(i, j, em::bx1) = br_interm_cntr[0];
+          m_mblock.em(i, j, em::ex2) = (ONE - sigma_r2) * m_mblock.em(i, j, em::ex2);
+          m_mblock.em(i, j, em::ex3) = (ONE - sigma_r2) * m_mblock.em(i, j, em::ex3);
+        });
     } else {
       NTTError("2d boundary condition for metric not implemented");
     }
