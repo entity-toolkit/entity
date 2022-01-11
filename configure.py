@@ -55,10 +55,15 @@ makefile_output = 'Makefile'
 # Options:
 Precision_options = ['double', 'single']
 
-Pgen_options = ['ntt_one', 'ntt_two']
 Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
-Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", "KNC", "KNL", "BGQ", "POWER7", "POWER8", "POWER9"], device=["KEPLER30", "KEPLER32", "KEPLER35", "KEPLER37", "MAXWELL50", "MAXWELL52", "MAXWELL53", "PASCAL60", "PASCAL61", "VOLTA70", "VOLTA72", "TURING75", "AMPERE80", "VEGA900", "VEGA906", "INTEL_GE"])
+Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", 
+                         "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", 
+                         "KNC", "KNL", "BGQ", "POWER7", "POWER8", "POWER9"], 
+                   device=["KEPLER30", "KEPLER32", "KEPLER35", "KEPLER37", 
+                           "MAXWELL50", "MAXWELL52", "MAXWELL53", "PASCAL60", 
+                           "PASCAL61", "VOLTA70", "VOLTA72", "TURING75", 
+                           "AMPERE80", "VEGA900", "VEGA906", "INTEL_GE"])
 Kokkos_devices_options = Kokkos_devices["host"] + Kokkos_devices["device"]
 Kokkos_arch_options = Kokkos_arch["host"] + Kokkos_arch["device"]
 Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for']
