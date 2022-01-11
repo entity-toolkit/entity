@@ -3,6 +3,8 @@
 
 #include "pic_ampere_minkowski.hpp"
 
+#include <stdexcept>
+
 namespace ntt {
   template <>
   void PIC<Dimension::ONE_D>::ampereSubstep(const real_t&, const real_t& fraction) {

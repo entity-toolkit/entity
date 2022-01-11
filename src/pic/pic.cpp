@@ -13,11 +13,11 @@ namespace ntt {
       timers.stop(1);
     }
 
-    // {
-    //   timers.start(2);
-    //   fieldBoundaryConditions(time);
-    //   timers.stop(2);
-    // }
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
 
     {
       timers.start(1);
@@ -25,11 +25,11 @@ namespace ntt {
       timers.stop(1);
     }
 
-    // {
-    //   timers.start(2);
-    //   fieldBoundaryConditions(time);
-    //   timers.stop(2);
-    // }
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
     timers.printAll(millisecond);
   }
 
@@ -42,11 +42,11 @@ namespace ntt {
       timers.stop(1);
     }
 
-    // {
-    //   timers.start(2);
-    //   fieldBoundaryConditions(time);
-    //   timers.stop(2);
-    // }
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
 
     {
       timers.start(1);
@@ -54,11 +54,11 @@ namespace ntt {
       timers.stop(1);
     }
 
-    // {
-    //   timers.start(2);
-    //   fieldBoundaryConditions(time);
-    //   timers.stop(2);
-    // }
+    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+    }
     timers.printAll(millisecond);
   }
 }
