@@ -56,7 +56,7 @@ makefile_output = 'Makefile'
 Precision_options = ['double', 'single']
 
 Pgen_options = ['ntt_one', 'ntt_two']
-Pgen_options = [f.replace('.hpp', '') for f in os.listdir('ntt/pgen') if '.hpp' in f]
+Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
 Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", "KNC", "KNL", "BGQ", "POWER7", "POWER8", "POWER9"], device=["KEPLER30", "KEPLER32", "KEPLER35", "KEPLER37", "MAXWELL50", "MAXWELL52", "MAXWELL53", "PASCAL60", "PASCAL61", "VOLTA70", "VOLTA72", "TURING75", "AMPERE80", "VEGA900", "VEGA906", "INTEL_GE"])
 Kokkos_devices_options = Kokkos_devices["host"] + Kokkos_devices["device"]
@@ -257,7 +257,7 @@ makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 # Code configurations
 makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D SINGLE_PRECISION")
 if (args['curv']):
-  makefile_options['COORDSYSTEM'] = "-D CURVILINEAR_COORDS"
+  makefile_options['COORDSYSTEM'] = "-D CURVILINEAR"
 else:
   makefile_options['COORDSYSTEM'] = ""
 
