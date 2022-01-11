@@ -3,6 +3,8 @@
 
 #include "pic_faraday_minkowski.hpp"
 
+#include <stdexcept>
+
 namespace ntt {
   template <>
   void PIC<Dimension::ONE_D>::faradaySubstep(const real_t&, const real_t& fraction) {

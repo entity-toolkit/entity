@@ -12,7 +12,7 @@ namespace ntt {
    *
    * @tparam D dimension.
    */
-  template<Dimension D>
+  template <Dimension D>
   class PIC : public Simulation<D, SimulationType::PIC> {
   public:
     /**
@@ -91,6 +91,6 @@ namespace ntt {
     void particleBoundaryConditions(const real_t& t);
   };
 
-}
+} // namespace ntt
 
 #endif
