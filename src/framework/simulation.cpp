@@ -1,6 +1,7 @@
 #include "global.h"
 #include "simulation.h"
 #include "minkowski.h"
+#include "spherical.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -19,13 +20,14 @@ namespace ntt {
   void Simulation<D, S>::initialize() {
     if (m_sim_params.metric() == "minkowski") {
       m_mblock.metric = std::make_unique<Minkowski<D>>(m_sim_params.resolution(), m_sim_params.extent());
+    } else if (m_sim_params.metric() == "spherical") {
+      m_mblock.metric = std::make_unique<Spherical<D>>(m_sim_params.resolution(), m_sim_params.extent());
     } else {
       NTTError("metric not implemented");
     }
     m_mblock.boundaries = m_sim_params.boundaries();
 
-    // } else if (m_sim_params.coord_system() == "spherical") {
-    //   m_mblock.grid = std::make_unique<SphericalSystem<D>>(m_sim_params.resolution(), m_sim_params.extent());
+    
     // } else if (m_sim_params.coord_system() == "qspherical") {
     //   auto r0 {m_sim_params.coord_parameters(0)};
     //   auto h {m_sim_params.coord_parameters(1)};
@@ -60,7 +62,7 @@ namespace ntt {
 
     PLOGI << "[domain]";
     PLOGI << "   dimension: " << static_cast<short>(D) << "D";
-    // PLOGI << "   coordinate system: " << (mblock.grid->label);
+    PLOGI << "   metric: " << (m_mblock.metric->label);
 
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.boundaries()) {

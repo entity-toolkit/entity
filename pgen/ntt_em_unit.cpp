@@ -41,7 +41,7 @@ namespace ntt {
       mblock.loopActiveCells(),
       Lambda(index_t i, index_t j) {
         // index to code units
-        auto i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
+        real_t i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
 
         // code units to cartesian (physical units)
         coord_t<Dimension::TWO_D> xy_, xy_half;
@@ -49,9 +49,9 @@ namespace ntt {
         mblock.metric->x_Code2Cart({i_ + HALF, j_ + HALF}, xy_half);
 
         // hatted fields
-        auto ex_hat {ex_ampl * std::sin(kx * xy_half[0] + ky * xy_[1])};
-        auto ey_hat {ey_ampl * std::sin(kx * xy_[0] + ky * xy_half[1])};
-        auto bz_hat {bz_ampl * std::sin(kx * xy_half[0] + ky * xy_half[1])};
+        real_t ex_hat {ex_ampl * std::sin(kx * xy_half[0] + ky * xy_[1])};
+        real_t ey_hat {ey_ampl * std::sin(kx * xy_[0] + ky * xy_half[1])};
+        real_t bz_hat {bz_ampl * std::sin(kx * xy_half[0] + ky * xy_half[1])};
 
         vec_t<Dimension::THREE_D> ex_cntr, ey_cntr, bz_cntr;
         mblock.metric->v_Hat2Cntrv({i_ + HALF, j_}, {ex_hat, ZERO, ZERO}, ex_cntr);
