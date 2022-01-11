@@ -37,36 +37,37 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     this->m_timestep = 0;
     this->m_time = 0.0;
 
-    // if (this->coords == "qspherical") {
-    //   m_x1x2_extent[0] = m_sim.mblock().metric->x1_min;
-    //   m_x1x2_extent[1] = m_sim.mblock().metric->x1_max;
+    if (this->coords == "qspherical") {
+      m_x1x2_extent[0] = m_sim.mblock().metric->x1_min;
+      m_x1x2_extent[1] = m_sim.mblock().metric->x1_max;
 
-    //   for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
-    //     auto i_ {(real_t)(i - ntt::N_GHOSTS)};
-    //     auto j_ {ZERO};
-    //     auto [r_, th_] = m_sim.mblock().grid->coord_CU_to_Sph(i_, j_);
-    //     m_ex1.grid_x1[i] = r_;
-    //   }
-    //   for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
-    //     m_ex1.grid_x1[i] = m_ex1.grid_x1[i + 1] - (m_ex1.grid_x1[ntt::N_GHOSTS + 1] - m_ex1.grid_x1[ntt::N_GHOSTS]);
-    //   }
-    //   for (int i {nx1 - ntt::N_GHOSTS + 1}; i <= nx1; ++i) {
-    //     m_ex1.grid_x1[i] = m_ex1.grid_x1[i - 1] + (m_ex1.grid_x1[nx1 - ntt::N_GHOSTS] - m_ex1.grid_x1[nx1 - ntt::N_GHOSTS - 1]);
-    //   }
+      for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
+        auto i_ {(real_t)(i - ntt::N_GHOSTS)};
+        auto j_ {ZERO};
+        ntt::coord_t<ntt::Dimension::TWO_D> rth_;
+        m_sim.mblock().metric->x_Code2Sph({i_, j_}, rth_);
+        m_ex1.grid_x1[i] = rth_[0];
+      }
+      for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
+        m_ex1.grid_x1[i] = m_ex1.grid_x1[i + 1] - (m_ex1.grid_x1[ntt::N_GHOSTS + 1] - m_ex1.grid_x1[ntt::N_GHOSTS]);
+      }
+      for (int i {nx1 - ntt::N_GHOSTS + 1}; i <= nx1; ++i) {
+        m_ex1.grid_x1[i] = m_ex1.grid_x1[i - 1] + (m_ex1.grid_x1[nx1 - ntt::N_GHOSTS] - m_ex1.grid_x1[nx1 - ntt::N_GHOSTS - 1]);
+      }
 
-    //   for (int j {0}; j <= nx2; ++j) {
-    //     auto i_ {ntt::ZERO};
-    //     auto j_ {(ntt::real_t)(j - ntt::N_GHOSTS)};
-    //     auto [r_, th_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(i_, j_);
-    //     m_ex1.grid_x2[j] = th_;
-    //   }
-    //   auto [r1_, th1_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(ntt::ZERO, (ntt::real_t)(-ntt::N_GHOSTS));
-    //   auto [r2_, th2_] = m_sim.get_meshblock().grid->coord_CU_to_Sph(ntt::ZERO, (ntt::real_t)(nx2 - ntt::N_GHOSTS));
-    //   m_x1x2_extent[2] = th1_;
-    //   m_x1x2_extent[3] = th2_;
-    // } else {
-
-
+      for (int j {0}; j <= nx2; ++j) {
+        auto i_ {ZERO};
+        auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+        ntt::coord_t<ntt::Dimension::TWO_D> rth_;
+        m_sim.mblock().metric->x_Code2Sph({i_, j_}, rth_);
+        m_ex1.grid_x2[j] = rth_[1];
+      }
+      ntt::coord_t<ntt::Dimension::TWO_D> rth1_, rth2_;
+      m_sim.mblock().metric->x_Code2Sph({ZERO, (real_t)(-ntt::N_GHOSTS)}, rth1_);
+      m_sim.mblock().metric->x_Code2Sph({ZERO, (real_t)(nx2 - ntt::N_GHOSTS)}, rth2_);
+      m_x1x2_extent[2] = rth1_[1];
+      m_x1x2_extent[3] = rth2_[1];
+    } else {
       auto sx1 {m_sim.mblock().metric->x1_max - m_sim.mblock().metric->x1_min};
       auto dx1 {sx1 / m_sim.mblock().metric->nx1};
       auto sx2 {m_sim.mblock().metric->x2_max - m_sim.mblock().metric->x2_min};
@@ -81,7 +82,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       for (int j {0}; j <= nx2; ++j) {
         m_ex1.grid_x2[j] = m_x1x2_extent[2] + (m_x1x2_extent[3] - m_x1x2_extent[2]) * (double)(j) / (double)(nx2);
       }
-    // }
+    }
 
     this->fields.insert({{"ex1", &(this->m_ex1)},
                          {"ex2", &(this->m_ex2)},
