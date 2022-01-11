@@ -1,5 +1,5 @@
-#ifndef OBJECTS_GEOMETRY_QSPHERICAL_H
-#define OBJECTS_GEOMETRY_QSPHERICAL_H
+// #ifndef OBJECTS_GEOMETRY_QSPHERICAL_H
+// #define OBJECTS_GEOMETRY_QSPHERICAL_H
 
 #include "global.h"
 #include "grid.h"
@@ -139,4 +139,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif
+// #endif

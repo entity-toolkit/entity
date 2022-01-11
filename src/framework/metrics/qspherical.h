@@ -1,34 +1,42 @@
-#ifndef FRAMEWORK_METRICS_SPHERICAL_H
-#define FRAMEWORK_METRICS_SPHERICAL_H
+#ifndef FRAMEWORK_METRICS_QSPHERICAL_H
+#define FRAMEWORK_METRICS_QSPHERICAL_H
 
 #include "global.h"
 #include "metric.h"
 
 #include <cmath>
-#include <cassert>
+#include <stdexcept>
 
 namespace ntt {
   /**
-   * Flat metric in spherical system: diag(-1, 1, r^2, r^2 sin(th)^2).
+   * Flat metric in quasi-spherical system.
+   * chi, eta, phi = log(r-r0), f(h, theta), phi
    *
+   * @todo change `eta_min`, `phi_min`.
    * @tparam D dimension.
    */
   template <Dimension D>
-  class Spherical : public Metric<D> {
+  class QSpherical : public Metric<D> {
   private:
-    const real_t dr, dtheta, dphi;
-    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
+    const real_t r0, h, chi_min, eta_min, phi_min;
+    const real_t dchi, deta, dphi;
+    const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
-    Spherical(std::vector<std::size_t> resolution, std::vector<real_t> extent)
-      : Metric<D> {"spherical", resolution, extent},
-        dr((this->x1_max - this->x1_min) / this->nx1),
-        dtheta(constant::PI / this->nx2),
+    QSpherical(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t& r0_, const real_t& h_)
+      : Metric<D> {"qspherical", resolution, extent},
+        r0 {r0_},
+        h {h_},
+        chi_min {std::log(this->x1_min - r0)},
+        eta_min {ZERO},
+        phi_min {ZERO},
+        dchi((std::log(this->x1_max - r0) - chi_min) / this->nx1),
+        deta(constant::PI / this->nx2),
         dphi(constant::TWO_PI / this->nx3),
-        dr_sqr(dr * dr),
-        dtheta_sqr(dtheta * dtheta),
+        dchi_sqr(dchi * dchi),
+        deta_sqr(deta * deta),
         dphi_sqr(dphi * dphi) {}
-    ~Spherical() = default;
+    ~QSpherical() = default;
 
     /**
      * Compute minimum effective cell size for Minkowski metric: `dx / sqrt(D)` (in physical units).
@@ -37,12 +45,39 @@ namespace ntt {
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dimension::TWO_D) {
-        auto dx1 {dr};
-        auto dx2 {this->x1_min * dtheta};
-        return ONE / std::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
+        real_t min_dx {-1.0};
+        for (int i {0}; i < this->nx1; ++i) {
+          for (int j {0}; j < this->nx2; ++j) {
+            real_t i_ {(real_t)(i) + HALF};
+            real_t j_ {(real_t)(j) + HALF};
+            real_t dx1_ {this->h_11({i_, j_})};
+            real_t dx2_ {this->h_22({i_, j_})};
+            real_t dx = 1.0 / std::sqrt(1.0 / dx1_ + 1.0 / dx2_);
+            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
+          }
+        }
+        return min_dx;
       } else {
-        NTTError("min cell finding not implemented for 3D spherical");
+        NTTError("min cell finding not implemented for 3D qspherical");
       }
+    }
+
+    /**
+     * @brief Compute d(th) / d(eta) for a given eta.
+     *
+     */
+    Inline auto dtheta_deta(const real_t& eta) const -> real_t {
+      return (ONE + static_cast<real_t>(2.0) * h + static_cast<real_t>(12.0) * h * (eta * constant::INV_PI) * ((eta * constant::INV_PI) - ONE));
+    }
+
+    /**
+     * @brief Convert quasi-spherical eta to spherical theta.
+     *
+     */
+    Inline auto eta2theta(const real_t& eta) const -> real_t {
+      return eta
+             + static_cast<real_t>(2.0) * h * eta * (constant::PI - static_cast<real_t>(2.0) * eta) * (constant::PI - eta)
+                 * constant::INV_PI_SQR;
     }
 
     /**
@@ -51,7 +86,10 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_11 (covariant, lower index) metric component.
      */
-    Inline auto h_11(const coord_t<D>&) const -> real_t { return dr_sqr; }
+    Inline auto h_11(const coord_t<D>& x) const -> real_t {
+      auto chi {x[0] * dchi + chi_min};
+      return dchi_sqr * std::exp(2.0 * chi);
+    }
     /**
      * Compute metric component 22.
      *
@@ -59,8 +97,11 @@ namespace ntt {
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      return dtheta_sqr * r * r;
+      auto chi {x[0] * dchi + chi_min};
+      auto r {r0 + std::exp(chi)};
+      auto eta {x[1] * deta + eta_min};
+      auto dtheta_deta_ {dtheta_deta(eta)};
+      return deta_sqr * r * r * dtheta_deta_ * dtheta_deta_;
     }
     /**
      * Compute metric component 33.
@@ -69,9 +110,11 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t sin_theta {std::sin(theta)};
+      auto chi {x[0] * dchi + chi_min};
+      auto r {r0 + std::exp(chi)};
+      auto eta {x[1] * deta + eta_min};
+      auto theta {eta2theta(eta)};
+      auto sin_theta {std::sin(theta)};
       return r * r * sin_theta * sin_theta;
     }
 
@@ -82,9 +125,13 @@ namespace ntt {
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      return dr * dtheta * r * r * std::sin(theta);
+      auto chi {x[0] * dchi + chi_min};
+      auto r {r0 + std::exp(chi)};
+      auto eta {x[1] * deta + eta_min};
+      auto theta {eta2theta(eta)};
+      auto sin_theta {std::sin(theta)};
+      auto dtheta_deta_ {dtheta_deta(eta)};
+      return dchi * deta * std::exp(chi) * r * r * sin_theta * dtheta_deta_;
     }
 
     /**
@@ -94,16 +141,18 @@ namespace ntt {
      * @returns Area at the pole.
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t del_theta {x[1] * dtheta};
-      return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
+      auto chi {x[0] * dchi + chi_min};
+      auto r {r0 + std::exp(chi)};
+      auto eta {x[1] * deta + eta_min};
+      auto theta {eta2theta(eta)};
+      return deta * std::exp(chi) * r * r * (ONE - std::cos(theta));
     }
 
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
      * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Cpherical coordinates in physical units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const;
 
@@ -130,7 +179,7 @@ namespace ntt {
   // vector transformations
   // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void Spherical<D>::v_Hat2Cntrv(const coord_t<D>& xi,
+  Inline void QSpherical<D>::v_Hat2Cntrv(const coord_t<D>& xi,
                                         const vec_t<Dimension::THREE_D>& vi_hat,
                                         vec_t<Dimension::THREE_D>& vi) const {
     vi[0] = vi_hat[0] / std::sqrt(h_11(xi));
@@ -138,7 +187,7 @@ namespace ntt {
     vi[2] = vi_hat[2] / std::sqrt(h_33(xi));
   }
   template <Dimension D>
-  Inline void Spherical<D>::v_Cntrv2Hat(const coord_t<D>& xi,
+  Inline void QSpherical<D>::v_Cntrv2Hat(const coord_t<D>& xi,
                                         const vec_t<Dimension::THREE_D>& vi,
                                         vec_t<Dimension::THREE_D>& vi_hat) const {
     vi_hat[0] = vi[0] * std::sqrt(h_11(xi));
@@ -150,30 +199,35 @@ namespace ntt {
   // 1D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Spherical<Dimension::ONE_D>::x_Code2Sph(const coord_t<Dimension::ONE_D>&,
+  Inline void QSpherical<Dimension::ONE_D>::x_Code2Sph(const coord_t<Dimension::ONE_D>&,
                                                       coord_t<Dimension::ONE_D>&) const {
-    NTTError("1d spherical not defined");
+    NTTError("1d qspherical not defined");
   }
 
   // * * * * * * * * * * * * * * *
   // 2D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Spherical<Dimension::TWO_D>::x_Code2Sph(const coord_t<Dimension::TWO_D>& xi,
+  Inline void QSpherical<Dimension::TWO_D>::x_Code2Sph(const coord_t<Dimension::TWO_D>& xi,
                                                       coord_t<Dimension::TWO_D>& x) const {
-    x[0] = xi[0] * dr + this->x1_min;
-    x[1] = xi[1] * dtheta + this->x2_min;
+    real_t chi {xi[0] * dchi + chi_min};
+    real_t eta {xi[1] * deta + eta_min};
+    x[0] = r0 + std::exp(chi);
+    x[1] = eta2theta(eta);
   }
 
   // * * * * * * * * * * * * * * *
   // 3D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Spherical<Dimension::THREE_D>::x_Code2Sph(const coord_t<Dimension::THREE_D>& xi,
+  Inline void QSpherical<Dimension::THREE_D>::x_Code2Sph(const coord_t<Dimension::THREE_D>& xi,
                                                         coord_t<Dimension::THREE_D>& x) const {
-    x[0] = xi[0] * dr + this->x1_min;
-    x[1] = xi[1] * dtheta + this->x2_min;
-    x[2] = xi[2] * dphi + this->x3_min;
+    real_t chi {xi[0] * dchi + chi_min};
+    real_t eta {xi[1] * deta + eta_min};
+    real_t phi {xi[2] * dphi + phi_min};
+    x[0] = r0 + std::exp(chi);
+    x[1] = eta2theta(eta);
+    x[2] = phi;
   }
 
   } // namespace ntt
