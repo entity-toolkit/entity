@@ -68,8 +68,4 @@ namespace ntt {
   }
 } // namespace ntt
 
-template class ntt::AmpereMinkowski<ntt::Dimension::ONE_D>;
-template class ntt::AmpereMinkowski<ntt::Dimension::TWO_D>;
-template class ntt::AmpereMinkowski<ntt::Dimension::THREE_D>;
-
 #endif

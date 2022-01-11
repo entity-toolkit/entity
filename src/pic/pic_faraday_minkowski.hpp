@@ -68,8 +68,4 @@ namespace ntt {
   }
 } // namespace ntt
 
-template class ntt::FaradayMinkowski<ntt::Dimension::ONE_D>;
-template class ntt::FaradayMinkowski<ntt::Dimension::TWO_D>;
-template class ntt::FaradayMinkowski<ntt::Dimension::THREE_D>;
-
 #endif
