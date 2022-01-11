@@ -9,7 +9,6 @@
 #include <string>
 #include <cassert>
 #include <vector>
-#include <iostream>
 
 namespace ntt {
 
@@ -53,8 +52,8 @@ namespace ntt {
     // domain size / resolution
     m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
     m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
-    if (m_metric == "cartesian") {
-      // cartesian grid
+    if (m_metric == "minkowski") {
+      // minkowski
       if (((short)(m_resolution.size()) < (short)(dim)) || ((short)(m_extent.size()) < 2 * (short)(dim))) {
         NTTError("not enough values in `extent` or `resolution` input");
       }
@@ -62,11 +61,11 @@ namespace ntt {
       auto dx {(m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0])};
       if (m_resolution.size() > 1) {
         auto dy {(m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1])};
-        if (dx != dy) { NTTError("dx != dy in cartesian"); }
+        if (dx != dy) { NTTError("dx != dy in minkowski"); }
       }
       if (m_resolution.size() > 2) {
         auto dz {(m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2])};
-        if (dx != dz) { NTTError("dx != dz in cartesian"); }
+        if (dx != dz) { NTTError("dx != dz in minkowski"); }
       }
     } else if ((m_metric == "spherical") || (m_metric == "qspherical")) {
       // spherical (quasi-spherical) grid
@@ -86,7 +85,7 @@ namespace ntt {
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
     m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
-    if (m_metric == "cartesian") {
+    if (m_metric == "minkowski") {
       auto boundaries = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
       short b {0};
       for (auto& bc : boundaries) {

@@ -12,10 +12,7 @@ BIN_DIR := ${ROOT_DIR}/@BIN_DIR@
 TARGET := @NTT_TARGET@
 TEST_TARGET := @TEST_TARGET@
 
-NTT_DIR := ${ROOT_DIR}/@NTT_DIR@
-BUILD_NTT_DIR := @NTT_DIR@
-
-PGEN_DIR := ${ROOT_DIR}/@NTT_DIR@/@PGEN_DIR@
+PGEN_DIR := ${ROOT_DIR}/@PGEN_DIR@
 
 PGEN := @PGEN@
 
@@ -78,26 +75,28 @@ LIBS :=
 
 # # # # # Targets # # # # # # # # # # # # # #
 #
-.PHONY: all help ntt test clean demo cleanlib pgenIsSpecified
+.PHONY: all help ntt test clean demo cleanlib pgenCopy
 
 default: help demo
 
 all: ntt test
 
 # linking the main app
-ntt : pgenIsSpecified ${BIN_DIR}/${TARGET}
+ntt : pgenCopy ${BIN_DIR}/${TARGET}
 	@echo [M]aking $@
-
-# Problem generator
-pgenIsSpecified:
-	@echo ${PGEN}
-# ifeq (${PGEN},)
-# 	$(error ERROR: no problem generator specified)
-# endif
 
 ifeq (${PGEN},)
 PGEN := ntt_dummy
 endif
+
+# Problem generator
+pgenCopy: ${SRC_DIR}/problem_generator.cpp ${SRC_DIR}/problem_generator.hpp
+
+${SRC_DIR}/problem_generator.cpp : ${PGEN_DIR}/${PGEN}.cpp
+	$(HIDE)cp $< $@
+
+${SRC_DIR}/problem_generator.hpp : ${PGEN_DIR}/${PGEN}.hpp
+	$(HIDE)cp $< $@
 
 # linking tests
 test : ${BIN_DIR}/${TEST_TARGET}
@@ -119,32 +118,24 @@ demo:
 
 # # # # # File collection # # # # # # # # # # #
 #
-# Main core
+# Src
 SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
+SRCS := $(filter-out ${SRC_DIR}/main.cpp, $(SRCS))
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
 
-# Problem generator
-PGEN_SRCS := ${PGEN_DIR}/${PGEN}.cpp
-PGEN_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(PGEN_SRCS:%=%.o))
-PGEN_DEPS := $(PGEN_OBJS:.o=.d)
-
-# NTT app
-NTT_SRCS := $(shell find ${NTT_DIR} -path ${PGEN_DIR} -prune -false -o -name *.cpp -or -name *.c)
-NTT_OBJS := $(subst ${NTT_DIR},${BUILD_NTT_DIR},$(NTT_SRCS:%=%.o))
-NTT_DEPS := $(NTT_OBJS:.o=.d)
+# Main app
+MAIN_SRCS := ${SRC_DIR}/main.cpp
+MAIN_OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(MAIN_SRCS:%=%.o))
+MAIN_DEPS := $(MAIN_OBJS:.o=.d)
 
 # Tests
 TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
 TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
 TEST_DEPS := $(TEST_OBJS:.o=.d)
 
-ALL_DEPS := $(DEPS) $(NTT_DEPS) $(TEST_DEPS)
-
 INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR}/plog/include ${EXT_DIR}/acutest/include ${EXT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
-
-ALL_OBJS := $(OBJS) $(PGEN_OBJS) $(NTT_OBJS) $(TEST_OBJS)
 
 # # # # # Link/compile # # # # # # # # # # # # # #
 #
@@ -158,32 +149,27 @@ LIBS := $(LIBS) $(KOKKOS_LIBS)
 compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -MMD
 link_command := ${LINK} $(LDFLAGS)
 
-${BIN_DIR}/${TARGET} : $(NTT_OBJS) $(PGEN_OBJS) $(OBJS)
+${BIN_DIR}/${TARGET} : $(MAIN_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $<
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
-${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(PGEN_OBJS) $(OBJS)
+${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
 	@echo [L]inking $(notdir $@) from $^
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
-${BUILD_NTT_DIR}/%.o : ${NTT_DIR}/%
-	@echo [C]ompiling \`ntt\`: $(subst ${ROOT_DIR}/,,$<)
-	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${compile_command} -include ${PGEN_DIR}/${PGEN}.hpp -c $< -o $@
-
 ${BUILD_SRC_DIR}/%.o : ${SRC_DIR}/%
 	@echo [C]ompiling \`src\`: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${compile_command} -include ${PGEN_DIR}/${PGEN}.hpp -c $< -o $@
+	$(HIDE)${compile_command} -c $< -o $@
 
 ${BUILD_TEST_DIR}/%.o : ${TEST_DIR}/%
 	@echo [C]ompiling \`tests\`: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${compile_command} -include ${PGEN_DIR}/${PGEN}.hpp -c $< -o $@
+	$(HIDE)${compile_command} -c $< -o $@
 
--include $(ALL_DEPS)
+-include $(DEPS) $(TEST_DEPS) $(MAIN_DEPS)
 
 # for nttiny />
 NTTINY_DIR := @NTTINY_DIR@
@@ -192,7 +178,7 @@ include ${ROOT_DIR}/Nttiny.mk
 # </ for nttiny
 
 clean:
-	rm -rf ${BUILD_SRC_DIR} ${BUILD_NTT_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
+	rm -rf ${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
 	rm -rf ${BIN_DIR}
 
 cleanlib: kokkos-clean
