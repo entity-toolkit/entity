@@ -9,7 +9,6 @@ namespace ntt {
     TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
     {
       timers.start(1);
-      fieldBoundaryConditions(time);
       faradaySubstep(time, 1.0);
       timers.stop(1);
     }

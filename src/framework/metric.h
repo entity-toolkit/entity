@@ -145,6 +145,14 @@ namespace ntt {
     virtual Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const { NTTError("not implemented"); }
 
     /**
+     * Coordinate conversion from code units to Spherical physical units.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Cpherical coordinates in physical units (size of the array is D).
+     */
+    virtual Inline void x_Code2Sph(const coord_t<D>&, coord_t<D>&) const { NTTError("not implemented"); }
+
+    /**
      * Vector conversion from hatted to contravariant basis.
      *
      * @param xi coordinate array in code units (size of the array is D).

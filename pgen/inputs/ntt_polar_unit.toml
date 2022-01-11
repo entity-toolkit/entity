@@ -3,7 +3,7 @@ title           = "Polar_example"
 runtime         = 0.1
 
 [domain]
-coord_sys       = "qspherical"
+metric          = "spherical"
 qsph_r0         = 0.0
 qsph_h          = 0.5
 sph_rabsorb     = 6.0

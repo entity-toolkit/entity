@@ -65,6 +65,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     //   m_x1x2_extent[2] = th1_;
     //   m_x1x2_extent[3] = th2_;
     // } else {
+
+
       auto sx1 {m_sim.mblock().metric->x1_max - m_sim.mblock().metric->x1_min};
       auto dx1 {sx1 / m_sim.mblock().metric->nx1};
       auto sx2 {m_sim.mblock().metric->x2_max - m_sim.mblock().metric->x2_min};
@@ -130,6 +132,13 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         m_bx1.set(i, j, bx1_hat[0]);
         m_bx2.set(i, j, bx2_hat[1]);
         m_bx3.set(i, j, bx3_hat[2]);
+
+        // m_ex1.set(i, j, ex1_cnt);
+        // m_ex2.set(i, j, ex2_cnt);
+        // m_ex3.set(i, j, ex3_cnt);
+        // m_bx1.set(i, j, bx1_cnt);
+        // m_bx2.set(i, j, bx2_cnt);
+        // m_bx3.set(i, j, bx3_cnt);
       }
     }
   }
@@ -141,6 +150,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   }
   void restart() override {
     m_sim.initializeSetup();
+    m_sim.fieldBoundaryConditions(ZERO);
     setData();
     m_time = 0.0;
     m_timestep = 0;
@@ -166,6 +176,7 @@ auto main(int argc, char* argv[]) -> int {
     sim.initializeSetup();
     sim.verify();
     sim.printDetails();
+    sim.fieldBoundaryConditions(ZERO);
     NTTSimulationVis visApi(sim);
 
     nttiny::Visualization<float> vis;
