@@ -133,13 +133,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         m_bx1.set(i, j, bx1_hat[0]);
         m_bx2.set(i, j, bx2_hat[1]);
         m_bx3.set(i, j, bx3_hat[2]);
-
-        // m_ex1.set(i, j, ex1_cnt);
-        // m_ex2.set(i, j, ex2_cnt);
-        // m_ex3.set(i, j, ex3_cnt);
-        // m_bx1.set(i, j, bx1_cnt);
-        // m_bx2.set(i, j, bx2_cnt);
-        // m_bx3.set(i, j, bx3_cnt);
       }
     }
   }
