@@ -69,13 +69,15 @@ namespace ntt {
       }
     } else if ((m_metric == "spherical") || (m_metric == "qspherical")) {
       // spherical (quasi-spherical) grid
-      if (m_extent.size() < 2) { throw std::invalid_argument("Not enough values in `extent` input."); }
+      if (m_extent.size() < 2) {
+        NTTError("not enough values in `extent` input"); 
+      }
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
       if (m_metric == "qspherical") {
-        m_metric[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
-        m_metric[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
+        m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
+        m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
       }
-      m_metric[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
+      // m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_extent.push_back(0.0);
       m_extent.push_back(constant::PI);
       m_extent.push_back(0.0);
@@ -106,7 +108,7 @@ namespace ntt {
       m_boundaries.push_back(BoundaryCondition::USER);
       m_boundaries.push_back(BoundaryCondition::USER);
     } else {
-      throw std::logic_error("# coordinate system NOT IMPLEMENTED.");
+      NTTError("coordinate system not implemented");
     }
 
     // plasma params

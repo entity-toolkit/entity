@@ -2,6 +2,7 @@
 #include "pic.h"
 
 #include "pic_faraday_minkowski.hpp"
+#include "pic_faraday_curvilinear.hpp"
 
 #include <stdexcept>
 
@@ -27,6 +28,9 @@ namespace ntt {
       const auto dx {(m_mblock.metric->x1_max - m_mblock.metric->x1_min) / m_mblock.metric->nx1};
       Kokkos::parallel_for(
         "faraday", m_mblock.loopActiveCells(), FaradayMinkowski<Dimension::TWO_D>(m_mblock, coeff / dx));
+    } else if ((m_mblock.metric->label == "spherical") || (m_mblock.metric->label == "qspherical")) {
+      Kokkos::parallel_for(
+        "faraday", m_mblock.loopActiveCells(), FaradayCurvilinear<Dimension::TWO_D>(m_mblock, coeff));
     } else {
       NTTError("faraday for this metric not defined");
     }
