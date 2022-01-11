@@ -39,7 +39,7 @@ namespace ntt {
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
   enum class SimulationType { UNDEFINED, PIC, FORCE_FREE, MHD };
-  enum class BoundaryCondition { UNDEFINED, PERIODIC, USER, OPEN };
+  enum class BoundaryCondition { UNDEFINED, PERIODIC, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
   
   // Defining stringify functions for enum classes

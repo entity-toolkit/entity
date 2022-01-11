@@ -32,6 +32,8 @@ namespace ntt {
       return "Open";
     case BoundaryCondition::USER:
       return "User";
+    case BoundaryCondition::COMM:
+      return "Communicate";
     default:
       return "N/A";
     }
