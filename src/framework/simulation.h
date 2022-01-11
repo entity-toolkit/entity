@@ -4,7 +4,7 @@
 #include "global.h"
 #include "sim_params.h"
 #include "meshblock.h"
-#include "pgen.h"
+#include "problem_generator.hpp"
 
 #include <toml/toml.hpp>
 
@@ -20,8 +20,11 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   class Simulation {
   protected:
+    // user-defined and inferred simulation parameters
     SimulationParams m_sim_params;
-    PGen<D, S> m_pGen;
+    // problem setup generator
+    ProblemGenerator<D, S> m_pGen;
+    // meshblock with all the fields / metric / and particles
     Meshblock<D, S> m_mblock;
 
   public:
@@ -38,7 +41,10 @@ namespace ntt {
      */
     void initialize();
 
-    // void userInitialize();
+    /**
+     * Setup the problem using the problem generator.
+     */
+    void initializeSetup();
 
     /**
      * Verify that all the specified parameters are compatible before beginning the simulation.

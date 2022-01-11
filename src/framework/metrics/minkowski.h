@@ -4,7 +4,7 @@
 #include "global.h"
 #include "metric.h"
 
-#include <tuple>
+#include <cmath>
 
 namespace ntt {
   /**
@@ -61,9 +61,85 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns sqrt(det(h_ij)).
      */
-    virtual Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t { return dx_sqr * dx; }
-  };
+    Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t { return dx_sqr * dx; }
 
-} // namespace ntt
+    /**
+     * Coordinate conversion from code units to Cartesian physical units.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Cartesian coordinates in physical units (size of the array is D).
+     */
+    Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const;
+
+    /**
+     * Vector conversion from hatted to contravariant basis.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi_hat vector in hatted basis (size of the array is 3).
+     * @param vi vector in contravariant basis (size of the array is 3).
+     */
+    Inline void v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+
+    /**
+     * Vector conversion from contravariant to hatted basis.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi vector in contravariant basis (size of the array is 3).
+     * @param vi_hat vector in hatted basis (size of the array is 3).
+     */
+    Inline void v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+  };
+  
+  // * * * * * * * * * * * * * * *
+  // vector transformations
+  // * * * * * * * * * * * * * * *
+  template <Dimension D>
+  Inline void Minkowski<D>::v_Hat2Cntrv(const coord_t<D>& xi,
+                                        const vec_t<Dimension::THREE_D>& vi_hat,
+                                        vec_t<Dimension::THREE_D>& vi) const {
+    vi[0] = vi_hat[0] / std::sqrt(h_11(xi));
+    vi[1] = vi_hat[1] / std::sqrt(h_22(xi));
+    vi[2] = vi_hat[2] / std::sqrt(h_33(xi));
+  }
+  template <Dimension D>
+  Inline void Minkowski<D>::v_Cntrv2Hat(const coord_t<D>& xi,
+                                        const vec_t<Dimension::THREE_D>& vi,
+                                        vec_t<Dimension::THREE_D>& vi_hat) const {
+    vi_hat[0] = vi[0] * std::sqrt(h_11(xi));
+    vi_hat[1] = vi[1] * std::sqrt(h_22(xi));
+    vi_hat[2] = vi[2] * std::sqrt(h_33(xi));
+  }
+
+  // * * * * * * * * * * * * * * *
+  // 1D:
+  // * * * * * * * * * * * * * * *
+  template <>
+  Inline void Minkowski<Dimension::ONE_D>::x_Code2Cart(const coord_t<Dimension::ONE_D>& xi,
+                                                       coord_t<Dimension::ONE_D>& x) const {
+    x[0] = xi[0] * dx + this->x1_min;
+  }
+
+  // * * * * * * * * * * * * * * *
+  // 2D:
+  // * * * * * * * * * * * * * * *
+  template <>
+  Inline void Minkowski<Dimension::TWO_D>::x_Code2Cart(const coord_t<Dimension::TWO_D>& xi,
+                                                     coord_t<Dimension::TWO_D>& x) const {
+    x[0] = xi[0] * dx + this->x1_min;
+    x[1] = xi[1] * dx + this->x2_min;
+  }
+
+  // * * * * * * * * * * * * * * *
+  // 3D:
+  // * * * * * * * * * * * * * * *
+  template <>
+  Inline void Minkowski<Dimension::THREE_D>::x_Code2Cart(const coord_t<Dimension::THREE_D>& xi,
+                                                       coord_t<Dimension::THREE_D>& x) const {
+    x[0] = xi[0] * dx + this->x1_min;
+    x[1] = xi[1] * dx + this->x2_min;
+    x[2] = xi[2] * dx + this->x3_min;
+  }
+
+  } // namespace ntt
 
 #endif

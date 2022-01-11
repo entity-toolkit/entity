@@ -75,6 +75,7 @@ namespace ntt {
     [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& { return m_boundaries; }
     [[nodiscard]] auto metric() const -> const std::string& { return m_metric; }
     [[nodiscard]] auto metric_parameters(const int& i) const -> const real_t& { return m_metric_parameters[i]; }
+    [[nodiscard]] auto inputdata() const -> const toml::value& { return m_inputdata; }
   };
 
 } // namespace ntt

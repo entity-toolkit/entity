@@ -6,6 +6,7 @@
 #include "fields.h"
 #include "particles.h"
 
+#include <memory>
 #include <vector>
 
 namespace ntt {
@@ -18,13 +19,13 @@ namespace ntt {
   class Mesh {
   protected:
     // active cell range in x1
-    const int i_min, i_max;
+    const int m_imin, m_imax;
     // active cell range in x2
-    const int j_min, j_max;
+    const int m_jmin, m_jmax;
     // active cell range in x3
-    const int k_min, k_max;
+    const int m_kmin, m_kmax;
     // number of active cells in each direction
-    const std::size_t Ni, Nj, Nk;
+    const std::size_t m_Ni, m_Nj, m_Nk;
 
   public:
     // Metric of the grid.
@@ -50,6 +51,19 @@ namespace ntt {
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto loopAllCells() -> RangeND<D>;
+
+    /**
+     * Getters.
+     */
+    [[nodiscard]] auto i_min() const -> const int& { return m_imin; }
+    [[nodiscard]] auto i_max() const -> const int& { return m_imax; }
+    [[nodiscard]] auto j_min() const -> const int& { return m_jmin; }
+    [[nodiscard]] auto j_max() const -> const int& { return m_jmax; }
+    [[nodiscard]] auto k_min() const -> const int& { return m_kmin; }
+    [[nodiscard]] auto k_max() const -> const int& { return m_kmax; }
+    [[nodiscard]] auto Ni() const -> const std::size_t& { return m_Ni; }
+    [[nodiscard]] auto Nj() const -> const std::size_t& { return m_Nj; }
+    [[nodiscard]] auto Nk() const -> const std::size_t& { return m_Nk; }
   };
 
   /**
@@ -69,6 +83,8 @@ namespace ntt {
   public:
     // Vector of particles species.
     std::vector<Particles<D, S>> particles;
+    // Boundary conditions.
+    std::vector<BoundaryCondition> boundaries;
 
     /**
      * Constructor for the meshblock.
