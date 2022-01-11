@@ -3,12 +3,12 @@ title           = "Example"
 runtime         = 0.1
 
 [domain]
-resolution      = [256, 256]
+resolution      = [512, 512]
 extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.95
+CFL             = 0.5
 correction      = 1.0
 
 [units]

@@ -76,6 +76,19 @@ namespace ntt {
     virtual void step_backward(const real_t&) {}
 
     /**
+     * Apply boundary conditions for fields.
+     *
+     * @param t time in physical units.
+     */
+    virtual void fieldBoundaryConditions(const real_t&) {}
+    /**
+     * Apply boundary conditions for particles.
+     *
+     * @param t time in physical units.
+     */
+    virtual void particleBoundaryConditions(const real_t&) {}
+
+    /**
      * Advance the simulation forward for a specified amount of timesteps, keeping track of time.
      */
     void mainloop();

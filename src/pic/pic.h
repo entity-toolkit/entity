@@ -82,13 +82,13 @@ namespace ntt {
      *
      * @param t time in physical units.
      */
-    void fieldBoundaryConditions(const real_t& t);
+    void fieldBoundaryConditions(const real_t& t) override;
     /**
      * Apply boundary conditions for particles.
      *
      * @param t time in physical units.
      */
-    void particleBoundaryConditions(const real_t& t);
+    void particleBoundaryConditions(const real_t&) override {}
   };
 
 } // namespace ntt
