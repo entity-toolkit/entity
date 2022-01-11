@@ -77,7 +77,7 @@ namespace ntt {
         m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
       }
-      // m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
+      m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_extent.push_back(0.0);
       m_extent.push_back(constant::PI);
       m_extent.push_back(0.0);
