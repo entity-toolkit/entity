@@ -123,6 +123,7 @@ namespace ntt {
   void Simulation<D, S>::mainloop() {
     unsigned long timax {static_cast<unsigned long>(m_sim_params.total_runtime() / m_mblock.timestep())};
     real_t time {0.0};
+    fieldBoundaryConditions(ZERO);
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
       step_forward(time);
