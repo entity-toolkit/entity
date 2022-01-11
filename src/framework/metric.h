@@ -3,6 +3,8 @@
 
 #include "global.h"
 
+#include <stdexcept>
+
 namespace ntt {
   /**
    * Arbitrary metric: h_ij. Coordinates vary from `0` to `nx1` ... (code units).
@@ -133,6 +135,37 @@ namespace ntt {
      * @returns Area at the pole.
      */
     virtual Inline auto polar_area(const coord_t<D>&) const -> real_t { NTTError("not implemented"); }
+
+    /**
+     * Coordinate conversion from code units to Cartesian physical units.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Cartesian coordinates in physical units (size of the array is D).
+     */
+    virtual Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const { NTTError("not implemented"); }
+
+    /**
+     * Vector conversion from hatted to contravariant basis.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi_hat vector in hatted basis (size of the array is 3).
+     * @param vi vector in contravariant basis (size of the array is 3).
+     */
+    virtual Inline void
+    v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const {
+      NTTError("not implemented");
+    }
+
+    /**
+     * Vector conversion from contravariant to hatted basis.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi vector in contravariant basis (size of the array is 3).
+     * @param vi_hat vector in hatted basis (size of the array is 3).
+     */
+    virtual Inline void v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const {
+      NTTError("not implemented");
+    }
   };
 
 } // namespace ntt

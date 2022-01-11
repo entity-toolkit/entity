@@ -10,40 +10,40 @@ namespace ntt {
 
   template <Dimension D>
   Mesh<D>::Mesh(std::vector<std::size_t> res)
-    : i_min {res.size() > 0 ? N_GHOSTS : 0},
-      i_max {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
-      j_min {res.size() > 1 ? N_GHOSTS : 0},
-      j_max {res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1},
-      k_min {res.size() > 2 ? N_GHOSTS : 0},
-      k_max {res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1},
-      Ni {res.size() > 0 ? res[0] : 1},
-      Nj {res.size() > 1 ? res[1] : 1},
-      Nk {res.size() > 2 ? res[2] : 1} {}
+    : m_imin {res.size() > 0 ? N_GHOSTS : 0},
+      m_imax {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
+      m_jmin {res.size() > 1 ? N_GHOSTS : 0},
+      m_jmax {res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1},
+      m_kmin {res.size() > 2 ? N_GHOSTS : 0},
+      m_kmax {res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1},
+      m_Ni {res.size() > 0 ? res[0] : 1},
+      m_Nj {res.size() > 1 ? res[1] : 1},
+      m_Nk {res.size() > 2 ? res[2] : 1} {}
 
   template <>
   auto Mesh<Dimension::ONE_D>::loopAllCells() -> RangeND<Dimension::ONE_D> {
-    return NTTRange<Dimension::ONE_D>({i_min - N_GHOSTS}, {i_max + N_GHOSTS});
+    return NTTRange<Dimension::ONE_D>({m_imin - N_GHOSTS}, {m_imax + N_GHOSTS});
   }
   template <>
   auto Mesh<Dimension::TWO_D>::loopAllCells() -> RangeND<Dimension::TWO_D> {
-    return NTTRange<Dimension::TWO_D>({i_min - N_GHOSTS, j_min - N_GHOSTS}, {i_max + N_GHOSTS, j_max + N_GHOSTS});
+    return NTTRange<Dimension::TWO_D>({m_imin - N_GHOSTS, m_jmin - N_GHOSTS}, {m_imax + N_GHOSTS, m_jmax + N_GHOSTS});
   }
   template <>
   auto Mesh<Dimension::THREE_D>::loopAllCells() -> RangeND<Dimension::THREE_D> {
-    return NTTRange<Dimension::THREE_D>({i_min - N_GHOSTS, j_min - N_GHOSTS, k_min - N_GHOSTS},
-                                        {i_max + N_GHOSTS, j_max + N_GHOSTS, k_max + N_GHOSTS});
+    return NTTRange<Dimension::THREE_D>({m_imin - N_GHOSTS, m_jmin - N_GHOSTS, m_kmin - N_GHOSTS},
+                                        {m_imax + N_GHOSTS, m_jmax + N_GHOSTS, m_kmax + N_GHOSTS});
   }
   template <>
   auto Mesh<Dimension::ONE_D>::loopActiveCells() -> RangeND<Dimension::ONE_D> {
-    return NTTRange<Dimension::ONE_D>({i_min}, {i_max});
+    return NTTRange<Dimension::ONE_D>({m_imin}, {m_imax});
   }
   template <>
   auto Mesh<Dimension::TWO_D>::loopActiveCells() -> RangeND<Dimension::TWO_D> {
-    return NTTRange<Dimension::TWO_D>({i_min, j_min}, {i_max, j_max});
+    return NTTRange<Dimension::TWO_D>({m_imin, m_jmin}, {m_imax, m_jmax});
   }
   template <>
   auto Mesh<Dimension::THREE_D>::loopActiveCells() -> RangeND<Dimension::THREE_D> {
-    return NTTRange<Dimension::THREE_D>({i_min, j_min, k_min}, {i_max, j_max, k_max});
+    return NTTRange<Dimension::THREE_D>({m_imin, m_jmin, m_kmin}, {m_imax, m_jmax, m_kmax});
   }
 
   template <Dimension D, SimulationType S>
@@ -53,21 +53,6 @@ namespace ntt {
       particles.emplace_back(part);
     }
   }
-
-  //   template <Dimension D>
-  //   void Meshblock<D>::verify(const SimulationParams&) {
-  //     if ((this->Ni == 1) ||
-  //        ((this->Nj > 1) && (static_cast<short>(D) < 2)) ||
-  //        ((this->Nk > 1) && (static_cast<short>(D) < 3))) {
-  //       throw std::logic_error("# Error: wrong dimension inferred in Meshblock.");
-  //     }
-  //     for (auto& p : particles) {
-  //       if (p.get_pusher() == UNDEFINED_PUSHER) {
-  //         throw std::logic_error("# Error: undefined particle pusher.");
-  //       }
-  //     }
-  //   }
-
 } // namespace ntt
 
 template class ntt::Mesh<ntt::Dimension::ONE_D>;

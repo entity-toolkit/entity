@@ -5,19 +5,24 @@
 #include <plog/Log.h>
 #include <toml/toml.hpp>
 
+#include <stdexcept>
+
 namespace ntt {
 
   template <Dimension D, SimulationType S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
-    : m_sim_params {inputdata, D}, m_pGen {m_sim_params}, m_mblock {m_sim_params.resolution(), m_sim_params.species()} {}
+    : m_sim_params {inputdata, D}, 
+      m_pGen {m_sim_params}, 
+      m_mblock {m_sim_params.resolution(), m_sim_params.species()} {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-    if (m_sim_params.metric() == "cartesian") {
+    if (m_sim_params.metric() == "minkowski") {
       m_mblock.metric = std::make_unique<Minkowski<D>>(m_sim_params.resolution(), m_sim_params.extent());
     } else {
       NTTError("metric not implemented");
     }
+    m_mblock.boundaries = m_sim_params.boundaries();
 
     // } else if (m_sim_params.coord_system() == "spherical") {
     //   m_mblock.grid = std::make_unique<SphericalSystem<D>>(m_sim_params.resolution(), m_sim_params.extent());
@@ -32,19 +37,11 @@ namespace ntt {
     m_mblock.set_timestep(m_sim_params.cfl() * m_mblock.min_cell_size());
   }
 
-  // template <Dimension D>
-  // void Simulation<D>::setIO(std::string_view infname, std::string_view outdirname) {
-  //   m_sim_params.m_outputpath = outdirname;
-  //   m_sim_params.m_inputfilename = infname;
-  // }
-
-  // template <Dimension D>
-  // void Simulation<D>::userInitialize() {
-  //   m_pGen.userInitFields(m_sim_params, mblock);
-  //   fieldBoundaryConditions(0.0);
-  //   m_pGen.userInitParticles(m_sim_params, mblock);
-  //   PLOGD << "Simulation initialized.";
-  // }
+  template <Dimension D, SimulationType S>
+  void Simulation<D, S>::initializeSetup() {
+    m_pGen.userInitFields(m_sim_params, m_mblock);
+    // m_pGen.userInitParticles(m_sim_params, m_mblock);
+  }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::verify() {
@@ -94,10 +91,10 @@ namespace ntt {
 
     PLOGI << "[fiducial parameters]";
     PLOGI << "   ppc0: " << m_sim_params.ppc0();
-    PLOGI << "   rho0: " << m_sim_params.larmor0() << " ["
-          << m_sim_params.larmor0() / m_mblock.min_cell_size() << " cells]";
-    PLOGI << "   c_omp0: " << m_sim_params.skindepth0() << " ["
-          << m_sim_params.skindepth0() / m_mblock.min_cell_size() << " cells]";
+    PLOGI << "   rho0: " << m_sim_params.larmor0() << " [" << m_sim_params.larmor0() / m_mblock.min_cell_size()
+          << " cells]";
+    PLOGI << "   c_omp0: " << m_sim_params.skindepth0() << " [" << m_sim_params.skindepth0() / m_mblock.min_cell_size()
+          << " cells]";
     PLOGI << "   sigma0: " << m_sim_params.sigma0();
     PLOGI << "   q0: " << m_sim_params.charge0();
     PLOGI << "   B0: " << m_sim_params.B0();
@@ -120,14 +117,10 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  void Simulation<D, S>::finalize() {
-    PLOGD << "Simulation finalized.";
-  }
+  void Simulation<D, S>::finalize() {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::mainloop() {
-    PLOGD << "Simulation mainloop started.";
-
     unsigned long timax {static_cast<unsigned long>(m_sim_params.total_runtime() / m_mblock.timestep())};
     real_t time {0.0};
     for (unsigned long ti {0}; ti < timax; ++ti) {
@@ -135,20 +128,24 @@ namespace ntt {
       step_forward(time);
       time += m_mblock.timestep();
     }
-    PLOGD << "Simulation mainloop finished.";
   }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::process() {
     initialize();
-    // setIO(infname, outdirname);
-    // userInitialize();
+    PLOGD << "Simulation initialized.";
+    initializeSetup();
+    PLOGD << "Setup initialized.";
     verify();
-    PLOGD << "Prerun check passed";
+    PLOGD << "Prerun check passed.";
     printDetails();
-    PLOGD << "Simulation details printed";
+    PLOGD << "Simulation details printed.";
+
+    PLOGD << "Simulation mainloop started >>>";
     mainloop();
+    PLOGD << "<<< simulation mainloop finished.";
     finalize();
+    PLOGD << "Simulation finalized.";
   }
 
 } // namespace ntt
