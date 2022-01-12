@@ -6,7 +6,6 @@
 #include "fields.h"
 #include "particles.h"
 
-#include <memory>
 #include <vector>
 
 namespace ntt {
@@ -29,8 +28,9 @@ namespace ntt {
 
   public:
     // Metric of the grid.
-    std::shared_ptr<Metric<D>> metric;
-    
+    // std::shared_ptr<Metric<D>> metric;
+    Metric<D>* metric;
+
     /**
      * Constructor for the mesh container, sets the active cell sizes and ranges.
      *
