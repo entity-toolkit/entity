@@ -76,7 +76,7 @@ namespace ntt {
   template <>
   Inline void
   FaradayCurvilinear<Dimension::THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-    NTTError("3d curvilinear faraday not implemented");
+    // 3d curvilinear faraday not implemented
   }
 } // namespace ntt
 

@@ -170,22 +170,22 @@ def configureKokkos(arg, mopt):
     arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
   mopt['KOKKOS_VECTOR_LENGTH'] = '-1'
   if arg['kokkos_loop'] == '1DRange':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D MANUAL1D_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DMANUAL1D_LOOP'
   elif arg['kokkos_loop'] == 'MDRange':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D MDRANGE_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DMDRANGE_LOOP'
   elif arg['kokkos_loop'] == 'for':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D FOR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DFOR_LOOP'
   elif arg['kokkos_loop'] == 'TP-TVR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TVR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTP_INNERX_LOOP -DINNER_TVR_LOOP'
     mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
   elif arg['kokkos_loop'] == 'TP-TTR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TTR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTP_INNERX_LOOP -DINNER_TTR_LOOP'
     mopt['KOKKOS_VECTOR_LENGTH'] = ('1' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
   elif arg['kokkos_loop'] == 'TP-TTR-TVR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TPTTRTVR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTPTTRTVR_LOOP'
     mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
 
-  mopt['KOKKOS_VECTOR_LENGTH'] = '-D KOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
+  mopt['KOKKOS_VECTOR_LENGTH'] = '-DKOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
 
   settings = f'''
   `Kokkos`:
@@ -260,9 +260,9 @@ makefile_options['DEBUG_CFLAGS'] = "-O0 -g -DDEBUG"
 makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 
 # Code configurations
-makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D SINGLE_PRECISION")
+makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-DSINGLE_PRECISION")
 if (args['curv']):
-  makefile_options['COORDSYSTEM'] = "-D CURVILINEAR"
+  makefile_options['COORDSYSTEM'] = "-DCURVILINEAR"
 else:
   makefile_options['COORDSYSTEM'] = ""
 
