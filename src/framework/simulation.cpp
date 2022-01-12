@@ -21,13 +21,13 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
     if (m_sim_params.metric() == "minkowski") {
-      m_mblock.metric = std::make_unique<Minkowski<D>>(m_sim_params.resolution(), m_sim_params.extent());
+      m_mblock.metric = new Minkowski<D>(m_sim_params.resolution(), m_sim_params.extent());
     } else if (m_sim_params.metric() == "spherical") {
-      m_mblock.metric = std::make_unique<Spherical<D>>(m_sim_params.resolution(), m_sim_params.extent());
+      m_mblock.metric = new Spherical<D>(m_sim_params.resolution(), m_sim_params.extent());
     } else if (m_sim_params.metric() == "qspherical") {
       auto r0 {m_sim_params.metric_parameters(0)};
       auto h {m_sim_params.metric_parameters(1)};
-      m_mblock.metric = std::make_unique<QSpherical<D>>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
+      m_mblock.metric = new QSpherical<D>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
     } else {
       NTTError("metric not implemented");
     }
