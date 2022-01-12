@@ -60,6 +60,7 @@ namespace ntt {
       } else {
         NTTError("min cell finding not implemented for 3D qspherical");
       }
+      return ZERO;
     }
 
     /**
@@ -200,9 +201,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void QSpherical<Dimension::ONE_D>::x_Code2Sph(const coord_t<Dimension::ONE_D>&,
-                                                      coord_t<Dimension::ONE_D>&) const {
-    NTTError("1d qspherical not defined");
-  }
+                                                      coord_t<Dimension::ONE_D>&) const { }
 
   // * * * * * * * * * * * * * * *
   // 2D:
