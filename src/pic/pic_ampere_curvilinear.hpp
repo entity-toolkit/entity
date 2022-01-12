@@ -54,7 +54,7 @@ namespace ntt {
   template <>
   Inline void
   AmpereCurvilinear<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    NTTError("3d curvilinear ampere not implemented");
+    // 3d curvilinear ampere not implemented
   }
 
   /**
@@ -67,17 +67,18 @@ namespace ntt {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
     real_t m_coeff;
+    std::size_t m_nj;
 
   public:
     AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
     Inline void operator()(const index_t) const;
   };
 
   template <>
   Inline void AmpereCurvilinearPoles<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
-    index_t j_max {m_mblock.Nj() + N_GHOSTS - 1};
+    index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
 
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_max_ {static_cast<real_t>(j_max - N_GHOSTS)};
