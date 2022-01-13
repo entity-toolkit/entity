@@ -54,10 +54,7 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    virtual auto findSmallestCell() const -> real_t { 
-      NTTError("not implemented"); 
-      return ZERO;
-    }
+    virtual auto findSmallestCell() const -> real_t = 0;
 
     /**
      * Compute metric component 11.
@@ -65,81 +62,63 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_11 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_11(const coord_t<D>&) const -> real_t { 
-      return ZERO;
-    }
+    virtual Inline auto h_11(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 12.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_12 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_12(const coord_t<D>&) const -> real_t { 
-      return ZERO;
-    }
+    virtual Inline auto h_12(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 13.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_13 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_13(const coord_t<D>&) const -> real_t { 
-      return ZERO;
-    }
+    virtual Inline auto h_13(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 21.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_21 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_21(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
+    virtual Inline auto h_21(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 22.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_22 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_22(const coord_t<D>&) const -> real_t { 
-      return ZERO;
-    }
+    virtual Inline auto h_22(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 23.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_23 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_23(const coord_t<D>&) const -> real_t { 
-      return ZERO;
-    }
+    virtual Inline auto h_23(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 31.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_31 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_31(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
+    virtual Inline auto h_31(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 32.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_32 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_32(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
+    virtual Inline auto h_32(const coord_t<D>&) const -> real_t = 0;
     /**
      * Compute metric component 33.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_33 (covariant, lower index) metric component.
      */
-    virtual Inline auto h_33(const coord_t<D>&) const -> real_t { 
-      return ZERO;
-    }
+    virtual Inline auto h_33(const coord_t<D>&) const -> real_t = 0;
 
     /**
      * Compute the square root of the determinant of h-matrix.
@@ -147,9 +126,7 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns sqrt(det(h_ij)).
      */
-    virtual Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
+    virtual Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t = 0;
 
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
@@ -157,9 +134,7 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns Area at the pole.
      */
-    virtual Inline auto polar_area(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
+    virtual Inline auto polar_area(const coord_t<D>&) const -> real_t = 0;
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
@@ -167,7 +142,7 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      * @param x coordinate array in Cartesian coordinates in physical units (size of the array is D).
      */
-    virtual Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const { }
+    virtual Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const = 0;
 
     /**
      * Coordinate conversion from code units to Spherical physical units.
@@ -175,7 +150,7 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      * @param x coordinate array in Cpherical coordinates in physical units (size of the array is D).
      */
-    virtual Inline void x_Code2Sph(const coord_t<D>&, coord_t<D>&) const { }
+    virtual Inline void x_Code2Sph(const coord_t<D>&, coord_t<D>&) const = 0;
 
     /**
      * Vector conversion from hatted to contravariant basis.
@@ -185,7 +160,7 @@ namespace ntt {
      * @param vi vector in contravariant basis (size of the array is 3).
      */
     virtual Inline void
-    v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const { }
+    v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const = 0;
 
     /**
      * Vector conversion from contravariant to hatted basis.
@@ -194,8 +169,64 @@ namespace ntt {
      * @param vi vector in contravariant basis (size of the array is 3).
      * @param vi_hat vector in hatted basis (size of the array is 3).
      */
-    virtual Inline void v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const { }
+    virtual Inline void
+    v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const = 0;
   };
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_11(const coord_t<D>&) const -> real_t {
+    return ONE;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_12(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_13(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_21(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_22(const coord_t<D>&) const -> real_t {
+    return ONE;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_23(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_31(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_32(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::h_33(const coord_t<D>&) const -> real_t {
+    return ONE;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::sqrt_det_h(const coord_t<D>&) const -> real_t {
+    return ONE;
+  }
+
+  template <Dimension D>
+  Inline auto Metric<D>::polar_area(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
 
 } // namespace ntt
 
