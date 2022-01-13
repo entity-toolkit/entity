@@ -16,7 +16,7 @@ namespace ntt {
    * @tparam D dimension.
    */
   template <Dimension D>
-  class QSpherical : public Metric<D> {
+  class QSpherical : virtual public Metric<D> {
   private:
     const real_t r0, h, chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
@@ -38,12 +38,7 @@ namespace ntt {
         dphi_sqr(dphi * dphi) {}
     ~QSpherical() = default;
 
-    /**
-     * Compute minimum effective cell size for Minkowski metric: `dx / sqrt(D)` (in physical units).
-     *
-     * @returns Minimum cell size [physical units].
-     */
-    auto findSmallestCell() const -> real_t {
+    auto findSmallestCell() const -> real_t override {
       if constexpr (D == Dimension::TWO_D) {
         real_t min_dx {-1.0};
         for (int i {0}; i < this->nx1; ++i) {
@@ -81,36 +76,18 @@ namespace ntt {
                  * constant::INV_PI_SQR;
     }
 
-    /**
-     * Compute metric component 11.
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns h_11 (covariant, lower index) metric component.
-     */
-    Inline auto h_11(const coord_t<D>& x) const -> real_t {
+    Inline auto h_11(const coord_t<D>& x) const -> real_t override {
       auto chi {x[0] * dchi + chi_min};
       return dchi_sqr * std::exp(2.0 * chi);
     }
-    /**
-     * Compute metric component 22.
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns h_22 (covariant, lower index) metric component.
-     */
-    Inline auto h_22(const coord_t<D>& x) const -> real_t {
+    Inline auto h_22(const coord_t<D>& x) const -> real_t override {
       auto chi {x[0] * dchi + chi_min};
       auto r {r0 + std::exp(chi)};
       auto eta {x[1] * deta + eta_min};
       auto dtheta_deta_ {dtheta_deta(eta)};
       return deta_sqr * r * r * dtheta_deta_ * dtheta_deta_;
     }
-    /**
-     * Compute metric component 33.
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns h_33 (covariant, lower index) metric component.
-     */
-    Inline auto h_33(const coord_t<D>& x) const -> real_t {
+    Inline auto h_33(const coord_t<D>& x) const -> real_t override {
       auto chi {x[0] * dchi + chi_min};
       auto r {r0 + std::exp(chi)};
       auto eta {x[1] * deta + eta_min};
@@ -119,13 +96,7 @@ namespace ntt {
       return r * r * sin_theta * sin_theta;
     }
 
-    /**
-     * Compute the square root of the determinant of h-matrix.
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns sqrt(det(h_ij)).
-     */
-    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t override {
       auto chi {x[0] * dchi + chi_min};
       auto r {r0 + std::exp(chi)};
       auto eta {x[1] * deta + eta_min};
@@ -135,13 +106,7 @@ namespace ntt {
       return dchi * deta * std::exp(chi) * r * r * sin_theta * dtheta_deta_;
     }
 
-    /**
-     * Compute the area at the pole (used in axisymmetric solvers).
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns Area at the pole.
-     */
-    Inline auto polar_area(const coord_t<D>& x) const -> real_t {
+    Inline auto polar_area(const coord_t<D>& x) const -> real_t override {
       auto chi {x[0] * dchi + chi_min};
       auto r {r0 + std::exp(chi)};
       auto eta {x[1] * deta + eta_min};
@@ -149,31 +114,21 @@ namespace ntt {
       return deta * std::exp(chi) * r * r * (ONE - std::cos(theta));
     }
 
-    /**
-     * Coordinate conversion from code units to Spherical physical units.
-     *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
-     */
-    Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const;
+    Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const override;
 
-    /**
-     * Vector conversion from hatted to contravariant basis.
-     *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_hat vector in hatted basis (size of the array is 3).
-     * @param vi vector in contravariant basis (size of the array is 3).
-     */
-    Inline void v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const override;
+    Inline void v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const override;
 
-    /**
-     * Vector conversion from contravariant to hatted basis.
-     *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi vector in contravariant basis (size of the array is 3).
-     * @param vi_hat vector in hatted basis (size of the array is 3).
-     */
-    Inline void v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    // todo
+    Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const override {};
+
+    // defaults
+    Inline auto h_12(const coord_t<D>& x) const -> real_t override { return Metric<D>::h_12(x); }
+    Inline auto h_13(const coord_t<D>& x) const -> real_t override { return Metric<D>::h_13(x); }
+    Inline auto h_21(const coord_t<D>& x) const -> real_t override { return Metric<D>::h_21(x); }
+    Inline auto h_23(const coord_t<D>& x) const -> real_t override { return Metric<D>::h_23(x); }
+    Inline auto h_31(const coord_t<D>& x) const -> real_t override { return Metric<D>::h_31(x); }
+    Inline auto h_32(const coord_t<D>& x) const -> real_t override { return Metric<D>::h_32(x); }
   };
 
   // * * * * * * * * * * * * * * *
