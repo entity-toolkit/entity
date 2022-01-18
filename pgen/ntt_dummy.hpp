@@ -2,7 +2,6 @@
 #define PROBLEM_GENERATOR_H
 
 #include "global.h"
-#include "pgen.h"
 #include "sim_params.h"
 #include "meshblock.h"
 
@@ -12,7 +11,7 @@ namespace ntt {
   struct ProblemGenerator : public PGen<D, S> {
     ProblemGenerator(const SimulationParams& sim_params) : PGen<D, S>(sim_params) {}
 
-    void userInitFields(const SimulationParams& sim_params, const Meshblock<D, S>& mblock) override;
+    void userInitFields(const SimulationParams& sim_params, const Meshblock<D, S>& mblock);
   };
 
 } // namespace ntt

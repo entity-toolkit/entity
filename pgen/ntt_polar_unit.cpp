@@ -1,7 +1,6 @@
 #include "global.h"
 #include "input.h"
 #include "sim_params.h"
-#include "pgen.h"
 #include "meshblock.h"
 
 #include "problem_generator.hpp"
@@ -12,7 +11,7 @@
 namespace ntt {
 
   template <Dimension D, SimulationType S>
-  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams& sim_params) : PGen<D, S> {sim_params} {}
+  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams&) {}
 
     // * * * * * * * * * * * * * * * * * * * * * * * *
     // Field initializers
@@ -104,10 +103,6 @@ namespace ntt {
       const real_t&, const SimulationParams&, Meshblock<Dimension::THREE_D, SimulationType::PIC>&) {}
 
   } // namespace ntt
-
-template struct ntt::PGen<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-template struct ntt::PGen<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-template struct ntt::PGen<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
 
 template struct ntt::ProblemGenerator<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
 template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;

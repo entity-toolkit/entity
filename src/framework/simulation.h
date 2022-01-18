@@ -62,43 +62,6 @@ namespace ntt {
     void finalize();
 
     /**
-     * Advance the simulation forward for one timestep.
-     * 
-     * @param t time in physical units
-     */
-    virtual void step_forward(const real_t&) {}
-
-    /**
-     * Advance the simulation forward for one timestep.
-     *
-     * @param t time in physical units
-     */
-    virtual void step_backward(const real_t&) {}
-
-    /**
-     * Apply boundary conditions for fields.
-     *
-     * @param t time in physical units.
-     */
-    virtual void fieldBoundaryConditions(const real_t&) {}
-    /**
-     * Apply boundary conditions for particles.
-     *
-     * @param t time in physical units.
-     */
-    virtual void particleBoundaryConditions(const real_t&) {}
-
-    /**
-     * Advance the simulation forward for a specified amount of timesteps, keeping track of time.
-     */
-    void mainloop();
-
-    /**
-     * Process the simulation (calling initialize, verify, mainloop, etc).
-     */
-    void process();
-
-    /**
      * Getters.
      */
     [[nodiscard]] auto sim_params() const -> const SimulationParams& { return m_sim_params; }
