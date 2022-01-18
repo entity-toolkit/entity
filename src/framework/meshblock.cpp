@@ -9,7 +9,7 @@
 namespace ntt {
 
   template <Dimension D>
-  Mesh<D>::Mesh(std::vector<std::size_t> res)
+  Mesh<D>::Mesh(const std::vector<std::size_t>& res, const std::vector<real_t>& ext, const real_t* params)
     : m_imin {res.size() > 0 ? N_GHOSTS : 0},
       m_imax {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
       m_jmin {res.size() > 1 ? N_GHOSTS : 0},
@@ -18,7 +18,8 @@ namespace ntt {
       m_kmax {res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1},
       m_Ni {res.size() > 0 ? res[0] : 1},
       m_Nj {res.size() > 1 ? res[1] : 1},
-      m_Nk {res.size() > 2 ? res[2] : 1} {}
+      m_Nk {res.size() > 2 ? res[2] : 1},
+      metric{res, ext, params} {}
 
   template <>
   auto Mesh<Dimension::ONE_D>::loopAllCells() -> RangeND<Dimension::ONE_D> {
@@ -47,11 +48,14 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  Meshblock<D, S>::Meshblock(const std::vector<std::size_t>& res, const std::vector<ParticleSpecies>& parts)
-    : Mesh<D>(res), Fields<D, S>(res) {
-    // for (auto& part : parts) {
-    //   particles.emplace_back(part);
-    // }
+  Meshblock<D, S>::Meshblock(const std::vector<std::size_t>& res,
+                             const std::vector<real_t>& ext,
+                             const real_t* params,
+                             const std::vector<ParticleSpecies>& species)
+    : Mesh<D>(res, ext, params), Fields<D, S>(res) {
+    for (auto& part : species) {
+      particles.emplace_back(part);
+    }
   }
 } // namespace ntt
 

@@ -152,8 +152,8 @@ namespace ntt {
         mblock.em(i, j, em::ex3) = 0.0;
       });
 
-    auto r_absorb {m_sim_params.metric_parameters(2)};
-    auto r_max {m_mblock.metric->x1_max};
+    auto r_absorb {m_sim_params.metric_parameters()[2]};
+    auto r_max {m_mblock.metric.x1_max};
     auto pGen {this->m_pGen};
     Kokkos::parallel_for(
       "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
@@ -162,11 +162,11 @@ namespace ntt {
 
         // i
         vec_t<Dimension::TWO_D> rth_;
-        mblock.metric->x_Code2Sph({i_, j_}, rth_);
+        mblock.metric.x_Code2Sph({i_, j_}, rth_);
         real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
         real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
         // i + 1/2
-        mblock.metric->x_Code2Sph({i_ + HALF, j_}, rth_);
+        mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
         real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
         real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
 
@@ -177,10 +177,10 @@ namespace ntt {
         real_t br_target_hat {pGen.userTargetField_br_hat(mblock, {i_, j_ + HALF})};
         real_t bx1_source_cntr {mblock.em(i, j, em::bx1)};
         vec_t<Dimension::THREE_D> br_source_hat;
-        mblock.metric->v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
+        mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
         real_t br_interm_hat {(ONE - sigma_r2) * br_source_hat[0] + sigma_r2 * br_target_hat};
         vec_t<Dimension::THREE_D> br_interm_cntr;
-        mblock.metric->v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
+        mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
         mblock.em(i, j, em::bx1) = br_interm_cntr[0];
         mblock.em(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em(i, j, em::ex2);
         mblock.em(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em(i, j, em::ex3);

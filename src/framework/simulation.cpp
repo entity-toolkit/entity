@@ -12,23 +12,22 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
-    : m_sim_params {inputdata, D}, 
-      m_pGen {m_sim_params}, 
-      m_mblock {m_sim_params.resolution(), m_sim_params.species()} {}
+    : m_sim_params {inputdata, D},
+      m_pGen {m_sim_params},
+      m_mblock {
+        m_sim_params.resolution(), 
+        m_sim_params.extent(), 
+        m_sim_params.metric_parameters(), 
+        m_sim_params.species()
+      } {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-#if !(METRIC == QSPHERICAL_METRIC)
-    m_mblock.metric = new Metric<D>(m_sim_params.resolution(), m_sim_params.extent());
-#else
-    auto r0 {m_sim_params.metric_parameters(0)};
-    auto h {m_sim_params.metric_parameters(1)};
-    m_mblock.metric = new Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
-#endif
-    m_mblock.boundaries = m_sim_params.boundaries();
+  // m_mblock.metric = Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters());
+  m_mblock.boundaries = m_sim_params.boundaries();
 
     // find timestep and effective cell size
-    m_mblock.set_min_cell_size(m_mblock.metric->findSmallestCell());
+    m_mblock.set_min_cell_size(m_mblock.metric.findSmallestCell());
     m_mblock.set_timestep(m_sim_params.cfl() * m_mblock.min_cell_size());
   }
 
@@ -55,7 +54,7 @@ namespace ntt {
 
     PLOGI << "[domain]";
     PLOGI << "   dimension: " << static_cast<short>(D) << "D";
-    PLOGI << "   metric: " << (m_mblock.metric->label);
+    PLOGI << "   metric: " << (m_mblock.metric.label);
 
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.boundaries()) {
@@ -94,21 +93,21 @@ namespace ntt {
     PLOGI << "   q0: " << m_sim_params.charge0();
     PLOGI << "   B0: " << m_sim_params.B0();
 
-    // if (m_mblock.particles.size() > 0) {
-    //   PLOGI << "[particles]";
-    //   int i {0};
-    //   for (auto& prtls : m_mblock.particles) {
-    //     PLOGI << "   [species #" << i + 1 << "]";
-    //     PLOGI << "      label: " << prtls.label();
-    //     PLOGI << "      mass: " << prtls.mass();
-    //     PLOGI << "      charge: " << prtls.charge();
-    //     PLOGI << "      pusher: " << stringifyParticlePusher(prtls.pusher());
-    //     PLOGI << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
-    //     ++i;
-    //   }
-    // } else {
-    //   PLOGI << "[no particles]";
-    // }
+    if (m_mblock.particles.size() > 0) {
+      PLOGI << "[particles]";
+      int i {0};
+      for (auto& prtls : m_mblock.particles) {
+        PLOGI << "   [species #" << i + 1 << "]";
+        PLOGI << "      label: " << prtls.label();
+        PLOGI << "      mass: " << prtls.mass();
+        PLOGI << "      charge: " << prtls.charge();
+        PLOGI << "      pusher: " << stringifyParticlePusher(prtls.pusher());
+        PLOGI << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
+        ++i;
+      }
+    } else {
+      PLOGI << "[no particles]";
+    }
   }
 
   template <Dimension D, SimulationType S>

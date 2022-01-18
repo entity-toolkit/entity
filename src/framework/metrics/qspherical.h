@@ -23,10 +23,10 @@ namespace ntt {
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
-    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t& r0_, const real_t& h_)
+    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t* params)
       : MetricBase<D> {"qspherical", resolution, extent},
-        r0 {r0_},
-        h {h_},
+        r0 {params[0]},
+        h {params[1]},
         chi_min {std::log(this->x1_min - r0)},
         eta_min {ZERO},
         phi_min {ZERO},
