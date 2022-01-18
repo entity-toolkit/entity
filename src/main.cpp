@@ -5,9 +5,9 @@
 #if SIMTYPE == PIC_SIMTYPE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
-#elif SIMTYPE == GRPIC_SIMTYPE
-#  include "grpic.h"
-#  define SIMULATION_CONTAINER GRPIC
+// #elif SIMTYPE == GRPIC_SIMTYPE
+// #  include "grpic.h"
+// #  define SIMULATION_CONTAINER GRPIC
 #endif
 
 #include <toml/toml.hpp>
