@@ -1,8 +1,7 @@
-#if SIMTYPE == PIC_SIMTYPE
-
-#  include "global.h"
-#  include "timer.h"
-#  include "pic.h"
+#include "global.h"
+#include "timer.h"
+#include "pic.h"
+#include "sim_params.h"
 
 namespace ntt {
 
@@ -95,61 +94,8 @@ namespace ntt {
   }
 } // namespace ntt
 
+#if SIMTYPE == PIC_SIMTYPE
 template class ntt::PIC<ntt::Dimension::ONE_D>;
 template class ntt::PIC<ntt::Dimension::TWO_D>;
 template class ntt::PIC<ntt::Dimension::THREE_D>;
-
-// {
-//   timers.start(1);
-//   faradaySubstep(time, 0.5);
-//   timers.stop(1);
-// }
-
-// {
-//   timers.start(2);
-//   fieldBoundaryConditions(time);
-//   timers.stop(2);
-// }
-
-// // {
-// //   timers.start(4);
-// //   pushParticlesSubstep(time);
-// //   timers.stop(4);
-// // }
-
-// // depositSubstep(time);
-
-// // {
-// //   timers.start(2);
-// //   particleBoundaryConditions(time);
-// //   timers.stop(2);
-// // }
-// // BC currents
-
-// {
-//   timers.start(1);
-//   faradaySubstep(time, 0.5);
-//   timers.stop(1);
-// }
-
-// {
-//   timers.start(2);
-//   fieldBoundaryConditions(time);
-//   timers.stop(2);
-// }
-
-// {
-//   timers.start(1);
-//   ampereSubstep(time, 1.0);
-//   addCurrentsSubstep(time);
-//   resetCurrentsSubstep(time);
-//   timers.stop(1);
-// }
-
-// {
-//   timers.start(2);
-//   fieldBoundaryConditions(time);
-//   timers.stop(2);
-// }
-
 #endif

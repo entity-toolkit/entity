@@ -75,7 +75,7 @@ namespace ntt {
    * @tparam S Simulation type.
    */
   template <Dimension D, SimulationType S>
-  struct Particles : ParticleSpecies {
+  struct Particles : public ParticleSpecies {
   private:
     // Number of currently active (used) particles.
     std::size_t m_npart {0};

@@ -63,10 +63,11 @@ template class ntt::Mesh<ntt::Dimension::ONE_D>;
 template class ntt::Mesh<ntt::Dimension::TWO_D>;
 template class ntt::Mesh<ntt::Dimension::THREE_D>;
 
-// template class ntt::Meshblock<ntt::Dimension::ONE_D, ntt::SimulationType::GRPIC>;
-// template class ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-// template class ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
-
+#if SIMTYPE == PIC_SIMTYPE
 template class ntt::Meshblock<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
 template class ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
 template class ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+#elif SIMTYPE == GRPIC_SIMTYPE
+template class ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
+template class ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+#endif
