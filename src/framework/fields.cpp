@@ -1,23 +1,31 @@
 #include "global.h"
 #include "fields.h"
 
+#include <plog/Log.h>
+
 #include <vector>
 
 namespace ntt {
 
   template <>
   Fields<Dimension::ONE_D, SimulationType::PIC>::Fields(std::vector<std::size_t> res)
-    : em {"EM", res[0] + 2 * N_GHOSTS}, cur {"J", res[0] + 2 * N_GHOSTS} {}
+    : em {"EM", res[0] + 2 * N_GHOSTS}, cur {"J", res[0] + 2 * N_GHOSTS} {
+    PLOGD << "Allocated field arrays.";
+  }
 
   template <>
   Fields<Dimension::TWO_D, SimulationType::PIC>::Fields(std::vector<std::size_t> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {}
+      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
+    PLOGD << "Allocated field arrays.";
+  }
 
   template <>
   Fields<Dimension::THREE_D, SimulationType::PIC>::Fields(std::vector<std::size_t> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {}
+      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
+    PLOGD << "Allocated field arrays.";
+  }
 
 } // namespace ntt
 
