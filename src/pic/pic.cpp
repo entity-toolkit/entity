@@ -1,6 +1,8 @@
-#include "global.h"
-#include "timer.h"
-#include "pic.h"
+#if SIMTYPE == PIC_SIMTYPE
+
+#  include "global.h"
+#  include "timer.h"
+#  include "pic.h"
 
 namespace ntt {
 
@@ -91,7 +93,7 @@ namespace ntt {
     }
     timers.printAll(millisecond);
   }
-}
+} // namespace ntt
 
 template class ntt::PIC<ntt::Dimension::ONE_D>;
 template class ntt::PIC<ntt::Dimension::TWO_D>;
@@ -149,3 +151,5 @@ template class ntt::PIC<ntt::Dimension::THREE_D>;
 //   fieldBoundaryConditions(time);
 //   timers.stop(2);
 // }
+
+#endif

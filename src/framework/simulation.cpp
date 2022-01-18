@@ -118,3 +118,6 @@ namespace ntt {
 template class ntt::Simulation<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
 template class ntt::Simulation<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
 template class ntt::Simulation<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+
+template class ntt::Simulation<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
+template class ntt::Simulation<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
