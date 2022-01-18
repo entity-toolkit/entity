@@ -25,7 +25,7 @@ namespace ntt {
       const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
       using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
       Kokkos::deep_copy(mblock.em, 0.0);
-      real_t r_min {mblock.metric->x1_min};
+      real_t r_min {mblock.metric.x1_min};
       Kokkos::parallel_for(
         "userInitFlds",
         mblock.loopActiveCells(),
@@ -34,11 +34,11 @@ namespace ntt {
           real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
           coord_t<Dimension::TWO_D> rth_;
-          mblock.metric->x_Code2Sph({i_, j_ + HALF}, rth_);
+          mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
 
           real_t br_hat {ONE * r_min * r_min / (rth_[0] * rth_[0])};
           vec_t<Dimension::THREE_D> br_cntr;
-          mblock.metric->v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, ZERO, ZERO}, br_cntr);
+          mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, ZERO, ZERO}, br_cntr);
           mblock.em(i, j, em::bx1) = br_cntr[0];
       });
     }
@@ -72,11 +72,11 @@ namespace ntt {
           real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
           coord_t<Dimension::TWO_D> rth1_;
-          mblock.metric->x_Code2Sph({i_, j_ + HALF}, rth1_);
+          mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth1_);
 
           real_t etheta_hat {omega * std::sin(rth1_[1])};
           vec_t<Dimension::THREE_D> etheta_cntr, br_cntr;
-          mblock.metric->v_Hat2Cntrv(
+          mblock.metric.v_Hat2Cntrv(
             {i_, j_ + HALF}, {ZERO, etheta_hat, ZERO}, etheta_cntr);
 
           mblock.em(i, j, em::ex3) = 0.0;
@@ -84,7 +84,7 @@ namespace ntt {
 
           real_t br_hat {ONE};
 
-          mblock.metric->v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, ZERO, ZERO}, br_cntr);
+          mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, ZERO, ZERO}, br_cntr);
           mblock.em(i, j, em::bx1) = br_cntr[0];
         });
 

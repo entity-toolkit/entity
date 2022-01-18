@@ -34,34 +34,34 @@ namespace ntt {
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
     real_t inv_sqrt_detH_iPj {
-      ONE / m_mblock.metric->sqrt_det_h({i_ + HALF, j_})
+      ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})
     };
     real_t inv_sqrt_detH_ijP {
-      ONE / m_mblock.metric->sqrt_det_h({i_, j_ + HALF})
+      ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})
     };
     real_t inv_sqrt_detH_iPjP {
-      ONE / m_mblock.metric->sqrt_det_h({i_ + HALF, j_ + HALF})
+      ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})
     };
     real_t h1_iPjP1 {
-      m_mblock.metric->h_11({i_ + HALF, j_ + ONE})
+      m_mblock.metric.h_11({i_ + HALF, j_ + ONE})
     };
     real_t h1_iPj {
-      m_mblock.metric->h_11({i_ + HALF, j_})
+      m_mblock.metric.h_11({i_ + HALF, j_})
     };
     real_t h2_iP1jP {
-      m_mblock.metric->h_22({i_ + ONE, j_ + HALF})
+      m_mblock.metric.h_22({i_ + ONE, j_ + HALF})
     };
     real_t h2_ijP {
-      m_mblock.metric->h_22({i_, j_ + HALF})
+      m_mblock.metric.h_22({i_, j_ + HALF})
     };
     real_t h3_ij {
-      m_mblock.metric->h_33({i_, j_})
+      m_mblock.metric.h_33({i_, j_})
     };
     real_t h3_iP1j {
-      m_mblock.metric->h_33({i_ + ONE, j_})
+      m_mblock.metric.h_33({i_ + ONE, j_})
     };
     real_t h3_ijP1 {
-      m_mblock.metric->h_33({i_, j_ + ONE})
+      m_mblock.metric.h_33({i_, j_ + ONE})
     };
 
     m_mblock.em(i, j, em::bx1)
