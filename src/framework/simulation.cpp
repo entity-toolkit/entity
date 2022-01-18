@@ -113,37 +113,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::finalize() {}
-
-  template <Dimension D, SimulationType S>
-  void Simulation<D, S>::mainloop() {
-    unsigned long timax {static_cast<unsigned long>(m_sim_params.total_runtime() / m_mblock.timestep())};
-    real_t time {0.0};
-    fieldBoundaryConditions(ZERO);
-    for (unsigned long ti {0}; ti < timax; ++ti) {
-      PLOGD << "t = " << time;
-      step_forward(time);
-      time += m_mblock.timestep();
-    }
-  }
-
-  template <Dimension D, SimulationType S>
-  void Simulation<D, S>::process() {
-    initialize();
-    PLOGD << "Simulation initialized.";
-    initializeSetup();
-    PLOGD << "Setup initialized.";
-    verify();
-    PLOGD << "Prerun check passed.";
-    printDetails();
-    PLOGD << "Simulation details printed.";
-
-    PLOGD << "Simulation mainloop started >>>";
-    mainloop();
-    PLOGD << "<<< simulation mainloop finished.";
-    finalize();
-    PLOGD << "Simulation finalized.";
-  }
-
+  
 } // namespace ntt
 
 template class ntt::Simulation<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;

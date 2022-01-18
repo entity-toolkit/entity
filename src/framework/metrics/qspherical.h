@@ -16,7 +16,7 @@ namespace ntt {
    * @tparam D dimension.
    */
   template <Dimension D>
-  class Metric : virtual public MetricBase<D> {
+  class Metric : public MetricBase<D> {
   private:
     const real_t r0, h, chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;

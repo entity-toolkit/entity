@@ -2,20 +2,19 @@
 #define PROBLEM_GENERATOR_H
 
 #include "global.h"
-#include "pgen.h"
 #include "sim_params.h"
 #include "meshblock.h"
 
 namespace ntt {
 
   template <Dimension D, SimulationType S>
-  struct ProblemGenerator : public PGen<D, S> {
+  struct ProblemGenerator {
     ProblemGenerator(const SimulationParams& sim_params);
 
-    void userInitFields(const SimulationParams&, Meshblock<D, S>&) override;
-    void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) override;
+    void userInitFields(const SimulationParams&, Meshblock<D, S>&);
+    void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
 
-    Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t override {
+    Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> rth_;
       real_t r_min {mblock.metric->x1_min};
       mblock.metric->x_Code2Sph(x, rth_);
