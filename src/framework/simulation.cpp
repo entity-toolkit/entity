@@ -94,21 +94,21 @@ namespace ntt {
     PLOGI << "   q0: " << m_sim_params.charge0();
     PLOGI << "   B0: " << m_sim_params.B0();
 
-    if (m_mblock.particles.size() > 0) {
-      PLOGI << "[particles]";
-      int i {0};
-      for (auto& prtls : m_mblock.particles) {
-        PLOGI << "   [species #" << i + 1 << "]";
-        PLOGI << "      label: " << prtls.label();
-        PLOGI << "      mass: " << prtls.mass();
-        PLOGI << "      charge: " << prtls.charge();
-        PLOGI << "      pusher: " << stringifyParticlePusher(prtls.pusher());
-        PLOGI << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
-        ++i;
-      }
-    } else {
-      PLOGI << "[no particles]";
-    }
+    // if (m_mblock.particles.size() > 0) {
+    //   PLOGI << "[particles]";
+    //   int i {0};
+    //   for (auto& prtls : m_mblock.particles) {
+    //     PLOGI << "   [species #" << i + 1 << "]";
+    //     PLOGI << "      label: " << prtls.label();
+    //     PLOGI << "      mass: " << prtls.mass();
+    //     PLOGI << "      charge: " << prtls.charge();
+    //     PLOGI << "      pusher: " << stringifyParticlePusher(prtls.pusher());
+    //     PLOGI << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
+    //     ++i;
+    //   }
+    // } else {
+    //   PLOGI << "[no particles]";
+    // }
   }
 
   template <Dimension D, SimulationType S>
