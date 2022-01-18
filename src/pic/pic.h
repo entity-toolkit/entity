@@ -28,14 +28,24 @@ namespace ntt {
      *
      * @param t time in physical units
      */
-    void step_forward(const real_t& t) override;
+    void step_forward(const real_t&);
 
     /**
      * Advance the simulation forward for one timestep.
      *
      * @param t time in physical units
      */
-    void step_backward(const real_t& t) override;
+    void step_backward(const real_t&);
+
+    /**
+     * Advance the simulation forward for a specified amount of timesteps, keeping track of time.
+     */
+    void mainloop();
+
+    /**
+     * Process the simulation (calling initialize, verify, mainloop, etc).
+     */
+    void process();
 
     /**
      * Advance B-field using Faraday's law.
@@ -82,13 +92,13 @@ namespace ntt {
      *
      * @param t time in physical units.
      */
-    void fieldBoundaryConditions(const real_t& t) override;
+    void fieldBoundaryConditions(const real_t& t);
     /**
      * Apply boundary conditions for particles.
      *
      * @param t time in physical units.
      */
-    void particleBoundaryConditions(const real_t&) override {}
+    void particleBoundaryConditions(const real_t&) {}
   };
 
 } // namespace ntt

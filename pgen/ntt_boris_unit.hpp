@@ -2,7 +2,6 @@
 #define PROBLEM_GENERATOR_H
 
 #include "global.h"
-#include "pgen.h"
 #include "sim_params.h"
 #include "meshblock.h"
 

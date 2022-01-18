@@ -35,7 +35,7 @@ namespace ntt {
         x2_max {resolution.size() > 1 ? extent[3] : ZERO},
         x3_min {resolution.size() > 2 ? extent[4] : ZERO},
         x3_max {resolution.size() > 2 ? extent[5] : ZERO} {}
-    virtual ~MetricBase() = default;
+    ~MetricBase() = default;
 
     /**
      * Convert `real_t` type code unit coordinate to cell index + displacement.
