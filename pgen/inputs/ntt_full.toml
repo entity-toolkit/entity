@@ -3,7 +3,6 @@ title           = <string>
 runtime         = <float>
 
 [domain]
-metric          = <string: { minkowski | spherical | qspherical }>
 qsph_r0         = <float: -infinity < ... < r_min>
 qsph_h          = <float: -1 < ... < 1>
 resolution      = <array of int of size 1, 2 or 3>
