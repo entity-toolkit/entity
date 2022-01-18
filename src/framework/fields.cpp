@@ -33,5 +33,5 @@ template class ntt::Fields<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
 template class ntt::Fields<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
 template class ntt::Fields<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
 
-template class ntt::Fields<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-template class ntt::Fields<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+// template class ntt::Fields<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
+// template class ntt::Fields<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
