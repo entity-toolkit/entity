@@ -82,7 +82,7 @@ namespace ntt {
 
   public:
     // Vector of particles species.
-    std::vector<Particles<D, S>> particles;
+    // std::vector<Particles<D, S>> particles;
     // Boundary conditions.
     std::vector<BoundaryCondition> boundaries;
 
