@@ -49,9 +49,9 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   Meshblock<D, S>::Meshblock(const std::vector<std::size_t>& res, const std::vector<ParticleSpecies>& parts)
     : Mesh<D>(res), Fields<D, S>(res) {
-    for (auto& part : parts) {
-      particles.emplace_back(part);
-    }
+    // for (auto& part : parts) {
+    //   particles.emplace_back(part);
+    // }
   }
 } // namespace ntt
 
