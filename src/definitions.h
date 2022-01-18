@@ -5,6 +5,13 @@
 #define STRINGIZE_DETAIL(x) #x
 #define LINE_STRING         STRINGIZE(__LINE__)
 
+#define MINKOWSKI_METRIC    1
+#define SPHERICAL_METRIC    2
+#define QSPHERICAL_METRIC   3
+
+#define PIC_SIMTYPE         1
+#define GRPIC_SIMTYPE       2
+
 #define NTTError(msg)       throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : line: " LINE_STRING)
 
 // Defining precision-based constants and types

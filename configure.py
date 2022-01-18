@@ -17,8 +17,9 @@
 #
 # [ Simulation flags ]
 #   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
-#   --precision=[single|double]   floating point precision used
-#   -curv                         use curvilinear coordinates
+#   --precision=[single|double]   floating point precision used [default: single]
+#   --metric=<METRIC>             select metric to be used [default: minkowski]
+#   --simtype=<SIM_TYPE>          select simulation type [default: pic]
 #
 # [ Kokkos-specific flags ]
 #   --kokkos_devices=<DEV>        `Kokkos` devices
@@ -54,6 +55,8 @@ makefile_output = 'Makefile'
 
 # Options:
 Precision_options = ['double', 'single']
+Metric_options = ['minkowski', 'spherical', 'qspherical']
+Simtype_options = ['pic', 'grpic']
 
 Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
@@ -92,12 +95,13 @@ def defineOptions():
   parser.add_argument('--nttiny_path', default="extern/nttiny", help='specify path for `Nttiny`')
 
   # simulation
-  parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision')
-  parser.add_argument('-curv', action='store_true', default=False, help='use curvilinear coordinates')
-  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used')
+  parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision (default: `single`)')
+  parser.add_argument('--metric', default=Metric_options[0], choices=Metric_options, help='select metric to be used (default: `minkowski`')
+  parser.add_argument(
+      '--simtype', default=Simtype_options[0], choices=Simtype_options, help='select simulation type (default: `pic`')
+  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used (default: `ntt_dummy`')
 
   # `Kokkos` specific
-  parser.add_argument('-kokkos', action='store_true', default=False, help='compile with `Kokkos` support')
   parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], help='`Kokkos` devices')
   parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
@@ -261,10 +265,8 @@ makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 
 # Code configurations
 makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-DSINGLE_PRECISION")
-if (args['curv']):
-  makefile_options['COORDSYSTEM'] = "-DCURVILINEAR"
-else:
-  makefile_options['COORDSYSTEM'] = ""
+makefile_options['METRIC'] = args['metric'].upper() + '_METRIC'
+makefile_options['SIMTYPE'] = args['simtype'].upper() + '_SIMTYPE'
 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)
@@ -343,9 +345,10 @@ report = f'''
 
 {'Setup configurations ':.<{w}}
 
+  {'Simulation type':32} {args['simtype'].upper()}
   {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
   {'Precision':32} {args['precision']}
-  {'Grid':32} {'curvilinear' if args['curv'] else 'cartesian'}
+  {'Metric':32} {args['metric']}
 
 {'Physics ':.<{w}}
 

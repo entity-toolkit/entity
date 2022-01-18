@@ -1,9 +1,7 @@
 #include "global.h"
 #include "simulation.h"
 
-#include "minkowski.h"
-#include "spherical.h"
-#include "qspherical.h"
+#include "metric.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -20,17 +18,13 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-    if (m_sim_params.metric() == "minkowski") {
-      m_mblock.metric = new Minkowski<D>(m_sim_params.resolution(), m_sim_params.extent());
-    } else if (m_sim_params.metric() == "spherical") {
-      m_mblock.metric = new Spherical<D>(m_sim_params.resolution(), m_sim_params.extent());
-    } else if (m_sim_params.metric() == "qspherical") {
-      auto r0 {m_sim_params.metric_parameters(0)};
-      auto h {m_sim_params.metric_parameters(1)};
-      m_mblock.metric = new QSpherical<D>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
-    } else {
-      NTTError("metric not implemented");
-    }
+#if !(METRIC == QSPHERICAL_METRIC)
+    m_mblock.metric = new Metric<D>(m_sim_params.resolution(), m_sim_params.extent());
+#else
+    auto r0 {m_sim_params.metric_parameters(0)};
+    auto h {m_sim_params.metric_parameters(1)};
+    m_mblock.metric = new Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), r0, h);
+#endif
     m_mblock.boundaries = m_sim_params.boundaries();
 
     // find timestep and effective cell size
