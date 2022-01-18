@@ -5,9 +5,9 @@
 #if SIMTYPE == PIC_SIMTYPE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
-// #elif SIMTYPE == GRPIC_SIMTYPE
-// #  include "grpic.h"
-// #  define SIMULATION_CONTAINER GRPIC
+#elif SIMTYPE == GRPIC_SIMTYPE
+#  include "grpic.h"
+#  define SIMULATION_CONTAINER GRPIC
 #endif
 
 #include <toml/toml.hpp>
@@ -47,8 +47,8 @@ auto main(int argc, char* argv[]) -> int {
       = static_cast<short>(ntt::readFromInput<std::vector<std::size_t>>(inputdata, "domain", "resolution").size());
 
     if (res == 1) {
-      ntt::SIMULATION_CONTAINER<ntt::Dimension::ONE_D> sim(inputdata);
-      sim.process();
+      // ntt::SIMULATION_CONTAINER<ntt::Dimension::ONE_D> sim(inputdata);
+      // sim.process();
     } else if (res == 2) {
       ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D> sim(inputdata);
       sim.process();
