@@ -3,12 +3,11 @@ title           = "Polar_example"
 runtime         = 0.1
 
 [domain]
-metric          = "qspherical"
 qsph_r0         = 0.0
-qsph_h          = 0.5
-sph_rabsorb     = 5.0
-resolution      = [256, 64]
-extent          = [1.0, 10.0]
+qsph_h          = 0.9
+sph_rabsorb     = 8.0
+resolution      = [64, 64]
+extent          = [1.0, 20.0]
 boundaries      = ["USER", "USER"]
 
 [algorithm]

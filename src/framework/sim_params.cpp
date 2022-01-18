@@ -39,14 +39,14 @@ namespace ntt {
       m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
     }
 
-    // reading coordinate system info
-#ifndef CURVILINEAR
+#if METRIC == MINKOWSKI_METRIC
     m_metric = "minkowski";
-    if (readFromInput<std::string>(m_inputdata, "domain", "metric", defaults::metric) != "minkowski") {
-      NTTError("non-minkowski metric specified, but the code is not compiled with the `-curv` flag");
-    }
+#elif METRIC == SPHERICAL_METRIC
+    m_metric = "spherical";
+#elif METRIC == QSPHERICAL_METRIC
+    m_metric = "qspherical";
 #else
-    m_metric = readFromInput<std::string>(m_inputdata, "domain", "metric");
+    NTTError("unrecognized metric");
 #endif
 
     // domain size / resolution
