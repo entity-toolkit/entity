@@ -6,7 +6,7 @@
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
 #elif SIMTYPE == GRPIC_SIMTYPE
-// #  include "grpic.h"
+#  include "grpic.h"
 #  define SIMULATION_CONTAINER GRPIC
 #endif
 

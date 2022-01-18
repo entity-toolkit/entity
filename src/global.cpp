@@ -15,6 +15,8 @@ namespace ntt {
     switch (sim) {
     case SimulationType::PIC:
       return "PIC";
+    case SimulationType::GRPIC:
+      return "GRPIC";
     case SimulationType::FORCE_FREE:
       return "FF";
     case SimulationType::MHD:
