@@ -19,7 +19,7 @@ namespace ntt {
     const real_t dx, dx_sqr, inv_dx;
 
   public:
-    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t* params)
+    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> {"minkowski", resolution, extent},
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
