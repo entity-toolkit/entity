@@ -15,7 +15,7 @@ namespace ntt {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if METRIC == MINKOWSKI_METRIC
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(m_mblock.metric->x1_max - m_mblock.metric->x1_min) / m_mblock.metric->nx1};
+    const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
     Kokkos::parallel_for("ampere", m_mblock.loopActiveCells(), AmpereMinkowski<Dimension::ONE_D>(m_mblock, coeff / dx));
 #else
     (void)(fraction);
@@ -29,7 +29,7 @@ namespace ntt {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if METRIC == MINKOWSKI_METRIC
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(m_mblock.metric->x1_max - m_mblock.metric->x1_min) / m_mblock.metric->nx1};
+    const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
     Kokkos::parallel_for("ampere", m_mblock.loopActiveCells(), AmpereMinkowski<Dimension::TWO_D>(m_mblock, coeff / dx));
 #else
     Kokkos::parallel_for(
@@ -47,7 +47,7 @@ namespace ntt {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if METRIC == MINKOWSKI_METRIC
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(m_mblock.metric->x1_max - m_mblock.metric->x1_min) / m_mblock.metric->nx1};
+    const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
     Kokkos::parallel_for(
       "ampere", m_mblock.loopActiveCells(), AmpereMinkowski<Dimension::THREE_D>(m_mblock, coeff / dx));
 #else

@@ -28,15 +28,16 @@ namespace ntt {
 
   public:
     // Metric of the grid.
-    // std::shared_ptr<Metric<D>> metric;
-    Metric<D>* metric;
+    const Metric<D> metric;
 
     /**
      * Constructor for the mesh container, sets the active cell sizes and ranges.
      *
      * @param res resolution vector of size D (dimension).
+     * @param ext extent vector of size 2 * D.
+     * @param params metric-/domain-specific parameters (max: 10).
      */
-    Mesh(std::vector<std::size_t> res);
+    Mesh(const std::vector<std::size_t>& res, const std::vector<real_t>& ext, const real_t* params);
     ~Mesh() = default;
 
     /**
@@ -82,7 +83,7 @@ namespace ntt {
 
   public:
     // Vector of particles species.
-    // std::vector<Particles<D, S>> particles;
+    std::vector<Particles<D, S>> particles;
     // Boundary conditions.
     std::vector<BoundaryCondition> boundaries;
 
@@ -90,9 +91,14 @@ namespace ntt {
      * Constructor for the meshblock.
      *
      * @param res resolution vector of size D (dimension).
+     * @param ext extent vector of size 2 * D.
+     * @param params metric-/domain-specific parameters (max: 10).
      * @param species vector of particle species parameters.
      */
-    Meshblock(const std::vector<std::size_t>& res, const std::vector<ParticleSpecies>& species);
+    Meshblock(const std::vector<std::size_t>& res,
+              const std::vector<real_t>& ext,
+              const real_t* params,
+              const std::vector<ParticleSpecies>& species);
     ~Meshblock() = default;
 
     /**

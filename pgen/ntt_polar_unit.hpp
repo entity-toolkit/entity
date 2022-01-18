@@ -16,8 +16,8 @@ namespace ntt {
 
     Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> rth_;
-      real_t r_min {mblock.metric->x1_min};
-      mblock.metric->x_Code2Sph(x, rth_);
+      real_t r_min {mblock.metric.x1_min};
+      mblock.metric.x_Code2Sph(x, rth_);
       return ONE * r_min * r_min / (rth_[0] * rth_[0]);
     }
   };
