@@ -79,8 +79,6 @@ LIBS :=
 
 default: help demo
 
-all: ntt test
-
 # linking the main app
 ntt : pgenCopy ${BIN_DIR}/${TARGET}
 	@echo [M]aking $@
@@ -104,7 +102,7 @@ test : ${BIN_DIR}/${TEST_TARGET}
 
 help:
 	@echo
-	@echo "usage: \`make [ ntt | vis | test | all | demo ]\`"
+	@echo "usage: \`make [ ntt | vis | demo ]\`"
 	@echo
 	@echo "cleanup: \`make clean\`"
 	@echo
@@ -120,6 +118,7 @@ demo:
 #
 # Src
 SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
+SRCS := ${SRCS} ${SRC_DIR}/problem_generator.cpp
 SRCS := $(filter-out ${SRC_DIR}/main.cpp, $(SRCS))
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
@@ -180,6 +179,7 @@ include ${ROOT_DIR}/Nttiny.mk
 clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
 	rm -rf ${BIN_DIR}
+	rm -f ${SRC_DIR}/problem_generator.cpp ${SRC_DIR}/problem_generator.hpp
 
 cleanlib: kokkos-clean
 	rm -rf {BUILD_DIR}/Kokkos*
