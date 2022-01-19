@@ -1,6 +1,5 @@
 #-----------------------------------------------------------------------------------------
 # Configure file for the `Entity` code to generate a temporary `Makefile`.
-# ... Parts of the code are adapted from the `K-Athena` MHD code (https://gitlab.com/pgrete/kathena).
 #
 # Options:
 #   -h  --help                    help message
@@ -18,8 +17,9 @@
 #
 # [ Simulation flags ]
 #   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
-#   --precision=[single|double]   floating point precision used
-#   --coords=<COORD_SYSTEM>       floating point precision used
+#   --precision=[single|double]   floating point precision used [default: single]
+#   --metric=<METRIC>             select metric to be used [default: minkowski]
+#   --simtype=<SIM_TYPE>          select simulation type [default: pic]
 #
 # [ Kokkos-specific flags ]
 #   --kokkos_devices=<DEV>        `Kokkos` devices
@@ -55,12 +55,18 @@ makefile_output = 'Makefile'
 
 # Options:
 Precision_options = ['double', 'single']
-Coord_options = ['xyz', 'sph', 'cyl', 'qxyz', 'qsph', 'qcyl']
+Metric_options = ['minkowski', 'spherical', 'qspherical']
+Simtype_options = ['pic', 'grpic']
 
-Pgen_options = ['ntt_one', 'ntt_two']
-Pgen_options = [f.replace('.hpp', '') for f in os.listdir('ntt/pgen') if '.hpp' in f]
+Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
-Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", "KNC", "KNL", "BGQ", "POWER7", "POWER8", "POWER9"], device=["KEPLER30", "KEPLER32", "KEPLER35", "KEPLER37", "MAXWELL50", "MAXWELL52", "MAXWELL53", "PASCAL60", "PASCAL61", "VOLTA70", "VOLTA72", "TURING75", "AMPERE80", "VEGA900", "VEGA906", "INTEL_GE"])
+Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", 
+                         "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", 
+                         "KNC", "KNL", "BGQ", "POWER7", "POWER8", "POWER9"], 
+                   device=["KEPLER30", "KEPLER32", "KEPLER35", "KEPLER37", 
+                           "MAXWELL50", "MAXWELL52", "MAXWELL53", "PASCAL60", 
+                           "PASCAL61", "VOLTA70", "VOLTA72", "TURING75", 
+                           "AMPERE80", "VEGA900", "VEGA906", "INTEL_GE"])
 Kokkos_devices_options = Kokkos_devices["host"] + Kokkos_devices["device"]
 Kokkos_arch_options = Kokkos_arch["host"] + Kokkos_arch["device"]
 Kokkos_loop_options = ['default', '1DRange', 'MDRange', 'TP-TVR', 'TP-TTR', 'TP-TTR-TVR', 'for']
@@ -89,12 +95,13 @@ def defineOptions():
   parser.add_argument('--nttiny_path', default="extern/nttiny", help='specify path for `Nttiny`')
 
   # simulation
-  parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision')
-  parser.add_argument('--coords', default=Coord_options[0], choices=Coord_options, help='coordinate system')
-  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used')
+  parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision (default: `single`)')
+  parser.add_argument('--metric', default=Metric_options[0], choices=Metric_options, help='select metric to be used (default: `minkowski`')
+  parser.add_argument(
+      '--simtype', default=Simtype_options[0], choices=Simtype_options, help='select simulation type (default: `pic`')
+  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used (default: `ntt_dummy`')
 
   # `Kokkos` specific
-  parser.add_argument('-kokkos', action='store_true', default=False, help='compile with `Kokkos` support')
   parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], help='`Kokkos` devices')
   parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
@@ -167,22 +174,22 @@ def configureKokkos(arg, mopt):
     arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
   mopt['KOKKOS_VECTOR_LENGTH'] = '-1'
   if arg['kokkos_loop'] == '1DRange':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D MANUAL1D_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DMANUAL1D_LOOP'
   elif arg['kokkos_loop'] == 'MDRange':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D MDRANGE_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DMDRANGE_LOOP'
   elif arg['kokkos_loop'] == 'for':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D FOR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DFOR_LOOP'
   elif arg['kokkos_loop'] == 'TP-TVR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TVR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTP_INNERX_LOOP -DINNER_TVR_LOOP'
     mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
   elif arg['kokkos_loop'] == 'TP-TTR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TP_INNERX_LOOP -D INNER_TTR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTP_INNERX_LOOP -DINNER_TTR_LOOP'
     mopt['KOKKOS_VECTOR_LENGTH'] = ('1' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
   elif arg['kokkos_loop'] == 'TP-TTR-TVR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-D TPTTRTVR_LOOP'
+    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTPTTRTVR_LOOP'
     mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
 
-  mopt['KOKKOS_VECTOR_LENGTH'] = '-D KOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
+  mopt['KOKKOS_VECTOR_LENGTH'] = '-DKOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
 
   settings = f'''
   `Kokkos`:
@@ -198,8 +205,6 @@ def createMakefile(m_in, m_out, mopt):
     makefile_template = current_file.read()
   for key, val in mopt.items():
     makefile_template = re.sub(r'@{0}@'.format(key), val, makefile_template)
-  if not args['debug']:
-    makefile_template = re.sub("# for developers />[\S\s]*?</ for developers", '', makefile_template)
   if not args['nttiny']:
     makefile_template = re.sub("# for nttiny />[\S\s]*?</ for nttiny", '', makefile_template)
   with open(args['build'] + '/' + m_out, 'w') as current_file:
@@ -259,19 +264,9 @@ makefile_options['DEBUG_CFLAGS'] = "-O0 -g -DDEBUG"
 makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 
 # Code configurations
-makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-D SINGLE_PRECISION")
-if (args['coords'] == 'xyz'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_FLAT_COORDS"
-elif (args['coords'] =='sph'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_SPHERICAL_COORDS"
-elif (args['coords'] =='cyl'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_CYLINDRICAL_COORDS"
-elif (args['coords'] =='qxyz'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_CARTESIAN_LIKE_COORDS"
-elif (args['coords'] =='qsph'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_SPHERICAL_LIKE_COORDS"
-elif (args['coords'] =='qcyl'):
-  makefile_options['COORDSYSTEM'] = "-D HARDCODE_CYLINDRICAL_LIKE_COORDS"
+makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-DSINGLE_PRECISION")
+makefile_options['METRIC'] = args['metric'].upper() + '_METRIC'
+makefile_options['SIMTYPE'] = args['simtype'].upper() + '_SIMTYPE'
 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)
@@ -281,7 +276,7 @@ try:
   compiledemo = makedemo.split('\n')[1]
   linkdemo = makedemo.split('\n')[4]
 except:
-  print (makedemo)
+  print ('ERROR', makedemo)
 
 def beautifyCommands(command):
   i = command.index(' -')
@@ -350,9 +345,10 @@ report = f'''
 
 {'Setup configurations ':.<{w}}
 
+  {'Simulation type':32} {args['simtype'].upper()}
   {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
   {'Precision':32} {args['precision']}
-  {'Grid':32} {args['coords']}
+  {'Metric':32} {args['metric']}
 
 {'Physics ':.<{w}}
 
