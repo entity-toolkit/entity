@@ -10,20 +10,20 @@ namespace ntt {
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Fields<Dimension::ONE_D, SimulationType::PIC>::Fields(std::vector<std::size_t> res)
+  Fields<Dimension::ONE_D, SimulationType::PIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS}, cur {"J", res[0] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
-  Fields<Dimension::TWO_D, SimulationType::PIC>::Fields(std::vector<std::size_t> res)
+  Fields<Dimension::TWO_D, SimulationType::PIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
-  Fields<Dimension::THREE_D, SimulationType::PIC>::Fields(std::vector<std::size_t> res)
+  Fields<Dimension::THREE_D, SimulationType::PIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
@@ -33,13 +33,13 @@ namespace ntt {
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Fields<Dimension::TWO_D, SimulationType::GRPIC>::Fields(std::vector<std::size_t> res)
+  Fields<Dimension::TWO_D, SimulationType::GRPIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS}, cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
-  Fields<Dimension::THREE_D, SimulationType::GRPIC>::Fields(std::vector<std::size_t> res)
+  Fields<Dimension::THREE_D, SimulationType::GRPIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";

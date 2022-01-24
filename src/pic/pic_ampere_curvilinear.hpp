@@ -67,7 +67,7 @@ namespace ntt {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
     real_t m_coeff;
-    std::size_t m_nj;
+    int m_nj;
 
   public:
     AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)

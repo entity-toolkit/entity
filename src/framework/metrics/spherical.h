@@ -20,7 +20,7 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
-    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t*)
+    Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> {"spherical", resolution, extent},
         dr((this->x1_max - this->x1_min) / this->nx1),
         dtheta(constant::PI / this->nx2),
