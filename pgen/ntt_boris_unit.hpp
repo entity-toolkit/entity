@@ -7,16 +7,14 @@
 
 namespace ntt {
 
-  template <Dimension D>
-  struct ProblemGenerator : PGen<D> {
-    int m_nx1, m_nx2;
-    real_t m_amplitude;
+  template <Dimension D, SimulationType S>
+  struct ProblemGenerator {
+    ProblemGenerator(const SimulationParams&) {}
 
-    ProblemGenerator(SimulationParams&);
-    ~ProblemGenerator() = default;
-
-    void userInitFields(SimulationParams&, Meshblock<D>&);
-    void userInitParticles(SimulationParams&, Meshblock<D>&);
+    void userInitFields(const SimulationParams&, Meshblock<D, S>&);
+    void userInitParticles(const SimulationParams&, Meshblock<D, S>&);
+    void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+    Inline auto userTargetField_br_hat(const Meshblock<D, S>&, const coord_t<D>&) const -> real_t { return ZERO; }
   };
 
 } // namespace ntt

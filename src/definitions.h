@@ -41,12 +41,16 @@ namespace ntt {
 inline constexpr float ONE {1.0f};
 inline constexpr float ZERO {0.0f};
 inline constexpr float HALF {0.5f};
+inline constexpr float QUARTER {0.25f};
 #else
 inline constexpr double ONE {1.0};
 inline constexpr double ZERO {0.0};
 inline constexpr double HALF {0.5};
+inline constexpr double QUARTER {0.25};
 #endif
 
+#define SIGNd(x)      (((x) < 0.0) ? -1.0 : 1.0)
+#define SIGNf(x)      (((x) < 0.0f) ? -1.0f : 1.0f)
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
 #define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
 #define SQR(x)       ((x) * (x))
