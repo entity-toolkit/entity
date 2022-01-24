@@ -99,8 +99,22 @@ namespace ntt {
    * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
    */
   template <Dimension D>
+  auto NTTRange(const std::size_t (&i1)[static_cast<short>(D)], const std::size_t (&i2)[static_cast<short>(D)])
+    -> RangeND<D>;
+
+  /**
+   * Function template for generating ND Kokkos range policy.
+   *
+   * @overload
+   * @tparam D Dimension
+   * @param i1 array of size D `int`: { min }.
+   * @param i2 array of size D `int`: { max }.
+   * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
+   */
+  template <Dimension D>
   auto NTTRange(const int (&i1)[static_cast<short>(D)], const int (&i2)[static_cast<short>(D)])
     -> RangeND<D>;
+
 } // namespace ntt
 
 namespace plog {

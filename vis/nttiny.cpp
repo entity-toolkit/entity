@@ -92,16 +92,27 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
                          {"bx3", &(this->m_bx3)}
                        });
 
-    for (auto const& [fld, arr] : this->fields) {
-      for (int i {0}; i <= nx1; ++i) {
-        arr->grid_x1[i] = m_ex1.grid_x1[i];
-      }
-      for (int i {0}; i <= nx2; ++i) {
-        arr->grid_x2[i] = m_ex1.grid_x2[i];
-      }
+    int s {0}, i {0};
+    for (auto& species : m_sim.mblock().particles) {
+      auto nprt {m_sim.mblock().particles[s].npart()};
+      auto x_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
+      auto y_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
+      this->prtl_pointers.push_back(std::move(x_prtl));
+      this->prtl_pointers.push_back(std::move(y_prtl));
+      this->particles.insert({species.label(), {(this->prtl_pointers[i].get()), (this->prtl_pointers[i + 1].get())}});
+      s ++;
+      i += 2;
     }
-    setData();
-  }
+      for (auto const& [fld, arr] : this->fields) {
+        for (int i {0}; i <= nx1; ++i) {
+          arr->grid_x1[i] = m_ex1.grid_x1[i];
+        }
+        for (int i {0}; i <= nx2; ++i) {
+          arr->grid_x2[i] = m_ex1.grid_x2[i];
+        }
+      }
+      setData();
+    }
 
   void setData() override {
     for (int j{0}; j < nx2; ++j) {
@@ -134,6 +145,18 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         m_bx2.set(i, j, bx2_hat[1]);
         m_bx3.set(i, j, bx3_hat[2]);
       }
+    }
+    int i {0};
+    for (auto& species : m_sim.mblock().particles) {
+      for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
+        float x1 {(float)(species.i1(k)) + species.dx1(k)};
+        float x2 {(float)(species.i2(k)) + species.dx2(k)};
+        ntt::coord_t<ntt::Dimension::TWO_D> xy;
+        m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
+        this->prtl_pointers[i]->set(k, 0, xy[0]);
+        this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
+      }
+      i += 2;
     }
   }
   void stepFwd() override {

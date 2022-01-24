@@ -10,8 +10,10 @@
 #include <stdexcept>
 
 namespace ntt {
-  struct Boris_t {};
-  struct Photon_t {};
+  struct BorisFwd_t {};
+  struct PhotonFwd_t {};
+  struct BorisBwd_t {};
+  struct PhotonBwd_t {};
 
   /**
    * Algorithm for the Particle pusher.
@@ -20,7 +22,7 @@ namespace ntt {
    */
   template <Dimension D>
   class Pusher {
-    using index_t = const int;
+    using index_t = const std::size_t;
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
     real_t m_coeff, m_dt;
@@ -36,20 +38,36 @@ namespace ntt {
      *
      */
     void pushParticles() {
-      if (m_particles.pusher() == ParticlePusher::PHOTON) {
-        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::BORIS) {
-        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
+      if (m_coeff > ZERO) {
+        if (m_particles.pusher() == ParticlePusher::PHOTON) {
+          // push photons forward
+          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, PhotonFwd_t>(0, m_particles.npart());
+          Kokkos::parallel_for("pusher", range_policy, *this);
+        } else if (m_particles.pusher() == ParticlePusher::BORIS) {
+          // push boris-particles forward
+          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, BorisFwd_t>(0, m_particles.npart());
+          Kokkos::parallel_for("pusher", range_policy, *this);
+        } else {
+          NTTError("pusher not implemented");
+        }
       } else {
-        NTTError("pusher not implemented");
+        if (m_particles.pusher() == ParticlePusher::PHOTON) {
+          // push photons backward
+          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, PhotonBwd_t>(0, m_particles.npart());
+          Kokkos::parallel_for("pusher", range_policy, *this);
+        } else if (m_particles.pusher() == ParticlePusher::BORIS) {
+          // push boris-particles backward
+          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, BorisBwd_t>(0, m_particles.npart());
+          Kokkos::parallel_for("pusher", range_policy, *this);
+        } else {
+          NTTError("pusher not implemented");
+        }
       }
     }
     /**
      * @todo Faster sqrt method?
      */
-    Inline void operator()(const Boris_t&, const index_t p) const {
+    Inline void operator()(const BorisFwd_t&, const index_t p) const {
       real_t e0_x1, e0_x2, e0_x3;
       real_t b0_x1, b0_x2, b0_x3;
       interpolateFields(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
@@ -63,9 +81,25 @@ namespace ntt {
     /**
      * @todo Faster sqrt method?
      */
-    Inline void operator()(const Photon_t&, const index_t p) const {
+    Inline void operator()(const PhotonFwd_t&, const index_t p) const {
       real_t inv_energy {
         ONE / std::sqrt(SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p)))};
+      positionUpdate(p, inv_energy);
+    }
+
+    Inline void operator()(const BorisBwd_t&, const index_t p) const {
+      real_t inv_gamma0 {
+        ONE / std::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p)))};
+      positionUpdate(p, inv_gamma0);
+      real_t e0_x1, e0_x2, e0_x3;
+      real_t b0_x1, b0_x2, b0_x3;
+      interpolateFields(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
+      // convertToCartesian(p);
+      BorisUpdate(p, e0_x1, e0_x2, e0_x3, b0_x1, b0_x2, b0_x3);
+      // convertFromCartesian(p);
+    }
+    Inline void operator()(const PhotonBwd_t&, const index_t p) const {
+      real_t inv_energy {ONE / std::sqrt(SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p)))};
       positionUpdate(p, inv_energy);
     }
 

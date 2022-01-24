@@ -24,7 +24,7 @@ namespace ntt {
     // active cell range in x3
     const int m_kmin, m_kmax;
     // number of active cells in each direction
-    const std::size_t m_Ni, m_Nj, m_Nk;
+    const int m_Ni, m_Nj, m_Nk;
 
   public:
     // Metric of the grid.
@@ -37,7 +37,7 @@ namespace ntt {
      * @param ext extent vector of size 2 * D.
      * @param params metric-/domain-specific parameters (max: 10).
      */
-    Mesh(const std::vector<std::size_t>& res, const std::vector<real_t>& ext, const real_t* params);
+    Mesh(const std::vector<unsigned int>& res, const std::vector<real_t>& ext, const real_t* params);
     ~Mesh() = default;
 
     /**
@@ -62,9 +62,9 @@ namespace ntt {
     [[nodiscard]] auto j_max() const -> const int& { return m_jmax; }
     [[nodiscard]] auto k_min() const -> const int& { return m_kmin; }
     [[nodiscard]] auto k_max() const -> const int& { return m_kmax; }
-    [[nodiscard]] auto Ni() const -> const std::size_t& { return m_Ni; }
-    [[nodiscard]] auto Nj() const -> const std::size_t& { return m_Nj; }
-    [[nodiscard]] auto Nk() const -> const std::size_t& { return m_Nk; }
+    [[nodiscard]] auto Ni() const -> const int& { return m_Ni; }
+    [[nodiscard]] auto Nj() const -> const int& { return m_Nj; }
+    [[nodiscard]] auto Nk() const -> const int& { return m_Nk; }
   };
 
   /**
@@ -95,7 +95,7 @@ namespace ntt {
      * @param params metric-/domain-specific parameters (max: 10).
      * @param species vector of particle species parameters.
      */
-    Meshblock(const std::vector<std::size_t>& res,
+    Meshblock(const std::vector<unsigned int>& res,
               const std::vector<real_t>& ext,
               const real_t* params,
               const std::vector<ParticleSpecies>& species);

@@ -50,7 +50,7 @@ namespace ntt {
 #endif
 
     // domain size / resolution
-    m_resolution = readFromInput<std::vector<std::size_t>>(m_inputdata, "domain", "resolution");
+    m_resolution = readFromInput<std::vector<unsigned int>>(m_inputdata, "domain", "resolution");
     m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
     if (m_metric == "minkowski") {
       // minkowski

@@ -19,13 +19,13 @@ namespace ntt {
     const real_t dx, dx_sqr, inv_dx;
 
   public:
-    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t*)
+    Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> {"minkowski", resolution, extent},
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
         inv_dx(ONE / dx) {}
     ~Metric() = default;
-    
+
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
      *
@@ -90,7 +90,7 @@ namespace ntt {
     /**
      * Coordinate conversion from code units to Spherical physical units.
      * @todo Actually implement.
-     * 
+     *
      * @param xi coordinate array in code units (size of the array is D).
      * @param x coordinate array in Cpherical coordinates in physical units (size of the array is D).
      */
@@ -102,17 +102,17 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <Dimension D>
   Inline void Metric<D>::v_Hat2Cntrv(const coord_t<D>& xi,
-                                        const vec_t<Dimension::THREE_D>& vi_hat,
-                                        vec_t<Dimension::THREE_D>& vi) const {
+                                     const vec_t<Dimension::THREE_D>& vi_hat,
+                                     vec_t<Dimension::THREE_D>& vi) const {
     vi[0] = vi_hat[0] / std::sqrt(h_11(xi));
     vi[1] = vi_hat[1] / std::sqrt(h_22(xi));
     vi[2] = vi_hat[2] / std::sqrt(h_33(xi));
   }
-  
+
   template <Dimension D>
   Inline void Metric<D>::v_Cntrv2Hat(const coord_t<D>& xi,
-                                        const vec_t<Dimension::THREE_D>& vi,
-                                        vec_t<Dimension::THREE_D>& vi_hat) const {
+                                     const vec_t<Dimension::THREE_D>& vi,
+                                     vec_t<Dimension::THREE_D>& vi_hat) const {
     vi_hat[0] = vi[0] * std::sqrt(h_11(xi));
     vi_hat[1] = vi[1] * std::sqrt(h_22(xi));
     vi_hat[2] = vi[2] * std::sqrt(h_33(xi));
@@ -123,7 +123,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Metric<Dimension::ONE_D>::x_Code2Cart(const coord_t<Dimension::ONE_D>& xi,
-                                                       coord_t<Dimension::ONE_D>& x) const {
+                                                    coord_t<Dimension::ONE_D>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
   }
 
@@ -132,7 +132,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Metric<Dimension::TWO_D>::x_Code2Cart(const coord_t<Dimension::TWO_D>& xi,
-                                                     coord_t<Dimension::TWO_D>& x) const {
+                                                    coord_t<Dimension::TWO_D>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
     x[1] = xi[1] * dx + this->x2_min;
   }
@@ -142,12 +142,12 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Metric<Dimension::THREE_D>::x_Code2Cart(const coord_t<Dimension::THREE_D>& xi,
-                                                       coord_t<Dimension::THREE_D>& x) const {
+                                                      coord_t<Dimension::THREE_D>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
     x[1] = xi[1] * dx + this->x2_min;
     x[2] = xi[2] * dx + this->x3_min;
   }
 
-  } // namespace ntt
+} // namespace ntt
 
 #endif

@@ -73,7 +73,7 @@ namespace ntt {
     PLOGI << res;
 
     std::string ext {"   extent: "};
-    for (std::size_t i {0}; i < m_sim_params.extent().size(); i += 2) {
+    for (auto i {0}; i < (int)(m_sim_params.extent().size()); i += 2) {
       ext
         += "{" + std::to_string(m_sim_params.extent()[i]) + ", " + std::to_string(m_sim_params.extent()[i + 1]) + "} ";
     }
