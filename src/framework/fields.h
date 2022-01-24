@@ -34,7 +34,7 @@ namespace ntt {
      *
      * @param res resolution vector of size D (dimension).
      */
-    Fields(std::vector<std::size_t> res);
+    Fields(std::vector<unsigned int> res);
     ~Fields() = default;
   };
 

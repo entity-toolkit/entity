@@ -1,20 +1,19 @@
 [simulation]
-title           = "Example"
+title           = "Boris example"
 runtime         = 0.1
 
 [domain]
-resolution      = [256, 256]
+resolution      = [64, 64]
 extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
-# options are: `PERIODIC`, `OPEN`
 
 [algorithm]
-CFL             = 0.95
+CFL             = 0.2
 correction      = 1.0
 
 [units]
 ppc0            = 0.1
-larmor0         = 0.1
+larmor0         = 0.25
 skindepth0      = 0.01
 
 [particles]
@@ -36,7 +35,7 @@ pusher          = "Boris"
 
 [species_3]
 label           = "ion"
-mass            = 10.0
+mass            = 2.0
 charge          = 1.0
 maxnpart        = 1e2
 pusher          = "Boris"
