@@ -14,8 +14,8 @@ namespace ntt {
    */
   template <>
   void PIC<Dimension::ONE_D>::fieldBoundaryConditions(const real_t&) {
-    using index_t = typename RealFieldND<Dimension::ONE_D, 6>::size_type;
 #  if METRIC == MINKOWSKI_METRIC
+    using index_t = typename RealFieldND<Dimension::ONE_D, 6>::size_type;
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
       auto range_m {NTTRange<Dimension::ONE_D>({0}, {m_mblock.i_min()})};

@@ -23,7 +23,7 @@ namespace ntt {
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
-    Metric(std::vector<std::size_t> resolution, std::vector<real_t> extent, const real_t* params)
+    Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t* params)
       : MetricBase<D> {"qspherical", resolution, extent},
         r0 {params[0]},
         h {params[1]},

@@ -99,7 +99,7 @@ namespace ntt {
      *
      * @param t time in physical units.
      */
-    void particleBoundaryConditions(const real_t&) {}
+    void particleBoundaryConditions(const real_t&);
   };
 
 } // namespace ntt
