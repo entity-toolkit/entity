@@ -34,7 +34,7 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initializeSetup() {
     m_pGen.userInitFields(m_sim_params, m_mblock);
-    // m_pGen.userInitParticles(m_sim_params, m_mblock);
+    m_pGen.userInitParticles(m_sim_params, m_mblock);
   }
 
   template <Dimension D, SimulationType S>
