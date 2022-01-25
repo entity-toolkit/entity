@@ -38,13 +38,11 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::step_forward(const real_t& time) {
     TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC"});
-    {
+    if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
       faradaySubstep(time, HALF);
       timers.stop(1);
-    }
 
-    {
       timers.start(2);
       fieldBoundaryConditions(time);
       timers.stop(2);
@@ -54,33 +52,25 @@ namespace ntt {
       timers.start(4);
       pushParticlesSubstep(time, ONE);
       timers.stop(4);
-    }
 
-    {
       timers.start(5);
       particleBoundaryConditions(time);
       timers.stop(5);
     }
 
-    {
+    if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
       faradaySubstep(time, HALF);
       timers.stop(1);
-    }
 
-    {
       timers.start(2);
       fieldBoundaryConditions(time);
       timers.stop(2);
-    }
 
-    {
       timers.start(1);
       ampereSubstep(time, ONE);
       timers.stop(1);
-    }
 
-    {
       timers.start(2);
       fieldBoundaryConditions(time);
       timers.stop(2);
@@ -91,43 +81,39 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::step_backward(const real_t& time) {
     TimerCollection timers({"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
-    {
+    if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
       ampereSubstep(time, -ONE);
       timers.stop(1);
-    }
 
-    {
+      timers.start(2);
+      fieldBoundaryConditions(time);
+      timers.stop(2);
+
+      timers.start(1);
+      faradaySubstep(time, -HALF);
+      timers.stop(1);
+
       timers.start(2);
       fieldBoundaryConditions(time);
       timers.stop(2);
     }
 
     {
-      timers.start(1);
-      faradaySubstep(time, -HALF);
-      timers.stop(1);
-    }
-
-    {
       timers.start(4);
       pushParticlesSubstep(time, -ONE);
       timers.stop(4);
-    }
 
-    {
       timers.start(5);
       particleBoundaryConditions(time);
       timers.stop(5);
     }
 
-    {
+    if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
       faradaySubstep(time, -HALF);
       timers.stop(1);
-    }
-
-    {
+      
       timers.start(2);
       fieldBoundaryConditions(time);
       timers.stop(2);
