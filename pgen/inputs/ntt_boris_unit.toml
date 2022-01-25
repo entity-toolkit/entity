@@ -8,16 +8,16 @@ extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.2
+CFL             = 0.1
 correction      = 1.0
 
 [units]
 ppc0            = 0.1
-larmor0         = 0.25
+larmor0         = 0.5
 skindepth0      = 0.01
 
 [particles]
-n_species       = 3
+n_species       = 4
 
 [species_1]
 label           = "electron"
@@ -39,5 +39,12 @@ mass            = 2.0
 charge          = 1.0
 maxnpart        = 1e2
 pusher          = "Boris"
+
+[species_4]
+label           = "photon"
+mass            = 0.0
+charge          = 0.0
+maxnpart        = 1e2
+pusher          = "Photon"
 
 [problem]

@@ -15,8 +15,13 @@ namespace ntt {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        mblock.em(i, j, em::ex2) = 0.2;
-        mblock.em(i, j, em::bx3) = 1.0;
+        real_t i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
+        real_t ex2_hat {0.1}, bx3_hat {1.0};
+        vec_t<Dimension::THREE_D> e_cntrv, b_cntrv;
+        mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
+        mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_hat}, b_cntrv);
+        mblock.em(i, j, em::ex2) = e_cntrv[1];
+        mblock.em(i, j, em::bx3) = b_cntrv[2];
       });
   }
 
@@ -26,28 +31,39 @@ namespace ntt {
     using index_t = const std::size_t;
     Kokkos::parallel_for(
       "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
+        coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;
+        mblock.metric.x_Cart2Code(x, x_CU);
+        auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
+        auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
         // electron
-        mblock.particles[0].i1(p) = 32;
-        mblock.particles[0].i2(p) = 32;
-        mblock.particles[0].dx1(p) = 0.3;
-        mblock.particles[0].dx2(p) = 0.3;
+        mblock.particles[0].i1(p) = i1;
+        mblock.particles[0].i2(p) = i2;
+        mblock.particles[0].dx1(p) = dx1;
+        mblock.particles[0].dx2(p) = dx2;
         mblock.particles[0].ux1(p) = 1.0;
         // positron
-        mblock.particles[1].i1(p) = 32;
-        mblock.particles[1].i2(p) = 32;
-        mblock.particles[1].dx1(p) = 0.3;
-        mblock.particles[1].dx2(p) = 0.3;
+        mblock.particles[1].i1(p) = i1;
+        mblock.particles[1].i2(p) = i2;
+        mblock.particles[1].dx1(p) = dx1;
+        mblock.particles[1].dx2(p) = dx2;
         mblock.particles[1].ux1(p) = 1.0;
         // ion
-        mblock.particles[2].i1(p) = 32;
-        mblock.particles[2].i2(p) = 32;
-        mblock.particles[2].dx1(p) = 0.3;
-        mblock.particles[2].dx2(p) = 0.3;
+        mblock.particles[2].i1(p) = i1;
+        mblock.particles[2].i2(p) = i2;
+        mblock.particles[2].dx1(p) = dx1;
+        mblock.particles[2].dx2(p) = dx2;
         mblock.particles[2].ux1(p) = 1.0;
+        // photon
+        mblock.particles[3].i1(p) = i1;
+        mblock.particles[3].i2(p) = i2;
+        mblock.particles[3].dx1(p) = dx1;
+        mblock.particles[3].dx2(p) = dx2;
+        mblock.particles[3].ux1(p) = 1.0;
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);
     mblock.particles[2].set_npart(1);
+    mblock.particles[3].set_npart(1);
   }
 
   // 1D

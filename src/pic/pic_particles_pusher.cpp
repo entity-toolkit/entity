@@ -11,8 +11,7 @@ namespace ntt {
       const real_t dt {factor * this->m_mblock.timestep()};
       const real_t coeff {(species.charge() / species.mass()) * HALF * dt
                           / this->sim_params().larmor0()};
-      const real_t dx {(this->m_mblock.metric.x1_max - this->m_mblock.metric.x1_min) / this->m_mblock.metric.nx1};
-      Pusher<D> pusher(this->m_mblock, species, coeff, dt / dx);
+      Pusher<D> pusher(this->m_mblock, species, coeff, dt);
       pusher.pushParticles();
     }
   }
