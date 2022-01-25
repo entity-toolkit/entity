@@ -18,9 +18,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   ntt::PIC<ntt::Dimension::TWO_D>& m_sim;
   nttiny::Data<float> m_ex1, m_ex2, m_ex3;
   nttiny::Data<float> m_bx1, m_bx2, m_bx3;
-
-  real_t m_time;
-
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
 
   NTTSimulationVis(ntt::PIC<ntt::Dimension::TWO_D>& sim)
@@ -176,7 +173,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     m_sim.step_backward(m_time);
     setData();
     --m_timestep;
-    m_time += m_sim.mblock().timestep();
+    m_time -= m_sim.mblock().timestep();
   }
 };
 
