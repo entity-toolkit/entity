@@ -10,6 +10,7 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 [algorithm]
 CFL             = 0.1
 correction      = 1.0
+fieldsolver_ON  = false
 
 [units]
 ppc0            = 0.1

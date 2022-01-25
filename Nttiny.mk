@@ -13,7 +13,7 @@ export VERBOSE := ${VERBOSE}
 export COMPILER := ${CXX}
 -include ${NTTINY_DIR}/Makefile
 
-vis : nttiny_static ${VIS_TARGET}
+vis : pgenCopy nttiny_static ${VIS_TARGET}
 
 ${VIS_TARGET}: ${NTTINY_DIR}/build/libnttiny.a $(OBJS) $(VIS_OBJ)
 	@echo [L]inking $@ from $^
