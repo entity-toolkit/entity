@@ -27,6 +27,7 @@ namespace ntt {
     real_t m_sigma0, m_charge0, m_B0;
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies> m_species;
+    bool m_enable_fieldsolver;
     /*
      * Extent of the whole domain in physical units
      * { x1_min, x1_max, x2_min, x2_max, x3_min, x3_max }.
@@ -76,7 +77,8 @@ namespace ntt {
     [[nodiscard]] auto metric() const -> const std::string& { return m_metric; }
     [[nodiscard]] auto metric_parameters() const -> const real_t* { return m_metric_parameters; }
     [[nodiscard]] auto inputdata() const -> const toml::value& { return m_inputdata; }
-  };
+    [[nodiscard]] auto enable_fieldsolver() const -> const bool& { return m_enable_fieldsolver; }
+    };
 
 } // namespace ntt
 
