@@ -39,10 +39,12 @@ namespace ntt {
 // Simple math expressions (for real-type arguments)
 #ifdef SINGLE_PRECISION
 inline constexpr float ONE {1.0f};
+inline constexpr float TWO {2.0f};
 inline constexpr float ZERO {0.0f};
 inline constexpr float HALF {0.5f};
 #else
 inline constexpr double ONE {1.0};
+inline constexpr double TWO {2.0};
 inline constexpr double ZERO {0.0};
 inline constexpr double HALF {0.5};
 #endif
