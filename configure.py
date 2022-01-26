@@ -55,7 +55,7 @@ makefile_output = 'Makefile'
 
 # Options:
 Precision_options = ['double', 'single']
-Metric_options = ['minkowski', 'spherical', 'qspherical']
+Metric_options = ['minkowski', 'spherical', 'qspherical', 'kerr_schild']
 Simtype_options = ['pic', 'grpic']
 
 Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
