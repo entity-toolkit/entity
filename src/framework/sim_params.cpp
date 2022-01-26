@@ -45,6 +45,8 @@ namespace ntt {
     m_metric = "spherical";
 #elif METRIC == QSPHERICAL_METRIC
     m_metric = "qspherical";
+#elif METRIC == KERR_SCHILD_METRIC
+    m_metric = "kerr_schild";
 #else
     NTTError("unrecognized metric");
 #endif
@@ -78,6 +80,11 @@ namespace ntt {
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
       }
       m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
+
+      if (m_metric == "kerr_schild") {
+        m_metric_parameters[3] = readFromInput<real_t>(inputdata, "domain", "a");
+      }
+
       m_extent.push_back(0.0);
       m_extent.push_back(constant::PI);
       m_extent.push_back(0.0);

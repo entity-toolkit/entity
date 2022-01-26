@@ -46,6 +46,27 @@ namespace ntt {
      * Process the simulation (calling initialize, verify, mainloop, etc).
      */
     void process();
+
+     /**
+     * Advance B-field using Faraday's law.
+     *
+     * @param t time in physical units.
+     * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
+     */
+    void faradaySubstep(const real_t& t, const real_t& f);
+
+     /**
+     * Compute E field.
+     *
+     * @param t time in physical units.
+     */
+    void Compute_E_Substep(const real_t& t);
+     /**
+     * Compute H field.
+     *
+     * @param t time in physical units.
+     */
+    void Compute_H_Substep(const real_t& t);
   };
 
 } // namespace ntt
