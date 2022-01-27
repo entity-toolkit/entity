@@ -58,7 +58,9 @@ Precision_options = ['double', 'single']
 Metric_options = ['minkowski', 'spherical', 'qspherical']
 Simtype_options = ['pic', 'grpic']
 
-Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
+def findFiles(directory, extension):
+  return glob.glob(directory + '/*/*.' + extension) + glob.glob(directory + '/*.' + extension)
+Pgen_options = [f.replace('.hpp', '').replace('pgen/', '') for f in findFiles('pgen', 'hpp')]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
 Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", 
                          "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", 
