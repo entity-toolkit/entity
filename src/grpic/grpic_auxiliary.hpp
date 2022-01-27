@@ -9,31 +9,25 @@
 #include <stdexcept>
 
 namespace ntt {
-
-  struct Compute_E {};
-  struct Compute_H {};
-  
   /**
-   * Methods for computing E and H.
+   * Method for computing E.
    *
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Compute_auxiliary {
+  class Compute_E {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Compute_auxiliary(const Meshblock<D, SimulationType::GRPIC>& mblock)
+    Compute_E(const Meshblock<D, SimulationType::GRPIC>& mblock)
       : m_mblock(mblock) {}
-    Inline void operator()(const Compute_E&, const index_t, const index_t) const;
-    Inline void operator()(const Compute_E&, const index_t, const index_t, const index_t) const;
-    Inline void operator()(const Compute_H&, const index_t, const index_t) const;
-    Inline void operator()(const Compute_H&, const index_t, const index_t, const index_t) const;
+    Inline void operator()(const index_t, const index_t) const;
+    Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   template <>
-  Inline void Compute_auxiliary<Dimension::TWO_D>::operator()(const Compute_E&, const index_t i, const index_t j) const {
+  Inline void Compute_E<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -67,10 +61,34 @@ namespace ntt {
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * Dr_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * Dth_cov - inv_sqrt_detH_ijP * beta_ijP *  Bph_half;
     m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;
-   }
+   };
 
   template <>
-  Inline void Compute_auxiliary<Dimension::TWO_D>::operator()(const Compute_H&, const index_t i, const index_t j) const {
+  Inline void
+  Compute_E<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    // 3d grpic not implemented
+  };
+
+   /**
+   * Method for computing H.
+   *
+   * @tparam D Dimension.
+   */
+  template <Dimension D>
+  class Compute_H {
+    using index_t = typename RealFieldND<D, 6>::size_type;
+    Meshblock<D, SimulationType::GRPIC> m_mblock;
+
+  public:
+    Compute_H(const Meshblock<D, SimulationType::GRPIC>& mblock)
+      : m_mblock(mblock) {}
+    Inline void operator()(const index_t, const index_t) const;
+    Inline void operator()(const index_t, const index_t, const index_t) const;
+  };
+
+
+  template <>
+  Inline void Compute_H<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -108,15 +126,77 @@ namespace ntt {
 
   template <>
   Inline void
-  Compute_auxiliary<Dimension::THREE_D>::operator()(const Compute_E&, const index_t, const index_t, const index_t) const {
-    // 3d curvilinear not implemented
+  Compute_H<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    // 3d grpic not implemented
   }
+  /**
+   * Time average B and D field: is it the most efficient way?
+   *
+   * @tparam D Dimension.
+   */
+  template <Dimension D>
+  class Average_EM {
+    using index_t = typename RealFieldND<D, 6>::size_type;
+    Meshblock<D, SimulationType::GRPIC> m_mblock;
+
+  public:
+    Average_EM(const Meshblock<D, SimulationType::GRPIC>& mblock)
+      : m_mblock(mblock) {}
+    Inline void operator()(const index_t, const index_t) const;
+    Inline void operator()(const index_t, const index_t, const index_t) const;
+  };
 
   template <>
+  Inline void Average_EM<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+
+    m_mblock.em0(i, j, em::bx1) = HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em(i, j, em::bx1));
+    m_mblock.em0(i, j, em::bx2) = HALF * (m_mblock.em0(i, j, em::bx2) + m_mblock.em(i, j, em::bx2));
+    m_mblock.em0(i, j, em::bx3) = HALF * (m_mblock.em0(i, j, em::bx3) + m_mblock.em(i, j, em::bx3));
+    m_mblock.em0(i, j, em::ex1) = HALF * (m_mblock.em0(i, j, em::ex1) + m_mblock.em(i, j, em::ex1));
+    m_mblock.em0(i, j, em::ex2) = HALF * (m_mblock.em0(i, j, em::ex2) + m_mblock.em(i, j, em::ex2));
+    m_mblock.em0(i, j, em::ex3) = HALF * (m_mblock.em0(i, j, em::ex3) + m_mblock.em(i, j, em::ex3));
+   }
+  
+  template <>
   Inline void
-  Compute_auxiliary<Dimension::THREE_D>::operator()(const Compute_H&, const index_t, const index_t, const index_t) const {
-    // 3d curvilinear not implemented
+  Average_EM<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    // 3d grpic not implemented
   }
+  /**
+   * Time average currents
+   *
+   * @tparam D Dimension.
+   */
+  template <Dimension D>
+  class Average_J {
+    using index_t = typename RealFieldND<D, 6>::size_type;
+    Meshblock<D, SimulationType::GRPIC> m_mblock;
+
+  public:
+    Average_J(const Meshblock<D, SimulationType::GRPIC>& mblock)
+      : m_mblock(mblock) {}
+    Inline void operator()(const index_t, const index_t) const;
+    Inline void operator()(const index_t, const index_t, const index_t) const;
+  };
+
+  template <>
+  Inline void Average_J<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+
+    m_mblock.cur0(i, j, cur::jx1) = HALF * (m_mblock.cur0(i, j, cur::jx1) + m_mblock.cur(i, j, cur::jx1));
+    m_mblock.cur0(i, j, cur::jx2) = HALF * (m_mblock.cur0(i, j, cur::jx2) + m_mblock.cur(i, j, cur::jx2));
+    m_mblock.cur0(i, j, cur::jx3) = HALF * (m_mblock.cur0(i, j, cur::jx3) + m_mblock.cur(i, j, cur::jx3));
+   }
+  
+  template <>
+  Inline void
+  Average_J<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    // 3d grpic not implemented
+  }
+
 } // namespace ntt
 
 #endif

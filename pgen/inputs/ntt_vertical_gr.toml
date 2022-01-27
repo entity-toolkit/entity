@@ -9,7 +9,7 @@ sph_rabsorb     = 8.0
 resolution      = [64, 64]
 extent          = [1.0, 20.0]
 boundaries      = ["USER", "USER"]
-spin            = 0.99
+a               = 0.99
 
 [algorithm]
 CFL             = 0.9

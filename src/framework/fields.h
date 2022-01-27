@@ -29,9 +29,11 @@ namespace ntt {
      */
     RealFieldND<D, 3> cur;
 
-    // GRPIC-specific
-#if PIC_SIMTYPE == GRPIC_SIMTYPE
-    
+  // * * * * * * * * * * * * * * * * * * * *
+  // GRPIC-specific
+  // * * * * * * * * * * * * * * * * * * * *
+  #ifdef GRPIC_SIMTYPE
+
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
