@@ -1,8 +1,6 @@
-#if SIMTYPE == PIC_SIMTYPE
-
-#  include "global.h"
-#  include "pic.h"
-#  include "pic_particles_pusher.hpp"
+#include "global.h"
+#include "pic.h"
+#include "pic_particles_pusher.hpp"
 
 namespace ntt {
   template <Dimension D>
@@ -18,10 +16,6 @@ namespace ntt {
 
 } // namespace ntt
 
-#  if SIMTYPE == PIC_SIMTYPE
 template class ntt::PIC<ntt::Dimension::ONE_D>;
 template class ntt::PIC<ntt::Dimension::TWO_D>;
 template class ntt::PIC<ntt::Dimension::THREE_D>;
-#  endif
-
-#endif

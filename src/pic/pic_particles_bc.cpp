@@ -1,11 +1,9 @@
-#if SIMTYPE == PIC_SIMTYPE
+#include "global.h"
+#include "pic.h"
 
-#  include "global.h"
-#  include "pic.h"
+#include <plog/Log.h>
 
-#  include <plog/Log.h>
-
-#  include <stdexcept>
+#include <stdexcept>
 #include <iostream>
 
 namespace ntt {
@@ -16,7 +14,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::ONE_D>::particleBoundaryConditions(const real_t&) {
     using index_t = const std::size_t;
-#  if METRIC == MINKOWSKI_METRIC
+#if METRIC == MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
         Kokkos::parallel_for(
@@ -31,10 +29,10 @@ namespace ntt {
     } else {
       NTTError("boundary condition not implemented");
     }
-#  else
+#else
     (void)(index_t {});
     NTTError("only minkowski possible in 1d");
-#  endif
+#endif
   }
 
   /**
@@ -44,7 +42,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::TWO_D>::particleBoundaryConditions(const real_t&) {
     using index_t = const std::size_t;
-#  if METRIC == MINKOWSKI_METRIC
+#if METRIC == MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
         Kokkos::parallel_for(
@@ -64,13 +62,18 @@ namespace ntt {
     } else {
       NTTError("boundary condition not implemented");
     }
-#  elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
     (void)(index_t {});
-    NTTError("non-minkowski particle boundary condition not implemented");
-#  else
+    for (auto& species : m_mblock.particles) {
+      (void)(species);
+      NTTError("non-minkowski particle boundary condition not implemented");
+    }
+#else
     (void)(index_t {});
-    NTTError("2d boundary condition for metric not implemented");
-#  endif
+    for (auto& species : m_mblock.particles) {
+      NTTError("2d boundary condition for metric not implemented");
+    }
+#endif
   }
 
   /**
@@ -83,5 +86,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-#endif
