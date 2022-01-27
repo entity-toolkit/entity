@@ -1,11 +1,9 @@
-#if SIMTYPE == PIC_SIMTYPE
+#include "global.h"
+#include "pic.h"
 
-#  include "global.h"
-#  include "pic.h"
+#include <plog/Log.h>
 
-#  include <plog/Log.h>
-
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
   /**
@@ -14,8 +12,8 @@ namespace ntt {
    */
   template <>
   void PIC<Dimension::ONE_D>::fieldBoundaryConditions(const real_t&) {
-#  if METRIC == MINKOWSKI_METRIC
     using index_t = typename RealFieldND<Dimension::ONE_D, 6>::size_type;
+#if METRIC == MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
       auto range_m {NTTRange<Dimension::ONE_D>({0}, {m_mblock.i_min()})};
@@ -44,10 +42,10 @@ namespace ntt {
     } else {
       NTTError("boundary condition not implemented");
     }
-#  else
+#else
     (void)(index_t {});
     NTTError("only minkowski possible in 1d");
-#  endif
+#endif
   }
 
   /**
@@ -57,7 +55,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t& t) {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
-#  if METRIC == MINKOWSKI_METRIC
+#if METRIC == MINKOWSKI_METRIC
     (void)(t); // ignore warning about unused parameter
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       // non-periodic
@@ -126,7 +124,7 @@ namespace ntt {
       // non-periodic
       NTTError("2d boundary condition for minkowski not implemented");
     }
-#  elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
     // * * * * * * * * * * * * * * * *
     // axisymmetric spherical grid
     // * * * * * * * * * * * * * * * *
@@ -187,10 +185,10 @@ namespace ntt {
         mblock.em(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em(i, j, em::ex2);
         mblock.em(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em(i, j, em::ex3);
       });
-#  else
+#else
     (void)(index_t {});
     NTTError("2d boundary condition for metric not implemented");
-#  endif
+#endif
   }
 
   /**
@@ -203,5 +201,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-#endif

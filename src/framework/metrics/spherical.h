@@ -98,76 +98,69 @@ namespace ntt {
       real_t del_theta {x[1] * dtheta};
       return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
     }
-    /**
-     * Coordinate conversion from code units to Metric physical units.
-     * @todo Actually implement.
-     *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Cpherical coordinates in physical units (size of the array is D).
-     */
-    Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const;
-    /**
-     * Vector conversion from hatted to contravariant basis.
-     *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_hat vector in hatted basis (size of the array is 3).
-     * @param vi vector in contravariant basis (size of the array is 3).
-     */
-    Inline void v_Hat2Cntrv(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
-    /**
-     * Vector conversion from contravariant to hatted basis.
-     *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi vector in contravariant basis (size of the array is 3).
-     * @param vi_hat vector in hatted basis (size of the array is 3).
-     */
-    Inline void v_Cntrv2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+
+/**
+ * @note Since kokkos disallows virtual inheritance, we have to
+ *       include vector transformations for a diagonal metric here
+ *       (and not in the base class).
+ */
+#include "diag_vector_transform.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
-     * @todo Actually implement.
      *
      * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Cartesian coordinates in physical units (size of the array is D).
+     * @param x coordinate array in Cartesian physical units (size of the array is D).
      */
-    Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const {};
+    Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const {}
+    /**
+     * Coordinate conversion from Cartesian physical units to code units.
+     *
+     * @param x coordinate array in Cartesian coordinates in
+     * physical units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
+     */
+    Inline void x_Cart2Code(const coord_t<D>&, coord_t<D>&) const {}
+    /**
+     * Coordinate conversion from code units to Spherical physical units.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
+     */
+    Inline void x_Code2Sph(const coord_t<D>&, coord_t<D>&) const;
+    /**
+     * Coordinate conversion from Spherical physical units to code units.
+     *
+     * @param xi coordinate array in Spherical coordinates in physical units (size of the array is D).
+     * @param x coordinate array in code units (size of the array is D).
+     */
+    Inline void x_Sph2Code(const coord_t<D>&, coord_t<D>&) const;
   };
-
-  // * * * * * * * * * * * * * * *
-  // vector transformations
-  // * * * * * * * * * * * * * * *
-  template <Dimension D>
-  Inline void Metric<D>::v_Hat2Cntrv(const coord_t<D>& xi,
-                                        const vec_t<Dimension::THREE_D>& vi_hat,
-                                        vec_t<Dimension::THREE_D>& vi) const {
-    vi[0] = vi_hat[0] / std::sqrt(h_11(xi));
-    vi[1] = vi_hat[1] / std::sqrt(h_22(xi));
-    vi[2] = vi_hat[2] / std::sqrt(h_33(xi));
-  }
-  template <Dimension D>
-  Inline void Metric<D>::v_Cntrv2Hat(const coord_t<D>& xi,
-                                        const vec_t<Dimension::THREE_D>& vi,
-                                        vec_t<Dimension::THREE_D>& vi_hat) const {
-    vi_hat[0] = vi[0] * std::sqrt(h_11(xi));
-    vi_hat[1] = vi[1] * std::sqrt(h_22(xi));
-    vi_hat[2] = vi[2] * std::sqrt(h_33(xi));
-  }
 
   // * * * * * * * * * * * * * * *
   // 1D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Metric<Dimension::ONE_D>::x_Code2Sph(const coord_t<Dimension::ONE_D>&,
-                                                      coord_t<Dimension::ONE_D>&) const { }
+  Inline void Metric<Dimension::ONE_D>::x_Code2Sph(const coord_t<Dimension::ONE_D>&, coord_t<Dimension::ONE_D>&) const {
+  }
+  template <>
+  Inline void Metric<Dimension::ONE_D>::x_Sph2Code(const coord_t<Dimension::ONE_D>&, coord_t<Dimension::ONE_D>&) const {
+  }
 
   // * * * * * * * * * * * * * * *
   // 2D:
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Metric<Dimension::TWO_D>::x_Code2Sph(const coord_t<Dimension::TWO_D>& xi,
-                                                      coord_t<Dimension::TWO_D>& x) const {
+                                                   coord_t<Dimension::TWO_D>& x) const {
     x[0] = xi[0] * dr + this->x1_min;
     x[1] = xi[1] * dtheta + this->x2_min;
+  }
+  template <>
+  Inline void Metric<Dimension::TWO_D>::x_Sph2Code(const coord_t<Dimension::TWO_D>& x,
+                                                   coord_t<Dimension::TWO_D>& xi) const {
+    xi[0] = (x[0] - this->x1_min) / dr;
+    xi[1] = (x[1] - this->x2_min) / dtheta;
   }
 
   // * * * * * * * * * * * * * * *
@@ -175,12 +168,19 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Metric<Dimension::THREE_D>::x_Code2Sph(const coord_t<Dimension::THREE_D>& xi,
-                                                        coord_t<Dimension::THREE_D>& x) const {
+                                                     coord_t<Dimension::THREE_D>& x) const {
     x[0] = xi[0] * dr + this->x1_min;
     x[1] = xi[1] * dtheta + this->x2_min;
     x[2] = xi[2] * dphi + this->x3_min;
   }
+  template <>
+  Inline void Metric<Dimension::THREE_D>::x_Sph2Code(const coord_t<Dimension::THREE_D>& x,
+                                                     coord_t<Dimension::THREE_D>& xi) const {
+    xi[0] = (x[0] - this->x1_min) / dr;
+    xi[1] = (x[1] - this->x2_min) / dtheta;
+    xi[2] = (x[2] - this->x3_min) / dphi;
+  }
 
-  } // namespace ntt
+} // namespace ntt
 
 #endif
