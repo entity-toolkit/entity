@@ -266,7 +266,7 @@ makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 # Code configurations
 makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-DSINGLE_PRECISION")
 makefile_options['METRIC'] = args['metric'].upper() + '_METRIC'
-makefile_options['SIMTYPE'] = args['simtype'].upper() + '_SIMTYPE'
+makefile_options['SIMTYPE'] = args['simtype'].upper()
 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)

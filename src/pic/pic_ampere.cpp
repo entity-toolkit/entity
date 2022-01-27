@@ -1,15 +1,13 @@
-#if SIMTYPE == PIC_SIMTYPE
+#include "global.h"
+#include "pic.h"
 
-#  include "global.h"
-#  include "pic.h"
+#if METRIC == MINKOWSKI_METRIC
+#  include "pic_ampere_minkowski.hpp"
+#else
+#  include "pic_ampere_curvilinear.hpp"
+#endif
 
-#  if METRIC == MINKOWSKI_METRIC
-#    include "pic_ampere_minkowski.hpp"
-#  else
-#    include "pic_ampere_curvilinear.hpp"
-#  endif
-
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
   template <>
@@ -60,6 +58,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-
-#endif
