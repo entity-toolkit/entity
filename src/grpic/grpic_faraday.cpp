@@ -1,4 +1,4 @@
-#if SIMTYPE == GRPIC_SIMTYPE
+#ifdef GRPIC_SIMTYPE
 
 #  include "global.h"
 #  include "grpic.h"
