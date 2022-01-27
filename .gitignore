@@ -31,4 +31,4 @@ extern/nttiny/
 .trash/
 
 # Problem generator template
-src/problem_generator.*
+src/.temp/

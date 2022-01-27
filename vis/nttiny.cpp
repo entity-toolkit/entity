@@ -148,7 +148,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
         float x1 {(float)(species.i1(k)) + species.dx1(k)};
         float x2 {(float)(species.i2(k)) + species.dx2(k)};
-        ntt::coord_t<ntt::Dimension::TWO_D> xy;
+        ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
         m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
         this->prtl_pointers[i]->set(k, 0, xy[0]);
         this->prtl_pointers[i + 1]->set(k, 0, xy[1]);

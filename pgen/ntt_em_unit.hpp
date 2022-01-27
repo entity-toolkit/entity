@@ -13,7 +13,7 @@ namespace ntt {
     real_t m_amplitude;
 
     ProblemGenerator(const SimulationParams& sim_params);
-
+    void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
     void userInitFields(const SimulationParams& sim_params, Meshblock<D, S>& mblock);
   };
 
