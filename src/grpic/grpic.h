@@ -54,7 +54,13 @@ namespace ntt {
      * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
      */
     void faradaySubstep(const real_t& t, const real_t& f);
-
+    /**
+     * Advance D-field using Ampere's law.
+     *
+     * @param t time in physical units.
+     * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
+     */
+    void ampereSubstep(const real_t& t, const real_t& f);
      /**
      * Compute E field.
      *
@@ -67,6 +73,18 @@ namespace ntt {
      * @param t time in physical units.
      */
     void Compute_H_Substep(const real_t& t);
+    /**
+     * Time average EM fields.
+     *
+     * @param t time in physical units.
+     */
+    void Average_EM_Substep(const real_t& t);
+     /**
+     * Time average currents.
+     *
+     * @param t time in physical units.
+     */
+    void Average_J_Substep(const real_t& t);
   };
 
 } // namespace ntt
