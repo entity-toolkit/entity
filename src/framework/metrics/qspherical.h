@@ -202,7 +202,22 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      * @param x coordinate array in Cartesian physical units (size of the array is D).
      */
-    Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const {}
+    Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("x_Code2Cart not implemented for 1D");
+      } else if constexpr (D == Dimension::TWO_D) {
+        coord_t<D> x_sph;
+        x_Code2Sph(xi, x_sph);
+        x[0] = x_sph[0] * std::cos(x_sph[1]);
+        x[1] = x_sph[0] * std::sin(x_sph[1]);
+      } else if constexpr (D == Dimension::THREE_D) {
+        coord_t<D> x_sph;
+        x_Code2Sph(xi, x_sph);
+        x[0] = x_sph[0] * std::sin(x_sph[1]) * std::cos(x_sph[2]);
+        x[1] = x_sph[0] * std::sin(x_sph[1]) * std::sin(x_sph[2]);
+        x[2] = x_sph[0] * std::cos(x_sph[1]);
+      }
+    }
     /**
      * Coordinate conversion from Cartesian physical units to code units.
      *
@@ -210,7 +225,22 @@ namespace ntt {
      * physical units (size of the array is D).
      * @param xi coordinate array in code units (size of the array is D).
      */
-    Inline void x_Cart2Code(const coord_t<D>&, coord_t<D>&) const {}
+    Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("x_Code2Cart not implemented for 1D");
+      } else if constexpr (D == Dimension::TWO_D) {
+        coord_t<D> x_sph;
+        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]);
+        x_sph[1] = std::atan2(x[1], x[0]);
+        x_Sph2Code(x_sph, xi);
+      } else if constexpr (D == Dimension::THREE_D) {
+        coord_t<D> x_sph;
+        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+        x_sph[1] = std::atan2(x[1], x[0]);
+        x_sph[2] = std::acos(x[2] / x_sph[0]);
+        x_Sph2Code(x_sph, xi);
+      }
+    }
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
@@ -218,20 +248,20 @@ namespace ntt {
      * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr(D == Dimension::TWO_D) {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("x_Sph2Code not implemented for 1D");
+      } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
         x[0] = r0 + std::exp(chi);
         x[1] = eta2theta(eta);
-      } else if constexpr(D == Dimension::THREE_D) {
+      } else if constexpr (D == Dimension::THREE_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
         real_t phi {xi[2] * dphi + phi_min};
         x[0] = r0 + std::exp(chi);
         x[1] = eta2theta(eta);
         x[2] = phi;
-      } else {
-        NTTError("x_Code2Sph not implemented for 1D");
       }
     }
     /**
@@ -241,7 +271,9 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("x_Sph2Code not implemented for 1D");
+      } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {std::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
         xi[0] = (chi - chi_min) / dchi;
@@ -253,8 +285,6 @@ namespace ntt {
         xi[0] = (chi - chi_min) / dchi;
         xi[1] = (eta - eta_min) / deta;
         xi[2] = (phi - phi_min) / dphi;
-      } else {
-        NTTError("x_Sph2Code not implemented for 1D");
       }
     }
   };
