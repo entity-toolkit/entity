@@ -117,10 +117,12 @@ demo:
 # # # # # File collection # # # # # # # # # # #
 #
 # Src files
+simtype := @SIMTYPE@
+simtype := $(shell echo $(simtype) | tr A-Z a-z)
 SRCS := $(wildcard ${SRC_DIR}/*.cpp ${SRC_DIR}/*.c)
 SRCS := $(SRCS) ${SRC_DIR}/${TEMP_DIR}/problem_generator.cpp
 SRCS := $(SRCS) $(shell find ${SRC_DIR}/framework -name "*.cpp" -o -name "*.c")
-SRCS := $(SRCS) $(shell find ${SRC_DIR}/@SIMTYPE@ -name "*.cpp" -o -name "*.c")
+SRCS := $(SRCS) $(shell find ${SRC_DIR}/${simtype} -name "*.cpp" -o -name "*.c")
 SRCS := $(filter-out ${SRC_DIR}/main.cpp, $(SRCS))
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
