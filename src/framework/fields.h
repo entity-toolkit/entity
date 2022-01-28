@@ -32,7 +32,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
-  #ifdef GRPIC_SIMTYPE
+  // #ifdef GRPIC_SIMTYPE
 
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
@@ -53,7 +53,7 @@ namespace ntt {
      */
     RealFieldND<D, 3> cur0;
 
-#endif
+// #endif
 
     /**
      * Constructor for the fields container. Also sets the active cell sizes and ranges.
