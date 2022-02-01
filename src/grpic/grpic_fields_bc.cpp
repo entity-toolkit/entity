@@ -87,7 +87,7 @@ namespace ntt {
       });
 #else
     (void)(index_t {});
-    NTTError("2d boundary condition for metric not implemented");
+    NTTError("2d boundary condition for Cartesian Kerr-Schild metric not implemented");
 #endif
   }
 
