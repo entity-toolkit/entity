@@ -46,6 +46,55 @@ namespace ntt {
      * Process the simulation (calling initialize, verify, mainloop, etc).
      */
     void process();
+
+     /**
+     * Advance B-field using Faraday's law.
+     *
+     * @param t time in physical units.
+     * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
+     * @param s switches whether it applies on em0 or em
+     */
+    void faradaySubstep(const real_t& t, const real_t& f, const short& s);
+    /**
+     * Advance D-field using Ampere's law.
+     *
+     * @param t time in physical units.
+     * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
+     * @param s switches whether it applies on em0 or em
+     */
+    void ampereSubstep(const real_t& t, const real_t& f, const short& s);
+     /**
+     * Compute E field.
+     *
+     * @param t time in physical units.
+     */
+    void Compute_E_Substep(const real_t& t, const short& s);
+     /**
+     * Compute H field.
+     *
+     * @param t time in physical units.
+     * @param s switches whether it applies on em0 or em
+     */
+    void Compute_H_Substep(const real_t& t, const short& s);
+    /**
+     * Time average EM fields.
+     *
+     * @param t time in physical units.
+     * @param s switches whether it applies on em0 or em
+     */
+    void Average_EM_Substep(const real_t& t);
+     /**
+     * Time average currents.
+     *
+     * @param t time in physical units.
+     */
+    void Average_J_Substep(const real_t& t);
+     /**
+     * Apply boundary conditions for fields.
+     *
+     * @param t time in physical units.
+     */
+    void fieldBoundaryConditions(const real_t& t);
   };
 
 } // namespace ntt

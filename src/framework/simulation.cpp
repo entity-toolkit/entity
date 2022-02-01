@@ -56,6 +56,10 @@ namespace ntt {
     PLOGI << "   dimension: " << static_cast<short>(D) << "D";
     PLOGI << "   metric: " << (m_mblock.metric.label);
 
+#if SIMTYPE == GRPIC_SIMTYPE
+    PLOGI << "   Spin parameter: " << (m_sim_params.metric_parameters()[3]);
+#endif
+
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.boundaries()) {
       bc += stringifyBoundaryCondition(b) + " x ";
