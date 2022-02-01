@@ -1,5 +1,3 @@
-#ifdef GRPIC_SIMTYPE
-
 #  include "global.h"
 #  include "grpic.h"
 #  include "grpic_faraday.hpp"
@@ -29,5 +27,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-#endif
