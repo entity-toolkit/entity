@@ -1,10 +1,8 @@
-#if SIMTYPE == GRPIC_SIMTYPE
+#include "global.h"
+#include "grpic.h"
+#include "grpic_ampere.hpp"
 
-#  include "global.h"
-#  include "grpic.h"
-#  include "grpic_ampere.hpp"
-
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
 
@@ -41,6 +39,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-
-#endif

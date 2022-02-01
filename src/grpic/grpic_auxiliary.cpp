@@ -1,10 +1,8 @@
-#ifdef GRPIC_SIMTYPE
+#include "global.h"
+#include "grpic.h"
+#include "grpic_auxiliary.hpp"
 
-#  include "global.h"
-#  include "grpic.h"
-#  include "grpic_auxiliary.hpp"
-
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
 
@@ -57,5 +55,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-#endif

@@ -152,7 +152,5 @@ namespace ntt {
    }
 } // namespace ntt
 
-#if SIMTYPE == GRPIC_SIMTYPE
 template class ntt::GRPIC<ntt::Dimension::TWO_D>;
 template class ntt::GRPIC<ntt::Dimension::THREE_D>;
-#endif
