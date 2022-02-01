@@ -40,11 +40,11 @@ namespace ntt {
       m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
     }
 
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
     m_metric = "minkowski";
-#elif METRIC == SPHERICAL_METRIC
+#elif (METRIC == SPHERICAL_METRIC)
     m_metric = "spherical";
-#elif METRIC == QSPHERICAL_METRIC
+#elif (METRIC == QSPHERICAL_METRIC)
     m_metric = "qspherical";
 #else
     NTTError("unrecognized metric");

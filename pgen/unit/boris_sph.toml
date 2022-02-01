@@ -1,0 +1,54 @@
+[simulation]
+title           = "Boris polar example"
+runtime         = 0.1
+
+[domain]
+qsph_r0         = -100.0
+qsph_h          = 0.1
+sph_rabsorb     = 18.0
+resolution      = [64, 64]
+extent          = [1.0, 20.0]
+boundaries      = ["USER", "USER"]
+
+[algorithm]
+CFL             = 0.95
+correction      = 1.0
+fieldsolver_ON  = false
+
+[units]
+ppc0            = 0.1
+larmor0         = 0.05
+skindepth0      = 0.01
+
+[particles]
+n_species       = 4
+
+[species_1]
+label           = "electron"
+mass            = 1.0
+charge          = -1.0
+maxnpart        = 1e2
+pusher          = "Boris"
+
+[species_2]
+label           = "positron"
+mass            = 1.0
+charge          = 1.0
+maxnpart        = 1e2
+pusher          = "Boris"
+
+[species_3]
+label           = "ion"
+mass            = 2.0
+charge          = 1.0
+maxnpart        = 1e2
+pusher          = "Boris"
+
+[species_4]
+label           = "photon"
+mass            = 0.0
+charge          = 0.0
+maxnpart        = 1e2
+pusher          = "Photon"
+
+[problem]
