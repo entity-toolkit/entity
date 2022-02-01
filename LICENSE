@@ -1,8 +1,13 @@
 BSD 3-Clause License
 
-Copyright (c) 2021, Princeton Plasma Physics Lab,
-Hayk Hakobyan, and Alexander Philippov
+Copyright (c) 2021, Princeton University (PU), and
+Princeton Plasma Physics Lab (PPPL).
 All rights reserved.
+
+Contributors (alphabetic order):
+Benjamin Crinquand (GRPIC),
+Hayk Hakobyan (framework, PIC),
+Sasha Philippov
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
