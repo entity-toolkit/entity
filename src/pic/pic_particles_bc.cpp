@@ -14,7 +14,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::ONE_D>::particleBoundaryConditions(const real_t&) {
     using index_t = const std::size_t;
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
         Kokkos::parallel_for(
@@ -42,7 +42,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::TWO_D>::particleBoundaryConditions(const real_t&) {
     using index_t = const std::size_t;
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
         Kokkos::parallel_for(
@@ -66,7 +66,21 @@ namespace ntt {
     (void)(index_t {});
     for (auto& species : m_mblock.particles) {
       (void)(species);
-      NTTError("non-minkowski particle boundary condition not implemented");
+      Kokkos::parallel_for(
+        "prtl_bc", species.loopParticles(), Lambda(index_t p) {
+          // if (species.i1(p) < 0) {
+          //   species.i1(p) += m_mblock.Ni();
+          // } else if (species.i1(p) >= m_mblock.Ni()) {
+          //   species.i1(p) -= m_mblock.Ni();
+          // }
+          // if (species.i2(p) < 0) {
+          //   species.i2(p) += m_mblock.Nj();
+          // } else if (species.i2(p) >= m_mblock.Nj()) {
+          //   species.i2(p) -= m_mblock.Nj();
+          // }
+        });
+
+      // NTTError("non-minkowski particle boundary condition not implemented");
     }
 #else
     (void)(index_t {});

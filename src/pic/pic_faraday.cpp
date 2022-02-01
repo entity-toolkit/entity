@@ -1,7 +1,7 @@
 #include "global.h"
 #include "pic.h"
 
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
 #  include "pic_faraday_minkowski.hpp"
 #else
 #  include "pic_faraday_curvilinear.hpp"
@@ -13,7 +13,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::ONE_D>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
     Kokkos::parallel_for(
@@ -28,7 +28,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::TWO_D>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
     Kokkos::parallel_for(
@@ -41,7 +41,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::THREE_D>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
-#if METRIC == MINKOWSKI_METRIC
+#if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
     Kokkos::parallel_for(

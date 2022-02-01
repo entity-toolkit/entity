@@ -116,31 +116,45 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       for (int i{0}; i < nx1; ++i) {
         auto i_ {(real_t)(i - ntt::N_GHOSTS)};
         auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+        real_t ex1_cnt, ex2_cnt, ex3_cnt;
+        real_t bx1_cnt, bx2_cnt, bx3_cnt;
 
-        auto ex1_cnt {m_sim.mblock().em(i, j, ntt::em::ex1)};
-        auto ex2_cnt {m_sim.mblock().em(i, j, ntt::em::ex2)};
-        auto ex3_cnt {m_sim.mblock().em(i, j, ntt::em::ex3)};
-        auto bx1_cnt {m_sim.mblock().em(i, j, ntt::em::bx1)};
-        auto bx2_cnt {m_sim.mblock().em(i, j, ntt::em::bx2)};
-        auto bx3_cnt {m_sim.mblock().em(i, j, ntt::em::bx3)};
+        if ((i < ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (i >= nx2 - ntt::N_GHOSTS) || (j >= nx1 - ntt::N_GHOSTS)) {
+          ex1_cnt = m_sim.mblock().em(i, j, ntt::em::ex1);
+          ex2_cnt = m_sim.mblock().em(i, j, ntt::em::ex2);
+          ex3_cnt = m_sim.mblock().em(i, j, ntt::em::ex3);
+          bx1_cnt = m_sim.mblock().em(i, j, ntt::em::bx1);
+          bx2_cnt = m_sim.mblock().em(i, j, ntt::em::bx2);
+          bx3_cnt = m_sim.mblock().em(i, j, ntt::em::bx3);
+        } else {
+          ex1_cnt = 0.5 * (m_sim.mblock().em(i, j, ntt::em::ex1) + m_sim.mblock().em(i, j + 1, ntt::em::ex1));
+          ex2_cnt = 0.5 * (m_sim.mblock().em(i, j, ntt::em::ex2) + m_sim.mblock().em(i + 1, j, ntt::em::ex2));
+          ex3_cnt = 0.25
+                    * (m_sim.mblock().em(i, j, ntt::em::ex3) + m_sim.mblock().em(i + 1, j, ntt::em::ex3)
+                       + m_sim.mblock().em(i, j + 1, ntt::em::ex3) + m_sim.mblock().em(i + 1, j + 1, ntt::em::ex3));
+          bx1_cnt = 0.5 * (m_sim.mblock().em(i, j, ntt::em::bx1) + m_sim.mblock().em(i + 1, j, ntt::em::bx1));
+          bx2_cnt = 0.5 * (m_sim.mblock().em(i, j, ntt::em::bx2) + m_sim.mblock().em(i, j + 1, ntt::em::bx2));
+          bx3_cnt = m_sim.mblock().em(i, j, ntt::em::bx3);
+        }
 
-        ntt::vec_t<ntt::Dimension::THREE_D> ex1_hat, ex2_hat, ex3_hat;
-        ntt::vec_t<ntt::Dimension::THREE_D> bx1_hat, bx2_hat, bx3_hat;
-        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_}, {ex1_cnt, ZERO, ZERO}, ex1_hat);
-        m_sim.mblock().metric.v_Cntrv2Hat({i_, j_ + HALF}, {ZERO, ex2_cnt, ZERO}, ex2_hat);
-        m_sim.mblock().metric.v_Cntrv2Hat({i_, j_}, {ZERO, ZERO, ex3_cnt}, ex3_hat);
+        ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
 
-        m_sim.mblock().metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_cnt, ZERO, ZERO}, bx1_hat);
-        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_}, {ZERO, bx2_cnt, ZERO}, bx2_hat);
-        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_cnt}, bx3_hat);
+        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
+        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
 
         // convert from contravariant to hatted
-        m_ex1.set(i, j, ex1_hat[0]);
-        m_ex2.set(i, j, ex2_hat[1]);
-        m_ex3.set(i, j, ex3_hat[2]);
-        m_bx1.set(i, j, bx1_hat[0]);
-        m_bx2.set(i, j, bx2_hat[1]);
-        m_bx3.set(i, j, bx3_hat[2]);
+        m_ex1.set(i, j, e_hat[0]);
+        m_ex2.set(i, j, e_hat[1]);
+        m_ex3.set(i, j, e_hat[2]);
+        m_bx1.set(i, j, b_hat[0]);
+        m_bx2.set(i, j, b_hat[1]);
+        m_bx3.set(i, j, b_hat[2]);
+        // m_ex1.set(i, j, ex1_cnt);
+        // m_ex2.set(i, j, ex2_cnt);
+        // m_ex3.set(i, j, ex3_cnt);
+        // m_bx1.set(i, j, bx1_cnt);
+        // m_bx2.set(i, j, bx2_cnt);
+        // m_bx3.set(i, j, bx3_cnt);
       }
     }
     int i {0};

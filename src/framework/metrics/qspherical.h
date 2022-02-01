@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 namespace ntt {
   /**
@@ -85,17 +86,26 @@ namespace ntt {
      * @brief Convert spherical theta to quasi-spherical eta.
      *
      */
-    Inline auto theta2eta(const real_t&) const -> real_t {
-      // a = 2 h
-      // y = theta / pi
-      // b = -54 a^2 + 108 a^2 y
-      // R = (b + sqrt(4(6a-3a^2)^3 + (b)^2))^(1/3)
-      real_t a {static_cast<real_t>(2.0) * h};
-      return a;
-      // real_t y {theta * constant::INV_PI};
-      // real_t R {std::pow(
-      //   b + static_cast<real_t>(4.0) * CUBE(static_cast<real_t>(6.0) * a - static_cast<real_t>(3.0) * SQR(a)) +
-      //   SQR(b), static_cast<real_t>(1.0 / 3.0))};
+    Inline auto theta2eta(const real_t& theta) const -> real_t {
+      // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y - 108 h y^2))])^(1/3)
+      double R {std::pow(
+        -9.0 * SQR(h) * (constant::PI - 2.0 * theta)
+                            + constant::SQRT3
+                                * std::sqrt(-(CUBE(h)
+                                              * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
+                                                 + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
+        static_cast<real_t>(1.0 / 3.0))};
+      // eta = Pi^(2/3)(6 Pi^(1/3) + 2 2^(1/3)(h-1)(3Pi)^(2/3)/R + 2^(2/3) 3^(1/3) R / h)/12
+      constexpr double PI_TO_TWO_THIRD {2.14502939711102560008};
+      constexpr double PI_TO_ONE_THIRD {1.46459188756152326302};
+      constexpr double TWO_TO_TWO_THIRD {1.58740105196819947475};
+      constexpr double THREE_TO_ONE_THIRD {1.442249570307408382321};
+      constexpr double TWO_TO_ONE_THIRD {1.2599210498948731647672};
+      constexpr double THREE_PI_TO_TWO_THIRD {4.46184094890142313715794};
+      return static_cast<real_t>(PI_TO_TWO_THIRD
+             * (6.0 * PI_TO_ONE_THIRD + 2.0 * TWO_TO_ONE_THIRD * (h - ONE) * THREE_PI_TO_TWO_THIRD / R
+                + TWO_TO_TWO_THIRD * THREE_TO_ONE_THIRD * R / h)
+             / 12.0);
     }
 
     /**
@@ -208,8 +218,8 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::cos(x_sph[1]);
-        x[1] = x_sph[0] * std::sin(x_sph[1]);
+        x[0] = x_sph[0] * std::sin(x_sph[1]);
+        x[1] = x_sph[0] * std::cos(x_sph[1]);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
@@ -227,7 +237,7 @@ namespace ntt {
      */
     Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dimension::ONE_D) {
-        NTTError("x_Code2Cart not implemented for 1D");
+        NTTError("x_Cart2Code not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
         x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]);
@@ -249,7 +259,7 @@ namespace ntt {
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dimension::ONE_D) {
-        NTTError("x_Sph2Code not implemented for 1D");
+        NTTError("x_Code2Sph not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
