@@ -112,6 +112,16 @@ namespace ntt {
      */
     void set_timestep(const real_t& timestep) { m_timestep = timestep; }
     void set_min_cell_size(const real_t& min_cell_size) { m_min_cell_size = min_cell_size; }
+
+    /**
+     * @brief Swaps em and em0 fields in a meshblock instance.
+     */
+    friend void swap_em_cur(Meshblock<D, S>& mblock)
+    {
+      using std::swap;
+      swap(mblock.em, mblock.em0);
+      swap(mblock.cur, mblock.cur0);
+    }
   };
 
 } // namespace ntt
