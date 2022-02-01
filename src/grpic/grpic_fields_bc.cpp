@@ -1,11 +1,9 @@
-#ifdef GRPIC_SIMTYPE
+#include "global.h"
+#include "grpic.h"
 
-#  include "global.h"
-#  include "grpic.h"
+#include <plog/Log.h>
 
-#  include <plog/Log.h>
-
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
   /**
@@ -101,5 +99,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-#endif
