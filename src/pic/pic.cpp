@@ -29,7 +29,7 @@ namespace ntt {
     PLOGD << "Simulation details printed.";
 
     PLOGD << "Simulation mainloop started >>>";
-    mainloop();
+    this->mainloop();
     PLOGD << "<<< simulation mainloop finished.";
     this->finalize();
     PLOGD << "Simulation finalized.";

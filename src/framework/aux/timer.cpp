@@ -102,10 +102,12 @@ namespace ntt {
   void TimerCollection::stop(const int& i) { m_timers[i - 1].stop(); }
 
   void TimerCollection::printAll(std::ostream& os, TimeUnit const& u) const {
+    os << "==============================" << std::endl;
     for (auto& t : m_timers) {
       t.printElapsed(os, u);
       os << std::endl;
     }
+    os << "------------------------------" << std::endl;
   }
 
   void TimerCollection::printAll(TimeUnit const& u) const { printAll(std::cout, u); }
