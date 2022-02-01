@@ -17,17 +17,40 @@ namespace ntt {
   class Fields {
   public:
     /**
-     * EM fields stored as Kokkos Views of dimension D * 6.
+     * EM fields at current time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
      * @note Address : em(i, j, k, em::***).
      */
     RealFieldND<D, 6> em;
-    /**
-     * Current fields stored as Kokkos Views of dimension D * 6.
+     /**
+     * Current fields at current time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
      * @note Address : cur(i, j, k, cur::***).
      */
     RealFieldND<D, 3> cur;
+
+  // * * * * * * * * * * * * * * * * * * * *
+  // GRPIC-specific
+  // * * * * * * * * * * * * * * * * * * * *
+
+    /**
+     * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Address : em0(i, j, k, em::***).
+     */
+    RealFieldND<D, 6> em0;
+    /**
+     * Auxiliary E and H fields stored as Kokkos Views of dimension D * 6.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Address : aux(i, j, k, em::***).
+     */
+    RealFieldND<D, 6> aux;
+     /**
+     * Current fields at previous time step stored as Kokkos Views of dimension D * 6.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Address : cur0(i, j, k, cur::***).
+     */
+    RealFieldND<D, 3> cur0;
 
     /**
      * Constructor for the fields container. Also sets the active cell sizes and ranges.
