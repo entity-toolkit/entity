@@ -1,10 +1,17 @@
 #include "nttiny/vis.h"
 #include "nttiny/api.h"
 
+#if (SIMTYPE == PIC_SIMTYPE)
+#  include "pic.h"
+#  define SIMULATION_CONTAINER PIC
+#elif (SIMTYPE == GRPIC_SIMTYPE)
+#  include "grpic.h"
+#  define SIMULATION_CONTAINER GRPIC
+#endif
+
 #include "global.h"
 #include "cargs.h"
 #include "input.h"
-#include "pic.h"
 
 #include <toml/toml.hpp>
 
@@ -139,9 +146,17 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
         ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
 
+#if (SIMTYPE == PIC_SIMTYPE)
         m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
         m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
-
+#elif (SIMTYPE == GRPIC_SIMTYPE)
+        e_hat[0] = ex1_cnt;
+        e_hat[1] = ex2_cnt;
+        e_hat[2] = ex3_cnt;
+        b_hat[0] = bx1_cnt;
+        b_hat[1] = bx2_cnt;
+        b_hat[2] = bx3_cnt;
+#endif
         // convert from contravariant to hatted
         m_ex1.set(i, j, e_hat[0]);
         m_ex2.set(i, j, e_hat[1]);
@@ -199,7 +214,7 @@ auto main(int argc, char* argv[]) -> int {
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
 
-    ntt::PIC<ntt::Dimension::TWO_D> sim(inputdata);
+    ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D> sim(inputdata);
     sim.initialize();
     sim.initializeSetup();
     sim.verify();
