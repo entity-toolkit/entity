@@ -219,17 +219,17 @@ namespace ntt {
     real_t inv_sqrt_detH_iPjP {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
 
     // D contra interpolation at half cell
-    real_t Dth_half {HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i + 1, j , em::ex2))};
-    real_t Dph_half {HALF * (m_mblock.em(i, j , em::ex3) + m_mblock.em(i + 1, j , em::ex3))};
+    real_t Dth_half {HALF * (m_mblock.em0(i, j, em::ex2) + m_mblock.em0(i + 1, j , em::ex2))};
+    real_t Dph_half {HALF * (m_mblock.em0(i, j , em::ex3) + m_mblock.em0(i + 1, j , em::ex3))};
 
     // B contra interpolation at half cell
-    real_t Br_half {HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i + 1, j, em::bx1))};
-    real_t Bph_half {HALF * (m_mblock.em(i - 1, j, em::bx3) + m_mblock.em(i, j , em::bx3))};
+    real_t Br_half {HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em0(i + 1, j, em::bx1))};
+    real_t Bph_half {HALF * (m_mblock.em0(i - 1, j, em::bx3) + m_mblock.em0(i, j , em::bx3))};
 
     // Contravariant B to covariant B
-    real_t Br_cov {hrr_ijP * m_mblock.em(i, j, em::bx1) + hrph_ijP * Bph_half};
-    real_t Bth_cov {hthth_iPj * m_mblock.em(i, j, em::bx2)};
-    real_t Bph_cov {hphph_iPjP * m_mblock.em(i, j, em::bx3) + hrph_iPjP * Br_half};
+    real_t Br_cov {hrr_ijP * m_mblock.em0(i, j, em::bx1) + hrph_ijP * Bph_half};
+    real_t Bth_cov {hthth_iPj * m_mblock.em0(i, j, em::bx2)};
+    real_t Bph_cov {hphph_iPjP * m_mblock.em0(i, j, em::bx3) + hrph_iPjP * Br_half};
 
     // Compute H_i
     m_mblock.aux(i, j, em::bx1) = alpha_ijP * Br_cov;
@@ -284,7 +284,7 @@ namespace ntt {
    */
   template <Dimension D>
   class Average_J {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    using index_t = typename RealFieldND<D, 3>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
