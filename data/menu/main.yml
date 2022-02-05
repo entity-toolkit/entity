@@ -16,6 +16,8 @@ main:
       #   ref: "/algorithms/deposit"
       - name: Full PIC
         ref: "/how_it_works/pic"
+      - name: Cubed sphere
+        ref: "/how_it_works/cubed_sphere"
 
   - name: 'For developers'
     # ref: "/dev"
