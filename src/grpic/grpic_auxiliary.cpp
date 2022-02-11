@@ -36,11 +36,13 @@ namespace ntt {
 
   template <>
   void GRPIC<Dimension::THREE_D>::Compute_E_Substep(const real_t&, const short (&s)) {
+    (void)(s);
     NTTError("auxiliary for this metric not defined");
   }
 
   template <>
   void GRPIC<Dimension::THREE_D>::Compute_H_Substep(const real_t&, const short (&s)) {
+    (void)(s);
     NTTError("auxiliary for this metric not defined");
   }
 

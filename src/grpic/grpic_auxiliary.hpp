@@ -62,13 +62,13 @@ namespace ntt {
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * Dr_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * Dth_cov - inv_sqrt_detH_ijP * beta_ijP *  Bph_half;
     m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;
-   };
+   }
 
   template <>
   Inline void
   Compute_E0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
     // 3d grpic not implemented
-  };
+  }
 
   template <Dimension D>
   class Compute_E {
@@ -118,13 +118,13 @@ namespace ntt {
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * Dr_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * Dth_cov - inv_sqrt_detH_ijP * beta_ijP *  Bph_half;
     m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;
-   };
+   }
 
   template <>
   Inline void
   Compute_E<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
     // 3d grpic not implemented
-  };
+  }
 
    /**
    * Method for computing H. 
@@ -261,8 +261,6 @@ namespace ntt {
 
   template <>
   Inline void Average_EM<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
     m_mblock.em0(i, j, em::bx1) = HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em(i, j, em::bx1));
     m_mblock.em0(i, j, em::bx2) = HALF * (m_mblock.em0(i, j, em::bx2) + m_mblock.em(i, j, em::bx2));
@@ -296,8 +294,6 @@ namespace ntt {
 
   template <>
   Inline void Average_J<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
     m_mblock.cur(i, j, cur::jx1) = HALF * (m_mblock.cur0(i, j, cur::jx1) + m_mblock.cur(i, j, cur::jx1));
     m_mblock.cur(i, j, cur::jx2) = HALF * (m_mblock.cur0(i, j, cur::jx2) + m_mblock.cur(i, j, cur::jx2));
