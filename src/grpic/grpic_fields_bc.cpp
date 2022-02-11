@@ -71,6 +71,9 @@ namespace ntt {
         mblock.em(i, j, em::ex1) = (ONE - sigma_r1) * mblock.em(i, j, em::ex1);
         mblock.em(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em(i, j, em::bx2);
         mblock.em(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em(i, j, em::bx3);
+        mblock.em0(i, j, em::ex1) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex1);
+        mblock.em0(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx2);
+        mblock.em0(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx3);
 
         real_t br_target_hat {pGen.userTargetField_br_hat(mblock, {i_, j_ + HALF})};
         real_t bx1_source_cntr {mblock.em(i, j, em::bx1)};
@@ -82,6 +85,9 @@ namespace ntt {
         mblock.em(i, j, em::bx1) = br_interm_cntr[0];
         mblock.em(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em(i, j, em::ex2);
         mblock.em(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em(i, j, em::ex3);
+        mblock.em0(i, j, em::bx1) = br_interm_cntr[0];
+        mblock.em0(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex2);
+        mblock.em0(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex3);
       });
 #else
     (void)(index_t {});
