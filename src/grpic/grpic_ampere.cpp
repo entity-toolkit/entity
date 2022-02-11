@@ -35,6 +35,7 @@ namespace ntt {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
     (void)(fraction);
     (void)(coeff);
+    (void)(s);
     NTTError("ampere for this metric not defined");
   }
 
