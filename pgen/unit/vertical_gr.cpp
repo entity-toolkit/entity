@@ -4,6 +4,7 @@
 #include "meshblock.h"
 
 #include "problem_generator.hpp"
+#include "init_fields.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -11,7 +12,9 @@
 namespace ntt {
 
   template <Dimension D, SimulationType S>
-  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams&) {}
+  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams&) {
+    epsilon = static_cast<real_t>(1e-3);
+  }
 
   // * * * * * * * * * * * * * * * * * * * * * * * *
   // Field initializers
@@ -23,25 +26,34 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::GRPIC>& mblock) {
-    using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
-    Kokkos::deep_copy(mblock.em, 0.0);
     Kokkos::parallel_for(
-      "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-        real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-
-        coord_t<Dimension::TWO_D> rth_;
-        mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
-
-        // Vertical field
-        real_t br_hat {std::cos(rth_[1])};
-        real_t bth_hat {std::sin(rth_[1])};
-        vec_t<Dimension::THREE_D> b_cntr;
-        mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, bth_hat, ZERO}, b_cntr);
-        mblock.em(i, j, em::bx1) = b_cntr[0];        
-        mblock.em(i, j, em::bx2) = b_cntr[1];
-      });
+      "userInitFlds", mblock.loopActiveCells(), 
+      init_fields_potential<Dimension::TWO_D>(mblock, epsilon, Aphi, Ar, At)
+      );
   }
+
+  // template <>
+  // void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userInitFields(
+  //   const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::GRPIC>& mblock) {
+  //   using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+  //   Kokkos::deep_copy(mblock.em, 0.0);
+  //   Kokkos::parallel_for(
+  //     "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+  //       real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+  //       real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+
+  //       coord_t<Dimension::TWO_D> rth_;
+  //       mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
+
+  //       // Vertical field
+  //       real_t br_hat {std::cos(rth_[1])};
+  //       real_t bth_hat {std::sin(rth_[1])};
+  //       vec_t<Dimension::THREE_D> b_cntr;
+  //       mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, bth_hat, ZERO}, b_cntr);
+  //       mblock.em(i, j, em::bx1) = b_cntr[0];        
+  //       mblock.em(i, j, em::bx2) = b_cntr[1];
+  //     });
+  // }
 
   template <>
   void ProblemGenerator<Dimension::THREE_D, SimulationType::GRPIC>::userInitFields(

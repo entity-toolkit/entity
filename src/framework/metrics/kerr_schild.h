@@ -34,6 +34,8 @@ namespace ntt {
         a(params[3]) {}
     ~Metric() = default;
 
+    [[nodiscard]] auto spin() const -> const real_t& { return a; }
+
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
      * @todo Implement real CFL condition; this is approximate
@@ -90,7 +92,12 @@ namespace ntt {
       real_t As {(r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth};
       return As * sth * sth / (r * r + a * a * cth * cth);
     }
-
+    /**
+     * Compute metric component 13.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns h_13 (covariant, lower index) metric component.
+     */
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
@@ -114,7 +121,12 @@ namespace ntt {
       real_t alpha {ONE / std::sqrt(ONE + z)};
       return (r * r + a * a * cth * cth)* sth / alpha;
     }
-
+    /**
+     * Compute lapse function.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns alpha.
+     */
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
@@ -123,7 +135,12 @@ namespace ntt {
       real_t z {TWO * r / (r * r + a * a * cth * cth)};
       return ONE / std::sqrt(ONE + z);
     }
-
+    /**
+     * Compute r component of shift vector.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns beta^r (contravariant).
+     */
     Inline auto betar(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
@@ -132,6 +149,47 @@ namespace ntt {
       real_t z {TWO * r / (r * r + a * a * cth * cth)};
       return z / (ONE + z);
     }
+    /**
+     * Compute inverse metric component 11 from h_ij.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns h^11 (contravariant, upper index) metric component.
+     */
+    Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
+      real_t h_33_cov {h_33(x)};
+      real_t h_13_cov {h_13(x)};
+      return h_33_cov / (h_11(x) * h_33_cov - h_13_cov * h_13_cov);
+    }  
+    /**
+     * Compute inverse metric component 22 from h_ij.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns h^22 (contravariant, upper index) metric component.
+     */
+    Inline auto h_22_inv(const coord_t<D>& x) const -> real_t {
+      return ONE / h_22(x);
+    }  
+    /**
+     * Compute inverse metric component 33 from h_ij.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns h^33 (contravariant, upper index) metric component.
+     */
+    Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
+      real_t h_11_cov {h_11(x)};
+      real_t h_13_cov {h_13(x)};
+      return h_11_cov / (h_11_cov * h_33(x) - h_13_cov * h_13_cov);
+    }  
+    /**
+     * Compute inverse metric component 13 from h_ij.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns h^13 (contravariant, upper index) metric component.
+     */
+    Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
+      real_t h_13_cov {h_13(x)};
+      return - h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
+    }  
 
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
@@ -173,18 +231,18 @@ namespace ntt {
      * Linear form conversion from hatted to covariant basis.
      *
      * @param xi coordinate array in code units (size of the array is D).
-     * @param omega_hat form in hatted basis (size of the array is 3).
+     * @param v_hat form in hatted basis (size of the array is 3).
      * @param omega form in covariant basis (size of the array is 3).
      */
-    Inline void omega_Hat2Cov(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void v_Hat2Cov(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
     /**
      * Linear form conversion from covariant to hatted basis.
      *
      * @param xi coordinate array in code units (size of the array is D).
      * @param omega vector in covariant basis (size of the array is 3).
-     * @param omega_hat vector in hatted basis (size of the array is 3).
+     * @param v_hat vector in hatted basis (size of the array is 3).
      */
-    Inline void omega_Cov2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void v_Cov2Hat(const coord_t<D>&, const vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
@@ -219,23 +277,23 @@ namespace ntt {
     vi_hat[2] = vi[2] * std::sqrt(h_33(xi)) + vi[0] * (h_13(xi) / std::sqrt(h_33(xi)));
   }
   template <Dimension D>
-  Inline void Metric<D>::omega_Cov2Hat(const coord_t<D>& xi,
-                                        const vec_t<Dimension::THREE_D>& omega,
-                                        vec_t<Dimension::THREE_D>& omega_hat) const {
+  Inline void Metric<D>::v_Cov2Hat(const coord_t<D>& xi,
+                                        const vec_t<Dimension::THREE_D>& vi,
+                                        vec_t<Dimension::THREE_D>& v_hat) const {
     real_t A0 {std::sqrt(h_33(xi) / ( h_11(xi) * h_33(xi) - h_13(xi) * h_13(xi)))};
         
-    omega_hat[0] = omega[0] * A0 - omega[2] * A0 * h_13(xi) / h_33(xi);
-    omega_hat[1] = omega[1] / std::sqrt(h_22(xi));
-    omega_hat[2] = omega[2] / std::sqrt(h_33(xi)) ;
+    v_hat[0] = vi[0] * A0 - vi[2] * A0 * h_13(xi) / h_33(xi);
+    v_hat[1] = vi[1] / std::sqrt(h_22(xi));
+    v_hat[2] = vi[2] / std::sqrt(h_33(xi)) ;
   }
   template <Dimension D>
-  Inline void Metric<D>::omega_Hat2Cov(const coord_t<D>& xi,
-                                        const vec_t<Dimension::THREE_D>& omega_hat,
-                                        vec_t<Dimension::THREE_D>& omega) const {
+  Inline void Metric<D>::v_Hat2Cov(const coord_t<D>& xi,
+                                        const vec_t<Dimension::THREE_D>& v_hat,
+                                        vec_t<Dimension::THREE_D>& vi) const {
         
-    omega[0] = omega_hat[0] / std::sqrt(h_33(xi) / ( h_11(xi) * h_33(xi) - h_13(xi) * h_13(xi))) + omega_hat[2] *  h_13(xi) / std::sqrt(h_33(xi));
-    omega[1] = omega_hat[1] * std::sqrt(h_22(xi));
-    omega[2] = omega_hat[2] * std::sqrt(h_33(xi)) ;
+    vi[0] = v_hat[0] / std::sqrt(h_33(xi) / ( h_11(xi) * h_33(xi) - h_13(xi) * h_13(xi))) + v_hat[2] *  h_13(xi) / std::sqrt(h_33(xi));
+    vi[1] = v_hat[1] * std::sqrt(h_22(xi));
+    vi[2] = v_hat[2] * std::sqrt(h_33(xi)) ;
   }
 
   // * * * * * * * * * * * * * * *
