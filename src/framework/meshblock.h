@@ -114,7 +114,7 @@ namespace ntt {
     void set_min_cell_size(const real_t& min_cell_size) { m_min_cell_size = min_cell_size; }
 
     /**
-     * @brief Swaps em and em0 fields in a meshblock instance.
+     * @brief Swaps em and em0 fields, cur and cur0 currents, in a meshblock instance.
      */
     friend void swap_em_cur(Meshblock<D, S>& mblock)
     {

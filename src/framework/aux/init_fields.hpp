@@ -23,14 +23,18 @@ namespace ntt {
     real_t (*m_aphi)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
     real_t (*m_ar)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
     real_t (*m_at)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
+    // RealFieldND<D, 1> m_bru0;
 
   public:
-    init_fields_potential(const Meshblock<D, SimulationType::GRPIC>& mblock,
+    init_fields_potential(
+    const Meshblock<D, SimulationType::GRPIC>& mblock,
     real_t eps,
     real_t (*aphi)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x),
     real_t (*ar)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x),
-    real_t (*at)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x))
-    : m_mblock(mblock), m_eps(eps), m_aphi(aphi), m_ar(ar), m_at(at) {}
+    real_t (*at)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x)
+    // RealFieldND<D, 1> bru0
+    // ): m_mblock(mblock), m_eps(eps), m_aphi(aphi), m_ar(ar), m_at(at), m_bru0(bru0) {}
+    ): m_mblock(mblock), m_eps(eps), m_aphi(aphi), m_ar(ar), m_at(at) {}
 
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
@@ -93,9 +97,16 @@ namespace ntt {
     m_mblock.em0(i, j, em::ex1) = Dru;
     m_mblock.em0(i, j, em::ex2) = Dthu;
     m_mblock.em0(i, j, em::ex3) = Dphu;
-    m_mblock.aux(i, j, em::ex1) = Erd;
-    m_mblock.aux(i, j, em::ex2) = Ethd;
-    m_mblock.aux(i, j, em::ex3) = ZERO;
+  
+    // m_bru0(i, j, 0) = Bru;
+
+  // Hack that works? To be checked. Otherwise, evolve for half a time step in simulation.initialize to get em.
+    m_mblock.em(i, j, em::bx1) = Bru;
+    m_mblock.em(i, j, em::bx2) = Bthu;
+    m_mblock.em(i, j, em::bx3) = Bphu;
+    m_mblock.em(i, j, em::ex1) = Dru;
+    m_mblock.em(i, j, em::ex2) = Dthu;
+    m_mblock.em(i, j, em::ex3) = Dphu;
   }
 
   template <>

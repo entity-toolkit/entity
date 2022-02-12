@@ -15,6 +15,7 @@ namespace ntt {
   struct ProblemGenerator {
     ProblemGenerator(const SimulationParams& sim_params);
     real_t epsilon;
+    // RealFieldND<D, 1> Bru0;
 
     void userInitFields(const SimulationParams&, Meshblock<D, S>&);
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
@@ -40,9 +41,8 @@ namespace ntt {
     Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> rth_;
       rth_[0] = ZERO;
-      real_t r_min {mblock.metric.x1_min};
       mblock.metric.x_Code2Sph(x, rth_);
-      return ONE * r_min * r_min / (rth_[0] * rth_[0]);
+      return ONE * std::cos(rth_[1]); // Vertical field at infinity
     }
 
   };

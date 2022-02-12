@@ -7,14 +7,14 @@ namespace ntt {
 
   template <Dimension D>
   void GRPIC<D>::mainloop() {
-    // unsigned long timax {static_cast<unsigned long>(this->m_sim_params.total_runtime() / this->m_mblock.timestep())};
-    // real_t time {0.0};
-    // fieldBoundaryConditions(ZERO);
-    // for (unsigned long ti {0}; ti < timax; ++ti) {
-    //   PLOGD << "t = " << time;
-    //   step_forward(time);
-    //   time += this->m_mblock.timestep();
-    // }
+    unsigned long timax {static_cast<unsigned long>(this->m_sim_params.total_runtime() / this->m_mblock.timestep())};
+    real_t time {0.0};
+    fieldBoundaryConditions(ZERO);
+    for (unsigned long ti {0}; ti < timax; ++ti) {
+      PLOGD << "t = " << time;
+      step_forward(time);
+      time += this->m_mblock.timestep();
+    }
   }
 
   template <Dimension D>
