@@ -70,7 +70,7 @@ namespace ntt {
         auto dz {(m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2])};
         if (dx != dz) { NTTError("dx != dz in minkowski"); }
       }
-    } else if ((m_metric == "spherical") || (m_metric == "qspherical")) {
+    } else if ((m_metric == "spherical") || (m_metric == "qspherical") || (m_metric == "kerr_schild")) {
       // spherical (quasi-spherical) grid
       if (m_extent.size() < 2) {
         NTTError("not enough values in `extent` input"); 

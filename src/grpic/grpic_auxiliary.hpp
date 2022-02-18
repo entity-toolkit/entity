@@ -202,6 +202,8 @@ namespace ntt {
     m_mblock.aux(i, j, em::bx2) = alpha_iPj * Bth_cov + inv_sqrt_detH_iPj * beta_iPj *  Dph_half;
     }
 
+    // std::printf("%f %f %f  %lu %lu \n", m_mblock.aux(i, j, em::bx1), m_mblock.aux(i, j, em::bx2), alpha_iPj * Bth_cov + inv_sqrt_detH_iPj * beta_iPj *  Dph_half, i, j);
+
     m_mblock.aux(i, j, em::bx3) = alpha_iPjP * Bph_cov - inv_sqrt_detH_iPjP * beta_iPjP *  Dth_half;
   
    }

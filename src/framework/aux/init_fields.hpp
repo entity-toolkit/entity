@@ -82,8 +82,6 @@ namespace ntt {
     }
     real_t Erd {(m_at(m_mblock, x0p) - m_at(m_mblock, x0m)) / m_eps};
 
-    //std::printf("%lu  %lu, %lu = %lu ??,  so Bth= %f?? \n", j, j_min, j_max, static_cast<index_t>(m_mblock.Nj()) + N_GHOSTS, Bthu);
-
     x0m[0] = i_ + HALF, x0m[1] = j_ + HALF - m_eps;
     x0p[0] = i_ + HALF, x0p[1] = j_ + HALF + m_eps;
     real_t Bphu {- (m_ar(m_mblock, x0p) - m_ar(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
@@ -104,15 +102,14 @@ namespace ntt {
     // Contravariant D to covariant D
     real_t Dru  {h11_inv_iPj * Drd + h13_inv_iPj * Dphd};
     real_t Dthu {h22_inv_ijP * Dthd};
-    real_t Dphu {h33_inv_ij * Dphd + h13_inv_ij * Drd};
+    real_t Dphu;
 
-    // if ((j == j_min) || (j == j_max)) {
-    // Dru = h11_inv_iPj * Drd;
-    // Dphu = h13_inv_ij * Drd;
-    // } else {
-    // Dru = h11_inv_iPj * Drd + h13_inv_iPj * Dphd;
-    // Dthu = h33_inv_ij * Dphd + h13_inv_ij * Drd;
-    // }
+    // h33_inv is singular at theta = 0.
+    if ((j == j_min) || (j == j_max)) {
+    Dphu = ZERO;
+    } else {
+    Dphu = h33_inv_ij * Dphd + h13_inv_ij * Drd;
+    }
 
     m_mblock.em0(i, j, em::bx1) = Bru;
     m_mblock.em0(i, j, em::bx2) = Bthu;
