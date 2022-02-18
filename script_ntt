@@ -1,0 +1,6 @@
+#!/bin/bash
+cd ~/GitHub/entity/build
+make clean
+make ntt
+cd ../bin/
+./ntt.exec -input ../pgen/unit/vertical_gr.toml

@@ -26,11 +26,18 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::GRPIC>& mblock) {
+    
     // RealFieldND<Dimension::TWO_D, 1> Bru0 ("Br0", mblock.res()[0] + 2 * N_GHOSTS, mblock.res()[1] + 2 * N_GHOSTS);
+    // Kokkos::parallel_for(
+    //   "userInitFlds", mblock.loopActiveCells(), 
+    //   // init_fields_potential<Dimension::TWO_D>(mblock, epsilon, Aphi, Ar, At, Bru0)
+    //   init_fields_potential<Dimension::TWO_D>(mblock, epsilon, Aphi, Ar, At)
+    //   );
+
     Kokkos::parallel_for(
-      "userInitFlds", mblock.loopActiveCells(), 
-      // init_fields_potential<Dimension::TWO_D>(mblock, epsilon, Aphi, Ar, At, Bru0)
-      init_fields_potential<Dimension::TWO_D>(mblock, epsilon, Aphi, Ar, At)
+      "userInitFlds",
+       mblock.loopActiveCells(),
+       init_fields_potential<Dimension::TWO_D>(mblock, epsilon, Aphi, Ar, At)
       );
   }
 
