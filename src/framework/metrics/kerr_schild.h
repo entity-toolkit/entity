@@ -34,7 +34,7 @@ namespace ntt {
         a(params[3]) {}
     ~Metric() = default;
 
-    [[nodiscard]] auto spin() const -> const real_t& { return a; }
+    [[nodiscard]] auto spin() const -> const real_t& {return a;}
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
