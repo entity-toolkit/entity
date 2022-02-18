@@ -111,7 +111,7 @@ namespace ntt {
         ++b;
         if (b >= (short)(dim)) { break; }
       }
-    } else if ((m_metric == "spherical") || (m_metric == "qspherical")) {
+    } else if ((m_metric == "spherical") || (m_metric == "qspherical") || (m_metric == "kerr_schild")) {
       // rmin, rmax boundaries only
       m_boundaries.push_back(BoundaryCondition::USER);
       m_boundaries.push_back(BoundaryCondition::USER);

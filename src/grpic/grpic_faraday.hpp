@@ -96,7 +96,7 @@ namespace ntt {
                                   m_coeff * inv_sqrt_detH_iPjP
                                   * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
                                   + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
-  }
+    }
 
   template <>
   Inline void
