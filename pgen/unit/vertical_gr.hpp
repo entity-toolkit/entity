@@ -33,9 +33,8 @@ namespace ntt {
 
     static real_t At(const Meshblock<D, S>& mblock, const coord_t<D>& x)
     {
-      (void)(mblock);
-      (void)(x);
-      return ZERO;
+      real_t g00 {- mblock.metric.alpha(x) * mblock.metric.alpha(x) + mblock.metric.h_11(x) * mblock.metric.betar(x) * mblock.metric.betar(x)};
+      return HALF * (mblock.metric.h_13(x) * mblock.metric.betar(x) + TWO * mblock.metric.spin() * g00);
     }
 
     Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
