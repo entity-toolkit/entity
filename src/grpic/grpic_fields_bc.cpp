@@ -30,24 +30,24 @@ namespace ntt {
       "2d_bc_theta0",
       NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
       Lambda(index_t i, index_t j) {
-        mblock.em(i, j, em::bx2) = 0.0;
-        mblock.em(i, j, em::ex3) = 0.0;
-        mblock.em0(i, j, em::bx2) = 0.0;
-        mblock.em0(i, j, em::ex3) = 0.0;
-        mblock.aux(i, j, em::bx2) = 0.0;
-        mblock.aux(i, j, em::ex3) = 0.0;
+        mblock.em(i, j, em::bx2) = ZERO;
+        mblock.em(i, j, em::ex3) = ZERO;
+        mblock.em0(i, j, em::bx2) = ZERO;
+        mblock.em0(i, j, em::ex3) = ZERO;
+        mblock.aux(i, j, em::bx2) = ZERO;
+        mblock.aux(i, j, em::ex3) = ZERO;
       });
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
       NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
       Lambda(index_t i, index_t j) {
-        mblock.em(i, j, em::bx2) = 0.0;
-        mblock.em(i, j, em::ex3) = 0.0;
-        mblock.em0(i, j, em::bx2) = 0.0;
-        mblock.em0(i, j, em::ex3) = 0.0;
-        mblock.aux(i, j, em::bx2) = 0.0;
-        mblock.aux(i, j, em::ex3) = 0.0;
+        mblock.em(i, j, em::bx2) = ZERO;
+        mblock.em(i, j, em::ex3) = ZERO;
+        mblock.em0(i, j, em::bx2) = ZERO;
+        mblock.em0(i, j, em::ex3) = ZERO;
+        mblock.aux(i, j, em::bx2) = ZERO;
+        mblock.aux(i, j, em::ex3) = ZERO;
       });
 
     auto r_absorb {m_sim_params.metric_parameters()[2]};
