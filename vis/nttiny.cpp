@@ -44,7 +44,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     this->m_timestep = 0;
     this->m_time = 0.0;
 
-    if (this->coords == "qspherical") {
+    if (this->coords == "kerr_schild") {
+
       m_x1x2_extent[0] = m_sim.mblock().metric.x1_min;
       m_x1x2_extent[1] = m_sim.mblock().metric.x1_max;
 
@@ -161,6 +162,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 //         b_hat[2] = bx3_cnt;
 // #endif
 
+        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
+        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
+
         e_hat[0] = ex1_cnt;
         e_hat[1] = ex2_cnt;
         e_hat[2] = ex3_cnt;
@@ -175,6 +179,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         m_bx1.set(i, j, b_hat[0]);
         m_bx2.set(i, j, b_hat[1]);
         m_bx3.set(i, j, b_hat[2]);
+        
         // m_ex1.set(i, j, ex1_cnt);
         // m_ex2.set(i, j, ex2_cnt);
         // m_ex3.set(i, j, ex3_cnt);

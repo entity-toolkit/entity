@@ -46,9 +46,6 @@ namespace ntt {
                                   * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                   + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
                                   // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx3);
-    
-        std::printf("%.2f %.2f %.2f \n", m_mblock.em0(i, j, em::ex1), m_mblock.em0(i, j, em::ex2), m_mblock.em0(i, j, em::ex3));
-
   }
   
   template <>
