@@ -75,6 +75,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       m_sim.mblock().metric.x_Code2Sph({ZERO, (real_t)(nx2 - ntt::N_GHOSTS)}, rth2_);
       m_x1x2_extent[2] = rth1_[1];
       m_x1x2_extent[3] = rth2_[1];
+
+    std::printf("%f %f %f %f\n",m_x1x2_extent[0], m_x1x2_extent[1], m_x1x2_extent[2], m_x1x2_extent[3]);
+
     } else {
       auto sx1 {m_sim.mblock().metric.x1_max - m_sim.mblock().metric.x1_min};
       auto dx1 {sx1 / m_sim.mblock().metric.nx1};
@@ -162,15 +165,15 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 //         b_hat[2] = bx3_cnt;
 // #endif
 
-        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
-        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
+        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
+        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
 
-        e_hat[0] = ex1_cnt;
-        e_hat[1] = ex2_cnt;
-        e_hat[2] = ex3_cnt;
-        b_hat[0] = bx1_cnt;
-        b_hat[1] = bx2_cnt;
-        b_hat[2] = bx3_cnt;
+        // e_hat[0] = ex1_cnt;
+        // e_hat[1] = ex2_cnt;
+        // e_hat[2] = ex3_cnt;
+        // b_hat[0] = bx1_cnt;
+        // b_hat[1] = bx2_cnt;
+        // b_hat[2] = bx3_cnt;
 
         // convert from contravariant to hatted
         m_ex1.set(i, j, e_hat[0]);
