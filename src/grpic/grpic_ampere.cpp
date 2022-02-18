@@ -12,15 +12,15 @@ namespace ntt {
 
     if (s == 0) {
     Kokkos::parallel_for("ampere",
-      NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1}, {m_mblock.i_max(), m_mblock.j_max()}),
-      Ampere_push0<Dimension::TWO_D>(m_mblock, coeff));
+                         NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1}, {m_mblock.i_max(), m_mblock.j_max()}),
+                         Ampere_push0<Dimension::TWO_D>(m_mblock, coeff));
     Kokkos::parallel_for("ampere_pole",
                          NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()}),
                          Ampere_Poles0<Dimension::TWO_D>(m_mblock, coeff));
     } else if (s == 1) {
     Kokkos::parallel_for("ampere",
-      NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1}, {m_mblock.i_max(), m_mblock.j_max()}),
-      Ampere_push<Dimension::TWO_D>(m_mblock, coeff));
+                         NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1}, {m_mblock.i_max(), m_mblock.j_max()}),
+                         Ampere_push<Dimension::TWO_D>(m_mblock, coeff));
     Kokkos::parallel_for("ampere_pole",
                          NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()}),
                          Ampere_Poles<Dimension::TWO_D>(m_mblock, coeff));

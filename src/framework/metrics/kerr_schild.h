@@ -156,9 +156,24 @@ namespace ntt {
      * @returns h^11 (contravariant, upper index) metric component.
      */
     Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
-      real_t h_33_cov {h_33(x)};
-      real_t h_13_cov {h_13(x)};
+      coord_t<D> y;
+      real_t h_33_cov, h_13_cov, inv1, inv2;
+      std::copy(std::begin(x), std::end(x), std::begin(y));
+      if (x[1] == ZERO) {
+      y[1] = x[1] + 1e-3;
+      h_33_cov = h_33(y);
+      h_13_cov = h_13(y);
+      inv1 = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
+      y[1] = x[1] - 1e-3;
+      h_33_cov = h_33(y);
+      h_13_cov = h_13(y);
+      inv2 = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
+      return HALF * (inv1 + inv2);
+      } else {
+      h_33_cov = h_33(x);
+      h_13_cov = h_13(x);
       return h_33_cov / (h_11(x) * h_33_cov - h_13_cov * h_13_cov);
+      }
     }  
     /**
      * Compute inverse metric component 22 from h_ij.
@@ -176,9 +191,24 @@ namespace ntt {
      * @returns h^33 (contravariant, upper index) metric component.
      */
     Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
-      real_t h_11_cov {h_11(x)};
-      real_t h_13_cov {h_13(x)};
+      coord_t<D> y;
+      real_t h_11_cov, h_13_cov, inv1, inv2;
+      std::copy(std::begin(x), std::end(x), std::begin(y));
+      if (x[1] == ZERO) {
+      y[1] = x[1] + 1e-3;
+      h_11_cov = h_11(y);
+      h_13_cov = h_13(y);
+      inv1 = h_11_cov / (h_11_cov * h_33(y) - h_13_cov * h_13_cov);
+      y[1] = x[1] - 1e-3;
+      h_11_cov = h_11(y);
+      h_13_cov = h_13(y);
+      inv2 = h_11_cov / (h_11_cov * h_33(y) - h_13_cov * h_13_cov);
+      return HALF * (inv1 + inv2);
+      } else {
+      h_11_cov = h_11(x);
+      h_13_cov = h_13(x);
       return h_11_cov / (h_11_cov * h_33(x) - h_13_cov * h_13_cov);
+      }
     }  
     /**
      * Compute inverse metric component 13 from h_ij.
@@ -187,8 +217,22 @@ namespace ntt {
      * @returns h^13 (contravariant, upper index) metric component.
      */
     Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
-      real_t h_13_cov {h_13(x)};
+
+      coord_t<D> y;
+      real_t h_13_cov, inv1, inv2;
+      std::copy(std::begin(x), std::end(x), std::begin(y));
+      if (x[1] == ZERO) {
+      y[1] = x[1] + 1e-3;
+      h_13_cov = h_13(y);
+      inv1 = - h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+      y[1] = x[1] - 1e-3;
+      h_13_cov = h_13(y);
+      inv2 = - h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+      return HALF * (inv1 + inv2);
+      } else {
+      h_13_cov = h_13(x);
       return - h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
+      }
     }  
 
     /**

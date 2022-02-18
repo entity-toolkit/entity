@@ -31,6 +31,8 @@ namespace ntt {
   Inline void Compute_E0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
 
     real_t hrr_iPj {m_mblock.metric.h_11({i_ + HALF, j_})};
     real_t hrph_iPj {m_mblock.metric.h_13({i_ + HALF, j_})};
@@ -61,7 +63,13 @@ namespace ntt {
     // Compute E_i
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * Dr_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * Dth_cov - inv_sqrt_detH_ijP * beta_ijP *  Bph_half;
-    m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;
+    
+    if ((j == j_min) || (j == j_max)) {
+    m_mblock.aux(i, j, em::ex3) = ZERO;
+    } else {
+    m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;;
+    }
+
    }
 
   template <>
@@ -87,7 +95,9 @@ namespace ntt {
   Inline void Compute_E<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-
+    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
+    
     real_t hrr_iPj {m_mblock.metric.h_11({i_ + HALF, j_})};
     real_t hrph_iPj {m_mblock.metric.h_13({i_ + HALF, j_})};
     real_t hthth_ijP {m_mblock.metric.h_22({i_, j_ + HALF})};
@@ -117,7 +127,13 @@ namespace ntt {
     // Compute E_i
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * Dr_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * Dth_cov - inv_sqrt_detH_ijP * beta_ijP *  Bph_half;
-    m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;
+    
+    if ((j == j_min) || (j == j_max)) {
+    m_mblock.aux(i, j, em::ex3) = ZERO;
+    } else {
+    m_mblock.aux(i, j, em::ex3) = alpha_ij * Dph_cov + inv_sqrt_detH_ij * beta_ij *  Bth_half;;
+    }
+
    }
 
   template <>
@@ -148,6 +164,8 @@ namespace ntt {
   Inline void Compute_H0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
 
     real_t hrr_ijP {m_mblock.metric.h_11({i_, j_ + HALF})};
     real_t hrph_ijP {m_mblock.metric.h_13({i_, j_ + HALF})};
@@ -177,8 +195,15 @@ namespace ntt {
 
     // Compute H_i
     m_mblock.aux(i, j, em::bx1) = alpha_ijP * Br_cov;
+
+    if ((j == j_min) || (j == j_max)) {
+    m_mblock.aux(i, j, em::bx2) = ZERO;
+    } else {
     m_mblock.aux(i, j, em::bx2) = alpha_iPj * Bth_cov + inv_sqrt_detH_iPj * beta_iPj *  Dph_half;
+    }
+
     m_mblock.aux(i, j, em::bx3) = alpha_iPjP * Bph_cov - inv_sqrt_detH_iPjP * beta_iPjP *  Dth_half;
+  
    }
 
   template <>
@@ -204,6 +229,8 @@ namespace ntt {
   Inline void Compute_H<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
 
     real_t hrr_ijP {m_mblock.metric.h_11({i_, j_ + HALF})};
     real_t hrph_ijP {m_mblock.metric.h_13({i_, j_ + HALF})};
@@ -233,7 +260,13 @@ namespace ntt {
 
     // Compute H_i
     m_mblock.aux(i, j, em::bx1) = alpha_ijP * Br_cov;
+
+    if ((j == j_min) || (j == j_max)) {
+    m_mblock.aux(i, j, em::bx2) = ZERO;
+    } else {
     m_mblock.aux(i, j, em::bx2) = alpha_iPj * Bth_cov + inv_sqrt_detH_iPj * beta_iPj *  Dph_half;
+    }
+  
     m_mblock.aux(i, j, em::bx3) = alpha_iPjP * Bph_cov - inv_sqrt_detH_iPjP * beta_iPjP *  Dth_half;
    }
 

@@ -44,6 +44,9 @@ namespace ntt {
   Inline void init_fields_potential<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
+
     coord_t<Dimension::TWO_D> x0m, x0p;
 
     real_t inv_sqrt_detH_ij   {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
@@ -65,23 +68,35 @@ namespace ntt {
 
     x0m[0] = i_, x0m[1] = j_ + HALF - m_eps;
     x0p[0] = i_, x0p[1] = j_ + HALF + m_eps;
-    real_t Bru     =   (m_aphi(m_mblock, x0p) -m_aphi(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps;
-    real_t Ethd    =   (m_at(m_mblock, x0p) - m_at(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps;
-    real_t Bph_aux = - (m_ar(m_mblock, x0p) - m_ar(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps;
+    real_t Bru     {(m_aphi(m_mblock, x0p) - m_aphi(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
+    real_t Ethd    {(m_at(m_mblock, x0p) - m_at(m_mblock, x0m)) / m_eps};
+    real_t Bph_aux {- (m_ar(m_mblock, x0p) - m_ar(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
 
     x0m[0] = i_ + HALF - m_eps, x0m[1] = j_;
     x0p[0] = i_ + HALF + m_eps, x0p[1] = j_;
-    real_t Bthu    = - (m_aphi(m_mblock, x0p) -m_aphi(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
-    real_t Erd     =   (m_at(m_mblock, x0p) - m_at(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
+    real_t Bthu;
+    if ((j == j_min) || (j == j_max)) {
+    Bthu = ZERO;
+    } else {
+    Bthu = - (m_aphi(m_mblock, x0p) - m_aphi(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
+    }
+    real_t Erd {(m_at(m_mblock, x0p) - m_at(m_mblock, x0m)) / m_eps};
+
+    //std::printf("%lu  %lu, %lu = %lu ??,  so Bth= %f?? \n", j, j_min, j_max, static_cast<index_t>(m_mblock.Nj()) + N_GHOSTS, Bthu);
 
     x0m[0] = i_ + HALF, x0m[1] = j_ + HALF - m_eps;
     x0p[0] = i_ + HALF, x0p[1] = j_ + HALF + m_eps;
-    real_t Bphu    = - (m_ar(m_mblock, x0p) - m_ar(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps;
+    real_t Bphu {- (m_ar(m_mblock, x0p) - m_ar(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
 
     x0m[0] = i_ - m_eps, x0m[1] = j_;
     x0p[0] = i_ + m_eps, x0p[1] = j_;
-    real_t Bth_aux = - (m_aphi(m_mblock, x0p) -m_aphi(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
- 
+    real_t Bth_aux;
+    if ((j == j_min) || (j == j_max)) {
+    Bth_aux = ZERO;
+    } else {
+    Bth_aux = - (m_aphi(m_mblock, x0p) -m_aphi(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
+    }
+
     real_t Drd  {Erd / alpha_iPj};
     real_t Dthd {Ethd / alpha_ijP + sqrt_detH_ijP * betar_ijP * Bph_aux / alpha_ijP};
     real_t Dphd {- sqrt_detH_ij * betar_ij * Bth_aux / alpha_ij};
@@ -90,6 +105,14 @@ namespace ntt {
     real_t Dru  {h11_inv_iPj * Drd + h13_inv_iPj * Dphd};
     real_t Dthu {h22_inv_ijP * Dthd};
     real_t Dphu {h33_inv_ij * Dphd + h13_inv_ij * Drd};
+
+    // if ((j == j_min) || (j == j_max)) {
+    // Dru = h11_inv_iPj * Drd;
+    // Dphu = h13_inv_ij * Drd;
+    // } else {
+    // Dru = h11_inv_iPj * Drd + h13_inv_iPj * Dphd;
+    // Dthu = h33_inv_ij * Dphd + h13_inv_ij * Drd;
+    // }
 
     m_mblock.em0(i, j, em::bx1) = Bru;
     m_mblock.em0(i, j, em::bx2) = Bthu;
@@ -107,12 +130,6 @@ namespace ntt {
     m_mblock.em(i, j, em::ex1) = Dru;
     m_mblock.em(i, j, em::ex2) = Dthu;
     m_mblock.em(i, j, em::ex3) = Dphu;
-  }
-
-  template <>
-  Inline void
-  init_fields_potential<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // No initialization with Aphi in 3D
   }
 
 } // namespace ntt
