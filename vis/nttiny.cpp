@@ -9,8 +9,8 @@
 // #  define SIMULATION_CONTAINER GRPIC
 // #endif
 
-#  include "pic.h"
-#  define SIMULATION_CONTAINER PIC
+#  include "grpic.h"
+#  define SIMULATION_CONTAINER GRPIC
 
 #include "global.h"
 #include "cargs.h"
@@ -25,12 +25,12 @@
 
 struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   int nx1, nx2;
-  ntt::PIC<ntt::Dimension::TWO_D>& m_sim;
+  ntt::GRPIC<ntt::Dimension::TWO_D>& m_sim;
   nttiny::Data<float> m_ex1, m_ex2, m_ex3;
   nttiny::Data<float> m_bx1, m_bx2, m_bx3;
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
 
-  NTTSimulationVis(ntt::PIC<ntt::Dimension::TWO_D>& sim)
+  NTTSimulationVis(ntt::GRPIC<ntt::Dimension::TWO_D>& sim)
     // : nttiny::SimulationAPI<float> {sim.mblock().metric.label},
     : nttiny::SimulationAPI<float> {"qspherical"},
       nx1(sim.mblock().Ni() + 2 * ntt::N_GHOSTS),
@@ -45,7 +45,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     this->m_timestep = 0;
     this->m_time = 0.0;
 
-    if (this->coords == "spherical") {
+    if (this->coords == "kerr_schild") {
 
       m_x1x2_extent[0] = m_sim.mblock().metric.x1_min;
       m_x1x2_extent[1] = m_sim.mblock().metric.x1_max;
