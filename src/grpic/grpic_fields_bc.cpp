@@ -7,7 +7,7 @@
 
 namespace ntt {
   /**
-   * @brief 2d periodic field bc.
+   * @brief 2d periodic field bc.Regular
    *
    */
   template <>
@@ -69,25 +69,37 @@ namespace ntt {
         real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
 
         mblock.em(i, j, em::ex1) = (ONE - sigma_r1) * mblock.em(i, j, em::ex1);
-        mblock.em(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em(i, j, em::bx2);
+        // mblock.em(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em(i, j, em::bx2);
         mblock.em(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em(i, j, em::bx3);
+       
         mblock.em0(i, j, em::ex1) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex1);
-        mblock.em0(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx2);
+        // mblock.em0(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx2);
         mblock.em0(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx3);
 
-        real_t br_target_hat {pGen.userTargetField_br_hat(mblock, {i_, j_ + HALF})};
+        real_t br_target_hat  {pGen.userTargetField_br_hat(mblock, {i_, j_ + HALF})};
+        real_t bth_target_hat {pGen.userTargetField_bth_hat(mblock, {i_ + HALF, j_})};
         real_t bx1_source_cntr {mblock.em(i, j, em::bx1)};
-        vec_t<Dimension::THREE_D> br_source_hat;
-        mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
-        real_t br_interm_hat {(ONE - sigma_r2) * br_source_hat[0] + sigma_r2 * br_target_hat};
-        vec_t<Dimension::THREE_D> br_interm_cntr;
-        mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
-        mblock.em(i, j, em::bx1) = br_interm_cntr[0];
+        real_t bx2_source_cntr {mblock.em(i, j, em::bx2)};
+        vec_t<Dimension::THREE_D> b_source_hat;
+        mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, bx2_source_cntr, ZERO}, b_source_hat);
+        real_t br_interm_hat  {(ONE - sigma_r2) * b_source_hat[0] + sigma_r2 * br_target_hat};
+        real_t bth_interm_hat {(ONE - sigma_r1) * b_source_hat[1] + sigma_r1 * bth_target_hat};
+        vec_t<Dimension::THREE_D> b_interm_cntr;
+        mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, bth_interm_hat, ZERO}, b_interm_cntr);
+        mblock.em(i, j, em::bx1) = b_interm_cntr[0];
+        mblock.em(i, j, em::bx2) = b_interm_cntr[1];
         mblock.em(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em(i, j, em::ex2);
         mblock.em(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em(i, j, em::ex3);
-        mblock.em0(i, j, em::bx1) = br_interm_cntr[0];
+        
+        mblock.em0(i, j, em::bx1) = b_interm_cntr[0];
+        mblock.em0(i, j, em::bx2) = b_interm_cntr[1];
         mblock.em0(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex2);
         mblock.em0(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex3);
+
+      // if (rth_[0] > 4.50) {
+      // std::printf("%f %f %f %f %f %f \n", bth_target_hat, bx2_source_cntr, b_source_hat[1], bth_interm_hat, b_interm_cntr[1]);
+      // }
+
       });
 #else
     (void)(index_t {});
