@@ -38,17 +38,24 @@ namespace ntt {
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
-     * @todo Implement real CFL condition; this is approximate
      * @returns Minimum cell size of the grid [physical units].
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dimension::TWO_D) {
-        auto dx1 {dr};
-        auto dx2 {this->x1_min * dtheta};
-        
-        return ONE / std::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
+        real_t min_dx {-1.0};
+        for (int i {0}; i < this->nx1; ++i) {
+          for (int j {0}; j < this->nx2; ++j) {
+            real_t i_ {(real_t)(i) + HALF};
+            real_t j_ {(real_t)(j) + HALF};
+            real_t inv_dx1_ {this->h_11_inv({i_, j_})};
+            real_t inv_dx2_ {this->h_22_inv({i_, j_})};
+            real_t dx = 1.0 / (this->alpha({i_, j_}) * std::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
+            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
+          }
+        }
+        return min_dx;
       } else {
-        NTTError("min cell finding not implemented for 3D spherical");
+        NTTError("min cell finding not implemented for 3D qspherical");
       }
       return ZERO;
     }
@@ -143,12 +150,12 @@ namespace ntt {
     }
 
     /**
-     * Compute r component of shift vector.
+     * Compute radial component of shift vector.
      *
      * @param x coordinate array in code units (size of the array is D).
-     * @returns beta^r (contravariant).
+     * @returns beta^1 (contravariant).
      */
-    Inline auto betar(const coord_t<D>& x) const -> real_t {
+    Inline auto beta1u(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};

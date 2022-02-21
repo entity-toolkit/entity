@@ -3,4 +3,4 @@ cd ~/GitHub/entity/build
 make clean
 make vis
 cd ../bin/
-./vis.exec -input ../pgen/unit/vertical_gr.toml
+./vis.exec -input ../pgen/unit/test_gr.toml
