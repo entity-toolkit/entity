@@ -8,7 +8,7 @@
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h^11 (contravariant, upper index) metric component.
-     * @details Regular at theta=0. Here, defined only in terms of the direct metric.
+     * @details Finite limit at theta=0. Here, defined only in terms of the direct metric.
      * But this introduces a singularity at theta=0, so take the limit as theta->0.
      */
     Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
@@ -47,7 +47,7 @@
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h^33 (contravariant, upper index) metric component.
-     * @details Singular at theta=0. No need to take a limit
+     * @details Singular at theta=0. No need to take a limit.
      */
     Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
       real_t h_11_cov, h_13_cov;
@@ -61,7 +61,7 @@
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h^13 (contravariant, upper index) metric component.
-     * @details Regular at theta=0. Here, defined only in terms of the direct metric.
+     * @details Finite limit at theta=0. Here, defined only in terms of the direct metric.
      * But this introduces a singularity at theta=0, so take the limit as theta->0.
      */
     Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
