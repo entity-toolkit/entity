@@ -4,6 +4,16 @@
 #include "global.h"
 
     /**
+     * Compute the square root of the determinant of h-matrix.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns sqrt(det(h_ij)).
+     */
+    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+      return std::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
+    }
+
+    /**
      * Compute inverse metric component 11 from h_ij.
      *
      * @param x coordinate array in code units (size of the array is D).
@@ -13,14 +23,16 @@
      */
     Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
       coord_t<D> y;
+      coord_t<D> rth_;
       real_t h_33_cov, h_13_cov, inv1, inv2;
       std::copy(std::begin(x), std::end(x), std::begin(y));
-      if (x[1] == ZERO) {
-      y[1] = x[1] + 1e-3;
+      x_Code2Sph(x, rth_);
+      if (std::sin(rth_[1]) == ZERO) {
+      y[1] = x[1] + 1e-1;
       h_33_cov = h_33(y);
       h_13_cov = h_13(y);
       inv1 = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
-      y[1] = x[1] - 1e-3;
+      y[1] = x[1] - 1e-1;
       h_33_cov = h_33(y);
       h_13_cov = h_13(y);
       inv2 = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
@@ -66,19 +78,21 @@
      */
     Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
       coord_t<D> y;
-      real_t h_13_cov, inv1, inv2;
+      coord_t<D> rth_;
+      real_t h_33_cov, h_13_cov, inv1, inv2;
       std::copy(std::begin(x), std::end(x), std::begin(y));
-      if (x[1] == ZERO) {
-      y[1] = x[1] + 1e-3;
+      x_Code2Sph(x, rth_);
+      if (std::sin(rth_[1]) == ZERO) {
+      y[1] = x[1] + 1e-1;
       h_13_cov = h_13(y);
-      inv1 = - h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
-      y[1] = x[1] - 1e-3;
+      inv1 = h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+      y[1] = x[1] - 1e-1;
       h_13_cov = h_13(y);
-      inv2 = - h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+      inv2 = h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
       return HALF * (inv1 + inv2);
       } else {
       h_13_cov = h_13(x);
-      return - h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
+      return h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
       }
     }  
 
@@ -106,7 +120,7 @@
 Inline void v_Cntrv2Hat(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_cntrv, vec_t<Dimension::THREE_D>& vi_hat) const {
     vi_hat[0] = vi_cntrv[0] / std::sqrt(h_11_inv(xi));
     vi_hat[1] = vi_cntrv[1] * std::sqrt(h_22(xi));
-    vi_hat[2] = vi_cntrv[2] * std::sqrt(h_33(xi)) + vi_cntrv[0] * (h_13(xi) / std::sqrt(h_33(xi)));
+    vi_hat[2] = vi_cntrv[2] * std::sqrt(h_33(xi)) + vi_cntrv[0] * h_13(xi) / std::sqrt(h_33(xi));
   }
 
 /**

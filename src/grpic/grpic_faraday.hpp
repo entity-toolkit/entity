@@ -34,7 +34,7 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max() - 2)};
 
     real_t inv_sqrt_detH_iPj  {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP  {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
@@ -51,7 +51,7 @@ namespace ntt {
     }
     m_mblock.em0(i, j, em::bx3) += m_coeff * inv_sqrt_detH_iPjP
                                   * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
-                                     + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
+                                     + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));  
   }
 
   template <>
@@ -79,7 +79,7 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
+    index_t j_max {static_cast<index_t>(m_mblock.j_max() - 2)};
 
     real_t inv_sqrt_detH_iPj  {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP  {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
@@ -95,10 +95,10 @@ namespace ntt {
                                   m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i + 1, j, em::ex3) - m_mblock.aux(i, j, em::ex3));
     }
 
-    m_mblock.em0(i, j, em::bx3) = m_mblock.em(i, j, em::bx3) +
-                                  m_coeff * inv_sqrt_detH_iPjP
+    m_mblock.em0(i, j, em::bx3) = m_mblock.em(i, j, em::bx3) 
+                                  +  m_coeff * inv_sqrt_detH_iPjP
                                   * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
-                                  + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
+                                  +  m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
     }
 
   template <>
