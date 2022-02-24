@@ -24,7 +24,13 @@ namespace ntt {
     Kokkos::parallel_for("ampere_pole",
                          NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()}),
                          Ampere_Poles<Dimension::TWO_D>(m_mblock, coeff));
-    swap_em_cur(m_mblock);
+    } else if (s == -1) {
+    Kokkos::parallel_for("ampere",
+                         NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1}, {m_mblock.i_max(), m_mblock.j_max()}),
+                         Ampere_push_initial<Dimension::TWO_D>(m_mblock, coeff));
+    Kokkos::parallel_for("ampere_pole",
+                         NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()}),
+                         Ampere_Poles_initial<Dimension::TWO_D>(m_mblock, coeff));
     } else {
     NTTError("Only two options: 0 and 1");
     }

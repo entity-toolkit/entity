@@ -39,14 +39,18 @@ namespace ntt {
     {
       coord_t<D> rth_;
       mblock.metric.x_Code2Sph(x, rth_);
-      // return HALF * std::sin(rth_[1]) * std::sin(rth_[1]) * rth_[0] * rth_[0];
-      return HALF * std::sin(rth_[1]) * mblock.metric.sqrt_det_h(x) ;
+      return ONE - std::cos(rth_[1]) ;
     }
 
     Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> rth_;
+      real_t r_min {mblock.metric.x1_min};
       mblock.metric.x_Code2Sph(x, rth_);
-      return ONE * std::cos(rth_[1]); // Vertical field at infinity
+      return ZERO;
+      }
+
+    Inline auto userTargetField_bth_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
+      return ZERO;
     }
 
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
@@ -55,14 +59,6 @@ namespace ntt {
       x0m[0] = x[0], x0m[1] = x[1] - HALF * epsilon;
       x0p[0] = x[0], x0p[1] = x[1] + HALF * epsilon;
       return (A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_ijP / epsilon;
-    }
-
-    Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
-      coord_t<D> x0m, x0p;
-      real_t inv_sqrt_detH_iPj  {ONE / mblock.metric.sqrt_det_h(x)};
-      x0m[0] = x[0] + HALF - HALF * epsilon, x0m[1] = x[1];
-      x0p[0] = x[0] + HALF + HALF * epsilon, x0p[1] = x[1];
-      return - (A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_iPj / epsilon;
     }
 
   };

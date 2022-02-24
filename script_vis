@@ -1,6 +1,6 @@
 #!/bin/bash
 cd ~/GitHub/entity/build
 make clean
-make vis
+make -j8 vis
 cd ../bin/
 ./vis.exec -input ../pgen/unit/test_gr.toml

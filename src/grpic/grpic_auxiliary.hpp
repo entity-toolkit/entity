@@ -59,17 +59,16 @@ namespace ntt {
     // Contravariant D to covariant D
     real_t D1_cov {h_11_iPj * m_mblock.em0(i, j, em::ex1) + h_13_iPj * D3_half};
     real_t D2_cov {h_22_ijP * m_mblock.em0(i, j, em::ex2)};
-    real_t D3_cov {h_33_ij * m_mblock.em0(i, j, em::ex3) + h_13_ij * D1_half};
+    real_t D3_cov {h_33_ij  * m_mblock.em0(i, j, em::ex3) + h_13_ij * D1_half};
+
+    // printf("BEFORE %f %f %f\n", m_mblock.aux(i, j, em::ex3), m_mblock.em0(i, j, em::ex2), B2_half);
 
     // Compute E_i
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * D1_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * D2_cov - sqrt_detH_ijP * beta_ijP *  B3_half;
-    
-    if ((j == j_min) || (j == j_max)) {
-    m_mblock.aux(i, j, em::ex3) = ZERO;
-    } else {
-    m_mblock.aux(i, j, em::ex3) = alpha_ij * D3_cov + sqrt_detH_ij * beta_ij *  B2_half;;
-    }
+    m_mblock.aux(i, j, em::ex3) = alpha_ij  * D3_cov + sqrt_detH_ij  * beta_ij  *  B2_half;
+
+    // printf("AFTER %f\n", m_mblock.aux(i, j, em::ex3));
 
    }
 
@@ -129,13 +128,7 @@ namespace ntt {
     // Compute E_i
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * D1_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * D2_cov - sqrt_detH_ijP * beta_ijP *  B3_half;
-    
-    if ((j == j_min) || (j == j_max)) {
-    m_mblock.aux(i, j, em::ex3) = ZERO;
-    } else {
-    m_mblock.aux(i, j, em::ex3) = alpha_ij * D3_cov + sqrt_detH_ij * beta_ij *  B2_half;;
-    }
-
+    m_mblock.aux(i, j, em::ex3) = alpha_ij * D3_cov + sqrt_detH_ij * beta_ij *  B2_half;
    }
 
   template <>
@@ -185,7 +178,7 @@ namespace ntt {
 
     // D contra interpolation at half cell
     real_t D2_half {HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i + 1, j , em::ex2))};
-    real_t D3_half {HALF * (m_mblock.em(i, j , em::ex3) + m_mblock.em(i + 1, j , em::ex3))};
+    real_t D3_half {HALF * (m_mblock.em(i, j, em::ex3) + m_mblock.em(i + 1, j , em::ex3))};
 
     // B contra interpolation at half cell
     real_t B1_half {HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em0(i + 1, j, em::bx1))};
@@ -197,18 +190,9 @@ namespace ntt {
     real_t B3_cov {h_33_iPjP * m_mblock.em0(i, j, em::bx3) + h_13_iPjP * B1_half};
 
     // Compute H_i
-    m_mblock.aux(i, j, em::bx1) = alpha_ijP * B1_cov;
-
-    if ((j == j_min) || (j == j_max)) {
-    m_mblock.aux(i, j, em::bx2) = ZERO;
-    } else {
-    m_mblock.aux(i, j, em::bx2) = alpha_iPj * B2_cov + sqrt_detH_iPj * beta_iPj *  D3_half;
-    }
-
-    // std::printf("%f %f %f  %lu %lu \n", m_mblock.aux(i, j, em::bx1), m_mblock.aux(i, j, em::bx2), alpha_iPj * B2_cov + inv_sqrt_detH_iPj * beta_iPj *  D3_half, i, j);
-
-    m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - sqrt_detH_iPjP * beta_iPjP *  D2_half;
-  
+    m_mblock.aux(i, j, em::bx1) = alpha_ijP  * B1_cov;
+    m_mblock.aux(i, j, em::bx2) = alpha_iPj  * B2_cov + sqrt_detH_iPj  * beta_iPj  * D3_half;
+    m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - sqrt_detH_iPjP * beta_iPjP * D2_half;
    }
 
   template <>
@@ -266,14 +250,8 @@ namespace ntt {
 
     // Compute H_i
     m_mblock.aux(i, j, em::bx1) = alpha_ijP * B1_cov;
-
-    if ((j == j_min) || (j == j_max)) {
-    m_mblock.aux(i, j, em::bx2) = ZERO;
-    } else {
-    m_mblock.aux(i, j, em::bx2) = alpha_iPj * B2_cov + sqrt_detH_iPj * beta_iPj *  D3_half;
-    }
-  
-    m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - sqrt_detH_iPjP * beta_iPjP *  D2_half;
+    m_mblock.aux(i, j, em::bx2) = alpha_iPj  * B2_cov + sqrt_detH_iPj  * beta_iPj  * D3_half;
+    m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - sqrt_detH_iPjP * beta_iPjP * D2_half;
    }
 
   template <>
