@@ -3,11 +3,11 @@ title           = "GR_example"
 runtime         = 0.1
 
 [domain]
-sph_rabsorb     = 4.5
+sph_rabsorb     = 9.0
 resolution      = [128, 128]
-extent          = [0.9, 5.0]
+extent          = [0.5, 10.0]
 boundaries      = ["USER", "USER"]
-a               = 0.99
+a               = 0.5
 
 [algorithm]
 CFL             = 0.4

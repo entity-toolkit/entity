@@ -37,30 +37,6 @@ namespace ntt {
     [[nodiscard]] auto spin() const -> const real_t& {return a;}
 
     /**
-     * Compute minimum effective cell size for a given metric (in physical units).
-     * @returns Minimum cell size of the grid [physical units].
-     */
-    auto findSmallestCell() const -> real_t {
-      if constexpr (D == Dimension::TWO_D) {
-        real_t min_dx {-1.0};
-        for (int i {0}; i < this->nx1; ++i) {
-          for (int j {0}; j < this->nx2; ++j) {
-            real_t i_ {(real_t)(i) + HALF};
-            real_t j_ {(real_t)(j) + HALF};
-            real_t inv_dx1_ {this->h_11_inv({i_, j_})};
-            real_t inv_dx2_ {this->h_22_inv({i_, j_})};
-            real_t dx = 1.0 / (this->alpha({i_, j_}) * std::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
-            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
-          }
-        }
-        return min_dx;
-      } else {
-        NTTError("min cell finding not implemented for 3D qspherical");
-      }
-      return ZERO;
-    }
-
-    /**
      * Compute metric component 11.
      *
      * @param x coordinate array in code units (size of the array is D).
@@ -70,7 +46,7 @@ namespace ntt {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};
-      return dr_sqr * ( ONE + TWO * r / (r * r + a * a * cth * cth) );
+      return dr_sqr * (ONE + TWO * r / (r * r + a * a * cth * cth) );
     }    
     
     /**
@@ -83,7 +59,7 @@ namespace ntt {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};
-      return dtheta_sqr / (r * r + a * a * cth * cth);
+      return dtheta_sqr * (r * r + a * a * cth * cth);
     }
 
     /**
@@ -114,24 +90,7 @@ namespace ntt {
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};
       real_t sth {std::sin(theta)};
-      return - dr * a * sth * sth *( ONE + TWO * r / (r * r + a * a * cth * cth));
-    }
-
-    /**
-     * Compute the square root of the determinant of h-matrix.
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns sqrt(det(h_ij)).
-     */
-    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
-      real_t sth {std::sin(theta)};
-
-      real_t z {TWO * r / (r * r + a * a * cth * cth)};
-      real_t alpha {ONE / std::sqrt(ONE + z)};
-      return (r * r + a * a * cth * cth)* sth / alpha;
+      return - dr * a * sth * sth * ( ONE + TWO * r / (r * r + a * a * cth * cth));
     }
 
     /**
@@ -161,7 +120,7 @@ namespace ntt {
       real_t cth {std::cos(theta)};
 
       real_t z {TWO * r / (r * r + a * a * cth * cth)};
-      return z / (ONE + z);
+      return z / (ONE + z) / dr;
     }
 
     /**
@@ -174,7 +133,7 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      return dtheta * dphi * std::sqrt((r * r + a * a ) * (ONE + TWO * r / ( r * r + a * a))) * (ONE - std::cos(del_theta));
+      return dtheta * dphi * std::sqrt((r * r + a * a) * (ONE + TWO * r / ( r * r + a * a))) * (ONE - std::cos(del_theta));
     }
 
 /**
@@ -183,6 +142,30 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "non_diag_vector_transform.h"
+
+    /**
+     * Compute minimum effective cell size for a given metric (in physical units).
+     * @returns Minimum cell size of the grid [physical units].
+     */
+    auto findSmallestCell() const -> real_t {
+      if constexpr (D == Dimension::TWO_D) {
+        real_t min_dx {-1.0};
+        for (int i {0}; i < this->nx1; ++i) {
+          for (int j {0}; j < this->nx2; ++j) {
+            real_t i_ {(real_t)(i) + HALF};
+            real_t j_ {(real_t)(j) + HALF};
+            real_t inv_dx1_ {this->h_11_inv({i_, j_})};
+            real_t inv_dx2_ {this->h_22_inv({i_, j_})};
+            real_t dx = 1.0 / (this->alpha({i_, j_}) * std::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
+            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
+          }
+        }
+        return min_dx;
+      } else {
+        NTTError("min cell finding not implemented for 3D qspherical");
+      }
+      return ZERO;
+    }
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
