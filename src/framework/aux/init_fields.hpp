@@ -88,7 +88,7 @@ namespace ntt {
     dx1 = rthp[0] - rthm[0];
 
     real_t B2u;
-    if ((j == j_min) || (j == j_max)) {
+    if (j == j_min) {
     B2u = ZERO;
     } else {
     B2u = - (m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
@@ -112,7 +112,7 @@ namespace ntt {
     dx1 = rthp[0] - rthm[0];
 
     real_t B2_aux;
-    if ((j == j_min) || (j == j_max)) {
+    if (j == j_min) {
     B2_aux = ZERO;
     } else {
     B2_aux = - (m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
@@ -129,7 +129,7 @@ namespace ntt {
     real_t D3u;
 
     // h33_inv is singular at theta = 0.
-    if ((j == j_min) || (j == j_max)) {
+    if (j == j_min) {
     D3u = ZERO;
     } else {
     D3u = h_33_inv_ij * D3d + h_13_inv_ij * D1d;

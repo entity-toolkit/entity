@@ -202,7 +202,7 @@ namespace ntt {
 
     // theta = 0
     m_mblock.em0(i, j_min, em::ex1) = m_mblock.em(i, j_min, em::ex1) + inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
-                                    //- TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_min, cur::jx1);
+                                      //- TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_min, cur::jx1);
     // theta = pi
     m_mblock.em0(i, j_max + 1, em::ex1) = m_mblock.em(i, j_max + 1, em::ex1) - inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
                                           // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_max + 1, cur::jx2);
@@ -211,7 +211,7 @@ namespace ntt {
     m_mblock.em0(i, j_min, em::ex2) = m_mblock.em(i, j_min, em::ex2) 
                                     + inv_sqrt_detH_ijP * m_coeff * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
                                     // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_min, cur::jx2);
-  }
+    }
 
   template <Dimension D>
   class Ampere_Poles_initial {
