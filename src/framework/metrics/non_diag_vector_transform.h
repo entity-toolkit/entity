@@ -14,6 +14,16 @@
     }
 
     /**
+     * Compute the square root of the determinant of h-matrix divided by sin(theta).
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns sqrt(det(h_ij))/sin(theta).
+     */
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      return h_22(x)/alpha(x);
+    }
+
+    /**
      * Compute inverse metric component 11 from h_ij.
      *
      * @param x coordinate array in code units (size of the array is D).

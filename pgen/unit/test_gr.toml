@@ -4,10 +4,10 @@ runtime         = 0.1
 
 [domain]
 sph_rabsorb     = 9.0
-resolution      = [128, 128]
-extent          = [0.5, 10.0]
+resolution      = [256, 128]
+extent          = [1.4, 10.0]
 boundaries      = ["USER", "USER"]
-a               = 0.5
+a               = 0.0
 
 [algorithm]
 CFL             = 0.4

@@ -28,6 +28,9 @@ namespace ntt {
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::bx2) = ZERO;
         mblock.em0(i, j, em::ex3) = ZERO;
+
+        mblock.em0(i, j + 1, em::bx3) = ZERO; //mblock.em0(i, j, em::bx3);
+
         });
     // theta = pi boundary
     Kokkos::parallel_for(
@@ -36,6 +39,9 @@ namespace ntt {
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::bx2) = ZERO;
         mblock.em0(i, j, em::ex3) = ZERO;
+
+        mblock.em0(i, j - 2, em::bx3) = ZERO; //mblock.em0(i, j - 1, em::bx3);
+
       });
 
     auto r_absorb {m_sim_params.metric_parameters()[2]};
@@ -43,22 +49,20 @@ namespace ntt {
     auto pGen {this->m_pGen};
     Kokkos::parallel_for(
       "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        // real_t i_ {static_cast<real_t>(i)};
-        // real_t j_ {static_cast<real_t>(j)};
         real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
         real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
         // i
         vec_t<Dimension::TWO_D> rth_;
         mblock.metric.x_Code2Sph({i_, j_}, rth_);
         real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-        // real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
-        real_t sigma_r1 {ONE - std::exp(- 10.0 * HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1)};
+        real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
+        // real_t sigma_r1 {ONE - std::exp(- 10.0 * HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1)};
 
         // i + 1/2
         mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
         real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-        // real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
-        real_t sigma_r2 {ONE - std::exp(- 10.0 * HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
+        real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
+        // real_t sigma_r2 {ONE - std::exp(- 10.0 * HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
 
         mblock.em0(i, j, em::ex1) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex1);
         // mblock.em0(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx2);
@@ -117,12 +121,16 @@ namespace ntt {
 
     auto mblock {this->m_mblock};
     // theta = 0 boundary
+
     Kokkos::parallel_for(
       "2d_bc_theta0",
       NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
       Lambda(index_t i, index_t j) {
         mblock.aux(i, j, em::bx2) = ZERO;
         mblock.aux(i, j, em::ex3) = ZERO;
+
+        mblock.aux(i, j + 1, em::bx3) = mblock.aux(i, j, em::bx3);
+
         });
     // theta = pi boundary
     Kokkos::parallel_for(
@@ -131,6 +139,40 @@ namespace ntt {
       Lambda(index_t i, index_t j) {
         mblock.aux(i, j, em::bx2) = ZERO;
         mblock.aux(i, j, em::ex3) = ZERO;
+  
+        mblock.aux(i, j - 2, em::bx3) = mblock.aux(i, j - 1, em::bx3);
+
+      });
+    
+        auto r_absorb {m_sim_params.metric_parameters()[2]};
+    auto r_max {m_mblock.metric.x1_max};
+    auto pGen {this->m_pGen};
+    Kokkos::parallel_for(
+      "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+        real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+        real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+        // i
+        vec_t<Dimension::TWO_D> rth_;
+        mblock.metric.x_Code2Sph({i_, j_}, rth_);
+        real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+        real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
+        // real_t sigma_r1 {ONE - std::exp(- 10.0 * HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1)};
+
+        // i + 1/2
+        mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
+        real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+        real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
+        // real_t sigma_r2 {ONE - std::exp(- 10.0 * HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
+
+      //  printf("BEFORE %f %f \n", m_mblock.aux(i, j, em::ex3), sigma_r2);
+
+        mblock.aux(i, j, em::bx3) = (ONE - sigma_r1) * mblock.aux(i, j, em::bx3);
+        mblock.aux(i, j, em::ex1) = (ONE - sigma_r1) * mblock.aux(i, j, em::ex1);
+        mblock.aux(i, j, em::ex2) = (ONE - sigma_r2) * mblock.aux(i, j, em::ex2);
+        mblock.aux(i, j, em::ex3) = (ONE - sigma_r2) * mblock.aux(i, j, em::ex3);
+
+      //  printf("after %f %f \n", m_mblock.aux(i, j, em::ex3), sigma_r2);
+
       });
 
     }
