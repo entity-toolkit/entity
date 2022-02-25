@@ -134,23 +134,30 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         real_t ex1_cnt, ex2_cnt, ex3_cnt;
         real_t bx1_cnt, bx2_cnt, bx3_cnt;
 
-        if ((i < ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (i >= nx2 - ntt::N_GHOSTS) || (j >= nx1 - ntt::N_GHOSTS)) {
-          ex1_cnt = m_sim.mblock().aux(i, j, ntt::em::ex1);
-          ex2_cnt = m_sim.mblock().aux(i, j, ntt::em::ex2);
-          ex3_cnt = m_sim.mblock().aux(i, j, ntt::em::ex3);
+        // if ((i < ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (i >= nx2 - ntt::N_GHOSTS) || (j >= nx1 - ntt::N_GHOSTS)) {
+        //   ex1_cnt = m_sim.mblock().aux(i, j, ntt::em::ex1);
+        //   ex2_cnt = m_sim.mblock().aux(i, j, ntt::em::ex2);
+        //   ex3_cnt = m_sim.mblock().aux(i, j, ntt::em::ex3);
+        //   bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
+        //   bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
+        //   bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
+        // } else {
+        //   ex1_cnt = 0.5 * (m_sim.mblock().aux(i, j, ntt::em::ex1) + m_sim.mblock().aux(i, j + 1, ntt::em::ex1));
+        //   ex2_cnt = 0.5 * (m_sim.mblock().aux(i, j, ntt::em::ex2) + m_sim.mblock().aux(i + 1, j, ntt::em::ex2));
+        //   ex3_cnt = 0.25
+        //             * (m_sim.mblock().aux(i, j, ntt::em::ex3) + m_sim.mblock().aux(i + 1, j, ntt::em::ex3)
+        //                + m_sim.mblock().aux(i, j + 1, ntt::em::ex3) + m_sim.mblock().aux(i + 1, j + 1, ntt::em::ex3));
+        //   bx1_cnt = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::bx1) + m_sim.mblock().em0(i + 1, j, ntt::em::bx1));
+        //   bx2_cnt = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::bx2) + m_sim.mblock().em0(i, j + 1, ntt::em::bx2));
+        //   bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
+        // }
+
+          ex1_cnt = m_sim.mblock().em0(i, j, ntt::em::ex1);
+          ex2_cnt = m_sim.mblock().em0(i, j, ntt::em::ex2);
+          ex3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
           bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
           bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
           bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
-        } else {
-          ex1_cnt = 0.5 * (m_sim.mblock().aux(i, j, ntt::em::ex1) + m_sim.mblock().aux(i, j + 1, ntt::em::ex1));
-          ex2_cnt = 0.5 * (m_sim.mblock().aux(i, j, ntt::em::ex2) + m_sim.mblock().aux(i + 1, j, ntt::em::ex2));
-          ex3_cnt = 0.25
-                    * (m_sim.mblock().aux(i, j, ntt::em::ex3) + m_sim.mblock().aux(i + 1, j, ntt::em::ex3)
-                       + m_sim.mblock().aux(i, j + 1, ntt::em::ex3) + m_sim.mblock().aux(i + 1, j + 1, ntt::em::ex3));
-          bx1_cnt = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::bx1) + m_sim.mblock().em0(i + 1, j, ntt::em::bx1));
-          bx2_cnt = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::bx2) + m_sim.mblock().em0(i, j + 1, ntt::em::bx2));
-          bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
-        }
 
         ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
 

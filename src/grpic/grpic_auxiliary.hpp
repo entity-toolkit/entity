@@ -56,19 +56,29 @@ namespace ntt {
     real_t D1_half {HALF * (m_mblock.em0(i - 1, j, em::ex1) + m_mblock.em0(i, j, em::ex1))};
     real_t D3_half {HALF * (m_mblock.em0(i, j, em::ex3) + m_mblock.em0(i + 1, j, em::ex3))};
 
+    // real_t w1;
+    // real_t w2;
+
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ - HALF, j_});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_});
+    // real_t B2_half {(w1 * m_mblock.em(i - 1, j, em::bx2) + w2 * m_mblock.em(i, j, em::bx2)) / (w1 + w2)};    
+    // real_t D1_half {(w1 * m_mblock.em0(i - 1, j, em::ex1) + w2 * m_mblock.em0(i, j, em::ex1)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ - HALF, j_ + HALF});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_ + HALF});
+    // real_t B3_half {(w1 * m_mblock.em(i - 1, j, em::bx3) + w2 * m_mblock.em(i, j, em::bx3)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_, j_});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE, j_});
+    // real_t D3_half {(w1 * m_mblock.em0(i, j, em::ex3) + w2 * m_mblock.em0(i + 1, j, em::ex3)) / (w1 + w2)};
+
     // Contravariant D to covariant D
     real_t D1_cov {h_11_iPj * m_mblock.em0(i, j, em::ex1) + h_13_iPj * D3_half};
     real_t D2_cov {h_22_ijP * m_mblock.em0(i, j, em::ex2)};
     real_t D3_cov {h_33_ij  * m_mblock.em0(i, j, em::ex3) + h_13_ij * D1_half};
 
-    // printf("BEFORE %f %f %f\n", m_mblock.aux(i, j, em::ex3), m_mblock.em0(i, j, em::ex2), B2_half);
-
     // Compute E_i
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * D1_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * D2_cov - sqrt_detH_ijP * beta_ijP *  B3_half;
     m_mblock.aux(i, j, em::ex3) = alpha_ij  * D3_cov + sqrt_detH_ij  * beta_ij  *  B2_half;
-
-    // printf("AFTER %f\n", m_mblock.aux(i, j, em::ex3));
 
    }
 
@@ -120,6 +130,20 @@ namespace ntt {
     real_t D1_half {HALF * (m_mblock.em(i - 1, j, em::ex1) + m_mblock.em(i, j, em::ex1))};
     real_t D3_half {HALF * (m_mblock.em(i, j, em::ex3) + m_mblock.em(i + 1, j, em::ex3))};
 
+    // real_t w1;
+    // real_t w2;
+
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ - HALF, j_});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_});
+    // real_t B2_half {(w1 * m_mblock.em0(i - 1, j, em::bx2) + w2 * m_mblock.em0(i, j, em::bx2)) / (w1 + w2)};    
+    // real_t D1_half {(w1 * m_mblock.em(i - 1, j, em::ex1) + w2 * m_mblock.em(i, j, em::ex1)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ - HALF, j_ + HALF});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_ + HALF});
+    // real_t B3_half {(w1 * m_mblock.em0(i - 1, j, em::bx3) + w2 * m_mblock.em0(i, j, em::bx3)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_, j_});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE, j_});
+    // real_t D3_half {(w1 * m_mblock.em(i, j, em::ex3) + w2 * m_mblock.em(i + 1, j, em::ex3)) / (w1 + w2)};
+
     // Contravariant D to covariant D
     real_t D1_cov {h_11_iPj * m_mblock.em(i, j, em::ex1) + h_13_iPj * D3_half};
     real_t D2_cov {h_22_ijP * m_mblock.em(i, j, em::ex2)};
@@ -128,7 +152,10 @@ namespace ntt {
     // Compute E_i
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * D1_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * D2_cov - sqrt_detH_ijP * beta_ijP *  B3_half;
-    m_mblock.aux(i, j, em::ex3) = alpha_ij * D3_cov + sqrt_detH_ij * beta_ij *  B2_half;
+    m_mblock.aux(i, j, em::ex3) = alpha_ij  * D3_cov + sqrt_detH_ij  * beta_ij  *  B2_half;
+
+        // printf("E field %.10f %.10f %.10f %.10f %lu %lu %lu\n", m_mblock.aux(i, j, em::ex2), B3_half, m_mblock.em0(i - 1, j, em::bx3), m_mblock.em0(i, j, em::bx3), j, j_, i);
+
    }
 
   template <>
@@ -184,6 +211,20 @@ namespace ntt {
     real_t B1_half {HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em0(i + 1, j, em::bx1))};
     real_t B3_half {HALF * (m_mblock.em0(i - 1, j, em::bx3) + m_mblock.em0(i, j , em::bx3))};
 
+    // real_t w1;
+    // real_t w2;
+
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_, j_ + HALF});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE, j_ + HALF});
+    // real_t D2_half {(w1 * m_mblock.em(i, j, em::ex2) + w2 * m_mblock.em(i + 1, j, em::ex2)) / (w1 + w2)};
+    // real_t B1_half {(w1 * m_mblock.em0(i, j, em::bx1) + w2 * m_mblock.em0(i + 1, j, em::bx1)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_, j_});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE, j_});
+    // real_t D3_half {(w1 * m_mblock.em(i, j, em::ex3) + w2 * m_mblock.em(i + 1, j, em::ex3)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ - HALF, j_ + HALF});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_ + HALF});
+    // real_t B3_half {(w1 * m_mblock.em0(i - 1, j, em::bx3) + w2 * m_mblock.em0(i, j, em::bx3)) / (w1 + w2)};
+
     // Contravariant B to covariant B
     real_t B1_cov {h_11_ijP * m_mblock.em0(i, j, em::bx1) + h_13_ijP * B3_half};
     real_t B2_cov {h_22_iPj * m_mblock.em0(i, j, em::bx2)};
@@ -237,19 +278,33 @@ namespace ntt {
 
     // D contra interpolation at half cell
     real_t D2_half {HALF * (m_mblock.em0(i, j, em::ex2) + m_mblock.em0(i + 1, j , em::ex2))};
-    real_t D3_half {HALF * (m_mblock.em0(i, j , em::ex3) + m_mblock.em0(i + 1, j , em::ex3))};
+    real_t D3_half {HALF * (m_mblock.em0(i, j, em::ex3) + m_mblock.em0(i + 1, j , em::ex3))};
 
     // B contra interpolation at half cell
     real_t B1_half {HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em0(i + 1, j, em::bx1))};
     real_t B3_half {HALF * (m_mblock.em0(i - 1, j, em::bx3) + m_mblock.em0(i, j , em::bx3))};
 
+    // real_t w1;
+    // real_t w2;
+
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_, j_ + HALF});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE, j_ + HALF});
+    // real_t D2_half {(w1 * m_mblock.em0(i, j, em::ex2) + w2 * m_mblock.em0(i + 1, j, em::ex2)) / (w1 + w2)};
+    // real_t B1_half {(w1 * m_mblock.em0(i, j, em::bx1) + w2 * m_mblock.em0(i + 1, j, em::bx1)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_, j_});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE, j_});
+    // real_t D3_half {(w1 * m_mblock.em0(i, j, em::ex3) + w2 * m_mblock.em0(i + 1, j, em::ex3)) / (w1 + w2)};
+    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ - HALF, j_ + HALF});
+    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_ + HALF});
+    // real_t B3_half {(w1 * m_mblock.em0(i - 1, j, em::bx3) + w2 * m_mblock.em0(i, j, em::bx3)) / (w1 + w2)};
+
     // Contravariant B to covariant B
-    real_t B1_cov {h_11_ijP * m_mblock.em0(i, j, em::bx1) + h_13_ijP * B3_half};
-    real_t B2_cov {h_22_iPj * m_mblock.em0(i, j, em::bx2)};
+    real_t B1_cov {h_11_ijP  * m_mblock.em0(i, j, em::bx1) + h_13_ijP * B3_half};
+    real_t B2_cov {h_22_iPj  * m_mblock.em0(i, j, em::bx2)};
     real_t B3_cov {h_33_iPjP * m_mblock.em0(i, j, em::bx3) + h_13_iPjP * B1_half};
 
     // Compute H_i
-    m_mblock.aux(i, j, em::bx1) = alpha_ijP * B1_cov;
+    m_mblock.aux(i, j, em::bx1) = alpha_ijP  * B1_cov;
     m_mblock.aux(i, j, em::bx2) = alpha_iPj  * B2_cov + sqrt_detH_iPj  * beta_iPj  * D3_half;
     m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - sqrt_detH_iPjP * beta_iPjP * D2_half;
    }

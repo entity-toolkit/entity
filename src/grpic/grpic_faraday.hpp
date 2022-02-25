@@ -43,7 +43,7 @@ namespace ntt {
     m_mblock.em0(i, j, em::bx1)
       += m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i, j, em::ex3) - m_mblock.aux(i, j + 1, em::ex3));
 
-    if ((j == j_min) || (j == j_max)) {
+    if (j == j_min) {
     m_mblock.em0(i, j, em::bx2) = ZERO;
     } else {
     m_mblock.em0(i, j, em::bx2)
@@ -88,7 +88,7 @@ namespace ntt {
     m_mblock.em0(i, j, em::bx1) = m_mblock.em(i, j, em::bx1) + 
                                   m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i, j, em::ex3) - m_mblock.aux(i, j + 1, em::ex3));
 
-    if ((j == j_min) || (j == j_max)) {
+    if (j == j_min) {
     m_mblock.em0(i, j, em::bx2) = ZERO;
     } else {
     m_mblock.em0(i, j, em::bx2) = m_mblock.em(i, j, em::bx2) + 
@@ -99,6 +99,9 @@ namespace ntt {
                                   +  m_coeff * inv_sqrt_detH_iPjP
                                   * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
                                   +  m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
+
+    // printf("B field %.10f %.10f %.10f %.10f %.10f %lu %lu\n", m_mblock.em0(i, j, em::bx3), m_mblock.aux(i, j + 1, em::ex1), m_mblock.aux(i, j, em::ex1), m_mblock.aux(i, j, em::ex2), m_mblock.aux(i + 1, j, em::ex2), j_, j);
+
     }
 
   template <>
