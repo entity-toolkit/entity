@@ -5,12 +5,12 @@ runtime         = 0.1
 [domain]
 sph_rabsorb     = 9.0
 resolution      = [256, 128]
-extent          = [1.4, 10.0]
+extent          = [0.9, 10.0]       # Radial extent in units of the event horizon radius  
 boundaries      = ["USER", "USER"]
-a               = 0.0
+a               = 0.99
 
 [algorithm]
-CFL             = 0.4
+CFL             = 0.1
 correction      = 1.025
 
 [units]
