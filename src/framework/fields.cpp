@@ -39,7 +39,8 @@ namespace ntt {
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       em0 {"EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS}, 
       aux {"AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS}, 
-      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
+      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} 
+      aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
@@ -49,7 +50,8 @@ namespace ntt {
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       em0 {"EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       aux {"AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
+      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS}
+      aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 

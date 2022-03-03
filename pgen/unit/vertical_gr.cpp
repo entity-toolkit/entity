@@ -89,18 +89,18 @@ namespace ntt {
         real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
         real_t br_target  {userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
 
-        mblock.em(i, j, em::ex3) = mblock.em(i - 1, j, em::ex3); //0.0;
-        mblock.em(i, j, em::ex2) = mblock.em(i - 1, j, em::ex2); // 0.0;
-        mblock.em(i, j, em::bx1) = br_target; //0.0;
+        mblock.em(i, j, em::ex3) = ZERO; //mblock.em(i + 1, j, em::ex3); //ZERO;
+        mblock.em(i, j, em::ex2) = ZERO; //mblock.em(i + 1, j, em::ex2); //ZERO;
+        mblock.em(i, j, em::bx1) = ZERO; //mblock.em(i + 1, j, em::bx1); //br_target;
       });
 
     Kokkos::parallel_for(
       "userBcFlds_rmax",
       NTTRange<Dimension::TWO_D>({mblock.i_max(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max()}),
       Lambda(index_t i, index_t j) {
-        mblock.em(i, j, em::ex3) = 0.0;
-        mblock.em(i, j, em::ex2) = 0.0;
-        mblock.em(i, j, em::bx1) = 0.0;
+        mblock.em(i, j, em::ex3) = ZERO;
+        mblock.em(i, j, em::ex2) = ZERO;
+        mblock.em(i, j, em::bx1) = ZERO;
       });
   }
 

@@ -9,18 +9,26 @@ namespace ntt {
   template <>
   void GRPIC<Dimension::TWO_D>::Compute_E_Substep(const real_t&, const short (&s)) {
     if (s == 0) {
-    Kokkos::parallel_for("auxiliary_E", m_mblock.loopActiveCells(), Compute_E0<Dimension::TWO_D>(m_mblock));
+    Kokkos::parallel_for("auxiliary_E", 
+    NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), Compute_E0<Dimension::TWO_D>(m_mblock));
+    } else if (s == 1) {
+    Kokkos::parallel_for("auxiliary_E", 
+    NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), Compute_E<Dimension::TWO_D>(m_mblock));
     } else {
-    Kokkos::parallel_for("auxiliary_E", m_mblock.loopActiveCells(), Compute_E<Dimension::TWO_D>(m_mblock));
+    NTTError("Only two options: 0 and 1");
     }
   }
 
   template <>
   void GRPIC<Dimension::TWO_D>::Compute_H_Substep(const real_t&, const short (&s)) {
     if (s == 0) {
-    Kokkos::parallel_for("auxiliary_H", m_mblock.loopActiveCells(), Compute_H0<Dimension::TWO_D>(m_mblock));
+    Kokkos::parallel_for("auxiliary_H", 
+    NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), Compute_H0<Dimension::TWO_D>(m_mblock));
+    } else if (s == 1) {
+    Kokkos::parallel_for("auxiliary_H",
+    NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), Compute_H<Dimension::TWO_D>(m_mblock));
     } else {
-    Kokkos::parallel_for("auxiliary_H", m_mblock.loopActiveCells(), Compute_H<Dimension::TWO_D>(m_mblock));
+    NTTError("Only two options: 0 and 1");
     }
   }
 

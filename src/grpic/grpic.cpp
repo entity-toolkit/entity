@@ -48,7 +48,7 @@ namespace ntt {
 
       // B0 at t=1/2
       faradaySubstep(time, 0.5, 0);
-      fieldBoundaryConditions(time, 0);
+      fieldBoundaryConditions(time, 1);
 
       // D1 at t=1/2
       ampereSubstep(time, 0.5, -1);
@@ -61,7 +61,7 @@ namespace ntt {
 
       // B0 at t=1
       faradaySubstep(time, 1.0, 1);
-      fieldBoundaryConditions(time, 0);
+      fieldBoundaryConditions(time, 1);
 
       // D0 at t=1
       ampereSubstep(time, 1.0, 0);
@@ -90,13 +90,12 @@ namespace ntt {
       Average_EM_Substep(time);
       // E at n-1/2 with B and D0
       Compute_E_Substep(time, 0);
-      AuxiliaryBoundaryConditions(time);
       // B0 at n, B at n-1/2 
       faradaySubstep(time, 1.0, 0);
       timers.stop(1);
 
       timers.start(2);
-      fieldBoundaryConditions(time, 0);
+      fieldBoundaryConditions(time, 1);
       timers.stop(2);
 
       timers.start(1);
@@ -120,13 +119,12 @@ namespace ntt {
       Average_J_Substep(time);
       // E at n with B0 and D
       Compute_E_Substep(time, 1);
-      AuxiliaryBoundaryConditions(time);
       // B0 at n+1/2, B at n-1/2
       faradaySubstep(time, 1.0, 1);
       timers.stop(1);
 
       timers.start(2);
-      fieldBoundaryConditions(time, 0);
+      fieldBoundaryConditions(time, 1);
       timers.stop(2);
 
       timers.start(1);
@@ -142,7 +140,7 @@ namespace ntt {
       // H at n+1/2 with B0 and D0
       Compute_H_Substep(time, 1);
       AuxiliaryBoundaryConditions(time);
-      // D0 at n+1, D at n, then all fields and currents are swapped
+      // D0 at n+1, D at n
       ampereSubstep(time, 1.0, 1);
       
       // Final: B0 at n-1/2, B at n+1/2, D0 at n, D at n+1, x at n+1, u at n+1/2, J0 at n, J at n+1/2
