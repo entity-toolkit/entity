@@ -7,20 +7,10 @@
      * Compute the square root of the determinant of h-matrix.
      *
      * @param x coordinate array in code units (size of the array is D).
-     * @returns sqrt(det(h_ij)).
+     * @returns sqrt(det(h)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       return std::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
-    }
-
-    /**
-     * Compute the square root of the determinant of h-matrix divided by sin(theta).
-     *
-     * @param x coordinate array in code units (size of the array is D).
-     * @returns sqrt(det(h_ij))/sin(theta).
-     */
-    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
-      return h_22(x)/alpha(x);
     }
 
     /**
@@ -89,7 +79,7 @@
     Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
       coord_t<D> y;
       coord_t<D> rth_;
-      real_t h_33_cov, h_13_cov, inv1, inv2;
+      real_t h_13_cov, inv1, inv2;
       std::copy(std::begin(x), std::end(x), std::begin(y));
       x_Code2Sph(x, rth_);
       if (std::sin(rth_[1]) == ZERO) {
