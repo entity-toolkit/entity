@@ -23,7 +23,6 @@ namespace ntt {
     real_t (*m_a0)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
     real_t (*m_a1)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
     real_t (*m_a3)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
-    // RealFieldND<D, 1> m_bru0;
 
   public:
     init_fields_potential(
@@ -32,12 +31,9 @@ namespace ntt {
     real_t (*a0)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x),
     real_t (*a1)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x),
     real_t (*a3)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x)
-    // RealFieldND<D, 1> bru0
-    // ): m_mblock(mblock), m_eps(eps), m_a3(a3), m_a1(a1), m_a0(a0), m_bru0(bru0) {}
     ): m_mblock(mblock), m_eps(eps), m_a0(a0), m_a1(a1), m_a3(a3) {}
 
     Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   template <>
@@ -45,7 +41,6 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max() - 2)};
     coord_t<Dimension::TWO_D> x0m, x0p;
     coord_t<Dimension::TWO_D> rthm, rthp;
     real_t dx1, dx2;
@@ -95,8 +90,6 @@ namespace ntt {
     }
     real_t E1d {(m_a0(m_mblock, x0p) - m_a0(m_mblock, x0m)) / m_eps};
 
-    // printf("theta:::: %f %f % f \n", B2u, ONE * std::sin(rth_[1]) / rth_[0]);
-
     x0m[0] = i_ + HALF, x0m[1] = j_ + HALF - HALF * m_eps;
     x0p[0] = i_ + HALF, x0p[1] = j_ + HALF + HALF * m_eps;
     m_mblock.metric.x_Code2Sph(x0m, rthm);
@@ -142,8 +135,6 @@ namespace ntt {
     m_mblock.em0(i, j, em::ex2) = D2u;
     m_mblock.em0(i, j, em::ex3) = D3u;
 
-    // m_bru0(i, j, 0) = Bru;
-
     m_mblock.em(i, j, em::bx1) = B1u;
     m_mblock.em(i, j, em::bx2) = B2u;
     m_mblock.em(i, j, em::bx3) = B3u;
@@ -151,6 +142,44 @@ namespace ntt {
     m_mblock.em(i, j, em::ex2) = D2u;
     m_mblock.em(i, j, em::ex3) = D3u;
   }
+
+  /**
+   * Computes Aphi from integration of local Br
+   *
+   * @tparam D Dimension.
+   */
+
+  template <Dimension D>
+    class Compute_Aphi {
+    using index_t = typename RealFieldND<D, 6>::size_type;
+    Meshblock<D, SimulationType::GRPIC> m_mblock;
+    real_t m_eps;
+
+  public:
+    Compute_Aphi(
+    const Meshblock<D, SimulationType::GRPIC>& mblock,
+    real_t eps
+    ): m_mblock(mblock), m_eps(eps) {}
+
+    Inline void operator()(const index_t, const index_t) const;
+  };
+
+  template <>
+  Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+
+    Kokkos::parallel_for("compute_aphi",
+    NTTRange<Dimension::ONE_D>({m_mblock.j_min() + 1}, {j_}), 
+    Lambda(index_t k_) {
+        real_t sqrt_detH_ij1  {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ - HALF})};
+        real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ + HALF})};
+        index_t k {k + N_GHOSTS};
+        m_mblock.aphi(i, j, 1) += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k, em::bx1));   
+                      }
+    );
+  }
+
 
 } // namespace ntt
 
