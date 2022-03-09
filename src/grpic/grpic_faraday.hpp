@@ -49,8 +49,8 @@ namespace ntt {
       += m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i + 1, j, em::ex3) - m_mblock.aux(i, j, em::ex3));
     }
     m_mblock.em0(i, j, em::bx3) += m_coeff * inv_sqrt_detH_iPjP
-                                  * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
-                                     + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));  
+                                * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
+                                + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));  
   }
 
   template <>

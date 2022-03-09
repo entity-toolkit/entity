@@ -42,8 +42,6 @@ namespace ntt {
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
     coord_t<Dimension::TWO_D> x0m, x0p;
-    coord_t<Dimension::TWO_D> rthm, rthp;
-    real_t dx1, dx2;
 
     real_t inv_sqrt_detH_ij   {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
     real_t inv_sqrt_detH_ijP  {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
@@ -64,23 +62,13 @@ namespace ntt {
 
     x0m[0] = i_, x0m[1] = j_ + HALF - HALF * m_eps;
     x0p[0] = i_, x0p[1] = j_ + HALF + HALF * m_eps;
-    m_mblock.metric.x_Code2Sph(x0m, rthm);
-    m_mblock.metric.x_Code2Sph(x0p, rthp);
-    dx2 = rthp[1] - rthm[1];
 
     real_t E2d    {  (m_a0(m_mblock, x0p) - m_a0(m_mblock, x0m)) / m_eps};
     real_t B1u    {  (m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
     real_t B3_aux {- (m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
 
-    coord_t<Dimension::TWO_D> rth_;
-    coord_t<Dimension::TWO_D> x {i_, j_};
-    m_mblock.metric.x_Code2Sph(x, rth_);
-
     x0m[0] = i_ + HALF - HALF * m_eps, x0m[1] = j_;
     x0p[0] = i_ + HALF + HALF * m_eps, x0p[1] = j_;
-    m_mblock.metric.x_Code2Sph(x0m, rthm);
-    m_mblock.metric.x_Code2Sph(x0p, rthp);
-    dx1 = rthp[0] - rthm[0];
 
     real_t B2u;
     if (j == j_min) {
@@ -92,17 +80,11 @@ namespace ntt {
 
     x0m[0] = i_ + HALF, x0m[1] = j_ + HALF - HALF * m_eps;
     x0p[0] = i_ + HALF, x0p[1] = j_ + HALF + HALF * m_eps;
-    m_mblock.metric.x_Code2Sph(x0m, rthm);
-    m_mblock.metric.x_Code2Sph(x0p, rthp);
-    dx2 = rthp[1] - rthm[1];
     
     real_t B3u {- (m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
 
     x0m[0] = i_ - HALF * m_eps, x0m[1] = j_;
     x0p[0] = i_ + HALF * m_eps, x0p[1] = j_;
-    m_mblock.metric.x_Code2Sph(x0m, rthm);
-    m_mblock.metric.x_Code2Sph(x0p, rthp);
-    dx1 = rthp[0] - rthm[0];
 
     real_t B2_aux;
     if (j == j_min) {
@@ -170,7 +152,7 @@ namespace ntt {
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
     Kokkos::parallel_for("compute_aphi",
-    NTTRange<Dimension::ONE_D>({m_mblock.j_min() + 1}, {j_}), 
+    NTTRange<Dimension::ONE_D>({m_mblock.j_min() + 1}, {(int)j_}), 
     Lambda(index_t k_) {
         real_t sqrt_detH_ij1  {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ - HALF})};
         real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ + HALF})};
