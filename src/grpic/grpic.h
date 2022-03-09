@@ -68,7 +68,7 @@ namespace ntt {
      *
      * @param t time in physical units.
      * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
-     * @param s switches whether it applies on em0 or em
+     * @param s switches whether it applies to em0 or em
      */
     void ampereSubstep(const real_t& t, const real_t& f, const short& s);
  
@@ -76,6 +76,7 @@ namespace ntt {
      * Compute E field.
      *
      * @param t time in physical units.
+     * @param s switches whether it applies to em0 or em
      */
     void Compute_E_Substep(const real_t& t, const short& s);
   
@@ -83,7 +84,7 @@ namespace ntt {
      * Compute H field.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies on em0 or em
+     * @param s switches whether it applies to em0 or em
      */
     void Compute_H_Substep(const real_t& t, const short& s);
   
@@ -91,7 +92,7 @@ namespace ntt {
      * Time average EM fields.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies on em0 or em
+     * @param s switches whether it applies to em0 or em
      */
     void Average_EM_Substep(const real_t& t);
   
@@ -106,7 +107,7 @@ namespace ntt {
      * Apply boundary conditions for fields.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies on em0 or em
+     * @param s switches whether it applies to B or D
      */
     void fieldBoundaryConditions(const real_t& t, const short& s);
 
