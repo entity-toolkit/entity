@@ -31,22 +31,20 @@ namespace ntt {
   Inline void Compute_E0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
 
     real_t h_11_iPj  {m_mblock.metric.h_11({i_ + HALF, j_})};
-    real_t h_13_iPj  {m_mblock.metric.h_13({i_ + HALF, j_})};
     real_t h_22_ijP  {m_mblock.metric.h_22({i_, j_ + HALF})};
     real_t h_33_ij   {m_mblock.metric.h_33({i_, j_})};
-    real_t h_13_ij   {m_mblock.metric.h_13({i_, j_})};
     real_t alpha_ij  {m_mblock.metric.alpha({i_, j_})};
     real_t alpha_iPj {m_mblock.metric.alpha({i_ + HALF, j_})};
     real_t alpha_ijP {m_mblock.metric.alpha({i_, j_ + HALF})};
-    real_t beta_ij   {m_mblock.metric.beta1u({i_, j_})};
-    real_t beta_ijP  {m_mblock.metric.beta1u({i_, j_ + HALF})};
-
-    real_t sqrt_detH_ijP {m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
-    real_t sqrt_detH_ij {m_mblock.metric.sqrt_det_h({i_, j_})};
+    
+    // real_t beta_ij   {m_mblock.metric.beta1u({i_, j_})};
+    // real_t beta_ijP  {m_mblock.metric.beta1u({i_, j_ + HALF})};
+    // real_t sqrt_detH_ijP {m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
+    // real_t sqrt_detH_ij {m_mblock.metric.sqrt_det_h({i_, j_})};
+    // real_t h_13_ij   {m_mblock.metric.h_13({i_, j_})};
+    // real_t h_13_iPj  {m_mblock.metric.h_13({i_ + HALF, j_})};
 
     // // B contra interpolation at half cell
     // real_t B2_half {HALF * (m_mblock.em(i - 1, j, em::bx2) + m_mblock.em(i, j, em::bx2))};
@@ -137,22 +135,20 @@ namespace ntt {
   Inline void Compute_E<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
     
     real_t h_11_iPj  {m_mblock.metric.h_11({i_ + HALF, j_})};
-    real_t h_13_iPj  {m_mblock.metric.h_13({i_ + HALF, j_})};
     real_t h_22_ijP  {m_mblock.metric.h_22({i_, j_ + HALF})};
     real_t h_33_ij   {m_mblock.metric.h_33({i_, j_})};
-    real_t h_13_ij   {m_mblock.metric.h_13({i_, j_})};
     real_t alpha_ij  {m_mblock.metric.alpha({i_, j_})};
     real_t alpha_iPj {m_mblock.metric.alpha({i_ + HALF, j_})};
     real_t alpha_ijP {m_mblock.metric.alpha({i_, j_ + HALF})};
-    real_t beta_ij   {m_mblock.metric.beta1u({i_, j_})};
-    real_t beta_ijP  {m_mblock.metric.beta1u({i_, j_ + HALF})};
-    
-    real_t sqrt_detH_ijP {m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
-    real_t sqrt_detH_ij {m_mblock.metric.sqrt_det_h({i_, j_})};
+
+    // real_t beta_ij   {m_mblock.metric.beta1u({i_, j_})};
+    // real_t beta_ijP  {m_mblock.metric.beta1u({i_, j_ + HALF})};    
+    // real_t sqrt_detH_ijP {m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
+    // real_t sqrt_detH_ij {m_mblock.metric.sqrt_det_h({i_, j_})};
+    // real_t h_13_iPj  {m_mblock.metric.h_13({i_ + HALF, j_})};
+    // real_t h_13_ij   {m_mblock.metric.h_13({i_, j_})};
 
     // // B contra interpolation at half cell
     // real_t B2_half {HALF * (m_mblock.em0(i - 1, j, em::bx2) + m_mblock.em0(i, j, em::bx2))};
@@ -248,22 +244,20 @@ namespace ntt {
   Inline void Compute_H0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
 
     real_t h_11_ijP   {m_mblock.metric.h_11({i_, j_ + HALF})};
-    real_t h_13_ijP   {m_mblock.metric.h_13({i_, j_ + HALF})};
     real_t h_22_iPj   {m_mblock.metric.h_22({i_ + HALF, j_})};
     real_t h_33_iPjP  {m_mblock.metric.h_33({i_ + HALF, j_ + HALF})};
-    real_t h_13_iPjP  {m_mblock.metric.h_13({i_ + HALF, j_ + HALF})};
     real_t alpha_ijP  {m_mblock.metric.alpha({i_, j_ + HALF})};
     real_t alpha_iPj  {m_mblock.metric.alpha({i_ + HALF, j_})};
     real_t alpha_iPjP {m_mblock.metric.alpha({i_ + HALF, j_ + HALF})};
-    real_t beta_iPj   {m_mblock.metric.beta1u({i_ + HALF, j_})};
-    real_t beta_iPjP  {m_mblock.metric.beta1u({i_ + HALF, j_ + HALF})};
-    
-    real_t sqrt_detH_iPj  {m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
-    real_t sqrt_detH_iPjP {m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
+
+    // real_t beta_iPj   {m_mblock.metric.beta1u({i_ + HALF, j_})};
+    // real_t beta_iPjP  {m_mblock.metric.beta1u({i_ + HALF, j_ + HALF})};    
+    // real_t sqrt_detH_iPj  {m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
+    // real_t sqrt_detH_iPjP {m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
+    // real_t h_13_ijP   {m_mblock.metric.h_13({i_, j_ + HALF})};
+    // real_t h_13_iPjP  {m_mblock.metric.h_13({i_ + HALF, j_ + HALF})};
 
     // // D contra interpolation at half cell
     // real_t D2_half {HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i + 1, j , em::ex2))};
@@ -354,22 +348,20 @@ namespace ntt {
   Inline void Compute_H<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
-    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
-    index_t j_max {static_cast<index_t>(m_mblock.j_max())};
 
     real_t h_11_ijP   {m_mblock.metric.h_11({i_, j_ + HALF})};
-    real_t h_13_ijP   {m_mblock.metric.h_13({i_, j_ + HALF})};
     real_t h_22_iPj   {m_mblock.metric.h_22({i_ + HALF, j_})};
     real_t h_33_iPjP  {m_mblock.metric.h_33({i_ + HALF, j_ + HALF})};
-    real_t h_13_iPjP  {m_mblock.metric.h_13({i_ + HALF, j_ + HALF})};
     real_t alpha_ijP  {m_mblock.metric.alpha({i_, j_ + HALF})};
     real_t alpha_iPj  {m_mblock.metric.alpha({i_ + HALF, j_})};
     real_t alpha_iPjP {m_mblock.metric.alpha({i_ + HALF, j_ + HALF})};
-    real_t beta_iPj   {m_mblock.metric.beta1u({i_ + HALF, j_})};
-    real_t beta_iPjP  {m_mblock.metric.beta1u({i_ + HALF, j_ + HALF})};
 
-    real_t sqrt_detH_iPj {m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
-    real_t sqrt_detH_iPjP {m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
+    // real_t beta_iPj   {m_mblock.metric.beta1u({i_ + HALF, j_})};
+    // real_t beta_iPjP  {m_mblock.metric.beta1u({i_ + HALF, j_ + HALF})};
+    // real_t sqrt_detH_iPj {m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
+    // real_t sqrt_detH_iPjP {m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
+    // real_t h_13_ijP   {m_mblock.metric.h_13({i_, j_ + HALF})};
+    // real_t h_13_iPjP  {m_mblock.metric.h_13({i_ + HALF, j_ + HALF})};
 
     // D contra interpolation at half cell
     // real_t D2_half {HALF * (m_mblock.em0(i, j, em::ex2) + m_mblock.em0(i + 1, j , em::ex2))};

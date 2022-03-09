@@ -11,12 +11,12 @@ namespace ntt {
   void GRPIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t& t, const short& s) {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
 
-    // r = rmin boundary
-    if (m_mblock.boundaries[0] == BoundaryCondition::USER) {
-      m_pGen.userBCFields(t, m_sim_params, m_mblock);
-    } else {
-      NTTError("2d non-user boundary condition not implemented for curvilinear");
-    }
+    // // r = rmin boundary
+    // if (m_mblock.boundaries[0] == BoundaryCondition::USER) {
+    //   m_pGen.userBCFields(t, m_sim_params, m_mblock);
+    // } else {
+    //   NTTError("2d non-user boundary condition not implemented for curvilinear");
+    // }
 
     auto mblock {this->m_mblock};
 
@@ -30,6 +30,7 @@ namespace ntt {
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::ex3) = ZERO;
         });
+    
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
@@ -38,6 +39,16 @@ namespace ntt {
         mblock.em0(i, j, em::ex3) = ZERO;
         });
 
+    // r = rmin boundary
+    Kokkos::parallel_for(
+      "2d_bc_rmin",
+      NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
+      Lambda(index_t i, index_t j) {
+        mblock.em0(i, j, em::ex3) = ZERO; 
+        mblock.em0(i, j, em::ex2) = ZERO; 
+      });
+
+    // Absorbing boundary
     auto r_absorb {m_sim_params.metric_parameters()[2]};
     auto r_max {m_mblock.metric.x1_max};
     auto pGen {this->m_pGen};
@@ -62,7 +73,15 @@ namespace ntt {
         mblock.em0(i, j, em::ex1) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex1);
         mblock.em0(i, j, em::ex2) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex2);
         mblock.em0(i, j, em::ex3) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex3);
-
+      });
+    
+    // r = rmax
+    Kokkos::parallel_for(
+      "2d_bc_rmax",
+      NTTRange<Dimension::TWO_D>({mblock.i_max(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max()}),
+      Lambda(index_t i, index_t j) {
+        mblock.em0(i, j, em::ex3) = ZERO;
+        mblock.em0(i, j, em::ex2) = ZERO;
       });
 
     // BC for B field
@@ -75,12 +94,26 @@ namespace ntt {
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::bx2) = ZERO;
         });
+
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
       NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::bx2) = ZERO;
+      });
+
+    // r = rmin boundary
+    Kokkos::parallel_for(
+      "2d_bc_rmin",
+      NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
+      Lambda(index_t i, index_t j) {
+        
+        // real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+        // real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+        // real_t br_target  {userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
+
+        mblock.em0(i, j, em::bx1) = ZERO; //br_target;
       });
 
     auto r_absorb {m_sim_params.metric_parameters()[2]};
@@ -115,18 +148,28 @@ namespace ntt {
         mblock.em0(i, j, em::bx2) = bth_interm;
         mblock.em0(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx3);
       });
+
+    // r = rmax
+    Kokkos::parallel_for(
+      "2d_bc_rmax",
+      NTTRange<Dimension::TWO_D>({mblock.i_max(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max()}),
+      Lambda(index_t i, index_t j) {
+        mblock.em0(i, j, em::bx1) = ZERO;
+    });
+
   }
   
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::fieldBoundaryConditions(const real_t&, const short& s) {
+  void GRPIC<Dimension::THREE_D>::fieldBoundaryConditions(const real_t&, const short&) {
     NTTError("not implemented");
   }
 
   template <>
   void GRPIC<Dimension::TWO_D>::AuxiliaryBoundaryConditions(const real_t& t) {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+    (void) t;
 
     auto mblock {this->m_mblock};
     // theta = 0 boundary

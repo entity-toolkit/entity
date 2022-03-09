@@ -59,7 +59,7 @@
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h^33 (contravariant, upper index) metric component.
-     * @details Singular at theta=0. No need to take a limit.
+     * @details Singular at theta=0.
      */
     Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
       real_t h_11_cov, h_13_cov;
@@ -85,14 +85,14 @@
       if (std::sin(rth_[1]) == ZERO) {
       y[1] = x[1] + 1e-1;
       h_13_cov = h_13(y);
-      inv1 = h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+      inv1 = - h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
       y[1] = x[1] - 1e-1;
       h_13_cov = h_13(y);
-      inv2 = h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+      inv2 = - h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
       return HALF * (inv1 + inv2);
       } else {
       h_13_cov = h_13(x);
-      return h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
+      return - h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
       }
     }  
 
