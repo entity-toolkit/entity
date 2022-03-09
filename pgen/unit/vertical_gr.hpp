@@ -14,12 +14,12 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   struct ProblemGenerator {
     ProblemGenerator(const SimulationParams& sim_params);
-    real_t epsilon {static_cast<real_t>(1e-2)};
+    real_t epsilon {static_cast<real_t>(1e-1)};
     // RealFieldND<D, 1> Bru0;
 
     void userInitFields(const SimulationParams&, Meshblock<D, S>&);
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
-    void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+    // void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
 
     static real_t A0(const Meshblock<D, S>& mblock, const coord_t<D>& x)
     {
@@ -39,8 +39,8 @@ namespace ntt {
     {
       coord_t<D> rth_;
       mblock.metric.x_Code2Sph(x, rth_);
-      // return HALF * std::sin(rth_[1]) * std::sin(rth_[1]) * rth_[0] * rth_[0];
-      return HALF * std::sin(rth_[1]) * mblock.metric.sqrt_det_h(x) ;
+      return HALF * std::sin(rth_[1]) * std::sin(rth_[1]) * rth_[0] * rth_[0];
+      // return HALF * std::sin(rth_[1]) * mblock.metric.sqrt_det_h(x) ;
     }
 
     Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {

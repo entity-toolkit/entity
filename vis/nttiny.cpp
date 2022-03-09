@@ -221,7 +221,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   void restart() override {
     m_sim.initializeSetup();
     m_sim.fieldBoundaryConditions(ZERO, 0);
-    m_sim.initial_step(ZERO);
+    // m_sim.initial_step(ZERO);
     setData();
     m_time = 0.0;
     m_timestep = 0;
@@ -248,7 +248,7 @@ auto main(int argc, char* argv[]) -> int {
     sim.verify();
     sim.printDetails();
     sim.fieldBoundaryConditions(ZERO, 0);
-    sim.initial_step(ZERO);
+    // sim.initial_step(ZERO);
     NTTSimulationVis visApi(sim);
 
     nttiny::Visualization<float> vis;
