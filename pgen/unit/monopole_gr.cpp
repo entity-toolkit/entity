@@ -30,7 +30,6 @@ namespace ntt {
     Kokkos::parallel_for(
       "userInitFlds",
       mblock.loopActiveCells(),
-      //  mblock.loopAllCells(),  
        init_fields_potential<Dimension::TWO_D>(mblock, epsilon, A0, A1, A3)
       );
   }

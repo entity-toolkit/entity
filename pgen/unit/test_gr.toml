@@ -10,7 +10,7 @@ boundaries      = ["USER", "USER"]
 a               = 0.99
 
 [algorithm]
-CFL             = 0.1
+CFL             = 0.9
 correction      = 1.025
 
 [units]
