@@ -46,7 +46,7 @@ namespace ntt {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};
-      return dr_sqr * (ONE + TWO * r / (r * r + a * a * cth * cth) );
+      return dr_sqr * (ONE + TWO * r / (r * r + a * a * cth * cth));
     }    
     
     /**
@@ -130,7 +130,7 @@ namespace ntt {
      * @returns sqrt(det(h))/sin(theta).
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
-      return h_22(x)/alpha(x);
+      return h_22(x) / alpha(x);
     }
 
     /**
