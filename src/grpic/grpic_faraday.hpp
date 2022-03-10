@@ -51,6 +51,15 @@ namespace ntt {
     m_mblock.em0(i, j, em::bx3) += m_coeff * inv_sqrt_detH_iPjP
                                 * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
                                 + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));  
+
+
+  // if ((j <=6) && (i <= 3)) {  
+  // // printf("Br  %.10f %.10f \n", m_mblock.em0(i , j, em::bx1), m_mblock.em(i, j, em::bx1));
+  // // printf("Bth %.10f %.10f \n", m_mblock.em0(i , j, em::bx2), m_mblock.em(i, j, em::bx2));
+  // printf("Bph %f %f %f %f %f %f %lu %lu\n", m_mblock.em0(i -1, j, em::bx3), m_mblock.em0(i, j, em::bx3), 
+  // m_mblock.aux(i, j + 1, em::ex1), m_mblock.aux(i, j, em::ex1), m_mblock.aux(i, j, em::ex2), m_mblock.aux(i + 1, j, em::ex2), i,j);
+  // }
+
   }
 
   template <>
