@@ -46,6 +46,23 @@ namespace ntt {
                                   * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                   + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
                                   // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx3);
+  
+  //   if ((j == 64) && (i <=5)) {
+  // printf("Ampère %f %f %lu %lu \n", m_mblock.em(i, j, em::ex2), m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3), i, j);
+  // }
+
+  // if ((j == 64) && (i ==2)) {
+  // printf("Hr %f %f %f %f %lu %lu \n", m_mblock.aux(i - 1, j, em::bx1), m_mblock.aux(i, j, em::bx1), m_mblock.aux(i + 1, j, em::bx1), m_mblock.aux(i + 2, j, em::bx1), i, j);
+  // printf("Hth %f %f %f %f %lu %lu \n", m_mblock.aux(i - 1, j, em::bx2), m_mblock.aux(i, j, em::bx2), m_mblock.aux(i + 1, j, em::bx2), m_mblock.aux(i + 2, j, em::bx2), i, j);  
+  // printf("Hph %f %f %f %f %lu %lu \n", m_mblock.aux(i - 1, j, em::bx3), m_mblock.aux(i, j, em::bx3), m_mblock.aux(i + 1, j, em::bx3), m_mblock.aux(i + 2, j, em::bx3), i, j);
+  // }
+
+  //   if ((j == 64) && (i <= 6)) {  
+  // printf("Er  %.10f %.10f \n", m_mblock.em0(i , j, em::ex1), m_mblock.em(i, j, em::ex1));
+  // printf("Eth %.10f %.10f \n", m_mblock.em0(i , j, em::ex2), m_mblock.em(i, j, em::ex2));
+  // printf("Eph %.10f %.10f \n", m_mblock.em0(i , j, em::ex3), m_mblock.em(i, j, em::ex3));
+  // }
+
   }
   
   template <>
@@ -127,7 +144,7 @@ namespace ntt {
     m_mblock.em(i, j, em::ex3) += m_coeff * inv_sqrt_detH_ij
                                   * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                   + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
-                                  // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx3);
+                                  // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx3);  
   }
 
   template <>

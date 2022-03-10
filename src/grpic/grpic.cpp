@@ -90,6 +90,7 @@ namespace ntt {
       Average_EM_Substep(time);
       // E at n-1/2 with B and D0
       Compute_E_Substep(time, 0);
+      AuxiliaryBoundaryConditions(time);
       // B0 at n, B at n-1/2 
       faradaySubstep(time, 1.0, 0);
       timers.stop(1);
@@ -119,6 +120,7 @@ namespace ntt {
       Average_J_Substep(time);
       // E at n with B0 and D
       Compute_E_Substep(time, 1);
+      AuxiliaryBoundaryConditions(time);
       // B0 at n+1/2, B at n-1/2
       faradaySubstep(time, 1.0, 1);
       timers.stop(1);
@@ -144,7 +146,7 @@ namespace ntt {
       ampereSubstep(time, 1.0, 1);
       
       // Final: B0 at n-1/2, B at n+1/2, D0 at n, D at n+1, x at n+1, u at n+1/2, J0 at n, J at n+1/2
-      // swap_em_cur(this->m_mblock);
+      swap_em_cur(this->m_mblock);
       timers.stop(1);
     
       timers.start(2);
@@ -216,7 +218,7 @@ namespace ntt {
       Compute_H_Substep(time, 1);
       // D0 at n+1, D at n, then all fields and currents are swapped
       ampereSubstep(time, -1.0, 1);
-      
+
       // Final: B0 at n-1/2, B at n+1/2, D0 at n, D at n+1, x at n+1, u at n+1/2, J0 at n, J at n+1/2
       swap_em_cur(this->m_mblock);
       timers.stop(1);
