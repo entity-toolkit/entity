@@ -73,7 +73,7 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
-    real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
+    real_t inv_sqrt_detH_ij  {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
 
@@ -114,7 +114,7 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
-    real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
+    real_t inv_sqrt_detH_ij  {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
 
@@ -162,7 +162,7 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
 
     real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};
-    real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
+    real_t inv_sqrt_detH_ijP  {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
 
     // theta = 0
     m_mblock.em0(i, j_min, em::ex1) += inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
@@ -198,7 +198,7 @@ namespace ntt {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
 
     real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};
-    real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
+    real_t inv_sqrt_detH_ijP  {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
 
     // theta = 0
     m_mblock.em0(i, j_min, em::ex1) = m_mblock.em(i, j_min, em::ex1) + inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
