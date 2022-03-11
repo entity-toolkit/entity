@@ -41,13 +41,6 @@ namespace ntt {
       return ONE - std::cos(rth_[1]);
     }
 
-    Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
-      coord_t<D> rth_;
-      real_t r_min {mblock.metric.x1_min};
-      mblock.metric.x_Code2Sph(x, rth_);
-      return ZERO;
-      }
-
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t inv_sqrt_detH_ijP  {ONE / mblock.metric.sqrt_det_h(x)};
