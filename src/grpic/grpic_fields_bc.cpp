@@ -23,25 +23,25 @@ namespace ntt {
     // BC for D field
     if (s == 0) {
 
-    // // theta = 0 boundary
-    // Kokkos::parallel_for(
-    //   "2d_bc_theta0",
-    //   NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
-    //   Lambda(index_t i, index_t j) {
-    //     mblock.em0(i, j, em::ex3) = ZERO;
+    // theta = 0 boundary
+    Kokkos::parallel_for(
+      "2d_bc_theta0",
+      NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
+      Lambda(index_t i, index_t j) {
+        mblock.em0(i, j, em::ex3) = ZERO;
 
-    //     mblock.em(i, j, em::ex3) = ZERO;
-    //     });
+        mblock.em(i, j, em::ex3) = ZERO;
+        });
     
-    // // theta = pi boundary
-    // Kokkos::parallel_for(
-    //   "2d_bc_thetaPi",
-    //   NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
-    //   Lambda(index_t i, index_t j) {
-    //     mblock.em0(i, j, em::ex3) = ZERO;
+    // theta = pi boundary
+    Kokkos::parallel_for(
+      "2d_bc_thetaPi",
+      NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
+      Lambda(index_t i, index_t j) {
+        mblock.em0(i, j, em::ex3) = ZERO;
 
-    //     mblock.em(i, j, em::ex3) = ZERO;
-    //     });
+        mblock.em(i, j, em::ex3) = ZERO;
+        });
 
     // r = rmin boundary
     Kokkos::parallel_for(
@@ -228,6 +228,22 @@ namespace ntt {
 
     // BC for E field
     if (s == 0) {
+
+          // theta = 0 boundary
+    Kokkos::parallel_for(
+      "2d_bc_theta0",
+      NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
+      Lambda(index_t i, index_t j) {
+        mblock.aux(i, j, em::ex3) = ZERO;
+        });
+    
+    // theta = pi boundary
+    Kokkos::parallel_for(
+      "2d_bc_thetaPi",
+      NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
+      Lambda(index_t i, index_t j) {
+        mblock.aux(i, j, em::ex3) = ZERO;
+        });
 
     // r = rmin boundary
     Kokkos::parallel_for(

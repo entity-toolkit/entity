@@ -154,9 +154,9 @@ namespace ntt {
     Kokkos::parallel_for("compute_aphi",
     NTTRange<Dimension::ONE_D>({m_mblock.j_min() + 1}, {(int)j_}), 
     Lambda(index_t k_) {
-        real_t sqrt_detH_ij1  {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ - HALF})};
+        real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ - HALF})};
         real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ + HALF})};
-        index_t k {k + N_GHOSTS};
+        index_t k {k_ + N_GHOSTS};
         m_mblock.aphi(i, j, 1) += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k, em::bx1));   
                       }
     );
