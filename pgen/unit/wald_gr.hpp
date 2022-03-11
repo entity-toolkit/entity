@@ -36,12 +36,6 @@ namespace ntt {
       return HALF * (mblock.metric.h_33(x) + TWO * mblock.metric.spin() * mblock.metric.h_13(x) * mblock.metric.beta1u(x));
     }
 
-    Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
-      coord_t<D> rth_;
-      mblock.metric.x_Code2Sph(x, rth_);
-      return ONE * std::cos(rth_[1]); // Vertical field at infinity
-    }
-
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t inv_sqrt_detH_ijP  {ONE / mblock.metric.sqrt_det_h(x)};
@@ -55,7 +49,11 @@ namespace ntt {
       real_t inv_sqrt_detH_iPj  {ONE / mblock.metric.sqrt_det_h(x)};
       x0m[0] = x[0] + HALF - HALF * epsilon, x0m[1] = x[1];
       x0p[0] = x[0] + HALF + HALF * epsilon, x0p[1] = x[1];
+      if (x[1] == ZERO) {
+      return ZERO;
+      } else {
       return - (A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_iPj / epsilon;
+      }
     }
 
   };
