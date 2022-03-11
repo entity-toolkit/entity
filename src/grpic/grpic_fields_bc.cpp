@@ -179,24 +179,24 @@ namespace ntt {
         real_t sigma_r2 {ONE - std::exp(- HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
 
         real_t br_target  {pGen.userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
-        real_t bth_target {pGen.userTargetField_bth_cntrv(mblock, {i_, j_ + HALF})};
+        real_t bth_target {pGen.userTargetField_bth_cntrv(mblock, {i_ + HALF, j_})};
         real_t bx1_source_cntr {mblock.em0(i, j, em::bx1)};
         real_t bx2_source_cntr {mblock.em0(i, j, em::bx2)};
-        real_t br_interm {(ONE - sigma_r2) * bx1_source_cntr + sigma_r2 * br_target};
-        real_t bth_interm {(ONE - sigma_r1) * bx2_source_cntr + sigma_r1 * bth_target};
+        real_t br_interm  {(ONE - sigma_r1) * bx1_source_cntr + sigma_r1 * br_target};
+        real_t bth_interm {(ONE - sigma_r2) * bx2_source_cntr + sigma_r2 * bth_target};
 
         mblock.em0(i, j, em::bx1) = br_interm;
         mblock.em0(i, j, em::bx2) = bth_interm;
-        mblock.em0(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx3);
+        mblock.em0(i, j, em::bx3) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx3);
 
         bx1_source_cntr = mblock.em(i, j, em::bx1);
         bx2_source_cntr = mblock.em(i, j, em::bx2);
-        br_interm = (ONE - sigma_r2) * bx1_source_cntr + sigma_r2 * br_target;
-        bth_interm = (ONE - sigma_r1) * bx2_source_cntr + sigma_r1 * bth_target;
+        br_interm =  (ONE - sigma_r1) * bx1_source_cntr + sigma_r1 * br_target;
+        bth_interm = (ONE - sigma_r2) * bx2_source_cntr + sigma_r2 * bth_target;
 
         mblock.em(i, j, em::bx1) = br_interm;
         mblock.em(i, j, em::bx2) = bth_interm;
-        mblock.em(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em(i, j, em::bx3);
+        mblock.em(i, j, em::bx3) = (ONE - sigma_r2) * mblock.em(i, j, em::bx3);
       });
 
     // r = rmax
