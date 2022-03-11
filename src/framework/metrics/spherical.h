@@ -96,7 +96,7 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      return dtheta * dphi * r * r * (ONE - std::cos(del_theta));
+      return dtheta * r * r * (ONE - std::cos(del_theta));
     }
 
 /**
