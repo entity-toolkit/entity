@@ -108,30 +108,9 @@ namespace ntt {
     real_t D2_cov {h_22_ijP * m_mblock.em0(i, j, em::ex2)};
     real_t D3_cov {h_33_ij  * m_mblock.em0(i, j, em::ex3) + D1_half};
 
-    // if (i == i_min) {
-    // h_22_ijP = m_mblock.metric.h_22({i_ + ONE, j_ + HALF});
-    // D2_cov = h_22_ijP * m_mblock.em(i + 1, j, em::ex2);    
-
-    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_});
-    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE + HALF, j_});
-    // h_13_ij1 = m_mblock.metric.h_13({i_ + HALF, j_});
-    // h_13_ij2 = m_mblock.metric.h_13({i_ + ONE + HALF, j_});
-    // D1_half = (w1 * h_13_ij1 *m_mblock.em(i, j, em::ex1) 
-    //                + w2 * h_13_ij2 * m_mblock.em(i + 1, j, em::ex1)) 
-    //                / (w1 + w2);
-    // h_33_ij = m_mblock.metric.h_33({i_, j_});
-    // D3_cov = h_33_ij * m_mblock.em(i + 1, j, em::ex3) + D1_half;
-    // }
-
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * D1_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * D2_cov - B3_half;
     m_mblock.aux(i, j, em::ex3) = alpha_ij  * D3_cov + B2_half;
-  
-  // if ((j <=6) && (i <= 3)) {  
-  // printf("Er %f %f %f %f %lu %lu\n",m_mblock.aux(i, j, em::ex1), D1_cov, 
-  // m_mblock.em0(i, j, em::ex1), D3_half, i,j);
-  // }
-
    }
 
   template <>
@@ -233,21 +212,6 @@ namespace ntt {
     real_t D1_cov {h_11_iPj * m_mblock.em(i, j, em::ex1) + D3_half};
     real_t D2_cov {h_22_ijP * m_mblock.em(i, j, em::ex2)};
     real_t D3_cov {h_33_ij * m_mblock.em(i, j, em::ex3) + D1_half};
-
-    // if (i == i_min) {
-    // h_22_ijP = m_mblock.metric.h_22({i_ + ONE, j_ + HALF});
-    // D2_cov = h_22_ijP * m_mblock.em(i + 1, j, em::ex2);    
-
-    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_});
-    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE + HALF, j_});
-    // h_13_ij1 = m_mblock.metric.h_13({i_ + HALF, j_});
-    // h_13_ij2 = m_mblock.metric.h_13({i_ + ONE + HALF, j_});
-    // D1_half = (w1 * h_13_ij1 *m_mblock.em(i, j, em::ex1) 
-    //                + w2 * h_13_ij2 * m_mblock.em(i + 1, j, em::ex1)) 
-    //                / (w1 + w2);
-    // h_33_ij = m_mblock.metric.h_33({i_, j_});
-    // D3_cov = h_33_ij * m_mblock.em(i + 1, j, em::ex3) + D1_half;
-    // }
 
     m_mblock.aux(i, j, em::ex1) = alpha_iPj * D1_cov;
     m_mblock.aux(i, j, em::ex2) = alpha_ijP * D2_cov - B3_half;
@@ -359,18 +323,6 @@ namespace ntt {
     real_t B2_cov {h_22_iPj * m_mblock.em0(i, j, em::bx2)};
     real_t B3_cov {h_33_iPjP * m_mblock.em0(i, j, em::bx3) + B1_half};
 
-    // if (i == i_min) {
-    // w1 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_ + HALF});
-    // w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE + HALF, j_ + HALF});
-    // h_13_ij1 = m_mblock.metric.h_13({i_ + HALF, j_ + HALF});
-    // h_13_ij2 = m_mblock.metric.h_13({i_ + ONE + HALF, j_ + HALF});
-    // B3_half = (w1 * h_13_ij1 * m_mblock.em0(i, j, em::bx3) 
-    //                + w2 * h_13_ij2 * m_mblock.em0(i + 1, j, em::bx3)) 
-    //                / (w1 + w2);
-    // h_11_ijP = m_mblock.metric.h_11({i_ + ONE, j_ + HALF});
-    // B1_cov = h_11_ijP * m_mblock.em0(i + 1, j, em::bx1) + B3_half;    
-    // }
-
     m_mblock.aux(i, j, em::bx1) = alpha_ijP  * B1_cov;
     m_mblock.aux(i, j, em::bx2) = alpha_iPj  * B2_cov + D3_half;
     m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - D2_half;
@@ -475,18 +427,6 @@ namespace ntt {
     real_t B1_cov {h_11_ijP  * m_mblock.em0(i, j, em::bx1) + B3_half};
     real_t B2_cov {h_22_iPj  * m_mblock.em0(i, j, em::bx2)};
     real_t B3_cov {h_33_iPjP * m_mblock.em0(i, j, em::bx3) + B1_half};
-
-  //   if (i == i_min) {
-  //   w1 = m_mblock.metric.sqrt_det_h_tilde({i_ + HALF, j_ + HALF});
-  //   w2 = m_mblock.metric.sqrt_det_h_tilde({i_ + ONE + HALF, j_ + HALF});
-  //   h_13_ij1 = m_mblock.metric.h_13({i_ + HALF, j_ + HALF});
-  //   h_13_ij2 = m_mblock.metric.h_13({i_ + ONE + HALF, j_ + HALF});
-  //   B3_half = (w1 * h_13_ij1 * m_mblock.em0(i, j, em::bx3) 
-  //                  + w2 * h_13_ij2 * m_mblock.em0(i + 1, j, em::bx3)) 
-  //                  / (w1 + w2);
-  //   h_11_ijP = m_mblock.metric.h_11({i_ + ONE, j_ + HALF});
-  //   B1_cov = h_11_ijP * m_mblock.em0(i + 1, j, em::bx1) + B3_half;    
-  //   }
 
     m_mblock.aux(i, j, em::bx1) = alpha_ijP  * B1_cov;
     m_mblock.aux(i, j, em::bx2) = alpha_iPj  * B2_cov + D3_half;

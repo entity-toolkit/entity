@@ -15,7 +15,6 @@ namespace ntt {
   struct ProblemGenerator {
     ProblemGenerator(const SimulationParams& sim_params);
     real_t epsilon {static_cast<real_t>(1e-1)};
-    // RealFieldND<D, 1> Bru0;
 
     void userInitFields(const SimulationParams&, Meshblock<D, S>&);
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
