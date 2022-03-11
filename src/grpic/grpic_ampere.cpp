@@ -32,7 +32,7 @@ namespace ntt {
                          NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()}),
                          Ampere_Poles_initial<Dimension::TWO_D>(m_mblock, coeff));
     } else {
-    NTTError("Only two options: 0 and 1");
+    NTTError("Only three options: 0, 1 and -1");
     }
   }
 
