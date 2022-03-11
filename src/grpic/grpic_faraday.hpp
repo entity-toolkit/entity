@@ -51,6 +51,11 @@ namespace ntt {
     m_mblock.em0(i, j, em::bx3) += m_coeff * inv_sqrt_detH_iPjP
                                 * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
                                 + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));  
+  
+  if ((j>=125) && (i<=6)) {
+  printf("%f %f %f %lu %lu\n",m_mblock.em0(i, j, em::bx3), m_mblock.aux(i, j + 1, em::ex1), m_mblock.aux(i, j, em::ex1), i, j);
+  }
+
   }
 
   template <>

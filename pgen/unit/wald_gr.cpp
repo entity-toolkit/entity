@@ -28,7 +28,7 @@ namespace ntt {
 
     Kokkos::parallel_for(
       "userInitFlds",
-       mblock.loopActiveCells(),
+       NTTRange<Dimension::TWO_D>({mblock.i_min() - 1, mblock.j_min()}, {mblock.i_max(), mblock.j_max() + 1}), 
        init_fields_potential<Dimension::TWO_D>(mblock, epsilon, A0, A1, A3)
       );
   }
