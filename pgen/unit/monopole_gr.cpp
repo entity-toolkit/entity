@@ -13,7 +13,6 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams&) {
-    // epsilon = static_cast<real_t>(1e-3);
   }
 
   // * * * * * * * * * * * * * * * * * * * * * * * *

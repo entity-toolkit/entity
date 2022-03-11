@@ -43,8 +43,9 @@ namespace ntt {
   
       // E, H at t=0
       Compute_E_Substep(time, 0);
+      AuxiliaryBoundaryConditions(time, 0);
       Compute_H_Substep(time, 0);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 1);
 
       // B0 at t=1/2
       faradaySubstep(time, 0.5, 0);
@@ -56,8 +57,9 @@ namespace ntt {
 
       // E, H at t=1/2
       Compute_E_Substep(time, 1);
+      AuxiliaryBoundaryConditions(time, 0);
       Compute_H_Substep(time, 0);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 1);
 
       // B0 at t=1
       faradaySubstep(time, 1.0, 1);
@@ -69,7 +71,7 @@ namespace ntt {
 
       // H at t=1
       Compute_H_Substep(time, 1);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 1);
 
       // D0 at t=3/2
       ampereSubstep(time, 1.0, 1);
@@ -90,7 +92,7 @@ namespace ntt {
       Average_EM_Substep(time);
       // E at n-1/2 with B and D0
       Compute_E_Substep(time, 0);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 0);
       // B0 at n, B at n-1/2 
       faradaySubstep(time, 1.0, 0);
       timers.stop(1);
@@ -102,7 +104,7 @@ namespace ntt {
       timers.start(1);
       // H at n with B0 and D
       Compute_H_Substep(time, 0);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 1);
       timers.stop(1);
 
     // Push particles
@@ -120,7 +122,7 @@ namespace ntt {
       Average_J_Substep(time);
       // E at n with B0 and D
       Compute_E_Substep(time, 1);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 0);
       // B0 at n+1/2, B at n-1/2
       faradaySubstep(time, 1.0, 1);
       timers.stop(1);
@@ -141,7 +143,7 @@ namespace ntt {
       timers.start(1);
       // H at n+1/2 with B0 and D0
       Compute_H_Substep(time, 1);
-      AuxiliaryBoundaryConditions(time);
+      AuxiliaryBoundaryConditions(time, 1);
       // D0 at n+1, D at n
       ampereSubstep(time, 1.0, 1);
       
@@ -168,17 +170,19 @@ namespace ntt {
       Average_EM_Substep(time);
       // E at n-1/2 with B and D0
       Compute_E_Substep(time, 0);
+      AuxiliaryBoundaryConditions(time, 0);
       // B0 at n, B at n-1/2 
-      faradaySubstep(time, -1.0, 0);
+      faradaySubstep(time, - 1.0, 0);
       timers.stop(1);
 
       timers.start(2);
-      fieldBoundaryConditions(time, 0);
+      fieldBoundaryConditions(time, 1);
       timers.stop(2);
 
       timers.start(1);
       // H at n with B0 and D
       Compute_H_Substep(time, 0);
+      AuxiliaryBoundaryConditions(time, 1);
       timers.stop(1);
 
     // Push particles
@@ -196,17 +200,18 @@ namespace ntt {
       Average_J_Substep(time);
       // E at n with B0 and D
       Compute_E_Substep(time, 1);
+      AuxiliaryBoundaryConditions(time, 0);
       // B0 at n+1/2, B at n-1/2
-      faradaySubstep(time, -1.0, 1);
+      faradaySubstep(time, - 1.0, 1);
       timers.stop(1);
 
       timers.start(2);
-      fieldBoundaryConditions(time, 0);
+      fieldBoundaryConditions(time, 1);
       timers.stop(2);
 
       timers.start(1);
       // D0 at n+1/2, D at n
-      ampereSubstep(time, -1.0, 0);
+      ampereSubstep(time, - 1.0, 0);
       timers.stop(1);
 
       timers.start(2);
@@ -216,9 +221,10 @@ namespace ntt {
       timers.start(1);
       // H at n+1/2 with B0 and D0
       Compute_H_Substep(time, 1);
-      // D0 at n+1, D at n, then all fields and currents are swapped
-      ampereSubstep(time, -1.0, 1);
-
+      AuxiliaryBoundaryConditions(time, 1);
+      // D0 at n+1, D at n
+      ampereSubstep(time, - 1.0, 1);
+      
       // Final: B0 at n-1/2, B at n+1/2, D0 at n, D at n+1, x at n+1, u at n+1/2, J0 at n, J at n+1/2
       swap_em_cur(this->m_mblock);
       timers.stop(1);
