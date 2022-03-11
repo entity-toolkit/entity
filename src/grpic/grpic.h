@@ -115,8 +115,9 @@ namespace ntt {
      * Apply boundary conditions for auxiliary fields.
      *
      * @param t time in physical units.
+     * @param s switches whether it applies to B or D
      */
-    void AuxiliaryBoundaryConditions(const real_t& t);
+    void AuxiliaryBoundaryConditions(const real_t& t, const short& s);
   };
 
 } // namespace ntt
