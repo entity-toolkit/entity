@@ -157,7 +157,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           ex3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
           bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
           bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
-          bx3_cnt = std::sqrt(m_sim.mblock().metric.h_33({i_ + HALF, j_ + HALF})) * m_sim.mblock().em0(i, j, ntt::em::bx3);
+          bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3); // * std::sqrt(m_sim.mblock().metric.h_33({i_ + HALF, j_ + HALF}))
 
         ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
 
