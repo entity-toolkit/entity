@@ -144,6 +144,7 @@ namespace ntt {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
       return dtheta * std::sqrt((r * r + a * a) * (ONE + TWO * r / ( r * r + a * a))) * (ONE - std::cos(del_theta));
+      // return dtheta * sqrt_det_h_tilde({x[0], ZERO}) * (ONE - std::cos(del_theta));
     }
 
 /**

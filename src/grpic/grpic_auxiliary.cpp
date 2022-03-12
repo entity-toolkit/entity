@@ -10,12 +10,10 @@ namespace ntt {
   void GRPIC<Dimension::TWO_D>::Compute_E_Substep(const real_t&, const short (&s)) {
     if (s == 0) {
     Kokkos::parallel_for("auxiliary_E", 
-    // m_mblock.loopAllCells(),
     NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), 
     Compute_E0<Dimension::TWO_D>(m_mblock));
     } else if (s == 1) {
     Kokkos::parallel_for("auxiliary_E",
-    // m_mblock.loopAllCells(), 
     NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), 
     Compute_E<Dimension::TWO_D>(m_mblock));
     } else {
@@ -27,12 +25,10 @@ namespace ntt {
   void GRPIC<Dimension::TWO_D>::Compute_H_Substep(const real_t&, const short (&s)) {
     if (s == 0) {
     Kokkos::parallel_for("auxiliary_H", 
-    // m_mblock.loopAllCells(),
     NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), 
     Compute_H0<Dimension::TWO_D>(m_mblock));
     } else if (s == 1) {
     Kokkos::parallel_for("auxiliary_H",
-    // m_mblock.loopAllCells(),
     NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}), 
     Compute_H<Dimension::TWO_D>(m_mblock));
     } else {
