@@ -11,13 +11,6 @@ namespace ntt {
   void GRPIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t& t, const short& s) {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
 
-    // // r = rmin boundary
-    // if (m_mblock.boundaries[0] == BoundaryCondition::USER) {
-    //   m_pGen.userBCFields(t, m_sim_params, m_mblock);
-    // } else {
-    //   NTTError("2d non-user boundary condition not implemented for curvilinear");
-    // }
-
     auto mblock {this->m_mblock};
 
     // BC for D field
@@ -28,9 +21,8 @@ namespace ntt {
     //   "2d_bc_theta0",
     //   NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
     //   Lambda(index_t i, index_t j) {
-    //     mblock.em0(i, j, em::ex3) = ZERO;
-
-    //     mblock.em(i, j, em::ex3) = ZERO;
+    //     // mblock.em0(i, j, em::ex3) = ZERO;
+    //     // mblock.em(i, j, em::ex3) = ZERO;
     //     });
     
     // // theta = pi boundary
@@ -47,7 +39,6 @@ namespace ntt {
     Kokkos::parallel_for(
       "2d_bc_rmin",
       NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
-      // NTTRange<Dimension::TWO_D>({0, mblock.j_min()}, {mblock.i_min(), mblock.j_max()}),
       Lambda(index_t i, index_t j) {
 
         mblock.em0(i - 1, j, em::ex1) = mblock.em0(i, j, em::ex1); 
@@ -116,7 +107,8 @@ namespace ntt {
     // theta = 0 boundary
     Kokkos::parallel_for(
       "2d_bc_theta0",
-      NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
+      // NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
+      NTTRange<Dimension::TWO_D>({mblock.i_min() - 1, mblock.j_min()}, {mblock.i_max(), mblock.j_min() + 1}),
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::bx2) = ZERO;
         mblock.em(i, j, em::bx2) = ZERO;
@@ -125,7 +117,8 @@ namespace ntt {
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
-      NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
+      // NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
+      NTTRange<Dimension::TWO_D>({mblock.i_min() - 1, m_mblock.j_max()}, {m_mblock.i_max(), m_mblock.j_max() + 1}),
       Lambda(index_t i, index_t j) {
         mblock.em0(i, j, em::bx2) = ZERO;
         mblock.em(i, j, em::bx2) = ZERO;
