@@ -32,3 +32,6 @@ extern/nttiny/
 
 # Problem generator template
 src/.temp/
+
+script_ntt
+script_vis

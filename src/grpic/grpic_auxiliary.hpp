@@ -1,12 +1,12 @@
 #ifndef GRPIC_AUXILIARY_H
-#  define GRPIC_AUXILIARY_H
+#define GRPIC_AUXILIARY_H
 
-#  include "global.h"
-#  include "fields.h"
-#  include "meshblock.h"
-#  include "grpic.h"
+#include "global.h"
+#include "fields.h"
+#include "meshblock.h"
+#include "grpic.h"
 
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
   /**
@@ -15,19 +15,19 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Compute_E0 {
+  class computeAuxE_D0_B {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Compute_E0(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
+    computeAuxE_D0_B(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   // First calculation, with B and D0
   template <>
-  Inline void Compute_E0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void computeAuxE_D0_B<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -85,24 +85,24 @@ namespace ntt {
   }
 
   template <>
-  Inline void Compute_E0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d grpic not implemented
+  Inline void computeAuxE_D0_B<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   template <Dimension D>
-  class Compute_E {
+  class computeAuxE_D_B0 {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Compute_E(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
+    computeAuxE_D_B0(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   // Second calculation, with B0 and D
   template <>
-  Inline void Compute_E<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void computeAuxE_D_B0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -160,8 +160,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void Compute_E<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d grpic not implemented
+  Inline void computeAuxE_D_B0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   /**
@@ -170,19 +170,19 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Compute_H0 {
+  class computeAuxH_D_B0 {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Compute_H0(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
+    computeAuxH_D_B0(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   // First calculation, with B0 and D
   template <>
-  Inline void Compute_H0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void computeAuxH_D_B0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<long int>(i - N_GHOSTS))};
     real_t j_ {static_cast<real_t>(static_cast<long int>(j - N_GHOSTS))};
 
@@ -240,24 +240,24 @@ namespace ntt {
   }
 
   template <>
-  Inline void Compute_H0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d grpic not implemented
+  Inline void computeAuxH_D_B0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   template <Dimension D>
-  class Compute_H {
+  class computeAuxH_D0_B0 {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Compute_H(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
+    computeAuxH_D0_B0(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   // Second calculation, with B0 and D0
   template <>
-  Inline void Compute_H<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void computeAuxH_D0_B0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -315,27 +315,28 @@ namespace ntt {
   }
 
   template <>
-  Inline void Compute_H<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d grpic not implemented
+  Inline void computeAuxH_D0_B0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
+
   /**
    * Time average B and D field
    *
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Average_EM {
+  class timeAverageDB {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Average_EM(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
+    timeAverageDB(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   template <>
-  Inline void Average_EM<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void timeAverageDB<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
 
     m_mblock.em0(i, j, em::bx1) = HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em(i, j, em::bx1));
     m_mblock.em0(i, j, em::bx2) = HALF * (m_mblock.em0(i, j, em::bx2) + m_mblock.em(i, j, em::bx2));
@@ -346,8 +347,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void Average_EM<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d grpic not implemented
+  Inline void timeAverageDB<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
   /**
    * Time average currents
@@ -355,18 +356,18 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Average_J {
+  class timeAverageJ {
     using index_t = typename RealFieldND<D, 3>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
 
   public:
-    Average_J(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
+    timeAverageJ(const Meshblock<D, SimulationType::GRPIC>& mblock) : m_mblock(mblock) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
 
   template <>
-  Inline void Average_J<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void timeAverageJ<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
 
     m_mblock.cur(i, j, cur::jx1) = HALF * (m_mblock.cur0(i, j, cur::jx1) + m_mblock.cur(i, j, cur::jx1));
     m_mblock.cur(i, j, cur::jx2) = HALF * (m_mblock.cur0(i, j, cur::jx2) + m_mblock.cur(i, j, cur::jx2));
@@ -374,13 +375,11 @@ namespace ntt {
   }
 
   template <>
-  Inline void Average_J<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d grpic not implemented
+  Inline void timeAverageJ<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt
-
-#endif
 
 // real_t beta_ij   {m_mblock.metric.beta1u({i_, j_})};
 // real_t beta_ijP  {m_mblock.metric.beta1u({i_, j_ + HALF})};
@@ -481,3 +480,5 @@ namespace ntt {
 // m_mblock.aux(i, j, em::bx1) = alpha_ijP  * B1_cov;
 // m_mblock.aux(i, j, em::bx2) = alpha_iPj  * B2_cov + sqrt_detH_iPj  * beta_iPj  * D3_half;
 // m_mblock.aux(i, j, em::bx3) = alpha_iPjP * B3_cov - sqrt_detH_iPjP * beta_iPjP * D2_half;
+
+#endif

@@ -7,24 +7,20 @@
 namespace ntt {
 
   template <>
-  void GRPIC<Dimension::TWO_D>::faradaySubstep(const real_t&, const real_t& fraction, const short& s) {
+  void GRPIC<Dimension::TWO_D>::faradaySubstep(const real_t&, const real_t& fraction, const gr_faraday& f) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
-    if (s == 0) {
-      Kokkos::parallel_for("faraday", m_mblock.loopActiveCells(), Faraday_push0<Dimension::TWO_D>(m_mblock, coeff));
-    } else if (s == 1) {
-      Kokkos::parallel_for("faraday", m_mblock.loopActiveCells(), Faraday_push<Dimension::TWO_D>(m_mblock, coeff));
+    if (f == gr_faraday::aux) {
+      Kokkos::parallel_for("faraday", m_mblock.loopActiveCells(), FaradayGR_aux<Dimension::TWO_D>(m_mblock, coeff));
+    } else if (f == gr_faraday::main) {
+      Kokkos::parallel_for("faraday", m_mblock.loopActiveCells(), FaradayGR<Dimension::TWO_D>(m_mblock, coeff));
     } else {
-      NTTError("Only two options: 0 and 1");
+      NTTError("Wrong option for `f`");
     }
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::faradaySubstep(const real_t&, const real_t& fraction, const short& s) {
-    const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
-    (void)(fraction);
-    (void)(coeff);
-    (void)(s);
-    NTTError("faraday for this metric not defined");
+  void GRPIC<Dimension::THREE_D>::faradaySubstep(const real_t&, const real_t&, const gr_faraday&) {
+    NTTError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt
