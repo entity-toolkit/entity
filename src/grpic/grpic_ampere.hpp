@@ -14,13 +14,13 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Ampere_push0 {
+  class AmpereGR_aux {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_coeff;
 
   public:
-    Ampere_push0(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
+    AmpereGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
@@ -28,7 +28,7 @@ namespace ntt {
 
   // First push, updates D0 with J.
   template <>
-  Inline void Ampere_push0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void AmpereGR_aux<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -38,29 +38,26 @@ namespace ntt {
 
     m_mblock.em0(i, j, em::ex1)
       += m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx1);
     m_mblock.em0(i, j, em::ex2)
       += m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx2);
     m_mblock.em0(i, j, em::ex3) += m_coeff * inv_sqrt_detH_ij
                                    * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                       + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx3);
   }
 
   template <>
-  Inline void Ampere_push0<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void AmpereGR_aux<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
   template <Dimension D>
-  class Ampere_push {
+  class AmpereGR {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_coeff;
 
   public:
-    Ampere_push(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
+    AmpereGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
@@ -68,7 +65,7 @@ namespace ntt {
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void Ampere_push<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void AmpereGR<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -79,31 +76,28 @@ namespace ntt {
     m_mblock.em0(i, j, em::ex1)
       = m_mblock.em(i, j, em::ex1)
         + m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j, cur::jx1);
     m_mblock.em0(i, j, em::ex2)
       = m_mblock.em(i, j, em::ex2)
         + m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j, cur::jx2);
     m_mblock.em0(i, j, em::ex3) = m_mblock.em(i, j, em::ex3)
                                   + m_coeff * inv_sqrt_detH_ij
                                       * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                          + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j, cur::jx3);
   }
 
   template <>
-  Inline void Ampere_push<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void AmpereGR<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
   template <Dimension D>
-  class Ampere_push_initial {
+  class AmpereGR_init {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_coeff;
 
   public:
-    Ampere_push_initial(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
+    AmpereGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
@@ -111,7 +105,7 @@ namespace ntt {
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void Ampere_push_initial<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void AmpereGR_init<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -121,19 +115,16 @@ namespace ntt {
 
     m_mblock.em(i, j, em::ex1)
       += m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx1);
     m_mblock.em(i, j, em::ex2)
       += m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx2);
     m_mblock.em(i, j, em::ex3) += m_coeff * inv_sqrt_detH_ij
                                   * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                      + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j, cur::jx3);
   }
 
   template <>
-  Inline void Ampere_push_initial<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
-    // 3d curvilinear ampere not implemented
+  Inline void AmpereGR_init<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   /**
@@ -142,21 +133,21 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Ampere_Poles0 {
+  class AmperePolesGR_aux {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_coeff;
     std::size_t m_nj;
 
   public:
-    Ampere_Poles0(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
+    AmperePolesGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
     Inline void operator()(const index_t) const;
   };
 
   // First push, updates D0 with J.
   template <>
-  Inline void Ampere_Poles0<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmperePolesGR_aux<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
@@ -166,33 +157,29 @@ namespace ntt {
 
     // theta = 0
     m_mblock.em0(i, j_min, em::ex1) += inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j_min, cur::jx1);
     // theta = pi
     m_mblock.em0(i, j_max + 1, em::ex1) -= inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j_max + 1, cur::jx2);
-
     // j = jmin + 1/2
     m_mblock.em0(i, j_min, em::ex2)
       += inv_sqrt_detH_ijP * m_coeff * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j_min, cur::jx2);
   }
 
   template <Dimension D>
-  class Ampere_Poles {
+  class AmperePolesGR {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_coeff;
     std::size_t m_nj;
 
   public:
-    Ampere_Poles(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
+    AmperePolesGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
     Inline void operator()(const index_t) const;
   };
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void Ampere_Poles<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmperePolesGR<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
@@ -203,35 +190,31 @@ namespace ntt {
     // theta = 0
     m_mblock.em0(i, j_min, em::ex1)
       = m_mblock.em(i, j_min, em::ex1) + inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
-    //- TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_min, cur::jx1);
     // theta = pi
     m_mblock.em0(i, j_max + 1, em::ex1)
       = m_mblock.em(i, j_max + 1, em::ex1) - inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_max + 1, cur::jx2);
-
     // j = jmin + 1/2
     m_mblock.em0(i, j_min, em::ex2)
       = m_mblock.em(i, j_min, em::ex2)
         + inv_sqrt_detH_ijP * m_coeff * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur0(i, j_min, cur::jx2);
   }
 
   template <Dimension D>
-  class Ampere_Poles_initial {
+  class AmperePolesGR_init {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_coeff;
     std::size_t m_nj;
 
   public:
-    Ampere_Poles_initial(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
+    AmperePolesGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
     Inline void operator()(const index_t) const;
   };
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void Ampere_Poles_initial<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmperePolesGR_init<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
@@ -241,15 +224,11 @@ namespace ntt {
 
     // theta = 0
     m_mblock.em(i, j_min, em::ex1) += inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j_min, cur::jx1);
     // theta = pi
     m_mblock.em(i, j_max + 1, em::ex1) -= inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j_max + 1, cur::jx2);
-
     // j = jmin + 1/2
     m_mblock.em(i, j_min, em::ex2)
       += inv_sqrt_detH_ijP * m_coeff * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
-    // - TWO * TWO_PI * m_coeff * m_mblock.cur(i, j_min, cur::jx2);
   }
 
 } // namespace ntt

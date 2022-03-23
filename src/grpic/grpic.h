@@ -7,6 +7,12 @@
 #include <toml/toml.hpp>
 
 namespace ntt {
+  enum class gr_bc { Dfield, Efield, Bfield, Hfield };
+  enum class gr_faraday { aux, main };
+  enum class gr_ampere { init, aux, main };
+  enum class gr_getE { D_B0, D0_B };
+  enum class gr_getH { D_B0, D0_B0 };
+
   /**
    * Class for GRPIC simulations, inherits from `Simulation<D, SimulationType::GRPIC>`.
    *
@@ -58,66 +64,66 @@ namespace ntt {
      * Advance B-field using Faraday's law.
      *
      * @param t time in physical units.
-     * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
-     * @param s switches whether it applies on em0 or em
+     * @param c coefficient that gets multiplied by the timestep (e.g., 0.5).
+     * @param f either intermediate substep or the main one [`gr_faraday::aux`, `gr_faraday::main`].
      */
-    void faradaySubstep(const real_t& t, const real_t& f, const short& s);
+    void faradaySubstep(const real_t&, const real_t&, const gr_faraday&);
 
     /**
      * Advance D-field using Ampere's law.
      *
      * @param t time in physical units.
-     * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
-     * @param s switches whether it applies to em0 or em
+     * @param c coefficient that gets multiplied by the timestep (e.g., 0.5).
+     * @param f either initial, intermediate or the main substep [`gr_ampere::init`, `gr_ampere::aux`,
+     * `gr_ampere::main`].
      */
-    void ampereSubstep(const real_t& t, const real_t& f, const short& s);
+    void ampereSubstep(const real_t&, const real_t&, const gr_ampere&);
 
     /**
      * Compute E field.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies to em0 or em
+     * @param f flag to use D0 and B or D and B0 [`gr_getE::D_B0`, `gr_getE::D0_B`].
      */
-    void Compute_E_Substep(const real_t& t, const short& s);
+    void computeAuxESubstep(const real_t&, const gr_getE&);
 
     /**
      * Compute H field.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies to em0 or em
+     * @param f flat to use D0 and B0 or D and B0 [`gr_getH::D_B0`, `gr_getH::D0_B0`].
      */
-    void Compute_H_Substep(const real_t& t, const short& s);
+    void computeAuxHSubstep(const real_t&, const gr_getH&);
 
     /**
      * Time average EM fields.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies to em0 or em
      */
-    void Average_EM_Substep(const real_t& t);
+    void timeAverageDBSubstep(const real_t&);
 
     /**
      * Time average currents.
      *
      * @param t time in physical units.
      */
-    void Average_J_Substep(const real_t& t);
+    void timeAverageJSubstep(const real_t&);
 
     /**
      * Apply boundary conditions for fields.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies to B or D
+     * @param f select field to apply boundary conditions to [`gr_bc::Dfield`, `gr_bc::Bfield`].
      */
-    void fieldBoundaryConditions(const real_t& t, const short& s);
+    void fieldBoundaryConditions(const real_t&, const gr_bc&);
 
     /**
      * Apply boundary conditions for auxiliary fields.
      *
      * @param t time in physical units.
-     * @param s switches whether it applies to B or D
+     * @param f select field to apply boundary conditions to [`gr_bc::Efield`, `gr_bc::Hfield`].
      */
-    void AuxiliaryBoundaryConditions(const real_t& t, const short& s);
+    void auxFieldBoundaryConditions(const real_t&, const gr_bc&);
   };
 
 } // namespace ntt

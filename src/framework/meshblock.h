@@ -115,9 +115,9 @@ namespace ntt {
 
     /**
      * @brief Swaps em and em0 fields, cur and cur0 currents, in a meshblock instance.
+     * @todo think of an alternative to this function.
      */
-    friend void swap_em_cur(Meshblock<D, S>& mblock)
-    {
+    friend void swapFieldsGR(Meshblock<D, S>& mblock) {
       using std::swap;
       swap(mblock.em, mblock.em0);
       swap(mblock.cur, mblock.cur0);

@@ -7,69 +7,59 @@
 namespace ntt {
 
   template <>
-  void GRPIC<Dimension::TWO_D>::Compute_E_Substep(const real_t&, const short(&s)) {
-    if (s == 0) {
-      Kokkos::parallel_for(
-        "auxiliary_E",
-        NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}),
-        Compute_E0<Dimension::TWO_D>(m_mblock));
-    } else if (s == 1) {
-      Kokkos::parallel_for(
-        "auxiliary_E",
-        NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}),
-        Compute_E<Dimension::TWO_D>(m_mblock));
+  void GRPIC<Dimension::TWO_D>::computeAuxESubstep(const real_t&, const gr_getE& f) {
+    auto range {
+      NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1})};
+    if (f == gr_getE::D0_B) {
+      Kokkos::parallel_for("auxiliary_E", range, computeAuxE_D0_B<Dimension::TWO_D>(m_mblock));
+    } else if (f == gr_getE::D_B0) {
+      Kokkos::parallel_for("auxiliary_E", range, computeAuxE_D_B0<Dimension::TWO_D>(m_mblock));
     } else {
-      NTTError("Only two options: 0 and 1");
+      NTTError("Wrong option for `f`");
     }
   }
 
   template <>
-  void GRPIC<Dimension::TWO_D>::Compute_H_Substep(const real_t&, const short(&s)) {
-    if (s == 0) {
-      Kokkos::parallel_for(
-        "auxiliary_H",
-        NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}),
-        Compute_H0<Dimension::TWO_D>(m_mblock));
-    } else if (s == 1) {
-      Kokkos::parallel_for(
-        "auxiliary_H",
-        NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1}),
-        Compute_H<Dimension::TWO_D>(m_mblock));
+  void GRPIC<Dimension::TWO_D>::computeAuxHSubstep(const real_t&, const gr_getH& f) {
+    auto range {
+      NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1})};
+    if (f == gr_getH::D_B0) {
+      Kokkos::parallel_for("auxiliary_H", range, computeAuxH_D_B0<Dimension::TWO_D>(m_mblock));
+    } else if (f == gr_getH::D0_B0) {
+      Kokkos::parallel_for("auxiliary_H", range, computeAuxH_D0_B0<Dimension::TWO_D>(m_mblock));
     } else {
-      NTTError("Only two options: 0 and 1");
+      NTTError("Wrong option for `f`");
     }
   }
 
   template <>
-  void GRPIC<Dimension::TWO_D>::Average_EM_Substep(const real_t&) {
-    Kokkos::parallel_for("auxiliary_EM", m_mblock.loopActiveCells(), Average_EM<Dimension::TWO_D>(m_mblock));
+  void GRPIC<Dimension::TWO_D>::timeAverageDBSubstep(const real_t&) {
+    Kokkos::parallel_for("auxiliary_EM", m_mblock.loopActiveCells(), timeAverageDB<Dimension::TWO_D>(m_mblock));
   }
 
   template <>
-  void GRPIC<Dimension::TWO_D>::Average_J_Substep(const real_t&) {
-    Kokkos::parallel_for("auxiliary_J", m_mblock.loopActiveCells(), Average_J<Dimension::TWO_D>(m_mblock));
+  void GRPIC<Dimension::TWO_D>::timeAverageJSubstep(const real_t&) {
+    Kokkos::parallel_for("auxiliary_J", m_mblock.loopActiveCells(), timeAverageJ<Dimension::TWO_D>(m_mblock));
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::Compute_E_Substep(const real_t&, const short(&s)) {
-    (void)(s);
-    NTTError("auxiliary for this metric not defined");
+  void GRPIC<Dimension::THREE_D>::computeAuxESubstep(const real_t&, const gr_getE&) {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::Compute_H_Substep(const real_t&, const short(&s)) {
-    (void)(s);
-    NTTError("auxiliary for this metric not defined");
+  void GRPIC<Dimension::THREE_D>::computeAuxHSubstep(const real_t&, const gr_getH&) {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::Average_EM_Substep(const real_t&) {
-    NTTError("auxiliary for this metric not defined");
+  void GRPIC<Dimension::THREE_D>::timeAverageDBSubstep(const real_t&) {
+    NTTError("3D GRPIC not implemented yet");
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::Average_J_Substep(const real_t&) {
-    NTTError("auxiliary for this metric not defined");
+  void GRPIC<Dimension::THREE_D>::timeAverageJSubstep(const real_t&) {
+    NTTError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt
