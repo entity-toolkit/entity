@@ -16,22 +16,26 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   class Fields {
   public:
+    // * * * * * * * * * * * * * * * * * * * *
+    // PIC-specific
+    // * * * * * * * * * * * * * * * * * * * *
+
     /**
      * EM fields at current time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
      * @note Address : em(i, j, k, em::***).
      */
     RealFieldND<D, 6> em;
-     /**
+    /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field component.
      * @note Address : cur(i, j, k, cur::***).
      */
     RealFieldND<D, 3> cur;
-
-  // * * * * * * * * * * * * * * * * * * * *
-  // GRPIC-specific
-  // * * * * * * * * * * * * * * * * * * * *
+#if SIMTYPE == GRPIC_SIMTYPE
+    // * * * * * * * * * * * * * * * * * * * *
+    // GRPIC-specific
+    // * * * * * * * * * * * * * * * * * * * *
 
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
@@ -45,19 +49,20 @@ namespace ntt {
      * @note Address : aux(i, j, k, em::***).
      */
     RealFieldND<D, 6> aux;
-     /**
+    /**
      * Current fields at previous time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field component.
      * @note Address : cur0(i, j, k, cur::***).
      */
     RealFieldND<D, 3> cur0;
 
-     /**
+    /**
      * Vector potential
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
      * @note Address : aphi(i, j, k).
      */
     RealFieldND<D, 1> aphi;
+#endif
 
     /**
      * Constructor for the fields container. Also sets the active cell sizes and ranges.
