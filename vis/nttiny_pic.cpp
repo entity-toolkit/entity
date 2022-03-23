@@ -1,16 +1,16 @@
 #include "nttiny/vis.h"
 #include "nttiny/api.h"
 
-// #if (SIMTYPE == PIC_SIMTYPE)
-// #  include "pic.h"
-// #  define SIMULATION_CONTAINER PIC
-// #elif (SIMTYPE == GRPIC_SIMTYPE)
-// #  include "grpic.h"
-// #  define SIMULATION_CONTAINER GRPIC
-// #endif
-
+#if (SIMTYPE == PIC_SIMTYPE)
+#  include "pic.h"
+#  define SIMULATION_CONTAINER PIC
+#elif (SIMTYPE == GRPIC_SIMTYPE)
 #  include "grpic.h"
 #  define SIMULATION_CONTAINER GRPIC
+#endif
+
+// #  include "grpic.h"
+// #  define SIMULATION_CONTAINER GRPIC
 
 #include "global.h"
 #include "cargs.h"
@@ -25,12 +25,12 @@
 
 struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   int nx1, nx2;
-  ntt::GRPIC<ntt::Dimension::TWO_D>& m_sim;
+  ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& m_sim;
   nttiny::Data<float> m_ex1, m_ex2, m_ex3;
   nttiny::Data<float> m_bx1, m_bx2, m_bx3;
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
 
-  NTTSimulationVis(ntt::GRPIC<ntt::Dimension::TWO_D>& sim)
+  NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& sim)
     // : nttiny::SimulationAPI<float> {sim.mblock().metric.label},
     : nttiny::SimulationAPI<float> {"qspherical"},
       nx1(sim.mblock().Ni() + 2 * ntt::N_GHOSTS),
@@ -45,7 +45,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     this->m_timestep = 0;
     this->m_time = 0.0;
 
-    if (this->coords == "kerr_schild") {
+    // if (this->coords == "kerr_schild") {
+    if (this->coords == "qspherical") {
 
       m_x1x2_extent[0] = m_sim.mblock().metric.x1_min;
       m_x1x2_extent[1] = m_sim.mblock().metric.x1_max;
@@ -124,7 +125,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         }
       }
       setData();
-    }
+  }
 
   void setData() override {
     for (int j{0}; j < nx2; ++j) {
@@ -152,36 +153,44 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         //   bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
         // }
 
-          ex1_cnt = m_sim.mblock().em0(i, j, ntt::em::ex1);
-          ex2_cnt = m_sim.mblock().em0(i, j, ntt::em::ex2);
-          ex3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
-          bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
-          bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
-          bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3); // * std::sqrt(m_sim.mblock().metric.h_33({i_ + HALF, j_ + HALF}))
+        ex1_cnt = m_sim.mblock().em(i, j, ntt::em::ex1);
+        ex2_cnt = m_sim.mblock().em(i, j, ntt::em::ex2);
+        ex3_cnt = m_sim.mblock().em(i, j, ntt::em::ex3);
+        bx1_cnt = m_sim.mblock().em(i, j, ntt::em::bx1);
+        bx2_cnt = m_sim.mblock().em(i, j, ntt::em::bx2);
+        bx3_cnt = m_sim.mblock().em(i, j, ntt::em::bx3);
+
+        // ex1_cnt = m_sim.mblock().em0(i, j, ntt::em::ex1);
+        // ex2_cnt = m_sim.mblock().em0(i, j, ntt::em::ex2);
+        // ex3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
+        // bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
+        // bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
+        // bx3_cnt = std::sqrt(m_sim.mblock().metric.h_33({i_ + HALF, j_ + HALF})) * m_sim.mblock().em0(i, j,
+        // ntt::em::bx3);
 
         ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
 
-// #if (SIMTYPE == PIC_SIMTYPE)
-//         m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
-//         m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
-// #elif (SIMTYPE == GRPIC_SIMTYPE)
-//         e_hat[0] = ex1_cnt;
-//         e_hat[1] = ex2_cnt;
-//         e_hat[2] = ex3_cnt;
-//         b_hat[0] = bx1_cnt;
-//         b_hat[1] = bx2_cnt;
-//         b_hat[2] = bx3_cnt;
-// #endif
-
-        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
-        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
-
+#if (SIMTYPE == PIC_SIMTYPE)
+        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
+        m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
+#elif (SIMTYPE == GRPIC_SIMTYPE)
         e_hat[0] = ex1_cnt;
         e_hat[1] = ex2_cnt;
         e_hat[2] = ex3_cnt;
         b_hat[0] = bx1_cnt;
         b_hat[1] = bx2_cnt;
         b_hat[2] = bx3_cnt;
+#endif
+
+        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
+        // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
+
+        // e_hat[0] = ex1_cnt;
+        // e_hat[1] = ex2_cnt;
+        // e_hat[2] = ex3_cnt;
+        // b_hat[0] = bx1_cnt;
+        // b_hat[1] = bx2_cnt;
+        // b_hat[2] = bx3_cnt;
 
         // convert from contravariant to hatted
         m_ex1.set(i, j, e_hat[0]);
@@ -220,17 +229,17 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   }
   void restart() override {
     m_sim.initializeSetup();
-    m_sim.fieldBoundaryConditions(ZERO, 0);
+    m_sim.fieldBoundaryConditions(ZERO);
     // m_sim.initial_step(ZERO);
     setData();
     m_time = 0.0;
     m_timestep = 0;
   }
   void stepBwd() override {
-    // m_sim.step_backward(m_time);
-    // setData();
-    // --m_timestep;
-    // m_time -= m_sim.mblock().timestep();
+    m_sim.step_backward(m_time);
+    setData();
+    --m_timestep;
+    m_time -= m_sim.mblock().timestep();
   }
 };
 
@@ -247,7 +256,7 @@ auto main(int argc, char* argv[]) -> int {
     sim.initializeSetup();
     sim.verify();
     sim.printDetails();
-    sim.fieldBoundaryConditions(ZERO, 0);
+    sim.fieldBoundaryConditions(ZERO);
     // sim.initial_step(ZERO);
     NTTSimulationVis visApi(sim);
 
@@ -266,3 +275,5 @@ auto main(int argc, char* argv[]) -> int {
 
   return 0;
 }
+
+#undef SIMULATION_CONTAINER
