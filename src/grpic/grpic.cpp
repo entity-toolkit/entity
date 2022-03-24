@@ -9,7 +9,6 @@ namespace ntt {
   void GRPIC<D>::mainloop() {
     unsigned long timax {static_cast<unsigned long>(this->m_sim_params.total_runtime() / this->m_mblock.timestep())};
     real_t time {0.0};
-    fieldBoundaryConditions(ZERO, 0);
     initial_step(ZERO);
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
@@ -38,67 +37,172 @@ namespace ntt {
 
   template <Dimension D>
   void GRPIC<D>::initial_step(const real_t& time) {
+    /*
+     * Initially: em0::B   --
+     *            em0::D   --
+     *            em::B    at -1/2
+     *            em::D    at -1/2
+     *
+     *            cur0::J  --
+     *            cur::J   --
+     *
+     *            aux::E   --
+     *            aux::H   --
+     *
+     *            x_prtl   at -1/2
+     *            u_prtl   at -1/2
+     */
+    
+    /*
+     * em0::D, em::D, em0::B, em::B <- boundary conditions
+     */
+    fieldBoundaryConditions(time, gr_bc::Dfield);
+    fieldBoundaryConditions(time, gr_bc::Bfield);
 
-    // Initially: B0, D0, B1, D1 at t=0
+    /*
+     * em0::B <- em::B
+     * em0::D <- em::D
+     *
+     * Now: em0::B & em0::D at -1/2
+     */
+    copyFieldsGR();
 
-    // E, H at n
-    computeAuxESubstep(time, fld::em0);
-    auxFieldBoundaryConditions(time, fld::em0);
-    computeAuxHSubstep(time, fld::em0);
-    auxFieldBoundaryConditions(time, fld::em);
+    /*
+     * aux::E <- alpha * em::D + beta x em::B
+     * aux::H <- alpha * em::D + beta x em0::B
+     *
+     * Now: aux::E & aux::H at -1/2
+     */
+    computeAuxESubstep(time, gr_getE::D_B0);
+    computeAuxHSubstep(time, gr_getH::D_B0);
+    /*
+     * aux::E, aux::H <- boundary conditions
+     */
+    auxFieldBoundaryConditions(time, gr_bc::Efield);
+    auxFieldBoundaryConditions(time, gr_bc::Hfield);
 
-    // B0 at n+1/2
-    faradaySubstep(time, 0.5, 0);
-    fieldBoundaryConditions(time, 1);
+    /*
+     * em0::B <- (em0::B) <- -curl aux::E
+     *
+     * Now: em0::B at 0
+     */
+    faradaySubstep(time, 0.5, gr_faraday::aux);
+    /*
+     * em0::B, em::B <- boundary conditions
+     */
+    fieldBoundaryConditions(time, gr_bc::Bfield);
 
-    // D1 at t=1/2
-    ampereSubstep(time, 0.5, -1);
-    fieldBoundaryConditions(time, 0);
+    /*
+     * em::D <- (em0::D) <- curl aux::H
+     *
+     * Now: em::D at 0
+     */
+    ampereSubstep(time, 0.5, gr_ampere::init);
+    /*
+     * em0::D, em::D <- boundary conditions
+     */
+    fieldBoundaryConditions(time, gr_bc::Dfield);
 
-    // E, H at t=1/2
-    computeAuxESubstep(time, 1);
-    auxFieldBoundaryConditions(time, 0);
-    computeAuxHSubstep(time, 0);
-    auxFieldBoundaryConditions(time, 1);
+    /*
+     * aux::E <- alpha * em::D + beta x em0::B
+     * aux::H <- alpha * em0::B - beta x em::D
+     *
+     * Now: aux::E & aux::H at 0
+     */
+    computeAuxESubstep(time, gr_getE::D_B0);
+    computeAuxHSubstep(time, gr_getH::D_B0);
+    /*
+     * aux::E, aux::H <- boundary conditions
+     */
+    auxFieldBoundaryConditions(time, gr_bc::Efield);
+    auxFieldBoundaryConditions(time, gr_bc::Hfield);
 
-    // B0 at t=1
-    faradaySubstep(time, 1.0, 1);
-    fieldBoundaryConditions(time, 1);
+    /*
+     * em0::B <- (em::B) <- -curl aux::E
+     *
+     * Now: em0::B at 1/2
+     */
+    faradaySubstep(time, 1.0, gr_faraday::main);
+    /*
+     * em0::B, em::B <- boundary conditions
+     */
+    fieldBoundaryConditions(time, gr_bc::Bfield);
 
-    // D0 at t=1
-    ampereSubstep(time, 1.0, 0);
-    fieldBoundaryConditions(time, 0);
+    /*
+     * em0::D <- (em0::D) <- curl aux::H
+     *
+     * Now: em0::D at 1/2
+     */
+    ampereSubstep(time, 1.0, gr_ampere::aux);
+    /*
+     * em0::D, em::D <- boundary conditions
+     */
+    fieldBoundaryConditions(time, gr_bc::Dfield);
 
-    // H at t=1
-    computeAuxHSubstep(time, 1);
-    auxFieldBoundaryConditions(time, 1);
+    /*
+     * aux::H <- alpha * em0::B - beta x em0::D
+     *
+     * Now: aux::H at 1/2
+     */
+    computeAuxHSubstep(time, gr_getH::D0_B0);
+    /*
+     * aux::H <- boundary conditions
+     */
+    auxFieldBoundaryConditions(time, gr_bc::Hfield);
 
-    // D0 at t=3/2
-    ampereSubstep(time, 1.0, 1);
-    fieldBoundaryConditions(time, 0);
+    /*
+     * em0::D <- (em::D) <- curl aux::H
+     *
+     * Now: em0::D at 1
+     *      em::D at 0
+     */
+    ampereSubstep(time, 1.0, gr_ampere::main);
+    /*
+     * em0::D, em::D <- boundary conditions
+     */
+    fieldBoundaryConditions(time, gr_bc::Dfield);
 
-    // Final: B0 at 0, D0 at 1/2, B1 at 1, D1 at 3/2
-    swap_em_cur(this->m_mblock);
+    /*
+     * em::D <-> em0::D
+     * em::B <-> em0::B
+     * em::J <-> em0::J
+     */
+    swapFieldsGR();
+    /*
+     * Finally: em0::B   at -1/2
+     *          em0::D   at 0
+     *          em::B    at 1/2
+     *          em::D    at 1
+     *
+     *          cur0::J  --
+     *          cur::J   --
+     *
+     *          aux::E   --
+     *          aux::H   --
+     *
+     *          x_prtl   at 1
+     *          u_prtl   at 1/2
+     */
   }
 
-  /*
-   * Initially: em0::B   at n-3/2
-   *            em0::D   at n-1
-   *            em::B    at n-1/2
-   *            em::D    at n
-   *
-   *            cur0::J  --
-   *            cur::J   at n-1/2
-   *
-   *            aux::E   --
-   *            aux::H   --
-   *
-   *            x_prtl   at n
-   *            u_prtl   at n-1/2
-   */
   template <Dimension D>
   void GRPIC<D>::step_forward(const real_t& time) {
     TimerCollection timers({"Field_solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
+    /*
+     * Initially: em0::B   at n-3/2
+     *            em0::D   at n-1
+     *            em::B    at n-1/2
+     *            em::D    at n
+     *
+     *            cur0::J  --
+     *            cur::J   at n-1/2
+     *
+     *            aux::E   --
+     *            aux::H   --
+     *
+     *            x_prtl   at n
+     *            u_prtl   at n-1/2
+     */
 
     if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
@@ -137,7 +241,7 @@ namespace ntt {
 
       timers.start(1);
       /*
-       * aux::H <- alpha * em::D + beta x em0::B
+       * aux::H <- alpha * em0::B - beta x em::D
        *
        * Now: aux::H at n
        */
@@ -212,7 +316,7 @@ namespace ntt {
 
       timers.start(1);
       /*
-       * aux::H <- alpha * em0::D + beta x em0::B
+       * aux::H <- alpha * em0::B - beta x em0::D
        *
        * Now: aux::H at n+1/2
        */
@@ -228,29 +332,38 @@ namespace ntt {
        *      em::D at n
        */
       ampereSubstep(time, 1.0, gr_ampere::main);
-
-      // Final: B0 at n-1/2, B at n+1/2, D0 at n, D at n+1, x at n+1, u at n+1/2, J0 at n, J at n+1/2
+      
       /*
        * em::D <-> em0::D
        * em::B <-> em0::B
        * em::J <-> em0::J
-       *
-       * Now: em0::D at n
-       *      em0::B at n-1/2
-       *      em::D at n+1
-       *      em::B at n+1/2
        */
-      swapFieldsGR(this->m_mblock);
+      swapFieldsGR();
       timers.stop(1);
 
       timers.start(2);
       /*
        * em0::D, em::D <- boundary conditions
        */
-      fieldBoundaryConditions(time, gr_bc::Efield);
+      fieldBoundaryConditions(time, gr_bc::Dfield);
       timers.stop(2);
     }
 
+    /*
+     * Finally: em0::B   at n-1/2
+     *          em0::D   at n
+     *          em::B    at n+1/2
+     *          em::D    at n+1
+     *    
+     *          cur0::J  (at n)
+     *          cur::J   at n+1/2
+     *    
+     *          aux::E   (at n+1/2)
+     *          aux::H   (at n)
+     *    
+     *          x_prtl   at n+1
+     *          u_prtl   at n+1/2
+     */
     timers.printAll(millisecond);
   }
 
