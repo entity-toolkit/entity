@@ -124,6 +124,19 @@ namespace ntt {
      * @param f select field to apply boundary conditions to [`gr_bc::Efield`, `gr_bc::Hfield`].
      */
     void auxFieldBoundaryConditions(const real_t&, const gr_bc&);
+
+    /**
+     * @brief Swaps em and em0 fields, cur and cur0 currents.
+     */
+    void swapFieldsGR() {
+      std::swap((this->m_mblock).em, (this->m_mblock).em0);
+      std::swap((this->m_mblock).cur, (this->m_mblock).cur0);
+    }
+    /**
+     * @brief Copies em fields into em0
+     *
+     */
+    void copyFieldsGR() { Kokkos::deep_copy((this->m_mblock).em0, (this->m_mblock).em); }
   };
 
 } // namespace ntt
