@@ -31,8 +31,8 @@ namespace ntt {
   // First push, updates B0.
   template <>
   Inline void FaradayGR_aux<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
 
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
@@ -74,8 +74,8 @@ namespace ntt {
   // Second push, updates B but assigns it to B0.
   template <>
   Inline void FaradayGR<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
 
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};

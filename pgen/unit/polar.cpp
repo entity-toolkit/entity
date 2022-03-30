@@ -28,8 +28,8 @@ namespace ntt {
     real_t r_min {mblock.metric.x1_min};
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-        real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+        real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+        real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
         coord_t<Dimension::TWO_D> rth_;
         mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
@@ -66,8 +66,8 @@ namespace ntt {
       "userBcFlds_rmin",
       NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
       Lambda(index_t i, index_t j) {
-        real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-        real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+        real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+        real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
         coord_t<Dimension::TWO_D> rth1_;
         mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth1_);

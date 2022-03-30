@@ -16,7 +16,7 @@ namespace ntt {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        real_t i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
+        real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
         real_t ex2_hat {0.1}, bx3_hat {1.0};
         vec_t<Dimension::THREE_D> e_cntrv, b_cntrv;
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
@@ -73,7 +73,7 @@ namespace ntt {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        real_t i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
+        real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
         real_t br, bphi, etheta;
         real_t r_min {mblock.metric.x1_min};
         coord_t<Dimension::TWO_D> rth_;

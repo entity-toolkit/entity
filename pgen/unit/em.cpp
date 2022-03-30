@@ -40,7 +40,7 @@ namespace ntt {
       mblock.loopActiveCells(),
       Lambda(index_t i, index_t j) {
         // index to code units
-        real_t i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
+        real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
 
         // code units to cartesian (physical units)
         coord_t<Dimension::TWO_D> xy_, xy_half;

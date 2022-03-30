@@ -58,8 +58,8 @@ template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationTy
 //     NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
 //     Lambda(index_t i, index_t j) {
 
-//       // real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-//       // real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+//       // real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+//       // real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 //       // real_t br_target  {userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
 
 //       mblock.em0(i, j, em::ex3) = ZERO;
