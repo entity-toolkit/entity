@@ -36,8 +36,8 @@ namespace ntt {
 
   template <>
   Inline void init_fields_potential<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     index_t j_min {static_cast<index_t>(m_mblock.j_min())};
     coord_t<Dimension::TWO_D> x0m, x0p;
 
@@ -135,8 +135,8 @@ namespace ntt {
 
   template <>
   Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     Kokkos::parallel_for(
       "compute_aphi", NTTRange<Dimension::ONE_D>({m_mblock.j_min() + 1}, {(int)j_}), Lambda(index_t k_) {

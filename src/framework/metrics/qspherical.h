@@ -196,6 +196,7 @@ namespace ntt {
         auto eta {x[1] * deta + eta_min};
         auto theta {eta2theta(eta)};
         return deta * std::exp(chi) * r * r * (ONE - std::cos(theta));
+        // dchi / dr = 
       }
     }
 
