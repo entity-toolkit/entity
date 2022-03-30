@@ -12,8 +12,7 @@
 namespace ntt {
 
   template <Dimension D, SimulationType S>
-  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams&) {
-  }
+  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams&) {}
 
   // * * * * * * * * * * * * * * * * * * * * * * * *
   // Field initializers
@@ -28,9 +27,8 @@ namespace ntt {
 
     Kokkos::parallel_for(
       "userInitFlds",
-       NTTRange<Dimension::TWO_D>({mblock.i_min() - 1, mblock.j_min()}, {mblock.i_max(), mblock.j_max() + 1}), 
-       init_fields_potential<Dimension::TWO_D>(mblock, epsilon, A0, A1, A3)
-      );
+      NTTRange<Dimension::TWO_D>({mblock.i_min() - 1, mblock.j_min()}, {mblock.i_max(), mblock.j_max() + 1}),
+      init_fields_potential<Dimension::TWO_D>(mblock, epsilon, A0, A1, A3));
   }
 
   template <>
@@ -53,13 +51,13 @@ namespace ntt {
   //     "userBcFlds_rmin",
   //     NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
   //     Lambda(index_t i, index_t j) {
-        
+
   //       // real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
   //       // real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
   //       // real_t br_target  {userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
 
-  //       mblock.em0(i, j, em::ex3) = ZERO; 
-  //       mblock.em0(i, j, em::ex2) = ZERO; 
+  //       mblock.em0(i, j, em::ex3) = ZERO;
+  //       mblock.em0(i, j, em::ex2) = ZERO;
   //       mblock.em0(i, j, em::bx1) = ZERO; //br_target;
   //     });
 

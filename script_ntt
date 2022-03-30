@@ -1,6 +1,0 @@
-#!/bin/bash
-cd ~/GitHub/entity/build
-make clean
-make -j8 ntt
-cd ../bin/
-./ntt.exec -input ../pgen/unit/test_gr.toml

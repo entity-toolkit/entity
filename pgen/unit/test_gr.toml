@@ -3,9 +3,9 @@ title           = "GR_example"
 runtime         = 0.1
 
 [domain]
-sph_rabsorb     = 5.5
-resolution      = [256, 128]
-extent          = [0.9, 6.0]       # Radial extent in units of the event horizon radius  
+sph_rabsorb     = 5.5              # radius of absorbing boundary in units of r_H
+resolution      = [128, 64]
+extent          = [0.9, 6.0]       # radial extent in units of r_H
 boundaries      = ["USER", "USER"]
 a               = 0.99
 

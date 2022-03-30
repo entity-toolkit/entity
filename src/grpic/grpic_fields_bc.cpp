@@ -33,7 +33,11 @@ namespace ntt {
       auto r_max {m_mblock.metric.x1_max};
       auto pGen {this->m_pGen};
       Kokkos::parallel_for(
+        // @CHECK
         "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+        // "2d_absorbing bc",
+        // NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max() + 1}),
+        // Lambda(index_t i, index_t j) {
           real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
           real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
@@ -107,7 +111,11 @@ namespace ntt {
       auto r_max {m_mblock.metric.x1_max};
       auto pGen {this->m_pGen};
       Kokkos::parallel_for(
+        // @CHECK
         "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+        // "2d_absorbing bc",
+        // NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max() + 1}),
+        // Lambda(index_t i, index_t j) {
           real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
           real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
