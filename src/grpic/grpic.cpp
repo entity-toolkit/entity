@@ -68,7 +68,7 @@ namespace ntt {
     copyFieldsGR();
 
     /*
-     * aux::E <- alpha * em::D + beta x em::B
+     * aux::E <- alpha * em::D + beta x em0::B
      * aux::H <- alpha * em::D + beta x em0::B
      *
      * Now: aux::E & aux::H at -1/2
@@ -260,6 +260,8 @@ namespace ntt {
 
     /*
      * cur0::J <- current deposition
+     *
+     * Now: cur0::J at n+1/2
      */
     timers.start(3);
     timers.stop(3);
