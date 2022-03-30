@@ -30,8 +30,8 @@ namespace ntt {
 
   template <>
   Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     real_t inv_sqrt_detH_iPj {
       ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})

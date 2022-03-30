@@ -3,11 +3,11 @@ title           = "GR_example"
 runtime         = 0.1
 
 [domain]
-sph_rabsorb     = 5.5              # radius of absorbing boundary in units of r_H
-resolution      = [128, 64]
-extent          = [0.9, 6.0]       # radial extent in units of r_H
+sph_rabsorb     = 6.0              # radius of absorbing boundary in units of r_H
+resolution      = [128, 128]
+extent          = [0.9, 8.0]       # radial extent in units of r_H
 boundaries      = ["USER", "USER"]
-a               = 0.99
+a               = 0.9
 
 [algorithm]
 CFL             = 0.9

@@ -34,23 +34,26 @@ namespace ntt {
       auto pGen {this->m_pGen};
       Kokkos::parallel_for(
         // @CHECK
-        "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        // "2d_absorbing bc",
-        // NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max() + 1}),
-        // Lambda(index_t i, index_t j) {
-          real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-          real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+        // "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+        "2d_absorbing bc",
+        NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max() + 1}),
+        Lambda(index_t i, index_t j) {
+          real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+          real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
           // i
           vec_t<Dimension::TWO_D> rth_;
           mblock.metric.x_Code2Sph({i_, j_}, rth_);
           real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-          real_t sigma_r1 {ONE - std::exp(-HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1)};
+          // @CHECK
+          real_t sigma_r1 {ONE - std::exp(-5.0 * HEAVISIDE(delta_r1)*delta_r1 * delta_r1 * delta_r1)};
+          // real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
 
           // i + 1/2
           mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
           real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-          real_t sigma_r2 {ONE - std::exp(-HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
+          real_t sigma_r2 {ONE - std::exp(-5.0 * HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
+          // real_t sigma_r2 {HEAVISIDE(5.0 * delta_r2) * delta_r2 * delta_r2 * delta_r2};
 
           mblock.em0(i, j, em::ex1) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex1);
           mblock.em0(i, j, em::ex2) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex2);
@@ -66,11 +69,16 @@ namespace ntt {
         "2d_bc_rmax",
         NTTRange<Dimension::TWO_D>({mblock.i_max(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max()}),
         Lambda(index_t i, index_t j) {
-          mblock.em0(i, j, em::ex3) = ZERO;
-          mblock.em0(i, j, em::ex2) = ZERO;
+          // mblock.em0(i, j, em::ex3) = mblock.em0(i - 1, j, em::ex3) * 0;
+          // mblock.em0(i, j, em::ex2) = mblock.em0(i - 1, j, em::ex3) * 0;
 
-          mblock.em(i, j, em::ex3) = ZERO;
-          mblock.em(i, j, em::ex2) = ZERO;
+          // mblock.em(i, j, em::ex3) = mblock.em(i - 1, j, em::ex3) * 0;
+          // mblock.em(i, j, em::ex2) = mblock.em(i - 1, j, em::ex3) * 0;
+          mblock.em0(i, j, em::ex3) = mblock.em0(i - 1, j, em::ex3);
+          mblock.em0(i, j, em::ex2) = mblock.em0(i - 1, j, em::ex3);
+
+          mblock.em(i, j, em::ex3) = mblock.em(i - 1, j, em::ex3);
+          mblock.em(i, j, em::ex2) = mblock.em(i - 1, j, em::ex3);
         });
     } else if (f == gr_bc::Bfield) {
       // theta = 0 boundary
@@ -112,23 +120,25 @@ namespace ntt {
       auto pGen {this->m_pGen};
       Kokkos::parallel_for(
         // @CHECK
-        "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        // "2d_absorbing bc",
-        // NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max() + 1}),
-        // Lambda(index_t i, index_t j) {
-          real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-          real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+        // "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+        "2d_absorbing bc",
+        NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max() + 1}),
+        Lambda(index_t i, index_t j) {
+          real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+          real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
           // i
           vec_t<Dimension::TWO_D> rth_;
           mblock.metric.x_Code2Sph({i_, j_}, rth_);
           real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-          real_t sigma_r1 {ONE - std::exp(-HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1)};
+          real_t sigma_r1 {ONE - std::exp(-HEAVISIDE(5.0 * delta_r1) * delta_r1 * delta_r1 * delta_r1)};
+          // real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
 
           // i + 1/2
           mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
           real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-          real_t sigma_r2 {ONE - std::exp(-HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2)};
+          real_t sigma_r2 {ONE - std::exp(-HEAVISIDE(5.0 * delta_r2) * delta_r2 * delta_r2 * delta_r2)};
+          // real_t sigma_r2 {HEAVISIDE(5.0 * delta_r2) * delta_r2 * delta_r2 * delta_r2};
 
           real_t br_target {pGen.userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
           real_t bth_target {pGen.userTargetField_bth_cntrv(mblock, {i_ + HALF, j_})};
@@ -156,6 +166,7 @@ namespace ntt {
         "2d_bc_rmax",
         NTTRange<Dimension::TWO_D>({mblock.i_max(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max()}),
         Lambda(index_t i, index_t j) {
+          // dBr /dr = 0
           mblock.em0(i, j, em::bx1) = mblock.em0(i - 1, j, em::bx1);
           mblock.em(i, j, em::bx1) = mblock.em(i - 1, j, em::bx1);
         });

@@ -1,16 +1,15 @@
 #include "nttiny/vis.h"
 #include "nttiny/api.h"
 
-#if (SIMTYPE == PIC_SIMTYPE)
+#include "global.h"
+
+#if SIMTYPE == PIC_SIMTYPE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
-#elif (SIMTYPE == GRPIC_SIMTYPE)
+#elif SIMTYPE == GRPIC_SIMTYPE
 #  include "grpic.h"
 #  define SIMULATION_CONTAINER GRPIC
 #endif
-
-#  include "grpic.h"
-#  define SIMULATION_CONTAINER GRPIC
 
 #include "global.h"
 #include "cargs.h"
@@ -27,6 +26,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   int nx1, nx2;
   ntt::GRPIC<ntt::Dimension::TWO_D>& m_sim;
   nttiny::Data<float> m_ex1, m_ex2, m_ex3;
+  nttiny::Data<float> m_hx1, m_hx2, m_hx3;
+  nttiny::Data<float> m_dx1, m_dx2, m_dx3;
   nttiny::Data<float> m_bx1, m_bx2, m_bx3;
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
 
@@ -39,6 +40,12 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       m_ex1 {nx1, nx2},
       m_ex2 {nx1, nx2},
       m_ex3 {nx1, nx2},
+      m_hx1 {nx1, nx2},
+      m_hx2 {nx1, nx2},
+      m_hx3 {nx1, nx2},
+      m_dx1 {nx1, nx2},
+      m_dx2 {nx1, nx2},
+      m_dx3 {nx1, nx2},
       m_bx1 {nx1, nx2},
       m_bx2 {nx1, nx2},
       m_bx3 {nx1, nx2} {
@@ -96,13 +103,19 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       }
     }
 
-    this->fields.insert({{"ex1", &(this->m_ex1)},
-                         {"ex2", &(this->m_ex2)},
-                         {"ex3", &(this->m_ex3)},
+    this->fields.insert({{"dx1", &(this->m_dx1)},
+                         {"dx2", &(this->m_dx2)},
+                         {"dx3", &(this->m_dx3)},
                          {"bx1", &(this->m_bx1)},
                          {"bx2", &(this->m_bx2)},
-                         {"bx3", &(this->m_bx3)}
-                       });
+                         {"bx3", &(this->m_bx3)},
+                         {"ex1", &(this->m_ex1)},
+                         {"ex2", &(this->m_ex2)},
+                         {"ex3", &(this->m_ex3)},
+                         {"hx1", &(this->m_hx1)},
+                         {"hx2", &(this->m_hx2)},
+                         {"hx3", &(this->m_hx3)}
+                         });
 
     int s {0}, i {0};
     for (auto& species : m_sim.mblock().particles) {
@@ -124,15 +137,17 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         }
       }
       setData();
-    }
+  }
 
   void setData() override {
     for (int j{0}; j < nx2; ++j) {
       for (int i{0}; i < nx1; ++i) {
-        auto i_ {(real_t)(i - ntt::N_GHOSTS)};
-        auto j_ {(real_t)(j - ntt::N_GHOSTS)};
-        real_t ex1_cnt, ex2_cnt, ex3_cnt;
+        // auto i_ {(real_t)(i - ntt::N_GHOSTS)};
+        // auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+        real_t dx1_cnt, dx2_cnt, dx3_cnt;
         real_t bx1_cnt, bx2_cnt, bx3_cnt;
+        real_t ex1_cnt, ex2_cnt, ex3_cnt;
+        real_t hx1_cnt, hx2_cnt, hx3_cnt;
 
         // if ((i < ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (i >= nx2 - ntt::N_GHOSTS) || (j >= nx1 - ntt::N_GHOSTS)) {
         //   ex1_cnt = m_sim.mblock().aux(i, j, ntt::em::ex1);
@@ -152,21 +167,28 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         //   bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
         // }
 
-          ex1_cnt = m_sim.mblock().em0(i, j, ntt::em::ex1);
-          ex2_cnt = m_sim.mblock().em0(i, j, ntt::em::ex2);
-          ex3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
-          bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
-          bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
-          bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
+          // ex1_cnt = m_sim.mblock().em0(i, j, ntt::em::ex1);
+          // ex2_cnt = m_sim.mblock().em0(i, j, ntt::em::ex2);
+          // ex3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
+          // bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
+          // bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
+          // bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
 
-        // ex1_cnt = m_sim.mblock().aux(i, j, ntt::em::ex1);
-        // ex2_cnt = m_sim.mblock().aux(i, j, ntt::em::ex2);
-        // ex3_cnt = m_sim.mblock().aux(i, j, ntt::em::ex3);
-        // bx1_cnt = m_sim.mblock().aux(i, j, ntt::em::bx1);
-        // bx2_cnt = m_sim.mblock().aux(i, j, ntt::em::bx2);
-        // bx3_cnt = m_sim.mblock().aux(i, j, ntt::em::bx3);
+        ex1_cnt = m_sim.mblock().aux(i, j, ntt::em::ex1);
+        ex2_cnt = m_sim.mblock().aux(i, j, ntt::em::ex2);
+        ex3_cnt = m_sim.mblock().aux(i, j, ntt::em::ex3);
+        hx1_cnt = m_sim.mblock().aux(i, j, ntt::em::bx1);
+        hx2_cnt = m_sim.mblock().aux(i, j, ntt::em::bx2);
+        hx3_cnt = m_sim.mblock().aux(i, j, ntt::em::bx3);
 
-        ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
+        dx1_cnt = m_sim.mblock().em0(i, j, ntt::em::ex1);
+        dx2_cnt = m_sim.mblock().em0(i, j, ntt::em::ex2);
+        dx3_cnt = m_sim.mblock().em0(i, j, ntt::em::ex3);
+        bx1_cnt = m_sim.mblock().em0(i, j, ntt::em::bx1);
+        bx2_cnt = m_sim.mblock().em0(i, j, ntt::em::bx2);
+        bx3_cnt = m_sim.mblock().em0(i, j, ntt::em::bx3);
+
+        ntt::vec_t<ntt::Dimension::THREE_D> d_hat, b_hat, e_hat, h_hat;
 
 // #if (SIMTYPE == PIC_SIMTYPE)
 //         m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
@@ -183,12 +205,24 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
         // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
 
-        e_hat[0] = SIGN(ex1_cnt) * std::pow(std::abs(ex1_cnt), 0.25);
-        e_hat[1] = SIGN(ex2_cnt) * std::pow(std::abs(ex2_cnt), 0.25);
-        e_hat[2] = SIGN(ex3_cnt) * std::pow(std::abs(ex3_cnt), 0.25);
-        b_hat[0] = SIGN(bx1_cnt) * std::pow(std::abs(bx1_cnt), 0.25);
-        b_hat[1] = SIGN(bx2_cnt) * std::pow(std::abs(bx2_cnt), 0.25);
-        b_hat[2] = SIGN(bx3_cnt) * std::pow(std::abs(bx3_cnt), 0.25);
+        // e_hat[0] = SIGN(ex1_cnt) * std::pow(std::abs(ex1_cnt), 0.25);
+        // e_hat[1] = SIGN(ex2_cnt) * std::pow(std::abs(ex2_cnt), 0.25);
+        // e_hat[2] = SIGN(ex3_cnt) * std::pow(std::abs(ex3_cnt), 0.25);
+        // b_hat[0] = SIGN(bx1_cnt) * std::pow(std::abs(bx1_cnt), 0.25);
+        // b_hat[1] = SIGN(bx2_cnt) * std::pow(std::abs(bx2_cnt), 0.25);
+        // b_hat[2] = SIGN(bx3_cnt) * std::pow(std::abs(bx3_cnt), 0.25);
+        e_hat[0] = ex1_cnt;
+        e_hat[1] = ex2_cnt;
+        e_hat[2] = ex3_cnt;
+        b_hat[0] = bx1_cnt;
+        b_hat[1] = bx2_cnt;
+        b_hat[2] = bx3_cnt;
+        d_hat[0] = dx1_cnt;
+        d_hat[1] = dx2_cnt;
+        d_hat[2] = dx3_cnt;
+        h_hat[0] = hx1_cnt;
+        h_hat[1] = hx2_cnt;
+        h_hat[2] = hx3_cnt;
 
         // convert from contravariant to hatted
         m_ex1.set(i, j, e_hat[0]);
@@ -197,6 +231,12 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         m_bx1.set(i, j, b_hat[0]);
         m_bx2.set(i, j, b_hat[1]);
         m_bx3.set(i, j, b_hat[2]);
+        m_dx1.set(i, j, d_hat[0]);
+        m_dx2.set(i, j, d_hat[1]);
+        m_dx3.set(i, j, d_hat[2]);
+        m_hx1.set(i, j, h_hat[0]);
+        m_hx2.set(i, j, h_hat[1]);
+        m_hx3.set(i, j, h_hat[2]);
         
         // m_ex1.set(i, j, ex1_cnt);
         // m_ex2.set(i, j, ex2_cnt);

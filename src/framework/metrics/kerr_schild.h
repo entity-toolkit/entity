@@ -143,8 +143,6 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      // std::cout << dr << " " << dtheta <<  " " << std::endl;
-      // return 20.485 * dr * dtheta * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - std::cos(del_theta));
       return dr * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - std::cos(del_theta));
     }
 /**
