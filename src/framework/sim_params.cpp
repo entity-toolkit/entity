@@ -88,6 +88,7 @@ namespace ntt {
         m_metric_parameters[3] = spin;
         m_extent[0] *= rh;
         m_extent[1] *= rh;
+        m_metric_parameters[2] *= rh;
       }
 
       m_extent.push_back(0.0);
