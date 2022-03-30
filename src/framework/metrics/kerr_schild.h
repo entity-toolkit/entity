@@ -34,7 +34,7 @@ namespace ntt {
         a(params[3]) {}
     ~Metric() = default;
 
-    [[nodiscard]] auto spin() const -> const real_t& {return a;}
+    [[nodiscard]] auto spin() const -> const real_t& { return a; }
 
     /**
      * Compute metric component 11.
@@ -47,8 +47,8 @@ namespace ntt {
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};
       return dr_sqr * (ONE + TWO * r / (r * r + a * a * cth * cth));
-    }    
-    
+    }
+
     /**
      * Compute metric component 22.
      *
@@ -90,7 +90,7 @@ namespace ntt {
       real_t theta {x[1] * dtheta};
       real_t cth {std::cos(theta)};
       real_t sth {std::sin(theta)};
-      return - dr * a * sth * sth * ( ONE + TWO * r / (r * r + a * a * cth * cth));
+      return -dr * a * sth * sth * (ONE + TWO * r / (r * r + a * a * cth * cth));
     }
 
     /**
@@ -123,14 +123,14 @@ namespace ntt {
       return z / (ONE + z) / dr;
     }
 
-     /**
+    /**
      * Compute the square root of the determinant of h-matrix divided by sin(theta).
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns sqrt(det(h))/sin(theta).
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
-      return h_22(x) / alpha(x);
+      return h_22(x) / alpha(x); 
     }
 
     /**
@@ -143,12 +143,13 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      return dtheta * (r * r + a * a) * std::sqrt(ONE + TWO * r / (r * r + a * a)) * (ONE - std::cos(del_theta));
+      // std::cout << dr << " " << dtheta <<  " " << std::endl;
+      // return 20.485 * dr * dtheta * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - std::cos(del_theta));
+      return dr * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - std::cos(del_theta));
     }
-
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
- *       include vector transformations for a diagonal metric here
+ *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
 #include "non_diag_vector_transform.h"
@@ -261,7 +262,6 @@ namespace ntt {
         x[2] = xi[2] / dphi;
       }
     }
-
   };
 
 } // namespace ntt
