@@ -28,8 +28,8 @@ namespace ntt {
   // First calculation, with B and D0
   template <>
   Inline void computeAuxE_D0_B<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     real_t h_11_iPj {m_mblock.metric.h_11({i_ + HALF, j_})};
     real_t h_22_ijP {m_mblock.metric.h_22({i_, j_ + HALF})};
@@ -103,8 +103,8 @@ namespace ntt {
   // Second calculation, with B0 and D
   template <>
   Inline void computeAuxE_D_B0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     real_t h_11_iPj {m_mblock.metric.h_11({i_ + HALF, j_})};
     real_t h_22_ijP {m_mblock.metric.h_22({i_, j_ + HALF})};
@@ -258,8 +258,8 @@ namespace ntt {
   // Second calculation, with B0 and D0
   template <>
   Inline void computeAuxH_D0_B0<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     real_t h_11_ijP {m_mblock.metric.h_11({i_, j_ + HALF})};
     real_t h_22_iPj {m_mblock.metric.h_22({i_ + HALF, j_})};
