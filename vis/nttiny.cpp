@@ -49,55 +49,56 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #if SIMTYPE == PIC_SIMTYPE
           // @TODO: transformations here
-          if (m_fields_to_plot[f] == "ex1") {
+          if (m_fields_to_plot[f] == "Er") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
-          } else if (m_fields_to_plot[f] == "ex2") {
+          } else if (m_fields_to_plot[f] == "Etheta") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex2));
-          } else if (m_fields_to_plot[f] == "ex3") {
+          } else if (m_fields_to_plot[f] == "Ephi") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex3));
-          } else if (m_fields_to_plot[f] == "bx1") {
+          } else if (m_fields_to_plot[f] == "Br") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx1));
-          } else if (m_fields_to_plot[f] == "bx2") {
+          } else if (m_fields_to_plot[f] == "Btheta") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx2));
-          } else if (m_fields_to_plot[f] == "bx3") {
+          } else if (m_fields_to_plot[f] == "Bphi") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx3));
           }
 #elif SIMTYPE == GRPIC_SIMTYPE
-          if (m_fields_to_plot[f] == "dx1") {
+          // @TODO: also need to transform if qspherical coordinates
+          if (m_fields_to_plot[f] == "Dr") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
-          } else if (m_fields_to_plot[f] == "dx2") {
+          } else if (m_fields_to_plot[f] == "Dtheta") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex2));
-          } else if (m_fields_to_plot[f] == "dx3") {
+          } else if (m_fields_to_plot[f] == "Dphi") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex3));
-          } else if (m_fields_to_plot[f] == "bx1") {
+          } else if (m_fields_to_plot[f] == "Br") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx1));
-          } else if (m_fields_to_plot[f] == "bx2") {
+          } else if (m_fields_to_plot[f] == "Btheta") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx2));
-          } else if (m_fields_to_plot[f] == "bx3") {
+          } else if (m_fields_to_plot[f] == "Bphi") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx3));
-          } else if (m_fields_to_plot[f] == "ex1") {
+          } else if (m_fields_to_plot[f] == "Er") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::ex1));
-          } else if (m_fields_to_plot[f] == "ex2") {
+          } else if (m_fields_to_plot[f] == "Etheta") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::ex2));
-          } else if (m_fields_to_plot[f] == "ex3") {
+          } else if (m_fields_to_plot[f] == "Ephi") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::ex3));
-          } else if (m_fields_to_plot[f] == "hx1") {
+          } else if (m_fields_to_plot[f] == "Hr") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::bx1));
-          } else if (m_fields_to_plot[f] == "hx2") {
+          } else if (m_fields_to_plot[f] == "Htheta") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::bx2));
-          } else if (m_fields_to_plot[f] == "hx3") {
+          } else if (m_fields_to_plot[f] == "Hphi") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::bx3));
-          } else if (m_fields_to_plot[f] == "d0x1") {
+          } else if (m_fields_to_plot[f] == "D0r") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::ex1));
-          } else if (m_fields_to_plot[f] == "d0x2") {
+          } else if (m_fields_to_plot[f] == "D0theta") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::ex2));
-          } else if (m_fields_to_plot[f] == "d0x3") {
+          } else if (m_fields_to_plot[f] == "D0phi") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::ex3));
-          } else if (m_fields_to_plot[f] == "b0x1") {
+          } else if (m_fields_to_plot[f] == "B0r") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx1));
-          } else if (m_fields_to_plot[f] == "b0x2") {
+          } else if (m_fields_to_plot[f] == "B0theta") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx2));
-          } else if (m_fields_to_plot[f] == "b0x3") {
+          } else if (m_fields_to_plot[f] == "B0phi") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx3));
           }
 #endif
