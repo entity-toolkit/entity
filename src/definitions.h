@@ -8,7 +8,7 @@
 #define MINKOWSKI_METRIC    1
 #define SPHERICAL_METRIC    2
 #define QSPHERICAL_METRIC   3
-#define KERR_SCHILD_METRIC   4
+#define KERR_SCHILD_METRIC  4
 
 #define PIC_SIMTYPE         1
 #define GRPIC_SIMTYPE       2
@@ -34,7 +34,7 @@ namespace ntt {
     inline constexpr double SQRT2 {1.41421356237309504880};
     inline constexpr double INV_SQRT2 {0.70710678118654752440};
     inline constexpr double SQRT3 {1.73205080756887729352};
-  } // namespace const
+  } // namespace constant
 } // namespace ntt
 
 // Simple math expressions (for real-type arguments)
@@ -52,8 +52,8 @@ inline constexpr double HALF {0.5};
 inline constexpr double QUARTER {0.25};
 #endif
 
-#define SIGNd(x)      (((x) < 0.0) ? -1.0 : 1.0)
-#define SIGNf(x)      (((x) < 0.0f) ? -1.0f : 1.0f)
+#define SIGNd(x)     (((x) < 0.0) ? -1.0 : 1.0)
+#define SIGNf(x)     (((x) < 0.0f) ? -1.0f : 1.0f)
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
 #define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
 #define SQR(x)       ((x) * (x))
