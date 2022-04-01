@@ -117,6 +117,8 @@ namespace ntt {
       += m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
     m_mblock.em(i, j, em::ex2)
       += m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
+    // m_mblock.em(i, j, em::ex3) += m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1);
+    // @TEMP:
     m_mblock.em(i, j, em::ex3) += m_coeff * inv_sqrt_detH_ij
                                   * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
                                      + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
