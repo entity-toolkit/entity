@@ -76,7 +76,7 @@ namespace ntt {
      * Vector potential
      *
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
-     * @note Address : aphi(i, j, k).
+     * @note Address : aphi(i, j, k, 0).
      */
     RealFieldND<D, 1> aphi;
 #endif

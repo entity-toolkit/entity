@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace ntt {
+#if SIMTYPE == PIC_SIMTYPE
   // * * * * * * * * * * * * * * * * * * * *
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -27,11 +28,10 @@ namespace ntt {
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
-
+#elif SIMTYPE == GRPIC_SIMTYPE
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
-#if SIMTYPE == GRPIC_SIMTYPE
   template <>
   Fields<Dimension::TWO_D, SimulationType::GRPIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
