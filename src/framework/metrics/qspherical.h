@@ -13,7 +13,7 @@ namespace ntt {
    * Flat metric in quasi-spherical system.
    * chi, eta, phi = log(r-r0), f(h, theta), phi
    *
-   * @todo change `eta_min`, `phi_min`.
+   * TODO: change `eta_min`, `phi_min`.
    * @tparam D dimension.
    */
   template <Dimension D>
@@ -195,8 +195,7 @@ namespace ntt {
         auto r {r0 + std::exp(chi)};
         auto eta {x[1] * deta + eta_min};
         auto theta {eta2theta(eta)};
-        return deta * std::exp(chi) * r * r * (ONE - std::cos(theta));
-        // dchi / dr = 
+        return dchi * std::exp(chi) * r * r * (ONE - std::cos(theta));
       }
     }
 
