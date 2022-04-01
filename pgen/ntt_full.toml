@@ -33,4 +33,4 @@ pusher          = <string: { BORIS }>
 ...
 
 [visualization]
-fields          = <array of strings, ex. ["dx1", "dx2", "dx3", "bx1", "bx2", ...]>
+fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see vis/nttiny.cpp for ref>
