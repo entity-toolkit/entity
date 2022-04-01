@@ -19,4 +19,9 @@ larmor0         = 0.1
 skindepth0      = 0.01
 
 [visualization]
-fields          = ["dx1", "dx2", "dx3", "bx1", "bx2", "bx3", "ex1", "ex2", "ex3", "hx1", "hx2", "hx3"]
+fields          = ["Dr", "Dtheta", "Dphi", 
+                   "Br", "Btheta", "Bphi", 
+                   "Er", "Etheta", "Ephi", 
+                   "Hr", "Htheta", "Hphi"]
+
+# fields          = ["dx1", "dx2", "dx3", "bx1", "bx2", "bx3", "ex1", "ex2", "ex3", "hx1", "hx2", "hx3"]
