@@ -58,15 +58,19 @@ namespace ntt {
     real_t h_33_inv_ij {m_mblock.metric.h_33_inv({i_, j_})};
     real_t h_13_inv_ij {m_mblock.metric.h_13_inv({i_, j_})};
 
-    x0m[0] = i_, x0m[1] = j_ + HALF - HALF * m_eps;
-    x0p[0] = i_, x0p[1] = j_ + HALF + HALF * m_eps;
+    x0m[0] = i_;
+    x0m[1] = j_ + HALF - HALF * m_eps;
+    x0p[0] = i_;
+    x0p[1] = j_ + HALF + HALF * m_eps;
 
     real_t E2d {(m_a0(m_mblock, x0p) - m_a0(m_mblock, x0m)) / m_eps};
     real_t B1u {(m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
     real_t B3_aux {-(m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
 
-    x0m[0] = i_ + HALF - HALF * m_eps, x0m[1] = j_;
-    x0p[0] = i_ + HALF + HALF * m_eps, x0p[1] = j_;
+    x0m[0] = i_ + HALF - HALF * m_eps; 
+    x0m[1] = j_;
+    x0p[0] = i_ + HALF + HALF * m_eps; 
+    x0p[1] = j_;
 
     real_t B2u;
     if (j == j_min) {
@@ -76,13 +80,17 @@ namespace ntt {
     }
     real_t E1d {(m_a0(m_mblock, x0p) - m_a0(m_mblock, x0m)) / m_eps};
 
-    x0m[0] = i_ + HALF, x0m[1] = j_ + HALF - HALF * m_eps;
-    x0p[0] = i_ + HALF, x0p[1] = j_ + HALF + HALF * m_eps;
+    x0m[0] = i_ + HALF;
+    x0m[1] = j_ + HALF - HALF * m_eps;
+    x0p[0] = i_ + HALF;
+    x0p[1] = j_ + HALF + HALF * m_eps;
 
     real_t B3u {-(m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
 
-    x0m[0] = i_ - HALF * m_eps, x0m[1] = j_;
-    x0p[0] = i_ + HALF * m_eps, x0p[1] = j_;
+    x0m[0] = i_ - HALF * m_eps;
+    x0m[1] = j_;
+    x0p[0] = i_ + HALF * m_eps;
+    x0p[1] = j_;
 
     real_t B2_aux;
     if (j == j_min) {
