@@ -10,7 +10,7 @@ namespace ntt {
   enum class gr_bc { Dfield, Efield, Bfield, Hfield };
   enum class gr_faraday { aux, main };
   enum class gr_ampere { init, aux, main };
-  enum class gr_getE { D_B0, D0_B };
+  enum class gr_getE { D0_B, D_B0 };
   enum class gr_getH { D_B0, D0_B0 };
 
   /**
@@ -83,7 +83,7 @@ namespace ntt {
      * Compute E field.
      *
      * @param t time in physical units.
-     * @param f flag to use D0 and B or D and B0 [`gr_getE::D_B0`, `gr_getE::D0_B`].
+     * @param f flag to use D0 and B or D and B0 [`gr_getE::D0_B`, `gr_getE::D_B0`].
      */
     void computeAuxESubstep(const real_t&, const gr_getE&);
 
