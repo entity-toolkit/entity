@@ -69,11 +69,11 @@ namespace ntt {
 
     /*
      * aux::E <- alpha * em::D + beta x em0::B
-     * aux::H <- alpha * em::D + beta x em0::B
+     * aux::H <- alpha * em::B0 - beta x em::D
      *
      * Now: aux::E & aux::H at -1/2
      */
-    computeAuxESubstep(time, gr_getE::D_B0);
+    computeAuxESubstep(time, gr_getE::D0_B);
     computeAuxHSubstep(time, gr_getH::D_B0);
     /*
      * aux::E, aux::H <- boundary conditions

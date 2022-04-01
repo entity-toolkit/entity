@@ -220,6 +220,12 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       }
     }
   }
+
+  void customAnnotatePcolor2d() override {
+    float a = m_sim.sim_params().metric_parameters()[3];
+    float rh = 1.0f + std::sqrt(1.0f - a * a);
+    nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
+  }
 };
 
 auto main(int argc, char* argv[]) -> int {
