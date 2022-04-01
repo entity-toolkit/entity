@@ -35,7 +35,7 @@ namespace ntt {
      */
     Simulation(const toml::value& inputdata);
     ~Simulation() = default;
-    
+
     /**
      * Initialize / allocate all the simulation objects based on the `m_sim_params`.
      */

@@ -52,8 +52,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void
-  AmpereCurvilinear<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void AmpereCurvilinear<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
