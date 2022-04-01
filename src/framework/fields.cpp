@@ -31,7 +31,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
-
+#if SIMTYPE == GRPIC_SIMTYPE
   template <>
   Fields<Dimension::TWO_D, SimulationType::GRPIC>::Fields(std::vector<unsigned int> res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
@@ -53,6 +53,7 @@ namespace ntt {
       aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
+#endif
 
 } // namespace ntt
 

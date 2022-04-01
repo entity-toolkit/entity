@@ -48,6 +48,12 @@ namespace ntt {
     void process();
 
     /**
+     * Dummy function to match with GRPIC
+     *
+     */
+    void initial_step(const real_t&) {}
+
+    /**
      * Advance B-field using Faraday's law.
      *
      * @param t time in physical units.

@@ -58,7 +58,7 @@ namespace ntt {
       auto r_max {m_mblock.metric.x1_max};
       auto pGen {this->m_pGen};
       Kokkos::parallel_for(
-        // @CHECK
+        // !TEMP:
         // "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
         "2d_absorbing bc",
         NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max() + 1}),
@@ -70,7 +70,7 @@ namespace ntt {
           vec_t<Dimension::TWO_D> rth_;
           mblock.metric.x_Code2Sph({i_, j_}, rth_);
           real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-          // @CHECK
+          // !TEMP:
           // real_t sigma_r1 {ONE - std::exp(-5.0 * HEAVISIDE(delta_r1)*delta_r1 * delta_r1 * delta_r1)};
           real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
 
@@ -158,7 +158,7 @@ namespace ntt {
       auto r_max {m_mblock.metric.x1_max};
       auto pGen {this->m_pGen};
       Kokkos::parallel_for(
-        // @CHECK
+        // !TEMP:
         // "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
         "2d_absorbing bc",
         NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max() + 1}),

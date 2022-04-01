@@ -34,7 +34,7 @@ namespace ntt {
       : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
     /**
      * Loop over all active particles of the given species and call the appropriate pusher.
-     * @todo forward/backward
+     * TODO: forward/backward
      */
     void pushParticles() {
       if (m_particles.pusher() == ParticlePusher::PHOTON) {
@@ -58,7 +58,7 @@ namespace ntt {
     }
 
     /**
-     * @todo Faster sqrt method?
+     * TODO: Faster sqrt method?
      */
     Inline void operator()(const BorisFwd_t&, const index_t p) const {
       vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;

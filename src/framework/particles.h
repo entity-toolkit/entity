@@ -80,7 +80,7 @@ namespace ntt {
     /**
      * 1D arrays with particle data
      *
-     * @todo: Perhaps try VPIC-style arrays.
+     * TODO: Perhaps try VPIC-style arrays.
      */
     // Cell number of the current particle.
     NTTArray<int*> i1, i2, i3;
