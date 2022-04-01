@@ -29,8 +29,14 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& sim,
                    const std::vector<std::string>& fields_to_plot)
-    // : nttiny::SimulationAPI<float> {sim.mblock().metric.label},
+/** 
+ * TODO: make this less ugly
+ */
+#if SIMTYPE == PIC_SIMTYPE
+    : nttiny::SimulationAPI<float> {sim.mblock().metric.label},
+#elif SIMTYPE == GRPIC_SIMTYPE
     : nttiny::SimulationAPI<float> {"qspherical"},
+#endif
       nx1(sim.mblock().Ni() + 2 * ntt::N_GHOSTS),
       nx2(sim.mblock().Nj() + 2 * ntt::N_GHOSTS),
       m_sim(sim),
@@ -48,22 +54,34 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       for (int i {0}; i < nx1; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #if SIMTYPE == PIC_SIMTYPE
-          // @TODO: transformations here
+          auto i_ {(real_t)(i - ntt::N_GHOSTS)};
+          auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+          ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
+          m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                            {m_sim.mblock().em(i, j, ntt::em::ex1),
+                                             m_sim.mblock().em(i, j, ntt::em::ex2),
+                                             m_sim.mblock().em(i, j, ntt::em::ex3)},
+                                            e_hat);
+          m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                            {m_sim.mblock().em(i, j, ntt::em::bx1),
+                                             m_sim.mblock().em(i, j, ntt::em::bx2),
+                                             m_sim.mblock().em(i, j, ntt::em::bx3)},
+                                            b_hat);
           if (m_fields_to_plot[f] == "Er") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
+            m_data[f].set(i, j, e_hat[0]);
           } else if (m_fields_to_plot[f] == "Etheta") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex2));
+            m_data[f].set(i, j, e_hat[1]);
           } else if (m_fields_to_plot[f] == "Ephi") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex3));
+            m_data[f].set(i, j, e_hat[2]);
           } else if (m_fields_to_plot[f] == "Br") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx1));
+            m_data[f].set(i, j, b_hat[0]);
           } else if (m_fields_to_plot[f] == "Btheta") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx2));
+            m_data[f].set(i, j, b_hat[1]);
           } else if (m_fields_to_plot[f] == "Bphi") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx3));
+            m_data[f].set(i, j, b_hat[2]);
           }
 #elif SIMTYPE == GRPIC_SIMTYPE
-          // @TODO: also need to transform if qspherical coordinates
+          // TODO: also need to transform if qspherical coordinates
           if (m_fields_to_plot[f] == "Dr") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
           } else if (m_fields_to_plot[f] == "Dtheta") {
@@ -222,9 +240,14 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   }
 
   void customAnnotatePcolor2d() override {
+#if SIMTYPE == GRPIC_SIMTYPE
     float a = m_sim.sim_params().metric_parameters()[3];
+    float r_absorb = m_sim.sim_params().metric_parameters()[2];
     float rh = 1.0f + std::sqrt(1.0f - a * a);
     nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
+    nttiny::drawCircle({0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI});
+#elif SIMTYPE == PIC_SIMTYPE
+#endif
   }
 };
 

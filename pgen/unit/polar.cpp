@@ -57,8 +57,8 @@ namespace ntt {
     const real_t& time, const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
     using index_t = NTTArray<real_t**>::size_type;
     real_t omega;
-    if (time < 0.5) {
-      omega = time / 10.0;
+    if (time < 5) {
+      omega = time / 100.0;
     } else {
       omega = 0.05;
     }

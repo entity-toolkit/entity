@@ -40,7 +40,7 @@ namespace ntt {
     /**
      * Convert `real_t` type code unit coordinate to cell index + displacement.
      *
-     * @todo `xi + N_GHOSTS` is a bit of a hack.
+     * TODO: `xi + N_GHOSTS` is a bit of a hack.
      * @returns A pair of `int` and `float`: cell index + displacement.
      */
     Inline auto CU_to_Idi(const real_t& xi) const -> std::pair<int, float> {
