@@ -8,8 +8,13 @@ namespace ntt {
 
   template <>
   void GRPIC<Dimension::TWO_D>::computeAuxESubstep(const real_t&, const gr_getE& f) {
+    // @ORIG:
     auto range {
-      NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1})};
+      NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, 
+          {m_mblock.i_max(), m_mblock.j_max() + 1})};
+    // @TEMP:
+    // auto range {
+    //   NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min() - 1}, {m_mblock.i_max(), m_mblock.j_max() + 1})};
     if (f == gr_getE::D0_B) {
       Kokkos::parallel_for("auxiliary_E", range, computeAuxE_D0_B<Dimension::TWO_D>(m_mblock));
     } else if (f == gr_getE::D_B0) {
@@ -21,11 +26,16 @@ namespace ntt {
 
   template <>
   void GRPIC<Dimension::TWO_D>::computeAuxHSubstep(const real_t&, const gr_getH& f) {
+    // @ORIG:
     auto range {
       // @CHECK:
       NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max() + 1})
       // NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min()}, {m_mblock.i_max(), m_mblock.j_max()})};
     };
+    // @TEMP:
+    // auto range {
+    //   NTTRange<Dimension::TWO_D>({m_mblock.i_min() - 1, m_mblock.j_min() - 1}, {m_mblock.i_max(), m_mblock.j_max() + 1})
+    // };
     if (f == gr_getH::D_B0) {
       Kokkos::parallel_for("auxiliary_H", range, computeAuxH_D_B0<Dimension::TWO_D>(m_mblock));
     } else if (f == gr_getH::D0_B0) {
