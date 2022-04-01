@@ -47,6 +47,22 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     for (int j {0}; j < nx2; ++j) {
       for (int i {0}; i < nx1; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
+#if SIMTYPE == PIC_SIMTYPE
+          // @TODO: transformations here
+          if (m_fields_to_plot[f] == "ex1") {
+            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
+          } else if (m_fields_to_plot[f] == "ex2") {
+            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex2));
+          } else if (m_fields_to_plot[f] == "ex3") {
+            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex3));
+          } else if (m_fields_to_plot[f] == "bx1") {
+            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx1));
+          } else if (m_fields_to_plot[f] == "bx2") {
+            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx2));
+          } else if (m_fields_to_plot[f] == "bx3") {
+            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx3));
+          }
+#elif SIMTYPE == GRPIC_SIMTYPE
           if (m_fields_to_plot[f] == "dx1") {
             m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
           } else if (m_fields_to_plot[f] == "dx2") {
@@ -84,6 +100,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           } else if (m_fields_to_plot[f] == "b0x3") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx3));
           }
+#endif
         }
       }
     }
