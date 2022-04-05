@@ -31,7 +31,7 @@ namespace ntt {
         dr_sqr(dr * dr),
         dtheta_sqr(dtheta * dtheta),
         dphi_sqr(dphi * dphi),
-        a(params[3]) {}
+        a(params[4]) {}
     ~Metric() = default;
 
     [[nodiscard]] auto spin() const -> const real_t& { return a; }
