@@ -81,11 +81,12 @@ namespace ntt {
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
       }
       m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
+      m_metric_parameters[3] = readFromInput<real_t>(inputdata, "domain", "absorb_coeff", (real_t)(1.0));
 
       if (m_metric == "kerr_schild") {
         real_t spin {readFromInput<real_t>(inputdata, "domain", "a")};
         real_t rh {ONE + std::sqrt(ONE - spin * spin)};
-        m_metric_parameters[3] = spin;
+        m_metric_parameters[4] = spin;
         m_extent[0] *= rh;
         m_extent[1] *= rh;
         m_metric_parameters[2] *= rh;

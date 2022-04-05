@@ -137,10 +137,12 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     }
   }
   void stepFwd() override {
-    m_sim.step_forward(m_time);
+    for (int i {0}; i < this->get_jumpover(); ++i) {
+      m_sim.step_forward(m_time);
+      ++m_timestep;
+      m_time += m_sim.mblock().timestep();
+    }
     setData();
-    ++m_timestep;
-    m_time += m_sim.mblock().timestep();
   }
   void restart() override {
     m_sim.initializeSetup();
@@ -241,7 +243,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
   void customAnnotatePcolor2d() override {
 #if SIMTYPE == GRPIC_SIMTYPE
-    float a = m_sim.sim_params().metric_parameters()[3];
+    float a = m_sim.sim_params().metric_parameters()[4];
     float r_absorb = m_sim.sim_params().metric_parameters()[2];
     float rh = 1.0f + std::sqrt(1.0f - a * a);
     nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
@@ -270,7 +272,7 @@ auto main(int argc, char* argv[]) -> int {
     NTTSimulationVis visApi(sim, fields_to_plot);
 
     nttiny::Visualization<float> vis;
-    vis.setTPSLimit(30.0f);
+    vis.setTPSLimit(140.0f);
     vis.bindSimulation(&visApi);
     vis.loop();
   }
