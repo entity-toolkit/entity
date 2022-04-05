@@ -3,6 +3,8 @@ title           = <string>
 runtime         = <float>
 
 [domain]
+sph_rabsorb     = <float: > r_min>
+absorb_coeff    = <float: -infinity < ... < infinity, != 0>
 qsph_r0         = <float: -infinity < ... < r_min>
 qsph_h          = <float: -1 < ... < 1>
 resolution      = <array of int of size 1, 2 or 3>
