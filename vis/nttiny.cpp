@@ -52,6 +52,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
   void setData() override {
 #if SIMTYPE == GRPIC_SIMTYPE
+    m_sim.computeVectorPotential();
     // compute the vector potential
 #endif
 

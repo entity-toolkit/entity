@@ -123,39 +123,6 @@ namespace ntt {
     m_mblock.em(i, j, em::ex3) = D3u;
   }
 
-  /**
-   * Computes Aphi from integration of local Br
-   *
-   * @tparam D Dimension.
-   */
-
-  template <Dimension D>
-  class Compute_Aphi {
-    using index_t = typename RealFieldND<D, 1>::size_type;
-    Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_eps;
-    int j_min;
-
-  public:
-    Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)
-      : m_mblock(mblock), m_eps(eps), j_min(mblock.j_min()) {}
-
-    Inline void operator()(const index_t, const index_t) const;
-  };
-
-  template <>
-  Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-    for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
-      real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
-      real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k + HALF})};
-      int k1 {k + N_GHOSTS};
-      m_mblock.aphi(i, j, 0)
-        += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k1 - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k1, em::bx1));
-    }
-  }
-
 } // namespace ntt
 
 #endif
