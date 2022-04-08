@@ -18,7 +18,6 @@ namespace ntt {
 
     void userInitFields(const SimulationParams&, Meshblock<D, S>&);
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
-    // void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
 
     static real_t A0(const Meshblock<D, S>& mblock, const coord_t<D>& x) {
       real_t g00 {-mblock.metric.alpha(x) * mblock.metric.alpha(x)
@@ -39,24 +38,34 @@ namespace ntt {
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t inv_sqrt_detH_ijP {ONE / mblock.metric.sqrt_det_h(x)};
-      x0m[0] = x[0];
-      x0m[1] = x[1] - HALF * epsilon;
-      x0p[0] = x[0];
-      x0p[1] = x[1] + HALF * epsilon;
-      return (A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_ijP / epsilon;
+      if constexpr (D == Dimension::TWO_D) {
+        x0m[0] = x[0];
+        x0m[1] = x[1] - HALF * epsilon;
+        x0p[0] = x[0];
+        x0p[1] = x[1] + HALF * epsilon;
+        return (A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_ijP / epsilon;
+      } else {
+        // 1D/3D N/A
+        return ZERO;
+      }
     }
 
     Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t inv_sqrt_detH_iPj {ONE / mblock.metric.sqrt_det_h(x)};
-      x0m[0] = x[0] + HALF - HALF * epsilon;
-      x0m[1] = x[1];
-      x0p[0] = x[0] + HALF + HALF * epsilon;
-      x0p[1] = x[1];
-      if (x[1] == ZERO) {
-        return ZERO;
+      if constexpr (D == Dimension::TWO_D) {
+        x0m[0] = x[0] + HALF - HALF * epsilon;
+        x0m[1] = x[1];
+        x0p[0] = x[0] + HALF + HALF * epsilon;
+        x0p[1] = x[1];
+        if (x[1] == ZERO) {
+          return ZERO;
+        } else {
+          return -(A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_iPj / epsilon;
+        }
       } else {
-        return -(A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_iPj / epsilon;
+        // 1D/3D N/A
+        return ZERO;
       }
     }
   };

@@ -132,11 +132,18 @@ namespace ntt {
       std::swap((this->m_mblock).em, (this->m_mblock).em0);
       std::swap((this->m_mblock).cur, (this->m_mblock).cur0);
     }
+    
     /**
      * @brief Copies em fields into em0
      *
      */
     void copyFieldsGR() { Kokkos::deep_copy((this->m_mblock).em0, (this->m_mblock).em); }
+
+    /**
+     * @brief Computes Aphi
+     *
+     */
+    void computeVectorPotential();
   };
 
 } // namespace ntt

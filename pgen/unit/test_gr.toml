@@ -3,12 +3,12 @@ title           = "GR_example"
 runtime         = 0.1
 
 [domain]
-sph_rabsorb     = 5.0              # radius of absorbing boundary in units of r_H
-absorb_coeff    = 2.0              # absorption coefficient
-resolution      = [256, 128]
-extent          = [0.8, 6.0]       # radial extent in units of r_H
+sph_rabsorb     = 5.5              # radius of absorbing boundary in units of r_H
+absorb_coeff    = 20.0              # absorption coefficient
+resolution      = [512, 256]
+extent          = [0.9, 6.0]       # radial extent in units of r_H
 boundaries      = ["USER", "USER"]
-a               = 0.99
+a               = 0.9999
 
 [algorithm]
 CFL             = 0.9
@@ -23,6 +23,7 @@ skindepth0      = 0.01
 fields          = ["Dr", "Dtheta", "Dphi", 
                    "Br", "Btheta", "Bphi", 
                    "Er", "Etheta", "Ephi", 
-                   "Hr", "Htheta", "Hphi"]
+                   "Hr", "Htheta", "Hphi", 
+                   "Aphi"]
 
 # fields          = ["dx1", "dx2", "dx3", "bx1", "bx2", "bx3", "ex1", "ex2", "ex3", "hx1", "hx2", "hx3"]
