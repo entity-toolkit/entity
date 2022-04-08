@@ -67,9 +67,9 @@ namespace ntt {
     real_t B1u {(m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
     real_t B3_aux {-(m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
 
-    x0m[0] = i_ + HALF - HALF * m_eps; 
+    x0m[0] = i_ + HALF - HALF * m_eps;
     x0m[1] = j_;
-    x0p[0] = i_ + HALF + HALF * m_eps; 
+    x0p[0] = i_ + HALF + HALF * m_eps;
     x0p[1] = j_;
 
     real_t B2u;
@@ -131,12 +131,14 @@ namespace ntt {
 
   template <Dimension D>
   class Compute_Aphi {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    using index_t = typename RealFieldND<D, 1>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t m_eps;
+    int j_min;
 
   public:
-    Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps) : m_mblock(mblock), m_eps(eps) {}
+    Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)
+      : m_mblock(mblock), m_eps(eps), j_min(mblock.j_min()) {}
 
     Inline void operator()(const index_t, const index_t) const;
   };
@@ -145,15 +147,13 @@ namespace ntt {
   Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-
-    Kokkos::parallel_for(
-      "compute_aphi", NTTRange<Dimension::ONE_D>({m_mblock.j_min() + 1}, {(int)j_}), Lambda(index_t k_) {
-        real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ - HALF})};
-        real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k_ + HALF})};
-        index_t k {k_ + N_GHOSTS};
-        m_mblock.aphi(i, j, 1)
-          += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k, em::bx1));
-      });
+    for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
+      real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
+      real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k + HALF})};
+      int k1 {k + N_GHOSTS};
+      m_mblock.aphi(i, j, 0)
+        += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k1 - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k1, em::bx1));
+    }
   }
 
 } // namespace ntt

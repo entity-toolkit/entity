@@ -10,6 +10,7 @@
 #  define SIMULATION_CONTAINER PIC
 #elif SIMTYPE == GRPIC_SIMTYPE
 #  include "grpic.h"
+#  include "init_fields.hpp"
 #  define SIMULATION_CONTAINER GRPIC
 #endif
 
@@ -29,7 +30,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& sim,
                    const std::vector<std::string>& fields_to_plot)
-/** 
+/**
  * TODO: make this less ugly
  */
 #if SIMTYPE == PIC_SIMTYPE
@@ -50,6 +51,10 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   }
 
   void setData() override {
+#if SIMTYPE == GRPIC_SIMTYPE
+    // compute the vector potential
+#endif
+
     for (int j {0}; j < nx2; ++j) {
       for (int i {0}; i < nx1; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
@@ -118,6 +123,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx2));
           } else if (m_fields_to_plot[f] == "B0phi") {
             m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx3));
+          } else if (m_fields_to_plot[f] == "Aphi") {
+            m_data[f].set(i, j, m_sim.mblock().aphi(i, j, 0));
           }
 #endif
         }

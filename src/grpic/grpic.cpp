@@ -2,6 +2,7 @@
 #include "timer.h"
 #include "grpic.h"
 #include "sim_params.h"
+#include "init_fields.hpp"
 
 namespace ntt {
 
@@ -52,7 +53,7 @@ namespace ntt {
      *            x_prtl   at -1/2
      *            u_prtl   at -1/2
      */
-    
+
     /*
      * em0::D, em::D, em0::B, em::B <- boundary conditions
      */
@@ -270,7 +271,7 @@ namespace ntt {
       timers.start(1);
       /*
        * cur::J <- (cur0::J + cur::J) / 2
-       * 
+       *
        * Now: cur::J at n
        */
       timeAverageJSubstep(time);
@@ -334,7 +335,7 @@ namespace ntt {
        *      em::D at n
        */
       ampereSubstep(time, 1.0, gr_ampere::main);
-      
+
       /*
        * em::D <-> em0::D
        * em::B <-> em0::B
@@ -356,18 +357,29 @@ namespace ntt {
      *          em0::D   at n
      *          em::B    at n+1/2
      *          em::D    at n+1
-     *    
+     *
      *          cur0::J  (at n)
      *          cur::J   at n+1/2
-     *    
+     *
      *          aux::E   (at n+1/2)
      *          aux::H   (at n)
-     *    
+     *
      *          x_prtl   at n+1
      *          u_prtl   at n+1/2
      */
     timers.printAll(millisecond);
+    computeVectorPotential();
   }
+
+  template <>
+  void GRPIC<Dimension::TWO_D>::computeVectorPotential() {
+    Kokkos::parallel_for("computeVectorPotential",
+                         (this->m_mblock).loopActiveCells(),
+                         Compute_Aphi<Dimension::TWO_D>(this->m_mblock, (real_t)(1.0)));
+  }
+
+  template <>
+  void GRPIC<Dimension::THREE_D>::computeVectorPotential() {}
 
 } // namespace ntt
 
