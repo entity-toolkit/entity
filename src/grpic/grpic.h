@@ -146,6 +146,26 @@ namespace ntt {
     void computeVectorPotential();
   };
 
+  /**
+   * Computes Aphi from integration of local Br
+   *
+   * @tparam D Dimension.
+   */
+
+  template <Dimension D>
+  class Compute_Aphi {
+    using index_t = typename RealFieldND<D, 1>::size_type;
+    Meshblock<D, SimulationType::GRPIC> m_mblock;
+    real_t m_eps;
+    int j_min;
+
+  public:
+    Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)
+      : m_mblock(mblock), m_eps(eps), j_min(mblock.j_min()) {}
+
+    Inline void operator()(const index_t, const index_t) const;
+  };
+
 } // namespace ntt
 
 #endif
