@@ -368,7 +368,6 @@ namespace ntt {
      *          u_prtl   at n+1/2
      */
     timers.printAll(millisecond);
-    computeVectorPotential();
   }
 
   template <>
@@ -380,6 +379,24 @@ namespace ntt {
 
   template <>
   void GRPIC<Dimension::THREE_D>::computeVectorPotential() {}
+
+  template <>
+  Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
+    for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
+      real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
+      real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k + HALF})};
+      int k1 {k + N_GHOSTS};
+      m_mblock.aphi(i, j, 0)
+        += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k1 - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k1, em::bx1));
+    }
+  }
+
+  template <>
+  Inline void Compute_Aphi<Dimension::THREE_D>::operator()(const index_t, const index_t) const {
+    // 3D GRPIC not implemented
+  }
 
 } // namespace ntt
 
