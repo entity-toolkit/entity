@@ -88,13 +88,12 @@ namespace ntt {
      */
     Inline auto theta2eta(const real_t& theta) const -> real_t {
       // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y - 108 h y^2))])^(1/3)
-      double R {std::pow(
-        -9.0 * SQR(h) * (constant::PI - 2.0 * theta)
-                            + constant::SQRT3
-                                * std::sqrt(-(CUBE(h)
-                                              * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
-                                                 + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
-        static_cast<real_t>(1.0 / 3.0))};
+      double R {std::pow(-9.0 * SQR(h) * (constant::PI - 2.0 * theta)
+                           + constant::SQRT3
+                               * std::sqrt(-(CUBE(h)
+                                             * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
+                                                + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
+                         static_cast<real_t>(1.0 / 3.0))};
       // eta = Pi^(2/3)(6 Pi^(1/3) + 2 2^(1/3)(h-1)(3Pi)^(2/3)/R + 2^(2/3) 3^(1/3) R / h)/12
       constexpr double PI_TO_TWO_THIRD {2.14502939711102560008};
       constexpr double PI_TO_ONE_THIRD {1.46459188756152326302};
@@ -103,9 +102,10 @@ namespace ntt {
       constexpr double TWO_TO_ONE_THIRD {1.2599210498948731647672};
       constexpr double THREE_PI_TO_TWO_THIRD {4.46184094890142313715794};
       return static_cast<real_t>(PI_TO_TWO_THIRD
-             * (6.0 * PI_TO_ONE_THIRD + 2.0 * TWO_TO_ONE_THIRD * (h - ONE) * THREE_PI_TO_TWO_THIRD / R
-                + TWO_TO_TWO_THIRD * THREE_TO_ONE_THIRD * R / h)
-             / 12.0);
+                                 * (6.0 * PI_TO_ONE_THIRD
+                                    + 2.0 * TWO_TO_ONE_THIRD * (h - ONE) * THREE_PI_TO_TWO_THIRD / R
+                                    + TWO_TO_TWO_THIRD * THREE_TO_ONE_THIRD * R / h)
+                                 / 12.0);
     }
 
     /**
@@ -119,7 +119,7 @@ namespace ntt {
         NTTError("h_11 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        auto chi {x[0] * dchi + chi_min};
+        real_t chi {x[0] * dchi + chi_min};
         return dchi_sqr * std::exp(2.0 * chi);
       }
     }
@@ -134,10 +134,10 @@ namespace ntt {
         NTTError("h_22 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        auto chi {x[0] * dchi + chi_min};
-        auto r {r0 + std::exp(chi)};
-        auto eta {x[1] * deta + eta_min};
-        auto dtheta_deta_ {dtheta_deta(eta)};
+        real_t chi {x[0] * dchi + chi_min};
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t dtheta_deta_ {dtheta_deta(eta)};
         return deta_sqr * r * r * dtheta_deta_ * dtheta_deta_;
       }
     }
@@ -152,11 +152,11 @@ namespace ntt {
         NTTError("h_33 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        auto chi {x[0] * dchi + chi_min};
-        auto r {r0 + std::exp(chi)};
-        auto eta {x[1] * deta + eta_min};
-        auto theta {eta2theta(eta)};
-        auto sin_theta {std::sin(theta)};
+        real_t chi {x[0] * dchi + chi_min};
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
+        real_t sin_theta {std::sin(theta)};
         return r * r * sin_theta * sin_theta;
       }
     }
@@ -171,12 +171,12 @@ namespace ntt {
         NTTError("sqrt_det_h not implemented for 3D qspherical");
         return ZERO;
       } else {
-        auto chi {x[0] * dchi + chi_min};
-        auto r {r0 + std::exp(chi)};
-        auto eta {x[1] * deta + eta_min};
-        auto theta {eta2theta(eta)};
-        auto sin_theta {std::sin(theta)};
-        auto dtheta_deta_ {dtheta_deta(eta)};
+        real_t chi {x[0] * dchi + chi_min};
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
+        real_t sin_theta {std::sin(theta)};
+        real_t dtheta_deta_ {dtheta_deta(eta)};
         return dchi * deta * std::exp(chi) * r * r * sin_theta * dtheta_deta_;
       }
     }
@@ -191,10 +191,10 @@ namespace ntt {
         NTTError("polar_area not implemented for 1D");
         return ZERO;
       } else {
-        auto chi {x[0] * dchi + chi_min};
-        auto r {r0 + std::exp(chi)};
-        auto eta {x[1] * deta + eta_min};
-        auto theta {eta2theta(eta)};
+        real_t chi {x[0] * dchi + chi_min};
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
         return dchi * std::exp(chi) * r * r * (ONE - std::cos(theta));
       }
     }

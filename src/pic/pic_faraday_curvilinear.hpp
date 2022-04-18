@@ -19,7 +19,7 @@ namespace ntt {
   class FaradayCurvilinear {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t m_coeff;
+    real_t                            m_coeff;
 
   public:
     FaradayCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)

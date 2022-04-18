@@ -19,7 +19,7 @@ namespace ntt {
       m_Ni {res.size() > 0 ? (int)(res[0]) : 1},
       m_Nj {res.size() > 1 ? (int)(res[1]) : 1},
       m_Nk {res.size() > 2 ? (int)(res[2]) : 1},
-      metric{res, ext, params} {}
+      metric {res, ext, params} {}
 
   template <>
   auto Mesh<Dimension::ONE_D>::loopAllCells() -> RangeND<Dimension::ONE_D> {
@@ -48,9 +48,9 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  Meshblock<D, S>::Meshblock(const std::vector<unsigned int>& res,
-                             const std::vector<real_t>& ext,
-                             const real_t* params,
+  Meshblock<D, S>::Meshblock(const std::vector<unsigned int>&    res,
+                             const std::vector<real_t>&          ext,
+                             const real_t*                       params,
                              const std::vector<ParticleSpecies>& species)
     : Mesh<D>(res, ext, params), Fields<D, S>(res) {
     for (auto& part : species) {

@@ -9,7 +9,7 @@ namespace ntt {
   template <Dimension D>
   void GRPIC<D>::mainloop() {
     unsigned long timax {static_cast<unsigned long>(this->m_sim_params.total_runtime() / this->m_mblock.timestep())};
-    real_t time {0.0};
+    real_t        time {0.0};
     initial_step(ZERO);
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
@@ -383,11 +383,10 @@ namespace ntt {
   template <>
   Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
       real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
       real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k + HALF})};
-      int k1 {k + N_GHOSTS};
+      int    k1 {k + N_GHOSTS};
       m_mblock.aphi(i, j, 0)
         += HALF * (sqrt_detH_ij1 * m_mblock.em(i, k1 - 1, em::bx1) + sqrt_detH_ij2 * m_mblock.em(i, k1, em::bx1));
     }

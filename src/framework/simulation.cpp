@@ -15,16 +15,12 @@ namespace ntt {
     : m_sim_params {inputdata, D},
       m_pGen {m_sim_params},
       m_mblock {
-        m_sim_params.resolution(), 
-        m_sim_params.extent(), 
-        m_sim_params.metric_parameters(), 
-        m_sim_params.species()
-      } {}
+        m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters(), m_sim_params.species()} {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-  // m_mblock.metric = Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters());
-  m_mblock.boundaries = m_sim_params.boundaries();
+    // m_mblock.metric = Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters());
+    m_mblock.boundaries = m_sim_params.boundaries();
 
     // find timestep and effective cell size
     m_mblock.set_min_cell_size(m_mblock.metric.findSmallestCell());
@@ -116,7 +112,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::finalize() {}
-  
+
 } // namespace ntt
 
 #if SIMTYPE == PIC_SIMTYPE

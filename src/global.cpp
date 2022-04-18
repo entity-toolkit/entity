@@ -84,8 +84,7 @@ namespace ntt {
                                       {static_cast<std::size_t>(i2[0]), static_cast<std::size_t>(i2[1])});
   }
   template <>
-  auto NTTRange<Dimension::THREE_D>(const int (&i1)[3], const int (&i2)[3])
-    -> RangeND<Dimension::THREE_D> {
+  auto NTTRange<Dimension::THREE_D>(const int (&i1)[3], const int (&i2)[3]) -> RangeND<Dimension::THREE_D> {
     return NTTRange<Dimension::THREE_D>(
       {static_cast<std::size_t>(i1[0]), static_cast<std::size_t>(i1[1]), static_cast<std::size_t>(i1[2])},
       {static_cast<std::size_t>(i2[0]), static_cast<std::size_t>(i2[1]), static_cast<std::size_t>(i2[2])});

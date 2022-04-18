@@ -18,15 +18,15 @@ namespace ntt {
       Kokkos::parallel_for(
         "2d_bc_rmin", NTTRange<Dimension::ONE_D>({mblock.j_min()}, {mblock.j_max() + 1}), Lambda(index_t j) {
           mblock.em0(i_min - 1, j, em::ex1) = mblock.em0(i_min, j, em::ex1);
-          mblock.em0(i_min, j, em::ex2) = mblock.em0(i_min + 1, j, em::ex2);
+          mblock.em0(i_min, j, em::ex2)     = mblock.em0(i_min + 1, j, em::ex2);
           mblock.em0(i_min - 1, j, em::ex2) = mblock.em0(i_min, j, em::ex2);
-          mblock.em0(i_min, j, em::ex3) = mblock.em0(i_min + 1, j, em::ex3);
+          mblock.em0(i_min, j, em::ex3)     = mblock.em0(i_min + 1, j, em::ex3);
           mblock.em0(i_min - 1, j, em::ex3) = mblock.em0(i_min, j, em::ex3);
 
           mblock.em(i_min - 1, j, em::ex1) = mblock.em(i_min, j, em::ex1);
-          mblock.em(i_min, j, em::ex2) = mblock.em(i_min + 1, j, em::ex2);
+          mblock.em(i_min, j, em::ex2)     = mblock.em(i_min + 1, j, em::ex2);
           mblock.em(i_min - 1, j, em::ex2) = mblock.em(i_min, j, em::ex2);
-          mblock.em(i_min, j, em::ex3) = mblock.em(i_min + 1, j, em::ex3);
+          mblock.em(i_min, j, em::ex3)     = mblock.em(i_min + 1, j, em::ex3);
           mblock.em(i_min - 1, j, em::ex3) = mblock.em(i_min, j, em::ex3);
         });
       // Absorbing boundary
@@ -62,7 +62,7 @@ namespace ntt {
             real_t sigma_r2 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
 
             mblock.em0(i, j, em::ex1) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex1);
-            mblock.em(i, j, em::ex1) = (ONE - sigma_r2) * mblock.em(i, j, em::ex1);
+            mblock.em(i, j, em::ex1)  = (ONE - sigma_r2) * mblock.em(i, j, em::ex1);
           }
         });
       // r = rmax
@@ -81,7 +81,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "2d_bc_theta0", NTTRange<Dimension::ONE_D>({mblock.i_min() - 1}, {mblock.i_max()}), Lambda(index_t i) {
           mblock.em0(i, j_min, em::bx2) = ZERO;
-          mblock.em(i, j_min, em::bx2) = ZERO;
+          mblock.em(i, j_min, em::bx2)  = ZERO;
         });
 
       // theta = pi boundary
@@ -89,19 +89,19 @@ namespace ntt {
       Kokkos::parallel_for(
         "2d_bc_thetaPi", NTTRange<Dimension::ONE_D>({mblock.i_min() - 1}, {m_mblock.i_max()}), Lambda(index_t i) {
           mblock.em0(i, j_max, em::bx2) = ZERO;
-          mblock.em(i, j_max, em::bx2) = ZERO;
+          mblock.em(i, j_max, em::bx2)  = ZERO;
         });
 
       // r = rmin boundary
       auto i_min {mblock.i_min()};
       Kokkos::parallel_for(
         "2d_bc_rmin", NTTRange<Dimension::ONE_D>({mblock.j_min()}, {mblock.j_max() + 1}), Lambda(index_t j) {
-          mblock.em0(i_min, j, em::bx1) = mblock.em0(i_min + 1, j, em::bx1);
+          mblock.em0(i_min, j, em::bx1)     = mblock.em0(i_min + 1, j, em::bx1);
           mblock.em0(i_min - 1, j, em::bx1) = mblock.em0(i_min, j, em::bx1);
           mblock.em0(i_min - 1, j, em::bx2) = mblock.em0(i_min, j, em::bx2);
           mblock.em0(i_min - 1, j, em::bx3) = mblock.em0(i_min, j, em::bx3);
 
-          mblock.em(i_min, j, em::bx1) = mblock.em(i_min + 1, j, em::bx1);
+          mblock.em(i_min, j, em::bx1)     = mblock.em(i_min + 1, j, em::bx1);
           mblock.em(i_min - 1, j, em::bx1) = mblock.em(i_min, j, em::bx1);
           mblock.em(i_min - 1, j, em::bx2) = mblock.em(i_min, j, em::bx2);
           mblock.em(i_min - 1, j, em::bx3) = mblock.em(i_min, j, em::bx3);
@@ -127,7 +127,7 @@ namespace ntt {
             real_t sigma_r1 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r1) * CUBE(delta_r1)))};
             real_t br_target {pGen.userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
             mblock.em0(i, j, em::bx1) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx1) + sigma_r1 * br_target;
-            mblock.em(i, j, em::bx1) = (ONE - sigma_r1) * mblock.em(i, j, em::bx1) + sigma_r1 * br_target;
+            mblock.em(i, j, em::bx1)  = (ONE - sigma_r1) * mblock.em(i, j, em::bx1) + sigma_r1 * br_target;
           }
           // i + 1/2
           mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
@@ -136,9 +136,9 @@ namespace ntt {
             real_t sigma_r2 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
             real_t bth_target {pGen.userTargetField_bth_cntrv(mblock, {i_ + HALF, j_})};
             mblock.em0(i, j, em::bx2) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx2) + sigma_r2 * bth_target;
-            mblock.em(i, j, em::bx2) = (ONE - sigma_r2) * mblock.em(i, j, em::bx2) + sigma_r2 * bth_target;
+            mblock.em(i, j, em::bx2)  = (ONE - sigma_r2) * mblock.em(i, j, em::bx2) + sigma_r2 * bth_target;
             mblock.em0(i, j, em::bx3) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx3);
-            mblock.em(i, j, em::bx3) = (ONE - sigma_r2) * mblock.em(i, j, em::bx3);
+            mblock.em(i, j, em::bx3)  = (ONE - sigma_r2) * mblock.em(i, j, em::bx3);
           }
         });
 
@@ -147,7 +147,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "2d_bc_rmax", NTTRange<Dimension::ONE_D>({mblock.j_min()}, {mblock.j_max()}), Lambda(index_t j) {
           mblock.em0(i_max, j, em::bx1) = mblock.em0(i_max - 1, j, em::bx1);
-          mblock.em(i_max, j, em::bx1) = mblock.em(i_max - 1, j, em::bx1);
+          mblock.em(i_max, j, em::bx1)  = mblock.em(i_max - 1, j, em::bx1);
         });
     } else {
       NTTError("Wrong option for `f`");

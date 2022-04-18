@@ -10,16 +10,15 @@ namespace ntt {
   // Type to be used for s/ms/us/ms
   class TimeUnit {
   private:
-    double multiplier;
+    double      multiplier;
     std::string unitname;
 
   public:
     TimeUnit() = default;
-    TimeUnit(double mult, const std::string& unit)
-        : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
+    TimeUnit(double mult, const std::string& unit) : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
     ~TimeUnit() = default;
     [[nodiscard]] auto getMultiplier() const -> double;
-    friend auto operator<<(std::ostream& os, TimeUnit const& v) -> std::ostream&;
+    friend auto        operator<<(std::ostream& os, TimeUnit const& v) -> std::ostream&;
   };
 
   // declaration of s/ms/us/ms
@@ -31,7 +30,7 @@ namespace ntt {
   // Type to keep track of timestamp
   class Time {
   private:
-    long double value {0.0};
+    long double     value {0.0};
     const TimeUnit* unit;
 
   public:
@@ -39,7 +38,7 @@ namespace ntt {
     Time(long double v, TimeUnit const& u = second);
     ~Time() = default;
     [[nodiscard]] auto getValue() const -> long double;
-    void convert(const TimeUnit to);
+    void               convert(const TimeUnit to);
     [[nodiscard]] auto represent(const TimeUnit to) const -> Time;
     // Time operator=(const Time & rhs);
     auto operator-() const -> Time;
@@ -56,23 +55,23 @@ namespace ntt {
 
   class Timer {
   private:
-    std::string name;
-    bool init {false};
-    bool on {false};
+    std::string   name;
+    bool          init {false};
+    bool          on {false};
     TimeContainer t_start;
-    Time t_elapsed;
+    Time          t_elapsed;
 
   public:
     Timer() : name("NULL"), t_elapsed {0.0} {}
     Timer(const std::string& name) : name(std::move(name)), t_elapsed {0.0} {}
     ~Timer() = default;
-    void start();
-    void check();
-    void stop();
+    void               start();
+    void               check();
+    void               stop();
     [[nodiscard]] auto getElapsedIn(TimeUnit const& u) const -> long double;
     [[nodiscard]] auto getName() const -> std::string;
-    void printElapsed(TimeUnit const& u = second) const;
-    void printElapsed(std::ostream& os = std::cout, TimeUnit const& u = second) const;
+    void               printElapsed(TimeUnit const& u = second) const;
+    void               printElapsed(std::ostream& os = std::cout, TimeUnit const& u = second) const;
   };
 
   class TimerCollection {
