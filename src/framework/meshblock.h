@@ -95,9 +95,9 @@ namespace ntt {
      * @param params metric-/domain-specific parameters (max: 10).
      * @param species vector of particle species parameters.
      */
-    Meshblock(const std::vector<unsigned int>& res,
-              const std::vector<real_t>& ext,
-              const real_t* params,
+    Meshblock(const std::vector<unsigned int>&    res,
+              const std::vector<real_t>&          ext,
+              const real_t*                       params,
               const std::vector<ParticleSpecies>& species);
     ~Meshblock() = default;
 

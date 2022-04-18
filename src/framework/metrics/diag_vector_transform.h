@@ -67,9 +67,9 @@ v_Cov2Hat(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_cov, vec_t<D
  * @param vi_cart vector in global Cartesian basis (size of the array is 3).
  */
 
-Inline void v_Cntrv2Cart(const coord_t<D>& xi,
+Inline void v_Cntrv2Cart(const coord_t<D>&                xi,
                          const vec_t<Dimension::THREE_D>& vi_cntrv,
-                         vec_t<Dimension::THREE_D>& vi_cart) const {
+                         vec_t<Dimension::THREE_D>&       vi_cart) const {
   this->v_Cntrv2Hat(xi, vi_cntrv, vi_cart);
 }
 /**
@@ -80,9 +80,9 @@ Inline void v_Cntrv2Cart(const coord_t<D>& xi,
  * @param vi_cntrv vector in contravariant basis (size of the array is 3).
  */
 
-Inline void v_Cart2Cntrv(const coord_t<D>& xi,
+Inline void v_Cart2Cntrv(const coord_t<D>&                xi,
                          const vec_t<Dimension::THREE_D>& vi_cart,
-                         vec_t<Dimension::THREE_D>& vi_cntrv) const {
+                         vec_t<Dimension::THREE_D>&       vi_cntrv) const {
   this->v_Hat2Cntrv(xi, vi_cart, vi_cntrv);
 }
 /**

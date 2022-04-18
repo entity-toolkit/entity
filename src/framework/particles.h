@@ -52,7 +52,7 @@ namespace ntt {
      * @param spec
      */
     ParticleSpecies(const ParticleSpecies&) = default;
-    ~ParticleSpecies() = default;
+    ~ParticleSpecies()                      = default;
 
     /**
      * Getters

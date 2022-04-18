@@ -132,7 +132,7 @@ namespace ntt {
       std::swap((this->m_mblock).em, (this->m_mblock).em0);
       std::swap((this->m_mblock).cur, (this->m_mblock).cur0);
     }
-    
+
     /**
      * @brief Copies em fields into em0
      *
@@ -156,8 +156,8 @@ namespace ntt {
   class Compute_Aphi {
     using index_t = typename RealFieldND<D, 1>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_eps;
-    int j_min;
+    real_t                              m_eps;
+    int                                 j_min;
 
   public:
     Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)

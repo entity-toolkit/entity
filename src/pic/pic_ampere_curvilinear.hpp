@@ -17,7 +17,7 @@ namespace ntt {
   class AmpereCurvilinear {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t m_coeff;
+    real_t                            m_coeff;
 
   public:
     AmpereCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
@@ -65,8 +65,8 @@ namespace ntt {
   class AmpereCurvilinearPoles {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t m_coeff;
-    int m_nj;
+    real_t                            m_coeff;
+    int                               m_nj;
 
   public:
     AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
