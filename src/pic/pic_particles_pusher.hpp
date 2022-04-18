@@ -24,13 +24,13 @@ namespace ntt {
     using index_t = const std::size_t;
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
-    real_t m_coeff, m_dt;
+    real_t                            m_coeff, m_dt;
 
   public:
     Pusher(const Meshblock<D, SimulationType::PIC>& mblock,
            const Particles<D, SimulationType::PIC>& particles,
-           const real_t& coeff,
-           const real_t& dt)
+           const real_t&                            coeff,
+           const real_t&                            dt)
       : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
     /**
      * Loop over all active particles of the given species and call the appropriate pusher.
@@ -176,7 +176,7 @@ namespace ntt {
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
   }
   template <>
-  Inline void Pusher<Dimension::THREE_D>::getParticleCoordinate(const index_t& p,
+  Inline void Pusher<Dimension::THREE_D>::getParticleCoordinate(const index_t&               p,
                                                                 coord_t<Dimension::THREE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
@@ -205,28 +205,28 @@ namespace ntt {
   template <Dimension D>
   Inline void Pusher<D>::positionUpdate_x1(const index_t& p, const real_t& vx1) const {
     m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
-    int temp_i {static_cast<int>(m_particles.dx1(p))};
+    int   temp_i {static_cast<int>(m_particles.dx1(p))};
     float temp_r {std::max(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
-    temp_i = static_cast<int>(temp_r);
-    m_particles.i1(p) = m_particles.i1(p) + temp_i;
+    temp_i             = static_cast<int>(temp_r);
+    m_particles.i1(p)  = m_particles.i1(p) + temp_i;
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
   }
   template <Dimension D>
   Inline void Pusher<D>::positionUpdate_x2(const index_t& p, const real_t& vx2) const {
     m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
-    int temp_i {static_cast<int>(m_particles.dx2(p))};
+    int   temp_i {static_cast<int>(m_particles.dx2(p))};
     float temp_r {std::max(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
-    temp_i = static_cast<int>(temp_r);
-    m_particles.i2(p) = m_particles.i2(p) + temp_i;
+    temp_i             = static_cast<int>(temp_r);
+    m_particles.i2(p)  = m_particles.i2(p) + temp_i;
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
   }
   template <Dimension D>
   Inline void Pusher<D>::positionUpdate_x3(const index_t& p, const real_t& vx3) const {
     m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
-    int temp_i {static_cast<int>(m_particles.dx3(p))};
+    int   temp_i {static_cast<int>(m_particles.dx3(p))};
     float temp_r {std::max(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
-    temp_i = static_cast<int>(temp_r);
-    m_particles.i3(p) = m_particles.i3(p) + temp_i;
+    temp_i             = static_cast<int>(temp_r);
+    m_particles.i3(p)  = m_particles.i3(p) + temp_i;
     m_particles.dx3(p) = m_particles.dx3(p) - temp_r;
   }
 
@@ -266,10 +266,10 @@ namespace ntt {
   // Field interpolations
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Pusher<Dimension::ONE_D>::interpolateFields(const index_t& p,
+  Inline void Pusher<Dimension::ONE_D>::interpolateFields(const index_t&             p,
                                                           vec_t<Dimension::THREE_D>& e0,
                                                           vec_t<Dimension::THREE_D>& b0) const {
-    const auto i {m_particles.i1(p) + N_GHOSTS};
+    const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
 
     // first order
@@ -282,35 +282,35 @@ namespace ntt {
     // interpolate from nodes to the particle position
     e0[0] = c0 * (ONE - dx1) + c1 * dx1;
     // Ex2
-    c0 = m_mblock.em(i, em::ex2);
-    c1 = m_mblock.em(i + 1, em::ex2);
+    c0    = m_mblock.em(i, em::ex2);
+    c1    = m_mblock.em(i + 1, em::ex2);
     e0[1] = c0 * (ONE - dx1) + c1 * dx1;
     // Ex3
-    c0 = m_mblock.em(i, em::ex3);
-    c1 = m_mblock.em(i + 1, em::ex3);
+    c0    = m_mblock.em(i, em::ex3);
+    c1    = m_mblock.em(i + 1, em::ex3);
     e0[2] = c0 * (ONE - dx1) + c1 * dx1;
 
     // Bx1
-    c0 = m_mblock.em(i, em::bx1);
-    c1 = m_mblock.em(i + 1, em::bx1);
+    c0    = m_mblock.em(i, em::bx1);
+    c1    = m_mblock.em(i + 1, em::bx1);
     b0[0] = c0 * (ONE - dx1) + c1 * dx1;
     // Bx2
-    c0 = HALF * (m_mblock.em(i - 1, em::bx2) + m_mblock.em(i, em::bx2));
-    c1 = HALF * (m_mblock.em(i, em::bx2) + m_mblock.em(i + 1, em::bx2));
+    c0    = HALF * (m_mblock.em(i - 1, em::bx2) + m_mblock.em(i, em::bx2));
+    c1    = HALF * (m_mblock.em(i, em::bx2) + m_mblock.em(i + 1, em::bx2));
     b0[1] = c0 * (ONE - dx1) + c1 * dx1;
     // Bx3
-    c0 = HALF * (m_mblock.em(i - 1, em::bx3) + m_mblock.em(i, em::bx3));
-    c1 = HALF * (m_mblock.em(i, em::bx3) + m_mblock.em(i + 1, em::bx3));
+    c0    = HALF * (m_mblock.em(i - 1, em::bx3) + m_mblock.em(i, em::bx3));
+    c1    = HALF * (m_mblock.em(i, em::bx3) + m_mblock.em(i + 1, em::bx3));
     b0[2] = c0 * (ONE - dx1) + c1 * dx1;
   }
 
   template <>
-  Inline void Pusher<Dimension::TWO_D>::interpolateFields(const index_t& p,
+  Inline void Pusher<Dimension::TWO_D>::interpolateFields(const index_t&             p,
                                                           vec_t<Dimension::THREE_D>& e0,
                                                           vec_t<Dimension::THREE_D>& b0) const {
-    const auto i {m_particles.i1(p) + N_GHOSTS};
+    const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
-    const auto j {m_particles.i2(p) + N_GHOSTS};
+    const auto   j {m_particles.i2(p) + N_GHOSTS};
     const real_t dx2 {static_cast<real_t>(m_particles.dx2(p))};
 
     // first order
@@ -323,41 +323,41 @@ namespace ntt {
     c010 = HALF * (m_mblock.em(i, j + 1, em::ex1) + m_mblock.em(i - 1, j + 1, em::ex1));
     c110 = HALF * (m_mblock.em(i, j + 1, em::ex1) + m_mblock.em(i + 1, j + 1, em::ex1));
     // interpolate from nodes to the particle position
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
     e0[0] = c00 * (ONE - dx2) + c10 * dx2;
     // Ex2
-    c000 = HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i, j - 1, em::ex2));
-    c100 = HALF * (m_mblock.em(i + 1, j, em::ex2) + m_mblock.em(i + 1, j - 1, em::ex2));
-    c010 = HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i, j + 1, em::ex2));
-    c110 = HALF * (m_mblock.em(i + 1, j, em::ex2) + m_mblock.em(i + 1, j + 1, em::ex2));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
+    c000  = HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i, j - 1, em::ex2));
+    c100  = HALF * (m_mblock.em(i + 1, j, em::ex2) + m_mblock.em(i + 1, j - 1, em::ex2));
+    c010  = HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i, j + 1, em::ex2));
+    c110  = HALF * (m_mblock.em(i + 1, j, em::ex2) + m_mblock.em(i + 1, j + 1, em::ex2));
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
     e0[1] = c00 * (ONE - dx2) + c10 * dx2;
     // Ex3
-    c000 = m_mblock.em(i, j, em::ex3);
-    c100 = m_mblock.em(i + 1, j, em::ex3);
-    c010 = m_mblock.em(i, j + 1, em::ex3);
-    c110 = m_mblock.em(i + 1, j + 1, em::ex3);
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
+    c000  = m_mblock.em(i, j, em::ex3);
+    c100  = m_mblock.em(i + 1, j, em::ex3);
+    c010  = m_mblock.em(i, j + 1, em::ex3);
+    c110  = m_mblock.em(i + 1, j + 1, em::ex3);
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
     e0[2] = c00 * (ONE - dx2) + c10 * dx2;
 
     // Bx1
-    c000 = HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i, j - 1, em::bx1));
-    c100 = HALF * (m_mblock.em(i + 1, j, em::bx1) + m_mblock.em(i + 1, j - 1, em::bx1));
-    c010 = HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i, j + 1, em::bx1));
-    c110 = HALF * (m_mblock.em(i + 1, j, em::bx1) + m_mblock.em(i + 1, j + 1, em::bx1));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
+    c000  = HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i, j - 1, em::bx1));
+    c100  = HALF * (m_mblock.em(i + 1, j, em::bx1) + m_mblock.em(i + 1, j - 1, em::bx1));
+    c010  = HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i, j + 1, em::bx1));
+    c110  = HALF * (m_mblock.em(i + 1, j, em::bx1) + m_mblock.em(i + 1, j + 1, em::bx1));
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[0] = c00 * (ONE - dx2) + c10 * dx2;
     // Bx2
-    c000 = HALF * (m_mblock.em(i - 1, j, em::bx2) + m_mblock.em(i, j, em::bx2));
-    c100 = HALF * (m_mblock.em(i, j, em::bx2) + m_mblock.em(i + 1, j, em::bx2));
-    c010 = HALF * (m_mblock.em(i - 1, j + 1, em::bx2) + m_mblock.em(i, j + 1, em::bx2));
-    c110 = HALF * (m_mblock.em(i, j + 1, em::bx2) + m_mblock.em(i + 1, j + 1, em::bx2));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
+    c000  = HALF * (m_mblock.em(i - 1, j, em::bx2) + m_mblock.em(i, j, em::bx2));
+    c100  = HALF * (m_mblock.em(i, j, em::bx2) + m_mblock.em(i + 1, j, em::bx2));
+    c010  = HALF * (m_mblock.em(i - 1, j + 1, em::bx2) + m_mblock.em(i, j + 1, em::bx2));
+    c110  = HALF * (m_mblock.em(i, j + 1, em::bx2) + m_mblock.em(i + 1, j + 1, em::bx2));
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[1] = c00 * (ONE - dx2) + c10 * dx2;
     // Bx3
     c000 = QUARTER
@@ -372,20 +372,20 @@ namespace ntt {
     c110 = QUARTER
            * (m_mblock.em(i, j, em::bx3) + m_mblock.em(i, j + 1, em::bx3) + m_mblock.em(i + 1, j, em::bx3)
               + m_mblock.em(i + 1, j + 1, em::bx3));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[2] = c00 * (ONE - dx2) + c10 * dx2;
   }
 
   template <>
-  Inline void Pusher<Dimension::THREE_D>::interpolateFields(const index_t& p,
+  Inline void Pusher<Dimension::THREE_D>::interpolateFields(const index_t&             p,
                                                             vec_t<Dimension::THREE_D>& e0,
                                                             vec_t<Dimension::THREE_D>& b0) const {
-    const auto i {m_particles.i1(p) + N_GHOSTS};
+    const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
-    const auto j {m_particles.i2(p) + N_GHOSTS};
+    const auto   j {m_particles.i2(p) + N_GHOSTS};
     const real_t dx2 {static_cast<real_t>(m_particles.dx2(p))};
-    const auto k {m_particles.i3(p) + N_GHOSTS};
+    const auto   k {m_particles.i3(p) + N_GHOSTS};
     const real_t dx3 {static_cast<real_t>(m_particles.dx3(p))};
 
     // first order
@@ -400,50 +400,50 @@ namespace ntt {
     // interpolate from nodes to the particle position
     c00 = c000 * (ONE - dx1) + c100 * dx1;
     c10 = c010 * (ONE - dx1) + c110 * dx1;
-    c0 = c00 * (ONE - dx2) + c10 * dx2;
+    c0  = c00 * (ONE - dx2) + c10 * dx2;
     // interpolate to nodes
     c001 = HALF * (m_mblock.em(i, j, k + 1, em::ex1) + m_mblock.em(i - 1, j, k + 1, em::ex1));
     c101 = HALF * (m_mblock.em(i, j, k + 1, em::ex1) + m_mblock.em(i + 1, j, k + 1, em::ex1));
     c011 = HALF * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i - 1, j + 1, k + 1, em::ex1));
     c111 = HALF * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i + 1, j + 1, k + 1, em::ex1));
     // interpolate from nodes to the particle position
-    c01 = c001 * (ONE - dx1) + c101 * dx1;
-    c11 = c011 * (ONE - dx1) + c111 * dx1;
-    c1 = c01 * (ONE - dx2) + c11 * dx2;
+    c01   = c001 * (ONE - dx1) + c101 * dx1;
+    c11   = c011 * (ONE - dx1) + c111 * dx1;
+    c1    = c01 * (ONE - dx2) + c11 * dx2;
     e0[0] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Ex2
-    c000 = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j - 1, k, em::ex2));
-    c100 = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j - 1, k, em::ex2));
-    c010 = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j + 1, k, em::ex2));
-    c110 = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j + 1, k, em::ex2));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
-    c0 = c00 * (ONE - dx2) + c10 * dx2;
-    c001 = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j - 1, k + 1, em::ex2));
-    c101 = HALF * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j - 1, k + 1, em::ex2));
-    c011 = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j + 1, k + 1, em::ex2));
-    c111 = HALF * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j + 1, k + 1, em::ex2));
-    c01 = c001 * (ONE - dx1) + c101 * dx1;
-    c11 = c011 * (ONE - dx1) + c111 * dx1;
-    c1 = c01 * (ONE - dx2) + c11 * dx2;
+    c000  = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j - 1, k, em::ex2));
+    c100  = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j - 1, k, em::ex2));
+    c010  = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j + 1, k, em::ex2));
+    c110  = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j + 1, k, em::ex2));
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
+    c0    = c00 * (ONE - dx2) + c10 * dx2;
+    c001  = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j - 1, k + 1, em::ex2));
+    c101  = HALF * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j - 1, k + 1, em::ex2));
+    c011  = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j + 1, k + 1, em::ex2));
+    c111  = HALF * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j + 1, k + 1, em::ex2));
+    c01   = c001 * (ONE - dx1) + c101 * dx1;
+    c11   = c011 * (ONE - dx1) + c111 * dx1;
+    c1    = c01 * (ONE - dx2) + c11 * dx2;
     e0[1] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Ex3
-    c000 = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k - 1, em::ex3));
-    c100 = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k - 1, em::ex3));
-    c010 = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k - 1, em::ex3));
-    c110 = HALF * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k - 1, em::ex3));
-    c001 = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k + 1, em::ex3));
-    c101 = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k + 1, em::ex3));
-    c011 = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k + 1, em::ex3));
-    c111 = HALF * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k + 1, em::ex3));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c01 = c001 * (ONE - dx1) + c101 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
-    c11 = c011 * (ONE - dx1) + c111 * dx1;
-    c0 = c00 * (ONE - dx2) + c10 * dx2;
-    c1 = c01 * (ONE - dx2) + c11 * dx2;
+    c000  = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k - 1, em::ex3));
+    c100  = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k - 1, em::ex3));
+    c010  = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k - 1, em::ex3));
+    c110  = HALF * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k - 1, em::ex3));
+    c001  = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k + 1, em::ex3));
+    c101  = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k + 1, em::ex3));
+    c011  = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k + 1, em::ex3));
+    c111  = HALF * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k + 1, em::ex3));
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c01   = c001 * (ONE - dx1) + c101 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
+    c11   = c011 * (ONE - dx1) + c111 * dx1;
+    c0    = c00 * (ONE - dx2) + c10 * dx2;
+    c1    = c01 * (ONE - dx2) + c11 * dx2;
     e0[2] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx1
@@ -471,12 +471,12 @@ namespace ntt {
     c111 = QUARTER
            * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j + 1, k, em::bx1)
               + m_mblock.em(i + 1, j + 1, k + 1, em::bx1) + m_mblock.em(i + 1, j, k + 1, em::bx1));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c01 = c001 * (ONE - dx1) + c101 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
-    c11 = c011 * (ONE - dx1) + c111 * dx1;
-    c0 = c00 * (ONE - dx2) + c10 * dx2;
-    c1 = c01 * (ONE - dx2) + c11 * dx2;
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c01   = c001 * (ONE - dx1) + c101 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
+    c11   = c011 * (ONE - dx1) + c111 * dx1;
+    c0    = c00 * (ONE - dx2) + c10 * dx2;
+    c1    = c01 * (ONE - dx2) + c11 * dx2;
     b0[0] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx2
@@ -504,12 +504,12 @@ namespace ntt {
     c111 = QUARTER
            * (m_mblock.em(i, j + 1, k, em::bx2) + m_mblock.em(i, j + 1, k + 1, em::bx2)
               + m_mblock.em(i + 1, j + 1, k, em::bx2) + m_mblock.em(i + 1, j + 1, k + 1, em::bx2));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c01 = c001 * (ONE - dx1) + c101 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
-    c11 = c011 * (ONE - dx1) + c111 * dx1;
-    c0 = c00 * (ONE - dx2) + c10 * dx2;
-    c1 = c01 * (ONE - dx2) + c11 * dx2;
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c01   = c001 * (ONE - dx1) + c101 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
+    c11   = c011 * (ONE - dx1) + c111 * dx1;
+    c0    = c00 * (ONE - dx2) + c10 * dx2;
+    c1    = c01 * (ONE - dx2) + c11 * dx2;
     b0[1] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx3
@@ -537,12 +537,12 @@ namespace ntt {
     c111 = QUARTER
            * (m_mblock.em(i, j, k + 1, em::bx3) + m_mblock.em(i, j + 1, k + 1, em::bx3)
               + m_mblock.em(i + 1, j, k + 1, em::bx3) + m_mblock.em(i + 1, j + 1, k + 1, em::bx3));
-    c00 = c000 * (ONE - dx1) + c100 * dx1;
-    c01 = c001 * (ONE - dx1) + c101 * dx1;
-    c10 = c010 * (ONE - dx1) + c110 * dx1;
-    c11 = c011 * (ONE - dx1) + c111 * dx1;
-    c0 = c00 * (ONE - dx2) + c10 * dx2;
-    c1 = c01 * (ONE - dx2) + c11 * dx2;
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c01   = c001 * (ONE - dx1) + c101 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
+    c11   = c011 * (ONE - dx1) + c111 * dx1;
+    c0    = c00 * (ONE - dx2) + c10 * dx2;
+    c1    = c01 * (ONE - dx2) + c11 * dx2;
     b0[2] = c0 * (ONE - dx3) + c1 * dx3;
   }
 

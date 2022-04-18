@@ -24,18 +24,18 @@ Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
 Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
   coord_t<D> y;
   coord_t<D> rth_;
-  real_t h_33_cov, h_13_cov, inv1, inv2;
+  real_t     h_33_cov, h_13_cov, inv1, inv2;
   std::copy(std::begin(x), std::end(x), std::begin(y));
   x_Code2Sph(x, rth_);
   if (std::sin(rth_[1]) == ZERO) {
-    y[1] = x[1] + 1e-1;
+    y[1]     = x[1] + 1e-1;
     h_33_cov = h_33(y);
     h_13_cov = h_13(y);
-    inv1 = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
-    y[1] = x[1] - 1e-1;
+    inv1     = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
+    y[1]     = x[1] - 1e-1;
     h_33_cov = h_33(y);
     h_13_cov = h_13(y);
-    inv2 = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
+    inv2     = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
     return HALF * (inv1 + inv2);
   } else {
     h_33_cov = h_33(x);
@@ -77,16 +77,16 @@ Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
 Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
   coord_t<D> y;
   coord_t<D> rth_;
-  real_t h_13_cov, inv1, inv2;
+  real_t     h_13_cov, inv1, inv2;
   std::copy(std::begin(x), std::end(x), std::begin(y));
   x_Code2Sph(x, rth_);
   if (std::sin(rth_[1]) == ZERO) {
-    y[1] = x[1] + 1e-1;
+    y[1]     = x[1] + 1e-1;
     h_13_cov = h_13(y);
-    inv1 = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
-    y[1] = x[1] - 1e-1;
+    inv1     = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+    y[1]     = x[1] - 1e-1;
     h_13_cov = h_13(y);
-    inv2 = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
+    inv2     = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
     return HALF * (inv1 + inv2);
   } else {
     h_13_cov = h_13(x);
@@ -160,9 +160,9 @@ v_Cov2Hat(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_cov, vec_t<D
  * @param vi_cart vector in global Cartesian basis (size of the array is 3).
  */
 
-Inline void v_Cntrv2Cart(const coord_t<D>& xi,
+Inline void v_Cntrv2Cart(const coord_t<D>&                xi,
                          const vec_t<Dimension::THREE_D>& vi_cntrv,
-                         vec_t<Dimension::THREE_D>& vi_cart) const {
+                         vec_t<Dimension::THREE_D>&       vi_cart) const {
   this->v_Cntrv2Hat(xi, vi_cntrv, vi_cart);
 }
 /**
@@ -173,9 +173,9 @@ Inline void v_Cntrv2Cart(const coord_t<D>& xi,
  * @param vi_cntrv vector in contravariant basis (size of the array is 3).
  */
 
-Inline void v_Cart2Cntrv(const coord_t<D>& xi,
+Inline void v_Cart2Cntrv(const coord_t<D>&                xi,
                          const vec_t<Dimension::THREE_D>& vi_cart,
-                         vec_t<Dimension::THREE_D>& vi_cntrv) const {
+                         vec_t<Dimension::THREE_D>&       vi_cntrv) const {
   this->v_Hat2Cntrv(xi, vi_cart, vi_cntrv);
 }
 /**
