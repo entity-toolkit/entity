@@ -17,7 +17,7 @@ namespace ntt {
   class AmpereGR_aux {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
+    real_t                              m_coeff;
 
   public:
     AmpereGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
@@ -54,7 +54,7 @@ namespace ntt {
   class AmpereGR {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
+    real_t                              m_coeff;
 
   public:
     AmpereGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
@@ -94,7 +94,7 @@ namespace ntt {
   class AmpereGR_init {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
+    real_t                              m_coeff;
 
   public:
     AmpereGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
@@ -136,8 +136,8 @@ namespace ntt {
   class AmperePolesGR_aux {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
-    std::size_t m_nj;
+    real_t                              m_coeff;
+    std::size_t                         m_nj;
 
   public:
     AmperePolesGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
@@ -150,7 +150,7 @@ namespace ntt {
   Inline void AmperePolesGR_aux<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
 
     real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
@@ -168,8 +168,8 @@ namespace ntt {
   class AmperePolesGR {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
-    std::size_t m_nj;
+    real_t                              m_coeff;
+    std::size_t                         m_nj;
 
   public:
     AmperePolesGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
@@ -182,7 +182,7 @@ namespace ntt {
   Inline void AmperePolesGR<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
 
     real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
@@ -203,8 +203,8 @@ namespace ntt {
   class AmperePolesGR_init {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
-    std::size_t m_nj;
+    real_t                              m_coeff;
+    std::size_t                         m_nj;
 
   public:
     AmperePolesGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
@@ -217,7 +217,7 @@ namespace ntt {
   Inline void AmperePolesGR_init<Dimension::TWO_D>::operator()(const index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
 
     real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
