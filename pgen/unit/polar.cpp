@@ -16,9 +16,6 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * * * * * *
   // Field initializers
   // . . . . . . . . . . . . . . . . . . . . . . . .
-  template <>
-  void ProblemGenerator<Dimension::ONE_D, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dimension::ONE_D, SimulationType::PIC>&) {}
 
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitFields(
@@ -34,12 +31,16 @@ namespace ntt {
         coord_t<Dimension::TWO_D> rth_;
         mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
 
-        real_t br_hat {ONE * r_min * r_min / (rth_[0] * rth_[0])};
+        real_t                    br_hat {ONE * r_min * r_min / (rth_[0] * rth_[0])};
         vec_t<Dimension::THREE_D> br_cntr;
         mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_hat, ZERO, ZERO}, br_cntr);
         mblock.em(i, j, em::bx1) = br_cntr[0];
       });
   }
+
+  template <>
+  void ProblemGenerator<Dimension::ONE_D, SimulationType::PIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dimension::ONE_D, SimulationType::PIC>&) {}
 
   template <>
   void ProblemGenerator<Dimension::THREE_D, SimulationType::PIC>::userInitFields(
@@ -48,10 +49,6 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * * * * * *
   // Field boundary conditions
   // . . . . . . . . . . . . . . . . . . . . . . . .
-  template <>
-  void ProblemGenerator<Dimension::ONE_D, SimulationType::PIC>::userBCFields(
-    const real_t&, const SimulationParams&, Meshblock<Dimension::ONE_D, SimulationType::PIC>&) {}
-
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userBCFields(
     const real_t& time, const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
@@ -72,7 +69,7 @@ namespace ntt {
         coord_t<Dimension::TWO_D> rth1_;
         mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth1_);
 
-        real_t etheta_hat {omega * std::sin(rth1_[1])};
+        real_t                    etheta_hat {omega * math::sin(rth1_[1])};
         vec_t<Dimension::THREE_D> etheta_cntr, br_cntr;
         mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {ZERO, etheta_hat, ZERO}, etheta_cntr);
 
@@ -94,6 +91,10 @@ namespace ntt {
         mblock.em(i, j, em::bx1) = 0.0;
       });
   }
+
+  template <>
+  void ProblemGenerator<Dimension::ONE_D, SimulationType::PIC>::userBCFields(
+    const real_t&, const SimulationParams&, Meshblock<Dimension::ONE_D, SimulationType::PIC>&) {}
 
   template <>
   void ProblemGenerator<Dimension::THREE_D, SimulationType::PIC>::userBCFields(

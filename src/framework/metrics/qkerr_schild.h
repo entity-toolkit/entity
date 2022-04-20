@@ -31,10 +31,10 @@ namespace ntt {
         a(params[4]),
         r0(params[0]),
         h(params[1]),
-        chi_min {std::log(this->x1_min - r0)},
+        chi_min {math::log(this->x1_min - r0)},
         eta_min {ZERO},
         phi_min {ZERO},
-        dchi {(std::log(this->x1_max - r0) - chi_min) / this->nx1},
+        dchi {(math::log(this->x1_max - r0) - chi_min) / this->nx1},
         deta {constant::PI / this->nx2},
         dphi {constant::TWO_PI / this->nx3},
         dchi_inv {ONE / dchi},
@@ -45,7 +45,7 @@ namespace ntt {
         dphi_sqr {dphi * dphi} {}
     ~Metric() = default;
 
-    [[nodiscard]] auto spin() const -> const real_t& { return a; }
+    [[nodiscard]] Inline auto spin() const -> const real_t& { return a; }
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
@@ -60,7 +60,7 @@ namespace ntt {
             real_t j_ {(real_t)(j) + HALF};
             real_t inv_dx1_ {this->h_11_inv({i_, j_})};
             real_t inv_dx2_ {this->h_22_inv({i_, j_})};
-            real_t dx = 1.0 / (this->alpha({i_, j_}) * std::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
+            real_t dx = 1.0 / (this->alpha({i_, j_}) * math::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
             if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
           }
         }
@@ -76,7 +76,7 @@ namespace ntt {
      *
      */
     Inline auto dtheta_deta(const real_t& eta) const -> real_t {
-      return (ONE + static_cast<real_t>(2.0) * h
+      return (ONE + TWO * h
               + static_cast<real_t>(12.0) * h * (eta * constant::INV_PI) * ((eta * constant::INV_PI) - ONE));
     }
 
@@ -85,9 +85,7 @@ namespace ntt {
      *
      */
     Inline auto eta2theta(const real_t& eta) const -> real_t {
-      return eta
-             + static_cast<real_t>(2.0) * h * eta * (constant::PI - static_cast<real_t>(2.0) * eta)
-                 * (constant::PI - eta) * constant::INV_PI_SQR;
+      return eta + TWO * h * eta * (constant::PI - TWO * eta) * (constant::PI - eta) * constant::INV_PI_SQR;
     }
     /**
      * @brief Convert spherical theta to quasi-spherical eta.
@@ -95,12 +93,12 @@ namespace ntt {
      */
     Inline auto theta2eta(const real_t& theta) const -> real_t {
       // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y - 108 h y^2))])^(1/3)
-      double R {std::pow(-9.0 * SQR(h) * (constant::PI - 2.0 * theta)
-                           + constant::SQRT3
-                               * std::sqrt(-(CUBE(h)
-                                             * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
-                                                + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
-                         static_cast<real_t>(1.0 / 3.0))};
+      double R {math::pow(-9.0 * SQR(h) * (constant::PI - 2.0 * theta)
+                            + constant::SQRT3
+                                * math::sqrt(-(CUBE(h)
+                                               * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
+                                                  + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
+                          static_cast<real_t>(1.0 / 3.0))};
       // eta = Pi^(2/3)(6 Pi^(1/3) + 2 2^(1/3)(h-1)(3Pi)^(2/3)/R + 2^(2/3) 3^(1/3) R / h)/12
       constexpr double PI_TO_TWO_THIRD {2.14502939711102560008};
       constexpr double PI_TO_ONE_THIRD {1.46459188756152326302};
@@ -127,11 +125,11 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t cth {std::cos(theta)};
-        return dchi_sqr * std::exp(2.0 * chi) * (ONE + TWO * r / (r * r + a * a * cth * cth));
+        real_t cth {math::cos(theta)};
+        return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (r * r + a * a * cth * cth));
       }
     }
 
@@ -147,11 +145,11 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t dtheta_deta_ {dtheta_deta(eta)};
-        real_t cth {std::cos(theta)};
+        real_t cth {math::cos(theta)};
         return deta_sqr * SQR(dtheta_deta_) * (r * r + a * a * cth * cth);
       }
     }
@@ -168,11 +166,11 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t cth {std::cos(theta)};
-        real_t sth {std::sin(theta)};
+        real_t cth {math::cos(theta)};
+        real_t sth {math::sin(theta)};
         real_t delta {r * r - TWO * r + a * a};
         real_t As {(r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth};
         return As * sth * sth / (r * r + a * a * cth * cth);
@@ -191,12 +189,12 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t cth {std::cos(theta)};
-        real_t sth {std::sin(theta)};
-        return -dchi * std::exp(chi) * a * sth * sth * (ONE + TWO * r / (r * r + a * a * cth * cth));
+        real_t cth {math::cos(theta)};
+        real_t sth {math::sin(theta)};
+        return -dchi * math::exp(chi) * a * sth * sth * (ONE + TWO * r / (r * r + a * a * cth * cth));
       }
     }
 
@@ -212,12 +210,12 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t cth {std::cos(theta)};
+        real_t cth {math::cos(theta)};
         real_t z {TWO * r / (r * r + a * a * cth * cth)};
-        return ONE / std::sqrt(ONE + z);
+        return ONE / math::sqrt(ONE + z);
       }
     }
 
@@ -233,12 +231,12 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t cth {std::cos(theta)};
+        real_t cth {math::cos(theta)};
         real_t z {TWO * r / (r * r + a * a * cth * cth)};
-        return std::exp(-chi) * dchi_inv * (z / (ONE + z));
+        return math::exp(-chi) * dchi_inv * (z / (ONE + z));
       }
     }
 
@@ -263,11 +261,11 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t del_eta {x[1] * deta + eta_min};
         real_t del_theta {eta2theta(del_eta)};
-        return dchi * std::exp(chi) * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a)))
-               * (ONE - std::cos(del_theta));
+        return dchi * math::exp(chi) * (SQR(r) + SQR(a)) * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a)))
+               * (ONE - math::cos(del_theta));
       }
     }
 /**
@@ -289,14 +287,14 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]);
-        x[1] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]);
+        x[1] = x_sph[0] * math::cos(x_sph[1]);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]) * std::cos(x_sph[2]);
-        x[1] = x_sph[0] * std::sin(x_sph[1]) * std::sin(x_sph[2]);
-        x[2] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
+        x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
+        x[2] = x_sph[0] * math::cos(x_sph[1]);
       }
     }
 
@@ -312,14 +310,14 @@ namespace ntt {
         NTTError("x_Cart2Code not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]);
-        x_sph[1] = std::atan2(x[1], x[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
+        x_sph[1] = math::atan2(x[1], x[0]);
         x_Sph2Code(x_sph, xi);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-        x_sph[1] = std::atan2(x[1], x[0]);
-        x_sph[2] = std::acos(x[2] / x_sph[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+        x_sph[1] = math::atan2(x[1], x[0]);
+        x_sph[2] = math::acos(x[2] / x_sph[0]);
         x_Sph2Code(x_sph, xi);
       }
     }
@@ -336,13 +334,13 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
-        x[0] = r0 + std::exp(chi);
+        x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
       } else if constexpr (D == Dimension::THREE_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
         real_t phi {xi[2] * dphi + phi_min};
-        x[0] = r0 + std::exp(chi);
+        x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
         x[2] = phi;
       }
@@ -358,12 +356,12 @@ namespace ntt {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("x_Code2Sph not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
-        real_t chi {std::log(x[0] - r0)};
+        real_t chi {math::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
         xi[0] = (chi - chi_min) * dchi_inv;
         xi[1] = (eta - eta_min) * deta_inv;
       } else if constexpr (D == Dimension::THREE_D) {
-        real_t chi {std::log(x[0] - r0)};
+        real_t chi {math::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
         real_t phi {x[2]};
         xi[0] = (chi - chi_min) * dchi_inv;
@@ -388,7 +386,7 @@ namespace ntt {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
         real_t deta_dtheta_ {ONE / dtheta_deta(eta)};
-        vsph_cntrv[0] = vi_cntrv[0] * std::exp(-chi) * dchi_inv;
+        vsph_cntrv[0] = vi_cntrv[0] * math::exp(-chi) * dchi_inv;
         vsph_cntrv[1] = vi_cntrv[1] * deta_dtheta_ * deta_inv;
         vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
       }

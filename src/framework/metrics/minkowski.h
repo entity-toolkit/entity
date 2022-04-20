@@ -31,7 +31,7 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t { return dx / std::sqrt(static_cast<real_t>(D)); }
+    auto findSmallestCell() const -> real_t { return dx / math::sqrt(static_cast<real_t>(D)); }
 
     /**
      * Compute metric component 11.
@@ -140,14 +140,14 @@ namespace ntt {
   Inline void Metric<Dimension::TWO_D>::x_Code2Sph(const coord_t<Dimension::TWO_D>& xi,
                                                    coord_t<Dimension::TWO_D>&       x) const {
     x_Code2Cart(xi, x);                          // convert to Cartesian coordinates
-    x[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]); // r = sqrt(x^2 + y^2)
-    x[1] = std::atan2(x[1], x[0]);               // theta = atan(y/x)
+    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]); // r = sqrt(x^2 + y^2)
+    x[1] = math::atan2(x[1], x[0]);               // theta = atan(y/x)
   }
   template <>
   Inline void Metric<Dimension::TWO_D>::x_Sph2Code(const coord_t<Dimension::TWO_D>& x,
                                                    coord_t<Dimension::TWO_D>&       xi) const {
-    xi[0] = x[0] * std::cos(x[1]); // x = r * cos(theta)
-    xi[1] = x[0] * std::sin(x[1]); // y = r * sin(theta)
+    xi[0] = x[0] * math::cos(x[1]); // x = r * cos(theta)
+    xi[1] = x[0] * math::sin(x[1]); // y = r * sin(theta)
     x_Cart2Code(xi, xi);           // convert to code units
   }
 
@@ -172,16 +172,16 @@ namespace ntt {
   Inline void Metric<Dimension::THREE_D>::x_Code2Sph(const coord_t<Dimension::THREE_D>& xi,
                                                      coord_t<Dimension::THREE_D>&       x) const {
     x_Code2Cart(xi, x);                                        // convert to Cartesian coordinates
-    x[0] = std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]); // r = sqrt(x^2 + y^2 + z^2)
-    x[1] = std::atan2(x[1], x[0]);                             // theta = atan(y/x)
-    x[2] = std::acos(x[2] / x[0]);                             // phi = acos(z/r)
+    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]); // r = sqrt(x^2 + y^2 + z^2)
+    x[1] = math::atan2(x[1], x[0]);                             // theta = atan(y/x)
+    x[2] = math::acos(x[2] / x[0]);                             // phi = acos(z/r)
   }
   template <>
   Inline void Metric<Dimension::THREE_D>::x_Sph2Code(const coord_t<Dimension::THREE_D>& x,
                                                      coord_t<Dimension::THREE_D>&       xi) const {
-    xi[0] = x[0] * std::sin(x[1]) * std::cos(x[2]); // x = r * sin(theta) * cos(phi)
-    xi[1] = x[0] * std::sin(x[1]) * std::sin(x[2]); // y = r * sin(theta) * sin(phi)
-    xi[2] = x[0] * std::cos(x[1]);                  // z = r * cos(theta)
+    xi[0] = x[0] * math::sin(x[1]) * math::cos(x[2]); // x = r * sin(theta) * cos(phi)
+    xi[1] = x[0] * math::sin(x[1]) * math::sin(x[2]); // y = r * sin(theta) * sin(phi)
+    xi[2] = x[0] * math::cos(x[1]);                  // z = r * cos(theta)
     x_Cart2Code(xi, xi);                            // convert to code units
   }
 
