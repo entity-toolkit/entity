@@ -11,6 +11,8 @@
 #  include "qspherical.h"
 #elif (METRIC == KERR_SCHILD_METRIC)
 #  include "kerr_schild.h"
+#elif (METRIC == QKERR_SCHILD_METRIC)
+#  include "qkerr_schild.h"
 #endif
 
 #endif

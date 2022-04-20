@@ -17,21 +17,21 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t dr, dtheta, dphi;
-    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
     // Spin parameter, in [0,1[
     const real_t a;
+    const real_t dr, dtheta, dphi;
+    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t* params)
       : MetricBase<D> {"kerr_schild", resolution, extent},
+        a(params[4]),
         dr((this->x1_max - this->x1_min) / this->nx1),
         dtheta(constant::PI / this->nx2),
         dphi(constant::TWO_PI / this->nx3),
         dr_sqr(dr * dr),
         dtheta_sqr(dtheta * dtheta),
-        dphi_sqr(dphi * dphi),
-        a(params[4]) {}
+        dphi_sqr(dphi * dphi) {}
     ~Metric() = default;
 
     [[nodiscard]] auto spin() const -> const real_t& { return a; }

@@ -46,8 +46,10 @@ namespace ntt {
     m_metric = "spherical";
 #elif (METRIC == QSPHERICAL_METRIC)
     m_metric = "qspherical";
-#elif METRIC == KERR_SCHILD_METRIC
+#elif (METRIC == KERR_SCHILD_METRIC)
     m_metric = "kerr_schild";
+#elif (METRIC == QKERR_SCHILD_METRIC)
+    m_metric = "qkerr_schild";
 #else
     NTTError("unrecognized metric");
 #endif
@@ -75,7 +77,7 @@ namespace ntt {
       // spherical (quasi-spherical) grid
       if (m_extent.size() < 2) { NTTError("not enough values in `extent` input"); }
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
-      if (m_metric == "qspherical") {
+      if ((m_metric == "qspherical") || (m_metric == "qkerr_schild")) {
         m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
       }
@@ -116,7 +118,8 @@ namespace ntt {
         ++b;
         if (b >= (short)(dim)) { break; }
       }
-    } else if ((m_metric == "spherical") || (m_metric == "qspherical") || (m_metric == "kerr_schild")) {
+    } else if ((m_metric == "spherical") || (m_metric == "qspherical") || (m_metric == "kerr_schild")
+               || (m_metric == "qkerr_schild")) {
       // rmin, rmax boundaries only
       m_boundaries.push_back(BoundaryCondition::USER);
       m_boundaries.push_back(BoundaryCondition::USER);
