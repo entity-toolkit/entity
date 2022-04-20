@@ -20,18 +20,22 @@ namespace ntt {
     // Spin parameter, in [0,1[
     const real_t a;
     const real_t dr, dtheta, dphi;
+    const real_t dr_inv, dtheta_inv, dphi_inv;
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t* params)
       : MetricBase<D> {"kerr_schild", resolution, extent},
-        a(params[4]),
-        dr((this->x1_max - this->x1_min) / this->nx1),
-        dtheta(constant::PI / this->nx2),
-        dphi(constant::TWO_PI / this->nx3),
-        dr_sqr(dr * dr),
-        dtheta_sqr(dtheta * dtheta),
-        dphi_sqr(dphi * dphi) {}
+        a {params[4]},
+        dr {(this->x1_max - this->x1_min) / this->nx1},
+        dtheta {constant::PI / this->nx2},
+        dphi {constant::TWO_PI / this->nx3},
+        dr_inv {ONE / dr},
+        dtheta_inv {ONE / dtheta},
+        dphi_inv {ONE / dphi},
+        dr_sqr {dr * dr},
+        dtheta_sqr {dtheta * dtheta},
+        dphi_sqr {dphi * dphi} {}
     ~Metric() = default;
 
     [[nodiscard]] auto spin() const -> const real_t& { return a; }
@@ -120,7 +124,7 @@ namespace ntt {
       real_t cth {std::cos(theta)};
 
       real_t z {TWO * r / (r * r + a * a * cth * cth)};
-      return z / (ONE + z) / dr;
+      return (z / (ONE + z)) * dr_inv;
     }
 
     /**
@@ -250,12 +254,31 @@ namespace ntt {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("x_Code2Sph not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
-        xi[0] = (x[0] - this->x1_min) / dr;
-        xi[1] = x[1] / dtheta;
+        xi[0] = (x[0] - this->x1_min) * dr_inv;
+        xi[1] = x[1] * dtheta_inv;
       } else if constexpr (D == Dimension::THREE_D) {
-        x[0] = (xi[0] - this->x1_min) / dr;
-        x[1] = xi[1] / dtheta;
-        x[2] = xi[2] / dphi;
+        x[0] = (xi[0] - this->x1_min) * dr_inv;
+        x[1] = xi[1] * dtheta_inv;
+        x[2] = xi[2] * dphi_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from contravariant to spherical contravariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+     * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
+     */
+    Inline void v_Cntr2SphCntrv(const coord_t<D>&                xi,
+                                const vec_t<Dimension::THREE_D>& vi_cntrv,
+                                vec_t<Dimension::THREE_D>&       vsph_cntrv) const {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("v_Cntr2SphCntrv not implemented for 1D");
+      } else {
+        vsph_cntrv[0] = vi_cntrv[0] * dr_inv;
+        vsph_cntrv[1] = vi_cntrv[1] * dtheta_inv;
+        vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
       }
     }
   };
