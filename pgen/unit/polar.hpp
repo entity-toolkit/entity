@@ -23,7 +23,6 @@ namespace ntt {
       return ONE * r_min * r_min / (rth_[0] * rth_[0]);
     }
   };
-
 } // namespace ntt
 
 #endif

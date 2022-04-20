@@ -80,7 +80,7 @@ namespace ntt {
 
         // Etheta
         mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
-        etheta = -0.05 * (r_min / rth_[0]) * std::sin(rth_[1]);
+        etheta = -0.05 * (r_min / rth_[0]) * math::sin(rth_[1]);
 
         vec_t<Dimension::THREE_D> cntrv;
         mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {ZERO, etheta, ZERO}, cntrv);
@@ -91,7 +91,7 @@ namespace ntt {
         br = SQR(r_min / rth_[0]);
 
         mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
-        bphi = -0.05 * (r_min / rth_[0]) * std::sin(rth_[1]);
+        bphi = -0.05 * (r_min / rth_[0]) * math::sin(rth_[1]);
 
         mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br, ZERO, bphi}, cntrv);
         mblock.em(i, j, em::bx1) = cntrv[0];
@@ -101,7 +101,7 @@ namespace ntt {
         br = SQR(r_min / rth_[0]);
 
         mblock.metric.x_Code2Sph({i_ + HALF, j_ + HALF}, rth_);
-        bphi = -0.05 * (r_min / rth_[0]) * std::sin(rth_[1]);
+        bphi = -0.05 * (r_min / rth_[0]) * math::sin(rth_[1]);
 
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {br, ZERO, bphi}, cntrv);
         mblock.em(i, j, em::bx3) = cntrv[2];

@@ -19,11 +19,12 @@ namespace ntt {
   class FaradayGR_aux {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
+    real_t                              m_coeff;
+    index_t                             j_min;
 
   public:
     FaradayGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+      : m_mblock {mblock}, m_coeff {coeff}, j_min {static_cast<index_t>(m_mblock.j_min())} {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
@@ -33,7 +34,7 @@ namespace ntt {
   Inline void FaradayGR_aux<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
+    // index_t j_min {static_cast<index_t>(m_mblock.j_min())};
 
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
@@ -62,11 +63,12 @@ namespace ntt {
   class FaradayGR {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t m_coeff;
+    real_t                              m_coeff;
+    index_t                             j_min;
 
   public:
     FaradayGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+      : m_mblock {mblock}, m_coeff {coeff}, j_min {static_cast<index_t>(m_mblock.j_min())} {}
     Inline void operator()(const index_t, const index_t) const;
     Inline void operator()(const index_t, const index_t, const index_t) const;
   };
@@ -76,7 +78,6 @@ namespace ntt {
   Inline void FaradayGR<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-    index_t j_min {static_cast<index_t>(m_mblock.j_min())};
 
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};

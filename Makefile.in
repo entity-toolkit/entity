@@ -97,7 +97,7 @@ ${SRC_DIR}/${TEMP_DIR}/problem_generator.hpp : ${PGEN_DIR}/${PGEN}.hpp
 	$(HIDE)cp $< $@
 
 # linking tests
-test : ${BIN_DIR}/${TEST_TARGET}
+test : pgenCopy ${BIN_DIR}/${TEST_TARGET}
 	@echo [M]aking $@
 
 help:

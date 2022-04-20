@@ -27,7 +27,7 @@ namespace ntt {
     Inline real_t A3(const Meshblock<D, S>& mblock, const coord_t<D>& x) {
       coord_t<D> rth_;
       mblock.metric.x_Code2Sph(x, rth_);
-      return ONE - std::cos(rth_[1]);
+      return ONE - math::cos(rth_[1]);
     }
 
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
