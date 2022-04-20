@@ -1,11 +1,15 @@
 #ifndef GRPIC_INIT_FIELDS
 #define GRPIC_INIT_FIELDS
 
-#include "global.h"
-#include "fields.h"
-#include "meshblock.h"
+#if (SIMTYPE == GRPIC_SIMTYPE)
 
-#include <stdexcept>
+#  include "global.h"
+#  include "fields.h"
+#  include "meshblock.h"
+
+#  include "problem_generator.hpp"
+
+#  include <stdexcept>
 
 namespace ntt {
 
@@ -15,27 +19,23 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class init_fields_potential {
+  class initFieldsFromVectorPotential {
     using index_t = typename RealFieldND<D, 6>::size_type;
-    Meshblock<D, SimulationType::GRPIC> m_mblock;
-    real_t                              m_eps;
-    real_t (*m_a0)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
-    real_t (*m_a1)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
-    real_t (*m_a3)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x);
+    ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
+    Meshblock<D, SimulationType::GRPIC>        m_mblock;
+    real_t                                     m_eps;
 
   public:
-    init_fields_potential(const Meshblock<D, SimulationType::GRPIC>& mblock,
-                          real_t                                     eps,
-                          real_t (*a0)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x),
-                          real_t (*a1)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x),
-                          real_t (*a3)(const Meshblock<D, SimulationType::GRPIC>&, const coord_t<D>& x))
-      : m_mblock(mblock), m_eps(eps), m_a0(a0), m_a1(a1), m_a3(a3) {}
+    initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationType::GRPIC>& pgen,
+                                  const Meshblock<D, SimulationType::GRPIC>&        mblock,
+                                  real_t                                            eps)
+      : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps} {}
 
     Inline void operator()(const index_t, const index_t) const;
   };
 
   template <>
-  Inline void init_fields_potential<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void initFieldsFromVectorPotential<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
     real_t                    i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t                    j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     index_t                   j_min {static_cast<index_t>(m_mblock.j_min())};
@@ -63,9 +63,9 @@ namespace ntt {
     x0p[0] = i_;
     x0p[1] = j_ + HALF + HALF * m_eps;
 
-    real_t E2d {(m_a0(m_mblock, x0p) - m_a0(m_mblock, x0m)) / m_eps};
-    real_t B1u {(m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
-    real_t B3_aux {-(m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
+    real_t E2d {(m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps};
+    real_t B1u {(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
+    real_t B3_aux {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
 
     x0m[0] = i_ + HALF - HALF * m_eps;
     x0m[1] = j_;
@@ -76,16 +76,16 @@ namespace ntt {
     if (j == j_min) {
       B2u = ZERO;
     } else {
-      B2u = -(m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
+      B2u = -(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
     }
-    real_t E1d {(m_a0(m_mblock, x0p) - m_a0(m_mblock, x0m)) / m_eps};
+    real_t E1d {(m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps};
 
     x0m[0] = i_ + HALF;
     x0m[1] = j_ + HALF - HALF * m_eps;
     x0p[0] = i_ + HALF;
     x0p[1] = j_ + HALF + HALF * m_eps;
 
-    real_t B3u {-(m_a1(m_mblock, x0p) - m_a1(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
+    real_t B3u {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
 
     x0m[0] = i_ - HALF * m_eps;
     x0m[1] = j_;
@@ -96,7 +96,7 @@ namespace ntt {
     if (j == j_min) {
       B2_aux = ZERO;
     } else {
-      B2_aux = -(m_a3(m_mblock, x0p) - m_a3(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
+      B2_aux = -(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
     }
 
     // Compute covariant D
@@ -124,5 +124,7 @@ namespace ntt {
   }
 
 } // namespace ntt
+
+#endif
 
 #endif
