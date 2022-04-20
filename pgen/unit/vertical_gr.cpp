@@ -28,7 +28,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "userInitFlds",
       NTTRange<Dimension::TWO_D>({mblock.i_min() - 1, mblock.j_min()}, {mblock.i_max(), mblock.j_max() + 1}),
-      init_fields_potential<Dimension::TWO_D>(mblock, epsilon, A0, A1, A3));
+      initFieldsFromVectorPotential<Dimension::TWO_D>(*this, mblock, epsilon));
   }
 
   template <>
@@ -40,6 +40,7 @@ template struct ntt::ProblemGenerator<ntt::Dimension::ONE_D, ntt::SimulationType
 template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
 template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
 
+// !LEGACY
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // Field boundary conditions
 // . . . . . . . . . . . . . . . . . . . . . . . .

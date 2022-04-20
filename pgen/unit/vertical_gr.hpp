@@ -20,19 +20,11 @@ namespace ntt {
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
     // void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
 
-    static real_t A0(const Meshblock<D, S>& mblock, const coord_t<D>& x) {
-      (void)mblock;
-      (void)x;
-      return ZERO;
-    }
+    Inline real_t A0(const Meshblock<D, S>&, const coord_t<D>&) { return ZERO; }
 
-    static real_t A1(const Meshblock<D, S>& mblock, const coord_t<D>& x) {
-      (void)mblock;
-      (void)x;
-      return ZERO;
-    }
+    Inline real_t A1(const Meshblock<D, S>&, const coord_t<D>&) { return ZERO; }
 
-    static real_t A3(const Meshblock<D, S>& mblock, const coord_t<D>& x) {
+    Inline real_t A3(const Meshblock<D, S>& mblock, const coord_t<D>& x) {
       coord_t<D> rth_;
       mblock.metric.x_Code2Sph(x, rth_);
       return HALF * std::sin(rth_[1]) * std::sin(rth_[1]) * rth_[0] * rth_[0];
@@ -40,7 +32,7 @@ namespace ntt {
 
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
-      real_t inv_sqrt_detH_ijP {ONE / mblock.metric.sqrt_det_h(x)};
+      real_t     inv_sqrt_detH_ijP {ONE / mblock.metric.sqrt_det_h(x)};
       if constexpr (D == Dimension::TWO_D) {
         x0m[0] = x[0];
         x0m[1] = x[1] - HALF * epsilon;
@@ -54,7 +46,7 @@ namespace ntt {
 
     Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
-      real_t inv_sqrt_detH_iPj {ONE / mblock.metric.sqrt_det_h(x)};
+      real_t     inv_sqrt_detH_iPj {ONE / mblock.metric.sqrt_det_h(x)};
       if constexpr (D == Dimension::TWO_D) {
         x0m[0] = x[0] + HALF - HALF * epsilon;
         x0m[1] = x[1];

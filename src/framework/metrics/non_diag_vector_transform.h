@@ -25,7 +25,9 @@ Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
   coord_t<D> y;
   coord_t<D> rth_;
   real_t     h_33_cov, h_13_cov, inv1, inv2;
-  std::copy(std::begin(x), std::end(x), std::begin(y));
+  for (short d = 0; d < static_cast<short>(D); ++d) {
+    y[d] = x[d];
+  }
   x_Code2Sph(x, rth_);
   if (std::sin(rth_[1]) == ZERO) {
     y[1]     = x[1] + 1e-1;
@@ -78,7 +80,9 @@ Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
   coord_t<D> y;
   coord_t<D> rth_;
   real_t     h_13_cov, inv1, inv2;
-  std::copy(std::begin(x), std::end(x), std::begin(y));
+  for (short d = 0; d < static_cast<short>(D); ++d) {
+    y[d] = x[d];
+  }
   x_Code2Sph(x, rth_);
   if (std::sin(rth_[1]) == ZERO) {
     y[1]     = x[1] + 1e-1;
