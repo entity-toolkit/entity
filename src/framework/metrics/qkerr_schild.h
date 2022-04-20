@@ -1,47 +1,51 @@
-#ifndef FRAMEWORK_METRICS_QSPHERICAL_H
-#define FRAMEWORK_METRICS_QSPHERICAL_H
+#ifndef FRAMEWORK_METRICS_QKERR_SCHILD_H
+#define FRAMEWORK_METRICS_QKERR_SCHILD_H
 
 #include "global.h"
 #include "metric_base.h"
 
 #include <cmath>
-#include <stdexcept>
-#include <iostream>
+#include <cassert>
 
 namespace ntt {
   /**
-   * Flat metric in quasi-spherical system.
-   * chi, eta, phi = log(r-r0), f(h, theta), phi
+   * Kerr metric in Kerr-Schild coordinates
+   * Units: c = rg = 1
    *
-   * TODO: change `eta_min`, `phi_min`.
    * @tparam D dimension.
    */
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t r0, h, chi_min, eta_min, phi_min;
+    // Spin parameter, in [0,1[
+    const real_t a;
+    const real_t r0, h;
+    const real_t chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
-    const real_t dchi_sqr, deta_sqr, dphi_sqr;
+    const real_t dchi_inv, dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t* params)
-      : MetricBase<D> {"qspherical", resolution, extent},
-        r0 {params[0]},
-        h {params[1]},
+      : MetricBase<D> {"kerr_schild", resolution, extent},
+        a(params[4]),
+        r0(params[0]),
+        h(params[1]),
         chi_min {std::log(this->x1_min - r0)},
         eta_min {ZERO},
         phi_min {ZERO},
-        dchi((std::log(this->x1_max - r0) - chi_min) / this->nx1),
-        deta(constant::PI / this->nx2),
-        dphi(constant::TWO_PI / this->nx3),
-        dchi_sqr(dchi * dchi),
-        deta_sqr(deta * deta),
-        dphi_sqr(dphi * dphi) {}
+        dchi {(std::log(this->x1_max - r0) - chi_min) / this->nx1},
+        deta {constant::PI / this->nx2},
+        dphi {constant::TWO_PI / this->nx3},
+        dchi_inv {ONE / dchi},
+        dchi_sqr {dchi * dchi},
+        deta_sqr {deta * deta},
+        dphi_sqr {dphi * dphi} {}
     ~Metric() = default;
+
+    [[nodiscard]] auto spin() const -> const real_t& { return a; }
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
-     *
      * @returns Minimum cell size of the grid [physical units].
      */
     auto findSmallestCell() const -> real_t {
@@ -51,9 +55,9 @@ namespace ntt {
           for (int j {0}; j < this->nx2; ++j) {
             real_t i_ {(real_t)(i) + HALF};
             real_t j_ {(real_t)(j) + HALF};
-            real_t dx1_ {this->h_11({i_, j_})};
-            real_t dx2_ {this->h_22({i_, j_})};
-            real_t dx = 1.0 / std::sqrt(1.0 / dx1_ + 1.0 / dx2_);
+            real_t inv_dx1_ {this->h_11_inv({i_, j_})};
+            real_t inv_dx2_ {this->h_22_inv({i_, j_})};
+            real_t dx = 1.0 / (this->alpha({i_, j_}) * std::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
             if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
           }
         }
@@ -120,9 +124,14 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        return dchi_sqr * std::exp(2.0 * chi);
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
+        real_t cth {std::cos(theta)};
+        return dchi_sqr * std::exp(2.0 * chi) * (ONE + TWO * r / (r * r + a * a * cth * cth));
       }
     }
+
     /**
      * Compute metric component 22.
      *
@@ -137,10 +146,13 @@ namespace ntt {
         real_t chi {x[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
         real_t dtheta_deta_ {dtheta_deta(eta)};
-        return deta_sqr * SQR(dtheta_deta_) * r * r * ;
+        real_t cth {std::cos(theta)};
+        return dtheta_sqr * SQR(dtheta_deta_) * (r * r + a * a * cth * cth);
       }
     }
+
     /**
      * Compute metric component 33.
      *
@@ -156,55 +168,111 @@ namespace ntt {
         real_t r {r0 + std::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t sin_theta {std::sin(theta)};
-        return r * r * sin_theta * sin_theta;
+        real_t cth {std::cos(theta)};
+        real_t sth {std::sin(theta)};
+        real_t delta {r * r - TWO * r + a * a};
+        real_t As {(r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth};
+        return As * sth * sth / (r * r + a * a * cth * cth);
       }
     }
+
     /**
-     * Compute the square root of the determinant of h-matrix.
+     * Compute metric component 13.
      *
      * @param x coordinate array in code units (size of the array is D).
-     * @returns sqrt(det(h_ij)).
+     * @returns h_13 (covariant, lower index) metric component.
      */
-    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+    Inline auto h_13(const coord_t<D>& x) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
-        NTTError("sqrt_det_h not implemented for 3D qspherical");
+        NTTError("h_13 not implemented for 1D qspherical");
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t sin_theta {std::sin(theta)};
-        real_t dtheta_deta_ {dtheta_deta(eta)};
-        return dchi * deta * std::exp(chi) * r * r * sin_theta * dtheta_deta_;
+        real_t cth {std::cos(theta)};
+        real_t sth {std::sin(theta)};
+        return -dchi * std::exp(chi) * a * sth * sth * (ONE + TWO * r / (r * r + a * a * cth * cth));
       }
     }
+
+    /**
+     * Compute lapse function.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns alpha.
+     */
+    Inline auto alpha(const coord_t<D>& x) const -> real_t {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("alpha not implemented for 1D qspherical");
+        return ZERO;
+      } else {
+        real_t chi {x[0] * dchi + chi_min};
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
+        real_t cth {std::cos(theta)};
+        real_t z {TWO * r / (r * r + a * a * cth * cth)};
+        return ONE / std::sqrt(ONE + z);
+      }
+    }
+
+    /**
+     * Compute radial component of shift vector.
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns beta^1 (contravariant).
+     */
+    Inline auto beta1u(const coord_t<D>& x) const -> real_t {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("beta1u not implemented for 1D qspherical");
+        return ZERO;
+      } else {
+        real_t chi {x[0] * dchi + chi_min};
+        real_t r {r0 + std::exp(chi)};
+        real_t eta {x[1] * deta + eta_min};
+        real_t theta {eta2theta(eta)};
+        real_t cth {std::cos(theta)};
+        real_t z {TWO * r / (r * r + a * a * cth * cth)};
+        return std::exp(-chi) * dchi_inv * (z / (ONE + z));
+      }
+    }
+
+    /**
+     * Compute the square root of the determinant of h-matrix divided by sin(theta).
+     *
+     * @param x coordinate array in code units (size of the array is D).
+     * @returns sqrt(det(h))/sin(theta).
+     */
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t { return h_22(x) / alpha(x); }
+
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
+     * Approximate solution for the polar area.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns Area at the pole.
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
-        NTTError("polar_area not implemented for 1D");
+        NTTError("polar_area not implemented for 1D qspherical");
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
         real_t del_eta {x[1] * deta + eta_min};
         real_t del_theta {eta2theta(del_eta)};
-        return dchi * std::exp(chi) * r * r * (ONE - std::cos(del_theta));
+        return dchi * std::exp(chi) * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a)))
+               * (ONE - std::cos(del_theta));
       }
     }
-
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
- *       include vector transformations for a diagonal metric here
+ *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
-#include "diag_vector_transform.h"
+#include "non_diag_vector_transform.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
@@ -228,6 +296,7 @@ namespace ntt {
         x[2] = x_sph[0] * std::cos(x_sph[1]);
       }
     }
+
     /**
      * Coordinate conversion from Cartesian physical units to code units.
      *
@@ -251,6 +320,7 @@ namespace ntt {
         x_Sph2Code(x_sph, xi);
       }
     }
+
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
@@ -274,15 +344,16 @@ namespace ntt {
         x[2] = phi;
       }
     }
+
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
-     * @param xi coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in Spherical coordinates in physical units (size of the array is D).
+     * @param x coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dimension::ONE_D) {
-        NTTError("x_Sph2Code not implemented for 1D");
+        NTTError("x_Code2Sph not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {std::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
@@ -298,6 +369,7 @@ namespace ntt {
       }
     }
   };
+
 } // namespace ntt
 
 #endif
