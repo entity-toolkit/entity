@@ -49,7 +49,7 @@ namespace ntt {
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
+      real_t cth {math::cos(theta)};
       return dr_sqr * (ONE + TWO * r / (r * r + a * a * cth * cth));
     }
 
@@ -62,7 +62,7 @@ namespace ntt {
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
+      real_t cth {math::cos(theta)};
       return dtheta_sqr * (r * r + a * a * cth * cth);
     }
 
@@ -75,8 +75,8 @@ namespace ntt {
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
-      real_t sth {std::sin(theta)};
+      real_t cth {math::cos(theta)};
+      real_t sth {math::sin(theta)};
 
       real_t delta {r * r - TWO * r + a * a};
       real_t As {(r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth};
@@ -92,8 +92,8 @@ namespace ntt {
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
-      real_t sth {std::sin(theta)};
+      real_t cth {math::cos(theta)};
+      real_t sth {math::sin(theta)};
       return -dr * a * sth * sth * (ONE + TWO * r / (r * r + a * a * cth * cth));
     }
 
@@ -106,10 +106,10 @@ namespace ntt {
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
+      real_t cth {math::cos(theta)};
 
       real_t z {TWO * r / (r * r + a * a * cth * cth)};
-      return ONE / std::sqrt(ONE + z);
+      return ONE / math::sqrt(ONE + z);
     }
 
     /**
@@ -121,7 +121,7 @@ namespace ntt {
     Inline auto beta1u(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t cth {std::cos(theta)};
+      real_t cth {math::cos(theta)};
 
       real_t z {TWO * r / (r * r + a * a * cth * cth)};
       return (z / (ONE + z)) * dr_inv;
@@ -145,7 +145,7 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      return dr * (SQR(r) + SQR(a)) * std::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - std::cos(del_theta));
+      return dr * (SQR(r) + SQR(a)) * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - math::cos(del_theta));
     }
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
@@ -167,7 +167,7 @@ namespace ntt {
             real_t j_ {(real_t)(j) + HALF};
             real_t inv_dx1_ {this->h_11_inv({i_, j_})};
             real_t inv_dx2_ {this->h_22_inv({i_, j_})};
-            real_t dx = 1.0 / (this->alpha({i_, j_}) * std::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
+            real_t dx = 1.0 / (this->alpha({i_, j_}) * math::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
             if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
           }
         }
@@ -190,14 +190,14 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]);
-        x[1] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]);
+        x[1] = x_sph[0] * math::cos(x_sph[1]);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]) * std::cos(x_sph[2]);
-        x[1] = x_sph[0] * std::sin(x_sph[1]) * std::sin(x_sph[2]);
-        x[2] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
+        x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
+        x[2] = x_sph[0] * math::cos(x_sph[1]);
       }
     }
 
@@ -213,14 +213,14 @@ namespace ntt {
         NTTError("x_Cart2Code not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]);
-        x_sph[1] = std::atan2(x[1], x[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
+        x_sph[1] = math::atan2(x[1], x[0]);
         x_Sph2Code(x_sph, xi);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-        x_sph[1] = std::atan2(x[1], x[0]);
-        x_sph[2] = std::acos(x[2] / x_sph[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+        x_sph[1] = math::atan2(x[1], x[0]);
+        x_sph[2] = math::acos(x[2] / x_sph[0]);
         x_Sph2Code(x_sph, xi);
       }
     }

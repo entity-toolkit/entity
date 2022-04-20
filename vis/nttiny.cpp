@@ -316,7 +316,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 #if SIMTYPE == GRPIC_SIMTYPE
     float a        = m_sim.sim_params().metric_parameters()[4];
     float r_absorb = m_sim.sim_params().metric_parameters()[2];
-    float rh       = 1.0f + std::sqrt(1.0f - a * a);
+    float rh       = 1.0f + math::sqrt(1.0f - a * a);
     nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
     nttiny::drawCircle({0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI});
 #elif SIMTYPE == PIC_SIMTYPE
@@ -437,12 +437,12 @@ void initLogger(plog_t* console_appender) {
 // // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
 // // m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
 
-// // e_hat[0] = SIGN(ex1_cnt) * std::pow(std::abs(ex1_cnt), 0.25);
-// // e_hat[1] = SIGN(ex2_cnt) * std::pow(std::abs(ex2_cnt), 0.25);
-// // e_hat[2] = SIGN(ex3_cnt) * std::pow(std::abs(ex3_cnt), 0.25);
-// // b_hat[0] = SIGN(bx1_cnt) * std::pow(std::abs(bx1_cnt), 0.25);
-// // b_hat[1] = SIGN(bx2_cnt) * std::pow(std::abs(bx2_cnt), 0.25);
-// // b_hat[2] = SIGN(bx3_cnt) * std::pow(std::abs(bx3_cnt), 0.25);
+// // e_hat[0] = SIGN(ex1_cnt) * math::pow(math::abs(ex1_cnt), 0.25);
+// // e_hat[1] = SIGN(ex2_cnt) * math::pow(math::abs(ex2_cnt), 0.25);
+// // e_hat[2] = SIGN(ex3_cnt) * math::pow(math::abs(ex3_cnt), 0.25);
+// // b_hat[0] = SIGN(bx1_cnt) * math::pow(math::abs(bx1_cnt), 0.25);
+// // b_hat[1] = SIGN(bx2_cnt) * math::pow(math::abs(bx2_cnt), 0.25);
+// // b_hat[2] = SIGN(bx3_cnt) * math::pow(math::abs(bx3_cnt), 0.25);
 // e_hat[0] = ex1_cnt;
 // e_hat[1] = ex2_cnt;
 // e_hat[2] = ex3_cnt;

@@ -10,7 +10,7 @@
  * @returns sqrt(det(h)).
  */
 Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-  return std::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
+  return math::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
 }
 
 /**
@@ -29,7 +29,7 @@ Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
     y[d] = x[d];
   }
   x_Code2Sph(x, rth_);
-  if (std::sin(rth_[1]) == ZERO) {
+  if (math::sin(rth_[1]) == ZERO) {
     y[1]     = x[1] + 1e-1;
     h_33_cov = h_33(y);
     h_13_cov = h_13(y);
@@ -84,7 +84,7 @@ Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
     y[d] = x[d];
   }
   x_Code2Sph(x, rth_);
-  if (std::sin(rth_[1]) == ZERO) {
+  if (math::sin(rth_[1]) == ZERO) {
     y[1]     = x[1] + 1e-1;
     h_13_cov = h_13(y);
     inv1     = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
@@ -107,10 +107,10 @@ Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
  */
 Inline void
 v_Hat2Cntrv(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_hat, vec_t<Dimension::THREE_D>& vi_cntrv) const {
-  real_t A0 {std::sqrt(h_11_inv(xi))};
+  real_t A0 {math::sqrt(h_11_inv(xi))};
   vi_cntrv[0] = vi_hat[0] * A0;
-  vi_cntrv[1] = vi_hat[1] / std::sqrt(h_22(xi));
-  vi_cntrv[2] = vi_hat[2] / std::sqrt(h_33(xi)) - vi_hat[0] * A0 * h_13(xi) / h_33(xi);
+  vi_cntrv[1] = vi_hat[1] / math::sqrt(h_22(xi));
+  vi_cntrv[2] = vi_hat[2] / math::sqrt(h_33(xi)) - vi_hat[0] * A0 * h_13(xi) / h_33(xi);
 }
 
 /**
@@ -122,9 +122,9 @@ v_Hat2Cntrv(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_hat, vec_t
  */
 Inline void
 v_Cntrv2Hat(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_cntrv, vec_t<Dimension::THREE_D>& vi_hat) const {
-  vi_hat[0] = vi_cntrv[0] / std::sqrt(h_11_inv(xi));
-  vi_hat[1] = vi_cntrv[1] * std::sqrt(h_22(xi));
-  vi_hat[2] = vi_cntrv[2] * std::sqrt(h_33(xi)) + vi_cntrv[0] * h_13(xi) / std::sqrt(h_33(xi));
+  vi_hat[0] = vi_cntrv[0] / math::sqrt(h_11_inv(xi));
+  vi_hat[1] = vi_cntrv[1] * math::sqrt(h_22(xi));
+  vi_hat[2] = vi_cntrv[2] * math::sqrt(h_33(xi)) + vi_cntrv[0] * h_13(xi) / math::sqrt(h_33(xi));
 }
 
 /**
@@ -136,9 +136,9 @@ v_Cntrv2Hat(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_cntrv, vec
  */
 Inline void
 v_Hat2Cov(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_hat, vec_t<Dimension::THREE_D>& vi_cov) const {
-  vi_cov[0] = vi_hat[0] / std::sqrt(h_11_inv(xi)) + vi_hat[2] * h_13(xi) / std::sqrt(h_33(xi));
-  vi_cov[1] = vi_hat[1] * std::sqrt(h_22(xi));
-  vi_cov[2] = vi_hat[2] * std::sqrt(h_33(xi));
+  vi_cov[0] = vi_hat[0] / math::sqrt(h_11_inv(xi)) + vi_hat[2] * h_13(xi) / math::sqrt(h_33(xi));
+  vi_cov[1] = vi_hat[1] * math::sqrt(h_22(xi));
+  vi_cov[2] = vi_hat[2] * math::sqrt(h_33(xi));
 }
 
 /**
@@ -150,10 +150,10 @@ v_Hat2Cov(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_hat, vec_t<D
  */
 Inline void
 v_Cov2Hat(const coord_t<D>& xi, const vec_t<Dimension::THREE_D>& vi_cov, vec_t<Dimension::THREE_D>& v_hat) const {
-  real_t A0 {std::sqrt(h_11_inv(xi))};
+  real_t A0 {math::sqrt(h_11_inv(xi))};
   v_hat[0] = vi_cov[0] * A0 - vi_cov[2] * A0 * h_13(xi) / h_33(xi);
-  v_hat[1] = vi_cov[1] / std::sqrt(h_22(xi));
-  v_hat[2] = vi_cov[2] / std::sqrt(h_33(xi));
+  v_hat[1] = vi_cov[1] / math::sqrt(h_22(xi));
+  v_hat[2] = vi_cov[2] / math::sqrt(h_33(xi));
 }
 
 /**

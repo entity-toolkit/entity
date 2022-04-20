@@ -24,21 +24,22 @@ namespace ntt {
     ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
     Meshblock<D, SimulationType::GRPIC>        m_mblock;
     real_t                                     m_eps;
+    index_t                                    j_min;
 
   public:
     initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationType::GRPIC>& pgen,
                                   const Meshblock<D, SimulationType::GRPIC>&        mblock,
                                   real_t                                            eps)
-      : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps} {}
+      : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps}, j_min {static_cast<index_t>(m_mblock.j_min())} {}
 
     Inline void operator()(const index_t, const index_t) const;
   };
 
   template <>
   Inline void initFieldsFromVectorPotential<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t                    i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t                    j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-    index_t                   j_min {static_cast<index_t>(m_mblock.j_min())};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
+
     coord_t<Dimension::TWO_D> x0m, x0p;
 
     real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};

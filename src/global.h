@@ -42,6 +42,8 @@
 #  define NTTError(msg) throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : line: " LINE_STRING)
 #endif
 
+namespace math = Kokkos::Experimental;
+
 namespace ntt {
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };

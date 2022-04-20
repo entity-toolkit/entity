@@ -1,5 +1,6 @@
 #include "global.h"
 #include "grpic.h"
+#include "grpic_fields_bc.hpp"
 
 #include <plog/Log.h>
 
@@ -32,9 +33,9 @@ namespace ntt {
       // Absorbing boundary
       auto r_absorb {m_sim_params.metric_parameters()[2]};
       auto absorb_coeff {m_sim_params.metric_parameters()[3]};
-      auto absorb_norm {ONE / (ONE - std::exp(absorb_coeff))};
+      auto absorb_norm {ONE / (ONE - math::exp(absorb_coeff))};
       auto r_max {m_mblock.metric.x1_max};
-      auto pGen {this->m_pGen};
+      // auto pGen {this->m_pGen};
       Kokkos::parallel_for(
         "2d_absorbing bc",
         NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max() + 1}),
@@ -47,7 +48,7 @@ namespace ntt {
           mblock.metric.x_Code2Sph({i_, j_}, rth_);
           if (rth_[0] > r_absorb) {
             real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-            real_t sigma_r1 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r1) * CUBE(delta_r1)))};
+            real_t sigma_r1 {absorb_norm * (ONE - math::exp(absorb_coeff * HEAVISIDE(delta_r1) * CUBE(delta_r1)))};
 
             mblock.em0(i, j, em::ex2) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex2);
             mblock.em0(i, j, em::ex3) = (ONE - sigma_r1) * mblock.em0(i, j, em::ex3);
@@ -59,7 +60,7 @@ namespace ntt {
           mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
           if (rth_[0] > r_absorb) {
             real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-            real_t sigma_r2 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
+            real_t sigma_r2 {absorb_norm * (ONE - math::exp(absorb_coeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
 
             mblock.em0(i, j, em::ex1) = (ONE - sigma_r2) * mblock.em0(i, j, em::ex1);
             mblock.em(i, j, em::ex1)  = (ONE - sigma_r2) * mblock.em(i, j, em::ex1);
@@ -108,39 +109,13 @@ namespace ntt {
         });
 
       auto r_absorb {m_sim_params.metric_parameters()[2]};
-      auto absorb_coeff {m_sim_params.metric_parameters()[3]};
-      auto absorb_norm {ONE / (ONE - std::exp(absorb_coeff))};
       auto r_max {m_mblock.metric.x1_max};
-      auto pGen {this->m_pGen};
+      auto absorb_coeff {m_sim_params.metric_parameters()[3]};
+      auto absorb_norm {ONE / (ONE - math::exp(absorb_coeff))};
       Kokkos::parallel_for(
         "2d_absorbing bc",
         NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max() + 1}),
-        Lambda(index_t i, index_t j) {
-          real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-          real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-
-          // i
-          vec_t<Dimension::TWO_D> rth_;
-          mblock.metric.x_Code2Sph({i_, j_}, rth_);
-          if (rth_[0] > r_absorb) {
-            real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-            real_t sigma_r1 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r1) * CUBE(delta_r1)))};
-            real_t br_target {pGen.userTargetField_br_cntrv(mblock, {i_, j_ + HALF})};
-            mblock.em0(i, j, em::bx1) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx1) + sigma_r1 * br_target;
-            mblock.em(i, j, em::bx1)  = (ONE - sigma_r1) * mblock.em(i, j, em::bx1) + sigma_r1 * br_target;
-          }
-          // i + 1/2
-          mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
-          if (rth_[0] > r_absorb) {
-            real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
-            real_t sigma_r2 {absorb_norm * (ONE - std::exp(absorb_coeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
-            real_t bth_target {pGen.userTargetField_bth_cntrv(mblock, {i_ + HALF, j_})};
-            mblock.em0(i, j, em::bx2) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx2) + sigma_r2 * bth_target;
-            mblock.em(i, j, em::bx2)  = (ONE - sigma_r2) * mblock.em(i, j, em::bx2) + sigma_r2 * bth_target;
-            mblock.em0(i, j, em::bx3) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx3);
-            mblock.em(i, j, em::bx3)  = (ONE - sigma_r2) * mblock.em(i, j, em::bx3);
-          }
-        });
+        GRFieldBC_rmax<Dimension::TWO_D>(m_mblock, this->m_pGen, r_absorb, r_max, absorb_coeff, absorb_norm));
 
       // r = rmax
       auto i_max {mblock.i_max()};
@@ -193,6 +168,7 @@ namespace ntt {
 
 } // namespace ntt
 
+// !LEGACY
 // // theta = 0 boundary
 // Kokkos::parallel_for(
 //   "2d_bc_theta0",
@@ -230,3 +206,40 @@ namespace ntt {
 // //     mblock.em0(i, j_max, em::ex2) = mblock.em0(i, j_max - 1, em::ex2);
 // //     mblock.em(i, j_max, em::ex2) = mblock.em(i, j_max - 1, em::ex2);
 // //   });
+
+// auto pGen {this->m_pGen};
+// auto br_func {&(this->m_pGen.userTargetField_br_cntrv)};
+// Kokkos::parallel_for(
+//   "2d_absorbing bc",
+//   NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max() + 1}),
+//   Lambda(index_t i, index_t j) {
+//     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+//     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
+
+//     // i
+//     vec_t<Dimension::TWO_D> rth_;
+//     mblock.metric.x_Code2Sph({i_, j_}, rth_);
+//     if (rth_[0] > r_absorb) {
+//       real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+//       real_t sigma_r1 {absorb_norm * (ONE - math::exp(absorb_coeff * HEAVISIDE(delta_r1) * CUBE(delta_r1)))};
+//       // !HACK
+//       // real_t br_target = pGen.userTargetField_br_cntrv(mblock, {i_, j_ + HALF});
+//       real_t br_target = br_func(mblock, {i_, j_ + HALF});
+//       // real_t br_target {ZERO};
+//       mblock.em0(i, j, em::bx1) = (ONE - sigma_r1) * mblock.em0(i, j, em::bx1) + sigma_r1 * br_target;
+//       mblock.em(i, j, em::bx1)  = (ONE - sigma_r1) * mblock.em(i, j, em::bx1) + sigma_r1 * br_target;
+//     }
+//     // i + 1/2
+//     mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
+//     if (rth_[0] > r_absorb) {
+//       real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+//       real_t sigma_r2 {absorb_norm * (ONE - math::exp(absorb_coeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
+//       // !HACK
+//       // real_t bth_target {pGen->userTargetField_bth_cntrv(mblock, {i_ + HALF, j_})};
+//       real_t bth_target {ZERO};
+//       mblock.em0(i, j, em::bx2) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx2) + sigma_r2 * bth_target;
+//       mblock.em(i, j, em::bx2)  = (ONE - sigma_r2) * mblock.em(i, j, em::bx2) + sigma_r2 * bth_target;
+//       mblock.em0(i, j, em::bx3) = (ONE - sigma_r2) * mblock.em0(i, j, em::bx3);
+//       mblock.em(i, j, em::bx3)  = (ONE - sigma_r2) * mblock.em(i, j, em::bx3);
+//     }
+//   });

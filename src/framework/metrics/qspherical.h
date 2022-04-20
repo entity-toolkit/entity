@@ -28,10 +28,10 @@ namespace ntt {
       : MetricBase<D> {"qspherical", resolution, extent},
         r0 {params[0]},
         h {params[1]},
-        chi_min {std::log(this->x1_min - r0)},
+        chi_min {math::log(this->x1_min - r0)},
         eta_min {ZERO},
         phi_min {ZERO},
-        dchi((std::log(this->x1_max - r0) - chi_min) / this->nx1),
+        dchi((math::log(this->x1_max - r0) - chi_min) / this->nx1),
         deta(constant::PI / this->nx2),
         dphi(constant::TWO_PI / this->nx3),
         dchi_sqr(dchi * dchi),
@@ -53,7 +53,7 @@ namespace ntt {
             real_t j_ {(real_t)(j) + HALF};
             real_t dx1_ {this->h_11({i_, j_})};
             real_t dx2_ {this->h_22({i_, j_})};
-            real_t dx = 1.0 / std::sqrt(1.0 / dx1_ + 1.0 / dx2_);
+            real_t dx = 1.0 / math::sqrt(1.0 / dx1_ + 1.0 / dx2_);
             if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
           }
         }
@@ -88,9 +88,9 @@ namespace ntt {
      */
     Inline auto theta2eta(const real_t& theta) const -> real_t {
       // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y - 108 h y^2))])^(1/3)
-      double R {std::pow(-9.0 * SQR(h) * (constant::PI - 2.0 * theta)
+      double R {math::pow(-9.0 * SQR(h) * (constant::PI - 2.0 * theta)
                            + constant::SQRT3
-                               * std::sqrt(-(CUBE(h)
+                               * math::sqrt(-(CUBE(h)
                                              * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
                                                 + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
                          static_cast<real_t>(1.0 / 3.0))};
@@ -120,7 +120,7 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        return dchi_sqr * std::exp(2.0 * chi);
+        return dchi_sqr * math::exp(2.0 * chi);
       }
     }
     /**
@@ -135,7 +135,7 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
         real_t dtheta_deta_ {dtheta_deta(eta)};
         return deta_sqr * SQR(dtheta_deta_) * r * r * ;
@@ -153,10 +153,10 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t sin_theta {std::sin(theta)};
+        real_t sin_theta {math::sin(theta)};
         return r * r * sin_theta * sin_theta;
       }
     }
@@ -172,12 +172,12 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
-        real_t sin_theta {std::sin(theta)};
+        real_t sin_theta {math::sin(theta)};
         real_t dtheta_deta_ {dtheta_deta(eta)};
-        return dchi * deta * std::exp(chi) * r * r * sin_theta * dtheta_deta_;
+        return dchi * deta * math::exp(chi) * r * r * sin_theta * dtheta_deta_;
       }
     }
     /**
@@ -192,10 +192,10 @@ namespace ntt {
         return ZERO;
       } else {
         real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + std::exp(chi)};
+        real_t r {r0 + math::exp(chi)};
         real_t del_eta {x[1] * deta + eta_min};
         real_t del_theta {eta2theta(del_eta)};
-        return dchi * std::exp(chi) * r * r * (ONE - std::cos(del_theta));
+        return dchi * math::exp(chi) * r * r * (ONE - math::cos(del_theta));
       }
     }
 
@@ -218,14 +218,14 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]);
-        x[1] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]);
+        x[1] = x_sph[0] * math::cos(x_sph[1]);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]) * std::cos(x_sph[2]);
-        x[1] = x_sph[0] * std::sin(x_sph[1]) * std::sin(x_sph[2]);
-        x[2] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
+        x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
+        x[2] = x_sph[0] * math::cos(x_sph[1]);
       }
     }
     /**
@@ -240,14 +240,14 @@ namespace ntt {
         NTTError("x_Cart2Code not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]);
-        x_sph[1] = std::atan2(x[1], x[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
+        x_sph[1] = math::atan2(x[1], x[0]);
         x_Sph2Code(x_sph, xi);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-        x_sph[1] = std::atan2(x[1], x[0]);
-        x_sph[2] = std::acos(x[2] / x_sph[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+        x_sph[1] = math::atan2(x[1], x[0]);
+        x_sph[2] = math::acos(x[2] / x_sph[0]);
         x_Sph2Code(x_sph, xi);
       }
     }
@@ -263,13 +263,13 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
-        x[0] = r0 + std::exp(chi);
+        x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
       } else if constexpr (D == Dimension::THREE_D) {
         real_t chi {xi[0] * dchi + chi_min};
         real_t eta {xi[1] * deta + eta_min};
         real_t phi {xi[2] * dphi + phi_min};
-        x[0] = r0 + std::exp(chi);
+        x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
         x[2] = phi;
       }
@@ -284,12 +284,12 @@ namespace ntt {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("x_Sph2Code not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
-        real_t chi {std::log(x[0] - r0)};
+        real_t chi {math::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
         xi[0] = (chi - chi_min) / dchi;
         xi[1] = (eta - eta_min) / deta;
       } else if constexpr (D == Dimension::THREE_D) {
-        real_t chi {std::log(x[0] - r0)};
+        real_t chi {math::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
         real_t phi {x[2]};
         xi[0] = (chi - chi_min) / dchi;
