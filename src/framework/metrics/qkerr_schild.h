@@ -22,11 +22,12 @@ namespace ntt {
     const real_t r0, h;
     const real_t chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
-    const real_t dchi_inv, dchi_sqr, deta_sqr, dphi_sqr;
+    const real_t dchi_inv, deta_inv, dphi_inv;
+    const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t* params)
-      : MetricBase<D> {"kerr_schild", resolution, extent},
+      : MetricBase<D> {"qkerr_schild", resolution, extent},
         a(params[4]),
         r0(params[0]),
         h(params[1]),
@@ -37,6 +38,8 @@ namespace ntt {
         deta {constant::PI / this->nx2},
         dphi {constant::TWO_PI / this->nx3},
         dchi_inv {ONE / dchi},
+        deta_inv {ONE / deta},
+        dphi_inv {ONE / dphi},
         dchi_sqr {dchi * dchi},
         deta_sqr {deta * deta},
         dphi_sqr {dphi * dphi} {}
@@ -115,17 +118,17 @@ namespace ntt {
     /**
      * Compute metric component 11.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      * @returns h_11 (covariant, lower index) metric component.
      */
-    Inline auto h_11(const coord_t<D>& x) const -> real_t {
+    Inline auto h_11(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("h_11 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi {xi[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
+        real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t cth {std::cos(theta)};
         return dchi_sqr * std::exp(2.0 * chi) * (ONE + TWO * r / (r * r + a * a * cth * cth));
@@ -135,38 +138,38 @@ namespace ntt {
     /**
      * Compute metric component 22.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      * @returns h_22 (covariant, lower index) metric component.
      */
-    Inline auto h_22(const coord_t<D>& x) const -> real_t {
+    Inline auto h_22(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("h_22 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi {xi[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
+        real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t dtheta_deta_ {dtheta_deta(eta)};
         real_t cth {std::cos(theta)};
-        return dtheta_sqr * SQR(dtheta_deta_) * (r * r + a * a * cth * cth);
+        return deta_sqr * SQR(dtheta_deta_) * (r * r + a * a * cth * cth);
       }
     }
 
     /**
      * Compute metric component 33.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      * @returns h_33 (covariant, lower index) metric component.
      */
-    Inline auto h_33(const coord_t<D>& x) const -> real_t {
+    Inline auto h_33(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("h_33 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi {xi[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
+        real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t cth {std::cos(theta)};
         real_t sth {std::sin(theta)};
@@ -179,17 +182,17 @@ namespace ntt {
     /**
      * Compute metric component 13.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      * @returns h_13 (covariant, lower index) metric component.
      */
-    Inline auto h_13(const coord_t<D>& x) const -> real_t {
+    Inline auto h_13(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("h_13 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi {xi[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
+        real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t cth {std::cos(theta)};
         real_t sth {std::sin(theta)};
@@ -200,17 +203,17 @@ namespace ntt {
     /**
      * Compute lapse function.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      * @returns alpha.
      */
-    Inline auto alpha(const coord_t<D>& x) const -> real_t {
+    Inline auto alpha(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("alpha not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi {xi[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
+        real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t cth {std::cos(theta)};
         real_t z {TWO * r / (r * r + a * a * cth * cth)};
@@ -221,17 +224,17 @@ namespace ntt {
     /**
      * Compute radial component of shift vector.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      * @returns beta^1 (contravariant).
      */
-    Inline auto beta1u(const coord_t<D>& x) const -> real_t {
+    Inline auto beta1u(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dimension::ONE_D) {
         NTTError("beta1u not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi {xi[0] * dchi + chi_min};
         real_t r {r0 + std::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
+        real_t eta {xi[1] * deta + eta_min};
         real_t theta {eta2theta(eta)};
         real_t cth {std::cos(theta)};
         real_t z {TWO * r / (r * r + a * a * cth * cth)};
@@ -348,8 +351,8 @@ namespace ntt {
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param xi coordinate array in Spherical coordinates in physical units (size of the array is D).
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dimension::ONE_D) {
@@ -357,15 +360,37 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         real_t chi {std::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
-        xi[0] = (chi - chi_min) / dchi;
-        xi[1] = (eta - eta_min) / deta;
+        xi[0] = (chi - chi_min) * dchi_inv;
+        xi[1] = (eta - eta_min) * deta_inv;
       } else if constexpr (D == Dimension::THREE_D) {
         real_t chi {std::log(x[0] - r0)};
         real_t eta {theta2eta(x[1])};
         real_t phi {x[2]};
-        xi[0] = (chi - chi_min) / dchi;
-        xi[1] = (eta - eta_min) / deta;
-        xi[2] = (phi - phi_min) / dphi;
+        xi[0] = (chi - chi_min) * dchi_inv;
+        xi[1] = (eta - eta_min) * deta_inv;
+        xi[2] = (phi - phi_min) * dphi_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from contravariant to spherical contravariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+     * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
+     */
+    Inline void v_Cntr2SphCntrv(const coord_t<D>&                xi,
+                                const vec_t<Dimension::THREE_D>& vi_cntrv,
+                                vec_t<Dimension::THREE_D>&       vsph_cntrv) const {
+      if constexpr (D == Dimension::ONE_D) {
+        NTTError("v_Cntr2SphCntrv not implemented for 1D");
+      } else {
+        real_t chi {xi[0] * dchi + chi_min};
+        real_t eta {xi[1] * deta + eta_min};
+        real_t deta_dtheta_ {ONE / dtheta_deta(eta)};
+        vsph_cntrv[0] = vi_cntrv[0] * std::exp(-chi) * dchi_inv;
+        vsph_cntrv[1] = vi_cntrv[1] * deta_dtheta_ * deta_inv;
+        vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
       }
     }
   };
