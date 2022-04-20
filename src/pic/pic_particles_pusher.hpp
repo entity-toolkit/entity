@@ -73,7 +73,7 @@ namespace ntt {
 
       real_t inv_energy;
       inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / std::sqrt(ONE + inv_energy);
+      inv_energy = ONE / math::sqrt(ONE + inv_energy);
 
       vec_t<Dimension::THREE_D> v;
       m_mblock.metric.v_Cart2Cntrv(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
@@ -89,7 +89,7 @@ namespace ntt {
       m_mblock.metric.v_Cart2Cntrv(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
       real_t inv_energy;
       inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / std::sqrt(inv_energy);
+      inv_energy = ONE / math::sqrt(inv_energy);
       v[0] *= inv_energy;
       v[1] *= inv_energy;
       v[2] *= inv_energy;
@@ -98,7 +98,7 @@ namespace ntt {
     Inline void operator()(const BorisBwd_t&, const index_t p) const {
       real_t inv_energy;
       inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / std::sqrt(ONE + inv_energy);
+      inv_energy = ONE / math::sqrt(ONE + inv_energy);
 
       coord_t<D> xp;
       getParticleCoordinate(p, xp);
@@ -206,7 +206,7 @@ namespace ntt {
   Inline void Pusher<D>::positionUpdate_x1(const index_t& p, const real_t& vx1) const {
     m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
     int   temp_i {static_cast<int>(m_particles.dx1(p))};
-    float temp_r {std::max(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+    float temp_r {math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
     temp_i             = static_cast<int>(temp_r);
     m_particles.i1(p)  = m_particles.i1(p) + temp_i;
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
@@ -215,7 +215,7 @@ namespace ntt {
   Inline void Pusher<D>::positionUpdate_x2(const index_t& p, const real_t& vx2) const {
     m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
     int   temp_i {static_cast<int>(m_particles.dx2(p))};
-    float temp_r {std::max(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+    float temp_r {math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
     temp_i             = static_cast<int>(temp_r);
     m_particles.i2(p)  = m_particles.i2(p) + temp_i;
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
@@ -224,7 +224,7 @@ namespace ntt {
   Inline void Pusher<D>::positionUpdate_x3(const index_t& p, const real_t& vx3) const {
     m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
     int   temp_i {static_cast<int>(m_particles.dx3(p))};
-    float temp_r {std::max(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+    float temp_r {math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
     temp_i             = static_cast<int>(temp_r);
     m_particles.i3(p)  = m_particles.i3(p) + temp_i;
     m_particles.dx3(p) = m_particles.dx3(p) - temp_r;
@@ -243,7 +243,7 @@ namespace ntt {
     e0[2] *= COEFF;
     vec_t<Dimension::THREE_D> u0 {m_particles.ux1(p) + e0[0], m_particles.ux2(p) + e0[1], m_particles.ux3(p) + e0[2]};
 
-    COEFF *= 1.0 / std::sqrt(1.0 + u0[0] * u0[0] + u0[1] * u0[1] + u0[2] * u0[2]);
+    COEFF *= 1.0 / math::sqrt(1.0 + u0[0] * u0[0] + u0[1] * u0[1] + u0[2] * u0[2]);
     b0[0] *= COEFF;
     b0[1] *= COEFF;
     b0[2] *= COEFF;

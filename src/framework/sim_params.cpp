@@ -86,7 +86,7 @@ namespace ntt {
 
       if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
         real_t spin {readFromInput<real_t>(inputdata, "domain", "a")};
-        real_t rh {ONE + std::sqrt(ONE - spin * spin)};
+        real_t rh {ONE + math::sqrt(ONE - spin * spin)};
         m_metric_parameters[4] = spin;
         m_extent[0] *= rh;
         m_extent[1] *= rh;

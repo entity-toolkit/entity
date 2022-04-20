@@ -39,7 +39,7 @@ namespace ntt {
       if constexpr (D == Dimension::TWO_D) {
         auto dx1 {dr};
         auto dx2 {this->x1_min * dtheta};
-        return ONE / std::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
+        return ONE / math::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
       } else {
         NTTError("min cell finding not implemented for 3D spherical");
       }
@@ -72,7 +72,7 @@ namespace ntt {
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      real_t sin_theta {std::sin(theta)};
+      real_t sin_theta {math::sin(theta)};
       return r * r * sin_theta * sin_theta;
     }
     /**
@@ -84,7 +84,7 @@ namespace ntt {
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t theta {x[1] * dtheta};
-      return dr * dtheta * r * r * std::sin(theta);
+      return dr * dtheta * r * r * math::sin(theta);
     }
 
     /**
@@ -96,7 +96,7 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      return dr * r * r * (ONE - std::cos(del_theta));
+      return dr * r * r * (ONE - math::cos(del_theta));
     }
 
 /**
@@ -118,14 +118,14 @@ namespace ntt {
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]);
-        x[1] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]);
+        x[1] = x_sph[0] * math::cos(x_sph[1]);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * std::sin(x_sph[1]) * std::cos(x_sph[2]);
-        x[1] = x_sph[0] * std::sin(x_sph[1]) * std::sin(x_sph[2]);
-        x[2] = x_sph[0] * std::cos(x_sph[1]);
+        x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
+        x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
+        x[2] = x_sph[0] * math::cos(x_sph[1]);
       }
     }
     /**
@@ -140,14 +140,14 @@ namespace ntt {
         NTTError("x_Cart2Code not implemented for 1D");
       } else if constexpr (D == Dimension::TWO_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1]);
-        x_sph[1] = std::atan2(x[1], x[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
+        x_sph[1] = math::atan2(x[1], x[0]);
         x_Sph2Code(x_sph, xi);
       } else if constexpr (D == Dimension::THREE_D) {
         coord_t<D> x_sph;
-        x_sph[0] = std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-        x_sph[1] = std::atan2(x[1], x[0]);
-        x_sph[2] = std::acos(x[2] / x_sph[0]);
+        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+        x_sph[1] = math::atan2(x[1], x[0]);
+        x_sph[2] = math::acos(x[2] / x_sph[0]);
         x_Sph2Code(x_sph, xi);
       }
     }
