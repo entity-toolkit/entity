@@ -15,21 +15,27 @@
 #endif
 
 #include <toml/toml.hpp>
+#include <plog/Log.h>
+#include <plog/Init.h>
+#include <plog/Appenders/ColorConsoleAppender.h>
 
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <vector>
 
+using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
+void initLogger(plog_t* console_appender);
+
 struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
-  int nx1, nx2;
+  int                                               nx1, nx2;
   ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& m_sim;
-  std::vector<nttiny::Data<float>> m_data;
+  std::vector<nttiny::Data<float>>                  m_data;
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
-  std::vector<std::string> m_fields_to_plot;
+  std::vector<std::string>                          m_fields_to_plot;
 
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& sim,
-                   const std::vector<std::string>& fields_to_plot)
+                   const std::vector<std::string>&                   fields_to_plot)
 /**
  * TODO: make this less ugly
  */
@@ -43,7 +49,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       m_sim(sim),
       m_fields_to_plot(fields_to_plot) {
     this->m_timestep = 0;
-    this->m_time = 0.0;
+    this->m_time     = 0.0;
     generateFields();
     generateGrid();
     generateParticles();
@@ -60,8 +66,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       for (int i {0}; i < nx1; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #if SIMTYPE == PIC_SIMTYPE
-          auto i_ {(real_t)(i - ntt::N_GHOSTS)};
-          auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+          auto                                i_ {(real_t)(i - ntt::N_GHOSTS)};
+          auto                                j_ {(real_t)(j - ntt::N_GHOSTS)};
           ntt::vec_t<ntt::Dimension::THREE_D> e_hat, b_hat;
           m_sim.mblock().metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
                                             {m_sim.mblock().em(i, j, ntt::em::ex1),
@@ -87,19 +93,76 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
             m_data[f].set(i, j, b_hat[2]);
           }
 #elif SIMTYPE == GRPIC_SIMTYPE
-          // TODO: also need to transform if qspherical coordinates
+          auto i_ {(real_t)(i - ntt::N_GHOSTS)};
+          auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+          // interpolate and transform to spherical
+          ntt::vec_t<ntt::Dimension::THREE_D> Dsph {0, 0, 0}, Bsph {0, 0, 0}, D0sph {0, 0, 0}, B0sph {0, 0, 0};
+          if ((i < ntt::N_GHOSTS) || (i >= nx1 - ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (j >= nx2 - ntt::N_GHOSTS)) {
+            Dsph[0] = m_sim.mblock().em(i, j, ntt::em::ex1);
+            Dsph[1] = m_sim.mblock().em(i, j, ntt::em::ex2);
+            Dsph[2] = m_sim.mblock().em(i, j, ntt::em::ex3);
+            Bsph[0] = m_sim.mblock().em(i, j, ntt::em::bx1);
+            Bsph[1] = m_sim.mblock().em(i, j, ntt::em::bx2);
+            Bsph[2] = m_sim.mblock().em(i, j, ntt::em::bx3);
+            D0sph[0] = m_sim.mblock().em0(i, j, ntt::em::ex1);
+            D0sph[1] = m_sim.mblock().em0(i, j, ntt::em::ex2);
+            D0sph[2] = m_sim.mblock().em0(i, j, ntt::em::ex3);
+            B0sph[0] = m_sim.mblock().em0(i, j, ntt::em::bx1);
+            B0sph[1] = m_sim.mblock().em0(i, j, ntt::em::bx2);
+            B0sph[2] = m_sim.mblock().em0(i, j, ntt::em::bx3);
+          } else {
+            if ((m_fields_to_plot[f] == "Dr") || (m_fields_to_plot[f] == "Dtheta") || (m_fields_to_plot[f] == "Dphi")) {
+              real_t Dx1, Dx2, Dx3;
+              // interpolate to cell center
+              Dx1 = 0.5 * (m_sim.mblock().em(i, j, ntt::em::ex1) + m_sim.mblock().em(i, j + 1, ntt::em::ex1));
+              Dx2 = 0.5 * (m_sim.mblock().em(i, j, ntt::em::ex2) + m_sim.mblock().em(i + 1, j, ntt::em::ex2));
+              Dx3 = 0.25
+                    * (m_sim.mblock().em(i, j, ntt::em::ex3) + m_sim.mblock().em(i + 1, j, ntt::em::ex3)
+                      + m_sim.mblock().em(i, j + 1, ntt::em::ex3) + m_sim.mblock().em(i + 1, j + 1, ntt::em::ex3));
+              m_sim.mblock().metric.v_Cntr2SphCntrv({i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, Dsph);
+            }
+            if ((m_fields_to_plot[f] == "Br") || (m_fields_to_plot[f] == "Btheta") || (m_fields_to_plot[f] == "Bphi")) {
+              real_t Bx1, Bx2, Bx3;
+              // interpolate to cell center
+              Bx1 = 0.5 * (m_sim.mblock().em(i + 1, j, ntt::em::bx1) + m_sim.mblock().em(i, j, ntt::em::bx1));
+              Bx2 = 0.5 * (m_sim.mblock().em(i, j + 1, ntt::em::bx2) + m_sim.mblock().em(i, j, ntt::em::bx2));
+              Bx3 = m_sim.mblock().em(i, j, ntt::em::bx3);
+              m_sim.mblock().metric.v_Cntr2SphCntrv({i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, Bsph);
+            }
+            if ((m_fields_to_plot[f] == "D0r") || (m_fields_to_plot[f] == "D0theta")
+                || (m_fields_to_plot[f] == "D0phi")) {
+              real_t Dx1, Dx2, Dx3;
+              // interpolate to cell center
+              Dx1 = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::ex1) + m_sim.mblock().em0(i, j + 1, ntt::em::ex1));
+              Dx2 = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::ex2) + m_sim.mblock().em0(i + 1, j, ntt::em::ex2));
+              Dx3 = 0.25
+                    * (m_sim.mblock().em0(i, j, ntt::em::ex3) + m_sim.mblock().em0(i + 1, j, ntt::em::ex3)
+                      + m_sim.mblock().em0(i, j + 1, ntt::em::ex3) + m_sim.mblock().em0(i + 1, j + 1, ntt::em::ex3));
+              m_sim.mblock().metric.v_Cntr2SphCntrv({i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, D0sph);
+            }
+            if ((m_fields_to_plot[f] == "B0r") || (m_fields_to_plot[f] == "B0theta")
+                || (m_fields_to_plot[f] == "B0phi")) {
+              real_t Bx1, Bx2, Bx3;
+              // interpolate to cell center
+              Bx1 = 0.5 * (m_sim.mblock().em0(i + 1, j, ntt::em::bx1) + m_sim.mblock().em0(i, j, ntt::em::bx1));
+              Bx2 = 0.5 * (m_sim.mblock().em0(i, j + 1, ntt::em::bx2) + m_sim.mblock().em0(i, j, ntt::em::bx2));
+              Bx3 = m_sim.mblock().em0(i, j, ntt::em::bx3);
+              m_sim.mblock().metric.v_Cntr2SphCntrv({i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, B0sph);
+            }
+          }
+
           if (m_fields_to_plot[f] == "Dr") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex1));
+            m_data[f].set(i, j, Dsph[0]);
           } else if (m_fields_to_plot[f] == "Dtheta") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex2));
+            m_data[f].set(i, j, Dsph[1]);
           } else if (m_fields_to_plot[f] == "Dphi") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::ex3));
+            m_data[f].set(i, j, Dsph[2]);
           } else if (m_fields_to_plot[f] == "Br") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx1));
+            m_data[f].set(i, j, Bsph[0]);
           } else if (m_fields_to_plot[f] == "Btheta") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx2));
+            m_data[f].set(i, j, Bsph[1]);
           } else if (m_fields_to_plot[f] == "Bphi") {
-            m_data[f].set(i, j, m_sim.mblock().em(i, j, ntt::em::bx3));
+            m_data[f].set(i, j, Bsph[2]);
           } else if (m_fields_to_plot[f] == "Er") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::ex1));
           } else if (m_fields_to_plot[f] == "Etheta") {
@@ -113,17 +176,17 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           } else if (m_fields_to_plot[f] == "Hphi") {
             m_data[f].set(i, j, m_sim.mblock().aux(i, j, ntt::em::bx3));
           } else if (m_fields_to_plot[f] == "D0r") {
-            m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::ex1));
+            m_data[f].set(i, j, D0sph[0]);
           } else if (m_fields_to_plot[f] == "D0theta") {
-            m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::ex2));
+            m_data[f].set(i, j, D0sph[1]);
           } else if (m_fields_to_plot[f] == "D0phi") {
-            m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::ex3));
+            m_data[f].set(i, j, D0sph[2]);
           } else if (m_fields_to_plot[f] == "B0r") {
-            m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx1));
+            m_data[f].set(i, j, B0sph[0]);
           } else if (m_fields_to_plot[f] == "B0theta") {
-            m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx2));
+            m_data[f].set(i, j, B0sph[1]);
           } else if (m_fields_to_plot[f] == "B0phi") {
-            m_data[f].set(i, j, m_sim.mblock().em0(i, j, ntt::em::bx3));
+            m_data[f].set(i, j, B0sph[2]);
           } else if (m_fields_to_plot[f] == "Aphi") {
             m_data[f].set(i, j, m_sim.mblock().aphi(i, j, 0));
           }
@@ -134,8 +197,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     int i {0};
     for (auto& species : m_sim.mblock().particles) {
       for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
-        float x1 {(float)(species.i1(k)) + species.dx1(k)};
-        float x2 {(float)(species.i2(k)) + species.dx2(k)};
+        float                               x1 {(float)(species.i1(k)) + species.dx1(k)};
+        float                               x2 {(float)(species.i2(k)) + species.dx2(k)};
         ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
         m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
         this->prtl_pointers[i]->set(k, 0, xy[0]);
@@ -156,7 +219,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     m_sim.initializeSetup();
     m_sim.initial_step(ZERO);
     setData();
-    m_time = 0.0;
+    m_time     = 0.0;
     m_timestep = 0;
   }
   void stepBwd() override {
@@ -194,8 +257,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       m_x1x2_extent[0] = m_sim.mblock().metric.x1_min;
       m_x1x2_extent[1] = m_sim.mblock().metric.x1_max;
       for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
-        auto i_ {(real_t)(i - ntt::N_GHOSTS)};
-        auto j_ {ZERO};
+        auto                                i_ {(real_t)(i - ntt::N_GHOSTS)};
+        auto                                j_ {ZERO};
         ntt::coord_t<ntt::Dimension::TWO_D> rth_;
         m_sim.mblock().metric.x_Code2Sph({i_, j_}, rth_);
         field_data_0.grid_x1[i] = rth_[0];
@@ -210,8 +273,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
             + (field_data_0.grid_x1[nx1 - ntt::N_GHOSTS] - field_data_0.grid_x1[nx1 - ntt::N_GHOSTS - 1]);
       }
       for (int j {0}; j <= nx2; ++j) {
-        auto i_ {ZERO};
-        auto j_ {(real_t)(j - ntt::N_GHOSTS)};
+        auto                                i_ {ZERO};
+        auto                                j_ {(real_t)(j - ntt::N_GHOSTS)};
         ntt::coord_t<ntt::Dimension::TWO_D> rth_;
         m_sim.mblock().metric.x_Code2Sph({i_, j_}, rth_);
         field_data_0.grid_x2[j] = rth_[1];
@@ -251,9 +314,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
   void customAnnotatePcolor2d() override {
 #if SIMTYPE == GRPIC_SIMTYPE
-    float a = m_sim.sim_params().metric_parameters()[4];
+    float a        = m_sim.sim_params().metric_parameters()[4];
     float r_absorb = m_sim.sim_params().metric_parameters()[2];
-    float rh = 1.0f + std::sqrt(1.0f - a * a);
+    float rh       = 1.0f + std::sqrt(1.0f - a * a);
     nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
     nttiny::drawCircle({0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI});
 #elif SIMTYPE == PIC_SIMTYPE
@@ -262,13 +325,16 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 };
 
 auto main(int argc, char* argv[]) -> int {
+  plog_t console_appender;
+  initLogger(&console_appender);
+
   Kokkos::initialize();
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
-    auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
-    auto& vis_data = toml::find(inputdata, "visualization");
+    auto                     inputfilename  = cl_args.getArgument("-input", ntt::defaults::input_filename);
+    auto                     inputdata      = toml::parse(static_cast<std::string>(inputfilename));
+    auto&                    vis_data       = toml::find(inputdata, "visualization");
     std::vector<std::string> fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
 
     ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D> sim(inputdata);
@@ -293,6 +359,16 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::finalize();
 
   return 0;
+}
+
+void initLogger(plog_t* console_appender) {
+  plog::Severity max_severity;
+#ifdef DEBUG
+  max_severity = plog::verbose;
+#else
+  max_severity = plog::info;
+#endif
+  plog::init(max_severity, console_appender);
 }
 
 // LEGACY CODE:
