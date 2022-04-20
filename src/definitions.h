@@ -14,8 +14,6 @@
 #define PIC_SIMTYPE         1
 #define GRPIC_SIMTYPE       2
 
-#define NTTError(msg)       throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : line: " LINE_STRING)
-
 // Defining precision-based constants and types
 #ifdef SINGLE_PRECISION
 using real_t = float;
