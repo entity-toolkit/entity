@@ -4,10 +4,10 @@ runtime         = 0.1
 
 [domain]
 qsph_r0         = 0.0
-qsph_h          = 0.9
-sph_rabsorb     = 8.0
-resolution      = [64, 64]
-extent          = [1.0, 20.0]
+qsph_h          = 0.6
+sph_rabsorb     = 9.0
+resolution      = [256, 128]
+extent          = [1.0, 10.0]
 boundaries      = ["USER", "USER"]
 
 [algorithm]
@@ -18,3 +18,7 @@ correction      = 1.025
 ppc0            = 0.1
 larmor0         = 0.1
 skindepth0      = 0.01
+
+[visualization]
+fields          = ["Br", "Btheta", "Bphi", 
+                   "Er", "Etheta", "Ephi"]

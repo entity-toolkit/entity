@@ -48,57 +48,64 @@ namespace ntt {
     void process();
 
     /**
+     * Dummy function to match with GRPIC
+     *
+     */
+    void initial_step(const real_t&) {}
+
+    /**
      * Advance B-field using Faraday's law.
      *
      * @param t time in physical units.
      * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
      */
-    void faradaySubstep(const real_t& t, const real_t& f);
+    void faradaySubstep(const real_t&, const real_t&);
     /**
      * Advance E-field using Ampere's law (without currents).
      *
      * @param t time in physical units.
      * @param f coefficient that gets multiplied by the timestep (e.g., 1.0).
      */
-    void ampereSubstep(const real_t& t, const real_t& f);
+    void ampereSubstep(const real_t&, const real_t&);
     /**
      * Add computed and filtered currents to the E-field.
      *
      * @param t time in physical units.
      */
-    void addCurrentsSubstep(const real_t& t);
+    void addCurrentsSubstep(const real_t&);
     /**
      * Reset current arrays.
      *
      * @param t time in physical units.
      */
-    void resetCurrentsSubstep(const real_t& t);
+    void resetCurrentsSubstep(const real_t&);
 
     /**
      * Advance particle positions and velocities.
      *
      * @param t time in physical units.
+     * @param f coefficient that gets multiplied by the timestep (e.g., 1.0).
      */
-    void pushParticlesSubstep(const real_t& t);
+    void pushParticlesSubstep(const real_t&, const real_t&);
     /**
      * Deposit currents from particles.
      *
      * @param t time in physical units.
      */
-    void depositSubstep(const real_t& t);
+    void depositCurrentsSubstep(const real_t&);
 
     /**
      * Apply boundary conditions for fields.
      *
      * @param t time in physical units.
      */
-    void fieldBoundaryConditions(const real_t& t);
+    void fieldBoundaryConditions(const real_t&);
     /**
      * Apply boundary conditions for particles.
      *
      * @param t time in physical units.
      */
-    void particleBoundaryConditions(const real_t&) {}
+    void particleBoundaryConditions(const real_t&);
   };
 
 } // namespace ntt

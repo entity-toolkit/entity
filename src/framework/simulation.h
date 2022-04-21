@@ -35,7 +35,7 @@ namespace ntt {
      */
     Simulation(const toml::value& inputdata);
     ~Simulation() = default;
-    
+
     /**
      * Initialize / allocate all the simulation objects based on the `m_sim_params`.
      */
@@ -66,6 +66,7 @@ namespace ntt {
      */
     [[nodiscard]] auto sim_params() const -> const SimulationParams& { return m_sim_params; }
     [[nodiscard]] auto mblock() const -> const Meshblock<D, S>& { return m_mblock; }
+    [[nodiscard]] auto pgen() const -> const ProblemGenerator<D, S>& { return m_pGen; }
   };
 
 } // namespace ntt

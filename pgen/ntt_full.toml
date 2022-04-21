@@ -3,16 +3,18 @@ title           = <string>
 runtime         = <float>
 
 [domain]
+sph_rabsorb     = <float: > r_min>
+absorb_coeff    = <float: -infinity < ... < infinity, != 0>
 qsph_r0         = <float: -infinity < ... < r_min>
 qsph_h          = <float: -1 < ... < 1>
 resolution      = <array of int of size 1, 2 or 3>
 extent          = <array of float of size 2, 4 or 6>, ex. [x1min, x1max, x2min, x2max, x3min, x3max]
-boundaries      = <array of strings of size 1, 2 or 3: { PERIODIC | OPEN | USER_BC }>
+boundaries      = <array of strings of size 1, 2 or 3: { "PERIODIC" | "OPEN" | "USER_BC" }>
 
 [algorithm]
 CFL             = <float: 0.0 < ... < 1.0>
 correction      = <float: ~1>
-particle_shape  = <int: { 0 | 1 | 2 | 3 }>
+fieldsolver_ON  = <bool>
 
 [units]
 ppc0            = <float>
@@ -31,3 +33,6 @@ pusher          = <string: { BORIS }>
 
 [problem]
 ...
+
+[visualization]
+fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see vis/nttiny.cpp for ref>

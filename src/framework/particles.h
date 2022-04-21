@@ -34,11 +34,7 @@ namespace ntt {
      * @param pusher pusher assigned for the species.
      */
     ParticleSpecies(
-        std::string label,
-        const float& m,
-        const float& ch,
-        const std::size_t& maxnpart,
-        const ParticlePusher& pusher);
+      std::string label, const float& m, const float& ch, const std::size_t& maxnpart, const ParticlePusher& pusher);
     /**
      * Constructor for the particle species container which deduces the pusher itself.
      *
@@ -53,10 +49,10 @@ namespace ntt {
      * Copy constructor for the particle species container.
      *
      * @overload
-     * @param spec 
+     * @param spec
      */
     ParticleSpecies(const ParticleSpecies&) = default;
-    ~ParticleSpecies() = default;
+    ~ParticleSpecies()                      = default;
 
     /**
      * Getters
@@ -79,11 +75,12 @@ namespace ntt {
   private:
     // Number of currently active (used) particles.
     std::size_t m_npart {0};
+
   public:
     /**
      * 1D arrays with particle data
-     * 
-     * @todo: Perhaps try VPIC-style arrays.
+     *
+     * TODO: Perhaps try VPIC-style arrays.
      */
     // Cell number of the current particle.
     NTTArray<int*> i1, i2, i3;
@@ -122,6 +119,11 @@ namespace ntt {
      * Getters
      */
     [[nodiscard]] auto npart() const -> const std::size_t& { return m_npart; }
+
+    /**
+     * Set the number of particles.
+     */
+    void set_npart(const std::size_t& N) { m_npart = N; }
   };
 
 } // namespace ntt

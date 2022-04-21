@@ -1,6 +1,3 @@
-# # # # # Scripts # # # # # # # # # # # #
-#
-rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 # # # # # Directories # # # # # # # # # #
 #
 ROOT_DIR := $(realpath ${CURDIR}/..)
@@ -8,6 +5,7 @@ ROOT_DIR := $(realpath ${CURDIR}/..)
 BUILD_DIR := @BUILD_DIR@
 # directory for the executable
 BIN_DIR := ${ROOT_DIR}/@BIN_DIR@
+TEMP_DIR := .temp
 
 TARGET := @NTT_TARGET@
 TEST_TARGET := @TEST_TARGET@
@@ -68,7 +66,7 @@ endif
 WARNFLAGS := @WARNING_FLAGS@
 
 # custom preprocessor flags
-PREPFLAGS := $(PREPFLAGS) @PRECISION@ -DMETRIC=@METRIC@ -DSIMTYPE=@SIMTYPE@
+PREPFLAGS := $(PREPFLAGS) @PRECISION@ -DMETRIC=@METRIC@_METRIC -DSIMTYPE=@SIMTYPE@_SIMTYPE
 
 CFLAGS := $(CFLAGS) $(WARNFLAGS) $(PREPFLAGS)
 LIBS :=
@@ -88,16 +86,18 @@ PGEN := ntt_dummy
 endif
 
 # Problem generator
-pgenCopy: ${SRC_DIR}/problem_generator.cpp ${SRC_DIR}/problem_generator.hpp
+pgenCopy: ${SRC_DIR}/${TEMP_DIR}/problem_generator.cpp ${SRC_DIR}/${TEMP_DIR}/problem_generator.hpp
 
-${SRC_DIR}/problem_generator.cpp : ${PGEN_DIR}/${PGEN}.cpp
+${SRC_DIR}/${TEMP_DIR}/problem_generator.cpp : ${PGEN_DIR}/${PGEN}.cpp
+	$(HIDE)mkdir -p ${SRC_DIR}/${TEMP_DIR}
 	$(HIDE)cp $< $@
 
-${SRC_DIR}/problem_generator.hpp : ${PGEN_DIR}/${PGEN}.hpp
+${SRC_DIR}/${TEMP_DIR}/problem_generator.hpp : ${PGEN_DIR}/${PGEN}.hpp
+	$(HIDE)mkdir -p ${SRC_DIR}/${TEMP_DIR}
 	$(HIDE)cp $< $@
 
 # linking tests
-test : ${BIN_DIR}/${TEST_TARGET}
+test : pgenCopy ${BIN_DIR}/${TEST_TARGET}
 	@echo [M]aking $@
 
 help:
@@ -116,9 +116,13 @@ demo:
 
 # # # # # File collection # # # # # # # # # # #
 #
-# Src
-SRCS := $(shell find ${SRC_DIR} -name *.cpp -or -name *.c)
-SRCS := ${SRCS} ${SRC_DIR}/problem_generator.cpp
+# Src files
+simtype := @SIMTYPE@
+simtype := $(shell echo $(simtype) | tr A-Z a-z)
+SRCS := $(wildcard ${SRC_DIR}/*.cpp ${SRC_DIR}/*.c)
+SRCS := $(SRCS) ${SRC_DIR}/${TEMP_DIR}/problem_generator.cpp
+SRCS := $(SRCS) $(shell find ${SRC_DIR}/framework -name "*.cpp" -o -name "*.c")
+SRCS := $(SRCS) $(shell find ${SRC_DIR}/${simtype} -name "*.cpp" -o -name "*.c")
 SRCS := $(filter-out ${SRC_DIR}/main.cpp, $(SRCS))
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
@@ -133,7 +137,7 @@ TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
 TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
 TEST_DEPS := $(TEST_OBJS:.o=.d)
 
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${EXT_DIR}/plog/include ${EXT_DIR}/acutest/include ${EXT_DIR}
+INC_DIRS := $(shell find ${SRC_DIR} -type d) ${SRC_DIR}/${TEMP_DIR} ${EXT_DIR}/plog/include ${EXT_DIR}/acutest/include ${EXT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 # # # # # Link/compile # # # # # # # # # # # # # #
@@ -179,7 +183,7 @@ include ${ROOT_DIR}/Nttiny.mk
 clean:
 	rm -rf ${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
 	rm -rf ${BIN_DIR}
-	rm -f ${SRC_DIR}/problem_generator.cpp ${SRC_DIR}/problem_generator.hpp
+	rm -rf ${SRC_DIR}/${TEMP_DIR}
 
 cleanlib: kokkos-clean
 	rm -rf {BUILD_DIR}/Kokkos*
