@@ -3,13 +3,9 @@ One particle-in-cell code to rule them all.
 
 ## Contributors
 
-<p>  
-  :tea: <b>Benjamin Crinquand</b> <br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/bcrinquand">@bcrinquand</a> <br>
-  
-  :coffee: <b>Hayk Hakobyan</b> <br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/haykh">@haykh</a> <br>
-</p>
+:tea: __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}  
+
+:coffee: __Hayk Hakobyan__ {[@haykh](https://github.com/haykh)}
 
 ## Getting started
 
