@@ -1,6 +1,16 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all.
 
+## Contributors
+
+<p>  
+  :tea: <b>Benjamin Crinquand</b> <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/bcrinquand">@bcrinquand</a> <br>
+  
+  :coffee: <b>Hayk Hakobyan</b> <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/haykh">@haykh</a> <br>
+</p>
+
 ## Getting started
 
 _Clone_ this repository and all its dependencies with the following command:
@@ -49,16 +59,6 @@ After the compilation is successful, you will find the corresponding executable 
   - [ ] cartesian Kerr-Schild metrics (1D/2D/3D)
 
 > To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
-
-## Contributors
-
-<p>  
-  :tea: <b>Benjamin Crinquand</b> <br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/bcrinquand">@bcrinquand</a> <br>
-  
-  :coffee: <b>Hayk Hakobyan</b> <br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/haykh">@haykh</a> <br>
-</p>
 
 ### Unit testing
 
