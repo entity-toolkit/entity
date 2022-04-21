@@ -50,6 +50,19 @@ After the compilation is successful, you will find the corresponding executable 
 
 > To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
 
+## Contributors
+
+#### [alphabetical order]
+
+<p>  
+  :tea: <b>Benjamin Crinquand</b> <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/bcrinquand">@bcrinquand</a> <br>
+  
+  :coffee: <b>Hayk Hakobyan</b> <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/haykh">@haykh</a> <br>
+</p>
+
+
 ### Unit testing
 
 _[under construction]_
