@@ -8,15 +8,14 @@ BUILD_VIS_DIR := $(subst ${ROOT_DIR}/,,${VIS_DIR})
 VIS_SRC := ${VIS_DIR}/nttiny.cpp
 VIS_OBJ := $(subst ${VIS_DIR},${BUILD_VIS_DIR},$(VIS_SRC:%=%.o))
 export COMPILE_GLFW := y
-export COMPILE_FREETYPE := y
 export DEBUG := ${DEBUGMODE}
 export VERBOSE := ${VERBOSE}
 export COMPILER := ${CXX}
 -include ${NTTINY_DIR}/Makefile
 
-vis : pgenCopy nttiny_static ${VIS_TARGET}
+vis : nttiny_static ${VIS_TARGET}
 
-${VIS_TARGET}: ${NTTINY_DIR}/build/libnttiny.a $(OBJS) $(VIS_OBJ) $(NTTINY_LIBS)
+${VIS_TARGET}: ${NTTINY_DIR}/build/libnttiny.a $(OBJS) $(VIS_OBJ)
 	@echo [L]inking $@ from $^
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ $(NTTINY_LIBS) -o $@ $(NTTINY_LINKFLAGS) $(LIBS)

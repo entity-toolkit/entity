@@ -24,7 +24,7 @@ namespace ntt {
     // extent in `x3` in physical units
     const real_t x3_min, x3_max;
 
-    MetricBase(const std::string& label_, std::vector<unsigned int> resolution, std::vector<real_t> extent)
+    MetricBase(const std::string& label_, std::vector<std::size_t> resolution, std::vector<real_t> extent)
       : label {label_},
         nx1 {resolution.size() > 0 ? (real_t)(resolution[0]) : ONE},
         nx2 {resolution.size() > 1 ? (real_t)(resolution[1]) : ONE},
@@ -40,11 +40,11 @@ namespace ntt {
     /**
      * Convert `real_t` type code unit coordinate to cell index + displacement.
      *
-     * TODO: `xi + N_GHOSTS` is a bit of a hack.
+     * @todo `xi + N_GHOSTS` is a bit of a hack.
      * @returns A pair of `int` and `float`: cell index + displacement.
      */
     Inline auto CU_to_Idi(const real_t& xi) const -> std::pair<int, float> {
-      auto  i {static_cast<int>(xi + N_GHOSTS) - N_GHOSTS};
+      auto i {static_cast<int>(xi + N_GHOSTS)};
       float di {static_cast<float>(xi) - static_cast<float>(i)};
       return {i, di};
     }

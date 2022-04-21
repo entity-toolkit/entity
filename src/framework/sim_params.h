@@ -27,7 +27,6 @@ namespace ntt {
     real_t m_sigma0, m_charge0, m_B0;
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies> m_species;
-    bool                         m_enable_fieldsolver;
     /*
      * Extent of the whole domain in physical units
      * { x1_min, x1_max, x2_min, x2_max, x3_min, x3_max }.
@@ -36,7 +35,7 @@ namespace ntt {
      */
     std::vector<real_t> m_extent;
     // User-defined resolution.
-    std::vector<unsigned int> m_resolution;
+    std::vector<std::size_t> m_resolution;
     // User-defined boundary conditions.
     std::vector<BoundaryCondition> m_boundaries;
     // User-defined metric.
@@ -72,12 +71,11 @@ namespace ntt {
     [[nodiscard]] auto B0() const -> const real_t& { return m_B0; }
     [[nodiscard]] auto species() const -> const std::vector<ParticleSpecies>& { return m_species; }
     [[nodiscard]] auto extent() const -> const std::vector<real_t>& { return m_extent; }
-    [[nodiscard]] auto resolution() const -> const std::vector<unsigned int>& { return m_resolution; }
+    [[nodiscard]] auto resolution() const -> const std::vector<std::size_t>& { return m_resolution; }
     [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& { return m_boundaries; }
     [[nodiscard]] auto metric() const -> const std::string& { return m_metric; }
     [[nodiscard]] auto metric_parameters() const -> const real_t* { return m_metric_parameters; }
     [[nodiscard]] auto inputdata() const -> const toml::value& { return m_inputdata; }
-    [[nodiscard]] auto enable_fieldsolver() const -> const bool& { return m_enable_fieldsolver; }
   };
 
 } // namespace ntt

@@ -13,8 +13,8 @@
 #include <iomanip>
 
 // Kokkos-specific flags
-#define Lambda KOKKOS_LAMBDA
-#define Inline KOKKOS_INLINE_FUNCTION
+#define Lambda    KOKKOS_LAMBDA
+#define Inline    KOKKOS_INLINE_FUNCTION
 
 // Defining Kokkos execution/memory space aliases
 #if !defined(GPUENABLED) && defined(OMPENABLED)
@@ -35,22 +35,13 @@
 #  define HostExeSpace Kokkos::Serial
 #endif
 
-#if defined(GPUENABLED)
-// #  define NTTError(msg) (Kokkos::Impl::throw_runtime_exception(msg))
-#  define NTTError(msg) ({})
-#else
-#  define NTTError(msg) throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : line: " LINE_STRING)
-#endif
-
-namespace math = Kokkos::Experimental;
-
 namespace ntt {
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
   enum class SimulationType { UNDEFINED, PIC, GRPIC, FORCE_FREE, MHD };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
-
+  
   // Defining stringify functions for enum classes
   auto stringifySimulationType(SimulationType sim) -> std::string;
   auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
@@ -82,17 +73,22 @@ namespace ntt {
     typename std::conditional<
       D == Dimension::TWO_D,
       NTTArray<real_t** [N]>,
-      typename std::conditional<D == Dimension::THREE_D, NTTArray<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
+      typename std::conditional<
+        D == Dimension::THREE_D, 
+        NTTArray<real_t*** [N]>, 
+        std::nullptr_t>::type>::type>::type;
   // Defining aliases for `ntt_*drange_t`
   template <Dimension D>
   using RangeND = typename std::conditional<
     D == Dimension::ONE_D,
     Kokkos::RangePolicy<AccelExeSpace>,
-    typename std::conditional<D == Dimension::TWO_D,
-                              Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>,
-                              typename std::conditional<D == Dimension::THREE_D,
-                                                        Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
-                                                        std::nullptr_t>::type>::type>::type;
+    typename std::conditional<
+      D == Dimension::TWO_D,
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>,
+      typename std::conditional<
+        D == Dimension::THREE_D,
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
+        std::nullptr_t>::type>::type>::type;
 
   /**
    * Function template for generating ND Kokkos range policy.
@@ -103,21 +99,8 @@ namespace ntt {
    * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
    */
   template <Dimension D>
-  auto NTTRange(const std::size_t (&i1)[static_cast<short>(D)], const std::size_t (&i2)[static_cast<short>(D)])
+  auto NTTRange(const int (&i1)[static_cast<short>(D)], const int (&i2)[static_cast<short>(D)])
     -> RangeND<D>;
-
-  /**
-   * Function template for generating ND Kokkos range policy.
-   *
-   * @overload
-   * @tparam D Dimension
-   * @param i1 array of size D `int`: { min }.
-   * @param i2 array of size D `int`: { max }.
-   * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
-   */
-  template <Dimension D>
-  auto NTTRange(const int (&i1)[static_cast<short>(D)], const int (&i2)[static_cast<short>(D)]) -> RangeND<D>;
-
 } // namespace ntt
 
 namespace plog {

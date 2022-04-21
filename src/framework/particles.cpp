@@ -22,8 +22,8 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * *
   template <>
   Particles<Dimension::ONE_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                              const float&       m_,
-                                                              const float&       ch_,
+                                                              const float& m_,
+                                                              const float& ch_,
                                                               const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
@@ -35,8 +35,8 @@ namespace ntt {
 
   template <>
   Particles<Dimension::TWO_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                              const float&       m_,
-                                                              const float&       ch_,
+                                                              const float& m_,
+                                                              const float& ch_,
                                                               const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
@@ -50,8 +50,8 @@ namespace ntt {
 
   template <>
   Particles<Dimension::THREE_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                                const float&       m_,
-                                                                const float&       ch_,
+                                                                const float& m_,
+                                                                const float& ch_,
                                                                 const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
@@ -70,9 +70,9 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * *
   template <>
   Particles<Dimension::TWO_D, SimulationType::GRPIC>::Particles(const std::string& label_,
-                                                                const float&       m_,
-                                                                const float&       ch_,
-                                                                const std::size_t& maxnpart_)
+                                                              const float& m_,
+                                                              const float& ch_,
+                                                              const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},
@@ -85,9 +85,9 @@ namespace ntt {
 
   template <>
   Particles<Dimension::THREE_D, SimulationType::GRPIC>::Particles(const std::string& label_,
-                                                                  const float&       m_,
-                                                                  const float&       ch_,
-                                                                  const std::size_t& maxnpart_)
+                                                                const float& m_,
+                                                                const float& ch_,
+                                                                const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},

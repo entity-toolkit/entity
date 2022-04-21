@@ -55,12 +55,10 @@ makefile_output = 'Makefile'
 
 # Options:
 Precision_options = ['double', 'single']
-Metric_options = ['minkowski', 'spherical', 'qspherical', 'kerr_schild', 'qkerr_schild']
+Metric_options = ['minkowski', 'spherical', 'qspherical']
 Simtype_options = ['pic', 'grpic']
 
-def findFiles(directory, extension):
-  return glob.glob(directory + '/*/*.' + extension) + glob.glob(directory + '/*.' + extension)
-Pgen_options = [f.replace('.hpp', '').replace('pgen/', '') for f in findFiles('pgen', 'hpp')]
+Pgen_options = [f.replace('.hpp', '') for f in os.listdir('pgen') if '.hpp' in f]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
 Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX", 
                          "ARMV8_THUNDERX2", "WSM", "SNB", "HSW", "BDW", "SKX", 
@@ -267,8 +265,8 @@ makefile_options['WARNING_FLAGS'] = "-Wall -Wextra -pedantic"
 
 # Code configurations
 makefile_options['PRECISION'] = ("" if (args['precision'] == 'double') else "-DSINGLE_PRECISION")
-makefile_options['METRIC'] = args['metric'].upper()
-makefile_options['SIMTYPE'] = args['simtype'].upper()
+makefile_options['METRIC'] = args['metric'].upper() + '_METRIC'
+makefile_options['SIMTYPE'] = args['simtype'].upper() + '_SIMTYPE'
 
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)

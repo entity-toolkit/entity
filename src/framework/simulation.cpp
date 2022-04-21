@@ -15,12 +15,16 @@ namespace ntt {
     : m_sim_params {inputdata, D},
       m_pGen {m_sim_params},
       m_mblock {
-        m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters(), m_sim_params.species()} {}
+        m_sim_params.resolution(), 
+        m_sim_params.extent(), 
+        m_sim_params.metric_parameters(), 
+        m_sim_params.species()
+      } {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-    // m_mblock.metric = Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters());
-    m_mblock.boundaries = m_sim_params.boundaries();
+  // m_mblock.metric = Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters());
+  m_mblock.boundaries = m_sim_params.boundaries();
 
     // find timestep and effective cell size
     m_mblock.set_min_cell_size(m_mblock.metric.findSmallestCell());
@@ -30,7 +34,7 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initializeSetup() {
     m_pGen.userInitFields(m_sim_params, m_mblock);
-    m_pGen.userInitParticles(m_sim_params, m_mblock);
+    // m_pGen.userInitParticles(m_sim_params, m_mblock);
   }
 
   template <Dimension D, SimulationType S>
@@ -52,10 +56,6 @@ namespace ntt {
     PLOGI << "   dimension: " << static_cast<short>(D) << "D";
     PLOGI << "   metric: " << (m_mblock.metric.label);
 
-#if SIMTYPE == GRPIC_SIMTYPE
-    PLOGI << "   Spin parameter: " << (m_sim_params.metric_parameters()[3]);
-#endif
-
     std::string bc {"   boundary conditions: { "};
     for (auto& b : m_sim_params.boundaries()) {
       bc += stringifyBoundaryCondition(b) + " x ";
@@ -73,7 +73,7 @@ namespace ntt {
     PLOGI << res;
 
     std::string ext {"   extent: "};
-    for (auto i {0}; i < (int)(m_sim_params.extent().size()); i += 2) {
+    for (std::size_t i {0}; i < m_sim_params.extent().size(); i += 2) {
       ext
         += "{" + std::to_string(m_sim_params.extent()[i]) + ", " + std::to_string(m_sim_params.extent()[i + 1]) + "} ";
     }
@@ -112,7 +112,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::finalize() {}
-
+  
 } // namespace ntt
 
 #if SIMTYPE == PIC_SIMTYPE

@@ -33,7 +33,7 @@ namespace ntt {
   auto readFromInput(const toml::value& inputdata,
                      const std::string& blockname,
                      const std::string& variable,
-                     const T&           defval) -> T {
+                     const T& defval) -> T {
     try {
       return readFromInput<T>(inputdata, blockname, variable);
     }

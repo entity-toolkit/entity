@@ -33,14 +33,14 @@ namespace ntt {
     real_t ex_ampl, ey_ampl, bz_ampl {m_amplitude};
     ex_ampl = -ky;
     ey_ampl = kx;
-    ex_ampl = m_amplitude * ex_ampl / math::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
-    ey_ampl = m_amplitude * ey_ampl / math::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
+    ex_ampl = m_amplitude * ex_ampl / std::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
+    ey_ampl = m_amplitude * ey_ampl / std::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
     Kokkos::parallel_for(
       "userInitFlds",
       mblock.loopActiveCells(),
       Lambda(index_t i, index_t j) {
         // index to code units
-        real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
+        real_t i_ {(real_t)(i - N_GHOSTS)}, j_ {(real_t)(j - N_GHOSTS)};
 
         // code units to cartesian (physical units)
         coord_t<Dimension::TWO_D> xy_, xy_half;
@@ -48,9 +48,9 @@ namespace ntt {
         mblock.metric.x_Code2Cart({i_ + HALF, j_ + HALF}, xy_half);
 
         // hatted fields
-        real_t ex_hat {ex_ampl * math::sin(kx * xy_half[0] + ky * xy_[1])};
-        real_t ey_hat {ey_ampl * math::sin(kx * xy_[0] + ky * xy_half[1])};
-        real_t bz_hat {bz_ampl * math::sin(kx * xy_half[0] + ky * xy_half[1])};
+        real_t ex_hat {ex_ampl * std::sin(kx * xy_half[0] + ky * xy_[1])};
+        real_t ey_hat {ey_ampl * std::sin(kx * xy_[0] + ky * xy_half[1])};
+        real_t bz_hat {bz_ampl * std::sin(kx * xy_half[0] + ky * xy_half[1])};
 
         vec_t<Dimension::THREE_D> ex_cntr, ey_cntr, bz_cntr;
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ex_hat, ZERO, ZERO}, ex_cntr);

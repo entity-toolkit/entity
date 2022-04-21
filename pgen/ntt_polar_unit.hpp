@@ -12,7 +12,6 @@ namespace ntt {
     ProblemGenerator(const SimulationParams& sim_params);
 
     void userInitFields(const SimulationParams&, Meshblock<D, S>&);
-    void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
     void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
 
     Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
@@ -23,6 +22,7 @@ namespace ntt {
       return ONE * r_min * r_min / (rth_[0] * rth_[0]);
     }
   };
+
 } // namespace ntt
 
 #endif

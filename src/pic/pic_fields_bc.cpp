@@ -1,10 +1,11 @@
-#include "global.h"
-#include "pic.h"
-#include "pic_fields_bc.hpp"
+#if SIMTYPE == PIC_SIMTYPE
 
-#include <plog/Log.h>
+#  include "global.h"
+#  include "pic.h"
 
-#include <stdexcept>
+#  include <plog/Log.h>
+
+#  include <stdexcept>
 
 namespace ntt {
   /**
@@ -14,7 +15,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::ONE_D>::fieldBoundaryConditions(const real_t&) {
     using index_t = typename RealFieldND<Dimension::ONE_D, 6>::size_type;
-#if (METRIC == MINKOWSKI_METRIC)
+#  if METRIC == MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
       auto range_m {NTTRange<Dimension::ONE_D>({0}, {m_mblock.i_min()})};
@@ -43,10 +44,10 @@ namespace ntt {
     } else {
       NTTError("boundary condition not implemented");
     }
-#else
+#  else
     (void)(index_t {});
     NTTError("only minkowski possible in 1d");
-#endif
+#  endif
   }
 
   /**
@@ -56,7 +57,7 @@ namespace ntt {
   template <>
   void PIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t& t) {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
-#if (METRIC == MINKOWSKI_METRIC)
+#  if METRIC == MINKOWSKI_METRIC
     (void)(t); // ignore warning about unused parameter
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       // non-periodic
@@ -125,7 +126,7 @@ namespace ntt {
       // non-periodic
       NTTError("2d boundary condition for minkowski not implemented");
     }
-#elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#  elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
     // * * * * * * * * * * * * * * * *
     // axisymmetric spherical grid
     // * * * * * * * * * * * * * * * *
@@ -155,13 +156,41 @@ namespace ntt {
 
     auto r_absorb {m_sim_params.metric_parameters()[2]};
     auto r_max {m_mblock.metric.x1_max};
-    Kokkos::parallel_for("2d_absorbing bc",
-                         m_mblock.loopActiveCells(),
-                         FieldBC_rmax<Dimension::TWO_D>(mblock, this->m_pGen, r_absorb, r_max));
-#else
+    auto pGen {this->m_pGen};
+    Kokkos::parallel_for(
+      "2d_absorbing bc", m_mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+        real_t i_ {static_cast<real_t>(i)};
+        real_t j_ {static_cast<real_t>(j)};
+
+        // i
+        vec_t<Dimension::TWO_D> rth_;
+        mblock.metric.x_Code2Sph({i_, j_}, rth_);
+        real_t delta_r1 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+        real_t sigma_r1 {HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1};
+        // i + 1/2
+        mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
+        real_t delta_r2 {(rth_[0] - r_absorb) / (r_max - r_absorb)};
+        real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
+
+        mblock.em(i, j, em::ex1) = (ONE - sigma_r1) * mblock.em(i, j, em::ex1);
+        mblock.em(i, j, em::bx2) = (ONE - sigma_r1) * mblock.em(i, j, em::bx2);
+        mblock.em(i, j, em::bx3) = (ONE - sigma_r1) * mblock.em(i, j, em::bx3);
+
+        real_t br_target_hat {pGen.userTargetField_br_hat(mblock, {i_, j_ + HALF})};
+        real_t bx1_source_cntr {mblock.em(i, j, em::bx1)};
+        vec_t<Dimension::THREE_D> br_source_hat;
+        mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
+        real_t br_interm_hat {(ONE - sigma_r2) * br_source_hat[0] + sigma_r2 * br_target_hat};
+        vec_t<Dimension::THREE_D> br_interm_cntr;
+        mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
+        mblock.em(i, j, em::bx1) = br_interm_cntr[0];
+        mblock.em(i, j, em::ex2) = (ONE - sigma_r2) * mblock.em(i, j, em::ex2);
+        mblock.em(i, j, em::ex3) = (ONE - sigma_r2) * mblock.em(i, j, em::ex3);
+      });
+#  else
     (void)(index_t {});
     NTTError("2d boundary condition for metric not implemented");
-#endif
+#  endif
   }
 
   /**
@@ -174,3 +203,5 @@ namespace ntt {
   }
 
 } // namespace ntt
+
+#endif

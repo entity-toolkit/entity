@@ -17,7 +17,7 @@ namespace ntt {
   class AmpereCurvilinear {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t                            m_coeff;
+    real_t m_coeff;
 
   public:
     AmpereCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
@@ -28,8 +28,8 @@ namespace ntt {
 
   template <>
   Inline void AmpereCurvilinear<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(j - N_GHOSTS)};
 
     real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
@@ -52,7 +52,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereCurvilinear<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void
+  AmpereCurvilinear<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
@@ -65,8 +66,8 @@ namespace ntt {
   class AmpereCurvilinearPoles {
     using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t                            m_coeff;
-    int                               m_nj;
+    real_t m_coeff;
+    std::size_t m_nj;
 
   public:
     AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
@@ -79,7 +80,7 @@ namespace ntt {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
 
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t i_ {static_cast<real_t>(i - N_GHOSTS)};
     real_t j_max_ {static_cast<real_t>(j_max - N_GHOSTS)};
 
     real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};

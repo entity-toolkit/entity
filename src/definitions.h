@@ -8,11 +8,11 @@
 #define MINKOWSKI_METRIC    1
 #define SPHERICAL_METRIC    2
 #define QSPHERICAL_METRIC   3
-#define KERR_SCHILD_METRIC  4
-#define QKERR_SCHILD_METRIC 5
 
 #define PIC_SIMTYPE         1
 #define GRPIC_SIMTYPE       2
+
+#define NTTError(msg)       throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : line: " LINE_STRING)
 
 // Defining precision-based constants and types
 #ifdef SINGLE_PRECISION
@@ -33,26 +33,20 @@ namespace ntt {
     inline constexpr double SQRT2 {1.41421356237309504880};
     inline constexpr double INV_SQRT2 {0.70710678118654752440};
     inline constexpr double SQRT3 {1.73205080756887729352};
-  } // namespace constant
+  } // namespace const
 } // namespace ntt
 
 // Simple math expressions (for real-type arguments)
 #ifdef SINGLE_PRECISION
 inline constexpr float ONE {1.0f};
-inline constexpr float TWO {2.0f};
 inline constexpr float ZERO {0.0f};
 inline constexpr float HALF {0.5f};
-inline constexpr float QUARTER {0.25f};
 #else
 inline constexpr double ONE {1.0};
-inline constexpr double TWO {2.0};
 inline constexpr double ZERO {0.0};
 inline constexpr double HALF {0.5};
-inline constexpr double QUARTER {0.25};
 #endif
 
-#define SIGNd(x)     (((x) < 0.0) ? -1.0 : 1.0)
-#define SIGNf(x)     (((x) < 0.0f) ? -1.0f : 1.0f)
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
 #define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
 #define SQR(x)       ((x) * (x))

@@ -31,7 +31,4 @@ extern/nttiny/
 .trash/
 
 # Problem generator template
-src/.temp/
-
-script_ntt
-script_vis
+src/problem_generator.*
