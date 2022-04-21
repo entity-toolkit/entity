@@ -52,8 +52,6 @@ After the compilation is successful, you will find the corresponding executable 
 
 ## Contributors
 
-#### [alphabetical order]
-
 <p>  
   :tea: <b>Benjamin Crinquand</b> <br>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/bcrinquand">@bcrinquand</a> <br>
@@ -61,7 +59,6 @@ After the compilation is successful, you will find the corresponding executable 
   :coffee: <b>Hayk Hakobyan</b> <br>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GitHub: <a href="https://github.com/haykh">@haykh</a> <br>
 </p>
-
 
 ### Unit testing
 
