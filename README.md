@@ -3,15 +3,15 @@ One particle-in-cell code to rule them all.
 
 ## Contributors
 
-:tea: __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}  
+🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}  
 
-:coffee: __Hayk Hakobyan__ {[@haykh](https://github.com/haykh)}
+☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh)}
 
 ## Getting started
 
 _Clone_ this repository and all its dependencies with the following command:
 
-```shell
+```sh
 git clone --recursive git@github.com:haykh/entity.git
 # to update submodules
 git submodule update --remote
@@ -19,7 +19,7 @@ git submodule update --remote
 
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
 
-```shell
+```sh
 python configure.py -debug --compiler=g++ --precision=single --pgen=unit/boris
 ```
 
