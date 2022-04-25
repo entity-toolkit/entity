@@ -194,18 +194,19 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         }
       }
     }
-    // int i {0};
-    // for (auto& species : m_sim.mblock().particles) {
-    // for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
-    // float                               x1 {(float)(species.i1(k)) + species.dx1(k)};
-    // float                               x2 {(float)(species.i2(k)) + species.dx2(k)};
-    // ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
-    // m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
-    // this->prtl_pointers[i]->set(k, 0, xy[0]);
-    // this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
-    //}
-    // i += 2;
-    //}
+    int i {0};
+    for (auto& species : m_sim.mblock().particles) {
+      std::cout << this->prtl_pointers[i]->get_size(0) << " SIZE\n";
+      for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
+        float                               x1 {(float)(species.i1(k)) + species.dx1(k)};
+        float                               x2 {(float)(species.i2(k)) + species.dx2(k)};
+        ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
+        m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
+        this->prtl_pointers[i]->set(k, 0, xy[0]);
+        this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
+      }
+      i += 2;
+    }
   }
   void stepFwd() override {
     for (int i {0}; i < this->get_jumpover(); ++i) {
@@ -239,16 +240,18 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   }
 
   void generateParticles() {
-    // int s {0}, i {0};
-    // for (auto& species : m_sim.mblock().particles) {
-    //   auto nprt {m_sim.mblock().particles[s].npart()};
-    //   auto x_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
-    //   auto y_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
-    //   this->prtl_pointers.push_back(std::move(x_prtl));
-    //   this->prtl_pointers.push_back(std::move(y_prtl));
-    //   this->particles.insert({species.label(), {(this->prtl_pointers[i].get()), (this->prtl_pointers[i +
-    //   1].get())}}); s++; i += 2;
-    // }
+    int s {0}, i {0};
+    for (auto& species : m_sim.mblock().particles) {
+      auto nprt {m_sim.mblock().particles[s].npart()};
+      std::cout << "Nprt: " << nprt << "\n";
+      auto x_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
+      auto y_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
+      this->prtl_pointers.push_back(std::move(x_prtl));
+      this->prtl_pointers.push_back(std::move(y_prtl));
+      this->particles.insert({species.label(), {(this->prtl_pointers[i].get()), (this->prtl_pointers[i + 1].get())}});
+      s++;
+      i += 2;
+    }
   }
 
   void generateGrid() {
@@ -371,8 +374,9 @@ void initLogger(plog_t* console_appender) {
   plog::init(max_severity, console_appender);
 }
 
-// LEGACY CODE:
-
+/*
+ * ! LEGACY CODE:
+ */
 // // auto i_ {(real_t)(i - ntt::N_GHOSTS)};
 // // auto j_ {(real_t)(j - ntt::N_GHOSTS)};
 // real_t dx1_cnt, dx2_cnt, dx3_cnt;
