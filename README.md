@@ -13,8 +13,10 @@ _Clone_ this repository and all its dependencies with the following command:
 
 ```sh
 git clone --recursive git@github.com:haykh/entity.git
-# to update submodules
-git submodule update --remote
+# if not using `--recursive`, after cloning run
+git submodule update --init --recursive
+# after that to update submodules
+git submodule update --recursive --remote
 ```
 
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
