@@ -79,17 +79,17 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
                                              m_sim.mblock().em(i, j, ntt::em::bx2),
                                              m_sim.mblock().em(i, j, ntt::em::bx3)},
                                             b_hat);
-          if (m_fields_to_plot[f] == "Er") {
+          if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
             m_data[f].set(i, j, e_hat[0]);
-          } else if (m_fields_to_plot[f] == "Etheta") {
+          } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
             m_data[f].set(i, j, e_hat[1]);
-          } else if (m_fields_to_plot[f] == "Ephi") {
+          } else if (m_fields_to_plot[f] == "Ephi" || m_fields_to_plot[f] == "Ez") {
             m_data[f].set(i, j, e_hat[2]);
-          } else if (m_fields_to_plot[f] == "Br") {
+          } else if (m_fields_to_plot[f] == "Br" || m_fields_to_plot[f] == "Bx") {
             m_data[f].set(i, j, b_hat[0]);
-          } else if (m_fields_to_plot[f] == "Btheta") {
+          } else if (m_fields_to_plot[f] == "Btheta" || m_fields_to_plot[f] == "By") {
             m_data[f].set(i, j, b_hat[1]);
-          } else if (m_fields_to_plot[f] == "Bphi") {
+          } else if (m_fields_to_plot[f] == "Bphi" || m_fields_to_plot[f] == "Bz") {
             m_data[f].set(i, j, b_hat[2]);
           }
 #elif SIMTYPE == GRPIC_SIMTYPE
@@ -98,12 +98,12 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           // interpolate and transform to spherical
           ntt::vec_t<ntt::Dimension::THREE_D> Dsph {0, 0, 0}, Bsph {0, 0, 0}, D0sph {0, 0, 0}, B0sph {0, 0, 0};
           if ((i < ntt::N_GHOSTS) || (i >= nx1 - ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (j >= nx2 - ntt::N_GHOSTS)) {
-            Dsph[0] = m_sim.mblock().em(i, j, ntt::em::ex1);
-            Dsph[1] = m_sim.mblock().em(i, j, ntt::em::ex2);
-            Dsph[2] = m_sim.mblock().em(i, j, ntt::em::ex3);
-            Bsph[0] = m_sim.mblock().em(i, j, ntt::em::bx1);
-            Bsph[1] = m_sim.mblock().em(i, j, ntt::em::bx2);
-            Bsph[2] = m_sim.mblock().em(i, j, ntt::em::bx3);
+            Dsph[0]  = m_sim.mblock().em(i, j, ntt::em::ex1);
+            Dsph[1]  = m_sim.mblock().em(i, j, ntt::em::ex2);
+            Dsph[2]  = m_sim.mblock().em(i, j, ntt::em::ex3);
+            Bsph[0]  = m_sim.mblock().em(i, j, ntt::em::bx1);
+            Bsph[1]  = m_sim.mblock().em(i, j, ntt::em::bx2);
+            Bsph[2]  = m_sim.mblock().em(i, j, ntt::em::bx3);
             D0sph[0] = m_sim.mblock().em0(i, j, ntt::em::ex1);
             D0sph[1] = m_sim.mblock().em0(i, j, ntt::em::ex2);
             D0sph[2] = m_sim.mblock().em0(i, j, ntt::em::ex3);
@@ -118,7 +118,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
               Dx2 = 0.5 * (m_sim.mblock().em(i, j, ntt::em::ex2) + m_sim.mblock().em(i + 1, j, ntt::em::ex2));
               Dx3 = 0.25
                     * (m_sim.mblock().em(i, j, ntt::em::ex3) + m_sim.mblock().em(i + 1, j, ntt::em::ex3)
-                      + m_sim.mblock().em(i, j + 1, ntt::em::ex3) + m_sim.mblock().em(i + 1, j + 1, ntt::em::ex3));
+                       + m_sim.mblock().em(i, j + 1, ntt::em::ex3) + m_sim.mblock().em(i + 1, j + 1, ntt::em::ex3));
               m_sim.mblock().metric.v_Cntr2SphCntrv({i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, Dsph);
             }
             if ((m_fields_to_plot[f] == "Br") || (m_fields_to_plot[f] == "Btheta") || (m_fields_to_plot[f] == "Bphi")) {
@@ -137,7 +137,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
               Dx2 = 0.5 * (m_sim.mblock().em0(i, j, ntt::em::ex2) + m_sim.mblock().em0(i + 1, j, ntt::em::ex2));
               Dx3 = 0.25
                     * (m_sim.mblock().em0(i, j, ntt::em::ex3) + m_sim.mblock().em0(i + 1, j, ntt::em::ex3)
-                      + m_sim.mblock().em0(i, j + 1, ntt::em::ex3) + m_sim.mblock().em0(i + 1, j + 1, ntt::em::ex3));
+                       + m_sim.mblock().em0(i, j + 1, ntt::em::ex3) + m_sim.mblock().em0(i + 1, j + 1, ntt::em::ex3));
               m_sim.mblock().metric.v_Cntr2SphCntrv({i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, D0sph);
             }
             if ((m_fields_to_plot[f] == "B0r") || (m_fields_to_plot[f] == "B0theta")
@@ -194,18 +194,18 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         }
       }
     }
-    int i {0};
-    for (auto& species : m_sim.mblock().particles) {
-      for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
-        float                               x1 {(float)(species.i1(k)) + species.dx1(k)};
-        float                               x2 {(float)(species.i2(k)) + species.dx2(k)};
-        ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
-        m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
-        this->prtl_pointers[i]->set(k, 0, xy[0]);
-        this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
-      }
-      i += 2;
-    }
+    // int i {0};
+    // for (auto& species : m_sim.mblock().particles) {
+    // for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
+    // float                               x1 {(float)(species.i1(k)) + species.dx1(k)};
+    // float                               x2 {(float)(species.i2(k)) + species.dx2(k)};
+    // ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
+    // m_sim.mblock().metric.x_Code2Cart({x1, x2}, xy);
+    // this->prtl_pointers[i]->set(k, 0, xy[0]);
+    // this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
+    //}
+    // i += 2;
+    //}
   }
   void stepFwd() override {
     for (int i {0}; i < this->get_jumpover(); ++i) {
