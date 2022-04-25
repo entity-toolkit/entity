@@ -49,3 +49,7 @@ maxnpart        = 1e2
 pusher          = "Photon"
 
 [problem]
+
+[visualization]
+fields          = ["Bx", "By", "Bz", "Ex", "Ey", "Ez"]
+
