@@ -196,7 +196,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     }
     int i {0};
     for (auto& species : m_sim.mblock().particles) {
-      std::cout << this->prtl_pointers[i]->get_size(0) << " SIZE\n";
       for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
         float                               x1 {(float)(species.i1(k)) + species.dx1(k)};
         float                               x2 {(float)(species.i2(k)) + species.dx2(k)};
@@ -243,7 +242,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     int s {0}, i {0};
     for (auto& species : m_sim.mblock().particles) {
       auto nprt {m_sim.mblock().particles[s].npart()};
-      std::cout << "Nprt: " << nprt << "\n";
       auto x_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
       auto y_prtl {std::make_unique<nttiny::Data<float>>(nprt, 1)};
       this->prtl_pointers.push_back(std::move(x_prtl));
