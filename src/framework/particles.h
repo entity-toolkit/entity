@@ -118,7 +118,7 @@ namespace ntt {
     /**
      * Getters
      */
-    [[nodiscard]] auto npart() const -> const std::size_t& { return m_npart; }
+    [[nodiscard]] auto npart() const -> std::size_t { return m_npart; }
 
     /**
      * Set the number of particles.
