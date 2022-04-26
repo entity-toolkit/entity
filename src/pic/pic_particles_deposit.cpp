@@ -5,13 +5,13 @@
 namespace ntt {
   template <Dimension D>
   void PIC<D>::depositCurrentsSubstep(const real_t&) {
-    // for (auto& species : this->m_mblock.particles) {
-    // if (species.charge() != 0.0) {
-    // const real_t dt {this->m_mblock.timestep()};
-    // Pusher<D>    pusher(this->m_mblock, species, coeff, dt);
-    // pusher.pushParticles();
-    //}
-    //}
+    for (auto& species : this->m_mblock.particles) {
+      if (species.charge() != 0.0) {
+        const real_t dt {this->m_mblock.timestep()};
+        Deposit<D>   deposit(this->m_mblock, species, 1.0, dt);
+        deposit.depositCurrents();
+      }
+    }
   }
 
 } // namespace ntt
