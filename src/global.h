@@ -57,12 +57,16 @@ namespace ntt {
   auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
 
   // ND coordinate alias
+  template <typename T, Dimension D>
+  using tuple_t = T[static_cast<short>(D)];
+
+  // ND coordinate alias
   template <Dimension D>
-  using coord_t = real_t[static_cast<short>(D)];
+  using coord_t = tuple_t<real_t, D>;
 
   // ND vector alias
   template <Dimension D>
-  using vec_t = real_t[static_cast<short>(D)];
+  using vec_t = tuple_t<real_t, D>;
 
   // Number of ghost zones to be used (compile-time enforced)
   inline constexpr int N_GHOSTS {2};

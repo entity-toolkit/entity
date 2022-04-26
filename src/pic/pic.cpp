@@ -53,6 +53,10 @@ namespace ntt {
       pushParticlesSubstep(time, ONE);
       timers.stop(4);
 
+      timers.start(3);
+      depositCurrentsSubstep(time);
+      timers.stop(3);
+
       timers.start(5);
       particleBoundaryConditions(time);
       timers.stop(5);
