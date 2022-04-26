@@ -1,13 +1,13 @@
 #ifndef PIC_PARTICLES_DEPOSIT_H
-#define PIC_PARTICLES_DEPOSIT_H
+#  define PIC_PARTICLES_DEPOSIT_H
 
-#include "global.h"
-#include "fields.h"
-#include "particles.h"
-#include "meshblock.h"
-#include "pic.h"
+#  include "global.h"
+#  include "fields.h"
+#  include "particles.h"
+#  include "meshblock.h"
+#  include "pic.h"
 
-#include <stdexcept>
+#  include <stdexcept>
 
 namespace ntt {
 
@@ -39,51 +39,72 @@ namespace ntt {
       Kokkos::parallel_for("deposit", range_policy, *this);
     }
 
-    Inline void operator()(const index_t p) const { // _f = final, _i = initial
-      tuple_t<int, D>   Ip_f, Ip_i;
-      tuple_t<float, D> dIp_f, dIp_i;
-      coord_t<D>        xp_f, xp_i, xp_r;
+    Inline void operator()(const index_t p) const {
+      // _f = final, _i = initial
+      tuple_t<int, D>           Ip_f, Ip_i;
+      coord_t<D>                xp_f, xp_i, xp_r;
+      vec_t<Dimension::THREE_D> vp;
 
       // get [i, di]_init and [i, di]_final (per dimension)
-      getDepositInterval(p, Ip_f, dIp_f, Ip_i, dIp_i, xp_f, xp_i, xp_r);
-      // depositCurrentsFromParticle();
+      getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+      depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
     }
+
+    /*
+     * Deposit currents from a single particle.
+     *
+     * @param[in] vp Particle 3-velocity.
+     * @param[in] Ip_f Final position of the particle (cell index).
+     * @param[in] Ip_i Initial position of the particle (cell index).
+     * @param[in] xp_f Final position.
+     * @param[in] xp_i Previous step position.
+     * @param[in] xp_r Intermediate point used in zig-zag deposit.
+     *
+     */
+    Inline void depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>& vp,
+                                            const tuple_t<int, D>&           Ip_f,
+                                            const tuple_t<int, D>&           Ip_i,
+                                            const coord_t<D>&                xp_f,
+                                            const coord_t<D>&                xp_i,
+                                            const coord_t<D>&                xp_r) const;
 
     /*
      * Get particle position in `coord_t` form.
      *
      * @param[in] p Index of particle.
+     * @param[out] vp Particle 3-velocity.
      * @param[out] Ip_f Final position of the particle (cell index).
-     * @param[out] dIp_f Final position of the particle (displacement).
      * @param[out] Ip_i Initial position of the particle (cell index).
-     * @param[out] dIp_i Initial position of the particle (displacement).
      * @param[out] xp_f Final position.
      * @param[out] xp_i Previous step position.
      * @param[out] xp_r Intermediate point used in zig-zag deposit.
      *
      */
-    Inline void getDepositInterval(const index_t&     p,
-                                   tuple_t<int, D>&   Ip_f,
-                                   tuple_t<float, D>& dIp_f,
-                                   tuple_t<int, D>&   Ip_i,
-                                   tuple_t<float, D>& dIp_i,
-                                   coord_t<D>&        xp_f,
-                                   coord_t<D>&        xp_i,
-                                   coord_t<D>&        xp_r) const {
-      coord_t<D>                xmid;
-      vec_t<Dimension::THREE_D> vp;
-      real_t                    inv_energy;
+    Inline void getDepositInterval(const index_t&             p,
+                                   vec_t<Dimension::THREE_D>& vp,
+                                   tuple_t<int, D>&           Ip_f,
+                                   tuple_t<int, D>&           Ip_i,
+                                   coord_t<D>&                xp_f,
+                                   coord_t<D>&                xp_i,
+                                   coord_t<D>&                xp_r) const {
+      coord_t<D>        xmid;
+      real_t            inv_energy;
+      tuple_t<float, D> dIp_f;
+
+      if constexpr ((D == Dimension::ONE_D) || (D == Dimension::TWO_D) || (D == Dimension::THREE_D)) {
+        Ip_f[0]  = m_particles.i1(p);
+        dIp_f[0] = m_particles.dx1(p);
+      }
+
+      if constexpr ((D == Dimension::TWO_D) || (D == Dimension::THREE_D)) {
+        Ip_f[1]  = m_particles.i2(p);
+        dIp_f[1] = m_particles.dx2(p);
+      }
 
       if constexpr (D == Dimension::THREE_D) {
         Ip_f[2]  = m_particles.i3(p);
         dIp_f[2] = m_particles.dx3(p);
       }
-      if constexpr (D != Dimension::ONE_D) {
-        Ip_f[1]  = m_particles.i2(p);
-        dIp_f[1] = m_particles.dx2(p);
-      }
-      Ip_f[0]  = m_particles.i1(p);
-      dIp_f[0] = m_particles.dx1(p);
 
       for (short i {0}; i < static_cast<short>(D); ++i) {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
@@ -100,60 +121,81 @@ namespace ntt {
       }
 
       for (short i {0}; i < static_cast<short>(D); ++i) {
-        xp_i[i]          = xp_f[i] - m_dt * vp[i];
-        xmid[i]          = HALF * (xp_i[i] + xp_f[i]);
-        auto [I_i, dI_i] = m_mblock.metric.CU_to_Idi(xp_i[i]);
-        Ip_i[i]          = I_i;
-        dIp_i[i]         = dI_i;
-        xp_r[i]          = math::min(static_cast<real_t>(math::min(Ip_i[i], Ip_f[i]) + 1),
+        xp_i[i]       = xp_f[i] - m_dt * vp[i];
+        xmid[i]       = HALF * (xp_i[i] + xp_f[i]);
+        auto [I_i, _] = m_mblock.metric.CU_to_Idi(xp_i[i]);
+        Ip_i[i]       = I_i;
+        xp_r[i]       = math::min(static_cast<real_t>(math::min(Ip_i[i], Ip_f[i]) + 1),
                             math::max(static_cast<real_t>(math::max(Ip_i[i], Ip_f[i])), xmid[i]));
       }
     }
   };
 
-  // template <>
-  // Inline void Deposit<Dimension::THREE_D> depositCurrentsFromParticle() {
-  //  real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
-  //  real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
+  template <>
+  Inline void Deposit<Dimension::ONE_D>::depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>&,
+                                                                     const tuple_t<int, Dimension::ONE_D>&,
+                                                                     const tuple_t<int, Dimension::ONE_D>&,
+                                                                     const coord_t<Dimension::ONE_D>&,
+                                                                     const coord_t<Dimension::ONE_D>&,
+                                                                     const coord_t<Dimension::ONE_D>&) const {}
 
-  // real_t Wx2_1 {HALF * (xp_i[1] + xp_r[1]) - static_cast<real_t>(Ip_i[1])};
-  // real_t Wx2_2 {HALF * (xp_f[1] + xp_r[1]) - static_cast<real_t>(Ip_f[1])};
+  template <>
+  Inline void Deposit<Dimension::TWO_D>::depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>&      vp,
+                                                                     const tuple_t<int, Dimension::TWO_D>& Ip_f,
+                                                                     const tuple_t<int, Dimension::TWO_D>& Ip_i,
+                                                                     const coord_t<Dimension::TWO_D>&      xp_f,
+                                                                     const coord_t<Dimension::TWO_D>&      xp_i,
+                                                                     const coord_t<Dimension::TWO_D>&      xp_r) const {
+    real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
+    real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
+    real_t Fx1_1 {-(xp_r[0] - xp_i[0]) * m_coeff};
+    real_t Fx1_2 {-(xp_f[0] - xp_r[0]) * m_coeff};
 
-  // real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
-  // real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
+    real_t Wx2_1 {HALF * (xp_i[1] + xp_r[1]) - static_cast<real_t>(Ip_i[1])};
+    real_t Wx2_2 {HALF * (xp_f[1] + xp_r[1]) - static_cast<real_t>(Ip_f[1])};
+    real_t Fx2_1 {-(xp_r[1] - xp_i[1]) * m_coeff};
+    real_t Fx2_2 {-(xp_f[1] - xp_r[1]) * m_coeff};
 
-  // real_t Fx1_1 {-(xp_r[0] - xp_i[0]) * m_coeff};
-  // real_t Fx1_2 {-(xp_f[0] - xp_r[0]) * weighted_charge};
+    real_t Fx3_1 {-HALF * m_dt * vp[2] * m_coeff};
+    real_t Fx3_2 {-HALF * m_dt * vp[2] * m_coeff};
 
-  // real_t Fx2_1 {-(xp_r[1] - xp_i[1]) * m_coeff};
-  // real_t Fx2_2 {-(xp_f[1] - xp_r[1]) * weighted_charge};
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx1), Fx1_1 * (ONE - Wx2_1));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx1), Fx1_1 * Wx2_1);
 
-  // real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_coeff};
-  // real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * weighted_charge};
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx2), Fx2_1 * (ONE - Wx1_1));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx2), Fx2_1 * Wx1_1);
 
-  // Kokkos::atomic_add(&jx_m(i1  , j1  ), Fx1 * onemWy1);
-  // Kokkos::atomic_add(&jx_m(i1  , j1+1), Fx1 * Wy1);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx1), Fx1_2 * (ONE - Wx2_2));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx1), Fx1_2 * Wx2_2);
 
-  // Kokkos::atomic_add(&jy_m(i1  , j1  ), Fy1 * onemWx1);
-  // Kokkos::atomic_add(&jy_m(i1+1, j1  ), Fy1 * Wx1);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx2), Fx2_2 * (ONE - Wx1_2));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx2), Fx2_2 * Wx1_2);
 
-  // Kokkos::atomic_add(&jx_m(i2  , j2  ), Fx2 * onemWy2);
-  // Kokkos::atomic_add(&jx_m(i2  , j2+1), Fx2 * Wy2);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx3), Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx3), Fx3_1 * Wx1_2 * (ONE - Wx2_1));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx3), Fx3_1 * (ONE - Wx1_1) * Wx2_1);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3), Fx3_1 * Wx1_1 * Wx2_1);
 
-  // Kokkos::atomic_add(&jy_m(i2  , j2  ), Fy2 * onemWx2);
-  // Kokkos::atomic_add(&jy_m(i2+1, j2  ), Fy2 * Wx2);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx3), Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx3), Fx3_2 * Wx1_2 * (ONE - Wx2_2));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx3), Fx3_2 * (ONE - Wx1_2) * Wx2_2);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3), Fx3_2 * Wx1_2 * Wx2_2);
+  }
 
-  // Kokkos::atomic_add(&jz_m(i1  , j1  ), Fz1 * onemWx1 * onemWy1);
-  // Kokkos::atomic_add(&jz_m(i1+1, j1  ), Fz1 * Wx1 * onemWy1);
-  // Kokkos::atomic_add(&jz_m(i1  , j1+1), Fz1 * onemWx1 * Wy1);
-  // Kokkos::atomic_add(&jz_m(i1+1, j1+1), Fz1 * Wx1 * Wy1);
-
-  // Kokkos::atomic_add(&jz_m(i2  , j2  ), Fz2 * onemWx2 * onemWy2);
-  // Kokkos::atomic_add(&jz_m(i2+1, j2  ), Fz2 * Wx2 * onemWy2);
-  // Kokkos::atomic_add(&jz_m(i2  , j2+1), Fz2 * onemWx2 * Wy2);
-  // Kokkos::atomic_add(&jz_m(i2+1, j2+1), Fz2 * Wx2 * Wy2);
-  //}
+  template <>
+  Inline void Deposit<Dimension::THREE_D>::depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>&,
+                                                                       const tuple_t<int, Dimension::THREE_D>&,
+                                                                       const tuple_t<int, Dimension::THREE_D>&,
+                                                                       const coord_t<Dimension::THREE_D>&,
+                                                                       const coord_t<Dimension::THREE_D>&,
+                                                                       const coord_t<Dimension::THREE_D>&) const {}
 
 } // namespace ntt
 
 #endif
+// if constexpr (D == Dimension::THREE_D) {
+// real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
+// real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
+// real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_coeff};
+// real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * m_coeff};
+//}
