@@ -270,7 +270,7 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
      */
-    Inline void v_Cntr2SphCntrv(const coord_t<D>&                xi,
+    Inline void v_Cntr2SphCntrv(const coord_t<D>&,
                                 const vec_t<Dimension::THREE_D>& vi_cntrv,
                                 vec_t<Dimension::THREE_D>&       vsph_cntrv) const {
       if constexpr (D == Dimension::ONE_D) {
