@@ -29,7 +29,8 @@ namespace ntt {
   };
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(const index_t i,
+                                                               const index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -45,16 +46,21 @@ namespace ntt {
     real_t h3_ijP1 {m_mblock.metric.h_33({i_, j_ + ONE})};
 
     m_mblock.em(i, j, em::bx1)
-      += m_coeff * inv_sqrt_detH_ijP * (h3_ij * m_mblock.em(i, j, em::ex3) - h3_ijP1 * m_mblock.em(i, j + 1, em::ex3));
+      += m_coeff * inv_sqrt_detH_ijP
+         * (h3_ij * m_mblock.em(i, j, em::ex3) - h3_ijP1 * m_mblock.em(i, j + 1, em::ex3));
     m_mblock.em(i, j, em::bx2)
-      += m_coeff * inv_sqrt_detH_iPj * (h3_iP1j * m_mblock.em(i + 1, j, em::ex3) - h3_ij * m_mblock.em(i, j, em::ex3));
-    m_mblock.em(i, j, em::bx3) += m_coeff * inv_sqrt_detH_iPjP
-                                  * (h1_iPjP1 * m_mblock.em(i, j + 1, em::ex1) - h1_iPj * m_mblock.em(i, j, em::ex1)
-                                     + h2_ijP * m_mblock.em(i, j, em::ex2) - h2_iP1jP * m_mblock.em(i + 1, j, em::ex2));
+      += m_coeff * inv_sqrt_detH_iPj
+         * (h3_iP1j * m_mblock.em(i + 1, j, em::ex3) - h3_ij * m_mblock.em(i, j, em::ex3));
+    m_mblock.em(i, j, em::bx3)
+      += m_coeff * inv_sqrt_detH_iPjP
+         * (h1_iPjP1 * m_mblock.em(i, j + 1, em::ex1) - h1_iPj * m_mblock.em(i, j, em::ex1)
+            + h2_ijP * m_mblock.em(i, j, em::ex2) - h2_iP1jP * m_mblock.em(i + 1, j, em::ex2));
   }
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void FaradayCurvilinear<Dimension::THREE_D>::operator()(const index_t,
+                                                                 const index_t,
+                                                                 const index_t) const {
     // 3d curvilinear faraday not implemented
   }
 } // namespace ntt

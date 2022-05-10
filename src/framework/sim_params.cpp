@@ -18,6 +18,7 @@ namespace ntt {
     m_total_runtime      = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
     m_correction         = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
     m_enable_fieldsolver = readFromInput<bool>(m_inputdata, "algorithm", "fieldsolver_ON", true);
+    m_enable_deposit     = readFromInput<bool>(m_inputdata, "algorithm", "deposit_ON", true);
 
     // reading particle parameters
     auto nspec = readFromInput<int>(m_inputdata, "particles", "n_species", defaults::n_species);
