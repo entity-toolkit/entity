@@ -1,5 +1,5 @@
-#ifndef PIC_PARTICLES_DEPOSIT_H
-#  define PIC_PARTICLES_DEPOSIT_H
+#ifndef PIC_CURRENTS_DEPOSIT_H
+#  define PIC_CURRENTS_DEPOSIT_H
 
 #  include "global.h"
 #  include "fields.h"
@@ -91,7 +91,8 @@ namespace ntt {
       real_t            inv_energy;
       tuple_t<float, D> dIp_f;
 
-      if constexpr ((D == Dimension::ONE_D) || (D == Dimension::TWO_D) || (D == Dimension::THREE_D)) {
+      if constexpr ((D == Dimension::ONE_D) || (D == Dimension::TWO_D)
+                    || (D == Dimension::THREE_D)) {
         Ip_f[0]  = m_particles.i1(p);
         dIp_f[0] = m_particles.dx1(p);
       }
@@ -110,7 +111,8 @@ namespace ntt {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
       }
 
-      m_mblock.metric.v_Cart2Cntrv(xp_f, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
+      m_mblock.metric.v_Cart2Cntrv(
+        xp_f, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
 
       inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
       inv_energy = ONE / math::sqrt(ONE + inv_energy);
@@ -125,27 +127,30 @@ namespace ntt {
         xmid[i]       = HALF * (xp_i[i] + xp_f[i]);
         auto [I_i, _] = m_mblock.metric.CU_to_Idi(xp_i[i]);
         Ip_i[i]       = I_i;
-        xp_r[i]       = math::min(static_cast<real_t>(math::min(Ip_i[i], Ip_f[i]) + 1),
-                            math::max(static_cast<real_t>(math::max(Ip_i[i], Ip_f[i])), xmid[i]));
+        xp_r[i]
+          = math::min(static_cast<real_t>(math::min(Ip_i[i], Ip_f[i]) + 1),
+                      math::max(static_cast<real_t>(math::max(Ip_i[i], Ip_f[i])), xmid[i]));
       }
     }
   };
 
   template <>
-  Inline void Deposit<Dimension::ONE_D>::depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>&,
-                                                                     const tuple_t<int, Dimension::ONE_D>&,
-                                                                     const tuple_t<int, Dimension::ONE_D>&,
-                                                                     const coord_t<Dimension::ONE_D>&,
-                                                                     const coord_t<Dimension::ONE_D>&,
-                                                                     const coord_t<Dimension::ONE_D>&) const {}
+  Inline void Deposit<Dimension::ONE_D>::depositCurrentsFromParticle(
+    const vec_t<Dimension::THREE_D>&,
+    const tuple_t<int, Dimension::ONE_D>&,
+    const tuple_t<int, Dimension::ONE_D>&,
+    const coord_t<Dimension::ONE_D>&,
+    const coord_t<Dimension::ONE_D>&,
+    const coord_t<Dimension::ONE_D>&) const {}
 
   template <>
-  Inline void Deposit<Dimension::TWO_D>::depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>&      vp,
-                                                                     const tuple_t<int, Dimension::TWO_D>& Ip_f,
-                                                                     const tuple_t<int, Dimension::TWO_D>& Ip_i,
-                                                                     const coord_t<Dimension::TWO_D>&      xp_f,
-                                                                     const coord_t<Dimension::TWO_D>&      xp_i,
-                                                                     const coord_t<Dimension::TWO_D>&      xp_r) const {
+  Inline void Deposit<Dimension::TWO_D>::depositCurrentsFromParticle(
+    const vec_t<Dimension::THREE_D>&      vp,
+    const tuple_t<int, Dimension::TWO_D>& Ip_f,
+    const tuple_t<int, Dimension::TWO_D>& Ip_i,
+    const coord_t<Dimension::TWO_D>&      xp_f,
+    const coord_t<Dimension::TWO_D>&      xp_i,
+    const coord_t<Dimension::TWO_D>&      xp_r) const {
     real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
     real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
     real_t Fx1_1 {-(xp_r[0] - xp_i[0]) * m_coeff};
@@ -171,24 +176,33 @@ namespace ntt {
     Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx2), Fx2_2 * (ONE - Wx1_2));
     Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx2), Fx2_2 * Wx1_2);
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx3), Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx3), Fx3_1 * Wx1_2 * (ONE - Wx2_1));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx3), Fx3_1 * (ONE - Wx1_1) * Wx2_1);
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3), Fx3_1 * Wx1_1 * Wx2_1);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx3),
+                       Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx3),
+                       Fx3_1 * Wx1_2 * (ONE - Wx2_1));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx3),
+                       Fx3_1 * (ONE - Wx1_1) * Wx2_1);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3),
+                       Fx3_1 * Wx1_1 * Wx2_1);
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx3), Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx3), Fx3_2 * Wx1_2 * (ONE - Wx2_2));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx3), Fx3_2 * (ONE - Wx1_2) * Wx2_2);
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3), Fx3_2 * Wx1_2 * Wx2_2);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx3),
+                       Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx3),
+                       Fx3_2 * Wx1_2 * (ONE - Wx2_2));
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx3),
+                       Fx3_2 * (ONE - Wx1_2) * Wx2_2);
+    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3),
+                       Fx3_2 * Wx1_2 * Wx2_2);
   }
 
   template <>
-  Inline void Deposit<Dimension::THREE_D>::depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>&,
-                                                                       const tuple_t<int, Dimension::THREE_D>&,
-                                                                       const tuple_t<int, Dimension::THREE_D>&,
-                                                                       const coord_t<Dimension::THREE_D>&,
-                                                                       const coord_t<Dimension::THREE_D>&,
-                                                                       const coord_t<Dimension::THREE_D>&) const {}
+  Inline void Deposit<Dimension::THREE_D>::depositCurrentsFromParticle(
+    const vec_t<Dimension::THREE_D>&,
+    const tuple_t<int, Dimension::THREE_D>&,
+    const tuple_t<int, Dimension::THREE_D>&,
+    const coord_t<Dimension::THREE_D>&,
+    const coord_t<Dimension::THREE_D>&,
+    const coord_t<Dimension::THREE_D>&) const {}
 
 } // namespace ntt
 

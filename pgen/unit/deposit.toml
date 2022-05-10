@@ -11,14 +11,15 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 CFL             = 0.1
 correction      = 1.0
 #fieldsolver_ON  = true
+#deposit_ON      = false
 
 [units]
 ppc0            = 0.1
 larmor0         = 0.5
-skindepth0      = 0.01
+skindepth0      = 0.5
 
 [particles]
-n_species       = 4
+n_species       = 3
 
 [species_1]
 label           = "electron"
@@ -35,13 +36,6 @@ maxnpart        = 1e2
 pusher          = "Boris"
 
 [species_3]
-label           = "ion"
-mass            = 2.0
-charge          = 1.0
-maxnpart        = 1e2
-pusher          = "Boris"
-
-[species_4]
 label           = "photon"
 mass            = 0.0
 charge          = 0.0

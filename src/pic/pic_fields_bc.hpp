@@ -33,7 +33,8 @@ namespace ntt {
   };
 
   template <>
-  Inline void FieldBC_rmax<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void FieldBC_rmax<Dimension::TWO_D>::operator()(const index_t i,
+                                                         const index_t j) const {
     real_t i_ {static_cast<real_t>(i)};
     real_t j_ {static_cast<real_t>(j)};
 
@@ -51,11 +52,11 @@ namespace ntt {
     m_mblock.em(i, j, em::bx2) = (ONE - sigma_r2) * m_mblock.em(i, j, em::bx2);
     m_mblock.em(i, j, em::bx3) = (ONE - sigma_r2) * m_mblock.em(i, j, em::bx3);
 
-    real_t                    br_target_hat {m_pgen.userTargetField_br_hat(m_mblock, {i_, j_ + HALF})};
-    real_t                    bx1_source_cntr {m_mblock.em(i, j, em::bx1)};
+    real_t br_target_hat {m_pgen.userTargetField_br_hat(m_mblock, {i_, j_ + HALF})};
+    real_t bx1_source_cntr {m_mblock.em(i, j, em::bx1)};
     vec_t<Dimension::THREE_D> br_source_hat;
     m_mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
-    real_t                    br_interm_hat {(ONE - sigma_r1) * br_source_hat[0] + sigma_r1 * br_target_hat};
+    real_t br_interm_hat {(ONE - sigma_r1) * br_source_hat[0] + sigma_r1 * br_target_hat};
     vec_t<Dimension::THREE_D> br_interm_cntr;
     m_mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
     m_mblock.em(i, j, em::bx1) = br_interm_cntr[0];
