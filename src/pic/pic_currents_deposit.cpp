@@ -1,6 +1,6 @@
 #include "global.h"
 #include "pic.h"
-#include "pic_particles_deposit.hpp"
+#include "pic_currents_deposit.hpp"
 
 namespace ntt {
   template <Dimension D>

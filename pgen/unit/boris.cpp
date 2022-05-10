@@ -21,7 +21,11 @@ namespace ntt {
         vec_t<Dimension::THREE_D> e_cntrv, b_cntrv;
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_hat}, b_cntrv);
+        mblock.em(i, j, em::ex1) = ZERO;
         mblock.em(i, j, em::ex2) = e_cntrv[1];
+        mblock.em(i, j, em::ex3) = ZERO;
+        mblock.em(i, j, em::bx1) = ZERO;
+        mblock.em(i, j, em::bx2) = ZERO;
         mblock.em(i, j, em::bx3) = b_cntrv[2];
       });
   }
