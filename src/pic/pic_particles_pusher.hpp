@@ -50,10 +50,10 @@ namespace ntt {
             = Kokkos::RangePolicy<AccelExeSpace, BorisFwd_t>(0, m_particles.npart());
           Kokkos::parallel_for("pusher", range_policy, *this);
         } else {
-          // push backward
-          auto range_policy
-            = Kokkos::RangePolicy<AccelExeSpace, BorisBwd_t>(0, m_particles.npart());
-          Kokkos::parallel_for("pusher", range_policy, *this);
+          //// push backward
+          // auto range_policy
+          //   = Kokkos::RangePolicy<AccelExeSpace, BorisBwd_t>(0, m_particles.npart());
+          // Kokkos::parallel_for("pusher", range_policy, *this);
         }
       } else {
         NTTError("pusher not implemented");
@@ -100,32 +100,31 @@ namespace ntt {
       v[2] *= inv_energy;
       positionUpdate(p, v);
     }
-    Inline void operator()(const BorisBwd_t&, const index_t p) const {
-      real_t inv_energy;
-      inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / math::sqrt(ONE + inv_energy);
+    // Inline void operator()(const BorisBwd_t&, const index_t p) const {
+    //   real_t inv_energy;
+    //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
+    //   inv_energy = ONE / math::sqrt(ONE + inv_energy);
 
-      coord_t<D> xp;
-      getParticleCoordinate(p, xp);
+    //   coord_t<D> xp;
+    //   getParticleCoordinate(p, xp);
 
-      vec_t<Dimension::THREE_D> v;
-      m_mblock.metric.v_Cart2Cntrv(
-        xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
-      v[0] *= inv_energy;
-      v[1] *= inv_energy;
-      v[2] *= inv_energy;
-      positionUpdate(p, v);
-      getParticleCoordinate(p, xp);
+    //   vec_t<Dimension::THREE_D> v;
+    //   m_mblock.metric.v_Cart2Cntrv(
+    //     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+    //   v[0] *= inv_energy;
+    //   v[1] *= inv_energy;
+    //   v[2] *= inv_energy;
+    //   positionUpdate(p, v);
+    //   getParticleCoordinate(p, xp);
 
-      vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
-      interpolateFields(p, e_int, b_int);
+    //   vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
+    //   interpolateFields(p, e_int, b_int);
 
-      m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-      m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+    //   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
+    //   m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
 
-      // !HACK
-      // BorisUpdate(p, e_int_Cart, b_int_Cart);
-    }
+    //   BorisUpdate(p, e_int_Cart, b_int_Cart);
+    // }
 
     /**
      * Transform particle coordinate from code units i+di to `real_t` type.
