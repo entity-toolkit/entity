@@ -36,9 +36,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& sim,
                    const std::vector<std::string>&                   fields_to_plot)
-/**
- * TODO: make this less ugly
- */
+  /**
+   * TODO: make this less ugly
+   */
 #if SIMTYPE == PIC_SIMTYPE
     : nttiny::SimulationAPI<float> {sim.mblock().metric.label},
 #elif SIMTYPE == GRPIC_SIMTYPE
@@ -61,7 +61,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     m_sim.computeVectorPotential();
     // compute the vector potential
 #endif
-
     for (int j {0}; j < nx2; ++j) {
       for (int i {0}; i < nx1; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
@@ -107,7 +106,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
             m_data[f].set(i, j, j_hat[2]);
           }
-
 #elif SIMTYPE == GRPIC_SIMTYPE
           auto i_ {(real_t)(i - ntt::N_GHOSTS)};
           auto j_ {(real_t)(j - ntt::N_GHOSTS)};
@@ -194,7 +192,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
                 {i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, B0sph);
             }
           }
-
           if (m_fields_to_plot[f] == "Dr") {
             m_data[f].set(i, j, Dsph[0]);
           } else if (m_fields_to_plot[f] == "Dtheta") {
@@ -302,7 +299,11 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   }
 
   void generateGrid() {
-    auto& field_data_0 = m_data[0];
+    // auto& field_data_0      = m_data[0];
+    m_global_grid.m_size[0] = nx1 + 1;
+    m_global_grid.m_size[1] = nx2 + 1;
+    m_global_grid.m_size[2] = 1;
+    m_global_grid.allocate();
     if (this->coords == "qspherical") {
       m_x1x2_extent[0] = m_sim.mblock().metric.x1_min;
       m_x1x2_extent[1] = m_sim.mblock().metric.x1_max;
@@ -311,24 +312,24 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         auto                                j_ {ZERO};
         ntt::coord_t<ntt::Dimension::TWO_D> rth_;
         m_sim.mblock().metric.x_Code2Sph({i_, j_}, rth_);
-        field_data_0.grid_x1[i] = rth_[0];
+        m_global_grid.m_x1[i] = rth_[0];
       }
       for (int i {ntt::N_GHOSTS - 1}; i >= 0; --i) {
-        field_data_0.grid_x1[i]
-          = field_data_0.grid_x1[i + 1]
-            - (field_data_0.grid_x1[ntt::N_GHOSTS + 1] - field_data_0.grid_x1[ntt::N_GHOSTS]);
+        m_global_grid.m_x1[i]
+          = m_global_grid.m_x1[i + 1]
+            - (m_global_grid.m_x1[ntt::N_GHOSTS + 1] - m_global_grid.m_x1[ntt::N_GHOSTS]);
       }
       for (int i {nx1 - ntt::N_GHOSTS + 1}; i <= nx1; ++i) {
-        field_data_0.grid_x1[i] = field_data_0.grid_x1[i - 1]
-                                  + (field_data_0.grid_x1[nx1 - ntt::N_GHOSTS]
-                                     - field_data_0.grid_x1[nx1 - ntt::N_GHOSTS - 1]);
+        m_global_grid.m_x1[i] = m_global_grid.m_x1[i - 1]
+                                + (m_global_grid.m_x1[nx1 - ntt::N_GHOSTS]
+                                   - m_global_grid.m_x1[nx1 - ntt::N_GHOSTS - 1]);
       }
       for (int j {0}; j <= nx2; ++j) {
         auto                                i_ {ZERO};
         auto                                j_ {(real_t)(j - ntt::N_GHOSTS)};
         ntt::coord_t<ntt::Dimension::TWO_D> rth_;
         m_sim.mblock().metric.x_Code2Sph({i_, j_}, rth_);
-        field_data_0.grid_x2[j] = rth_[1];
+        m_global_grid.m_x2[j] = rth_[1];
       }
       ntt::coord_t<ntt::Dimension::TWO_D> rth1_, rth2_;
       m_sim.mblock().metric.x_Code2Sph({ZERO, (real_t)(-ntt::N_GHOSTS)}, rth1_);
@@ -345,24 +346,24 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       m_x1x2_extent[2] = m_sim.mblock().metric.x2_min - dx2 * ntt::N_GHOSTS;
       m_x1x2_extent[3] = m_sim.mblock().metric.x2_max + dx2 * ntt::N_GHOSTS;
       for (int i {0}; i <= nx1; ++i) {
-        field_data_0.grid_x1[i]
+        m_global_grid.m_x1[i]
           = m_x1x2_extent[0]
             + (m_x1x2_extent[1] - m_x1x2_extent[0]) * (double)(i) / (double)(nx1);
       }
       for (int j {0}; j <= nx2; ++j) {
-        field_data_0.grid_x2[j]
+        m_global_grid.m_x2[j]
           = m_x1x2_extent[2]
             + (m_x1x2_extent[3] - m_x1x2_extent[2]) * (double)(j) / (double)(nx2);
       }
     }
-    for (auto const& [fld, arr] : this->fields) {
-      for (int i {0}; i <= nx1; ++i) {
-        arr->grid_x1[i] = field_data_0.grid_x1[i];
-      }
-      for (int i {0}; i <= nx2; ++i) {
-        arr->grid_x2[i] = field_data_0.grid_x2[i];
-      }
-    }
+    // for (auto const& [fld, arr] : this->fields) {
+    // for (int i {0}; i <= nx1; ++i) {
+    ////arr->grid_x1[i] = field_data_0.grid_x1[i];
+    //}
+    // for (int i {0}; i <= nx2; ++i) {
+    // arr->grid_x2[i] = field_data_0.grid_x2[i];
+    //}
+    //}
   }
 
   void customAnnotatePcolor2d() override {
