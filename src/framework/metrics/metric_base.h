@@ -5,6 +5,45 @@
 
 #include <stdexcept>
 
+/*
+ *
+ * Vector transformations
+ *
+ * Cntrv (A^mu)
+ *   ^  ^
+ *   |  |
+ *   |  v
+ *   | Hat <---> Cart (A_xyz)
+ *   |  ^
+ *   |  |
+ *   v  v
+ *   Cov (A_mu)
+ *
+ * Cntrv: contravariant vector
+ * Cov: covariant vector
+ * Hat: hatted (orthonormal) basis vector
+ * Cart: global Cartesian basis vector (defined for diagonal only)
+ *
+ */
+
+/*
+ *
+ * Coordinate transformations
+ *
+ *   +---> Cart
+ *   |
+ *   v
+ * Code
+ *   ^
+ *   |
+ *   +---> Sph
+ * 
+ * Code: coordinates in code units
+ * Cart: coordinates in global Cartesian basis
+ * Sph: coordinates in spherical basis
+ * 
+ */
+
 namespace ntt {
   /**
    * Parent metric class: h_ij. Coordinates vary from `0` to `nx1` ... (code units).

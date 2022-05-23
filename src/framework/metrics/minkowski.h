@@ -68,7 +68,9 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "diag_vector_transform.h"
+#include "metric_diag_vtrans.h"
+#include "metric_cart_vtrans.h"
+#include "metric_cart_cart_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
