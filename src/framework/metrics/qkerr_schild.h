@@ -273,7 +273,7 @@ namespace ntt {
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
-#include "non_diag_vector_transform.h"
+#include "metric_nondiag_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
