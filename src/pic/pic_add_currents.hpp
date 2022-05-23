@@ -31,8 +31,8 @@ namespace ntt {
 
   template <>
   Inline void AddCurrentsSubstep<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    //m_mblock.em(i, j, em::ex1) += m_mblock.cur(i, j, cur::jx1);
-    //m_mblock.em(i, j, em::ex2) += m_mblock.cur(i, j, cur::jx2);
+    m_mblock.em(i, j, em::ex1) += m_mblock.cur(i, j, cur::jx1);
+    m_mblock.em(i, j, em::ex2) += m_mblock.cur(i, j, cur::jx2);
     m_mblock.em(i, j, em::ex3) += m_mblock.cur(i, j, cur::jx3);
   }
 
