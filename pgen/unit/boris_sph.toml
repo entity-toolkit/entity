@@ -6,7 +6,7 @@ runtime         = 0.1
 qsph_r0         = -100.0
 qsph_h          = 0.1
 sph_rabsorb     = 18.0
-resolution      = [64, 64]
+resolution      = [128, 128]
 extent          = [1.0, 20.0]
 boundaries      = ["USER", "USER"]
 
@@ -14,10 +14,11 @@ boundaries      = ["USER", "USER"]
 CFL             = 0.95
 correction      = 1.0
 fieldsolver_ON  = false
+deposit_ON      = false
 
 [units]
 ppc0            = 0.1
-larmor0         = 0.05
+larmor0         = 0.01
 skindepth0      = 0.01
 
 [particles]
@@ -39,7 +40,7 @@ pusher          = "Boris"
 
 [species_3]
 label           = "ion"
-mass            = 2.0
+mass            = 5.0
 charge          = 1.0
 maxnpart        = 1e2
 pusher          = "Boris"
@@ -52,3 +53,6 @@ maxnpart        = 1e2
 pusher          = "Photon"
 
 [problem]
+
+[visualization]
+fields          = ["Er", "Etheta", "Ephi", "Br", "Btheta", "Bphi", "Jr", "Jtheta", "Jphi"]
