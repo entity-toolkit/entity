@@ -24,7 +24,9 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
-    Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t* params)
+    Metric(std::vector<unsigned int> resolution,
+           std::vector<real_t>       extent,
+           const real_t*             params)
       : MetricBase<D> {"kerr_schild", resolution, extent},
         a {params[4]},
         dr {(this->x1_max - this->x1_min) / this->nx1},
@@ -133,7 +135,9 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns sqrt(det(h))/sin(theta).
      */
-    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t { return h_22(x) / alpha(x); }
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      return h_22(x) / alpha(x);
+    }
 
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
@@ -145,14 +149,15 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r {x[0] * dr + this->x1_min};
       real_t del_theta {x[1] * dtheta};
-      return dr * (SQR(r) + SQR(a)) * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - math::cos(del_theta));
+      return dr * (SQR(r) + SQR(a)) * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a)))
+             * (ONE - math::cos(del_theta));
     }
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
-#include "non_diag_vector_transform.h"
+#include "metric_nondiag_vtrans.h"
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
@@ -167,7 +172,9 @@ namespace ntt {
             real_t j_ {(real_t)(j) + HALF};
             real_t inv_dx1_ {this->h_11_inv({i_, j_})};
             real_t inv_dx2_ {this->h_22_inv({i_, j_})};
-            real_t dx = 1.0 / (this->alpha({i_, j_}) * math::sqrt(inv_dx1_ + inv_dx2_) + this->beta1u({i_, j_}));
+            real_t dx = 1.0
+                        / (this->alpha({i_, j_}) * math::sqrt(inv_dx1_ + inv_dx2_)
+                           + this->beta1u({i_, j_}));
             if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
           }
         }
@@ -229,7 +236,8 @@ namespace ntt {
      * Coordinate conversion from code units to Spherical physical units.
      *
      * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units (size of the array
+     * is D).
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dimension::ONE_D) {
@@ -247,8 +255,9 @@ namespace ntt {
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param xi coordinate array in Spherical coordinates in physical units (size of the array is D).
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units (size of the array
+     * is D).
+     * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dimension::ONE_D) {
@@ -257,9 +266,9 @@ namespace ntt {
         xi[0] = (x[0] - this->x1_min) * dr_inv;
         xi[1] = x[1] * dtheta_inv;
       } else if constexpr (D == Dimension::THREE_D) {
-        x[0] = (xi[0] - this->x1_min) * dr_inv;
-        x[1] = xi[1] * dtheta_inv;
-        x[2] = xi[2] * dphi_inv;
+        xi[0] = (x[0] - this->x1_min) * dr_inv;
+        xi[1] = x[1] * dtheta_inv;
+        xi[2] = x[2] * dphi_inv;
       }
     }
 
