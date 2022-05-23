@@ -1,13 +1,13 @@
 #ifndef PIC_CURRENTS_DEPOSIT_H
-#  define PIC_CURRENTS_DEPOSIT_H
+#define PIC_CURRENTS_DEPOSIT_H
 
-#  include "global.h"
-#  include "fields.h"
-#  include "particles.h"
-#  include "meshblock.h"
-#  include "pic.h"
+#include "global.h"
+#include "fields.h"
+#include "particles.h"
+#include "meshblock.h"
+#include "pic.h"
 
-#  include <stdexcept>
+#include <stdexcept>
 
 namespace ntt {
 
@@ -206,10 +206,10 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif
 // if constexpr (D == Dimension::THREE_D) {
 // real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
 // real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
 // real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_coeff};
 // real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * m_coeff};
 //}
+#endif
