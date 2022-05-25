@@ -50,6 +50,26 @@ namespace ntt {
      */
     void initial_step(const real_t&);
 
+    // !HACK: not implemented yet
+    /**
+     * Reset field arrays.
+     *
+     * @param t time in physical units.
+     */
+    void resetFields(const real_t&) {}
+    /**
+     * Reset current arrays.
+     *
+     * @param t time in physical units.
+     */
+    void resetCurrents(const real_t&) {}
+    /**
+     * Reset particles.
+     *
+     * @param t time in physical units.
+     */
+    void resetParticles(const real_t&) {}
+
     /**
      * Advance the simulation forward for a specified amount of timesteps, keeping track of time.
      */
@@ -108,6 +128,32 @@ namespace ntt {
      * @param t time in physical units.
      */
     void timeAverageJSubstep(const real_t&);
+
+    // !HACK: not implemented yet
+    /**
+     * Deposit currents from particles.
+     *
+     * @param t time in physical units.
+     */
+    void depositCurrentsSubstep(const real_t&) {}
+    /**
+     * Add computed and filtered currents to the E-field.
+     *
+     * @param t time in physical units.
+     */
+    void addCurrentsSubstep(const real_t&) {}
+    /**
+     * Transform the deposited currents to coordinate basis.
+     *
+     * @param t time in physical units.
+     */
+    void transformCurrentsSubstep(const real_t&) {}
+    /**
+     * Spatially filter all the deposited currents.
+     *
+     * @param t time in physical units.
+     */
+    void filterCurrentsSubstep(const real_t&) {}
 
     /**
      * Apply boundary conditions for fields.
