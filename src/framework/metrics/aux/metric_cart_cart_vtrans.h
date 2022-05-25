@@ -19,8 +19,12 @@
  * @param vi_cart vector in global Cartesian basis (size of the array is 3).
  */
 Inline void v_Hat2Cart(const coord_t<D>&,
-                       const vec_t<Dimension::THREE_D>&,
-                       vec_t<Dimension::THREE_D>&) const {}
+                       const vec_t<Dimension::THREE_D>& vi_hat,
+                       vec_t<Dimension::THREE_D>& vi_cart) const {
+  vi_cart[0] = vi_hat[0];
+  vi_cart[1] = vi_hat[1];
+  vi_cart[2] = vi_hat[2];
+}
 
 /**
  * Vector conversion from hatted (cartesian) to global Cartesian basis.
@@ -30,7 +34,11 @@ Inline void v_Hat2Cart(const coord_t<D>&,
  * @param vi_hat vector in hatted (cartesian) basis (size of the array is 3).
  */
 Inline void v_Cart2Hat(const coord_t<D>&,
-                       const vec_t<Dimension::THREE_D>&,
-                       vec_t<Dimension::THREE_D>&) const {}
+                       const vec_t<Dimension::THREE_D>& vi_cart,
+                       vec_t<Dimension::THREE_D>& vi_hat) const {
+  vi_hat[0] = vi_cart[0];
+  vi_hat[1] = vi_cart[1];
+  vi_hat[2] = vi_cart[2];
+}
 
 #endif
