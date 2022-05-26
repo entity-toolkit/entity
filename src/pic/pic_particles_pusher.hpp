@@ -39,18 +39,21 @@ namespace ntt {
     void pushParticles() {
       if (m_particles.pusher() == ParticlePusher::PHOTON) {
         // push photons
-        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.npart());
+        auto range_policy
+          = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.npart());
         Kokkos::parallel_for("pusher", range_policy, *this);
       } else if (m_particles.pusher() == ParticlePusher::BORIS) {
         // push boris-particles
         if (SIGN(m_coeff) == SIGN(m_particles.charge())) {
           // push forward
-          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, BorisFwd_t>(0, m_particles.npart());
+          auto range_policy
+            = Kokkos::RangePolicy<AccelExeSpace, BorisFwd_t>(0, m_particles.npart());
           Kokkos::parallel_for("pusher", range_policy, *this);
         } else {
-          // push backward
-          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, BorisBwd_t>(0, m_particles.npart());
-          Kokkos::parallel_for("pusher", range_policy, *this);
+          //// push backward
+          // auto range_policy
+          //   = Kokkos::RangePolicy<AccelExeSpace, BorisBwd_t>(0, m_particles.npart());
+          // Kokkos::parallel_for("pusher", range_policy, *this);
         }
       } else {
         NTTError("pusher not implemented");
@@ -76,7 +79,8 @@ namespace ntt {
       inv_energy = ONE / math::sqrt(ONE + inv_energy);
 
       vec_t<Dimension::THREE_D> v;
-      m_mblock.metric.v_Cart2Cntrv(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+      m_mblock.metric.v_Cart2Cntrv(
+        xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
       v[0] *= inv_energy;
       v[1] *= inv_energy;
       v[2] *= inv_energy;
@@ -86,7 +90,8 @@ namespace ntt {
       coord_t<D> xp;
       getParticleCoordinate(p, xp);
       vec_t<Dimension::THREE_D> v;
-      m_mblock.metric.v_Cart2Cntrv(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+      m_mblock.metric.v_Cart2Cntrv(
+        xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
       real_t inv_energy;
       inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
       inv_energy = ONE / math::sqrt(inv_energy);
@@ -95,30 +100,31 @@ namespace ntt {
       v[2] *= inv_energy;
       positionUpdate(p, v);
     }
-    Inline void operator()(const BorisBwd_t&, const index_t p) const {
-      real_t inv_energy;
-      inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / math::sqrt(ONE + inv_energy);
+    // Inline void operator()(const BorisBwd_t&, const index_t p) const {
+    //   real_t inv_energy;
+    //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
+    //   inv_energy = ONE / math::sqrt(ONE + inv_energy);
 
-      coord_t<D> xp;
-      getParticleCoordinate(p, xp);
+    //   coord_t<D> xp;
+    //   getParticleCoordinate(p, xp);
 
-      vec_t<Dimension::THREE_D> v;
-      m_mblock.metric.v_Cart2Cntrv(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
-      v[0] *= inv_energy;
-      v[1] *= inv_energy;
-      v[2] *= inv_energy;
-      positionUpdate(p, v);
-      getParticleCoordinate(p, xp);
+    //   vec_t<Dimension::THREE_D> v;
+    //   m_mblock.metric.v_Cart2Cntrv(
+    //     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+    //   v[0] *= inv_energy;
+    //   v[1] *= inv_energy;
+    //   v[2] *= inv_energy;
+    //   positionUpdate(p, v);
+    //   getParticleCoordinate(p, xp);
 
-      vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
-      interpolateFields(p, e_int, b_int);
+    //   vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
+    //   interpolateFields(p, e_int, b_int);
 
-      m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-      m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+    //   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
+    //   m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
 
-      BorisUpdate(p, e_int_Cart, b_int_Cart);
-    }
+    //   BorisUpdate(p, e_int_Cart, b_int_Cart);
+    // }
 
     /**
      * Transform particle coordinate from code units i+di to `real_t` type.
@@ -135,7 +141,9 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void interpolateFields(const index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void interpolateFields(const index_t&,
+                                  vec_t<Dimension::THREE_D>&,
+                                  vec_t<Dimension::THREE_D>&) const;
 
     /**
      * Update particle positions according to updated velocities.
@@ -163,21 +171,27 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [modified].
      * @param b interpolated b-field vector of size 3 [modified].
      */
-    Inline void BorisUpdate(const index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void
+    BorisUpdate(const index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
   };
 
   template <>
-  Inline void Pusher<Dimension::ONE_D>::getParticleCoordinate(const index_t& p, coord_t<Dimension::ONE_D>& xp) const {
+  Inline void
+  Pusher<Dimension::ONE_D>::getParticleCoordinate(const index_t&             p,
+                                                  coord_t<Dimension::ONE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
   }
   template <>
-  Inline void Pusher<Dimension::TWO_D>::getParticleCoordinate(const index_t& p, coord_t<Dimension::TWO_D>& xp) const {
+  Inline void
+  Pusher<Dimension::TWO_D>::getParticleCoordinate(const index_t&             p,
+                                                  coord_t<Dimension::TWO_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
   }
   template <>
-  Inline void Pusher<Dimension::THREE_D>::getParticleCoordinate(const index_t&               p,
-                                                                coord_t<Dimension::THREE_D>& xp) const {
+  Inline void
+  Pusher<Dimension::THREE_D>::getParticleCoordinate(const index_t&               p,
+                                                    coord_t<Dimension::THREE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
     xp[2] = static_cast<real_t>(m_particles.i3(p)) + static_cast<real_t>(m_particles.dx3(p));
@@ -187,16 +201,22 @@ namespace ntt {
   // General position update
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Pusher<Dimension::ONE_D>::positionUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
+  Inline void
+  Pusher<Dimension::ONE_D>::positionUpdate(const index_t&                   p,
+                                           const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
   }
   template <>
-  Inline void Pusher<Dimension::TWO_D>::positionUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
+  Inline void
+  Pusher<Dimension::TWO_D>::positionUpdate(const index_t&                   p,
+                                           const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
   }
   template <>
-  Inline void Pusher<Dimension::THREE_D>::positionUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
+  Inline void
+  Pusher<Dimension::THREE_D>::positionUpdate(const index_t&                   p,
+                                             const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
     positionUpdate_x3(p, v[2]);
@@ -206,7 +226,8 @@ namespace ntt {
   Inline void Pusher<D>::positionUpdate_x1(const index_t& p, const real_t& vx1) const {
     m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
     int   temp_i {static_cast<int>(m_particles.dx1(p))};
-    float temp_r {math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+    float temp_r {math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i))
+                  - 1.0f};
     temp_i             = static_cast<int>(temp_r);
     m_particles.i1(p)  = m_particles.i1(p) + temp_i;
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
@@ -215,7 +236,8 @@ namespace ntt {
   Inline void Pusher<D>::positionUpdate_x2(const index_t& p, const real_t& vx2) const {
     m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
     int   temp_i {static_cast<int>(m_particles.dx2(p))};
-    float temp_r {math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+    float temp_r {math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i))
+                  - 1.0f};
     temp_i             = static_cast<int>(temp_r);
     m_particles.i2(p)  = m_particles.i2(p) + temp_i;
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
@@ -224,7 +246,8 @@ namespace ntt {
   Inline void Pusher<D>::positionUpdate_x3(const index_t& p, const real_t& vx3) const {
     m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
     int   temp_i {static_cast<int>(m_particles.dx3(p))};
-    float temp_r {math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+    float temp_r {math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i))
+                  - 1.0f};
     temp_i             = static_cast<int>(temp_r);
     m_particles.i3(p)  = m_particles.i3(p) + temp_i;
     m_particles.dx3(p) = m_particles.dx3(p) - temp_r;
@@ -234,14 +257,16 @@ namespace ntt {
   // Boris velocity update
   // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void
-  Pusher<D>::BorisUpdate(const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+  Inline void Pusher<D>::BorisUpdate(const index_t&             p,
+                                     vec_t<Dimension::THREE_D>& e0,
+                                     vec_t<Dimension::THREE_D>& b0) const {
     real_t COEFF {m_coeff};
 
     e0[0] *= COEFF;
     e0[1] *= COEFF;
     e0[2] *= COEFF;
-    vec_t<Dimension::THREE_D> u0 {m_particles.ux1(p) + e0[0], m_particles.ux2(p) + e0[1], m_particles.ux3(p) + e0[2]};
+    vec_t<Dimension::THREE_D> u0 {
+      m_particles.ux1(p) + e0[0], m_particles.ux2(p) + e0[1], m_particles.ux3(p) + e0[2]};
 
     COEFF *= 1.0 / math::sqrt(1.0 + u0[0] * u0[0] + u0[1] * u0[1] + u0[2] * u0[2]);
     b0[0] *= COEFF;
@@ -266,9 +291,8 @@ namespace ntt {
   // Field interpolations
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Pusher<Dimension::ONE_D>::interpolateFields(const index_t&             p,
-                                                          vec_t<Dimension::THREE_D>& e0,
-                                                          vec_t<Dimension::THREE_D>& b0) const {
+  Inline void Pusher<Dimension::ONE_D>::interpolateFields(
+    const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
 
@@ -305,9 +329,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher<Dimension::TWO_D>::interpolateFields(const index_t&             p,
-                                                          vec_t<Dimension::THREE_D>& e0,
-                                                          vec_t<Dimension::THREE_D>& b0) const {
+  Inline void Pusher<Dimension::TWO_D>::interpolateFields(
+    const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};
@@ -361,26 +384,25 @@ namespace ntt {
     b0[1] = c00 * (ONE - dx2) + c10 * dx2;
     // Bx3
     c000 = QUARTER
-           * (m_mblock.em(i - 1, j - 1, em::bx3) + m_mblock.em(i - 1, j, em::bx3) + m_mblock.em(i, j - 1, em::bx3)
-              + m_mblock.em(i, j, em::bx3));
+           * (m_mblock.em(i - 1, j - 1, em::bx3) + m_mblock.em(i - 1, j, em::bx3)
+              + m_mblock.em(i, j - 1, em::bx3) + m_mblock.em(i, j, em::bx3));
     c100 = QUARTER
-           * (m_mblock.em(i, j - 1, em::bx3) + m_mblock.em(i, j, em::bx3) + m_mblock.em(i + 1, j - 1, em::bx3)
-              + m_mblock.em(i + 1, j, em::bx3));
+           * (m_mblock.em(i, j - 1, em::bx3) + m_mblock.em(i, j, em::bx3)
+              + m_mblock.em(i + 1, j - 1, em::bx3) + m_mblock.em(i + 1, j, em::bx3));
     c010 = QUARTER
-           * (m_mblock.em(i - 1, j, em::bx3) + m_mblock.em(i - 1, j + 1, em::bx3) + m_mblock.em(i, j, em::bx3)
-              + m_mblock.em(i, j + 1, em::bx3));
+           * (m_mblock.em(i - 1, j, em::bx3) + m_mblock.em(i - 1, j + 1, em::bx3)
+              + m_mblock.em(i, j, em::bx3) + m_mblock.em(i, j + 1, em::bx3));
     c110 = QUARTER
-           * (m_mblock.em(i, j, em::bx3) + m_mblock.em(i, j + 1, em::bx3) + m_mblock.em(i + 1, j, em::bx3)
-              + m_mblock.em(i + 1, j + 1, em::bx3));
+           * (m_mblock.em(i, j, em::bx3) + m_mblock.em(i, j + 1, em::bx3)
+              + m_mblock.em(i + 1, j, em::bx3) + m_mblock.em(i + 1, j + 1, em::bx3));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[2] = c00 * (ONE - dx2) + c10 * dx2;
   }
 
   template <>
-  Inline void Pusher<Dimension::THREE_D>::interpolateFields(const index_t&             p,
-                                                            vec_t<Dimension::THREE_D>& e0,
-                                                            vec_t<Dimension::THREE_D>& b0) const {
+  Inline void Pusher<Dimension::THREE_D>::interpolateFields(
+    const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};
@@ -404,8 +426,12 @@ namespace ntt {
     // interpolate to nodes
     c001 = HALF * (m_mblock.em(i, j, k + 1, em::ex1) + m_mblock.em(i - 1, j, k + 1, em::ex1));
     c101 = HALF * (m_mblock.em(i, j, k + 1, em::ex1) + m_mblock.em(i + 1, j, k + 1, em::ex1));
-    c011 = HALF * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i - 1, j + 1, k + 1, em::ex1));
-    c111 = HALF * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i + 1, j + 1, k + 1, em::ex1));
+    c011
+      = HALF
+        * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i - 1, j + 1, k + 1, em::ex1));
+    c111
+      = HALF
+        * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i + 1, j + 1, k + 1, em::ex1));
     // interpolate from nodes to the particle position
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c11   = c011 * (ONE - dx1) + c111 * dx1;
@@ -413,31 +439,39 @@ namespace ntt {
     e0[0] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Ex2
-    c000  = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j - 1, k, em::ex2));
-    c100  = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j - 1, k, em::ex2));
-    c010  = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j + 1, k, em::ex2));
-    c110  = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j + 1, k, em::ex2));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    c001  = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j - 1, k + 1, em::ex2));
-    c101  = HALF * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j - 1, k + 1, em::ex2));
-    c011  = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j + 1, k + 1, em::ex2));
-    c111  = HALF * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j + 1, k + 1, em::ex2));
+    c000 = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j - 1, k, em::ex2));
+    c100 = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j - 1, k, em::ex2));
+    c010 = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j + 1, k, em::ex2));
+    c110 = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j + 1, k, em::ex2));
+    c00  = c000 * (ONE - dx1) + c100 * dx1;
+    c10  = c010 * (ONE - dx1) + c110 * dx1;
+    c0   = c00 * (ONE - dx2) + c10 * dx2;
+    c001 = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j - 1, k + 1, em::ex2));
+    c101
+      = HALF
+        * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j - 1, k + 1, em::ex2));
+    c011 = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j + 1, k + 1, em::ex2));
+    c111
+      = HALF
+        * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j + 1, k + 1, em::ex2));
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c11   = c011 * (ONE - dx1) + c111 * dx1;
     c1    = c01 * (ONE - dx2) + c11 * dx2;
     e0[1] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Ex3
-    c000  = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k - 1, em::ex3));
-    c100  = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k - 1, em::ex3));
-    c010  = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k - 1, em::ex3));
-    c110  = HALF * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k - 1, em::ex3));
-    c001  = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k + 1, em::ex3));
-    c101  = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k + 1, em::ex3));
-    c011  = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k + 1, em::ex3));
-    c111  = HALF * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k + 1, em::ex3));
+    c000 = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k - 1, em::ex3));
+    c100 = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k - 1, em::ex3));
+    c010 = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k - 1, em::ex3));
+    c110
+      = HALF
+        * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k - 1, em::ex3));
+    c001 = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k + 1, em::ex3));
+    c101 = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k + 1, em::ex3));
+    c011 = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k + 1, em::ex3));
+    c111
+      = HALF
+        * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k + 1, em::ex3));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
@@ -448,29 +482,33 @@ namespace ntt {
 
     // Bx1
     c000 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j - 1, k, em::bx1) + m_mblock.em(i, j, k - 1, em::bx1)
-              + m_mblock.em(i, j - 1, k - 1, em::bx1));
+           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j - 1, k, em::bx1)
+              + m_mblock.em(i, j, k - 1, em::bx1) + m_mblock.em(i, j - 1, k - 1, em::bx1));
     c100 = QUARTER
            * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j - 1, k, em::bx1)
-              + m_mblock.em(i + 1, j, k - 1, em::bx1) + m_mblock.em(i + 1, j - 1, k - 1, em::bx1));
+              + m_mblock.em(i + 1, j, k - 1, em::bx1)
+              + m_mblock.em(i + 1, j - 1, k - 1, em::bx1));
     c001 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j, k + 1, em::bx1) + m_mblock.em(i, j - 1, k, em::bx1)
-              + m_mblock.em(i, j - 1, k + 1, em::bx1));
+           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j, k + 1, em::bx1)
+              + m_mblock.em(i, j - 1, k, em::bx1) + m_mblock.em(i, j - 1, k + 1, em::bx1));
     c101 = QUARTER
            * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j, k + 1, em::bx1)
-              + m_mblock.em(i + 1, j - 1, k, em::bx1) + m_mblock.em(i + 1, j - 1, k + 1, em::bx1));
+              + m_mblock.em(i + 1, j - 1, k, em::bx1)
+              + m_mblock.em(i + 1, j - 1, k + 1, em::bx1));
     c010 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j + 1, k, em::bx1) + m_mblock.em(i, j, k - 1, em::bx1)
-              + m_mblock.em(i, j + 1, k - 1, em::bx1));
+           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j + 1, k, em::bx1)
+              + m_mblock.em(i, j, k - 1, em::bx1) + m_mblock.em(i, j + 1, k - 1, em::bx1));
     c110 = QUARTER
            * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j, k - 1, em::bx1)
-              + m_mblock.em(i + 1, j + 1, k - 1, em::bx1) + m_mblock.em(i + 1, j + 1, k, em::bx1));
+              + m_mblock.em(i + 1, j + 1, k - 1, em::bx1)
+              + m_mblock.em(i + 1, j + 1, k, em::bx1));
     c011 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j + 1, k, em::bx1) + m_mblock.em(i, j + 1, k + 1, em::bx1)
-              + m_mblock.em(i, j, k + 1, em::bx1));
+           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j + 1, k, em::bx1)
+              + m_mblock.em(i, j + 1, k + 1, em::bx1) + m_mblock.em(i, j, k + 1, em::bx1));
     c111 = QUARTER
            * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j + 1, k, em::bx1)
-              + m_mblock.em(i + 1, j + 1, k + 1, em::bx1) + m_mblock.em(i + 1, j, k + 1, em::bx1));
+              + m_mblock.em(i + 1, j + 1, k + 1, em::bx1)
+              + m_mblock.em(i + 1, j, k + 1, em::bx1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
@@ -484,26 +522,28 @@ namespace ntt {
            * (m_mblock.em(i - 1, j, k - 1, em::bx2) + m_mblock.em(i - 1, j, k, em::bx2)
               + m_mblock.em(i, j, k - 1, em::bx2) + m_mblock.em(i, j, k, em::bx2));
     c100 = QUARTER
-           * (m_mblock.em(i, j, k - 1, em::bx2) + m_mblock.em(i, j, k, em::bx2) + m_mblock.em(i + 1, j, k - 1, em::bx2)
-              + m_mblock.em(i + 1, j, k, em::bx2));
+           * (m_mblock.em(i, j, k - 1, em::bx2) + m_mblock.em(i, j, k, em::bx2)
+              + m_mblock.em(i + 1, j, k - 1, em::bx2) + m_mblock.em(i + 1, j, k, em::bx2));
     c001 = QUARTER
-           * (m_mblock.em(i - 1, j, k, em::bx2) + m_mblock.em(i - 1, j, k + 1, em::bx2) + m_mblock.em(i, j, k, em::bx2)
-              + m_mblock.em(i, j, k + 1, em::bx2));
+           * (m_mblock.em(i - 1, j, k, em::bx2) + m_mblock.em(i - 1, j, k + 1, em::bx2)
+              + m_mblock.em(i, j, k, em::bx2) + m_mblock.em(i, j, k + 1, em::bx2));
     c101 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx2) + m_mblock.em(i, j, k + 1, em::bx2) + m_mblock.em(i + 1, j, k, em::bx2)
-              + m_mblock.em(i + 1, j, k + 1, em::bx2));
+           * (m_mblock.em(i, j, k, em::bx2) + m_mblock.em(i, j, k + 1, em::bx2)
+              + m_mblock.em(i + 1, j, k, em::bx2) + m_mblock.em(i + 1, j, k + 1, em::bx2));
     c010 = QUARTER
            * (m_mblock.em(i - 1, j + 1, k - 1, em::bx2) + m_mblock.em(i - 1, j + 1, k, em::bx2)
               + m_mblock.em(i, j + 1, k - 1, em::bx2) + m_mblock.em(i, j + 1, k, em::bx2));
     c110 = QUARTER
            * (m_mblock.em(i, j + 1, k - 1, em::bx2) + m_mblock.em(i, j + 1, k, em::bx2)
-              + m_mblock.em(i + 1, j + 1, k - 1, em::bx2) + m_mblock.em(i + 1, j + 1, k, em::bx2));
+              + m_mblock.em(i + 1, j + 1, k - 1, em::bx2)
+              + m_mblock.em(i + 1, j + 1, k, em::bx2));
     c011 = QUARTER
            * (m_mblock.em(i - 1, j + 1, k, em::bx2) + m_mblock.em(i - 1, j + 1, k + 1, em::bx2)
               + m_mblock.em(i, j + 1, k, em::bx2) + m_mblock.em(i, j + 1, k + 1, em::bx2));
     c111 = QUARTER
            * (m_mblock.em(i, j + 1, k, em::bx2) + m_mblock.em(i, j + 1, k + 1, em::bx2)
-              + m_mblock.em(i + 1, j + 1, k, em::bx2) + m_mblock.em(i + 1, j + 1, k + 1, em::bx2));
+              + m_mblock.em(i + 1, j + 1, k, em::bx2)
+              + m_mblock.em(i + 1, j + 1, k + 1, em::bx2));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
@@ -517,26 +557,28 @@ namespace ntt {
            * (m_mblock.em(i - 1, j - 1, k, em::bx3) + m_mblock.em(i - 1, j, k, em::bx3)
               + m_mblock.em(i, j - 1, k, em::bx3) + m_mblock.em(i, j, k, em::bx3));
     c100 = QUARTER
-           * (m_mblock.em(i, j - 1, k, em::bx3) + m_mblock.em(i, j, k, em::bx3) + m_mblock.em(i + 1, j - 1, k, em::bx3)
-              + m_mblock.em(i + 1, j, k, em::bx3));
+           * (m_mblock.em(i, j - 1, k, em::bx3) + m_mblock.em(i, j, k, em::bx3)
+              + m_mblock.em(i + 1, j - 1, k, em::bx3) + m_mblock.em(i + 1, j, k, em::bx3));
     c001 = QUARTER
            * (m_mblock.em(i - 1, j - 1, k + 1, em::bx3) + m_mblock.em(i - 1, j, k + 1, em::bx3)
               + m_mblock.em(i, j - 1, k + 1, em::bx3) + m_mblock.em(i, j, k + 1, em::bx3));
     c101 = QUARTER
            * (m_mblock.em(i, j - 1, k + 1, em::bx3) + m_mblock.em(i, j, k + 1, em::bx3)
-              + m_mblock.em(i + 1, j - 1, k + 1, em::bx3) + m_mblock.em(i + 1, j, k + 1, em::bx3));
+              + m_mblock.em(i + 1, j - 1, k + 1, em::bx3)
+              + m_mblock.em(i + 1, j, k + 1, em::bx3));
     c010 = QUARTER
-           * (m_mblock.em(i - 1, j, k, em::bx3) + m_mblock.em(i - 1, j + 1, k, em::bx3) + m_mblock.em(i, j, k, em::bx3)
-              + m_mblock.em(i, j + 1, k, em::bx3));
+           * (m_mblock.em(i - 1, j, k, em::bx3) + m_mblock.em(i - 1, j + 1, k, em::bx3)
+              + m_mblock.em(i, j, k, em::bx3) + m_mblock.em(i, j + 1, k, em::bx3));
     c110 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx3) + m_mblock.em(i, j + 1, k, em::bx3) + m_mblock.em(i + 1, j, k, em::bx3)
-              + m_mblock.em(i + 1, j + 1, k, em::bx3));
+           * (m_mblock.em(i, j, k, em::bx3) + m_mblock.em(i, j + 1, k, em::bx3)
+              + m_mblock.em(i + 1, j, k, em::bx3) + m_mblock.em(i + 1, j + 1, k, em::bx3));
     c011 = QUARTER
            * (m_mblock.em(i - 1, j, k + 1, em::bx3) + m_mblock.em(i - 1, j + 1, k + 1, em::bx3)
               + m_mblock.em(i, j, k + 1, em::bx3) + m_mblock.em(i, j + 1, k + 1, em::bx3));
     c111 = QUARTER
            * (m_mblock.em(i, j, k + 1, em::bx3) + m_mblock.em(i, j + 1, k + 1, em::bx3)
-              + m_mblock.em(i + 1, j, k + 1, em::bx3) + m_mblock.em(i + 1, j + 1, k + 1, em::bx3));
+              + m_mblock.em(i + 1, j, k + 1, em::bx3)
+              + m_mblock.em(i + 1, j + 1, k + 1, em::bx3));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;

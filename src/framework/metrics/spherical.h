@@ -104,7 +104,9 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "diag_vector_transform.h"
+#include "metric_diag_vtrans.h"
+#include "metric_cart_vtrans.h"
+#include "metric_cart_sph_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
@@ -172,8 +174,8 @@ namespace ntt {
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param xi coordinate array in Spherical coordinates in physical units (size of the array is D).
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units (size of the array is D).
+     * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dimension::ONE_D) {

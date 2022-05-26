@@ -23,9 +23,6 @@ __pycache__
 # Temporary Kokkos files
 /Kokkos*
 /*.a
-extern/kokkos/
-extern/plog/
-extern/nttiny/
 
 # Trash files
 .trash/

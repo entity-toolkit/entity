@@ -17,9 +17,6 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * * * * * *
   // Field initializers
   // . . . . . . . . . . . . . . . . . . . . . . . .
-  template <>
-  void ProblemGenerator<Dimension::ONE_D, SimulationType::GRPIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dimension::ONE_D, SimulationType::GRPIC>&) {}
 
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userInitFields(
@@ -36,7 +33,6 @@ namespace ntt {
     const SimulationParams&, Meshblock<Dimension::THREE_D, SimulationType::GRPIC>&) {}
 } // namespace ntt
 
-template struct ntt::ProblemGenerator<ntt::Dimension::ONE_D, ntt::SimulationType::GRPIC>;
 template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
 template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
 

@@ -38,7 +38,8 @@ namespace ntt {
     void step_backward(const real_t&);
 
     /**
-     * Advance the simulation forward for a specified amount of timesteps, keeping track of time.
+     * Advance the simulation forward for a specified amount of timesteps, keeping track of
+     * time.
      */
     void mainloop();
 
@@ -52,6 +53,24 @@ namespace ntt {
      *
      */
     void initial_step(const real_t&) {}
+    /**
+     * Reset field arrays.
+     *
+     * @param t time in physical units.
+     */
+    void resetFields(const real_t&);
+    /**
+     * Reset current arrays.
+     *
+     * @param t time in physical units.
+     */
+    void resetCurrents(const real_t&);
+    /**
+     * Reset particles.
+     *
+     * @param t time in physical units.
+     */
+    void resetParticles(const real_t&);
 
     /**
      * Advance B-field using Faraday's law.
@@ -68,17 +87,29 @@ namespace ntt {
      */
     void ampereSubstep(const real_t&, const real_t&);
     /**
+     * Deposit currents from particles.
+     *
+     * @param t time in physical units.
+     */
+    void depositCurrentsSubstep(const real_t&);
+    /**
      * Add computed and filtered currents to the E-field.
      *
      * @param t time in physical units.
      */
     void addCurrentsSubstep(const real_t&);
     /**
-     * Reset current arrays.
+     * Transform the deposited currents to coordinate basis.
      *
      * @param t time in physical units.
      */
-    void resetCurrentsSubstep(const real_t&);
+    void transformCurrentsSubstep(const real_t&);
+    /**
+     * Spatially filter all the deposited currents.
+     *
+     * @param t time in physical units.
+     */
+    void filterCurrentsSubstep(const real_t&);
 
     /**
      * Advance particle positions and velocities.
@@ -87,13 +118,6 @@ namespace ntt {
      * @param f coefficient that gets multiplied by the timestep (e.g., 1.0).
      */
     void pushParticlesSubstep(const real_t&, const real_t&);
-    /**
-     * Deposit currents from particles.
-     *
-     * @param t time in physical units.
-     */
-    void depositCurrentsSubstep(const real_t&);
-
     /**
      * Apply boundary conditions for fields.
      *
