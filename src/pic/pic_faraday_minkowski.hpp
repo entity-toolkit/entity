@@ -29,31 +29,41 @@ namespace ntt {
 
   template <>
   Inline void FaradayMinkowski<Dimension::ONE_D>::operator()(const index_t i) const {
-    m_mblock.em(i, em::bx2) += m_coeff * (m_mblock.em(i + 1, em::ex3) - m_mblock.em(i, em::ex3));
-    m_mblock.em(i, em::bx3) += m_coeff * (m_mblock.em(i, em::ex2) - m_mblock.em(i + 1, em::ex2));
+    m_mblock.em(i, em::bx2)
+      += m_coeff * (m_mblock.em(i + 1, em::ex3) - m_mblock.em(i, em::ex3));
+    m_mblock.em(i, em::bx3)
+      += m_coeff * (m_mblock.em(i, em::ex2) - m_mblock.em(i + 1, em::ex2));
   }
 
   template <>
-  Inline void FaradayMinkowski<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
-    m_mblock.em(i, j, em::bx1) += m_coeff * (m_mblock.em(i, j, em::ex3) - m_mblock.em(i, j + 1, em::ex3));
-    m_mblock.em(i, j, em::bx2) += m_coeff * (m_mblock.em(i + 1, j, em::ex3) - m_mblock.em(i, j, em::ex3));
-    m_mblock.em(i, j, em::bx3) += m_coeff
-                                  * (m_mblock.em(i, j + 1, em::ex1) - m_mblock.em(i, j, em::ex1)
-                                     + m_mblock.em(i, j, em::ex2) - m_mblock.em(i + 1, j, em::ex2));
+  Inline void FaradayMinkowski<Dimension::TWO_D>::operator()(const index_t i,
+                                                             const index_t j) const {
+    m_mblock.em(i, j, em::bx1)
+      += m_coeff * (m_mblock.em(i, j, em::ex3) - m_mblock.em(i, j + 1, em::ex3));
+    m_mblock.em(i, j, em::bx2)
+      += m_coeff * (m_mblock.em(i + 1, j, em::ex3) - m_mblock.em(i, j, em::ex3));
+    m_mblock.em(i, j, em::bx3)
+      += m_coeff
+         * (m_mblock.em(i, j + 1, em::ex1) - m_mblock.em(i, j, em::ex1)
+            + m_mblock.em(i, j, em::ex2) - m_mblock.em(i + 1, j, em::ex2));
   }
 
   template <>
-  Inline void
-  FaradayMinkowski<Dimension::THREE_D>::operator()(const index_t i, const index_t j, const index_t k) const {
-    m_mblock.em(i, j, k, em::bx1) += m_coeff
-                                     * (m_mblock.em(i, j, k + 1, em::ex2) - m_mblock.em(i, j, k, em::ex2)
-                                        + m_mblock.em(i, j, k, em::ex3) - m_mblock.em(i, j + 1, k, em::ex3));
-    m_mblock.em(i, j, k, em::bx2) += m_coeff
-                                     * (m_mblock.em(i + 1, j, k, em::ex3) - m_mblock.em(i, j, k, em::ex3)
-                                        + m_mblock.em(i, j, k, em::ex1) - m_mblock.em(i, j, k + 1, em::ex1));
-    m_mblock.em(i, j, k, em::bx3) += m_coeff
-                                     * (m_mblock.em(i, j + 1, k, em::ex1) - m_mblock.em(i, j, k, em::ex1)
-                                        + m_mblock.em(i, j, k, em::ex2) - m_mblock.em(i + 1, j, k, em::ex2));
+  Inline void FaradayMinkowski<Dimension::THREE_D>::operator()(const index_t i,
+                                                               const index_t j,
+                                                               const index_t k) const {
+    m_mblock.em(i, j, k, em::bx1)
+      += m_coeff
+         * (m_mblock.em(i, j, k + 1, em::ex2) - m_mblock.em(i, j, k, em::ex2)
+            + m_mblock.em(i, j, k, em::ex3) - m_mblock.em(i, j + 1, k, em::ex3));
+    m_mblock.em(i, j, k, em::bx2)
+      += m_coeff
+         * (m_mblock.em(i + 1, j, k, em::ex3) - m_mblock.em(i, j, k, em::ex3)
+            + m_mblock.em(i, j, k, em::ex1) - m_mblock.em(i, j, k + 1, em::ex1));
+    m_mblock.em(i, j, k, em::bx3)
+      += m_coeff
+         * (m_mblock.em(i, j + 1, k, em::ex1) - m_mblock.em(i, j, k, em::ex1)
+            + m_mblock.em(i, j, k, em::ex2) - m_mblock.em(i + 1, j, k, em::ex2));
   }
 } // namespace ntt
 
