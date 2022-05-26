@@ -13,8 +13,10 @@ _Clone_ this repository and all its dependencies with the following command:
 
 ```sh
 git clone --recursive git@github.com:haykh/entity.git
-# to update submodules
-git submodule update --remote
+# if not using `--recursive`, after cloning run
+git submodule update --init --recursive
+# after that to update submodules
+git submodule update --recursive --remote
 ```
 
 _Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
@@ -53,6 +55,14 @@ After the compilation is successful, you will find the corresponding executable 
   - [ ] particle pusher (1D/2D/3D)
   - [ ] current deposition (2D)
   - [ ] cartesian Kerr-Schild metrics (1D/2D/3D)
+
+### Known bugs / minor issues to fix
+
+- [ ] `$(CURDIR)` seems to fail in some instances (need a more robust apprch)
+- [ ] check python `subprocess.run` command during the configure stage
+- [ ] check if compilation of `glfw` is possible (or if `glfw` is available)
+- [ ] same for `freetype`
+- [ ] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
 
 > To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
 

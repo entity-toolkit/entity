@@ -15,6 +15,7 @@ boundaries      = <array of strings of size 1, 2 or 3: { "PERIODIC" | "OPEN" | "
 CFL             = <float: 0.0 < ... < 1.0>
 correction      = <float: ~1>
 fieldsolver_ON  = <bool>
+deposit_ON      = <bool>
 
 [units]
 ppc0            = <float>

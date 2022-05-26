@@ -14,12 +14,13 @@ namespace ntt {
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_sim_params {inputdata, D},
       m_pGen {m_sim_params},
-      m_mblock {
-        m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters(), m_sim_params.species()} {}
+      m_mblock {m_sim_params.resolution(),
+                m_sim_params.extent(),
+                m_sim_params.metric_parameters(),
+                m_sim_params.species()} {}
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
-    // m_mblock.metric = Metric<D>(m_sim_params.resolution(), m_sim_params.extent(), m_sim_params.metric_parameters());
     m_mblock.boundaries = m_sim_params.boundaries();
 
     // find timestep and effective cell size
@@ -74,8 +75,8 @@ namespace ntt {
 
     std::string ext {"   extent: "};
     for (auto i {0}; i < (int)(m_sim_params.extent().size()); i += 2) {
-      ext
-        += "{" + std::to_string(m_sim_params.extent()[i]) + ", " + std::to_string(m_sim_params.extent()[i + 1]) + "} ";
+      ext += "{" + std::to_string(m_sim_params.extent()[i]) + ", "
+             + std::to_string(m_sim_params.extent()[i + 1]) + "} ";
     }
     PLOGI << ext;
 
@@ -85,10 +86,10 @@ namespace ntt {
 
     PLOGI << "[fiducial parameters]";
     PLOGI << "   ppc0: " << m_sim_params.ppc0();
-    PLOGI << "   rho0: " << m_sim_params.larmor0() << " [" << m_sim_params.larmor0() / m_mblock.min_cell_size()
-          << " cells]";
-    PLOGI << "   c_omp0: " << m_sim_params.skindepth0() << " [" << m_sim_params.skindepth0() / m_mblock.min_cell_size()
-          << " cells]";
+    PLOGI << "   rho0: " << m_sim_params.larmor0() << " ["
+          << m_sim_params.larmor0() / m_mblock.min_cell_size() << " cells]";
+    PLOGI << "   c_omp0: " << m_sim_params.skindepth0() << " ["
+          << m_sim_params.skindepth0() / m_mblock.min_cell_size() << " cells]";
     PLOGI << "   sigma0: " << m_sim_params.sigma0();
     PLOGI << "   q0: " << m_sim_params.charge0();
     PLOGI << "   B0: " << m_sim_params.B0();
