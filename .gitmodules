@@ -1,7 +1,6 @@
 [submodule "extern/kokkos"]
 	path = extern/kokkos
-	url = git@github.com:haykh/kokkos.git
-	branch = develop
+	url = git@github.com:kokkos/kokkos.git
 [submodule "extern/plog"]
 	path = extern/plog
 	url = git@github.com:haykh/plog.git
