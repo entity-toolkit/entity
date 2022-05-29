@@ -8,13 +8,14 @@ extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.1
+CFL             = 0.9
 correction      = 1.0
 #fieldsolver_ON  = true
+deposit_ON      = false
 
 [units]
 ppc0            = 0.1
-larmor0         = 0.5
+larmor0         = 0.1
 skindepth0      = 0.01
 
 [particles]
