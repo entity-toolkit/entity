@@ -18,7 +18,7 @@ namespace ntt {
     real_t epsilon {1.0};
 
     void userInitFields(const SimulationParams&, Meshblock<D, S>&);
-    void userInitParticles(const SimulationParams&, Meshblock<D, S>&);// {}
+    void userInitParticles(const SimulationParams&, Meshblock<D, S>&);
 
     Inline auto A0(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       real_t g00 {-mblock.metric.alpha(x) * mblock.metric.alpha(x)
