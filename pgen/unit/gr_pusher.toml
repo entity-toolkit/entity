@@ -10,7 +10,7 @@ absorb_coeff    = 20.0              # absorption coefficient
 resolution      = [128, 128]
 extent          = [0.9, 6.0]       # radial extent in units of r_H
 boundaries      = ["USER", "USER"]
-a               = 0.9
+a               = 0.0
 
 [algorithm]
 CFL             = 0.9

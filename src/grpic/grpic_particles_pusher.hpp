@@ -46,20 +46,19 @@ namespace ntt {
      * TODO: Faster sqrt method?
      */
     Inline void operator()(const Photon_t&, const index_t p) const {
+      // get coordinate & velocity
       coord_t<D> xp;
       getParticleCoordinate(p, xp);
-      //coord_t<D> rth_;
-      //m_mblock.metric.x_Code2Sph(xp, rth_);
-      vec_t<Dimension::THREE_D> v;
-      //m_mblock.metric.v_Cntr2SphCntrv(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
-
-      coord_t<D> xm;
-      coord_t<D> xu;
-
+      vec_t<Dimension::THREE_D> v {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)};
+      
+      // initialize midpoint values & updated values
+      coord_t<D> xpm;
+      coord_t<D> xpu {xp[0], xp[1]};
       vec_t<Dimension::THREE_D> vm;
       vec_t<Dimension::THREE_D> vmu;
       vec_t<Dimension::THREE_D> vu {v[0], v[1], v[2]};
       
+      // initialize coefficients & coordinates for derivatives
       real_t EPS_R {1e-6};
       real_t EPS_T {1e-6};
       real_t DIVIDE_EPS_R {0.5 / EPS_R};
@@ -70,36 +69,65 @@ namespace ntt {
       coord_t<D> xp_dtp {xp[0], xp[1]+EPS_T};
       coord_t<D> xp_dtm {xp[0], xp[1]-EPS_T};
 
-      for (int i = 0; i = 1; i++) {
+      // iterate
+      for (int i = 0; i < 10; i++) {
+
+        // find midpoint values
+        xpm[0] = 0.5*(xp[0]+xpu[0]);
+        xpm[1] = 0.5*(xp[1]+xpu[1]);
         vm[0] = 0.5*(v[0]+vu[0]);
         vm[1] = 0.5*(v[1]+vu[1]);
         vm[2] = 0.5*(v[2]+vu[2]);
 
-        vmu = v_Cov2Cntr(vm)
+        // find contravariant midpoint velocity
+        m_mblock.metric.v_Cov2Cntrv(xpm, vm, vmu);
 
+        // find spacial derivatives
         real_t alphadr {DIVIDE_EPS_R * (m_mblock.metric.alpha(xp_drp) - m_mblock.metric.alpha(xp_drm))};
         real_t betadr {DIVIDE_EPS_R * (m_mblock.metric.beta1u(xp_drp) - m_mblock.metric.beta1u(xp_drm))};
-        real_t g11dr {DIVIDE_EPS_R * (m_mblock.metric.h_11(xp_drp) - m_mblock.metric.h_11(xp_drm))};
-        real_t g22dr {DIVIDE_EPS_R * (m_mblock.metric.h_22(xp_drp) - m_mblock.metric.h_22(xp_drm))};
-        real_t g33dr {DIVIDE_EPS_R * (m_mblock.metric.h_33(xp_drp) - m_mblock.metric.h_33(xp_drm))};
 
-        real_t g33dt {DIVIDE_EPS_T * (m_mblock.metric.h_33(xp_dtp) - m_mblock.metric.h_33(xp_dtm))};
+        real_t g11dr {DIVIDE_EPS_R * (m_mblock.metric.h_11_inv(xp_drp) - m_mblock.metric.h_11_inv(xp_drm))};
+        real_t g22dr {DIVIDE_EPS_R * (m_mblock.metric.h_22_inv(xp_drp) - m_mblock.metric.h_22_inv(xp_drm))};
+        real_t g33dr {DIVIDE_EPS_R * (m_mblock.metric.h_33_inv(xp_drp) - m_mblock.metric.h_33_inv(xp_drm))};
 
-        real_t gamma {math::sqrt(m_mblock.metric.h_11(xp)*SQR(m_particles.ux1(p)) + m_mblock.metric.h_22(xp)*SQR(m_particles.ux2(p)) + m_mblock.metric.h_33(xp)*SQR(m_particles.ux3(p)))};
-        real_t u0 {gamma/m_mblock.metric.alpha(xp)};
+        real_t g33dt {DIVIDE_EPS_T * (m_mblock.metric.h_33_inv(xp_dtp) - m_mblock.metric.h_33_inv(xp_dtm))};
 
+        // find midpoint coefficients
+        real_t gamma {math::sqrt(vm[0]*vmu[0] + vm[1]*vmu[1] + vm[2]*vmu[2])};
+        real_t u0 {gamma/m_mblock.metric.alpha(xpm)};
 
+        // find updated coordinate shift
+        xpu[0] = xp[0] + m_dt * (m_mblock.metric.alpha(xpm) * vmu[0] / u0 - m_mblock.metric.beta1u(xpm));
+        xpu[1] = xp[1] + m_dt * (m_mblock.metric.alpha(xpm) * vmu[1] / u0);
 
-        vu[0] = v[0] + m_dt * ( -m_mblock.metric.alpha(xp)*u0*alphadr + vm[0]*betadr
-            - 1/(2*u0)*(g11dr*vm[0]*vm[0] + g22dr*vm[1]*vm[1] + g33dr*vm[2]*vm[2])  );
+        // find updated velocity
+        vu[0] = v[0] + m_dt * ( -m_mblock.metric.alpha(xpm)*u0*alphadr + vm[0]*betadr
+            - 1/(2*u0)*(g11dr*vm[0]*vm[0] + g22dr*vm[1]*vm[1] + g33dr*vm[2]*vm[2]));
 
         vu[1] = v[1] + m_dt * ( 1/(2*u0)*(g33dt*vm[2]*vm[2]) );
 
         vu[2] = v[2];
       }
+      
+      // update coordinate
+      m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(xpu[0] - xp[0]);
+      int   temp_i {static_cast<int>(m_particles.dx1(p))};
+      float temp_r {math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
+      temp_i             = static_cast<int>(temp_r);
+      m_particles.i1(p)  = m_particles.i1(p) + temp_i;
+      m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
 
-      //velocityUpdate(p, v);
-      //positionUpdate(p, v);
+      m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(xpu[1] - xp[1]);
+      temp_i = static_cast<int>(m_particles.dx2(p));
+      temp_r = math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f;
+      temp_i             = static_cast<int>(temp_r);
+      m_particles.i2(p)  = m_particles.i2(p) + temp_i;
+      m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
+      
+      // update velocity
+      m_particles.ux1(p) = vu[0];
+      m_particles.ux2(p) = vu[1];
+      m_particles.ux3(p) = vu[2];
     }
 
     /**
@@ -150,18 +178,18 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   // General velocity update
   // * * * * * * * * * * * * * * *
-  template <>
-  Inline void Pusher<Dimension::ONE_D>::velocityUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
-    velocityUpdate_v123(p, v[0], v[1], v[2]);
-  }
+  //template <>
+  //Inline void Pusher<Dimension::ONE_D>::velocityUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
+  //  velocityUpdate_v123(p, v[0], v[1], v[2]);
+  //}
   template <>
   Inline void Pusher<Dimension::TWO_D>::velocityUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
     velocityUpdate_v123(p, v[0], v[1], v[2]);
   }
-  template <>
-  Inline void Pusher<Dimension::THREE_D>::velocityUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
-    velocityUpdate_v123(p, v[0], v[1], v[2]);
-  }
+  //template <>
+  //Inline void Pusher<Dimension::THREE_D>::velocityUpdate(const index_t& p, const vec_t<Dimension::THREE_D>& v) const {
+  //  velocityUpdate_v123(p, v[0], v[1], v[2]);
+  //}
 
   // * * * * * * * * * * * * * * *
   // General position update
@@ -229,57 +257,68 @@ namespace ntt {
 
   template <Dimension D>
   Inline void Pusher<D>::velocityUpdate_v123(const index_t& p, const real_t& vx1, const real_t& vx2, const real_t& vx3) const {
-    /*coord_t<D> xp;
+    // get coordinate & velocity
+    coord_t<D> xp;
     getParticleCoordinate(p, xp);
-    
-    vec_t<Dimension::THREE_D> vm;
-    vec_t<Dimension::THREE_D> vu {vx1, vx2, vx3};
+    vec_t<Dimension::THREE_D> v {vx1, vx2, vx3};
       
+    // initialize midpoint values & updated values
+    coord_t<D> xpm;
+    coord_t<D> xpu {xp[0], xp[1]};
+    vec_t<Dimension::THREE_D> vm;
+    vec_t<Dimension::THREE_D> vmu;
+    vec_t<Dimension::THREE_D> vu {v[0], v[1], v[2]};
+      
+    // initialize coefficients & coordinates for derivatives
     real_t EPS_R {1e-6};
     real_t EPS_T {1e-6};
     real_t DIVIDE_EPS_R {0.5 / EPS_R};
     real_t DIVIDE_EPS_T {0.5 / EPS_T};
 
-    coord_t<Dimension::TWO_D> xp_drp {xp[0]+EPS_R, xp[1]};
-    coord_t<Dimension::TWO_D> xp_drm {xp[0]-EPS_R, xp[1]};
-    coord_t<Dimension::TWO_D> xp_dtp {xp[0], xp[1]+EPS_T};
-    coord_t<Dimension::TWO_D> xp_dtm {xp[0], xp[1]-EPS_T};
+    coord_t<D> xp_drp {xp[0]+EPS_R, xp[1]};
+    coord_t<D> xp_drm {xp[0]-EPS_R, xp[1]};
+    coord_t<D> xp_dtp {xp[0], xp[1]+EPS_T};
+    coord_t<D> xp_dtm {xp[0], xp[1]-EPS_T};
 
-    //using index_t = const std::size_t;
-    //Kokkos::parallel_for(
-    //"VelocityPush",
-    //NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
-    for(int i=0; i=1; i++) {
-      vm[0] = 0.5*(vx1+vu[0]);
-      vm[1] = 0.5*(vx2+vu[1]);
-      vm[2] = 0.5*(vx3+vu[2]);
+    // iterate
+    for (int i = 0; i < 10; i++) {
 
+      // find midpoint values
+      xpm[0] = 0.5*(xp[0]+xpu[0]);
+      xpm[1] = 0.5*(xp[1]+xpu[1]);
+      vm[0] = 0.5*(v[0]+vu[0]);
+      vm[1] = 0.5*(v[1]+vu[1]);
+      vm[2] = 0.5*(v[2]+vu[2]);
+
+      // find contravariant midpoint velocity
+      m_mblock.metric.v_Cov2Cntrv(xpm, vm, vmu);
+
+      // find spacial derivatives
       real_t alphadr {DIVIDE_EPS_R * (m_mblock.metric.alpha(xp_drp) - m_mblock.metric.alpha(xp_drm))};
       real_t betadr {DIVIDE_EPS_R * (m_mblock.metric.beta1u(xp_drp) - m_mblock.metric.beta1u(xp_drm))};
+
       real_t g11dr {DIVIDE_EPS_R * (m_mblock.metric.h_11(xp_drp) - m_mblock.metric.h_11(xp_drm))};
       real_t g22dr {DIVIDE_EPS_R * (m_mblock.metric.h_22(xp_drp) - m_mblock.metric.h_22(xp_drm))};
       real_t g33dr {DIVIDE_EPS_R * (m_mblock.metric.h_33(xp_drp) - m_mblock.metric.h_33(xp_drm))};
 
       real_t g33dt {DIVIDE_EPS_T * (m_mblock.metric.h_33(xp_dtp) - m_mblock.metric.h_33(xp_dtm))};
 
-      real_t gamma {math::sqrt(m_mblock.metric.h_11(xp)*SQR(m_particles.ux1(p)) + m_mblock.metric.h_22(xp)*SQR(m_particles.ux2(p)) + m_mblock.metric.h_33(xp)*SQR(m_particles.ux3(p)))};
-      real_t u0 {gamma/m_mblock.metric.alpha(xp)};
+      // find midpoint coefficients
+      real_t gamma {math::sqrt(1 + vm[0]*vmu[0] + vm[1]*vmu[1] + vm[2]*vmu[2])};
+      real_t u0 {gamma/m_mblock.metric.alpha(xpm)};
 
-      vu[0] = vx1 + m_dt * ( -m_mblock.metric.alpha(xp)*u0*alphadr + vm[0]*betadr
+      // find updated velocity
+      vu[0] = v[0] + m_dt * ( -m_mblock.metric.alpha(xpm)*u0*alphadr + vm[0]*betadr
           - 1/(2*u0)*(g11dr*vm[0]*vm[0] + g22dr*vm[1]*vm[1] + g33dr*vm[2]*vm[2])  );
 
-      vu[1] = vx2 + m_dt * ( 1/(2*u0)*(g33dt*vm[2]*vm[2]) );
+      vu[1] = v[1] + m_dt * ( 1/(2*u0)*(g33dt*vm[2]*vm[2]) );
 
-      vu[2] = vx1;
-    }//);*/
-    
-    
-    /*m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
-    int   temp_i {static_cast<int>(m_particles.dx3(p))};
-    float temp_r {math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i)) - 1.0f};
-    temp_i             = static_cast<int>(temp_r);
-    m_particles.i3(p)  = m_particles.i3(p) + temp_i;
-    m_particles.dx3(p) = m_particles.dx3(p) - temp_r;*/
+      vu[2] = v[2];
+    }
+    // update velocity
+    m_particles.ux1(p) = vu[0];
+    m_particles.ux2(p) = vu[1];
+    m_particles.ux3(p) = vu[2];
   }
 
 } // namespace ntt
