@@ -44,7 +44,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "userInitPrtls",
       NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
-      coord_t<Dimension::TWO_D> x {2.0, constant::PI * 0.1}, x_CU;
+      coord_t<Dimension::TWO_D> x {5.0, constant::PI/2.}, x_CU;
       mblock.metric.x_Sph2Code(x, x_CU);
       mblock.metric.x_Code2Sph(x_CU, x);
       auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
@@ -55,7 +55,9 @@ namespace ntt {
       mblock.particles[0].i2(p) = i2;
       mblock.particles[0].dx1(p) = dx1;
       mblock.particles[0].dx2(p) = dx2;
-      //mblock.particles[0].ux1(p) = 0.0;
+      mblock.particles[0].ux1(p) = -0.2;
+      mblock.particles[0].ux2(p) = 5;
+      mblock.particles[0].ux3(p) = 0;
       });
     mblock.particles[0].set_npart(1);
 
