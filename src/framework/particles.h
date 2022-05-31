@@ -91,6 +91,13 @@ namespace ntt {
     // Particle weights.
     NTTArray<float*> weight;
 
+    // Additional variables (specific to different cases).
+    // previous coordinates (GR specific)
+    NTTArray<real_t*> i1_prev, i2_prev, i3_prev;
+    NTTArray<real_t*> dx1_prev, dx2_prev, dx3_prev;
+    // phi coordinate (for axisymmetry)
+    NTTArray<real_t*> phi, phi_prev;
+
     /**
      * Constructor for the particle container.
      *

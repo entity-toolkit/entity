@@ -33,6 +33,7 @@ namespace ntt {
       ux3 {label_ + "_ux3", maxnpart_},
       weight {label_ + "_w", maxnpart_} {}
 
+#if (METRIC == MINKOWSKI_METRIC)
   template <>
   Particles<Dimension::TWO_D, SimulationType::PIC>::Particles(const std::string& label_,
                                                               const float&       m_,
@@ -47,7 +48,23 @@ namespace ntt {
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
       weight {label_ + "_w", maxnpart_} {}
-
+#else // axisymmetry
+  template <>
+  Particles<Dimension::TWO_D, SimulationType::PIC>::Particles(const std::string& label_,
+                                                              const float&       m_,
+                                                              const float&       ch_,
+                                                              const std::size_t& maxnpart_)
+    : ParticleSpecies {label_, m_, ch_, maxnpart_},
+      i1 {label_ + "_i1", maxnpart_},
+      i2 {label_ + "_i2", maxnpart_},
+      dx1 {label_ + "_dx1", maxnpart_},
+      dx2 {label_ + "_dx2", maxnpart_},
+      ux1 {label_ + "_ux1", maxnpart_},
+      ux2 {label_ + "_ux2", maxnpart_},
+      ux3 {label_ + "_ux3", maxnpart_},
+      weight {label_ + "_w", maxnpart_},
+      phi {label_ + "_phi", maxnpart_} {}
+#endif
   template <>
   Particles<Dimension::THREE_D, SimulationType::PIC>::Particles(const std::string& label_,
                                                                 const float&       m_,
@@ -66,7 +83,7 @@ namespace ntt {
       weight {label_ + "_w", maxnpart_} {}
 
   // * * * * * * * * * * * * * * * * * * * *
-  // GRPIC-specific
+  // GRPIC-specific (not Cartesian)
   // * * * * * * * * * * * * * * * * * * * *
   template <>
   Particles<Dimension::TWO_D, SimulationType::GRPIC>::Particles(const std::string& label_,
@@ -81,7 +98,13 @@ namespace ntt {
       ux1 {label_ + "_ux1", maxnpart_},
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
-      weight {label_ + "_w", maxnpart_} {}
+      weight {label_ + "_w", maxnpart_},
+      i1_prev {label_ + "_i1_prev", maxnpart_},
+      i2_prev {label_ + "_i2_prev", maxnpart_},
+      dx1_prev {label_ + "_dx1_prev", maxnpart_},
+      dx2_prev {label_ + "_dx2_prev", maxnpart_},
+      phi {label_ + "_phi", maxnpart_},
+      phi_prev {label_ + "_phi_prev", maxnpart_} {}
 
   template <>
   Particles<Dimension::THREE_D, SimulationType::GRPIC>::Particles(const std::string& label_,
@@ -98,7 +121,13 @@ namespace ntt {
       ux1 {label_ + "_ux1", maxnpart_},
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
-      weight {label_ + "_w", maxnpart_} {}
+      weight {label_ + "_w", maxnpart_},
+      i1_prev {label_ + "_i1_prev", maxnpart_},
+      i2_prev {label_ + "_i2_prev", maxnpart_},
+      i3_prev {label_ + "_i3_prev", maxnpart_},
+      dx1_prev {label_ + "_dx1_prev", maxnpart_},
+      dx2_prev {label_ + "_dx2_prev", maxnpart_},
+      dx3_prev {label_ + "_dx3_prev", maxnpart_} {}
 
   template <Dimension D, SimulationType S>
   Particles<D, S>::Particles(const ParticleSpecies& spec)
