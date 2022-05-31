@@ -78,24 +78,24 @@ namespace ntt {
     using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
-        real_t                    i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)};
-        real_t                    j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
-        real_t                    r_min {mblock.metric.x1_min};
-        coord_t<Dimension::TWO_D> rth_;
-        // dipole
-        real_t br, btheta;
-        // Br
-        mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
-        br = TWO * math::cos(rth_[1]) / CUBE(rth_[0] / r_min);
-        // Btheta
-        mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
-        btheta = math::sin(rth_[1]) / CUBE(rth_[0] / r_min);
+        // real_t                    i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)};
+        // real_t                    j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
+        // real_t                    r_min {mblock.metric.x1_min};
+        // coord_t<Dimension::TWO_D> rth_;
+        // // dipole
+        // real_t br, btheta;
+        // // Br
+        // mblock.metric.x_Code2Sph({i_, j_ + HALF}, rth_);
+        // br = TWO * math::cos(rth_[1]) / CUBE(rth_[0] / r_min);
+        // // Btheta
+        // mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
+        // btheta = math::sin(rth_[1]) / CUBE(rth_[0] / r_min);
 
-        vec_t<Dimension::THREE_D> b_cntrv;
-        // @comment not quite true (need to separate for each component)
-        mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {br, btheta, ZERO}, b_cntrv);
-        mblock.em(i, j, em::bx1) = b_cntrv[0];
-        mblock.em(i, j, em::bx2) = b_cntrv[1];
+        // vec_t<Dimension::THREE_D> b_cntrv;
+        // // @comment not quite true (need to separate for each component)
+        // mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {br, btheta, ZERO}, b_cntrv);
+        mblock.em(i, j, em::bx1) = ZERO; // b_cntrv[0];
+        mblock.em(i, j, em::bx2) = ZERO; // b_cntrv[1];
 
         // rotating monopole
         // real_t                    br, bphi, etheta;
@@ -145,29 +145,30 @@ namespace ntt {
         mblock.particles[0].i2(p)  = i2;
         mblock.particles[0].dx1(p) = dx1;
         mblock.particles[0].dx2(p) = dx2;
-        mblock.particles[0].ux1(p) = 0.2;
-        mblock.particles[0].ux2(p) = 0.1;
+        // mblock.particles[0].ux1(p) = 0.2;
+        // mblock.particles[0].ux2(p) = 0.1;
         //  positron
         mblock.particles[1].i1(p)  = i1;
         mblock.particles[1].i2(p)  = i2;
         mblock.particles[1].dx1(p) = dx1;
         mblock.particles[1].dx2(p) = dx2;
-        mblock.particles[1].ux1(p) = 0.2;
-        mblock.particles[1].ux2(p) = 0.1;
+        // mblock.particles[1].ux1(p) = 0.2;
+        // mblock.particles[1].ux2(p) = 0.1;
         // ion
         mblock.particles[2].i1(p)  = i1;
         mblock.particles[2].i2(p)  = i2;
         mblock.particles[2].dx1(p) = dx1;
         mblock.particles[2].dx2(p) = dx2;
-        mblock.particles[2].ux1(p) = 0.2;
-        mblock.particles[2].ux2(p) = 0.1;
+        // mblock.particles[2].ux1(p) = 0.2;
+        // mblock.particles[2].ux2(p) = 0.1;
         // photon
-        // mblock.particles[3].i1(p) = i1;
-        // mblock.particles[3].i2(p) = i2;
-        // mblock.particles[3].dx1(p) = dx1;
-        // mblock.particles[3].dx2(p) = dx2;
+        mblock.particles[3].i1(p) = i1;
+        mblock.particles[3].i2(p) = i2;
+        mblock.particles[3].dx1(p) = dx1;
+        mblock.particles[3].dx2(p) = dx2;
         // mblock.particles[3].ux1(p) = 1.0;
         // mblock.particles[3].ux2(p) = 1.0;
+        mblock.particles[3].ux3(p) = 1.0;
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);
