@@ -128,8 +128,8 @@ namespace ntt {
         auto [I_i, _] = m_mblock.metric.CU_to_Idi(xp_i[i]);
         Ip_i[i]       = I_i;
         xp_r[i]
-          = math::min(static_cast<real_t>(math::min(Ip_i[i], Ip_f[i]) + 1),
-                      math::max(static_cast<real_t>(math::max(Ip_i[i], Ip_f[i])), xmid[i]));
+          = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                      math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xmid[i]));
       }
     }
   };
