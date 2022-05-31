@@ -104,8 +104,8 @@ def defineOptions():
   parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used (default: `ntt_dummy`')
 
   # `Kokkos` specific
-  parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], help='`Kokkos` devices')
-  parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
+  parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], choices=Kokkos_devices_options, help='`Kokkos` devices')
+  parser.add_argument('--kokkos_arch', default='', choices=Kokkos_arch_options, help='`Kokkos` architecture')
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
   parser.add_argument('--kokkos_cuda_options', default='', help='`Kokkos` CUDA options')
   parser.add_argument('--kokkos_loop', default='default', choices=Kokkos_loop_options, help='`Kokkos` loop layout')
