@@ -51,6 +51,8 @@ inline constexpr double HALF {0.5};
 inline constexpr double QUARTER {0.25};
 #endif
 
+#define IMIN(a, b)   ((a) < (b) ? (a) : (b))
+#define IMAX(a, b)   ((a) > (b) ? (a) : (b))
 #define SIGNd(x)     (((x) < 0.0) ? -1.0 : 1.0)
 #define SIGNf(x)     (((x) < 0.0f) ? -1.0f : 1.0f)
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
