@@ -256,6 +256,7 @@ namespace ntt {
 
     // Push particles
     // x at n+1, u at n+1/2
+    // using em:e at n & em0:b at n
     timers.start(4);
     pushParticlesSubstep(time, ONE);
     timers.stop(4);
