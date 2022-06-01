@@ -26,11 +26,11 @@ skindepth0      = 0.01
 n_species       = 1
 
 [species_1]
-label           = "photon"
-mass            = 0.0
-charge          = 0.0
+label           = "electron"
+mass            = 1.0
+charge          = 1.0
 maxnpart        = 1e2
-pusher          = "Photon"
+pusher          = "Boris"
 
 [visualization]
 fields          = ["Dr", "Dtheta", "Dphi", 

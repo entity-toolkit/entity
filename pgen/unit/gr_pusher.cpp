@@ -46,7 +46,7 @@ namespace ntt {
       NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
       coord_t<Dimension::TWO_D> x {5.0, constant::PI/2.}, x_CU;
       mblock.metric.x_Sph2Code(x, x_CU);
-      mblock.metric.x_Code2Sph(x_CU, x);
+      
       auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
       auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
     
