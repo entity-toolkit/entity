@@ -6,34 +6,38 @@
 namespace ntt {
 
   template <Dimension D>
+  void PIC<D>::process() {
+    this->initialize();
+    this->initializeSetup();
+    this->verify();
+    this->printDetails();
+    this->mainloop();
+    // this->benchmark();
+    this->finalize();
+  }
+
+  template <Dimension D>
+  void PIC<D>::benchmark() {
+    faradaySubstep(0.0, HALF);
+    ampereSubstep(0.0, ONE);
+    faradaySubstep(0.0, HALF);
+  }
+
+  template <Dimension D>
   void PIC<D>::mainloop() {
     unsigned long timax {static_cast<unsigned long>(this->m_sim_params.total_runtime()
                                                     / this->m_mblock.timestep())};
     real_t        time {0.0};
+    PLOGD << "Simulation mainloop started >>>";
+
     fieldBoundaryConditions(ZERO);
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
       step_forward(time);
       time += this->m_mblock.timestep();
     }
-  }
-
-  template <Dimension D>
-  void PIC<D>::process() {
-    this->initialize();
-    PLOGD << "Simulation initialized.";
-    this->initializeSetup();
-    PLOGD << "Setup initialized.";
-    this->verify();
-    PLOGD << "Prerun check passed.";
-    this->printDetails();
-    PLOGD << "Simulation details printed.";
-
-    PLOGD << "Simulation mainloop started >>>";
-    this->mainloop();
+    NTTWait();
     PLOGD << "<<< simulation mainloop finished.";
-    this->finalize();
-    PLOGD << "Simulation finalized.";
   }
 
   template <Dimension D>

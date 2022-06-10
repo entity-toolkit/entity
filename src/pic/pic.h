@@ -130,6 +130,12 @@ namespace ntt {
      * @param t time in physical units.
      */
     void particleBoundaryConditions(const real_t&);
+
+    /**
+     * Benchmarking step.
+     * 
+     */
+    void benchmark();
   };
 
 } // namespace ntt
