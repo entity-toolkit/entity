@@ -25,8 +25,6 @@
 #   --kokkos_devices=<DEV>        `Kokkos` devices
 #   --kokkos_arch=<ARCH>          `Kokkos` architecture
 #   --kokkos_options=<OPT>        `Kokkos` options
-#   --kokkos_vector_length=<VLEN> `Kokkos` vector length
-#   --kokkos_loop=[...]           `Kokkos` loop layout
 #   --kokkos_cuda_options=<COPT>  `Kokkos` Cuda options
 # ----------------------------------------------------------------------------------------
 
@@ -98,18 +96,16 @@ def defineOptions():
 
   # simulation
   parser.add_argument('--precision', default='single', choices=Precision_options, help='code precision (default: `single`)')
-  parser.add_argument('--metric', default=Metric_options[0], choices=Metric_options, help='select metric to be used (default: `minkowski`')
+  parser.add_argument('--metric', default=Metric_options[0], choices=Metric_options, help='select metric to be used (default: `minkowski`)')
   parser.add_argument(
-      '--simtype', default=Simtype_options[0], choices=Simtype_options, help='select simulation type (default: `pic`')
-  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used (default: `ntt_dummy`')
+      '--simtype', default=Simtype_options[0], choices=Simtype_options, help='select simulation type (default: `pic`)')
+  parser.add_argument('--pgen', default="", choices=Pgen_options, help='problem generator to be used (default: `ntt_dummy`)')
 
   # `Kokkos` specific
-  parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], choices=Kokkos_devices_options, help='`Kokkos` devices')
-  parser.add_argument('--kokkos_arch', default='', choices=Kokkos_arch_options, help='`Kokkos` architecture')
+  parser.add_argument('--kokkos_devices', default=Kokkos_devices['host'][0], help='`Kokkos` devices')
+  parser.add_argument('--kokkos_arch', default='', help='`Kokkos` architecture')
   parser.add_argument('--kokkos_options', default='', help='`Kokkos` options')
   parser.add_argument('--kokkos_cuda_options', default='', help='`Kokkos` CUDA options')
-  parser.add_argument('--kokkos_loop', default='default', choices=Kokkos_loop_options, help='`Kokkos` loop layout')
-  parser.add_argument('--kokkos_vector_length', default=-1, type=int, help='`Kokkos` vector length')
   return vars(parser.parse_args())
 
 def configureKokkos(arg, mopt):
@@ -171,35 +167,12 @@ def configureKokkos(arg, mopt):
                           + '${KOKKOS_PATH}/bin/nvcc_wrapper'
     # add with MPI here (TODO)
 
-  # kokkos loop stuff
-  if arg['kokkos_loop'] == 'default':
-    arg['kokkos_loop'] = '1DRange' if 'Cuda' in arg['kokkos_devices'] else 'for'
-  mopt['KOKKOS_VECTOR_LENGTH'] = '-1'
-  if arg['kokkos_loop'] == '1DRange':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-DMANUAL1D_LOOP'
-  elif arg['kokkos_loop'] == 'MDRange':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-DMDRANGE_LOOP'
-  elif arg['kokkos_loop'] == 'for':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-DFOR_LOOP'
-  elif arg['kokkos_loop'] == 'TP-TVR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTP_INNERX_LOOP -DINNER_TVR_LOOP'
-    mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
-  elif arg['kokkos_loop'] == 'TP-TTR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTP_INNERX_LOOP -DINNER_TTR_LOOP'
-    mopt['KOKKOS_VECTOR_LENGTH'] = ('1' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
-  elif arg['kokkos_loop'] == 'TP-TTR-TVR':
-    mopt['KOKKOS_LOOP_LAYOUT'] = '-DTPTTRTVR_LOOP'
-    mopt['KOKKOS_VECTOR_LENGTH'] = ('32' if arg['kokkos_vector_length'] == -1 else str(arg['kokkos_vector_length']))
-
-  mopt['KOKKOS_VECTOR_LENGTH'] = '-DKOKKOS_VECTOR_LENGTH=' + mopt['KOKKOS_VECTOR_LENGTH']
-
   settings = f'''
   `Kokkos`:
-    {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] else '-'}
-    {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] else '-'}
-    {'Options':30} {arg['kokkos_options'] if arg['kokkos_options'] else '-'}
-    {'Loop':30} {arg['kokkos_loop']}
-    {'Vector length':30} {arg['kokkos_vector_length']}'''
+    {'Devices':30} {arg['kokkos_devices'] if arg['kokkos_devices'] is not None else '-'}
+    {'Architecture':30} {arg['kokkos_arch'] if arg['kokkos_arch'] is not None else '-'}
+    {'Options':30} {mopt['KOKKOS_OPTIONS'] if mopt['KOKKOS_OPTIONS'] is not None else '-'}
+    {'Cuda options':30} {mopt['KOKKOS_CUDA_OPTIONS'] if mopt['KOKKOS_CUDA_OPTIONS'] is not None else '-'}'''
   return settings
 
 def createMakefile(m_in, m_out, mopt):

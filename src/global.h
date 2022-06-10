@@ -126,6 +126,12 @@ namespace ntt {
   auto NTTRange(const int (&i1)[static_cast<short>(D)], const int (&i2)[static_cast<short>(D)])
     -> RangeND<D>;
 
+  /**
+   * @brief Synchronize CPU/GPU before advancing.
+   * 
+   */
+  void NTTWait();
+
 } // namespace ntt
 
 namespace plog {

@@ -26,18 +26,26 @@ namespace ntt {
     // find timestep and effective cell size
     m_mblock.set_min_cell_size(m_mblock.metric.findSmallestCell());
     m_mblock.set_timestep(m_sim_params.cfl() * m_mblock.min_cell_size());
+
+    NTTWait();
+    PLOGD << "Simulation initialized.";
   }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initializeSetup() {
     m_pGen.userInitFields(m_sim_params, m_mblock);
     m_pGen.userInitParticles(m_sim_params, m_mblock);
+
+    NTTWait();
+    PLOGD << "Setup initialized.";
   }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::verify() {
     // m_sim_params.verify();
     // mblock.verify(m_sim_params);
+    NTTWait();
+    PLOGD << "Prerun check passed.";
   }
 
   template <Dimension D, SimulationType S>
@@ -109,10 +117,15 @@ namespace ntt {
     } else {
       PLOGI << "[no particles]";
     }
+    NTTWait();
+    PLOGD << "Simulation details printed.";
   }
 
   template <Dimension D, SimulationType S>
-  void Simulation<D, S>::finalize() {}
+  void Simulation<D, S>::finalize() {
+    NTTWait();
+    PLOGD << "Simulation finalized.";
+  }
 
 } // namespace ntt
 
