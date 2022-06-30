@@ -20,6 +20,9 @@ main:
         ref: "/how_it_works/cubed_sphere"
 
   - name: 'For developers'
+
+  - name: 'Fun'
+    ref: "/fun/funstuff"
     # ref: "/dev"
     # icon: "gdoc_notification"
     # sub:
