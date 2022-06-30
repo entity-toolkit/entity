@@ -52,7 +52,7 @@ window.addEventListener("load", function (event) {
     }
     draw(p5inst) {
       p5inst.strokeWeight(2);
-      p5inst.stroke(250);
+      p5inst.stroke(color_fg);
       p5inst.line(0, configs.y0, width, configs.y0);
       this.plasmoids.forEach((p) => {
         p.draw(p5inst)
