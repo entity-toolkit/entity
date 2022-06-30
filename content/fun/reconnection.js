@@ -1,10 +1,11 @@
 window.addEventListener("load", function (event) {
   var color_fg = getComputedStyle(document.getElementsByTagName('body')[0]).getPropertyValue('--body-font-color');
   var color_bg = getComputedStyle(document.getElementsByTagName('body')[0]).getPropertyValue('--body-background');
+  var w = document.getElementsByTagName('article')[0].offsetWidth;
   if (color_bg == 'white') {
     color_bg = '#ffffff';
   }
-  const width = 600, height = 600;
+  const width = w, height = 600;
   let configs = {
     y0: height / 2,
     dr: 0.025,
