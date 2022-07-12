@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     sudo bc zsh git vim wget curl \
     libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
     libglu1-mesa-dev freeglut3-dev mesa-common-dev \
-    cmake doxygen python3 python3-pip build-essential
+    clang-tools cmake doxygen python3 python3-pip build-essential
 
 RUN ln -s /bin/python3 /bin/python
 RUN pip install autopep8

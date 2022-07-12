@@ -1,0 +1,35 @@
+{
+  "env": {
+    "myDefaultIncludePath": [
+      "${workspaceFolder}",
+      "${workspaceFolder}/src/**",
+      "${workspaceFolder}/build/",
+      "${workspaceFolder}/extern/**"
+    ],
+    "myCompilerPath": "/usr/bin/g++"
+  },
+  "configurations": [
+    {
+      "name": "default",
+      "intelliSenseMode": "linux-gcc-x64",
+      "includePath": [
+        "${myDefaultIncludePath}"
+      ],
+      "defines": [
+        "SIMTYPE=PIC_SIMTYPE"
+      ],
+      "compilerPath": "${myCompilerPath}",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "forcedInclude": ["${workspaceFolder}/.vscode/intellisense.h"],
+      "browse": {
+        "path": [
+          "${workspaceFolder}"
+        ],
+        "limitSymbolsToIncludedHeaders": true,
+        "databaseFilename": ""
+      }
+    }
+  ],
+  "version": 4
+}
