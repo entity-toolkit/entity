@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "*.in": "makefile",
+    "string_view": "cpp"
+  },
+}
