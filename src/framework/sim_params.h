@@ -71,14 +71,24 @@ namespace ntt {
     [[nodiscard]] auto sigma0() const -> const real_t& { return m_sigma0; }
     [[nodiscard]] auto charge0() const -> const real_t& { return m_charge0; }
     [[nodiscard]] auto B0() const -> const real_t& { return m_B0; }
-    [[nodiscard]] auto species() const -> const std::vector<ParticleSpecies>& { return m_species; }
+    [[nodiscard]] auto species() const -> const std::vector<ParticleSpecies>& {
+      return m_species;
+    }
     [[nodiscard]] auto extent() const -> const std::vector<real_t>& { return m_extent; }
-    [[nodiscard]] auto resolution() const -> const std::vector<unsigned int>& { return m_resolution; }
-    [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& { return m_boundaries; }
+    [[nodiscard]] auto resolution() const -> const std::vector<unsigned int>& {
+      return m_resolution;
+    }
+    [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& {
+      return m_boundaries;
+    }
     [[nodiscard]] auto metric() const -> const std::string& { return m_metric; }
-    [[nodiscard]] auto metric_parameters() const -> const real_t* { return m_metric_parameters; }
+    [[nodiscard]] auto metric_parameters() const -> const real_t* {
+      return m_metric_parameters;
+    }
     [[nodiscard]] auto inputdata() const -> const toml::value& { return m_inputdata; }
-    [[nodiscard]] auto enable_fieldsolver() const -> const bool& { return m_enable_fieldsolver; }
+    [[nodiscard]] auto enable_fieldsolver() const -> const bool& {
+      return m_enable_fieldsolver;
+    }
     [[nodiscard]] auto enable_deposit() const -> const bool& { return m_enable_deposit; }
   };
 

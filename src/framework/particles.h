@@ -33,8 +33,11 @@ namespace ntt {
      * @param maxnpart max number of allocated particles.
      * @param pusher pusher assigned for the species.
      */
-    ParticleSpecies(
-      std::string label, const float& m, const float& ch, const std::size_t& maxnpart, const ParticlePusher& pusher);
+    ParticleSpecies(std::string           label,
+                    const float&          m,
+                    const float&          ch,
+                    const std::size_t&    maxnpart,
+                    const ParticlePusher& pusher);
     /**
      * Constructor for the particle species container which deduces the pusher itself.
      *

@@ -23,7 +23,8 @@ namespace ntt {
     /**
      * EM fields at current time step stored as Kokkos Views of dimension D * 6.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
+     * component.
      * @note Address : em(i, j, k, em::***).
      *
      * @note Bx1 is stored at (    i, j+1/2, k+1/2, n-1/2)
@@ -38,7 +39,8 @@ namespace ntt {
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 6.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
+     * component.
      * @note Address : cur(i, j, k, cur::***).
      *
      * @note Jx1 is deposited at (i+1/2,     j,     k, n+1/2)
@@ -54,28 +56,32 @@ namespace ntt {
     /**
      * Auxiliary E and H fields stored as Kokkos Views of dimension D * 6.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
+     * component.
      * @note Address : aux(i, j, k, em::***).
      */
     RealFieldND<D, 6> aux;
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
+     * component.
      * @note Address : em0(i, j, k, em::***).
      */
     RealFieldND<D, 6> em0;
     /**
      * Current fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
+     * component.
      * @note Address : cur0(i, j, k, cur::***).
      */
     RealFieldND<D, 3> cur0;
     /**
      * Vector potential
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
+     * component.
      * @note Address : aphi(i, j, k, 0).
      */
     RealFieldND<D, 1> aphi;

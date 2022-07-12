@@ -37,7 +37,9 @@ namespace ntt {
      * @param ext extent vector of size 2 * D.
      * @param params metric-/domain-specific parameters (max: 10).
      */
-    Mesh(const std::vector<unsigned int>& res, const std::vector<real_t>& ext, const real_t* params);
+    Mesh(const std::vector<unsigned int>& res,
+         const std::vector<real_t>&       ext,
+         const real_t*                    params);
     ~Mesh() = default;
 
     /**
@@ -68,7 +70,8 @@ namespace ntt {
   };
 
   /**
-   * Container for the fields, particles and coordinate system. This is the main subject of the simulation.
+   * Container for the fields, particles and coordinate system. This is the main subject of the
+   * simulation.
    *
    * @tparam D Dimension.
    * @tparam S Simulation type.
