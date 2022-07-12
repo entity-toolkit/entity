@@ -1,0 +1,13 @@
+version: "3"
+services:
+  entity:
+    image: entity
+    container_name: ntt
+    build:
+      context: .
+      args:
+        USERNAME: $USER
+    volumes:
+      - type: bind
+        source: ../
+        target: /home/$USER/entity
