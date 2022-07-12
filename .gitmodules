@@ -10,3 +10,6 @@
 [submodule "extern/acutest"]
 	path = extern/acutest
 	url = git@github.com:mity/acutest.git
+[submodule "extern/nttiny"]
+	path = extern/nttiny
+	url = git@github.com:haykh/nttiny.git
