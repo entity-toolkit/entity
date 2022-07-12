@@ -60,9 +60,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * TODO: Faster sqrt method?
-     */
     Inline void operator()(const BorisFwd_t&, const index_t p) const {
       vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
       interpolateFields(p, e_int, b_int);
@@ -102,8 +99,8 @@ namespace ntt {
     }
     // Inline void operator()(const BorisBwd_t&, const index_t p) const {
     //   real_t inv_energy;
-    //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-    //   inv_energy = ONE / math::sqrt(ONE + inv_energy);
+    //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) +
+    //   SQR(m_particles.ux3(p)); inv_energy = ONE / math::sqrt(ONE + inv_energy);
 
     //   coord_t<D> xp;
     //   getParticleCoordinate(p, xp);
