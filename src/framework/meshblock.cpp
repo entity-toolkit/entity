@@ -9,7 +9,9 @@
 namespace ntt {
 
   template <Dimension D>
-  Mesh<D>::Mesh(const std::vector<unsigned int>& res, const std::vector<real_t>& ext, const real_t* params)
+  Mesh<D>::Mesh(const std::vector<unsigned int>& res,
+                const std::vector<real_t>&       ext,
+                const real_t*                    params)
     : m_imin {res.size() > 0 ? N_GHOSTS : 0},
       m_imax {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
       m_jmin {res.size() > 1 ? N_GHOSTS : 0},
@@ -27,12 +29,14 @@ namespace ntt {
   }
   template <>
   auto Mesh<Dimension::TWO_D>::loopAllCells() -> RangeND<Dimension::TWO_D> {
-    return NTTRange<Dimension::TWO_D>({m_imin - N_GHOSTS, m_jmin - N_GHOSTS}, {m_imax + N_GHOSTS, m_jmax + N_GHOSTS});
+    return NTTRange<Dimension::TWO_D>({m_imin - N_GHOSTS, m_jmin - N_GHOSTS},
+                                      {m_imax + N_GHOSTS, m_jmax + N_GHOSTS});
   }
   template <>
   auto Mesh<Dimension::THREE_D>::loopAllCells() -> RangeND<Dimension::THREE_D> {
-    return NTTRange<Dimension::THREE_D>({m_imin - N_GHOSTS, m_jmin - N_GHOSTS, m_kmin - N_GHOSTS},
-                                        {m_imax + N_GHOSTS, m_jmax + N_GHOSTS, m_kmax + N_GHOSTS});
+    return NTTRange<Dimension::THREE_D>(
+      {m_imin - N_GHOSTS, m_jmin - N_GHOSTS, m_kmin - N_GHOSTS},
+      {m_imax + N_GHOSTS, m_jmax + N_GHOSTS, m_kmax + N_GHOSTS});
   }
   template <>
   auto Mesh<Dimension::ONE_D>::loopActiveCells() -> RangeND<Dimension::ONE_D> {

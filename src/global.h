@@ -7,6 +7,7 @@
 #include <plog/Log.h>
 #include <Kokkos_Core.hpp>
 
+#include <type_traits>
 #include <vector>
 #include <cstddef>
 #include <string>
