@@ -3,7 +3,9 @@ One particle-in-cell code to rule them all.
 
 ## Contributors
 
-🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}  
+🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}
+
+🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk)}
 
 ☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh)}
 
@@ -12,10 +14,9 @@ One particle-in-cell code to rule them all.
 _Clone_ this repository and all its dependencies with the following command:
 
 ```sh
-git clone --recursive git@github.com:haykh/entity.git
-# if not using `--recursive`, after cloning run
-git submodule update --init --recursive
-# after that to update submodules
+git clone git@github.com:haykh/entity.git
+git submodule update --recursive --init
+# to update the submodules
 git submodule update --recursive --remote
 ```
 
@@ -90,7 +91,7 @@ The header-only libraries can be included in the `.cpp` or `.h` files with `#inc
 While we try to keep the code as compatible as possible, there are certain stringent requirements we impose (primarily due to limitations by `Kokkos`).
 
 1. `python3`: for configuration (verify: `python --version`);
-2. `GNU Make<=4.2.1`: for compilation (verify: `make -v`);
+2. `GNU Make`: for compilation (verify: `make -v`);
 3. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`).
 
 > For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
