@@ -128,7 +128,7 @@ namespace ntt {
 
   /**
    * @brief Synchronize CPU/GPU before advancing.
-   * 
+   *
    */
   void NTTWait();
 
