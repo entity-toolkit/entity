@@ -128,7 +128,7 @@ MAIN_SRCS := ${SRC_DIR}/main.cpp
 MAIN_OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(MAIN_SRCS:%=%.o))
 MAIN_DEPS := $(MAIN_OBJS:.o=.d)
 
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${SRC_DIR}/${TEMP_DIR} ${EXT_DIR}/plog/include ${EXT_DIR}/acutest/include ${EXT_DIR}
+INC_DIRS := $(shell find ${SRC_DIR} -type d) ${SRC_DIR}/${TEMP_DIR} ${EXT_DIR}/plog/include ${EXT_DIR}/doctest/doctest ${EXT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 # # # # # Link/compile # # # # # # # # # # # # # #
