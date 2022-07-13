@@ -1,21 +1,22 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <doctest.h>
+
 // test external libraries
 #include "test_extern_toml.h"
 #include "test_extern_kokkos.h"
+
+// test auxiliary
 #include "test_qmath.h"
 
 #include "pic/test_pic_minkowski.h"
 
-#include <acutest.h>
-
-void testSuccess() {}
-
-TEST_LIST
-    = {{"extern/toml", testExternToml},
-       {"extern/kokkos", testExternKokkos},
-       {"qmath", testQmath},
-       {"pic/minkowski", testPICMinkowski},
-       {"success", testSuccess},
-       {nullptr, nullptr}};
+// TEST_LIST
+//= {{"extern/toml", testExternToml},
+//{"extern/kokkos", testExternKokkos},
+//{"qmath", testQmath},
+//{"pic/minkowski", testPICMinkowski},
+//{"success", testSuccess},
+//{nullptr, nullptr}};
 
 // #include "global.h"
 // #include "cargs.h"
@@ -46,7 +47,8 @@ TEST_LIST
 //     // auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
 //     // // auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
 //     // auto  inputdata = toml::parse(static_cast<std::string>(inputfilename));
-//     // short res = static_cast<short>(ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
+//     // short res = static_cast<short>(ntt::readFromInput<std::vector<int>>(inputdata,
+//     "domain", "resolution").size());
 
 //     // if (res == 1) {
 //     //   // ntt::SIMULATION_CONTAINER<ntt::Dimension::ONE_D> sim(inputdata);
