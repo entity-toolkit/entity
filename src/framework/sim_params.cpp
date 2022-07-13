@@ -15,8 +15,10 @@ namespace ntt {
   SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) {
     m_inputdata = inputdata;
     m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", defaults::title);
-    m_total_runtime = readFromInput<real_t>(m_inputdata, "simulation", "runtime");
-    m_correction    = readFromInput<real_t>(m_inputdata, "algorithm", "correction");
+    m_total_runtime
+      = readFromInput<real_t>(m_inputdata, "simulation", "runtime", defaults::runtime);
+    m_correction
+      = readFromInput<real_t>(m_inputdata, "algorithm", "correction", defaults::correction);
     m_enable_fieldsolver
       = readFromInput<bool>(m_inputdata, "algorithm", "fieldsolver_ON", true);
     m_enable_deposit = readFromInput<bool>(m_inputdata, "algorithm", "deposit_ON", true);
