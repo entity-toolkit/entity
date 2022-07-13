@@ -105,8 +105,7 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metric_diag_vtrans.h"
-#include "metric_cart_vtrans.h"
-#include "metric_cart_sph_vtrans.h"
+#include "metric_sph_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
