@@ -21,7 +21,11 @@
       "compilerPath": "${myCompilerPath}",
       "cStandard": "c17",
       "cppStandard": "c++17",
-      "forcedInclude": ["${workspaceFolder}/.vscode/intellisense.h"],
+      "forcedInclude": [
+        "${workspaceFolder}/.vscode/intellisense.h",
+        "${workspaceFolder}/src/global.h",
+        "${workspaceFolder}/src/definitions.h"
+      ],
       "browse": {
         "path": [
           "${workspaceFolder}"
