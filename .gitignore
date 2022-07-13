@@ -3,10 +3,11 @@
 
 # Compilation junk
 *.o
+*.tmp
 build/
+build_tests/
 bin/
 Makefile
-*.tmp
 
 # Accidental python files
 *.ipynb
@@ -28,6 +29,7 @@ __pycache__
 
 # Problem generator template
 src/.temp/
+
 .vscode/*.log
 
 script_ntt
