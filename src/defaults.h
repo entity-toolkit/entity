@@ -14,6 +14,8 @@ namespace ntt {
     const std::string pusher {"Boris"};
     const std::string metric {"minkowski"};
 
+    const real_t runtime {1e10};
+    const real_t correction {1.0};
     const real_t cfl {0.95};
   } // namespace defaults
 } // namespace ntt
