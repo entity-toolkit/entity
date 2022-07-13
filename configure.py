@@ -376,7 +376,7 @@ report = f'''
 {'Setup configurations ':.<{w}}
 
   {'Simulation type':32} {args['simtype'].upper()}
-  {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else 'N/A'}
+  {'Problem generator':32} {args['pgen'] if args['pgen'] != '' else '--'}
   {'Precision':32} {args['precision']}
   {'Metric':32} {args['metric']}
 
