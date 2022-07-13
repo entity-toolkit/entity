@@ -138,7 +138,7 @@ namespace ntt {
         real_t r {r0 + math::exp(chi)};
         real_t eta {x[1] * deta + eta_min};
         real_t dtheta_deta_ {dtheta_deta(eta)};
-        return deta_sqr * SQR(dtheta_deta_) * r * r * ;
+        return deta_sqr * SQR(dtheta_deta_) * r * r;
       }
     }
     /**
@@ -205,8 +205,7 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metric_diag_vtrans.h"
-#include "metric_cart_vtrans.h"
-#include "metric_cart_sph_vtrans.h"
+#include "metric_sph_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
