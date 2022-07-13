@@ -15,7 +15,7 @@ PGEN_DIR := ${ROOT_DIR}/@PGEN_DIR@
 PGEN := @PGEN@
 
 TEST_DIR := ${ROOT_DIR}/@TEST_DIR@
-BUILD_TEST_DIR := @TEST_DIR@
+BUILD_TEST_DIR := ${ROOT_DIR}/${BUILD_DIR}_tests/
 
 SRC_DIR := ${ROOT_DIR}/@SRC_DIR@
 BUILD_SRC_DIR := @SRC_DIR@
@@ -73,7 +73,7 @@ LIBS :=
 
 # # # # # Targets # # # # # # # # # # # # # #
 #
-.PHONY: all help ntt test clean demo cleanlib pgenCopy
+.PHONY: all help ntt clean demo cleanlib pgenCopy
 
 default: help demo
 
@@ -82,7 +82,7 @@ ntt : pgenCopy ${BIN_DIR}/${TARGET}
 	@echo [M]aking $@
 
 ifeq (${PGEN},)
-PGEN := ntt_dummy
+PGEN := dummy
 endif
 
 # Problem generator
@@ -95,10 +95,6 @@ ${SRC_DIR}/${TEMP_DIR}/problem_generator.cpp : ${PGEN_DIR}/${PGEN}.cpp
 ${SRC_DIR}/${TEMP_DIR}/problem_generator.hpp : ${PGEN_DIR}/${PGEN}.hpp
 	$(HIDE)mkdir -p ${SRC_DIR}/${TEMP_DIR}
 	$(HIDE)cp $< $@
-
-# linking tests
-test : pgenCopy ${BIN_DIR}/${TEST_TARGET}
-	@echo [M]aking $@
 
 help:
 	@echo
@@ -132,22 +128,17 @@ MAIN_SRCS := ${SRC_DIR}/main.cpp
 MAIN_OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(MAIN_SRCS:%=%.o))
 MAIN_DEPS := $(MAIN_OBJS:.o=.d)
 
-# Tests
-TEST_SRCS := $(shell find ${TEST_DIR} -name *.cpp -or -name *.c)
-TEST_OBJS := $(subst ${TEST_DIR},${BUILD_TEST_DIR},$(TEST_SRCS:%=%.o))
-TEST_DEPS := $(TEST_OBJS:.o=.d)
-
 INC_DIRS := $(shell find ${SRC_DIR} -type d) ${SRC_DIR}/${TEMP_DIR} ${EXT_DIR}/plog/include ${EXT_DIR}/acutest/include ${EXT_DIR}
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 # # # # # Link/compile # # # # # # # # # # # # # #
-#
-# using `Kokkos`
+
 include ${KOKKOS_PATH}/Makefile.kokkos
 OBJS := $(OBJS) $(KOKKOS_LINK_DEPENDS)
 CFLAGS := $(CFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(KOKKOS_LDFLAGS)
 LIBS := $(LIBS) $(KOKKOS_LIBS)
+CFLAGS := $(filter-out ${CXXSTANDARD}, $(CFLAGS))
 
 compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(CFLAGS) -MMD
 link_command := ${LINK} $(LDFLAGS)
@@ -157,22 +148,15 @@ ${BIN_DIR}/${TARGET} : $(MAIN_OBJS) $(OBJS)
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
-${BIN_DIR}/${TEST_TARGET} : $(TEST_OBJS) $(OBJS)
-	@echo [L]inking $(notdir $@) from $^
-	$(HIDE)mkdir -p ${BIN_DIR}
-	$(HIDE)${link_command} $^ -o $@ $(LIBS)
-
 ${BUILD_SRC_DIR}/%.o : ${SRC_DIR}/%
 	@echo [C]ompiling \`src\`: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${compile_command} -c $< -o $@
 
-${BUILD_TEST_DIR}/%.o : ${TEST_DIR}/%
-	@echo [C]ompiling \`tests\`: $(subst ${ROOT_DIR}/,,$<)
-	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${compile_command} -c $< -o $@
+include ${ROOT_DIR}/Tests.mk
 
--include $(DEPS) $(TEST_DEPS) $(MAIN_DEPS)
+# to ensure recompilation when header files are changed
+-include $(DEPS) $(MAIN_DEPS)
 
 # for nttiny />
 NTTINY_DIR := @NTTINY_DIR@
