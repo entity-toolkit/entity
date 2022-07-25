@@ -1,7 +1,3 @@
----
-title: Code units
----
-
 All the scales in the code are normalized to the so-called Code Units (CU). Employing these allows to scale-invariantly define the simulation setup, without overconstrainting the unit system.
 
 !!! info

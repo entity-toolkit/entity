@@ -1,7 +1,3 @@
----
-title: Particle-in-cell
----
-
 Here we demonstrate the full particle-in-cell (PIC) algorithm in the most general form for both flat (curvilinear) space-time and GR.
 
 ## Non-GR
@@ -230,6 +226,4 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
 *Final configuration:*
 <div id="grplot5"></div>
 
-
-<script src="/how/pic_nongr.js" type="text/javascript"></script>
-<script src="/how/pic_gr.js" type="text/javascript"></script>
+<div id="pic_scheme"></div>
