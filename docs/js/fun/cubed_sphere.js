@@ -1,11 +1,4 @@
-const ifDocumentContains = (id, callback) => {
-  const element = document.getElementById(id)
-  if (element) {
-    callback(element)
-  }
-}
-
-ifDocumentContains("plot_cubed_sphere", e => {
+if (document.getElementById("plot_cubed_sphere")) {
 
   window.addEventListener("load", (event) => {
     // const color_bg = [255, 255, 255];
@@ -126,4 +119,4 @@ ifDocumentContains("plot_cubed_sphere", e => {
     }
     const myp5 = new p5(sketch);
   }, false);
-})
+}

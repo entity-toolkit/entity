@@ -1,11 +1,4 @@
-const ifDocumentContains = (id, callback) => {
-  const element = document.getElementById(id)
-  if (element) {
-    callback(element)
-  }
-}
-
-ifDocumentContains("plot_ax_01", e => {
+if (document.getElementById("plot_ax_01")) {
 
   window.addEventListener("load", function (event) {
     // const color = getComputedStyle(document.getElementsByTagName('body')[0]).getPropertyValue('--body-font-color');
@@ -221,4 +214,4 @@ ifDocumentContains("plot_ax_01", e => {
     const myp5 = new p5(sketch);
 
   }, false);
-})
+}
