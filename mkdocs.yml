@@ -1,0 +1,74 @@
+site_name: "Entity wiki"
+
+nav:
+  - 'How it works':
+    - '3+1 formulation': 'how/3p1.md'
+    - 'Code units': 'how/units.md'
+    - 'PIC algorithm': 'how/pic.md'
+    - 'Coordinate systems': 'how/coords.md'
+  - 'Fun': 
+    - 'Cubed sphere': 'fun/cubed_sphere.md'
+    - '"Reconnection"': 'fun/reconnection.md'
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+
+# repo_url: https://github.com/haykh/entity/
+# repo_name: haykh/entity
+
+plugins:
+  - search
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  icon:
+    repo: fontawesome/brands/git 
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+  font:
+    text: 'IBM Plex Sans'
+    code: 'JetBrains Mono'
+  features:
+    - navigation.tracking
+    - navigation.expand
+    - toc.integrate
+    - content.code.annotate
+
+extra_javascript:
+  - js/init.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdnjs.cloudflare.com/ajax/libs/d3/7.6.1/d3.min.js
+  - https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js
+
+extra_css:
+  - css/extra.css
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/haykh/entity/
+
+copyright: Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton
