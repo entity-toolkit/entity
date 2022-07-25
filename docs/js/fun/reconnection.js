@@ -1,11 +1,4 @@
-const ifDocumentContains = (id, callback) => {
-  const element = document.getElementById(id)
-  if (element) {
-    callback(element)
-  }
-}
-
-ifDocumentContains("plot_reconnection", e => {
+if (document.getElementById("plot_reconnection")) {
 
   window.addEventListener("load", (event) => {
     const w = document.getElementsByTagName('article')[0].offsetWidth;
@@ -148,4 +141,4 @@ ifDocumentContains("plot_reconnection", e => {
 
   }, false);
 
-})
+}

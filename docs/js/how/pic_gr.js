@@ -1,11 +1,4 @@
-const ifDocumentContains = (id, callback) => {
-  const element = document.getElementById(id)
-  if (element) {
-    callback(element)
-  }
-}
-
-ifDocumentContains("pic_scheme", (e) => {
+if (document.getElementById("pic_scheme")) {
   const C0_color = "#389ed0"
   const C1_color = "#ef5946"
   const C2_color = "#06b15c"
@@ -460,4 +453,4 @@ ifDocumentContains("pic_scheme", (e) => {
       l[0].attr("transform", "translate(" + this.xScale(0.5) + "," + (this.upY - 25) + ")")
     }
   }
-})
+}
