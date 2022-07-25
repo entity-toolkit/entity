@@ -1,3 +1,10 @@
+const ifDocumentContains = (id, callback) => {
+  const element = document.getElementById(id)
+  if (element) {
+    callback(element)
+  }
+}
+
 ifDocumentContains("pic_scheme", (e) => {
   const C0_color = "#389ed0"
   const C1_color = "#ef5946"

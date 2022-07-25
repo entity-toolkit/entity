@@ -1,3 +1,10 @@
+const ifDocumentContains = (id, callback) => {
+  const element = document.getElementById(id)
+  if (element) {
+    callback(element)
+  }
+}
+
 ifDocumentContains("plot_reconnection", e => {
 
   window.addEventListener("load", (event) => {

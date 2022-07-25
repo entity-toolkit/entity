@@ -24,10 +24,3 @@ window.MathJax = {
 };
 
 document$.subscribe(MathJax.typesetPromise)
-
-const ifDocumentContains = (id, callback) => {
-  const element = document.getElementById(id)
-  if (element) {
-    callback(element)
-  }
-}
