@@ -6,14 +6,14 @@
 #
 # [ Compilation flags ]
 #   -verbose                      enable verbose compilation mode
-#   --build=<DIR>                 specify building directory
-#   --bin=<DIR>                   specify directory for executables
 #   -debug                        compile in `debug` mode
 #   --compiler=<COMPILER>         compiler used (can be a valid path to the binary)
+#   --build=<DIR>                 specify building directory
+#   --bin=<DIR>                   specify directory for executables
 #
 # [ Nttiny flags ]
 #   -nttiny                       enable visualizer compilation
-#   --nttiny_path=<DIR>           specify path for `Nttiny`
+#   --nttiny_path=<DIR>           specify path for `Nttiny` (relative to current dir or absolute)
 #
 # [ Simulation flags ]
 #   --pgen=<PROBLEM_GENERATOR>    specify the problem generator to be used
@@ -25,7 +25,7 @@
 #   --kokkos_devices=<DEV>        `Kokkos` devices
 #   --kokkos_arch=<ARCH>          `Kokkos` architecture
 #   --kokkos_options=<OPT>        `Kokkos` options
-#   --kokkos_cuda_options=<COPT>  `Kokkos` Cuda options
+#   --kokkos_cuda_options=<OPT>   `Kokkos` Cuda options
 # ----------------------------------------------------------------------------------------
 
 import argparse
