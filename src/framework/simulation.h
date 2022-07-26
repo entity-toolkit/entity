@@ -64,9 +64,22 @@ namespace ntt {
     /**
      * Getters.
      */
-    [[nodiscard]] auto sim_params() const -> const SimulationParams& { return m_sim_params; }
-    [[nodiscard]] auto mblock() const -> const Meshblock<D, S>& { return m_mblock; }
-    [[nodiscard]] auto pgen() const -> const ProblemGenerator<D, S>& { return m_pGen; }
+    [[nodiscard]] auto sim_params() -> SimulationParams* { return &m_sim_params; }
+    [[nodiscard]] auto mblock() -> Meshblock<D, S>* { return &m_mblock; }
+    [[nodiscard]] auto pgen() -> ProblemGenerator<D, S>* { return &m_pGen; }
+
+    /**
+     * Loop over all active cells (disregard ghost cells).
+     *
+     * @returns Kokkos range policy with proper min/max indices and dimension.
+     */
+    auto loopActiveCells() -> RangeND<D>;
+    /**
+     * Loop over all cells.
+     *
+     * @returns Kokkos range policy with proper min/max indices and dimension.
+     */
+    auto loopAllCells() -> RangeND<D>;
   };
 
 } // namespace ntt

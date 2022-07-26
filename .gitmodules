@@ -13,3 +13,6 @@
 [submodule "extern/doctest"]
 	path = extern/doctest
 	url = git@github.com:doctest/doctest.git
+[submodule "extern/rapidcsv"]
+	path = extern/rapidcsv
+	url = git@github.com:d99kris/rapidcsv.git

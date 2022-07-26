@@ -16,7 +16,9 @@
         "${myDefaultIncludePath}"
       ],
       "defines": [
-        "SIMTYPE=PIC_SIMTYPE"
+        "SIMTYPE=PIC_SIMTYPE",
+        "SINGLE_PRECISION",
+        "METRIC=MINKOWSKI_METRIC"
       ],
       "compilerPath": "${myCompilerPath}",
       "cStandard": "c17",
