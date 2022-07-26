@@ -1,7 +1,7 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all.
 
-## Contributors
+## Contributors (alphabetical)
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}
 
@@ -60,7 +60,7 @@ After the compilation is successful, you will find the corresponding executable 
 ### Known bugs / minor issues to fix
 
 - [ ] `$(CURDIR)` seems to fail in some instances (need a more robust apprch)
-- [ ] check python `subprocess.run` command during the configure stage
+- [x] check python `subprocess.run` command during the configure stage
 - [ ] check if compilation of `glfw` is possible (or if `glfw` is available)
 - [ ] same for `freetype`
 - [ ] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
@@ -77,14 +77,15 @@ _[under construction]_
 
 ## Third-party libraries
 
+All the third-party libraries are added as git submodules. If the code is cloned recursively, the submodules are automatically included updated.
+
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability;
 2. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging;
-3. [`acutest`](https://github.com/mity/acutest): for unit testing;
-4. [`toml11`](https://github.com/ToruNiina/toml11): for `toml` file parsing.
+3. [`doctest`](https://github.com/doctest/doctest): for unit testing (header-only);
+4. [`toml11`](https://github.com/ToruNiina/toml11): for `toml` file parsing (header-only);
+5. [`rapidcsv`](https://github.com/d99kris/rapidcsv): for `csv` file writing (header-only).
 
 > All the third-party libraries reside in the `extern` directory.
-
-The header-only libraries can be included in the `.cpp` or `.h` files with `#include "{LIBNAME}/{LIBHEADER}[.h|.hpp]"`. Compiled libraries such as `Kokkos` are included similar to standard libraries, e.g., `#include <Kokkos_Core.hpp>`.
 
 ## Dependencies
 
