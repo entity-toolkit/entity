@@ -143,8 +143,8 @@ namespace ntt {
     m_ppc0       = readFromInput<real_t>(m_inputdata, "units", "ppc0");
     m_larmor0    = readFromInput<real_t>(m_inputdata, "units", "larmor0");
     m_skindepth0 = readFromInput<real_t>(m_inputdata, "units", "skindepth0");
-    m_sigma0     = m_larmor0 * m_larmor0 / (m_skindepth0 * m_skindepth0);
-    m_charge0    = 1.0 / (m_ppc0 * m_skindepth0 * m_skindepth0);
+    m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
+    m_charge0    = 1.0 / (m_ppc0 * SQR(m_skindepth0));
     m_B0         = 1.0 / m_larmor0;
 
     m_cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", defaults::cfl);
