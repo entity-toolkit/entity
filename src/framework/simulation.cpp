@@ -122,6 +122,16 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
+  auto Simulation<D, S>::loopActiveCells() -> RangeND<D> {
+    return m_mblock.loopActiveCells();
+  }
+
+  template <Dimension D, SimulationType S>
+  auto Simulation<D, S>::loopAllCells() -> RangeND<D> {
+    return m_mblock.loopAllCells();
+  }
+
+  template <Dimension D, SimulationType S>
   void Simulation<D, S>::finalize() {
     NTTWait();
     PLOGD << "Simulation finalized.";
