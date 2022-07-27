@@ -17,7 +17,11 @@
 
 TEST_CASE("testing PIC") {
   Kokkos::initialize();
+  /* -------------------------------------------------------------------------- */
+  /*                            Minkowski metric test                           */
+  /* -------------------------------------------------------------------------- */
   SUBCASE("Minkowski") {
+    /* ------------------------- 2D particle pusher test ------------------------ */
     SUBCASE("2D pusher [E x B]") {
       std::string        input_toml = R"TOML(
         [domain]
@@ -107,7 +111,6 @@ TEST_CASE("testing PIC") {
       // run for some # of timesteps
       real_t runtime = 500.0f;
       for (int i {0}; i < (int)runtime; ++i) {
-
         sim.pushParticlesSubstep(0.0f, ONE);
         sim.particleBoundaryConditions(0.0f);
       }
@@ -173,8 +176,114 @@ TEST_CASE("testing PIC") {
 
       sim.finalize();
     }
+    /* -------------------------- 2D field solver test -------------------------- */
     SUBCASE("2D fieldsolver") {
       // test field solver
+      std::string        input_toml = R"TOML(
+        [domain]
+        resolution      = [256, 256]
+        extent          = [0.0, 1.0, 0.0, 1.0]
+        boundaries      = ["PERIODIC", "PERIODIC"]
+
+        [units]
+        ppc0            = 1.0
+        larmor0         = 1.0
+        skindepth0      = 0.1
+      )TOML";
+      std::istringstream is(input_toml, std::ios_base::binary | std::ios_base::in);
+      auto               inputdata = toml::parse(is, "std::string");
+      ntt::PIC<ntt::Dimension::TWO_D> sim(inputdata);
+      sim.initialize();
+
+      CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.0026240291f));
+      real_t dt = sim.mblock()->timestep();
+
+      real_t sx = sim.mblock()->metric.x1_max - sim.mblock()->metric.x1_min;
+      real_t sy = sim.mblock()->metric.x2_max - sim.mblock()->metric.x2_min;
+
+      real_t nx1       = 2.0f;
+      real_t nx2       = 3.0f;
+      real_t amplitude = 1.0f;
+      auto   kx        = (real_t)(ntt::constant::TWO_PI)*nx1 / sx;
+      auto   ky        = (real_t)(ntt::constant::TWO_PI)*nx2 / sy;
+      real_t ex_ampl, ey_ampl, bz_ampl = amplitude;
+      ex_ampl = amplitude * (-ky) / math::sqrt(SQR(kx) + SQR(ky));
+      ey_ampl = amplitude * (kx) / math::sqrt(SQR(kx) + SQR(ky));
+
+      auto mblock = sim.mblock();
+      Kokkos::parallel_for(
+        "userInitFlds",
+        sim.loopActiveCells(),
+        Lambda(const std::size_t i, const std::size_t j) {
+          // index to code units
+          real_t i_ {(real_t)(static_cast<int>(i) - ntt::N_GHOSTS)},
+            j_ {(real_t)(static_cast<int>(j) - ntt::N_GHOSTS)};
+
+          // code units to cartesian (physical units)
+          ntt::coord_t<ntt::Dimension::TWO_D> x_y, xp_y, x_yp, xp_yp;
+          mblock->metric.x_Code2Cart({i_, j_}, x_y);
+          mblock->metric.x_Code2Cart({i_ + HALF, j_}, xp_y);
+          mblock->metric.x_Code2Cart({i_, j_ + HALF}, x_yp);
+          mblock->metric.x_Code2Cart({i_ + HALF, j_ + HALF}, xp_yp);
+
+          ntt::vec_t<ntt::Dimension::THREE_D> ex_cntr, ey_cntr, bz_cntr;
+
+          // hatted fields
+          ntt::vec_t<ntt::Dimension::THREE_D> e_hat {ZERO, ZERO, ZERO};
+          // i + 1/2, j
+          e_hat[0] = ex_ampl * math::sin(kx * xp_y[0] + ky * xp_y[1]);
+          e_hat[1] = ey_ampl * math::sin(kx * xp_y[0] + ky * xp_y[1]);
+          e_hat[2] = ZERO;
+          mblock->metric.v_Hat2Cntrv({i_ + HALF, j_}, e_hat, ex_cntr);
+          // i, j + 1/2
+          e_hat[0] = ex_ampl * math::sin(kx * x_yp[0] + ky * x_yp[1]);
+          e_hat[1] = ey_ampl * math::sin(kx * x_yp[0] + ky * x_yp[1]);
+          e_hat[2] = ZERO;
+          mblock->metric.v_Hat2Cntrv({i_, j_ + HALF}, e_hat, ey_cntr);
+
+          real_t bz_hat = bz_ampl * math::sin(kx * xp_yp[0] + ky * xp_yp[1]);
+          mblock->metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bz_hat}, bz_cntr);
+
+          mblock->em(i, j, ntt::em::ex1) = ex_cntr[0];
+          mblock->em(i, j, ntt::em::ex2) = ey_cntr[1];
+          mblock->em(i, j, ntt::em::bx3) = bz_cntr[2];
+        });
+      sim.fieldBoundaryConditions(0.0f);
+
+      // run for some # of timesteps
+      real_t runtime = 250.0f;
+      for (int i {0}; i < (int)runtime; ++i) {
+        sim.faradaySubstep(0.0f, HALF);
+        sim.fieldBoundaryConditions(0.0f);
+
+        sim.ampereSubstep(0.0f, ONE);
+        sim.fieldBoundaryConditions(0.0f);
+
+        sim.faradaySubstep(0.0f, HALF);
+        sim.fieldBoundaryConditions(0.0f);
+      }
+
+      // check that the fields are correct
+      CHECK(ntt::AlmostEqual(
+        sim.mblock()->em(100 + ntt::N_GHOSTS, 150 + ntt::N_GHOSTS, ntt::em::ex1), -191.516f));
+      CHECK(ntt::AlmostEqual(
+        sim.mblock()->em(10 + ntt::N_GHOSTS, 54 + ntt::N_GHOSTS, ntt::em::ex2), 114.057f));
+      CHECK(ntt::AlmostEqual(
+        sim.mblock()->em(60 + ntt::N_GHOSTS, 186 + ntt::N_GHOSTS, ntt::em::bx3), 246.654f));
+
+      real_t all_zeros = 0.0f;
+      for (std::size_t i {0}; i < 256; ++i) {
+        for (std::size_t j {0}; j < 256; ++j) {
+          all_zeros
+            += math::abs(sim.mblock()->em(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::em::ex3));
+          all_zeros
+            += math::abs(sim.mblock()->em(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::em::bx1));
+          all_zeros
+            += math::abs(sim.mblock()->em(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, ntt::em::bx2));
+        }
+      }
+      CHECK(ntt::AlmostEqual(all_zeros, 0.0f));
+      sim.finalize();
     }
     // test deposition
   }
