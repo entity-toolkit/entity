@@ -51,7 +51,7 @@ template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationTy
 // template <>
 // void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userBCFields(
 // const real_t& time, const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::GRPIC>& mblock) {
-//  using index_t = NTTArray<real_t**>::size_type;
+//  
 
 //  Kokkos::parallel_for(
 //     "userBcFlds_rmin",

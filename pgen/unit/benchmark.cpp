@@ -20,7 +20,7 @@ namespace ntt {
 
   template <>
   void ProblemGenerator2D::userInitFields(const SimulationParams&, Meshblock2D& mblock) {
-    using index_t = std::size_t;
+    
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
         auto i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
@@ -36,7 +36,7 @@ namespace ntt {
 
   template <>
   void ProblemGenerator2D::userInitParticles(const SimulationParams&, Meshblock2D&) {
-    // using index_t = const std::size_t;
+    // 
     // Kokkos::parallel_for(
     //   "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
     //     coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;

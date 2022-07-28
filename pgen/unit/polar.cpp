@@ -20,7 +20,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+    
     Kokkos::deep_copy(mblock.em, 0.0);
     real_t r_min {mblock.metric.x1_min};
     Kokkos::parallel_for(
@@ -52,7 +52,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userBCFields(
     const real_t& time, const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    using index_t = NTTArray<real_t**>::size_type;
+    
     real_t omega;
     if (time < 5) {
       omega = time / 100.0;

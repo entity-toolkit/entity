@@ -12,7 +12,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+    
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
         real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
@@ -32,7 +32,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitParticles(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    using index_t = const std::size_t;
+    
     Kokkos::parallel_for(
       "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
         coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;
