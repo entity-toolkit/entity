@@ -1,3 +1,6 @@
+TEST_DIR := ${ROOT_DIR}/tests
+BUILD_TEST_DIR := ${ROOT_DIR}/${BUILD_DIR}/tests/
+
 .PHONY: test test_pic test_grpic
 
 TEST_CFLAGS := $(filter-out -DSIMTYPE=%, $(filter-out -DMETRIC=%, $(CFLAGS)))
@@ -52,5 +55,4 @@ ${BUILD_TEST_DIR}PIC_qsph/%.o: ${SRC_DIR}/%
 
 -include $(TEST_DEPS)
 
-print: 
-	@echo $(TEST_DEPS)
+export BUILD_TEST_DIR

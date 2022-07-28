@@ -14,9 +14,6 @@ PGEN_DIR := ${ROOT_DIR}/@PGEN_DIR@
 
 PGEN := @PGEN@
 
-TEST_DIR := ${ROOT_DIR}/@TEST_DIR@
-BUILD_TEST_DIR := ${ROOT_DIR}/${BUILD_DIR}_tests/
-
 SRC_DIR := ${ROOT_DIR}/@SRC_DIR@
 BUILD_SRC_DIR := @SRC_DIR@
 
@@ -154,6 +151,7 @@ ${BUILD_SRC_DIR}/%.o : ${SRC_DIR}/%
 	$(HIDE)${compile_command} -c $< -o $@
 
 include ${ROOT_DIR}/Tests.mk
+include ${ROOT_DIR}/Docs.mk
 
 # to ensure recompilation when header files are changed
 -include $(DEPS) $(MAIN_DEPS)
@@ -165,7 +163,7 @@ include ${ROOT_DIR}/Nttiny.mk
 # </ for nttiny
 
 clean:
-	rm -rf ${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
+	rm -rf ${ROOT_DIR}/${BUILD_DIR}/${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
 	rm -rf ${BIN_DIR}
 	rm -rf ${SRC_DIR}/${TEMP_DIR}
 
