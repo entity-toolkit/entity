@@ -24,9 +24,7 @@
       "cStandard": "c17",
       "cppStandard": "c++17",
       "forcedInclude": [
-        "${workspaceFolder}/.vscode/intellisense.h",
-        "${workspaceFolder}/src/global.h",
-        "${workspaceFolder}/src/definitions.h"
+        "${workspaceFolder}/.vscode/intellisense.h"
       ],
       "browse": {
         "path": [
