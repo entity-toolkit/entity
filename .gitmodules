@@ -16,3 +16,6 @@
 [submodule "extern/rapidcsv"]
 	path = extern/rapidcsv
 	url = git@github.com:d99kris/rapidcsv.git
+[submodule "extern/doxygenmd"]
+	path = extern/doxygenmd
+	url = git@github.com:d99kris/doxygenmd.git
