@@ -20,7 +20,7 @@ namespace ntt {
    */
   template <Dimension D>
   class initFieldsFromVectorPotential {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
     Meshblock<D, SimulationType::GRPIC>        m_mblock;
     real_t                                     m_eps;
@@ -32,11 +32,11 @@ namespace ntt {
                                   real_t                                            eps)
       : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps}, j_min {static_cast<index_t>(m_mblock.j_min())} {}
 
-    Inline void operator()(const index_t, const index_t) const;
+    Inline void operator()(index_t, index_t) const;
   };
 
   template <>
-  Inline void initFieldsFromVectorPotential<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void initFieldsFromVectorPotential<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 

@@ -6,6 +6,13 @@
 
 namespace ntt {
 
+  /**
+   * @brief Function to compare two float values.
+   * @param a First value.
+   * @param b Second value.
+   * @param epsilon Accuracy.
+   * @returns true/false.
+   */
   bool AlmostEqual(float a, float b, float epsilon = 0.00001f) {
     float absA = std::abs(a);
     float absB = std::abs(b);
@@ -20,6 +27,13 @@ namespace ntt {
     }
   }
 
+  /**
+   * @brief Function to compare two double values.
+   * @param a First value.
+   * @param b Second value.
+   * @param epsilon Accuracy.
+   * @returns true/false.
+   */
   bool AlmostEqual(double a, double b, double epsilon = 1e-8) {
     double diff {std::abs(a - b)};
     if (diff <= 1e-12) return true;

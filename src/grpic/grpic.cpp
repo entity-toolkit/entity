@@ -38,7 +38,7 @@ namespace ntt {
 
   template <Dimension D>
   void GRPIC<D>::initial_step(const real_t& time) {
-    /*
+   /**
      * Initially: em0::B   --
      *            em0::D   --
      *            em::B    at -1/2
@@ -54,13 +54,13 @@ namespace ntt {
      *            u_prtl   at -1/2
      */
 
-    /*
+   /**
      * em0::D, em::D, em0::B, em::B <- boundary conditions
      */
     fieldBoundaryConditions(time, gr_bc::Dfield);
     fieldBoundaryConditions(time, gr_bc::Bfield);
 
-    /*
+   /**
      * em0::B <- em::B
      * em0::D <- em::D
      *
@@ -68,7 +68,7 @@ namespace ntt {
      */
     copyFieldsGR();
 
-    /*
+   /**
      * aux::E <- alpha * em::D + beta x em0::B
      * aux::H <- alpha * em::B0 - beta x em::D
      *
@@ -76,35 +76,35 @@ namespace ntt {
      */
     computeAuxESubstep(time, gr_getE::D0_B);
     computeAuxHSubstep(time, gr_getH::D_B0);
-    /*
+   /**
      * aux::E, aux::H <- boundary conditions
      */
     auxFieldBoundaryConditions(time, gr_bc::Efield);
     auxFieldBoundaryConditions(time, gr_bc::Hfield);
 
-    /*
+   /**
      * em0::B <- (em0::B) <- -curl aux::E
      *
      * Now: em0::B at 0
      */
     faradaySubstep(time, 0.5, gr_faraday::aux);
-    /*
+   /**
      * em0::B, em::B <- boundary conditions
      */
     fieldBoundaryConditions(time, gr_bc::Bfield);
 
-    /*
+   /**
      * em::D <- (em0::D) <- curl aux::H
      *
      * Now: em::D at 0
      */
     ampereSubstep(time, 0.5, gr_ampere::init);
-    /*
+   /**
      * em0::D, em::D <- boundary conditions
      */
     fieldBoundaryConditions(time, gr_bc::Dfield);
 
-    /*
+   /**
      * aux::E <- alpha * em::D + beta x em0::B
      * aux::H <- alpha * em0::B - beta x em::D
      *
@@ -112,64 +112,64 @@ namespace ntt {
      */
     computeAuxESubstep(time, gr_getE::D_B0);
     computeAuxHSubstep(time, gr_getH::D_B0);
-    /*
+   /**
      * aux::E, aux::H <- boundary conditions
      */
     auxFieldBoundaryConditions(time, gr_bc::Efield);
     auxFieldBoundaryConditions(time, gr_bc::Hfield);
 
-    /*
+   /**
      * em0::B <- (em::B) <- -curl aux::E
      *
      * Now: em0::B at 1/2
      */
     faradaySubstep(time, 1.0, gr_faraday::main);
-    /*
+   /**
      * em0::B, em::B <- boundary conditions
      */
     fieldBoundaryConditions(time, gr_bc::Bfield);
 
-    /*
+   /**
      * em0::D <- (em0::D) <- curl aux::H
      *
      * Now: em0::D at 1/2
      */
     ampereSubstep(time, 1.0, gr_ampere::aux);
-    /*
+   /**
      * em0::D, em::D <- boundary conditions
      */
     fieldBoundaryConditions(time, gr_bc::Dfield);
 
-    /*
+   /**
      * aux::H <- alpha * em0::B - beta x em0::D
      *
      * Now: aux::H at 1/2
      */
     computeAuxHSubstep(time, gr_getH::D0_B0);
-    /*
+   /**
      * aux::H <- boundary conditions
      */
     auxFieldBoundaryConditions(time, gr_bc::Hfield);
 
-    /*
+   /**
      * em0::D <- (em::D) <- curl aux::H
      *
      * Now: em0::D at 1
      *      em::D at 0
      */
     ampereSubstep(time, 1.0, gr_ampere::main);
-    /*
+   /**
      * em0::D, em::D <- boundary conditions
      */
     fieldBoundaryConditions(time, gr_bc::Dfield);
 
-    /*
+   /**
      * em::D <-> em0::D
      * em::B <-> em0::B
      * em::J <-> em0::J
      */
     swapFieldsGR();
-    /*
+   /**
      * Finally: em0::B   at -1/2
      *          em0::D   at 0
      *          em::B    at 1/2
@@ -189,7 +189,7 @@ namespace ntt {
   template <Dimension D>
   void GRPIC<D>::step_forward(const real_t& time) {
     TimerCollection timers({"Field_solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
-    /*
+   /**
      * Initially: em0::B   at n-3/2
      *            em0::D   at n-1
      *            em::B    at n-1/2
@@ -207,7 +207,7 @@ namespace ntt {
 
     if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
-      /*
+     /**
        * em0::D <- (em0::D + em::D) / 2
        * em0::B <- (em0::B + em::B) / 2
        *
@@ -215,17 +215,17 @@ namespace ntt {
        *      em0::B at n-1
        */
       timeAverageDBSubstep(time);
-      /*
+     /**
        * aux::E <- alpha * em0::D + beta x em::B
        *
        * Now: aux::E at n-1/2
        */
       computeAuxESubstep(time, gr_getE::D0_B);
-      /*
+     /**
        * aux::E <- boundary conditions
        */
       auxFieldBoundaryConditions(time, gr_bc::Efield);
-      /*
+     /**
        * em0::B <- (em0::B) <- -curl aux::E
        *
        * Now: em0::B at n
@@ -234,20 +234,20 @@ namespace ntt {
       timers.stop(1);
 
       timers.start(2);
-      /*
+     /**
        * em0::B, em::B <- boundary conditions
        */
       fieldBoundaryConditions(time, gr_bc::Bfield);
       timers.stop(2);
 
       timers.start(1);
-      /*
+     /**
        * aux::H <- alpha * em0::B - beta x em::D
        *
        * Now: aux::H at n
        */
       computeAuxHSubstep(time, gr_getH::D_B0);
-      /*
+     /**
        * aux::H <- boundary conditions
        */
       auxFieldBoundaryConditions(time, gr_bc::Hfield);
@@ -259,7 +259,7 @@ namespace ntt {
     timers.start(4);
     timers.stop(4);
 
-    /*
+   /**
      * cur0::J <- current deposition
      *
      * Now: cur0::J at n+1/2
@@ -269,23 +269,23 @@ namespace ntt {
 
     if (this->sim_params().enable_fieldsolver()) {
       timers.start(1);
-      /*
+     /**
        * cur::J <- (cur0::J + cur::J) / 2
        *
        * Now: cur::J at n
        */
       timeAverageJSubstep(time);
-      /*
+     /**
        * aux::Е <- alpha * em::D + beta x em0::B
        *
        * Now: aux::Е at n
        */
       computeAuxESubstep(time, gr_getE::D_B0);
-      /*
+     /**
        * aux::Е <- boundary conditions
        */
       auxFieldBoundaryConditions(time, gr_bc::Efield);
-      /*
+     /**
        * em0::B <- (em::B) <- -curl aux::E
        *
        * Now: em0::B at n+1/2
@@ -295,14 +295,14 @@ namespace ntt {
       timers.stop(1);
 
       timers.start(2);
-      /*
+     /**
        * em0::B, em::B <- boundary conditions
        */
       fieldBoundaryConditions(time, gr_bc::Bfield);
       timers.stop(2);
 
       timers.start(1);
-      /*
+     /**
        * em0::D <- (em0::D) <- curl aux::H
        *
        * Now: em0::D at n+1/2
@@ -311,24 +311,24 @@ namespace ntt {
       timers.stop(1);
 
       timers.start(2);
-      /*
+     /**
        * em0::D, em::D <- boundary conditions
        */
       fieldBoundaryConditions(time, gr_bc::Dfield);
       timers.stop(2);
 
       timers.start(1);
-      /*
+     /**
        * aux::H <- alpha * em0::B - beta x em0::D
        *
        * Now: aux::H at n+1/2
        */
       computeAuxHSubstep(time, gr_getH::D0_B0);
-      /*
+     /**
        * aux::H <- boundary conditions
        */
       auxFieldBoundaryConditions(time, gr_bc::Hfield);
-      /*
+     /**
        * em0::D <- (em::D) <- curl aux::H
        *
        * Now: em0::D at n+1
@@ -336,7 +336,7 @@ namespace ntt {
        */
       ampereSubstep(time, 1.0, gr_ampere::main);
 
-      /*
+     /**
        * em::D <-> em0::D
        * em::B <-> em0::B
        * em::J <-> em0::J
@@ -345,14 +345,14 @@ namespace ntt {
       timers.stop(1);
 
       timers.start(2);
-      /*
+     /**
        * em0::D, em::D <- boundary conditions
        */
       fieldBoundaryConditions(time, gr_bc::Dfield);
       timers.stop(2);
     }
 
-    /*
+   /**
      * Finally: em0::B   at n-1/2
      *          em0::D   at n
      *          em::B    at n+1/2
@@ -381,7 +381,7 @@ namespace ntt {
   void GRPIC<Dimension::THREE_D>::computeVectorPotential() {}
 
   template <>
-  Inline void Compute_Aphi<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void Compute_Aphi<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
       real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
@@ -393,7 +393,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void Compute_Aphi<Dimension::THREE_D>::operator()(const index_t, const index_t) const {
+  Inline void Compute_Aphi<Dimension::THREE_D>::operator()(index_t, index_t) const {
     // 3D GRPIC not implemented
   }
 

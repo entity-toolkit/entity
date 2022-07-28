@@ -12,8 +12,7 @@
 
 namespace ntt {
   /**
-   * Main class of the simulation containing all the necessary methods and configurations.
-   *
+   * @brief Main class of the simulation containing all the necessary methods and configurations.
    * @tparam D dimension.
    * @tparam S simulation type.
    */
@@ -29,54 +28,57 @@ namespace ntt {
 
   public:
     /**
-     * Constructor for simulation class.
-     *
+     * @brief Constructor for simulation class.
      * @param inputdata toml-object with parsed toml parameters.
      */
     Simulation(const toml::value& inputdata);
     ~Simulation() = default;
 
     /**
-     * Initialize / allocate all the simulation objects based on the `m_sim_params`.
+     * @brief Initialize / allocate all the simulation objects based on the `m_sim_params`.
      */
     void initialize();
 
     /**
-     * Setup the problem using the problem generator.
+     * @brief Setup the problem using the problem generator.
      */
     void initializeSetup();
 
     /**
-     * Verify that all the specified parameters are compatible before beginning the simulation.
+     * @brief Verify that all the specified parameters are compatible before beginning the simulation.
      */
     void verify();
 
     /**
-     * Print all the simulation details using `plog`.
+     * @brief Print all the simulation details using `plog`.
      */
     void printDetails();
 
     /**
-     * Finalize the simulation objects.
+     * @brief Finalize the simulation objects.
      */
     void finalize();
 
     /**
-     * Getters.
+     * @brief Get pointer to `sim_params`.
      */
     [[nodiscard]] auto sim_params() -> SimulationParams* { return &m_sim_params; }
+    /**
+     * @brief Get pointer to `mblock`.
+     */
     [[nodiscard]] auto mblock() -> Meshblock<D, S>* { return &m_mblock; }
+    /**
+     * @brief Get pointer to `pgen`.
+     */
     [[nodiscard]] auto pgen() -> ProblemGenerator<D, S>* { return &m_pGen; }
 
     /**
-     * Loop over all active cells (disregard ghost cells).
-     *
+     * @brief Loop over all active cells (disregard ghost cells).
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto loopActiveCells() -> RangeND<D>;
     /**
-     * Loop over all cells.
-     *
+     * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto loopAllCells() -> RangeND<D>;

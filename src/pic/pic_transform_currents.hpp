@@ -6,25 +6,42 @@
 
 namespace ntt {
   /**
-   * Transform currents to the coordinate basis.
-   *
+   * @brief Transform currents to the coordinate basis.
    * @tparam D Dimension.
    */
   template <Dimension D>
   class TransformCurrentsSubstep {
-    using index_t = typename RealFieldND<D, 3>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     */
     TransformCurrentsSubstep(const Meshblock<D, SimulationType::PIC>& mblock)
       : m_mblock {mblock} {}
-    Inline void operator()(const index_t) const;
-    Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
+    /**
+     * @brief 1D implementation of the algorithm.
+     * @param i1 index.
+     */
+    Inline void operator()(index_t) const;
+    /**
+     * @brief 2D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     */
+    Inline void operator()(index_t, index_t) const;
+    /**
+     * @brief 3D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     * @param i3 index.
+     */
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   template <>
-  Inline void TransformCurrentsSubstep<Dimension::ONE_D>::operator()(const index_t i) const {
+  Inline void TransformCurrentsSubstep<Dimension::ONE_D>::operator()(index_t i) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t coeff_x1 {
       ONE / (m_mblock.metric.h_22({i_ + HALF}) * m_mblock.metric.h_33({i_ + HALF}))};
@@ -36,8 +53,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void TransformCurrentsSubstep<Dimension::TWO_D>::operator()(const index_t i,
-                                                                     const index_t j) const {
+  Inline void TransformCurrentsSubstep<Dimension::TWO_D>::operator()(index_t i,
+                                                                     index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     real_t coeff_x1 {
@@ -51,9 +68,9 @@ namespace ntt {
   }
 
   template <>
-  Inline void TransformCurrentsSubstep<Dimension::THREE_D>::operator()(const index_t i,
-                                                                       const index_t j,
-                                                                       const index_t k) const {
+  Inline void TransformCurrentsSubstep<Dimension::THREE_D>::operator()(index_t i,
+                                                                       index_t j,
+                                                                       index_t k) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     real_t k_ {static_cast<real_t>(static_cast<int>(k) - N_GHOSTS)};
