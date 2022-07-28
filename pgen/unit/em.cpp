@@ -24,7 +24,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+    
     real_t sx {mblock.metric.x1_max - mblock.metric.x1_min};
     real_t sy {mblock.metric.x2_max - mblock.metric.x2_min};
 
