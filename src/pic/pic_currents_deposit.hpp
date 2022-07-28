@@ -12,26 +12,38 @@
 namespace ntt {
 
   /**
-   * Algorithm for the current deposition.
-   *
+   * @brief Algorithm for the current deposition.
    * @tparam D Dimension.
    */
   template <Dimension D>
   class Deposit {
-    using index_t = const std::size_t;
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
+    RealScatterFieldND<D, 3>          m_scatter_cur;
     real_t                            m_coeff, m_dt;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     * @param particles Particles.
+     * @param scatter_cur Scatter array of the currents.
+     * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
+     * @param dt Time step.
+     */
     Deposit(const Meshblock<D, SimulationType::PIC>& mblock,
             const Particles<D, SimulationType::PIC>& particles,
+            const RealScatterFieldND<D, 3>&          scatter_cur,
             const real_t&                            coeff,
             const real_t&                            dt)
-      : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
+      : m_mblock(mblock),
+        m_particles(particles),
+        m_scatter_cur(scatter_cur),
+        m_coeff(coeff),
+        m_dt(dt) {}
 
     /**
-     * Loop over all active particles and deposit currents.
+     * @brief Loop over all active particles and deposit currents.
      * TODO: forward/backward
      */
     void depositCurrents() {
@@ -39,7 +51,11 @@ namespace ntt {
       Kokkos::parallel_for("deposit", range_policy, *this);
     }
 
-    Inline void operator()(const index_t p) const {
+    /**
+     * @brief Iteration of the loop over particles.
+     * @param p index.
+     */
+    Inline void operator()(index_t p) const {
       // _f = final, _i = initial
       tuple_t<int, D>           Ip_f, Ip_i;
       coord_t<D>                xp_f, xp_i, xp_r;
@@ -50,16 +66,14 @@ namespace ntt {
       depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
     }
 
-    /*
-     * Deposit currents from a single particle.
-     *
+    /**
+     * @brief Deposit currents from a single particle.
      * @param[in] vp Particle 3-velocity.
      * @param[in] Ip_f Final position of the particle (cell index).
      * @param[in] Ip_i Initial position of the particle (cell index).
      * @param[in] xp_f Final position.
      * @param[in] xp_i Previous step position.
      * @param[in] xp_r Intermediate point used in zig-zag deposit.
-     *
      */
     Inline void depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>& vp,
                                             const tuple_t<int, D>&           Ip_f,
@@ -68,9 +82,8 @@ namespace ntt {
                                             const coord_t<D>&                xp_i,
                                             const coord_t<D>&                xp_r) const;
 
-    /*
-     * Get particle position in `coord_t` form.
-     *
+    /**
+     * @brief Get particle position in `coord_t` form.
      * @param[in] p Index of particle.
      * @param[out] vp Particle 3-velocity.
      * @param[out] Ip_f Final position of the particle (cell index).
@@ -78,9 +91,8 @@ namespace ntt {
      * @param[out] xp_f Final position.
      * @param[out] xp_i Previous step position.
      * @param[out] xp_r Intermediate point used in zig-zag deposit.
-     *
      */
-    Inline void getDepositInterval(const index_t&             p,
+    Inline void getDepositInterval(index_t&             p,
                                    vec_t<Dimension::THREE_D>& vp,
                                    tuple_t<int, D>&           Ip_f,
                                    tuple_t<int, D>&           Ip_i,
@@ -129,7 +141,7 @@ namespace ntt {
         Ip_i[i]       = I_i;
         xp_r[i]
           = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                      math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xmid[i]));
+                       math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xmid[i]));
       }
     }
   };
@@ -164,35 +176,28 @@ namespace ntt {
     real_t Fx3_1 {-HALF * m_dt * vp[2] * m_coeff};
     real_t Fx3_2 {-HALF * m_dt * vp[2] * m_coeff};
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx1), Fx1_1 * (ONE - Wx2_1));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx1), Fx1_1 * Wx2_1);
+    auto cur_access = m_scatter_cur.access();
+    cur_access(Ip_i[0], Ip_i[1], cur::jx1) += Fx1_1 * (ONE - Wx2_1);
+    cur_access(Ip_i[0], Ip_i[1] + 1, cur::jx1) += Fx1_1 * Wx2_1;
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx2), Fx2_1 * (ONE - Wx1_1));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx2), Fx2_1 * Wx1_1);
+    cur_access(Ip_i[0], Ip_i[1], cur::jx2) += Fx2_1 * (ONE - Wx1_1);
+    cur_access(Ip_i[0] + 1, Ip_i[1], cur::jx2) += Fx2_1 * Wx1_1;
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx1), Fx1_2 * (ONE - Wx2_2));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx1), Fx1_2 * Wx2_2);
+    cur_access(Ip_f[0], Ip_f[1], cur::jx1) += Fx1_2 * (ONE - Wx2_2);
+    cur_access(Ip_f[0], Ip_f[1] + 1, cur::jx1) += Fx1_2 * Wx2_2;
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx2), Fx2_2 * (ONE - Wx1_2));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx2), Fx2_2 * Wx1_2);
+    cur_access(Ip_f[0], Ip_f[1], cur::jx2) += Fx2_2 * (ONE - Wx1_2);
+    cur_access(Ip_f[0] + 1, Ip_f[1], cur::jx2) += Fx2_2 * Wx1_2;
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx3),
-                       Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx3),
-                       Fx3_1 * Wx1_2 * (ONE - Wx2_1));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx3),
-                       Fx3_1 * (ONE - Wx1_1) * Wx2_1);
-    Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3),
-                       Fx3_1 * Wx1_1 * Wx2_1);
+    cur_access(Ip_i[0], Ip_i[1], cur::jx3) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+    cur_access(Ip_i[0] + 1, Ip_i[1], cur::jx3) += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
+    cur_access(Ip_i[0], Ip_i[1] + 1, cur::jx3) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+    cur_access(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3) += Fx3_1 * Wx1_1 * Wx2_1;
 
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx3),
-                       Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx3),
-                       Fx3_2 * Wx1_2 * (ONE - Wx2_2));
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx3),
-                       Fx3_2 * (ONE - Wx1_2) * Wx2_2);
-    Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3),
-                       Fx3_2 * Wx1_2 * Wx2_2);
+    cur_access(Ip_f[0], Ip_f[1], cur::jx3) += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+    cur_access(Ip_f[0] + 1, Ip_f[1], cur::jx3) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+    cur_access(Ip_f[0], Ip_f[1] + 1, cur::jx3) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+    cur_access(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3) += Fx3_2 * Wx1_2 * Wx2_2;
   }
 
   template <>
@@ -202,7 +207,9 @@ namespace ntt {
     const tuple_t<int, Dimension::THREE_D>&,
     const coord_t<Dimension::THREE_D>&,
     const coord_t<Dimension::THREE_D>&,
-    const coord_t<Dimension::THREE_D>&) const {}
+    const coord_t<Dimension::THREE_D>&) const {
+    NTTError("Deposit::depositCurrentsFromParticle() not implemented for 3D");
+  }
 
 } // namespace ntt
 
@@ -211,5 +218,35 @@ namespace ntt {
 // real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
 // real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_coeff};
 // real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * m_coeff};
+
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx1), Fx1_1 * (ONE - Wx2_1));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx1), Fx1_1 * Wx2_1);
+
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx2), Fx2_1 * (ONE - Wx1_1));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx2), Fx2_1 * Wx1_1);
+
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx1), Fx1_2 * (ONE - Wx2_2));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx1), Fx1_2 * Wx2_2);
+
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx2), Fx2_2 * (ONE - Wx1_2));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx2), Fx2_2 * Wx1_2);
+
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx3),
+//                    Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx3),
+//                    Fx3_1 * Wx1_2 * (ONE - Wx2_1));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx3),
+//                    Fx3_1 * (ONE - Wx1_1) * Wx2_1);
+// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3),
+//                    Fx3_1 * Wx1_1 * Wx2_1);
+
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx3),
+//                    Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx3),
+//                    Fx3_2 * Wx1_2 * (ONE - Wx2_2));
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx3),
+//                    Fx3_2 * (ONE - Wx1_2) * Wx2_2);
+// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3),
+//                    Fx3_2 * Wx1_2 * Wx2_2);
 //}
 #endif

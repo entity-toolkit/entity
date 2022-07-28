@@ -6,6 +6,7 @@
 
 #include <plog/Log.h>
 #include <Kokkos_Core.hpp>
+#include <Kokkos_ScatterView.hpp>
 
 #include <type_traits>
 #include <vector>
@@ -70,12 +71,18 @@ namespace ntt {
   template <Dimension D>
   using vec_t = tuple_t<real_t, D>;
 
+  using index_t = const std::size_t;
+
   // Number of ghost zones to be used (compile-time enforced)
   inline constexpr int N_GHOSTS {2};
 
   // Defining an array alias of arbitrary type
   template <typename T>
   using NTTArray = Kokkos::View<T, AccelMemSpace>;
+
+  // Defining a scatter view alias of arbitrary type
+  template <typename T>
+  using NTTScatterArray = Kokkos::Experimental::ScatterView<T>;
 
   // Defining Kokkos-specific range aliases
   using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
@@ -90,6 +97,18 @@ namespace ntt {
                               typename std::conditional<D == Dimension::THREE_D,
                                                         NTTArray<real_t*** [N]>,
                                                         std::nullptr_t>::type>::type>::type;
+
+  // D x N dimensional scatter array for storing fields on ND hypercubes
+  template <Dimension D, int N>
+  using RealScatterFieldND = typename std::conditional<
+    D == Dimension::ONE_D,
+    NTTScatterArray<real_t* [N]>,
+    typename std::conditional<D == Dimension::TWO_D,
+                              NTTScatterArray<real_t** [N]>,
+                              typename std::conditional<D == Dimension::THREE_D,
+                                                        NTTScatterArray<real_t*** [N]>,
+                                                        std::nullptr_t>::type>::type>::type;
+
   // Defining aliases for `ntt_*drange_t`
   template <Dimension D>
   using RangeND = typename std::conditional<
@@ -103,8 +122,7 @@ namespace ntt {
                                 std::nullptr_t>::type>::type>::type;
 
   /**
-   * Function template for generating ND Kokkos range policy.
-   *
+   * @brief Function template for generating ND Kokkos range policy.
    * @tparam D Dimension
    * @param i1 array of size D `int`: { min }.
    * @param i2 array of size D `int`: { max }.
@@ -115,8 +133,7 @@ namespace ntt {
                 const std::size_t (&i2)[static_cast<short>(D)]) -> RangeND<D>;
 
   /**
-   * Function template for generating ND Kokkos range policy.
-   *
+   * @brief Function template for generating ND Kokkos range policy.
    * @overload
    * @tparam D Dimension
    * @param i1 array of size D `int`: { min }.
@@ -129,13 +146,15 @@ namespace ntt {
 
   /**
    * @brief Synchronize CPU/GPU before advancing.
-   *
    */
   void NTTWait();
 
 } // namespace ntt
 
 namespace plog {
+  /**
+   * @brief Formatter for logging messages.
+   */
   class NTTFormatter {
   public:
     static auto header() -> util::nstring;

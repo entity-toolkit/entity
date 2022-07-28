@@ -8,8 +8,7 @@ namespace ntt {
   enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
 
   /**
-   * Container for the fields. Used a parent class for the Meshblock.
-   *
+   * @brief Container for the fields. Used a parent class for the Meshblock.
    * @tparam D Dimension.
    * @tparam S Simulation type.
    */
@@ -21,8 +20,7 @@ namespace ntt {
     // * * * * * * * * * * * * * * * * * * * *
 
     /**
-     * EM fields at current time step stored as Kokkos Views of dimension D * 6.
-     *
+     * @brief EM fields at current time step stored as Kokkos Views of dimension D * 6.
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
      * component.
      * @note Address : em(i, j, k, em::***).
@@ -88,8 +86,7 @@ namespace ntt {
 #endif
 
     /**
-     * Constructor for the fields container. Also sets the active cell sizes and ranges.
-     *
+     * @brief Constructor for the fields container. Also sets the active cell sizes and ranges.
      * @param res resolution vector of size D (dimension).
      */
     Fields(std::vector<unsigned int> res);

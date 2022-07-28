@@ -17,7 +17,7 @@ namespace ntt {
    */
   template <Dimension D>
   class GRFieldBC_rmax {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC>        m_mblock;
     ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
     real_t                                     m_rabsorb;
@@ -38,11 +38,11 @@ namespace ntt {
         m_rmax {r_max},
         m_absorbcoeff {absorb_coeff},
         m_absorbnorm {absorb_norm} {}
-    Inline void operator()(const index_t, const index_t) const;
+    Inline void operator()(index_t, index_t) const;
   };
 
   template <>
-  Inline void GRFieldBC_rmax<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void GRFieldBC_rmax<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 

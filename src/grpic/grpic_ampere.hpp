@@ -15,20 +15,20 @@ namespace ntt {
    */
   template <Dimension D>
   class AmpereGR_aux {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
 
   public:
     AmpereGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
-    Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
+    Inline void operator()(index_t, index_t) const;
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   // First push, updates D0 with J.
   template <>
-  Inline void AmpereGR_aux<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void AmpereGR_aux<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -46,26 +46,26 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereGR_aux<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void AmpereGR_aux<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
   template <Dimension D>
   class AmpereGR {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
 
   public:
     AmpereGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
-    Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
+    Inline void operator()(index_t, index_t) const;
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmpereGR<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void AmpereGR<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -86,26 +86,26 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereGR<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void AmpereGR<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
   template <Dimension D>
   class AmpereGR_init {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
 
   public:
     AmpereGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
-    Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
+    Inline void operator()(index_t, index_t) const;
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmpereGR_init<Dimension::TWO_D>::operator()(const index_t i, const index_t j) const {
+  Inline void AmpereGR_init<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -123,7 +123,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereGR_init<Dimension::THREE_D>::operator()(const index_t, const index_t, const index_t) const {
+  Inline void AmpereGR_init<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -134,7 +134,7 @@ namespace ntt {
    */
   template <Dimension D>
   class AmperePolesGR_aux {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
     std::size_t                         m_nj;
@@ -142,12 +142,12 @@ namespace ntt {
   public:
     AmperePolesGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
-    Inline void operator()(const index_t) const;
+    Inline void operator()(index_t) const;
   };
 
   // First push, updates D0 with J.
   template <>
-  Inline void AmperePolesGR_aux<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmperePolesGR_aux<Dimension::TWO_D>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
@@ -166,7 +166,7 @@ namespace ntt {
 
   template <Dimension D>
   class AmperePolesGR {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
     std::size_t                         m_nj;
@@ -174,12 +174,12 @@ namespace ntt {
   public:
     AmperePolesGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
-    Inline void operator()(const index_t) const;
+    Inline void operator()(index_t) const;
   };
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmperePolesGR<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmperePolesGR<Dimension::TWO_D>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
@@ -201,7 +201,7 @@ namespace ntt {
 
   template <Dimension D>
   class AmperePolesGR_init {
-    using index_t = typename RealFieldND<D, 6>::size_type;
+    
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
     std::size_t                         m_nj;
@@ -209,12 +209,12 @@ namespace ntt {
   public:
     AmperePolesGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
-    Inline void operator()(const index_t) const;
+    Inline void operator()(index_t) const;
   };
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmperePolesGR_init<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmperePolesGR_init<Dimension::TWO_D>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};

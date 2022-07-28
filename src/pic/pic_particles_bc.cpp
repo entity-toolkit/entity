@@ -13,7 +13,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dimension::ONE_D>::particleBoundaryConditions(const real_t&) {
-    using index_t = const std::size_t;
+    
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
@@ -42,7 +42,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dimension::TWO_D>::particleBoundaryConditions(const real_t&) {
-    using index_t = const std::size_t;
+    
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {

@@ -10,7 +10,7 @@ namespace ntt {
 
   template <>
   void GRPIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t& t, const gr_bc& f) {
-    using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+    
     (void)t;
     auto mblock {this->m_mblock};
     if (f == gr_bc::Dfield) {
@@ -136,7 +136,7 @@ namespace ntt {
 
   template <>
   void GRPIC<Dimension::TWO_D>::auxFieldBoundaryConditions(const real_t&, const gr_bc& f) {
-    using index_t = typename RealFieldND<Dimension::TWO_D, 6>::size_type;
+    
     auto mblock {this->m_mblock};
     auto i_min {mblock.i_min()};
     auto range {NTTRange<Dimension::ONE_D>({mblock.j_min()}, {mblock.j_max() + 1})};

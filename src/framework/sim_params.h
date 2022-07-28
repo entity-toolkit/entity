@@ -10,7 +10,7 @@
 
 namespace ntt {
   /**
-   * Storage class for user-defined & implied parameter values.
+   * @brief Storage class for user-defined & implied parameter values.
    */
   class SimulationParams {
     // User defined simualation title
@@ -29,7 +29,8 @@ namespace ntt {
     std::vector<ParticleSpecies> m_species;
     bool                         m_enable_fieldsolver;
     bool                         m_enable_deposit;
-    /*
+
+    /**
      * Extent of the whole domain in physical units
      * { x1_min, x1_max, x2_min, x2_max, x3_min, x3_max }.
      *
@@ -50,45 +51,98 @@ namespace ntt {
 
   public:
     /**
-     * Constructor for simulation parameters class.
-     *
+     * @brief Constructor for simulation parameters class.
      * @param inputdata toml-object with parsed toml parameters.
      * @param dim Dimension.
      */
-    SimulationParams(const toml::value& inputdata, Dimension dim);
+    SimulationParams(const toml::value&, Dimension);
     ~SimulationParams() = default;
 
     /**
-     * Getters.
+     * @brief Get the simulation title.
      */
     [[nodiscard]] auto title() const -> const std::string& { return m_title; }
+    /**
+     * @brief Get the CFL.
+     */
     [[nodiscard]] auto cfl() const -> const real_t& { return m_cfl; }
+    /**
+     * @brief Get the correction to the speed of light.
+     */
     [[nodiscard]] auto correction() const -> const real_t& { return m_correction; }
+    /**
+     * @brief Get the total runtime in physical units.
+     */
     [[nodiscard]] auto total_runtime() const -> const real_t& { return m_total_runtime; }
+    /**
+     * @brief Get the fiducial number of particles per cell.
+     */
     [[nodiscard]] auto ppc0() const -> const real_t& { return m_ppc0; }
+    /**
+     * @brief Get the fiducial Larmor radius.
+     */
     [[nodiscard]] auto larmor0() const -> const real_t& { return m_larmor0; }
+    /**
+     * @brief Get the fiducial skin depth.
+     */
     [[nodiscard]] auto skindepth0() const -> const real_t& { return m_skindepth0; }
+    /**
+     * @brief Get the fiducial sigma.
+     */
     [[nodiscard]] auto sigma0() const -> const real_t& { return m_sigma0; }
+    /**
+     * @brief Get the fiducial charge.
+     */
     [[nodiscard]] auto charge0() const -> const real_t& { return m_charge0; }
+    /**
+     * @brief Get the fiducial magnetic/electric field.
+     */
     [[nodiscard]] auto B0() const -> const real_t& { return m_B0; }
+    /**
+     * @brief Get the vector of user-defined species parameters.
+     */
     [[nodiscard]] auto species() const -> const std::vector<ParticleSpecies>& {
       return m_species;
     }
+    /**
+     * @brief Get the extent of the simulation box.
+     */
     [[nodiscard]] auto extent() const -> const std::vector<real_t>& { return m_extent; }
+    /**
+     * @brief Get the resolution of the simulation box.
+     */
     [[nodiscard]] auto resolution() const -> const std::vector<unsigned int>& {
       return m_resolution;
     }
+    /**
+     * @brief Get the boundary conditions of the simulation box.
+     */
     [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& {
       return m_boundaries;
     }
+    /**
+     * @brief Get the metric.
+     */
     [[nodiscard]] auto metric() const -> const std::string& { return m_metric; }
+    /**
+     * @brief Get the metric parameters.
+     */
     [[nodiscard]] auto metric_parameters() const -> const real_t* {
       return m_metric_parameters;
     }
+    /**
+     * @brief Get the input params in toml format.
+     */
     [[nodiscard]] auto inputdata() const -> const toml::value& { return m_inputdata; }
+    /**
+     * @brief Get the enable_fieldsolver flag.
+     */
     [[nodiscard]] auto enable_fieldsolver() const -> const bool& {
       return m_enable_fieldsolver;
     }
+    /**
+     * @brief Get the enable_deposit flag.
+     */
     [[nodiscard]] auto enable_deposit() const -> const bool& { return m_enable_deposit; }
   };
 
