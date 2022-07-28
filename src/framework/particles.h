@@ -8,7 +8,7 @@
 
 namespace ntt {
   /**
-   * Container for the information about the particle species.
+   * @brief Container for the information about the particle species.
    */
   class ParticleSpecies {
   protected:
@@ -25,8 +25,7 @@ namespace ntt {
 
   public:
     /**
-     * Constructor for the particle species container.
-     *
+     * @brief Constructor for the particle species container.
      * @param label species label.
      * @param m species mass.
      * @param ch species charge.
@@ -39,8 +38,7 @@ namespace ntt {
                     const std::size_t&    maxnpart,
                     const ParticlePusher& pusher);
     /**
-     * Constructor for the particle species container which deduces the pusher itself.
-     *
+     * @brief Constructor for the particle species container which deduces the pusher itself.
      * @overload
      * @param label species label.
      * @param m species mass.
@@ -49,8 +47,7 @@ namespace ntt {
      */
     ParticleSpecies(std::string, const float&, const float&, const std::size_t&);
     /**
-     * Copy constructor for the particle species container.
-     *
+     * @brief Copy constructor for the particle species container.
      * @overload
      * @param spec
      */
@@ -58,18 +55,29 @@ namespace ntt {
     ~ParticleSpecies()                      = default;
 
     /**
-     * Getters
+     * @brief Get the species label.
      */
     [[nodiscard]] auto label() const -> std::string { return m_label; }
+    /**
+     * @brief Get the species mass.
+     */
     [[nodiscard]] auto mass() const -> float { return m_mass; }
+    /**
+     * @brief Get the species charge.
+     */
     [[nodiscard]] auto charge() const -> float { return m_charge; }
+    /**
+     * @brief Get the max number of allocated particles.
+     */
     [[nodiscard]] auto maxnpart() const -> std::size_t { return m_maxnpart; }
+    /**
+     * @brief Get the pusher assigned for the species.
+     */
     [[nodiscard]] auto pusher() const -> ParticlePusher { return m_pusher; }
   };
 
   /**
-   * Container class to carry particle information for a specific species.
-   *
+   * @brief Container class to carry particle information for a specific species.
    * @tparam D Dimension.
    * @tparam S Simulation type.
    */
@@ -82,7 +90,6 @@ namespace ntt {
   public:
     /**
      * 1D arrays with particle data
-     *
      * TODO: Perhaps try VPIC-style arrays.
      */
     // Cell number of the current particle.
@@ -102,8 +109,7 @@ namespace ntt {
     NTTArray<real_t*> phi, phi_prev;
 
     /**
-     * Constructor for the particle container.
-     *
+     * @brief Constructor for the particle container.
      * @param label species label.
      * @param m species mass.
      * @param ch species charge.
@@ -111,8 +117,7 @@ namespace ntt {
      */
     Particles(const std::string&, const float&, const float&, const std::size_t&);
     /**
-     * Constructor for the particle container.
-     *
+     * @brief Constructor for the particle container.
      * @overload
      * @param spec species container.
      */
@@ -120,18 +125,18 @@ namespace ntt {
     ~Particles() = default;
 
     /**
-     * Loop over all active particles.
-     *
+     * @brief Loop over all active particles.
      * @returns 1D Kokkos range policy of size of `npart`.
      */
     auto loopParticles() -> RangeND<Dimension::ONE_D>;
     /**
-     * Getters
+     * @brief Get the number of active particles.
      */
     [[nodiscard]] auto npart() const -> std::size_t { return m_npart; }
 
     /**
-     * Set the number of particles.
+     * @brief Set the number of particles.
+     * @param npart number of particles.
      */
     void set_npart(const std::size_t& N) { m_npart = N; }
   };

@@ -15,25 +15,30 @@ namespace ntt {
   struct Photon_t {};
 
   /**
-   * Algorithm for the Particle pusher.
-   *
+   * @brief Algorithm for the Particle pusher.
    * @tparam D Dimension.
    */
   template <Dimension D>
   class Pusher {
-    using index_t = const std::size_t;
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
     real_t                            m_coeff, m_dt;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     * @param particles Particles.
+     * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
+     * @param dt Time step.
+     */
     Pusher(const Meshblock<D, SimulationType::PIC>& mblock,
            const Particles<D, SimulationType::PIC>& particles,
            const real_t&                            coeff,
            const real_t&                            dt)
       : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
     /**
-     * Loop over all active particles of the given species and call the appropriate pusher.
+     * @brief Loop over all active particles of the given species and call the appropriate pusher.
      * TODO: forward/backward
      */
     void pushParticles() {
@@ -59,8 +64,11 @@ namespace ntt {
         NTTError("pusher not implemented");
       }
     }
-
-    Inline void operator()(const BorisFwd_t&, const index_t p) const {
+    /**
+     * @brief Pusher for the forward Boris algorithm.
+     * @param p index.
+     */
+    Inline void operator()(const BorisFwd_t&, index_t p) const {
       vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
       interpolateFields(p, e_int, b_int);
 
@@ -83,7 +91,11 @@ namespace ntt {
       v[2] *= inv_energy;
       positionUpdate(p, v);
     }
-    Inline void operator()(const Photon_t&, const index_t p) const {
+    /**
+     * @brief Pusher for the photon pusher.
+     * @param p index.
+     */
+    Inline void operator()(const Photon_t&, index_t p) const {
       coord_t<D> xp;
       getParticleCoordinate(p, xp);
       vec_t<Dimension::THREE_D> v;
@@ -97,7 +109,7 @@ namespace ntt {
       v[2] *= inv_energy;
       positionUpdate(p, v);
     }
-    // Inline void operator()(const BorisBwd_t&, const index_t p) const {
+    // Inline void operator()(const BorisBwd_t&, index_t p) const {
     //   real_t inv_energy;
     //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) +
     //   SQR(m_particles.ux3(p)); inv_energy = ONE / math::sqrt(ONE + inv_energy);
@@ -124,70 +136,65 @@ namespace ntt {
     // }
 
     /**
-     * Transform particle coordinate from code units i+di to `real_t` type.
-     *
+     * @brief Transform particle coordinate from code units i+di to `real_t` type.
      * @param p index of the particle.
      * @param coord coordinate of the particle as a vector (of size D).
      */
-    Inline void getParticleCoordinate(const index_t&, coord_t<D>&) const;
+    Inline void getParticleCoordinate(index_t&, coord_t<D>&) const;
 
     /**
-     * First order Yee mesh field interpolation to particle position.
-     *
+     * @brief First order Yee mesh field interpolation to particle position.
      * @param p index of the particle.
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void interpolateFields(const index_t&,
+    Inline void interpolateFields(index_t&,
                                   vec_t<Dimension::THREE_D>&,
                                   vec_t<Dimension::THREE_D>&) const;
 
     /**
-     * Update particle positions according to updated velocities.
-     *
+     * @brief Update particle positions according to updated velocities.
      * @param p index of the particle.
      * @param v particle 3-velocity.
      */
-    Inline void positionUpdate(const index_t&, const vec_t<Dimension::THREE_D>&) const;
+    Inline void positionUpdate(index_t&, const vec_t<Dimension::THREE_D>&) const;
 
     /**
-     * Update each position component.
-     *
+     * @brief Update each position component.
      * @param p index of the particle.
      * @param v corresponding 3-velocity component.
      */
-    Inline void positionUpdate_x1(const index_t&, const real_t&) const;
-    Inline void positionUpdate_x2(const index_t&, const real_t&) const;
-    Inline void positionUpdate_x3(const index_t&, const real_t&) const;
+    Inline void positionUpdate_x1(index_t&, const real_t&) const;
+    Inline void positionUpdate_x2(index_t&, const real_t&) const;
+    Inline void positionUpdate_x3(index_t&, const real_t&) const;
 
     /**
-     * Boris algorithm.
+     * @brief Boris algorithm.
      * @note Fields are modified inside the function and cannot be reused.
-     *
      * @param p index of the particle.
      * @param e interpolated e-field vector of size 3 [modified].
      * @param b interpolated b-field vector of size 3 [modified].
      */
     Inline void
-    BorisUpdate(const index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    BorisUpdate(index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
   };
 
   template <>
   Inline void
-  Pusher<Dimension::ONE_D>::getParticleCoordinate(const index_t&             p,
+  Pusher<Dimension::ONE_D>::getParticleCoordinate(index_t&             p,
                                                   coord_t<Dimension::ONE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
   }
   template <>
   Inline void
-  Pusher<Dimension::TWO_D>::getParticleCoordinate(const index_t&             p,
+  Pusher<Dimension::TWO_D>::getParticleCoordinate(index_t&             p,
                                                   coord_t<Dimension::TWO_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
   }
   template <>
   Inline void
-  Pusher<Dimension::THREE_D>::getParticleCoordinate(const index_t&               p,
+  Pusher<Dimension::THREE_D>::getParticleCoordinate(index_t&               p,
                                                     coord_t<Dimension::THREE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
@@ -199,20 +206,20 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void
-  Pusher<Dimension::ONE_D>::positionUpdate(const index_t&                   p,
+  Pusher<Dimension::ONE_D>::positionUpdate(index_t&                   p,
                                            const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
   }
   template <>
   Inline void
-  Pusher<Dimension::TWO_D>::positionUpdate(const index_t&                   p,
+  Pusher<Dimension::TWO_D>::positionUpdate(index_t&                   p,
                                            const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
   }
   template <>
   Inline void
-  Pusher<Dimension::THREE_D>::positionUpdate(const index_t&                   p,
+  Pusher<Dimension::THREE_D>::positionUpdate(index_t&                   p,
                                              const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
@@ -220,7 +227,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  Inline void Pusher<D>::positionUpdate_x1(const index_t& p, const real_t& vx1) const {
+  Inline void Pusher<D>::positionUpdate_x1(index_t& p, const real_t& vx1) const {
     m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
     int   temp_i {static_cast<int>(m_particles.dx1(p))};
     float temp_r {math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i))
@@ -230,7 +237,7 @@ namespace ntt {
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
   }
   template <Dimension D>
-  Inline void Pusher<D>::positionUpdate_x2(const index_t& p, const real_t& vx2) const {
+  Inline void Pusher<D>::positionUpdate_x2(index_t& p, const real_t& vx2) const {
     m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
     int   temp_i {static_cast<int>(m_particles.dx2(p))};
     float temp_r {math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i))
@@ -240,7 +247,7 @@ namespace ntt {
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
   }
   template <Dimension D>
-  Inline void Pusher<D>::positionUpdate_x3(const index_t& p, const real_t& vx3) const {
+  Inline void Pusher<D>::positionUpdate_x3(index_t& p, const real_t& vx3) const {
     m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
     int   temp_i {static_cast<int>(m_particles.dx3(p))};
     float temp_r {math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i))
@@ -254,7 +261,7 @@ namespace ntt {
   // Boris velocity update
   // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void Pusher<D>::BorisUpdate(const index_t&             p,
+  Inline void Pusher<D>::BorisUpdate(index_t&             p,
                                      vec_t<Dimension::THREE_D>& e0,
                                      vec_t<Dimension::THREE_D>& b0) const {
     real_t COEFF {m_coeff};
@@ -289,7 +296,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Pusher<Dimension::ONE_D>::interpolateFields(
-    const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+    index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
 
@@ -327,7 +334,7 @@ namespace ntt {
 
   template <>
   Inline void Pusher<Dimension::TWO_D>::interpolateFields(
-    const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+    index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};
@@ -399,7 +406,7 @@ namespace ntt {
 
   template <>
   Inline void Pusher<Dimension::THREE_D>::interpolateFields(
-    const index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+    index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};

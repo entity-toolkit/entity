@@ -11,26 +11,41 @@
 namespace ntt {
 
   /**
-   * Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear space (diagonal metric).
-   *
+   * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear space (diagonal metric).
    * @tparam D Dimension.
    */
   template <Dimension D>
   class FaradayCurvilinear {
-    using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
     real_t                            m_coeff;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     * @param coeff Coefficient to be multiplied by dB/dt = coeff * -curl E.
+     */
     FaradayCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
-    Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
+    
+    /**
+     * @brief 2D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     */
+    Inline void operator()(index_t, index_t) const;
+    /**
+     * @brief 3D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     * @param i3 index.
+     */
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(const index_t i,
-                                                               const index_t j) const {
+  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(index_t i,
+                                                               index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -58,9 +73,9 @@ namespace ntt {
   }
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::THREE_D>::operator()(const index_t,
-                                                                 const index_t,
-                                                                 const index_t) const {
+  Inline void FaradayCurvilinear<Dimension::THREE_D>::operator()(index_t,
+                                                                 index_t,
+                                                                 index_t) const {
     // 3d curvilinear faraday not implemented
   }
 } // namespace ntt

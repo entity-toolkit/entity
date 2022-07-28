@@ -11,30 +11,40 @@
 
 namespace ntt {
   /**
-   * Algorithms for PIC field boundary conditions.
-   *
+   * @brief Algorithms for PIC field boundary conditions.
    * @tparam D Dimension.
    */
   template <Dimension D>
   class FieldBC_rmax {
-    using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC>        m_mblock;
     ProblemGenerator<D, SimulationType::PIC> m_pgen;
     real_t                                   m_rabsorb;
     real_t                                   m_rmax;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     * @param pgen Problem generator.
+     * @param rabsorb Absorbing radius.
+     * @param rmax Maximum radius.
+     */
     FieldBC_rmax(const Meshblock<D, SimulationType::PIC>&        mblock,
                  const ProblemGenerator<D, SimulationType::PIC>& pgen,
                  real_t                                          r_absorb,
                  real_t                                          r_max)
       : m_mblock {mblock}, m_pgen {pgen}, m_rabsorb {r_absorb}, m_rmax {r_max} {}
-    Inline void operator()(const index_t, const index_t) const;
+    /**
+     * @brief 2D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     */
+    Inline void operator()(index_t, index_t) const;
   };
 
   template <>
-  Inline void FieldBC_rmax<Dimension::TWO_D>::operator()(const index_t i,
-                                                         const index_t j) const {
+  Inline void FieldBC_rmax<Dimension::TWO_D>::operator()(index_t i,
+                                                         index_t j) const {
     real_t i_ {static_cast<real_t>(i)};
     real_t j_ {static_cast<real_t>(j)};
 

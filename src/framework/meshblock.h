@@ -10,8 +10,7 @@
 
 namespace ntt {
   /**
-   * Container for the meshgrid information (cell ranges etc).
-   *
+   * @brief Container for the meshgrid information (cell ranges etc).
    * @tparam D Dimension.
    */
   template <Dimension D>
@@ -31,8 +30,7 @@ namespace ntt {
     const Metric<D> metric;
 
     /**
-     * Constructor for the mesh container, sets the active cell sizes and ranges.
-     *
+     * @brief Constructor for the mesh container, sets the active cell sizes and ranges.
      * @param res resolution vector of size D (dimension).
      * @param ext extent vector of size 2 * D.
      * @param params metric-/domain-specific parameters (max: 10).
@@ -43,36 +41,57 @@ namespace ntt {
     ~Mesh() = default;
 
     /**
-     * Loop over all active cells (disregard ghost cells).
-     *
+     * @brief Loop over all active cells (disregard ghost cells).
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto loopActiveCells() -> RangeND<D>;
     /**
-     * Loop over all cells.
-     *
+     * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto loopAllCells() -> RangeND<D>;
 
     /**
-     * Getters.
+     * @brief Get the first index of active zone along 1st dimension.
      */
     [[nodiscard]] auto i_min() const -> const int& { return m_imin; }
+    /**
+     * @brief Get the last index of active zone along 1st dimension.
+     */
     [[nodiscard]] auto i_max() const -> const int& { return m_imax; }
-    [[nodiscard]] auto j_min() const -> const int& { return m_jmin; }
-    [[nodiscard]] auto j_max() const -> const int& { return m_jmax; }
-    [[nodiscard]] auto k_min() const -> const int& { return m_kmin; }
-    [[nodiscard]] auto k_max() const -> const int& { return m_kmax; }
+    /**
+     * @brief Get the number of active cells along 1st dimension.
+     */
     [[nodiscard]] auto Ni() const -> const int& { return m_Ni; }
+    /**
+     * @brief Get the first index of active zone along 2nd dimension.
+     */
+    [[nodiscard]] auto j_min() const -> const int& { return m_jmin; }
+    /**
+     * @brief Get the last index of active zone along 2nd dimension.
+     */
+    [[nodiscard]] auto j_max() const -> const int& { return m_jmax; }
+    /**
+     * @brief Get the number of active cells along 2nd dimension.
+     */
     [[nodiscard]] auto Nj() const -> const int& { return m_Nj; }
+    /**
+     * @brief Get the number of active cells along 3rd dimension.
+     */
+    [[nodiscard]] auto k_min() const -> const int& { return m_kmin; }
+    /**
+     * @brief Get the last index of active zone along 3rd dimension.
+     */
+    [[nodiscard]] auto k_max() const -> const int& { return m_kmax; }
+    /**
+     * @brief Get the number of active cells along 3rd dimension.
+     */
     [[nodiscard]] auto Nk() const -> const int& { return m_Nk; }
   };
 
   /**
-   * Container for the fields, particles and coordinate system. This is the main subject of the
-   * simulation.
-   *
+   * @brief Container for the fields, particles and coordinate system. This is the main subject
+   * of the simulation.
    * @tparam D Dimension.
    * @tparam S Simulation type.
    */
@@ -91,8 +110,7 @@ namespace ntt {
     std::vector<BoundaryCondition> boundaries;
 
     /**
-     * Constructor for the meshblock.
-     *
+     * @brief Constructor for the meshblock.
      * @param res resolution vector of size D (dimension).
      * @param ext extent vector of size 2 * D.
      * @param params metric-/domain-specific parameters (max: 10).
@@ -105,15 +123,23 @@ namespace ntt {
     ~Meshblock() = default;
 
     /**
-     * Getters
+     * @brief Get the timestep.
      */
     [[nodiscard]] auto timestep() const -> const real_t& { return m_timestep; }
+    /**
+     * @brief Get the minimum cell size.
+     */
     [[nodiscard]] auto min_cell_size() const -> const real_t& { return m_min_cell_size; }
 
     /**
-     * Setters
+     * @brief Set the timestep of the meshblock.
+     * @param timestep timestep in physical units.
      */
     void set_timestep(const real_t& timestep) { m_timestep = timestep; }
+    /**
+     * @brief Set the minimum cell size of the meshblock.
+     * @param min_cell_size minimum cell size in physical units.
+     */
     void set_min_cell_size(const real_t& min_cell_size) { m_min_cell_size = min_cell_size; }
   };
 

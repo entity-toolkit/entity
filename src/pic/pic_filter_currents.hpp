@@ -6,8 +6,7 @@
 
 namespace ntt {
   /**
-   * Spatial filtering of all the deposited currents.
-   *
+   * @brief Spatial filtering of all the deposited currents.
    * @tparam D Dimension.
    */
 } // namespace ntt

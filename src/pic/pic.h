@@ -8,132 +8,115 @@
 
 namespace ntt {
   /**
-   * Class for PIC simulations, inherits from `Simulation<D, SimulationType::PIC>`.
-   *
+   * @brief Class for PIC simulations, inherits from `Simulation<D, SimulationType::PIC>`.
    * @tparam D dimension.
    */
   template <Dimension D>
   class PIC : public Simulation<D, SimulationType::PIC> {
   public:
     /**
-     * Constructor for PIC class.
-     *
+     * @brief Constructor for PIC class.
      * @param inputdata toml-object with parsed toml parameters.
      */
     PIC(const toml::value& inputdata) : Simulation<D, SimulationType::PIC>(inputdata) {}
     ~PIC() = default;
 
     /**
-     * Advance the simulation forward for one timestep.
-     *
+     * @brief Advance the simulation forward for one timestep.
      * @param t time in physical units
      */
-    void step_forward(const real_t&);
+    void step_forward(const real_t& t);
 
     /**
-     * Advance the simulation forward for one timestep.
-     *
+     * @brief Advance the simulation forward for one timestep.
      * @param t time in physical units
      */
-    void step_backward(const real_t&);
+    void step_backward(const real_t& t);
 
     /**
-     * Advance the simulation forward for a specified amount of timesteps, keeping track of
-     * time.
+     * @brief Advance the simulation forward for a specified amount of timesteps, keeping track
+     * of time.
      */
     void mainloop();
 
     /**
-     * Process the simulation (calling initialize, verify, mainloop, etc).
+     * @brief Process the simulation (calling initialize, verify, mainloop, etc).
      */
     void process();
 
     /**
-     * Dummy function to match with GRPIC
-     *
+     * @brief Dummy function to match with GRPIC
+     * @param time in physical units
      */
     void initial_step(const real_t&) {}
     /**
-     * Reset field arrays.
-     *
+     * @brief Reset field arrays.
      * @param t time in physical units.
      */
-    void resetFields(const real_t&);
+    void resetFields(const real_t& t);
     /**
-     * Reset current arrays.
-     *
+     * @brief Reset current arrays.
      * @param t time in physical units.
      */
-    void resetCurrents(const real_t&);
+    void resetCurrents(const real_t& t);
     /**
-     * Reset particles.
-     *
+     * @brief Reset particles.
      * @param t time in physical units.
      */
-    void resetParticles(const real_t&);
+    void resetParticles(const real_t& t);
 
     /**
-     * Advance B-field using Faraday's law.
-     *
+     * @brief Advance B-field using Faraday's law.
      * @param t time in physical units.
      * @param f coefficient that gets multiplied by the timestep (e.g., 0.5).
      */
-    void faradaySubstep(const real_t&, const real_t&);
+    void faradaySubstep(const real_t& t, const real_t& f);
     /**
-     * Advance E-field using Ampere's law (without currents).
-     *
+     * @brief Advance E-field using Ampere's law (without currents).
      * @param t time in physical units.
      * @param f coefficient that gets multiplied by the timestep (e.g., 1.0).
      */
-    void ampereSubstep(const real_t&, const real_t&);
+    void ampereSubstep(const real_t& t, const real_t& f);
     /**
-     * Deposit currents from particles.
-     *
+     * @brief Deposit currents from particles.
      * @param t time in physical units.
      */
-    void depositCurrentsSubstep(const real_t&);
+    void depositCurrentsSubstep(const real_t& t);
     /**
-     * Add computed and filtered currents to the E-field.
-     *
+     * @brief Add computed and filtered currents to the E-field.
      * @param t time in physical units.
      */
-    void addCurrentsSubstep(const real_t&);
+    void addCurrentsSubstep(const real_t& t);
     /**
-     * Transform the deposited currents to coordinate basis.
-     *
+     * @brief Transform the deposited currents to coordinate basis.
      * @param t time in physical units.
      */
-    void transformCurrentsSubstep(const real_t&);
+    void transformCurrentsSubstep(const real_t& t);
     /**
-     * Spatially filter all the deposited currents.
-     *
+     * @brief Spatially filter all the deposited currents.
      * @param t time in physical units.
      */
-    void filterCurrentsSubstep(const real_t&);
+    void filterCurrentsSubstep(const real_t& t);
 
     /**
-     * Advance particle positions and velocities.
-     *
+     * @brief Advance particle positions and velocities.
      * @param t time in physical units.
      * @param f coefficient that gets multiplied by the timestep (e.g., 1.0).
      */
-    void pushParticlesSubstep(const real_t&, const real_t&);
+    void pushParticlesSubstep(const real_t& t, const real_t& f);
     /**
-     * Apply boundary conditions for fields.
-     *
+     * @brief Apply boundary conditions for fields.
      * @param t time in physical units.
      */
-    void fieldBoundaryConditions(const real_t&);
+    void fieldBoundaryConditions(const real_t& t);
     /**
-     * Apply boundary conditions for particles.
-     *
+     * @brief Apply boundary conditions for particles.
      * @param t time in physical units.
      */
-    void particleBoundaryConditions(const real_t&);
+    void particleBoundaryConditions(const real_t& t);
 
     /**
-     * Benchmarking step.
-     * 
+     * @brief Benchmarking step.
      */
     void benchmark();
   };

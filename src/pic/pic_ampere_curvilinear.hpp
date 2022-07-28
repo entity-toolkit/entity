@@ -7,28 +7,40 @@
 #include "pic.h"
 
 namespace ntt {
-
   /**
-   * Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space.
-   *
+   * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space.
    * @tparam D Dimension.
    */
   template <Dimension D>
   class AmpereCurvilinear {
-    using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
     real_t                            m_coeff;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
+     */
     AmpereCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
-    Inline void operator()(const index_t, const index_t) const;
-    Inline void operator()(const index_t, const index_t, const index_t) const;
+    /**
+     * @brief 2D version of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     */
+    Inline void operator()(index_t i1, index_t i2) const;
+    /**
+     * @brief 3D version of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     * @param i3 index.
+     */
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const;
   };
 
   template <>
-  Inline void AmpereCurvilinear<Dimension::TWO_D>::operator()(const index_t i,
-                                                              const index_t j) const {
+  Inline void AmpereCurvilinear<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -56,34 +68,40 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereCurvilinear<Dimension::THREE_D>::operator()(const index_t,
-                                                                const index_t,
-                                                                const index_t) const {
+  Inline void
+  AmpereCurvilinear<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
   /**
-   * Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space near the polar axes
-   * (integral form).
-   *
+   * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space near the
+   * polar axes (integral form).
    * @tparam D Dimension.
    */
   template <Dimension D>
   class AmpereCurvilinearPoles {
-    using index_t = typename RealFieldND<D, 6>::size_type;
     Meshblock<D, SimulationType::PIC> m_mblock;
     real_t                            m_coeff;
-    int                               m_nj;
+    const int                         m_nj;
 
   public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
+     */
     AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock,
                            const real_t&                            coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
-    Inline void operator()(const index_t) const;
+    /**
+     * @brief Implementation of the algorithm.
+     * @param i radial index.
+     */
+    Inline void operator()(index_t i) const;
   };
 
   template <>
-  Inline void AmpereCurvilinearPoles<Dimension::TWO_D>::operator()(const index_t i) const {
+  Inline void AmpereCurvilinearPoles<Dimension::TWO_D>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
 
@@ -109,7 +127,6 @@ namespace ntt {
                                       * (h3_min_iMjP * m_mblock.em(i - 1, j_min, em::bx3)
                                          - h3_min_iPjP * m_mblock.em(i, j_min, em::bx3));
   }
-
 } // namespace ntt
 
 #endif
