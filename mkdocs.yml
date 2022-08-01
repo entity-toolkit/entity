@@ -28,6 +28,7 @@ plugins:
 
 theme:
   name: material
+  favicon: assets/logo.svg
   logo: assets/logo.svg
   icon:
     repo: fontawesome/brands/git 
