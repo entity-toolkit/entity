@@ -2,7 +2,9 @@ window.MathJax = {
   loader: {
     load: [
       '[tex]/boldsymbol',
-      '[tex]/mathtools'
+      '[tex]/mathtools',
+      '[tex]/ams',
+      '[tex]/mathtools',
     ]
   },
 
@@ -13,7 +15,9 @@ window.MathJax = {
     processEnvironments: true,
     packages: {
       '[+]': ['boldsymbol'],
-      '[+]': ['mathtools']
+      '[+]': ['mathtools'],
+      '[+]': ['ams'],
+      '[+]': ['mathtools'],
     }
   },
 
