@@ -25,26 +25,31 @@ if (document.getElementById("pic_scheme")) {
     }
     return result;
   }
-  
-  window.addEventListener("load", function (event) {
-    new GRStep0("#grplot0", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
 
-    new GRStep1_1("#grplot1_1", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep1_2("#grplot1_2", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep1_3("#grplot1_3", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
+  window.addEventListener("load", () => {
+    const width = document.getElementsByTagName("article")[0].offsetWidth
+    const factor = width / 600
+    const height = 40 * factor
+    const margins = { top: 30 * factor, right: 30 * factor, bottom: 35 * factor, left: 30 * factor };
 
-    new GRStep2_1("#grplot2_1", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
+    new GRStep0("#grplot0", width, height, margins);
 
-    new GRStep3("#grplot3", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
+    new GRStep1_1("#grplot1_1", width, height, margins);
+    new GRStep1_2("#grplot1_2", width, height, margins);
+    new GRStep1_3("#grplot1_3", width, height, margins);
 
-    new GRStep4_1("#grplot4_1", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep4_2("#grplot4_2", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep4_3("#grplot4_3", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep4_4("#grplot4_4", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep4_5("#grplot4_5", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
-    new GRStep4_6("#grplot4_6", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
+    new GRStep2_1("#grplot2_1", width, height, margins);
 
-    new GRStep5("#grplot5", 600, 40, { top: 20, right: 30, bottom: 30, left: 30 });
+    new GRStep3("#grplot3", width, height, margins);
+
+    new GRStep4_1("#grplot4_1", width, height, margins);
+    new GRStep4_2("#grplot4_2", width, height, margins);
+    new GRStep4_3("#grplot4_3", width, height, margins);
+    new GRStep4_4("#grplot4_4", width, height, margins);
+    new GRStep4_5("#grplot4_5", width, height, margins);
+    new GRStep4_6("#grplot4_6", width, height, margins);
+
+    new GRStep5("#grplot5", width, height, margins);
   }, false);
 
 

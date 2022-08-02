@@ -1,11 +1,18 @@
 site_name: "Entity wiki"
 
 nav:
+  - 'Home': 'index.md'
   - 'How it works':
     - '3+1 formulation': 'how/3p1.md'
     - 'Code units': 'how/units.md'
     - 'PIC algorithm': 'how/pic.md'
     - 'Coordinate systems': 'how/coords.md'
+  - 'Guides':
+    - 'Configuring/compiling': '404.md'
+    - 'Running': '404.md'
+    - 'Developing': '404.md'
+    - 'Testing': '404.md'
+    - 'Documenting': '404.md'
   - 'Fun': 
     - 'Cubed sphere': 'fun/cubed_sphere.md'
     - '"Reconnection"': 'fun/reconnection.md'
@@ -22,6 +29,9 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
 
 plugins:
   - search
@@ -52,11 +62,13 @@ theme:
     - navigation.expand
     - toc.integrate
     - content.code.annotate
+    - navigation.indexes
 
 extra_javascript:
   - js/init.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js
   - https://cdnjs.cloudflare.com/ajax/libs/d3/7.6.1/d3.min.js
   - https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js
   - js/how/pic_nongr.js
@@ -67,6 +79,7 @@ extra_javascript:
 
 extra_css:
   - css/extra.css
+  - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
 
 extra:
   generator: false
@@ -74,4 +87,4 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/haykh/entity/
 
-copyright: Copyright &copy; 2021&#8594;&infin; Entity dev team @ PPPL/Princeton
+copyright: Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton

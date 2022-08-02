@@ -22,9 +22,20 @@
 }
 
 div[id^="plot"] .label,
-div[id^="grplot"] .label {
+div[id^="grplot"] .label,
+div[id^="plot"] .tick text,
+div[id^="grplot"] .tick text {
   font-family: 'JetBrains Mono';
-  font-size: 0.7em;
+  font-size: 16px;
+}
+
+@media (max-width: 992px) {
+
+  div[id^="plot"] .label,
+  div[id^="grplot"] .label,
+  div[id^="plot"] .tick text div[id^="grplot"] .tick text {
+    font-size: 0.6em;
+  }
 }
 
 [data-md-color-scheme="slate"] div[id^="plot"] .label,
@@ -60,7 +71,7 @@ div[id^="grplot"] .label {
 
 /* Code blocks */
 
-[data-md-color-scheme="slate"]:root > * {
+[data-md-color-scheme="slate"]:root>* {
   --md-code-hl-keyword-color: #BD96C2;
   --md-code-hl-punctuation-color: #74B0B1;
   --md-code-hl-operator-color: #72AEAF;
@@ -78,7 +89,7 @@ div[id^="grplot"] .label {
 }
 
 #plot_ax_01 th {
-  min-width: 3rem!important;
+  min-width: 3rem !important;
 }
 
 #plot_ax_01 input {

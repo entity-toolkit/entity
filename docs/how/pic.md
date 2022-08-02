@@ -48,7 +48,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="plot1"></div>
 
     $$
-    B^{(n-1/2)}\overset{\Delta t/2}{\underset{\qquad E^{(n)}\qquad}{\longrightarrow}} B^{(n)}
+    B^{(n-1/2)}\xrightarrow[\qquad E^{(n)}\qquad]{\Delta t/2} B^{(n)}
     $$
 
     ```c++
@@ -65,7 +65,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="plot2_1"></div>
 
     $$
-    u^{(n-1/2)}\overset{\Delta t}{\underset{\qquad E(x^n),~B(x^n)\qquad}{\longrightarrow}} u^{(n+1/2)}
+    u^{(n-1/2)}\xrightarrow[\qquad E(x^n),~B(x^n)\qquad]{\Delta t} u^{(n+1/2)}
     $$
 
     * 2.2. coordinate update (particle move)
@@ -77,7 +77,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="plot2_2"></div>
 
     $$
-    x^{(n)}\overset{\Delta t}{\underset{\qquad u^{(n+1/2)}\qquad}{\longrightarrow}} x^{(n+1)}
+    x^{(n)}\xrightarrow[\qquad u^{(n+1/2)}\qquad]{\Delta t} x^{(n+1)}
     $$
 
 === "3. current deposition"
@@ -112,7 +112,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="plot5"></div>
 
     $$
-    E^{(n)}\overset{\Delta t}{\underset{\qquad B^{(n+1/2)},~J^{(n+1/2)}\qquad}{\longrightarrow}} E^{(n+1)}
+    E^{(n)}\xrightarrow[\qquad B^{(n+1/2)},~J^{(n+1/2)}\qquad]{\Delta t} E^{(n+1)}
     $$
 
     ```c++
@@ -158,7 +158,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="grplot1_3"></div>
 
     $$
-    B^{(n-1)}\overset{\Delta t}{\underset{\qquad E^{(n-1/2)}\qquad}{\longrightarrow}} B^{(n)}
+    B^{(n-1)}\xrightarrow[\qquad E^{(n-1/2)}\qquad]{\Delta t} B^{(n)}
     $$
 
 === "2. particle push"
@@ -188,7 +188,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="grplot4_2"></div>
 
     $$
-    B^{(n-1/2)}\overset{\Delta t}{\underset{\qquad E^{(n)}\qquad}{\longrightarrow}} B^{(n+1/2)}
+    B^{(n-1/2)}\xrightarrow[\qquad E^{(n)}\qquad]{\Delta t} B^{(n+1/2)}
     $$
 
     * 4.3. intermediate current interpolation
@@ -202,7 +202,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     * 4.4. auxiliary Ampere substep
 
     $$
-    D^{(n-1/2)}\overset{\Delta t}{\underset{\qquad H^{(n)},~J^{(n)}\qquad}{\longrightarrow}} D^{(n+1/2)}
+    D^{(n-1/2)}\xrightarrow[\qquad H^{(n)},~J^{(n)}\qquad]{\Delta t} D^{(n+1/2)}
     $$
 
     <div id="grplot4_4"></div>
@@ -220,7 +220,7 @@ Simulation::Meshblock.particles[species_id].m_ux3(prtl_id);
     <div id="grplot4_6"></div>
 
     $$
-    D^{(n)}\overset{\Delta t}{\underset{\qquad H^{(n+1/2)},~J^{(n+1/2)}\qquad}{\longrightarrow}} D^{(n+1)}
+    D^{(n)}\xrightarrow[\qquad H^{(n+1/2)},~J^{(n+1/2)}\qquad]{\Delta t} D^{(n+1)}
     $$
 
 *Final configuration:*
