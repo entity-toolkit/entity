@@ -1,5 +1,6 @@
 :root {
   font-variant-ligatures: normal;
+  font-size: 1.4em;
 }
 
 [data-md-color-scheme="default"] {
@@ -10,6 +11,7 @@
 [data-md-color-scheme="slate"] {
   --md-admonition-bg-color: hsl(232, 15%, 25%);
   --md-shadow-z1: none;
+  --md-typeset-a-color: hsl(231, 100%, 64%);
 }
 
 .md-typeset :is(.admonition),
@@ -19,28 +21,6 @@
 
 .md-header {
   box-shadow: none;
-}
-
-div[id^="plot"] .label,
-div[id^="grplot"] .label,
-div[id^="plot"] .tick text,
-div[id^="grplot"] .tick text {
-  font-family: 'JetBrains Mono';
-  font-size: 16px;
-}
-
-@media (max-width: 992px) {
-
-  div[id^="plot"] .label,
-  div[id^="grplot"] .label,
-  div[id^="plot"] .tick text div[id^="grplot"] .tick text {
-    font-size: 0.6em;
-  }
-}
-
-[data-md-color-scheme="slate"] div[id^="plot"] .label,
-[data-md-color-scheme="slate"] div[id^="grplot"] .label {
-  fill: var(--md-default-fg-color--light);
 }
 
 @keyframes gradient {
@@ -69,6 +49,29 @@ div[id^="grplot"] .tick text {
   animation: gradient 15s ease infinite;
 }
 
+/* Additional admonition */
+
+:root {
+  --md-admonition-icon--code: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 3h2v2H5v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5h2v2H5c-1.07-.27-2-.9-2-2v-4a2 2 0 0 0-2-2H0v-2h1a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2m14 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3h2m-7 12a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-4 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m8 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1Z" /></svg>')
+}
+
+.md-typeset .admonition.code,
+.md-typeset details.code {
+  border-color: rgb(155, 43, 140);
+}
+
+.md-typeset .code>.admonition-title,
+.md-typeset .code>summary {
+  background-color: rgba(155, 43, 140, 0.1);
+}
+
+.md-typeset .code>.admonition-title::before,
+.md-typeset .code>summary::before {
+  background-color: rgb(155, 43, 140);
+  -webkit-mask-image: var(--md-admonition-icon--code);
+  mask-image: var(--md-admonition-icon--code);
+}
+
 /* Code blocks */
 
 [data-md-color-scheme="slate"]:root>* {
@@ -80,6 +83,19 @@ div[id^="grplot"] .tick text {
   --md-code-hl-function-color: #7198C7;
   --md-code-hl-string-color: #A2C699;
   --md-code-hl-comment-color: #67737D;
+}
+
+/* Katex */
+.katex-display {
+  margin: 0px;
+}
+
+.katex .text > .mord {
+  font-family: var(--md-text-font);
+  font-weight: normal;
+}
+.katex .tag {
+  right: 25px!important;
 }
 
 /* p5 canvases */
@@ -104,4 +120,26 @@ div[id^="grplot"] .tick text {
   color: white;
   padding: 10px 0px 10px 0px;
   background-color: var(--md-primary-fg-color);
+}
+
+div[id^="plot"] .label,
+div[id^="grplot"] .label,
+div[id^="plot"] .tick text,
+div[id^="grplot"] .tick text {
+  font-family: 'JetBrains Mono';
+  font-size: 16px;
+}
+
+@media (max-width: 992px) {
+
+  div[id^="plot"] .label,
+  div[id^="grplot"] .label,
+  div[id^="plot"] .tick text div[id^="grplot"] .tick text {
+    font-size: 0.6em;
+  }
+}
+
+[data-md-color-scheme="slate"] div[id^="plot"] .label,
+[data-md-color-scheme="slate"] div[id^="grplot"] .label {
+  fill: var(--md-default-fg-color--light);
 }

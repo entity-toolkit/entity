@@ -1,3 +1,8 @@
+---
+hide:
+  - footer
+---
+
 ## Development status
 
 __PIC__
