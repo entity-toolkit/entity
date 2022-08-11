@@ -56,8 +56,6 @@ TEST_CASE("testing PIC") {
         sim.initialize();
 
         CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.041984464973f));
-        CHECK(ntt::AlmostEqual(sim.sim_params()->B0(), 1.0f));
-        CHECK(ntt::AlmostEqual(sim.sim_params()->charge0(), 100.0f));
         CHECK(ntt::AlmostEqual(sim.sim_params()->sigma0(), 0.01f));
 
         real_t beta_drift = 0.1f;
@@ -305,7 +303,7 @@ TEST_CASE("testing PIC") {
       std::string input_toml = R"TOML(
         [domain]
         resolution      = [256, 64]
-        extent          = [0.0, 256.0, 0.0, 64.0]
+        extent          = [0.0, 4.0, 0.0, 1.0]
         boundaries      = ["PERIODIC", "PERIODIC"]
 
         [units]
@@ -323,7 +321,7 @@ TEST_CASE("testing PIC") {
 
         [species_2]
         mass            = 1.0
-        charge          = 1.0
+        charge          = 1.6
         maxnpart        = 10.0
       )TOML";
       try {
@@ -332,67 +330,111 @@ TEST_CASE("testing PIC") {
         ntt::PIC<ntt::Dimension::TWO_D> sim(inputdata);
         sim.initialize();
 
-        CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.6717514396f));
-        CHECK(ntt::AlmostEqual(sim.sim_params()->B0(), 1.0f));
-        CHECK(ntt::AlmostEqual(sim.sim_params()->charge0(), 100.0f));
+        CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.010496116243f));
         CHECK(ntt::AlmostEqual(sim.sim_params()->sigma0(), 0.01f));
 
         {
-          auto                                mblock      = sim.mblock();
-          real_t                              gammabeta   = 12.0f;
-          real_t                              pitch_angle = ntt::constant::PI / 6.0f;
-          ntt::coord_t<ntt::Dimension::TWO_D> x_init {25.233f, 12.65f};
+          auto                                mblock       = sim.mblock();
+          real_t                              gammabeta    = 12.0f;
+          real_t                              pitch_angle1 = ntt::constant::PI / 6.0f;
+          real_t                              pitch_angle2 = ntt::constant::PI / 4.0f;
+          ntt::coord_t<ntt::Dimension::TWO_D> x_init1 {2.5233f, 0.1265f};
+          ntt::coord_t<ntt::Dimension::TWO_D> x_init2 {0.254f, 0.834f};
 
           Kokkos::parallel_for(
             "set particles",
             ntt::NTTRange<ntt::Dimension::ONE_D>({0}, {1}),
             Lambda(const std::size_t p) {
               ntt::coord_t<ntt::Dimension::TWO_D> x_CU;
-              mblock->metric.x_Cart2Code(x_init, x_CU);
-              auto [i1, dx1] = mblock->metric.CU_to_Idi(x_CU[0]);
-              auto [i2, dx2] = mblock->metric.CU_to_Idi(x_CU[1]);
-              // electron
-              mblock->particles[0].i1(p)  = i1;
-              mblock->particles[0].i2(p)  = i2;
-              mblock->particles[0].dx1(p) = dx1;
-              mblock->particles[0].dx2(p) = dx2;
-              // mblock->particles[0].ux1(p) = gammabeta * math::cos(pitch_angle);
-              mblock->particles[0].ux2(p) = gammabeta * math::cos(pitch_angle);
-              mblock->particles[0].ux3(p) = gammabeta * math::sin(pitch_angle);
-              // positron
-              mblock->particles[1].i1(p)  = i1;
-              mblock->particles[1].i2(p)  = i2;
-              mblock->particles[1].dx1(p) = dx1;
-              mblock->particles[1].dx2(p) = dx2;
+              mblock->metric.x_Cart2Code(x_init1, x_CU);
+              std::pair<int, float> i1_di1, i2_di2;
+
+              i1_di1 = mblock->metric.CU_to_Idi(x_CU[0]);
+              i2_di2 = mblock->metric.CU_to_Idi(x_CU[1]);
+
+              mblock->particles[0].i1(p)  = i1_di1.first;
+              mblock->particles[0].i2(p)  = i2_di2.first;
+              mblock->particles[0].dx1(p) = i1_di1.second;
+              mblock->particles[0].dx2(p) = i2_di2.second;
+              mblock->particles[0].ux2(p) = gammabeta * math::cos(pitch_angle1);
+              mblock->particles[0].ux3(p) = gammabeta * math::sin(pitch_angle1);
+
+              mblock->metric.x_Cart2Code(x_init2, x_CU);
+              i1_di1 = mblock->metric.CU_to_Idi(x_CU[0]);
+              i2_di2 = mblock->metric.CU_to_Idi(x_CU[1]);
+
+              mblock->particles[1].i1(p)  = i1_di1.first;
+              mblock->particles[1].i2(p)  = i2_di2.first;
+              mblock->particles[1].dx1(p) = i1_di1.second;
+              mblock->particles[1].dx2(p) = i2_di2.second;
+              mblock->particles[1].ux1(p) = -gammabeta * math::cos(pitch_angle2);
+              mblock->particles[1].ux2(p) = -gammabeta * math::sin(pitch_angle2);
             });
           (mblock->particles[0]).set_npart(1);
           (mblock->particles[1]).set_npart(1);
 
-          ntt::csv::writeParticle("output/prtl1.csv", *mblock, 0, 0);
+          sim.pushParticlesSubstep(ZERO, ONE);
 
-          real_t runtime = 100.0f;
-          for (int i {0}; i < (int)runtime; ++i) {
-            real_t time = (real_t)i;
+          sim.depositCurrentsSubstep(ZERO);
 
-            sim.pushParticlesSubstep(time, ONE);
+          CHECK(ntt::AlmostEqual(
+            sim.mblock()->cur(161 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx2)
+              + sim.mblock()->cur(162 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx2),
+            -55.23417f));
+          CHECK(ntt::AlmostEqual(
+            sim.mblock()->cur(161 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx3)
+              + sim.mblock()->cur(162 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx3)
+              + sim.mblock()->cur(161 + ntt::N_GHOSTS, 9 + ntt::N_GHOSTS, ntt::cur::jx3)
+              + sim.mblock()->cur(162 + ntt::N_GHOSTS, 9 + ntt::N_GHOSTS, ntt::cur::jx3),
+            -31.889464f));
 
-            sim.resetCurrents(time);
-            sim.depositCurrentsSubstep(time);
-            ntt::csv::writeField(
-              "output/jx1_" + std::to_string(i) + ".csv", *mblock, ntt::cur::jx1);
-            ntt::csv::writeField(
-              "output/jx2_" + std::to_string(i) + ".csv", *mblock, ntt::cur::jx2);
-            ntt::csv::writeField(
-              "output/jx3_" + std::to_string(i) + ".csv", *mblock, ntt::cur::jx3);
+          CHECK(ntt::AlmostEqual(
+            sim.mblock()->cur(15 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx1)
+              + sim.mblock()->cur(15 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx1)
+              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx1)
+              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 54 + ntt::N_GHOSTS, ntt::cur::jx1),
+            -1.6f * 45.098512f));
 
-            sim.filterCurrentsSubstep(time);
-            // sim.transformCurrentsSubstep(time);
+          CHECK(ntt::AlmostEqual(
+            sim.mblock()->cur(15 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx2)
+              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx2)
+              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx2)
+              + sim.mblock()->cur(17 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx2),
+            -1.6f * 45.098512f));
 
-            sim.particleBoundaryConditions(time);
+          sim.addCurrentsSubstep(ZERO);
 
-            ntt::csv::writeParticle(
-              "output/prtl1.csv", *mblock, 0, 0, ntt::OutputMode::APPEND);
-          }
+          real_t ex1 {0.0f};
+          Kokkos::parallel_reduce(
+            "post-deposit",
+            sim.loopActiveCells(),
+            Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
+              sum += mblock->em(i, j, ntt::em::ex1);
+            },
+            ex1);
+
+          real_t ex2 {0.0f};
+          Kokkos::parallel_reduce(
+            "post-deposit",
+            sim.loopActiveCells(),
+            Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
+              sum += mblock->em(i, j, ntt::em::ex2);
+            },
+            ex2);
+
+          real_t ex3 {0.0f};
+          Kokkos::parallel_reduce(
+            "post-deposit",
+            sim.loopActiveCells(),
+            Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
+              sum += mblock->em(i, j, ntt::em::ex3);
+            },
+            ex3);
+
+          real_t c0 {275148.964f};
+          CHECK(ntt::AlmostEqual(ex1, c0 * 72.1576208f));
+          CHECK(ntt::AlmostEqual(ex2, c0 * 127.3917908f));
+          CHECK(ntt::AlmostEqual(ex3, c0 * 31.889464f));
         }
       }
       catch (std::exception& err) {

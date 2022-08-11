@@ -63,8 +63,12 @@ namespace ntt {
         timers.start(3);
         resetCurrents(time);
         depositCurrentsSubstep(time);
+        
+        timers.start(2);
+        currentBoundaryConditions(time);
+        timers.stop(2);
+
         filterCurrentsSubstep(time);
-        transformCurrentsSubstep(time);
         timers.stop(3);
       }
 

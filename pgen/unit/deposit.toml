@@ -1,25 +1,23 @@
 [simulation]
-title           = "Boris example"
+title           = "Deposit example"
 runtime         = 0.1
 
 [domain]
-resolution      = [64, 64]
-extent          = [-2.0, 2.0, -2.0, 2.0]
+resolution      = [128, 128]
+extent          = [-0.5, 0.5, -0.5, 0.5]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.1
+CFL             = 0.5
 correction      = 1.0
-#fieldsolver_ON  = true
-#deposit_ON      = false
 
 [units]
-ppc0            = 0.1
-larmor0         = 0.5
-skindepth0      = 0.5
+ppc0            = 10.0
+larmor0         = 1.0
+skindepth0      = 20.0
 
 [particles]
-n_species       = 3
+n_species       = 2
 
 [species_1]
 label           = "electron"
@@ -30,17 +28,10 @@ pusher          = "Boris"
 
 [species_2]
 label           = "positron"
-mass            = 1.0
+mass            = 20.0
 charge          = 1.0
 maxnpart        = 1e2
 pusher          = "Boris"
-
-[species_3]
-label           = "photon"
-mass            = 0.0
-charge          = 0.0
-maxnpart        = 1e2
-pusher          = "Photon"
 
 [problem]
 

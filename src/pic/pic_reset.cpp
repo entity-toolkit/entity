@@ -32,7 +32,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::resetCurrents(const real_t&) {
     Kokkos::parallel_for(
-      "reset_currents", this->m_mblock.loopActiveCells(), ResetCurrents<D>(this->m_mblock));
+      "reset_currents", this->m_mblock.loopAllCells(), ResetCurrents<D>(this->m_mblock));
   }
 } // namespace ntt
 

@@ -1,4 +1,12 @@
 {
+  "search.exclude": {
+    "extern/": true,
+    ".trash": true,
+    "bin/": true,
+    "build/": true,
+    "old/": true,
+    "docs/": true
+  },
   "files.associations": {
     "*.in": "makefile",
     "string_view": "cpp",
@@ -96,5 +104,9 @@
     "memory_resource": "cpp",
     "source_location": "cpp",
     "stop_token": "cpp"
+  },
+  "editor.tokenColorCustomizations": {
+    "comments": "",
+    "textMateRules": []
   },
 }
