@@ -64,7 +64,7 @@ TEST_CASE("testing PIC") {
         auto mblock = sim.mblock();
         Kokkos::parallel_for(
           "set fields",
-          sim.loopActiveCells(),
+          sim.rangeActiveCells(),
           Lambda(const std::size_t i, const std::size_t j) {
             real_t i_ {(real_t)(static_cast<int>(i) - ntt::N_GHOSTS)};
             real_t j_ {(real_t)(static_cast<int>(j) - ntt::N_GHOSTS)};
@@ -221,7 +221,7 @@ TEST_CASE("testing PIC") {
         auto mblock = sim.mblock();
         Kokkos::parallel_for(
           "userInitFlds",
-          sim.loopActiveCells(),
+          sim.rangeActiveCells(),
           Lambda(const std::size_t i, const std::size_t j) {
             // index to code units
             real_t i_ {(real_t)(static_cast<int>(i) - ntt::N_GHOSTS)},
@@ -407,7 +407,7 @@ TEST_CASE("testing PIC") {
           real_t ex1 {0.0f};
           Kokkos::parallel_reduce(
             "post-deposit",
-            sim.loopActiveCells(),
+            sim.rangeActiveCells(),
             Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
               sum += mblock->em(i, j, ntt::em::ex1);
             },
@@ -416,7 +416,7 @@ TEST_CASE("testing PIC") {
           real_t ex2 {0.0f};
           Kokkos::parallel_reduce(
             "post-deposit",
-            sim.loopActiveCells(),
+            sim.rangeActiveCells(),
             Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
               sum += mblock->em(i, j, ntt::em::ex2);
             },
@@ -425,7 +425,7 @@ TEST_CASE("testing PIC") {
           real_t ex3 {0.0f};
           Kokkos::parallel_reduce(
             "post-deposit",
-            sim.loopActiveCells(),
+            sim.rangeActiveCells(),
             Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
               sum += mblock->em(i, j, ntt::em::ex3);
             },

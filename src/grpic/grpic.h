@@ -207,7 +207,7 @@ namespace ntt {
 
   public:
     Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)
-      : m_mblock(mblock), m_eps(eps), j_min(mblock.j_min()) {}
+      : m_mblock(mblock), m_eps(eps), i2_min(mblock.i2_min()) {}
 
     Inline void operator()(index_t, index_t) const;
   };

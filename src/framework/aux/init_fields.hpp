@@ -30,7 +30,7 @@ namespace ntt {
     initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationType::GRPIC>& pgen,
                                   const Meshblock<D, SimulationType::GRPIC>&        mblock,
                                   real_t                                            eps)
-      : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps}, j_min {static_cast<index_t>(m_mblock.j_min())} {}
+      : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps}, j_min {static_cast<index_t>(m_mblock.i2_min())} {}
 
     Inline void operator()(index_t, index_t) const;
   };

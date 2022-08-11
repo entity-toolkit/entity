@@ -10,8 +10,8 @@ namespace ntt {
   void GRPIC<Dimension::TWO_D>::ampereSubstep(const real_t&, const real_t& fraction, const gr_ampere& f) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
     auto         range {
-      NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1}, {m_mblock.i_max(), m_mblock.j_max()})};
-    auto range_pole {NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()})};
+      NTTRange<Dimension::TWO_D>({m_mblock.i1_min(), m_mblock.i2_min() + 1}, {m_mblock.i1_max(), m_mblock.i2_max()})};
+    auto range_pole {NTTRange<Dimension::ONE_D>({m_mblock.i1_min()}, {m_mblock.i1_max()})};
     if (f == gr_ampere::aux) {
       Kokkos::parallel_for("ampere", range, AmpereGR_aux<Dimension::TWO_D>(m_mblock, coeff));
       Kokkos::parallel_for("ampere_pole", range_pole, AmperePolesGR_aux<Dimension::TWO_D>(m_mblock, coeff));

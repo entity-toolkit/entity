@@ -9,7 +9,7 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::filterCurrentsSubstep(const real_t&) {
-    // Kokkos::parallel_for("", this->m_mblock.loopActiveCells(), ...<D>(this->m_mblock));
+    // Kokkos::parallel_for("", this->m_mblock.rangeActiveCells(), ...<D>(this->m_mblock));
   }
 } // namespace ntt
 

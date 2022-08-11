@@ -141,7 +141,7 @@ namespace ntt {
 
   public:
     AmperePolesGR_aux(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
+      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
     Inline void operator()(index_t) const;
   };
 
@@ -173,7 +173,7 @@ namespace ntt {
 
   public:
     AmperePolesGR(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
+      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
     Inline void operator()(index_t) const;
   };
 
@@ -208,7 +208,7 @@ namespace ntt {
 
   public:
     AmperePolesGR_init(const Meshblock<D, SimulationType::GRPIC>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
+      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
     Inline void operator()(index_t) const;
   };
 

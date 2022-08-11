@@ -22,7 +22,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::resetFields(const real_t&) {
     Kokkos::parallel_for(
-      "reset_fields", this->m_mblock.loopActiveCells(), ResetFields<D>(this->m_mblock));
+      "reset_fields", this->m_mblock.rangeActiveCells(), ResetFields<D>(this->m_mblock));
   }
 
   /**
@@ -32,7 +32,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::resetCurrents(const real_t&) {
     Kokkos::parallel_for(
-      "reset_currents", this->m_mblock.loopAllCells(), ResetCurrents<D>(this->m_mblock));
+      "reset_currents", this->m_mblock.rangeAllCells(), ResetCurrents<D>(this->m_mblock));
   }
 } // namespace ntt
 

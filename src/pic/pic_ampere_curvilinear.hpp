@@ -92,7 +92,7 @@ namespace ntt {
      */
     AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock,
                            const real_t&                            coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Nj()) {}
+      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
     /**
      * @brief Implementation of the algorithm.
      * @param i radial index.

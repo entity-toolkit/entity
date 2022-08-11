@@ -10,15 +10,18 @@
 #include <stdexcept>
 
 namespace ntt {
+  const auto Dim1 = Dimension::ONE_D;
+  const auto Dim2 = Dimension::TWO_D;
+  const auto Dim3 = Dimension::THREE_D;
+
   template <>
-  void PIC<Dimension::ONE_D>::ampereSubstep(const real_t&, const real_t& fraction) {
+  void PIC<Dim1>::ampereSubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
-    Kokkos::parallel_for("ampere",
-                         m_mblock.loopActiveCells(),
-                         AmpereMinkowski<Dimension::ONE_D>(m_mblock, coeff / dx));
+    Kokkos::parallel_for(
+      "ampere", m_mblock.rangeActiveCells(), AmpereMinkowski<Dim1>(m_mblock, coeff / dx));
 #else
     (void)(fraction);
     (void)(coeff);
@@ -27,34 +30,32 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dimension::TWO_D>::ampereSubstep(const real_t&, const real_t& fraction) {
+  void PIC<Dim2>::ampereSubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
-    Kokkos::parallel_for("ampere",
-                         m_mblock.loopActiveCells(),
-                         AmpereMinkowski<Dimension::TWO_D>(m_mblock, coeff / dx));
+    Kokkos::parallel_for(
+      "ampere", m_mblock.rangeActiveCells(), AmpereMinkowski<Dim2>(m_mblock, coeff / dx));
 #else
     Kokkos::parallel_for("ampere",
-                         NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_min() + 1},
-                                                    {m_mblock.i_max(), m_mblock.j_max()}),
-                         AmpereCurvilinear<Dimension::TWO_D>(m_mblock, coeff));
+                         NTTRange<Dim2>({m_mblock.i1_min(), m_mblock.i2_min() + 1},
+                                        {m_mblock.i1_max(), m_mblock.i2_max()}),
+                         AmpereCurvilinear<Dim2>(m_mblock, coeff));
     Kokkos::parallel_for("ampere_pole",
-                         NTTRange<Dimension::ONE_D>({m_mblock.i_min()}, {m_mblock.i_max()}),
-                         AmpereCurvilinearPoles<Dimension::TWO_D>(m_mblock, coeff));
+                         NTTRange<Dim1>({m_mblock.i1_min()}, {m_mblock.i1_max()}),
+                         AmpereCurvilinearPoles<Dim2>(m_mblock, coeff));
 #endif
   }
 
   template <>
-  void PIC<Dimension::THREE_D>::ampereSubstep(const real_t&, const real_t& fraction) {
+  void PIC<Dim3>::ampereSubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
-    Kokkos::parallel_for("ampere",
-                         m_mblock.loopActiveCells(),
-                         AmpereMinkowski<Dimension::THREE_D>(m_mblock, coeff / dx));
+    Kokkos::parallel_for(
+      "ampere", m_mblock.rangeActiveCells(), AmpereMinkowski<Dim3>(m_mblock, coeff / dx));
 #else
     (void)(fraction);
     (void)(coeff);
