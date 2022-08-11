@@ -55,12 +55,11 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t& t) {
+  void PIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t&) {
     
 #if (METRIC == MINKOWSKI_METRIC)
-    (void)(t); // ignore warning about unused parameter
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
-      // non-periodic
+      // periodic
       auto range_m {NTTRange<Dimension::TWO_D>({0, m_mblock.j_min()},
                                                {m_mblock.i_min(), m_mblock.j_max()})};
       auto range_p {

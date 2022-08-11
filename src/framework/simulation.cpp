@@ -99,8 +99,6 @@ namespace ntt {
     PLOGI << "   c_omp0: " << m_sim_params.skindepth0() << " ["
           << m_sim_params.skindepth0() / m_mblock.min_cell_size() << " cells]";
     PLOGI << "   sigma0: " << m_sim_params.sigma0();
-    PLOGI << "   q0: " << m_sim_params.charge0();
-    PLOGI << "   B0: " << m_sim_params.B0();
 
     if (m_mblock.particles.size() > 0) {
       PLOGI << "[particles]";
