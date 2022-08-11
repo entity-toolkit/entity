@@ -38,6 +38,7 @@ import textwrap
 from pathlib import Path
 
 assert sys.version_info >= (3, 7), "Requires python 3.7 or higher"
+nproc = 'sysctl -n hw.physicalcpu' if sys.platform == 'darwin' else 'nproc'
 
 # Global Settings
 # ---------------
@@ -340,7 +341,7 @@ def makeNotes():
         notes += f"* nvcc recognized as:\n    $ {findCompiler('nvcc')}\n  "
     notes += f"* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:\n    $ {findCompiler(cxx)}\n  "
     if 'OpenMP' in args['kokkos_devices']:
-        notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_NUM_THREADS=$(nproc)\n  "
+        notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_NUM_THREADS=$({nproc})\n  "
     if args['nttiny']:
         notes += f"* `nttiny` path:\n    $ {pathNotEmpty(args['nttiny_path'])}"
     return notes.strip()
