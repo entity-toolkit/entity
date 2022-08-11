@@ -41,13 +41,29 @@ After the compilation is successful, you will find the corresponding executable 
 
 ## Development status
 
+### Short term things to do/fix
+
+  - [ ] routine for easy side/corner range selection
+  - [ ] add a simple current filtering
+  - [ ] field mirrors
+
+### Intermediate term things to do/fix
+
+  - [ ] test curvilinear particle pusher
+  - [ ] particle motion near the axes
+  - [ ] test curvilinear current deposit
+  - [ ] deposition near the axes
+  - [ ] filtering near the axes
+
+### State of things
+
 * PIC
   - [x] spherical/qspherical metrics (2D)
   - [x] minkowski field solver (1D/2D/3D)
   - [x] curvilinear field solver (2D)
   - [x] minkowski particle pusher (Boris; 1D/2D/3D)
   - [x] curvilinear particle pusher (Boris; 2D)
-  - [ ] minkowski current deposition (1D/2D/3D)
+  - [x] minkowski current deposition (1D/2D/3D)
   - [ ] curvilinear current deposition (2D)
   - [ ] cubed sphere metric (3D)
 * GRPIC
