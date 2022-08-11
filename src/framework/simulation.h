@@ -76,12 +76,12 @@ namespace ntt {
      * @brief Loop over all active cells (disregard ghost cells).
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto loopActiveCells() -> RangeND<D>;
+    auto rangeActiveCells() -> RangeND<D>;
     /**
      * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto loopAllCells() -> RangeND<D>;
+    auto rangeAllCells() -> RangeND<D>;
   };
 
 } // namespace ntt

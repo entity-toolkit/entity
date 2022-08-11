@@ -17,7 +17,7 @@ namespace ntt {
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
-        auto ni {m_mblock.Ni()};
+        auto ni {m_mblock.Ni1()};
         Kokkos::parallel_for(
           "prtl_bc", species.loopParticles(), Lambda(index_t p) {
             if (species.i1(p) < 0) {
@@ -46,8 +46,8 @@ namespace ntt {
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
-        auto ni {m_mblock.Ni()};
-        auto nj {m_mblock.Nj()};
+        auto ni {m_mblock.Ni1()};
+        auto nj {m_mblock.Ni2()};
         Kokkos::parallel_for(
           "prtl_bc", species.loopParticles(), Lambda(index_t p) {
             if (species.i1(p) < 0) {
@@ -73,14 +73,14 @@ namespace ntt {
                            species.loopParticles(),
                            Lambda(index_t) {
                              // if (species.i1(p) < 0) {
-                             //   species.i1(p) += m_mblock.Ni();
-                             // } else if (species.i1(p) >= m_mblock.Ni()) {
-                             //   species.i1(p) -= m_mblock.Ni();
+                             //   species.i1(p) += m_mblock.Ni1();
+                             // } else if (species.i1(p) >= m_mblock.Ni1()) {
+                             //   species.i1(p) -= m_mblock.Ni1();
                              // }
                              // if (species.i2(p) < 0) {
-                             //   species.i2(p) += m_mblock.Nj();
-                             // } else if (species.i2(p) >= m_mblock.Nj()) {
-                             //   species.i2(p) -= m_mblock.Nj();
+                             //   species.i2(p) += m_mblock.Ni2();
+                             // } else if (species.i2(p) >= m_mblock.Ni2()) {
+                             //   species.i2(p) -= m_mblock.Ni2();
                              // }
                            });
 

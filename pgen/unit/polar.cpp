@@ -24,7 +24,7 @@ namespace ntt {
     Kokkos::deep_copy(mblock.em, 0.0);
     real_t r_min {mblock.metric.x1_min};
     Kokkos::parallel_for(
-      "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+      "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
         real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -61,7 +61,7 @@ namespace ntt {
     }
     Kokkos::parallel_for(
       "userBcFlds_rmin",
-      NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()}, {mblock.i_min() + 1, mblock.j_max()}),
+      NTTRange<Dimension::TWO_D>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_min() + 1, mblock.i2_max()}),
       Lambda(index_t i, index_t j) {
         real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
         real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
@@ -84,7 +84,7 @@ namespace ntt {
 
     Kokkos::parallel_for(
       "userBcFlds_rmax",
-      NTTRange<Dimension::TWO_D>({mblock.i_max(), mblock.j_min()}, {mblock.i_max() + 1, mblock.j_max()}),
+      NTTRange<Dimension::TWO_D>({mblock.i1_max(), mblock.i2_min()}, {mblock.i1_max() + 1, mblock.i2_max()}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::ex3) = 0.0;
         mblock.em(i, j, em::ex2) = 0.0;

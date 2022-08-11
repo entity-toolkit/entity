@@ -5,6 +5,11 @@
 #include <cstddef>
 
 namespace ntt {
+  const auto Dim1      = Dimension::ONE_D;
+  const auto Dim2      = Dimension::TWO_D;
+  const auto Dim3      = Dimension::THREE_D;
+  const auto TypePIC   = SimulationType::PIC;
+  const auto TypeGRPIC = SimulationType::GRPIC;
 
   ParticleSpecies::ParticleSpecies(std::string           label_,
                                    const float&          m_,
@@ -31,10 +36,10 @@ namespace ntt {
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Particles<Dimension::ONE_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                              const float&       m_,
-                                                              const float&       ch_,
-                                                              const std::size_t& maxnpart_)
+  Particles<Dim1, TypePIC>::Particles(const std::string& label_,
+                                      const float&       m_,
+                                      const float&       ch_,
+                                      const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       dx1 {label_ + "_dx1", maxnpart_},
@@ -45,10 +50,10 @@ namespace ntt {
 
 #if (METRIC == MINKOWSKI_METRIC)
   template <>
-  Particles<Dimension::TWO_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                              const float&       m_,
-                                                              const float&       ch_,
-                                                              const std::size_t& maxnpart_)
+  Particles<Dim2, TypePIC>::Particles(const std::string& label_,
+                                      const float&       m_,
+                                      const float&       ch_,
+                                      const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},
@@ -60,10 +65,10 @@ namespace ntt {
       weight {label_ + "_w", maxnpart_} {}
 #else // axisymmetry
   template <>
-  Particles<Dimension::TWO_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                              const float&       m_,
-                                                              const float&       ch_,
-                                                              const std::size_t& maxnpart_)
+  Particles<Dim2, TypePIC>::Particles(const std::string& label_,
+                                      const float&       m_,
+                                      const float&       ch_,
+                                      const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},
@@ -76,10 +81,10 @@ namespace ntt {
       phi {label_ + "_phi", maxnpart_} {}
 #endif
   template <>
-  Particles<Dimension::THREE_D, SimulationType::PIC>::Particles(const std::string& label_,
-                                                                const float&       m_,
-                                                                const float&       ch_,
-                                                                const std::size_t& maxnpart_)
+  Particles<Dim3, TypePIC>::Particles(const std::string& label_,
+                                      const float&       m_,
+                                      const float&       ch_,
+                                      const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},
@@ -96,10 +101,10 @@ namespace ntt {
   // GRPIC-specific (not Cartesian)
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Particles<Dimension::TWO_D, SimulationType::GRPIC>::Particles(const std::string& label_,
-                                                                const float&       m_,
-                                                                const float&       ch_,
-                                                                const std::size_t& maxnpart_)
+  Particles<Dim2, TypeGRPIC>::Particles(const std::string& label_,
+                                        const float&       m_,
+                                        const float&       ch_,
+                                        const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},
@@ -117,10 +122,10 @@ namespace ntt {
       phi_prev {label_ + "_phi_prev", maxnpart_} {}
 
   template <>
-  Particles<Dimension::THREE_D, SimulationType::GRPIC>::Particles(const std::string& label_,
-                                                                  const float&       m_,
-                                                                  const float&       ch_,
-                                                                  const std::size_t& maxnpart_)
+  Particles<Dim3, TypeGRPIC>::Particles(const std::string& label_,
+                                        const float&       m_,
+                                        const float&       ch_,
+                                        const std::size_t& maxnpart_)
     : ParticleSpecies {label_, m_, ch_, maxnpart_},
       i1 {label_ + "_i1", maxnpart_},
       i2 {label_ + "_i2", maxnpart_},

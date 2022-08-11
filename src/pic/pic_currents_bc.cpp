@@ -7,12 +7,16 @@
 #include <stdexcept>
 
 namespace ntt {
+  const auto Dim1 = Dimension::ONE_D;
+  const auto Dim2 = Dimension::TWO_D;
+  const auto Dim3 = Dimension::THREE_D;
+
   /**
    * @brief 1d periodic field bc.
    *
    */
   template <>
-  void PIC<Dimension::ONE_D>::currentBoundaryConditions(const real_t&) {
+  void PIC<Dim1>::currentBoundaryConditions(const real_t&) {
 
 #if (METRIC == MINKOWSKI_METRIC)
 
@@ -27,7 +31,7 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::TWO_D>::currentBoundaryConditions(const real_t&) {
+  void PIC<Dim2>::currentBoundaryConditions(const real_t&) {
 
 #if (METRIC == MINKOWSKI_METRIC)
     /**
@@ -35,12 +39,12 @@ namespace ntt {
      */
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       // periodic
-      auto ni {m_mblock.Ni()};
+      auto ni {m_mblock.Ni1()};
       auto mblock {this->m_mblock};
-      auto range_m = NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()},
-                                                {mblock.i_min() + N_GHOSTS, mblock.j_max()});
-      auto range_p = NTTRange<Dimension::TWO_D>({mblock.i_max() - N_GHOSTS, mblock.j_min()},
-                                                {mblock.i_max(), mblock.j_max()});
+      auto range_m = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
+                                                {mblock.i1_min() + N_GHOSTS, mblock.i2_max()});
+      auto range_p = NTTRange<Dim2>({mblock.i1_max() - N_GHOSTS, mblock.i2_min()},
+                                                {mblock.i1_max(), mblock.i2_max()});
       Kokkos::parallel_for(
         "2d_bc_x1m", range_m, Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j, cur::jx1);
@@ -63,12 +67,12 @@ namespace ntt {
       /**
        * @note: no corners
        */
-      auto nj {m_mblock.Nj()};
+      auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
-      auto range_m = NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()},
-                                                {mblock.i_max(), mblock.j_min() + N_GHOSTS});
-      auto range_p = NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_max() - N_GHOSTS},
-                                                {mblock.i_max(), mblock.j_max()});
+      auto range_m = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
+                                                {mblock.i1_max(), mblock.i2_min() + N_GHOSTS});
+      auto range_p = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_max() - N_GHOSTS},
+                                                {mblock.i1_max(), mblock.i2_max()});
       Kokkos::parallel_for(
         "2d_bc_x1m", range_m, Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j + nj, cur::jx1);
@@ -91,12 +95,12 @@ namespace ntt {
      */
     if ((m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)
         && (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
-      auto ni {m_mblock.Ni()};
-      auto nj {m_mblock.Nj()};
+      auto ni {m_mblock.Ni1()};
+      auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
       auto range_corner1
-        = NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_min()},
-                                     {mblock.i_min() + N_GHOSTS, mblock.j_min() + N_GHOSTS});
+        = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
+                                     {mblock.i1_min() + N_GHOSTS, mblock.i2_min() + N_GHOSTS});
       Kokkos::parallel_for(
         "2d_bc_corner1", range_corner1, Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j + nj, cur::jx1);
@@ -104,8 +108,8 @@ namespace ntt {
           mblock.cur(i, j, cur::jx3) += mblock.cur(i + ni, j + nj, cur::jx3);
         });
       auto range_corner2
-        = NTTRange<Dimension::TWO_D>({mblock.i_min(), mblock.j_max() - N_GHOSTS},
-                                     {mblock.i_min() + N_GHOSTS, mblock.j_max()});
+        = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_max() - N_GHOSTS},
+                                     {mblock.i1_min() + N_GHOSTS, mblock.i2_max()});
       Kokkos::parallel_for(
         "2d_bc_corner2", range_corner2, Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j - nj, cur::jx1);
@@ -113,8 +117,8 @@ namespace ntt {
           mblock.cur(i, j, cur::jx3) += mblock.cur(i + ni, j - nj, cur::jx3);
         });
       auto range_corner3
-        = NTTRange<Dimension::TWO_D>({mblock.i_max() - N_GHOSTS, mblock.j_min()},
-                                     {mblock.i_max(), mblock.j_min() + N_GHOSTS});
+        = NTTRange<Dim2>({mblock.i1_max() - N_GHOSTS, mblock.i2_min()},
+                                     {mblock.i1_max(), mblock.i2_min() + N_GHOSTS});
       Kokkos::parallel_for(
         "2d_bc_corner3", range_corner3, Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i - ni, j + nj, cur::jx1);
@@ -122,8 +126,8 @@ namespace ntt {
           mblock.cur(i, j, cur::jx3) += mblock.cur(i - ni, j + nj, cur::jx3);
         });
       auto range_corner4
-        = NTTRange<Dimension::TWO_D>({mblock.i_max() - N_GHOSTS, mblock.j_max() - N_GHOSTS},
-                                     {mblock.i_max(), mblock.j_max()});
+        = NTTRange<Dim2>({mblock.i1_max() - N_GHOSTS, mblock.i2_max() - N_GHOSTS},
+                                     {mblock.i1_max(), mblock.i2_max()});
       Kokkos::parallel_for(
         "2d_bc_corner4", range_corner4, Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i - ni, j - nj, cur::jx1);
@@ -144,7 +148,7 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::THREE_D>::currentBoundaryConditions(const real_t&) {
+  void PIC<Dim3>::currentBoundaryConditions(const real_t&) {
     NTTError("not implemented");
   }
 

@@ -6,25 +6,33 @@
 #include <vector>
 
 namespace ntt {
+  const auto Dim1      = Dimension::ONE_D;
+  const auto Dim2      = Dimension::TWO_D;
+  const auto Dim3      = Dimension::THREE_D;
+  const auto TypePIC   = SimulationType::PIC;
+  const auto TypeGRPIC = SimulationType::GRPIC;
+
+  using resolution_t = std::vector<unsigned int>;
+
 #if SIMTYPE == PIC_SIMTYPE
   // * * * * * * * * * * * * * * * * * * * *
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Fields<Dimension::ONE_D, SimulationType::PIC>::Fields(std::vector<unsigned int> res)
+  Fields<Dim1, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS}, cur {"J", res[0] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
-  Fields<Dimension::TWO_D, SimulationType::PIC>::Fields(std::vector<unsigned int> res)
+  Fields<Dim2, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
-  Fields<Dimension::THREE_D, SimulationType::PIC>::Fields(std::vector<unsigned int> res)
+  Fields<Dim3, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
@@ -34,7 +42,7 @@ namespace ntt {
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Fields<Dimension::TWO_D, SimulationType::GRPIC>::Fields(std::vector<unsigned int> res)
+  Fields<Dim2, TypeGRPIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       aux {"AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
@@ -45,7 +53,7 @@ namespace ntt {
   }
 
   template <>
-  Fields<Dimension::THREE_D, SimulationType::GRPIC>::Fields(std::vector<unsigned int> res)
+  Fields<Dim3, TypeGRPIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       aux {"AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},

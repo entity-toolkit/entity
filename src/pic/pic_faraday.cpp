@@ -10,15 +10,18 @@
 #include <stdexcept>
 
 namespace ntt {
+  const auto Dim1 = Dimension::ONE_D;
+  const auto Dim2 = Dimension::TWO_D;
+  const auto Dim3 = Dimension::THREE_D;
+
   template <>
-  void PIC<Dimension::ONE_D>::faradaySubstep(const real_t&, const real_t& fraction) {
+  void PIC<Dim1>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
-    Kokkos::parallel_for("faraday",
-                         m_mblock.loopActiveCells(),
-                         FaradayMinkowski<Dimension::ONE_D>(m_mblock, coeff / dx));
+    Kokkos::parallel_for(
+      "faraday", m_mblock.rangeActiveCells(), FaradayMinkowski<Dim1>(m_mblock, coeff / dx));
 #else
     (void)(fraction);
     (void)(coeff);
@@ -27,30 +30,27 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dimension::TWO_D>::faradaySubstep(const real_t&, const real_t& fraction) {
+  void PIC<Dim2>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
-    Kokkos::parallel_for("faraday",
-                         m_mblock.loopActiveCells(),
-                         FaradayMinkowski<Dimension::TWO_D>(m_mblock, coeff / dx));
+    Kokkos::parallel_for(
+      "faraday", m_mblock.rangeActiveCells(), FaradayMinkowski<Dim2>(m_mblock, coeff / dx));
 #else
-    Kokkos::parallel_for("faraday",
-                         m_mblock.loopActiveCells(),
-                         FaradayCurvilinear<Dimension::TWO_D>(m_mblock, coeff));
+    Kokkos::parallel_for(
+      "faraday", m_mblock.rangeActiveCells(), FaradayCurvilinear<Dim2>(m_mblock, coeff));
 #endif
   }
 
   template <>
-  void PIC<Dimension::THREE_D>::faradaySubstep(const real_t&, const real_t& fraction) {
+  void PIC<Dim3>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
 #if (METRIC == MINKOWSKI_METRIC)
     // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto dx {(m_mblock.metric.x1_max - m_mblock.metric.x1_min) / m_mblock.metric.nx1};
-    Kokkos::parallel_for("faraday",
-                         m_mblock.loopActiveCells(),
-                         FaradayMinkowski<Dimension::THREE_D>(m_mblock, coeff / dx));
+    Kokkos::parallel_for(
+      "faraday", m_mblock.rangeActiveCells(), FaradayMinkowski<Dim3>(m_mblock, coeff / dx));
 #else
     (void)(fraction);
     (void)(coeff);
