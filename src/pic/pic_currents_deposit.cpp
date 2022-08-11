@@ -9,7 +9,7 @@ namespace ntt {
     for (auto& species : this->m_mblock.particles) {
       if (species.charge() != 0.0) {
         const real_t dt {this->m_mblock.timestep()};
-        const real_t charge {this->m_sim_params.charge0() * species.charge()};
+        const real_t charge {species.charge()};
         Deposit<D>   deposit(this->m_mblock, species, scatter_cur, charge, dt);
         deposit.depositCurrents();
       }

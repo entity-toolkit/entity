@@ -20,7 +20,7 @@ namespace ntt {
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
     RealScatterFieldND<D, 3>          m_scatter_cur;
-    real_t                            m_coeff, m_dt;
+    real_t                            m_charge, m_dt;
 
   public:
     /**
@@ -28,18 +28,18 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param particles Particles.
      * @param scatter_cur Scatter array of the currents.
-     * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
+     * @param charge charge of the species (code units).
      * @param dt Time step.
      */
     Deposit(const Meshblock<D, SimulationType::PIC>& mblock,
             const Particles<D, SimulationType::PIC>& particles,
             const RealScatterFieldND<D, 3>&          scatter_cur,
-            const real_t&                            coeff,
+            const real_t&                            charge,
             const real_t&                            dt)
       : m_mblock(mblock),
         m_particles(particles),
         m_scatter_cur(scatter_cur),
-        m_coeff(coeff),
+        m_charge(charge),
         m_dt(dt) {}
 
     /**
@@ -92,7 +92,7 @@ namespace ntt {
      * @param[out] xp_i Previous step position.
      * @param[out] xp_r Intermediate point used in zig-zag deposit.
      */
-    Inline void getDepositInterval(index_t&             p,
+    Inline void getDepositInterval(index_t&                   p,
                                    vec_t<Dimension::THREE_D>& vp,
                                    tuple_t<int, D>&           Ip_f,
                                    tuple_t<int, D>&           Ip_i,
@@ -155,6 +155,9 @@ namespace ntt {
     const coord_t<Dimension::ONE_D>&,
     const coord_t<Dimension::ONE_D>&) const {}
 
+  /**
+   * !TODO: fix the conversion to I+di
+   */
   template <>
   Inline void Deposit<Dimension::TWO_D>::depositCurrentsFromParticle(
     const vec_t<Dimension::THREE_D>&      vp,
@@ -165,39 +168,47 @@ namespace ntt {
     const coord_t<Dimension::TWO_D>&      xp_r) const {
     real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
     real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
-    real_t Fx1_1 {-(xp_r[0] - xp_i[0]) * m_coeff};
-    real_t Fx1_2 {-(xp_f[0] - xp_r[0]) * m_coeff};
+    real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};
+    real_t Fx1_2 {(xp_f[0] - xp_r[0]) * m_charge / m_dt};
 
     real_t Wx2_1 {HALF * (xp_i[1] + xp_r[1]) - static_cast<real_t>(Ip_i[1])};
     real_t Wx2_2 {HALF * (xp_f[1] + xp_r[1]) - static_cast<real_t>(Ip_f[1])};
-    real_t Fx2_1 {-(xp_r[1] - xp_i[1]) * m_coeff};
-    real_t Fx2_2 {-(xp_f[1] - xp_r[1]) * m_coeff};
+    real_t Fx2_1 {(xp_r[1] - xp_i[1]) * m_charge / m_dt};
+    real_t Fx2_2 {(xp_f[1] - xp_r[1]) * m_charge / m_dt};
 
-    real_t Fx3_1 {-HALF * m_dt * vp[2] * m_coeff};
-    real_t Fx3_2 {-HALF * m_dt * vp[2] * m_coeff};
+    real_t Fx3_1 {HALF * vp[2] * m_charge};
+    real_t Fx3_2 {HALF * vp[2] * m_charge};
 
     auto cur_access = m_scatter_cur.access();
-    cur_access(Ip_i[0], Ip_i[1], cur::jx1) += Fx1_1 * (ONE - Wx2_1);
-    cur_access(Ip_i[0], Ip_i[1] + 1, cur::jx1) += Fx1_1 * Wx2_1;
+    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx1) += Fx1_1 * (ONE - Wx2_1);
+    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_1 * Wx2_1;
 
-    cur_access(Ip_i[0], Ip_i[1], cur::jx2) += Fx2_1 * (ONE - Wx1_1);
-    cur_access(Ip_i[0] + 1, Ip_i[1], cur::jx2) += Fx2_1 * Wx1_1;
+    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * (ONE - Wx1_1);
+    cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * Wx1_1;
 
-    cur_access(Ip_f[0], Ip_f[1], cur::jx1) += Fx1_2 * (ONE - Wx2_2);
-    cur_access(Ip_f[0], Ip_f[1] + 1, cur::jx1) += Fx1_2 * Wx2_2;
+    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx1) += Fx1_2 * (ONE - Wx2_2);
+    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_2 * Wx2_2;
 
-    cur_access(Ip_f[0], Ip_f[1], cur::jx2) += Fx2_2 * (ONE - Wx1_2);
-    cur_access(Ip_f[0] + 1, Ip_f[1], cur::jx2) += Fx2_2 * Wx1_2;
+    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * (ONE - Wx1_2);
+    cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * Wx1_2;
 
-    cur_access(Ip_i[0], Ip_i[1], cur::jx3) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
-    cur_access(Ip_i[0] + 1, Ip_i[1], cur::jx3) += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
-    cur_access(Ip_i[0], Ip_i[1] + 1, cur::jx3) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
-    cur_access(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3) += Fx3_1 * Wx1_1 * Wx2_1;
+    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
+      += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+    cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
+      += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
+    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3)
+      += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+    cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3)
+      += Fx3_1 * Wx1_1 * Wx2_1;
 
-    cur_access(Ip_f[0], Ip_f[1], cur::jx3) += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
-    cur_access(Ip_f[0] + 1, Ip_f[1], cur::jx3) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
-    cur_access(Ip_f[0], Ip_f[1] + 1, cur::jx3) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
-    cur_access(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3) += Fx3_2 * Wx1_2 * Wx2_2;
+    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
+      += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+    cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
+      += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3)
+      += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+    cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3)
+      += Fx3_2 * Wx1_2 * Wx2_2;
   }
 
   template <>
@@ -216,8 +227,8 @@ namespace ntt {
 // if constexpr (D == Dimension::THREE_D) {
 // real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
 // real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
-// real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_coeff};
-// real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * m_coeff};
+// real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_charge};
+// real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * m_charge};
 
 // Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx1), Fx1_1 * (ONE - Wx2_1));
 // Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx1), Fx1_1 * Wx2_1);

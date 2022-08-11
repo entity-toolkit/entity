@@ -10,8 +10,7 @@
 #include <stdexcept>
 
 namespace ntt {
-  struct BorisFwd_t {};
-  struct BorisBwd_t {};
+  struct Boris_t {};
   struct Photon_t {};
 
   /**
@@ -38,8 +37,8 @@ namespace ntt {
            const real_t&                            dt)
       : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
     /**
-     * @brief Loop over all active particles of the given species and call the appropriate pusher.
-     * TODO: forward/backward
+     * @brief Loop over all active particles of the given species and call the appropriate
+     * pusher.
      */
     void pushParticles() {
       if (m_particles.pusher() == ParticlePusher::PHOTON) {
@@ -49,17 +48,9 @@ namespace ntt {
         Kokkos::parallel_for("pusher", range_policy, *this);
       } else if (m_particles.pusher() == ParticlePusher::BORIS) {
         // push boris-particles
-        if (SIGN(m_coeff) == SIGN(m_particles.charge())) {
-          // push forward
-          auto range_policy
-            = Kokkos::RangePolicy<AccelExeSpace, BorisFwd_t>(0, m_particles.npart());
-          Kokkos::parallel_for("pusher", range_policy, *this);
-        } else {
-          //// push backward
-          // auto range_policy
-          //   = Kokkos::RangePolicy<AccelExeSpace, BorisBwd_t>(0, m_particles.npart());
-          // Kokkos::parallel_for("pusher", range_policy, *this);
-        }
+        auto range_policy
+          = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
+        Kokkos::parallel_for("pusher", range_policy, *this);
       } else {
         NTTError("pusher not implemented");
       }
@@ -68,7 +59,7 @@ namespace ntt {
      * @brief Pusher for the forward Boris algorithm.
      * @param p index.
      */
-    Inline void operator()(const BorisFwd_t&, index_t p) const {
+    Inline void operator()(const Boris_t&, index_t p) const {
       vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
       interpolateFields(p, e_int, b_int);
 
@@ -109,31 +100,6 @@ namespace ntt {
       v[2] *= inv_energy;
       positionUpdate(p, v);
     }
-    // Inline void operator()(const BorisBwd_t&, index_t p) const {
-    //   real_t inv_energy;
-    //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) +
-    //   SQR(m_particles.ux3(p)); inv_energy = ONE / math::sqrt(ONE + inv_energy);
-
-    //   coord_t<D> xp;
-    //   getParticleCoordinate(p, xp);
-
-    //   vec_t<Dimension::THREE_D> v;
-    //   m_mblock.metric.v_Cart2Cntrv(
-    //     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
-    //   v[0] *= inv_energy;
-    //   v[1] *= inv_energy;
-    //   v[2] *= inv_energy;
-    //   positionUpdate(p, v);
-    //   getParticleCoordinate(p, xp);
-
-    //   vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
-    //   interpolateFields(p, e_int, b_int);
-
-    //   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-    //   m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
-
-    //   BorisUpdate(p, e_int_Cart, b_int_Cart);
-    // }
 
     /**
      * @brief Transform particle coordinate from code units i+di to `real_t` type.
@@ -148,9 +114,8 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void interpolateFields(index_t&,
-                                  vec_t<Dimension::THREE_D>&,
-                                  vec_t<Dimension::THREE_D>&) const;
+    Inline void
+    interpolateFields(index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
 
     /**
      * @brief Update particle positions according to updated velocities.
@@ -181,20 +146,20 @@ namespace ntt {
 
   template <>
   Inline void
-  Pusher<Dimension::ONE_D>::getParticleCoordinate(index_t&             p,
+  Pusher<Dimension::ONE_D>::getParticleCoordinate(index_t&                   p,
                                                   coord_t<Dimension::ONE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
   }
   template <>
   Inline void
-  Pusher<Dimension::TWO_D>::getParticleCoordinate(index_t&             p,
+  Pusher<Dimension::TWO_D>::getParticleCoordinate(index_t&                   p,
                                                   coord_t<Dimension::TWO_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
   }
   template <>
   Inline void
-  Pusher<Dimension::THREE_D>::getParticleCoordinate(index_t&               p,
+  Pusher<Dimension::THREE_D>::getParticleCoordinate(index_t&                     p,
                                                     coord_t<Dimension::THREE_D>& xp) const {
     xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
     xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
@@ -206,20 +171,20 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void
-  Pusher<Dimension::ONE_D>::positionUpdate(index_t&                   p,
+  Pusher<Dimension::ONE_D>::positionUpdate(index_t&                         p,
                                            const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
   }
   template <>
   Inline void
-  Pusher<Dimension::TWO_D>::positionUpdate(index_t&                   p,
+  Pusher<Dimension::TWO_D>::positionUpdate(index_t&                         p,
                                            const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
   }
   template <>
   Inline void
-  Pusher<Dimension::THREE_D>::positionUpdate(index_t&                   p,
+  Pusher<Dimension::THREE_D>::positionUpdate(index_t&                         p,
                                              const vec_t<Dimension::THREE_D>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
@@ -261,7 +226,7 @@ namespace ntt {
   // Boris velocity update
   // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void Pusher<D>::BorisUpdate(index_t&             p,
+  Inline void Pusher<D>::BorisUpdate(index_t&                   p,
                                      vec_t<Dimension::THREE_D>& e0,
                                      vec_t<Dimension::THREE_D>& b0) const {
     real_t COEFF {m_coeff};
@@ -272,11 +237,11 @@ namespace ntt {
     vec_t<Dimension::THREE_D> u0 {
       m_particles.ux1(p) + e0[0], m_particles.ux2(p) + e0[1], m_particles.ux3(p) + e0[2]};
 
-    COEFF *= 1.0 / math::sqrt(1.0 + u0[0] * u0[0] + u0[1] * u0[1] + u0[2] * u0[2]);
+    COEFF *= ONE / math::sqrt(ONE + SQR(u0[0]) + SQR(u0[1]) + SQR(u0[2]));
     b0[0] *= COEFF;
     b0[1] *= COEFF;
     b0[2] *= COEFF;
-    COEFF = 2.0 / (1.0 + b0[0] * b0[0] + b0[1] * b0[1] + b0[2] * b0[2]);
+    COEFF = 2.0 / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
 
     vec_t<Dimension::THREE_D> u1 {(u0[0] + u0[1] * b0[2] - u0[2] * b0[1]) * COEFF,
                                   (u0[1] + u0[2] * b0[0] - u0[0] * b0[2]) * COEFF,
@@ -593,5 +558,31 @@ namespace ntt {
   }
 
 } // namespace ntt
+
+// Inline void operator()(const BorisBwd_t&, index_t p) const {
+//   real_t inv_energy;
+//   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) +
+//   SQR(m_particles.ux3(p)); inv_energy = ONE / math::sqrt(ONE + inv_energy);
+
+//   coord_t<D> xp;
+//   getParticleCoordinate(p, xp);
+
+//   vec_t<Dimension::THREE_D> v;
+//   m_mblock.metric.v_Cart2Cntrv(
+//     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+//   v[0] *= inv_energy;
+//   v[1] *= inv_energy;
+//   v[2] *= inv_energy;
+//   positionUpdate(p, v);
+//   getParticleCoordinate(p, xp);
+
+//   vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
+//   interpolateFields(p, e_int, b_int);
+
+//   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
+//   m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+
+//   BorisUpdate(p, e_int_Cart, b_int_Cart);
+// }
 
 #endif

@@ -88,11 +88,6 @@ namespace ntt {
      */
     void addCurrentsSubstep(const real_t& t);
     /**
-     * @brief Transform the deposited currents to coordinate basis.
-     * @param t time in physical units.
-     */
-    void transformCurrentsSubstep(const real_t& t);
-    /**
      * @brief Spatially filter all the deposited currents.
      * @param t time in physical units.
      */
@@ -109,6 +104,11 @@ namespace ntt {
      * @param t time in physical units.
      */
     void fieldBoundaryConditions(const real_t& t);
+    /**
+     * @brief Apply boundary conditions for currents.
+     * @param t time in physical units.
+     */
+    void currentBoundaryConditions(const real_t& t);
     /**
      * @brief Apply boundary conditions for particles.
      * @param t time in physical units.

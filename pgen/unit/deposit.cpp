@@ -16,10 +16,10 @@ namespace ntt {
     Kokkos::parallel_for(
       "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
         real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};
-        real_t ex2_hat {0.1}, bx3_hat {1.0};
-        vec_t<Dimension::THREE_D> e_cntrv, b_cntrv;
-        mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
-        mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_hat}, b_cntrv);
+        // real_t ex2_hat {0.1}, bx3_hat {1.0};
+        // vec_t<Dimension::THREE_D> e_cntrv, b_cntrv;
+        // mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
+        // mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_hat}, b_cntrv);
         mblock.em(i, j, em::ex1) = ZERO;
         mblock.em(i, j, em::ex2) = ZERO; // e_cntrv[1];
         mblock.em(i, j, em::ex3) = ZERO;
@@ -32,10 +32,10 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitParticles(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    
+
     Kokkos::parallel_for(
       "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
-        coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;
+        coord_t<Dimension::TWO_D> x {0.0, 0.0}, x_CU;
         mblock.metric.x_Cart2Code(x, x_CU);
         auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
         auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
@@ -44,23 +44,20 @@ namespace ntt {
         mblock.particles[0].i2(p) = i2;
         mblock.particles[0].dx1(p) = dx1;
         mblock.particles[0].dx2(p) = dx2;
-        mblock.particles[0].ux3(p) = 1.0;
+        // mblock.particles[0].ux1(p) = -2.0;
+        // mblock.particles[0].ux2(p) = -5.0;
+        mblock.particles[0].ux1(p) = 12.0;
         // positron
         mblock.particles[1].i1(p) = i1;
         mblock.particles[1].i2(p) = i2;
         mblock.particles[1].dx1(p) = dx1;
         mblock.particles[1].dx2(p) = dx2;
-        mblock.particles[1].ux3(p) = 1.0;
-        // photon
-        mblock.particles[2].i1(p) = i1;
-        mblock.particles[2].i2(p) = i2;
-        mblock.particles[2].dx1(p) = dx1;
-        mblock.particles[2].dx2(p) = dx2;
-        mblock.particles[2].ux1(p) = 1.0;
+        // mblock.particles[0].ux1(p) = -2.0;
+        // mblock.particles[0].ux2(p) = 6.0;
+        // mblock.particles[1].ux3(p) = 0.0;
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);
-    mblock.particles[2].set_npart(0);
   }
   // 1D
   template <>

@@ -24,7 +24,7 @@ namespace ntt {
     // Independent simulation parameters.
     real_t m_ppc0, m_larmor0, m_skindepth0;
     // Deduced simulation parameters.
-    real_t m_sigma0, m_charge0, m_B0;
+    real_t m_sigma0;
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies> m_species;
     bool                         m_enable_fieldsolver;
@@ -90,14 +90,6 @@ namespace ntt {
      * @brief Get the fiducial sigma.
      */
     [[nodiscard]] auto sigma0() const -> const real_t& { return m_sigma0; }
-    /**
-     * @brief Get the fiducial charge.
-     */
-    [[nodiscard]] auto charge0() const -> const real_t& { return m_charge0; }
-    /**
-     * @brief Get the fiducial magnetic/electric field.
-     */
-    [[nodiscard]] auto B0() const -> const real_t& { return m_B0; }
     /**
      * @brief Get the vector of user-defined species parameters.
      */
