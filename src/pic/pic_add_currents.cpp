@@ -23,11 +23,11 @@ namespace ntt {
     const auto coeff {-dt * rho0 / (n0 * SQR(de0))};
 #if (METRIC == MINKOWSKI_METRIC)
     Kokkos::parallel_for("add_currents",
-                         this->m_mblock.loopActiveCells(),
+                         this->m_mblock.rangeActiveCells(),
                          AddCurrentsMinkowski<D>(this->m_mblock, coeff / CUBE(dx)));
 #else
     Kokkos::parallel_for("add_currents",
-                         this->m_mblock.loopActiveCells(),
+                         this->m_mblock.rangeActiveCells(),
                          AddCurrentsCurvilinear<D>(this->m_mblock, coeff));
 #endif
   }

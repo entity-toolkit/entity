@@ -21,13 +21,13 @@ namespace ntt {
       rapidcsv::Document doc(
         "", rapidcsv::LabelParams(-1, -1), rapidcsv::SeparatorParams(',', false, false));
       if constexpr (D == Dimension::ONE_D) {
-        auto N = mblock.Ni();
+        auto N = mblock.Ni1();
         for (int i {0}; i < N; ++i) {
           doc.SetCell<real_t>(i, 0, mblock.em(i + ntt::N_GHOSTS, field));
         }
       } else if constexpr (D == Dimension::TWO_D) {
-        auto N1 = mblock.Ni();
-        auto N2 = mblock.Nj();
+        auto N1 = mblock.Ni1();
+        auto N2 = mblock.Ni2();
         for (int i {0}; i < N1; ++i) {
           for (int j {0}; j < N2; ++j) {
             doc.SetCell<real_t>(i, j, mblock.em(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, field));
@@ -46,13 +46,13 @@ namespace ntt {
       rapidcsv::Document doc(
         "", rapidcsv::LabelParams(-1, -1), rapidcsv::SeparatorParams(',', false, false));
       if constexpr (D == Dimension::ONE_D) {
-        auto N = mblock.Ni();
+        auto N = mblock.Ni1();
         for (int i {0}; i < N; ++i) {
           doc.SetCell<real_t>(i, 0, mblock.cur(i + ntt::N_GHOSTS, field));
         }
       } else if constexpr (D == Dimension::TWO_D) {
-        auto N1 = mblock.Ni();
-        auto N2 = mblock.Nj();
+        auto N1 = mblock.Ni1();
+        auto N2 = mblock.Ni2();
         for (int i {0}; i < N1; ++i) {
           for (int j {0}; j < N2; ++j) {
             doc.SetCell<real_t>(i, j, mblock.cur(i + ntt::N_GHOSTS, j + ntt::N_GHOSTS, field));

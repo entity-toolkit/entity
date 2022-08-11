@@ -120,13 +120,13 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  auto Simulation<D, S>::loopActiveCells() -> RangeND<D> {
-    return m_mblock.loopActiveCells();
+  auto Simulation<D, S>::rangeActiveCells() -> RangeND<D> {
+    return m_mblock.rangeActiveCells();
   }
 
   template <Dimension D, SimulationType S>
-  auto Simulation<D, S>::loopAllCells() -> RangeND<D> {
-    return m_mblock.loopAllCells();
+  auto Simulation<D, S>::rangeAllCells() -> RangeND<D> {
+    return m_mblock.rangeAllCells();
   }
 
   template <Dimension D, SimulationType S>

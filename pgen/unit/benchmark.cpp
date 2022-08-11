@@ -22,7 +22,7 @@ namespace ntt {
   void ProblemGenerator2D::userInitFields(const SimulationParams&, Meshblock2D& mblock) {
     
     Kokkos::parallel_for(
-      "userInitFlds", mblock.loopActiveCells(), Lambda(index_t i, index_t j) {
+      "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         auto i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
         auto j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
         mblock.em(i, j, em::ex1) = 1.0 * i_;

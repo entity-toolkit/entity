@@ -103,7 +103,10 @@
     "*.tcc": "cpp",
     "memory_resource": "cpp",
     "source_location": "cpp",
-    "stop_token": "cpp"
+    "stop_token": "cpp",
+    "any": "cpp",
+    "regex": "cpp",
+    "shared_mutex": "cpp"
   },
   "editor.tokenColorCustomizations": {
     "comments": "",

@@ -37,7 +37,7 @@ namespace ntt {
     ey_ampl = m_amplitude * ey_ampl / math::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
     Kokkos::parallel_for(
       "userInitFlds",
-      mblock.loopActiveCells(),
+      mblock.rangeActiveCells(),
       Lambda(index_t i, index_t j) {
         // index to code units
         real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)}, j_ {(real_t)(static_cast<int>(j) - N_GHOSTS)};

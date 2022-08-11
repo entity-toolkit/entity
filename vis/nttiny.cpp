@@ -44,8 +44,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
 #elif SIMTYPE == GRPIC_SIMTYPE
     : nttiny::SimulationAPI<float> {"qspherical"},
 #endif
-      nx1(sim.mblock()->Ni() + 2 * ntt::N_GHOSTS),
-      nx2(sim.mblock()->Nj() + 2 * ntt::N_GHOSTS),
+      nx1(sim.mblock()->Ni1() + 2 * ntt::N_GHOSTS),
+      nx2(sim.mblock()->Ni2() + 2 * ntt::N_GHOSTS),
       m_sim(sim),
       m_fields_to_plot(fields_to_plot) {
     this->m_timestep = 0;

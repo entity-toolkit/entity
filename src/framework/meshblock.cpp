@@ -7,48 +7,50 @@
 #include <cassert>
 
 namespace ntt {
+  const auto Dim1 = Dimension::ONE_D;
+  const auto Dim2 = Dimension::TWO_D;
+  const auto Dim3 = Dimension::THREE_D;
 
   template <Dimension D>
   Mesh<D>::Mesh(const std::vector<unsigned int>& res,
                 const std::vector<real_t>&       ext,
                 const real_t*                    params)
-    : m_imin {res.size() > 0 ? N_GHOSTS : 0},
-      m_imax {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
-      m_jmin {res.size() > 1 ? N_GHOSTS : 0},
-      m_jmax {res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1},
-      m_kmin {res.size() > 2 ? N_GHOSTS : 0},
-      m_kmax {res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1},
-      m_Ni {res.size() > 0 ? (int)(res[0]) : 1},
-      m_Nj {res.size() > 1 ? (int)(res[1]) : 1},
-      m_Nk {res.size() > 2 ? (int)(res[2]) : 1},
+    : m_i1min {res.size() > 0 ? N_GHOSTS : 0},
+      m_i1max {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
+      m_i2min {res.size() > 1 ? N_GHOSTS : 0},
+      m_i2max {res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1},
+      m_i3min {res.size() > 2 ? N_GHOSTS : 0},
+      m_i3max {res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1},
+      m_Ni1 {res.size() > 0 ? (int)(res[0]) : 1},
+      m_Ni2 {res.size() > 1 ? (int)(res[1]) : 1},
+      m_Ni3 {res.size() > 2 ? (int)(res[2]) : 1},
       metric {res, ext, params} {}
 
   template <>
-  auto Mesh<Dimension::ONE_D>::loopAllCells() -> RangeND<Dimension::ONE_D> {
-    return NTTRange<Dimension::ONE_D>({m_imin - N_GHOSTS}, {m_imax + N_GHOSTS});
+  auto Mesh<Dim1>::rangeAllCells() -> RangeND<Dim1> {
+    return NTTRange<Dim1>({m_i1min - N_GHOSTS}, {m_i1max + N_GHOSTS});
   }
   template <>
-  auto Mesh<Dimension::TWO_D>::loopAllCells() -> RangeND<Dimension::TWO_D> {
-    return NTTRange<Dimension::TWO_D>({m_imin - N_GHOSTS, m_jmin - N_GHOSTS},
-                                      {m_imax + N_GHOSTS, m_jmax + N_GHOSTS});
+  auto Mesh<Dim2>::rangeAllCells() -> RangeND<Dim2> {
+    return NTTRange<Dim2>({m_i1min - N_GHOSTS, m_i2min - N_GHOSTS},
+                          {m_i1max + N_GHOSTS, m_i2max + N_GHOSTS});
   }
   template <>
-  auto Mesh<Dimension::THREE_D>::loopAllCells() -> RangeND<Dimension::THREE_D> {
-    return NTTRange<Dimension::THREE_D>(
-      {m_imin - N_GHOSTS, m_jmin - N_GHOSTS, m_kmin - N_GHOSTS},
-      {m_imax + N_GHOSTS, m_jmax + N_GHOSTS, m_kmax + N_GHOSTS});
+  auto Mesh<Dim3>::rangeAllCells() -> RangeND<Dim3> {
+    return NTTRange<Dim3>({m_i1min - N_GHOSTS, m_i2min - N_GHOSTS, m_i3min - N_GHOSTS},
+                          {m_i1max + N_GHOSTS, m_i2max + N_GHOSTS, m_i3max + N_GHOSTS});
   }
   template <>
-  auto Mesh<Dimension::ONE_D>::loopActiveCells() -> RangeND<Dimension::ONE_D> {
-    return NTTRange<Dimension::ONE_D>({m_imin}, {m_imax});
+  auto Mesh<Dim1>::rangeActiveCells() -> RangeND<Dim1> {
+    return NTTRange<Dim1>({m_i1min}, {m_i1max});
   }
   template <>
-  auto Mesh<Dimension::TWO_D>::loopActiveCells() -> RangeND<Dimension::TWO_D> {
-    return NTTRange<Dimension::TWO_D>({m_imin, m_jmin}, {m_imax, m_jmax});
+  auto Mesh<Dim2>::rangeActiveCells() -> RangeND<Dim2> {
+    return NTTRange<Dim2>({m_i1min, m_i2min}, {m_i1max, m_i2max});
   }
   template <>
-  auto Mesh<Dimension::THREE_D>::loopActiveCells() -> RangeND<Dimension::THREE_D> {
-    return NTTRange<Dimension::THREE_D>({m_imin, m_jmin, m_kmin}, {m_imax, m_jmax, m_kmax});
+  auto Mesh<Dim3>::rangeActiveCells() -> RangeND<Dim3> {
+    return NTTRange<Dim3>({m_i1min, m_i2min, m_i3min}, {m_i1max, m_i2max, m_i3max});
   }
 
   template <Dimension D, SimulationType S>

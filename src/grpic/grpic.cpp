@@ -373,7 +373,7 @@ namespace ntt {
   template <>
   void GRPIC<Dimension::TWO_D>::computeVectorPotential() {
     Kokkos::parallel_for("computeVectorPotential",
-                         (this->m_mblock).loopActiveCells(),
+                         (this->m_mblock).rangeActiveCells(),
                          Compute_Aphi<Dimension::TWO_D>(this->m_mblock, (real_t)(1.0)));
   }
 

@@ -7,20 +7,23 @@
 #include <stdexcept>
 
 namespace ntt {
+  const auto Dim1 = Dimension::ONE_D;
+  const auto Dim2 = Dimension::TWO_D;
+  const auto Dim3 = Dimension::THREE_D;
+
   /**
    * @brief 1d periodic field bc.
    *
    */
   template <>
-  void PIC<Dimension::ONE_D>::fieldBoundaryConditions(const real_t&) {
-    
+  void PIC<Dim1>::fieldBoundaryConditions(const real_t&) {
+
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
-      auto range_m {NTTRange<Dimension::ONE_D>({0}, {m_mblock.i_min()})};
-      auto range_p {
-        NTTRange<Dimension::ONE_D>({m_mblock.i_max()}, {m_mblock.i_max() + N_GHOSTS})};
-      auto ni {m_mblock.Ni()};
+      auto range_m {NTTRange<Dim1>({0}, {m_mblock.i1_min()})};
+      auto range_p {NTTRange<Dim1>({m_mblock.i1_max()}, {m_mblock.i1_max() + N_GHOSTS})};
+      auto ni {m_mblock.Ni1()};
       // in x1_min
       Kokkos::parallel_for(
         "1d_bc_x1m", range_m, Lambda(index_t i) {
@@ -55,17 +58,16 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::TWO_D>::fieldBoundaryConditions(const real_t&) {
-    
+  void PIC<Dim2>::fieldBoundaryConditions(const real_t&) {
+
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       // periodic
-      auto range_m {NTTRange<Dimension::TWO_D>({0, m_mblock.j_min()},
-                                               {m_mblock.i_min(), m_mblock.j_max()})};
-      auto range_p {
-        NTTRange<Dimension::TWO_D>({m_mblock.i_max(), m_mblock.j_min()},
-                                   {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max()})};
-      auto ni {m_mblock.Ni()};
+      auto range_m {
+        NTTRange<Dim2>({0, m_mblock.i2_min()}, {m_mblock.i1_min(), m_mblock.i2_max()})};
+      auto range_p {NTTRange<Dim2>({m_mblock.i1_max(), m_mblock.i2_min()},
+                                   {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max()})};
+      auto ni {m_mblock.Ni1()};
       auto mblock {this->m_mblock};
       Kokkos::parallel_for(
         "2d_bc_x1m", range_m, Lambda(index_t i, index_t j) {
@@ -91,21 +93,20 @@ namespace ntt {
     }
     // corners are included in x2
     if (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
-      RangeND<Dimension::TWO_D> range_m, range_p;
+      RangeND<Dim2> range_m, range_p;
       if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
         // double periodic boundaries
-        range_m = NTTRange<Dimension::TWO_D>({0, 0},
-                                             {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min()});
-        range_p = NTTRange<Dimension::TWO_D>(
-          {0, m_mblock.j_max()}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS});
+        range_m = NTTRange<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min()});
+        range_p = NTTRange<Dim2>({0, m_mblock.i2_max()},
+                                 {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() + N_GHOSTS});
       } else {
         // single periodic (only x2-periodic)
-        range_m = NTTRange<Dimension::TWO_D>({m_mblock.i_min(), 0},
-                                             {m_mblock.i_max(), m_mblock.j_min()});
-        range_p = NTTRange<Dimension::TWO_D>({m_mblock.i_min(), m_mblock.j_max()},
-                                             {m_mblock.i_max(), m_mblock.j_max() + N_GHOSTS});
+        range_m
+          = NTTRange<Dim2>({m_mblock.i1_min(), 0}, {m_mblock.i1_max(), m_mblock.i2_min()});
+        range_p = NTTRange<Dim2>({m_mblock.i1_min(), m_mblock.i2_max()},
+                                 {m_mblock.i1_max(), m_mblock.i2_max() + N_GHOSTS});
       }
-      auto nj {m_mblock.Nj()};
+      auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
       Kokkos::parallel_for(
         "2d_bc_x2m", range_m, Lambda(index_t i, index_t j) {
@@ -143,7 +144,7 @@ namespace ntt {
     // theta = 0 boundary
     Kokkos::parallel_for(
       "2d_bc_theta0",
-      NTTRange<Dimension::TWO_D>({0, 0}, {m_mblock.i_max() + N_GHOSTS, m_mblock.j_min() + 1}),
+      NTTRange<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min() + 1}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;
         mblock.em(i, j, em::ex3) = 0.0;
@@ -151,8 +152,8 @@ namespace ntt {
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
-      NTTRange<Dimension::TWO_D>({0, m_mblock.j_max()},
-                                 {m_mblock.i_max() + N_GHOSTS, m_mblock.j_max() + N_GHOSTS}),
+      NTTRange<Dim2>({0, m_mblock.i2_max()},
+                     {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() + N_GHOSTS}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;
         mblock.em(i, j, em::ex3) = 0.0;
@@ -160,10 +161,9 @@ namespace ntt {
 
     auto r_absorb {m_sim_params.metric_parameters()[2]};
     auto r_max {m_mblock.metric.x1_max};
-    Kokkos::parallel_for(
-      "2d_absorbing bc",
-      m_mblock.loopActiveCells(),
-      FieldBC_rmax<Dimension::TWO_D>(mblock, this->m_pGen, r_absorb, r_max));
+    Kokkos::parallel_for("2d_absorbing bc",
+                         m_mblock.rangeActiveCells(),
+                         FieldBC_rmax<Dim2>(mblock, this->m_pGen, r_absorb, r_max));
 #else
     (void)(index_t {});
     NTTError("2d boundary condition for metric not implemented");
@@ -175,7 +175,7 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::THREE_D>::fieldBoundaryConditions(const real_t&) {
+  void PIC<Dim3>::fieldBoundaryConditions(const real_t&) {
     NTTError("not implemented");
   }
 

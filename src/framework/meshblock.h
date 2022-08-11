@@ -17,13 +17,13 @@ namespace ntt {
   class Mesh {
   protected:
     // active cell range in x1
-    const int m_imin, m_imax;
+    const int m_i1min, m_i1max;
     // active cell range in x2
-    const int m_jmin, m_jmax;
+    const int m_i2min, m_i2max;
     // active cell range in x3
-    const int m_kmin, m_kmax;
+    const int m_i3min, m_i3max;
     // number of active cells in each direction
-    const int m_Ni, m_Nj, m_Nk;
+    const int m_Ni1, m_Ni2, m_Ni3;
 
   public:
     // Metric of the grid.
@@ -44,49 +44,49 @@ namespace ntt {
      * @brief Loop over all active cells (disregard ghost cells).
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto loopActiveCells() -> RangeND<D>;
+    auto rangeActiveCells() -> RangeND<D>;
     /**
      * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto loopAllCells() -> RangeND<D>;
+    auto rangeAllCells() -> RangeND<D>;
 
     /**
      * @brief Get the first index of active zone along 1st dimension.
      */
-    [[nodiscard]] auto i_min() const -> const int& { return m_imin; }
+    [[nodiscard]] auto i1_min() const -> const int& { return m_i1min; }
     /**
      * @brief Get the last index of active zone along 1st dimension.
      */
-    [[nodiscard]] auto i_max() const -> const int& { return m_imax; }
+    [[nodiscard]] auto i1_max() const -> const int& { return m_i1max; }
     /**
      * @brief Get the number of active cells along 1st dimension.
      */
-    [[nodiscard]] auto Ni() const -> const int& { return m_Ni; }
+    [[nodiscard]] auto Ni1() const -> const int& { return m_Ni1; }
     /**
      * @brief Get the first index of active zone along 2nd dimension.
      */
-    [[nodiscard]] auto j_min() const -> const int& { return m_jmin; }
+    [[nodiscard]] auto i2_min() const -> const int& { return m_i2min; }
     /**
      * @brief Get the last index of active zone along 2nd dimension.
      */
-    [[nodiscard]] auto j_max() const -> const int& { return m_jmax; }
+    [[nodiscard]] auto i2_max() const -> const int& { return m_i2max; }
     /**
      * @brief Get the number of active cells along 2nd dimension.
      */
-    [[nodiscard]] auto Nj() const -> const int& { return m_Nj; }
+    [[nodiscard]] auto Ni2() const -> const int& { return m_Ni2; }
     /**
      * @brief Get the number of active cells along 3rd dimension.
      */
-    [[nodiscard]] auto k_min() const -> const int& { return m_kmin; }
+    [[nodiscard]] auto i3_min() const -> const int& { return m_i3min; }
     /**
      * @brief Get the last index of active zone along 3rd dimension.
      */
-    [[nodiscard]] auto k_max() const -> const int& { return m_kmax; }
+    [[nodiscard]] auto i3_max() const -> const int& { return m_i3max; }
     /**
      * @brief Get the number of active cells along 3rd dimension.
      */
-    [[nodiscard]] auto Nk() const -> const int& { return m_Nk; }
+    [[nodiscard]] auto Ni3() const -> const int& { return m_Ni3; }
   };
 
   /**
