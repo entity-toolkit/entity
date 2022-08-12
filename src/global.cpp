@@ -10,6 +10,9 @@
 #include <iomanip>
 
 namespace ntt {
+  const auto Dim1 = Dimension::ONE_D;
+  const auto Dim2 = Dimension::TWO_D;
+  const auto Dim3 = Dimension::THREE_D;
 
   auto NTTWait() -> void { Kokkos::fence(); }
 
@@ -57,50 +60,35 @@ namespace ntt {
   }
 
   template <>
-  auto NTTRange<Dimension::ONE_D>(const std::size_t (&i1)[1], const std::size_t (&i2)[1])
-    -> RangeND<Dimension::ONE_D> {
-    return Kokkos::RangePolicy<AccelExeSpace>(static_cast<range_t>(i1[0]),
-                                              static_cast<range_t>(i2[0]));
+  auto NTTRange<Dim1>(const tuple_t<int, Dim1>& i1, const tuple_t<int, Dim1>& i2)
+    -> RangeND<Dim1> {
+    auto i1min = static_cast<range_t>(i1[0]);
+    auto i1max = static_cast<range_t>(i2[0]);
+    return Kokkos::RangePolicy<AccelExeSpace>(i1min, i1max);
   }
 
   template <>
-  auto NTTRange<Dimension::TWO_D>(const std::size_t (&i1)[2], const std::size_t (&i2)[2])
-    -> RangeND<Dimension::TWO_D> {
-    return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
-      {static_cast<range_t>(i1[0]), static_cast<range_t>(i1[1])},
-      {static_cast<range_t>(i2[0]), static_cast<range_t>(i2[1])});
-  }
-  template <>
-  auto NTTRange<Dimension::THREE_D>(const std::size_t (&i1)[3], const std::size_t (&i2)[3])
-    -> RangeND<Dimension::THREE_D> {
-    return Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>(
-      {static_cast<range_t>(i1[0]), static_cast<range_t>(i1[1]), static_cast<range_t>(i1[2])},
-      {static_cast<range_t>(i2[0]), static_cast<range_t>(i2[1]), static_cast<range_t>(i2[2])});
+  auto NTTRange<Dim2>(const tuple_t<int, Dim2>& i1, const tuple_t<int, Dim2>& i2)
+    -> RangeND<Dim2> {
+    auto i1min = static_cast<range_t>(i1[0]);
+    auto i1max = static_cast<range_t>(i2[0]);
+    auto i2min = static_cast<range_t>(i1[1]);
+    auto i2max = static_cast<range_t>(i2[1]);
+    return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>({i1min, i2min},
+                                                                 {i1max, i2max});
   }
 
   template <>
-  auto NTTRange<Dimension::ONE_D>(const int (&i1)[1], const int (&i2)[1])
-    -> RangeND<Dimension::ONE_D> {
-    return NTTRange<Dimension::ONE_D>({static_cast<std::size_t>(i1[0])},
-                                      {static_cast<std::size_t>(i2[0])});
-  }
-
-  template <>
-  auto NTTRange<Dimension::TWO_D>(const int (&i1)[2], const int (&i2)[2])
-    -> RangeND<Dimension::TWO_D> {
-    return NTTRange<Dimension::TWO_D>(
-      {static_cast<std::size_t>(i1[0]), static_cast<std::size_t>(i1[1])},
-      {static_cast<std::size_t>(i2[0]), static_cast<std::size_t>(i2[1])});
-  }
-  template <>
-  auto NTTRange<Dimension::THREE_D>(const int (&i1)[3], const int (&i2)[3])
-    -> RangeND<Dimension::THREE_D> {
-    return NTTRange<Dimension::THREE_D>({static_cast<std::size_t>(i1[0]),
-                                         static_cast<std::size_t>(i1[1]),
-                                         static_cast<std::size_t>(i1[2])},
-                                        {static_cast<std::size_t>(i2[0]),
-                                         static_cast<std::size_t>(i2[1]),
-                                         static_cast<std::size_t>(i2[2])});
+  auto NTTRange<Dim3>(const tuple_t<int, Dim3>& i1, const tuple_t<int, Dim3>& i2)
+    -> RangeND<Dim3> {
+    auto i1min = static_cast<range_t>(i1[0]);
+    auto i1max = static_cast<range_t>(i2[0]);
+    auto i2min = static_cast<range_t>(i1[1]);
+    auto i2max = static_cast<range_t>(i2[1]);
+    auto i3min = static_cast<range_t>(i1[2]);
+    auto i3max = static_cast<range_t>(i2[2]);
+    return Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>({i1min, i2min, i3min},
+                                                                 {i1max, i2max, i3max});
   }
 
 } // namespace ntt
@@ -123,3 +111,13 @@ namespace plog {
   }
 
 } // namespace plog
+
+template ntt::RangeND<ntt::Dimension::ONE_D>
+ntt::NTTRange<ntt::Dimension::ONE_D>(const ntt::tuple_t<int, ntt::Dimension::ONE_D>&,
+                                     const ntt::tuple_t<int, ntt::Dimension::ONE_D>&);
+template ntt::RangeND<ntt::Dimension::TWO_D>
+ntt::NTTRange<ntt::Dimension::TWO_D>(const ntt::tuple_t<int, ntt::Dimension::TWO_D>&,
+                                     const ntt::tuple_t<int, ntt::Dimension::TWO_D>&);
+template ntt::RangeND<ntt::Dimension::THREE_D>
+ntt::NTTRange<ntt::Dimension::THREE_D>(const ntt::tuple_t<int, ntt::Dimension::THREE_D>&,
+                                       const ntt::tuple_t<int, ntt::Dimension::THREE_D>&);

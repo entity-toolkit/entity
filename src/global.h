@@ -121,16 +121,15 @@ namespace ntt {
                                 Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
                                 std::nullptr_t>::type>::type>::type;
 
-  /**
-   * @brief Function template for generating ND Kokkos range policy.
-   * @tparam D Dimension
-   * @param i1 array of size D `int`: { min }.
-   * @param i2 array of size D `int`: { max }.
-   * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
-   */
-  template <Dimension D>
-  auto NTTRange(const std::size_t (&i1)[static_cast<short>(D)],
-                const std::size_t (&i2)[static_cast<short>(D)]) -> RangeND<D>;
+  // /**
+  //  * @brief Function template for generating ND Kokkos range policy.
+  //  * @tparam D Dimension
+  //  * @param i1 array of size D `std::size_t`: { min }.
+  //  * @param i2 array of size D `std::size_t`: { max }.
+  //  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
+  //  */
+  // template <Dimension D>
+  // auto NTTRange(const tuple_t<std::size_t, D>&, const tuple_t<std::size_t, D>&) -> RangeND<D>;
 
   /**
    * @brief Function template for generating ND Kokkos range policy.
@@ -141,8 +140,7 @@ namespace ntt {
    * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
    */
   template <Dimension D>
-  auto NTTRange(const int (&i1)[static_cast<short>(D)], const int (&i2)[static_cast<short>(D)])
-    -> RangeND<D>;
+  auto NTTRange(const tuple_t<int, D>&, const tuple_t<int, D>&) -> RangeND<D>;
 
   /**
    * @brief Synchronize CPU/GPU before advancing.
