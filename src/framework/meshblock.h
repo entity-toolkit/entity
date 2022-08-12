@@ -9,6 +9,34 @@
 #include <vector>
 
 namespace ntt {
+  enum class CellLayer {
+    allLayer,
+    allActiveLayer,
+    minGhostLayer,
+    minActiveLayer,
+    maxActiveLayer,
+    maxGhostLayer
+  };
+  /**
+   *   minGhostLayer                     maxGhostLayer
+   *    |                                   |
+   *    |   minActiveLayer                  |  maxActiveLayer
+   *    |     |                             |     |
+   * [--+-----+---------- allLayer ---------+-----+--]
+   *    |     |                             |     |
+   *    |  [--+------- allActiveLayer ------+--]  |
+   *    |     |                             |     |
+   *    |     |                             |     |
+   * |  v  |  v  |                       |  v  |  v  |
+   * X=====O=====X=======================X=====O=====X
+   *       |                                   |
+   *  <--->
+   * N_GHOSTS
+   */
+
+  template <Dimension D>
+  using boxRegion = tuple_t<CellLayer, D>;
+
   /**
    * @brief Container for the meshgrid information (cell ranges etc).
    * @tparam D Dimension.
@@ -51,6 +79,8 @@ namespace ntt {
      */
     auto rangeAllCells() -> RangeND<D>;
 
+    auto rangeCells(const boxRegion<D>&) -> RangeND<D>;
+
     /**
      * @brief Get the first index of active zone along 1st dimension.
      */
@@ -87,6 +117,51 @@ namespace ntt {
      * @brief Get the number of active cells along 3rd dimension.
      */
     [[nodiscard]] auto Ni3() const -> const int& { return m_Ni3; }
+    /**
+     * @brief Get the first index of active zone along i-th dimension.
+     */
+    [[nodiscard]] auto i_min(short i) const -> const int& {
+      switch (i) {
+      case 0:
+        return m_i1min;
+      case 1:
+        return m_i2min;
+      case 2:
+        return m_i3min;
+      default:
+        NTTError("Invalid dimension");
+      }
+    }
+    /**
+     * @brief Get the last index of active zone along i-th dimension.
+     */
+    [[nodiscard]] auto i_max(short i) const -> const int& {
+      switch (i) {
+      case 0:
+        return m_i1max;
+      case 1:
+        return m_i2max;
+      case 2:
+        return m_i3max;
+      default:
+        NTTError("Invalid dimension");
+      }
+    }
+    /**
+     * @brief Get the number of active cells along i-th dimension.
+     */
+    [[nodiscard]] auto Ni(short i) const -> const int& {
+      switch (i) {
+      case 0:
+        return m_Ni1;
+      case 1:
+        return m_Ni2;
+      case 2:
+        return m_Ni3;
+      default:
+        NTTError("Invalid dimension");
+      }
+    }
   };
 
   /**

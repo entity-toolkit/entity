@@ -28,29 +28,70 @@ namespace ntt {
 
   template <>
   auto Mesh<Dim1>::rangeAllCells() -> RangeND<Dim1> {
-    return NTTRange<Dim1>({m_i1min - N_GHOSTS}, {m_i1max + N_GHOSTS});
+    boxRegion<Dim1> region {CellLayer::allLayer};
+    return rangeCells(region);
   }
   template <>
   auto Mesh<Dim2>::rangeAllCells() -> RangeND<Dim2> {
-    return NTTRange<Dim2>({m_i1min - N_GHOSTS, m_i2min - N_GHOSTS},
-                          {m_i1max + N_GHOSTS, m_i2max + N_GHOSTS});
+    boxRegion<Dim2> region {CellLayer::allLayer, CellLayer::allLayer};
+    return rangeCells(region);
   }
   template <>
   auto Mesh<Dim3>::rangeAllCells() -> RangeND<Dim3> {
-    return NTTRange<Dim3>({m_i1min - N_GHOSTS, m_i2min - N_GHOSTS, m_i3min - N_GHOSTS},
-                          {m_i1max + N_GHOSTS, m_i2max + N_GHOSTS, m_i3max + N_GHOSTS});
+    boxRegion<Dim3> region {CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer};
+    return rangeCells(region);
   }
   template <>
   auto Mesh<Dim1>::rangeActiveCells() -> RangeND<Dim1> {
-    return NTTRange<Dim1>({m_i1min}, {m_i1max});
+    boxRegion<Dim1> region {CellLayer::allActiveLayer};
+    return rangeCells(region);
   }
   template <>
   auto Mesh<Dim2>::rangeActiveCells() -> RangeND<Dim2> {
-    return NTTRange<Dim2>({m_i1min, m_i2min}, {m_i1max, m_i2max});
+    boxRegion<Dim2> region {CellLayer::allActiveLayer, CellLayer::allActiveLayer};
+    return rangeCells(region);
   }
   template <>
   auto Mesh<Dim3>::rangeActiveCells() -> RangeND<Dim3> {
-    return NTTRange<Dim3>({m_i1min, m_i2min, m_i3min}, {m_i1max, m_i2max, m_i3max});
+    boxRegion<Dim3> region {
+      CellLayer::allActiveLayer, CellLayer::allActiveLayer, CellLayer::allActiveLayer};
+    return rangeCells(region);
+  }
+
+  template <Dimension D>
+  auto Mesh<D>::rangeCells(const boxRegion<D>& region) -> RangeND<D> {
+    tuple_t<int, D> imin, imax;
+    for (short i = 0; i < (short)D; i++) {
+      switch (region[i]) {
+      case CellLayer::allLayer:
+        imin[i] = 0;
+        imax[i] = Ni(i) + 2 * N_GHOSTS;
+        break;
+      case CellLayer::allActiveLayer:
+        imin[i] = i_min(i);
+        imax[i] = i_max(i);
+        break;
+      case CellLayer::minGhostLayer:
+        imin[i] = 0;
+        imax[i] = i_min(i);
+        break;
+      case CellLayer::minActiveLayer:
+        imin[i] = i_min(i);
+        imax[i] = i_min(i) + N_GHOSTS;
+        break;
+      case CellLayer::maxActiveLayer:
+        imin[i] = i_max(i) - N_GHOSTS;
+        imax[i] = i_max(i);
+        break;
+      case CellLayer::maxGhostLayer:
+        imin[i] = i_max(i);
+        imax[i] = Ni(i) + 2 * N_GHOSTS;
+        break;
+      default:
+        NTTError("Invalid cell layer");
+      }
+    }
+    return NTTRange<D>(imin, imax);
   }
 
   template <Dimension D, SimulationType S>
