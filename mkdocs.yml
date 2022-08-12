@@ -12,7 +12,7 @@ nav:
     - 'Running': '404.md'
     - 'Developing': '404.md'
     - 'Testing': '404.md'
-    - 'Documenting': '404.md'
+    - 'Documenting': 'guides/docs.md'
   - 'Fun': 
     - 'Cubed sphere': 'fun/cubed_sphere.md'
     - '"Reconnection"': 'fun/reconnection.md'
