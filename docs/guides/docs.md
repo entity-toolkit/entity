@@ -1,0 +1,46 @@
+---
+hide:
+  - footer
+---
+
+`entity` documentation is automatically generated using the [`Material for mkdocs`](https://squidfunk.github.io/mkdocs-material/) framework and pushed to the `gh-pages` branch of the main repository. The source code for the documentation with all the texts for the pages you are currently viewing is contained in the [`wiki`](https://github.com/haykh/entity/tree/wiki) branch. 
+
+!!! hint
+
+    Documentations are created using `markdown` syntax which is then automatically parsed and converted into `html`. As such, any `html`/`css`/`js` code you write in the documentation will be automatically rendered in the documentation. To add global external `css` or `js` files, add them to the `mkdocs.yml` file (`extra_javascript` and `extra_css`). If a script is meant to run on just one page, add it with a dedicated `<script></script>` tag.
+
+## Adding/editing documentation
+
+1. Pull the `wiki` branch of the main repository (it is recommended to do this in a separate directory from the main code).
+  ```shell
+  git clone -b wiki git@github.com:haykh/entity.git entity-wiki
+  ```
+
+2. Create an isolated python virtual environment and activate it.
+  ```shell
+  virtualenv .venv
+  source .venv/bin/activate
+  ```
+
+    !!! note
+
+        You might need to install `virtualenv` if you don't already have it: `pip install virtualenv`.
+
+3. Install the dependencies (everything is installed locally in the `.venv` directory).
+  ```shell
+  pip install -r pipreq.txt
+  ```
+
+4. Start the reactive server that will generate the website and will dynamically update any changes made to the documentation.
+  ```shell
+  mkdocs serve
+  ```
+  To access the documentation simply open the [`http://127.0.0.1:8000/`](http://127.0.0.1:8000/) in your browser.
+
+5. When satisfied with all the changes made simply push them to the `wiki` branch.
+  ```shell
+  git add .
+  git commit -m "<reasonable comment>"
+  git push origin wiki
+  ```
+  Shortly after that `github-actions` will generate the website and push it to the `gh-pages` branch of the main repository, which will be accessible from the web.
