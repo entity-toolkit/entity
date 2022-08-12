@@ -1,6 +1,7 @@
 #include "global.h"
 #include "pic.h"
 #include "pic_currents_bc.hpp"
+#include "meshblock.h"
 
 #include <plog/Log.h>
 
@@ -41,18 +42,18 @@ namespace ntt {
       // periodic
       auto ni {m_mblock.Ni1()};
       auto mblock {this->m_mblock};
-      auto range_m = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
-                                                {mblock.i1_min() + N_GHOSTS, mblock.i2_max()});
-      auto range_p = NTTRange<Dim2>({mblock.i1_max() - N_GHOSTS, mblock.i2_min()},
-                                                {mblock.i1_max(), mblock.i2_max()});
       Kokkos::parallel_for(
-        "2d_bc_x1m", range_m, Lambda(index_t i, index_t j) {
+        "2d_bc_x1m",
+        mblock.rangeCells({CellLayer::minActiveLayer, CellLayer::allActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i + ni, j, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i + ni, j, cur::jx3);
         });
       Kokkos::parallel_for(
-        "2d_bc_x1p", range_p, Lambda(index_t i, index_t j) {
+        "2d_bc_x1p",
+        mblock.rangeCells({CellLayer::maxActiveLayer, CellLayer::allActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i - ni, j, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i - ni, j, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i - ni, j, cur::jx3);
@@ -70,17 +71,21 @@ namespace ntt {
       auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
       auto range_m = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
-                                                {mblock.i1_max(), mblock.i2_min() + N_GHOSTS});
+                                    {mblock.i1_max(), mblock.i2_min() + N_GHOSTS});
       auto range_p = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_max() - N_GHOSTS},
-                                                {mblock.i1_max(), mblock.i2_max()});
+                                    {mblock.i1_max(), mblock.i2_max()});
       Kokkos::parallel_for(
-        "2d_bc_x1m", range_m, Lambda(index_t i, index_t j) {
+        "2d_bc_x1m",
+        mblock.rangeCells({CellLayer::allActiveLayer, CellLayer::minActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j + nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i, j + nj, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i, j + nj, cur::jx3);
         });
       Kokkos::parallel_for(
-        "2d_bc_x1p", range_p, Lambda(index_t i, index_t j) {
+        "2d_bc_x1p",
+        mblock.rangeCells({CellLayer::allActiveLayer, CellLayer::maxActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j - nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i, j - nj, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i, j - nj, cur::jx3);
@@ -98,38 +103,34 @@ namespace ntt {
       auto ni {m_mblock.Ni1()};
       auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
-      auto range_corner1
-        = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
-                                     {mblock.i1_min() + N_GHOSTS, mblock.i2_min() + N_GHOSTS});
       Kokkos::parallel_for(
-        "2d_bc_corner1", range_corner1, Lambda(index_t i, index_t j) {
+        "2d_bc_corner1",
+        mblock.rangeCells({CellLayer::minActiveLayer, CellLayer::minActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j + nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i + ni, j + nj, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i + ni, j + nj, cur::jx3);
         });
-      auto range_corner2
-        = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_max() - N_GHOSTS},
-                                     {mblock.i1_min() + N_GHOSTS, mblock.i2_max()});
       Kokkos::parallel_for(
-        "2d_bc_corner2", range_corner2, Lambda(index_t i, index_t j) {
+        "2d_bc_corner2",
+        mblock.rangeCells({CellLayer::minActiveLayer, CellLayer::maxActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j - nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i + ni, j - nj, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i + ni, j - nj, cur::jx3);
         });
-      auto range_corner3
-        = NTTRange<Dim2>({mblock.i1_max() - N_GHOSTS, mblock.i2_min()},
-                                     {mblock.i1_max(), mblock.i2_min() + N_GHOSTS});
       Kokkos::parallel_for(
-        "2d_bc_corner3", range_corner3, Lambda(index_t i, index_t j) {
+        "2d_bc_corner3",
+        mblock.rangeCells({CellLayer::maxActiveLayer, CellLayer::minActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i - ni, j + nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i - ni, j + nj, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i - ni, j + nj, cur::jx3);
         });
-      auto range_corner4
-        = NTTRange<Dim2>({mblock.i1_max() - N_GHOSTS, mblock.i2_max() - N_GHOSTS},
-                                     {mblock.i1_max(), mblock.i2_max()});
       Kokkos::parallel_for(
-        "2d_bc_corner4", range_corner4, Lambda(index_t i, index_t j) {
+        "2d_bc_corner4",
+        mblock.rangeCells({CellLayer::maxActiveLayer, CellLayer::maxActiveLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i - ni, j - nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i - ni, j - nj, cur::jx2);
           mblock.cur(i, j, cur::jx3) += mblock.cur(i - ni, j - nj, cur::jx3);
