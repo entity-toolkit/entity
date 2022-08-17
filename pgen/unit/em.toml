@@ -20,3 +20,6 @@ skindepth0      = 0.01
 amplitude       = 2.5
 nx1             = 5
 nx2             = 5
+
+[visualization]
+fields          = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz"]
