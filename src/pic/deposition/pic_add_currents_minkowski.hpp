@@ -4,6 +4,8 @@
 #include "global.h"
 #include "pic.h"
 
+#include "field_macros.h"
+
 namespace ntt {
   /**
    * @brief Add the currents to the E field (Minkowski).
@@ -44,24 +46,24 @@ namespace ntt {
 
   template <>
   Inline void AddCurrentsMinkowski<Dimension::ONE_D>::operator()(index_t i) const {
-    m_mblock.em(i, em::ex1) += m_coeff * m_mblock.cur(i, cur::jx1);
-    m_mblock.em(i, em::ex2) += m_coeff * m_mblock.cur(i, cur::jx2);
-    m_mblock.em(i, em::ex3) += m_coeff * m_mblock.cur(i, cur::jx3);
+    EX1(i) += m_coeff * JX1(i);
+    EX2(i) += m_coeff * JX2(i);
+    EX3(i) += m_coeff * JX3(i);
   }
 
   template <>
   Inline void AddCurrentsMinkowski<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
-    m_mblock.em(i, j, em::ex1) += m_coeff * m_mblock.cur(i, j, cur::jx1);
-    m_mblock.em(i, j, em::ex2) += m_coeff * m_mblock.cur(i, j, cur::jx2);
-    m_mblock.em(i, j, em::ex3) += m_coeff * m_mblock.cur(i, j, cur::jx3);
+    EX1(i, j) += m_coeff * JX1(i, j);
+    EX2(i, j) += m_coeff * JX2(i, j);
+    EX3(i, j) += m_coeff * JX3(i, j);
   }
 
   template <>
   Inline void
   AddCurrentsMinkowski<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
-    m_mblock.em(i, j, k, em::ex1) += m_coeff * m_mblock.cur(i, j, k, cur::jx1);
-    m_mblock.em(i, j, k, em::ex2) += m_coeff * m_mblock.cur(i, j, k, cur::jx2);
-    m_mblock.em(i, j, k, em::ex3) += m_coeff * m_mblock.cur(i, j, k, cur::jx3);
+    EX1(i, j, k) += m_coeff * JX1(i, j, k);
+    EX2(i, j, k) += m_coeff * JX2(i, j, k);
+    EX3(i, j, k) += m_coeff * JX3(i, j, k);
   }
 } // namespace ntt
 

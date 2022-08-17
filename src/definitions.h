@@ -60,36 +60,4 @@ inline constexpr double QUARTER {0.25};
 #define SQR(x)       ((x) * (x))
 #define CUBE(x)      ((x) * (x) * (x))
 
-#define GET_MACRO(_1, _2, _3, NAME, ...) NAME
-
-#define BX1(...)                         GET_MACRO(__VA_ARGS__, BX1_3D, BX1_2D, BX1_1D)(__VA_ARGS__)
-#define BX1_1D(I)                        (m_mblock.em((I), em::bx1))
-#define BX1_2D(I, J)                     (m_mblock.em((I), (J), em::bx1))
-#define BX1_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::bx1))
-
-#define BX2(...)                         GET_MACRO(__VA_ARGS__, BX2_3D, BX2_2D, BX2_1D)(__VA_ARGS__)
-#define BX2_1D(I)                        (m_mblock.em((I), em::bx2))
-#define BX2_2D(I, J)                     (m_mblock.em((I), (J), em::bx2))
-#define BX2_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::bx2))
-
-#define BX3(...)                         GET_MACRO(__VA_ARGS__, BX3_3D, BX3_2D, BX3_1D)(__VA_ARGS__)
-#define BX3_1D(I)                        (m_mblock.em((I), em::bx3))
-#define BX3_2D(I, J)                     (m_mblock.em((I), (J), em::bx3))
-#define BX3_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::bx3))
-
-#define EX1(...)                         GET_MACRO(__VA_ARGS__, EX1_3D, EX1_2D, EX1_1D)(__VA_ARGS__)
-#define EX1_1D(I)                        (m_mblock.em((I), em::ex1))
-#define EX1_2D(I, J)                     (m_mblock.em((I), (J), em::ex1))
-#define EX1_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::ex1))
-
-#define EX2(...)                         GET_MACRO(__VA_ARGS__, EX2_3D, EX2_2D, EX2_1D)(__VA_ARGS__)
-#define EX2_1D(I)                        (m_mblock.em((I), em::ex2))
-#define EX2_2D(I, J)                     (m_mblock.em((I), (J), em::ex2))
-#define EX2_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::ex2))
-
-#define EX3(...)                         GET_MACRO(__VA_ARGS__, EX3_3D, EX3_2D, EX3_1D)(__VA_ARGS__)
-#define EX3_1D(I)                        (m_mblock.em((I), em::ex3))
-#define EX3_2D(I, J)                     (m_mblock.em((I), (J), em::ex3))
-#define EX3_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::ex3))
-
 #endif
