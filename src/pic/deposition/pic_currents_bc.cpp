@@ -40,11 +40,11 @@ namespace ntt {
      */
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       // periodic
-      auto ni {m_mblock.Ni1()};
       auto mblock {this->m_mblock};
+      auto ni {mblock.Ni1()};
       Kokkos::parallel_for(
         "2d_bc_x1m",
-        mblock.rangeCells({CellLayer::minActiveLayer, CellLayer::allActiveLayer}),
+        mblock.rangeCells({CellLayer::minActiveLayer, CellLayer::activeLayer}),
         Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i + ni, j, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i + ni, j, cur::jx2);
@@ -52,7 +52,7 @@ namespace ntt {
         });
       Kokkos::parallel_for(
         "2d_bc_x1p",
-        mblock.rangeCells({CellLayer::maxActiveLayer, CellLayer::allActiveLayer}),
+        mblock.rangeCells({CellLayer::maxActiveLayer, CellLayer::activeLayer}),
         Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i - ni, j, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i - ni, j, cur::jx2);
@@ -68,15 +68,11 @@ namespace ntt {
       /**
        * @note: no corners
        */
-      auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
-      auto range_m = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
-                                    {mblock.i1_max(), mblock.i2_min() + N_GHOSTS});
-      auto range_p = NTTRange<Dim2>({mblock.i1_min(), mblock.i2_max() - N_GHOSTS},
-                                    {mblock.i1_max(), mblock.i2_max()});
+      auto nj {mblock.Ni2()};
       Kokkos::parallel_for(
         "2d_bc_x1m",
-        mblock.rangeCells({CellLayer::allActiveLayer, CellLayer::minActiveLayer}),
+        mblock.rangeCells({CellLayer::activeLayer, CellLayer::minActiveLayer}),
         Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j + nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i, j + nj, cur::jx2);
@@ -84,7 +80,7 @@ namespace ntt {
         });
       Kokkos::parallel_for(
         "2d_bc_x1p",
-        mblock.rangeCells({CellLayer::allActiveLayer, CellLayer::maxActiveLayer}),
+        mblock.rangeCells({CellLayer::activeLayer, CellLayer::maxActiveLayer}),
         Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j - nj, cur::jx1);
           mblock.cur(i, j, cur::jx2) += mblock.cur(i, j - nj, cur::jx2);
@@ -100,9 +96,9 @@ namespace ntt {
      */
     if ((m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)
         && (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
-      auto ni {m_mblock.Ni1()};
-      auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
+      auto ni {mblock.Ni1()};
+      auto nj {mblock.Ni2()};
       Kokkos::parallel_for(
         "2d_bc_corner1",
         mblock.rangeCells({CellLayer::minActiveLayer, CellLayer::minActiveLayer}),

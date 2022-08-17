@@ -1,6 +1,9 @@
 #include "global.h"
 #include "pic.h"
-#include "pic_fields_bc.hpp"
+
+#if (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#  include "pic_fields_bc_rmax.hpp"
+#endif
 
 #include <plog/Log.h>
 
@@ -21,12 +24,10 @@ namespace ntt {
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
-      auto range_m {NTTRange<Dim1>({0}, {m_mblock.i1_min()})};
-      auto range_p {NTTRange<Dim1>({m_mblock.i1_max()}, {m_mblock.i1_max() + N_GHOSTS})};
-      auto ni {m_mblock.Ni1()};
+      auto ni {mblock.Ni1()};
       // in x1_min
       Kokkos::parallel_for(
-        "1d_bc_x1m", range_m, Lambda(index_t i) {
+        "1d_bc_x1m", mblock.rangeCells({CellLayer::minGhostLayer}), Lambda(index_t i) {
           mblock.em(i, em::ex1) = mblock.em(i + ni, em::ex1);
           mblock.em(i, em::ex2) = mblock.em(i + ni, em::ex2);
           mblock.em(i, em::ex3) = mblock.em(i + ni, em::ex3);
@@ -36,7 +37,7 @@ namespace ntt {
         });
       // in x1_max
       Kokkos::parallel_for(
-        "1d_bc_x1p", range_p, Lambda(index_t i) {
+        "1d_bc_x1p", mblock.rangeCells({CellLayer::maxGhostLayer}), Lambda(index_t i) {
           mblock.em(i, em::ex1) = mblock.em(i - ni, em::ex1);
           mblock.em(i, em::ex2) = mblock.em(i - ni, em::ex2);
           mblock.em(i, em::ex3) = mblock.em(i - ni, em::ex3);
@@ -58,19 +59,16 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dim2>::fieldBoundaryConditions(const real_t&) {
-
+  void PIC<Dim2>::fieldBoundaryConditions(const real_t& t) {
 #if (METRIC == MINKOWSKI_METRIC)
+    (void)(t);
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
-      // periodic
-      auto range_m {
-        NTTRange<Dim2>({0, m_mblock.i2_min()}, {m_mblock.i1_min(), m_mblock.i2_max()})};
-      auto range_p {NTTRange<Dim2>({m_mblock.i1_max(), m_mblock.i2_min()},
-                                   {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max()})};
-      auto ni {m_mblock.Ni1()};
       auto mblock {this->m_mblock};
+      auto ni {mblock.Ni1()};
       Kokkos::parallel_for(
-        "2d_bc_x1m", range_m, Lambda(index_t i, index_t j) {
+        "2d_bc_x1m",
+        mblock.rangeCells({CellLayer::minGhostLayer, CellLayer::activeLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.em(i, j, em::ex1) = mblock.em(i + ni, j, em::ex1);
           mblock.em(i, j, em::ex2) = mblock.em(i + ni, j, em::ex2);
           mblock.em(i, j, em::ex3) = mblock.em(i + ni, j, em::ex3);
@@ -79,7 +77,9 @@ namespace ntt {
           mblock.em(i, j, em::bx3) = mblock.em(i + ni, j, em::bx3);
         });
       Kokkos::parallel_for(
-        "2d_bc_x1p", range_p, Lambda(index_t i, index_t j) {
+        "2d_bc_x1p",
+        mblock.rangeCells({CellLayer::maxGhostLayer, CellLayer::activeLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.em(i, j, em::ex1) = mblock.em(i - ni, j, em::ex1);
           mblock.em(i, j, em::ex2) = mblock.em(i - ni, j, em::ex2);
           mblock.em(i, j, em::ex3) = mblock.em(i - ni, j, em::ex3);
@@ -91,25 +91,13 @@ namespace ntt {
       // non-periodic
       NTTError("2d boundary condition for minkowski not implemented");
     }
-    // corners are included in x2
     if (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
-      RangeND<Dim2> range_m, range_p;
-      if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
-        // double periodic boundaries
-        range_m = NTTRange<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min()});
-        range_p = NTTRange<Dim2>({0, m_mblock.i2_max()},
-                                 {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() + N_GHOSTS});
-      } else {
-        // single periodic (only x2-periodic)
-        range_m
-          = NTTRange<Dim2>({m_mblock.i1_min(), 0}, {m_mblock.i1_max(), m_mblock.i2_min()});
-        range_p = NTTRange<Dim2>({m_mblock.i1_min(), m_mblock.i2_max()},
-                                 {m_mblock.i1_max(), m_mblock.i2_max() + N_GHOSTS});
-      }
-      auto nj {m_mblock.Ni2()};
       auto mblock {this->m_mblock};
+      auto nj {mblock.Ni2()};
       Kokkos::parallel_for(
-        "2d_bc_x2m", range_m, Lambda(index_t i, index_t j) {
+        "2d_bc_x2m",
+        mblock.rangeCells({CellLayer::activeLayer, CellLayer::minGhostLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.em(i, j, em::ex1) = mblock.em(i, j + nj, em::ex1);
           mblock.em(i, j, em::ex2) = mblock.em(i, j + nj, em::ex2);
           mblock.em(i, j, em::ex3) = mblock.em(i, j + nj, em::ex3);
@@ -118,7 +106,9 @@ namespace ntt {
           mblock.em(i, j, em::bx3) = mblock.em(i, j + nj, em::bx3);
         });
       Kokkos::parallel_for(
-        "2d_bc_x2p", range_p, Lambda(index_t i, index_t j) {
+        "2d_bc_x2p",
+        mblock.rangeCells({CellLayer::activeLayer, CellLayer::maxGhostLayer}),
+        Lambda(index_t i, index_t j) {
           mblock.em(i, j, em::ex1) = mblock.em(i, j - nj, em::ex1);
           mblock.em(i, j, em::ex2) = mblock.em(i, j - nj, em::ex2);
           mblock.em(i, j, em::ex3) = mblock.em(i, j - nj, em::ex3);
@@ -130,10 +120,61 @@ namespace ntt {
       // non-periodic
       NTTError("2d boundary condition for minkowski not implemented");
     }
+
+    if ((m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)
+        && (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
+      auto mblock {this->m_mblock};
+      auto ni {mblock.Ni1()};
+      auto nj {mblock.Ni2()};
+      Kokkos::parallel_for(
+        "2d_bc_corner1",
+        mblock.rangeCells({CellLayer::minGhostLayer, CellLayer::minGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          mblock.em(i, j, em::ex1) = mblock.em(i + ni, j + nj, em::ex1);
+          mblock.em(i, j, em::ex2) = mblock.em(i + ni, j + nj, em::ex2);
+          mblock.em(i, j, em::ex3) = mblock.em(i + ni, j + nj, em::ex3);
+          mblock.em(i, j, em::bx1) = mblock.em(i + ni, j + nj, em::bx1);
+          mblock.em(i, j, em::bx2) = mblock.em(i + ni, j + nj, em::bx2);
+          mblock.em(i, j, em::bx3) = mblock.em(i + ni, j + nj, em::bx3);
+        });
+      Kokkos::parallel_for(
+        "2d_bc_corner2",
+        mblock.rangeCells({CellLayer::minGhostLayer, CellLayer::maxGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          mblock.em(i, j, em::ex1) = mblock.em(i + ni, j - nj, em::ex1);
+          mblock.em(i, j, em::ex2) = mblock.em(i + ni, j - nj, em::ex2);
+          mblock.em(i, j, em::ex3) = mblock.em(i + ni, j - nj, em::ex3);
+          mblock.em(i, j, em::bx1) = mblock.em(i + ni, j - nj, em::bx1);
+          mblock.em(i, j, em::bx2) = mblock.em(i + ni, j - nj, em::bx2);
+          mblock.em(i, j, em::bx3) = mblock.em(i + ni, j - nj, em::bx3);
+        });
+      Kokkos::parallel_for(
+        "2d_bc_corner3",
+        mblock.rangeCells({CellLayer::maxGhostLayer, CellLayer::minGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          mblock.em(i, j, em::ex1) = mblock.em(i - ni, j + nj, em::ex1);
+          mblock.em(i, j, em::ex2) = mblock.em(i - ni, j + nj, em::ex2);
+          mblock.em(i, j, em::ex3) = mblock.em(i - ni, j + nj, em::ex3);
+          mblock.em(i, j, em::bx1) = mblock.em(i - ni, j + nj, em::bx1);
+          mblock.em(i, j, em::bx2) = mblock.em(i - ni, j + nj, em::bx2);
+          mblock.em(i, j, em::bx3) = mblock.em(i - ni, j + nj, em::bx3);
+        });
+      Kokkos::parallel_for(
+        "2d_bc_corner4",
+        mblock.rangeCells({CellLayer::maxGhostLayer, CellLayer::maxGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          mblock.em(i, j, em::ex1) = mblock.em(i - ni, j - nj, em::ex1);
+          mblock.em(i, j, em::ex2) = mblock.em(i - ni, j - nj, em::ex2);
+          mblock.em(i, j, em::ex3) = mblock.em(i - ni, j - nj, em::ex3);
+          mblock.em(i, j, em::bx1) = mblock.em(i - ni, j - nj, em::bx1);
+          mblock.em(i, j, em::bx2) = mblock.em(i - ni, j - nj, em::bx2);
+          mblock.em(i, j, em::bx3) = mblock.em(i - ni, j - nj, em::bx3);
+        });
+    }
+
 #elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
-    // * * * * * * * * * * * * * * * *
-    // axisymmetric spherical grid
-    // * * * * * * * * * * * * * * * *
+
+    /* ----------------------- axisymmetric spherical grid ---------------------- */
     // r = rmin boundary
     if (m_mblock.boundaries[0] == BoundaryCondition::USER) {
       m_pGen.userBCFields(t, m_sim_params, m_mblock);

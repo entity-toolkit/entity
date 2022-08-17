@@ -1,5 +1,5 @@
-#ifndef PIC_FIELDS_BC_H
-#define PIC_FIELDS_BC_H
+#ifndef PIC_FIELDS_BC_RMAX_H
+#define PIC_FIELDS_BC_RMAX_H
 
 #include "global.h"
 #include "pic.h"

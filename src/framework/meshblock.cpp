@@ -43,18 +43,18 @@ namespace ntt {
   }
   template <>
   auto Mesh<Dim1>::rangeActiveCells() -> RangeND<Dim1> {
-    boxRegion<Dim1> region {CellLayer::allActiveLayer};
+    boxRegion<Dim1> region {CellLayer::activeLayer};
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim2>::rangeActiveCells() -> RangeND<Dim2> {
-    boxRegion<Dim2> region {CellLayer::allActiveLayer, CellLayer::allActiveLayer};
+    boxRegion<Dim2> region {CellLayer::activeLayer, CellLayer::activeLayer};
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim3>::rangeActiveCells() -> RangeND<Dim3> {
     boxRegion<Dim3> region {
-      CellLayer::allActiveLayer, CellLayer::allActiveLayer, CellLayer::allActiveLayer};
+      CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer};
     return rangeCells(region);
   }
 
@@ -67,7 +67,7 @@ namespace ntt {
         imin[i] = 0;
         imax[i] = Ni(i) + 2 * N_GHOSTS;
         break;
-      case CellLayer::allActiveLayer:
+      case CellLayer::activeLayer:
         imin[i] = i_min(i);
         imax[i] = i_max(i);
         break;

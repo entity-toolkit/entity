@@ -70,7 +70,7 @@ LIBS :=
 
 # # # # # Targets # # # # # # # # # # # # # #
 #
-.PHONY: all help ntt clean demo cleanlib pgenCopy
+.PHONY: help ntt clean demo cleanlib pgenCopy
 
 default: help demo
 
