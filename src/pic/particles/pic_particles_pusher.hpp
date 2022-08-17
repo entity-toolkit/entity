@@ -7,6 +7,8 @@
 #include "meshblock.h"
 #include "pic.h"
 
+#include "field_macros.h"
+
 #include <stdexcept>
 
 namespace ntt {
@@ -270,30 +272,30 @@ namespace ntt {
 
     // Ex1
     // interpolate to nodes
-    c0 = HALF * (m_mblock.em(i, em::ex1) + m_mblock.em(i - 1, em::ex1));
-    c1 = HALF * (m_mblock.em(i, em::ex1) + m_mblock.em(i + 1, em::ex1));
+    c0 = HALF * (EX1(i) + EX1(i - 1));
+    c1 = HALF * (EX1(i) + EX1(i + 1));
     // interpolate from nodes to the particle position
     e0[0] = c0 * (ONE - dx1) + c1 * dx1;
     // Ex2
-    c0    = m_mblock.em(i, em::ex2);
-    c1    = m_mblock.em(i + 1, em::ex2);
+    c0    = EX2(i);
+    c1    = EX2(i + 1);
     e0[1] = c0 * (ONE - dx1) + c1 * dx1;
     // Ex3
-    c0    = m_mblock.em(i, em::ex3);
-    c1    = m_mblock.em(i + 1, em::ex3);
+    c0    = EX3(i);
+    c1    = EX3(i + 1);
     e0[2] = c0 * (ONE - dx1) + c1 * dx1;
 
     // Bx1
-    c0    = m_mblock.em(i, em::bx1);
-    c1    = m_mblock.em(i + 1, em::bx1);
+    c0    = BX1(i);
+    c1    = BX1(i + 1);
     b0[0] = c0 * (ONE - dx1) + c1 * dx1;
     // Bx2
-    c0    = HALF * (m_mblock.em(i - 1, em::bx2) + m_mblock.em(i, em::bx2));
-    c1    = HALF * (m_mblock.em(i, em::bx2) + m_mblock.em(i + 1, em::bx2));
+    c0    = HALF * (BX2(i - 1) + BX2(i));
+    c1    = HALF * (BX2(i) + BX2(i + 1));
     b0[1] = c0 * (ONE - dx1) + c1 * dx1;
     // Bx3
-    c0    = HALF * (m_mblock.em(i - 1, em::bx3) + m_mblock.em(i, em::bx3));
-    c1    = HALF * (m_mblock.em(i, em::bx3) + m_mblock.em(i + 1, em::bx3));
+    c0    = HALF * (BX3(i - 1) + BX3(i));
+    c1    = HALF * (BX3(i) + BX3(i + 1));
     b0[2] = c0 * (ONE - dx1) + c1 * dx1;
   }
 
@@ -310,60 +312,52 @@ namespace ntt {
 
     // Ex1
     // interpolate to nodes
-    c000 = HALF * (m_mblock.em(i, j, em::ex1) + m_mblock.em(i - 1, j, em::ex1));
-    c100 = HALF * (m_mblock.em(i, j, em::ex1) + m_mblock.em(i + 1, j, em::ex1));
-    c010 = HALF * (m_mblock.em(i, j + 1, em::ex1) + m_mblock.em(i - 1, j + 1, em::ex1));
-    c110 = HALF * (m_mblock.em(i, j + 1, em::ex1) + m_mblock.em(i + 1, j + 1, em::ex1));
+    c000 = HALF * (EX1(i, j) + EX1(i - 1, j));
+    c100 = HALF * (EX1(i, j) + EX1(i + 1, j));
+    c010 = HALF * (EX1(i, j + 1) + EX1(i - 1, j + 1));
+    c110 = HALF * (EX1(i, j + 1) + EX1(i + 1, j + 1));
     // interpolate from nodes to the particle position
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     e0[0] = c00 * (ONE - dx2) + c10 * dx2;
     // Ex2
-    c000  = HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i, j - 1, em::ex2));
-    c100  = HALF * (m_mblock.em(i + 1, j, em::ex2) + m_mblock.em(i + 1, j - 1, em::ex2));
-    c010  = HALF * (m_mblock.em(i, j, em::ex2) + m_mblock.em(i, j + 1, em::ex2));
-    c110  = HALF * (m_mblock.em(i + 1, j, em::ex2) + m_mblock.em(i + 1, j + 1, em::ex2));
+    c000  = HALF * (EX2(i, j) + EX2(i, j - 1));
+    c100  = HALF * (EX2(i + 1, j) + EX2(i + 1, j - 1));
+    c010  = HALF * (EX2(i, j) + EX2(i, j + 1));
+    c110  = HALF * (EX2(i + 1, j) + EX2(i + 1, j + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     e0[1] = c00 * (ONE - dx2) + c10 * dx2;
     // Ex3
-    c000  = m_mblock.em(i, j, em::ex3);
-    c100  = m_mblock.em(i + 1, j, em::ex3);
-    c010  = m_mblock.em(i, j + 1, em::ex3);
-    c110  = m_mblock.em(i + 1, j + 1, em::ex3);
+    c000  = EX3(i, j);
+    c100  = EX3(i + 1, j);
+    c010  = EX3(i, j + 1);
+    c110  = EX3(i + 1, j + 1);
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     e0[2] = c00 * (ONE - dx2) + c10 * dx2;
 
     // Bx1
-    c000  = HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i, j - 1, em::bx1));
-    c100  = HALF * (m_mblock.em(i + 1, j, em::bx1) + m_mblock.em(i + 1, j - 1, em::bx1));
-    c010  = HALF * (m_mblock.em(i, j, em::bx1) + m_mblock.em(i, j + 1, em::bx1));
-    c110  = HALF * (m_mblock.em(i + 1, j, em::bx1) + m_mblock.em(i + 1, j + 1, em::bx1));
+    c000  = HALF * (BX1(i, j) + BX1(i, j - 1));
+    c100  = HALF * (BX1(i + 1, j) + BX1(i + 1, j - 1));
+    c010  = HALF * (BX1(i, j) + BX1(i, j + 1));
+    c110  = HALF * (BX1(i + 1, j) + BX1(i + 1, j + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[0] = c00 * (ONE - dx2) + c10 * dx2;
     // Bx2
-    c000  = HALF * (m_mblock.em(i - 1, j, em::bx2) + m_mblock.em(i, j, em::bx2));
-    c100  = HALF * (m_mblock.em(i, j, em::bx2) + m_mblock.em(i + 1, j, em::bx2));
-    c010  = HALF * (m_mblock.em(i - 1, j + 1, em::bx2) + m_mblock.em(i, j + 1, em::bx2));
-    c110  = HALF * (m_mblock.em(i, j + 1, em::bx2) + m_mblock.em(i + 1, j + 1, em::bx2));
+    c000  = HALF * (BX2(i - 1, j) + BX2(i, j));
+    c100  = HALF * (BX2(i, j) + BX2(i + 1, j));
+    c010  = HALF * (BX2(i - 1, j + 1) + BX2(i, j + 1));
+    c110  = HALF * (BX2(i, j + 1) + BX2(i + 1, j + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[1] = c00 * (ONE - dx2) + c10 * dx2;
     // Bx3
-    c000 = QUARTER
-           * (m_mblock.em(i - 1, j - 1, em::bx3) + m_mblock.em(i - 1, j, em::bx3)
-              + m_mblock.em(i, j - 1, em::bx3) + m_mblock.em(i, j, em::bx3));
-    c100 = QUARTER
-           * (m_mblock.em(i, j - 1, em::bx3) + m_mblock.em(i, j, em::bx3)
-              + m_mblock.em(i + 1, j - 1, em::bx3) + m_mblock.em(i + 1, j, em::bx3));
-    c010 = QUARTER
-           * (m_mblock.em(i - 1, j, em::bx3) + m_mblock.em(i - 1, j + 1, em::bx3)
-              + m_mblock.em(i, j, em::bx3) + m_mblock.em(i, j + 1, em::bx3));
-    c110 = QUARTER
-           * (m_mblock.em(i, j, em::bx3) + m_mblock.em(i, j + 1, em::bx3)
-              + m_mblock.em(i + 1, j, em::bx3) + m_mblock.em(i + 1, j + 1, em::bx3));
+    c000  = QUARTER * (BX3(i - 1, j - 1) + BX3(i - 1, j) + BX3(i, j - 1) + BX3(i, j));
+    c100  = QUARTER * (BX3(i, j - 1) + BX3(i, j) + BX3(i + 1, j - 1) + BX3(i + 1, j));
+    c010  = QUARTER * (BX3(i - 1, j) + BX3(i - 1, j + 1) + BX3(i, j) + BX3(i, j + 1));
+    c110  = QUARTER * (BX3(i, j) + BX3(i, j + 1) + BX3(i + 1, j) + BX3(i + 1, j + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[2] = c00 * (ONE - dx2) + c10 * dx2;
@@ -384,23 +378,19 @@ namespace ntt {
 
     // Ex1
     // interpolate to nodes
-    c000 = HALF * (m_mblock.em(i, j, k, em::ex1) + m_mblock.em(i - 1, j, k, em::ex1));
-    c100 = HALF * (m_mblock.em(i, j, k, em::ex1) + m_mblock.em(i + 1, j, k, em::ex1));
-    c010 = HALF * (m_mblock.em(i, j + 1, k, em::ex1) + m_mblock.em(i - 1, j + 1, k, em::ex1));
-    c110 = HALF * (m_mblock.em(i, j + 1, k, em::ex1) + m_mblock.em(i + 1, j + 1, k, em::ex1));
+    c000 = HALF * (EX1(i, j, k) + EX1(i - 1, j, k));
+    c100 = HALF * (EX1(i, j, k) + EX1(i + 1, j, k));
+    c010 = HALF * (EX1(i, j + 1, k) + EX1(i - 1, j + 1, k));
+    c110 = HALF * (EX1(i, j + 1, k) + EX1(i + 1, j + 1, k));
     // interpolate from nodes to the particle position
     c00 = c000 * (ONE - dx1) + c100 * dx1;
     c10 = c010 * (ONE - dx1) + c110 * dx1;
     c0  = c00 * (ONE - dx2) + c10 * dx2;
     // interpolate to nodes
-    c001 = HALF * (m_mblock.em(i, j, k + 1, em::ex1) + m_mblock.em(i - 1, j, k + 1, em::ex1));
-    c101 = HALF * (m_mblock.em(i, j, k + 1, em::ex1) + m_mblock.em(i + 1, j, k + 1, em::ex1));
-    c011
-      = HALF
-        * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i - 1, j + 1, k + 1, em::ex1));
-    c111
-      = HALF
-        * (m_mblock.em(i, j + 1, k + 1, em::ex1) + m_mblock.em(i + 1, j + 1, k + 1, em::ex1));
+    c001 = HALF * (EX1(i, j, k + 1) + EX1(i - 1, j, k + 1));
+    c101 = HALF * (EX1(i, j, k + 1) + EX1(i + 1, j, k + 1));
+    c011 = HALF * (EX1(i, j + 1, k + 1) + EX1(i - 1, j + 1, k + 1));
+    c111 = HALF * (EX1(i, j + 1, k + 1) + EX1(i + 1, j + 1, k + 1));
     // interpolate from nodes to the particle position
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c11   = c011 * (ONE - dx1) + c111 * dx1;
@@ -408,39 +398,31 @@ namespace ntt {
     e0[0] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Ex2
-    c000 = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j - 1, k, em::ex2));
-    c100 = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j - 1, k, em::ex2));
-    c010 = HALF * (m_mblock.em(i, j, k, em::ex2) + m_mblock.em(i, j + 1, k, em::ex2));
-    c110 = HALF * (m_mblock.em(i + 1, j, k, em::ex2) + m_mblock.em(i + 1, j + 1, k, em::ex2));
-    c00  = c000 * (ONE - dx1) + c100 * dx1;
-    c10  = c010 * (ONE - dx1) + c110 * dx1;
-    c0   = c00 * (ONE - dx2) + c10 * dx2;
-    c001 = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j - 1, k + 1, em::ex2));
-    c101
-      = HALF
-        * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j - 1, k + 1, em::ex2));
-    c011 = HALF * (m_mblock.em(i, j, k + 1, em::ex2) + m_mblock.em(i, j + 1, k + 1, em::ex2));
-    c111
-      = HALF
-        * (m_mblock.em(i + 1, j, k + 1, em::ex2) + m_mblock.em(i + 1, j + 1, k + 1, em::ex2));
+    c000  = HALF * (EX2(i, j, k) + EX2(i, j - 1, k));
+    c100  = HALF * (EX2(i + 1, j, k) + EX2(i + 1, j - 1, k));
+    c010  = HALF * (EX2(i, j, k) + EX2(i, j + 1, k));
+    c110  = HALF * (EX2(i + 1, j, k) + EX2(i + 1, j + 1, k));
+    c00   = c000 * (ONE - dx1) + c100 * dx1;
+    c10   = c010 * (ONE - dx1) + c110 * dx1;
+    c0    = c00 * (ONE - dx2) + c10 * dx2;
+    c001  = HALF * (EX2(i, j, k + 1) + EX2(i, j - 1, k + 1));
+    c101  = HALF * (EX2(i + 1, j, k + 1) + EX2(i + 1, j - 1, k + 1));
+    c011  = HALF * (EX2(i, j, k + 1) + EX2(i, j + 1, k + 1));
+    c111  = HALF * (EX2(i + 1, j, k + 1) + EX2(i + 1, j + 1, k + 1));
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c11   = c011 * (ONE - dx1) + c111 * dx1;
     c1    = c01 * (ONE - dx2) + c11 * dx2;
     e0[1] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Ex3
-    c000 = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k - 1, em::ex3));
-    c100 = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k - 1, em::ex3));
-    c010 = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k - 1, em::ex3));
-    c110
-      = HALF
-        * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k - 1, em::ex3));
-    c001 = HALF * (m_mblock.em(i, j, k, em::ex3) + m_mblock.em(i, j, k + 1, em::ex3));
-    c101 = HALF * (m_mblock.em(i + 1, j, k, em::ex3) + m_mblock.em(i + 1, j, k + 1, em::ex3));
-    c011 = HALF * (m_mblock.em(i, j + 1, k, em::ex3) + m_mblock.em(i, j + 1, k + 1, em::ex3));
-    c111
-      = HALF
-        * (m_mblock.em(i + 1, j + 1, k, em::ex3) + m_mblock.em(i + 1, j + 1, k + 1, em::ex3));
+    c000  = HALF * (EX3(i, j, k) + EX3(i, j, k - 1));
+    c100  = HALF * (EX3(i + 1, j, k) + EX3(i + 1, j, k - 1));
+    c010  = HALF * (EX3(i, j + 1, k) + EX3(i, j + 1, k - 1));
+    c110  = HALF * (EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k - 1));
+    c001  = HALF * (EX3(i, j, k) + EX3(i, j, k + 1));
+    c101  = HALF * (EX3(i + 1, j, k) + EX3(i + 1, j, k + 1));
+    c011  = HALF * (EX3(i, j + 1, k) + EX3(i, j + 1, k + 1));
+    c111  = HALF * (EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
@@ -450,34 +432,26 @@ namespace ntt {
     e0[2] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx1
-    c000 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j - 1, k, em::bx1)
-              + m_mblock.em(i, j, k - 1, em::bx1) + m_mblock.em(i, j - 1, k - 1, em::bx1));
+    c000
+      = QUARTER * (BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1));
     c100 = QUARTER
-           * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j - 1, k, em::bx1)
-              + m_mblock.em(i + 1, j, k - 1, em::bx1)
-              + m_mblock.em(i + 1, j - 1, k - 1, em::bx1));
-    c001 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j, k + 1, em::bx1)
-              + m_mblock.em(i, j - 1, k, em::bx1) + m_mblock.em(i, j - 1, k + 1, em::bx1));
+           * (BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1)
+              + BX1(i + 1, j - 1, k - 1));
+    c001
+      = QUARTER * (BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1));
     c101 = QUARTER
-           * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j, k + 1, em::bx1)
-              + m_mblock.em(i + 1, j - 1, k, em::bx1)
-              + m_mblock.em(i + 1, j - 1, k + 1, em::bx1));
-    c010 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j + 1, k, em::bx1)
-              + m_mblock.em(i, j, k - 1, em::bx1) + m_mblock.em(i, j + 1, k - 1, em::bx1));
+           * (BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k)
+              + BX1(i + 1, j - 1, k + 1));
+    c010
+      = QUARTER * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1));
     c110 = QUARTER
-           * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j, k - 1, em::bx1)
-              + m_mblock.em(i + 1, j + 1, k - 1, em::bx1)
-              + m_mblock.em(i + 1, j + 1, k, em::bx1));
-    c011 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx1) + m_mblock.em(i, j + 1, k, em::bx1)
-              + m_mblock.em(i, j + 1, k + 1, em::bx1) + m_mblock.em(i, j, k + 1, em::bx1));
+           * (BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1)
+              + BX1(i + 1, j + 1, k));
+    c011
+      = QUARTER * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1));
     c111 = QUARTER
-           * (m_mblock.em(i + 1, j, k, em::bx1) + m_mblock.em(i + 1, j + 1, k, em::bx1)
-              + m_mblock.em(i + 1, j + 1, k + 1, em::bx1)
-              + m_mblock.em(i + 1, j, k + 1, em::bx1));
+           * (BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1)
+              + BX1(i + 1, j, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
@@ -487,32 +461,26 @@ namespace ntt {
     b0[0] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx2
-    c000 = QUARTER
-           * (m_mblock.em(i - 1, j, k - 1, em::bx2) + m_mblock.em(i - 1, j, k, em::bx2)
-              + m_mblock.em(i, j, k - 1, em::bx2) + m_mblock.em(i, j, k, em::bx2));
-    c100 = QUARTER
-           * (m_mblock.em(i, j, k - 1, em::bx2) + m_mblock.em(i, j, k, em::bx2)
-              + m_mblock.em(i + 1, j, k - 1, em::bx2) + m_mblock.em(i + 1, j, k, em::bx2));
-    c001 = QUARTER
-           * (m_mblock.em(i - 1, j, k, em::bx2) + m_mblock.em(i - 1, j, k + 1, em::bx2)
-              + m_mblock.em(i, j, k, em::bx2) + m_mblock.em(i, j, k + 1, em::bx2));
-    c101 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx2) + m_mblock.em(i, j, k + 1, em::bx2)
-              + m_mblock.em(i + 1, j, k, em::bx2) + m_mblock.em(i + 1, j, k + 1, em::bx2));
+    c000
+      = QUARTER * (BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k));
+    c100
+      = QUARTER * (BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k));
+    c001
+      = QUARTER * (BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1));
+    c101
+      = QUARTER * (BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1));
     c010 = QUARTER
-           * (m_mblock.em(i - 1, j + 1, k - 1, em::bx2) + m_mblock.em(i - 1, j + 1, k, em::bx2)
-              + m_mblock.em(i, j + 1, k - 1, em::bx2) + m_mblock.em(i, j + 1, k, em::bx2));
+           * (BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1)
+              + BX2(i, j + 1, k));
     c110 = QUARTER
-           * (m_mblock.em(i, j + 1, k - 1, em::bx2) + m_mblock.em(i, j + 1, k, em::bx2)
-              + m_mblock.em(i + 1, j + 1, k - 1, em::bx2)
-              + m_mblock.em(i + 1, j + 1, k, em::bx2));
+           * (BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1)
+              + BX2(i + 1, j + 1, k));
     c011 = QUARTER
-           * (m_mblock.em(i - 1, j + 1, k, em::bx2) + m_mblock.em(i - 1, j + 1, k + 1, em::bx2)
-              + m_mblock.em(i, j + 1, k, em::bx2) + m_mblock.em(i, j + 1, k + 1, em::bx2));
+           * (BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k)
+              + BX2(i, j + 1, k + 1));
     c111 = QUARTER
-           * (m_mblock.em(i, j + 1, k, em::bx2) + m_mblock.em(i, j + 1, k + 1, em::bx2)
-              + m_mblock.em(i + 1, j + 1, k, em::bx2)
-              + m_mblock.em(i + 1, j + 1, k + 1, em::bx2));
+           * (BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k)
+              + BX2(i + 1, j + 1, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
@@ -522,32 +490,26 @@ namespace ntt {
     b0[1] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx3
-    c000 = QUARTER
-           * (m_mblock.em(i - 1, j - 1, k, em::bx3) + m_mblock.em(i - 1, j, k, em::bx3)
-              + m_mblock.em(i, j - 1, k, em::bx3) + m_mblock.em(i, j, k, em::bx3));
-    c100 = QUARTER
-           * (m_mblock.em(i, j - 1, k, em::bx3) + m_mblock.em(i, j, k, em::bx3)
-              + m_mblock.em(i + 1, j - 1, k, em::bx3) + m_mblock.em(i + 1, j, k, em::bx3));
+    c000
+      = QUARTER * (BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k));
+    c100
+      = QUARTER * (BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k));
     c001 = QUARTER
-           * (m_mblock.em(i - 1, j - 1, k + 1, em::bx3) + m_mblock.em(i - 1, j, k + 1, em::bx3)
-              + m_mblock.em(i, j - 1, k + 1, em::bx3) + m_mblock.em(i, j, k + 1, em::bx3));
+           * (BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1)
+              + BX3(i, j, k + 1));
     c101 = QUARTER
-           * (m_mblock.em(i, j - 1, k + 1, em::bx3) + m_mblock.em(i, j, k + 1, em::bx3)
-              + m_mblock.em(i + 1, j - 1, k + 1, em::bx3)
-              + m_mblock.em(i + 1, j, k + 1, em::bx3));
-    c010 = QUARTER
-           * (m_mblock.em(i - 1, j, k, em::bx3) + m_mblock.em(i - 1, j + 1, k, em::bx3)
-              + m_mblock.em(i, j, k, em::bx3) + m_mblock.em(i, j + 1, k, em::bx3));
-    c110 = QUARTER
-           * (m_mblock.em(i, j, k, em::bx3) + m_mblock.em(i, j + 1, k, em::bx3)
-              + m_mblock.em(i + 1, j, k, em::bx3) + m_mblock.em(i + 1, j + 1, k, em::bx3));
+           * (BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1)
+              + BX3(i + 1, j, k + 1));
+    c010
+      = QUARTER * (BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k));
+    c110
+      = QUARTER * (BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k));
     c011 = QUARTER
-           * (m_mblock.em(i - 1, j, k + 1, em::bx3) + m_mblock.em(i - 1, j + 1, k + 1, em::bx3)
-              + m_mblock.em(i, j, k + 1, em::bx3) + m_mblock.em(i, j + 1, k + 1, em::bx3));
+           * (BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1)
+              + BX3(i, j + 1, k + 1));
     c111 = QUARTER
-           * (m_mblock.em(i, j, k + 1, em::bx3) + m_mblock.em(i, j + 1, k + 1, em::bx3)
-              + m_mblock.em(i + 1, j, k + 1, em::bx3)
-              + m_mblock.em(i + 1, j + 1, k + 1, em::bx3));
+           * (BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1)
+              + BX3(i + 1, j + 1, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c01   = c001 * (ONE - dx1) + c101 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;

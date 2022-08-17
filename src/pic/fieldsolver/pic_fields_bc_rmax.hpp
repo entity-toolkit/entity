@@ -5,6 +5,8 @@
 #include "pic.h"
 #include "problem_generator.hpp"
 
+#include "field_macros.h"
+
 #include <plog/Log.h>
 
 #include <stdexcept>
@@ -43,8 +45,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void FieldBC_rmax<Dimension::TWO_D>::operator()(index_t i,
-                                                         index_t j) const {
+  Inline void FieldBC_rmax<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(i)};
     real_t j_ {static_cast<real_t>(j)};
 
@@ -58,20 +59,20 @@ namespace ntt {
     real_t delta_r2 {(rth_[0] - m_rabsorb) / (m_rmax - m_rabsorb)};
     real_t sigma_r2 {HEAVISIDE(delta_r2) * delta_r2 * delta_r2 * delta_r2};
 
-    m_mblock.em(i, j, em::ex1) = (ONE - sigma_r2) * m_mblock.em(i, j, em::ex1);
-    m_mblock.em(i, j, em::bx2) = (ONE - sigma_r2) * m_mblock.em(i, j, em::bx2);
-    m_mblock.em(i, j, em::bx3) = (ONE - sigma_r2) * m_mblock.em(i, j, em::bx3);
+    EX1(i, j) = (ONE - sigma_r2) * EX1(i, j);
+    BX2(i, j) = (ONE - sigma_r2) * BX2(i, j);
+    BX3(i, j) = (ONE - sigma_r2) * BX3(i, j);
 
     real_t br_target_hat {m_pgen.userTargetField_br_hat(m_mblock, {i_, j_ + HALF})};
-    real_t bx1_source_cntr {m_mblock.em(i, j, em::bx1)};
+    real_t bx1_source_cntr {BX1(i, j)};
     vec_t<Dimension::THREE_D> br_source_hat;
     m_mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
     real_t br_interm_hat {(ONE - sigma_r1) * br_source_hat[0] + sigma_r1 * br_target_hat};
     vec_t<Dimension::THREE_D> br_interm_cntr;
     m_mblock.metric.v_Hat2Cntrv({i_, j_ + HALF}, {br_interm_hat, ZERO, ZERO}, br_interm_cntr);
-    m_mblock.em(i, j, em::bx1) = br_interm_cntr[0];
-    m_mblock.em(i, j, em::ex2) = (ONE - sigma_r1) * m_mblock.em(i, j, em::ex2);
-    m_mblock.em(i, j, em::ex3) = (ONE - sigma_r1) * m_mblock.em(i, j, em::ex3);
+    BX1(i, j) = br_interm_cntr[0];
+    EX2(i, j) = (ONE - sigma_r1) * EX2(i, j);
+    EX3(i, j) = (ONE - sigma_r1) * EX3(i, j);
   }
 } // namespace ntt
 

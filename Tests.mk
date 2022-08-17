@@ -21,9 +21,9 @@ test: $(KOKKOS_LINK_DEPENDS) test_pic
 
 test_pic: test_pic_minkowski test_pic_qspherical
 
-test_pic_minkowski: ${BIN_DIR}/testPICMink.exec
+test_pic_minkowski: pgenCopy ${BIN_DIR}/testPICMink.exec
 
-test_pic_qspherical: ${BIN_DIR}/testPICQsph.exec
+test_pic_qspherical: pgenCopy ${BIN_DIR}/testPICQsph.exec
 
 # test_sph_pic test_qsph_pic
 
@@ -37,7 +37,7 @@ ${BIN_DIR}/testPICMink.exec: $(TEST_MINK_PIC_OBJS) ${BUILD_TEST_DIR}PIC_mnk/test
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
-${BUILD_TEST_DIR}PIC_mnk/%.o: pgenCopy ${SRC_DIR}/%
+${BUILD_TEST_DIR}PIC_mnk/%.o: ${SRC_DIR}/%
 	@echo [C]ompiling \`src\` for \`PIC Mink\` test: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${test_compile_command} ${MINKOWSKI_FLAG} ${PIC_FLAG} -c $< -o $@
@@ -50,7 +50,7 @@ ${BUILD_TEST_DIR}PIC_mnk/test.o: ${TEST_DIR}/test.cpp
 # ---------------------------------------------------------------------------- #
 #                                 PIC Spherical                                #
 # ---------------------------------------------------------------------------- #
-${BUILD_TEST_DIR}PIC_sph/%.o: pgenCopy ${SRC_DIR}/%
+${BUILD_TEST_DIR}PIC_sph/%.o: ${SRC_DIR}/%
 	@echo [C]ompiling \`src\` for \`PIC Sph\` test: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${test_compile_command} ${SPHERICAL_FLAG} ${PIC_FLAG} -c $< -o $@
@@ -63,7 +63,7 @@ ${BIN_DIR}/testPICQsph.exec: $(TEST_QSPH_PIC_OBJS) ${BUILD_TEST_DIR}PIC_mnk/test
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ -o $@ $(LIBS)
 
-${BUILD_TEST_DIR}PIC_qsph/%.o: pgenCopy ${SRC_DIR}/%
+${BUILD_TEST_DIR}PIC_qsph/%.o: ${SRC_DIR}/%
 	@echo [C]ompiling \`src\` for \`PIC Qsph\` test: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${test_compile_command} ${QSPHERICAL_FLAG} ${PIC_FLAG} -c $< -o $@
