@@ -11,7 +11,7 @@
 namespace ntt {
   enum class CellLayer {
     allLayer,
-    allActiveLayer,
+    activeLayer,
     minGhostLayer,
     minActiveLayer,
     maxActiveLayer,
@@ -24,7 +24,7 @@ namespace ntt {
    *    |     |                             |     |
    * [--+-----+---------- allLayer ---------+-----+--]
    *    |     |                             |     |
-   *    |  [--+------- allActiveLayer ------+--]  |
+   *    |  [--+--------- activeLayer -------+--]  |
    *    |     |                             |     |
    *    |     |                             |     |
    * |  v  |  v  |                       |  v  |  v  |

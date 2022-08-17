@@ -7,6 +7,7 @@
 namespace ntt {
   /**
    * @brief Add the currents to the E field (Minkowski).
+   * @brief `m_coeff` includes metric coefficient.
    * @tparam D Dimension.
    */
   template <Dimension D>
