@@ -6,12 +6,15 @@
 #include "meshblock.h"
 #include "pic.h"
 
+#include "field_macros.h"
+
 #include <stdexcept>
 
 namespace ntt {
 
   /**
-   * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear space (diagonal metric).
+   * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear space (diagonal
+   * metric).
    * @tparam D Dimension.
    */
   template <Dimension D>
@@ -27,7 +30,7 @@ namespace ntt {
      */
     FaradayCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
-    
+
     /**
      * @brief 2D implementation of the algorithm.
      * @param i1 index.
@@ -44,8 +47,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(index_t i,
-                                                               index_t j) const {
+  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -60,22 +62,16 @@ namespace ntt {
     real_t h3_iP1j {m_mblock.metric.h_33({i_ + ONE, j_})};
     real_t h3_ijP1 {m_mblock.metric.h_33({i_, j_ + ONE})};
 
-    m_mblock.em(i, j, em::bx1)
-      += m_coeff * inv_sqrt_detH_ijP
-         * (h3_ij * m_mblock.em(i, j, em::ex3) - h3_ijP1 * m_mblock.em(i, j + 1, em::ex3));
-    m_mblock.em(i, j, em::bx2)
-      += m_coeff * inv_sqrt_detH_iPj
-         * (h3_iP1j * m_mblock.em(i + 1, j, em::ex3) - h3_ij * m_mblock.em(i, j, em::ex3));
-    m_mblock.em(i, j, em::bx3)
-      += m_coeff * inv_sqrt_detH_iPjP
-         * (h1_iPjP1 * m_mblock.em(i, j + 1, em::ex1) - h1_iPj * m_mblock.em(i, j, em::ex1)
-            + h2_ijP * m_mblock.em(i, j, em::ex2) - h2_iP1jP * m_mblock.em(i + 1, j, em::ex2));
+    BX1(i, j) += m_coeff * inv_sqrt_detH_ijP * (h3_ij * EX3(i, j) - h3_ijP1 * EX3(i, j + 1));
+    BX2(i, j) += m_coeff * inv_sqrt_detH_iPj * (h3_iP1j * EX3(i + 1, j) - h3_ij * EX3(i, j));
+    BX3(i, j) += m_coeff * inv_sqrt_detH_iPjP
+                 * (h1_iPjP1 * EX1(i, j + 1) - h1_iPj * EX1(i, j) + h2_ijP * EX2(i, j)
+                    - h2_iP1jP * EX2(i + 1, j));
   }
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::THREE_D>::operator()(index_t,
-                                                                 index_t,
-                                                                 index_t) const {
+  Inline void
+  FaradayCurvilinear<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear faraday not implemented
   }
 } // namespace ntt

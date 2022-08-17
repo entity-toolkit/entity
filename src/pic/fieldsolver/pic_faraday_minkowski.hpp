@@ -6,6 +6,8 @@
 #include "meshblock.h"
 #include "pic.h"
 
+#include "field_macros.h"
+
 namespace ntt {
 
   /**
@@ -47,39 +49,26 @@ namespace ntt {
 
   template <>
   Inline void FaradayMinkowski<Dimension::ONE_D>::operator()(index_t i) const {
-    m_mblock.em(i, em::bx2)
-      += m_coeff * (m_mblock.em(i + 1, em::ex3) - m_mblock.em(i, em::ex3));
-    m_mblock.em(i, em::bx3)
-      += m_coeff * (m_mblock.em(i, em::ex2) - m_mblock.em(i + 1, em::ex2));
+    BX2(i) += m_coeff * (EX3(i + 1) - EX3(i));
+    BX3(i) += m_coeff * (EX2(i) - EX2(i + 1));
   }
 
   template <>
   Inline void FaradayMinkowski<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
-    m_mblock.em(i, j, em::bx1)
-      += m_coeff * (m_mblock.em(i, j, em::ex3) - m_mblock.em(i, j + 1, em::ex3));
-    m_mblock.em(i, j, em::bx2)
-      += m_coeff * (m_mblock.em(i + 1, j, em::ex3) - m_mblock.em(i, j, em::ex3));
-    m_mblock.em(i, j, em::bx3)
-      += m_coeff
-         * (m_mblock.em(i, j + 1, em::ex1) - m_mblock.em(i, j, em::ex1)
-            + m_mblock.em(i, j, em::ex2) - m_mblock.em(i + 1, j, em::ex2));
+    BX1(i, j) += m_coeff * (EX3(i, j) - EX3(i, j + 1));
+    BX2(i, j) += m_coeff * (EX3(i + 1, j) - EX3(i, j));
+    BX3(i, j) += m_coeff * (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
   }
 
   template <>
   Inline void
   FaradayMinkowski<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
-    m_mblock.em(i, j, k, em::bx1)
-      += m_coeff
-         * (m_mblock.em(i, j, k + 1, em::ex2) - m_mblock.em(i, j, k, em::ex2)
-            + m_mblock.em(i, j, k, em::ex3) - m_mblock.em(i, j + 1, k, em::ex3));
-    m_mblock.em(i, j, k, em::bx2)
-      += m_coeff
-         * (m_mblock.em(i + 1, j, k, em::ex3) - m_mblock.em(i, j, k, em::ex3)
-            + m_mblock.em(i, j, k, em::ex1) - m_mblock.em(i, j, k + 1, em::ex1));
-    m_mblock.em(i, j, k, em::bx3)
-      += m_coeff
-         * (m_mblock.em(i, j + 1, k, em::ex1) - m_mblock.em(i, j, k, em::ex1)
-            + m_mblock.em(i, j, k, em::ex2) - m_mblock.em(i + 1, j, k, em::ex2));
+    BX1(i, j, k)
+      += m_coeff * (EX2(i, j, k + 1) - EX2(i, j, k) + EX3(i, j, k) - EX3(i, j + 1, k));
+    BX2(i, j, k)
+      += m_coeff * (EX3(i + 1, j, k) - EX3(i, j, k) + EX1(i, j, k) - EX1(i, j, k + 1));
+    BX3(i, j, k)
+      += m_coeff * (EX1(i, j + 1, k) - EX1(i, j, k) + EX2(i, j, k) - EX2(i + 1, j, k));
   }
 } // namespace ntt
 

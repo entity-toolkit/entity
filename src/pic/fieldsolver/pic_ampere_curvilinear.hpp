@@ -6,6 +6,8 @@
 #include "meshblock.h"
 #include "pic.h"
 
+#include "field_macros.h"
+
 namespace ntt {
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space.
@@ -55,16 +57,11 @@ namespace ntt {
     real_t h3_iPjM {m_mblock.metric.h_33({i_ + HALF, j_ - HALF})};
     real_t h3_iPjP {m_mblock.metric.h_33({i_ + HALF, j_ + HALF})};
 
-    m_mblock.em(i, j, em::ex1)
-      += m_coeff * inv_sqrt_detH_iPj
-         * (h3_iPjP * m_mblock.em(i, j, em::bx3) - h3_iPjM * m_mblock.em(i, j - 1, em::bx3));
-    m_mblock.em(i, j, em::ex2)
-      += m_coeff * inv_sqrt_detH_ijP
-         * (h3_iMjP * m_mblock.em(i - 1, j, em::bx3) - h3_iPjP * m_mblock.em(i, j, em::bx3));
-    m_mblock.em(i, j, em::ex3)
-      += m_coeff * inv_sqrt_detH_ij
-         * (h1_ijM * m_mblock.em(i, j - 1, em::bx1) - h1_ijP * m_mblock.em(i, j, em::bx1)
-            + h2_iPj * m_mblock.em(i, j, em::bx2) - h2_iMj * m_mblock.em(i - 1, j, em::bx2));
+    EX1(i, j) += m_coeff * inv_sqrt_detH_iPj * (h3_iPjP * BX3(i, j) - h3_iPjM * BX3(i, j - 1));
+    EX2(i, j) += m_coeff * inv_sqrt_detH_ijP * (h3_iMjP * BX3(i - 1, j) - h3_iPjP * BX3(i, j));
+    EX3(i, j) += m_coeff * inv_sqrt_detH_ij
+                 * (h1_ijM * BX1(i, j - 1) - h1_ijP * BX1(i, j) + h2_iPj * BX2(i, j)
+                    - h2_iMj * BX2(i - 1, j));
   }
 
   template <>
@@ -116,16 +113,13 @@ namespace ntt {
     real_t h3_min_iMjP {m_mblock.metric.h_33({i_ - HALF, HALF})};
 
     // theta = 0
-    m_mblock.em(i, j_min, em::ex1)
-      += inv_polar_area_iPj * m_coeff * (h3_min_iPjP * m_mblock.em(i, j_min, em::bx3));
+    EX1(i, j_min) += inv_polar_area_iPj * m_coeff * (h3_min_iPjP * BX3(i, j_min));
     // theta = pi
-    m_mblock.em(i, j_max + 1, em::ex1)
-      -= inv_polar_area_iPj * m_coeff * (h3_max_iPjP * m_mblock.em(i, j_max, em::bx3));
+    EX1(i, j_max + 1) -= inv_polar_area_iPj * m_coeff * (h3_max_iPjP * BX3(i, j_max));
 
     // j = jmin + 1/2
-    m_mblock.em(i, j_min, em::ex2) += inv_sqrt_detH_ijP * m_coeff
-                                      * (h3_min_iMjP * m_mblock.em(i - 1, j_min, em::bx3)
-                                         - h3_min_iPjP * m_mblock.em(i, j_min, em::bx3));
+    EX2(i, j_min) += inv_sqrt_detH_ijP * m_coeff
+                     * (h3_min_iMjP * BX3(i - 1, j_min) - h3_min_iPjP * BX3(i, j_min));
   }
 } // namespace ntt
 

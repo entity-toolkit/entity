@@ -4,6 +4,8 @@
 #include "global.h"
 #include "pic.h"
 
+#include "field_macros.h"
+
 namespace ntt {
   /**
    * @brief Reset all particles of a particular species.
@@ -23,7 +25,7 @@ namespace ntt {
     ResetParticles(const Meshblock<D, SimulationType::PIC>& mblock,
                    const Particles<D, SimulationType::PIC>& particles)
       : m_mblock(mblock), m_particles(particles) {}
-    
+
     /**
      * @brief Calling the loop over all particles.
      */
@@ -33,7 +35,7 @@ namespace ntt {
     }
     /**
      * @brief Loop iteration.
-     * @param p index 
+     * @param p index
      */
     Inline void operator()(index_t p) const {
       if constexpr ((D == Dimension::ONE_D) || (D == Dimension::TWO_D)
@@ -91,26 +93,24 @@ namespace ntt {
 
   template <>
   Inline void ResetCurrents<Dimension::ONE_D>::operator()(index_t i) const {
-    m_mblock.cur(i, cur::jx1) = ZERO;
-    m_mblock.cur(i, cur::jx2) = ZERO;
-    m_mblock.cur(i, cur::jx3) = ZERO;
+    JX1(i) = ZERO;
+    JX2(i) = ZERO;
+    JX3(i) = ZERO;
   }
 
   template <>
-  Inline void ResetCurrents<Dimension::TWO_D>::operator()(index_t i,
-                                                          index_t j) const {
-    m_mblock.cur(i, j, cur::jx1) = ZERO;
-    m_mblock.cur(i, j, cur::jx2) = ZERO;
-    m_mblock.cur(i, j, cur::jx3) = ZERO;
+  Inline void ResetCurrents<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+    JX1(i, j) = ZERO;
+    JX2(i, j) = ZERO;
+    JX3(i, j) = ZERO;
   }
 
   template <>
-  Inline void ResetCurrents<Dimension::THREE_D>::operator()(index_t i,
-                                                            index_t j,
-                                                            index_t k) const {
-    m_mblock.cur(i, j, k, cur::jx1) = ZERO;
-    m_mblock.cur(i, j, k, cur::jx2) = ZERO;
-    m_mblock.cur(i, j, k, cur::jx3) = ZERO;
+  Inline void
+  ResetCurrents<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
+    JX1(i, j, k) = ZERO;
+    JX2(i, j, k) = ZERO;
+    JX3(i, j, k) = ZERO;
   }
 
   /**
@@ -149,35 +149,33 @@ namespace ntt {
 
   template <>
   Inline void ResetFields<Dimension::ONE_D>::operator()(index_t i) const {
-    m_mblock.em(i, em::ex1) = ZERO;
-    m_mblock.em(i, em::ex2) = ZERO;
-    m_mblock.em(i, em::ex3) = ZERO;
-    m_mblock.em(i, em::bx1) = ZERO;
-    m_mblock.em(i, em::bx2) = ZERO;
-    m_mblock.em(i, em::bx3) = ZERO;
+    EX1(i) = ZERO;
+    EX2(i) = ZERO;
+    EX3(i) = ZERO;
+    BX1(i) = ZERO;
+    BX2(i) = ZERO;
+    BX3(i) = ZERO;
   }
 
   template <>
-  Inline void ResetFields<Dimension::TWO_D>::operator()(index_t i,
-                                                        index_t j) const {
-    m_mblock.em(i, j, em::ex1) = ZERO;
-    m_mblock.em(i, j, em::ex2) = ZERO;
-    m_mblock.em(i, j, em::ex3) = ZERO;
-    m_mblock.em(i, j, em::bx1) = ZERO;
-    m_mblock.em(i, j, em::bx2) = ZERO;
-    m_mblock.em(i, j, em::bx3) = ZERO;
+  Inline void ResetFields<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+    EX1(i, j) = ZERO;
+    EX2(i, j) = ZERO;
+    EX3(i, j) = ZERO;
+    BX1(i, j) = ZERO;
+    BX2(i, j) = ZERO;
+    BX3(i, j) = ZERO;
   }
 
   template <>
-  Inline void ResetFields<Dimension::THREE_D>::operator()(index_t i,
-                                                          index_t j,
-                                                          index_t k) const {
-    m_mblock.em(i, j, k, em::ex1) = ZERO;
-    m_mblock.em(i, j, k, em::ex2) = ZERO;
-    m_mblock.em(i, j, k, em::ex3) = ZERO;
-    m_mblock.em(i, j, k, em::bx1) = ZERO;
-    m_mblock.em(i, j, k, em::bx2) = ZERO;
-    m_mblock.em(i, j, k, em::bx3) = ZERO;
+  Inline void
+  ResetFields<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
+    EX1(i, j, k) = ZERO;
+    EX2(i, j, k) = ZERO;
+    EX3(i, j, k) = ZERO;
+    BX1(i, j, k) = ZERO;
+    BX2(i, j, k) = ZERO;
+    BX3(i, j, k) = ZERO;
   }
 } // namespace ntt
 
