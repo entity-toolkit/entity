@@ -34,7 +34,7 @@ namespace ntt {
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
 
     Kokkos::parallel_for(
-      "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
+      "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
         coord_t<Dimension::TWO_D> x {0.0, 0.0}, x_CU;
         mblock.metric.x_Cart2Code(x, x_CU);
         auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);

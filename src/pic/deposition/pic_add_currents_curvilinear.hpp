@@ -79,12 +79,9 @@ namespace ntt {
     real_t inv_sqrt_detH_iPjk {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_, k_})};
     real_t inv_sqrt_detH_ijPk {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF, k_})};
     real_t inv_sqrt_detH_ijkP {ONE / m_mblock.metric.sqrt_det_h({i_, j_, k_ + HALF})};
-    EX1(i, j, k)
-      += m_coeff * JX1(i, j, k) * inv_sqrt_detH_iPjk;
-    EX2(i, j, k)
-      += m_coeff * JX2(i, j, k) * inv_sqrt_detH_ijPk;
-    EX3(i, j, k)
-      += m_coeff * JX3(i, j, k) * inv_sqrt_detH_ijkP;
+    EX1(i, j, k) += m_coeff * JX1(i, j, k) * inv_sqrt_detH_iPjk;
+    EX2(i, j, k) += m_coeff * JX2(i, j, k) * inv_sqrt_detH_ijPk;
+    EX3(i, j, k) += m_coeff * JX3(i, j, k) * inv_sqrt_detH_ijkP;
   }
 } // namespace ntt
 

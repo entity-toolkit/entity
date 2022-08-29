@@ -17,7 +17,7 @@ Constructor for the mesh container, sets the active cell sizes and ranges.
 ---
 
 ```c++
-template<Dimension D> auto loopActiveCells ()
+template<Dimension D> auto rangeActiveCells ()
 ```
 Loop over all active cells (disregard ghost cells). 
 
@@ -27,7 +27,7 @@ Loop over all active cells (disregard ghost cells).
 ---
 
 ```c++
-template<Dimension D> auto loopAllCells ()
+template<Dimension D> auto rangeAllCells ()
 ```
 Loop over all cells. 
 

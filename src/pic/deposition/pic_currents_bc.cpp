@@ -8,10 +8,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
   /**
    * @brief 1d periodic field bc.
    *
@@ -62,7 +58,7 @@ namespace ntt {
       // non-periodic
       NTTError("2d boundary condition for minkowski not implemented");
     }
-    NTTWait();
+    WaitAndSynchronize();
     if (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
       // periodic
       /**
@@ -90,7 +86,7 @@ namespace ntt {
       // non-periodic
       NTTError("2d boundary condition for minkowski not implemented");
     }
-    NTTWait();
+    WaitAndSynchronize();
     /**
      * @note: corners treated separately
      */

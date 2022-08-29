@@ -109,9 +109,9 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      */
-    Inline void v_Cntrv2Cart(const coord_t<D>&                xi,
-                             const vec_t<Dimension::THREE_D>& vi_cntrv,
-                             vec_t<Dimension::THREE_D>&       vi_cart) const {
+    Inline void v_Cntrv2Cart(const coord_t<D>&  xi,
+                             const vec_t<Dim3>& vi_cntrv,
+                             vec_t<Dim3>&       vi_cart) const {
       this->v_Cntrv2Hat(xi, vi_cntrv, vi_cart);
     }
 
@@ -122,9 +122,9 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      */
-    Inline void v_Cart2Cntrv(const coord_t<D>&                xi,
-                             const vec_t<Dimension::THREE_D>& vi_cart,
-                             vec_t<Dimension::THREE_D>&       vi_cntrv) const {
+    Inline void v_Cart2Cntrv(const coord_t<D>&  xi,
+                             const vec_t<Dim3>& vi_cart,
+                             vec_t<Dim3>&       vi_cntrv) const {
       this->v_Hat2Cntrv(xi, vi_cart, vi_cntrv);
     }
 
@@ -135,9 +135,8 @@ namespace ntt {
      * @param vi_cov vector in covariant basis (size of the array is 3).
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      */
-    Inline void v_Cov2Cart(const coord_t<D>&                xi,
-                           const vec_t<Dimension::THREE_D>& vi_cov,
-                           vec_t<Dimension::THREE_D>&       vi_cart) const {
+    Inline void
+    v_Cov2Cart(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov, vec_t<Dim3>& vi_cart) const {
       this->v_Cov2Hat(xi, vi_cov, vi_cart);
     }
 
@@ -148,9 +147,8 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      * @param vi_cov vector in covariant basis (size of the array is 3).
      */
-    Inline void v_Cart2Cov(const coord_t<D>&                xi,
-                           const vec_t<Dimension::THREE_D>& vi_cart,
-                           vec_t<Dimension::THREE_D>&       vi_cov) const {
+    Inline void
+    v_Cart2Cov(const coord_t<D>& xi, const vec_t<Dim3>& vi_cart, vec_t<Dim3>& vi_cov) const {
       this->v_Hat2Cov(xi, vi_cart, vi_cov);
     }
   };
@@ -159,47 +157,39 @@ namespace ntt {
   // 1D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Metric<Dimension::ONE_D>::x_Code2Cart(const coord_t<Dimension::ONE_D>& xi,
-                                                    coord_t<Dimension::ONE_D>&       x) const {
+  Inline void Metric<Dim1>::x_Code2Cart(const coord_t<Dim1>& xi, coord_t<Dim1>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
   }
   template <>
-  Inline void Metric<Dimension::ONE_D>::x_Cart2Code(const coord_t<Dimension::ONE_D>& x,
-                                                    coord_t<Dimension::ONE_D>& xi) const {
+  Inline void Metric<Dim1>::x_Cart2Code(const coord_t<Dim1>& x, coord_t<Dim1>& xi) const {
     xi[0] = (x[0] - this->x1_min) * inv_dx;
   }
   template <>
-  Inline void Metric<Dimension::ONE_D>::x_Code2Sph(const coord_t<Dimension::ONE_D>&,
-                                                   coord_t<Dimension::ONE_D>&) const {}
+  Inline void Metric<Dim1>::x_Code2Sph(const coord_t<Dim1>&, coord_t<Dim1>&) const {}
   template <>
-  Inline void Metric<Dimension::ONE_D>::x_Sph2Code(const coord_t<Dimension::ONE_D>&,
-                                                   coord_t<Dimension::ONE_D>&) const {}
+  Inline void Metric<Dim1>::x_Sph2Code(const coord_t<Dim1>&, coord_t<Dim1>&) const {}
 
   // * * * * * * * * * * * * * * *
   // 2D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Metric<Dimension::TWO_D>::x_Code2Cart(const coord_t<Dimension::TWO_D>& xi,
-                                                    coord_t<Dimension::TWO_D>&       x) const {
+  Inline void Metric<Dim2>::x_Code2Cart(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
     x[1] = xi[1] * dx + this->x2_min;
   }
   template <>
-  Inline void Metric<Dimension::TWO_D>::x_Cart2Code(const coord_t<Dimension::TWO_D>& x,
-                                                    coord_t<Dimension::TWO_D>& xi) const {
+  Inline void Metric<Dim2>::x_Cart2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
     xi[0] = (x[0] - this->x1_min) * inv_dx;
     xi[1] = (x[1] - this->x2_min) * inv_dx;
   }
   template <>
-  Inline void Metric<Dimension::TWO_D>::x_Code2Sph(const coord_t<Dimension::TWO_D>& xi,
-                                                   coord_t<Dimension::TWO_D>&       x) const {
+  Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
     x_Code2Cart(xi, x);                           // convert to Cartesian coordinates
     x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]); // r = sqrt(x^2 + y^2)
     x[1] = math::atan2(x[1], x[0]);               // theta = atan(y/x)
   }
   template <>
-  Inline void Metric<Dimension::TWO_D>::x_Sph2Code(const coord_t<Dimension::TWO_D>& x,
-                                                   coord_t<Dimension::TWO_D>&       xi) const {
+  Inline void Metric<Dim2>::x_Sph2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
     xi[0] = x[0] * math::cos(x[1]); // x = r * cos(theta)
     xi[1] = x[0] * math::sin(x[1]); // y = r * sin(theta)
     x_Cart2Code(xi, xi);            // convert to code units
@@ -209,30 +199,26 @@ namespace ntt {
   // 3D:
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Metric<Dimension::THREE_D>::x_Code2Cart(const coord_t<Dimension::THREE_D>& xi,
-                                                      coord_t<Dimension::THREE_D>& x) const {
+  Inline void Metric<Dim3>::x_Code2Cart(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
     x[1] = xi[1] * dx + this->x2_min;
     x[2] = xi[2] * dx + this->x3_min;
   }
   template <>
-  Inline void Metric<Dimension::THREE_D>::x_Cart2Code(const coord_t<Dimension::THREE_D>& x,
-                                                      coord_t<Dimension::THREE_D>& xi) const {
+  Inline void Metric<Dim3>::x_Cart2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
     xi[0] = (x[0] - this->x1_min) * inv_dx;
     xi[1] = (x[1] - this->x2_min) * inv_dx;
     xi[2] = (x[2] - this->x3_min) * inv_dx;
   }
   template <>
-  Inline void Metric<Dimension::THREE_D>::x_Code2Sph(const coord_t<Dimension::THREE_D>& xi,
-                                                     coord_t<Dimension::THREE_D>& x) const {
+  Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
     x_Code2Cart(xi, x); // convert to Cartesian coordinates
     x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]); // r = sqrt(x^2 + y^2 + z^2)
     x[1] = math::atan2(x[1], x[0]);                             // theta = atan(y/x)
     x[2] = math::acos(x[2] / x[0]);                             // phi = acos(z/r)
   }
   template <>
-  Inline void Metric<Dimension::THREE_D>::x_Sph2Code(const coord_t<Dimension::THREE_D>& x,
-                                                     coord_t<Dimension::THREE_D>& xi) const {
+  Inline void Metric<Dim3>::x_Sph2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
     xi[0] = x[0] * math::sin(x[1]) * math::cos(x[2]); // x = r * sin(theta) * cos(phi)
     xi[1] = x[0] * math::sin(x[1]) * math::sin(x[2]); // y = r * sin(theta) * sin(phi)
     xi[2] = x[0] * math::cos(x[1]);                   // z = r * cos(theta)

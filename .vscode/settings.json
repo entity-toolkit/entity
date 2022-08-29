@@ -112,4 +112,5 @@
     "comments": "",
     "textMateRules": []
   },
+  "C_Cpp.errorSquiggles": "Disabled",
 }

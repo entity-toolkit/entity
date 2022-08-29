@@ -79,7 +79,7 @@ namespace ntt {
   class AmpereCurvilinearPoles {
     Meshblock<D, SimulationType::PIC> m_mblock;
     real_t                            m_coeff;
-    const int                         m_nj;
+    const std::size_t                 m_nj;
 
   public:
     /**
@@ -100,7 +100,7 @@ namespace ntt {
   template <>
   Inline void AmpereCurvilinearPoles<Dimension::TWO_D>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
-    index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
+    index_t j_max {m_nj + N_GHOSTS - 1};
 
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_max_ {static_cast<real_t>(j_max - N_GHOSTS)};

@@ -10,10 +10,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
   template <>
   void PIC<Dim1>::ampereSubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
@@ -39,11 +35,11 @@ namespace ntt {
       "ampere", m_mblock.rangeActiveCells(), AmpereMinkowski<Dim2>(m_mblock, coeff / dx));
 #else
     Kokkos::parallel_for("ampere",
-                         NTTRange<Dim2>({m_mblock.i1_min(), m_mblock.i2_min() + 1},
+                         CreateRangePolicy<Dim2>({m_mblock.i1_min(), m_mblock.i2_min() + 1},
                                         {m_mblock.i1_max(), m_mblock.i2_max()}),
                          AmpereCurvilinear<Dim2>(m_mblock, coeff));
     Kokkos::parallel_for("ampere_pole",
-                         NTTRange<Dim1>({m_mblock.i1_min()}, {m_mblock.i1_max()}),
+                         CreateRangePolicy<Dim1>({m_mblock.i1_min()}, {m_mblock.i1_max()}),
                          AmpereCurvilinearPoles<Dim2>(m_mblock, coeff));
 #endif
   }

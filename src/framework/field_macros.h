@@ -1,3 +1,6 @@
+#ifndef FRAMEWORK_FIELD_MACROS_H
+#define FRAMEWORK_FIELD_MACROS_H
+
 #define GET_MACRO(_1, _2, _3, NAME, ...) NAME
 
 #define BX1(...)                         GET_MACRO(__VA_ARGS__, BX1_3D, BX1_2D, BX1_1D, )(__VA_ARGS__)
@@ -45,6 +48,26 @@
 #define JX3_2D(I, J)                     (m_mblock.cur((I), (J), cur::jx3))
 #define JX3_3D(I, J, K)                  (m_mblock.cur((I), (J), (K), cur::jx3))
 
+#define ATOMIC_JX1(...)                                                                       \
+  GET_MACRO(__VA_ARGS__, ATOMIC_JX1_3D, ATOMIC_JX1_2D, ATOMIC_JX1_1D, )(__VA_ARGS__)
+#define ATOMIC_JX1_1D(I)    (cur_access((I) + N_GHOSTS, cur::jx1))
+#define ATOMIC_JX1_2D(I, J) (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, cur::jx1))
+#define ATOMIC_JX1_3D(I, J, K)                                                                \
+  (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, (K) + N_GHOSTS, cur::jx1))
+
+#define ATOMIC_JX2(...)                                                                       \
+  GET_MACRO(__VA_ARGS__, ATOMIC_JX2_3D, ATOMIC_JX2_2D, ATOMIC_JX2_1D, )(__VA_ARGS__)
+#define ATOMIC_JX2_1D(I)    (cur_access((I) + N_GHOSTS, cur::jx2))
+#define ATOMIC_JX2_2D(I, J) (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, cur::jx2))
+#define ATOMIC_JX2_3D(I, J, K)                                                                \
+  (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, (K) + N_GHOSTS, cur::jx2))
+
+#define ATOMIC_JX3(...)                                                                       \
+  GET_MACRO(__VA_ARGS__, ATOMIC_JX3_3D, ATOMIC_JX3_2D, ATOMIC_JX3_1D, )(__VA_ARGS__)
+#define ATOMIC_JX3_1D(I)    (cur_access((I) + N_GHOSTS, cur::jx3))
+#define ATOMIC_JX3_2D(I, J) (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, cur::jx3))
+#define ATOMIC_JX3_3D(I, J, K)                                                                \
+  (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, (K) + N_GHOSTS, cur::jx3))
 
 // regex
 
@@ -56,3 +79,5 @@
 
 // find: m_mblock.cur\((.*?), cur::jx(.*?)\)
 // replace: JX$2($1)
+
+#endif

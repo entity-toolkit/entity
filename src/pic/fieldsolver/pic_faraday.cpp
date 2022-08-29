@@ -10,10 +10,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
   template <>
   void PIC<Dim1>::faradaySubstep(const real_t&, const real_t& fraction) {
     const real_t coeff {fraction * m_sim_params.correction() * m_mblock.timestep()};
