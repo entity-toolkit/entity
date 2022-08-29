@@ -7,10 +7,6 @@
 #include <cassert>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
   template <Dimension D>
   Mesh<D>::Mesh(const std::vector<unsigned int>& res,
                 const std::vector<real_t>&       ext,
@@ -27,39 +23,39 @@ namespace ntt {
       metric {res, ext, params} {}
 
   template <>
-  auto Mesh<Dim1>::rangeAllCells() -> RangeND<Dim1> {
+  auto Mesh<Dim1>::rangeAllCells() -> range_t<Dim1> {
     boxRegion<Dim1> region {CellLayer::allLayer};
     return rangeCells(region);
   }
   template <>
-  auto Mesh<Dim2>::rangeAllCells() -> RangeND<Dim2> {
+  auto Mesh<Dim2>::rangeAllCells() -> range_t<Dim2> {
     boxRegion<Dim2> region {CellLayer::allLayer, CellLayer::allLayer};
     return rangeCells(region);
   }
   template <>
-  auto Mesh<Dim3>::rangeAllCells() -> RangeND<Dim3> {
+  auto Mesh<Dim3>::rangeAllCells() -> range_t<Dim3> {
     boxRegion<Dim3> region {CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer};
     return rangeCells(region);
   }
   template <>
-  auto Mesh<Dim1>::rangeActiveCells() -> RangeND<Dim1> {
+  auto Mesh<Dim1>::rangeActiveCells() -> range_t<Dim1> {
     boxRegion<Dim1> region {CellLayer::activeLayer};
     return rangeCells(region);
   }
   template <>
-  auto Mesh<Dim2>::rangeActiveCells() -> RangeND<Dim2> {
+  auto Mesh<Dim2>::rangeActiveCells() -> range_t<Dim2> {
     boxRegion<Dim2> region {CellLayer::activeLayer, CellLayer::activeLayer};
     return rangeCells(region);
   }
   template <>
-  auto Mesh<Dim3>::rangeActiveCells() -> RangeND<Dim3> {
+  auto Mesh<Dim3>::rangeActiveCells() -> range_t<Dim3> {
     boxRegion<Dim3> region {
       CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer};
     return rangeCells(region);
   }
 
   template <Dimension D>
-  auto Mesh<D>::rangeCells(const boxRegion<D>& region) -> RangeND<D> {
+  auto Mesh<D>::rangeCells(const boxRegion<D>& region) -> range_t<D> {
     tuple_t<int, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
       switch (region[i]) {
@@ -91,7 +87,7 @@ namespace ntt {
         NTTError("Invalid cell layer");
       }
     }
-    return NTTRange<D>(imin, imax);
+    return CreateRangePolicy<D>(imin, imax);
   }
 
   template <Dimension D, SimulationType S>

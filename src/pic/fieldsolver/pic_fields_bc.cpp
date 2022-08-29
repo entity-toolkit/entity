@@ -10,10 +10,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
   /**
    * @brief 1d periodic field bc.
    *
@@ -185,7 +181,7 @@ namespace ntt {
     // theta = 0 boundary
     Kokkos::parallel_for(
       "2d_bc_theta0",
-      NTTRange<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min() + 1}),
+      CreateRangePolicy<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min() + 1}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;
         mblock.em(i, j, em::ex3) = 0.0;
@@ -193,7 +189,7 @@ namespace ntt {
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
-      NTTRange<Dim2>({0, m_mblock.i2_max()},
+      CreateRangePolicy<Dim2>({0, m_mblock.i2_max()},
                      {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() + N_GHOSTS}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;

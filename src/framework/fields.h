@@ -33,7 +33,7 @@ namespace ntt {
      * @note Ex2 is stored at (    i, j+1/2,     k,     n)
      * @note Ex3 is stored at (    i,     j, k+1/2,     n)
      */
-    RealFieldND<D, 6> em;
+    ndfield_t<D, 6> em;
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 6.
      *
@@ -45,7 +45,7 @@ namespace ntt {
      * @note Jx2 is deposited at (    i, j+1/2,     k, n+1/2)
      * @note Jx3 is deposited at (    i,     j, k+1/2, n+1/2)
      */
-    RealFieldND<D, 3> cur;
+    ndfield_t<D, 3> cur;
 #if SIMTYPE == GRPIC_SIMTYPE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific
@@ -58,7 +58,7 @@ namespace ntt {
      * component.
      * @note Address : aux(i, j, k, em::***).
      */
-    RealFieldND<D, 6> aux;
+    ndfield_t<D, 6> aux;
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
@@ -66,7 +66,7 @@ namespace ntt {
      * component.
      * @note Address : em0(i, j, k, em::***).
      */
-    RealFieldND<D, 6> em0;
+    ndfield_t<D, 6> em0;
     /**
      * Current fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
@@ -74,7 +74,7 @@ namespace ntt {
      * component.
      * @note Address : cur0(i, j, k, cur::***).
      */
-    RealFieldND<D, 3> cur0;
+    ndfield_t<D, 3> cur0;
     /**
      * Vector potential
      *
@@ -82,7 +82,7 @@ namespace ntt {
      * component.
      * @note Address : aphi(i, j, k, 0).
      */
-    RealFieldND<D, 1> aphi;
+    ndfield_t<D, 1> aphi;
 #endif
 
     /**

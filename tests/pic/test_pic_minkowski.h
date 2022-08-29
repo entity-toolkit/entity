@@ -83,7 +83,7 @@ TEST_CASE("testing PIC") {
 
         Kokkos::parallel_for(
           "set particles",
-          ntt::NTTRange<ntt::Dimension::ONE_D>({0}, {1}),
+          ntt::CreateRangePolicy<ntt::Dimension::ONE_D>({0}, {1}),
           Lambda(const std::size_t p) {
             ntt::coord_t<ntt::Dimension::TWO_D> x_CU;
             mblock->metric.x_Cart2Code(x_init, x_CU);
@@ -343,7 +343,7 @@ TEST_CASE("testing PIC") {
 
           Kokkos::parallel_for(
             "set particles",
-            ntt::NTTRange<ntt::Dimension::ONE_D>({0}, {1}),
+            ntt::CreateRangePolicy<ntt::Dimension::ONE_D>({0}, {1}),
             Lambda(const std::size_t p) {
               ntt::coord_t<ntt::Dimension::TWO_D> x_CU;
               mblock->metric.x_Cart2Code(x_init1, x_CU);

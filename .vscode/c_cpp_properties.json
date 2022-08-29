@@ -18,8 +18,9 @@
       "defines": [
         "SIMTYPE=PIC_SIMTYPE",
         "SINGLE_PRECISION",
-        "METRIC=MINKOWSKI_METRIC"
-        // "METRIC=QSPHERICAL_METRIC"
+        "OMPENABLED",
+        // "METRIC=MINKOWSKI_METRIC"
+        "METRIC=QSPHERICAL_METRIC"
       ],
       "compilerPath": "${myCompilerPath}",
       "cStandard": "c17",

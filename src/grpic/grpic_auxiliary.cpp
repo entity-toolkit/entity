@@ -10,7 +10,7 @@ namespace ntt {
 
   template <>
   void GRPIC<Dim2>::computeAuxESubstep(const real_t&, const gr_getE& f) {
-    auto range {NTTRange<Dim2>({m_mblock.i1_min() - 1, m_mblock.i2_min()},
+    auto range {CreateRangePolicy<Dim2>({m_mblock.i1_min() - 1, m_mblock.i2_min()},
                                {m_mblock.i1_max(), m_mblock.i2_max() + 1})};
     if (f == gr_getE::D0_B) {
       Kokkos::parallel_for("auxiliary_E", range, computeAuxE_D0_B<Dim2>(m_mblock));
@@ -23,7 +23,7 @@ namespace ntt {
 
   template <>
   void GRPIC<Dim2>::computeAuxHSubstep(const real_t&, const gr_getH& f) {
-    auto range {NTTRange<Dim2>({m_mblock.i1_min() - 1, m_mblock.i2_min()},
+    auto range {CreateRangePolicy<Dim2>({m_mblock.i1_min() - 1, m_mblock.i2_min()},
                                {m_mblock.i1_max(), m_mblock.i2_max() + 1})};
     if (f == gr_getH::D_B0) {
       Kokkos::parallel_for("auxiliary_H", range, computeAuxH_D_B0<Dim2>(m_mblock));

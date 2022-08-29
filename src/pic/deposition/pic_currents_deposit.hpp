@@ -7,6 +7,9 @@
 #include "meshblock.h"
 #include "pic.h"
 
+#include "particle_macros.h"
+#include "field_macros.h"
+
 #include <stdexcept>
 
 namespace ntt {
@@ -19,7 +22,7 @@ namespace ntt {
   class Deposit {
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
-    RealScatterFieldND<D, 3>          m_scatter_cur;
+    scatter_ndfield_t<D, 3>           m_scatter_cur;
     real_t                            m_charge, m_dt;
 
   public:
@@ -33,7 +36,7 @@ namespace ntt {
      */
     Deposit(const Meshblock<D, SimulationType::PIC>& mblock,
             const Particles<D, SimulationType::PIC>& particles,
-            const RealScatterFieldND<D, 3>&          scatter_cur,
+            const scatter_ndfield_t<D, 3>&           scatter_cur,
             const real_t&                            charge,
             const real_t&                            dt)
       : m_mblock(mblock),
@@ -123,11 +126,18 @@ namespace ntt {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
       }
 
+#if (METRIC == MINKOWSKI_METRIC)
       m_mblock.metric.v_Cart2Cntrv(
         xp_f, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
-
-      inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / math::sqrt(ONE + inv_energy);
+#else
+      coord_t<Dim3> xp;
+      xp[0] = xp_f[0];
+      xp[1] = xp_f[1];
+      xp[2] = m_particles.phi(p);
+      m_mblock.metric.v_Cart2Cntrv(
+        xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
+#endif
+      inv_energy = ONE / PRTL_GAMMA_SR(p);
 
       // get particle 3-velocity in coordinate basis
       for (short i {0}; i < 3; ++i) {
@@ -180,35 +190,27 @@ namespace ntt {
     real_t Fx3_2 {HALF * vp[2] * m_charge};
 
     auto cur_access = m_scatter_cur.access();
-    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx1) += Fx1_1 * (ONE - Wx2_1);
-    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_1 * Wx2_1;
+    ATOMIC_JX1(Ip_i[0], Ip_i[1]) += Fx1_1 * (ONE - Wx2_1);
+    ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1) += Fx1_1 * Wx2_1;
 
-    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * (ONE - Wx1_1);
-    cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * Wx1_1;
+    ATOMIC_JX2(Ip_i[0], Ip_i[1]) += Fx2_1 * (ONE - Wx1_1);
+    ATOMIC_JX2(Ip_i[0] + 1, Ip_i[1]) += Fx2_1 * Wx1_1;
 
-    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx1) += Fx1_2 * (ONE - Wx2_2);
-    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_2 * Wx2_2;
+    ATOMIC_JX1(Ip_f[0], Ip_f[1]) += Fx1_2 * (ONE - Wx2_2);
+    ATOMIC_JX1(Ip_f[0], Ip_f[1] + 1) += Fx1_2 * Wx2_2;
 
-    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * (ONE - Wx1_2);
-    cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * Wx1_2;
+    ATOMIC_JX2(Ip_f[0], Ip_f[1]) += Fx2_2 * (ONE - Wx1_2);
+    ATOMIC_JX2(Ip_f[0] + 1, Ip_f[1]) += Fx2_2 * Wx1_2;
 
-    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
-      += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
-    cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
-      += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
-    cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3)
-      += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
-    cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3)
-      += Fx3_1 * Wx1_1 * Wx2_1;
+    ATOMIC_JX3(Ip_i[0], Ip_i[1]) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+    ATOMIC_JX3(Ip_i[0] + 1, Ip_i[1]) += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
+    ATOMIC_JX3(Ip_i[0], Ip_i[1] + 1) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+    ATOMIC_JX3(Ip_i[0] + 1, Ip_i[1] + 1) += Fx3_1 * Wx1_1 * Wx2_1;
 
-    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
-      += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
-    cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
-      += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
-    cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3)
-      += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
-    cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3)
-      += Fx3_2 * Wx1_2 * Wx2_2;
+    ATOMIC_JX3(Ip_f[0], Ip_f[1]) += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+    ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1]) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+    ATOMIC_JX3(Ip_f[0], Ip_f[1] + 1) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+    ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1] + 1) += Fx3_2 * Wx1_2 * Wx2_2;
   }
 
   template <>
@@ -260,4 +262,35 @@ namespace ntt {
 // Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3),
 //                    Fx3_2 * Wx1_2 * Wx2_2);
 //}
+
+// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx1) += Fx1_1 * (ONE - Wx2_1);
+// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_1 * Wx2_1;
+
+// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * (ONE - Wx1_1);
+// cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * Wx1_1;
+
+// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx1) += Fx1_2 * (ONE - Wx2_2);
+// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_2 * Wx2_2;
+
+// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * (ONE - Wx1_2);
+// cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * Wx1_2;
+
+// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
+//   += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+// cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
+//   += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
+// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3)
+//   += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+// cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3) += Fx3_1 * Wx1_1 *
+// Wx2_1;
+
+// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
+//   += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+// cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
+//   += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3)
+//   += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+// cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3) += Fx3_2 * Wx1_2 *
+// Wx2_2;
+
 #endif

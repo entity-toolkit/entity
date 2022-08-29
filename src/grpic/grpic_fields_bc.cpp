@@ -7,10 +7,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
   template <>
   void GRPIC<Dim2>::fieldBoundaryConditions(const real_t& t, const gr_bc& f) {
 
@@ -21,7 +17,7 @@ namespace ntt {
       auto i_min {mblock.i1_min()};
       Kokkos::parallel_for(
         "2d_bc_rmin",
-        NTTRange<Dim1>({mblock.i2_min()}, {mblock.i2_max() + 1}),
+        CreateRangePolicy<Dim1>({mblock.i2_min()}, {mblock.i2_max() + 1}),
         Lambda(index_t j) {
           mblock.em0(i_min - 1, j, em::ex1) = mblock.em0(i_min, j, em::ex1);
           mblock.em0(i_min, j, em::ex2)     = mblock.em0(i_min + 1, j, em::ex2);
@@ -43,7 +39,7 @@ namespace ntt {
       // auto pGen {this->m_pGen};
       Kokkos::parallel_for(
         "2d_absorbing bc",
-        NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
+        CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()},
                        {mblock.i1_max() + 1, mblock.i2_max() + 1}),
         Lambda(index_t i, index_t j) {
           real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
@@ -79,7 +75,7 @@ namespace ntt {
       // r = rmax
       auto i_max {mblock.i1_max()};
       Kokkos::parallel_for(
-        "2d_bc_rmax", NTTRange<Dim1>({mblock.i2_min()}, {mblock.i2_max()}), Lambda(index_t j) {
+        "2d_bc_rmax", CreateRangePolicy<Dim1>({mblock.i2_min()}, {mblock.i2_max()}), Lambda(index_t j) {
           mblock.em0(i_max, j, em::ex2) = mblock.em0(i_max - 1, j, em::ex2);
           mblock.em0(i_max, j, em::ex3) = mblock.em0(i_max - 1, j, em::ex3);
 
@@ -91,7 +87,7 @@ namespace ntt {
       auto j_min {mblock.i2_min()};
       Kokkos::parallel_for(
         "2d_bc_theta0",
-        NTTRange<Dim1>({mblock.i1_min() - 1}, {mblock.i1_max()}),
+        CreateRangePolicy<Dim1>({mblock.i1_min() - 1}, {mblock.i1_max()}),
         Lambda(index_t i) {
           mblock.em0(i, j_min, em::bx2) = ZERO;
           mblock.em(i, j_min, em::bx2)  = ZERO;
@@ -101,7 +97,7 @@ namespace ntt {
       auto j_max {mblock.i2_max()};
       Kokkos::parallel_for(
         "2d_bc_thetaPi",
-        NTTRange<Dim1>({mblock.i1_min() - 1}, {m_mblock.i1_max()}),
+        CreateRangePolicy<Dim1>({mblock.i1_min() - 1}, {m_mblock.i1_max()}),
         Lambda(index_t i) {
           mblock.em0(i, j_max, em::bx2) = ZERO;
           mblock.em(i, j_max, em::bx2)  = ZERO;
@@ -111,7 +107,7 @@ namespace ntt {
       auto i_min {mblock.i1_min()};
       Kokkos::parallel_for(
         "2d_bc_rmin",
-        NTTRange<Dim1>({mblock.i2_min()}, {mblock.i2_max() + 1}),
+        CreateRangePolicy<Dim1>({mblock.i2_min()}, {mblock.i2_max() + 1}),
         Lambda(index_t j) {
           mblock.em0(i_min, j, em::bx1)     = mblock.em0(i_min + 1, j, em::bx1);
           mblock.em0(i_min - 1, j, em::bx1) = mblock.em0(i_min, j, em::bx1);
@@ -130,7 +126,7 @@ namespace ntt {
       auto absorb_norm {ONE / (ONE - math::exp(absorb_coeff))};
       Kokkos::parallel_for(
         "2d_absorbing bc",
-        NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()},
+        CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()},
                        {mblock.i1_max() + 1, mblock.i2_max() + 1}),
         GRFieldBC_rmax<Dim2>(
           m_mblock, this->m_pGen, r_absorb, r_max, absorb_coeff, absorb_norm));
@@ -138,7 +134,7 @@ namespace ntt {
       // r = rmax
       auto i_max {mblock.i1_max()};
       Kokkos::parallel_for(
-        "2d_bc_rmax", NTTRange<Dim1>({mblock.i2_min()}, {mblock.i2_max()}), Lambda(index_t j) {
+        "2d_bc_rmax", CreateRangePolicy<Dim1>({mblock.i2_min()}, {mblock.i2_max()}), Lambda(index_t j) {
           mblock.em0(i_max, j, em::bx1) = mblock.em0(i_max - 1, j, em::bx1);
           mblock.em(i_max, j, em::bx1)  = mblock.em(i_max - 1, j, em::bx1);
         });
@@ -157,7 +153,7 @@ namespace ntt {
 
     auto mblock {this->m_mblock};
     auto i_min {mblock.i1_min()};
-    auto range {NTTRange<Dim1>({mblock.i2_min()}, {mblock.i2_max() + 1})};
+    auto range {CreateRangePolicy<Dim1>({mblock.i2_min()}, {mblock.i2_max() + 1})};
     if (f == gr_bc::Efield) {
       // r = rmin boundary
       Kokkos::parallel_for(
@@ -190,7 +186,7 @@ namespace ntt {
 // // theta = 0 boundary
 // Kokkos::parallel_for(
 //   "2d_bc_theta0",
-//   NTTRange<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min() + 1}),
+//   CreateRangePolicy<Dim2>({0, 0}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_min() + 1}),
 //   Lambda(index_t i, index_t j) {
 //     // mblock.em0(i, j, em::ex3) = ZERO;
 //     // mblock.em(i, j, em::ex3) = ZERO;
@@ -199,7 +195,7 @@ namespace ntt {
 // // theta = pi boundary
 // Kokkos::parallel_for(
 //   "2d_bc_thetaPi",
-//   NTTRange<Dim2>({0, m_mblock.i2_max()}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() +
+//   CreateRangePolicy<Dim2>({0, m_mblock.i2_max()}, {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() +
 //   N_GHOSTS}), Lambda(index_t i, index_t j) {
 //     mblock.em0(i, j, em::ex3) = ZERO;
 
@@ -208,7 +204,7 @@ namespace ntt {
 
 // auto j_min {mblock.i2_min()};
 // // Kokkos::parallel_for(
-// //   "2d_bc_theta0", NTTRange<Dim1>({mblock.i1_min() - 1}, {mblock.i1_max()}),
+// //   "2d_bc_theta0", CreateRangePolicy<Dim1>({mblock.i1_min() - 1}, {mblock.i1_max()}),
 // Lambda(index_t i) {
 // //     // mblock.em0(i, j_min, em::ex3) = ZERO;
 // //     // mblock.em(i, j_min, em::ex3) = ZERO;
@@ -219,7 +215,7 @@ namespace ntt {
 // // // theta = pi boundary
 // // auto j_max {mblock.i2_max()};
 // // Kokkos::parallel_for(
-// //   "2d_bc_thetaPi", NTTRange<Dim1>({mblock.i1_min() - 1}, {m_mblock.i1_max()}),
+// //   "2d_bc_thetaPi", CreateRangePolicy<Dim1>({mblock.i1_min() - 1}, {m_mblock.i1_max()}),
 // Lambda(index_t i) {
 // //     // mblock.em0(i, j_max, em::ex3) = ZERO;
 // //     // mblock.em(i, j_max, em::ex3) = ZERO;
@@ -231,7 +227,7 @@ namespace ntt {
 // auto br_func {&(this->m_pGen.userTargetField_br_cntrv)};
 // Kokkos::parallel_for(
 //   "2d_absorbing bc",
-//   NTTRange<Dim2>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_max() + 1, mblock.i2_max() +
+//   CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_max() + 1, mblock.i2_max() +
 //   1}), Lambda(index_t i, index_t j) {
 //     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
 //     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};

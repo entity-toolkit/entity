@@ -43,7 +43,9 @@ After the compilation is successful, you will find the corresponding executable 
 
 ### Short term things to do/fix
 
-  - [ ] routine for easy side/corner range selection
+  - [x] routine for easy side/corner range selection
+  - [x] aliases for fields/particles/currents
+  - [ ] check allocation of proper fields
   - [ ] add a simple current filtering
   - [ ] field mirrors
 

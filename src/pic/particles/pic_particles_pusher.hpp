@@ -8,6 +8,7 @@
 #include "pic.h"
 
 #include "field_macros.h"
+#include "particle_macros.h"
 
 #include <stdexcept>
 
@@ -62,10 +63,14 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(const Boris_t&, index_t p) const {
-      vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
+      vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
       interpolateFields(p, e_int, b_int);
 
+#if (METRIC == MINKOWSKI_METRIC)
       coord_t<D> xp;
+#else
+      coord_t<Dim3> xp;
+#endif
       getParticleCoordinate(p, xp);
       m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
       m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
@@ -73,42 +78,57 @@ namespace ntt {
       BorisUpdate(p, e_int_Cart, b_int_Cart);
 
       real_t inv_energy;
-      inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / math::sqrt(ONE + inv_energy);
+      inv_energy = ONE / PRTL_GAMMA_SR(p);
 
-      vec_t<Dimension::THREE_D> v;
+      // contravariant 3-velocity: u^i / gamma
+      vec_t<Dim3> v;
       m_mblock.metric.v_Cart2Cntrv(
         xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
       v[0] *= inv_energy;
       v[1] *= inv_energy;
       v[2] *= inv_energy;
+
       positionUpdate(p, v);
     }
     /**
-     * @brief Pusher for the photon pusher.
+     * @brief Pusher for the photon.
      * @param p index.
      */
     Inline void operator()(const Photon_t&, index_t p) const {
+#if (METRIC == MINKOWSKI_METRIC)
       coord_t<D> xp;
+#else
+      coord_t<Dim3> xp;
+#endif
       getParticleCoordinate(p, xp);
-      vec_t<Dimension::THREE_D> v;
+      vec_t<Dim3> v;
       m_mblock.metric.v_Cart2Cntrv(
         xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+
       real_t inv_energy;
-      inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) + SQR(m_particles.ux3(p));
-      inv_energy = ONE / math::sqrt(inv_energy);
+      inv_energy = ONE / math::sqrt(PRTL_USQR_SR(p));
       v[0] *= inv_energy;
       v[1] *= inv_energy;
       v[2] *= inv_energy;
+
       positionUpdate(p, v);
     }
 
+#if (METRIC == MINKOWSKI_METRIC)
     /**
      * @brief Transform particle coordinate from code units i+di to `real_t` type.
      * @param p index of the particle.
      * @param coord coordinate of the particle as a vector (of size D).
      */
     Inline void getParticleCoordinate(index_t&, coord_t<D>&) const;
+#else
+    /**
+     * @brief Transform particle coordinate from code units i+di to `real_t` type.
+     * @param p index of the particle.
+     * @param coord coordinate of the particle as a vector (of size 3).
+     */
+    Inline void getParticleCoordinate(index_t&, coord_t<Dim3>&) const;
+#endif
 
     /**
      * @brief First order Yee mesh field interpolation to particle position.
@@ -116,15 +136,14 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void
-    interpolateFields(index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void interpolateFields(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
     /**
      * @brief Update particle positions according to updated velocities.
      * @param p index of the particle.
      * @param v particle 3-velocity.
      */
-    Inline void positionUpdate(index_t&, const vec_t<Dimension::THREE_D>&) const;
+    Inline void positionUpdate(index_t&, const vec_t<Dim3>&) const;
 
     /**
      * @brief Update each position component.
@@ -142,52 +161,56 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [modified].
      * @param b interpolated b-field vector of size 3 [modified].
      */
-    Inline void
-    BorisUpdate(index_t&, vec_t<Dimension::THREE_D>&, vec_t<Dimension::THREE_D>&) const;
+    Inline void BorisUpdate(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
   };
 
+#if (METRIC == MINKOWSKI_METRIC)
   template <>
-  Inline void
-  Pusher<Dimension::ONE_D>::getParticleCoordinate(index_t&                   p,
-                                                  coord_t<Dimension::ONE_D>& xp) const {
-    xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
+  Inline void Pusher<Dim1>::getParticleCoordinate(index_t& p, coord_t<Dim1>& xp) const {
+    xp[0] = PRTL_X1(p);
   }
   template <>
-  Inline void
-  Pusher<Dimension::TWO_D>::getParticleCoordinate(index_t&                   p,
-                                                  coord_t<Dimension::TWO_D>& xp) const {
-    xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
-    xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
+  Inline void Pusher<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim2>& xp) const {
+    xp[0] = PRTL_X1(p);
+    xp[1] = PRTL_X2(p);
+  }
+#else
+  template <>
+  Inline void Pusher<Dim1>::getParticleCoordinate(index_t&, coord_t<Dim3>&) const {
+    NTTError("not implemented");
   }
   template <>
-  Inline void
-  Pusher<Dimension::THREE_D>::getParticleCoordinate(index_t&                     p,
-                                                    coord_t<Dimension::THREE_D>& xp) const {
-    xp[0] = static_cast<real_t>(m_particles.i1(p)) + static_cast<real_t>(m_particles.dx1(p));
-    xp[1] = static_cast<real_t>(m_particles.i2(p)) + static_cast<real_t>(m_particles.dx2(p));
-    xp[2] = static_cast<real_t>(m_particles.i3(p)) + static_cast<real_t>(m_particles.dx3(p));
+  Inline void Pusher<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
+    xp[0] = PRTL_X1(p);
+    xp[1] = PRTL_X2(p);
+    xp[2] = m_particles.phi(p);
+  }
+#endif
+
+  template <>
+  Inline void Pusher<Dim3>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
+    xp[0] = PRTL_X1(p);
+    xp[1] = PRTL_X2(p);
+    xp[2] = PRTL_X3(p);
   }
 
   // * * * * * * * * * * * * * * *
   // General position update
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void
-  Pusher<Dimension::ONE_D>::positionUpdate(index_t&                         p,
-                                           const vec_t<Dimension::THREE_D>& v) const {
+  Inline void Pusher<Dim1>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
   }
   template <>
-  Inline void
-  Pusher<Dimension::TWO_D>::positionUpdate(index_t&                         p,
-                                           const vec_t<Dimension::THREE_D>& v) const {
+  Inline void Pusher<Dim2>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
+#if !(METRIC == MINKOWSKI_METRIC)
+    m_particles.phi(p) += m_dt * v[2];
+#endif
   }
   template <>
-  Inline void
-  Pusher<Dimension::THREE_D>::positionUpdate(index_t&                         p,
-                                             const vec_t<Dimension::THREE_D>& v) const {
+  Inline void Pusher<Dim3>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
     positionUpdate_x3(p, v[2]);
@@ -228,15 +251,13 @@ namespace ntt {
   // Boris velocity update
   // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void Pusher<D>::BorisUpdate(index_t&                   p,
-                                     vec_t<Dimension::THREE_D>& e0,
-                                     vec_t<Dimension::THREE_D>& b0) const {
+  Inline void Pusher<D>::BorisUpdate(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     real_t COEFF {m_coeff};
 
     e0[0] *= COEFF;
     e0[1] *= COEFF;
     e0[2] *= COEFF;
-    vec_t<Dimension::THREE_D> u0 {
+    vec_t<Dim3> u0 {
       m_particles.ux1(p) + e0[0], m_particles.ux2(p) + e0[1], m_particles.ux3(p) + e0[2]};
 
     COEFF *= ONE / math::sqrt(ONE + SQR(u0[0]) + SQR(u0[1]) + SQR(u0[2]));
@@ -245,9 +266,9 @@ namespace ntt {
     b0[2] *= COEFF;
     COEFF = 2.0 / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
 
-    vec_t<Dimension::THREE_D> u1 {(u0[0] + u0[1] * b0[2] - u0[2] * b0[1]) * COEFF,
-                                  (u0[1] + u0[2] * b0[0] - u0[0] * b0[2]) * COEFF,
-                                  (u0[2] + u0[0] * b0[1] - u0[1] * b0[0]) * COEFF};
+    vec_t<Dim3> u1 {(u0[0] + u0[1] * b0[2] - u0[2] * b0[1]) * COEFF,
+                    (u0[1] + u0[2] * b0[0] - u0[0] * b0[2]) * COEFF,
+                    (u0[2] + u0[0] * b0[1] - u0[1] * b0[0]) * COEFF};
 
     u0[0] += u1[1] * b0[2] - u1[2] * b0[1] + e0[0];
     u0[1] += u1[2] * b0[0] - u1[0] * b0[2] + e0[1];
@@ -262,8 +283,8 @@ namespace ntt {
   // Field interpolations
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Pusher<Dimension::ONE_D>::interpolateFields(
-    index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+  Inline void
+  Pusher<Dim1>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
 
@@ -300,8 +321,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher<Dimension::TWO_D>::interpolateFields(
-    index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+  Inline void
+  Pusher<Dim2>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};
@@ -364,8 +385,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher<Dimension::THREE_D>::interpolateFields(
-    index_t& p, vec_t<Dimension::THREE_D>& e0, vec_t<Dimension::THREE_D>& b0) const {
+  Inline void
+  Pusher<Dim3>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};
@@ -529,7 +550,7 @@ namespace ntt {
 //   coord_t<D> xp;
 //   getParticleCoordinate(p, xp);
 
-//   vec_t<Dimension::THREE_D> v;
+//   vec_t<Dim3> v;
 //   m_mblock.metric.v_Cart2Cntrv(
 //     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
 //   v[0] *= inv_energy;
@@ -538,7 +559,7 @@ namespace ntt {
 //   positionUpdate(p, v);
 //   getParticleCoordinate(p, xp);
 
-//   vec_t<Dimension::THREE_D> e_int, b_int, e_int_Cart, b_int_Cart;
+//   vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
 //   interpolateFields(p, e_int, b_int);
 
 //   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);

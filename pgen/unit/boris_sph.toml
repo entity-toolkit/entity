@@ -29,28 +29,24 @@ label           = "electron"
 mass            = 1.0
 charge          = -1.0
 maxnpart        = 1e2
-pusher          = "Boris"
 
 [species_2]
 label           = "positron"
 mass            = 1.0
 charge          = 1.0
 maxnpart        = 1e2
-pusher          = "Boris"
 
 [species_3]
 label           = "ion"
 mass            = 5.0
 charge          = 1.0
 maxnpart        = 1e2
-pusher          = "Boris"
 
 [species_4]
 label           = "photon"
 mass            = 0.0
 charge          = 0.0
 maxnpart        = 1e2
-pusher          = "Photon"
 
 [problem]
 

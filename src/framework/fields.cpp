@@ -6,12 +6,6 @@
 #include <vector>
 
 namespace ntt {
-  const auto Dim1      = Dimension::ONE_D;
-  const auto Dim2      = Dimension::TWO_D;
-  const auto Dim3      = Dimension::THREE_D;
-  const auto TypePIC   = SimulationType::PIC;
-  const auto TypeGRPIC = SimulationType::GRPIC;
-
   using resolution_t = std::vector<unsigned int>;
 
 #if SIMTYPE == PIC_SIMTYPE

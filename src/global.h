@@ -54,11 +54,23 @@ namespace ntt {
   enum class BoundaryCondition { UNDEFINED, PERIODIC, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
 
+  inline constexpr auto Dim1      = Dimension::ONE_D;
+  inline constexpr auto Dim2      = Dimension::TWO_D;
+  inline constexpr auto Dim3      = Dimension::THREE_D;
+  inline constexpr auto TypePIC   = SimulationType::PIC;
+  inline constexpr auto TypeGRPIC = SimulationType::GRPIC;
+
   // Defining stringify functions for enum classes
   auto stringifySimulationType(SimulationType sim) -> std::string;
   auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
   auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
 
+  // Number of ghost zones to be used (compile-time enforced)
+  inline constexpr int N_GHOSTS = 2;
+
+  /* -------------------------------------------------------------------------- */
+  /*                                Type aliases                                */
+  /* -------------------------------------------------------------------------- */
   // ND coordinate alias
   template <typename T, Dimension D>
   using tuple_t = T[static_cast<short>(D)];
@@ -73,45 +85,39 @@ namespace ntt {
 
   using index_t = const std::size_t;
 
-  // Number of ghost zones to be used (compile-time enforced)
-  inline constexpr int N_GHOSTS {2};
-
   // Defining an array alias of arbitrary type
   template <typename T>
-  using NTTArray = Kokkos::View<T, AccelMemSpace>;
+  using array_t = Kokkos::View<T, AccelMemSpace>;
 
   // Defining a scatter view alias of arbitrary type
   template <typename T>
-  using NTTScatterArray = Kokkos::Experimental::ScatterView<T>;
-
-  // Defining Kokkos-specific range aliases
-  using range_t = Kokkos::RangePolicy<AccelExeSpace>::member_type;
+  using scatter_array_t = Kokkos::Experimental::ScatterView<T>;
 
   // D x N dimensional array for storing fields on ND hypercubes
   template <Dimension D, int N>
-  using RealFieldND = typename std::conditional<
+  using ndfield_t = typename std::conditional<
     D == Dimension::ONE_D,
-    NTTArray<real_t* [N]>,
+    array_t<real_t* [N]>,
     typename std::conditional<D == Dimension::TWO_D,
-                              NTTArray<real_t** [N]>,
+                              array_t<real_t** [N]>,
                               typename std::conditional<D == Dimension::THREE_D,
-                                                        NTTArray<real_t*** [N]>,
+                                                        array_t<real_t*** [N]>,
                                                         std::nullptr_t>::type>::type>::type;
 
   // D x N dimensional scatter array for storing fields on ND hypercubes
   template <Dimension D, int N>
-  using RealScatterFieldND = typename std::conditional<
+  using scatter_ndfield_t = typename std::conditional<
     D == Dimension::ONE_D,
-    NTTScatterArray<real_t* [N]>,
+    scatter_array_t<real_t* [N]>,
     typename std::conditional<D == Dimension::TWO_D,
-                              NTTScatterArray<real_t** [N]>,
+                              scatter_array_t<real_t** [N]>,
                               typename std::conditional<D == Dimension::THREE_D,
-                                                        NTTScatterArray<real_t*** [N]>,
+                                                        scatter_array_t<real_t*** [N]>,
                                                         std::nullptr_t>::type>::type>::type;
 
-  // Defining aliases for `ntt_*drange_t`
+  // Defining aliases for `RangePolicy` and `MDRangePolicy`
   template <Dimension D>
-  using RangeND = typename std::conditional<
+  using range_t = typename std::conditional<
     D == Dimension::ONE_D,
     Kokkos::RangePolicy<AccelExeSpace>,
     typename std::conditional<
@@ -120,16 +126,6 @@ namespace ntt {
       typename std::conditional<D == Dimension::THREE_D,
                                 Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
                                 std::nullptr_t>::type>::type>::type;
-
-  // /**
-  //  * @brief Function template for generating ND Kokkos range policy.
-  //  * @tparam D Dimension
-  //  * @param i1 array of size D `std::size_t`: { min }.
-  //  * @param i2 array of size D `std::size_t`: { max }.
-  //  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
-  //  */
-  // template <Dimension D>
-  // auto NTTRange(const tuple_t<std::size_t, D>&, const tuple_t<std::size_t, D>&) -> RangeND<D>;
 
   /**
    * @brief Function template for generating ND Kokkos range policy.
@@ -140,12 +136,12 @@ namespace ntt {
    * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
    */
   template <Dimension D>
-  auto NTTRange(const tuple_t<int, D>&, const tuple_t<int, D>&) -> RangeND<D>;
+  auto CreateRangePolicy(const tuple_t<int, D>&, const tuple_t<int, D>&) -> range_t<D>;
 
   /**
    * @brief Synchronize CPU/GPU before advancing.
    */
-  void NTTWait();
+  void WaitAndSynchronize();
 
 } // namespace ntt
 
