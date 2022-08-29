@@ -27,7 +27,7 @@ namespace ntt {
     m_mblock.set_min_cell_size(m_mblock.metric.findSmallestCell());
     m_mblock.set_timestep(m_sim_params.cfl() * m_mblock.min_cell_size());
 
-    NTTWait();
+    WaitAndSynchronize();
     PLOGD << "Simulation initialized.";
   }
 
@@ -36,7 +36,7 @@ namespace ntt {
     m_pGen.userInitFields(m_sim_params, m_mblock);
     m_pGen.userInitParticles(m_sim_params, m_mblock);
 
-    NTTWait();
+    WaitAndSynchronize();
     PLOGD << "Setup initialized.";
   }
 
@@ -44,7 +44,7 @@ namespace ntt {
   void Simulation<D, S>::verify() {
     // m_sim_params.verify();
     // mblock.verify(m_sim_params);
-    NTTWait();
+    WaitAndSynchronize();
     PLOGD << "Prerun check passed.";
   }
 
@@ -115,23 +115,23 @@ namespace ntt {
     } else {
       PLOGI << "[no particles]";
     }
-    NTTWait();
+    WaitAndSynchronize();
     PLOGD << "Simulation details printed.";
   }
 
   template <Dimension D, SimulationType S>
-  auto Simulation<D, S>::rangeActiveCells() -> RangeND<D> {
+  auto Simulation<D, S>::rangeActiveCells() -> range_t<D> {
     return m_mblock.rangeActiveCells();
   }
 
   template <Dimension D, SimulationType S>
-  auto Simulation<D, S>::rangeAllCells() -> RangeND<D> {
+  auto Simulation<D, S>::rangeAllCells() -> range_t<D> {
     return m_mblock.rangeAllCells();
   }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::finalize() {
-    NTTWait();
+    WaitAndSynchronize();
     PLOGD << "Simulation finalized.";
   }
 

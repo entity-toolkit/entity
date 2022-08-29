@@ -36,7 +36,7 @@ namespace ntt {
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
     
     Kokkos::parallel_for(
-      "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
+      "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
         coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;
         mblock.metric.x_Cart2Code(x, x_CU);
         auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
@@ -134,10 +134,9 @@ namespace ntt {
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
     
     Kokkos::parallel_for(
-      "userInitPrtls", NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
+      "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
         coord_t<Dimension::TWO_D> x {5.0, constant::PI * 0.5}, x_CU;
         mblock.metric.x_Sph2Code(x, x_CU);
-        mblock.metric.x_Code2Sph(x_CU, x);
         auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
         auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
         // electron
@@ -153,7 +152,7 @@ namespace ntt {
         mblock.particles[1].dx1(p) = dx1;
         mblock.particles[1].dx2(p) = dx2;
         // mblock.particles[1].ux1(p) = 0.2;
-        // mblock.particles[1].ux2(p) = 0.1;
+        mblock.particles[1].ux2(p) = 1.0;
         // ion
         mblock.particles[2].i1(p)  = i1;
         mblock.particles[2].i2(p)  = i2;
@@ -167,13 +166,13 @@ namespace ntt {
         mblock.particles[3].dx1(p) = dx1;
         mblock.particles[3].dx2(p) = dx2;
         // mblock.particles[3].ux1(p) = 1.0;
-        // mblock.particles[3].ux2(p) = 1.0;
-        mblock.particles[3].ux3(p) = 1.0;
+        mblock.particles[3].ux2(p) = 1.0;
+        // mblock.particles[3].ux3(p) = 1.0;
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);
     mblock.particles[2].set_npart(1);
-    // mblock.particles[3].set_npart(1);
+    mblock.particles[3].set_npart(1);
   }
 #endif
   // 1D

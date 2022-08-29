@@ -61,7 +61,7 @@ namespace ntt {
     }
     Kokkos::parallel_for(
       "userBcFlds_rmin",
-      NTTRange<Dimension::TWO_D>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_min() + 1, mblock.i2_max()}),
+      CreateRangePolicy<Dimension::TWO_D>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_min() + 1, mblock.i2_max()}),
       Lambda(index_t i, index_t j) {
         real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
         real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
@@ -84,7 +84,7 @@ namespace ntt {
 
     Kokkos::parallel_for(
       "userBcFlds_rmax",
-      NTTRange<Dimension::TWO_D>({mblock.i1_max(), mblock.i2_min()}, {mblock.i1_max() + 1, mblock.i2_max()}),
+      CreateRangePolicy<Dimension::TWO_D>({mblock.i1_max(), mblock.i2_min()}, {mblock.i1_max() + 1, mblock.i2_max()}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::ex3) = 0.0;
         mblock.em(i, j, em::ex2) = 0.0;

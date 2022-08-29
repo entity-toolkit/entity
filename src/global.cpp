@@ -10,11 +10,7 @@
 #include <iomanip>
 
 namespace ntt {
-  const auto Dim1 = Dimension::ONE_D;
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
-
-  auto NTTWait() -> void { Kokkos::fence(); }
+  auto WaitAndSynchronize() -> void { Kokkos::fence(); }
 
   auto stringifySimulationType(SimulationType sim) -> std::string {
     switch (sim) {
@@ -60,33 +56,33 @@ namespace ntt {
   }
 
   template <>
-  auto NTTRange<Dim1>(const tuple_t<int, Dim1>& i1, const tuple_t<int, Dim1>& i2)
-    -> RangeND<Dim1> {
-    auto i1min = static_cast<range_t>(i1[0]);
-    auto i1max = static_cast<range_t>(i2[0]);
+  auto CreateRangePolicy<Dim1>(const tuple_t<int, Dim1>& i1, const tuple_t<int, Dim1>& i2)
+    -> range_t<Dim1> {
+    index_t i1min = i1[0];
+    index_t i1max = i2[0];
     return Kokkos::RangePolicy<AccelExeSpace>(i1min, i1max);
   }
 
   template <>
-  auto NTTRange<Dim2>(const tuple_t<int, Dim2>& i1, const tuple_t<int, Dim2>& i2)
-    -> RangeND<Dim2> {
-    auto i1min = static_cast<range_t>(i1[0]);
-    auto i1max = static_cast<range_t>(i2[0]);
-    auto i2min = static_cast<range_t>(i1[1]);
-    auto i2max = static_cast<range_t>(i2[1]);
+  auto CreateRangePolicy<Dim2>(const tuple_t<int, Dim2>& i1, const tuple_t<int, Dim2>& i2)
+    -> range_t<Dim2> {
+    index_t i1min = i1[0];
+    index_t i1max = i2[0];
+    index_t i2min = i1[1];
+    index_t i2max = i2[1];
     return Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>({i1min, i2min},
                                                                  {i1max, i2max});
   }
 
   template <>
-  auto NTTRange<Dim3>(const tuple_t<int, Dim3>& i1, const tuple_t<int, Dim3>& i2)
-    -> RangeND<Dim3> {
-    auto i1min = static_cast<range_t>(i1[0]);
-    auto i1max = static_cast<range_t>(i2[0]);
-    auto i2min = static_cast<range_t>(i1[1]);
-    auto i2max = static_cast<range_t>(i2[1]);
-    auto i3min = static_cast<range_t>(i1[2]);
-    auto i3max = static_cast<range_t>(i2[2]);
+  auto CreateRangePolicy<Dim3>(const tuple_t<int, Dim3>& i1, const tuple_t<int, Dim3>& i2)
+    -> range_t<Dim3> {
+    index_t i1min = i1[0];
+    index_t i1max = i2[0];
+    index_t i2min = i1[1];
+    index_t i2max = i2[1];
+    index_t i3min = i1[2];
+    index_t i3max = i2[2];
     return Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>({i1min, i2min, i3min},
                                                                  {i1max, i2max, i3max});
   }
@@ -112,12 +108,12 @@ namespace plog {
 
 } // namespace plog
 
-template ntt::RangeND<ntt::Dimension::ONE_D>
-ntt::NTTRange<ntt::Dimension::ONE_D>(const ntt::tuple_t<int, ntt::Dimension::ONE_D>&,
-                                     const ntt::tuple_t<int, ntt::Dimension::ONE_D>&);
-template ntt::RangeND<ntt::Dimension::TWO_D>
-ntt::NTTRange<ntt::Dimension::TWO_D>(const ntt::tuple_t<int, ntt::Dimension::TWO_D>&,
-                                     const ntt::tuple_t<int, ntt::Dimension::TWO_D>&);
-template ntt::RangeND<ntt::Dimension::THREE_D>
-ntt::NTTRange<ntt::Dimension::THREE_D>(const ntt::tuple_t<int, ntt::Dimension::THREE_D>&,
-                                       const ntt::tuple_t<int, ntt::Dimension::THREE_D>&);
+template ntt::range_t<ntt::Dim1>
+ntt::CreateRangePolicy<ntt::Dim1>(const ntt::tuple_t<int, ntt::Dim1>&,
+                                  const ntt::tuple_t<int, ntt::Dim1>&);
+template ntt::range_t<ntt::Dim2>
+ntt::CreateRangePolicy<ntt::Dim2>(const ntt::tuple_t<int, ntt::Dim2>&,
+                                  const ntt::tuple_t<int, ntt::Dim2>&);
+template ntt::range_t<ntt::Dim3>
+ntt::CreateRangePolicy<ntt::Dim3>(const ntt::tuple_t<int, ntt::Dim3>&,
+                                  const ntt::tuple_t<int, ntt::Dim3>&);

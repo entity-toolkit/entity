@@ -93,20 +93,20 @@ namespace ntt {
      * TODO: Perhaps try VPIC-style arrays.
      */
     // Cell number of the current particle.
-    NTTArray<int*> i1, i2, i3;
+    array_t<int*> i1, i2, i3;
     // Displacement of a particle within the shell.
-    NTTArray<float*> dx1, dx2, dx3;
+    array_t<float*> dx1, dx2, dx3;
     // Three spatial components of the covariant 4-velocity (physical units).
-    NTTArray<real_t*> ux1, ux2, ux3;
+    array_t<real_t*> ux1, ux2, ux3;
     // Particle weights.
-    NTTArray<float*> weight;
+    array_t<float*> weight;
 
     // Additional variables (specific to different cases).
     // previous coordinates (GR specific)
-    NTTArray<real_t*> i1_prev, i2_prev, i3_prev;
-    NTTArray<real_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*> i1_prev, i2_prev, i3_prev;
+    array_t<real_t*> dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
-    NTTArray<real_t*> phi, phi_prev;
+    array_t<real_t*> phi;
 
     /**
      * @brief Constructor for the particle container.
@@ -128,7 +128,7 @@ namespace ntt {
      * @brief Loop over all active particles.
      * @returns 1D Kokkos range policy of size of `npart`.
      */
-    auto loopParticles() -> RangeND<Dimension::ONE_D>;
+    auto loopParticles() -> range_t<Dimension::ONE_D>;
     /**
      * @brief Get the number of active particles.
      */

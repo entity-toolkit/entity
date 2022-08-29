@@ -15,7 +15,7 @@ Constructor for simulation class.
 ---
 
 ```c++
-template<Dimension D, SimulationType S> auto loopActiveCells ()
+template<Dimension D, SimulationType S> auto rangeActiveCells ()
 ```
 Loop over all active cells (disregard ghost cells). 
 
@@ -25,7 +25,7 @@ Loop over all active cells (disregard ghost cells).
 ---
 
 ```c++
-template<Dimension D, SimulationType S> auto loopAllCells ()
+template<Dimension D, SimulationType S> auto rangeAllCells ()
 ```
 Loop over all cells. 
 

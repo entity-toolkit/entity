@@ -36,7 +36,7 @@ namespace ntt {
       step_forward(time);
       time += this->m_mblock.timestep();
     }
-    NTTWait();
+    WaitAndSynchronize();
     PLOGD << "<<< simulation mainloop finished.";
   }
 

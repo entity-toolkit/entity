@@ -5,12 +5,6 @@
 #include <cstddef>
 
 namespace ntt {
-  const auto Dim1      = Dimension::ONE_D;
-  const auto Dim2      = Dimension::TWO_D;
-  const auto Dim3      = Dimension::THREE_D;
-  const auto TypePIC   = SimulationType::PIC;
-  const auto TypeGRPIC = SimulationType::GRPIC;
-
   ParticleSpecies::ParticleSpecies(std::string           label_,
                                    const float&          m_,
                                    const float&          ch_,
@@ -118,8 +112,7 @@ namespace ntt {
       i2_prev {label_ + "_i2_prev", maxnpart_},
       dx1_prev {label_ + "_dx1_prev", maxnpart_},
       dx2_prev {label_ + "_dx2_prev", maxnpart_},
-      phi {label_ + "_phi", maxnpart_},
-      phi_prev {label_ + "_phi_prev", maxnpart_} {}
+      phi {label_ + "_phi", maxnpart_} {}
 
   template <>
   Particles<Dim3, TypeGRPIC>::Particles(const std::string& label_,
@@ -149,8 +142,8 @@ namespace ntt {
     : Particles(spec.label(), spec.mass(), spec.charge(), spec.maxnpart()) {}
 
   template <Dimension D, SimulationType S>
-  auto Particles<D, S>::loopParticles() -> RangeND<Dimension::ONE_D> {
-    return NTTRange<Dimension::ONE_D>({0}, {(int)(npart())});
+  auto Particles<D, S>::loopParticles() -> range_t<Dimension::ONE_D> {
+    return CreateRangePolicy<Dimension::ONE_D>({0}, {(int)(npart())});
   }
 
 } // namespace ntt
