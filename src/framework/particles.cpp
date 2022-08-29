@@ -40,7 +40,8 @@ namespace ntt {
       ux1 {label_ + "_ux1", maxnpart_},
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
-      weight {label_ + "_w", maxnpart_} {}
+      weight {label_ + "_w", maxnpart_},
+      is_dead {label_ + "_a", maxnpart_} {}
 
 #if (METRIC == MINKOWSKI_METRIC)
   template <>
@@ -56,7 +57,8 @@ namespace ntt {
       ux1 {label_ + "_ux1", maxnpart_},
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
-      weight {label_ + "_w", maxnpart_} {}
+      weight {label_ + "_w", maxnpart_},
+      is_dead {label_ + "_a", maxnpart_} {}
 #else // axisymmetry
   template <>
   Particles<Dim2, TypePIC>::Particles(const std::string& label_,
@@ -72,7 +74,8 @@ namespace ntt {
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
       weight {label_ + "_w", maxnpart_},
-      phi {label_ + "_phi", maxnpart_} {}
+      phi {label_ + "_phi", maxnpart_},
+      is_dead {label_ + "_a", maxnpart_} {}
 #endif
   template <>
   Particles<Dim3, TypePIC>::Particles(const std::string& label_,
@@ -89,7 +92,8 @@ namespace ntt {
       ux1 {label_ + "_ux1", maxnpart_},
       ux2 {label_ + "_ux2", maxnpart_},
       ux3 {label_ + "_ux3", maxnpart_},
-      weight {label_ + "_w", maxnpart_} {}
+      weight {label_ + "_w", maxnpart_},
+      is_dead {label_ + "_a", maxnpart_} {}
 
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific (not Cartesian)
@@ -112,7 +116,8 @@ namespace ntt {
       i2_prev {label_ + "_i2_prev", maxnpart_},
       dx1_prev {label_ + "_dx1_prev", maxnpart_},
       dx2_prev {label_ + "_dx2_prev", maxnpart_},
-      phi {label_ + "_phi", maxnpart_} {}
+      phi {label_ + "_phi", maxnpart_},
+      is_dead {label_ + "_a", maxnpart_} {}
 
   template <>
   Particles<Dim3, TypeGRPIC>::Particles(const std::string& label_,
@@ -135,7 +140,8 @@ namespace ntt {
       i3_prev {label_ + "_i3_prev", maxnpart_},
       dx1_prev {label_ + "_dx1_prev", maxnpart_},
       dx2_prev {label_ + "_dx2_prev", maxnpart_},
-      dx3_prev {label_ + "_dx3_prev", maxnpart_} {}
+      dx3_prev {label_ + "_dx3_prev", maxnpart_},
+      is_dead {label_ + "_a", maxnpart_} {}
 
   template <Dimension D, SimulationType S>
   Particles<D, S>::Particles(const ParticleSpecies& spec)

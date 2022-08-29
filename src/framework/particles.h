@@ -108,6 +108,8 @@ namespace ntt {
     // phi coordinate (for axisymmetry)
     array_t<real_t*> phi;
 
+    array_t<bool*>   is_dead;
+
     /**
      * @brief Constructor for the particle container.
      * @param label species label.
