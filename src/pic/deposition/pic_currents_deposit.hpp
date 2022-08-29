@@ -139,7 +139,7 @@ namespace ntt {
       m_mblock.metric.v_Cart2Cntrv(
         xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
 #endif
-      inv_energy = ONE / PRTL_GAMMA_SR(p);
+      inv_energy = ONE / PRTL_GAMMA_SR(m_particles, p);
 
       // get particle 3-velocity in coordinate basis
       for (short i {0}; i < 3; ++i) {

@@ -139,7 +139,7 @@ namespace ntt {
         PICPRTL_SPH_2D(&mblock, 0, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
         PICPRTL_SPH_2D(&mblock, 1, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
         PICPRTL_SPH_2D(&mblock, 2, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
-        PICPRTL_SPH_2D(&mblock, 3, p, 5.0, constant::PI * 0.5, 0.0, 1.0, 0.0);
+        PICPRTL_SPH_2D(&mblock, 3, p, 5.0, constant::PI * 0.5, -1.0, 1.0, 0.0);
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);

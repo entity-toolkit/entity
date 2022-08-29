@@ -80,7 +80,7 @@ namespace ntt {
         BorisUpdate(p, e_int_Cart, b_int_Cart);
 
         real_t inv_energy;
-        inv_energy = ONE / PRTL_GAMMA_SR(p);
+        inv_energy = ONE / PRTL_GAMMA_SR(m_particles, p);
 
         // contravariant 3-velocity: u^i / gamma
         vec_t<Dim3> v;
@@ -111,7 +111,7 @@ namespace ntt {
           xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
 
         real_t inv_energy;
-        inv_energy = ONE / math::sqrt(PRTL_USQR_SR(p));
+        inv_energy = ONE / math::sqrt(PRTL_USQR_SR(m_particles, p));
         v[0] *= inv_energy;
         v[1] *= inv_energy;
         v[2] *= inv_energy;
@@ -173,12 +173,12 @@ namespace ntt {
 #if (METRIC == MINKOWSKI_METRIC)
   template <>
   Inline void Pusher<Dim1>::getParticleCoordinate(index_t& p, coord_t<Dim1>& xp) const {
-    xp[0] = PRTL_X1(p);
+    xp[0] = PRTL_X1(m_particles, p);
   }
   template <>
   Inline void Pusher<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim2>& xp) const {
-    xp[0] = PRTL_X1(p);
-    xp[1] = PRTL_X2(p);
+    xp[0] = PRTL_X1(m_particles, p);
+    xp[1] = PRTL_X2(m_particles, p);
   }
 #else
   template <>
@@ -187,17 +187,17 @@ namespace ntt {
   }
   template <>
   Inline void Pusher<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
-    xp[0] = PRTL_X1(p);
-    xp[1] = PRTL_X2(p);
+    xp[0] = PRTL_X1(m_particles, p);
+    xp[1] = PRTL_X2(m_particles, p);
     xp[2] = m_particles.phi(p);
   }
 #endif
 
   template <>
   Inline void Pusher<Dim3>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
-    xp[0] = PRTL_X1(p);
-    xp[1] = PRTL_X2(p);
-    xp[2] = PRTL_X3(p);
+    xp[0] = PRTL_X1(m_particles, p);
+    xp[1] = PRTL_X2(m_particles, p);
+    xp[2] = PRTL_X3(m_particles, p);
   }
 
   // * * * * * * * * * * * * * * *

@@ -1,6 +1,8 @@
 #include "global.h"
 #include "pic.h"
 
+#include "particle_macros.h"
+
 #include <plog/Log.h>
 
 #include <stdexcept>
@@ -37,7 +39,6 @@ namespace ntt {
       }
     }
 #else
-    (void)(index_t {});
     NTTError("only minkowski possible in 1d");
 #endif
   }
@@ -80,12 +81,41 @@ namespace ntt {
       }
     }
 #else
-    (void)(index_t {});
     for (auto& species : m_mblock.particles) {
       auto ni {m_mblock.Ni1()};
+      auto nj {m_mblock.Ni2()};
       Kokkos::parallel_for(
         "prtl_bc", species.loopParticles(), Lambda(index_t p) {
+          // radial boundary conditions
           species.is_dead(p) = ((species.i1(p) < -1) || (species.i1(p) >= ni + 1));
+          if (species.i2(p) < 0) {
+            // reflect particle coordinate
+            species.i2(p)  = 0;
+            species.dx2(p) = 1.0f - species.dx2(p);
+            // reverse u^theta
+            coord_t<Dim3> x_p {PRTL_X1(species, p), PRTL_X2(species, p), species.phi(p)};
+            vec_t<Dim3>   u_hat, u_cart;
+            m_mblock.metric.v_Cart2Hat(
+              x_p, {species.ux1(p), species.ux2(p), species.ux3(p)}, u_hat);
+            m_mblock.metric.v_Hat2Cart(x_p, {u_hat[0], -u_hat[1], u_hat[2]}, u_cart);
+            species.ux1(p) = u_cart[0];
+            species.ux2(p) = u_cart[1];
+            species.ux3(p) = u_cart[2];
+          }
+          if (species.i2(p) >= nj) {
+            // reflect particle coordinate
+            species.i2(p)  = nj - 1;
+            species.dx2(p) = 1.0f - species.dx2(p);
+            // reverse u^theta
+            coord_t<Dim3> x_p {PRTL_X1(species, p), PRTL_X2(species, p), species.phi(p)};
+            vec_t<Dim3>   u_hat, u_cart;
+            m_mblock.metric.v_Cart2Hat(
+              x_p, {species.ux1(p), species.ux2(p), species.ux3(p)}, u_hat);
+            m_mblock.metric.v_Hat2Cart(x_p, {u_hat[0], -u_hat[1], u_hat[2]}, u_cart);
+            species.ux1(p) = u_cart[0];
+            species.ux2(p) = u_cart[1];
+            species.ux3(p) = u_cart[2];
+          }
         });
     }
 #endif
