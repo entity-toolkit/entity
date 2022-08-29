@@ -13,7 +13,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dimension::ONE_D>::particleBoundaryConditions(const real_t&) {
-    
+
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
@@ -28,7 +28,13 @@ namespace ntt {
           });
       }
     } else {
-      NTTError("boundary condition not implemented");
+      for (auto& species : m_mblock.particles) {
+        auto ni {m_mblock.Ni1()};
+        Kokkos::parallel_for(
+          "prtl_bc", species.loopParticles(), Lambda(index_t p) {
+            species.is_dead(p) = ((species.i1(p) < 0) || (species.i1(p) >= ni));
+          });
+      }
     }
 #else
     (void)(index_t {});
@@ -42,7 +48,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dimension::TWO_D>::particleBoundaryConditions(const real_t&) {
-    
+
 #if (METRIC == MINKOWSKI_METRIC)
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
@@ -63,33 +69,24 @@ namespace ntt {
           });
       }
     } else {
-      NTTError("boundary condition not implemented");
-    }
-#elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
-    (void)(index_t {});
-    for (auto& species : m_mblock.particles) {
-      (void)(species);
-      Kokkos::parallel_for("prtl_bc",
-                           species.loopParticles(),
-                           Lambda(index_t) {
-                             // if (species.i1(p) < 0) {
-                             //   species.i1(p) += m_mblock.Ni1();
-                             // } else if (species.i1(p) >= m_mblock.Ni1()) {
-                             //   species.i1(p) -= m_mblock.Ni1();
-                             // }
-                             // if (species.i2(p) < 0) {
-                             //   species.i2(p) += m_mblock.Ni2();
-                             // } else if (species.i2(p) >= m_mblock.Ni2()) {
-                             //   species.i2(p) -= m_mblock.Ni2();
-                             // }
-                           });
-
-      // NTTError("non-minkowski particle boundary condition not implemented");
+      for (auto& species : m_mblock.particles) {
+        auto ni {m_mblock.Ni1()};
+        auto nj {m_mblock.Ni2()};
+        Kokkos::parallel_for(
+          "prtl_bc", species.loopParticles(), Lambda(index_t p) {
+            species.is_dead(p) = ((species.i1(p) < 0) || (species.i1(p) >= ni)
+                                  || (species.i2(p) < 0) || (species.i2(p) >= nj));
+          });
+      }
     }
 #else
     (void)(index_t {});
     for (auto& species : m_mblock.particles) {
-      NTTError("2d boundary condition for metric not implemented");
+      auto ni {m_mblock.Ni1()};
+      Kokkos::parallel_for(
+        "prtl_bc", species.loopParticles(), Lambda(index_t p) {
+          species.is_dead(p) = ((species.i1(p) < -1) || (species.i1(p) >= ni + 1));
+        });
     }
 #endif
   }
