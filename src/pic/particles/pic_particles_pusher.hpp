@@ -63,55 +63,61 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(const Boris_t&, index_t p) const {
-      vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
-      interpolateFields(p, e_int, b_int);
+      if (!m_particles.is_dead(p)) {
+
+        vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
+        interpolateFields(p, e_int, b_int);
 
 #if (METRIC == MINKOWSKI_METRIC)
-      coord_t<D> xp;
+        coord_t<D> xp;
 #else
-      coord_t<Dim3> xp;
+        coord_t<Dim3> xp;
 #endif
-      getParticleCoordinate(p, xp);
-      m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-      m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+        getParticleCoordinate(p, xp);
+        m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
+        m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
 
-      BorisUpdate(p, e_int_Cart, b_int_Cart);
+        BorisUpdate(p, e_int_Cart, b_int_Cart);
 
-      real_t inv_energy;
-      inv_energy = ONE / PRTL_GAMMA_SR(p);
+        real_t inv_energy;
+        inv_energy = ONE / PRTL_GAMMA_SR(p);
 
-      // contravariant 3-velocity: u^i / gamma
-      vec_t<Dim3> v;
-      m_mblock.metric.v_Cart2Cntrv(
-        xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
-      v[0] *= inv_energy;
-      v[1] *= inv_energy;
-      v[2] *= inv_energy;
+        // contravariant 3-velocity: u^i / gamma
+        vec_t<Dim3> v;
+        m_mblock.metric.v_Cart2Cntrv(
+          xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+        v[0] *= inv_energy;
+        v[1] *= inv_energy;
+        v[2] *= inv_energy;
 
-      positionUpdate(p, v);
+        positionUpdate(p, v);
+      }
     }
     /**
      * @brief Pusher for the photon.
      * @param p index.
      */
     Inline void operator()(const Photon_t&, index_t p) const {
+      if (!m_particles.is_dead(p)) {
+
 #if (METRIC == MINKOWSKI_METRIC)
-      coord_t<D> xp;
+        coord_t<D> xp;
 #else
-      coord_t<Dim3> xp;
+        coord_t<Dim3> xp;
 #endif
-      getParticleCoordinate(p, xp);
-      vec_t<Dim3> v;
-      m_mblock.metric.v_Cart2Cntrv(
-        xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
+        getParticleCoordinate(p, xp);
+        vec_t<Dim3> v;
+        m_mblock.metric.v_Cart2Cntrv(
+          xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
 
-      real_t inv_energy;
-      inv_energy = ONE / math::sqrt(PRTL_USQR_SR(p));
-      v[0] *= inv_energy;
-      v[1] *= inv_energy;
-      v[2] *= inv_energy;
+        real_t inv_energy;
+        inv_energy = ONE / math::sqrt(PRTL_USQR_SR(p));
+        v[0] *= inv_energy;
+        v[1] *= inv_energy;
+        v[2] *= inv_energy;
 
-      positionUpdate(p, v);
+        positionUpdate(p, v);
+      }
     }
 
 #if (METRIC == MINKOWSKI_METRIC)
