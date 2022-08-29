@@ -59,14 +59,16 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(index_t p) const {
-      // _f = final, _i = initial
-      tuple_t<int, D>           Ip_f, Ip_i;
-      coord_t<D>                xp_f, xp_i, xp_r;
-      vec_t<Dimension::THREE_D> vp;
+      if (!m_particles.is_dead(p)) {
+        // _f = final, _i = initial
+        tuple_t<int, D>           Ip_f, Ip_i;
+        coord_t<D>                xp_f, xp_i, xp_r;
+        vec_t<Dimension::THREE_D> vp;
 
-      // get [i, di]_init and [i, di]_final (per dimension)
-      getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-      depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+        // get [i, di]_init and [i, di]_final (per dimension)
+        getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+        depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+      }
     }
 
     /**
