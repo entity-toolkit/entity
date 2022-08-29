@@ -2,6 +2,7 @@
 #include "input.h"
 #include "sim_params.h"
 #include "meshblock.h"
+#include "particle_macros.h"
 
 #include "problem_generator.hpp"
 
@@ -13,7 +14,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    
+
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         real_t i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)},
@@ -34,7 +35,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitParticles(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    
+
     Kokkos::parallel_for(
       "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
         coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;
@@ -75,7 +76,7 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitFields(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    
+
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         // real_t                    i_ {(real_t)(static_cast<int>(i) - N_GHOSTS)};
@@ -132,42 +133,13 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>::userInitParticles(
     const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::PIC>& mblock) {
-    
+
     Kokkos::parallel_for(
       "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
-        coord_t<Dimension::TWO_D> x {5.0, constant::PI * 0.5}, x_CU;
-        mblock.metric.x_Sph2Code(x, x_CU);
-        auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
-        auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
-        // electron
-        mblock.particles[0].i1(p)  = i1;
-        mblock.particles[0].i2(p)  = i2;
-        mblock.particles[0].dx1(p) = dx1;
-        mblock.particles[0].dx2(p) = dx2;
-        // mblock.particles[0].ux1(p) = 0.2;
-        // mblock.particles[0].ux2(p) = 0.1;
-        //  positron
-        mblock.particles[1].i1(p)  = i1;
-        mblock.particles[1].i2(p)  = i2;
-        mblock.particles[1].dx1(p) = dx1;
-        mblock.particles[1].dx2(p) = dx2;
-        // mblock.particles[1].ux1(p) = 0.2;
-        mblock.particles[1].ux2(p) = 1.0;
-        // ion
-        mblock.particles[2].i1(p)  = i1;
-        mblock.particles[2].i2(p)  = i2;
-        mblock.particles[2].dx1(p) = dx1;
-        mblock.particles[2].dx2(p) = dx2;
-        // mblock.particles[2].ux1(p) = 0.2;
-        // mblock.particles[2].ux2(p) = 0.1;
-        // photon
-        mblock.particles[3].i1(p) = i1;
-        mblock.particles[3].i2(p) = i2;
-        mblock.particles[3].dx1(p) = dx1;
-        mblock.particles[3].dx2(p) = dx2;
-        // mblock.particles[3].ux1(p) = 1.0;
-        mblock.particles[3].ux2(p) = 1.0;
-        // mblock.particles[3].ux3(p) = 1.0;
+        PICPRTL_SPH_2D(0, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(1, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(2, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(3, p, 5.0, constant::PI * 0.5, 0.0, 1.0, 0.0);
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);
