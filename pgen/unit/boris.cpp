@@ -136,10 +136,10 @@ namespace ntt {
 
     Kokkos::parallel_for(
       "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
-        PICPRTL_SPH_2D(0, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
-        PICPRTL_SPH_2D(1, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
-        PICPRTL_SPH_2D(2, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
-        PICPRTL_SPH_2D(3, p, 5.0, constant::PI * 0.5, 0.0, 1.0, 0.0);
+        PICPRTL_SPH_2D(&mblock, 0, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(&mblock, 1, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(&mblock, 2, p, 5.0, constant::PI * 0.5, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(&mblock, 3, p, 5.0, constant::PI * 0.5, 0.0, 1.0, 0.0);
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);

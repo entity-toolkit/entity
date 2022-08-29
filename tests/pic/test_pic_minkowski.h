@@ -6,6 +6,7 @@
 
 #include "pic.h"
 #include "fields.h"
+#include "particle_macros.h"
 
 #include "output_csv.h"
 
@@ -85,22 +86,8 @@ TEST_CASE("testing PIC") {
           "set particles",
           ntt::CreateRangePolicy<ntt::Dimension::ONE_D>({0}, {1}),
           Lambda(const std::size_t p) {
-            ntt::coord_t<ntt::Dimension::TWO_D> x_CU;
-            mblock->metric.x_Cart2Code(x_init, x_CU);
-            auto [i1, dx1] = mblock->metric.CU_to_Idi(x_CU[0]);
-            auto [i2, dx2] = mblock->metric.CU_to_Idi(x_CU[1]);
-            // electron
-            mblock->particles[0].i1(p)  = i1;
-            mblock->particles[0].i2(p)  = i2;
-            mblock->particles[0].dx1(p) = dx1;
-            mblock->particles[0].dx2(p) = dx2;
-            mblock->particles[0].ux1(p) = gammabeta;
-            // positron
-            mblock->particles[1].i1(p)  = i1;
-            mblock->particles[1].i2(p)  = i2;
-            mblock->particles[1].dx1(p) = dx1;
-            mblock->particles[1].dx2(p) = dx2;
-            mblock->particles[1].ux1(p) = gammabeta;
+            PICPRTL_XYZ_2D(mblock, 0, p, x_init[0], x_init[1], gammabeta, ZERO, ZERO);
+            PICPRTL_XYZ_2D(mblock, 1, p, x_init[0], x_init[1], gammabeta, ZERO, ZERO);
           });
         (mblock->particles[0]).set_npart(1);
         (mblock->particles[1]).set_npart(1);
@@ -345,30 +332,22 @@ TEST_CASE("testing PIC") {
             "set particles",
             ntt::CreateRangePolicy<ntt::Dimension::ONE_D>({0}, {1}),
             Lambda(const std::size_t p) {
-              ntt::coord_t<ntt::Dimension::TWO_D> x_CU;
-              mblock->metric.x_Cart2Code(x_init1, x_CU);
-              std::pair<int, float> i1_di1, i2_di2;
-
-              i1_di1 = mblock->metric.CU_to_Idi(x_CU[0]);
-              i2_di2 = mblock->metric.CU_to_Idi(x_CU[1]);
-
-              mblock->particles[0].i1(p)  = i1_di1.first;
-              mblock->particles[0].i2(p)  = i2_di2.first;
-              mblock->particles[0].dx1(p) = i1_di1.second;
-              mblock->particles[0].dx2(p) = i2_di2.second;
-              mblock->particles[0].ux2(p) = gammabeta * math::cos(pitch_angle1);
-              mblock->particles[0].ux3(p) = gammabeta * math::sin(pitch_angle1);
-
-              mblock->metric.x_Cart2Code(x_init2, x_CU);
-              i1_di1 = mblock->metric.CU_to_Idi(x_CU[0]);
-              i2_di2 = mblock->metric.CU_to_Idi(x_CU[1]);
-
-              mblock->particles[1].i1(p)  = i1_di1.first;
-              mblock->particles[1].i2(p)  = i2_di2.first;
-              mblock->particles[1].dx1(p) = i1_di1.second;
-              mblock->particles[1].dx2(p) = i2_di2.second;
-              mblock->particles[1].ux1(p) = -gammabeta * math::cos(pitch_angle2);
-              mblock->particles[1].ux2(p) = -gammabeta * math::sin(pitch_angle2);
+              PICPRTL_XYZ_2D(mblock,
+                             0,
+                             p,
+                             x_init1[0],
+                             x_init1[1],
+                             ZERO,
+                             gammabeta * math::cos(pitch_angle1),
+                             gammabeta * math::sin(pitch_angle1));
+              PICPRTL_XYZ_2D(mblock,
+                             1,
+                             p,
+                             x_init2[0],
+                             x_init2[1],
+                             -gammabeta * math::cos(pitch_angle2),
+                             -gammabeta * math::sin(pitch_angle2),
+                             ZERO);
             });
           (mblock->particles[0]).set_npart(1);
           (mblock->particles[1]).set_npart(1);
