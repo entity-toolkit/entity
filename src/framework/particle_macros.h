@@ -16,106 +16,106 @@
 
 #define PRTL_GAMMA_SR(P) math::sqrt(static_cast<real_t>(1.0) + PRTL_USQR_SR((P)))
 
-#define PICPRTL_XYZ_1D(S, P, X1, U1, U2, U3)                                                  \
+#define PICPRTL_XYZ_1D(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3)                                \
   {                                                                                           \
+    using namespace ntt;                                                                      \
     coord_t<Dimension::ONE_D> X_CU;                                                           \
-    vec_t<Dimension::THREE_D> U_C;                                                            \
-    mblock.metric.x_Cart2Code({(X1)}, X_CU);                                                  \
-    auto [I1, DX1]                 = mblock.metric.CU_to_Idi(X_CU[0]);                        \
-    mblock.particles[(S)].i1((P))  = I1;                                                      \
-    mblock.particles[(S)].dx1((P)) = DX1;                                                     \
-    mblock.metric.v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                        \
-    mblock.particles[(S)].ux1((P)) = U_C[0];                                                  \
-    mblock.particles[(S)].ux2((P)) = U_C[1];                                                  \
-    mblock.particles[(S)].ux3((P)) = U_C[2];                                                  \
+    ((MBLOCK)->metric).x_Cart2Code({(X1)}, X_CU);                                             \
+    auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
+    (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx1((INDEX)) = DX1;                                        \
+    (MBLOCK)->particles[(SPECIES)].ux1((INDEX)) = U1;                                         \
+    (MBLOCK)->particles[(SPECIES)].ux2((INDEX)) = U2;                                         \
+    (MBLOCK)->particles[(SPECIES)].ux3((INDEX)) = U3;                                         \
   }
 
-#define PICPRTL_XYZ_2D(S, P, X1, X2, U1, U2, U3)                                              \
+#define PICPRTL_XYZ_2D(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
   {                                                                                           \
+    using namespace ntt;                                                                      \
     coord_t<Dimension::TWO_D> X_CU;                                                           \
-    vec_t<Dimension::THREE_D> U_C;                                                            \
-    mblock.metric.x_Cart2Code({(X1), (X2)}, X_CU);                                            \
-    auto [I1, DX1]                 = mblock.metric.CU_to_Idi(X_CU[0]);                        \
-    auto [I2, DX2]                 = mblock.metric.CU_to_Idi(X_CU[1]);                        \
-    mblock.particles[(S)].i1((P))  = I1;                                                      \
-    mblock.particles[(S)].dx1((P)) = DX1;                                                     \
-    mblock.particles[(S)].i2((P))  = I2;                                                      \
-    mblock.particles[(S)].dx2((P)) = DX2;                                                     \
-    mblock.metric.v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                        \
-    mblock.particles[(S)].ux1((P)) = U_C[0];                                                  \
-    mblock.particles[(S)].ux2((P)) = U_C[1];                                                  \
-    mblock.particles[(S)].ux3((P)) = U_C[2];                                                  \
+    ((MBLOCK)->metric).x_Cart2Code({(X1), (X2)}, X_CU);                                       \
+    auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
+    auto [I2, DX2]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[1]);      \
+    (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx1((INDEX)) = DX1;                                        \
+    (MBLOCK)->particles[(SPECIES)].i2((INDEX))  = I2;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx2((INDEX)) = DX2;                                        \
+    (MBLOCK)->particles[(SPECIES)].ux1((INDEX)) = U1;                                         \
+    (MBLOCK)->particles[(SPECIES)].ux2((INDEX)) = U2;                                         \
+    (MBLOCK)->particles[(SPECIES)].ux3((INDEX)) = U3;                                         \
   }
 
-#define PICPRTL_XYZ_3D(S, P, X1, X2, X3, U1, U2, U3)                                          \
+#define PICPRTL_XYZ_3D(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
   {                                                                                           \
+    using namespace ntt;                                                                      \
     coord_t<Dimension::THREE_D> X_CU;                                                         \
-    vec_t<Dimension::THREE_D>   U_C;                                                          \
-    mblock.metric.x_Cart2Code({(X1), (X2), (X3)}, X_CU);                                      \
-    auto [I1, DX1]                 = mblock.metric.CU_to_Idi(X_CU[0]);                        \
-    auto [I2, DX2]                 = mblock.metric.CU_to_Idi(X_CU[1]);                        \
-    auto [I3, DX3]                 = mblock.metric.CU_to_Idi(X_CU[2]);                        \
-    mblock.particles[(S)].i1((P))  = I1;                                                      \
-    mblock.particles[(S)].dx1((P)) = DX1;                                                     \
-    mblock.particles[(S)].i2((P))  = I2;                                                      \
-    mblock.particles[(S)].dx2((P)) = DX2;                                                     \
-    mblock.particles[(S)].i3((P))  = I3;                                                      \
-    mblock.particles[(S)].dx3((P)) = DX3;                                                     \
-    mblock.metric.v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                        \
-    mblock.particles[(S)].ux1((P)) = U_C[0];                                                  \
-    mblock.particles[(S)].ux2((P)) = U_C[1];                                                  \
-    mblock.particles[(S)].ux3((P)) = U_C[2];                                                  \
+    ((MBLOCK)->metric).x_Cart2Code({(X1), (X2), (X3)}, X_CU);                                 \
+    auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
+    auto [I2, DX2]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[1]);      \
+    auto [I3, DX3]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[2]);      \
+    (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx1((INDEX)) = DX1;                                        \
+    (MBLOCK)->particles[(SPECIES)].i2((INDEX))  = I2;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx2((INDEX)) = DX2;                                        \
+    (MBLOCK)->particles[(SPECIES)].i3((INDEX))  = I3;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx3((INDEX)) = DX3;                                        \
+    (MBLOCK)->particles[(SPECIES)].ux1((INDEX)) = U1;                                         \
+    (MBLOCK)->particles[(SPECIES)].ux2((INDEX)) = U2;                                         \
+    (MBLOCK)->particles[(SPECIES)].ux3((INDEX)) = U3;                                         \
   }
 
-#define PICPRTL_SPH_1D(S, P, X1, U1, U2, U3)                                                  \
+#define PICPRTL_SPH_1D(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3)                                \
   {                                                                                           \
+    using namespace ntt;                                                                      \
     coord_t<Dimension::ONE_D> X_CU;                                                           \
-    vec_t<Dimension::THREE_D> U_C;                                                            \
-    mblock.metric.x_Sph2Code({(X1)}, X_CU);                                                   \
-    auto [I1, DX1]                 = mblock.metric.CU_to_Idi(X_CU[0]);                        \
-    mblock.particles[(S)].i1((P))  = I1;                                                      \
-    mblock.particles[(S)].dx1((P)) = DX1;                                                     \
-    mblock.metric.v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                        \
-    mblock.particles[(S)].ux1((P)) = U_C[0];                                                  \
-    mblock.particles[(S)].ux2((P)) = U_C[1];                                                  \
-    mblock.particles[(S)].ux3((P)) = U_C[2];                                                  \
+    vec_t<Dimension::THREE_D> U_C {ZERO, ZERO, ZERO};                                         \
+    ((MBLOCK)->metric)).x_Sph2Code({(X1)}, X_CU);                                             \
+    ((MBLOCK)->metric)).v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                  \
+    auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
+    (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx1((INDEX)) = DX1;                                        \
+    (MBLOCK)->particles[(SPECIES)].ux1((INDEX)) = U_C[0];                                     \
+    (MBLOCK)->particles[(SPECIES)].ux2((INDEX)) = U_C[1];                                     \
+    (MBLOCK)->particles[(SPECIES)].ux3((INDEX)) = U_C[2];                                     \
   }
 
-#define PICPRTL_SPH_2D(S, P, X1, X2, U1, U2, U3)                                              \
+#define PICPRTL_SPH_2D(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
   {                                                                                           \
+    using namespace ntt;                                                                      \
     coord_t<Dimension::TWO_D> X_CU;                                                           \
-    vec_t<Dimension::THREE_D> U_C;                                                            \
-    mblock.metric.x_Sph2Code({(X1), (X2)}, X_CU);                                             \
-    auto [I1, DX1]                 = mblock.metric.CU_to_Idi(X_CU[0]);                        \
-    auto [I2, DX2]                 = mblock.metric.CU_to_Idi(X_CU[1]);                        \
-    mblock.particles[(S)].i1((P))  = I1;                                                      \
-    mblock.particles[(S)].dx1((P)) = DX1;                                                     \
-    mblock.particles[(S)].i2((P))  = I2;                                                      \
-    mblock.particles[(S)].dx2((P)) = DX2;                                                     \
-    mblock.metric.v_Hat2Cart({X_CU[0], X_CU[1], ZERO}, {U1, U2, U3}, U_C);                    \
-    mblock.particles[(S)].ux1((P)) = U_C[0];                                                  \
-    mblock.particles[(S)].ux2((P)) = U_C[1];                                                  \
-    mblock.particles[(S)].ux3((P)) = U_C[2];                                                  \
+    vec_t<Dimension::THREE_D> U_C {ZERO, ZERO, ZERO};                                         \
+    ((MBLOCK)->metric).x_Sph2Code({(X1), (X2)}, X_CU);                                        \
+    ((MBLOCK)->metric).v_Hat2Cart({X_CU[0], X_CU[1], ZERO}, {U1, U2, U3}, U_C);               \
+    auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
+    auto [I2, DX2]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[1]);      \
+    (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx1((INDEX)) = DX1;                                        \
+    (MBLOCK)->particles[(SPECIES)].i2((INDEX))  = I2;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx2((INDEX)) = DX2;                                        \
+    (MBLOCK)->particles[(SPECIES)].ux1((INDEX)) = U_C[0];                                     \
+    (MBLOCK)->particles[(SPECIES)].ux2((INDEX)) = U_C[1];                                     \
+    (MBLOCK)->particles[(SPECIES)].ux3((INDEX)) = U_C[2];                                     \
   }
 
-#define PICPRTL_SPH_3D(S, P, X1, X2, X3, U1, U2, U3)                                          \
+#define PICPRTL_SPH_3D(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
   {                                                                                           \
+    using namespace ntt;                                                                      \
     coord_t<Dimension::THREE_D> X_CU;                                                         \
-    vec_t<Dimension::THREE_D>   U_C;                                                          \
-    mblock.metric.x_Sph2Code({(X1), (X2), (X3)}, X_CU);                                       \
-    auto [I1, DX1]                 = mblock.metric.CU_to_Idi(X_CU[0]);                        \
-    auto [I2, DX2]                 = mblock.metric.CU_to_Idi(X_CU[1]);                        \
-    auto [I3, DX3]                 = mblock.metric.CU_to_Idi(X_CU[2]);                        \
-    mblock.particles[(S)].i1((P))  = I1;                                                      \
-    mblock.particles[(S)].dx1((P)) = DX1;                                                     \
-    mblock.particles[(S)].i2((P))  = I2;                                                      \
-    mblock.particles[(S)].dx2((P)) = DX2;                                                     \
-    mblock.particles[(S)].i3((P))  = I3;                                                      \
-    mblock.particles[(S)].dx3((P)) = DX3;                                                     \
-    mblock.metric.v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                        \
-    mblock.particles[(S)].ux1((P)) = U_C[0];                                                  \
-    mblock.particles[(S)].ux2((P)) = U_C[1];                                                  \
-    mblock.particles[(S)].ux3((P)) = U_C[2];                                                  \
+    vec_t<Dimension::THREE_D>   U_C {ZERO, ZERO, ZERO};                                       \
+    ((MBLOCK)->metric).x_Sph2Code({(X1), (X2), (X3)}, X_CU);                                  \
+    ((MBLOCK)->metric).v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                   \
+    auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
+    auto [I2, DX2]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[1]);      \
+    auto [I3, DX3]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[2]);      \
+    (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx1((INDEX)) = DX1;                                        \
+    (MBLOCK)->particles[(SPECIES)].i2((INDEX))  = I2;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx2((INDEX)) = DX2;                                        \
+    (MBLOCK)->particles[(SPECIES)].i3((INDEX))  = I3;                                         \
+    (MBLOCK)->particles[(SPECIES)].dx3((INDEX)) = DX3;                                        \
+    (MBLOCK)->particles[(SPECIES)].ux1((INDEX)) = U_C[0];                                     \
+    (MBLOCK)->particles[(SPECIES)].ux2((INDEX)) = U_C[1];                                     \
+    (MBLOCK)->particles[(SPECIES)].ux3((INDEX)) = U_C[2];                                     \
   }
 
 #endif
