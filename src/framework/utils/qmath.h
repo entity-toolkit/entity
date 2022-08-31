@@ -1,5 +1,5 @@
-#ifndef AUX_QMATH_H
-#define AUX_QMATH_H
+#ifndef UTILS_QMATH_H
+#define UTILS_QMATH_H
 
 #include <algorithm>
 #include <cmath>

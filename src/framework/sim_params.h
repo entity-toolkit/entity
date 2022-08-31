@@ -27,8 +27,10 @@ namespace ntt {
     real_t m_sigma0;
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies> m_species;
-    bool                         m_enable_fieldsolver;
-    bool                         m_enable_deposit;
+
+    // Enable/disable algorithms
+    bool m_enable_fieldsolver;
+    bool m_enable_deposit;
 
     /**
      * Extent of the whole domain in physical units
@@ -45,6 +47,10 @@ namespace ntt {
     std::string m_metric;
     // User-defined real-valued parameters for the metric [10 max].
     real_t m_metric_parameters[10];
+
+    // Output parameters
+    std::string m_output_format;
+    int         m_output_interval;
 
     // Container with data from the parsed input file.
     toml::value m_inputdata;
@@ -136,6 +142,14 @@ namespace ntt {
      * @brief Get the enable_deposit flag.
      */
     [[nodiscard]] auto enable_deposit() const -> const bool& { return m_enable_deposit; }
+    /**
+     * @brief Get the output format.
+     */
+    [[nodiscard]] auto output_format() const -> const std::string& { return m_output_format; }
+    /**
+     * @brief Get the output interval.
+     */
+    [[nodiscard]] auto output_interval() const -> const int& { return m_output_interval; }
   };
 
 } // namespace ntt

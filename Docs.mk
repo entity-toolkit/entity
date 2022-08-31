@@ -19,8 +19,8 @@ HEADERS := $(filter-out ${SRC_DIR}/.temp/problem_generator.hpp, $(HEADERS))
 HEADERS := $(filter-out ${SRC_DIR}/defaults.h, $(HEADERS))
 HEADERS := $(filter-out ${SRC_DIR}/definitions.h, $(HEADERS))
 
-HEADERS := $(filter-out ${SRC_DIR}/framework/aux/%, $(HEADERS))
-HEADERS := $(filter-out ${SRC_DIR}/framework/metrics/aux/%, $(HEADERS))
+HEADERS := $(filter-out ${SRC_DIR}/framework/utils/%, $(HEADERS))
+HEADERS := $(filter-out ${SRC_DIR}/framework/metrics/utils/%, $(HEADERS))
 HEADERS := $(filter-out ${SRC_DIR}/framework/metric.h, $(HEADERS))
 HEADERS := $(filter-out ${SRC_DIR}/framework/io/%, $(HEADERS))
 

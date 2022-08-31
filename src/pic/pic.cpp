@@ -34,6 +34,7 @@ namespace ntt {
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
       step_forward(time);
+      this->writeOutput(ti);
       time += this->m_mblock.timestep();
     }
     WaitAndSynchronize();
@@ -63,7 +64,7 @@ namespace ntt {
         timers.start(3);
         resetCurrents(time);
         depositCurrentsSubstep(time);
-        
+
         timers.start(2);
         currentBoundaryConditions(time);
         timers.stop(2);

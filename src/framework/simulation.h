@@ -82,6 +82,12 @@ namespace ntt {
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto rangeAllCells() -> range_t<D>;
+
+    /**
+     * @brief Output the simulation data to a file.
+     * @param tstep current timestep.
+     */
+    void writeOutput(const unsigned long& tstep);
   };
 
 } // namespace ntt
