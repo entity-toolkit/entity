@@ -1,4 +1,5 @@
 #include "global.h"
+#include "qmath.h"
 #include "sim_params.h"
 #include "input.h"
 #include "particles.h"
@@ -90,6 +91,9 @@ namespace ntt {
       if ((m_metric == "qspherical") || (m_metric == "qkerr_schild")) {
         m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
+        if (AlmostEqual(m_metric_parameters[1], ZERO, (real_t)(1e-6))) {
+          NTTError("qsph_h must be non-zero");
+        }
       }
       m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_metric_parameters[3]
@@ -147,5 +151,11 @@ namespace ntt {
 
     m_cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
+
+    // output params
+    m_output_format
+      = readFromInput<std::string>(m_inputdata, "output", "format", defaults::output_format);
+    m_output_interval
+      = readFromInput<real_t>(m_inputdata, "output", "interval", defaults::output_interval);
   }
 } // namespace ntt

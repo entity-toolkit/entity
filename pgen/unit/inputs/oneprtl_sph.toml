@@ -1,28 +1,28 @@
 [simulation]
-title           = "Boris polar example"
+title           = "spherical single particle"
 runtime         = 0.1
 
 [domain]
-qsph_r0         = -100.0
-qsph_h          = 0.1
+qsph_r0         = 0.0
+qsph_h          = 0.01
 sph_rabsorb     = 18.0
-resolution      = [128, 128]
+resolution      = [256, 64]
 extent          = [1.0, 20.0]
 boundaries      = ["USER", "USER"]
 
 [algorithm]
 CFL             = 0.95
 correction      = 1.0
-fieldsolver_ON  = false
-deposit_ON      = false
+fieldsolver_ON  = true
+deposit_ON      = true
 
 [units]
-ppc0            = 0.1
-larmor0         = 0.01
-skindepth0      = 0.01
+ppc0            = 1.0
+larmor0         = 0.1
+skindepth0      = 1.0
 
 [particles]
-n_species       = 4
+n_species       = 2
 
 [species_1]
 label           = "electron"
@@ -48,7 +48,11 @@ mass            = 0.0
 charge          = 0.0
 maxnpart        = 1e2
 
-[problem]
-
 [visualization]
 fields          = ["Er", "Etheta", "Ephi", "Br", "Btheta", "Bphi", "Jr", "Jtheta", "Jphi"]
+
+[output]
+format          = "csv"
+interval        = 1
+
+[problem]

@@ -37,3 +37,7 @@ pusher          = <string: { BORIS }>
 
 [visualization]
 fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see vis/nttiny.cpp for ref>
+
+[output]
+format          = <string: { disabled, csv }>
+interval        = <int>
