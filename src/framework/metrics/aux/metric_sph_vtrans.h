@@ -137,7 +137,6 @@ v_Cart2Hat(const coord_t<Dim3>& xi, const vec_t<Dim3>& vi_cart, vec_t<Dim3>& vi_
     this->x_Code2Sph(xi, x_sph);
   }
   if constexpr (D != Dim1) {
-    std::cout << "x_sph: " << x_sph[1] << " " << x_sph[2] << std::endl;
     vi_hat[0] = vi_cart[0] * math::sin(x_sph[1]) * math::cos(x_sph[2])
                 + vi_cart[1] * math::sin(x_sph[1]) * math::sin(x_sph[2])
                 + vi_cart[2] * math::cos(x_sph[1]);

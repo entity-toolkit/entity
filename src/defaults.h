@@ -17,5 +17,8 @@ namespace ntt {
     const real_t runtime {1e10};
     const real_t correction {1.0};
     const real_t cfl {0.95};
+
+    const std::string output_format {"disabled"};
+    const int output_interval {1};
   } // namespace defaults
 } // namespace ntt

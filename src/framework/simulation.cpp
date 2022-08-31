@@ -1,7 +1,9 @@
 #include "global.h"
 #include "simulation.h"
-
 #include "metric.h"
+
+#include "output_csv.h"
+#include "utils.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -127,6 +129,25 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   auto Simulation<D, S>::rangeAllCells() -> range_t<D> {
     return m_mblock.rangeAllCells();
+  }
+
+  template <Dimension D, SimulationType S>
+  void Simulation<D, S>::writeOutput(const unsigned long& tstep) {
+    WaitAndSynchronize();
+    if (m_sim_params.output_format() == "disabled") {
+      return;
+    } else if (m_sim_params.output_format() == "csv") {
+      if ((tstep % m_sim_params.output_interval() == 0)
+          && (m_sim_params.output_interval() > 0)) {
+        csv::writeField(
+          "ex1-" + zeropad(std::to_string(tstep), 5) + ".csv", m_mblock, em::ex1);
+        csv::writeField(
+          "jx1-" + zeropad(std::to_string(tstep), 5) + ".csv", m_mblock, cur::jx1);
+      }
+    } else {
+      NTTError("unrecognized output format");
+    }
+    PLOGD << "Output written.";
   }
 
   template <Dimension D, SimulationType S>

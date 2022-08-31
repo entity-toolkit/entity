@@ -1,5 +1,5 @@
-#ifndef AUX_TIMER_H
-#define AUX_TIMER_H
+#ifndef UTILS_TIMER_H
+#define UTILS_TIMER_H
 
 #include <string>
 #include <chrono>
