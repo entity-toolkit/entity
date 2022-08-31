@@ -26,9 +26,28 @@ namespace ntt {
                          this->m_mblock.rangeActiveCells(),
                          AddCurrentsMinkowski<D>(this->m_mblock, coeff / CUBE(dx)));
 #else
-    Kokkos::parallel_for("add_currents",
-                         this->m_mblock.rangeActiveCells(),
-                         AddCurrentsCurvilinear<D>(this->m_mblock, coeff));
+    tuple_t<tuple_t<short, Dim2>, D> range;
+    // skip the axis
+    if constexpr (D == Dim1) {
+      range[0][0] = 0;
+      range[0][1] = 0;
+    } else if constexpr (D == Dim2) {
+      range[0][0] = 0;
+      range[0][1] = 0;
+      range[1][0] = 1;
+      range[1][1] = -1;
+    } else if constexpr (D == Dim3) {
+      range[0][0] = 0;
+      range[0][1] = 0;
+      range[1][0] = 1;
+      range[1][1] = -1;
+      range[2][0] = 0;
+      range[2][1] = 0;
+    }
+    Kokkos::parallel_for(
+      "add_currents",
+      this->m_mblock.rangeCells(range),
+      AddCurrentsCurvilinear<D>(this->m_mblock, coeff));
 #endif
   }
 } // namespace ntt

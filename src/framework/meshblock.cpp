@@ -90,6 +90,22 @@ namespace ntt {
     return CreateRangePolicy<D>(imin, imax);
   }
 
+  template <Dimension D>
+  auto Mesh<D>::rangeCells(const tuple_t<tuple_t<short, Dim2>, D>& ranges) -> range_t<D> {
+    tuple_t<int, D> imin, imax;
+    for (short i = 0; i < (short)D; i++) {
+      if ((ranges[i][0] < -N_GHOSTS) || (ranges[i][1] > N_GHOSTS)) {
+        NTTError("Invalid cell layer picked");
+      }
+      imin[i] = i_min(i) + ranges[i][0];
+      imax[i] = i_max(i) + ranges[i][1];
+      if (imin[i] >= imax[i]) {
+        NTTError("Invalid cell layer picked");
+      }
+    }
+    return CreateRangePolicy<D>(imin, imax);
+  }
+
   template <Dimension D, SimulationType S>
   Meshblock<D, S>::Meshblock(const std::vector<unsigned int>&    res,
                              const std::vector<real_t>&          ext,

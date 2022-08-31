@@ -18,9 +18,11 @@ namespace ntt {
     maxGhostLayer
   };
   /**
-   *   minGhostLayer                     maxGhostLayer
+   * "layer":           N_GHOSTS cells
+   *
+   * minGhostLayer                       maxActiveLayer
    *    |                                   |
-   *    |   minActiveLayer                  |  maxActiveLayer
+   *    |  minActiveLayer                   |  maxGhostLayer
    *    |     |                             |     |
    * [--+-----+---------- allLayer ---------+-----+--]
    *    |     |                             |     |
@@ -30,10 +32,21 @@ namespace ntt {
    * |  v  |  v  |                       |  v  |  v  |
    * X=====O=====X=======================X=====O=====X
    *       |                                   |
-   *  <--->
-   * N_GHOSTS
    */
 
+  /**
+   * @brief Usage example:
+   * 1. boxRegion<Dim2>{ CellLayer::minGhostLayer, CellLayer::maxGhostLayer }
+   * results in a region [ [ i1min - N_GHOSTS, i1min ),
+   *                       [ i2max, i2max + N_GHOSTS ) ]
+   *
+   * 2. boxRegion<Dim3>{ CellLayer::activeLayer,
+   *                     CellLayer::maxActiveLayer,
+   *                     CellLayer::allLayer }
+   * results in a region [ [ i1min, i1max ),
+   *                       [ i2max - N_GHOSTS, i2max ),
+   *                       [ i3min - N_GHOSTS, i3max + N_GHOSTS ) ]
+   */
   template <Dimension D>
   using boxRegion = tuple_t<CellLayer, D>;
 
@@ -79,7 +92,21 @@ namespace ntt {
      */
     auto rangeAllCells() -> range_t<D>;
 
+    /**
+     * @brief Pick a particular region of cells.
+     * @param boxRegion region of cells to pick: tuple of cellLayer objects.
+     * @returns Kokkos range policy with proper min/max indices and dimension.
+     */
     auto rangeCells(const boxRegion<D>&) -> range_t<D>;
+    /**
+     * @brief Pick a particular region of cells.
+     * @overload
+     * @param range tuple of respective min and max ranges
+     * @example {-1, 1} converts into {i_min - 1, i_max + 1} etc.
+     * @example {{0, 0}, {0, 0}, {0, 0}} corresponds to allActiveLayer in all 3 dimensions.
+     * @returns Kokkos range policy with proper min/max indices and dimension.
+     */
+    auto rangeCells(const tuple_t<tuple_t<short, Dim2>, D>&) -> range_t<D>;
 
     /**
      * @brief Get the first index of active zone along 1st dimension.
