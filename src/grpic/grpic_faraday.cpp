@@ -5,8 +5,8 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim2 = Dimension::TWO_D;
-  const auto Dim3 = Dimension::THREE_D;
+  const auto Dim2 = Dim2;
+  const auto Dim3 = Dim3;
 
   template <>
   void

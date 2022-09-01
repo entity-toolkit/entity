@@ -28,7 +28,7 @@ namespace ntt {
 
   // First push, updates D0 with J.
   template <>
-  Inline void AmpereGR_aux<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void AmpereGR_aux<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -46,7 +46,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereGR_aux<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void AmpereGR_aux<Dim3>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
@@ -65,7 +65,7 @@ namespace ntt {
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmpereGR<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void AmpereGR<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -86,7 +86,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereGR<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void AmpereGR<Dim3>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
@@ -105,7 +105,7 @@ namespace ntt {
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmpereGR_init<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void AmpereGR_init<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -123,7 +123,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereGR_init<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void AmpereGR_init<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -147,7 +147,7 @@ namespace ntt {
 
   // First push, updates D0 with J.
   template <>
-  Inline void AmperePolesGR_aux<Dimension::TWO_D>::operator()(index_t i) const {
+  Inline void AmperePolesGR_aux<Dim2>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
@@ -179,7 +179,7 @@ namespace ntt {
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmperePolesGR<Dimension::TWO_D>::operator()(index_t i) const {
+  Inline void AmperePolesGR<Dim2>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
@@ -214,7 +214,7 @@ namespace ntt {
 
   // Second push, updates D with J0 but assigns it to D0.
   template <>
-  Inline void AmperePolesGR_init<Dimension::TWO_D>::operator()(index_t i) const {
+  Inline void AmperePolesGR_init<Dim2>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {static_cast<index_t>(m_nj) + N_GHOSTS - 1};
     real_t  i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};

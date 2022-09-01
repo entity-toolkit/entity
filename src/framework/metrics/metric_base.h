@@ -37,11 +37,11 @@
  *   ^
  *   |
  *   +---> Sph
- * 
+ *
  * Code: coordinates in code units
  * Cart: coordinates in global Cartesian basis
  * Sph: coordinates in spherical basis
- * 
+ *
  */
 
 namespace ntt {
@@ -63,7 +63,9 @@ namespace ntt {
     // extent in `x3` in physical units
     const real_t x3_min, x3_max;
 
-    MetricBase(const std::string& label_, std::vector<unsigned int> resolution, std::vector<real_t> extent)
+    MetricBase(const std::string&        label_,
+               std::vector<unsigned int> resolution,
+               std::vector<real_t>       extent)
       : label {label_},
         nx1 {resolution.size() > 0 ? (real_t)(resolution[0]) : ONE},
         nx2 {resolution.size() > 1 ? (real_t)(resolution[1]) : ONE},

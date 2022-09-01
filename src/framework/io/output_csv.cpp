@@ -20,12 +20,12 @@ namespace ntt {
     writeField(const std::string& filename, const Meshblock<D, S>& mblock, const em& field) {
       rapidcsv::Document doc(
         "", rapidcsv::LabelParams(-1, -1), rapidcsv::SeparatorParams(',', false, false));
-      if constexpr (D == Dimension::ONE_D) {
+      if constexpr (D == Dim1) {
         auto N = mblock.Ni1();
         for (int i {0}; i < N; ++i) {
           doc.SetCell<real_t>(i, 0, mblock.em(i + ntt::N_GHOSTS, field));
         }
-      } else if constexpr (D == Dimension::TWO_D) {
+      } else if constexpr (D == Dim2) {
         auto N1 = mblock.Ni1();
         auto N2 = mblock.Ni2();
         for (int i {0}; i < N1; ++i) {
@@ -45,12 +45,12 @@ namespace ntt {
     writeField(const std::string& filename, const Meshblock<D, S>& mblock, const cur& field) {
       rapidcsv::Document doc(
         "", rapidcsv::LabelParams(-1, -1), rapidcsv::SeparatorParams(',', false, false));
-      if constexpr (D == Dimension::ONE_D) {
+      if constexpr (D == Dim1) {
         auto N = mblock.Ni1();
         for (int i {0}; i < N; ++i) {
           doc.SetCell<real_t>(i, 0, mblock.cur(i + ntt::N_GHOSTS, field));
         }
-      } else if constexpr (D == Dimension::TWO_D) {
+      } else if constexpr (D == Dim2) {
         auto N1 = mblock.Ni1();
         auto N2 = mblock.Ni2();
         for (int i {0}; i < N1; ++i) {
@@ -89,9 +89,9 @@ namespace ntt {
         doc.SetColumnName(2, "ux3");
         doc.SetColumnName(3, "w");
         doc.SetColumnName(4, "x1");
-        if constexpr (D == Dimension::TWO_D) {
+        if constexpr (D == Dim2) {
           doc.SetColumnName(5, "x2");
-        } else if constexpr (D == Dimension::THREE_D) {
+        } else if constexpr (D == Dim3) {
           doc.SetColumnName(5, "x2");
           doc.SetColumnName(6, "x3");
         }
@@ -104,11 +104,11 @@ namespace ntt {
       auto x = (real_t)(mblock.particles[species_id].i1(prtl_id))
                + mblock.particles[species_id].dx1(prtl_id);
       doc.SetCell<real_t>(4, i_new, x);
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         x = (real_t)(mblock.particles[species_id].i2(prtl_id))
             + mblock.particles[species_id].dx2(prtl_id);
         doc.SetCell<real_t>(5, i_new, x);
-      } else if constexpr (D == Dimension::THREE_D) {
+      } else if constexpr (D == Dim3) {
         x = (real_t)(mblock.particles[species_id].i2(prtl_id))
             + mblock.particles[species_id].dx2(prtl_id);
         doc.SetCell<real_t>(5, i_new, x);
@@ -124,44 +124,52 @@ namespace ntt {
 
 #if SIMTYPE == PIC_SIMTYPE
 
-using Meshblock1D = ntt::Meshblock<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-using Meshblock2D = ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-using Meshblock3D = ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+using Meshblock1D = ntt::Meshblock<ntt::Dim1, ntt::SimulationType::PIC>;
+using Meshblock2D = ntt::Meshblock<ntt::Dim2, ntt::SimulationType::PIC>;
+using Meshblock3D = ntt::Meshblock<ntt::Dim3, ntt::SimulationType::PIC>;
 
-template void ntt::csv::writeField<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>(
-  const std::string&, const Meshblock1D&, const em&);
-template void ntt::csv::writeField<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>(
-  const std::string&, const Meshblock2D&, const em&);
-template void ntt::csv::writeField<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>(
-  const std::string&, const Meshblock3D&, const em&);
+template void ntt::csv::writeField<ntt::Dim1, ntt::SimulationType::PIC>(const std::string&,
+                                                                        const Meshblock1D&,
+                                                                        const em&);
+template void ntt::csv::writeField<ntt::Dim2, ntt::SimulationType::PIC>(const std::string&,
+                                                                        const Meshblock2D&,
+                                                                        const em&);
+template void ntt::csv::writeField<ntt::Dim3, ntt::SimulationType::PIC>(const std::string&,
+                                                                        const Meshblock3D&,
+                                                                        const em&);
 
-template void ntt::csv::writeField<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>(
-  const std::string&, const Meshblock1D&, const cur&);
-template void ntt::csv::writeField<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>(
-  const std::string&, const Meshblock2D&, const cur&);
-template void ntt::csv::writeField<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>(
-  const std::string&, const Meshblock3D&, const cur&);
+template void ntt::csv::writeField<ntt::Dim1, ntt::SimulationType::PIC>(const std::string&,
+                                                                        const Meshblock1D&,
+                                                                        const cur&);
+template void ntt::csv::writeField<ntt::Dim2, ntt::SimulationType::PIC>(const std::string&,
+                                                                        const Meshblock2D&,
+                                                                        const cur&);
+template void ntt::csv::writeField<ntt::Dim3, ntt::SimulationType::PIC>(const std::string&,
+                                                                        const Meshblock3D&,
+                                                                        const cur&);
 
-template void ntt::csv::writeParticle<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>(
+template void ntt::csv::writeParticle<ntt::Dim1, ntt::SimulationType::PIC>(
   std::string, const Meshblock1D&, const std::size_t&, const std::size_t&, const OutputMode&);
-template void ntt::csv::writeParticle<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>(
+template void ntt::csv::writeParticle<ntt::Dim2, ntt::SimulationType::PIC>(
   std::string, const Meshblock2D&, const std::size_t&, const std::size_t&, const OutputMode&);
-template void ntt::csv::writeParticle<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>(
+template void ntt::csv::writeParticle<ntt::Dim3, ntt::SimulationType::PIC>(
   std::string, const Meshblock3D&, const std::size_t&, const std::size_t&, const OutputMode&);
 
 #elif SIMTYPE == GRPIC_SIMTYPE
 
-using Meshblock2D = ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-using Meshblock3D = ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+using Meshblock2D = ntt::Meshblock<ntt::Dim2, ntt::SimulationType::GRPIC>;
+using Meshblock3D = ntt::Meshblock<ntt::Dim3, ntt::SimulationType::GRPIC>;
 
-template void ntt::csv::writeField<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>(
-  const std::string&, const Meshblock2D&, const em&);
-template void ntt::csv::writeField<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>(
-  const std::string&, const Meshblock3D&, const em&);
+template void ntt::csv::writeField<ntt::Dim2, ntt::SimulationType::GRPIC>(const std::string&,
+                                                                          const Meshblock2D&,
+                                                                          const em&);
+template void ntt::csv::writeField<ntt::Dim3, ntt::SimulationType::GRPIC>(const std::string&,
+                                                                          const Meshblock3D&,
+                                                                          const em&);
 
-template void ntt::csv::writeParticle<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>(
+template void ntt::csv::writeParticle<ntt::Dim2, ntt::SimulationType::GRPIC>(
   std::string, const Meshblock2D&, const std::size_t&, const std::size_t&, const OutputMode&);
-template void ntt::csv::writeParticle<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>(
+template void ntt::csv::writeParticle<ntt::Dim3, ntt::SimulationType::GRPIC>(
   std::string, const Meshblock3D&, const std::size_t&, const std::size_t&, const OutputMode&);
 
 #endif

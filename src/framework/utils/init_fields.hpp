@@ -20,7 +20,7 @@ namespace ntt {
    */
   template <Dimension D>
   class initFieldsFromVectorPotential {
-    
+
     ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
     Meshblock<D, SimulationType::GRPIC>        m_mblock;
     real_t                                     m_eps;
@@ -30,17 +30,20 @@ namespace ntt {
     initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationType::GRPIC>& pgen,
                                   const Meshblock<D, SimulationType::GRPIC>&        mblock,
                                   real_t                                            eps)
-      : m_pgen {pgen}, m_mblock {mblock}, m_eps {eps}, j_min {static_cast<index_t>(m_mblock.i2_min())} {}
+      : m_pgen {pgen},
+        m_mblock {mblock},
+        m_eps {eps},
+        j_min {static_cast<index_t>(m_mblock.i2_min())} {}
 
     Inline void operator()(index_t, index_t) const;
   };
 
   template <>
-  Inline void initFieldsFromVectorPotential<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void initFieldsFromVectorPotential<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
-    coord_t<Dimension::TWO_D> x0m, x0p;
+    coord_t<Dim2> x0m, x0p;
 
     real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
@@ -65,8 +68,10 @@ namespace ntt {
     x0p[1] = j_ + HALF + HALF * m_eps;
 
     real_t E2d {(m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps};
-    real_t B1u {(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
-    real_t B3_aux {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_ijP / m_eps};
+    real_t B1u {(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ijP
+                / m_eps};
+    real_t B3_aux {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_ijP
+                   / m_eps};
 
     x0m[0] = i_ + HALF - HALF * m_eps;
     x0m[1] = j_;
@@ -86,7 +91,8 @@ namespace ntt {
     x0p[0] = i_ + HALF;
     x0p[1] = j_ + HALF + HALF * m_eps;
 
-    real_t B3u {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_iPjP / m_eps};
+    real_t B3u {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_iPjP
+                / m_eps};
 
     x0m[0] = i_ - HALF * m_eps;
     x0m[1] = j_;
@@ -97,7 +103,8 @@ namespace ntt {
     if (j == j_min) {
       B2_aux = ZERO;
     } else {
-      B2_aux = -(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
+      B2_aux
+        = -(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ij / m_eps;
     }
 
     // Compute covariant D

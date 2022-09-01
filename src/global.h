@@ -96,34 +96,34 @@ namespace ntt {
   // D x N dimensional array for storing fields on ND hypercubes
   template <Dimension D, int N>
   using ndfield_t = typename std::conditional<
-    D == Dimension::ONE_D,
+    D == Dim1,
     array_t<real_t* [N]>,
-    typename std::conditional<D == Dimension::TWO_D,
-                              array_t<real_t** [N]>,
-                              typename std::conditional<D == Dimension::THREE_D,
-                                                        array_t<real_t*** [N]>,
-                                                        std::nullptr_t>::type>::type>::type;
+    typename std::conditional<
+      D == Dim2,
+      array_t<real_t** [N]>,
+      typename std::conditional<D == Dim3, array_t<real_t*** [N]>, std::nullptr_t>::type>::
+      type>::type;
 
   // D x N dimensional scatter array for storing fields on ND hypercubes
   template <Dimension D, int N>
   using scatter_ndfield_t = typename std::conditional<
-    D == Dimension::ONE_D,
+    D == Dim1,
     scatter_array_t<real_t* [N]>,
-    typename std::conditional<D == Dimension::TWO_D,
+    typename std::conditional<D == Dim2,
                               scatter_array_t<real_t** [N]>,
-                              typename std::conditional<D == Dimension::THREE_D,
+                              typename std::conditional<D == Dim3,
                                                         scatter_array_t<real_t*** [N]>,
                                                         std::nullptr_t>::type>::type>::type;
 
   // Defining aliases for `RangePolicy` and `MDRangePolicy`
   template <Dimension D>
   using range_t = typename std::conditional<
-    D == Dimension::ONE_D,
+    D == Dim1,
     Kokkos::RangePolicy<AccelExeSpace>,
     typename std::conditional<
-      D == Dimension::TWO_D,
+      D == Dim2,
       Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>,
-      typename std::conditional<D == Dimension::THREE_D,
+      typename std::conditional<D == Dim3,
                                 Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
                                 std::nullptr_t>::type>::type>::type;
 

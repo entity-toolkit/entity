@@ -15,7 +15,7 @@ namespace ntt {
   template <>
   void PIC<Dim1>::currentBoundaryConditions(const real_t&) {
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
 
 #else
     (void)(index_t {});
@@ -30,7 +30,7 @@ namespace ntt {
   template <>
   void PIC<Dim2>::currentBoundaryConditions(const real_t&) {
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
     /**
      * @note: no corners in each direction
      */
@@ -128,7 +128,7 @@ namespace ntt {
           mblock.cur(i, j, cur::jx3) += mblock.cur(i - ni, j - nj, cur::jx3);
         });
     }
-#elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#elif defined(SPHERICAL_METRIC) || defined(QSPHERICAL_METRIC)
 
 #else
     (void)(index_t {});

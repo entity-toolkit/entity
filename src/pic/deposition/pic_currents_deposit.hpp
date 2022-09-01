@@ -61,9 +61,9 @@ namespace ntt {
     Inline void operator()(index_t p) const {
       if (!m_particles.is_dead(p)) {
         // _f = final, _i = initial
-        tuple_t<int, D>           Ip_f, Ip_i;
-        coord_t<D>                xp_f, xp_i, xp_r;
-        vec_t<Dimension::THREE_D> vp;
+        tuple_t<int, D> Ip_f, Ip_i;
+        coord_t<D>      xp_f, xp_i, xp_r;
+        vec_t<Dim3>     vp;
 
         // get [i, di]_init and [i, di]_final (per dimension)
         getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
@@ -80,12 +80,12 @@ namespace ntt {
      * @param[in] xp_i Previous step position.
      * @param[in] xp_r Intermediate point used in zig-zag deposit.
      */
-    Inline void depositCurrentsFromParticle(const vec_t<Dimension::THREE_D>& vp,
-                                            const tuple_t<int, D>&           Ip_f,
-                                            const tuple_t<int, D>&           Ip_i,
-                                            const coord_t<D>&                xp_f,
-                                            const coord_t<D>&                xp_i,
-                                            const coord_t<D>&                xp_r) const;
+    Inline void depositCurrentsFromParticle(const vec_t<Dim3>&     vp,
+                                            const tuple_t<int, D>& Ip_f,
+                                            const tuple_t<int, D>& Ip_i,
+                                            const coord_t<D>&      xp_f,
+                                            const coord_t<D>&      xp_i,
+                                            const coord_t<D>&      xp_r) const;
 
     /**
      * @brief Get particle position in `coord_t` form.
@@ -97,29 +97,28 @@ namespace ntt {
      * @param[out] xp_i Previous step position.
      * @param[out] xp_r Intermediate point used in zig-zag deposit.
      */
-    Inline void getDepositInterval(index_t&                   p,
-                                   vec_t<Dimension::THREE_D>& vp,
-                                   tuple_t<int, D>&           Ip_f,
-                                   tuple_t<int, D>&           Ip_i,
-                                   coord_t<D>&                xp_f,
-                                   coord_t<D>&                xp_i,
-                                   coord_t<D>&                xp_r) const {
+    Inline void getDepositInterval(index_t&         p,
+                                   vec_t<Dim3>&     vp,
+                                   tuple_t<int, D>& Ip_f,
+                                   tuple_t<int, D>& Ip_i,
+                                   coord_t<D>&      xp_f,
+                                   coord_t<D>&      xp_i,
+                                   coord_t<D>&      xp_r) const {
       coord_t<D>        xmid;
       real_t            inv_energy;
       tuple_t<float, D> dIp_f;
 
-      if constexpr ((D == Dimension::ONE_D) || (D == Dimension::TWO_D)
-                    || (D == Dimension::THREE_D)) {
+      if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
         Ip_f[0]  = m_particles.i1(p);
         dIp_f[0] = m_particles.dx1(p);
       }
 
-      if constexpr ((D == Dimension::TWO_D) || (D == Dimension::THREE_D)) {
+      if constexpr ((D == Dim2) || (D == Dim3)) {
         Ip_f[1]  = m_particles.i2(p);
         dIp_f[1] = m_particles.dx2(p);
       }
 
-      if constexpr (D == Dimension::THREE_D) {
+      if constexpr (D == Dim3) {
         Ip_f[2]  = m_particles.i3(p);
         dIp_f[2] = m_particles.dx3(p);
       }
@@ -128,7 +127,7 @@ namespace ntt {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
       }
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
       m_mblock.metric.v_Cart2Cntrv(
         xp_f, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
 #else
@@ -159,25 +158,23 @@ namespace ntt {
   };
 
   template <>
-  Inline void Deposit<Dimension::ONE_D>::depositCurrentsFromParticle(
-    const vec_t<Dimension::THREE_D>&,
-    const tuple_t<int, Dimension::ONE_D>&,
-    const tuple_t<int, Dimension::ONE_D>&,
-    const coord_t<Dimension::ONE_D>&,
-    const coord_t<Dimension::ONE_D>&,
-    const coord_t<Dimension::ONE_D>&) const {}
+  Inline void Deposit<Dim1>::depositCurrentsFromParticle(const vec_t<Dim3>&,
+                                                         const tuple_t<int, Dim1>&,
+                                                         const tuple_t<int, Dim1>&,
+                                                         const coord_t<Dim1>&,
+                                                         const coord_t<Dim1>&,
+                                                         const coord_t<Dim1>&) const {}
 
   /**
    * !TODO: fix the conversion to I+di
    */
   template <>
-  Inline void Deposit<Dimension::TWO_D>::depositCurrentsFromParticle(
-    const vec_t<Dimension::THREE_D>&      vp,
-    const tuple_t<int, Dimension::TWO_D>& Ip_f,
-    const tuple_t<int, Dimension::TWO_D>& Ip_i,
-    const coord_t<Dimension::TWO_D>&      xp_f,
-    const coord_t<Dimension::TWO_D>&      xp_i,
-    const coord_t<Dimension::TWO_D>&      xp_r) const {
+  Inline void Deposit<Dim2>::depositCurrentsFromParticle(const vec_t<Dim3>&        vp,
+                                                         const tuple_t<int, Dim2>& Ip_f,
+                                                         const tuple_t<int, Dim2>& Ip_i,
+                                                         const coord_t<Dim2>&      xp_f,
+                                                         const coord_t<Dim2>&      xp_i,
+                                                         const coord_t<Dim2>& xp_r) const {
     real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
     real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
     real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};
@@ -216,19 +213,18 @@ namespace ntt {
   }
 
   template <>
-  Inline void Deposit<Dimension::THREE_D>::depositCurrentsFromParticle(
-    const vec_t<Dimension::THREE_D>&,
-    const tuple_t<int, Dimension::THREE_D>&,
-    const tuple_t<int, Dimension::THREE_D>&,
-    const coord_t<Dimension::THREE_D>&,
-    const coord_t<Dimension::THREE_D>&,
-    const coord_t<Dimension::THREE_D>&) const {
+  Inline void Deposit<Dim3>::depositCurrentsFromParticle(const vec_t<Dim3>&,
+                                                         const tuple_t<int, Dim3>&,
+                                                         const tuple_t<int, Dim3>&,
+                                                         const coord_t<Dim3>&,
+                                                         const coord_t<Dim3>&,
+                                                         const coord_t<Dim3>&) const {
     NTTError("Deposit::depositCurrentsFromParticle() not implemented for 3D");
   }
 
 } // namespace ntt
 
-// if constexpr (D == Dimension::THREE_D) {
+// if constexpr (D == Dim3) {
 // real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
 // real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
 // real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_charge};

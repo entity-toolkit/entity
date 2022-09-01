@@ -43,7 +43,7 @@ namespace ntt {
       weight {label_ + "_w", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {}
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
   template <>
   Particles<Dim2, TypePIC>::Particles(const std::string& label_,
                                       const float&       m_,
@@ -148,17 +148,17 @@ namespace ntt {
     : Particles(spec.label(), spec.mass(), spec.charge(), spec.maxnpart()) {}
 
   template <Dimension D, SimulationType S>
-  auto Particles<D, S>::loopParticles() -> range_t<Dimension::ONE_D> {
-    return CreateRangePolicy<Dimension::ONE_D>({0}, {(int)(npart())});
+  auto Particles<D, S>::loopParticles() -> range_t<Dim1> {
+    return CreateRangePolicy<Dim1>({0}, {(int)(npart())});
   }
 
 } // namespace ntt
 
 #if SIMTYPE == PIC_SIMTYPE
-template struct ntt::Particles<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-template struct ntt::Particles<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-template struct ntt::Particles<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+template struct ntt::Particles<ntt::Dim1, ntt::SimulationType::PIC>;
+template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::PIC>;
+template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::PIC>;
 #elif SIMTYPE == GRPIC_SIMTYPE
-template struct ntt::Particles<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-template struct ntt::Particles<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::GRPIC>;
+template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

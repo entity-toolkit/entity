@@ -14,9 +14,9 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::ONE_D>::particleBoundaryConditions(const real_t&) {
+  void PIC<Dim1>::particleBoundaryConditions(const real_t&) {
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
         auto ni {m_mblock.Ni1()};
@@ -48,9 +48,9 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::TWO_D>::particleBoundaryConditions(const real_t&) {
+  void PIC<Dim2>::particleBoundaryConditions(const real_t&) {
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       for (auto& species : m_mblock.particles) {
         auto ni {m_mblock.Ni1()};
@@ -126,7 +126,7 @@ namespace ntt {
    *
    */
   template <>
-  void PIC<Dimension::THREE_D>::particleBoundaryConditions(const real_t&) {
+  void PIC<Dim3>::particleBoundaryConditions(const real_t&) {
     NTTError("not implemented");
   }
 

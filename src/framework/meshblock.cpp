@@ -99,9 +99,7 @@ namespace ntt {
       }
       imin[i] = i_min(i) + ranges[i][0];
       imax[i] = i_max(i) + ranges[i][1];
-      if (imin[i] >= imax[i]) {
-        NTTError("Invalid cell layer picked");
-      }
+      if (imin[i] >= imax[i]) { NTTError("Invalid cell layer picked"); }
     }
     return CreateRangePolicy<D>(imin, imax);
   }
@@ -118,15 +116,15 @@ namespace ntt {
   }
 } // namespace ntt
 
-template class ntt::Mesh<ntt::Dimension::ONE_D>;
-template class ntt::Mesh<ntt::Dimension::TWO_D>;
-template class ntt::Mesh<ntt::Dimension::THREE_D>;
+template class ntt::Mesh<ntt::Dim1>;
+template class ntt::Mesh<ntt::Dim2>;
+template class ntt::Mesh<ntt::Dim3>;
 
 #if SIMTYPE == PIC_SIMTYPE
-template class ntt::Meshblock<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-template class ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-template class ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+template class ntt::Meshblock<ntt::Dim1, ntt::SimulationType::PIC>;
+template class ntt::Meshblock<ntt::Dim2, ntt::SimulationType::PIC>;
+template class ntt::Meshblock<ntt::Dim3, ntt::SimulationType::PIC>;
 #elif SIMTYPE == GRPIC_SIMTYPE
-template class ntt::Meshblock<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-template class ntt::Meshblock<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+template class ntt::Meshblock<ntt::Dim2, ntt::SimulationType::GRPIC>;
+template class ntt::Meshblock<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

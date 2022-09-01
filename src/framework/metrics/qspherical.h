@@ -51,7 +51,7 @@ namespace ntt {
      * @returns Minimum cell size of the grid [physical units].
      */
     auto findSmallestCell() const -> real_t {
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         real_t min_dx {-1.0};
         for (int i {0}; i < this->nx1; ++i) {
           for (int j {0}; j < this->nx2; ++j) {

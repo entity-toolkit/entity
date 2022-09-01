@@ -45,22 +45,21 @@ namespace ntt {
   };
 
   template <>
-  Inline void AddCurrentsMinkowski<Dimension::ONE_D>::operator()(index_t i) const {
+  Inline void AddCurrentsMinkowski<Dim1>::operator()(index_t i) const {
     EX1(i) += m_coeff * JX1(i);
     EX2(i) += m_coeff * JX2(i);
     EX3(i) += m_coeff * JX3(i);
   }
 
   template <>
-  Inline void AddCurrentsMinkowski<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void AddCurrentsMinkowski<Dim2>::operator()(index_t i, index_t j) const {
     EX1(i, j) += m_coeff * JX1(i, j);
     EX2(i, j) += m_coeff * JX2(i, j);
     EX3(i, j) += m_coeff * JX3(i, j);
   }
 
   template <>
-  Inline void
-  AddCurrentsMinkowski<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void AddCurrentsMinkowski<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     EX1(i, j, k) += m_coeff * JX1(i, j, k);
     EX2(i, j, k) += m_coeff * JX2(i, j, k);
     EX3(i, j, k) += m_coeff * JX3(i, j, k);
