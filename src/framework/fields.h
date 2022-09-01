@@ -35,7 +35,7 @@ namespace ntt {
      */
     ndfield_t<D, 6> em;
     /**
-     * Current fields at current time step stored as Kokkos Views of dimension D * 6.
+     * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
      * component.
@@ -46,6 +46,14 @@ namespace ntt {
      * @note Jx3 is deposited at (    i,     j, k+1/2, n+1/2)
      */
     ndfield_t<D, 3> cur;
+    /**
+     * Current fields at previous time step stored as Kokkos Views of dimension D * 3.
+     *
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
+     * component.
+     * @note Address : cur0(i, j, k, cur::***).
+     */
+    ndfield_t<D, 3> cur0;
 #if SIMTYPE == GRPIC_SIMTYPE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific
@@ -67,14 +75,6 @@ namespace ntt {
      * @note Address : em0(i, j, k, em::***).
      */
     ndfield_t<D, 6> em0;
-    /**
-     * Current fields at previous time step stored as Kokkos Views of dimension D * 6.
-     *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
-     * component.
-     * @note Address : cur0(i, j, k, cur::***).
-     */
-    ndfield_t<D, 3> cur0;
     /**
      * Vector potential
      *

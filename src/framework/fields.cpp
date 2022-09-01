@@ -14,21 +14,25 @@ namespace ntt {
   // * * * * * * * * * * * * * * * * * * * *
   template <>
   Fields<Dim1, TypePIC>::Fields(resolution_t res)
-    : em {"EM", res[0] + 2 * N_GHOSTS}, cur {"J", res[0] + 2 * N_GHOSTS} {
+    : em {"EM", res[0] + 2 * N_GHOSTS},
+      cur {"J", res[0] + 2 * N_GHOSTS},
+      cur0 {"J0", res[0] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
   Fields<Dim2, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
+      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 
   template <>
   Fields<Dim3, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
+      cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
 #elif SIMTYPE == GRPIC_SIMTYPE
