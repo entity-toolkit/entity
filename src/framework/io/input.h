@@ -9,21 +9,14 @@
 
 namespace ntt {
   namespace {
-    void dataExistsInToml(const toml::value& inputdata,
+    auto dataExistsInToml(const toml::value& inputdata,
                           const std::string& blockname,
-                          const std::string& variable) {
+                          const std::string& variable) -> bool {
       if (inputdata.contains(blockname)) {
         auto& val_block = toml::find(inputdata, blockname);
-        if (!val_block.contains(variable)) {
-          PLOGI << "Cannot find variable <" << variable << "> from block [" << blockname
-                << "] in the input file.";
-          std::cout << variable << " " << blockname << "\n";
-          throw std::invalid_argument("Cannot find variable in input file.");
-        }
-      } else {
-        PLOGI << "Cannot find block [" << blockname << "] in the input file.";
-        throw std::invalid_argument("Cannot find blockname in input file.");
+        return val_block.contains(variable);
       }
+      return false;
     }
   } // namespace
 
@@ -31,23 +24,24 @@ namespace ntt {
   auto readFromInput(const toml::value& inputdata,
                      const std::string& blockname,
                      const std::string& variable) -> T {
-    dataExistsInToml(inputdata, blockname, variable);
-    auto& val_block = toml::find(inputdata, blockname);
-    return toml::find<T>(val_block, variable);
+    if (dataExistsInToml(inputdata, blockname, variable)) {
+      auto& val_block = toml::find(inputdata, blockname);
+      return toml::find<T>(val_block, variable);
+    }
+    PLOGI << "Cannot find variable <" << variable << "> from block [" << blockname
+          << "] in the input file.";
+    throw std::invalid_argument("cannot find variable in the input");
   }
   template <typename T>
   auto readFromInput(const toml::value& inputdata,
                      const std::string& blockname,
                      const std::string& variable,
                      const T&           defval) -> T {
-    try {
-      return readFromInput<T>(inputdata, blockname, variable);
+    if (dataExistsInToml(inputdata, blockname, variable)) {
+      auto& val_block = toml::find(inputdata, blockname);
+      return toml::find<T>(val_block, variable);
     }
-    catch (std::exception& err) {
-      PLOGI << "Variable <" << variable << "> of [" << blockname
-            << "] not found. Falling back to default value: `" << defval << "`.";
-      return defval;
-    }
+    return defval;
   }
 
 } // namespace ntt

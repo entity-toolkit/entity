@@ -32,6 +32,9 @@ namespace ntt {
     bool m_enable_fieldsolver;
     bool m_enable_deposit;
 
+    // current filtering passes
+    unsigned short m_current_filters;
+
     /**
      * Extent of the whole domain in physical units
      * { x1_min, x1_max, x2_min, x2_max, x3_min, x3_max }.
@@ -137,6 +140,12 @@ namespace ntt {
      */
     [[nodiscard]] auto enable_fieldsolver() const -> const bool& {
       return m_enable_fieldsolver;
+    }
+    /**
+     * @brief number of current filter passes
+     */
+    [[nodiscard]] auto current_filters() const -> const unsigned short& {
+      return m_current_filters;
     }
     /**
      * @brief Get the enable_deposit flag.

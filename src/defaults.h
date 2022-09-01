@@ -18,6 +18,8 @@ namespace ntt {
     const real_t correction {1.0};
     const real_t cfl {0.95};
 
+    const unsigned short current_filters {0};
+
     const std::string output_format {"disabled"};
     const int         output_interval {1};
   } // namespace defaults
