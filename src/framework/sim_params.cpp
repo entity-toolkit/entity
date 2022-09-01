@@ -152,6 +152,10 @@ namespace ntt {
     m_cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
 
+    // number of current filter passes
+    m_current_filters = readFromInput<unsigned short>(
+      m_inputdata, "algorithm", "current_filters", defaults::current_filters);
+
     // output params
     m_output_format
       = readFromInput<std::string>(m_inputdata, "output", "format", defaults::output_format);
