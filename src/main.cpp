@@ -47,13 +47,13 @@ auto main(int argc, char* argv[]) -> int {
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
 
     if (res == 1) {
-      // ntt::SIMULATION_CONTAINER<ntt::Dimension::ONE_D> sim(inputdata);
+      // ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
       // sim.process();
     } else if (res == 2) {
-      ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D> sim(inputdata);
+      ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
       sim.process();
     } else if (res == 3) {
-      ntt::SIMULATION_CONTAINER<ntt::Dimension::THREE_D> sim(inputdata);
+      ntt::SIMULATION_CONTAINER<ntt::Dim3> sim(inputdata);
       sim.process();
     } else {
       NTTError("wrong dimension specified");

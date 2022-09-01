@@ -47,7 +47,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void AddCurrentsCurvilinear<Dimension::ONE_D>::operator()(index_t i) const {
+  Inline void AddCurrentsCurvilinear<Dim1>::operator()(index_t i) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t inv_sqrt_detH_i {ONE / m_mblock.metric.sqrt_det_h({i_})};
     real_t inv_sqrt_detH_iP {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF})};
@@ -57,8 +57,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AddCurrentsCurvilinear<Dimension::TWO_D>::operator()(index_t i,
-                                                                   index_t j) const {
+  Inline void AddCurrentsCurvilinear<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
@@ -70,9 +69,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AddCurrentsCurvilinear<Dimension::THREE_D>::operator()(index_t i,
-                                                                     index_t j,
-                                                                     index_t k) const {
+  Inline void AddCurrentsCurvilinear<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     real_t k_ {static_cast<real_t>(static_cast<int>(k) - N_GHOSTS)};

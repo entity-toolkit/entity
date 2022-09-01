@@ -12,7 +12,8 @@
 
 namespace ntt {
   /**
-   * @brief Main class of the simulation containing all the necessary methods and configurations.
+   * @brief Main class of the simulation containing all the necessary methods and
+   * configurations.
    * @tparam D dimension.
    * @tparam S simulation type.
    */
@@ -45,7 +46,8 @@ namespace ntt {
     void initializeSetup();
 
     /**
-     * @brief Verify that all the specified parameters are compatible before beginning the simulation.
+     * @brief Verify that all the specified parameters are compatible before beginning the
+     * simulation.
      */
     void verify();
 

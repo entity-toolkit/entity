@@ -164,7 +164,7 @@ namespace ntt {
      * @returns Minimum cell size of the grid [physical units].
      */
     auto findSmallestCell() const -> real_t {
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         real_t min_dx {-1.0};
         for (int i {0}; i < this->nx1; ++i) {
           for (int j {0}; j < this->nx2; ++j) {
@@ -192,14 +192,14 @@ namespace ntt {
      * @param x coordinate array in Cartesian physical units (size of the array is D).
      */
     Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dimension::ONE_D) {
+      if constexpr (D == Dim1) {
         NTTError("x_Code2Cart not implemented for 1D");
-      } else if constexpr (D == Dimension::TWO_D) {
+      } else if constexpr (D == Dim2) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
         x[0] = x_sph[0] * math::sin(x_sph[1]);
         x[1] = x_sph[0] * math::cos(x_sph[1]);
-      } else if constexpr (D == Dimension::THREE_D) {
+      } else if constexpr (D == Dim3) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
         x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
@@ -216,14 +216,14 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dimension::ONE_D) {
+      if constexpr (D == Dim1) {
         NTTError("x_Cart2Code not implemented for 1D");
-      } else if constexpr (D == Dimension::TWO_D) {
+      } else if constexpr (D == Dim2) {
         coord_t<D> x_sph;
         x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
         x_sph[1] = math::atan2(x[1], x[0]);
         x_Sph2Code(x_sph, xi);
-      } else if constexpr (D == Dimension::THREE_D) {
+      } else if constexpr (D == Dim3) {
         coord_t<D> x_sph;
         x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
         x_sph[1] = math::atan2(x[1], x[0]);
@@ -240,12 +240,12 @@ namespace ntt {
      * is D).
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dimension::ONE_D) {
+      if constexpr (D == Dim1) {
         NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dimension::TWO_D) {
+      } else if constexpr (D == Dim2) {
         x[0] = xi[0] * dr + this->x1_min;
         x[1] = xi[1] * dtheta;
-      } else if constexpr (D == Dimension::THREE_D) {
+      } else if constexpr (D == Dim3) {
         x[0] = xi[0] * dr + this->x1_min;
         x[1] = xi[1] * dtheta;
         x[2] = xi[2] * dphi;
@@ -260,12 +260,12 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dimension::ONE_D) {
+      if constexpr (D == Dim1) {
         NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dimension::TWO_D) {
+      } else if constexpr (D == Dim2) {
         xi[0] = (x[0] - this->x1_min) * dr_inv;
         xi[1] = x[1] * dtheta_inv;
-      } else if constexpr (D == Dimension::THREE_D) {
+      } else if constexpr (D == Dim3) {
         xi[0] = (x[0] - this->x1_min) * dr_inv;
         xi[1] = x[1] * dtheta_inv;
         xi[2] = x[2] * dphi_inv;
@@ -280,9 +280,9 @@ namespace ntt {
      * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
      */
     Inline void v_Cntr2SphCntrv(const coord_t<D>&,
-                                const vec_t<Dimension::THREE_D>& vi_cntrv,
-                                vec_t<Dimension::THREE_D>&       vsph_cntrv) const {
-      if constexpr (D == Dimension::ONE_D) {
+                                const vec_t<Dim3>& vi_cntrv,
+                                vec_t<Dim3>&       vsph_cntrv) const {
+      if constexpr (D == Dim1) {
         NTTError("v_Cntr2SphCntrv not implemented for 1D");
       } else {
         vsph_cntrv[0] = vi_cntrv[0] * dr_inv;

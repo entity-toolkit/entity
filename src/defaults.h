@@ -19,6 +19,6 @@ namespace ntt {
     const real_t cfl {0.95};
 
     const std::string output_format {"disabled"};
-    const int output_interval {1};
+    const int         output_interval {1};
   } // namespace defaults
 } // namespace ntt

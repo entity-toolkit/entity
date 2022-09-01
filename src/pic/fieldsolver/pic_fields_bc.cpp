@@ -1,7 +1,7 @@
 #include "global.h"
 #include "pic.h"
 
-#if (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#if defined(SPHERICAL_METRIC) || defined(QSPHERICAL_METRIC)
 #  include "pic_fields_bc_rmax.hpp"
 #endif
 
@@ -17,7 +17,7 @@ namespace ntt {
   template <>
   void PIC<Dim1>::fieldBoundaryConditions(const real_t&) {
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
       auto ni {mblock.Ni1()};
@@ -56,7 +56,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dim2>::fieldBoundaryConditions(const real_t& t) {
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
     (void)(t);
     if (m_mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
@@ -168,7 +168,7 @@ namespace ntt {
         });
     }
 
-#elif (METRIC == SPHERICAL_METRIC) || (METRIC == QSPHERICAL_METRIC)
+#elif defined(SPHERICAL_METRIC) || defined(QSPHERICAL_METRIC)
 
     /* ----------------------- axisymmetric spherical grid ---------------------- */
     // r = rmin boundary
@@ -190,7 +190,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
       CreateRangePolicy<Dim2>({0, m_mblock.i2_max()},
-                     {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() + N_GHOSTS}),
+                              {m_mblock.i1_max() + N_GHOSTS, m_mblock.i2_max() + N_GHOSTS}),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;
         mblock.em(i, j, em::ex3) = 0.0;

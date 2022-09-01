@@ -47,7 +47,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void FaradayCurvilinear<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void FaradayCurvilinear<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -70,8 +70,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void
-  FaradayCurvilinear<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void FaradayCurvilinear<Dim3>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear faraday not implemented
   }
 } // namespace ntt
