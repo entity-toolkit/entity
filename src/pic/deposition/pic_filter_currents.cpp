@@ -13,6 +13,6 @@ namespace ntt {
   }
 } // namespace ntt
 
-template class ntt::PIC<ntt::Dimension::ONE_D>;
-template class ntt::PIC<ntt::Dimension::TWO_D>;
-template class ntt::PIC<ntt::Dimension::THREE_D>;
+template class ntt::PIC<ntt::Dim1>;
+template class ntt::PIC<ntt::Dim2>;
+template class ntt::PIC<ntt::Dim3>;

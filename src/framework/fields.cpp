@@ -61,10 +61,10 @@ namespace ntt {
 } // namespace ntt
 
 #if SIMTYPE == PIC_SIMTYPE
-template class ntt::Fields<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-template class ntt::Fields<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-template class ntt::Fields<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+template class ntt::Fields<ntt::Dim1, ntt::SimulationType::PIC>;
+template class ntt::Fields<ntt::Dim2, ntt::SimulationType::PIC>;
+template class ntt::Fields<ntt::Dim3, ntt::SimulationType::PIC>;
 #elif SIMTYPE == GRPIC_SIMTYPE
-template class ntt::Fields<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-template class ntt::Fields<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+template class ntt::Fields<ntt::Dim2, ntt::SimulationType::GRPIC>;
+template class ntt::Fields<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

@@ -68,7 +68,7 @@ namespace ntt {
         vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
         interpolateFields(p, e_int, b_int);
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
         coord_t<D> xp;
 #else
         coord_t<Dim3> xp;
@@ -100,7 +100,7 @@ namespace ntt {
     Inline void operator()(const Photon_t&, index_t p) const {
       if (!m_particles.is_dead(p)) {
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
         coord_t<D> xp;
 #else
         coord_t<Dim3> xp;
@@ -120,7 +120,7 @@ namespace ntt {
       }
     }
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
     /**
      * @brief Transform particle coordinate from code units i+di to `real_t` type.
      * @param p index of the particle.
@@ -170,7 +170,7 @@ namespace ntt {
     Inline void BorisUpdate(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
   };
 
-#if (METRIC == MINKOWSKI_METRIC)
+#ifdef MINKOWSKI_METRIC
   template <>
   Inline void Pusher<Dim1>::getParticleCoordinate(index_t& p, coord_t<Dim1>& xp) const {
     xp[0] = PRTL_X1(m_particles, p);
@@ -211,7 +211,7 @@ namespace ntt {
   Inline void Pusher<Dim2>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
-#if !(METRIC == MINKOWSKI_METRIC)
+#ifndef MINKOWSKI_METRIC
     m_particles.phi(p) += m_dt * v[2];
 #endif
   }

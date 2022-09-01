@@ -20,7 +20,7 @@
 #define PICPRTL_XYZ_1D(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3)                                \
   {                                                                                           \
     using namespace ntt;                                                                      \
-    coord_t<Dimension::ONE_D> X_CU;                                                           \
+    coord_t<Dim1> X_CU;                                                                       \
     ((MBLOCK)->metric).x_Cart2Code({(X1)}, X_CU);                                             \
     auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
     (MBLOCK)->particles[(SPECIES)].i1((INDEX))  = I1;                                         \
@@ -33,7 +33,7 @@
 #define PICPRTL_XYZ_2D(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
   {                                                                                           \
     using namespace ntt;                                                                      \
-    coord_t<Dimension::TWO_D> X_CU;                                                           \
+    coord_t<Dim2> X_CU;                                                                       \
     ((MBLOCK)->metric).x_Cart2Code({(X1), (X2)}, X_CU);                                       \
     auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
     auto [I2, DX2]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[1]);      \
@@ -49,7 +49,7 @@
 #define PICPRTL_XYZ_3D(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
   {                                                                                           \
     using namespace ntt;                                                                      \
-    coord_t<Dimension::THREE_D> X_CU;                                                         \
+    coord_t<Dim3> X_CU;                                                                       \
     ((MBLOCK)->metric).x_Cart2Code({(X1), (X2), (X3)}, X_CU);                                 \
     auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
     auto [I2, DX2]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[1]);      \
@@ -68,8 +68,8 @@
 #define PICPRTL_SPH_1D(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3)                                \
   {                                                                                           \
     using namespace ntt;                                                                      \
-    coord_t<Dimension::ONE_D> X_CU;                                                           \
-    vec_t<Dimension::THREE_D> U_C {ZERO, ZERO, ZERO};                                         \
+    coord_t<Dim1> X_CU;                                                                       \
+    vec_t<Dim3>   U_C {ZERO, ZERO, ZERO};                                                     \
     ((MBLOCK)->metric)).x_Sph2Code({(X1)}, X_CU);                                             \
     ((MBLOCK)->metric)).v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                  \
     auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
@@ -83,8 +83,8 @@
 #define PICPRTL_SPH_2D(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
   {                                                                                           \
     using namespace ntt;                                                                      \
-    coord_t<Dimension::TWO_D> X_CU;                                                           \
-    vec_t<Dimension::THREE_D> U_C {ZERO, ZERO, ZERO};                                         \
+    coord_t<Dim2> X_CU;                                                                       \
+    vec_t<Dim3>   U_C {ZERO, ZERO, ZERO};                                                     \
     ((MBLOCK)->metric).x_Sph2Code({(X1), (X2)}, X_CU);                                        \
     ((MBLOCK)->metric).v_Hat2Cart({X_CU[0], X_CU[1], ZERO}, {U1, U2, U3}, U_C);               \
     auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \
@@ -101,8 +101,8 @@
 #define PICPRTL_SPH_3D(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
   {                                                                                           \
     using namespace ntt;                                                                      \
-    coord_t<Dimension::THREE_D> X_CU;                                                         \
-    vec_t<Dimension::THREE_D>   U_C {ZERO, ZERO, ZERO};                                       \
+    coord_t<Dim3> X_CU;                                                                       \
+    vec_t<Dim3>   U_C {ZERO, ZERO, ZERO};                                                     \
     ((MBLOCK)->metric).x_Sph2Code({(X1), (X2), (X3)}, X_CU);                                  \
     ((MBLOCK)->metric).v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                   \
     auto [I1, DX1]                              = ((MBLOCK)->metric).CU_to_Idi(X_CU[0]);      \

@@ -9,7 +9,6 @@
 
 #include <stdexcept>
 
-namespace ntt {
-} // namespace ntt
+namespace ntt {} // namespace ntt
 
 #endif

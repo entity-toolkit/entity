@@ -5,11 +5,11 @@
 #define STRINGIZE_DETAIL(x) #x
 #define LINE_STRING         STRINGIZE(__LINE__)
 
-#define MINKOWSKI_METRIC    1
-#define SPHERICAL_METRIC    2
-#define QSPHERICAL_METRIC   3
-#define KERR_SCHILD_METRIC  4
-#define QKERR_SCHILD_METRIC 5
+// #define MINKOWSKI_METRIC    1
+// #define SPHERICAL_METRIC    2
+// #define QSPHERICAL_METRIC   3
+// #define KERR_SCHILD_METRIC  4
+// #define QKERR_SCHILD_METRIC 5
 
 #define PIC_SIMTYPE         1
 #define GRPIC_SIMTYPE       2

@@ -41,9 +41,6 @@ ${DOCS_DIR}/%.md: ${SRC_DIR}/%
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${docs_command} $< ${subst .h,,${subst .hpp,,$@}}
 
-print:
-	@echo $(DOCS)
-
 clean_docs:
 	@echo [C]leaning docs
 	$(HIDE)rm -rf $(DOCS_DIR)

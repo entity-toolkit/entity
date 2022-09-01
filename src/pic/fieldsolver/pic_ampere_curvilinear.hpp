@@ -42,7 +42,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void AmpereCurvilinear<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void AmpereCurvilinear<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -65,8 +65,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void
-  AmpereCurvilinear<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void AmpereCurvilinear<Dim3>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
@@ -98,7 +97,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void AmpereCurvilinearPoles<Dimension::TWO_D>::operator()(index_t i) const {
+  Inline void AmpereCurvilinearPoles<Dim2>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {m_nj + N_GHOSTS - 1};
 

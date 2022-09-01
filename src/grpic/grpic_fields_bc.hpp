@@ -42,12 +42,12 @@ namespace ntt {
   };
 
   template <>
-  Inline void GRFieldBC_rmax<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void GRFieldBC_rmax<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     // i
-    vec_t<Dimension::TWO_D> rth_;
+    vec_t<Dim2> rth_;
     m_mblock.metric.x_Code2Sph({i_, j_}, rth_);
     if (rth_[0] > m_rabsorb) {
       real_t delta_r1 {(rth_[0] - m_rabsorb) / (m_rmax - m_rabsorb)};

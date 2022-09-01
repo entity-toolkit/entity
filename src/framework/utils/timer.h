@@ -15,7 +15,8 @@ namespace ntt {
 
   public:
     TimeUnit() = default;
-    TimeUnit(double mult, const std::string& unit) : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
+    TimeUnit(double mult, const std::string& unit)
+      : multiplier(static_cast<double>(mult)), unitname(std::move(unit)) {}
     ~TimeUnit() = default;
     [[nodiscard]] auto getMultiplier() const -> double;
     friend auto        operator<<(std::ostream& os, TimeUnit const& v) -> std::ostream&;
@@ -71,7 +72,7 @@ namespace ntt {
     [[nodiscard]] auto getElapsedIn(TimeUnit const& u) const -> long double;
     [[nodiscard]] auto getName() const -> std::string;
     void               printElapsed(TimeUnit const& u = second) const;
-    void               printElapsed(std::ostream& os = std::cout, TimeUnit const& u = second) const;
+    void printElapsed(std::ostream& os = std::cout, TimeUnit const& u = second) const;
   };
 
   class TimerCollection {

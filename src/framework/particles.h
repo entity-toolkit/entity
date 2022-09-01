@@ -108,7 +108,7 @@ namespace ntt {
     // phi coordinate (for axisymmetry)
     array_t<real_t*> phi;
 
-    array_t<bool*>   is_dead;
+    array_t<bool*> is_dead;
 
     /**
      * @brief Constructor for the particle container.
@@ -130,7 +130,7 @@ namespace ntt {
      * @brief Loop over all active particles.
      * @returns 1D Kokkos range policy of size of `npart`.
      */
-    auto loopParticles() -> range_t<Dimension::ONE_D>;
+    auto loopParticles() -> range_t<Dim1>;
     /**
      * @brief Get the number of active particles.
      */

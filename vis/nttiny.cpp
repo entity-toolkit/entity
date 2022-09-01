@@ -29,13 +29,13 @@ void initLogger(plog_t* console_appender);
 
 struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   int                                               nx1, nx2;
-  ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& m_sim;
+  ntt::SIMULATION_CONTAINER<ntt::Dim2>&             m_sim;
   std::vector<nttiny::Data<float>>                  m_data;
   std::vector<std::unique_ptr<nttiny::Data<float>>> prtl_pointers;
   std::vector<std::string>                          m_fields_to_plot;
 
-  NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D>& sim,
-                   const std::vector<std::string>&                   fields_to_plot)
+  NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dim2>& sim,
+                   const std::vector<std::string>&       fields_to_plot)
   /**
    * TODO: make this less ugly
    */
@@ -66,9 +66,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       for (int j {0}; j < nx2; ++j) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #if SIMTYPE == PIC_SIMTYPE
-          auto                                i_ {(real_t)(i - ntt::N_GHOSTS)};
-          auto                                j_ {(real_t)(j - ntt::N_GHOSTS)};
-          ntt::vec_t<ntt::Dimension::THREE_D> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
+          auto                  i_ {(real_t)(i - ntt::N_GHOSTS)};
+          auto                  j_ {(real_t)(j - ntt::N_GHOSTS)};
+          ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
           if (m_fields_to_plot[f].at(0) == 'E') {
             m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
                                                {m_sim.mblock()->em(i, j, ntt::em::ex1),
@@ -111,7 +111,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           auto i_ {(real_t)(i - ntt::N_GHOSTS)};
           auto j_ {(real_t)(j - ntt::N_GHOSTS)};
           // interpolate and transform to spherical
-          ntt::vec_t<ntt::Dimension::THREE_D> Dsph {0, 0, 0}, Bsph {0, 0, 0}, D0sph {0, 0, 0},
+          ntt::vec_t<ntt::Dim3> Dsph {0, 0, 0}, Bsph {0, 0, 0}, D0sph {0, 0, 0},
             B0sph {0, 0, 0};
           if ((i < ntt::N_GHOSTS) || (i >= nx1 - ntt::N_GHOSTS) || (j < ntt::N_GHOSTS)
               || (j >= nx2 - ntt::N_GHOSTS)) {
@@ -244,7 +244,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
         // this->prtl_pointers[i]->set(k, 0, x1);
         // this->prtl_pointers[i + 1]->set(k, 0, x2);
         // // !HACK: temporary
-        ntt::coord_t<ntt::Dimension::TWO_D> xy {ZERO, ZERO};
+        ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
         m_sim.mblock()->metric.x_Code2Cart({x1, x2}, xy);
         this->prtl_pointers[i]->set(k, 0, xy[0]);
         this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
@@ -312,9 +312,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
       m_x1x2_extent[0] = m_sim.mblock()->metric.x1_min;
       m_x1x2_extent[1] = m_sim.mblock()->metric.x1_max;
       for (int i {ntt::N_GHOSTS}; i <= nx1 - ntt::N_GHOSTS; ++i) {
-        auto                                i_ {(real_t)(i - ntt::N_GHOSTS)};
-        auto                                j_ {ZERO};
-        ntt::coord_t<ntt::Dimension::TWO_D> rth_;
+        auto                    i_ {(real_t)(i - ntt::N_GHOSTS)};
+        auto                    j_ {ZERO};
+        ntt::coord_t<ntt::Dim2> rth_;
         m_sim.mblock()->metric.x_Code2Sph({i_, j_}, rth_);
         m_global_grid.m_x1[i] = rth_[0];
       }
@@ -329,13 +329,13 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
                                    - m_global_grid.m_x1[nx1 - ntt::N_GHOSTS - 1]);
       }
       for (int j {0}; j <= nx2; ++j) {
-        auto                                i_ {ZERO};
-        auto                                j_ {(real_t)(j - ntt::N_GHOSTS)};
-        ntt::coord_t<ntt::Dimension::TWO_D> rth_;
+        auto                    i_ {ZERO};
+        auto                    j_ {(real_t)(j - ntt::N_GHOSTS)};
+        ntt::coord_t<ntt::Dim2> rth_;
         m_sim.mblock()->metric.x_Code2Sph({i_, j_}, rth_);
         m_global_grid.m_x2[j] = rth_[1];
       }
-      ntt::coord_t<ntt::Dimension::TWO_D> rth1_, rth2_;
+      ntt::coord_t<ntt::Dim2> rth1_, rth2_;
       m_sim.mblock()->metric.x_Code2Sph({ZERO, (real_t)(-ntt::N_GHOSTS)}, rth1_);
       m_sim.mblock()->metric.x_Code2Sph({ZERO, (real_t)(nx2 - ntt::N_GHOSTS)}, rth2_);
       m_x1x2_extent[2] = rth1_[1];
@@ -401,7 +401,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::string> fields_to_plot
       = toml::find<std::vector<std::string>>(vis_data, "fields");
 
-    ntt::SIMULATION_CONTAINER<ntt::Dimension::TWO_D> sim(inputdata);
+    ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
     sim.initialize();
     sim.initializeSetup();
     sim.verify();
@@ -492,7 +492,7 @@ void initLogger(plog_t* console_appender) {
 // bx2_cnt = m_sim.mblock()->em(i, j, ntt::em::bx2);
 // bx3_cnt = m_sim.mblock()->em(i, j, ntt::em::bx3);
 
-// ntt::vec_t<ntt::Dimension::THREE_D> d_hat, b_hat, e_hat, h_hat;
+// ntt::vec_t<ntt::Dim3> d_hat, b_hat, e_hat, h_hat;
 
 // // #if (SIMTYPE == PIC_SIMTYPE)
 // //         m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},

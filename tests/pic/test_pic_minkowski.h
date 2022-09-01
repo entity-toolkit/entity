@@ -51,10 +51,11 @@ TEST_CASE("testing PIC") {
         maxnpart        = 10.0
       )TOML";
       try {
-        std::istringstream is(input_toml, std::ios_base::binary | std::ios_base::in);
-        auto               inputdata = toml::parse(is, "std::string");
-        ntt::PIC<ntt::Dimension::TWO_D> sim(inputdata);
+        std::istringstream  is(input_toml, std::ios_base::binary | std::ios_base::in);
+        auto                inputdata = toml::parse(is, "std::string");
+        ntt::PIC<ntt::Dim2> sim(inputdata);
         sim.initialize();
+        sim.printDetails();
 
         CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.041984464973f));
         CHECK(ntt::AlmostEqual(sim.sim_params()->sigma0(), 0.01f));
@@ -67,9 +68,9 @@ TEST_CASE("testing PIC") {
           "set fields",
           sim.rangeActiveCells(),
           Lambda(const std::size_t i, const std::size_t j) {
-            real_t i_ {(real_t)(static_cast<int>(i) - ntt::N_GHOSTS)};
-            real_t j_ {(real_t)(static_cast<int>(j) - ntt::N_GHOSTS)};
-            ntt::vec_t<ntt::Dimension::THREE_D> e_cntrv, b_cntrv;
+            real_t                i_ {(real_t)(static_cast<int>(i) - ntt::N_GHOSTS)};
+            real_t                j_ {(real_t)(static_cast<int>(j) - ntt::N_GHOSTS)};
+            ntt::vec_t<ntt::Dim3> e_cntrv, b_cntrv;
             mblock->metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, ONE}, b_cntrv);
             mblock->em(i, j, ntt::em::bx3) = b_cntrv[2];
 
@@ -79,12 +80,12 @@ TEST_CASE("testing PIC") {
         sim.fieldBoundaryConditions(0.0f);
 
         // initialize particles
-        real_t                              gammabeta = 1.0f;
-        ntt::coord_t<ntt::Dimension::TWO_D> x_init {0.1, 0.12};
+        real_t                  gammabeta = 1.0f;
+        ntt::coord_t<ntt::Dim2> x_init {0.1, 0.12};
 
         Kokkos::parallel_for(
           "set particles",
-          ntt::CreateRangePolicy<ntt::Dimension::ONE_D>({0}, {1}),
+          ntt::CreateRangePolicy<ntt::Dim1>({0}, {1}),
           Lambda(const std::size_t p) {
             PICPRTL_XYZ_2D(mblock, 0, p, x_init[0], x_init[1], gammabeta, ZERO, ZERO);
             PICPRTL_XYZ_2D(mblock, 1, p, x_init[0], x_init[1], gammabeta, ZERO, ZERO);
@@ -149,7 +150,7 @@ TEST_CASE("testing PIC") {
         }
 
         // check: 1 % accurate after ~ 5 rotations
-        ntt::coord_t<ntt::Dimension::TWO_D> x_p {ZERO, ZERO};
+        ntt::coord_t<ntt::Dim2> x_p {ZERO, ZERO};
         mblock->metric.x_Code2Cart(
           {(real_t)(mblock->particles[0].i1(0)) + mblock->particles[0].dx1(0),
            (real_t)(mblock->particles[0].i2(0)) + mblock->particles[0].dx2(0)},
@@ -186,9 +187,9 @@ TEST_CASE("testing PIC") {
       )TOML";
       try {
 
-        std::istringstream is(input_toml, std::ios_base::binary | std::ios_base::in);
-        auto               inputdata = toml::parse(is, "std::string");
-        ntt::PIC<ntt::Dimension::TWO_D> sim(inputdata);
+        std::istringstream  is(input_toml, std::ios_base::binary | std::ios_base::in);
+        auto                inputdata = toml::parse(is, "std::string");
+        ntt::PIC<ntt::Dim2> sim(inputdata);
         sim.initialize();
 
         CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.0026240291f));
@@ -215,16 +216,16 @@ TEST_CASE("testing PIC") {
               j_ {(real_t)(static_cast<int>(j) - ntt::N_GHOSTS)};
 
             // code units to cartesian (physical units)
-            ntt::coord_t<ntt::Dimension::TWO_D> x_y, xp_y, x_yp, xp_yp;
+            ntt::coord_t<ntt::Dim2> x_y, xp_y, x_yp, xp_yp;
             mblock->metric.x_Code2Cart({i_, j_}, x_y);
             mblock->metric.x_Code2Cart({i_ + HALF, j_}, xp_y);
             mblock->metric.x_Code2Cart({i_, j_ + HALF}, x_yp);
             mblock->metric.x_Code2Cart({i_ + HALF, j_ + HALF}, xp_yp);
 
-            ntt::vec_t<ntt::Dimension::THREE_D> ex_cntr, ey_cntr, bz_cntr;
+            ntt::vec_t<ntt::Dim3> ex_cntr, ey_cntr, bz_cntr;
 
             // hatted fields
-            ntt::vec_t<ntt::Dimension::THREE_D> e_hat {ZERO, ZERO, ZERO};
+            ntt::vec_t<ntt::Dim3> e_hat {ZERO, ZERO, ZERO};
             // i + 1/2, j
             e_hat[0] = ex_ampl * math::sin(kx * xp_y[0] + ky * xp_y[1]);
             e_hat[1] = ey_ampl * math::sin(kx * xp_y[0] + ky * xp_y[1]);
@@ -312,25 +313,25 @@ TEST_CASE("testing PIC") {
         maxnpart        = 10.0
       )TOML";
       try {
-        std::istringstream is(input_toml, std::ios_base::binary | std::ios_base::in);
-        auto               inputdata = toml::parse(is, "std::string");
-        ntt::PIC<ntt::Dimension::TWO_D> sim(inputdata);
+        std::istringstream  is(input_toml, std::ios_base::binary | std::ios_base::in);
+        auto                inputdata = toml::parse(is, "std::string");
+        ntt::PIC<ntt::Dim2> sim(inputdata);
         sim.initialize();
 
         CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.010496116243f));
         CHECK(ntt::AlmostEqual(sim.sim_params()->sigma0(), 0.01f));
 
         {
-          auto                                mblock       = sim.mblock();
-          real_t                              gammabeta    = 12.0f;
-          real_t                              pitch_angle1 = ntt::constant::PI / 6.0f;
-          real_t                              pitch_angle2 = ntt::constant::PI / 4.0f;
-          ntt::coord_t<ntt::Dimension::TWO_D> x_init1 {2.5233f, 0.1265f};
-          ntt::coord_t<ntt::Dimension::TWO_D> x_init2 {0.254f, 0.834f};
+          auto                    mblock       = sim.mblock();
+          real_t                  gammabeta    = 12.0f;
+          real_t                  pitch_angle1 = ntt::constant::PI / 6.0f;
+          real_t                  pitch_angle2 = ntt::constant::PI / 4.0f;
+          ntt::coord_t<ntt::Dim2> x_init1 {2.5233f, 0.1265f};
+          ntt::coord_t<ntt::Dim2> x_init2 {0.254f, 0.834f};
 
           Kokkos::parallel_for(
             "set particles",
-            ntt::CreateRangePolicy<ntt::Dimension::ONE_D>({0}, {1}),
+            ntt::CreateRangePolicy<ntt::Dim1>({0}, {1}),
             Lambda(const std::size_t p) {
               PICPRTL_XYZ_2D(mblock,
                              0,

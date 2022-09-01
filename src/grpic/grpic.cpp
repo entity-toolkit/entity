@@ -371,17 +371,17 @@ namespace ntt {
   }
 
   template <>
-  void GRPIC<Dimension::TWO_D>::computeVectorPotential() {
+  void GRPIC<Dim2>::computeVectorPotential() {
     Kokkos::parallel_for("computeVectorPotential",
                          (this->m_mblock).rangeActiveCells(),
-                         Compute_Aphi<Dimension::TWO_D>(this->m_mblock, (real_t)(1.0)));
+                         Compute_Aphi<Dim2>(this->m_mblock, (real_t)(1.0)));
   }
 
   template <>
-  void GRPIC<Dimension::THREE_D>::computeVectorPotential() {}
+  void GRPIC<Dim3>::computeVectorPotential() {}
 
   template <>
-  Inline void Compute_Aphi<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void Compute_Aphi<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
       real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
@@ -393,14 +393,14 @@ namespace ntt {
   }
 
   template <>
-  Inline void Compute_Aphi<Dimension::THREE_D>::operator()(index_t, index_t) const {
+  Inline void Compute_Aphi<Dim3>::operator()(index_t, index_t) const {
     // 3D GRPIC not implemented
   }
 
 } // namespace ntt
 
-template class ntt::GRPIC<ntt::Dimension::TWO_D>;
-template class ntt::GRPIC<ntt::Dimension::THREE_D>;
+template class ntt::GRPIC<ntt::Dim2>;
+template class ntt::GRPIC<ntt::Dim3>;
 
 // template <Dimension D>
 // void GRPIC<D>::step_backward(const real_t& time) {

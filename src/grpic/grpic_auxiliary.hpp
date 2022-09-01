@@ -27,7 +27,7 @@ namespace ntt {
 
   // First calculation, with B and D0
   template <>
-  Inline void computeAuxE_D0_B<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void computeAuxE_D0_B<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -85,7 +85,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void computeAuxE_D0_B<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void computeAuxE_D0_B<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -102,7 +102,7 @@ namespace ntt {
 
   // Second calculation, with B0 and D
   template <>
-  Inline void computeAuxE_D_B0<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void computeAuxE_D_B0<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -160,7 +160,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void computeAuxE_D_B0<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void computeAuxE_D_B0<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -182,7 +182,7 @@ namespace ntt {
 
   // First calculation, with B0 and D
   template <>
-  Inline void computeAuxH_D_B0<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void computeAuxH_D_B0<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -240,7 +240,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void computeAuxH_D_B0<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void computeAuxH_D_B0<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -257,7 +257,7 @@ namespace ntt {
 
   // Second calculation, with B0 and D0
   template <>
-  Inline void computeAuxH_D0_B0<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void computeAuxH_D0_B0<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -315,7 +315,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void computeAuxH_D0_B0<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void computeAuxH_D0_B0<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -336,7 +336,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void timeAverageDB<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void timeAverageDB<Dim2>::operator()(index_t i, index_t j) const {
 
     m_mblock.em0(i, j, em::bx1) = HALF * (m_mblock.em0(i, j, em::bx1) + m_mblock.em(i, j, em::bx1));
     m_mblock.em0(i, j, em::bx2) = HALF * (m_mblock.em0(i, j, em::bx2) + m_mblock.em(i, j, em::bx2));
@@ -347,7 +347,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void timeAverageDB<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void timeAverageDB<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
   /**
@@ -367,7 +367,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void timeAverageJ<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void timeAverageJ<Dim2>::operator()(index_t i, index_t j) const {
 
     m_mblock.cur(i, j, cur::jx1) = HALF * (m_mblock.cur0(i, j, cur::jx1) + m_mblock.cur(i, j, cur::jx1));
     m_mblock.cur(i, j, cur::jx2) = HALF * (m_mblock.cur0(i, j, cur::jx2) + m_mblock.cur(i, j, cur::jx2));
@@ -375,7 +375,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void timeAverageJ<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void timeAverageJ<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 

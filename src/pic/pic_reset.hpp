@@ -38,16 +38,15 @@ namespace ntt {
      * @param p index
      */
     Inline void operator()(index_t p) const {
-      if constexpr ((D == Dimension::ONE_D) || (D == Dimension::TWO_D)
-                    || (D == Dimension::THREE_D)) {
+      if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
         m_particles.i1(p)  = 0;
         m_particles.dx1(p) = 0.0f;
       }
-      if constexpr ((D == Dimension::TWO_D) || (D == Dimension::THREE_D)) {
+      if constexpr ((D == Dim2) || (D == Dim3)) {
         m_particles.i2(p)  = 0;
         m_particles.dx2(p) = 0.0f;
       }
-      if constexpr (D == Dimension::THREE_D) {
+      if constexpr (D == Dim3) {
         m_particles.i3(p)  = 0;
         m_particles.dx3(p) = 0.0f;
       }
@@ -92,22 +91,21 @@ namespace ntt {
   };
 
   template <>
-  Inline void ResetCurrents<Dimension::ONE_D>::operator()(index_t i) const {
+  Inline void ResetCurrents<Dim1>::operator()(index_t i) const {
     JX1(i) = ZERO;
     JX2(i) = ZERO;
     JX3(i) = ZERO;
   }
 
   template <>
-  Inline void ResetCurrents<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void ResetCurrents<Dim2>::operator()(index_t i, index_t j) const {
     JX1(i, j) = ZERO;
     JX2(i, j) = ZERO;
     JX3(i, j) = ZERO;
   }
 
   template <>
-  Inline void
-  ResetCurrents<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void ResetCurrents<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     JX1(i, j, k) = ZERO;
     JX2(i, j, k) = ZERO;
     JX3(i, j, k) = ZERO;
@@ -148,7 +146,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void ResetFields<Dimension::ONE_D>::operator()(index_t i) const {
+  Inline void ResetFields<Dim1>::operator()(index_t i) const {
     EX1(i) = ZERO;
     EX2(i) = ZERO;
     EX3(i) = ZERO;
@@ -158,7 +156,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void ResetFields<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void ResetFields<Dim2>::operator()(index_t i, index_t j) const {
     EX1(i, j) = ZERO;
     EX2(i, j) = ZERO;
     EX3(i, j) = ZERO;
@@ -168,8 +166,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void
-  ResetFields<Dimension::THREE_D>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void ResetFields<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     EX1(i, j, k) = ZERO;
     EX2(i, j, k) = ZERO;
     EX3(i, j, k) = ZERO;

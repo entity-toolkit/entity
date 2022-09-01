@@ -31,7 +31,7 @@ namespace ntt {
 
   // First push, updates B0.
   template <>
-  Inline void FaradayGR_aux<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void FaradayGR_aux<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
     // index_t j_min {static_cast<index_t>(m_mblock.i2_min())};
@@ -55,7 +55,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void FaradayGR_aux<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void FaradayGR_aux<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 
@@ -75,7 +75,7 @@ namespace ntt {
 
   // Second push, updates B but assigns it to B0.
   template <>
-  Inline void FaradayGR<Dimension::TWO_D>::operator()(index_t i, index_t j) const {
+  Inline void FaradayGR<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -102,7 +102,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void FaradayGR<Dimension::THREE_D>::operator()(index_t, index_t, index_t) const {
+  Inline void FaradayGR<Dim3>::operator()(index_t, index_t, index_t) const {
     NTTError("3D GRPIC not implemented yet");
   }
 

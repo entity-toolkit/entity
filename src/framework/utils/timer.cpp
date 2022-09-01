@@ -11,7 +11,9 @@
 namespace ntt {
 
   auto TimeUnit::getMultiplier() const -> double { return multiplier; }
-  auto operator<<(std::ostream& os, TimeUnit const& v) -> std::ostream& { return os << v.unitname; }
+  auto operator<<(std::ostream& os, TimeUnit const& v) -> std::ostream& {
+    return os << v.unitname;
+  }
 
   Time::Time(long double v, TimeUnit const& u) {
     value = static_cast<long double>(v);
@@ -31,18 +33,21 @@ namespace ntt {
       return Time(value, to);
     }
   }
-  auto operator<<(std::ostream& os, Time const& t) -> std::ostream& { return os << t.value << " " << *(t.unit); }
+  auto operator<<(std::ostream& os, Time const& t) -> std::ostream& {
+    return os << t.value << " " << *(t.unit);
+  }
   auto Time::operator-() const -> Time { return Time(-(this->value), *(this->unit)); }
   auto       operator+(Time const& t1, Time const& t2) -> Time {
     if (t1.unit == t2.unit) {
-      return Time(static_cast<long double>(t1.value + t2.value), *(t1.unit));
+            return Time(static_cast<long double>(t1.value + t2.value), *(t1.unit));
     } else {
-      const TimeUnit* main_unit;
-      if (t1.unit->getMultiplier() < t2.unit->getMultiplier())
+            const TimeUnit* main_unit;
+            if (t1.unit->getMultiplier() < t2.unit->getMultiplier())
         main_unit = t1.unit;
       else
         main_unit = t2.unit;
-      return Time(static_cast<long double>(t1.represent(*main_unit).value + t2.represent(*main_unit).value),
+      return Time(static_cast<long double>(t1.represent(*main_unit).value
+                                           + t2.represent(*main_unit).value),
                   *(main_unit));
     }
   }
@@ -54,7 +59,8 @@ namespace ntt {
     void timeNow(TimeContainer& time) { time = std::chrono::system_clock::now(); }
     void timeElapsed(TimeContainer& time_start, Time& time_elapsed) {
       long double dt;
-      dt           = std::chrono::duration<long double>(std::chrono::system_clock::now() - time_start).count();
+      dt = std::chrono::duration<long double>(std::chrono::system_clock::now() - time_start)
+             .count();
       time_elapsed = Time(dt, second);
     }
   } // namespace
