@@ -1,6 +1,5 @@
 #include "global.h"
 #include "pic.h"
-#include "pic_currents_bc.hpp"
 #include "meshblock.h"
 
 #include <plog/Log.h>
@@ -21,17 +20,13 @@ namespace ntt {
       auto mblock {this->m_mblock};
       auto ni {mblock.Ni1()};
       Kokkos::parallel_for(
-        "1d_bc_x1m",
-        mblock.rangeCells({CellLayer::minActiveLayer}),
-        Lambda(index_t i, index_t j) {
+        "1d_bc_x1m", mblock.rangeCells({CellLayer::minActiveLayer}), Lambda(index_t i) {
           mblock.cur(i, cur::jx1) += mblock.cur(i + ni, cur::jx1);
           mblock.cur(i, cur::jx2) += mblock.cur(i + ni, cur::jx2);
           mblock.cur(i, cur::jx3) += mblock.cur(i + ni, cur::jx3);
         });
       Kokkos::parallel_for(
-        "1d_bc_x1p",
-        mblock.rangeCells({CellLayer::maxActiveLayer}),
-        Lambda(index_t i, index_t j) {
+        "1d_bc_x1p", mblock.rangeCells({CellLayer::maxActiveLayer}), Lambda(index_t i) {
           mblock.cur(i, cur::jx1) += mblock.cur(i - ni, cur::jx1);
           mblock.cur(i, cur::jx2) += mblock.cur(i - ni, cur::jx2);
           mblock.cur(i, cur::jx3) += mblock.cur(i - ni, cur::jx3);
@@ -90,7 +85,7 @@ namespace ntt {
       auto mblock {this->m_mblock};
       auto nj {mblock.Ni2()};
       Kokkos::parallel_for(
-        "2d_bc_x1m",
+        "2d_bc_x2m",
         mblock.rangeCells({CellLayer::activeLayer, CellLayer::minActiveLayer}),
         Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j + nj, cur::jx1);
@@ -98,7 +93,7 @@ namespace ntt {
           mblock.cur(i, j, cur::jx3) += mblock.cur(i, j + nj, cur::jx3);
         });
       Kokkos::parallel_for(
-        "2d_bc_x1p",
+        "2d_bc_x2p",
         mblock.rangeCells({CellLayer::activeLayer, CellLayer::maxActiveLayer}),
         Lambda(index_t i, index_t j) {
           mblock.cur(i, j, cur::jx1) += mblock.cur(i, j - nj, cur::jx1);
@@ -113,7 +108,7 @@ namespace ntt {
     /**
      * @note: corners treated separately
      */
-    if ((m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)
+    if ((m_mblock.boundaries[0] == BoundaryCondition::PERIODIC)
         && (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
       auto mblock {this->m_mblock};
       auto ni {mblock.Ni1()};

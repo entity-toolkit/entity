@@ -3,23 +3,24 @@ title           = "Boris example"
 runtime         = 0.1
 
 [domain]
-resolution      = [64, 64]
+resolution      = [256, 256]
 extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.9
+CFL             = 0.5
 correction      = 1.0
 #fieldsolver_ON  = true
-deposit_ON      = false
+deposit_ON      = true
+current_filters = 2
 
 [units]
-ppc0            = 0.1
+ppc0            = 1.0
 larmor0         = 0.1
-skindepth0      = 0.01
+skindepth0      = 10.0
 
 [particles]
-n_species       = 4
+n_species       = 2
 
 [species_1]
 label           = "electron"
