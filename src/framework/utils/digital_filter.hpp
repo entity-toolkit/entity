@@ -11,9 +11,9 @@ namespace ntt {
    */
   template <Dimension D>
   class DigitalFilter {
-    Mesh<D>         m_mesh;
     ndfield_t<D, 3> m_cur;
     ndfield_t<D, 3> m_cur_b;
+    Mesh<D>         m_mesh;
     unsigned short  m_npasses;
 
   public:
@@ -23,52 +23,94 @@ namespace ntt {
      * @param cur0 Backup current field.
      * @param npasses Number of filter passes.
      */
-    Digital(const ndfield_t<D, 3>& cur,
-            const ndfiend_t<D, 3>& cur_b,
-            const Mesh<D>&         mesh,
-            const unsigned short&  npasses)
+    DigitalFilter(const ndfield_t<D, 3>& cur,
+                  const ndfield_t<D, 3>& cur_b,
+                  const Mesh<D>&         mesh,
+                  const unsigned short&  npasses)
       : m_cur(cur), m_cur_b(cur_b), m_mesh(mesh), m_npasses(npasses) {}
 
-    void apply() const {
+    void apply() {
       for (unsigned short i = 0; i < m_npasses; ++i) {
-        // backup the field
-        Kokkos::deep_copy(cur_b, cur);
-        // filter the current
+        synchronizeGhostZones();
+        Kokkos::deep_copy(m_cur_b, m_cur);
         filterPass();
-        // exchange ghost zones and/or apply boundary conditions
       }
     }
 
+    /**
+     * @brief 1D implementation of the algorithm.
+     * @param i1 index.
+     */
+    Inline void operator()(index_t) const;
+    /**
+     * @brief 2D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     */
+    Inline void operator()(index_t, index_t) const;
+    /**
+     * @brief 3D implementation of the algorithm.
+     * @param i1 index.
+     * @param i2 index.
+     * @param i3 index.
+     */
+    Inline void operator()(index_t, index_t, index_t) const;
+
   private:
-    void filterPass() const {}
+    void filterPass() {
+      auto range {m_mesh.rangeActiveCells()};
+      Kokkos::parallel_for("filter_pass", range, *this);
+    }
     void synchronizeGhostZones() const;
   };
 
+#ifdef MINKOWSKI_METRIC
   template <>
-  void DigitalFilter<Dim1>::synchronizeGhostZones() const {
-    auto ni {m_mesh.Ni1()};
-    Kokkos::parallel_for(
-      "1d_gh_x1m",
-      m_mesh.rangeCells({CellLayer::minGhostLayer}),
-      Lambda(index_t i, index_t j) {
-        m_cur.cur(i, cur::jx1) += m_cur.cur(i + ni, cur::jx1);
-        m_cur.cur(i, cur::jx2) += m_cur.cur(i + ni, cur::jx2);
-        m_cur.cur(i, cur::jx3) += m_cur.cur(i + ni, cur::jx3);
-      });
-    Kokkos::parallel_for(
-      "1d_gh_x1p",
-      m_mesh.rangeCells({CellLayer::maxGhostLayer}),
-      Lambda(index_t i, index_t j) {
-        m_cur.cur(i, cur::jx1) += m_cur.cur(i - ni, cur::jx1);
-        m_cur.cur(i, cur::jx2) += m_cur.cur(i - ni, cur::jx2);
-        m_cur.cur(i, cur::jx3) += m_cur.cur(i - ni, cur::jx3);
-      });
+  Inline void DigitalFilter<Dim1>::operator()(index_t i) const {
+    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+      m_cur(i, comp) = (real_t)(0.5) * m_cur_b(i, comp)
+                       + (real_t)(0.25) * (m_cur_b(i - 1, comp) + m_cur_b(i + 1, comp));
+    }
   }
 
   template <>
-  void DigitalFilter<Dim2>::synchronizeGhostZones() const {}
+  Inline void DigitalFilter<Dim2>::operator()(index_t i, index_t j) const {
+    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+      m_cur(i, j, comp) = (real_t)(0.25) * m_cur_b(i, j, comp)
+                          + (real_t)(0.125)
+                              * (m_cur_b(i - 1, j, comp) + m_cur_b(i + 1, j, comp)
+                                 + m_cur_b(i, j - 1, comp) + m_cur_b(i, j + 1, comp))
+                          + (real_t)(0.0625)
+                              * (m_cur_b(i - 1, j - 1, comp) + m_cur_b(i + 1, j + 1, comp)
+                                 + m_cur_b(i - 1, j + 1, comp) + m_cur_b(i + 1, j - 1, comp));
+    }
+  }
 
   template <>
-  void DigitalFilter<Dim3>::synchronizeGhostZones() const {}
+  Inline void DigitalFilter<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+      m_cur(i, j, k, comp)
+        = (real_t)(0.125) * m_cur_b(i, j, k, comp)
+          + (real_t)(0.0625)
+              * (m_cur_b(i - 1, j, k, comp) + m_cur_b(i + 1, j, k, comp)
+                 + m_cur_b(i, j - 1, k, comp) + m_cur_b(i, j + 1, k, comp)
+                 + m_cur_b(i, j, k - 1, comp) + m_cur_b(i, j, k + 1, comp))
+          + (real_t)(0.03125)
+              * (m_cur_b(i - 1, j - 1, k, comp) + m_cur_b(i + 1, j + 1, k, comp)
+                 + m_cur_b(i - 1, j + 1, k, comp) + m_cur_b(i + 1, j - 1, k, comp)
+                 + m_cur_b(i, j - 1, k - 1, comp) + m_cur_b(i, j + 1, k + 1, comp)
+                 + m_cur_b(i, j, k - 1, comp) + m_cur_b(i, j, k + 1, comp)
+                 + m_cur_b(i - 1, j, k - 1, comp) + m_cur_b(i + 1, j, k + 1, comp)
+                 + m_cur_b(i - 1, j, k + 1, comp) + m_cur_b(i + 1, j, k - 1, comp))
+          + (real_t)(0.015625)
+              * (m_cur_b(i - 1, j - 1, k - 1, comp) + m_cur_b(i + 1, j + 1, k + 1, comp)
+                 + m_cur_b(i - 1, j + 1, k + 1, comp) + m_cur_b(i + 1, j - 1, k - 1, comp)
+                 + m_cur_b(i - 1, j - 1, k + 1, comp) + m_cur_b(i + 1, j + 1, k - 1, comp)
+                 + m_cur_b(i - 1, j + 1, k - 1, comp) + m_cur_b(i + 1, j - 1, k + 1, comp));
+    }
+  }
+#endif
+
+} // namespace ntt
 
 #endif

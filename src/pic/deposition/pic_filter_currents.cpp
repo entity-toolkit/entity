@@ -1,15 +1,21 @@
 #include "global.h"
 #include "pic.h"
-#include "pic_filter_currents.hpp"
+#include "digital_filter.hpp"
+// #include "pic_filter_currents.hpp"
 
 namespace ntt {
+
   /**
    * @brief filter currents.
    *
    */
   template <Dimension D>
   void PIC<D>::filterCurrentsSubstep(const real_t&) {
-    // Kokkos::parallel_for("", this->m_mblock.rangeActiveCells(), ...<D>(this->m_mblock));
+    DigitalFilter<D> filter(this->m_mblock.cur,
+                            this->m_mblock.cur0,
+                            this->m_mblock,
+                            this->m_sim_params.current_filters());
+    filter.apply();
   }
 } // namespace ntt
 

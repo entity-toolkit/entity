@@ -22,7 +22,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::resetFields(const real_t&) {
     Kokkos::parallel_for(
-      "reset_fields", this->m_mblock.rangeActiveCells(), ResetFields<D>(this->m_mblock));
+      "reset_fields", this->m_mblock.rangeAllCells(), ResetFields<D>(this->m_mblock));
   }
 
   /**
