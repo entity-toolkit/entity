@@ -80,6 +80,9 @@ namespace ntt {
          const std::vector<real_t>&       ext,
          const real_t*                    params);
     ~Mesh() = default;
+    
+    // Boundary conditions.
+    std::vector<BoundaryCondition> boundaries;
 
     /**
      * @brief Loop over all active cells (disregard ghost cells).
@@ -208,8 +211,6 @@ namespace ntt {
   public:
     // Vector of particles species.
     std::vector<Particles<D, S>> particles;
-    // Boundary conditions.
-    std::vector<BoundaryCondition> boundaries;
 
     /**
      * @brief Constructor for the meshblock.
