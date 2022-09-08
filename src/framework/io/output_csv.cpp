@@ -122,7 +122,7 @@ namespace ntt {
   } // namespace csv
 } // namespace ntt
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
 
 using Meshblock1D = ntt::Meshblock<ntt::Dim1, ntt::SimulationType::PIC>;
 using Meshblock2D = ntt::Meshblock<ntt::Dim2, ntt::SimulationType::PIC>;
@@ -155,7 +155,7 @@ template void ntt::csv::writeParticle<ntt::Dim2, ntt::SimulationType::PIC>(
 template void ntt::csv::writeParticle<ntt::Dim3, ntt::SimulationType::PIC>(
   std::string, const Meshblock3D&, const std::size_t&, const std::size_t&, const OutputMode&);
 
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
 
 using Meshblock2D = ntt::Meshblock<ntt::Dim2, ntt::SimulationType::GRPIC>;
 using Meshblock3D = ntt::Meshblock<ntt::Dim3, ntt::SimulationType::GRPIC>;

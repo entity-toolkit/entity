@@ -8,7 +8,7 @@
 namespace ntt {
   using resolution_t = std::vector<unsigned int>;
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
   // * * * * * * * * * * * * * * * * * * * *
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -35,7 +35,7 @@ namespace ntt {
       cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
   }
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -64,11 +64,11 @@ namespace ntt {
 
 } // namespace ntt
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
 template class ntt::Fields<ntt::Dim1, ntt::SimulationType::PIC>;
 template class ntt::Fields<ntt::Dim2, ntt::SimulationType::PIC>;
 template class ntt::Fields<ntt::Dim3, ntt::SimulationType::PIC>;
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
 template class ntt::Fields<ntt::Dim2, ntt::SimulationType::GRPIC>;
 template class ntt::Fields<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

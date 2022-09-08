@@ -4,11 +4,11 @@
 
 #include "problem_generator.hpp"
 
-#if SIMTYPE == PIC_SIMTYPE
-template struct ntt::ProblemGenerator<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
-#elif SIMTYPE == GRPIC_SIMTYPE
-template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+#ifdef PIC_SIMTYPE
+template struct ntt::ProblemGenerator<ntt::Dim1, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::PIC>;
+#elif defined(GRPIC_SIMTYPE)
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::GRPIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

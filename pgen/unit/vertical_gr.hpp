@@ -33,7 +33,7 @@ namespace ntt {
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t     inv_sqrt_detH_ijP {ONE / mblock.metric.sqrt_det_h(x)};
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         x0m[0] = x[0];
         x0m[1] = x[1] - HALF * epsilon;
         x0p[0] = x[0];
@@ -47,7 +47,7 @@ namespace ntt {
     Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t     inv_sqrt_detH_iPj {ONE / mblock.metric.sqrt_det_h(x)};
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         x0m[0] = x[0] + HALF - HALF * epsilon;
         x0m[1] = x[1];
         x0p[0] = x[0] + HALF + HALF * epsilon;
