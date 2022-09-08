@@ -9,14 +9,14 @@
 
 namespace ntt {
 
-  using ProblemGenerator1D = ProblemGenerator<Dimension::ONE_D, SimulationType::PIC>;
-  using Meshblock1D        = Meshblock<Dimension::ONE_D, SimulationType::PIC>;
+  using ProblemGenerator1D = ProblemGenerator<Dim1, SimulationType::PIC>;
+  using Meshblock1D        = Meshblock<Dim1, SimulationType::PIC>;
 
-  using ProblemGenerator2D = ProblemGenerator<Dimension::TWO_D, SimulationType::PIC>;
-  using Meshblock2D        = Meshblock<Dimension::TWO_D, SimulationType::PIC>;
+  using ProblemGenerator2D = ProblemGenerator<Dim2, SimulationType::PIC>;
+  using Meshblock2D        = Meshblock<Dim2, SimulationType::PIC>;
 
-  using ProblemGenerator3D = ProblemGenerator<Dimension::THREE_D, SimulationType::PIC>;
-  using Meshblock3D        = Meshblock<Dimension::THREE_D, SimulationType::PIC>;
+  using ProblemGenerator3D = ProblemGenerator<Dim3, SimulationType::PIC>;
+  using Meshblock3D        = Meshblock<Dim3, SimulationType::PIC>;
 
   template <>
   void ProblemGenerator2D::userInitFields(const SimulationParams&, Meshblock2D& mblock) {
@@ -38,8 +38,8 @@ namespace ntt {
   void ProblemGenerator2D::userInitParticles(const SimulationParams&, Meshblock2D&) {
     //
     // Kokkos::parallel_for(
-    //   "userInitPrtls", CreateRangePolicy<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
-    //     coord_t<Dimension::TWO_D> x {0.1, 0.12}, x_CU;
+    //   "userInitPrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
+    //     coord_t<Dim2> x {0.1, 0.12}, x_CU;
     //     mblock.metric.x_Cart2Code(x, x_CU);
     //     auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
     //     auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
@@ -88,6 +88,6 @@ namespace ntt {
 
 } // namespace ntt
 
-template struct ntt::ProblemGenerator<ntt::Dimension::ONE_D, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim1, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::PIC>;

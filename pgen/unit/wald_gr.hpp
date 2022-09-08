@@ -36,7 +36,7 @@ namespace ntt {
              * (mblock.metric.h_33(x) + TWO * mblock.metric.spin() * mblock.metric.h_13(x) * mblock.metric.beta1u(x));
     }
     Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         coord_t<D> x0m, x0p;
         real_t     inv_sqrt_detH_ijP {ONE / mblock.metric.sqrt_det_h(x)};
         x0m[0] = x[0];
@@ -51,7 +51,7 @@ namespace ntt {
     }
 
     Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
-      if constexpr (D == Dimension::TWO_D) {
+      if constexpr (D == Dim2) {
         coord_t<D> x0m, x0p;
         real_t     inv_sqrt_detH_iPj {ONE / mblock.metric.sqrt_det_h(x)};
         x0m[0] = x[0] + HALF - HALF * epsilon;

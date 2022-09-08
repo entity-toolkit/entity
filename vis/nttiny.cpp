@@ -5,10 +5,10 @@
 #include "cargs.h"
 #include "input.h"
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
 #  include "grpic.h"
 #  include "init_fields.hpp"
 #  define SIMULATION_CONTAINER GRPIC
@@ -39,9 +39,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
   /**
    * TODO: make this less ugly
    */
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
     : nttiny::SimulationAPI<float> {sim.mblock()->metric.label},
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
     : nttiny::SimulationAPI<float> {"qspherical"},
 #endif
       nx1(sim.mblock()->Ni1() + 2 * ntt::N_GHOSTS),
@@ -65,7 +65,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     for (int i {0}; i < nx1; ++i) {
       for (int j {0}; j < nx2; ++j) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
           auto                  i_ {(real_t)(i - ntt::N_GHOSTS)};
           auto                  j_ {(real_t)(j - ntt::N_GHOSTS)};
           ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
@@ -107,7 +107,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
           } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
             m_data[f].set(i, nx2 - j - 1, j_hat[2]);
           }
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
           auto i_ {(real_t)(i - ntt::N_GHOSTS)};
           auto j_ {(real_t)(j - ntt::N_GHOSTS)};
           // interpolate and transform to spherical
@@ -382,7 +382,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<float> {
     float rh       = 1.0f + math::sqrt(1.0f - a * a);
     nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
     nttiny::drawCircle({0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI});
-#elif SIMTYPE == PIC_SIMTYPE
+#elifdef PIC_SIMTYPE
 #endif
   }
 };

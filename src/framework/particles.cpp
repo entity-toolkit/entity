@@ -154,11 +154,11 @@ namespace ntt {
 
 } // namespace ntt
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
 template struct ntt::Particles<ntt::Dim1, ntt::SimulationType::PIC>;
 template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::PIC>;
 template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::PIC>;
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
 template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::GRPIC>;
 template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

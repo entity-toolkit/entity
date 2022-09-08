@@ -19,40 +19,41 @@ namespace ntt {
   // . . . . . . . . . . . . . . . . . . . . . . . .
 
   template <>
-  void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::GRPIC>& mblock) {
+  void ProblemGenerator<Dim2, SimulationType::GRPIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim2, SimulationType::GRPIC>& mblock) {
 
-    Kokkos::parallel_for(
-      "userInitFlds",
-      CreateRangePolicy<Dimension::TWO_D>({mblock.i1_min() - 1, mblock.i2_min()}, {mblock.i1_max(), mblock.i2_max() + 1}),
-      initFieldsFromVectorPotential<Dimension::TWO_D>(*this, mblock, epsilon));
+    Kokkos::parallel_for("userInitFlds",
+                         CreateRangePolicy<Dim2>({mblock.i1_min() - 1, mblock.i2_min()},
+                                                 {mblock.i1_max(), mblock.i2_max() + 1}),
+                         initFieldsFromVectorPotential<Dim2>(*this, mblock, epsilon));
   }
 
   template <>
-  void ProblemGenerator<Dimension::THREE_D, SimulationType::GRPIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dimension::THREE_D, SimulationType::GRPIC>&) {}
+  void ProblemGenerator<Dim3, SimulationType::GRPIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim3, SimulationType::GRPIC>&) {}
 } // namespace ntt
 
-template struct ntt::ProblemGenerator<ntt::Dimension::TWO_D, ntt::SimulationType::GRPIC>;
-template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationType::GRPIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::GRPIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::GRPIC>;
 
 // !LEGACY
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // Field boundary conditions
 // . . . . . . . . . . . . . . . . . . . . . . . .
 // template <>
-// void ProblemGenerator<Dimension::ONE_D, SimulationType::GRPIC>::userBCFields(
-//   const real_t&, const SimulationParams&, Meshblock<Dimension::ONE_D, SimulationType::GRPIC>&) {}
+// void ProblemGenerator<Dim1, SimulationType::GRPIC>::userBCFields(
+//   const real_t&, const SimulationParams&, Meshblock<Dim1, SimulationType::GRPIC>&) {}
 
 // template <>
-// void ProblemGenerator<Dimension::TWO_D, SimulationType::GRPIC>::userBCFields(
-// const real_t& time, const SimulationParams&, Meshblock<Dimension::TWO_D, SimulationType::GRPIC>& mblock) {
-//  
+// void ProblemGenerator<Dim2, SimulationType::GRPIC>::userBCFields(
+// const real_t& time, const SimulationParams&, Meshblock<Dim2, SimulationType::GRPIC>& mblock)
+// {
+//
 //   (void) time;
 //   Kokkos::parallel_for(
 //     "userBcFlds_rmin",
-//     CreateRangePolicy<Dimension::TWO_D>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_min() + 1, mblock.i2_max()}),
-//     Lambda(index_t i, index_t j) {
+//     CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()}, {mblock.i1_min() + 1,
+//     mblock.i2_max()}), Lambda(index_t i, index_t j) {
 
 //       // real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
 //       // real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
@@ -65,8 +66,8 @@ template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationTy
 
 //   Kokkos::parallel_for(
 //     "userBcFlds_rmax",
-//     CreateRangePolicy<Dimension::TWO_D>({mblock.i1_max(), mblock.i2_min()}, {mblock.i1_max() + 1, mblock.i2_max()}),
-//     Lambda(index_t i, index_t j) {
+//     CreateRangePolicy<Dim2>({mblock.i1_max(), mblock.i2_min()}, {mblock.i1_max() + 1,
+//     mblock.i2_max()}), Lambda(index_t i, index_t j) {
 //       mblock.em0(i, j, em::ex3) = ZERO;
 //       mblock.em0(i, j, em::ex2) = ZERO;
 //       mblock.em0(i, j, em::bx1) = ZERO;
@@ -74,5 +75,5 @@ template struct ntt::ProblemGenerator<ntt::Dimension::THREE_D, ntt::SimulationTy
 // }
 
 // template <>
-// void ProblemGenerator<Dimension::THREE_D, SimulationType::GRPIC>::userBCFields(
-//   const real_t&, const SimulationParams&, Meshblock<Dimension::THREE_D, SimulationType::GRPIC>&) {}
+// void ProblemGenerator<Dim3, SimulationType::GRPIC>::userBCFields(
+//   const real_t&, const SimulationParams&, Meshblock<Dim3, SimulationType::GRPIC>&) {}

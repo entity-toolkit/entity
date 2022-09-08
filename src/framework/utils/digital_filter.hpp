@@ -109,6 +109,16 @@ namespace ntt {
                  + m_cur_b(i - 1, j + 1, k - 1, comp) + m_cur_b(i + 1, j - 1, k + 1, comp));
     }
   }
+#else
+  template <>
+  Inline void DigitalFilter<Dim1>::operator()(index_t) const {}
+
+  template <>
+  Inline void DigitalFilter<Dim2>::operator()(index_t, index_t) const {}
+
+  template <>
+  Inline void DigitalFilter<Dim3>::operator()(index_t, index_t, index_t) const {}
+
 #endif
 
 } // namespace ntt
