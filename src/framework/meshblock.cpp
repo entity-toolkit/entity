@@ -120,11 +120,11 @@ template class ntt::Mesh<ntt::Dim1>;
 template class ntt::Mesh<ntt::Dim2>;
 template class ntt::Mesh<ntt::Dim3>;
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
 template class ntt::Meshblock<ntt::Dim1, ntt::SimulationType::PIC>;
 template class ntt::Meshblock<ntt::Dim2, ntt::SimulationType::PIC>;
 template class ntt::Meshblock<ntt::Dim3, ntt::SimulationType::PIC>;
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
 template class ntt::Meshblock<ntt::Dim2, ntt::SimulationType::GRPIC>;
 template class ntt::Meshblock<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

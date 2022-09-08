@@ -158,11 +158,11 @@ namespace ntt {
 
 } // namespace ntt
 
-#if SIMTYPE == PIC_SIMTYPE
+#ifdef PIC_SIMTYPE
 template class ntt::Simulation<ntt::Dim1, ntt::SimulationType::PIC>;
 template class ntt::Simulation<ntt::Dim2, ntt::SimulationType::PIC>;
 template class ntt::Simulation<ntt::Dim3, ntt::SimulationType::PIC>;
-#elif SIMTYPE == GRPIC_SIMTYPE
+#elif defined(GRPIC_SIMTYPE)
 template class ntt::Simulation<ntt::Dim2, ntt::SimulationType::GRPIC>;
 template class ntt::Simulation<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

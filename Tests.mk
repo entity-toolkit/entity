@@ -3,14 +3,13 @@ BUILD_TEST_DIR := ${ROOT_DIR}/${BUILD_DIR}/tests/
 
 .PHONY: test test_pic test_grpic
 
-TEST_CFLAGS := $(filter-out -DSIMTYPE=%, $(filter-out -DMETRIC=%, $(CFLAGS)))
+TEST_CFLAGS := $(filter-out -DSIMTYPE=%, $(filter-out -D%_METRIC, $(CFLAGS)))
 test_compile_command := ${CXX} ${CXXSTANDARD} $(INCFLAGS) $(DEFINITIONS) $(TEST_CFLAGS) -MMD
 
-UTILS_FLAG := -DMETRIC=-1
-MINKOWSKI_FLAG := -DMETRIC=MINKOWSKI_METRIC
-SPHERICAL_FLAG := -DMETRIC=SPHERICAL_METRIC
-QSPHERICAL_FLAG := -DMETRIC=QSPHERICAL_METRIC
-PIC_FLAG := -DSIMTYPE=PIC_SIMTYPE
+MINKOWSKI_FLAG := -DMINKOWSKI_METRIC
+SPHERICAL_FLAG := -DSPHERICAL_METRIC
+QSPHERICAL_FLAG := -DQSPHERICAL_METRIC
+PIC_FLAG := -DPIC_SIMTYPE
 
 TEST_UTILS_OBJS := $(filter %timer.cpp, $(SRCS)) $(filter %qmath.cpp, $(SRCS))
 TEST_UTILS_OBJS := $(subst ${SRC_DIR},${BUILD_TEST_DIR}Utils,$(TEST_UTILS_OBJS:%=%.o))
@@ -52,12 +51,12 @@ ${BIN_DIR}/testUtils.exec: $(TEST_UTILS_OBJS) ${BUILD_TEST_DIR}Utils/test.o
 ${BUILD_TEST_DIR}Utils/%.o: ${SRC_DIR}/%
 	@echo [C]ompiling \`src\` for \`Utils\` test: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${test_compile_command} ${UTILS_FLAG} -c $< -o $@
+	$(HIDE)${test_compile_command} -c $< -o $@
 
 ${BUILD_TEST_DIR}Utils/test.o: ${TEST_DIR}/test.cpp
 	@echo [C]ompiling \`test\` for \`Utils\` test: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${test_compile_command} ${UTILS_FLAG} -c $< -o $@
+	$(HIDE)${test_compile_command} -c $< -o $@
 
 # ---------------------------------------------------------------------------- #
 #                                 PIC Minkowski                                #
