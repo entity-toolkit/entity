@@ -54,7 +54,7 @@ namespace ntt {
      * @note Address : cur0(i, j, k, cur::***).
      */
     ndfield_t<D, 3> cur0;
-#if SIMTYPE == GRPIC_SIMTYPE
+#ifdef GRPIC_SIMTYPE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific
     // * * * * * * * * * * * * * * * * * * * *

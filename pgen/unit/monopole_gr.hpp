@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-#if SIMTYPE == GRPIC_SIMTYPE
+#ifdef GRPIC_SIMTYPE
 
 namespace ntt {
 
@@ -30,7 +30,8 @@ namespace ntt {
       return ONE - math::cos(rth_[1]);
     }
 
-    Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
+    Inline auto userTargetField_br_cntrv(const Meshblock<D, S>& mblock,
+                                         const coord_t<D>&      x) const -> real_t {
       coord_t<D> x0m, x0p;
       real_t     inv_sqrt_detH_ijP {ONE / mblock.metric.sqrt_det_h(x)};
       x0m[0] = x[0];
@@ -40,7 +41,8 @@ namespace ntt {
       return (A3(mblock, x0p) - A3(mblock, x0m)) * inv_sqrt_detH_ijP / epsilon;
     }
 
-    Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
+    Inline auto userTargetField_bth_cntrv(const Meshblock<D, S>& mblock,
+                                          const coord_t<D>&      x) const -> real_t {
       (void)mblock;
       (void)x;
       return ZERO;

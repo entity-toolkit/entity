@@ -63,7 +63,7 @@ namespace ntt {
     PLOGI << "   dimension: " << static_cast<short>(D) << "D";
     PLOGI << "   metric: " << (m_mblock.metric.label);
 
-#if SIMTYPE == GRPIC_SIMTYPE
+#ifdef GRPIC_SIMTYPE
     PLOGI << "   Spin parameter: " << (m_sim_params.metric_parameters()[3]);
 #endif
 

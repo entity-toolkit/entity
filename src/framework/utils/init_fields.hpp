@@ -1,7 +1,7 @@
 #ifndef GRPIC_INIT_FIELDS
 #define GRPIC_INIT_FIELDS
 
-#if (SIMTYPE == GRPIC_SIMTYPE)
+#ifdef GRPIC_SIMTYPE
 
 #  include "global.h"
 #  include "fields.h"
