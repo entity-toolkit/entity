@@ -16,6 +16,7 @@ CFL             = <float: 0.0 < ... < 1.0>
 correction      = <float: ~1>
 fieldsolver_ON  = <bool>
 deposit_ON      = <bool>
+current_filters = <int>
 
 [units]
 ppc0            = <float>
