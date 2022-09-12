@@ -5,12 +5,6 @@
 #define STRINGIZE_DETAIL(x) #x
 #define LINE_STRING         STRINGIZE(__LINE__)
 
-// #define MINKOWSKI_METRIC    1
-// #define SPHERICAL_METRIC    2
-// #define QSPHERICAL_METRIC   3
-// #define KERR_SCHILD_METRIC  4
-// #define QKERR_SCHILD_METRIC 5
-
 #define PIC_SIMTYPE         1
 #define GRPIC_SIMTYPE       2
 
@@ -42,7 +36,6 @@ inline constexpr float ONE {1.0f};
 inline constexpr float TWO {2.0f};
 inline constexpr float ZERO {0.0f};
 inline constexpr float HALF {0.5f};
-inline constexpr float QUARTER {0.25f};
 inline constexpr float INV_2 {0.5f};
 inline constexpr float INV_4 {0.25f};
 inline constexpr float INV_8 {0.125f};
@@ -54,7 +47,6 @@ inline constexpr double ONE {1.0};
 inline constexpr double TWO {2.0};
 inline constexpr double ZERO {0.0};
 inline constexpr double HALF {0.5};
-inline constexpr double QUARTER {0.25};
 inline constexpr double INV_2 {0.5};
 inline constexpr double INV_4 {0.25};
 inline constexpr double INV_8 {0.125};

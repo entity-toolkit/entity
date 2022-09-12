@@ -158,12 +158,37 @@ namespace ntt {
   };
 
   template <>
-  Inline void Deposit<Dim1>::depositCurrentsFromParticle(const vec_t<Dim3>&,
-                                                         const tuple_t<int, Dim1>&,
-                                                         const tuple_t<int, Dim1>&,
-                                                         const coord_t<Dim1>&,
-                                                         const coord_t<Dim1>&,
-                                                         const coord_t<Dim1>&) const {}
+  Inline void Deposit<Dim1>::depositCurrentsFromParticle(const vec_t<Dim3>&        vp,
+                                                         const tuple_t<int, Dim1>& Ip_f,
+                                                         const tuple_t<int, Dim1>& Ip_i,
+                                                         const coord_t<Dim1>&      xp_f,
+                                                         const coord_t<Dim1>&      xp_i,
+                                                         const coord_t<Dim1>& xp_r) const {
+    real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
+    real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
+    real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};
+    real_t Fx1_2 {(xp_f[0] - xp_r[0]) * m_charge / m_dt};
+
+    real_t Fx2_1 {HALF * vp[1] * m_charge};
+    real_t Fx2_2 {HALF * vp[1] * m_charge};
+
+    real_t Fx3_1 {HALF * vp[2] * m_charge};
+    real_t Fx3_2 {HALF * vp[2] * m_charge};
+
+    auto cur_access = m_scatter_cur.access();
+    ATOMIC_JX1(Ip_i[0]) += Fx1_1;
+    ATOMIC_JX1(Ip_f[0]) += Fx1_2;
+
+    ATOMIC_JX2(Ip_i[0]) += Fx2_1 * (ONE - Wx1_1);
+    ATOMIC_JX2(Ip_i[0] + 1) += Fx2_1 * Wx1_1;
+    ATOMIC_JX2(Ip_f[0]) += Fx2_2 * (ONE - Wx1_2);
+    ATOMIC_JX2(Ip_f[0] + 1) += Fx2_2 * Wx1_2;
+
+    ATOMIC_JX3(Ip_i[0]) += Fx3_1 * (ONE - Wx1_1);
+    ATOMIC_JX3(Ip_i[0] + 1) += Fx3_1 * Wx1_1;
+    ATOMIC_JX3(Ip_f[0]) += Fx3_2 * (ONE - Wx1_2);
+    ATOMIC_JX3(Ip_f[0] + 1) += Fx3_2 * Wx1_2;
+  }
 
   /**
    * !TODO: fix the conversion to I+di
@@ -191,13 +216,11 @@ namespace ntt {
     auto cur_access = m_scatter_cur.access();
     ATOMIC_JX1(Ip_i[0], Ip_i[1]) += Fx1_1 * (ONE - Wx2_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1) += Fx1_1 * Wx2_1;
-
-    ATOMIC_JX2(Ip_i[0], Ip_i[1]) += Fx2_1 * (ONE - Wx1_1);
-    ATOMIC_JX2(Ip_i[0] + 1, Ip_i[1]) += Fx2_1 * Wx1_1;
-
     ATOMIC_JX1(Ip_f[0], Ip_f[1]) += Fx1_2 * (ONE - Wx2_2);
     ATOMIC_JX1(Ip_f[0], Ip_f[1] + 1) += Fx1_2 * Wx2_2;
 
+    ATOMIC_JX2(Ip_i[0], Ip_i[1]) += Fx2_1 * (ONE - Wx1_1);
+    ATOMIC_JX2(Ip_i[0] + 1, Ip_i[1]) += Fx2_1 * Wx1_1;
     ATOMIC_JX2(Ip_f[0], Ip_f[1]) += Fx2_2 * (ONE - Wx1_2);
     ATOMIC_JX2(Ip_f[0] + 1, Ip_f[1]) += Fx2_2 * Wx1_2;
 
@@ -214,81 +237,58 @@ namespace ntt {
 
   template <>
   Inline void Deposit<Dim3>::depositCurrentsFromParticle(const vec_t<Dim3>&,
-                                                         const tuple_t<int, Dim3>&,
-                                                         const tuple_t<int, Dim3>&,
-                                                         const coord_t<Dim3>&,
-                                                         const coord_t<Dim3>&,
-                                                         const coord_t<Dim3>&) const {
-    NTTError("Deposit::depositCurrentsFromParticle() not implemented for 3D");
+                                                         const tuple_t<int, Dim3>& Ip_f,
+                                                         const tuple_t<int, Dim3>& Ip_i,
+                                                         const coord_t<Dim3>&      xp_f,
+                                                         const coord_t<Dim3>&      xp_i,
+                                                         const coord_t<Dim3>& xp_r) const {
+    real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
+    real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
+    real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};
+    real_t Fx1_2 {(xp_f[0] - xp_r[0]) * m_charge / m_dt};
+
+    real_t Wx2_1 {HALF * (xp_i[1] + xp_r[1]) - static_cast<real_t>(Ip_i[1])};
+    real_t Wx2_2 {HALF * (xp_f[1] + xp_r[1]) - static_cast<real_t>(Ip_f[1])};
+    real_t Fx2_1 {(xp_r[1] - xp_i[1]) * m_charge / m_dt};
+    real_t Fx2_2 {(xp_f[1] - xp_r[1]) * m_charge / m_dt};
+
+    real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
+    real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
+    real_t Fx3_1 {(xp_r[2] - xp_i[2]) * m_charge / m_dt};
+    real_t Fx3_2 {(xp_f[2] - xp_r[2]) * m_charge / m_dt};
+
+    auto cur_access = m_scatter_cur.access();
+    ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2]) += Fx1_1 * (ONE - Wx2_1) * (ONE - Wx3_1);
+    ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1, Ip_i[2]) += Fx1_1 * Wx2_1 * (ONE - Wx3_1);
+    ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2] + 1) += Fx1_1 * (ONE - Wx2_1) * Wx3_1;
+    ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1, Ip_i[2] + 1) += Fx1_1 * Wx2_1 * Wx3_1;
+
+    ATOMIC_JX1(Ip_f[0], Ip_f[1], Ip_f[2]) += Fx1_2 * (ONE - Wx2_2) * (ONE - Wx3_2);
+    ATOMIC_JX1(Ip_f[0], Ip_f[1] + 1, Ip_f[2]) += Fx1_2 * Wx2_2 * (ONE - Wx3_2);
+    ATOMIC_JX1(Ip_f[0], Ip_f[1], Ip_f[2] + 1) += Fx1_2 * (ONE - Wx2_2) * Wx3_2;
+    ATOMIC_JX1(Ip_f[0], Ip_f[1] + 1, Ip_f[2] + 1) += Fx1_2 * Wx2_2 * Wx3_2;
+
+    ATOMIC_JX2(Ip_i[0], Ip_i[1], Ip_i[2]) += Fx2_1 * (ONE - Wx1_1) * (ONE - Wx3_1);
+    ATOMIC_JX2(Ip_i[0] + 1, Ip_i[1], Ip_i[2]) += Fx2_1 * Wx1_1 * (ONE - Wx3_1);
+    ATOMIC_JX2(Ip_i[0], Ip_i[1], Ip_i[2] + 1) += Fx2_1 * (ONE - Wx1_1) * Wx3_1;
+    ATOMIC_JX2(Ip_i[0] + 1, Ip_i[1], Ip_i[2] + 1) += Fx2_1 * Wx1_1 * Wx3_1;
+
+    ATOMIC_JX2(Ip_f[0], Ip_f[1], Ip_f[2]) += Fx2_2 * (ONE - Wx1_2) * (ONE - Wx3_2);
+    ATOMIC_JX2(Ip_f[0] + 1, Ip_f[1], Ip_f[2]) += Fx2_2 * Wx1_2 * (ONE - Wx3_2);
+    ATOMIC_JX2(Ip_f[0], Ip_f[1], Ip_f[2] + 1) += Fx2_2 * (ONE - Wx1_2) * Wx3_2;
+    ATOMIC_JX2(Ip_f[0] + 1, Ip_f[1], Ip_f[2] + 1) += Fx2_2 * Wx1_2 * Wx3_2;
+
+    ATOMIC_JX3(Ip_i[0], Ip_i[1], Ip_i[2]) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+    ATOMIC_JX3(Ip_i[0] + 1, Ip_i[1], Ip_i[2]) += Fx3_1 * Wx1_1 * (ONE - Wx2_1);
+    ATOMIC_JX3(Ip_i[0], Ip_i[1] + 1, Ip_i[2]) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+    ATOMIC_JX3(Ip_i[0] + 1, Ip_i[1] + 1, Ip_i[2]) += Fx3_1 * Wx1_1 * Wx2_1;
+
+    ATOMIC_JX3(Ip_f[0], Ip_f[1], Ip_f[2]) += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+    ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1], Ip_f[2]) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+    ATOMIC_JX3(Ip_f[0], Ip_f[1] + 1, Ip_f[2]) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+    ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1] + 1, Ip_f[2]) += Fx3_2 * Wx1_2 * Wx2_2;
   }
 
 } // namespace ntt
-
-// if constexpr (D == Dim3) {
-// real_t Wx3_1 {HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2])};
-// real_t Wx3_2 {HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2])};
-// real_t Fx3_1 {-(xp_r[2] - xp_i[2]) * m_charge};
-// real_t Fx3_2 {-(xp_f[2] - xp_r[2]) * m_charge};
-
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx1), Fx1_1 * (ONE - Wx2_1));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx1), Fx1_1 * Wx2_1);
-
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx2), Fx2_1 * (ONE - Wx1_1));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx2), Fx2_1 * Wx1_1);
-
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx1), Fx1_2 * (ONE - Wx2_2));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx1), Fx1_2 * Wx2_2);
-
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx2), Fx2_2 * (ONE - Wx1_2));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx2), Fx2_2 * Wx1_2);
-
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1], cur::jx3),
-//                    Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1], cur::jx3),
-//                    Fx3_1 * Wx1_2 * (ONE - Wx2_1));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0], Ip_i[1] + 1, cur::jx3),
-//                    Fx3_1 * (ONE - Wx1_1) * Wx2_1);
-// Kokkos::atomic_add(&m_mblock.cur(Ip_i[0] + 1, Ip_i[1] + 1, cur::jx3),
-//                    Fx3_1 * Wx1_1 * Wx2_1);
-
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1], cur::jx3),
-//                    Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1], cur::jx3),
-//                    Fx3_2 * Wx1_2 * (ONE - Wx2_2));
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0], Ip_f[1] + 1, cur::jx3),
-//                    Fx3_2 * (ONE - Wx1_2) * Wx2_2);
-// Kokkos::atomic_add(&m_mblock.cur(Ip_f[0] + 1, Ip_f[1] + 1, cur::jx3),
-//                    Fx3_2 * Wx1_2 * Wx2_2);
-//}
-
-// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx1) += Fx1_1 * (ONE - Wx2_1);
-// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_1 * Wx2_1;
-
-// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * (ONE - Wx1_1);
-// cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx2) += Fx2_1 * Wx1_1;
-
-// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx1) += Fx1_2 * (ONE - Wx2_2);
-// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx1) += Fx1_2 * Wx2_2;
-
-// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * (ONE - Wx1_2);
-// cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx2) += Fx2_2 * Wx1_2;
-
-// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
-//   += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
-// cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + N_GHOSTS, cur::jx3)
-//   += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
-// cur_access(Ip_i[0] + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3)
-//   += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
-// cur_access(Ip_i[0] + 1 + N_GHOSTS, Ip_i[1] + 1 + N_GHOSTS, cur::jx3) += Fx3_1 * Wx1_1 *
-// Wx2_1;
-
-// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
-//   += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
-// cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + N_GHOSTS, cur::jx3)
-//   += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
-// cur_access(Ip_f[0] + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3)
-//   += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
-// cur_access(Ip_f[0] + 1 + N_GHOSTS, Ip_f[1] + 1 + N_GHOSTS, cur::jx3) += Fx3_2 * Wx1_2 *
-// Wx2_2;
 
 #endif

@@ -381,10 +381,10 @@ namespace ntt {
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[1] = c00 * (ONE - dx2) + c10 * dx2;
     // Bx3
-    c000  = QUARTER * (BX3(i - 1, j - 1) + BX3(i - 1, j) + BX3(i, j - 1) + BX3(i, j));
-    c100  = QUARTER * (BX3(i, j - 1) + BX3(i, j) + BX3(i + 1, j - 1) + BX3(i + 1, j));
-    c010  = QUARTER * (BX3(i - 1, j) + BX3(i - 1, j + 1) + BX3(i, j) + BX3(i, j + 1));
-    c110  = QUARTER * (BX3(i, j) + BX3(i, j + 1) + BX3(i + 1, j) + BX3(i + 1, j + 1));
+    c000  = INV_4 * (BX3(i - 1, j - 1) + BX3(i - 1, j) + BX3(i, j - 1) + BX3(i, j));
+    c100  = INV_4 * (BX3(i, j - 1) + BX3(i, j) + BX3(i + 1, j - 1) + BX3(i + 1, j));
+    c010  = INV_4 * (BX3(i - 1, j) + BX3(i - 1, j + 1) + BX3(i, j) + BX3(i, j + 1));
+    c110  = INV_4 * (BX3(i, j) + BX3(i, j + 1) + BX3(i + 1, j) + BX3(i + 1, j + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
     c10   = c010 * (ONE - dx1) + c110 * dx1;
     b0[2] = c00 * (ONE - dx2) + c10 * dx2;
@@ -460,23 +460,23 @@ namespace ntt {
 
     // Bx1
     c000
-      = QUARTER * (BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1));
-    c100 = QUARTER
+      = INV_4 * (BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1));
+    c100 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1)
               + BX1(i + 1, j - 1, k - 1));
     c001
-      = QUARTER * (BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1));
-    c101 = QUARTER
+      = INV_4 * (BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1));
+    c101 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k)
               + BX1(i + 1, j - 1, k + 1));
     c010
-      = QUARTER * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1));
-    c110 = QUARTER
+      = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1));
+    c110 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1)
               + BX1(i + 1, j + 1, k));
     c011
-      = QUARTER * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1));
-    c111 = QUARTER
+      = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1));
+    c111 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1)
               + BX1(i + 1, j, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
@@ -489,23 +489,23 @@ namespace ntt {
 
     // Bx2
     c000
-      = QUARTER * (BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k));
+      = INV_4 * (BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k));
     c100
-      = QUARTER * (BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k));
+      = INV_4 * (BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k));
     c001
-      = QUARTER * (BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1));
+      = INV_4 * (BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1));
     c101
-      = QUARTER * (BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1));
-    c010 = QUARTER
+      = INV_4 * (BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1));
+    c010 = INV_4
            * (BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1)
               + BX2(i, j + 1, k));
-    c110 = QUARTER
+    c110 = INV_4
            * (BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1)
               + BX2(i + 1, j + 1, k));
-    c011 = QUARTER
+    c011 = INV_4
            * (BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k)
               + BX2(i, j + 1, k + 1));
-    c111 = QUARTER
+    c111 = INV_4
            * (BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k)
               + BX2(i + 1, j + 1, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
@@ -518,23 +518,23 @@ namespace ntt {
 
     // Bx3
     c000
-      = QUARTER * (BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k));
+      = INV_4 * (BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k));
     c100
-      = QUARTER * (BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k));
-    c001 = QUARTER
+      = INV_4 * (BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k));
+    c001 = INV_4
            * (BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1)
               + BX3(i, j, k + 1));
-    c101 = QUARTER
+    c101 = INV_4
            * (BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1)
               + BX3(i + 1, j, k + 1));
     c010
-      = QUARTER * (BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k));
+      = INV_4 * (BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k));
     c110
-      = QUARTER * (BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k));
-    c011 = QUARTER
+      = INV_4 * (BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k));
+    c011 = INV_4
            * (BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1)
               + BX3(i, j + 1, k + 1));
-    c111 = QUARTER
+    c111 = INV_4
            * (BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1)
               + BX3(i + 1, j + 1, k + 1));
     c00   = c000 * (ONE - dx1) + c100 * dx1;
