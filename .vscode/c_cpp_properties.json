@@ -16,11 +16,11 @@
         "${myDefaultIncludePath}"
       ],
       "defines": [
-        "SIMTYPE=PIC_SIMTYPE",
+        "PIC_SIMTYPE",
         "SINGLE_PRECISION",
         "OMPENABLED",
-        // "METRIC=MINKOWSKI_METRIC"
-        "METRIC=QSPHERICAL_METRIC"
+        // "MINKOWSKI_METRIC"
+        "QSPHERICAL_METRIC"
       ],
       "compilerPath": "${myCompilerPath}",
       "cStandard": "c17",

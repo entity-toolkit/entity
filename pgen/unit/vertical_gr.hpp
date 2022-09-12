@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-#if SIMTYPE == GRPIC_SIMTYPE
+#ifdef GRPIC_SIMTYPE
 
 namespace ntt {
 
