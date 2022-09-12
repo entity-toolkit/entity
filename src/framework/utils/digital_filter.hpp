@@ -15,6 +15,7 @@ namespace ntt {
     ndfield_t<D, 3> m_cur_b;
     Mesh<D>         m_mesh;
     unsigned short  m_npasses;
+    tuple_t<int, D> m_size;
 
   public:
     /**
@@ -27,7 +28,11 @@ namespace ntt {
                   const ndfield_t<D, 3>& cur_b,
                   const Mesh<D>&         mesh,
                   const unsigned short&  npasses)
-      : m_cur(cur), m_cur_b(cur_b), m_mesh(mesh), m_npasses(npasses) {}
+      : m_cur(cur), m_cur_b(cur_b), m_mesh(mesh), m_npasses(npasses) {
+      for (short d = 0; d < (short)D; ++d) {
+        m_size[d] = m_mesh.Ni(d);
+      }
+    }
 
     void apply() {
       for (unsigned short i = 0; i < m_npasses; ++i) {
@@ -114,7 +119,14 @@ namespace ntt {
   Inline void DigitalFilter<Dim1>::operator()(index_t) const {}
 
   template <>
-  Inline void DigitalFilter<Dim2>::operator()(index_t, index_t) const {}
+  Inline void DigitalFilter<Dim2>::operator()(index_t i, index_t j) const {
+    if (j == N_GHOSTS) {
+      m_cur(i, j, cur::jx1) = (real_t)(0.5) * m_cur_b(i, j, cur::jx1)
+                              + (real_t)(0.25) * m_cur_b(i, j + 1, cur::jx1);
+      m_cur(i, j, cur::jx3) = (real_t)(0.5) * m_cur_b(i, j, cur::jx3)
+                              + (real_t)(0.25) * m_cur_b(i, j + 1, cur::jx3);
+    }
+  }
 
   template <>
   Inline void DigitalFilter<Dim3>::operator()(index_t, index_t, index_t) const {}
