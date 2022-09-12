@@ -7,10 +7,6 @@
 
 #include "field_macros.h"
 
-#include <plog/Log.h>
-
-#include <stdexcept>
-
 namespace ntt {
   /**
    * @brief Algorithms for PIC field boundary conditions.
@@ -46,8 +42,8 @@ namespace ntt {
 
   template <>
   Inline void FieldBC_rmax<Dim2>::operator()(index_t i, index_t j) const {
-    real_t i_ {static_cast<real_t>(i)};
-    real_t j_ {static_cast<real_t>(j)};
+    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
     // i
     vec_t<Dim2> rth_;

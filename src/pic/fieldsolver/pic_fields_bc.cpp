@@ -5,10 +5,6 @@
 #  include "pic_fields_bc_rmax.hpp"
 #endif
 
-#include <plog/Log.h>
-
-#include <stdexcept>
-
 namespace ntt {
   /**
    * @brief 1d periodic field bc.
@@ -198,6 +194,7 @@ namespace ntt {
 
     auto r_absorb {m_sim_params.metric_parameters()[2]};
     auto r_max {m_mblock.metric.x1_max};
+    // !TODO: no need to do all cells
     Kokkos::parallel_for("2d_absorbing bc",
                          m_mblock.rangeActiveCells(),
                          FieldBC_rmax<Dim2>(mblock, this->m_pGen, r_absorb, r_max));
