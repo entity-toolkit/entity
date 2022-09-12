@@ -2,13 +2,13 @@
 #include "pic.h"
 #include "meshblock.h"
 
-#include <plog/Log.h>
-
-#include <stdexcept>
+#if defined(SPHERICAL_METRIC) || defined(QSPHERICAL_METRIC)
+#  include "pic_currents_bc_rmax.hpp"
+#endif
 
 namespace ntt {
   /**
-   * @brief 1d periodic field bc.
+   * @brief 1d current bc.
    *
    */
   template <>
@@ -42,7 +42,7 @@ namespace ntt {
   }
 
   /**
-   * @brief 2d periodic field bc.
+   * @brief 2d current bc.
    *
    */
   template <>
@@ -147,15 +147,17 @@ namespace ntt {
         });
     }
 #elif defined(SPHERICAL_METRIC) || defined(QSPHERICAL_METRIC)
-
-#else
-    (void)(index_t {});
-    NTTError("2d boundary condition for metric not implemented");
+    auto r_absorb {this->m_sim_params.metric_parameters()[2]};
+    auto r_max {this->m_mblock.metric.x1_max};
+    // !TODO: no need to do all cells
+    Kokkos::parallel_for("2d_absorbing bc currs",
+                         m_mblock.rangeActiveCells(),
+                         CurrentBC_rmax<Dim2>(this->m_mblock, this->m_pGen, r_absorb, r_max));
 #endif
   }
 
   /**
-   * @brief 3d periodic field bc.
+   * @brief 3d current bc.
    *
    */
   template <>
