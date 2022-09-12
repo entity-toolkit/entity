@@ -6,7 +6,7 @@ runtime         = 0.1
 qsph_r0         = 0.0
 qsph_h          = 0.01
 sph_rabsorb     = 18.0
-resolution      = [512, 256]
+resolution      = [128, 128]
 extent          = [1.0, 20.0]
 boundaries      = ["USER", "USER"]
 
@@ -15,6 +15,7 @@ CFL             = 0.95
 correction      = 1.0
 fieldsolver_ON  = true
 deposit_ON      = true
+current_filters = 2
 
 [units]
 ppc0            = 1.0
@@ -52,7 +53,7 @@ maxnpart        = 1e2
 fields          = ["Er", "Etheta", "Ephi", "Br", "Btheta", "Bphi", "Jr", "Jtheta", "Jphi"]
 
 [output]
-format          = "csv"
-interval        = 1
+format          = "disabled"
+# interval        = 1
 
 [problem]
