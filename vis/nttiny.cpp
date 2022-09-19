@@ -27,7 +27,7 @@
 using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
 void initLogger(plog_t* console_appender);
 
-struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
+struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
   int                                   sx1, sx2;
   ntt::SIMULATION_CONTAINER<ntt::Dim2>& m_sim;
   std::vector<std::string>              m_fields_to_plot;
@@ -35,15 +35,15 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dim2>& sim,
                    const std::vector<std::string>&       fields_to_plot)
 #ifdef PIC_SIMTYPE
-    : nttiny::SimulationAPI<ntt::real_t, 2> {sim.mblock()->metric.label == "cartesian"
-                                         ? nttiny::Coord::Cartesian
-                                         : nttiny::Coord::Spherical,
-                                       {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
-                                       ntt::N_GHOSTS},
+    : nttiny::SimulationAPI<real_t, 2> {sim.mblock()->metric.label == "cartesian"
+                                          ? nttiny::Coord::Cartesian
+                                          : nttiny::Coord::Spherical,
+                                        {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
+                                        ntt::N_GHOSTS},
 #elif defined(GRPIC_SIMTYPE)
-    : nttiny::SimulationAPI<ntt::real_t, 2> {nttiny::Coord::Spherical,
-                                       {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
-                                       ntt::N_GHOSTS},
+    : nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
+                                        {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
+                                        ntt::N_GHOSTS},
 #endif
       sx1 {sim.mblock()->Ni1()},
       sx2 {sim.mblock()->Ni2()},
@@ -63,8 +63,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
     // compute the vector potential
 #endif
 
-    for (int i {0}; i < nx1; ++i) {
-      for (int j {0}; j < nx2; ++j) {
+    for (int i {0}; i < sx1; ++i) {
+      for (int j {0}; j < sx2; ++j) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #ifdef PIC_SIMTYPE
           auto                  i_ {(real_t)(i - ntt::N_GHOSTS)};
@@ -89,7 +89,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
                                                 m_sim.mblock()->cur(i, j, ntt::cur::jx3)},
                                                j_hat);
           }
-          ntt::real_t val;
+          real_t val {0.0};
           if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
             val = e_hat[0];
           } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
@@ -239,21 +239,22 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
         }
       }
     }
-    int i {0};
-    for (auto& species : m_sim.mblock()->particles) {
-      for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
-        ntt::real_t x1 {(ntt::real_t)(species.i1(k)) + species.dx1(k)};
-        ntt::real_t x2 {(ntt::real_t)(species.i2(k)) + species.dx2(k)};
-        // this->prtl_pointers[i]->set(k, 0, x1);
-        // this->prtl_pointers[i + 1]->set(k, 0, x2);
-        // // !HACK: temporary
-        ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
-        m_sim.mblock()->metric.x_Code2Cart({x1, x2}, xy);
-        this->prtl_pointers[i]->set(k, 0, xy[0]);
-        this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
-      }
-      i += 2;
-    }
+    // }
+    // int i {0};
+    // for (auto& species : m_sim.mblock()->particles) {
+    //   for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
+    //     real_t x1 {(real_t)(species.i1(k)) + species.dx1(k)};
+    //     real_t x2 {(real_t)(species.i2(k)) + species.dx2(k)};
+    //     // this->prtl_pointers[i]->set(k, 0, x1);
+    //     // this->prtl_pointers[i + 1]->set(k, 0, x2);
+    //     // // !HACK: temporary
+    //     ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
+    //     m_sim.mblock()->metric.x_Code2Cart({x1, x2}, xy);
+    //     this->prtl_pointers[i]->set(k, 0, xy[0]);
+    //     this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
+    //   }
+    //   i += 2;
+    // }
   }
   void stepFwd() override {
     m_sim.step_forward(m_time);
@@ -282,21 +283,22 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
     const auto nx1 {this->m_global_grid.m_size[0] + this->m_global_grid.m_ngh * 2};
     const auto nx2 {this->m_global_grid.m_size[1] + this->m_global_grid.m_ngh * 2};
     for (std::size_t i {0}; i < m_fields_to_plot.size(); ++i) {
-      this->fields.insert({m_fields_to_plot[i], new ntt::real_t[nx1 * nx2]});
+      this->fields.insert({m_fields_to_plot[i], new real_t[nx1 * nx2]});
     }
   }
 
   void generateParticles() {
-    int s {0}, i {0};
+    int s {0};
     for (auto& species : m_sim.mblock()->particles) {
       auto nprtl {m_sim.mblock()->particles[s].npart()};
-      this->particles.insert({species.label(), {nprtl, {new ntt::real_t[nprtl], new ntt::real_t[nprtl]}}});
+      this->particles.insert(
+        {species.label(), {nprtl, {new real_t[nprtl], new real_t[nprtl]}}});
       ++s;
     }
   }
 
   void generateGrid() {
-    if (this->m_global_grid.coords == nttiny::Coord::Spherical) {
+    if (this->m_global_grid.m_coord == nttiny::Coord::Spherical) {
       const auto sx1 {this->m_global_grid.m_size[0]};
       const auto sx2 {this->m_global_grid.m_size[1]};
       for (int i {0}; i <= sx1; ++i) {
@@ -311,7 +313,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
         auto                    j_ {(real_t)(j)};
         ntt::coord_t<ntt::Dim2> rth_;
         m_sim.mblock()->metric.x_Code2Sph({i_, j_}, rth_);
-        this->m_global_grid.m_xi[1][i] = rth_[1];
+        this->m_global_grid.m_xi[1][j] = rth_[1];
       }
       this->m_global_grid.ExtendGridWithGhosts();
     } else {
@@ -321,20 +323,20 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<ntt::real_t, 2> {
       const auto sx2 {this->m_global_grid.m_size[1]};
       for (int i {0}; i <= sx1; ++i) {
         this->m_global_grid.m_xi[0][i]
-          = m_sim.mblock()->metric.x1_min + s2 * (ntt::real_t)(i) / (ntt::real_t)(s1);
+          = m_sim.mblock()->metric.x1_min + s2 * (real_t)(i) / (real_t)(s1);
       }
       for (int j {0}; j <= sx2; ++j) {
         this->m_global_grid.m_xi[1][j]
-          = m_sim.mblock()->metric.x2_min + s2 * (ntt::real_t)(j) / (ntt::real_t)(s2);
+          = m_sim.mblock()->metric.x2_min + s2 * (real_t)(j) / (real_t)(s2);
       }
     }
   }
 
   void customAnnotatePcolor2d() override {
 #if SIMTYPE == GRPIC_SIMTYPE
-    // ntt::real_t a        = m_sim.sim_params().metric_parameters()[4];
-    // ntt::real_t r_absorb = m_sim.sim_params().metric_parameters()[2];
-    // ntt::real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
+    // real_t a        = m_sim.sim_params().metric_parameters()[4];
+    // real_t r_absorb = m_sim.sim_params().metric_parameters()[2];
+    // real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
     // nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
     // nttiny::drawCircle({0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI});
 #elif defined(PIC_SIMTYPE)
@@ -350,7 +352,8 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale         = cl_args.getArgument("-scale", 4.0f);
+    auto  scale_str     = cl_args.getArgument("-scale", "4.0");
+    auto  scale         = std::stof(std::string(scale_str));
     auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
     auto& vis_data      = toml::find(inputdata, "visualization");
@@ -365,7 +368,7 @@ auto main(int argc, char* argv[]) -> int {
     sim.initial_step(ZERO);
     NTTSimulationVis visApi(sim, fields_to_plot);
 
-    nttiny::Visualization<ntt::real_t> vis {scale};
+    nttiny::Visualization<real_t, 2> vis {scale};
     vis.bindSimulation(&visApi);
     vis.loop();
   }
