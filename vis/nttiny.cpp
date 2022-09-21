@@ -63,32 +63,35 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     // compute the vector potential
 #endif
     const auto ngh = this->m_global_grid.m_ngh;
+    std::cout << "ngh = " << ngh << std::endl;
+    std::cout << "sx1 = " << sx1 << std::endl;
+    std::cout << "sx2 = " << sx2 << std::endl;
 
     for (int j {-ngh}; j < sx2 + ngh; ++j) {
       for (int i {-ngh}; i < sx1 + ngh; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #ifdef PIC_SIMTYPE
-          if (i >= 0 && i < sx1 && j >= 0 && j < sx2) {
+          if ((i >= 0) && (i < sx1) && (j >= 0) && (j < sx2)) {
             auto                  i_ {(real_t)(i)};
             auto                  j_ {(real_t)(j)};
             ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
             if (m_fields_to_plot[f].at(0) == 'E') {
               m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                                 {m_sim.mblock()->em(i, j, ntt::em::ex1),
-                                                  m_sim.mblock()->em(i, j, ntt::em::ex2),
-                                                  m_sim.mblock()->em(i, j, ntt::em::ex3)},
+                                                 {m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::ex1),
+                                                  m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::ex2),
+                                                  m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::ex3)},
                                                  e_hat);
             } else if (m_fields_to_plot[f].at(0) == 'B') {
               m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                                 {m_sim.mblock()->em(i, j, ntt::em::bx1),
-                                                  m_sim.mblock()->em(i, j, ntt::em::bx2),
-                                                  m_sim.mblock()->em(i, j, ntt::em::bx3)},
+                                                 {m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::bx1),
+                                                  m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::bx2),
+                                                  m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::bx3)},
                                                  b_hat);
             } else if (m_fields_to_plot[f].at(0) == 'J') {
               m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                                 {m_sim.mblock()->cur(i, j, ntt::cur::jx1),
-                                                  m_sim.mblock()->cur(i, j, ntt::cur::jx2),
-                                                  m_sim.mblock()->cur(i, j, ntt::cur::jx3)},
+                                                 {m_sim.mblock()->cur(i + ngh, j + ngh, ntt::cur::jx1),
+                                                  m_sim.mblock()->cur(i + ngh, j + ngh, ntt::cur::jx2),
+                                                  m_sim.mblock()->cur(i + ngh, j + ngh, ntt::cur::jx3)},
                                                  j_hat);
             }
             real_t val {0.0};
@@ -374,7 +377,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale_str     = cl_args.getArgument("-scale", "4.0");
+    auto  scale_str     = cl_args.getArgument("-scale", "2.0");
     auto  scale         = std::stof(std::string(scale_str));
     auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
