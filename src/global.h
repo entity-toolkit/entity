@@ -45,7 +45,7 @@
                              "line: " LINE_STRING)
 #endif
 
-namespace math = Kokkos::Experimental;
+namespace math = Kokkos;
 
 namespace ntt {
   // Defining specific code configurations as enum classes
