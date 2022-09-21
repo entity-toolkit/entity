@@ -63,7 +63,7 @@ def findFiles(directory, extension):
     return glob.glob(directory + '/*/*.' + extension) + glob.glob(directory + '/*.' + extension)
 
 
-Pgen_options = [f.replace('.hpp', '').replace('pgen/', '')
+Pgen_options = [f.replace('.hpp', '').replace('\\', '/').replace('pgen/', '')
                 for f in findFiles('pgen', 'hpp')]
 Kokkos_devices = dict(host=['Serial', 'OpenMP', 'PThreads'], device=['Cuda'])
 Kokkos_arch = dict(host=["AMDAVX", "EPYC", "ARMV80", "ARMV81", "ARMV8_THUNDERX",
@@ -134,9 +134,11 @@ def defineOptions():
                         help='`Kokkos` CUDA options')
     return vars(parser.parse_args())
 
+
 def configureKokkos(arg, mopt):
     global use_nvcc_wrapper
     kokkos_configs = {}
+
     def parseArchDevice(carg, kokkos_list):
         _ = carg.split(',')
         assert len(_) <= 2, "Wrong arch/device specified"
@@ -173,11 +175,11 @@ def configureKokkos(arg, mopt):
         kokkos_configs['arch'] = host_a
     if device_a is not None:
         assert (device_a in Kokkos_arch['device']), 'Wrong device architecture'
-        try: 
+        try:
             kokkos_configs['arch'] += ',' + device_a
         except:
             kokkos_configs['arch'] = device_a
-    
+
     mopt['KOKKOS_DEVICES'] = kokkos_configs['devices']
     mopt['KOKKOS_ARCH'] = kokkos_configs.get('arch', '')
     if 'Cuda' in kokkos_configs['devices']:
@@ -219,9 +221,9 @@ def configureKokkos(arg, mopt):
 def createMakefile(m_in, m_out, mopt):
     with open(m_in, 'r') as current_file:
         makefile_template = current_file.read()
+    # print(makefile_template)
     for key, val in mopt.items():
-        makefile_template = re.sub(
-            r'@{0}@'.format(key), val, makefile_template)
+        makefile_template = makefile_template.replace(f'@{key}@', val)
     if not args['nttiny']:
         makefile_template = re.sub(
             "# for nttiny />[\S\s]*?</ for nttiny", '', makefile_template)
@@ -236,6 +238,11 @@ args = defineOptions()
 # Step 2. Set definitions and Makefile options based on above arguments
 
 makefile_options = {}
+
+if sys.platform.startswith('win'):
+    makefile_options['FIND'] = '/usr/bin/find.exe'
+else:
+    makefile_options['FIND'] = 'find'
 
 # Settings
 makefile_options['VERBOSE'] = ('y' if args['verbose'] else 'n')
@@ -291,9 +298,9 @@ makefile_options['SIMTYPE'] = args['simtype'].upper()
 # Step 3. Create new files, finish up
 createMakefile(makefile_input, makefile_output, makefile_options)
 
-makedemo = subprocess.run(['make', 'demo'], 
+makedemo = subprocess.run(['make', 'demo'],
                           capture_output=True,
-                          text=True, 
+                          text=True,
                           cwd=makefile_options['BUILD_DIR'])
 if makedemo.returncode != 0:
     raise Exception(f'Error creating demo: {makedemo.stdout}')
