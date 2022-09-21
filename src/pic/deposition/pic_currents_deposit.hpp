@@ -63,10 +63,48 @@ namespace ntt {
         // _f = final, _i = initial
         tuple_t<int, D> Ip_f, Ip_i;
         coord_t<D>      xp_f, xp_i, xp_r;
-        vec_t<Dim3>     vp;
+        vec_t<Dim3>     vp {ZERO, ZERO, ZERO};
 
         // get [i, di]_init and [i, di]_final (per dimension)
         getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+#ifndef MINKOWSKI_METRIC
+        if constexpr (D == Dim2) {
+          // take care of the axes
+          if (Ip_i[1] < 0) {
+            /* @TODO: lower axis */
+            coord_t<Dim2> xp_ax, xp_ax_i, xp_ax_r;
+            xp_ax[0] = xp_i[0] + xp_i[1] * (xp_f[0] - xp_i[0]) / (xp_i[1] - xp_f[1]);
+            xp_ax[1] = ZERO;
+            tuple_t<int, Dim2> Ip_ax, Ip_ax_i;
+            auto [I_1, di1] = m_mblock.metric.CU_to_Idi(xp_ax[0]);
+            auto [I_2, di2] = m_mblock.metric.CU_to_Idi(xp_ax[1]);
+            Ip_ax[0]        = I_1;
+            Ip_ax[1]        = I_2;
+
+            Ip_ax_i[0] = Ip_i[0];
+            xp_ax_i[0] = xp_i[0];
+            // reflect particle starting point
+            Ip_ax_i[1] = 0;
+            xp_ax_i[1] = ONE - xp_i[1];
+
+            for (short i {0}; i < static_cast<short>(D); ++i) {
+              real_t xi_mid = HALF * (xp_ax_i[i] + xp_ax[i]);
+              xp_ax_r[i]    = math::fmin(
+                static_cast<real_t>(math::fmin(Ip_ax_i[i], Ip_ax[i]) + 1),
+                math::fmax(static_cast<real_t>(math::fmax(Ip_ax_i[i], Ip_ax[i])), xi_mid));
+              // shift particle starting point
+              xi_mid  = HALF * (xp_ax[i] + xp_f[i]);
+              Ip_i[i] = Ip_ax[i];
+              xp_i[i] = xp_ax[i];
+              xp_r[i] = math::fmin(
+                static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
+            }
+            // deposit first half
+            depositCurrentsFromParticle(vp, Ip_ax, Ip_ax_i, xp_ax, xp_ax_i, xp_ax_r);
+          }
+        }
+#endif
         depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
       }
     }
@@ -104,7 +142,6 @@ namespace ntt {
                                    coord_t<D>&      xp_f,
                                    coord_t<D>&      xp_i,
                                    coord_t<D>&      xp_r) const {
-      coord_t<D>        xmid;
       real_t            inv_energy;
       tuple_t<float, D> dIp_f;
 
@@ -146,13 +183,13 @@ namespace ntt {
       }
 
       for (short i {0}; i < static_cast<short>(D); ++i) {
-        xp_i[i]       = xp_f[i] - m_dt * vp[i];
-        xmid[i]       = HALF * (xp_i[i] + xp_f[i]);
-        auto [I_i, _] = m_mblock.metric.CU_to_Idi(xp_i[i]);
-        Ip_i[i]       = I_i;
+        xp_i[i]             = xp_f[i] - m_dt * vp[i];
+        const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
+        auto [I_i, _]       = m_mblock.metric.CU_to_Idi(xp_i[i]);
+        Ip_i[i]             = I_i;
         xp_r[i]
           = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                       math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xmid[i]));
+                       math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
       }
     }
   };
