@@ -114,8 +114,8 @@ simtype := @SIMTYPE@
 simtype := $(shell echo $(simtype) | tr A-Z a-z)
 SRCS := $(wildcard ${SRC_DIR}/*.cpp ${SRC_DIR}/*.c)
 SRCS := $(SRCS) ${SRC_DIR}/${TEMP_DIR}/problem_generator.cpp
-SRCS := $(SRCS) $(shell find ${SRC_DIR}/framework -name "*.cpp" -o -name "*.c")
-SRCS := $(SRCS) $(shell find ${SRC_DIR}/${simtype} -name "*.cpp" -o -name "*.c")
+SRCS := $(SRCS) $(shell @FIND@ ${SRC_DIR}/framework -name "*.cpp" -o -name "*.c")
+SRCS := $(SRCS) $(shell @FIND@ ${SRC_DIR}/${simtype} -name "*.cpp" -o -name "*.c")
 SRCS := $(filter-out ${SRC_DIR}/main.cpp, $(SRCS))
 OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(SRCS:%=%.o))
 DEPS := $(OBJS:.o=.d)
@@ -125,7 +125,7 @@ MAIN_SRCS := ${SRC_DIR}/main.cpp
 MAIN_OBJS := $(subst ${SRC_DIR},${BUILD_SRC_DIR},$(MAIN_SRCS:%=%.o))
 MAIN_DEPS := $(MAIN_OBJS:.o=.d)
 
-INC_DIRS := $(shell find ${SRC_DIR} -type d) ${SRC_DIR}/${TEMP_DIR} ${EXT_DIR}/plog/include ${EXT_DIR}/doctest/doctest ${EXT_DIR} ${EXT_DIR}/rapidcsv/src
+INC_DIRS := $(shell @FIND@ ${SRC_DIR} -type d) ${SRC_DIR}/${TEMP_DIR} ${EXT_DIR}/plog/include ${EXT_DIR}/doctest/doctest ${EXT_DIR} ${EXT_DIR}/rapidcsv/src
 INCFLAGS := $(addprefix -I,${INC_DIRS})
 
 # # # # # Link/compile # # # # # # # # # # # # # #

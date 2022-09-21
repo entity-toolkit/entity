@@ -35,7 +35,7 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dim2>& sim,
                    const std::vector<std::string>&       fields_to_plot)
 #ifdef PIC_SIMTYPE
-    : nttiny::SimulationAPI<real_t, 2> {sim.mblock()->metric.label == "cartesian"
+    : nttiny::SimulationAPI<real_t, 2> {sim.mblock()->metric.label == "minkowski"
                                           ? nttiny::Coord::Cartesian
                                           : nttiny::Coord::Spherical,
                                         {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
@@ -62,54 +62,81 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     m_sim.computeVectorPotential();
     // compute the vector potential
 #endif
+    const auto ngh = this->m_global_grid.m_ngh;
 
-    for (int i {0}; i < sx1; ++i) {
-      for (int j {0}; j < sx2; ++j) {
+    for (int j {-ngh}; j < sx2 + ngh; ++j) {
+      for (int i {-ngh}; i < sx1 + ngh; ++i) {
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #ifdef PIC_SIMTYPE
-          auto                  i_ {(real_t)(i - ntt::N_GHOSTS)};
-          auto                  j_ {(real_t)(j - ntt::N_GHOSTS)};
-          ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
-          if (m_fields_to_plot[f].at(0) == 'E') {
-            m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                               {m_sim.mblock()->em(i, j, ntt::em::ex1),
-                                                m_sim.mblock()->em(i, j, ntt::em::ex2),
-                                                m_sim.mblock()->em(i, j, ntt::em::ex3)},
-                                               e_hat);
-          } else if (m_fields_to_plot[f].at(0) == 'B') {
-            m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                               {m_sim.mblock()->em(i, j, ntt::em::bx1),
-                                                m_sim.mblock()->em(i, j, ntt::em::bx2),
-                                                m_sim.mblock()->em(i, j, ntt::em::bx3)},
-                                               b_hat);
-          } else if (m_fields_to_plot[f].at(0) == 'J') {
-            m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                               {m_sim.mblock()->cur(i, j, ntt::cur::jx1),
-                                                m_sim.mblock()->cur(i, j, ntt::cur::jx2),
-                                                m_sim.mblock()->cur(i, j, ntt::cur::jx3)},
-                                               j_hat);
+          if (i >= 0 && i < sx1 && j >= 0 && j < sx2) {
+            auto                  i_ {(real_t)(i)};
+            auto                  j_ {(real_t)(j)};
+            ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
+            if (m_fields_to_plot[f].at(0) == 'E') {
+              m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                                 {m_sim.mblock()->em(i, j, ntt::em::ex1),
+                                                  m_sim.mblock()->em(i, j, ntt::em::ex2),
+                                                  m_sim.mblock()->em(i, j, ntt::em::ex3)},
+                                                 e_hat);
+            } else if (m_fields_to_plot[f].at(0) == 'B') {
+              m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                                 {m_sim.mblock()->em(i, j, ntt::em::bx1),
+                                                  m_sim.mblock()->em(i, j, ntt::em::bx2),
+                                                  m_sim.mblock()->em(i, j, ntt::em::bx3)},
+                                                 b_hat);
+            } else if (m_fields_to_plot[f].at(0) == 'J') {
+              m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                                 {m_sim.mblock()->cur(i, j, ntt::cur::jx1),
+                                                  m_sim.mblock()->cur(i, j, ntt::cur::jx2),
+                                                  m_sim.mblock()->cur(i, j, ntt::cur::jx3)},
+                                                 j_hat);
+            }
+            real_t val {0.0};
+            if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
+              val = e_hat[0];
+            } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
+              val = e_hat[1];
+            } else if (m_fields_to_plot[f] == "Ephi" || m_fields_to_plot[f] == "Ez") {
+              val = e_hat[2];
+            } else if (m_fields_to_plot[f] == "Br" || m_fields_to_plot[f] == "Bx") {
+              val = b_hat[0];
+            } else if (m_fields_to_plot[f] == "Btheta" || m_fields_to_plot[f] == "By") {
+              val = b_hat[1];
+            } else if (m_fields_to_plot[f] == "Bphi" || m_fields_to_plot[f] == "Bz") {
+              val = b_hat[2];
+            } else if (m_fields_to_plot[f] == "Jr" || m_fields_to_plot[f] == "Jx") {
+              val = j_hat[0];
+            } else if (m_fields_to_plot[f] == "Jtheta" || m_fields_to_plot[f] == "Jy") {
+              val = j_hat[1];
+            } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
+              val = j_hat[2];
+            }
+            auto idx                                 = Index(i, j);
+            (this->fields)[m_fields_to_plot[f]][idx] = val;
+          } else {
+            real_t val {0.0};
+            if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
+              val = m_sim.mblock()->em(i, j, ntt::em::ex1);
+            } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
+              val = m_sim.mblock()->em(i, j, ntt::em::ex2);
+            } else if (m_fields_to_plot[f] == "Ephi" || m_fields_to_plot[f] == "Ez") {
+              val = m_sim.mblock()->em(i, j, ntt::em::ex3);
+            } else if (m_fields_to_plot[f] == "Br" || m_fields_to_plot[f] == "Bx") {
+              val = m_sim.mblock()->em(i, j, ntt::em::bx1);
+            } else if (m_fields_to_plot[f] == "Btheta" || m_fields_to_plot[f] == "By") {
+              val = m_sim.mblock()->em(i, j, ntt::em::bx2);
+            } else if (m_fields_to_plot[f] == "Bphi" || m_fields_to_plot[f] == "Bz") {
+              val = m_sim.mblock()->em(i, j, ntt::em::bx3);
+            } else if (m_fields_to_plot[f] == "Jr" || m_fields_to_plot[f] == "Jx") {
+              val = m_sim.mblock()->cur(i, j, ntt::cur::jx1);
+            } else if (m_fields_to_plot[f] == "Jtheta" || m_fields_to_plot[f] == "Jy") {
+              val = m_sim.mblock()->cur(i, j, ntt::cur::jx2);
+            } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
+              val = m_sim.mblock()->cur(i, j, ntt::cur::jx3);
+            }
+            auto idx                                 = Index(i, j);
+            (this->fields)[m_fields_to_plot[f]][idx] = val;
           }
-          real_t val {0.0};
-          if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
-            val = e_hat[0];
-          } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
-            val = e_hat[1];
-          } else if (m_fields_to_plot[f] == "Ephi" || m_fields_to_plot[f] == "Ez") {
-            val = e_hat[2];
-          } else if (m_fields_to_plot[f] == "Br" || m_fields_to_plot[f] == "Bx") {
-            val = b_hat[0];
-          } else if (m_fields_to_plot[f] == "Btheta" || m_fields_to_plot[f] == "By") {
-            val = b_hat[1];
-          } else if (m_fields_to_plot[f] == "Bphi" || m_fields_to_plot[f] == "Bz") {
-            val = b_hat[2];
-          } else if (m_fields_to_plot[f] == "Jr" || m_fields_to_plot[f] == "Jx") {
-            val = j_hat[0];
-          } else if (m_fields_to_plot[f] == "Jtheta" || m_fields_to_plot[f] == "Jy") {
-            val = j_hat[1];
-          } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
-            val = j_hat[2];
-          }
-          (this->fields)[m_fields_to_plot[f]][Index((int)(i_), (int)(j_))] = val;
 #elif defined(GRPIC_SIMTYPE)
           auto i_ {(real_t)(i - ntt::N_GHOSTS)};
           auto j_ {(real_t)(j - ntt::N_GHOSTS)};
@@ -239,28 +266,24 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
         }
       }
     }
-    // }
-    // int i {0};
-    // for (auto& species : m_sim.mblock()->particles) {
-    //   for (int k {0}; k < this->prtl_pointers[i]->get_size(0); ++k) {
-    //     real_t x1 {(real_t)(species.i1(k)) + species.dx1(k)};
-    //     real_t x2 {(real_t)(species.i2(k)) + species.dx2(k)};
-    //     // this->prtl_pointers[i]->set(k, 0, x1);
-    //     // this->prtl_pointers[i + 1]->set(k, 0, x2);
-    //     // // !HACK: temporary
-    //     ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
-    //     m_sim.mblock()->metric.x_Code2Cart({x1, x2}, xy);
-    //     this->prtl_pointers[i]->set(k, 0, xy[0]);
-    //     this->prtl_pointers[i + 1]->set(k, 0, xy[1]);
-    //   }
-    //   i += 2;
-    // }
+    auto s {0};
+    for (const auto& [lbl, species] : this->particles) {
+      auto sim_species = m_sim.mblock()->particles[s];
+      for (int p {0}; p < species.first; ++p) {
+        real_t                  x1 {(real_t)(sim_species.i1(p)) + sim_species.dx1(p)};
+        real_t                  x2 {(real_t)(sim_species.i2(p)) + sim_species.dx2(p)};
+        ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
+        m_sim.mblock()->metric.x_Code2Cart({x1, x2}, xy);
+        species.second[0][p] = xy[0];
+        species.second[1][p] = xy[1];
+      }
+      ++s;
+    }
   }
   void stepFwd() override {
     m_sim.step_forward(m_time);
     ++m_timestep;
     m_time += m_sim.mblock()->timestep();
-    setData();
   }
   void restart() override {
     m_sim.resetCurrents(ZERO);
@@ -274,7 +297,6 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
   }
   void stepBwd() override {
     // m_sim.step_backward(m_time);
-    // setData();
     // --m_timestep;
     // m_time -= m_sim.mblock()->timestep();
   }
@@ -323,11 +345,11 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
       const auto sx2 {this->m_global_grid.m_size[1]};
       for (int i {0}; i <= sx1; ++i) {
         this->m_global_grid.m_xi[0][i]
-          = m_sim.mblock()->metric.x1_min + s2 * (real_t)(i) / (real_t)(s1);
+          = m_sim.mblock()->metric.x1_min + s1 * (real_t)(i) / (real_t)(sx1);
       }
       for (int j {0}; j <= sx2; ++j) {
         this->m_global_grid.m_xi[1][j]
-          = m_sim.mblock()->metric.x2_min + s2 * (real_t)(j) / (real_t)(s2);
+          = m_sim.mblock()->metric.x2_min + s2 * (real_t)(j) / (real_t)(sx2);
       }
     }
   }
@@ -392,123 +414,3 @@ void initLogger(plog_t* console_appender) {
 #endif
   plog::init(max_severity, console_appender);
 }
-
-/*
- * ! LEGACY CODE:
- */
-// // auto i_ {(real_t)(i - ntt::N_GHOSTS)};
-// // auto j_ {(real_t)(j - ntt::N_GHOSTS)};
-// real_t dx1_cnt, dx2_cnt, dx3_cnt;
-// real_t bx1_cnt, bx2_cnt, bx3_cnt;
-// real_t ex1_cnt, ex2_cnt, ex3_cnt;
-// real_t hx1_cnt, hx2_cnt, hx3_cnt;
-
-// // if ((i < ntt::N_GHOSTS) || (j < ntt::N_GHOSTS) || (i >= nx2 -
-// ntt::N_GHOSTS) || (j >= nx1 - ntt::N_GHOSTS)) {
-// //   ex1_cnt = m_sim.mblock()->aux(i, j, ntt::em::ex1);
-// //   ex2_cnt = m_sim.mblock()->aux(i, j, ntt::em::ex2);
-// //   ex3_cnt = m_sim.mblock()->aux(i, j, ntt::em::ex3);
-// //   bx1_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx1);
-// //   bx2_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx2);
-// //   bx3_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx3);
-// // } else {
-// //   ex1_cnt = 0.5 * (m_sim.mblock()->aux(i, j, ntt::em::ex1) +
-// m_sim.mblock()->aux(i, j + 1, ntt::em::ex1));
-// //   ex2_cnt = 0.5 * (m_sim.mblock()->aux(i, j, ntt::em::ex2) +
-// m_sim.mblock()->aux(i + 1, j, ntt::em::ex2));
-// //   ex3_cnt = 0.25
-// //             * (m_sim.mblock()->aux(i, j, ntt::em::ex3) +
-// m_sim.mblock()->aux(i + 1, j, ntt::em::ex3)
-// //                + m_sim.mblock()->aux(i, j + 1, ntt::em::ex3) +
-// m_sim.mblock()->aux(i + 1, j + 1,
-// //                ntt::em::ex3));
-// //   bx1_cnt = 0.5 * (m_sim.mblock()->em0(i, j, ntt::em::bx1) +
-// m_sim.mblock()->em0(i + 1, j, ntt::em::bx1));
-// //   bx2_cnt = 0.5 * (m_sim.mblock()->em0(i, j, ntt::em::bx2) +
-// m_sim.mblock()->em0(i, j + 1, ntt::em::bx2));
-// //   bx3_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx3);
-// // }
-
-// // ex1_cnt = m_sim.mblock()->em0(i, j, ntt::em::ex1);
-// // ex2_cnt = m_sim.mblock()->em0(i, j, ntt::em::ex2);
-// // ex3_cnt = m_sim.mblock()->em0(i, j, ntt::em::ex3);
-// // bx1_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx1);
-// // bx2_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx2);
-// // bx3_cnt = m_sim.mblock()->em0(i, j, ntt::em::bx3);
-
-// ex1_cnt = m_sim.mblock()->aux(i, j, ntt::em::ex1);
-// ex2_cnt = m_sim.mblock()->aux(i, j, ntt::em::ex2);
-// ex3_cnt = m_sim.mblock()->aux(i, j, ntt::em::ex3);
-// hx1_cnt = m_sim.mblock()->aux(i, j, ntt::em::bx1);
-// hx2_cnt = m_sim.mblock()->aux(i, j, ntt::em::bx2);
-// hx3_cnt = m_sim.mblock()->aux(i, j, ntt::em::bx3);
-
-// dx1_cnt = m_sim.mblock()->em(i, j, ntt::em::ex1);
-// dx2_cnt = m_sim.mblock()->em(i, j, ntt::em::ex2);
-// dx3_cnt = m_sim.mblock()->em(i, j, ntt::em::ex3);
-// bx1_cnt = m_sim.mblock()->em(i, j, ntt::em::bx1);
-// bx2_cnt = m_sim.mblock()->em(i, j, ntt::em::bx2);
-// bx3_cnt = m_sim.mblock()->em(i, j, ntt::em::bx3);
-
-// ntt::vec_t<ntt::Dim3> d_hat, b_hat, e_hat, h_hat;
-
-// // #if (SIMTYPE == PIC_SIMTYPE)
-// //         m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-// {ex1_cnt, ex2_cnt, ex3_cnt}, e_hat);
-// //         m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-// {bx1_cnt, bx2_cnt, bx3_cnt}, b_hat);
-// // #elif (SIMTYPE == GRPIC_SIMTYPE)
-// //         e_hat[0] = ex1_cnt;
-// //         e_hat[1] = ex2_cnt;
-// //         e_hat[2] = ex3_cnt;
-// //         b_hat[0] = bx1_cnt;
-// //         b_hat[1] = bx2_cnt;
-// //         b_hat[2] = bx3_cnt;
-// // #endif
-
-// // m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {ex1_cnt,
-// ex2_cnt, ex3_cnt}, e_hat);
-// // m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF}, {bx1_cnt,
-// bx2_cnt, bx3_cnt}, b_hat);
-
-// // e_hat[0] = SIGN(ex1_cnt) * math::pow(math::abs(ex1_cnt), 0.25);
-// // e_hat[1] = SIGN(ex2_cnt) * math::pow(math::abs(ex2_cnt), 0.25);
-// // e_hat[2] = SIGN(ex3_cnt) * math::pow(math::abs(ex3_cnt), 0.25);
-// // b_hat[0] = SIGN(bx1_cnt) * math::pow(math::abs(bx1_cnt), 0.25);
-// // b_hat[1] = SIGN(bx2_cnt) * math::pow(math::abs(bx2_cnt), 0.25);
-// // b_hat[2] = SIGN(bx3_cnt) * math::pow(math::abs(bx3_cnt), 0.25);
-// e_hat[0] = ex1_cnt;
-// e_hat[1] = ex2_cnt;
-// e_hat[2] = ex3_cnt;
-// b_hat[0] = bx1_cnt;
-// b_hat[1] = bx2_cnt;
-// b_hat[2] = bx3_cnt;
-// d_hat[0] = dx1_cnt;
-// d_hat[1] = dx2_cnt;
-// d_hat[2] = dx3_cnt;
-// h_hat[0] = hx1_cnt;
-// h_hat[1] = hx2_cnt;
-// h_hat[2] = hx3_cnt;
-
-// // convert from contravariant to hatted
-// m_data[0].set(i, j, e_hat[0]);
-
-// // m_ex2.set(i, j, e_hat[1]);
-// // m_ex3.set(i, j, e_hat[2]);
-// // m_bx1.set(i, j, b_hat[0]);
-// // m_bx2.set(i, j, b_hat[1]);
-// // m_bx3.set(i, j, b_hat[2]);
-// // m_dx1.set(i, j, d_hat[0]);
-// // m_dx2.set(i, j, d_hat[1]);
-// // m_dx3.set(i, j, d_hat[2]);
-// // m_hx1.set(i, j, h_hat[0]);
-// // m_hx2.set(i, j, h_hat[1]);
-// // m_hx3.set(i, j, h_hat[2]);
-
-// // m_ex1.set(i, j, ex1_cnt);
-// // m_ex2.set(i, j, ex2_cnt);
-// // m_ex3.set(i, j, ex3_cnt);
-// // m_bx1.set(i, j, bx1_cnt);
-// // m_bx2.set(i, j, bx2_cnt);
-// // m_bx3.set(i, j, bx3_cnt);
-// }
