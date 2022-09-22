@@ -1,13 +1,13 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all.
 
-## Contributors (alphabetical)
+## Code contributors (alphabetical)
 
-🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand)}
+🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC}
 
-🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk)}
+🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
 
-☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh)}
+☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC}
 
 ## Getting started
 
@@ -110,15 +110,11 @@ All the third-party libraries are added as git submodules. If the code is cloned
 
 While we try to keep the code as compatible as possible, there are certain stringent requirements we impose (primarily due to limitations by `Kokkos`).
 
-1. `python3`: for configuration (verify: `python --version`);
+1. `python>=3.7`: for configuration (verify: `python --version`);
 2. `GNU Make`: for compilation (verify: `make -v`);
 3. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`).
 
 > For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
-
-## To-do architecture-wise
-
-- [ ] offset views are possible with `kokkos` in [experimental branch](https://github.com/kokkos/kokkos/wiki/Offset-View)
 
 ---
 
