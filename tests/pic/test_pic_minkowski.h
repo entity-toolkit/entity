@@ -19,7 +19,6 @@
 #include <stdexcept>
 
 TEST_CASE("testing PIC") {
-  Kokkos::initialize();
   /* -------------------------------------------------------------------------- */
   /*                            Minkowski metric test                           */
   /* -------------------------------------------------------------------------- */
@@ -321,108 +320,107 @@ TEST_CASE("testing PIC") {
         CHECK(ntt::AlmostEqual(sim.mblock()->timestep(), 0.010496116243f));
         CHECK(ntt::AlmostEqual(sim.sim_params()->sigma0(), 0.01f));
 
-        {
-          auto                    mblock       = sim.mblock();
-          real_t                  gammabeta    = 12.0f;
-          real_t                  pitch_angle1 = ntt::constant::PI / 6.0f;
-          real_t                  pitch_angle2 = ntt::constant::PI / 4.0f;
-          ntt::coord_t<ntt::Dim2> x_init1 {2.5233f, 0.1265f};
-          ntt::coord_t<ntt::Dim2> x_init2 {0.254f, 0.834f};
+        auto                    mblock       = sim.mblock();
+        real_t                  gammabeta    = 12.0f;
+        real_t                  pitch_angle1 = ntt::constant::PI / 6.0f;
+        real_t                  pitch_angle2 = ntt::constant::PI / 4.0f;
+        ntt::coord_t<ntt::Dim2> x_init1 {2.5233f, 0.1265f};
+        ntt::coord_t<ntt::Dim2> x_init2 {0.254f, 0.834f};
 
-          Kokkos::parallel_for(
-            "set particles",
-            ntt::CreateRangePolicy<ntt::Dim1>({0}, {1}),
-            Lambda(const std::size_t p) {
-              PICPRTL_XYZ_2D(mblock,
-                             0,
-                             p,
-                             x_init1[0],
-                             x_init1[1],
-                             ZERO,
-                             gammabeta * math::cos(pitch_angle1),
-                             gammabeta * math::sin(pitch_angle1));
-              PICPRTL_XYZ_2D(mblock,
-                             1,
-                             p,
-                             x_init2[0],
-                             x_init2[1],
-                             -gammabeta * math::cos(pitch_angle2),
-                             -gammabeta * math::sin(pitch_angle2),
-                             ZERO);
-            });
-          (mblock->particles[0]).set_npart(1);
-          (mblock->particles[1]).set_npart(1);
+        Kokkos::parallel_for(
+          "set particles",
+          ntt::CreateRangePolicy<ntt::Dim1>({0}, {1}),
+          Lambda(const std::size_t p) {
+            PICPRTL_XYZ_2D(mblock,
+                           0,
+                           p,
+                           x_init1[0],
+                           x_init1[1],
+                           ZERO,
+                           gammabeta * math::cos(pitch_angle1),
+                           gammabeta * math::sin(pitch_angle1));
+            PICPRTL_XYZ_2D(mblock,
+                           1,
+                           p,
+                           x_init2[0],
+                           x_init2[1],
+                           -gammabeta * math::cos(pitch_angle2),
+                           -gammabeta * math::sin(pitch_angle2),
+                           ZERO);
+          });
+        (mblock->particles[0]).set_npart(1);
+        (mblock->particles[1]).set_npart(1);
 
-          sim.pushParticlesSubstep(ZERO, ONE);
+        sim.pushParticlesSubstep(ZERO, ONE);
 
-          sim.depositCurrentsSubstep(ZERO);
+        sim.depositCurrentsSubstep(ZERO);
 
-          CHECK(ntt::AlmostEqual(
-            sim.mblock()->cur(161 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx2)
-              + sim.mblock()->cur(162 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx2),
-            -55.23417f));
-          CHECK(ntt::AlmostEqual(
-            sim.mblock()->cur(161 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx3)
-              + sim.mblock()->cur(162 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx3)
-              + sim.mblock()->cur(161 + ntt::N_GHOSTS, 9 + ntt::N_GHOSTS, ntt::cur::jx3)
-              + sim.mblock()->cur(162 + ntt::N_GHOSTS, 9 + ntt::N_GHOSTS, ntt::cur::jx3),
-            -31.889464f));
+        CHECK(ntt::AlmostEqual(
+          sim.mblock()->cur(161 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx2)
+            + sim.mblock()->cur(162 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx2),
+          -55.23417f));
+        CHECK(ntt::AlmostEqual(
+          sim.mblock()->cur(161 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx3)
+            + sim.mblock()->cur(162 + ntt::N_GHOSTS, 8 + ntt::N_GHOSTS, ntt::cur::jx3)
+            + sim.mblock()->cur(161 + ntt::N_GHOSTS, 9 + ntt::N_GHOSTS, ntt::cur::jx3)
+            + sim.mblock()->cur(162 + ntt::N_GHOSTS, 9 + ntt::N_GHOSTS, ntt::cur::jx3),
+          -31.889464f));
 
-          CHECK(ntt::AlmostEqual(
-            sim.mblock()->cur(15 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx1)
-              + sim.mblock()->cur(15 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx1)
-              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx1)
-              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 54 + ntt::N_GHOSTS, ntt::cur::jx1),
-            -1.6f * 45.098512f));
+        CHECK(ntt::AlmostEqual(
+          sim.mblock()->cur(15 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx1)
+            + sim.mblock()->cur(15 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx1)
+            + sim.mblock()->cur(16 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx1)
+            + sim.mblock()->cur(16 + ntt::N_GHOSTS, 54 + ntt::N_GHOSTS, ntt::cur::jx1),
+          -1.6f * 45.098512f));
 
-          CHECK(ntt::AlmostEqual(
-            sim.mblock()->cur(15 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx2)
-              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx2)
-              + sim.mblock()->cur(16 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx2)
-              + sim.mblock()->cur(17 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx2),
-            -1.6f * 45.098512f));
+        CHECK(ntt::AlmostEqual(
+          sim.mblock()->cur(15 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx2)
+            + sim.mblock()->cur(16 + ntt::N_GHOSTS, 52 + ntt::N_GHOSTS, ntt::cur::jx2)
+            + sim.mblock()->cur(16 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx2)
+            + sim.mblock()->cur(17 + ntt::N_GHOSTS, 53 + ntt::N_GHOSTS, ntt::cur::jx2),
+          -1.6f * 45.098512f));
 
-          sim.addCurrentsSubstep(ZERO);
+        sim.addCurrentsSubstep(ZERO);
 
-          real_t ex1 {0.0f};
-          Kokkos::parallel_reduce(
-            "post-deposit",
-            sim.rangeActiveCells(),
-            Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
-              sum += mblock->em(i, j, ntt::em::ex1);
-            },
-            ex1);
+        real_t ex1 {0.0f};
+        Kokkos::parallel_reduce(
+          "post-deposit",
+          sim.rangeActiveCells(),
+          Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
+            sum += mblock->em(i, j, ntt::em::ex1);
+          },
+          ex1);
 
-          real_t ex2 {0.0f};
-          Kokkos::parallel_reduce(
-            "post-deposit",
-            sim.rangeActiveCells(),
-            Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
-              sum += mblock->em(i, j, ntt::em::ex2);
-            },
-            ex2);
+        real_t ex2 {0.0f};
+        Kokkos::parallel_reduce(
+          "post-deposit",
+          sim.rangeActiveCells(),
+          Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
+            sum += mblock->em(i, j, ntt::em::ex2);
+          },
+          ex2);
 
-          real_t ex3 {0.0f};
-          Kokkos::parallel_reduce(
-            "post-deposit",
-            sim.rangeActiveCells(),
-            Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
-              sum += mblock->em(i, j, ntt::em::ex3);
-            },
-            ex3);
+        real_t ex3 {0.0f};
+        Kokkos::parallel_reduce(
+          "post-deposit",
+          sim.rangeActiveCells(),
+          Lambda(ntt::index_t i, ntt::index_t j, real_t & sum) {
+            sum += mblock->em(i, j, ntt::em::ex3);
+          },
+          ex3);
 
-          real_t c0 {275148.964f};
-          CHECK(ntt::AlmostEqual(ex1, c0 * 72.1576208f));
-          CHECK(ntt::AlmostEqual(ex2, c0 * 127.3917908f));
-          CHECK(ntt::AlmostEqual(ex3, c0 * 31.889464f));
-        }
+        real_t c0 {275148.964f};
+        CHECK(ntt::AlmostEqual(ex1, c0 * 72.1576208f));
+        CHECK(ntt::AlmostEqual(ex2, c0 * 127.3917908f));
+        CHECK(ntt::AlmostEqual(ex3, c0 * 31.889464f));
+
+        sim.finalize();
       }
       catch (std::exception& err) {
         std::cerr << err.what() << std::endl;
       }
     }
   }
-  Kokkos::finalize();
 }
 
 #endif
