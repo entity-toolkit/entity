@@ -28,14 +28,15 @@ python configure.py -debug --compiler=g++ --precision=single --pgen=unit/boris
 
 > To see all the available configuration flags run `python configure.py -h`.
 
-Once the code is configured, and the `Makefile` is generated in the specified path (by default it is `build/`), you may _compile_ the desired code regime by going into the `build` directory and running `make <REGIME>`. Currently we support the following regimes:
+Once the code is configured, and the `Makefile` is generated in the `build/` path, you may _compile_ the code by going into the `build` directory and running `make <TARGET>`. Currently we support the following targets:
 
-* `ntt`: main regime for performance runs;
-* `test`: test regime that runs a series of unit tests.
+* `ntt`: main target for performance runs;
+* `vis`: on-the-fly visulization mode;
+* `test`: test target that runs a series of unit tests.
 
 > Running `make all` will compile all the available regimes. `make` or `make help` will show more detailed instruction list.
 
-After the compilation is successful, you will find the corresponding executable called `<REGIME>.exec` in the `bin/` directory (or whatever was specified during the configure). That's it!
+After the compilation is successful, you will find the corresponding executable called `<TARGET>.exec` in the `bin/` directory. That's it!
 
 > Directories where the temporary compiled objects and executables go can be defined during the configure time using the flags `--build=<DIR>` and `--bin=<DIR>` correspondingly. By default if not specified the configure script assumes `--build=build/` and `--bin=bin/`. Passing the current directory for `--build` is a bad idea, as there are tons of temporary files generated at compile time, especially from `Kokkos` library.  
 
@@ -46,16 +47,16 @@ After the compilation is successful, you will find the corresponding executable 
   - [x] routine for easy side/corner range selection
   - [x] aliases for fields/particles/currents
   - [ ] check allocation of proper fields
-  - [ ] add a simple current filtering
+  - [x] add a simple current filtering
   - [ ] field mirrors
 
 ### Intermediate term things to do/fix
 
   - [ ] test curvilinear particle pusher
-  - [ ] particle motion near the axes
-  - [ ] test curvilinear current deposit
+  - [x] particle motion near the axes
+  - [x] test curvilinear current deposit
   - [ ] deposition near the axes
-  - [ ] filtering near the axes
+  - [x] filtering near the axes
 
 ### State of things
 
@@ -81,7 +82,7 @@ After the compilation is successful, you will find the corresponding executable 
 - [x] check python `subprocess.run` command during the configure stage
 - [ ] check if compilation of `glfw` is possible (or if `glfw` is available)
 - [ ] same for `freetype`
-- [ ] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
+- [x] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
 
 > To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
 
