@@ -5,9 +5,6 @@
 #define STRINGIZE_DETAIL(x) #x
 #define LINE_STRING         STRINGIZE(__LINE__)
 
-#define PIC_SIMTYPE         1
-#define GRPIC_SIMTYPE       2
-
 // Defining precision-based constants and types
 #ifdef SINGLE_PRECISION
 using real_t = float;

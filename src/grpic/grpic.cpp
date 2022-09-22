@@ -14,6 +14,7 @@ namespace ntt {
     for (unsigned long ti {0}; ti < timax; ++ti) {
       PLOGD << "t = " << time;
       step_forward(time);
+      this->writeOutput(ti);
       time += this->m_mblock.timestep();
     }
   }
@@ -205,7 +206,7 @@ namespace ntt {
      *            u_prtl   at n-1/2
      */
 
-    if (this->sim_params().enable_fieldsolver()) {
+    if (this->sim_params()->enable_fieldsolver()) {
       timers.start(1);
      /**
        * em0::D <- (em0::D + em::D) / 2
@@ -267,7 +268,7 @@ namespace ntt {
     timers.start(3);
     timers.stop(3);
 
-    if (this->sim_params().enable_fieldsolver()) {
+    if (this->sim_params()->enable_fieldsolver()) {
       timers.start(1);
      /**
        * cur::J <- (cur0::J + cur::J) / 2
@@ -383,7 +384,7 @@ namespace ntt {
   template <>
   Inline void Compute_Aphi<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    for (int k = (int)(j_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
+    for (int k = (int)(i2_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
       real_t sqrt_detH_ij1 {m_mblock.metric.sqrt_det_h({i_, (real_t)k - HALF})};
       real_t sqrt_detH_ij2 {m_mblock.metric.sqrt_det_h({i_, (real_t)k + HALF})};
       int    k1 {k + N_GHOSTS};

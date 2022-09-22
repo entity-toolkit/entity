@@ -167,6 +167,13 @@ template void ntt::csv::writeField<ntt::Dim3, ntt::SimulationType::GRPIC>(const 
                                                                           const Meshblock3D&,
                                                                           const em&);
 
+template void ntt::csv::writeField<ntt::Dim2, ntt::SimulationType::GRPIC>(const std::string&,
+                                                                          const Meshblock2D&,
+                                                                          const cur&);
+template void ntt::csv::writeField<ntt::Dim3, ntt::SimulationType::GRPIC>(const std::string&,
+                                                                          const Meshblock3D&,
+                                                                          const cur&);
+
 template void ntt::csv::writeParticle<ntt::Dim2, ntt::SimulationType::GRPIC>(
   std::string, const Meshblock2D&, const std::size_t&, const std::size_t&, const OutputMode&);
 template void ntt::csv::writeParticle<ntt::Dim3, ntt::SimulationType::GRPIC>(
