@@ -32,33 +32,29 @@
 #include <plog/Initializers/RollingFileInitializer.h>
 
 #include <stdexcept>
-
-// Logging is done via `plog` library...
-// ... Use the following commands:
-//  `PLOGI << ...` for general info
-//  `PLOGF << ...` for fatal error messages (development)
-//  `PLOGD << ...` for debug messages (development)
-//  `PLOGE << ...` for simple error messages
-//  `PLOGW << ...` for warnings
-
 auto main(int argc, char* argv[]) -> int {
-  plog::init(plog::info, "test.log");
+  doctest::Context context;
+  int              res;
+
+  Kokkos::initialize();
+  {
+    plog::init(plog::info, "test.log");
 
 #ifdef GPUENABLED
-  throw std::runtime_error("tests should be done on CPUs");
+    throw std::runtime_error("tests should be done on CPUs");
 #endif
 
-  doctest::Context context;
-  context.setOption("order-by", "none");
+    context.setOption("order-by", "none");
 
-  context.applyCommandLine(argc, argv);
+    context.applyCommandLine(argc, argv);
 
-  context.setOption("no-intro", true);
-  context.setOption("no-version", true);
+    context.setOption("no-intro", true);
+    context.setOption("no-version", true);
 
-  int res = context.run();
+    res = context.run();
 
-  if (context.shouldExit()) { return res; }
-
+    if (context.shouldExit()) { return res; }
+  }
+  Kokkos::finalize();
   return res;
 }
