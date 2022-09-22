@@ -58,41 +58,40 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
   }
 
   void setData() override {
-#if SIMTYPE == GRPIC_SIMTYPE
-    m_sim.computeVectorPotential();
+#ifdef GRPIC_SIMTYPE
     // compute the vector potential
+    m_sim.computeVectorPotential();
 #endif
     const auto ngh = this->m_global_grid.m_ngh;
 
     for (int j {-ngh}; j < sx2 + ngh; ++j) {
       for (int i {-ngh}; i < sx1 + ngh; ++i) {
+        const int  I = i + ngh, J = j + ngh;
+        const auto i_ = (real_t)(i);
+        const auto j_ = (real_t)(j);
         for (std::size_t f {0}; f < m_fields_to_plot.size(); ++f) {
 #ifdef PIC_SIMTYPE
           if ((i >= 0) && (i < sx1) && (j >= 0) && (j < sx2)) {
-            auto                  i_ {(real_t)(i)};
-            auto                  j_ {(real_t)(j)};
+            //! TODO: no interpolation to cell center
             ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
             if (m_fields_to_plot[f].at(0) == 'E') {
-              m_sim.mblock()->metric.v_Cntrv2Hat(
-                {i_ + HALF, j_ + HALF},
-                {m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::ex1),
-                 m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::ex2),
-                 m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::ex3)},
-                e_hat);
+              m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                                 {m_sim.mblock()->em(I, J, ntt::em::ex1),
+                                                  m_sim.mblock()->em(I, J, ntt::em::ex2),
+                                                  m_sim.mblock()->em(I, J, ntt::em::ex3)},
+                                                 e_hat);
             } else if (m_fields_to_plot[f].at(0) == 'B') {
-              m_sim.mblock()->metric.v_Cntrv2Hat(
-                {i_ + HALF, j_ + HALF},
-                {m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::bx1),
-                 m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::bx2),
-                 m_sim.mblock()->em(i + ngh, j + ngh, ntt::em::bx3)},
-                b_hat);
+              m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                                 {m_sim.mblock()->em(I, J, ntt::em::bx1),
+                                                  m_sim.mblock()->em(I, J, ntt::em::bx2),
+                                                  m_sim.mblock()->em(I, J, ntt::em::bx3)},
+                                                 b_hat);
             } else if (m_fields_to_plot[f].at(0) == 'J') {
-              m_sim.mblock()->metric.v_Cntrv2Hat(
-                {i_ + HALF, j_ + HALF},
-                {m_sim.mblock()->cur(i + ngh, j + ngh, ntt::cur::jx1),
-                 m_sim.mblock()->cur(i + ngh, j + ngh, ntt::cur::jx2),
-                 m_sim.mblock()->cur(i + ngh, j + ngh, ntt::cur::jx3)},
-                j_hat);
+              m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
+                                                 {m_sim.mblock()->cur(I, J, ntt::cur::jx1),
+                                                  m_sim.mblock()->cur(I, J, ntt::cur::jx2),
+                                                  m_sim.mblock()->cur(I, J, ntt::cur::jx3)},
+                                                 j_hat);
             }
             real_t val {0.0};
             if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
@@ -117,154 +116,150 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
             auto idx                                 = Index(i, j);
             (this->fields)[m_fields_to_plot[f]][idx] = val;
           } else {
-            real_t val {0.0};
+            real_t val {ZERO};
             if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
-              val = m_sim.mblock()->em(i, j, ntt::em::ex1);
+              val = m_sim.mblock()->em(I, J, ntt::em::ex1);
             } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
-              val = m_sim.mblock()->em(i, j, ntt::em::ex2);
+              val = m_sim.mblock()->em(I, J, ntt::em::ex2);
             } else if (m_fields_to_plot[f] == "Ephi" || m_fields_to_plot[f] == "Ez") {
-              val = m_sim.mblock()->em(i, j, ntt::em::ex3);
+              val = m_sim.mblock()->em(I, J, ntt::em::ex3);
             } else if (m_fields_to_plot[f] == "Br" || m_fields_to_plot[f] == "Bx") {
-              val = m_sim.mblock()->em(i, j, ntt::em::bx1);
+              val = m_sim.mblock()->em(I, J, ntt::em::bx1);
             } else if (m_fields_to_plot[f] == "Btheta" || m_fields_to_plot[f] == "By") {
-              val = m_sim.mblock()->em(i, j, ntt::em::bx2);
+              val = m_sim.mblock()->em(I, J, ntt::em::bx2);
             } else if (m_fields_to_plot[f] == "Bphi" || m_fields_to_plot[f] == "Bz") {
-              val = m_sim.mblock()->em(i, j, ntt::em::bx3);
+              val = m_sim.mblock()->em(I, J, ntt::em::bx3);
             } else if (m_fields_to_plot[f] == "Jr" || m_fields_to_plot[f] == "Jx") {
-              val = m_sim.mblock()->cur(i, j, ntt::cur::jx1);
+              val = m_sim.mblock()->cur(I, J, ntt::cur::jx1);
             } else if (m_fields_to_plot[f] == "Jtheta" || m_fields_to_plot[f] == "Jy") {
-              val = m_sim.mblock()->cur(i, j, ntt::cur::jx2);
+              val = m_sim.mblock()->cur(I, J, ntt::cur::jx2);
             } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
-              val = m_sim.mblock()->cur(i, j, ntt::cur::jx3);
+              val = m_sim.mblock()->cur(I, J, ntt::cur::jx3);
             }
             auto idx                                 = Index(i, j);
             (this->fields)[m_fields_to_plot[f]][idx] = val;
           }
 #elif defined(GRPIC_SIMTYPE)
-          auto i_ {(real_t)(i - ntt::N_GHOSTS)};
-          auto j_ {(real_t)(j - ntt::N_GHOSTS)};
           // interpolate and transform to spherical
-          ntt::vec_t<ntt::Dim3> Dsph {0, 0, 0}, Bsph {0, 0, 0}, D0sph {0, 0, 0},
-            B0sph {0, 0, 0};
-          if ((i < ntt::N_GHOSTS) || (i >= nx1 - ntt::N_GHOSTS) || (j < ntt::N_GHOSTS)
-              || (j >= nx2 - ntt::N_GHOSTS)) {
-            Dsph[0]  = m_sim.mblock()->em(i, j, ntt::em::ex1);
-            Dsph[1]  = m_sim.mblock()->em(i, j, ntt::em::ex2);
-            Dsph[2]  = m_sim.mblock()->em(i, j, ntt::em::ex3);
-            Bsph[0]  = m_sim.mblock()->em(i, j, ntt::em::bx1);
-            Bsph[1]  = m_sim.mblock()->em(i, j, ntt::em::bx2);
-            Bsph[2]  = m_sim.mblock()->em(i, j, ntt::em::bx3);
-            D0sph[0] = m_sim.mblock()->em0(i, j, ntt::em::ex1);
-            D0sph[1] = m_sim.mblock()->em0(i, j, ntt::em::ex2);
-            D0sph[2] = m_sim.mblock()->em0(i, j, ntt::em::ex3);
-            B0sph[0] = m_sim.mblock()->em0(i, j, ntt::em::bx1);
-            B0sph[1] = m_sim.mblock()->em0(i, j, ntt::em::bx2);
-            B0sph[2] = m_sim.mblock()->em0(i, j, ntt::em::bx3);
+          ntt::vec_t<ntt::Dim3> Dsph {ZERO}, Bsph {ZERO}, D0sph {ZERO}, B0sph {ZERO};
+          if ((i >= 0) && (i < sx1) && (j >= 0) && (j < sx2)) {
+            if (m_fields_to_plot[f].at(0) == 'D') {
+              if (m_fields_to_plot[f].at(1) == '0') {
+                real_t Dx1, Dx2, Dx3;
+                // interpolate to cell center
+                Dx1 = 0.5
+                      * (m_sim.mblock()->em0(I, J, ntt::em::ex1)
+                         + m_sim.mblock()->em0(I, J + 1, ntt::em::ex1));
+                Dx2 = 0.5
+                      * (m_sim.mblock()->em0(I, J, ntt::em::ex2)
+                         + m_sim.mblock()->em0(I + 1, J, ntt::em::ex2));
+                Dx3 = 0.25
+                      * (m_sim.mblock()->em0(I, J, ntt::em::ex3)
+                         + m_sim.mblock()->em0(I + 1, J, ntt::em::ex3)
+                         + m_sim.mblock()->em0(I, J + 1, ntt::em::ex3)
+                         + m_sim.mblock()->em0(I + 1, J + 1, ntt::em::ex3));
+                m_sim.mblock()->metric.v_Cntr2SphCntrv(
+                  {i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, D0sph);
+              } else {
+                real_t Dx1, Dx2, Dx3;
+                // interpolate to cell center
+                Dx1 = 0.5
+                      * (m_sim.mblock()->em(I, J, ntt::em::ex1)
+                         + m_sim.mblock()->em(I, J + 1, ntt::em::ex1));
+                Dx2 = 0.5
+                      * (m_sim.mblock()->em(I, J, ntt::em::ex2)
+                         + m_sim.mblock()->em(I + 1, J, ntt::em::ex2));
+                Dx3 = 0.25
+                      * (m_sim.mblock()->em(I, J, ntt::em::ex3)
+                         + m_sim.mblock()->em(I + 1, J, ntt::em::ex3)
+                         + m_sim.mblock()->em(I, J + 1, ntt::em::ex3)
+                         + m_sim.mblock()->em(I + 1, J + 1, ntt::em::ex3));
+                m_sim.mblock()->metric.v_Cntr2SphCntrv(
+                  {i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, Dsph);
+              }
+            } else if (m_fields_to_plot[f].at(0) == 'B') {
+              if (m_fields_to_plot[f].at(1) == '0') {
+                real_t Bx1, Bx2, Bx3;
+                // interpolate to cell center
+                Bx1 = 0.5
+                      * (m_sim.mblock()->em0(I + 1, J, ntt::em::bx1)
+                         + m_sim.mblock()->em0(I, J, ntt::em::bx1));
+                Bx2 = 0.5
+                      * (m_sim.mblock()->em0(I, J + 1, ntt::em::bx2)
+                         + m_sim.mblock()->em0(I, J, ntt::em::bx2));
+                Bx3 = m_sim.mblock()->em0(I, J, ntt::em::bx3);
+                m_sim.mblock()->metric.v_Cntr2SphCntrv(
+                  {i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, B0sph);
+              } else {
+                real_t Bx1, Bx2, Bx3;
+                // interpolate to cell center
+                Bx1 = 0.5
+                      * (m_sim.mblock()->em(I + 1, J, ntt::em::bx1)
+                         + m_sim.mblock()->em(I, J, ntt::em::bx1));
+                Bx2 = 0.5
+                      * (m_sim.mblock()->em(I, J + 1, ntt::em::bx2)
+                         + m_sim.mblock()->em(I, J, ntt::em::bx2));
+                Bx3 = m_sim.mblock()->em(I, J, ntt::em::bx3);
+                m_sim.mblock()->metric.v_Cntr2SphCntrv(
+                  {i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, Bsph);
+              }
+            }
           } else {
-            if ((m_fields_to_plot[f] == "Dr") || (m_fields_to_plot[f] == "Dtheta")
-                || (m_fields_to_plot[f] == "Dphi")) {
-              real_t Dx1, Dx2, Dx3;
-              // interpolate to cell center
-              Dx1 = 0.5
-                    * (m_sim.mblock()->em(i, j, ntt::em::ex1)
-                       + m_sim.mblock()->em(i, j + 1, ntt::em::ex1));
-              Dx2 = 0.5
-                    * (m_sim.mblock()->em(i, j, ntt::em::ex2)
-                       + m_sim.mblock()->em(i + 1, j, ntt::em::ex2));
-              Dx3 = 0.25
-                    * (m_sim.mblock()->em(i, j, ntt::em::ex3)
-                       + m_sim.mblock()->em(i + 1, j, ntt::em::ex3)
-                       + m_sim.mblock()->em(i, j + 1, ntt::em::ex3)
-                       + m_sim.mblock()->em(i + 1, j + 1, ntt::em::ex3));
-              m_sim.mblock()->metric.v_Cntr2SphCntrv(
-                {i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, Dsph);
-            }
-            if ((m_fields_to_plot[f] == "Br") || (m_fields_to_plot[f] == "Btheta")
-                || (m_fields_to_plot[f] == "Bphi")) {
-              real_t Bx1, Bx2, Bx3;
-              // interpolate to cell center
-              Bx1 = 0.5
-                    * (m_sim.mblock()->em(i + 1, j, ntt::em::bx1)
-                       + m_sim.mblock()->em(i, j, ntt::em::bx1));
-              Bx2 = 0.5
-                    * (m_sim.mblock()->em(i, j + 1, ntt::em::bx2)
-                       + m_sim.mblock()->em(i, j, ntt::em::bx2));
-              Bx3 = m_sim.mblock()->em(i, j, ntt::em::bx3);
-              m_sim.mblock()->metric.v_Cntr2SphCntrv(
-                {i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, Bsph);
-            }
-            if ((m_fields_to_plot[f] == "D0r") || (m_fields_to_plot[f] == "D0theta")
-                || (m_fields_to_plot[f] == "D0phi")) {
-              real_t Dx1, Dx2, Dx3;
-              // interpolate to cell center
-              Dx1 = 0.5
-                    * (m_sim.mblock()->em0(i, j, ntt::em::ex1)
-                       + m_sim.mblock()->em0(i, j + 1, ntt::em::ex1));
-              Dx2 = 0.5
-                    * (m_sim.mblock()->em0(i, j, ntt::em::ex2)
-                       + m_sim.mblock()->em0(i + 1, j, ntt::em::ex2));
-              Dx3 = 0.25
-                    * (m_sim.mblock()->em0(i, j, ntt::em::ex3)
-                       + m_sim.mblock()->em0(i + 1, j, ntt::em::ex3)
-                       + m_sim.mblock()->em0(i, j + 1, ntt::em::ex3)
-                       + m_sim.mblock()->em0(i + 1, j + 1, ntt::em::ex3));
-              m_sim.mblock()->metric.v_Cntr2SphCntrv(
-                {i_ + HALF, j_ + HALF}, {Dx1, Dx2, Dx3}, D0sph);
-            }
-            if ((m_fields_to_plot[f] == "B0r") || (m_fields_to_plot[f] == "B0theta")
-                || (m_fields_to_plot[f] == "B0phi")) {
-              real_t Bx1, Bx2, Bx3;
-              // interpolate to cell center
-              Bx1 = 0.5
-                    * (m_sim.mblock()->em0(i + 1, j, ntt::em::bx1)
-                       + m_sim.mblock()->em0(i, j, ntt::em::bx1));
-              Bx2 = 0.5
-                    * (m_sim.mblock()->em0(i, j + 1, ntt::em::bx2)
-                       + m_sim.mblock()->em0(i, j, ntt::em::bx2));
-              Bx3 = m_sim.mblock()->em0(i, j, ntt::em::bx3);
-              m_sim.mblock()->metric.v_Cntr2SphCntrv(
-                {i_ + HALF, j_ + HALF}, {Bx1, Bx2, Bx3}, B0sph);
-            }
+            Dsph[0]  = m_sim.mblock()->em(I, J, ntt::em::ex1);
+            Dsph[1]  = m_sim.mblock()->em(I, J, ntt::em::ex2);
+            Dsph[2]  = m_sim.mblock()->em(I, J, ntt::em::ex3);
+            Bsph[0]  = m_sim.mblock()->em(I, J, ntt::em::bx1);
+            Bsph[1]  = m_sim.mblock()->em(I, J, ntt::em::bx2);
+            Bsph[2]  = m_sim.mblock()->em(I, J, ntt::em::bx3);
+            D0sph[0] = m_sim.mblock()->em0(I, J, ntt::em::ex1);
+            D0sph[1] = m_sim.mblock()->em0(I, J, ntt::em::ex2);
+            D0sph[2] = m_sim.mblock()->em0(I, J, ntt::em::ex3);
+            B0sph[0] = m_sim.mblock()->em0(I, J, ntt::em::bx1);
+            B0sph[1] = m_sim.mblock()->em0(I, J, ntt::em::bx2);
+            B0sph[2] = m_sim.mblock()->em0(I, J, ntt::em::bx3);
           }
+          real_t val {ZERO};
           if (m_fields_to_plot[f] == "Dr") {
-            m_data[f].set(i, j, Dsph[0]);
+            val = Dsph[0];
           } else if (m_fields_to_plot[f] == "Dtheta") {
-            m_data[f].set(i, j, Dsph[1]);
+            val = Dsph[1];
           } else if (m_fields_to_plot[f] == "Dphi") {
-            m_data[f].set(i, j, Dsph[2]);
+            val = Dsph[2];
           } else if (m_fields_to_plot[f] == "Br") {
-            m_data[f].set(i, j, Bsph[0]);
+            val = Bsph[0];
           } else if (m_fields_to_plot[f] == "Btheta") {
-            m_data[f].set(i, j, Bsph[1]);
+            val = Bsph[1];
           } else if (m_fields_to_plot[f] == "Bphi") {
-            m_data[f].set(i, j, Bsph[2]);
+            val = Bsph[2];
           } else if (m_fields_to_plot[f] == "Er") {
-            m_data[f].set(i, j, m_sim.mblock()->aux(i, j, ntt::em::ex1));
+            val = m_sim.mblock()->aux(I, J, ntt::em::ex1);
           } else if (m_fields_to_plot[f] == "Etheta") {
-            m_data[f].set(i, j, m_sim.mblock()->aux(i, j, ntt::em::ex2));
+            val = m_sim.mblock()->aux(I, J, ntt::em::ex2);
           } else if (m_fields_to_plot[f] == "Ephi") {
-            m_data[f].set(i, j, m_sim.mblock()->aux(i, j, ntt::em::ex3));
+            val = m_sim.mblock()->aux(I, J, ntt::em::ex3);
           } else if (m_fields_to_plot[f] == "Hr") {
-            m_data[f].set(i, j, m_sim.mblock()->aux(i, j, ntt::em::bx1));
+            val = m_sim.mblock()->aux(I, J, ntt::em::bx1);
           } else if (m_fields_to_plot[f] == "Htheta") {
-            m_data[f].set(i, j, m_sim.mblock()->aux(i, j, ntt::em::bx2));
+            val = m_sim.mblock()->aux(I, J, ntt::em::bx2);
           } else if (m_fields_to_plot[f] == "Hphi") {
-            m_data[f].set(i, j, m_sim.mblock()->aux(i, j, ntt::em::bx3));
+            val = m_sim.mblock()->aux(I, J, ntt::em::bx3);
           } else if (m_fields_to_plot[f] == "D0r") {
-            m_data[f].set(i, j, D0sph[0]);
+            val = D0sph[0];
           } else if (m_fields_to_plot[f] == "D0theta") {
-            m_data[f].set(i, j, D0sph[1]);
+            val = D0sph[1];
           } else if (m_fields_to_plot[f] == "D0phi") {
-            m_data[f].set(i, j, D0sph[2]);
+            val = D0sph[2];
           } else if (m_fields_to_plot[f] == "B0r") {
-            m_data[f].set(i, j, B0sph[0]);
+            val = B0sph[0];
           } else if (m_fields_to_plot[f] == "B0theta") {
-            m_data[f].set(i, j, B0sph[1]);
+            val = B0sph[1];
           } else if (m_fields_to_plot[f] == "B0phi") {
-            m_data[f].set(i, j, B0sph[2]);
+            val = B0sph[2];
           } else if (m_fields_to_plot[f] == "Aphi") {
-            m_data[f].set(i, j, m_sim.mblock()->aphi(i, j, 0));
+            val = m_sim.mblock()->aphi(I, J, 0);
           }
+          auto idx                                 = Index(i, j);
+          (this->fields)[m_fields_to_plot[f]][idx] = val;
 #endif
         }
       }
@@ -357,13 +352,15 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     }
   }
 
-  void customAnnotatePcolor2d() override {
-#if SIMTYPE == GRPIC_SIMTYPE
-    // real_t a        = m_sim.sim_params().metric_parameters()[4];
-    // real_t r_absorb = m_sim.sim_params().metric_parameters()[2];
-    // real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
-    // nttiny::drawCircle({0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI});
-    // nttiny::drawCircle({0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI});
+  void customAnnotatePcolor2d(const nttiny::UISettings& ui_settings) override {
+#if GRPIC_SIMTYPE
+    real_t a        = m_sim.sim_params()->metric_parameters()[4];
+    real_t r_absorb = m_sim.sim_params()->metric_parameters()[2];
+    real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
+    nttiny::tools::drawCircle(
+      {0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+    nttiny::tools::drawCircle(
+      {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
 #elif defined(PIC_SIMTYPE)
 #endif
   }
@@ -377,7 +374,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale_str     = cl_args.getArgument("-scale", "1.0");
+    auto  scale_str     = cl_args.getArgument("-scale", "2.0");
     auto  scale         = std::stof(std::string(scale_str));
     auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
