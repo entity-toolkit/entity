@@ -10,6 +10,7 @@
 [submodule "extern/nttiny"]
 	path = extern/nttiny
 	url = git@github.com:haykh/nttiny.git
+  branch = master
 [submodule "extern/doctest"]
 	path = extern/doctest
 	url = git@github.com:doctest/doctest.git

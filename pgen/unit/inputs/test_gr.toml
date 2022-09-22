@@ -5,12 +5,12 @@ runtime         = 0.1
 [domain]
 qsph_r0         = 0.0
 qsph_h          = 0.4
-sph_rabsorb     = 5.5              # radius of absorbing boundary in units of r_H
+sph_rabsorb     = 18.0              # radius of absorbing boundary in units of r_H
 absorb_coeff    = 20.0              # absorption coefficient
-resolution      = [512, 512]
-extent          = [0.9, 6.0]       # radial extent in units of r_H
+resolution      = [128, 128]
+extent          = [0.9, 20.0]       # radial extent in units of r_H
 boundaries      = ["USER", "USER"]
-a               = 0.99
+a               = 0.95
 
 [algorithm]
 CFL             = 0.9
