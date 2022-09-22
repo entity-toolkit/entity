@@ -16,9 +16,10 @@
         "${myDefaultIncludePath}"
       ],
       "defines": [
-        "PIC_SIMTYPE",
+        // "PIC_SIMTYPE",
         "SINGLE_PRECISION",
         "OMPENABLED",
+        "GRPIC_SIMTYPE",
         // "MINKOWSKI_METRIC"
         "QSPHERICAL_METRIC"
       ],

@@ -203,7 +203,7 @@ namespace ntt {
     
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_eps;
-    int                                 j_min;
+    int                                 i2_min;
 
   public:
     Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)

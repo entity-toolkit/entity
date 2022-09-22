@@ -5,8 +5,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim2 = Dim2;
-  const auto Dim3 = Dim3;
 
   template <>
   void GRPIC<Dim2>::computeAuxESubstep(const real_t&, const gr_getE& f) {

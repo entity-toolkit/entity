@@ -5,9 +5,6 @@
 #include <stdexcept>
 
 namespace ntt {
-  const auto Dim2 = Dim2;
-  const auto Dim3 = Dim3;
-
   template <>
   void
   GRPIC<Dim2>::faradaySubstep(const real_t&, const real_t& fraction, const gr_faraday& f) {
