@@ -1,5 +1,6 @@
 #include "nttiny/vis.h"
 #include "nttiny/api.h"
+#include "nttiny/tools.h"
 
 #include "global.h"
 #include "cargs.h"
