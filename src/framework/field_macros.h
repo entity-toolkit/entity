@@ -18,35 +18,116 @@
 #define BX3_2D(I, J)                     (m_mblock.em((I), (J), em::bx3))
 #define BX3_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::bx3))
 
-#define EX1(...)                         GET_MACRO(__VA_ARGS__, EX1_3D, EX1_2D, EX1_1D, )(__VA_ARGS__)
-#define EX1_1D(I)                        (m_mblock.em((I), em::ex1))
-#define EX1_2D(I, J)                     (m_mblock.em((I), (J), em::ex1))
-#define EX1_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::ex1))
+#ifdef PIC_SIMTYPE
 
-#define EX2(...)                         GET_MACRO(__VA_ARGS__, EX2_3D, EX2_2D, EX2_1D, )(__VA_ARGS__)
-#define EX2_1D(I)                        (m_mblock.em((I), em::ex2))
-#define EX2_2D(I, J)                     (m_mblock.em((I), (J), em::ex2))
-#define EX2_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::ex2))
+#  define EX1(...)        GET_MACRO(__VA_ARGS__, EX1_3D, EX1_2D, EX1_1D, )(__VA_ARGS__)
+#  define EX1_1D(I)       (m_mblock.em((I), em::ex1))
+#  define EX1_2D(I, J)    (m_mblock.em((I), (J), em::ex1))
+#  define EX1_3D(I, J, K) (m_mblock.em((I), (J), (K), em::ex1))
 
-#define EX3(...)                         GET_MACRO(__VA_ARGS__, EX3_3D, EX3_2D, EX3_1D, )(__VA_ARGS__)
-#define EX3_1D(I)                        (m_mblock.em((I), em::ex3))
-#define EX3_2D(I, J)                     (m_mblock.em((I), (J), em::ex3))
-#define EX3_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::ex3))
+#  define EX2(...)        GET_MACRO(__VA_ARGS__, EX2_3D, EX2_2D, EX2_1D, )(__VA_ARGS__)
+#  define EX2_1D(I)       (m_mblock.em((I), em::ex2))
+#  define EX2_2D(I, J)    (m_mblock.em((I), (J), em::ex2))
+#  define EX2_3D(I, J, K) (m_mblock.em((I), (J), (K), em::ex2))
 
-#define JX1(...)                         GET_MACRO(__VA_ARGS__, JX1_3D, JX1_2D, JX1_1D, )(__VA_ARGS__)
-#define JX1_1D(I)                        (m_mblock.cur((I), cur::jx1))
-#define JX1_2D(I, J)                     (m_mblock.cur((I), (J), cur::jx1))
-#define JX1_3D(I, J, K)                  (m_mblock.cur((I), (J), (K), cur::jx1))
+#  define EX3(...)        GET_MACRO(__VA_ARGS__, EX3_3D, EX3_2D, EX3_1D, )(__VA_ARGS__)
+#  define EX3_1D(I)       (m_mblock.em((I), em::ex3))
+#  define EX3_2D(I, J)    (m_mblock.em((I), (J), em::ex3))
+#  define EX3_3D(I, J, K) (m_mblock.em((I), (J), (K), em::ex3))
 
-#define JX2(...)                         GET_MACRO(__VA_ARGS__, JX2_3D, JX2_2D, JX2_1D, )(__VA_ARGS__)
-#define JX2_1D(I)                        (m_mblock.cur((I), cur::jx2))
-#define JX2_2D(I, J)                     (m_mblock.cur((I), (J), cur::jx2))
-#define JX2_3D(I, J, K)                  (m_mblock.cur((I), (J), (K), cur::jx2))
+#else
 
-#define JX3(...)                         GET_MACRO(__VA_ARGS__, JX3_3D, JX3_2D, JX3_1D, )(__VA_ARGS__)
-#define JX3_1D(I)                        (m_mblock.cur((I), cur::jx3))
-#define JX3_2D(I, J)                     (m_mblock.cur((I), (J), cur::jx3))
-#define JX3_3D(I, J, K)                  (m_mblock.cur((I), (J), (K), cur::jx3))
+#  define DX1(...)         GET_MACRO(__VA_ARGS__, DX1_3D, DX1_2D, DX1_1D, )(__VA_ARGS__)
+#  define DX1_1D(I)        (m_mblock.em((I), em::ex1))
+#  define DX1_2D(I, J)     (m_mblock.em((I), (J), em::ex1))
+#  define DX1_3D(I, J, K)  (m_mblock.em((I), (J), (K), em::ex1))
+
+#  define DX2(...)         GET_MACRO(__VA_ARGS__, DX2_3D, DX2_2D, DX2_1D, )(__VA_ARGS__)
+#  define DX2_1D(I)        (m_mblock.em((I), em::ex2))
+#  define DX2_2D(I, J)     (m_mblock.em((I), (J), em::ex2))
+#  define DX2_3D(I, J, K)  (m_mblock.em((I), (J), (K), em::ex2))
+
+#  define DX3(...)         GET_MACRO(__VA_ARGS__, DX3_3D, DX3_2D, DX3_1D, )(__VA_ARGS__)
+#  define DX3_1D(I)        (m_mblock.em((I), em::ex3))
+#  define DX3_2D(I, J)     (m_mblock.em((I), (J), em::ex3))
+#  define DX3_3D(I, J, K)  (m_mblock.em((I), (J), (K), em::ex3))
+
+#  define B0X1(...)        GET_MACRO(__VA_ARGS__, B0X1_3D, B0X1_2D, B0X1_1D, )(__VA_ARGS__)
+#  define B0X1_1D(I)       (m_mblock.em0((I), em::bx1))
+#  define B0X1_2D(I, J)    (m_mblock.em0((I), (J), em::bx1))
+#  define B0X1_3D(I, J, K) (m_mblock.em0((I), (J), (K), em::bx1))
+
+#  define B0X2(...)        GET_MACRO(__VA_ARGS__, B0X2_3D, B0X2_2D, B0X2_1D, )(__VA_ARGS__)
+#  define B0X2_1D(I)       (m_mblock.em0((I), em::bx2))
+#  define B0X2_2D(I, J)    (m_mblock.em0((I), (J), em::bx2))
+#  define B0X2_3D(I, J, K) (m_mblock.em0((I), (J), (K), em::bx2))
+
+#  define B0X3(...)        GET_MACRO(__VA_ARGS__, B0X3_3D, B0X3_2D, B0X3_1D, )(__VA_ARGS__)
+#  define B0X3_1D(I)       (m_mblock.em0((I), em::bx3))
+#  define B0X3_2D(I, J)    (m_mblock.em0((I), (J), em::bx3))
+#  define B0X3_3D(I, J, K) (m_mblock.em0((I), (J), (K), em::bx3))
+
+#  define D0X1(...)        GET_MACRO(__VA_ARGS__, D0X1_3D, D0X1_2D, D0X1_1D, )(__VA_ARGS__)
+#  define D0X1_1D(I)       (m_mblock.em0((I), em::ex1))
+#  define D0X1_2D(I, J)    (m_mblock.em0((I), (J), em::ex1))
+#  define D0X1_3D(I, J, K) (m_mblock.em0((I), (J), (K), em::ex1))
+
+#  define D0X2(...)        GET_MACRO(__VA_ARGS__, D0X2_3D, D0X2_2D, D0X2_1D, )(__VA_ARGS__)
+#  define D0X2_1D(I)       (m_mblock.em0((I), em::ex2))
+#  define D0X2_2D(I, J)    (m_mblock.em0((I), (J), em::ex2))
+#  define D0X2_3D(I, J, K) (m_mblock.em0((I), (J), (K), em::ex2))
+
+#  define D0X3(...)        GET_MACRO(__VA_ARGS__, D0X3_3D, D0X3_2D, D0X3_1D, )(__VA_ARGS__)
+#  define D0X3_1D(I)       (m_mblock.em0((I), em::ex3))
+#  define D0X3_2D(I, J)    (m_mblock.em0((I), (J), em::ex3))
+#  define D0X3_3D(I, J, K) (m_mblock.em0((I), (J), (K), em::ex3))
+
+#  define HX1(...)         GET_MACRO(__VA_ARGS__, HX1_3D, HX1_2D, HX1_1D, )(__VA_ARGS__)
+#  define HX1_1D(I)        (m_mblock.aux((I), em::bx1))
+#  define HX1_2D(I, J)     (m_mblock.aux((I), (J), em::bx1))
+#  define HX1_3D(I, J, K)  (m_mblock.aux((I), (J), (K), em::bx1))
+
+#  define HX2(...)         GET_MACRO(__VA_ARGS__, HX2_3D, HX2_2D, HX2_1D, )(__VA_ARGS__)
+#  define HX2_1D(I)        (m_mblock.aux((I), em::bx2))
+#  define HX2_2D(I, J)     (m_mblock.aux((I), (J), em::bx2))
+#  define HX2_3D(I, J, K)  (m_mblock.aux((I), (J), (K), em::bx2))
+
+#  define HX3(...)         GET_MACRO(__VA_ARGS__, HX3_3D, HX3_2D, HX3_1D, )(__VA_ARGS__)
+#  define HX3_1D(I)        (m_mblock.aux((I), em::bx3))
+#  define HX3_2D(I, J)     (m_mblock.aux((I), (J), em::bx3))
+#  define HX3_3D(I, J, K)  (m_mblock.aux((I), (J), (K), em::bx3))
+
+#  define EX1(...)         GET_MACRO(__VA_ARGS__, EX1_3D, EX1_2D, EX1_1D, )(__VA_ARGS__)
+#  define EX1_1D(I)        (m_mblock.aux((I), em::ex1))
+#  define EX1_2D(I, J)     (m_mblock.aux((I), (J), em::ex1))
+#  define EX1_3D(I, J, K)  (m_mblock.aux((I), (J), (K), em::ex1))
+
+#  define EX2(...)         GET_MACRO(__VA_ARGS__, EX2_3D, EX2_2D, EX2_1D, )(__VA_ARGS__)
+#  define EX2_1D(I)        (m_mblock.aux((I), em::ex2))
+#  define EX2_2D(I, J)     (m_mblock.aux((I), (J), em::ex2))
+#  define EX2_3D(I, J, K)  (m_mblock.aux((I), (J), (K), em::ex2))
+
+#  define EX3(...)         GET_MACRO(__VA_ARGS__, EX3_3D, EX3_2D, EX3_1D, )(__VA_ARGS__)
+#  define EX3_1D(I)        (m_mblock.aux((I), em::ex3))
+#  define EX3_2D(I, J)     (m_mblock.aux((I), (J), em::ex3))
+#  define EX3_3D(I, J, K)  (m_mblock.aux((I), (J), (K), em::ex3))
+
+#endif
+
+#define JX1(...)        GET_MACRO(__VA_ARGS__, JX1_3D, JX1_2D, JX1_1D, )(__VA_ARGS__)
+#define JX1_1D(I)       (m_mblock.cur((I), cur::jx1))
+#define JX1_2D(I, J)    (m_mblock.cur((I), (J), cur::jx1))
+#define JX1_3D(I, J, K) (m_mblock.cur((I), (J), (K), cur::jx1))
+
+#define JX2(...)        GET_MACRO(__VA_ARGS__, JX2_3D, JX2_2D, JX2_1D, )(__VA_ARGS__)
+#define JX2_1D(I)       (m_mblock.cur((I), cur::jx2))
+#define JX2_2D(I, J)    (m_mblock.cur((I), (J), cur::jx2))
+#define JX2_3D(I, J, K) (m_mblock.cur((I), (J), (K), cur::jx2))
+
+#define JX3(...)        GET_MACRO(__VA_ARGS__, JX3_3D, JX3_2D, JX3_1D, )(__VA_ARGS__)
+#define JX3_1D(I)       (m_mblock.cur((I), cur::jx3))
+#define JX3_2D(I, J)    (m_mblock.cur((I), (J), cur::jx3))
+#define JX3_3D(I, J, K) (m_mblock.cur((I), (J), (K), cur::jx3))
 
 #define ATOMIC_JX1(...)                                                                       \
   GET_MACRO(__VA_ARGS__, ATOMIC_JX1_3D, ATOMIC_JX1_2D, ATOMIC_JX1_1D, )(__VA_ARGS__)
