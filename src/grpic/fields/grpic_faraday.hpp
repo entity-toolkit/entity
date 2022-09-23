@@ -5,6 +5,7 @@
 #include "fields.h"
 #include "meshblock.h"
 #include "grpic.h"
+#include "field_macros.h"
 
 #include <stdexcept>
 
@@ -17,7 +18,7 @@ namespace ntt {
    */
   template <Dimension D>
   class FaradayGR_aux {
-    
+
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
     index_t                             j_min;
@@ -40,18 +41,15 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
     real_t inv_sqrt_detH_iPjP {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
 
-    m_mblock.em0(i, j, em::bx1)
-      += m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i, j, em::ex3) - m_mblock.aux(i, j + 1, em::ex3));
+    B0X1(i, j) += m_coeff * inv_sqrt_detH_ijP * (EX3(i, j) - EX3(i, j + 1));
 
     if (j == j_min) {
-      m_mblock.em0(i, j, em::bx2) = ZERO;
+      B0X2(i, j) = ZERO;
     } else {
-      m_mblock.em0(i, j, em::bx2)
-        += m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i + 1, j, em::ex3) - m_mblock.aux(i, j, em::ex3));
+      B0X2(i, j) += m_coeff * inv_sqrt_detH_iPj * (EX3(i + 1, j) - EX3(i, j));
     }
-    m_mblock.em0(i, j, em::bx3) += m_coeff * inv_sqrt_detH_iPjP
-                                   * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
-                                      + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
+    B0X3(i, j) += m_coeff * inv_sqrt_detH_iPjP
+                  * (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
   }
 
   template <>
@@ -61,7 +59,7 @@ namespace ntt {
 
   template <Dimension D>
   class FaradayGR {
-    
+
     Meshblock<D, SimulationType::GRPIC> m_mblock;
     real_t                              m_coeff;
     index_t                             j_min;
@@ -83,22 +81,17 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
     real_t inv_sqrt_detH_iPjP {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
 
-    m_mblock.em0(i, j, em::bx1)
-      = m_mblock.em(i, j, em::bx1)
-        + m_coeff * inv_sqrt_detH_ijP * (m_mblock.aux(i, j, em::ex3) - m_mblock.aux(i, j + 1, em::ex3));
+    B0X1(i, j) = BX1(i, j) + m_coeff * inv_sqrt_detH_ijP * (EX3(i, j) - EX3(i, j + 1));
 
     if (j == j_min) {
-      m_mblock.em0(i, j, em::bx2) = ZERO;
+      B0X2(i, j) = ZERO;
     } else {
-      m_mblock.em0(i, j, em::bx2)
-        = m_mblock.em(i, j, em::bx2)
-          + m_coeff * inv_sqrt_detH_iPj * (m_mblock.aux(i + 1, j, em::ex3) - m_mblock.aux(i, j, em::ex3));
+      B0X2(i, j) = BX2(i, j) + m_coeff * inv_sqrt_detH_iPj * (EX3(i + 1, j) - EX3(i, j));
     }
 
-    m_mblock.em0(i, j, em::bx3) = m_mblock.em(i, j, em::bx3)
-                                  + m_coeff * inv_sqrt_detH_iPjP
-                                      * (m_mblock.aux(i, j + 1, em::ex1) - m_mblock.aux(i, j, em::ex1)
-                                         + m_mblock.aux(i, j, em::ex2) - m_mblock.aux(i + 1, j, em::ex2));
+    B0X3(i, j) = BX3(i, j)
+                 + m_coeff * inv_sqrt_detH_iPjP
+                     * (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
   }
 
   template <>

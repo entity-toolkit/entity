@@ -5,6 +5,7 @@
 #include "fields.h"
 #include "meshblock.h"
 #include "grpic.h"
+#include "field_macros.h"
 
 namespace ntt {
 
@@ -36,16 +37,10 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
 
-    m_mblock.em0(i, j, em::ex1)
-      += m_coeff * inv_sqrt_detH_iPj
-         * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
-    m_mblock.em0(i, j, em::ex2)
-      += m_coeff * inv_sqrt_detH_ijP
-         * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
-    m_mblock.em0(i, j, em::ex3)
-      += m_coeff * inv_sqrt_detH_ij
-         * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
-            + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
+    D0X1(i, j) += m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
+    D0X2(i, j) += m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
+    D0X3(i, j)
+      += m_coeff * inv_sqrt_detH_ij * (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
   }
 
   template <>
@@ -76,19 +71,11 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
 
-    m_mblock.em0(i, j, em::ex1)
-      = m_mblock.em(i, j, em::ex1)
-        + m_coeff * inv_sqrt_detH_iPj
-            * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
-    m_mblock.em0(i, j, em::ex2)
-      = m_mblock.em(i, j, em::ex2)
-        + m_coeff * inv_sqrt_detH_ijP
-            * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
-    m_mblock.em0(i, j, em::ex3)
-      = m_mblock.em(i, j, em::ex3)
-        + m_coeff * inv_sqrt_detH_ij
-            * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
-               + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
+    D0X1(i, j) = DX1(i, j) + m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
+    D0X2(i, j) = DX2(i, j) + m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
+    D0X3(i, j)
+      = DX3(i, j)
+        + m_coeff * inv_sqrt_detH_ij * (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
   }
 
   template <>
@@ -119,16 +106,10 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
 
-    m_mblock.em(i, j, em::ex1)
-      += m_coeff * inv_sqrt_detH_iPj
-         * (m_mblock.aux(i, j, em::bx3) - m_mblock.aux(i, j - 1, em::bx3));
-    m_mblock.em(i, j, em::ex2)
-      += m_coeff * inv_sqrt_detH_ijP
-         * (m_mblock.aux(i - 1, j, em::bx3) - m_mblock.aux(i, j, em::bx3));
-    m_mblock.em(i, j, em::ex3)
-      += m_coeff * inv_sqrt_detH_ij
-         * (m_mblock.aux(i, j - 1, em::bx1) - m_mblock.aux(i, j, em::bx1)
-            + m_mblock.aux(i, j, em::bx2) - m_mblock.aux(i - 1, j, em::bx2));
+    DX1(i, j) += m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
+    DX2(i, j) += m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
+    DX3(i, j)
+      += m_coeff * inv_sqrt_detH_ij * (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
   }
 
   template <>
@@ -165,15 +146,11 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
 
     // theta = 0
-    m_mblock.em0(i, j_min, em::ex1)
-      += inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
+    D0X1(i, j_min) += inv_polar_area_iPj * m_coeff * HX3(i, j_min);
     // theta = pi
-    m_mblock.em0(i, j_max + 1, em::ex1)
-      -= inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
+    D0X1(i, j_max + 1) -= inv_polar_area_iPj * m_coeff * HX3(i, j_max);
     // j = jmin + 1/2
-    m_mblock.em0(i, j_min, em::ex2)
-      += inv_sqrt_detH_ijP * m_coeff
-         * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
+    D0X2(i, j_min) += inv_sqrt_detH_ijP * m_coeff * (HX3(i - 1, j_min) - HX3(i, j_min));
   }
 
   template <Dimension D>
@@ -200,18 +177,12 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
 
     // theta = 0
-    m_mblock.em0(i, j_min, em::ex1)
-      = m_mblock.em(i, j_min, em::ex1)
-        + inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
+    D0X1(i, j_min) = DX1(i, j_min) + inv_polar_area_iPj * m_coeff * HX3(i, j_min);
     // theta = pi
-    m_mblock.em0(i, j_max + 1, em::ex1)
-      = m_mblock.em(i, j_max + 1, em::ex1)
-        - inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
+    D0X1(i, j_max + 1) = DX1(i, j_max + 1) - inv_polar_area_iPj * m_coeff * HX3(i, j_max);
     // j = jmin + 1/2
-    m_mblock.em0(i, j_min, em::ex2)
-      = m_mblock.em(i, j_min, em::ex2)
-        + inv_sqrt_detH_ijP * m_coeff
-            * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
+    D0X2(i, j_min)
+      = DX2(i, j_min) + inv_sqrt_detH_ijP * m_coeff * (HX3(i - 1, j_min) - HX3(i, j_min));
   }
 
   template <Dimension D>
@@ -238,15 +209,11 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
 
     // theta = 0
-    m_mblock.em(i, j_min, em::ex1)
-      += inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_min, em::bx3));
+    DX1(i, j_min) += inv_polar_area_iPj * m_coeff * HX3(i, j_min);
     // theta = pi
-    m_mblock.em(i, j_max + 1, em::ex1)
-      -= inv_polar_area_iPj * m_coeff * (m_mblock.aux(i, j_max, em::bx3));
+    DX1(i, j_max + 1) -= inv_polar_area_iPj * m_coeff * HX3(i, j_max);
     // j = jmin + 1/2
-    m_mblock.em(i, j_min, em::ex2)
-      += inv_sqrt_detH_ijP * m_coeff
-         * (m_mblock.aux(i - 1, j_min, em::bx3) - m_mblock.aux(i, j_min, em::bx3));
+    DX2(i, j_min) += inv_sqrt_detH_ijP * m_coeff * (HX3(i - 1, j_min) - HX3(i, j_min));
   }
 
 } // namespace ntt
