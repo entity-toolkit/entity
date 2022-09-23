@@ -1,6 +1,3 @@
-[submodule "extern/kokkos"]
-	path = extern/kokkos
-	url = git@github.com:kokkos/kokkos.git
 [submodule "extern/plog"]
 	path = extern/plog
 	url = git@github.com:haykh/plog.git
@@ -20,3 +17,7 @@
 	path = extern/nttiny
 	url = git@github.com:haykh/nttiny.git
 	branch = master
+[submodule "extern/kokkos"]
+	path = extern/kokkos
+	url = git@github.com:kokkos/kokkos.git
+	master = master
