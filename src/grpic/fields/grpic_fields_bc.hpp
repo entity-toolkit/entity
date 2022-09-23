@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "grpic.h"
+#include "field_macros.h"
 #include "problem_generator.hpp"
 
 #include <plog/Log.h>
@@ -55,10 +56,8 @@ namespace ntt {
         m_absorbnorm
         * (ONE - math::exp(m_absorbcoeff * HEAVISIDE(delta_r1) * CUBE(delta_r1)))};
       real_t br_target {m_pgen.userTargetField_br_cntrv(m_mblock, {i_, j_ + HALF})};
-      m_mblock.em0(i, j, em::bx1)
-        = (ONE - sigma_r1) * m_mblock.em0(i, j, em::bx1) + sigma_r1 * br_target;
-      m_mblock.em(i, j, em::bx1)
-        = (ONE - sigma_r1) * m_mblock.em(i, j, em::bx1) + sigma_r1 * br_target;
+      B0X1(i, j) = (ONE - sigma_r1) * B0X1(i, j) + sigma_r1 * br_target;
+      BX1(i, j)  = (ONE - sigma_r1) * BX1(i, j) + sigma_r1 * br_target;
     }
     // i + 1/2
     m_mblock.metric.x_Code2Sph({i_ + HALF, j_}, rth_);
@@ -68,12 +67,10 @@ namespace ntt {
         m_absorbnorm
         * (ONE - math::exp(m_absorbcoeff * HEAVISIDE(delta_r2) * CUBE(delta_r2)))};
       real_t bth_target {m_pgen.userTargetField_bth_cntrv(m_mblock, {i_ + HALF, j_})};
-      m_mblock.em0(i, j, em::bx2)
-        = (ONE - sigma_r2) * m_mblock.em0(i, j, em::bx2) + sigma_r2 * bth_target;
-      m_mblock.em(i, j, em::bx2)
-        = (ONE - sigma_r2) * m_mblock.em(i, j, em::bx2) + sigma_r2 * bth_target;
-      m_mblock.em0(i, j, em::bx3) = (ONE - sigma_r2) * m_mblock.em0(i, j, em::bx3);
-      m_mblock.em(i, j, em::bx3)  = (ONE - sigma_r2) * m_mblock.em(i, j, em::bx3);
+      B0X2(i, j) = (ONE - sigma_r2) * B0X2(i, j) + sigma_r2 * bth_target;
+      BX2(i, j)  = (ONE - sigma_r2) * BX2(i, j) + sigma_r2 * bth_target;
+      B0X3(i, j) = (ONE - sigma_r2) * B0X3(i, j);
+      BX3(i, j)  = (ONE - sigma_r2) * BX3(i, j);
     }
   }
 } // namespace ntt
