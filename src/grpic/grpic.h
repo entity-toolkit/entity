@@ -190,6 +190,14 @@ namespace ntt {
      *
      */
     void computeVectorPotential();
+  
+     /**
+     * Advance particle positions and velocities.
+     *
+     * @param t time in physical units.
+     * @param f coefficient that gets multiplied by the timestep (e.g., 1.0).
+     */
+     void pushParticlesSubstep(const real_t&, const real_t&);
   };
 
   /**
