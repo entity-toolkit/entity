@@ -1,0 +1,42 @@
+[simulation]
+title           = "GR_pusher_example"
+runtime         = 0.1
+
+[domain]
+qsph_r0         = 0.0
+qsph_h          = 0.4
+sph_rabsorb     = 5.5              # radius of absorbing boundary in units of r_H
+absorb_coeff    = 20.0              # absorption coefficient
+resolution      = [128, 128]
+extent          = [0.9, 6.0]       # radial extent in units of r_H
+boundaries      = ["USER", "USER"]
+a               = 0.0
+
+[algorithm]
+CFL             = 0.9
+correction      = 1.0
+fieldsolver_ON  = false
+
+[units]
+ppc0            = 0.1
+larmor0         = 0.1
+skindepth0      = 0.01
+
+[particles]
+n_species       = 1
+
+[species_1]
+label           = "electron"
+mass            = 1.0
+charge          = 1.0
+maxnpart        = 1e2
+pusher          = "Boris"
+
+[visualization]
+fields          = ["Dr", "Dtheta", "Dphi", 
+                   "Br", "Btheta", "Bphi", 
+                   "Er", "Etheta", "Ephi", 
+                   "Hr", "Htheta", "Hphi", 
+                   "Aphi"]
+
+# fields          = ["dx1", "dx2", "dx3", "bx1", "bx2", "bx3", "ex1", "ex2", "ex3", "hx1", "hx2", "hx3"]
