@@ -20,4 +20,4 @@
 [submodule "extern/kokkos"]
 	path = extern/kokkos
 	url = git@github.com:kokkos/kokkos.git
-	master = master
+	branch = master
