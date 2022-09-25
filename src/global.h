@@ -104,6 +104,10 @@ namespace ntt {
       typename std::conditional<D == Dim3, array_t<real_t*** [N]>, std::nullptr_t>::type>::
       type>::type;
 
+  // D x N dimensional array (host memspace) for storing fields on ND hypercube
+  template <Dimension D, int N>
+  using ndfield_mirror_t = typename ndfield_t<D, N>::HostMirror;
+
   // D x N dimensional scatter array for storing fields on ND hypercubes
   template <Dimension D, int N>
   using scatter_ndfield_t = typename std::conditional<

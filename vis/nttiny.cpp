@@ -55,16 +55,22 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     generateFields();
     generateGrid();
     generateParticles();
+
+    nttiny::ScrollingBuffer flux_E;
+    this->buffers.insert({"flux_Er", std::move(flux_E)});
     setData();
   }
 
   void setData() override {
+    Kokkos::deep_copy(m_sim.mblock()->em_h, m_sim.mblock()->em);
+    Kokkos::deep_copy(m_sim.mblock()->cur_h, m_sim.mblock()->cur);
 #ifdef GRPIC_SIMTYPE
+    Kokkos::deep_copy(m_sim.mblock()->aphi_h, m_sim.mblock()->aphi);
     // compute the vector potential
     m_sim.computeVectorPotential();
 #endif
     const auto ngh = this->m_global_grid.m_ngh;
-
+    real_t     flux_E {ZERO};
     for (int j {-ngh}; j < sx2 + ngh; ++j) {
       for (int i {-ngh}; i < sx1 + ngh; ++i) {
         const int  I = i + ngh, J = j + ngh;
@@ -77,25 +83,30 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
             ntt::vec_t<ntt::Dim3> e_hat {ZERO}, b_hat {ZERO}, j_hat {ZERO};
             if (m_fields_to_plot[f].at(0) == 'E') {
               m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                                 {m_sim.mblock()->em(I, J, ntt::em::ex1),
-                                                  m_sim.mblock()->em(I, J, ntt::em::ex2),
-                                                  m_sim.mblock()->em(I, J, ntt::em::ex3)},
+                                                 {m_sim.mblock()->em_h(I, J, ntt::em::ex1),
+                                                  m_sim.mblock()->em_h(I, J, ntt::em::ex2),
+                                                  m_sim.mblock()->em_h(I, J, ntt::em::ex3)},
                                                  e_hat);
             } else if (m_fields_to_plot[f].at(0) == 'B') {
               m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                                 {m_sim.mblock()->em(I, J, ntt::em::bx1),
-                                                  m_sim.mblock()->em(I, J, ntt::em::bx2),
-                                                  m_sim.mblock()->em(I, J, ntt::em::bx3)},
+                                                 {m_sim.mblock()->em_h(I, J, ntt::em::bx1),
+                                                  m_sim.mblock()->em_h(I, J, ntt::em::bx2),
+                                                  m_sim.mblock()->em_h(I, J, ntt::em::bx3)},
                                                  b_hat);
             } else if (m_fields_to_plot[f].at(0) == 'J') {
               m_sim.mblock()->metric.v_Cntrv2Hat({i_ + HALF, j_ + HALF},
-                                                 {m_sim.mblock()->cur(I, J, ntt::cur::jx1),
-                                                  m_sim.mblock()->cur(I, J, ntt::cur::jx2),
-                                                  m_sim.mblock()->cur(I, J, ntt::cur::jx3)},
+                                                 {m_sim.mblock()->cur_h(I, J, ntt::cur::jx1),
+                                                  m_sim.mblock()->cur_h(I, J, ntt::cur::jx2),
+                                                  m_sim.mblock()->cur_h(I, J, ntt::cur::jx3)},
                                                  j_hat);
             }
             real_t val {0.0};
             if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
+              if (i == 105) {
+                ntt::coord_t<ntt::Dim2> rth_;
+                m_sim.mblock()->metric.x_Code2Sph({i_ + HALF, j_ + HALF}, rth_);
+                flux_E += e_hat[0] * math::sin(rth_[1]);
+              }
               val = e_hat[0];
             } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
               val = e_hat[1];
@@ -119,29 +130,30 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
           } else {
             real_t val {ZERO};
             if (m_fields_to_plot[f] == "Er" || m_fields_to_plot[f] == "Ex") {
-              val = m_sim.mblock()->em(I, J, ntt::em::ex1);
+              val = m_sim.mblock()->em_h(I, J, ntt::em::ex1);
             } else if (m_fields_to_plot[f] == "Etheta" || m_fields_to_plot[f] == "Ey") {
-              val = m_sim.mblock()->em(I, J, ntt::em::ex2);
+              val = m_sim.mblock()->em_h(I, J, ntt::em::ex2);
             } else if (m_fields_to_plot[f] == "Ephi" || m_fields_to_plot[f] == "Ez") {
-              val = m_sim.mblock()->em(I, J, ntt::em::ex3);
+              val = m_sim.mblock()->em_h(I, J, ntt::em::ex3);
             } else if (m_fields_to_plot[f] == "Br" || m_fields_to_plot[f] == "Bx") {
-              val = m_sim.mblock()->em(I, J, ntt::em::bx1);
+              val = m_sim.mblock()->em_h(I, J, ntt::em::bx1);
             } else if (m_fields_to_plot[f] == "Btheta" || m_fields_to_plot[f] == "By") {
-              val = m_sim.mblock()->em(I, J, ntt::em::bx2);
+              val = m_sim.mblock()->em_h(I, J, ntt::em::bx2);
             } else if (m_fields_to_plot[f] == "Bphi" || m_fields_to_plot[f] == "Bz") {
-              val = m_sim.mblock()->em(I, J, ntt::em::bx3);
+              val = m_sim.mblock()->em_h(I, J, ntt::em::bx3);
             } else if (m_fields_to_plot[f] == "Jr" || m_fields_to_plot[f] == "Jx") {
-              val = m_sim.mblock()->cur(I, J, ntt::cur::jx1);
+              val = m_sim.mblock()->cur_h(I, J, ntt::cur::jx1);
             } else if (m_fields_to_plot[f] == "Jtheta" || m_fields_to_plot[f] == "Jy") {
-              val = m_sim.mblock()->cur(I, J, ntt::cur::jx2);
+              val = m_sim.mblock()->cur_h(I, J, ntt::cur::jx2);
             } else if (m_fields_to_plot[f] == "Jphi" || m_fields_to_plot[f] == "Jz") {
-              val = m_sim.mblock()->cur(I, J, ntt::cur::jx3);
+              val = m_sim.mblock()->cur_h(I, J, ntt::cur::jx3);
             }
             auto idx                                 = Index(i, j);
             (this->fields)[m_fields_to_plot[f]][idx] = val;
           }
 #elif defined(GRPIC_SIMTYPE)
           // interpolate and transform to spherical
+          // @TODO: mirrors for em0, aux etc
           ntt::vec_t<ntt::Dim3> Dsph {ZERO}, Bsph {ZERO}, D0sph {ZERO}, B0sph {ZERO};
           if ((i >= 0) && (i < sx1) && (j >= 0) && (j < sx2)) {
             if (m_fields_to_plot[f].at(0) == 'D') {
@@ -278,6 +290,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
       }
       ++s;
     }
+
+    this->buffers["flux_Er"].AddPoint(m_time, (float)(-flux_E));
   }
   void stepFwd() override {
     m_sim.step_forward(m_time);
@@ -363,6 +377,10 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     nttiny::tools::drawCircle(
       {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
 #elif defined(PIC_SIMTYPE)
+    ntt::coord_t<ntt::Dim2> rth_;
+    m_sim.mblock()->metric.x_Code2Sph({(float)105 + HALF, HALF}, rth_);
+    nttiny::tools::drawCircle(
+      {0.0f, 0.0f}, rth_[0], {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
 #endif
   }
 };
