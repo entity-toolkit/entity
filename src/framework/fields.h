@@ -33,7 +33,8 @@ namespace ntt {
      * @note Ex2 is stored at (    i, j+1/2,     k,     n)
      * @note Ex3 is stored at (    i,     j, k+1/2,     n)
      */
-    ndfield_t<D, 6> em;
+    ndfield_t<D, 6>        em;
+    ndfield_mirror_t<D, 6> em_h;
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
@@ -45,7 +46,8 @@ namespace ntt {
      * @note Jx2 is deposited at (    i, j+1/2,     k, n+1/2)
      * @note Jx3 is deposited at (    i,     j, k+1/2, n+1/2)
      */
-    ndfield_t<D, 3> cur;
+    ndfield_t<D, 3>        cur;
+    ndfield_mirror_t<D, 3> cur_h;
     /**
      * Current fields at previous time step stored as Kokkos Views of dimension D * 3.
      *
@@ -82,7 +84,8 @@ namespace ntt {
      * component.
      * @note Address : aphi(i, j, k, 0).
      */
-    ndfield_t<D, 1> aphi;
+    ndfield_t<D, 1>        aphi;
+    ndfield_mirror_t<D, 1> aphi_h;
 #endif
 
     /**
