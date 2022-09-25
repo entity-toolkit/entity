@@ -24,4 +24,4 @@ ${VIS_TARGET}: ${NTTINY_DIR}/build/libnttiny.a $(OBJS) $(VIS_OBJ) $(NTTINY_LIBS)
 ${BUILD_VIS_DIR}/%.o : ${VIS_DIR}/%
 	@echo [C]ompiling \`vis\`: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
-	$(HIDE)${compile_command} $(NTTINY_INCFLAGS) -c $^ -o $@
+	$(HIDE)${compile_command} $(NTTINY_INCFLAGS) -I${NTTINY_DIR} -c $^ -o $@
