@@ -47,6 +47,12 @@ namespace ntt {
     Kokkos::parallel_for("add_currents",
                          this->m_mblock.rangeCells(range),
                          AddCurrentsCurvilinear<D>(this->m_mblock, coeff));
+    if constexpr (D == Dim2) {
+      Kokkos::parallel_for(
+        "add_currents_pole",
+        CreateRangePolicy<Dim1>({this->m_mblock.i1_min()}, {this->m_mblock.i1_max()}),
+        AddCurrentsCurvilinearPoles<Dim2>(this->m_mblock, coeff));
+    }
 #endif
   }
 } // namespace ntt
