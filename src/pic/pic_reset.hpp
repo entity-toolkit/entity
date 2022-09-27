@@ -30,7 +30,7 @@ namespace ntt {
      * @brief Calling the loop over all particles.
      */
     void resetParticles() {
-      auto range_policy = Kokkos::RangePolicy<AccelExeSpace>(0, m_particles.npart());
+      auto range_policy = Kokkos::RangePolicy<AccelExeSpace>(0, m_particles.maxnpart());
       Kokkos::parallel_for("reset_particles", range_policy, *this);
     }
     /**
@@ -45,6 +45,9 @@ namespace ntt {
       if constexpr ((D == Dim2) || (D == Dim3)) {
         m_particles.i2(p)  = 0;
         m_particles.dx2(p) = 0.0f;
+#ifndef MINKOWSKI_METRIC
+        m_particles.phi(p) = ZERO;
+#endif
       }
       if constexpr (D == Dim3) {
         m_particles.i3(p)  = 0;
@@ -92,23 +95,32 @@ namespace ntt {
 
   template <>
   Inline void ResetCurrents<Dim1>::operator()(index_t i) const {
-    JX1(i) = ZERO;
-    JX2(i) = ZERO;
-    JX3(i) = ZERO;
+    JX1(i)  = ZERO;
+    JX2(i)  = ZERO;
+    JX3(i)  = ZERO;
+    J0X1(i) = ZERO;
+    J0X2(i) = ZERO;
+    J0X3(i) = ZERO;
   }
 
   template <>
   Inline void ResetCurrents<Dim2>::operator()(index_t i, index_t j) const {
-    JX1(i, j) = ZERO;
-    JX2(i, j) = ZERO;
-    JX3(i, j) = ZERO;
+    JX1(i, j)  = ZERO;
+    JX2(i, j)  = ZERO;
+    JX3(i, j)  = ZERO;
+    J0X1(i, j) = ZERO;
+    J0X2(i, j) = ZERO;
+    J0X3(i, j) = ZERO;
   }
 
   template <>
   Inline void ResetCurrents<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    JX1(i, j, k) = ZERO;
-    JX2(i, j, k) = ZERO;
-    JX3(i, j, k) = ZERO;
+    JX1(i, j, k)  = ZERO;
+    JX2(i, j, k)  = ZERO;
+    JX3(i, j, k)  = ZERO;
+    J0X1(i, j, k) = ZERO;
+    J0X2(i, j, k) = ZERO;
+    J0X3(i, j, k) = ZERO;
   }
 
   /**
