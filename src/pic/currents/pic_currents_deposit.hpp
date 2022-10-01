@@ -23,7 +23,9 @@ namespace ntt {
     Meshblock<D, SimulationType::PIC> m_mblock;
     Particles<D, SimulationType::PIC> m_particles;
     scatter_ndfield_t<D, 3>           m_scatter_cur;
-    real_t                            m_charge, m_dt;
+    const real_t                      m_charge, m_dt;
+    const std::size_t                 m_i2max;
+    const real_t                      m_sx2;
 
   public:
     /**
@@ -43,7 +45,9 @@ namespace ntt {
         m_particles(particles),
         m_scatter_cur(scatter_cur),
         m_charge(charge),
-        m_dt(dt) {}
+        m_dt(dt),
+        m_i2max(m_mblock.i2_max()),
+        m_sx2((real_t)m_mblock.Ni2()) {}
 
     /**
      * @brief Loop over all active particles and deposit currents.
@@ -67,44 +71,6 @@ namespace ntt {
 
         // get [i, di]_init and [i, di]_final (per dimension)
         getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-#ifndef MINKOWSKI_METRIC
-        if constexpr (D == Dim2) {
-          // take care of the axes
-          if (Ip_i[1] < 0) {
-            /* @TODO: lower axis */
-            coord_t<Dim2> xp_ax, xp_ax_i, xp_ax_r;
-            xp_ax[0] = xp_i[0] + xp_i[1] * (xp_f[0] - xp_i[0]) / (xp_i[1] - xp_f[1]);
-            xp_ax[1] = ZERO;
-            tuple_t<int, Dim2> Ip_ax, Ip_ax_i;
-            auto [I_1, di1] = m_mblock.metric.CU_to_Idi(xp_ax[0]);
-            auto [I_2, di2] = m_mblock.metric.CU_to_Idi(xp_ax[1]);
-            Ip_ax[0]        = I_1;
-            Ip_ax[1]        = I_2;
-
-            Ip_ax_i[0] = Ip_i[0];
-            xp_ax_i[0] = xp_i[0];
-            // reflect particle starting point
-            Ip_ax_i[1] = 0;
-            xp_ax_i[1] = ONE - xp_i[1];
-
-            for (short i {0}; i < static_cast<short>(D); ++i) {
-              real_t xi_mid = HALF * (xp_ax_i[i] + xp_ax[i]);
-              xp_ax_r[i]    = math::fmin(
-                static_cast<real_t>(math::fmin(Ip_ax_i[i], Ip_ax[i]) + 1),
-                math::fmax(static_cast<real_t>(math::fmax(Ip_ax_i[i], Ip_ax[i])), xi_mid));
-              // shift particle starting point
-              xi_mid  = HALF * (xp_ax[i] + xp_f[i]);
-              Ip_i[i] = Ip_ax[i];
-              xp_i[i] = xp_ax[i];
-              xp_r[i] = math::fmin(
-                static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
-            }
-            // deposit first half
-            depositCurrentsFromParticle(vp, Ip_ax, Ip_ax_i, xp_ax, xp_ax_i, xp_ax_r);
-          }
-        }
-#endif
         depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
       }
     }
@@ -183,10 +149,23 @@ namespace ntt {
       }
 
       for (short i {0}; i < static_cast<short>(D); ++i) {
-        xp_i[i]             = xp_f[i] - m_dt * vp[i];
-        const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
-        auto [I_i, _]       = m_mblock.metric.CU_to_Idi(xp_i[i]);
+        xp_i[i]       = xp_f[i] - m_dt * vp[i];
+        auto [I_i, _] = m_mblock.metric.CU_to_Idi(xp_i[i]);
+
+#ifndef MINKOWSKI_METRIC
+        if constexpr (D == Dim2) {
+          if (i == 1) {
+            const bool northern_pole  = (I_i < 0);
+            const bool sourthern_pole = (I_i >= static_cast<int>(m_i2max));
+            if (northern_pole || sourthern_pole) {
+              I_i     = northern_pole ? 0 : m_i2max - 1;
+              xp_i[i] = northern_pole ? -xp_i[i] : m_sx2 - (xp_i[i] - m_sx2);
+            }
+          }
+        }
+#endif
         Ip_i[i]             = I_i;
+        const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
         xp_r[i]
           = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
                        math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));

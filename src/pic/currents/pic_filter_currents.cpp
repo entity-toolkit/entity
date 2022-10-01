@@ -1,6 +1,6 @@
 #include "global.h"
 #include "pic.h"
-#include "digital_filter.hpp"
+#include "current_filter.hpp"
 // #include "pic_filter_currents.hpp"
 
 namespace ntt {
@@ -11,7 +11,7 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::filterCurrentsSubstep(const real_t&) {
-    DigitalFilter<D> filter(this->m_mblock.cur,
+    CurrentFilter<D> filter(this->m_mblock.cur,
                             this->m_mblock.cur0,
                             this->m_mblock,
                             this->m_sim_params.current_filters());
