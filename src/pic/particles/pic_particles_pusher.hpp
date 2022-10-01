@@ -77,7 +77,8 @@ namespace ntt {
         m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
         m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
 
-        BorisUpdate(p, e_int_Cart, b_int_Cart);
+        // !HACK:
+        // BorisUpdate(p, e_int_Cart, b_int_Cart);
 
         real_t inv_energy;
         inv_energy = ONE / PRTL_GAMMA_SR(m_particles, p);
@@ -459,23 +460,19 @@ namespace ntt {
     e0[2] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx1
-    c000
-      = INV_4 * (BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1));
+    c000 = INV_4 * (BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1));
     c100 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1)
               + BX1(i + 1, j - 1, k - 1));
-    c001
-      = INV_4 * (BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1));
+    c001 = INV_4 * (BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1));
     c101 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k)
               + BX1(i + 1, j - 1, k + 1));
-    c010
-      = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1));
+    c010 = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1));
     c110 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1)
               + BX1(i + 1, j + 1, k));
-    c011
-      = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1));
+    c011 = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1));
     c111 = INV_4
            * (BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1)
               + BX1(i + 1, j, k + 1));
@@ -488,14 +485,10 @@ namespace ntt {
     b0[0] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx2
-    c000
-      = INV_4 * (BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k));
-    c100
-      = INV_4 * (BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k));
-    c001
-      = INV_4 * (BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1));
-    c101
-      = INV_4 * (BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1));
+    c000 = INV_4 * (BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k));
+    c100 = INV_4 * (BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k));
+    c001 = INV_4 * (BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1));
+    c101 = INV_4 * (BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1));
     c010 = INV_4
            * (BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1)
               + BX2(i, j + 1, k));
@@ -517,20 +510,16 @@ namespace ntt {
     b0[1] = c0 * (ONE - dx3) + c1 * dx3;
 
     // Bx3
-    c000
-      = INV_4 * (BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k));
-    c100
-      = INV_4 * (BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k));
+    c000 = INV_4 * (BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k));
+    c100 = INV_4 * (BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k));
     c001 = INV_4
            * (BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1)
               + BX3(i, j, k + 1));
     c101 = INV_4
            * (BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1)
               + BX3(i + 1, j, k + 1));
-    c010
-      = INV_4 * (BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k));
-    c110
-      = INV_4 * (BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k));
+    c010 = INV_4 * (BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k));
+    c110 = INV_4 * (BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k));
     c011 = INV_4
            * (BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1)
               + BX3(i, j + 1, k + 1));
