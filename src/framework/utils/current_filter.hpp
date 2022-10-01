@@ -1,20 +1,20 @@
-#ifndef UTILS_DIGITAL_FILTER_H
-#define UTILS_DIGITAL_FILTER_H
+#ifndef UTILS_CURRENT_FILTER_H
+#define UTILS_CURRENT_FILTER_H
 
 #include "global.h"
 #include "meshblock.h"
 
 namespace ntt {
   /**
-   * @brief Digital filtering routine.
+   * @brief Digital current filtering routine.
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class DigitalFilter {
-    ndfield_t<D, 3> m_cur;
-    ndfield_t<D, 3> m_cur_b;
-    Mesh<D>         m_mesh;
-    unsigned short  m_npasses;
+  class CurrentFilter {
+    ndfield_t<D, 3>         m_cur;
+    ndfield_t<D, 3>         m_cur_b;
+    Mesh<D>                 m_mesh;
+    unsigned short          m_npasses;
     tuple_t<std::size_t, D> m_size;
 
   public:
@@ -24,7 +24,7 @@ namespace ntt {
      * @param cur0 Backup current field.
      * @param npasses Number of filter passes.
      */
-    DigitalFilter(const ndfield_t<D, 3>& cur,
+    CurrentFilter(const ndfield_t<D, 3>& cur,
                   const ndfield_t<D, 3>& cur_b,
                   const Mesh<D>&         mesh,
                   const unsigned short&  npasses)
@@ -63,15 +63,25 @@ namespace ntt {
 
   private:
     void filterPass() {
-      auto range {m_mesh.rangeActiveCells()};
-      Kokkos::parallel_for("filter_pass", range, *this);
+#ifdef MINKOWSKI_METRIC
+      Kokkos::parallel_for("filter_pass", m_mesh.rangeActiveCells(), *this);
+#else
+      if constexpr (D == Dim2) {
+        Kokkos::parallel_for("filter_pass",
+                             CreateRangePolicy<Dim2>({m_mesh.i1_min(), m_mesh.i2_min()},
+                                                     {m_mesh.i1_max(), m_mesh.i2_max() + 1}),
+                             *this);
+      } else {
+        Kokkos::parallel_for("filter_pass", m_mesh.rangeActiveCells(), *this);
+      }
+#endif
     }
     void synchronizeGhostZones() const;
   };
 
 #ifdef MINKOWSKI_METRIC
   template <>
-  Inline void DigitalFilter<Dim1>::operator()(index_t i) const {
+  Inline void CurrentFilter<Dim1>::operator()(index_t i) const {
     for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
       m_cur(i, comp)
         = INV_2 * m_cur_b(i, comp) + INV_4 * (m_cur_b(i - 1, comp) + m_cur_b(i + 1, comp));
@@ -79,7 +89,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void DigitalFilter<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void CurrentFilter<Dim2>::operator()(index_t i, index_t j) const {
     for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
       m_cur(i, j, comp) = INV_4 * m_cur_b(i, j, comp)
                           + INV_8
@@ -92,7 +102,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void DigitalFilter<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void CurrentFilter<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
       m_cur(i, j, k, comp)
         = INV_8 * m_cur_b(i, j, k, comp)
@@ -116,49 +126,51 @@ namespace ntt {
   }
 #else
   template <>
-  Inline void DigitalFilter<Dim1>::operator()(index_t) const {}
+  Inline void CurrentFilter<Dim1>::operator()(index_t) const {}
 
 #  define FILTER_IN_I1(ARR, COMP, I, J)                                                       \
-    (ARR)((I), (J), (COMP)) = static_cast<real_t>(0.5) * (ARR)((I), (J), (COMP))              \
-                              + static_cast<real_t>(0.25)                                     \
-                                  * ((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+    INV_2*(ARR)((I), (J), (COMP))                                                             \
+      + INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
   template <>
-  Inline void DigitalFilter<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void CurrentFilter<Dim2>::operator()(index_t i, index_t j) const {
     const std::size_t j_min = N_GHOSTS, j_min_p1 = j_min + 1;
-    const std::size_t j_max = m_size[1] - N_GHOSTS - 1, j_max_m1 = j_max - 1;
-    real_t    cur_ij, cur_ijp1, cur_ijm1;
+    const std::size_t j_max = m_size[1] + N_GHOSTS - 1, j_max_m1 = j_max - 1;
+    real_t cur_ij, cur_ijp1, cur_ijm1;
+#  define BELYAEV_FILTER
+
+#  ifdef BELYAEV_FILTER
     if (j == j_min) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
       // ... filter in theta
       m_cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijp1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j + 1);
       // ... filter in theta
       m_cur(i, j, cur::jx3) = INV_2 * cur_ij + INV_4 * cur_ijp1;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx2, i, j + 1);
       // ... filter in theta
       m_cur(i, j, cur::jx2) = INV_4 * cur_ij + INV_4 * cur_ijp1;
     } else if (j == j_min_p1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j - 1);
       // ... filter in theta
       m_cur(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j + 1);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j - 1);
       // ... filter in theta
@@ -166,14 +178,14 @@ namespace ntt {
     } else if (j == j_max_m1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j - 1);
       // ... filter in theta
       m_cur(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j + 1);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j - 1);
       // ... filter in theta
@@ -181,14 +193,14 @@ namespace ntt {
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx2, i, j - 1);
       // ... filter in theta
       m_cur(i, j, cur::jx2) = INV_4 * cur_ij + INV_4 * cur_ijm1;
     } else if (j == j_max) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j - 1);
       // ... filter in theta
@@ -196,13 +208,49 @@ namespace ntt {
         = INV_2 * m_cur_b(i, j, cur::jx1) + INV_4 * m_cur_b(i, j - 1, cur::jx1);
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
       cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j + 1);
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j - 1);
       // ... filter in theta
       m_cur(i, j, cur::jx3)
         = INV_2 * m_cur_b(i, j, cur::jx3) + INV_4 * m_cur_b(i, j - 1, cur::jx3);
-    } else {
+    }
+#  elif defined(NORMAL_FILTER)
+    if (j == j_min) {
+      /* --------------------------------- r, phi --------------------------------- */
+      // ... filter in r
+      // cur_ij = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      // cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
+      // ... filter in theta
+      m_cur(i, j, cur::jx1) = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      // INV_2 * cur_ij + INV_2 * cur_ijp1;
+
+      // m_cur(i, j, cur::jx3) = ZERO;
+
+      /* ---------------------------------- theta --------------------------------- */
+      // ... filter in r
+      // cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      // ... filter in theta
+      m_cur(i, j, cur::jx2) = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      // INV_2 * cur_ij;
+    } else if (j == j_max + 1) {
+      /* --------------------------------- r, phi --------------------------------- */
+      // ... filter in r
+      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j - 1);
+      // ... filter in theta
+      m_cur(i, j, cur::jx1)
+        = INV_2 * m_cur_b(i, j, cur::jx1) + INV_2 * m_cur_b(i, j - 1, cur::jx1);
+
+      m_cur(i, j, cur::jx3) = ZERO;
+
+      // ... filter in r
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      // ... filter in theta
+      m_cur(i, j, cur::jx2) = INV_2 * cur_ij;
+    }
+#  endif
+    else {
       for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
         m_cur(i, j, comp)
           = INV_4 * m_cur_b(i, j, comp)
@@ -219,7 +267,7 @@ namespace ntt {
 #  undef FILTER_IN_I1
 
   template <>
-  Inline void DigitalFilter<Dim3>::operator()(index_t, index_t, index_t) const {}
+  Inline void CurrentFilter<Dim3>::operator()(index_t, index_t, index_t) const {}
 
 #endif
 

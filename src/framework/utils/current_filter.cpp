@@ -1,10 +1,10 @@
 #include "global.h"
-#include "digital_filter.hpp"
+#include "current_filter.hpp"
 
 namespace ntt {
 
   template <>
-  void DigitalFilter<Dim1>::synchronizeGhostZones() const {
+  void CurrentFilter<Dim1>::synchronizeGhostZones() const {
     auto ni {m_mesh.Ni1()};
     auto mesh {this->m_mesh};
     if (mesh.boundaries[0] == BoundaryCondition::PERIODIC) {
@@ -24,7 +24,7 @@ namespace ntt {
   }
 
   template <>
-  void DigitalFilter<Dim2>::synchronizeGhostZones() const {
+  void CurrentFilter<Dim2>::synchronizeGhostZones() const {
     auto ni {m_mesh.Ni1()};
     auto nj {m_mesh.Ni2()};
     auto mesh {this->m_mesh};
@@ -102,10 +102,10 @@ namespace ntt {
   }
 
   template <>
-  void DigitalFilter<Dim3>::synchronizeGhostZones() const {}
+  void CurrentFilter<Dim3>::synchronizeGhostZones() const {}
 
 } // namespace ntt
 
-template class ntt::DigitalFilter<ntt::Dim1>;
-template class ntt::DigitalFilter<ntt::Dim2>;
-template class ntt::DigitalFilter<ntt::Dim3>;
+template class ntt::CurrentFilter<ntt::Dim1>;
+template class ntt::CurrentFilter<ntt::Dim2>;
+template class ntt::CurrentFilter<ntt::Dim3>;
