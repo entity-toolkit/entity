@@ -44,7 +44,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::step_forward(const real_t& time) {
     TimerCollection timers(
-      {"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC"});
+      {"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User"});
     if (this->sim_params()->enable_fieldsolver()) {
       timers.start(1);
       faradaySubstep(time, HALF);
@@ -60,6 +60,15 @@ namespace ntt {
       pushParticlesSubstep(time, ONE);
       timers.stop(4);
 
+      timers.start(6);
+      this->m_pGen.userDriveParticles(time, this->m_sim_params, this->m_mblock);
+      timers.stop(6);
+
+      // !HACK
+      timers.start(5);
+      particleBoundaryConditions(time);
+      timers.stop(5);
+
       if (this->sim_params()->enable_deposit()) {
         timers.start(3);
         resetCurrents(time);
@@ -73,9 +82,9 @@ namespace ntt {
         timers.stop(3);
       }
 
-      timers.start(5);
-      particleBoundaryConditions(time);
-      timers.stop(5);
+      // timers.start(5);
+      // particleBoundaryConditions(time);
+      // timers.stop(5);
     }
 
     if (this->sim_params()->enable_fieldsolver()) {

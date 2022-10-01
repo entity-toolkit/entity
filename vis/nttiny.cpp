@@ -393,7 +393,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale_str     = cl_args.getArgument("-scale", "2.0");
+    auto  scale_str     = cl_args.getArgument("-scale", "1.0");
     auto  scale         = std::stof(std::string(scale_str));
     auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
