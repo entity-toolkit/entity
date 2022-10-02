@@ -46,15 +46,15 @@ namespace ntt {
       NTTRange<Dimension::ONE_D>({0}, {1}), Lambda(index_t p) {
       coord_t<Dimension::TWO_D> x {5.0, constant::PI/2.}, x_CU;
       mblock.metric.x_Sph2Code(x, x_CU);
-      
-      auto [i1, dx1] = mblock.metric.CU_to_Idi(x_CU[0]);
-      auto [i2, dx2] = mblock.metric.CU_to_Idi(x_CU[1]);
-    
       // photon
-      mblock.particles[0].i1(p) = i1;
-      mblock.particles[0].i2(p) = i2;
-      mblock.particles[0].dx1(p) = dx1;
-      mblock.particles[0].dx2(p) = dx2;
+      int   I;
+      float DX;
+      Xi_TO_i_di(x_CU[0], I, DX);
+      mblock.particles[0].i1(p) = I;
+      mblock.particles[0].dx1(p) = DX;
+      Xi_TO_i_di(x_CU[1], I, DX);
+      mblock.particles[0].i2(p)  = I;
+      mblock.particles[0].dx2(p) = DX;
       mblock.particles[0].ux1(p) = -0.2;
       mblock.particles[0].ux2(p) = 5;
       mblock.particles[0].ux3(p) = 0;
