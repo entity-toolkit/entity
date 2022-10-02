@@ -138,6 +138,7 @@ namespace ntt {
     const std::size_t j_max = m_size[1] + N_GHOSTS - 1, j_max_m1 = j_max - 1;
     real_t cur_ij, cur_ijp1, cur_ijm1;
 #  define BELYAEV_FILTER
+    // #  define REGULAR_FILTER
 
 #  ifdef BELYAEV_FILTER
     if (j == j_min) {
@@ -215,23 +216,22 @@ namespace ntt {
       m_cur(i, j, cur::jx3)
         = INV_2 * m_cur_b(i, j, cur::jx3) + INV_4 * m_cur_b(i, j - 1, cur::jx3);
     }
-#  elif defined(NORMAL_FILTER)
+#  elif defined(REGULAR_FILTER)
     if (j == j_min) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      // cur_ij = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
-      // cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
+      cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
+      cur_ijp1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j + 1);
       // ... filter in theta
-      m_cur(i, j, cur::jx1) = FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
-      // INV_2 * cur_ij + INV_2 * cur_ijp1;
-
-      // m_cur(i, j, cur::jx3) = ZERO;
+      m_cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_2 * cur_ijp1;
+      // FILTER_IN_I1(m_cur_b, cur::jx1, i, j);
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      // cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
       // ... filter in theta
-      m_cur(i, j, cur::jx2) = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
+      m_cur(i, j, cur::jx2) = INV_2 * cur_ij;
+      // FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
       // INV_2 * cur_ij;
     } else if (j == j_max + 1) {
       /* --------------------------------- r, phi --------------------------------- */
@@ -241,8 +241,6 @@ namespace ntt {
       // ... filter in theta
       m_cur(i, j, cur::jx1)
         = INV_2 * m_cur_b(i, j, cur::jx1) + INV_2 * m_cur_b(i, j - 1, cur::jx1);
-
-      m_cur(i, j, cur::jx3) = ZERO;
 
       // ... filter in r
       cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
