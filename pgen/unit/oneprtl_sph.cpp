@@ -38,11 +38,12 @@ namespace ntt {
   template <>
   void ProblemGenerator<Dim2, TypePIC>::userInitParticles(const SimulationParams&,
                                                           Meshblock<Dim2, TypePIC>& mblock) {
-
+    auto electrons = mblock.particles[0];
+    auto positrons = mblock.particles[1];
     Kokkos::parallel_for(
       "userInitPrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
-        PICPRTL_SPH_2D(&mblock, 0, p, 3.0, constant::PI * 0.002, 0.0, 0.0, 0.0);
-        PICPRTL_SPH_2D(&mblock, 1, p, 3.0, constant::PI * 0.002, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(mblock, electrons, p, 3.0, ntt::constant::PI * 0.002, 0.0, 0.0, 0.0);
+        PICPRTL_SPH_2D(mblock, positrons, p, 3.0, ntt::constant::PI * 0.002, 0.0, 0.0, 0.0);
       });
     mblock.particles[0].set_npart(1);
     mblock.particles[1].set_npart(1);
