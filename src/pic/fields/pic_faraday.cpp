@@ -1,6 +1,8 @@
 #include "global.h"
 #include "pic.h"
 
+#include <plog/Log.h>
+
 #ifdef MINKOWSKI_METRIC
 #  include "pic_faraday_minkowski.hpp"
 #else
@@ -21,8 +23,9 @@ namespace ntt {
 #else
     (void)(fraction);
     (void)(coeff);
-    NTTError("faraday for this metric not defined");
+    NTTHostError("faraday for this metric not defined");
 #endif
+    PLOGD << "... ... faraday substep finished";
   }
 
   template <>
@@ -37,6 +40,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "faraday", m_mblock.rangeActiveCells(), FaradayCurvilinear<Dim2>(m_mblock, coeff));
 #endif
+    PLOGD << "... ... faraday substep finished";
   }
 
   template <>
@@ -50,8 +54,9 @@ namespace ntt {
 #else
     (void)(fraction);
     (void)(coeff);
-    NTTError("faraday for this metric not defined");
+    NTTHostError("faraday for this metric not defined");
 #endif
+    PLOGD << "... ... faraday substep finished";
   }
 
 } // namespace ntt

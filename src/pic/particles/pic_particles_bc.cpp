@@ -39,7 +39,7 @@ namespace ntt {
       }
     }
 #else
-    NTTError("only minkowski possible in 1d");
+    NTTHostError("only minkowski possible in 1d");
 #endif
   }
 
@@ -127,7 +127,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dim3>::particleBoundaryConditions(const real_t&) {
-    NTTError("not implemented");
+    NTTHostError("not implemented");
   }
 
 } // namespace ntt

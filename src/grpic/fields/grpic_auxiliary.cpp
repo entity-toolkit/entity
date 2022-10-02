@@ -15,7 +15,7 @@ namespace ntt {
     } else if (f == gr_getE::D_B0) {
       Kokkos::parallel_for("auxiliary_E", range, computeAuxE_D_B0<Dim2>(m_mblock));
     } else {
-      NTTError("Wrong option for `f`");
+      NTTHostError("Wrong option for `f`");
     }
   }
 
@@ -28,7 +28,7 @@ namespace ntt {
     } else if (f == gr_getH::D0_B0) {
       Kokkos::parallel_for("auxiliary_H", range, computeAuxH_D0_B0<Dim2>(m_mblock));
     } else {
-      NTTError("Wrong option for `f`");
+      NTTHostError("Wrong option for `f`");
     }
   }
 
@@ -46,22 +46,22 @@ namespace ntt {
 
   template <>
   void GRPIC<Dim3>::computeAuxESubstep(const real_t&, const gr_getE&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
   template <>
   void GRPIC<Dim3>::computeAuxHSubstep(const real_t&, const gr_getH&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
   template <>
   void GRPIC<Dim3>::timeAverageDBSubstep(const real_t&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
   template <>
   void GRPIC<Dim3>::timeAverageJSubstep(const real_t&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt

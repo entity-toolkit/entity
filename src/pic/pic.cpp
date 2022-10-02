@@ -3,17 +3,25 @@
 #include "pic.h"
 #include "sim_params.h"
 
+#include <plog/Log.h>
+
 namespace ntt {
 
   template <Dimension D>
   void PIC<D>::process() {
     this->initialize();
+    PLOGI << "... simulation initialized";
     this->initializeSetup();
+    PLOGI << "... simulation setup initialized";
     this->verify();
+    PLOGI << "... simulation verified";
     this->printDetails();
+    PLOGI << "... simulation details printed";
     this->mainloop();
+    PLOGI << "... mainloop finished";
     // this->benchmark();
     this->finalize();
+    PLOGI << "... simulation finalized";
   }
 
   template <Dimension D>
@@ -28,7 +36,7 @@ namespace ntt {
     unsigned long timax {static_cast<unsigned long>(this->m_sim_params.total_runtime()
                                                     / this->m_mblock.timestep())};
     real_t        time {0.0};
-    PLOGD << "Simulation mainloop started >>>";
+    PLOGI << "simulation mainloop started ...";
 
     fieldBoundaryConditions(ZERO);
     for (unsigned long ti {0}; ti < timax; ++ti) {
@@ -38,7 +46,6 @@ namespace ntt {
       time += this->m_mblock.timestep();
     }
     WaitAndSynchronize();
-    PLOGD << "<<< simulation mainloop finished.";
   }
 
   template <Dimension D>

@@ -41,7 +41,7 @@ namespace ntt {
         auto dx2 {this->x1_min * dtheta};
         return ONE / math::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
       } else {
-        NTTError("min cell finding not implemented for 3D spherical");
+        NTTHostError("min cell finding not implemented for 3D spherical");
       }
       return ZERO;
     }

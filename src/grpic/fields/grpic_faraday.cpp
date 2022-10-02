@@ -16,13 +16,13 @@ namespace ntt {
       Kokkos::parallel_for(
         "faraday", m_mblock.rangeActiveCells(), FaradayGR<Dim2>(m_mblock, coeff));
     } else {
-      NTTError("Wrong option for `f`");
+      NTTHostError("Wrong option for `f`");
     }
   }
 
   template <>
   void GRPIC<Dim3>::faradaySubstep(const real_t&, const real_t&, const gr_faraday&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt

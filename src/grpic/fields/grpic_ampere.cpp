@@ -22,13 +22,13 @@ namespace ntt {
       Kokkos::parallel_for("ampere", range, AmpereGR_init<Dim2>(m_mblock, coeff));
       Kokkos::parallel_for("ampere_pole", range_pole, AmperePolesGR_init<Dim2>(m_mblock, coeff));
     } else {
-      NTTError("Wrong option for `f`");
+      NTTHostError("Wrong option for `f`");
     }
   }
 
   template <>
   void GRPIC<Dim3>::ampereSubstep(const real_t&, const real_t&, const gr_ampere&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt

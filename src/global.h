@@ -37,12 +37,14 @@
 #  define HostExeSpace Kokkos::Serial
 #endif
 
+#define NTTHostError(msg)                                                                     \
+  throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                     \
+                           "line: " LINE_STRING)
+
 #if defined(GPUENABLED)
 #  define NTTError(msg) ({})
 #else
-#  define NTTError(msg)                                                                       \
-    throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                   \
-                             "line: " LINE_STRING)
+#  define NTTError(msg) NTTHostError(msg)
 #endif
 
 namespace math = Kokkos;

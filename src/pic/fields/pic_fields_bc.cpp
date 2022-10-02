@@ -38,11 +38,11 @@ namespace ntt {
           mblock.em(i, em::bx3) = mblock.em(i - ni, em::bx3);
         });
     } else {
-      NTTError("boundary condition not implemented");
+      NTTHostError("boundary condition not implemented");
     }
 #else
     (void)(index_t {});
-    NTTError("only minkowski possible in 1d");
+    NTTHostError("only minkowski possible in 1d");
 #endif
   }
 
@@ -81,7 +81,7 @@ namespace ntt {
         });
     } else {
       // non-periodic
-      NTTError("2d boundary condition for minkowski not implemented");
+      NTTHostError("2d boundary condition for minkowski not implemented");
     }
     if (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
       auto mblock {this->m_mblock};
@@ -110,7 +110,7 @@ namespace ntt {
         });
     } else {
       // non-periodic
-      NTTError("2d boundary condition for minkowski not implemented");
+      NTTHostError("2d boundary condition for minkowski not implemented");
     }
 
     if ((m_mblock.boundaries[1] == BoundaryCondition::PERIODIC)
@@ -171,7 +171,7 @@ namespace ntt {
     if (m_mblock.boundaries[0] == BoundaryCondition::USER) {
       m_pGen.userBCFields(t, m_sim_params, m_mblock);
     } else {
-      NTTError("2d non-user boundary condition not implemented for curvilinear");
+      NTTHostError("2d non-user boundary condition not implemented for curvilinear");
     }
     auto mblock {this->m_mblock};
     // theta = 0 boundary
@@ -200,7 +200,7 @@ namespace ntt {
                          FieldBC_rmax<Dim2>(mblock, this->m_pGen, r_absorb, r_max));
 #else
     (void)(index_t {});
-    NTTError("2d boundary condition for metric not implemented");
+    NTTHostError("2d boundary condition for metric not implemented");
 #endif
   }
 
@@ -210,7 +210,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dim3>::fieldBoundaryConditions(const real_t&) {
-    NTTError("not implemented");
+    NTTHostError("not implemented");
   }
 
 } // namespace ntt

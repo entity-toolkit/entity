@@ -77,18 +77,6 @@ namespace ntt {
         x3_min {resolution.size() > 2 ? extent[4] : ZERO},
         x3_max {resolution.size() > 2 ? extent[5] : ZERO} {}
     ~MetricBase() = default;
-
-    /**
-     * Convert `real_t` type code unit coordinate to cell index + displacement.
-     *
-     * TODO: `xi + N_GHOSTS` is a bit of a hack.
-     * @returns A pair of `int` and `float`: cell index + displacement.
-     */
-    Inline auto CU_to_Idi(const real_t& xi) const -> std::pair<int, float> {
-      auto  i {static_cast<int>(xi + N_GHOSTS) - N_GHOSTS};
-      float di {static_cast<float>(xi) - static_cast<float>(i)};
-      return {i, di};
-    }
   };
 
 } // namespace ntt
