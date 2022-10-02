@@ -106,7 +106,9 @@
     "stop_token": "cpp",
     "any": "cpp",
     "regex": "cpp",
-    "shared_mutex": "cpp"
+    "shared_mutex": "cpp",
+    "filesystem": "cpp",
+    "future": "cpp"
   },
   "editor.tokenColorCustomizations": {
     "comments": "",
