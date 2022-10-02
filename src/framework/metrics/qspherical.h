@@ -40,7 +40,7 @@ namespace ntt {
         deta_sqr(deta * deta),
         dphi_sqr(dphi * dphi) {
       if constexpr ((D == Dim1) || (D == Dim3)) {
-        NTTError("Qspherical can only be defined for 2D");
+        NTTHostError("Qspherical can only be defined for 2D");
       }
     }
     ~Metric() = default;
@@ -65,7 +65,7 @@ namespace ntt {
         }
         return min_dx;
       } else {
-        NTTError("min cell finding not implemented for 3D qspherical");
+        NTTHostError("min cell finding not implemented for 3D qspherical");
       }
       return ZERO;
     }

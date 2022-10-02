@@ -106,6 +106,6 @@ namespace ntt {
 
 } // namespace ntt
 
-template class ntt::CurrentFilter<ntt::Dim1>;
-template class ntt::CurrentFilter<ntt::Dim2>;
-template class ntt::CurrentFilter<ntt::Dim3>;
+template struct ntt::CurrentFilter<ntt::Dim1>;
+template struct ntt::CurrentFilter<ntt::Dim2>;
+template struct ntt::CurrentFilter<ntt::Dim3>;

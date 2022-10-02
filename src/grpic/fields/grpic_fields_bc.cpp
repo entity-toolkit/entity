@@ -139,13 +139,13 @@ namespace ntt {
           mblock.em(i_max, j, em::bx1)  = mblock.em(i_max - 1, j, em::bx1);
         });
     } else {
-      NTTError("Wrong option for `f`");
+      NTTHostError("Wrong option for `f`");
     }
   }
 
   template <>
   void GRPIC<Dim3>::fieldBoundaryConditions(const real_t&, const gr_bc&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
   template <>
@@ -171,13 +171,13 @@ namespace ntt {
           mblock.aux(i_min - 1, j, em::bx3) = mblock.aux(i_min, j, em::bx3);
         });
     } else {
-      NTTError("Wrong option for `f`");
+      NTTHostError("Wrong option for `f`");
     }
   }
 
   template <>
   void GRPIC<Dim3>::auxFieldBoundaryConditions(const real_t&, const gr_bc&) {
-    NTTError("3D GRPIC not implemented yet");
+    NTTHostError("3D GRPIC not implemented yet");
   }
 
 } // namespace ntt

@@ -60,7 +60,7 @@ namespace ntt {
 #elif defined(QKERR_SCHILD_METRIC)
     m_metric = "qkerr_schild";
 #else
-    NTTError("unrecognized metric");
+    NTTHostError("unrecognized metric");
 #endif
 
     // domain size / resolution
@@ -71,28 +71,28 @@ namespace ntt {
       // minkowski
       if (((short)(m_resolution.size()) < (short)(dim))
           || ((short)(m_extent.size()) < 2 * (short)(dim))) {
-        NTTError("not enough values in `extent` or `resolution` input");
+        NTTHostError("not enough values in `extent` or `resolution` input");
       }
       // enforce dx = dy = dz
       auto dx {(m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0])};
       if (m_resolution.size() > 1) {
         auto dy {(m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1])};
-        if (dx != dy) { NTTError("dx != dy in minkowski"); }
+        if (dx != dy) { NTTHostError("dx != dy in minkowski"); }
       }
       if (m_resolution.size() > 2) {
         auto dz {(m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2])};
-        if (dx != dz) { NTTError("dx != dz in minkowski"); }
+        if (dx != dz) { NTTHostError("dx != dz in minkowski"); }
       }
     } else if ((m_metric == "spherical") || (m_metric == "qspherical")
                || (m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
       // spherical (quasi-spherical) grid
-      if (m_extent.size() < 2) { NTTError("not enough values in `extent` input"); }
+      if (m_extent.size() < 2) { NTTHostError("not enough values in `extent` input"); }
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
       if ((m_metric == "qspherical") || (m_metric == "qkerr_schild")) {
         m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
         if (AlmostEqual(m_metric_parameters[1], ZERO, (real_t)(1e-6))) {
-          NTTError("qsph_h must be non-zero");
+          NTTHostError("qsph_h must be non-zero");
         }
       }
       m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
@@ -140,7 +140,7 @@ namespace ntt {
       m_boundaries.push_back(BoundaryCondition::USER);
       m_boundaries.push_back(BoundaryCondition::USER);
     } else {
-      NTTError("coordinate system not implemented");
+      NTTHostError("coordinate system not implemented");
     }
 
     // plasma params

@@ -55,7 +55,7 @@ namespace ntt {
           = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
         Kokkos::parallel_for("pusher", range_policy, *this);
       } else {
-        NTTError("pusher not implemented");
+        NTTHostError("pusher not implemented");
       }
     }
     /**

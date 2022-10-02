@@ -38,25 +38,29 @@ auto main(int argc, char* argv[]) -> int {
 
   Kokkos::initialize();
   try {
+    PLOGI << "Kokkos initialized";
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     // auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
     auto  inputdata = toml::parse(static_cast<std::string>(inputfilename));
+    PLOGI << "input file parsed";
     short res       = static_cast<short>(
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
-
     if (res == 1) {
       // ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
+      // PLOGI << "1D simulation initialized";
       // sim.process();
     } else if (res == 2) {
       ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
+      PLOGI << "2D simulation initialized";
       sim.process();
     } else if (res == 3) {
       ntt::SIMULATION_CONTAINER<ntt::Dim3> sim(inputdata);
+      PLOGI << "3D simulation initialized";
       sim.process();
     } else {
-      NTTError("wrong dimension specified");
+      NTTHostError("wrong dimension specified");
     }
   }
   catch (std::exception& err) {

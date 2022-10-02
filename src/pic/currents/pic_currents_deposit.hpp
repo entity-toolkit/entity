@@ -149,8 +149,9 @@ namespace ntt {
       }
 
       for (short i {0}; i < static_cast<short>(D); ++i) {
+        int I_i;
         xp_i[i]       = xp_f[i] - m_dt * vp[i];
-        auto [I_i, _] = m_mblock.metric.CU_to_Idi(xp_i[i]);
+        Xi_TO_i(xp_i[i], I_i);
 
 #ifndef MINKOWSKI_METRIC
         if constexpr (D == Dim2) {

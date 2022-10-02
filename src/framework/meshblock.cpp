@@ -84,7 +84,7 @@ namespace ntt {
         imax[i] = Ni(i) + 2 * N_GHOSTS;
         break;
       default:
-        NTTError("Invalid cell layer");
+        NTTHostError("Invalid cell layer");
       }
     }
     return CreateRangePolicy<D>(imin, imax);
@@ -95,11 +95,11 @@ namespace ntt {
     tuple_t<int, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
       if ((ranges[i][0] < -N_GHOSTS) || (ranges[i][1] > N_GHOSTS)) {
-        NTTError("Invalid cell layer picked");
+        NTTHostError("Invalid cell layer picked");
       }
       imin[i] = i_min(i) + ranges[i][0];
       imax[i] = i_max(i) + ranges[i][1];
-      if (imin[i] >= imax[i]) { NTTError("Invalid cell layer picked"); }
+      if (imin[i] >= imax[i]) { NTTHostError("Invalid cell layer picked"); }
     }
     return CreateRangePolicy<D>(imin, imax);
   }
