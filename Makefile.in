@@ -70,7 +70,7 @@ LIBS :=
 
 # # # # # Targets # # # # # # # # # # # # # #
 #
-.PHONY: help ntt clean demo cleanlib pgenCopy
+.PHONY: help ntt demo clean cleanlib cleanall pgenCopy
 
 default: help demo
 
@@ -97,7 +97,7 @@ help:
 	@echo
 	@echo "usage: \`make [ ntt | vis | demo ]\`"
 	@echo
-	@echo "cleanup: \`make clean\`"
+	@echo "cleanup: \`make [ clean | cleanlib | cleanall ]\`"
 	@echo
 
 demo:
@@ -169,3 +169,5 @@ clean:
 
 cleanlib: kokkos-clean
 	rm -rf {BUILD_DIR}/Kokkos*
+
+cleanall: clean cleanlib
