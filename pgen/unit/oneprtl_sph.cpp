@@ -57,7 +57,9 @@ namespace ntt {
       auto electron = mblock.particles[0];
       Kokkos::parallel_for(
         "userDrivePrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
-          electron.ux3(p) = 2.0 * (math::tanh((t - 350.0 * dt) / (100.0 * dt)) + 1.0) / 2.0;
+          real_t vel      = 2.0 * (math::tanh((t - 350.0 * dt) / (100.0 * dt)) + 1.0) / 2.0;
+          electron.ux1(p) = vel * math::sin(constant::PI * 0.25);
+          electron.ux3(p) = vel * math::cos(constant::PI * 0.25);
         });
     }
   }
