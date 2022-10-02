@@ -21,7 +21,7 @@ namespace ntt {
 #else
     (void)(fraction);
     (void)(coeff);
-    NTTError("ampere for this metric not defined");
+    NTTHostError("ampere for this metric not defined");
 #endif
   }
 
@@ -55,7 +55,7 @@ namespace ntt {
 #else
     (void)(fraction);
     (void)(coeff);
-    NTTError("ampere for this metric not defined");
+    NTTHostError("ampere for this metric not defined");
 #endif
   }
 

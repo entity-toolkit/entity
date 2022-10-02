@@ -70,7 +70,7 @@ namespace ntt {
         }
         return min_dx;
       } else {
-        NTTError("min cell finding not implemented for 3D qspherical");
+        NTTHostError("min cell finding not implemented for 3D qspherical");
       }
       return ZERO;
     }

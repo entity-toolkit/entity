@@ -145,7 +145,7 @@ namespace ntt {
           "jx1-" + zeropad(std::to_string(tstep), 5) + ".csv", m_mblock, cur::jx1);
       }
     } else {
-      NTTError("unrecognized output format");
+      NTTHostError("unrecognized output format");
     }
     PLOGD << "Output written.";
   }

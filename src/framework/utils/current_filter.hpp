@@ -10,14 +10,13 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class CurrentFilter {
+  struct CurrentFilter {
     ndfield_t<D, 3>         m_cur;
     ndfield_t<D, 3>         m_cur_b;
     Mesh<D>                 m_mesh;
-    unsigned short          m_npasses;
+    const unsigned short          m_npasses;
     tuple_t<std::size_t, D> m_size;
 
-  public:
     /**
      * @brief Constructor.
      * @param cur Current field.
@@ -61,7 +60,6 @@ namespace ntt {
      */
     Inline void operator()(index_t, index_t, index_t) const;
 
-  private:
     void filterPass() {
 #ifdef MINKOWSKI_METRIC
       Kokkos::parallel_for("filter_pass", m_mesh.rangeActiveCells(), *this);

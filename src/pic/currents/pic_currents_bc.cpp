@@ -33,11 +33,11 @@ namespace ntt {
         });
     } else {
       // non-periodic
-      NTTError("2d boundary condition for minkowski not implemented");
+      NTTHostError("2d boundary condition for minkowski not implemented");
     }
 #else
     (void)(index_t {});
-    NTTError("only minkowski possible in 1d");
+    NTTHostError("only minkowski possible in 1d");
 #endif
   }
 
@@ -74,7 +74,7 @@ namespace ntt {
         });
     } else {
       // non-periodic
-      NTTError("2d boundary condition for minkowski not implemented");
+      NTTHostError("2d boundary condition for minkowski not implemented");
     }
     WaitAndSynchronize();
     if (m_mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
@@ -102,7 +102,7 @@ namespace ntt {
         });
     } else {
       // non-periodic
-      NTTError("2d boundary condition for minkowski not implemented");
+      NTTHostError("2d boundary condition for minkowski not implemented");
     }
     WaitAndSynchronize();
     /**
@@ -162,7 +162,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dim3>::currentBoundaryConditions(const real_t&) {
-    NTTError("not implemented");
+    NTTHostError("not implemented");
   }
 
 } // namespace ntt

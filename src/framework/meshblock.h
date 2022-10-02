@@ -80,7 +80,7 @@ namespace ntt {
          const std::vector<real_t>&       ext,
          const real_t*                    params);
     ~Mesh() = default;
-    
+
     // Boundary conditions.
     std::vector<BoundaryCondition> boundaries;
 
@@ -159,7 +159,7 @@ namespace ntt {
       case 2:
         return m_i3min;
       default:
-        NTTError("Invalid dimension");
+        NTTHostError("Invalid dimension");
       }
     }
     /**
@@ -174,7 +174,7 @@ namespace ntt {
       case 2:
         return m_i3max;
       default:
-        NTTError("Invalid dimension");
+        NTTHostError("Invalid dimension");
       }
     }
     /**
@@ -189,7 +189,7 @@ namespace ntt {
       case 2:
         return m_Ni3;
       default:
-        NTTError("Invalid dimension");
+        NTTHostError("Invalid dimension");
       }
     }
   };

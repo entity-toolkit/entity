@@ -54,7 +54,7 @@ namespace ntt {
           // Kokkos::parallel_for("pusher", range_policy, *this);
         }
       } else {
-        NTTError("pusher not implemented");
+        NTTHostError("pusher not implemented");
       }
     }
 
@@ -66,7 +66,7 @@ namespace ntt {
       interpolateFields(p, d_int, b_int);
       m_mblock.metric.v_Cntrv2Hat(xp, d_int, d_int_tetrads);
       m_mblock.metric.v_Cntrv2Hat(xp, b_int, b_int_tetrads);
-      
+
       BorisUpdate(p, d_int_tetrads, b_int_tetrads);
       velocityUpdate(p, m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p));
       BorisUpdate(p, d_int_tetrads, b_int_tetrads);
@@ -151,12 +151,14 @@ namespace ntt {
       }
 
       // update coordinate
-      auto [i1, dx1]     = m_mblock.metric.CU_to_Idi(xpu[0]);
-      auto [i2, dx2]     = m_mblock.metric.CU_to_Idi(xpu[1]);
-      m_particles.i1(p)  = i1;
-      m_particles.dx1(p) = dx1;
-      m_particles.i2(p)  = i2;
-      m_particles.dx2(p) = dx2;
+      int   I;
+      float DX;
+      Xi_TO_i_di(xpu[0], I, DX);
+      m_particles.i1(p)  = I;
+      m_particles.dx1(p) = DX;
+      Xi_TO_i_di(xpu[1], I, DX);
+      m_particles.i2(p)  = I;
+      m_particles.dx2(p) = DX;
 
       // update velocity
       m_particles.ux1(p) = vu[0];
@@ -359,12 +361,14 @@ namespace ntt {
     }
 
     // update coordinate
-    auto [i1, dx1]     = m_mblock.metric.CU_to_Idi(xpu[0]);
-    auto [i2, dx2]     = m_mblock.metric.CU_to_Idi(xpu[1]);
-    m_particles.i1(p)  = i1;
-    m_particles.dx1(p) = dx1;
-    m_particles.i2(p)  = i2;
-    m_particles.dx2(p) = dx2;
+    int   I;
+    float DX;
+    Xi_TO_i_di(xpu[0], I, DX);
+    m_particles.i1(p)  = I;
+    m_particles.dx1(p) = DX;
+    Xi_TO_i_di(xpu[1], I, DX);
+    m_particles.i2(p)  = I;
+    m_particles.dx2(p) = DX;
   }
 
   template <>
@@ -378,36 +382,37 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void Pusher<Dimension::TWO_D>::BorisUpdate(const index_t&             p,
-                                                     vec_t<Dimension::THREE_D>& d0,
-                                                     vec_t<Dimension::THREE_D>& b0) const {
-  
-  coord_t<Dimension::TWO_D> xp;
-  getParticleCoordinate(p, xp);
-  vec_t<Dimension::THREE_D> vv;
-  vec_t<Dimension::THREE_D> vu;
-  m_mblock.metric.v_Cov2Hat(xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vv);
-  vv[0] += d0[0];
-  vv[1] += d0[1];
-  vv[2] += d0[2];
-  const real_t gamma {ONE/math::sqrt(ONE + vv[0]*vv[0] + vv[1]*vv[1] + vv[2]*vv[2])};
-  const real_t prefactor {m_dt/TWO * m_mblock.metric.alpha(xp)};
-  vec_t<Dimension::THREE_D> tt {prefactor*gamma*b0[0], prefactor*gamma*b0[1], prefactor*gamma*b0[2]};
-  const real_t ff {ONE/math::sqrt(ONE + tt[0]*tt[0] + tt[1]*tt[1] + tt[2]*tt[2])};
+                                                    vec_t<Dimension::THREE_D>& d0,
+                                                    vec_t<Dimension::THREE_D>& b0) const {
 
-  vu[0] = ff*(vv[0] + vv[1]*tt[2] - vv[2]*tt[1]);
-  vu[1] = ff*(vv[1] + vv[2]*tt[0] - vv[0]*tt[2]);
-  vu[2] = ff*(vv[2] + vv[0]*tt[1] - vv[1]*tt[0]);
+    coord_t<Dimension::TWO_D> xp;
+    getParticleCoordinate(p, xp);
+    vec_t<Dimension::THREE_D> vv;
+    vec_t<Dimension::THREE_D> vu;
+    m_mblock.metric.v_Cov2Hat(
+      xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vv);
+    vv[0] += d0[0];
+    vv[1] += d0[1];
+    vv[2] += d0[2];
+    const real_t gamma {ONE / math::sqrt(ONE + vv[0] * vv[0] + vv[1] * vv[1] + vv[2] * vv[2])};
+    const real_t prefactor {m_dt / TWO * m_mblock.metric.alpha(xp)};
+    vec_t<Dimension::THREE_D> tt {
+      prefactor * gamma * b0[0], prefactor * gamma * b0[1], prefactor * gamma * b0[2]};
+    const real_t ff {ONE / math::sqrt(ONE + tt[0] * tt[0] + tt[1] * tt[1] + tt[2] * tt[2])};
 
-  m_mblock.metric.v_Hat2Cov(xp, vu, vv);
-  m_particles.ux1(p) = vv[0];
-  m_particles.ux2(p) = vv[1];
-  m_particles.ux3(p) = vv[2];
+    vu[0] = ff * (vv[0] + vv[1] * tt[2] - vv[2] * tt[1]);
+    vu[1] = ff * (vv[1] + vv[2] * tt[0] - vv[0] * tt[2]);
+    vu[2] = ff * (vv[2] + vv[0] * tt[1] - vv[1] * tt[0]);
 
+    m_mblock.metric.v_Hat2Cov(xp, vu, vv);
+    m_particles.ux1(p) = vv[0];
+    m_particles.ux2(p) = vv[1];
+    m_particles.ux3(p) = vv[2];
   }
   template <>
   Inline void Pusher<Dimension::THREE_D>::BorisUpdate(const index_t&,
-                                                    vec_t<Dimension::THREE_D>&,
-                                                    vec_t<Dimension::THREE_D>&) const {}
+                                                      vec_t<Dimension::THREE_D>&,
+                                                      vec_t<Dimension::THREE_D>&) const {}
 
   // * * * * * * * * * * * * * * *
   // Field interpolations
