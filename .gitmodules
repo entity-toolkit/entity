@@ -21,3 +21,6 @@
 	path = extern/kokkos
 	url = git@github.com:kokkos/kokkos.git
 	branch = master
+[submodule "extern/filesystem"]
+	path = extern/filesystem
+	url = git@github.com:gulrak/filesystem.git
