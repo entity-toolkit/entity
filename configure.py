@@ -38,7 +38,6 @@ import textwrap
 from pathlib import Path
 
 assert sys.version_info >= (3, 7), "Requires python 3.7 or higher"
-nproc = 'sysctl -n hw.physicalcpu' if sys.platform == 'darwin' else 'nproc'
 
 # Global Settings
 # ---------------
@@ -205,8 +204,10 @@ def configureKokkos(arg, mopt):
 
         # no MPI (TODO)
         arg['nvcc_wrapper_cxx'] = arg['compiler']
+        mopt['HOST_COMPILER'] = arg["nvcc_wrapper_cxx"]
         mopt['COMPILER'] = f'NVCC_WRAPPER_DEFAULT_COMPILER={arg["nvcc_wrapper_cxx"]} '\
             + '${KOKKOS_PATH}/bin/nvcc_wrapper'
+        # + 'NVCC_WRAPPER_TMPDIR=${BUILD_DIR}/tmp '\
         # add with MPI here (TODO)
 
     settings = f'''
@@ -250,6 +251,7 @@ makefile_options['DEBUGMODE'] = ('y' if args['debug'] else 'n')
 
 # Compilation commands
 makefile_options['COMPILER'] = args['compiler']
+makefile_options['HOST_COMPILER'] = args['compiler']
 makefile_options['CXXSTANDARD'] = f'{DEF_cppstandard}'
 
 # Target names
@@ -315,12 +317,14 @@ except Exception as e:
 def beautifyCommands(command):
     i = command.index(' -')
     cmd = command[:i]
+    cmd = re.sub('\s*(NVCC_.*?)\s', '\\1\n', cmd)
+    cmd = re.sub('\n', '\n  ', cmd)
     flags = list(set(re.sub('<.o> *', '',
                             re.sub(r'-[I|L|o|c].+?[ |>|$]', '',
                                    re.sub(r'-([I|D|c|o|W|O|L]) ', r'-\1',
                                           command[i + 1:]))
                             ).strip().split(' ')))
-    order = ['-std', '-D', '-W', '-l', '']
+    order = ['-std', '-D', '-W', '-l', '--diag', '']
     accounted_flags = []
     ordered_flags = {key: [] for key in order}
     for o in order:
@@ -348,7 +352,7 @@ def makeNotes():
         notes += f"* nvcc recognized as:\n    $ {findCompiler('nvcc')}\n  "
     notes += f"* {'nvcc wrapper ' if use_nvcc_wrapper else ''}compiler recognized as:\n    $ {findCompiler(cxx)}\n  "
     if 'OpenMP' in args['kokkos_devices']:
-        notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_NUM_THREADS=$({nproc})\n  "
+        notes += f"* when using OpenMP set the following environment variables:\n    $ export OMP_PROC_BIND=spread OMP_PLACES=threads\n  "
     if args['nttiny']:
         notes += f"* `nttiny` path:\n    $ {pathNotEmpty(args['nttiny_path'])}"
     return notes.strip()
