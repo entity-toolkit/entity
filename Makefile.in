@@ -2,7 +2,7 @@
 #
 ROOT_DIR := $(realpath ${CURDIR}/..)
 # directory for the building
-BUILD_DIR := @BUILD_DIR@
+BUILD_DIR := ${ROOT_DIR}/@BUILD_DIR@
 # directory for the executable
 BIN_DIR := ${ROOT_DIR}/@BIN_DIR@
 TEMP_DIR := .temp
@@ -50,6 +50,7 @@ PREPFLAGS := ${PREPFLAGS}
 # # # # # Compiler and flags # # # # # # #
 #
 CXX := @COMPILER@
+HOST_CXX := @HOST_COMPILER@
 LINK := ${CXX}
 CXXSTANDARD := -std=@CXXSTANDARD@
 ifeq ($(strip ${DEBUGMODE}), n)
@@ -163,11 +164,11 @@ include ${ROOT_DIR}/Nttiny.mk
 # </ for nttiny
 
 clean:
-	rm -rf ${ROOT_DIR}/${BUILD_DIR}/${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
+	rm -rf ${BUILD_DIR}/${BUILD_SRC_DIR} ${BUILD_TEST_DIR} ${BUILD_VIS_DIR}
 	rm -rf ${BIN_DIR}
 	rm -rf ${SRC_DIR}/${TEMP_DIR}
 
 cleanlib: kokkos-clean
-	rm -rf {BUILD_DIR}/Kokkos*
+	rm -rf ${BUILD_DIR}/Kokkos*
 
 cleanall: clean cleanlib
