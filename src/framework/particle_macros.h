@@ -31,7 +31,7 @@
     coord_t<Dim1> X_CU;                                                                       \
     int           I;                                                                          \
     float         DX;                                                                         \
-    ((MBLOCK)->metric).x_Cart2Code({(X1)}, X_CU);                                             \
+    ((MBLOCK).metric).x_Cart2Code({(X1)}, X_CU);                                              \
     Xi_TO_i_di(X_CU[0], I, DX);                                                               \
     (SPECIES).i1((INDEX))  = I;                                                               \
     (SPECIES).dx1((INDEX)) = DX;                                                              \
@@ -45,7 +45,7 @@
     coord_t<Dim2> X_CU;                                                                       \
     int           I;                                                                          \
     float         DX;                                                                         \
-    ((MBLOCK)->metric).x_Cart2Code({(X1), (X2)}, X_CU);                                       \
+    ((MBLOCK).metric).x_Cart2Code({(X1), (X2)}, X_CU);                                        \
     Xi_TO_i_di(X_CU[0], I, DX);                                                               \
     (SPECIES).i1((INDEX))  = I;                                                               \
     (SPECIES).dx1((INDEX)) = DX;                                                              \
@@ -62,7 +62,7 @@
     coord_t<Dim3> X_CU;                                                                       \
     int           I;                                                                          \
     float         DX;                                                                         \
-    ((MBLOCK)->metric).x_Cart2Code({(X1), (X2), (X3)}, X_CU);                                 \
+    ((MBLOCK).metric).x_Cart2Code({(X1), (X2), (X3)}, X_CU);                                  \
     Xi_TO_i_di(X_CU[0], I, DX);                                                               \
     (SPECIES).i1((INDEX))  = I;                                                               \
     (SPECIES).dx1((INDEX)) = DX;                                                              \

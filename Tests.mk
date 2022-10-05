@@ -1,5 +1,5 @@
 TEST_DIR := ${ROOT_DIR}/tests
-BUILD_TEST_DIR := ${ROOT_DIR}/${BUILD_DIR}/tests/
+BUILD_TEST_DIR := ${BUILD_DIR}/tests/
 
 .PHONY: test test_pic test_grpic
 

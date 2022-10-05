@@ -94,8 +94,12 @@ namespace ntt {
      */
     // Cell number of the current particle.
     array_t<int*> i1, i2, i3;
+    // host mirrors for cell index.
+    array_mirror_t<int*> i1_h, i2_h, i3_h;
     // Displacement of a particle within the shell.
     array_t<float*> dx1, dx2, dx3;
+    // host mirrors for the displacements.
+    array_mirror_t<float*> dx1_h, dx2_h, dx3_h;
     // Three spatial components of the covariant 4-velocity (physical units).
     array_t<real_t*> ux1, ux2, ux3;
     // Particle weights.
@@ -141,6 +145,11 @@ namespace ntt {
      * @param npart number of particles.
      */
     void set_npart(const std::size_t& N) { m_npart = N; }
+
+    /**
+     * @brief Synchronize data from device to host.
+     */
+    void synchronizeHostDevice();
   };
 
 } // namespace ntt

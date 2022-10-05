@@ -6,6 +6,7 @@
 
 #include <plog/Log.h>
 #include <Kokkos_Core.hpp>
+#include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
 
 #include <type_traits>
@@ -87,11 +88,15 @@ namespace ntt {
 
   using index_t = const std::size_t;
 
-  // Defining an array alias of arbitrary type
+  // Array alias of arbitrary type
   template <typename T>
   using array_t = Kokkos::View<T, AccelMemSpace>;
 
-  // Defining a scatter view alias of arbitrary type
+  // Array mirror alias of arbitrary type
+  template <typename T>
+  using array_mirror_t = typename array_t<T>::HostMirror;
+
+  // Scatter view alias of arbitrary type
   template <typename T>
   using scatter_array_t = Kokkos::Experimental::ScatterView<T>;
 
@@ -132,6 +137,9 @@ namespace ntt {
       typename std::conditional<D == Dim3,
                                 Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
                                 std::nullptr_t>::type>::type>::type;
+
+  // Random number pool alias
+  using RandomNumberPool_t = Kokkos::Random_XorShift1024_Pool<AccelExeSpace>;
 
   /**
    * @brief Function template for generating ND Kokkos range policy.

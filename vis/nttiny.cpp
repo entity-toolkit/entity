@@ -56,14 +56,15 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     generateGrid();
     generateParticles();
 
-    nttiny::ScrollingBuffer flux_E;
-    this->buffers.insert({"flux_Er", std::move(flux_E)});
+    if (sim.mblock()->metric.label != "minkowski") {
+      nttiny::ScrollingBuffer flux_E;
+      this->buffers.insert({"flux_Er", std::move(flux_E)});
+    }
     setData();
   }
 
   void setData() override {
-    Kokkos::deep_copy(m_sim.mblock()->em_h, m_sim.mblock()->em);
-    Kokkos::deep_copy(m_sim.mblock()->cur_h, m_sim.mblock()->cur);
+    m_sim.synchronizeHostDevice();
 #ifdef GRPIC_SIMTYPE
     Kokkos::deep_copy(m_sim.mblock()->aphi_h, m_sim.mblock()->aphi);
     // compute the vector potential
@@ -281,8 +282,8 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     for (const auto& [lbl, species] : this->particles) {
       auto sim_species = m_sim.mblock()->particles[s];
       for (int p {0}; p < species.first; ++p) {
-        real_t                  x1 {(real_t)(sim_species.i1(p)) + sim_species.dx1(p)};
-        real_t                  x2 {(real_t)(sim_species.i2(p)) + sim_species.dx2(p)};
+        real_t                  x1 {(real_t)(sim_species.i1_h(p)) + sim_species.dx1_h(p)};
+        real_t                  x2 {(real_t)(sim_species.i2_h(p)) + sim_species.dx2_h(p)};
         ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
         m_sim.mblock()->metric.x_Code2Cart({x1, x2}, xy);
         species.second[0][p] = xy[0];
@@ -291,7 +292,9 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
       ++s;
     }
 
-    this->buffers["flux_Er"].AddPoint(m_time, (float)(-flux_E));
+    if (m_sim.mblock()->metric.label != "minkowski") {
+      this->buffers["flux_Er"].AddPoint(m_time, (float)(-flux_E));
+    }
   }
   void stepFwd() override {
     m_sim.step_forward(m_time);
@@ -377,10 +380,20 @@ struct NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
     nttiny::tools::drawCircle(
       {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
 #elif defined(PIC_SIMTYPE)
-    ntt::coord_t<ntt::Dim2> rth_;
-    m_sim.mblock()->metric.x_Code2Sph({(float)105 + HALF, HALF}, rth_);
-    nttiny::tools::drawCircle(
-      {0.0f, 0.0f}, rth_[0], {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+    if (m_sim.mblock()->metric.label != "minkowski") {
+      ntt::coord_t<ntt::Dim2> rth_;
+      m_sim.mblock()->metric.x_Code2Sph({(float)105 + HALF, HALF}, rth_);
+      nttiny::tools::drawCircle(
+        {0.0f, 0.0f}, rth_[0], {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+    }
+
+    // nttiny::tools::drawCircle(
+    //   {0.1f + 0.1f * this->m_time, 0.12f + 0.1f},
+    //   0.1f,
+    //   {0.0f, 2.0 * ntt::constant::PI},
+    //   128,
+    //   ui_settings.OutlineColor);
+
 #endif
   }
 };

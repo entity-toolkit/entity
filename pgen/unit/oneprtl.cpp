@@ -23,22 +23,27 @@ namespace ntt {
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_hat}, b_cntrv);
         mblock.em(i, j, em::ex1) = ZERO;
-        mblock.em(i, j, em::ex2) = ZERO; // e_cntrv[1];
+        mblock.em(i, j, em::ex2) = e_cntrv[1];
         mblock.em(i, j, em::ex3) = ZERO;
         mblock.em(i, j, em::bx1) = ZERO;
         mblock.em(i, j, em::bx2) = ZERO;
-        mblock.em(i, j, em::bx3) = ZERO; // b_cntrv[2];
+        mblock.em(i, j, em::bx3) = b_cntrv[2];
       });
   }
 
   template <>
   void ProblemGenerator<Dim2, SimulationType::PIC>::userInitParticles(
     const SimulationParams&, Meshblock<Dim2, SimulationType::PIC>& mblock) {
-
+    auto electrons = mblock.particles[0];
+    auto positrons = mblock.particles[1];
+    auto random_pool = (*mblock.random_pool_ptr);
     Kokkos::parallel_for(
       "userInitPrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
-        PICPRTL_XYZ_2D(&mblock, 0, p, 0.1, 0.12, 1.0, 0.0, 0.0);
-        PICPRTL_XYZ_2D(&mblock, 1, p, 0.1, 0.12, -1.0, 0.0, 0.0);
+        typename RandomNumberPool_t::generator_type rand_gen = random_pool.get_state();
+        real_t rx = rand_gen.frand((real_t)(-2.0), (real_t)(2.0));
+        real_t ry = rand_gen.frand((real_t)(-2.0), (real_t)(2.0));
+        PICPRTL_XYZ_2D(mblock, electrons, p, rx, ry, 1.0, 0.0, 0.0);
+        PICPRTL_XYZ_2D(mblock, positrons, p, rx, ry, 1.0, 0.0, 0.0);
         // PICPRTL_XYZ_2D(&mblock, 2, p, 0.1, 0.12, 1.0, 0.0, 0.0);
         // PICPRTL_XYZ_2D(&mblock, 3, p, 0.1, 0.12, 1.0, 0.0, 0.0);
       });

@@ -114,20 +114,20 @@
 
 #endif
 
-#define JX1(...)        GET_MACRO(__VA_ARGS__, JX1_3D, JX1_2D, JX1_1D, )(__VA_ARGS__)
-#define JX1_1D(I)       (m_mblock.cur((I), cur::jx1))
-#define JX1_2D(I, J)    (m_mblock.cur((I), (J), cur::jx1))
-#define JX1_3D(I, J, K) (m_mblock.cur((I), (J), (K), cur::jx1))
+#define JX1(...)         GET_MACRO(__VA_ARGS__, JX1_3D, JX1_2D, JX1_1D, )(__VA_ARGS__)
+#define JX1_1D(I)        (m_mblock.cur((I), cur::jx1))
+#define JX1_2D(I, J)     (m_mblock.cur((I), (J), cur::jx1))
+#define JX1_3D(I, J, K)  (m_mblock.cur((I), (J), (K), cur::jx1))
 
-#define JX2(...)        GET_MACRO(__VA_ARGS__, JX2_3D, JX2_2D, JX2_1D, )(__VA_ARGS__)
-#define JX2_1D(I)       (m_mblock.cur((I), cur::jx2))
-#define JX2_2D(I, J)    (m_mblock.cur((I), (J), cur::jx2))
-#define JX2_3D(I, J, K) (m_mblock.cur((I), (J), (K), cur::jx2))
+#define JX2(...)         GET_MACRO(__VA_ARGS__, JX2_3D, JX2_2D, JX2_1D, )(__VA_ARGS__)
+#define JX2_1D(I)        (m_mblock.cur((I), cur::jx2))
+#define JX2_2D(I, J)     (m_mblock.cur((I), (J), cur::jx2))
+#define JX2_3D(I, J, K)  (m_mblock.cur((I), (J), (K), cur::jx2))
 
-#define JX3(...)        GET_MACRO(__VA_ARGS__, JX3_3D, JX3_2D, JX3_1D, )(__VA_ARGS__)
-#define JX3_1D(I)       (m_mblock.cur((I), cur::jx3))
-#define JX3_2D(I, J)    (m_mblock.cur((I), (J), cur::jx3))
-#define JX3_3D(I, J, K) (m_mblock.cur((I), (J), (K), cur::jx3))
+#define JX3(...)         GET_MACRO(__VA_ARGS__, JX3_3D, JX3_2D, JX3_1D, )(__VA_ARGS__)
+#define JX3_1D(I)        (m_mblock.cur((I), cur::jx3))
+#define JX3_2D(I, J)     (m_mblock.cur((I), (J), cur::jx3))
+#define JX3_3D(I, J, K)  (m_mblock.cur((I), (J), (K), cur::jx3))
 
 #define J0X1(...)        GET_MACRO(__VA_ARGS__, J0X1_3D, J0X1_2D, J0X1_1D, )(__VA_ARGS__)
 #define J0X1_1D(I)       (m_mblock.cur0((I), cur::jx1))

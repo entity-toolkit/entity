@@ -19,7 +19,10 @@ namespace ntt {
       m_mblock {m_sim_params.resolution(),
                 m_sim_params.extent(),
                 m_sim_params.metric_parameters(),
-                m_sim_params.species()} {}
+                m_sim_params.species()},
+      m_random_pool{RandomSeed} {
+    m_mblock.random_pool_ptr = &m_random_pool;
+  }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::initialize() {
@@ -154,6 +157,16 @@ namespace ntt {
   void Simulation<D, S>::finalize() {
     WaitAndSynchronize();
     PLOGD << "Simulation finalized.";
+  }
+
+  template <Dimension D, SimulationType S>
+  void Simulation<D, S>::synchronizeHostDevice() {
+    WaitAndSynchronize();
+    m_mblock.synchronizeHostDevice();
+    for (auto& species : m_mblock.particles) {
+      species.synchronizeHostDevice();
+    }
+    PLOGD << "... host-device synchronized";
   }
 
 } // namespace ntt

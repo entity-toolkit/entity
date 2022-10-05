@@ -94,6 +94,11 @@ namespace ntt {
      */
     Fields(std::vector<unsigned int> res);
     ~Fields() = default;
+
+    /**
+     * @brief Synchronize data from device to host.
+     */
+    void synchronizeHostDevice();
   };
 
 } // namespace ntt
