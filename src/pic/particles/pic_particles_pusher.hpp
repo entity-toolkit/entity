@@ -77,8 +77,7 @@ namespace ntt {
         m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
         m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
 
-        // !HACK:
-        // BorisUpdate(p, e_int_Cart, b_int_Cart);
+        BorisUpdate(p, e_int_Cart, b_int_Cart);
 
         real_t inv_energy;
         inv_energy = ONE / PRTL_GAMMA_SR(m_particles, p);

@@ -12,6 +12,10 @@ using real_t = float;
 using real_t = double;
 #endif
 
+#include <cstdint>
+
+inline constexpr std::uint64_t RandomSeed = 0x123456789abcdef0;
+
 // Math constants
 namespace ntt {
   namespace constant {

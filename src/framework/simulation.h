@@ -22,12 +22,15 @@ namespace ntt {
   protected:
     // user-defined and inferred simulation parameters
     SimulationParams m_sim_params;
+
+  public:
     // problem setup generator
     ProblemGenerator<D, S> m_pGen;
     // meshblock with all the fields / metric / and particles
     Meshblock<D, S> m_mblock;
+    // random number pool
+    RandomNumberPool_t m_random_pool;
 
-  public:
     /**
      * @brief Constructor for simulation class.
      * @param inputdata toml-object with parsed toml parameters.
@@ -90,6 +93,11 @@ namespace ntt {
      * @param tstep current timestep.
      */
     void writeOutput(const unsigned long& tstep);
+
+    /**
+     * @brief Synchronize data from device to host.
+     */
+    void synchronizeHostDevice();
   };
 
 } // namespace ntt
