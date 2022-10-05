@@ -41,6 +41,16 @@ namespace ntt {
     em_h  = Kokkos::create_mirror_view(em);
     cur_h = Kokkos::create_mirror_view(cur);
   }
+
+  template <Dimension D, SimulationType S>
+  void Fields<D, S>::synchronizeHostDevice() {
+    Kokkos::deep_copy(em_h, em);
+    Kokkos::deep_copy(cur_h, cur);
+#ifdef GRPIC_SIMTYPE
+      Kokkos::deep_copy(aphi_h, aphi);
+#endif
+  }
+  
 #elif defined(GRPIC_SIMTYPE)
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific

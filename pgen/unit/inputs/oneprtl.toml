@@ -8,10 +8,10 @@ extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.5
+CFL             = 0.9
 correction      = 1.0
-#fieldsolver_ON  = true
-deposit_ON      = true
+fieldsolver_ON  = false
+deposit_ON      = false
 current_filters = 2
 
 [units]

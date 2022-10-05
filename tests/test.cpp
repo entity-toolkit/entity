@@ -33,28 +33,30 @@
 
 #include <stdexcept>
 auto main(int argc, char* argv[]) -> int {
-  doctest::Context context;
-  int              res;
+  return -1;
+//   doctest::Context context;
+//   int              res;
 
-  Kokkos::initialize();
-  {
-    plog::init(plog::info, "test.log");
+//   Kokkos::initialize();
+//   {
+//     plog::init(plog::info, "test.log");
 
-#ifdef GPUENABLED
-    throw std::runtime_error("tests should be done on CPUs");
-#endif
+// // @HACK
+// // #ifdef GPUENABLED
+// //     throw std::runtime_error("tests should be done on CPUs");
+// // #endif
 
-    context.setOption("order-by", "none");
+//     context.setOption("order-by", "none");
 
-    context.applyCommandLine(argc, argv);
+//     context.applyCommandLine(argc, argv);
 
-    context.setOption("no-intro", true);
-    context.setOption("no-version", true);
+//     context.setOption("no-intro", true);
+//     context.setOption("no-version", true);
 
-    res = context.run();
+//     res = context.run();
 
-    if (context.shouldExit()) { return res; }
-  }
-  Kokkos::finalize();
-  return res;
+//     if (context.shouldExit()) { return res; }
+//   }
+//   Kokkos::finalize();
+//   return res;
 }

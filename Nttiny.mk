@@ -22,17 +22,17 @@ nttiny_clean :
 	$(HIDE)cd ${NTTINY_DIR}/build && make clean
 
 ${VIS_TARGET} : ${BUILD_DIR}/lib/libnttiny.a $(OBJS) $(VIS_OBJ)
-	NTTINY_LIB_DIRS := $(subst ",,$(subst ;, ,"$(shell cat ${BUILD_DIR}/lib/NTTINY_LIB_DIRS)")) ${BUILD_DIR}/lib
-	NTTINY_LIBS := $(subst ",,$(subst ;, ,"$(shell cat ${BUILD_DIR}/lib/NTTINY_LIBS)")) nttiny
-	NTTINY_LIB_FLAGS := $(addprefix -l, $(NTTINY_LIBS))
-	NTTINY_LD_FLAGS := $(addprefix -L, $(NTTINY_LIB_DIRS)) $(LIBS)
+	$(eval NTTINY_LIB_DIRS := $(subst ",,$(subst ;, ,"$(shell cat ${BUILD_DIR}/lib/NTTINY_LIB_DIRS)")) ${BUILD_DIR}/lib)
+	$(eval NTTINY_LIBS := $(subst ",,$(subst ;, ,"$(shell cat ${BUILD_DIR}/lib/NTTINY_LIBS)")) nttiny)
+	$(eval NTTINY_LIB_FLAGS := $(addprefix -l, $(NTTINY_LIBS)))
+	$(eval NTTINY_LD_FLAGS := $(addprefix -L, $(NTTINY_LIB_DIRS)) $(LIBS))
 	@echo [L]inking $@ from $^
 	$(HIDE)mkdir -p ${BIN_DIR}
 	$(HIDE)${link_command} $^ $(NTTINY_LIB_FLAGS) -o $@ $(NTTINY_LD_FLAGS)
 
 ${BUILD_VIS_DIR}/%.o : ${VIS_DIR}/%
-	NTTINY_LIBS := $(subst ",,$(subst ;, ,"$(shell cat ${BUILD_DIR}/lib/NTTINY_LIBS)")) nttiny
-	NTTINY_INC_FLAGS := $(addprefix -I, $(NTTINY_INC_DIRS) ${NTTINY_DIR}/src ${NTTINY_DIR}/extern $(dir $(wildcard ${NTTINY_DIR}/src/**/)))
+	$(eval NTTINY_INC_DIRS := $(subst ",,$(subst ;, ,"$(shell cat ${BUILD_DIR}/lib/NTTINY_INC_DIRS)")))
+	$(eval NTTINY_INC_FLAGS := $(addprefix -I, $(NTTINY_INC_DIRS) ${NTTINY_DIR}/src ${NTTINY_DIR}/extern $(dir $(wildcard ${NTTINY_DIR}/src/**/))))
 	@echo [C]ompiling \`vis\`: $(subst ${ROOT_DIR}/,,$<)
 	$(HIDE)mkdir -p $(dir $@)
 	$(HIDE)${compile_command} $(NTTINY_INC_FLAGS) -c $^ -o $@

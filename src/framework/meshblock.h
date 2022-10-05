@@ -211,6 +211,7 @@ namespace ntt {
   public:
     // Vector of particles species.
     std::vector<Particles<D, S>> particles;
+    RandomNumberPool_t*          random_pool_ptr;
 
     /**
      * @brief Constructor for the meshblock.
