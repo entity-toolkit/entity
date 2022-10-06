@@ -18,8 +18,8 @@ namespace ntt {
   // . . . . . . . . . . . . . . . . . . . . . . . .
 
   template <>
-  void ProblemGenerator<Dim2, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim2, SimulationType::PIC>& mblock) {
+  void ProblemGenerator<Dim2, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
     
     Kokkos::deep_copy(mblock.em, 0.0);
     real_t r_min {mblock.metric.x1_min};
@@ -39,19 +39,19 @@ namespace ntt {
   }
 
   template <>
-  void ProblemGenerator<Dim1, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim1, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim1, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim1, TypePIC>&) {}
 
   template <>
-  void ProblemGenerator<Dim3, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim3, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim3, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim3, TypePIC>&) {}
 
   // * * * * * * * * * * * * * * * * * * * * * * * *
   // Field boundary conditions
   // . . . . . . . . . . . . . . . . . . . . . . . .
   template <>
-  void ProblemGenerator<Dim2, SimulationType::PIC>::userBCFields(
-    const real_t& time, const SimulationParams&, Meshblock<Dim2, SimulationType::PIC>& mblock) {
+  void ProblemGenerator<Dim2, TypePIC>::userBCFields(
+    const real_t& time, const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
     
     real_t omega;
     if (time < 5) {
@@ -93,15 +93,15 @@ namespace ntt {
   }
 
   template <>
-  void ProblemGenerator<Dim1, SimulationType::PIC>::userBCFields(
-    const real_t&, const SimulationParams&, Meshblock<Dim1, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim1, TypePIC>::userBCFields(
+    const real_t&, const SimulationParams&, Meshblock<Dim1, TypePIC>&) {}
 
   template <>
-  void ProblemGenerator<Dim3, SimulationType::PIC>::userBCFields(
-    const real_t&, const SimulationParams&, Meshblock<Dim3, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim3, TypePIC>::userBCFields(
+    const real_t&, const SimulationParams&, Meshblock<Dim3, TypePIC>&) {}
 
 } // namespace ntt
 
-template struct ntt::ProblemGenerator<ntt::Dim1, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim1, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::TypePIC>;

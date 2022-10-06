@@ -17,7 +17,8 @@ TEST_MINK_PIC_OBJS := $(subst ${SRC_DIR},${BUILD_TEST_DIR}PIC_mnk,$(SRCS:%=%.o))
 TEST_SPH_PIC_OBJS := $(subst ${SRC_DIR},${BUILD_TEST_DIR}PIC_sph,$(SRCS:%=%.o))
 TEST_QSPH_PIC_OBJS := $(subst ${SRC_DIR},${BUILD_TEST_DIR}PIC_qsph,$(SRCS:%=%.o))
 
-TEST_DEPS := ${BUILD_TEST_DIR}PIC_mnk/test.d
+TEST_OBJS := ${TEST_UTILS_OBJS} ${TEST_MINK_PIC_OBJS} ${TEST_SPH_PIC_OBJS} ${TEST_QSPH_PIC_OBJS}
+TEST_DEPS := ${BUILD_TEST_DIR}PIC_mnk/test.d $(TEST_OBJS:.o=.d)
 
 test_instance_depends := pgenCopy $(KOKKOS_LINK_DEPENDS) 
 

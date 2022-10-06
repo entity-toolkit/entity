@@ -8,10 +8,12 @@ namespace ntt {
    *
    */
   template <Dimension D>
-  void PIC<D>::resetParticles(const real_t&) {
-    for (auto& species : this->m_mblock.particles) {
-      ResetParticles<D> reset_particles(this->m_mblock, species);
-      reset_particles.resetParticles();
+  void PIC<D>::ResetParticles() {
+    auto& mblock = this->meshblock;
+    for (auto& species : mblock.particles) {
+      Kokkos::parallel_for("reset_particles",
+                           species.rangeAllParticles(),
+                           ResetParticles_kernel<D>(mblock, species));
     }
   }
 
@@ -20,9 +22,10 @@ namespace ntt {
    *
    */
   template <Dimension D>
-  void PIC<D>::resetFields(const real_t&) {
+  void PIC<D>::ResetFields() {
+    auto& mblock = this->meshblock;
     Kokkos::parallel_for(
-      "reset_fields", this->m_mblock.rangeAllCells(), ResetFields<D>(this->m_mblock));
+      "reset_fields", mblock.rangeAllCells(), ResetFields_kernel<D>(mblock));
   }
 
   /**
@@ -30,12 +33,13 @@ namespace ntt {
    *
    */
   template <Dimension D>
-  void PIC<D>::resetCurrents(const real_t&) {
+  void PIC<D>::ResetCurrents() {
+    auto& mblock = this->meshblock;
     Kokkos::parallel_for(
-      "reset_currents", this->m_mblock.rangeAllCells(), ResetCurrents<D>(this->m_mblock));
+      "reset_currents", mblock.rangeAllCells(), ResetCurrents_kernel<D>(mblock));
   }
 } // namespace ntt
 
-template class ntt::PIC<ntt::Dim1>;
-template class ntt::PIC<ntt::Dim2>;
-template class ntt::PIC<ntt::Dim3>;
+template struct ntt::PIC<ntt::Dim1>;
+template struct ntt::PIC<ntt::Dim2>;
+template struct ntt::PIC<ntt::Dim3>;

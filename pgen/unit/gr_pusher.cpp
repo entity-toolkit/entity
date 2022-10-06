@@ -49,17 +49,17 @@ namespace ntt {
       // photon
       int   I;
       float DX;
-      Xi_TO_i_di(x_CU[0], I, DX);
+      from_Xi_to_i_di(x_CU[0], I, DX);
       mblock.particles[0].i1(p) = I;
       mblock.particles[0].dx1(p) = DX;
-      Xi_TO_i_di(x_CU[1], I, DX);
+      from_Xi_to_i_di(x_CU[1], I, DX);
       mblock.particles[0].i2(p)  = I;
       mblock.particles[0].dx2(p) = DX;
       mblock.particles[0].ux1(p) = -0.2;
       mblock.particles[0].ux2(p) = 5;
       mblock.particles[0].ux3(p) = 0;
       });
-    mblock.particles[0].set_npart(1);
+    mblock.particles[0].setNpart(1);
 
   }
 

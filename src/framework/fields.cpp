@@ -43,7 +43,7 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  void Fields<D, S>::synchronizeHostDevice() {
+  void Fields<D, S>::SynchronizeHostDevice() {
     Kokkos::deep_copy(em_h, em);
     Kokkos::deep_copy(cur_h, cur);
 #ifdef GRPIC_SIMTYPE
@@ -87,10 +87,10 @@ namespace ntt {
 } // namespace ntt
 
 #ifdef PIC_SIMTYPE
-template class ntt::Fields<ntt::Dim1, ntt::SimulationType::PIC>;
-template class ntt::Fields<ntt::Dim2, ntt::SimulationType::PIC>;
-template class ntt::Fields<ntt::Dim3, ntt::SimulationType::PIC>;
+template struct ntt::Fields<ntt::Dim1, ntt::TypePIC>;
+template struct ntt::Fields<ntt::Dim2, ntt::TypePIC>;
+template struct ntt::Fields<ntt::Dim3, ntt::TypePIC>;
 #elif defined(GRPIC_SIMTYPE)
-template class ntt::Fields<ntt::Dim2, ntt::SimulationType::GRPIC>;
-template class ntt::Fields<ntt::Dim3, ntt::SimulationType::GRPIC>;
+template struct ntt::Fields<ntt::Dim2, ntt::SimulationType::GRPIC>;
+template struct ntt::Fields<ntt::Dim3, ntt::SimulationType::GRPIC>;
 #endif

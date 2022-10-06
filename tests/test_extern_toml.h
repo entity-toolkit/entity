@@ -1,6 +1,7 @@
 #ifndef TEST_EXTERN_TOML_H
 #define TEST_EXTERN_TOML_H
 
+#include <doctest.h>
 #include <toml/toml.hpp>
 
 #include <vector>

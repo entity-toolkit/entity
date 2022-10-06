@@ -6,7 +6,7 @@ namespace ntt {
   template <>
   void CurrentFilter<Dim1>::synchronizeGhostZones() const {
     auto ni {m_mesh.Ni1()};
-    auto mesh {this->m_mesh};
+    auto mesh {m_mesh};
     if (mesh.boundaries[0] == BoundaryCondition::PERIODIC) {
       Kokkos::parallel_for(
         "1d_gh_x1m", mesh.rangeCells({CellLayer::minGhostLayer}), Lambda(index_t i) {

@@ -14,9 +14,9 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class AmpereCurvilinear {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t                            m_coeff;
+  class Ampere_kernel {
+    Meshblock<D, TypePIC> m_mblock;
+    real_t                m_coeff;
 
   public:
     /**
@@ -24,7 +24,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    AmpereCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
+    Ampere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
     /**
      * @brief 2D version of the algorithm.
@@ -42,7 +42,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void AmpereCurvilinear<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void Ampere_kernel<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -65,7 +65,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void AmpereCurvilinear<Dim3>::operator()(index_t, index_t, index_t) const {
+  Inline void Ampere_kernel<Dim3>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear ampere not implemented
   }
 
@@ -75,10 +75,10 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class AmpereCurvilinearPoles {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t                            m_coeff;
-    const std::size_t                 m_nj;
+  class AmperePoles_kernel {
+    Meshblock<D, TypePIC> m_mblock;
+    real_t                m_coeff;
+    const std::size_t     m_nj;
 
   public:
     /**
@@ -86,8 +86,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    AmpereCurvilinearPoles(const Meshblock<D, SimulationType::PIC>& mblock,
-                           const real_t&                            coeff)
+    AmperePoles_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
     /**
      * @brief Implementation of the algorithm.
@@ -97,7 +96,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void AmpereCurvilinearPoles<Dim2>::operator()(index_t i) const {
+  Inline void AmperePoles_kernel<Dim2>::operator()(index_t i) const {
     index_t j_min {N_GHOSTS};
     index_t j_max {m_nj + N_GHOSTS - 1};
 
@@ -122,4 +121,4 @@ namespace ntt {
   }
 } // namespace ntt
 
-#endif
+#endif // NTT_AMPERE_KERNEL_HPP

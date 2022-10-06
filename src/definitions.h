@@ -16,6 +16,19 @@ using real_t = double;
 
 inline constexpr std::uint64_t RandomSeed = 0x123456789abcdef0;
 
+#include <plog/Log.h>
+
+namespace plog {
+  /**
+   * @brief Formatter for logging messages.
+   */
+  class NTTFormatter {
+  public:
+    static auto header() -> util::nstring;
+    static auto format(const Record& record) -> util::nstring;
+  };
+} // namespace plog
+
 // Math constants
 namespace ntt {
   namespace constant {

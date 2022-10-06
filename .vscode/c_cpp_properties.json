@@ -20,8 +20,8 @@
         "SINGLE_PRECISION",
         "OMPENABLED",
         // "GRPIC_SIMTYPE",
-        // "MINKOWSKI_METRIC"
-        "QSPHERICAL_METRIC"
+        "MINKOWSKI_METRIC"
+        // "QSPHERICAL_METRIC"
       ],
       "compilerPath": "${myCompilerPath}",
       "cStandard": "c17",

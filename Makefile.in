@@ -67,7 +67,7 @@ WARNFLAGS := @WARNING_FLAGS@
 PREPFLAGS := $(PREPFLAGS) @PRECISION@ -D@METRIC@_METRIC -D@SIMTYPE@_SIMTYPE
 
 CFLAGS := $(CFLAGS) $(WARNFLAGS) $(PREPFLAGS)
-LIBS :=
+LIBS := -lstdc++fs
 
 # # # # # Targets # # # # # # # # # # # # # #
 #
