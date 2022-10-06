@@ -44,8 +44,9 @@ After the compilation is successful, you will find the corresponding executable 
 
 ### Active to-do
 
-  - [ ] Add metric as a template argument
-  - [x] Add time as a global parameter
+  - [ ] add metric as a template argument
+  - [x] add time as a global parameter
+  - [ ] use `kokkos` methods for `vis/nttiny.cpp`
 
 ### Short term things to do/fix
 
