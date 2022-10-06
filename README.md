@@ -45,7 +45,7 @@ After the compilation is successful, you will find the corresponding executable 
 ### Active to-do
 
   - [ ] Add metric as a template argument
-  - [ ] Add time as a global parameter
+  - [x] Add time as a global parameter
 
 ### Short term things to do/fix
 
