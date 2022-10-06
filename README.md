@@ -53,14 +53,14 @@ After the compilation is successful, you will find the corresponding executable 
   - [x] aliases for fields/particles/currents
   - [ ] check allocation of proper fields
   - [x] add a simple current filtering
-  - [ ] field mirrors
+  - [x] field mirrors
 
 ### Intermediate term things to do/fix
 
   - [ ] test curvilinear particle pusher
   - [x] particle motion near the axes
   - [x] test curvilinear current deposit
-  - [ ] deposition near the axes
+  - [x] deposition near the axes
   - [x] filtering near the axes
 
 ### State of things
@@ -72,7 +72,7 @@ After the compilation is successful, you will find the corresponding executable 
   - [x] minkowski particle pusher (Boris; 1D/2D/3D)
   - [x] curvilinear particle pusher (Boris; 2D)
   - [x] minkowski current deposition (1D/2D/3D)
-  - [ ] curvilinear current deposition (2D)
+  - [x] curvilinear current deposition (2D)
   - [ ] cubed sphere metric (3D)
 * GRPIC
   - [x] spherical/qspherical Kerr-Schild metrics (2D)
@@ -83,10 +83,9 @@ After the compilation is successful, you will find the corresponding executable 
 
 ### Known bugs / minor issues to fix
 
-- [ ] `$(CURDIR)` seems to fail in some instances (need a more robust apprch)
+- [ ] `$(CURDIR)` seems to fail in some instances (need a more robust approach)
 - [x] check python `subprocess.run` command during the configure stage
-- [ ] check if compilation of `glfw` is possible (or if `glfw` is available)
-- [ ] same for `freetype`
+- [x] check if compilation of `glfw` is possible (or if `glfw` is available)
 - [x] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
 
 > To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
