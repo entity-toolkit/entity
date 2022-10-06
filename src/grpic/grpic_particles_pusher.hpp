@@ -153,10 +153,10 @@ namespace ntt {
       // update coordinate
       int   I;
       float DX;
-      Xi_TO_i_di(xpu[0], I, DX);
+      from_Xi_to_i_di(xpu[0], I, DX);
       m_particles.i1(p)  = I;
       m_particles.dx1(p) = DX;
-      Xi_TO_i_di(xpu[1], I, DX);
+      from_Xi_to_i_di(xpu[1], I, DX);
       m_particles.i2(p)  = I;
       m_particles.dx2(p) = DX;
 
@@ -363,10 +363,10 @@ namespace ntt {
     // update coordinate
     int   I;
     float DX;
-    Xi_TO_i_di(xpu[0], I, DX);
+    from_Xi_to_i_di(xpu[0], I, DX);
     m_particles.i1(p)  = I;
     m_particles.dx1(p) = DX;
-    Xi_TO_i_di(xpu[1], I, DX);
+    from_Xi_to_i_di(xpu[1], I, DX);
     m_particles.i2(p)  = I;
     m_particles.dx2(p) = DX;
   }

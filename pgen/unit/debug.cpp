@@ -23,11 +23,11 @@ namespace ntt {
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_}, {ZERO, ex2_hat, ZERO}, e_cntrv);
         mblock.metric.v_Hat2Cntrv({i_ + HALF, j_ + HALF}, {ZERO, ZERO, bx3_hat}, b_cntrv);
         mblock.em(i, j, em::ex1) = ZERO;
-        mblock.em(i, j, em::ex2) = e_cntrv[1];
+        mblock.em(i, j, em::ex2) = ZERO;
         mblock.em(i, j, em::ex3) = ZERO;
         mblock.em(i, j, em::bx1) = ZERO;
         mblock.em(i, j, em::bx2) = ZERO;
-        mblock.em(i, j, em::bx3) = b_cntrv[2];
+        mblock.em(i, j, em::bx3) = ZERO;
       });
   }
 
@@ -47,8 +47,8 @@ namespace ntt {
         // init_prtl_2d_XYZ(&mblock, 2, p, 0.1, 0.12, 1.0, 0.0, 0.0);
         // init_prtl_2d_XYZ(&mblock, 3, p, 0.1, 0.12, 1.0, 0.0, 0.0);
       });
-    mblock.particles[0].setNpart(1);
-    mblock.particles[1].setNpart(1);
+    electrons.setNpart(1);
+    positrons.setNpart(1);
     // mblock.particles[2].setNpart(1);
     // mblock.particles[3].setNpart(1);
   }

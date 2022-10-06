@@ -134,7 +134,12 @@ namespace ntt {
      * @brief Loop over all active particles.
      * @returns 1D Kokkos range policy of size of `npart`.
      */
-    auto loopParticles() -> range_t<Dim1>;
+    auto rangeActiveParticles() -> range_t<Dim1>;
+    /**
+     * @brief Loop over all particles.
+     * @returns 1D Kokkos range policy of size of `npart`.
+     */
+    auto rangeAllParticles() -> range_t<Dim1>;
     /**
      * @brief Get the number of active particles.
      */
@@ -144,12 +149,12 @@ namespace ntt {
      * @brief Set the number of particles.
      * @param npart number of particles.
      */
-    void set_npart(const std::size_t& N) { m_npart = N; }
+    void setNpart(const std::size_t& N) { m_npart = N; }
 
     /**
      * @brief Synchronize data from device to host.
      */
-    void synchronizeHostDevice();
+    void SynchronizeHostDevice();
   };
 
 } // namespace ntt

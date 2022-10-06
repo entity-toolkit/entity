@@ -10,15 +10,14 @@ namespace ntt {
    *
    */
   template <Dimension D>
-  void PIC<D>::filterCurrentsSubstep(const real_t&) {
-    CurrentFilter<D> filter(this->m_mblock.cur,
-                            this->m_mblock.cur0,
-                            this->m_mblock,
-                            this->m_sim_params.current_filters());
+  void PIC<D>::FilterCurrentsSubstep(const real_t&) {
+    auto&            mblock = this->meshblock;
+    auto             params = *(this->params());
+    CurrentFilter<D> filter(mblock.cur, mblock.cur0, mblock, params.currentFilters());
     filter.apply();
   }
 } // namespace ntt
 
-template class ntt::PIC<ntt::Dim1>;
-template class ntt::PIC<ntt::Dim2>;
-template class ntt::PIC<ntt::Dim3>;
+template struct ntt::PIC<ntt::Dim1>;
+template struct ntt::PIC<ntt::Dim2>;
+template struct ntt::PIC<ntt::Dim3>;

@@ -14,7 +14,7 @@ namespace ntt {
 
   auto stringifySimulationType(SimulationType sim) -> std::string {
     switch (sim) {
-    case SimulationType::PIC:
+    case TypePIC:
       return "PIC";
     case SimulationType::GRPIC:
       return "GRPIC";

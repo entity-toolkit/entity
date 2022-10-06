@@ -18,12 +18,12 @@ namespace ntt {
   }
 
   template <>
-  void ProblemGenerator<Dim1, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim1, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim1, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim1, TypePIC>&) {}
 
   template <>
-  void ProblemGenerator<Dim2, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim2, SimulationType::PIC>& mblock) {
+  void ProblemGenerator<Dim2, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
 
     real_t sx {mblock.metric.x1_max - mblock.metric.x1_min};
     real_t sy {mblock.metric.x2_max - mblock.metric.x2_min};
@@ -63,11 +63,11 @@ namespace ntt {
   }
 
   template <>
-  void ProblemGenerator<Dim3, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim3, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim3, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim3, TypePIC>&) {}
 
 } // namespace ntt
 
-template struct ntt::ProblemGenerator<ntt::Dim1, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim1, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::TypePIC>;

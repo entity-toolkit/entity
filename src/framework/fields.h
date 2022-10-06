@@ -13,8 +13,7 @@ namespace ntt {
    * @tparam S Simulation type.
    */
   template <Dimension D, SimulationType S>
-  class Fields {
-  public:
+  struct Fields {
     // * * * * * * * * * * * * * * * * * * * *
     // PIC-specific
     // * * * * * * * * * * * * * * * * * * * *
@@ -98,7 +97,7 @@ namespace ntt {
     /**
      * @brief Synchronize data from device to host.
      */
-    void synchronizeHostDevice();
+    void SynchronizeHostDevice();
   };
 
 } // namespace ntt

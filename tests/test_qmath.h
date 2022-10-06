@@ -3,6 +3,8 @@
 
 #include "qmath.h"
 
+#include <doctest.h>
+
 #include <vector>
 
 TEST_CASE("testing qmath AlmostEqual") {

@@ -233,18 +233,18 @@ namespace ntt {
     /**
      * @brief Get the minimum cell size.
      */
-    [[nodiscard]] auto min_cell_size() const -> const real_t& { return m_min_cell_size; }
+    [[nodiscard]] auto minCellSize() const -> const real_t& { return m_min_cell_size; }
 
     /**
      * @brief Set the timestep of the meshblock.
      * @param timestep timestep in physical units.
      */
-    void set_timestep(const real_t& timestep) { m_timestep = timestep; }
+    void setTimestep(const real_t& timestep) { m_timestep = timestep; }
     /**
      * @brief Set the minimum cell size of the meshblock.
      * @param min_cell_size minimum cell size in physical units.
      */
-    void set_min_cell_size(const real_t& min_cell_size) { m_min_cell_size = min_cell_size; }
+    void setMinCellSize(const real_t& min_cell_size) { m_min_cell_size = min_cell_size; }
   };
 
 } // namespace ntt

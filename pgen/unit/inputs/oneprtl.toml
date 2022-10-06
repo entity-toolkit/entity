@@ -10,9 +10,9 @@ boundaries      = ["PERIODIC", "PERIODIC"]
 [algorithm]
 CFL             = 0.9
 correction      = 1.0
-fieldsolver_ON  = false
-deposit_ON      = false
-current_filters = 2
+fieldsolver_ON  = true
+deposit_ON      = true
+current_filters = 0
 
 [units]
 ppc0            = 1.0

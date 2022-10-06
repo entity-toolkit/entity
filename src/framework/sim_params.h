@@ -82,7 +82,7 @@ namespace ntt {
     /**
      * @brief Get the total runtime in physical units.
      */
-    [[nodiscard]] auto total_runtime() const -> const real_t& { return m_total_runtime; }
+    [[nodiscard]] auto totalRuntime() const -> const real_t& { return m_total_runtime; }
     /**
      * @brief Get the fiducial number of particles per cell.
      */
@@ -128,7 +128,7 @@ namespace ntt {
     /**
      * @brief Get the metric parameters.
      */
-    [[nodiscard]] auto metric_parameters() const -> const real_t* {
+    [[nodiscard]] auto metricParameters() const -> const real_t* {
       return m_metric_parameters;
     }
     /**
@@ -138,27 +138,27 @@ namespace ntt {
     /**
      * @brief Get the enable_fieldsolver flag.
      */
-    [[nodiscard]] auto enable_fieldsolver() const -> const bool& {
+    [[nodiscard]] auto fieldsolverEnabled() const -> const bool& {
       return m_enable_fieldsolver;
     }
     /**
      * @brief number of current filter passes
      */
-    [[nodiscard]] auto current_filters() const -> const unsigned short& {
+    [[nodiscard]] auto currentFilters() const -> const unsigned short& {
       return m_current_filters;
     }
     /**
      * @brief Get the enable_deposit flag.
      */
-    [[nodiscard]] auto enable_deposit() const -> const bool& { return m_enable_deposit; }
+    [[nodiscard]] auto depositEnabled() const -> const bool& { return m_enable_deposit; }
     /**
      * @brief Get the output format.
      */
-    [[nodiscard]] auto output_format() const -> const std::string& { return m_output_format; }
+    [[nodiscard]] auto outputFormat() const -> const std::string& { return m_output_format; }
     /**
      * @brief Get the output interval.
      */
-    [[nodiscard]] auto output_interval() const -> const int& { return m_output_interval; }
+    [[nodiscard]] auto outputInterval() const -> const int& { return m_output_interval; }
   };
 
 } // namespace ntt

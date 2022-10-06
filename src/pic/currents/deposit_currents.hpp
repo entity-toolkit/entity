@@ -1,5 +1,5 @@
-#ifndef PIC_CURRENTS_DEPOSIT_H
-#define PIC_CURRENTS_DEPOSIT_H
+#ifndef PIC_DEPOSIT_CURRENTS_H
+#define PIC_DEPOSIT_CURRENTS_H
 
 #include "global.h"
 #include "fields.h"
@@ -19,13 +19,13 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Deposit {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    Particles<D, SimulationType::PIC> m_particles;
-    scatter_ndfield_t<D, 3>           m_scatter_cur;
-    const real_t                      m_charge, m_dt;
-    const std::size_t                 m_i2max;
-    const real_t                      m_sx2;
+  class DepositCurrents_kernel {
+    Meshblock<D, TypePIC>   m_mblock;
+    Particles<D, TypePIC>   m_particles;
+    scatter_ndfield_t<D, 3> m_scatter_cur;
+    const real_t            m_charge, m_dt;
+    const std::size_t       m_i2max;
+    const real_t            m_sx2;
 
   public:
     /**
@@ -36,11 +36,11 @@ namespace ntt {
      * @param charge charge of the species (code units).
      * @param dt Time step.
      */
-    Deposit(const Meshblock<D, SimulationType::PIC>& mblock,
-            const Particles<D, SimulationType::PIC>& particles,
-            const scatter_ndfield_t<D, 3>&           scatter_cur,
-            const real_t&                            charge,
-            const real_t&                            dt)
+    DepositCurrents_kernel(const Meshblock<D, TypePIC>&   mblock,
+                           const Particles<D, TypePIC>&   particles,
+                           const scatter_ndfield_t<D, 3>& scatter_cur,
+                           const real_t&                  charge,
+                           const real_t&                  dt)
       : m_mblock(mblock),
         m_particles(particles),
         m_scatter_cur(scatter_cur),
@@ -53,7 +53,7 @@ namespace ntt {
      * @brief Loop over all active particles and deposit currents.
      * TODO: forward/backward
      */
-    void depositCurrents() {
+    void apply() {
       auto range_policy = Kokkos::RangePolicy<AccelExeSpace>(0, m_particles.npart());
       Kokkos::parallel_for("deposit", range_policy, *this);
     }
@@ -141,7 +141,7 @@ namespace ntt {
       m_mblock.metric.v_Cart2Cntrv(
         xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, vp);
 #endif
-      inv_energy = ONE / PRTL_GAMMA_SR(m_particles, p);
+      inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
 
       // get particle 3-velocity in coordinate basis
       for (short i {0}; i < 3; ++i) {
@@ -150,8 +150,8 @@ namespace ntt {
 
       for (short i {0}; i < static_cast<short>(D); ++i) {
         int I_i;
-        xp_i[i]       = xp_f[i] - m_dt * vp[i];
-        Xi_TO_i(xp_i[i], I_i);
+        xp_i[i] = xp_f[i] - m_dt * vp[i];
+        from_Xi_to_i(xp_i[i], I_i);
 
 #ifndef MINKOWSKI_METRIC
         if constexpr (D == Dim2) {
@@ -175,12 +175,13 @@ namespace ntt {
   };
 
   template <>
-  Inline void Deposit<Dim1>::depositCurrentsFromParticle(const vec_t<Dim3>&        vp,
-                                                         const tuple_t<int, Dim1>& Ip_f,
-                                                         const tuple_t<int, Dim1>& Ip_i,
-                                                         const coord_t<Dim1>&      xp_f,
-                                                         const coord_t<Dim1>&      xp_i,
-                                                         const coord_t<Dim1>& xp_r) const {
+  Inline void
+  DepositCurrents_kernel<Dim1>::depositCurrentsFromParticle(const vec_t<Dim3>&        vp,
+                                                            const tuple_t<int, Dim1>& Ip_f,
+                                                            const tuple_t<int, Dim1>& Ip_i,
+                                                            const coord_t<Dim1>&      xp_f,
+                                                            const coord_t<Dim1>&      xp_i,
+                                                            const coord_t<Dim1>& xp_r) const {
     real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
     real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
     real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};
@@ -211,12 +212,13 @@ namespace ntt {
    * !TODO: fix the conversion to I+di
    */
   template <>
-  Inline void Deposit<Dim2>::depositCurrentsFromParticle(const vec_t<Dim3>&        vp,
-                                                         const tuple_t<int, Dim2>& Ip_f,
-                                                         const tuple_t<int, Dim2>& Ip_i,
-                                                         const coord_t<Dim2>&      xp_f,
-                                                         const coord_t<Dim2>&      xp_i,
-                                                         const coord_t<Dim2>& xp_r) const {
+  Inline void
+  DepositCurrents_kernel<Dim2>::depositCurrentsFromParticle(const vec_t<Dim3>&        vp,
+                                                            const tuple_t<int, Dim2>& Ip_f,
+                                                            const tuple_t<int, Dim2>& Ip_i,
+                                                            const coord_t<Dim2>&      xp_f,
+                                                            const coord_t<Dim2>&      xp_i,
+                                                            const coord_t<Dim2>& xp_r) const {
     real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
     real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
     real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};
@@ -253,12 +255,13 @@ namespace ntt {
   }
 
   template <>
-  Inline void Deposit<Dim3>::depositCurrentsFromParticle(const vec_t<Dim3>&,
-                                                         const tuple_t<int, Dim3>& Ip_f,
-                                                         const tuple_t<int, Dim3>& Ip_i,
-                                                         const coord_t<Dim3>&      xp_f,
-                                                         const coord_t<Dim3>&      xp_i,
-                                                         const coord_t<Dim3>& xp_r) const {
+  Inline void
+  DepositCurrents_kernel<Dim3>::depositCurrentsFromParticle(const vec_t<Dim3>&,
+                                                            const tuple_t<int, Dim3>& Ip_f,
+                                                            const tuple_t<int, Dim3>& Ip_i,
+                                                            const coord_t<Dim3>&      xp_f,
+                                                            const coord_t<Dim3>&      xp_i,
+                                                            const coord_t<Dim3>& xp_r) const {
     real_t Wx1_1 {HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0])};
     real_t Wx1_2 {HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0])};
     real_t Fx1_1 {(xp_r[0] - xp_i[0]) * m_charge / m_dt};

@@ -8,16 +8,15 @@
 
 #include "field_macros.h"
 
-#ifdef MINKOWSKI_METRIC
 namespace ntt {
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in Minkowski space.
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class AmpereMinkowski {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t                            m_coeff;
+  class Ampere_kernel {
+    Meshblock<D, TypePIC> m_mblock;
+    real_t                m_coeff;
 
   public:
     /**
@@ -25,7 +24,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    AmpereMinkowski(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
+    Ampere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
 
     /**
@@ -51,20 +50,20 @@ namespace ntt {
   };
 
   template <>
-  Inline void AmpereMinkowski<Dim1>::operator()(index_t i) const {
+  Inline void Ampere_kernel<Dim1>::operator()(index_t i) const {
     EX2(i) += m_coeff * (BX3(i - 1) - BX3(i));
     EX3(i) += m_coeff * (BX2(i) - BX2(i - 1));
   }
 
   template <>
-  Inline void AmpereMinkowski<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void Ampere_kernel<Dim2>::operator()(index_t i, index_t j) const {
     EX1(i, j) += m_coeff * (BX3(i, j) - BX3(i, j - 1));
     EX2(i, j) += m_coeff * (BX3(i - 1, j) - BX3(i, j));
     EX3(i, j) += m_coeff * (BX1(i, j - 1) - BX1(i, j) + BX2(i, j) - BX2(i - 1, j));
   }
 
   template <>
-  Inline void AmpereMinkowski<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void Ampere_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     EX1(i, j, k)
       += m_coeff * (BX2(i, j, k - 1) - BX2(i, j, k) + BX3(i, j, k) - BX3(i, j - 1, k));
     EX2(i, j, k)
@@ -73,6 +72,4 @@ namespace ntt {
       += m_coeff * (BX1(i, j - 1, k) - BX1(i, j, k) + BX2(i, j, k) - BX2(i - 1, j, k));
   }
 } // namespace ntt
-#endif
-
-#endif
+#endif // PIC_AMPERE_MINKOWSKI_H

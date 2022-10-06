@@ -4,6 +4,8 @@
 #include "global.h"
 #include "timer.h"
 
+#include <doctest.h>
+
 #include <iostream>
 #include <cstddef>
 #include <cmath>

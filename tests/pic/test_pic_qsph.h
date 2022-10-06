@@ -9,6 +9,7 @@
 
 #include "output_csv.h"
 
+#include <doctest.h>
 #include <toml/toml.hpp>
 
 #include <cmath>

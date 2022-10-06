@@ -18,9 +18,9 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class FaradayCurvilinear {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    real_t                            m_coeff;
+  class Faraday_kernel {
+    Meshblock<D, TypePIC> m_mblock;
+    real_t                m_coeff;
 
   public:
     /**
@@ -28,7 +28,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dB/dt = coeff * -curl E.
      */
-    FaradayCurvilinear(const Meshblock<D, SimulationType::PIC>& mblock, const real_t& coeff)
+    Faraday_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
 
     /**
@@ -47,7 +47,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void FaradayCurvilinear<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void Faraday_kernel<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 
@@ -70,7 +70,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void FaradayCurvilinear<Dim3>::operator()(index_t, index_t, index_t) const {
+  Inline void Faraday_kernel<Dim3>::operator()(index_t, index_t, index_t) const {
     // 3d curvilinear faraday not implemented
   }
 } // namespace ntt

@@ -10,8 +10,8 @@
 namespace ntt {
 
   template <>
-  void ProblemGenerator<Dim2, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim2, SimulationType::PIC>& mblock) {
+  void ProblemGenerator<Dim2, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
 
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -31,8 +31,8 @@ namespace ntt {
   }
 
   template <>
-  void ProblemGenerator<Dim2, SimulationType::PIC>::userInitParticles(
-    const SimulationParams&, Meshblock<Dim2, SimulationType::PIC>& mblock) {
+  void ProblemGenerator<Dim2, TypePIC>::userInitParticles(
+    const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
 
     Kokkos::parallel_for(
       "userInitPrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
@@ -57,27 +57,27 @@ namespace ntt {
         // mblock.particles[0].ux2(p) = 6.0;
         // mblock.particles[1].ux3(p) = 0.0;
       });
-    mblock.particles[0].set_npart(1);
-    mblock.particles[1].set_npart(1);
+    mblock.particles[0].setNpart(1);
+    mblock.particles[1].setNpart(1);
   }
   // 1D
   template <>
-  void ProblemGenerator<Dim1, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim1, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim1, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim1, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim1, SimulationType::PIC>::userInitParticles(
-    const SimulationParams&, Meshblock<Dim1, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim1, TypePIC>::userInitParticles(
+    const SimulationParams&, Meshblock<Dim1, TypePIC>&) {}
 
   // 3D
   template <>
-  void ProblemGenerator<Dim3, SimulationType::PIC>::userInitFields(
-    const SimulationParams&, Meshblock<Dim3, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim3, TypePIC>::userInitFields(
+    const SimulationParams&, Meshblock<Dim3, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim3, SimulationType::PIC>::userInitParticles(
-    const SimulationParams&, Meshblock<Dim3, SimulationType::PIC>&) {}
+  void ProblemGenerator<Dim3, TypePIC>::userInitParticles(
+    const SimulationParams&, Meshblock<Dim3, TypePIC>&) {}
 
 } // namespace ntt
 
-template struct ntt::ProblemGenerator<ntt::Dim1, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dim2, ntt::SimulationType::PIC>;
-template struct ntt::ProblemGenerator<ntt::Dim3, ntt::SimulationType::PIC>;
+template struct ntt::ProblemGenerator<ntt::Dim1, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::TypePIC>;

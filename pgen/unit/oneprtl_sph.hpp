@@ -11,14 +11,14 @@ namespace ntt {
   struct ProblemGenerator {
     ProblemGenerator(const SimulationParams&) {}
 
-    void        userInitFields(const SimulationParams&, Meshblock<D, S>&);
-    void        userInitParticles(const SimulationParams&, Meshblock<D, S>&);
-    void        userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
-    Inline auto userTargetField_br_hat(const Meshblock<D, S>&, const coord_t<D>&) const
+    void        UserInitFields(const SimulationParams&, Meshblock<D, S>&);
+    void        UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
+    void        UserBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+    Inline auto UserTargetField_br_hat(const Meshblock<D, S>&, const coord_t<D>&) const
       -> real_t {
       return ZERO;
     }
-    void userDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+    void UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&);
   };
 
 } // namespace ntt
