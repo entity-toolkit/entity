@@ -42,6 +42,11 @@ After the compilation is successful, you will find the corresponding executable 
 
 ## Development status
 
+### Active to-do
+
+  - [ ] Add metric as a template argument
+  - [ ] Add time as a global parameter
+
 ### Short term things to do/fix
 
   - [x] routine for easy side/corner range selection
@@ -102,7 +107,6 @@ All the third-party libraries are added as git submodules. If the code is cloned
 2. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging;
 3. [`doctest`](https://github.com/doctest/doctest): for unit testing (header-only);
 4. [`toml11`](https://github.com/ToruNiina/toml11): for `toml` file parsing (header-only);
-5. [`rapidcsv`](https://github.com/d99kris/rapidcsv): for `csv` file writing (header-only).
 
 > All the third-party libraries reside in the `extern` directory.
 

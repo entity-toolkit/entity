@@ -1,5 +1,5 @@
-#ifndef PIC_CURRENTS_BC_RMAX_H
-#define PIC_CURRENTS_BC_RMAX_H
+#ifndef PIC_CURRENTS_BC_H
+#define PIC_CURRENTS_BC_H
 
 #include "global.h"
 #include "pic.h"
@@ -13,11 +13,11 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class CurrentBC_rmax {
-    Meshblock<D, SimulationType::PIC>        m_mblock;
-    ProblemGenerator<D, SimulationType::PIC> m_pgen;
-    real_t                                   m_rabsorb;
-    real_t                                   m_rmax;
+  class AbsorbCurrents_kernel {
+    Meshblock<D, TypePIC>        m_mblock;
+    ProblemGenerator<D, TypePIC> m_pgen;
+    real_t                       m_rabsorb;
+    real_t                       m_rmax;
 
   public:
     /**
@@ -27,10 +27,10 @@ namespace ntt {
      * @param rabsorb Absorbing radius.
      * @param rmax Maximum radius.
      */
-    CurrentBC_rmax(const Meshblock<D, SimulationType::PIC>&        mblock,
-                   const ProblemGenerator<D, SimulationType::PIC>& pgen,
-                   real_t                                          r_absorb,
-                   real_t                                          r_max)
+    AbsorbCurrents_kernel(const Meshblock<D, TypePIC>&        mblock,
+                          const ProblemGenerator<D, TypePIC>& pgen,
+                          real_t                              r_absorb,
+                          real_t                              r_max)
       : m_mblock {mblock}, m_pgen {pgen}, m_rabsorb {r_absorb}, m_rmax {r_max} {}
     /**
      * @brief 2D implementation of the algorithm.
@@ -41,7 +41,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void CurrentBC_rmax<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void AbsorbCurrents_kernel<Dim2>::operator()(index_t i, index_t j) const {
     real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
     real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
 

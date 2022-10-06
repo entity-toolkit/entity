@@ -43,22 +43,22 @@ auto main(int argc, char* argv[]) -> int {
     cl_args.readCommandLineArguments(argc, argv);
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     // auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
-    auto  inputdata = toml::parse(static_cast<std::string>(inputfilename));
+    auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
     PLOGI << "input file parsed";
-    short res       = static_cast<short>(
+    short res = static_cast<short>(
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
     if (res == 1) {
-      // ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
-      // PLOGI << "1D simulation initialized";
-      // sim.process();
+      ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
+      PLOGI << "1D simulation initialized";
+      sim.Run();
     } else if (res == 2) {
       ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
       PLOGI << "2D simulation initialized";
-      sim.process();
+      sim.Run();
     } else if (res == 3) {
       ntt::SIMULATION_CONTAINER<ntt::Dim3> sim(inputdata);
       PLOGI << "3D simulation initialized";
-      sim.process();
+      sim.Run();
     } else {
       NTTHostError("wrong dimension specified");
     }

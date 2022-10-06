@@ -4,7 +4,6 @@
 #include "definitions.h"
 #include "defaults.h"
 
-#include <plog/Log.h>
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -158,16 +157,5 @@ namespace ntt {
   void WaitAndSynchronize();
 
 } // namespace ntt
-
-namespace plog {
-  /**
-   * @brief Formatter for logging messages.
-   */
-  class NTTFormatter {
-  public:
-    static auto header() -> util::nstring;
-    static auto format(const Record& record) -> util::nstring;
-  };
-} // namespace plog
 
 #endif

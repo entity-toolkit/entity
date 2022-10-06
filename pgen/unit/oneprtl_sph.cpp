@@ -11,18 +11,18 @@
 namespace ntt {
 
   template <>
-  void ProblemGenerator<Dim2, TypePIC>::userInitFields(const SimulationParams&,
+  void ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&,
                                                        Meshblock<Dim2, TypePIC>& mblock) {
 
     Kokkos::parallel_for(
-      "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
+      "UserInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx1) = ZERO;
         mblock.em(i, j, em::bx2) = ZERO;
       });
   }
 
   template <>
-  void ProblemGenerator<Dim2, TypePIC>::userBCFields(const real_t&,
+  void ProblemGenerator<Dim2, TypePIC>::UserBCFields(const real_t&,
                                                      const SimulationParams&,
                                                      Meshblock<Dim2, TypePIC>& mblock) {
     Kokkos::parallel_for(
@@ -36,28 +36,28 @@ namespace ntt {
   }
 
   template <>
-  void ProblemGenerator<Dim2, TypePIC>::userInitParticles(const SimulationParams&,
+  void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(const SimulationParams&,
                                                           Meshblock<Dim2, TypePIC>& mblock) {
-    auto electrons = mblock.particles[0];
-    auto positrons = mblock.particles[1];
+    auto& electrons = mblock.particles[0];
+    auto& positrons = mblock.particles[1];
     Kokkos::parallel_for(
-      "userInitPrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
-        PICPRTL_SPH_2D(mblock, electrons, p, 3.0, ntt::constant::PI * 0.002, 0.0, 0.0, 0.0);
-        PICPRTL_SPH_2D(mblock, positrons, p, 3.0, ntt::constant::PI * 0.002, 0.0, 0.0, 0.0);
+      "UserInitPrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
+        init_prtl_2d_Sph(mblock, electrons, p, 3.0, ntt::constant::PI * 0.002, 0.0, 0.0, 0.0);
+        init_prtl_2d_Sph(mblock, positrons, p, 3.0, ntt::constant::PI * 0.002, 0.0, 0.0, 0.0);
       });
-    mblock.particles[0].set_npart(1);
-    mblock.particles[1].set_npart(1);
+    mblock.particles[0].setNpart(1);
+    mblock.particles[1].setNpart(1);
   }
 
   template <>
-  void ProblemGenerator<Dim2, TypePIC>::userDriveParticles(const real_t& t,
+  void ProblemGenerator<Dim2, TypePIC>::UserDriveParticles(const real_t& t,
                                                            const SimulationParams&,
                                                            Meshblock<Dim2, TypePIC>& mblock) {
     real_t dt = mblock.timestep();
     if (t < 400 * dt) {
       auto electron = mblock.particles[0];
       Kokkos::parallel_for(
-        "userDrivePrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
+        "UserDrivePrtls", CreateRangePolicy<Dim1>({0}, {1}), Lambda(index_t p) {
           real_t vel      = 2.0 * (math::tanh((t - 350.0 * dt) / (100.0 * dt)) + 1.0) / 2.0;
           electron.ux1(p) = vel * math::sin(constant::PI * 0.25);
           electron.ux3(p) = vel * math::cos(constant::PI * 0.25);
@@ -67,33 +67,33 @@ namespace ntt {
 
   // 1D
   template <>
-  void ProblemGenerator<Dim1, TypePIC>::userInitFields(const SimulationParams&,
+  void ProblemGenerator<Dim1, TypePIC>::UserInitFields(const SimulationParams&,
                                                        Meshblock<Dim1, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim1, TypePIC>::userInitParticles(const SimulationParams&,
+  void ProblemGenerator<Dim1, TypePIC>::UserInitParticles(const SimulationParams&,
                                                           Meshblock<Dim1, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim1, TypePIC>::userBCFields(const real_t&,
+  void ProblemGenerator<Dim1, TypePIC>::UserBCFields(const real_t&,
                                                      const SimulationParams&,
                                                      Meshblock<Dim1, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim1, TypePIC>::userDriveParticles(const real_t&,
+  void ProblemGenerator<Dim1, TypePIC>::UserDriveParticles(const real_t&,
                                                            const SimulationParams&,
                                                            Meshblock<Dim1, TypePIC>&) {}
 
   // 3D
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::userInitFields(const SimulationParams&,
+  void ProblemGenerator<Dim3, TypePIC>::UserInitFields(const SimulationParams&,
                                                        Meshblock<Dim3, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::userInitParticles(const SimulationParams&,
+  void ProblemGenerator<Dim3, TypePIC>::UserInitParticles(const SimulationParams&,
                                                           Meshblock<Dim3, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::userBCFields(const real_t&,
+  void ProblemGenerator<Dim3, TypePIC>::UserBCFields(const real_t&,
                                                      const SimulationParams&,
                                                      Meshblock<Dim3, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::userDriveParticles(const real_t&,
+  void ProblemGenerator<Dim3, TypePIC>::UserDriveParticles(const real_t&,
                                                            const SimulationParams&,
                                                            Meshblock<Dim3, TypePIC>&) {}
 

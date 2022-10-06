@@ -21,15 +21,19 @@ namespace ntt {
   class Simulation {
   protected:
     // user-defined and inferred simulation parameters
-    SimulationParams m_sim_params;
+    SimulationParams m_params;
+    // time in physical units
+    real_t m_time {0.0};
+    // time in iteration timesteps
+    std::size_t m_tstep {0};
 
   public:
     // problem setup generator
-    ProblemGenerator<D, S> m_pGen;
+    ProblemGenerator<D, S> problem_generator;
     // meshblock with all the fields / metric / and particles
-    Meshblock<D, S> m_mblock;
+    Meshblock<D, S> meshblock;
     // random number pool
-    RandomNumberPool_t m_random_pool;
+    RandomNumberPool_t random_pool;
 
     /**
      * @brief Constructor for simulation class.
@@ -39,43 +43,35 @@ namespace ntt {
     ~Simulation() = default;
 
     /**
-     * @brief Initialize / allocate all the simulation objects based on the `m_sim_params`.
+     * @brief Initialize / allocate all the simulation objects based on the `m_params`.
      */
-    void initialize();
+    void Initialize();
 
     /**
      * @brief Setup the problem using the problem generator.
      */
-    void initializeSetup();
+    void InitializeSetup();
 
     /**
      * @brief Verify that all the specified parameters are compatible before beginning the
      * simulation.
      */
-    void verify();
+    void Verify();
 
     /**
      * @brief Print all the simulation details using `plog`.
      */
-    void printDetails();
+    void PrintDetails();
 
     /**
      * @brief Finalize the simulation objects.
      */
-    void finalize();
+    void Finalize();
 
     /**
-     * @brief Get pointer to `sim_params`.
+     * @brief Get pointer to `m_params`.
      */
-    [[nodiscard]] auto sim_params() -> SimulationParams* { return &m_sim_params; }
-    /**
-     * @brief Get pointer to `mblock`.
-     */
-    [[nodiscard]] auto mblock() -> Meshblock<D, S>* { return &m_mblock; }
-    /**
-     * @brief Get pointer to `pgen`.
-     */
-    [[nodiscard]] auto pgen() -> ProblemGenerator<D, S>* { return &m_pGen; }
+    [[nodiscard]] auto params() -> SimulationParams* { return &m_params; }
 
     /**
      * @brief Loop over all active cells (disregard ghost cells).
@@ -92,12 +88,12 @@ namespace ntt {
      * @brief Output the simulation data to a file.
      * @param tstep current timestep.
      */
-    void writeOutput(const unsigned long& tstep);
+    void WriteOutput(const unsigned long& tstep);
 
     /**
      * @brief Synchronize data from device to host.
      */
-    void synchronizeHostDevice();
+    void SynchronizeHostDevice();
   };
 
 } // namespace ntt

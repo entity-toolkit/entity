@@ -14,7 +14,7 @@ namespace ntt {
     ndfield_t<D, 3>         m_cur;
     ndfield_t<D, 3>         m_cur_b;
     Mesh<D>                 m_mesh;
-    const unsigned short          m_npasses;
+    const unsigned short    m_npasses;
     tuple_t<std::size_t, D> m_size;
 
     /**
@@ -34,11 +34,11 @@ namespace ntt {
     }
 
     void apply() {
-      for (unsigned short i = 0; i < m_npasses; ++i) {
-        synchronizeGhostZones();
-        Kokkos::deep_copy(m_cur_b, m_cur);
-        filterPass();
-      }
+      // for (unsigned short i = 0; i < m_npasses; ++i) {
+      //   synchronizeGhostZones();
+      //   Kokkos::deep_copy(m_cur_b, m_cur);
+      //   filterPass();
+      // }
     }
 
     /**

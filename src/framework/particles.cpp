@@ -180,12 +180,17 @@ namespace ntt {
     : Particles(spec.label(), spec.mass(), spec.charge(), spec.maxnpart()) {}
 
   template <Dimension D, SimulationType S>
-  auto Particles<D, S>::loopParticles() -> range_t<Dim1> {
+  auto Particles<D, S>::rangeActiveParticles() -> range_t<Dim1> {
     return CreateRangePolicy<Dim1>({0}, {(int)(npart())});
   }
 
   template <Dimension D, SimulationType S>
-  void Particles<D, S>::synchronizeHostDevice() {
+  auto Particles<D, S>::rangeAllParticles() -> range_t<Dim1> {
+    return CreateRangePolicy<Dim1>({0}, {(int)(maxnpart())});
+  }
+
+  template <Dimension D, SimulationType S>
+  void Particles<D, S>::SynchronizeHostDevice() {
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
       Kokkos::deep_copy(i1_h, i1);
       Kokkos::deep_copy(dx1_h, dx1);
@@ -203,9 +208,9 @@ namespace ntt {
 } // namespace ntt
 
 #ifdef PIC_SIMTYPE
-template struct ntt::Particles<ntt::Dim1, ntt::SimulationType::PIC>;
-template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::PIC>;
-template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::PIC>;
+template struct ntt::Particles<ntt::Dim1, ntt::TypePIC>;
+template struct ntt::Particles<ntt::Dim2, ntt::TypePIC>;
+template struct ntt::Particles<ntt::Dim3, ntt::TypePIC>;
 #elif defined(GRPIC_SIMTYPE)
 template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::GRPIC>;
 template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::GRPIC>;

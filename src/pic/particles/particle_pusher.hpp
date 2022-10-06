@@ -1,5 +1,5 @@
-#ifndef PIC_PARTICLES_PUSHER_H
-#define PIC_PARTICLES_PUSHER_H
+#ifndef PIC_PARTICLE_PUSHER_H
+#define PIC_PARTICLE_PUSHER_H
 
 #include "global.h"
 #include "fields.h"
@@ -11,6 +11,7 @@
 #include "particle_macros.h"
 
 #include <stdexcept>
+#include <iostream>
 
 namespace ntt {
   struct Boris_t {};
@@ -21,10 +22,10 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Pusher {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    Particles<D, SimulationType::PIC> m_particles;
-    real_t                            m_coeff, m_dt;
+  class Pusher_kernel {
+    Meshblock<D, TypePIC> m_mblock;
+    Particles<D, TypePIC> m_particles;
+    real_t                m_coeff, m_dt;
 
   public:
     /**
@@ -34,16 +35,16 @@ namespace ntt {
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      * @param dt Time step.
      */
-    Pusher(const Meshblock<D, SimulationType::PIC>& mblock,
-           const Particles<D, SimulationType::PIC>& particles,
-           const real_t&                            coeff,
-           const real_t&                            dt)
+    Pusher_kernel(const Meshblock<D, TypePIC>& mblock,
+                  const Particles<D, TypePIC>& particles,
+                  const real_t&                coeff,
+                  const real_t&                dt)
       : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
     /**
      * @brief Loop over all active particles of the given species and call the appropriate
      * pusher.
      */
-    void pushParticles() {
+    void apply() {
       if (m_particles.pusher() == ParticlePusher::PHOTON) {
         // push photons
         auto range_policy
@@ -80,7 +81,7 @@ namespace ntt {
         BorisUpdate(p, e_int_Cart, b_int_Cart);
 
         real_t inv_energy;
-        inv_energy = ONE / PRTL_GAMMA_SR(m_particles, p);
+        inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
 
         // contravariant 3-velocity: u^i / gamma
         vec_t<Dim3> v;
@@ -111,7 +112,7 @@ namespace ntt {
           xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
 
         real_t inv_energy;
-        inv_energy = ONE / math::sqrt(PRTL_USQR_SR(m_particles, p));
+        inv_energy = ONE / math::sqrt(get_prtl_Usqr_SR(m_particles, p));
         v[0] *= inv_energy;
         v[1] *= inv_energy;
         v[2] *= inv_energy;
@@ -172,43 +173,43 @@ namespace ntt {
 
 #ifdef MINKOWSKI_METRIC
   template <>
-  Inline void Pusher<Dim1>::getParticleCoordinate(index_t& p, coord_t<Dim1>& xp) const {
-    xp[0] = PRTL_X1(m_particles, p);
+  Inline void Pusher_kernel<Dim1>::getParticleCoordinate(index_t& p, coord_t<Dim1>& xp) const {
+    xp[0] = get_prtl_x1(m_particles, p);
   }
   template <>
-  Inline void Pusher<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim2>& xp) const {
-    xp[0] = PRTL_X1(m_particles, p);
-    xp[1] = PRTL_X2(m_particles, p);
+  Inline void Pusher_kernel<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim2>& xp) const {
+    xp[0] = get_prtl_x1(m_particles, p);
+    xp[1] = get_prtl_x2(m_particles, p);
   }
 #else
   template <>
-  Inline void Pusher<Dim1>::getParticleCoordinate(index_t&, coord_t<Dim3>&) const {
+  Inline void Pusher_kernel<Dim1>::getParticleCoordinate(index_t&, coord_t<Dim3>&) const {
     NTTError("not implemented");
   }
   template <>
-  Inline void Pusher<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
-    xp[0] = PRTL_X1(m_particles, p);
-    xp[1] = PRTL_X2(m_particles, p);
+  Inline void Pusher_kernel<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
+    xp[0] = get_prtl_x1(m_particles, p);
+    xp[1] = get_prtl_x2(m_particles, p);
     xp[2] = m_particles.phi(p);
   }
 #endif
 
   template <>
-  Inline void Pusher<Dim3>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
-    xp[0] = PRTL_X1(m_particles, p);
-    xp[1] = PRTL_X2(m_particles, p);
-    xp[2] = PRTL_X3(m_particles, p);
+  Inline void Pusher_kernel<Dim3>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
+    xp[0] = get_prtl_x1(m_particles, p);
+    xp[1] = get_prtl_x2(m_particles, p);
+    xp[2] = get_prtl_x3(m_particles, p);
   }
 
   // * * * * * * * * * * * * * * *
   // General position update
   // * * * * * * * * * * * * * * *
   template <>
-  Inline void Pusher<Dim1>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
+  Inline void Pusher_kernel<Dim1>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
   }
   template <>
-  Inline void Pusher<Dim2>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
+  Inline void Pusher_kernel<Dim2>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
 #ifndef MINKOWSKI_METRIC
@@ -216,14 +217,14 @@ namespace ntt {
 #endif
   }
   template <>
-  Inline void Pusher<Dim3>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
+  Inline void Pusher_kernel<Dim3>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
     positionUpdate_x1(p, v[0]);
     positionUpdate_x2(p, v[1]);
     positionUpdate_x3(p, v[2]);
   }
 
   template <Dimension D>
-  Inline void Pusher<D>::positionUpdate_x1(index_t& p, const real_t& vx1) const {
+  Inline void Pusher_kernel<D>::positionUpdate_x1(index_t& p, const real_t& vx1) const {
     m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
     int   temp_i {static_cast<int>(m_particles.dx1(p))};
     float temp_r {math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i))
@@ -233,7 +234,7 @@ namespace ntt {
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
   }
   template <Dimension D>
-  Inline void Pusher<D>::positionUpdate_x2(index_t& p, const real_t& vx2) const {
+  Inline void Pusher_kernel<D>::positionUpdate_x2(index_t& p, const real_t& vx2) const {
     m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
     int   temp_i {static_cast<int>(m_particles.dx2(p))};
     float temp_r {math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i))
@@ -243,7 +244,7 @@ namespace ntt {
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
   }
   template <Dimension D>
-  Inline void Pusher<D>::positionUpdate_x3(index_t& p, const real_t& vx3) const {
+  Inline void Pusher_kernel<D>::positionUpdate_x3(index_t& p, const real_t& vx3) const {
     m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
     int   temp_i {static_cast<int>(m_particles.dx3(p))};
     float temp_r {math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i))
@@ -257,7 +258,8 @@ namespace ntt {
   // Boris velocity update
   // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void Pusher<D>::BorisUpdate(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
+  Inline void
+  Pusher_kernel<D>::BorisUpdate(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     real_t COEFF {m_coeff};
 
     e0[0] *= COEFF;
@@ -290,7 +292,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   template <>
   Inline void
-  Pusher<Dim1>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
+  Pusher_kernel<Dim1>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
 
@@ -328,7 +330,7 @@ namespace ntt {
 
   template <>
   Inline void
-  Pusher<Dim2>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
+  Pusher_kernel<Dim2>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};
@@ -392,7 +394,7 @@ namespace ntt {
 
   template <>
   Inline void
-  Pusher<Dim3>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
+  Pusher_kernel<Dim3>::interpolateFields(index_t& p, vec_t<Dim3>& e0, vec_t<Dim3>& b0) const {
     const auto   i {m_particles.i1(p) + N_GHOSTS};
     const real_t dx1 {static_cast<real_t>(m_particles.dx1(p))};
     const auto   j {m_particles.i2(p) + N_GHOSTS};

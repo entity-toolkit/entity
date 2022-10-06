@@ -12,9 +12,9 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class ResetParticles {
-    Meshblock<D, SimulationType::PIC> m_mblock;
-    Particles<D, SimulationType::PIC> m_particles;
+  class ResetParticles_kernel {
+    Meshblock<D, TypePIC> m_mblock;
+    Particles<D, TypePIC> m_particles;
 
   public:
     /**
@@ -22,17 +22,10 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param particles Particles.
      */
-    ResetParticles(const Meshblock<D, SimulationType::PIC>& mblock,
-                   const Particles<D, SimulationType::PIC>& particles)
+    ResetParticles_kernel(const Meshblock<D, TypePIC>& mblock,
+                          const Particles<D, TypePIC>& particles)
       : m_mblock(mblock), m_particles(particles) {}
 
-    /**
-     * @brief Calling the loop over all particles.
-     */
-    void resetParticles() {
-      auto range_policy = Kokkos::RangePolicy<AccelExeSpace>(0, m_particles.maxnpart());
-      Kokkos::parallel_for("reset_particles", range_policy, *this);
-    }
     /**
      * @brief Loop iteration.
      * @param p index
@@ -64,15 +57,15 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class ResetCurrents {
-    Meshblock<D, SimulationType::PIC> m_mblock;
+  class ResetCurrents_kernel {
+    Meshblock<D, TypePIC> m_mblock;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    ResetCurrents(const Meshblock<D, SimulationType::PIC>& mblock) : m_mblock {mblock} {}
+    ResetCurrents_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock {mblock} {}
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.
@@ -94,7 +87,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void ResetCurrents<Dim1>::operator()(index_t i) const {
+  Inline void ResetCurrents_kernel<Dim1>::operator()(index_t i) const {
     JX1(i)  = ZERO;
     JX2(i)  = ZERO;
     JX3(i)  = ZERO;
@@ -104,7 +97,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void ResetCurrents<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void ResetCurrents_kernel<Dim2>::operator()(index_t i, index_t j) const {
     JX1(i, j)  = ZERO;
     JX2(i, j)  = ZERO;
     JX3(i, j)  = ZERO;
@@ -114,7 +107,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void ResetCurrents<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void ResetCurrents_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     JX1(i, j, k)  = ZERO;
     JX2(i, j, k)  = ZERO;
     JX3(i, j, k)  = ZERO;
@@ -128,15 +121,15 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class ResetFields {
-    Meshblock<D, SimulationType::PIC> m_mblock;
+  class ResetFields_kernel {
+    Meshblock<D, TypePIC> m_mblock;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    ResetFields(const Meshblock<D, SimulationType::PIC>& mblock) : m_mblock {mblock} {}
+    ResetFields_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock {mblock} {}
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.
@@ -158,7 +151,7 @@ namespace ntt {
   };
 
   template <>
-  Inline void ResetFields<Dim1>::operator()(index_t i) const {
+  Inline void ResetFields_kernel<Dim1>::operator()(index_t i) const {
     EX1(i) = ZERO;
     EX2(i) = ZERO;
     EX3(i) = ZERO;
@@ -168,7 +161,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void ResetFields<Dim2>::operator()(index_t i, index_t j) const {
+  Inline void ResetFields_kernel<Dim2>::operator()(index_t i, index_t j) const {
     EX1(i, j) = ZERO;
     EX2(i, j) = ZERO;
     EX3(i, j) = ZERO;
@@ -178,7 +171,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void ResetFields<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void ResetFields_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     EX1(i, j, k) = ZERO;
     EX2(i, j, k) = ZERO;
     EX3(i, j, k) = ZERO;

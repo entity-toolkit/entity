@@ -1,5 +1,4 @@
 #define DOCTEST_CONFIG_IMPLEMENT
-#include <doctest.h>
 
 #ifdef MINKOWSKI_METRIC
 
@@ -31,32 +30,34 @@
 #include <plog/Log.h>
 #include <plog/Initializers/RollingFileInitializer.h>
 
+#include <doctest.h>
+
 #include <stdexcept>
+
 auto main(int argc, char* argv[]) -> int {
-  return -1;
-//   doctest::Context context;
-//   int              res;
+  plog::init(plog::info, "test.log");
 
-//   Kokkos::initialize();
-//   {
-//     plog::init(plog::info, "test.log");
+  doctest::Context context;
+  int              res;
 
-// // @HACK
-// // #ifdef GPUENABLED
-// //     throw std::runtime_error("tests should be done on CPUs");
-// // #endif
+  Kokkos::initialize();
+  {
+    // @HACK
+    // #ifdef GPUENABLED
+    //     throw std::runtime_error("tests should be done on CPUs");
+    // #endif
 
-//     context.setOption("order-by", "none");
+    context.setOption("order-by", "none");
 
-//     context.applyCommandLine(argc, argv);
+    context.applyCommandLine(argc, argv);
 
-//     context.setOption("no-intro", true);
-//     context.setOption("no-version", true);
+    context.setOption("no-intro", true);
+    context.setOption("no-version", true);
 
-//     res = context.run();
+    res = context.run();
 
-//     if (context.shouldExit()) { return res; }
-//   }
-//   Kokkos::finalize();
-//   return res;
+    if (context.shouldExit()) { return res; }
+  }
+  Kokkos::finalize();
+  return res;
 }
