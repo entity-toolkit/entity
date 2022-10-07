@@ -1,7 +1,7 @@
 #ifndef PIC_CURRENTS_BC_H
 #define PIC_CURRENTS_BC_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "pic.h"
 #include "problem_generator.hpp"
 

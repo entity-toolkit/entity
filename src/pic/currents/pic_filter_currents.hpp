@@ -1,7 +1,7 @@
 #ifndef PIC_FILTER_CURRENTS_H
 #define PIC_FILTER_CURRENTS_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "pic.h"
 
 namespace ntt {

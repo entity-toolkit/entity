@@ -1,7 +1,7 @@
 #ifndef PIC_PARTICLE_PUSHER_H
 #define PIC_PARTICLE_PUSHER_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "fields.h"
 #include "particles.h"
 #include "meshblock.h"

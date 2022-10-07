@@ -1,14 +1,14 @@
 #ifndef FRAMEWORK_METRICS_MINKOWSKI_H
 #define FRAMEWORK_METRICS_MINKOWSKI_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "metric_base.h"
 
 #include <cmath>
 
 namespace ntt {
   /**
-   * Metric metric (cartesian system): diag(-1, 1, 1, 1).
+   * Flat metric (cartesian system): diag(-1, 1, 1, 1).
    * Cell sizes in each direction dx1 = dx2 = dx3 are equal.
    *
    * @tparam D dimension.

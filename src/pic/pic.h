@@ -1,7 +1,7 @@
 #ifndef PIC_PIC_H
 #define PIC_PIC_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "simulation.h"
 
 #include <toml/toml.hpp>

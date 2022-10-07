@@ -1,7 +1,7 @@
 #ifndef IO_OUTPUT_CSV_H
 #define IO_OUTPUT_CSV_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "fields.h"
 #include "meshblock.h"
 

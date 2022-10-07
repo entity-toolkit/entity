@@ -1,0 +1,12 @@
+file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+list(REMOVE_ITEM SRC_FILES ${PGENS})
+list(APPEND SRC_FILES ${PGEN_SRC})
+
+target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/fields)
+target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/currents)
+target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/particles)
+target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/boundaries)
+target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/exchange)
+target_sources(${PICSIM} PRIVATE ${SRC_FILES})
+target_link_libraries(${PICSIM} PRIVATE Kokkos::kokkos ${FRAMEWORK} ${WRAPPER})
