@@ -3,7 +3,7 @@
     "myDefaultIncludePath": [
       "${workspaceFolder}",
       "${workspaceFolder}/src/**",
-      "${workspaceFolder}/build/",
+      "${workspaceFolder}/build/src/",
       "${workspaceFolder}/extern/**"
     ],
     "myCompilerPath": "/usr/bin/g++"
@@ -31,8 +31,7 @@
       ],
       "browse": {
         "path": [
-          "${workspaceFolder}",
-          "${workspaceFolder}/build/src"
+          "${workspaceFolder}"
         ],
         "limitSymbolsToIncludedHeaders": true,
         "databaseFilename": ""

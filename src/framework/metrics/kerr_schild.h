@@ -157,7 +157,7 @@ namespace ntt {
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
-#include "metric_nondiag_vtrans.h"
+#include "nondiag_vtrans.h"
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
