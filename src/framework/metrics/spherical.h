@@ -104,8 +104,8 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "metric_diag_vtrans.h"
-#include "metric_sph_vtrans.h"
+#include "diag_vtrans.h"
+#include "sph_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
