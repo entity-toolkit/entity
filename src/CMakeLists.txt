@@ -1,7 +1,8 @@
-set(FRAMEWORK ${PROJECT_NAME}-framework)
-set(MAIN ${PROJECT_NAME})
-set(PICSIM ${PROJECT_NAME}-pic)
 set(WRAPPER ${PROJECT_NAME}-wrapper)
+set(FRAMEWORK ${PROJECT_NAME}-framework)
+set(PICSIM ${PROJECT_NAME}-pic)
+
+set(ENTITY ${PROJECT_NAME}.xc)
 
 set(EXTERN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../extern)
 
@@ -51,6 +52,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wrapper wrapper)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/framework framework)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/pic pic)
 
-add_executable(${MAIN} entity.cpp)
-target_link_libraries(${MAIN} PRIVATE Kokkos::kokkos ${WRAPPER} ${FRAMEWORK} ${PICSIM})
-target_include_directories(${MAIN} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pic)
+add_executable(${ENTITY} entity.cpp)
+target_link_libraries(${ENTITY} PRIVATE Kokkos::kokkos ${WRAPPER} ${FRAMEWORK} ${PICSIM})
+target_include_directories(${ENTITY} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pic)
