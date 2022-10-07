@@ -1,6 +1,6 @@
-#include "vis.h"
-#include "api.h"
-#include "tools.h"
+#include "nttiny/vis.h"
+#include "nttiny/api.h"
+#include "nttiny/tools.h"
 
 #include "wrapper.h"
 #include "cargs.h"
@@ -42,11 +42,11 @@ public:
                                           ? nttiny::Coord::Cartesian
                                           : nttiny::Coord::Spherical,
                                         {sim.meshblock.Ni1(), sim.meshblock.Ni2()},
-                                        ntt::N_GHOSTS},
+                                        N_GHOSTS},
 #elif defined(GRPIC_SIMTYPE)
     : nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
                                         {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
-                                        ntt::N_GHOSTS},
+                                        N_GHOSTS},
 #endif
       sx1 {sim.meshblock.Ni1()},
       sx2 {sim.meshblock.Ni2()},
@@ -302,16 +302,16 @@ public:
     }
   }
   void stepFwd() override {
-    m_sim.StepForward(m_time);
+    m_sim.StepForward();
     ++m_timestep;
     m_time += m_sim.meshblock.timestep();
   }
   void restart() override {
-    m_sim.ResetCurrents(ZERO);
-    m_sim.ResetFields(ZERO);
-    m_sim.ResetParticles(ZERO);
+    m_sim.ResetCurrents();
+    m_sim.ResetFields();
+    m_sim.ResetParticles();
     m_sim.InitializeSetup();
-    m_sim.InitialStep(ZERO);
+    m_sim.InitialStep();
     setData();
     m_time     = 0.0;
     m_timestep = 0;
@@ -425,7 +425,7 @@ auto main(int argc, char* argv[]) -> int {
     sim.InitializeSetup();
     sim.Verify();
     sim.PrintDetails();
-    sim.InitialStep(ZERO);
+    sim.InitialStep();
     NTTSimulationVis visApi(sim, fields_to_plot);
 
     nttiny::Visualization<real_t, 2> vis {scale};

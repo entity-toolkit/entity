@@ -22,15 +22,13 @@ namespace ntt {
 
     /**
      * @brief Advance the simulation forward for one timestep.
-     * @param t time in physical units
      */
-    void StepForward(const real_t& t);
+    void StepForward();
 
     /**
      * @brief Advance the simulation forward for one timestep.
-     * @param t time in physical units
      */
-    void StepBackward(const real_t& t);
+    void StepBackward();
 
     /**
      * @brief Run the simulation (calling initialize, verify, mainloop, etc).
@@ -39,9 +37,8 @@ namespace ntt {
 
     /**
      * @brief Dummy function to match with GRPIC
-     * @param time in physical units
      */
-    void InitialStep(const real_t&) {}
+    void InitialStep() {}
 
     /* ---------------------------------- Reset --------------------------------- */
     /**

@@ -28,7 +28,7 @@ namespace ntt {
       for (unsigned long ti {0}; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
-        StepForward(this->m_time);
+        StepForward();
         Simulation<D, TypePIC>::WriteOutput(ti);
       }
       WaitAndSynchronize();
@@ -47,7 +47,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::StepForward(const real_t& time) {
+  void PIC<D>::StepForward() {
     TimerCollection timers(
       {"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User"});
     auto  params = *(this->params());
@@ -71,7 +71,7 @@ namespace ntt {
       timers.stop(4);
 
       timers.start(6);
-      pgen.UserDriveParticles(time, params, mblock);
+      pgen.UserDriveParticles(this->m_time, params, mblock);
       timers.stop(6);
 
       timers.start(5);
@@ -88,7 +88,7 @@ namespace ntt {
         CurrentsBoundaryConditions();
         timers.stop(2);
 
-        FilterCurrentsSubstep(time);
+        FilterCurrentsSubstep(this->m_time);
         timers.stop(3);
       }
 
@@ -129,7 +129,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::StepBackward(const real_t&) {}
+  void PIC<D>::StepBackward() {}
 } // namespace ntt
 
 template struct ntt::PIC<ntt::Dim1>;
