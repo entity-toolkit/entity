@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME entity-demo)
+set(PROJECT_NAME entity)
 
-project(${PROJECT_NAME} 
-        VERSION 0.0.1
+project(${PROJECT_NAME}
+        VERSION 0.8.0
         LANGUAGES CXX
 )
 

@@ -43,7 +43,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/io)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/utils)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/metrics/aux)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/vec_transforms)
 include_directories(${EXTERN_DIR})
 include_directories(${EXTERN_DIR}/plog/include)
 
