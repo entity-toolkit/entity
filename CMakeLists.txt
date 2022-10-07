@@ -76,7 +76,6 @@ if (${nttiny} STREQUAL "ON")
 endif()
 
 # ----------------------------- Kokkos settings ---------------------------- #
-
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
 
 # set memory space
@@ -101,6 +100,13 @@ if(${Kokkos_ENABLE_OPENMP})
   set(HOST_EXE_SPACE Kokkos::OpenMP)
 else()
   set(HOST_EXE_SPACE Kokkos::Serial)
+endif()
+
+# ----------------------------- Adios2 settings ---------------------------- #
+set(ENABLE_OUTPUT ON CACHE BOOL "Enable output")
+if (${ENABLE_OUTPUT} STREQUAL "ON")
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
+  set(BUILD_TESTING OFF CACHE BOOL "Build adios2 tests")
 endif()
 
 # ------------------------------- Main source ------------------------------ #
