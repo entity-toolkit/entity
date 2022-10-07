@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "timer.h"
 
 #include <string>

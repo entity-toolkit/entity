@@ -1,7 +1,7 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "sim_params.h"
 #include "meshblock.h"
 

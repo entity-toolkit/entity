@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "input.h"
 #include "sim_params.h"
 #include "meshblock.h"

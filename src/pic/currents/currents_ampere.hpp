@@ -1,7 +1,7 @@
 #ifndef PIC_CURRENTS_AMPERE_H
 #define PIC_CURRENTS_AMPERE_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "pic.h"
 
 #include "field_macros.h"

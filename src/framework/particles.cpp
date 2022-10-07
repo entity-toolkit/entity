@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "particles.h"
 
 #include <string>

@@ -18,3 +18,7 @@
 	path = extern/kokkos
 	url = git@github.com:kokkos/kokkos.git
 	branch = master
+[submodule "extern/adios2"]
+	path = extern/adios2
+	url = git@github.com:ornladios/ADIOS2.git
+	branch = master

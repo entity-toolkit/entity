@@ -1,7 +1,7 @@
 #ifndef TEST_EXTERN_KOKKOS_H
 #define TEST_EXTERN_KOKKOS_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "timer.h"
 
 #include <doctest.h>

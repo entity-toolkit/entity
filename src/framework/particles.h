@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_PARTICLES_H
 #define FRAMEWORK_PARTICLES_H
 
-#include "global.h"
+#include "wrapper.h"
 
 #include <cstddef>
 #include <string>

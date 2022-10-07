@@ -1,8 +1,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include "config.h"
 #include "definitions.h"
-#include "defaults.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
@@ -14,79 +14,20 @@
 #include <string>
 #include <iomanip>
 
-// Kokkos-specific flags
+// clang-format off
+#define AccelExeSpace @ACC_EXE_SPACE@
+#define AccelMemSpace @ACC_MEM_SPACE@
+
+#define HostExeSpace  @HOST_EXE_SPACE@
+#define HostMemSpace  @HOST_MEM_SPACE@
+// clang-format on
+
 #define Lambda KOKKOS_LAMBDA
 #define Inline KOKKOS_INLINE_FUNCTION
-
-// Defining Kokkos execution/memory space aliases
-#if !defined(GPUENABLED) && defined(OMPENABLED)
-#  define AccelExeSpace Kokkos::OpenMP
-#  define AccelMemSpace Kokkos::HostSpace
-#elif defined(GPUENABLED)
-#  define AccelExeSpace Kokkos::Cuda
-#  define AccelMemSpace Kokkos::CudaSpace
-#else
-#  define AccelExeSpace Kokkos::Serial
-#  define AccelMemSpace Kokkos::HostSpace
-#endif
-
-#define HostMemSpace Kokkos::HostSpace
-#if defined(OMPENABLED)
-#  define HostExeSpace Kokkos::OpenMP
-#else
-#  define HostExeSpace Kokkos::Serial
-#endif
-
-#define NTTHostError(msg)                                                                     \
-  throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                     \
-                           "line: " LINE_STRING)
-
-#if defined(GPUENABLED)
-#  define NTTError(msg) ({})
-#else
-#  define NTTError(msg) NTTHostError(msg)
-#endif
 
 namespace math = Kokkos;
 
 namespace ntt {
-  // Defining specific code configurations as enum classes
-  enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
-  enum class SimulationType { UNDEFINED, PIC, GRPIC, FORCE_FREE, MHD };
-  enum class BoundaryCondition { UNDEFINED, PERIODIC, USER, OPEN, COMM };
-  enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
-
-  inline constexpr auto Dim1      = Dimension::ONE_D;
-  inline constexpr auto Dim2      = Dimension::TWO_D;
-  inline constexpr auto Dim3      = Dimension::THREE_D;
-  inline constexpr auto TypePIC   = SimulationType::PIC;
-  inline constexpr auto TypeGRPIC = SimulationType::GRPIC;
-
-  // Defining stringify functions for enum classes
-  auto stringifySimulationType(SimulationType sim) -> std::string;
-  auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string;
-  auto stringifyParticlePusher(ParticlePusher pusher) -> std::string;
-
-  // Number of ghost zones to be used (compile-time enforced)
-  inline constexpr int N_GHOSTS = 2;
-
-  /* -------------------------------------------------------------------------- */
-  /*                                Type aliases                                */
-  /* -------------------------------------------------------------------------- */
-  // ND coordinate alias
-  template <typename T, Dimension D>
-  using tuple_t = T[static_cast<short>(D)];
-
-  // ND coordinate alias
-  template <Dimension D>
-  using coord_t = tuple_t<real_t, D>;
-
-  // ND vector alias
-  template <Dimension D>
-  using vec_t = tuple_t<real_t, D>;
-
-  using index_t = const std::size_t;
-
   // Array alias of arbitrary type
   template <typename T>
   using array_t = Kokkos::View<T, AccelMemSpace>;

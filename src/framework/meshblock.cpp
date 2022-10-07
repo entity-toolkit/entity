@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "meshblock.h"
 #include "particles.h"
 

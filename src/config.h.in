@@ -1,0 +1,34 @@
+#ifndef CONFIG_H
+#  define CONFIG_H
+
+#  include <stdexcept>
+
+#  define STRINGIZE(x)        STRINGIZE_DETAIL(x)
+#  define STRINGIZE_DETAIL(x) #  x
+#  define LINE_STRING         STRINGIZE(__LINE__)
+
+#  define NTTHostError(msg)                                                                   \
+    throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                   \
+                             "line: " LINE_STRING)
+
+#  if defined(GPUENABLED)
+#    define NTTError(msg) ({})
+#  else
+#    define NTTError(msg) NTTHostError(msg)
+#  endif
+
+// Defining precision-based constants and types
+#  ifdef SINGLE_PRECISION
+using real_t = float;
+#  else
+using real_t = double;
+#  endif
+
+inline constexpr int N_GHOSTS = 2;
+
+// clang-format off
+#define @SIMTYPE_FLAG@
+#define @METRIC_FLAG@
+// clang-format on
+
+#endif

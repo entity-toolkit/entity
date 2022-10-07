@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "qmath.h"
 #include "sim_params.h"
 #include "input.h"

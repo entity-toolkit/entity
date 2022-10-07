@@ -2,7 +2,7 @@
 #include "api.h"
 #include "tools.h"
 
-#include "global.h"
+#include "wrapper.h"
 #include "cargs.h"
 #include "input.h"
 

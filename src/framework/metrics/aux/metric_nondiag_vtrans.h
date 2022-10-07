@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_AUX_NONDIAG_VTRANS_H
 #define FRAMEWORK_AUX_NONDIAG_VTRANS_H
 
-#include "global.h"
+#include "wrapper.h"
 
 /**
  * Compute the square root of the determinant of h-matrix.

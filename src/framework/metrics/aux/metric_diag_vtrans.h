@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_AUX_DIAG_VTRANS_H
 #define FRAMEWORK_AUX_DIAG_VTRANS_H
 
-#include "global.h"
+#include "wrapper.h"
 
 /**
  * Vector conversion from hatted to contravariant basis.

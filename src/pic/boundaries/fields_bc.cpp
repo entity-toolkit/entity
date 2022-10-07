@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "pic.h"
 
 #ifndef MINKOWSKI_METRIC

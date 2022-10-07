@@ -1,6 +1,6 @@
-#include "global.h"
+#include "wrapper.h"
 #include "pic.h"
-#include "current_filter.hpp"
+// #include "current_filter.hpp"
 // #include "pic_filter_currents.hpp"
 
 namespace ntt {
@@ -11,10 +11,10 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::FilterCurrentsSubstep(const real_t&) {
-    auto&            mblock = this->meshblock;
-    auto             params = *(this->params());
-    CurrentFilter<D> filter(mblock.cur, mblock.cur0, mblock, params.currentFilters());
-    filter.apply();
+    // auto&            mblock = this->meshblock;
+    // auto             params = *(this->params());
+    // CurrentFilter<D> filter(mblock.cur, mblock.cur0, mblock, params.currentFilters());
+    // filter.apply();
   }
 } // namespace ntt
 
