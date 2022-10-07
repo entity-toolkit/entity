@@ -56,7 +56,7 @@ if (${DEBUG} STREQUAL "OFF")
   set(Kokkos_ENABLE_DEBUG OFF)
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF)
   set(CMAKE_BUILD_TYPE Release)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -DNDEBUG")
   message(STATUS "Release mode")
 else()
   set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF)
@@ -64,10 +64,17 @@ else()
   set(Kokkos_ENABLE_DEBUG ON)
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK ON)
   set(CMAKE_BUILD_TYPE Debug)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
   message(STATUS "Debug mode")
 endif()
+
+# ----------------------------------- GUI ---------------------------------- #
+set(nttiny OFF CACHE BOOL "Use nttiny GUI")
+if (${nttiny} STREQUAL "ON")
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny nttiny)
+endif()
+
 # ----------------------------- Kokkos settings ---------------------------- #
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
@@ -98,3 +105,5 @@ endif()
 
 # ------------------------------- Main source ------------------------------ #
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/report.cmake)
