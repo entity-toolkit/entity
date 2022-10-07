@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "simulation.h"
 #include "metric.h"
 
@@ -9,8 +9,45 @@
 #include <toml/toml.hpp>
 
 #include <stdexcept>
+#include <string>
 
 namespace ntt {
+  auto stringifySimulationType(const SimulationType& sim) -> std::string {
+    switch (sim) {
+    case TypePIC:
+      return "PIC";
+    case SimulationType::GRPIC:
+      return "GRPIC";
+    default:
+      return "N/A";
+    }
+  }
+  auto stringifyBoundaryCondition(const BoundaryCondition& bc) -> std::string {
+    switch (bc) {
+    case BoundaryCondition::PERIODIC:
+      return "Periodic";
+    case BoundaryCondition::OPEN:
+      return "Open";
+    case BoundaryCondition::USER:
+      return "User";
+    case BoundaryCondition::COMM:
+      return "Communicate";
+    default:
+      return "N/A";
+    }
+  }
+  auto stringifyParticlePusher(const ParticlePusher& pusher) -> std::string {
+    switch (pusher) {
+    case ParticlePusher::BORIS:
+      return "Boris";
+    case ParticlePusher::VAY:
+      return "Vay";
+    case ParticlePusher::PHOTON:
+      return "Photon";
+    default:
+      return "N/A";
+    }
+  }
 
   template <Dimension D, SimulationType S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
@@ -20,7 +57,7 @@ namespace ntt {
                  m_params.extent(),
                  m_params.metricParameters(),
                  m_params.species()},
-      random_pool {RandomSeed} {
+      random_pool {constant::RandomSeed} {
     meshblock.random_pool_ptr = &random_pool;
   }
 
@@ -137,7 +174,7 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::WriteOutput(const unsigned long& tstep) {
     WaitAndSynchronize();
-    auto output_format = m_params.outputFormat();
+    auto output_format   = m_params.outputFormat();
     auto output_interval = m_params.outputInterval();
     if (output_format == "disabled") {
       return;

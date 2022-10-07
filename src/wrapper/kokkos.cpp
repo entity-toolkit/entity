@@ -1,59 +1,10 @@
-#include "global.h"
+#include "wrapper.h"
+#include "definitions.h"
 
-#include <plog/Log.h>
 #include <Kokkos_Core.hpp>
-
-#include <string>
-#include <cstddef>
-#include <cassert>
-#include <string>
-#include <iomanip>
 
 namespace ntt {
   auto WaitAndSynchronize() -> void { Kokkos::fence(); }
-
-  auto stringifySimulationType(SimulationType sim) -> std::string {
-    switch (sim) {
-    case TypePIC:
-      return "PIC";
-    case SimulationType::GRPIC:
-      return "GRPIC";
-    case SimulationType::FORCE_FREE:
-      return "FF";
-    case SimulationType::MHD:
-      return "MHD";
-    default:
-      return "N/A";
-    }
-  }
-
-  auto stringifyBoundaryCondition(BoundaryCondition bc) -> std::string {
-    switch (bc) {
-    case BoundaryCondition::PERIODIC:
-      return "Periodic";
-    case BoundaryCondition::OPEN:
-      return "Open";
-    case BoundaryCondition::USER:
-      return "User";
-    case BoundaryCondition::COMM:
-      return "Communicate";
-    default:
-      return "N/A";
-    }
-  }
-
-  auto stringifyParticlePusher(ParticlePusher pusher) -> std::string {
-    switch (pusher) {
-    case ParticlePusher::BORIS:
-      return "Boris";
-    case ParticlePusher::VAY:
-      return "Vay";
-    case ParticlePusher::PHOTON:
-      return "Photon";
-    default:
-      return "N/A";
-    }
-  }
 
   template <>
   auto CreateRangePolicy<Dim1>(const tuple_t<int, Dim1>& i1, const tuple_t<int, Dim1>& i2)
@@ -88,25 +39,6 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-namespace plog {
-
-  auto NTTFormatter::header() -> util::nstring { return util::nstring(); }
-  auto NTTFormatter::format(const Record& record) -> util::nstring {
-    util::nostringstream ss;
-#ifdef DEBUG
-    if (record.getSeverity() == plog::debug) {
-      ss << PLOG_NSTR("\n") << record.getFunc() << PLOG_NSTR(" @ ") << record.getLine()
-         << PLOG_NSTR("\n");
-    }
-#endif
-    ss << std::setw(9) << std::left << severityToString(record.getSeverity())
-       << PLOG_NSTR(": ");
-    ss << record.getMessage() << PLOG_NSTR("\n");
-    return ss.str();
-  }
-
-} // namespace plog
 
 template ntt::range_t<ntt::Dim1>
 ntt::CreateRangePolicy<ntt::Dim1>(const ntt::tuple_t<int, ntt::Dim1>&,

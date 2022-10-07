@@ -1,7 +1,7 @@
 #ifndef TEST_PIC_MINKOWSKI_H
 #define TEST_PIC_MINKOWSKI_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "qmath.h"
 
 #include "pic.h"

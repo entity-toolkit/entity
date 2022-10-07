@@ -1,7 +1,7 @@
 #ifndef PIC_FARADAY_CURVILINEAR_H
 #define PIC_FARADAY_CURVILINEAR_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "fields.h"
 #include "meshblock.h"
 #include "pic.h"

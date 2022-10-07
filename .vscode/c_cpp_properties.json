@@ -31,7 +31,8 @@
       ],
       "browse": {
         "path": [
-          "${workspaceFolder}"
+          "${workspaceFolder}",
+          "${workspaceFolder}/build/src"
         ],
         "limitSymbolsToIncludedHeaders": true,
         "databaseFilename": ""

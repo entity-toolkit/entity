@@ -1,7 +1,7 @@
 #ifndef PIC_DEPOSIT_CURRENTS_H
 #define PIC_DEPOSIT_CURRENTS_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "fields.h"
 #include "particles.h"
 #include "meshblock.h"

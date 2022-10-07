@@ -8,7 +8,7 @@
     "docs/": true
   },
   "files.associations": {
-    "*.in": "makefile",
+    "*.in": "cpp",
     "string_view": "cpp",
     "vector": "cpp",
     "__bit_reference": "cpp",

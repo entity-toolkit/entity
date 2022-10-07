@@ -1,4 +1,4 @@
-#include "global.h"
+#include "wrapper.h"
 #include "timer.h"
 #include "pic.h"
 #include "sim_params.h"

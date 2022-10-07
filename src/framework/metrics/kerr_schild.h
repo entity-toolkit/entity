@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_METRICS_KERR_SCHILD_H
 #define FRAMEWORK_METRICS_KERR_SCHILD_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "metric_base.h"
 
 #include <cmath>

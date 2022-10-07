@@ -1,7 +1,7 @@
 #ifndef PIC_RESET_H
 #define PIC_RESET_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "pic.h"
 
 #include "field_macros.h"

@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_SIMULATION_H
 #define FRAMEWORK_SIMULATION_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "sim_params.h"
 #include "meshblock.h"
 #include "problem_generator.hpp"
@@ -11,6 +11,10 @@
 #include <string>
 
 namespace ntt {
+  auto stringifySimulationType(const SimulationType&) -> std::string;
+  auto stringifyBoundaryCondition(const BoundaryCondition&) -> std::string;
+  auto stringifyParticlePusher(const ParticlePusher&) -> std::string;
+
   /**
    * @brief Main class of the simulation containing all the necessary methods and
    * configurations.

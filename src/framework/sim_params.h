@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_SIM_PARAMS_H
 #define FRAMEWORK_SIM_PARAMS_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "particles.h"
 
 #include <toml/toml.hpp>

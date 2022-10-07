@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_MESHBLOCK_H
 #define FRAMEWORK_MESHBLOCK_H
 
-#include "global.h"
+#include "wrapper.h"
 #include "metric.h"
 #include "fields.h"
 #include "particles.h"

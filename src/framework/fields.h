@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_FIELDS_H
 #define FRAMEWORK_FIELDS_H
 
-#include "global.h"
+#include "wrapper.h"
 
 namespace ntt {
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };

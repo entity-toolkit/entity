@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_AUX_METRIC_CART_H
 #define FRAMEWORK_AUX_METRIC_CART_H
 
-#include "global.h"
+#include "wrapper.h"
 
 /**
  * @brief Vector transformations from and to global Cartesian basis.

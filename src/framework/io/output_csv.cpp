@@ -1,5 +1,6 @@
-#include "global.h"
+#include "wrapper.h"
 #include "output_csv.h"
+#include "simulation.h"
 #include "meshblock.h"
 #include "particle_macros.h"
 

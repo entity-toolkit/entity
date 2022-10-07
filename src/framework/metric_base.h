@@ -1,7 +1,7 @@
 #ifndef FRAMEWORK_METRICS_BASE_H
 #define FRAMEWORK_METRICS_BASE_H
 
-#include "global.h"
+#include "wrapper.h"
 
 #include <stdexcept>
 
