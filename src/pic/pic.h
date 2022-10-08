@@ -81,9 +81,8 @@ namespace ntt {
     /* -------------------------------- Currents -------------------------------- */
     /**
      * @brief Spatially filter all the deposited currents.
-     * @param t time in physical units.
      */
-    void FilterCurrentsSubstep(const real_t& t);
+    void CurrentsFilter();
     /**
      * @brief Deposit currents from particles.
      */
@@ -93,7 +92,11 @@ namespace ntt {
      */
     void CurrentsBoundaryConditions();
     /**
-     * @brief Synchronize currents in ghost zones between the meshblocks.
+     * @brief Synchronize currents deposited in different meshblocks.
+     */
+    void CurrentsSynchronize();
+    /**
+     * @brief Exchange currents in ghost zones between the meshblocks.
      */
     void CurrentsExchange();
 
