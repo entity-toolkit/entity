@@ -20,25 +20,18 @@ git submodule update --recursive --init
 git submodule update --recursive --remote
 ```
 
-_Configure_ the code by running `configure.py` file with the desired specifications. This will generate a disposable `Makefile` which is used to build the code. Configuration example might look something like this:
+_Configure_ the code using `cmake` before compilation, e.g.:
 
 ```sh
-python configure.py -debug --compiler=g++ --precision=single --pgen=unit/boris
+# from the root of the repository
+cmake -B build -D pgen=<PROBLEM_GENERATOR> -D Kokkos_ENABLE_CUDA=ON <...>
 ```
 
-> To see all the available configuration flags run `python configure.py -h`.
+> This generates a configuration report where both the selected and all the available flags are highlighted.
 
-Once the code is configured, and the `Makefile` is generated in the `build/` path, you may _compile_ the code by going into the `build` directory and running `make <TARGET>`. Currently we support the following targets:
+Once the code is configured, proceed to the `build/` directory and _compile_ the code by running `make -j`. 
 
-* `ntt`: main target for performance runs;
-* `vis`: on-the-fly visulization mode;
-* `test`: test target that runs a series of unit tests.
-
-> Running `make all` will compile all the available regimes. `make` or `make help` will show more detailed instruction list.
-
-After the compilation is successful, you will find the corresponding executable called `<TARGET>.exec` in the `bin/` directory. That's it!
-
-> Directories where the temporary compiled objects and executables go can be defined during the configure time using the flags `--build=<DIR>` and `--bin=<DIR>` correspondingly. By default if not specified the configure script assumes `--build=build/` and `--bin=bin/`. Passing the current directory for `--build` is a bad idea, as there are tons of temporary files generated at compile time, especially from `Kokkos` library.  
+After the compilation is successful, you will find the executables and compiled static libraries in the `build/src` directory. That's it!
 
 ## Development status
 
@@ -48,6 +41,7 @@ After the compilation is successful, you will find the corresponding executable 
   - [x] change metrics/aux foldername
   - [x] add time as a global parameter
   - [ ] use `kokkos` methods for `vis/nttiny.cpp`
+  - [ ] add disabled indicator for options in `report.cmake`
 
 ### Short term things to do/fix
 
@@ -85,10 +79,7 @@ After the compilation is successful, you will find the corresponding executable 
 
 ### Known bugs / minor issues to fix
 
-- [ ] `$(CURDIR)` seems to fail in some instances (need a more robust approach)
-- [x] check python `subprocess.run` command during the configure stage
-- [x] check if compilation of `glfw` is possible (or if `glfw` is available)
-- [x] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
+  ...
 
 > To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
 
@@ -113,13 +104,12 @@ All the third-party libraries are added as git submodules. If the code is cloned
 
 ## Dependencies
 
-While we try to keep the code as compatible as possible, there are certain stringent requirements we impose (primarily due to limitations by `Kokkos`).
+While we try to keep the code as compatible as possible, there are certain stringent requirements we impose.
 
-1. `python>=3.7`: for configuration (verify: `python --version`);
-2. `GNU Make`: for compilation (verify: `make -v`);
-3. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`).
+1. `cmake>=3.16`: for configuration (verify: `cmake --version`);
+2. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`; optionally `nvcc` compilers: `nvcc --version`).
 
-> For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
+> For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries, atomic operations etc. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
 
 ---
 
