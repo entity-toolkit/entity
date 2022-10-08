@@ -2,6 +2,7 @@ if(NOT WIN32)
   string(ASCII 27 Esc)
   set(ColourReset "${Esc}[m")
   set(ColourBold "${Esc}[1m")
+  set(Underline "${Esc}[4m")
   set(Red "${Esc}[31m")
   set(Green "${Esc}[32m")
   set(Yellow "${Esc}[33m")
@@ -20,7 +21,7 @@ if(NOT WIN32)
   set(Dim "${Esc}[2m")
 endif()
 
-function(PrintChoices Choices Value Color OutputString)
+function(PrintChoices Choices Value Default Color OutputString)
   list(LENGTH "${Choices}" nchoices)
   set(rstring "")
   set(counter 0)
@@ -34,15 +35,23 @@ function(PrintChoices Choices Value Color OutputString)
 
     if(${ch} STREQUAL ${Value})
       if(${ch} STREQUAL "ON")
-        set(rstring "${rstring}${Green}ON${ColourReset}")
+        set(col ${Green})
+        # set(rstring "${rstring}${Green}ON${ColourReset}")
       elseif(${ch} STREQUAL "OFF")
-        set(rstring "${rstring}${Red}OFF${ColourReset}")
+        set(col ${Red})
+        # set(rstring "${rstring}${Red}OFF${ColourReset}")
       else()
-        set(rstring "${rstring}${Color}${ch}${ColourReset}")
+        set(col ${Color})
+        # set(rstring "${rstring}${Color}${ch}${ColourReset}")
       endif()
     else()
-      set(rstring "${rstring}${Dim}${ch}${ColourReset}")
+      set(col ${Dim})
+      # set(rstring "${rstring}${Dim}${Underline}${ch}${ColourReset}")
     endif()
+    if(${ch} STREQUAL ${Default})
+      set(col ${col}${Underline})
+    endif()
+    set(rstring "${rstring}${col}${ch}${ColourReset}")
 
     math(EXPR counter "${counter} + 1")
   endforeach()
@@ -52,17 +61,17 @@ endfunction()
 
 set(ON_OFF_VALUES "ON" "OFF")
 
-PrintChoices("${ON_OFF_VALUES}" ${output} "${Green}" OUTPUT_REPORT)
-PrintChoices("${simulation_types}" ${simtype} "${Blue}" SIMTYPE_REPORT)
-PrintChoices("${metrics}" ${metric} "${Blue}" METRIC_REPORT)
-PrintChoices("${problem_generators}" ${pgen} "${Blue}" PGEN_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${output} ${default_output} "${Green}" OUTPUT_REPORT)
+PrintChoices("${simulation_types}" ${simtype} ${default_simtype} "${Blue}" SIMTYPE_REPORT)
+PrintChoices("${metrics}" ${metric} ${default_metric} "${Blue}" METRIC_REPORT)
+PrintChoices("${problem_generators}" ${pgen} ${default_pgen} "${Blue}" PGEN_REPORT)
 
-PrintChoices("${precisions}" ${precision} "${Blue}" PRECISION_REPORT)
-PrintChoices("${ON_OFF_VALUES}" ${nttiny} "${Green}" NTTINY_REPORT)
-PrintChoices("${ON_OFF_VALUES}" ${DEBUG} "${Green}" DEBUG_REPORT)
+PrintChoices("${precisions}" ${precision} ${default_precision} "${Blue}" PRECISION_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${nttiny} ${default_nttiny} "${Green}" NTTINY_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${DEBUG} ${default_DEBUG} "${Green}" DEBUG_REPORT)
 
-PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_CUDA} "${Green}" CUDA_REPORT)
-PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_OPENMP} "${Green}" OPENMP_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_CUDA} "OFF" "${Green}" CUDA_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_OPENMP} "OFF" "${Green}" OPENMP_REPORT)
 
 message("
 ======================================================
@@ -79,8 +88,7 @@ ${ColourReset}.${Blue}                                       \\/__/        ${Col
 ${ColourReset}.${Blue}                     v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}                         ${ColourReset}.
 ======================================================
 
-Main `entity` configurations
-  ${Dim}* Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`${ColourReset}
+Main `entity` configurations ${Dim}[1]${ColourReset}
 ------------------------------------------------------
   Simulation type [${Magenta}simtype${ColourReset}]:\t${SIMTYPE_REPORT}
   Metric [${Magenta}metric${ColourReset}]:\t\t${METRIC_REPORT}
@@ -97,6 +105,13 @@ Framework configurations
   OpenMP [${Magenta}Kokkos_ENABLE_OPENMP${ColourReset}]:\t${OPENMP_REPORT}
 
 ======================================================
+
+Notes
+
+  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`,...
+  * ... default (${Underline}underlined${ColourReset}${Dim}) value will be used...
+  * ... unless a variable is explicitly set.${ColourReset}
+
 ")
 
 # message("This is normal")

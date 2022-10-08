@@ -7,8 +7,17 @@ project(${PROJECT_NAME}
   LANGUAGES CXX
 )
 
+set(default_simtype "pic")
+set(default_precision "single")
+set(default_pgen "dummy")
+set(default_output "ON")
+set(default_DEBUG "OFF")
+set(default_nttiny "OFF")
+set(default_KOKKOS_ENABLE_CUDA "OFF")
+set(default_KOKKOS_ENABLE_OPENMP "OFF")
+
 # ----------------------------- Simulation type ---------------------------- #
-set(simtype "pic" CACHE STRING "Simulation type")
+set(simtype ${default_simtype} CACHE STRING "Simulation type")
 set(simulation_types "pic" "grpic")
 list(FIND simulation_types ${simtype} SIMTYPE_FOUND)
 
@@ -17,7 +26,7 @@ if(${SIMTYPE_FOUND} EQUAL -1)
 endif()
 
 # -------------------------------- Precision ------------------------------- #
-set(precision "single" CACHE STRING "Precision")
+set(precision ${default_precision} CACHE STRING "Precision")
 set(precisions "single" "double")
 list(FIND precisions ${precision} PRECISION_FOUND)
 
@@ -31,10 +40,12 @@ endif()
 
 # --------------------------------- Metric --------------------------------- #
 if(${simtype} STREQUAL "pic")
-  set(metric "minkowski" CACHE STRING "Metric")
+  set(default_metric "minkowski")
+  set(metric ${default_metric} CACHE STRING "Metric")
   set(metrics "minkowski" "spherical" "qspherical")
 elseif(${simtype} STREQUAL "grpic")
-  set(metric "spherical" CACHE STRING "Metric")
+  set(default_metric "qkerr_schild")
+  set(metric ${default_metric} CACHE STRING "Metric")
   set(metrics "kerr_schild" "qkerr_schild")
 endif()
 
@@ -47,7 +58,7 @@ endif()
 # ---------------------------- Problem generator --------------------------- #
 # !TODO: add empty pgen
 set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${simtype}/pgen/)
-set(pgen "dummy" CACHE STRING "Problem generator")
+set(pgen ${default_pgen} CACHE STRING "Problem generator")
 file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.cpp)
 set(problem_generators "")
 
@@ -66,7 +77,7 @@ endif()
 set(PGEN_SRC ${PGEN_DIRECTORY}${pgen}.cpp)
 
 # -------------------------- Compilation settings -------------------------- #
-set(DEBUG OFF CACHE BOOL "Debug mode")
+set(DEBUG ${default_DEBUG} CACHE BOOL "Debug mode")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -91,7 +102,7 @@ else()
 endif()
 
 # ----------------------------------- GUI ---------------------------------- #
-set(nttiny OFF CACHE BOOL "Use nttiny GUI")
+set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
 if(${nttiny} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny nttiny)
@@ -130,7 +141,7 @@ else()
 endif()
 
 # ----------------------------- Adios2 settings ---------------------------- #
-set(output ON CACHE BOOL "Enable output")
+set(output ${default_output} CACHE BOOL "Enable output")
 
 if(${output} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
