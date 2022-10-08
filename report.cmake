@@ -74,23 +74,28 @@ PrintChoices("${ON_OFF_VALUES}" ${DEBUG} ${default_DEBUG} "${Green}" DEBUG_REPOR
 PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_CUDA} "OFF" "${Green}" CUDA_REPORT 0)
 PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_OPENMP} "OFF" "${Green}" OPENMP_REPORT 0)
 
+set(DOT_SYMBOL "${ColourReset}${ColourReset}.${ColourReset}")
+set(DOTTED_LINE_SYMBOL "${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL}")
+set(DASHED_LINE_SYMBOL "${ColourReset}- - - - - - - - - - - - - - - - - - - - - - - - - - - -${ColourReset}")
+
 message("
-======================================================
-${ColourReset}.${Blue}                 __        __                       ${ColourReset}.
-${ColourReset}.${Blue}                /\\ \\__  __/\\ \\__                    ${ColourReset}.
-${ColourReset}.${Blue}       __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __           ${ColourReset}.
-${ColourReset}.${Blue}     / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\          ${ColourReset}.
-${ColourReset}.${Blue}    /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __     ${ColourReset}.
-${ColourReset}.${Blue}    \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\    ${ColourReset}.
-${ColourReset}.${Blue}     \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/    ${ColourReset}.
-${ColourReset}.${Blue}                                       /\\___/       ${ColourReset}.
-${ColourReset}.${Blue}                                       \\/__/        ${ColourReset}.
-.                                                    .
-${ColourReset}.${Blue}                     v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}                         ${ColourReset}.
-======================================================
+${DOTTED_LINE_SYMBOL}
+${DOT_SYMBOL}${Blue}                  __        __                       ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                 /\\ \\__  __/\\ \\__                    ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}        __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __           ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}      / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\          ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}     /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __     ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}     \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\    ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}      \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/    ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                                        /\\___/       ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                                        \\/__/        ${DOT_SYMBOL}
+${DOT_SYMBOL}                                                     ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                      v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}                         ${DOT_SYMBOL}
+${DOTTED_LINE_SYMBOL}
+
 
 Main `entity` configurations ${Dim}[1]${ColourReset}
-------------------------------------------------------
+${DASHED_LINE_SYMBOL}
   Simulation type [${Magenta}simtype${ColourReset}]:\t${SIMTYPE_REPORT}
   Metric [${Magenta}metric${ColourReset}]:\t\t${METRIC_REPORT}
   Problem generator [${Magenta}pgen${ColourReset}]:\t${PGEN_REPORT}
@@ -99,19 +104,17 @@ Main `entity` configurations ${Dim}[1]${ColourReset}
   nttiny GUI [${Magenta}nttiny${ColourReset}]:\t\t${NTTINY_REPORT}
 
 Framework configurations
-------------------------------------------------------
+${DASHED_LINE_SYMBOL}
   Debug mode [${Magenta}DEBUG${ColourReset}]:\t\t\t${DEBUG_REPORT}
   Main framework:\t\t\t${Blue}Kokkos${ColourReset}
   CUDA [${Magenta}Kokkos_ENABLE_CUDA${ColourReset}]:\t\t${CUDA_REPORT}
   OpenMP [${Magenta}Kokkos_ENABLE_OPENMP${ColourReset}]:\t${OPENMP_REPORT}
 
-======================================================
-
 Notes
-
-  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`,...
-  * ... default (${Underline}underlined${ColourReset}${Dim}) value will be used...
-  * ... unless a variable is explicitly set.${ColourReset}
+${DASHED_LINE_SYMBOL}
+  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`,
+   :  default (${Underline}underlined${ColourReset}${Dim}) value will be used
+   :  unless a variable is explicitly set.${ColourReset}
 
 ")
 
