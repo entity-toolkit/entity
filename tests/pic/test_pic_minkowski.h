@@ -8,8 +8,6 @@
 #include "fields.h"
 #include "particle_macros.h"
 
-#include "output_csv.h"
-
 #include <doctest.h>
 #include <toml/toml.hpp>
 

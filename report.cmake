@@ -18,19 +18,61 @@ if(NOT WIN32)
   set(BoldWhite   "${Esc}[1;37m")
 endif()
 
+if (${ENABLE_OUTPUT} STREQUAL "ON")
+  set(OUTPUT_COLOR ${Green})
+else()
+  set(OUTPUT_COLOR ${Red})
+endif()
+
+if (${DEBUG} STREQUAL "ON")
+  set(DEBUG_COLOR ${Green})
+else()
+  set(DEBUG_COLOR ${Red})
+endif()
+
+if (${Kokkos_ENABLE_CUDA} STREQUAL "ON")
+  set(CUDA_COLOR ${Green})
+else()
+  set(CUDA_COLOR ${Red})
+endif()
+
+if (${Kokkos_ENABLE_OPENMP} STREQUAL "ON")
+  set(OPENMP_COLOR ${Green})
+else()
+  set(OPENMP_COLOR ${Red})
+endif()
+
 message("
-======================================================${Magenta}
-                 __        __
-                /\\ \\__  __/\\ \\__
-       __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __
-     / __ \\/  _  \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\
-    /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __
-    \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\
-     \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/
-                                       /\\___/
-                                       \\/__/${ColourReset}
 ======================================================
-`entity` has been configured with the following options:
+${ColourReset}.${Blue}                 __        __                       ${ColourReset}.
+${ColourReset}.${Blue}                /\\ \\__  __/\\ \\__                    ${ColourReset}.
+${ColourReset}.${Blue}       __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __           ${ColourReset}.
+${ColourReset}.${Blue}     / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\          ${ColourReset}.
+${ColourReset}.${Blue}    /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __     ${ColourReset}.
+${ColourReset}.${Blue}    \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\    ${ColourReset}.
+${ColourReset}.${Blue}     \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/    ${ColourReset}.
+${ColourReset}.${Blue}                                       /\\___/       ${ColourReset}.
+${ColourReset}.${Blue}                                       \\/__/        ${ColourReset}.
+.                                                    .
+${ColourReset}.${Blue}                     v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}                         ${ColourReset}.
+======================================================
+
+Main `entity` configurations
+------------------------------------------------------
+  Simulation type:\t${Green}${simtype}${ColourReset}
+  Metric:\t\t${Green}${metric}${ColourReset}
+  Problem generator:\t${Green}${pgen}${ColourReset}
+  Precision:\t\t${Green}${precision}${ColourReset}
+  Output:\t\t${OUTPUT_COLOR}${ENABLE_OUTPUT}${ColourReset}
+
+Framework configurations
+------------------------------------------------------
+  Debug mode:\t\t${DEBUG_COLOR}${DEBUG}${ColourReset}
+  Main framework:\t${Green}Kokkos${ColourReset}
+  CUDA:\t\t\t${CUDA_COLOR}${Kokkos_ENABLE_CUDA}${ColourReset}
+  OpenMP:\t\t${OPENMP_COLOR}${Kokkos_ENABLE_OPENMP}${ColourReset}
+
+======================================================
 ")
 
 # message("This is normal")
