@@ -84,6 +84,9 @@ namespace ntt {
     // Boundary conditions.
     std::vector<BoundaryCondition> boundaries;
 
+    /* -------------------------------------------------------------------------- */
+    /*                    Ranges in the device execution space                    */
+    /* -------------------------------------------------------------------------- */
     /**
      * @brief Loop over all active cells (disregard ghost cells).
      * @returns Kokkos range policy with proper min/max indices and dimension.
@@ -110,6 +113,28 @@ namespace ntt {
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto rangeCells(const tuple_t<tuple_t<short, Dim2>, D>&) -> range_t<D>;
+
+    /* -------------------------------------------------------------------------- */
+    /*                     Ranges in the host execution space                     */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @brief Loop over all active cells (disregard ghost cells).
+     * @returns Kokkos range policy in the host space with proper min/max indices and
+     * dimension.
+     */
+    auto rangeActiveCellsOnHost() -> range_h_t<D>;
+    /**
+     * @brief Loop over all cells.
+     * @returns Kokkos range policy in the host space with proper min/max indices and
+     * dimension.
+     */
+    auto rangeAllCellsOnHost() -> range_h_t<D>;
+    /**
+     * @brief Pick a particular region of cells.
+     * @param boxRegion region of cells to pick: tuple of cellLayer objects.
+     * @returns Kokkos range policy in the host space with proper min/max indices and dimension.
+     */
+    auto rangeCellsOnHost(const boxRegion<D>&) -> range_h_t<D>;
 
     /**
      * @brief Get the first index of active zone along 1st dimension.

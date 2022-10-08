@@ -1,6 +1,7 @@
 {
   "search.exclude": {
     "extern/": true,
+    "legacy/": true,
     ".trash": true,
     "bin/": true,
     "build/": true,
