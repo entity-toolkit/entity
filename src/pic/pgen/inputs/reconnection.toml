@@ -12,7 +12,7 @@ CFL             = 0.9
 correction      = 1.0
 fieldsolver_ON  = true
 deposit_ON      = true
-current_filters = 0
+current_filters = 4
 
 [units]
 ppc0       = 32.0

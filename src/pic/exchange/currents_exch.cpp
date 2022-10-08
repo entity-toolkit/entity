@@ -5,11 +5,8 @@
 
 namespace ntt {
 #ifdef MINKOWSKI_METRIC
-  /**
-   * @brief Synchronize currents between meshblocks.
-   */
   template <>
-  void PIC<Dim1>::CurrentsExchange() {
+  void PIC<Dim1>::CurrentsSynchronize() {
     auto& mblock = this->meshblock;
     if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
       // periodic
@@ -34,7 +31,7 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dim2>::CurrentsExchange() {
+  void PIC<Dim2>::CurrentsSynchronize() {
     /**
      * @note: no corners in each direction
      */
@@ -131,14 +128,115 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dim3>::CurrentsExchange() {
+  void PIC<Dim3>::CurrentsSynchronize() {
     NTTHostError("not implemented");
   }
 
 #else
   template <Dimension D>
-  void PIC<D>::CurrentsExchange() {}
+  void PIC<D>::CurrentsSynchronize() {}
 #endif
+
+  template <>
+  void PIC<Dim1>::CurrentsExchange() {
+    auto& mblock = this->meshblock;
+    auto  ni     = mblock.Ni1();
+    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+      Kokkos::parallel_for(
+        "1d_gh_x1m", mblock.rangeCells({CellLayer::minGhostLayer}), Lambda(index_t i) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, comp) = mblock.cur(i + ni, comp);
+          }
+        });
+      Kokkos::parallel_for(
+        "1d_gh_x1p", mblock.rangeCells({CellLayer::maxGhostLayer}), Lambda(index_t i) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, comp) = mblock.cur(i - ni, comp);
+          }
+        });
+    }
+  }
+
+  template <>
+  void PIC<Dim2>::CurrentsExchange() {
+    auto& mblock = this->meshblock;
+    auto  ni     = mblock.Ni1();
+    auto  nj     = mblock.Ni2();
+    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+      Kokkos::parallel_for(
+        "2d_gh_x1m",
+        mblock.rangeCells({CellLayer::minGhostLayer, CellLayer::activeLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i + ni, j, comp);
+          }
+        });
+      Kokkos::parallel_for(
+        "2d_gh_x1p",
+        mblock.rangeCells({CellLayer::maxGhostLayer, CellLayer::activeLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i - ni, j, comp);
+          }
+        });
+    }
+    if (mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
+      Kokkos::parallel_for(
+        "2d_gh_x2m",
+        mblock.rangeCells({CellLayer::activeLayer, CellLayer::minGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i, j + nj, comp);
+          }
+        });
+      Kokkos::parallel_for(
+        "2d_gh_x2p",
+        mblock.rangeCells({CellLayer::activeLayer, CellLayer::maxGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i, j - nj, comp);
+          }
+        });
+    }
+    if ((mblock.boundaries[0] == BoundaryCondition::PERIODIC)
+        && (mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
+      Kokkos::parallel_for(
+        "2d_bc_corner1",
+        mblock.rangeCells({CellLayer::minGhostLayer, CellLayer::minGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i + ni, j + nj, comp);
+          }
+        });
+      Kokkos::parallel_for(
+        "2d_bc_corner2",
+        mblock.rangeCells({CellLayer::minGhostLayer, CellLayer::maxGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i + ni, j - nj, comp);
+          }
+        });
+      Kokkos::parallel_for(
+        "2d_bc_corner3",
+        mblock.rangeCells({CellLayer::maxGhostLayer, CellLayer::minGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i - ni, j + nj, comp);
+          }
+        });
+      Kokkos::parallel_for(
+        "2d_bc_corner4",
+        mblock.rangeCells({CellLayer::maxGhostLayer, CellLayer::maxGhostLayer}),
+        Lambda(index_t i, index_t j) {
+          for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+            mblock.cur(i, j, comp) = mblock.cur(i - ni, j - nj, comp);
+          }
+        });
+    }
+  }
+
+  template <>
+  void PIC<Dim3>::CurrentsExchange() {}
 
 } // namespace ntt
 
