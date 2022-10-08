@@ -3,14 +3,15 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-        VERSION 0.8.0
-        LANGUAGES CXX
+  VERSION 0.8.0
+  LANGUAGES CXX
 )
 
 # ----------------------------- Simulation type ---------------------------- #
 set(simtype "pic" CACHE STRING "Simulation type")
 set(simulation_types "pic" "grpic")
 list(FIND simulation_types ${simtype} SIMTYPE_FOUND)
+
 if(${SIMTYPE_FOUND} EQUAL -1)
   message(FATAL_ERROR "Invalid simulation type: ${simtype}\nValid options are: ${simulation_types}")
 endif()
@@ -19,22 +20,26 @@ endif()
 set(precision "single" CACHE STRING "Precision")
 set(precisions "single" "double")
 list(FIND precisions ${precision} PRECISION_FOUND)
+
 if(${PRECISION_FOUND} EQUAL -1)
   message(FATAL_ERROR "Invalid precision: ${precision}\nValid options are: ${precisions}")
 endif()
+
 if(${precision} STREQUAL "single")
   add_definitions(-DSINGLE_PRECISION)
 endif()
 
 # --------------------------------- Metric --------------------------------- #
-if (${simtype} STREQUAL "pic")
+if(${simtype} STREQUAL "pic")
   set(metric "minkowski" CACHE STRING "Metric")
   set(metrics "minkowski" "spherical" "qspherical")
-elseif (${simtype} STREQUAL "grpic")
+elseif(${simtype} STREQUAL "grpic")
   set(metric "spherical" CACHE STRING "Metric")
   set(metrics "kerr_schild" "qkerr_schild")
 endif()
+
 list(FIND metrics ${metric} METRIC_FOUND)
+
 if(${METRIC_FOUND} EQUAL -1)
   message(FATAL_ERROR "Invalid metric: ${metric}\nValid options are: ${metrics}")
 endif()
@@ -45,14 +50,19 @@ set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${simtype}/pgen/)
 set(pgen "dummy" CACHE STRING "Problem generator")
 file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.cpp)
 set(problem_generators "")
+
 foreach(pgen_file ${PGENS})
   string(REPLACE ${PGEN_DIRECTORY} "" new_pgen ${pgen_file})
+  string(REPLACE ".cpp" "" new_pgen ${new_pgen})
   list(APPEND problem_generators ${new_pgen})
 endforeach()
-list(FIND problem_generators ${pgen}.cpp PGEN_FOUND)
-if (${PGEN_FOUND} EQUAL -1)
+
+list(FIND problem_generators ${pgen} PGEN_FOUND)
+
+if(${PGEN_FOUND} EQUAL -1)
   message(FATAL_ERROR "Problem generator ${pgen}.cpp not found\nAvailable problem generators: ${problem_generators}")
 endif()
+
 set(PGEN_SRC ${PGEN_DIRECTORY}${pgen}.cpp)
 
 # -------------------------- Compilation settings -------------------------- #
@@ -61,7 +71,7 @@ set(DEBUG OFF CACHE BOOL "Debug mode")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (${DEBUG} STREQUAL "OFF")
+if(${DEBUG} STREQUAL "OFF")
   set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION ON CACHE BOOL "Kokkos aggressive vectorization")
   set(Kokkos_ENABLE_COMPILER_WARNINGS OFF CACHE BOOL "Kokkos compiler warnings")
   set(Kokkos_ENABLE_DEBUG OFF CACHE BOOL "Kokkos debug")
@@ -82,7 +92,8 @@ endif()
 
 # ----------------------------------- GUI ---------------------------------- #
 set(nttiny OFF CACHE BOOL "Use nttiny GUI")
-if (${nttiny} STREQUAL "ON")
+
+if(${nttiny} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny nttiny)
 endif()
 
@@ -90,7 +101,7 @@ endif()
 if(${Kokkos_ENABLE_CUDA})
   set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable CUDA lambda")
 endif()
-set(Kokkos_CXX_STANDARD 17 CACHE STRING "Kokkos C++ standard")
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
 
 # set memory space
@@ -119,8 +130,9 @@ else()
 endif()
 
 # ----------------------------- Adios2 settings ---------------------------- #
-set(ENABLE_OUTPUT ON CACHE BOOL "Enable output")
-if (${ENABLE_OUTPUT} STREQUAL "ON")
+set(output ON CACHE BOOL "Enable output")
+
+if(${output} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
   set(BUILD_TESTING OFF CACHE BOOL "Build adios2 tests")
 endif()
