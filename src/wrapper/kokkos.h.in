@@ -66,7 +66,9 @@ namespace ntt {
                                                         scatter_array_t<real_t*** [N]>,
                                                         std::nullptr_t>::type>::type>::type;
 
-  // Defining aliases for `RangePolicy` and `MDRangePolicy`
+  // @TODO: this looks ugly, template it...
+
+  // Defining aliases for `RangePolicy` and `MDRangePolicy` for the device space
   template <Dimension D>
   using range_t = typename std::conditional<
     D == Dim1,
@@ -76,6 +78,18 @@ namespace ntt {
       Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>,
       typename std::conditional<D == Dim3,
                                 Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>,
+                                std::nullptr_t>::type>::type>::type;
+
+  // Defining aliases for `RangePolicy` and `MDRangePolicy` for the host space
+  template <Dimension D>
+  using range_h_t = typename std::conditional<
+    D == Dim1,
+    Kokkos::RangePolicy<HostExeSpace>,
+    typename std::conditional<
+      D == Dim2,
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>, HostExeSpace>,
+      typename std::conditional<D == Dim3,
+                                Kokkos::MDRangePolicy<Kokkos::Rank<3>, HostExeSpace>,
                                 std::nullptr_t>::type>::type>::type;
 
   // Random number pool alias
@@ -91,6 +105,17 @@ namespace ntt {
    */
   template <Dimension D>
   auto CreateRangePolicy(const tuple_t<int, D>&, const tuple_t<int, D>&) -> range_t<D>;
+
+  /**
+   * @brief Function template for generating ND Kokkos range policy on the host.
+   * @overload
+   * @tparam D Dimension
+   * @param i1 array of size D `int`: { min }.
+   * @param i2 array of size D `int`: { max }.
+   * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the host execution space.
+   */
+  template <Dimension D>
+  auto CreateRangePolicyOnHost(const tuple_t<int, D>&, const tuple_t<int, D>&) -> range_h_t<D>;
 
   /**
    * @brief Synchronize CPU/GPU before advancing.

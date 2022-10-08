@@ -90,6 +90,75 @@ namespace ntt {
     return CreateRangePolicy<D>(imin, imax);
   }
 
+  // !TODO: too ugly, implement a better solution (combine with device)
+  template <Dimension D>
+  auto Mesh<D>::rangeCellsOnHost(const boxRegion<D>& region) -> range_h_t<D> {
+    tuple_t<int, D> imin, imax;
+    for (short i = 0; i < (short)D; i++) {
+      switch (region[i]) {
+      case CellLayer::allLayer:
+        imin[i] = 0;
+        imax[i] = Ni(i) + 2 * N_GHOSTS;
+        break;
+      case CellLayer::activeLayer:
+        imin[i] = i_min(i);
+        imax[i] = i_max(i);
+        break;
+      case CellLayer::minGhostLayer:
+        imin[i] = 0;
+        imax[i] = i_min(i);
+        break;
+      case CellLayer::minActiveLayer:
+        imin[i] = i_min(i);
+        imax[i] = i_min(i) + N_GHOSTS;
+        break;
+      case CellLayer::maxActiveLayer:
+        imin[i] = i_max(i) - N_GHOSTS;
+        imax[i] = i_max(i);
+        break;
+      case CellLayer::maxGhostLayer:
+        imin[i] = i_max(i);
+        imax[i] = Ni(i) + 2 * N_GHOSTS;
+        break;
+      default:
+        NTTHostError("Invalid cell layer");
+      }
+    }
+    return CreateRangePolicyOnHost<D>(imin, imax);
+  }
+
+  template <>
+  auto Mesh<Dim1>::rangeAllCellsOnHost() -> range_h_t<Dim1> {
+    boxRegion<Dim1> region {CellLayer::allLayer};
+    return rangeCellsOnHost(region);
+  }
+  template <>
+  auto Mesh<Dim2>::rangeAllCellsOnHost() -> range_h_t<Dim2> {
+    boxRegion<Dim2> region {CellLayer::allLayer, CellLayer::allLayer};
+    return rangeCellsOnHost(region);
+  }
+  template <>
+  auto Mesh<Dim3>::rangeAllCellsOnHost() -> range_h_t<Dim3> {
+    boxRegion<Dim3> region {CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer};
+    return rangeCellsOnHost(region);
+  }
+  template <>
+  auto Mesh<Dim1>::rangeActiveCellsOnHost() -> range_h_t<Dim1> {
+    boxRegion<Dim1> region {CellLayer::activeLayer};
+    return rangeCellsOnHost(region);
+  }
+  template <>
+  auto Mesh<Dim2>::rangeActiveCellsOnHost() -> range_h_t<Dim2> {
+    boxRegion<Dim2> region {CellLayer::activeLayer, CellLayer::activeLayer};
+    return rangeCellsOnHost(region);
+  }
+  template <>
+  auto Mesh<Dim3>::rangeActiveCellsOnHost() -> range_h_t<Dim3> {
+    boxRegion<Dim3> region {
+      CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer};
+    return rangeCellsOnHost(region);
+  }
+
   template <Dimension D>
   auto Mesh<D>::rangeCells(const tuple_t<tuple_t<short, Dim2>, D>& ranges) -> range_t<D> {
     tuple_t<int, D> imin, imax;
