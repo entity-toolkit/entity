@@ -1,46 +1,68 @@
 if(NOT WIN32)
   string(ASCII 27 Esc)
   set(ColourReset "${Esc}[m")
-  set(ColourBold  "${Esc}[1m")
-  set(Red         "${Esc}[31m")
-  set(Green       "${Esc}[32m")
-  set(Yellow      "${Esc}[33m")
-  set(Blue        "${Esc}[34m")
-  set(Magenta     "${Esc}[35m")
-  set(Cyan        "${Esc}[36m")
-  set(White       "${Esc}[37m")
-  set(BoldRed     "${Esc}[1;31m")
-  set(BoldGreen   "${Esc}[1;32m")
-  set(BoldYellow  "${Esc}[1;33m")
-  set(BoldBlue    "${Esc}[1;34m")
+  set(ColourBold "${Esc}[1m")
+  set(Red "${Esc}[31m")
+  set(Green "${Esc}[32m")
+  set(Yellow "${Esc}[33m")
+  set(Blue "${Esc}[34m")
+  set(Magenta "${Esc}[35m")
+  set(Cyan "${Esc}[36m")
+  set(White "${Esc}[37m")
+  set(BoldRed "${Esc}[1;31m")
+  set(BoldGreen "${Esc}[1;32m")
+  set(BoldYellow "${Esc}[1;33m")
+  set(BoldBlue "${Esc}[1;34m")
   set(BoldMagenta "${Esc}[1;35m")
-  set(BoldCyan    "${Esc}[1;36m")
-  set(BoldWhite   "${Esc}[1;37m")
+  set(BoldCyan "${Esc}[1;36m")
+  set(BoldWhite "${Esc}[1;37m")
+  set(DarkGray "${Esc}[1;90m")
+  set(Dim "${Esc}[2m")
 endif()
 
-if (${ENABLE_OUTPUT} STREQUAL "ON")
-  set(OUTPUT_COLOR ${Green})
-else()
-  set(OUTPUT_COLOR ${Red})
-endif()
+function(PrintChoices Choices Value Color OutputString)
+  list(LENGTH "${Choices}" nchoices)
+  set(rstring "")
+  set(counter 0)
 
-if (${DEBUG} STREQUAL "ON")
-  set(DEBUG_COLOR ${Green})
-else()
-  set(DEBUG_COLOR ${Red})
-endif()
+  foreach(ch ${Choices})
+    if(NOT ${counter} EQUAL ${nchoices})
+      set(rstring "${rstring}/")
+    else()
+      set(rstring "${rstring}")
+    endif()
 
-if (${Kokkos_ENABLE_CUDA} STREQUAL "ON")
-  set(CUDA_COLOR ${Green})
-else()
-  set(CUDA_COLOR ${Red})
-endif()
+    if(${ch} STREQUAL ${Value})
+      if(${ch} STREQUAL "ON")
+        set(rstring "${rstring}${Green}ON${ColourReset}")
+      elseif(${ch} STREQUAL "OFF")
+        set(rstring "${rstring}${Red}OFF${ColourReset}")
+      else()
+        set(rstring "${rstring}${Color}${ch}${ColourReset}")
+      endif()
+    else()
+      set(rstring "${rstring}${Dim}${ch}${ColourReset}")
+    endif()
 
-if (${Kokkos_ENABLE_OPENMP} STREQUAL "ON")
-  set(OPENMP_COLOR ${Green})
-else()
-  set(OPENMP_COLOR ${Red})
-endif()
+    math(EXPR counter "${counter} + 1")
+  endforeach()
+
+  set(${OutputString} "${rstring}" PARENT_SCOPE)
+endfunction()
+
+set(ON_OFF_VALUES "ON" "OFF")
+
+PrintChoices("${ON_OFF_VALUES}" ${output} "${Green}" OUTPUT_REPORT)
+PrintChoices("${simulation_types}" ${simtype} "${Blue}" SIMTYPE_REPORT)
+PrintChoices("${metrics}" ${metric} "${Blue}" METRIC_REPORT)
+PrintChoices("${problem_generators}" ${pgen} "${Blue}" PGEN_REPORT)
+
+PrintChoices("${precisions}" ${precision} "${Blue}" PRECISION_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${nttiny} "${Green}" NTTINY_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${DEBUG} "${Green}" DEBUG_REPORT)
+
+PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_CUDA} "${Green}" CUDA_REPORT)
+PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_OPENMP} "${Green}" OPENMP_REPORT)
 
 message("
 ======================================================
@@ -58,19 +80,21 @@ ${ColourReset}.${Blue}                     v${PROJECT_VERSION_MAJOR}.${PROJECT_V
 ======================================================
 
 Main `entity` configurations
+  ${Dim}* Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`${ColourReset}
 ------------------------------------------------------
-  Simulation type:\t${Green}${simtype}${ColourReset}
-  Metric:\t\t${Green}${metric}${ColourReset}
-  Problem generator:\t${Green}${pgen}${ColourReset}
-  Precision:\t\t${Green}${precision}${ColourReset}
-  Output:\t\t${OUTPUT_COLOR}${ENABLE_OUTPUT}${ColourReset}
+  Simulation type [${Magenta}simtype${ColourReset}]:\t${SIMTYPE_REPORT}
+  Metric [${Magenta}metric${ColourReset}]:\t\t${METRIC_REPORT}
+  Problem generator [${Magenta}pgen${ColourReset}]:\t${PGEN_REPORT}
+  Precision [${Magenta}precision${ColourReset}]:\t${PRECISION_REPORT}
+  Output [${Magenta}output${ColourReset}]:\t\t${OUTPUT_REPORT}
+  nttiny GUI [${Magenta}nttiny${ColourReset}]:\t\t${NTTINY_REPORT}
 
 Framework configurations
 ------------------------------------------------------
-  Debug mode:\t\t${DEBUG_COLOR}${DEBUG}${ColourReset}
-  Main framework:\t${Green}Kokkos${ColourReset}
-  CUDA:\t\t\t${CUDA_COLOR}${Kokkos_ENABLE_CUDA}${ColourReset}
-  OpenMP:\t\t${OPENMP_COLOR}${Kokkos_ENABLE_OPENMP}${ColourReset}
+  Debug mode [${Magenta}DEBUG${ColourReset}]:\t\t\t${DEBUG_REPORT}
+  Main framework:\t\t\t${Blue}Kokkos${ColourReset}
+  CUDA [${Magenta}Kokkos_ENABLE_CUDA${ColourReset}]:\t\t${CUDA_REPORT}
+  OpenMP [${Magenta}Kokkos_ENABLE_OPENMP${ColourReset}]:\t${OPENMP_REPORT}
 
 ======================================================
 ")
