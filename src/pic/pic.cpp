@@ -84,11 +84,12 @@ namespace ntt {
         CurrentsDeposit();
 
         timers.start(2);
+        CurrentsSynchronize();
         CurrentsExchange();
         CurrentsBoundaryConditions();
         timers.stop(2);
 
-        FilterCurrentsSubstep(this->m_time);
+        CurrentsFilter();
         timers.stop(3);
       }
 
