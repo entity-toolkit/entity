@@ -1,0 +1,47 @@
+[simulation]
+title   = "Reconnection"
+runtime = 100.0
+
+[domain]
+resolution = [256, 256]
+extent     = [-128.0, 128.0, -128.0, 128.0]
+boundaries = ["PERIODIC", "PERIODIC"]
+
+[algorithm]
+CFL             = 0.9
+correction      = 1.0
+fieldsolver_ON  = true
+deposit_ON      = true
+current_filters = 0
+
+[units]
+ppc0       = 32.0
+larmor0    = 10.0
+skindepth0 = 10.0
+
+[particles]
+n_species = 2
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 5000000.0
+pusher   = "BORIS"
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 5000000.0
+pusher   = "BORIS"
+
+# [problem]
+# ...
+
+[visualization]
+fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez"]
+
+# [output]
+# format          = <string: { disabled, csv }>
+# interval        = <int>

@@ -56,7 +56,7 @@ public:
     this->m_time     = 0.0;
     generateFields();
     generateGrid();
-    generateParticles();
+    // generateParticles();
 
     if (sim.meshblock.metric.label != "minkowski") {
       nttiny::ScrollingBuffer flux_E;
@@ -282,24 +282,24 @@ public:
         }
       }
     }
-    auto  s         = 0;
-    auto& Particles = this->particles;
-    for (const auto& [lbl, species] : Particles) {
-      auto sim_species = m_sim.meshblock.particles[s];
-      for (int p {0}; p < species.first; ++p) {
-        real_t                  x1 {(real_t)(sim_species.i1_h(p)) + sim_species.dx1_h(p)};
-        real_t                  x2 {(real_t)(sim_species.i2_h(p)) + sim_species.dx2_h(p)};
-        ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
-        m_sim.meshblock.metric.x_Code2Cart({x1, x2}, xy);
-        species.second[0][p] = xy[0];
-        species.second[1][p] = xy[1];
-      }
-      ++s;
-    }
-    auto& Buffers = this->buffers;
-    if (m_sim.meshblock.metric.label != "minkowski") {
-      Buffers["flux_Er"].AddPoint(m_time, (float)(-flux_E));
-    }
+    // auto  s         = 0;
+    // auto& Particles = this->particles;
+    // for (const auto& [lbl, species] : Particles) {
+    //   auto sim_species = m_sim.meshblock.particles[s];
+    //   for (int p {0}; p < species.first; ++p) {
+    //     real_t                  x1 {(real_t)(sim_species.i1_h(p)) + sim_species.dx1_h(p)};
+    //     real_t                  x2 {(real_t)(sim_species.i2_h(p)) + sim_species.dx2_h(p)};
+    //     ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
+    //     m_sim.meshblock.metric.x_Code2Cart({x1, x2}, xy);
+    //     species.second[0][p] = xy[0];
+    //     species.second[1][p] = xy[1];
+    //   }
+    //   ++s;
+    // }
+    // auto& Buffers = this->buffers;
+    // if (m_sim.meshblock.metric.label != "minkowski") {
+    //   Buffers["flux_Er"].AddPoint(m_time, (float)(-flux_E));
+    // }
   }
   void stepFwd() override {
     m_sim.StepForward();

@@ -11,7 +11,7 @@
     throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                   \
                              "line: " LINE_STRING)
 
-#  if defined(GPUENABLED)
+#  ifdef ENABLE_GPU
 #    define NTTError(msg) ({})
 #  else
 #    define NTTError(msg) NTTHostError(msg)
