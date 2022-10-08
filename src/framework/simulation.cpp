@@ -2,7 +2,6 @@
 #include "simulation.h"
 #include "metric.h"
 
-#include "output_csv.h"
 #include "utils.h"
 
 #include <plog/Log.h>
@@ -172,23 +171,23 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  void Simulation<D, S>::WriteOutput(const unsigned long& tstep) {
+  void Simulation<D, S>::WriteOutput(const unsigned long&) {
     WaitAndSynchronize();
-    auto output_format   = m_params.outputFormat();
-    auto output_interval = m_params.outputInterval();
-    if (output_format == "disabled") {
-      return;
-    } else if (output_format == "csv") {
-      if ((tstep % output_interval == 0) && (output_interval > 0)) {
-        csv::writeField(
-          "ex1-" + zeropad(std::to_string(tstep), 5) + ".csv", meshblock, em::ex1);
-        csv::writeField(
-          "jx1-" + zeropad(std::to_string(tstep), 5) + ".csv", meshblock, cur::jx1);
-      }
-    } else {
-      NTTHostError("unrecognized output format");
-    }
-    PLOGD << "Output written.";
+    // auto output_format   = m_params.outputFormat();
+    // auto output_interval = m_params.outputInterval();
+    // if (output_format == "disabled") {
+    //   return;
+    // } else if (output_format == "csv") {
+    //   if ((tstep % output_interval == 0) && (output_interval > 0)) {
+    //     // csv::writeField(
+    //     //   "ex1-" + zeropad(std::to_string(tstep), 5) + ".csv", meshblock, em::ex1);
+    //     // csv::writeField(
+    //     //   "jx1-" + zeropad(std::to_string(tstep), 5) + ".csv", meshblock, cur::jx1);
+    //   }
+    // } else {
+    //   NTTHostError("unrecognized output format");
+    // }
+    // PLOGD << "Output written.";
   }
 
   template <Dimension D, SimulationType S>

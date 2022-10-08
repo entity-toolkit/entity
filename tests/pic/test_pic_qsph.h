@@ -7,8 +7,6 @@
 #include "pic.h"
 #include "fields.h"
 
-#include "output_csv.h"
-
 #include <doctest.h>
 #include <toml/toml.hpp>
 
