@@ -21,21 +21,55 @@ if(NOT WIN32)
   set(Dim "${Esc}[2m")
 endif()
 
-function(PrintChoices Choices Value Default Color OutputString Multiline)
+function(PadTo Text Padding Target Result)
+  set(rt ${Text})
+  string(FIND ${rt} "${Magenta}" mg_fnd)
+
+  if(mg_fnd GREATER -1)
+    string(REGEX REPLACE "${Esc}\\[35m" "" rt ${rt})
+  endif()
+
+  string(LENGTH "${rt}" TextLength)
+  math(EXPR PaddingNeeded "${Target} - ${TextLength}")
+  set(rt ${Text})
+
+  if(PaddingNeeded GREATER 0)
+    foreach(i RANGE 0 ${PaddingNeeded})
+      set(rt "${rt}${Padding}")
+    endforeach()
+  else()
+    set(${rt} "${rt}")
+  endif()
+
+  set(${Result} "${rt}" PARENT_SCOPE)
+endfunction()
+
+function(PrintChoices Label Flag Choices Value Default Color OutputString Multiline Padding)
   list(LENGTH "${Choices}" nchoices)
   set(rstring "")
   set(counter 0)
 
   foreach(ch ${Choices})
-    if(NOT ${counter} EQUAL ${nchoices})
-      if(${Multiline} EQUAL 1)
-        set(rstring "${rstring}\n\t\t\t\t")
-      else()
-        set(rstring "${rstring}/")
+    if(${counter} EQUAL 0)
+      set(rstring_i "- ${Label}")
+
+      if(NOT "${Flag}" STREQUAL "")
+        set(rstring_i "${rstring_i} [${Magenta}${Flag}${ColourReset}]")
       endif()
 
+      set(rstring_i "${rstring_i}:")
+      PadTo("${rstring_i}" " " ${Padding} rstring_i)
     else()
-      set(rstring "${rstring}")
+      set(rstring_i "")
+
+      if(NOT ${counter} EQUAL ${nchoices})
+        if(${Multiline} EQUAL 1)
+          set(rstring_i "${rstring_i}\n")
+          PadTo("${rstring_i}" " " ${Padding} rstring_i)
+        else()
+          set(rstring_i "${rstring_i}/")
+        endif()
+      endif()
     endif()
 
     if(${ch} STREQUAL ${Value})
@@ -49,12 +83,15 @@ function(PrintChoices Choices Value Default Color OutputString Multiline)
     else()
       set(col ${Dim})
     endif()
+
     if(${ch} STREQUAL ${Default})
       set(col ${col}${Underline})
     endif()
-    set(rstring "${rstring}${col}${ch}${ColourReset}")
 
+    set(rstring_i "${rstring_i}${col}${ch}${ColourReset}")
     math(EXPR counter "${counter} + 1")
+    set(rstring "${rstring}${rstring_i}")
+    set(rstring_i "")
   endforeach()
 
   set(${OutputString} "${rstring}" PARENT_SCOPE)
@@ -62,59 +99,188 @@ endfunction()
 
 set(ON_OFF_VALUES "ON" "OFF")
 
-PrintChoices("${ON_OFF_VALUES}" ${output} ${default_output} "${Green}" OUTPUT_REPORT 0)
-PrintChoices("${simulation_types}" ${simtype} ${default_simtype} "${Blue}" SIMTYPE_REPORT 1)
-PrintChoices("${metrics}" ${metric} ${default_metric} "${Blue}" METRIC_REPORT 1)
-PrintChoices("${problem_generators}" ${pgen} ${default_pgen} "${Blue}" PGEN_REPORT 1)
+PrintChoices("Simulation type"
+  "simtype"
+  "${simulation_types}"
+  ${simtype}
+  ${default_simtype}
+  "${Blue}"
+  SIMTYPE_REPORT
+  1
+  36
+)
+PrintChoices("Metric"
+  "metric"
+  "${metrics}"
+  ${metric}
+  ${default_metric}
+  "${Blue}"
+  METRIC_REPORT
+  1
+  36
+)
+PrintChoices("Problem generator"
+  "pgen"
+  "${problem_generators}"
+  ${pgen}
+  ${default_pgen}
+  "${Blue}"
+  PGEN_REPORT
+  1
+  36
+)
+PrintChoices("Precision"
+  "precision"
+  "${precisions}"
+  ${precision}
+  ${default_precision}
+  "${Blue}"
+  PRECISION_REPORT
+  1
+  36
+)
+PrintChoices("Output"
+  "output"
+  "${ON_OFF_VALUES}"
+  ${output}
+  ${default_output}
+  "${Green}"
+  OUTPUT_REPORT
+  0
+  36
+)
+PrintChoices("nttiny GUI"
+  "nttiny"
+  "${ON_OFF_VALUES}"
+  ${nttiny}
+  ${default_nttiny}
+  "${Green}"
+  NTTINY_REPORT
+  0
+  36
+)
+PrintChoices("Debug mode"
+  "DEBUG"
+  "${ON_OFF_VALUES}"
+  ${DEBUG}
+  ${default_DEBUG}
+  "${Green}"
+  DEBUG_REPORT
+  0
+  42
+)
+PrintChoices("Main framework"
+  ""
+  "Kokkos"
+  "Kokkos"
+  "N/A"
+  "${Blue}"
+  FRAMEWORK_REPORT
+  0
+  39
+)
+PrintChoices("CUDA"
+  "Kokkos_ENABLE_CUDA"
+  "${ON_OFF_VALUES}"
+  ${Kokkos_ENABLE_CUDA}
+  "OFF"
+  "${Green}"
+  CUDA_REPORT
+  0
+  42
+)
+PrintChoices("OpenMP"
+  "Kokkos_ENABLE_OPENMP"
+  "${ON_OFF_VALUES}"
+  ${Kokkos_ENABLE_OPENMP}
+  "OFF"
+  "${Green}"
+  OPENMP_REPORT
+  0
+  42
+)
+PrintChoices("C++ compiler"
+  "CMAKE_CXX_COMPILER"
+  "${CMAKE_CXX_COMPILER}"
+  ${CMAKE_CXX_COMPILER}
+  "N/A"
+  "${White}"
+  COMPILERS_REPORT
+  0
+  42
+)
 
-PrintChoices("${precisions}" ${precision} ${default_precision} "${Blue}" PRECISION_REPORT 1)
-PrintChoices("${ON_OFF_VALUES}" ${nttiny} ${default_nttiny} "${Green}" NTTINY_REPORT 0)
-PrintChoices("${ON_OFF_VALUES}" ${DEBUG} ${default_DEBUG} "${Green}" DEBUG_REPORT 0)
+if(${Kokkos_ENABLE_CUDA})
+  PrintChoices("CUDA compiler"
+    "CMAKE_CUDA_COMPILER"
+    "${CMAKE_CUDA_COMPILER}"
+    ${CMAKE_CUDA_COMPILER}
+    "N/A"
+    "${White}"
+    CUDA_COMPILER_REPORT
+    0
+    42
+  )
+  set(COMPILERS_REPORT "${COMPILERS_REPORT}\n  ${CUDA_COMPILER_REPORT}")
+endif()
 
-PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_CUDA} "OFF" "${Green}" CUDA_REPORT 0)
-PrintChoices("${ON_OFF_VALUES}" ${Kokkos_ENABLE_OPENMP} "OFF" "${Green}" OPENMP_REPORT 0)
+set(DOT_SYMBOL "${ColourReset}.")
+set(DOTTED_LINE_SYMBOL "${ColourReset}. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ")
 
-set(DOT_SYMBOL "${ColourReset}${ColourReset}.${ColourReset}")
-set(DOTTED_LINE_SYMBOL "${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL} ${DOT_SYMBOL}")
-set(DASHED_LINE_SYMBOL "${ColourReset}- - - - - - - - - - - - - - - - - - - - - - - - - - - -${ColourReset}")
+set(DASHED_LINE_SYMBOL "${ColourReset}- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ")
+
+if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
+  set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}")
+else()
+  set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}    ")
+endif()
 
 message("
 ${DOTTED_LINE_SYMBOL}
-${DOT_SYMBOL}${Blue}                  __        __                       ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                 /\\ \\__  __/\\ \\__                    ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}        __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __           ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}      / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\          ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}     /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __     ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}     \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\    ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}      \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/    ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                                        /\\___/       ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                                        \\/__/        ${DOT_SYMBOL}
-${DOT_SYMBOL}                                                     ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                      v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}                         ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                          __        __                               ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                         /\\ \\__  __/\\ \\__                            ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __                   ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}              / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\                  ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}             /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __             ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}             \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\            ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}              \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/            ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                                                /\\___/               ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                                                \\/__/                ${DOT_SYMBOL}
+${DOT_SYMBOL}                                                                     ${DOT_SYMBOL}
+${DOT_SYMBOL}${Blue}                              ${VERSION_SYMBOL}                             ${DOT_SYMBOL}
 ${DOTTED_LINE_SYMBOL}
 
-
-Main `entity` configurations ${Dim}[1]${ColourReset}
 ${DASHED_LINE_SYMBOL}
-  Simulation type [${Magenta}simtype${ColourReset}]:\t${SIMTYPE_REPORT}
-  Metric [${Magenta}metric${ColourReset}]:\t\t${METRIC_REPORT}
-  Problem generator [${Magenta}pgen${ColourReset}]:\t${PGEN_REPORT}
-  Precision [${Magenta}precision${ColourReset}]:\t${PRECISION_REPORT}
-  Output [${Magenta}output${ColourReset}]:\t\t${OUTPUT_REPORT}
-  nttiny GUI [${Magenta}nttiny${ColourReset}]:\t\t${NTTINY_REPORT}
+Main configurations ${Dim}[1]${ColourReset}
+${DASHED_LINE_SYMBOL}
+  ${SIMTYPE_REPORT}
 
+  ${METRIC_REPORT}
+
+  ${PGEN_REPORT}
+
+  ${PRECISION_REPORT}
+
+  ${OUTPUT_REPORT}
+
+  ${NTTINY_REPORT}
+${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}
-  Debug mode [${Magenta}DEBUG${ColourReset}]:\t\t\t${DEBUG_REPORT}
-  Main framework:\t\t\t${Blue}Kokkos${ColourReset}
-  CUDA [${Magenta}Kokkos_ENABLE_CUDA${ColourReset}]:\t\t${CUDA_REPORT}
-  OpenMP [${Magenta}Kokkos_ENABLE_OPENMP${ColourReset}]:\t${OPENMP_REPORT}
+  ${DEBUG_REPORT}
 
+  ${FRAMEWORK_REPORT}
+
+  ${CUDA_REPORT}
+
+  ${OPENMP_REPORT}
+
+  ${COMPILERS_REPORT}
+${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}
-  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`,
-   :  default (${Underline}underlined${ColourReset}${Dim}) value will be used
-   :  unless a variable is explicitly set.${ColourReset}
+  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, default (${Underline}underlined${ColourReset}${Dim}) 
+   :  value will be used unless a variable is explicitly set.${ColourReset}
 
 ")
 
