@@ -9,12 +9,12 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator {
-    int m_nx1, m_nx2;
+    int    m_nx1, m_nx2;
     real_t m_amplitude;
 
-    ProblemGenerator(const SimulationParams& sim_params);
+    ProblemGenerator(const SimulationParams&);
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
-    void userInitFields(const SimulationParams& sim_params, Meshblock<D, S>& mblock);
+    void userInitFields(const SimulationParams&, Meshblock<D, S>&);
   };
 
 } // namespace ntt

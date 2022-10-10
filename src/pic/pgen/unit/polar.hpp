@@ -15,7 +15,8 @@ namespace ntt {
     void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
     void userBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
 
-    Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock, const coord_t<D>& x) const -> real_t {
+    Inline auto userTargetField_br_hat(const Meshblock<D, S>& mblock,
+                                       const coord_t<D>&      x) const -> real_t {
       coord_t<D> rth_;
       rth_[0] = ZERO;
       real_t r_min {mblock.metric.x1_min};
