@@ -9,7 +9,9 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator {
-    ProblemGenerator(const SimulationParams&) {}
+    real_t udrift_1, udrift_2;
+
+    ProblemGenerator(const SimulationParams&);
 
     void        UserInitFields(const SimulationParams&, Meshblock<D, S>&);
     void        UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
