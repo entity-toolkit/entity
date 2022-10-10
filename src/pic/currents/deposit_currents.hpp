@@ -50,15 +50,6 @@ namespace ntt {
         m_sx2((real_t)m_mblock.Ni2()) {}
 
     /**
-     * @brief Loop over all active particles and deposit currents.
-     * TODO: forward/backward
-     */
-    void apply() {
-      auto range_policy = Kokkos::RangePolicy<AccelExeSpace>(0, m_particles.npart());
-      Kokkos::parallel_for("deposit", range_policy, *this);
-    }
-
-    /**
      * @brief Iteration of the loop over particles.
      * @param p index.
      */

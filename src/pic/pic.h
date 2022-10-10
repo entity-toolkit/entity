@@ -121,6 +121,11 @@ namespace ntt {
      */
     void Benchmark();
 
+    /* ----------------- Additional conversions and computations ---------------- */
+    /**
+     * @brief Compute density for output or other usage.
+     */
+    void ComputeDensity();
     /**
      * @brief Convert a given field to the hatted basis on the host.
      */

@@ -12,7 +12,7 @@ namespace ntt {
         const real_t              dt {mblock.timestep()};
         const real_t              charge {species.charge()};
         DepositCurrents_kernel<D> deposit(mblock, species, scatter_cur, charge, dt);
-        deposit.apply();
+        Kokkos::parallel_for("deposit", species.rangeActiveParticles(), deposit);
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
