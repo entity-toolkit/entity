@@ -1,4 +1,5 @@
 #include "wrapper.h"
+#include "input.h"
 #include "sim_params.h"
 #include "meshblock.h"
 #include "particle_macros.h"
@@ -8,6 +9,11 @@
 #include <cmath>
 
 namespace ntt {
+  template <Dimension D, SimulationType S>
+  ProblemGenerator<D, S>::ProblemGenerator(const SimulationParams& params) {
+    udrift_1 = readFromInput<real_t>(params.inputdata(), "problem", "udrift_1", 1.0);
+    udrift_2 = readFromInput<real_t>(params.inputdata(), "problem", "udrift_2", -udrift_1);
+  }
 
   template <>
   void ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&   params,
@@ -42,6 +48,8 @@ namespace ntt {
     auto   random_pool = *(mblock.random_pool_ptr);
     real_t Xmin = params.extent()[0], Xmax = params.extent()[1];
     real_t Ymin = params.extent()[2], Ymax = params.extent()[3];
+    auto   u1 = udrift_1;
+    auto   u2 = udrift_2;
     electrons.setNpart(npart);
     positrons.setNpart(npart);
     Kokkos::parallel_for(
@@ -50,8 +58,8 @@ namespace ntt {
 
         real_t rx = rand_gen.frand(Xmin, Xmax);
         real_t ry = rand_gen.frand(Ymin, Ymax);
-        init_prtl_2d_XYZ(mblock, electrons, p, rx, ry, 1.0, 0.0, 0.0);
-        init_prtl_2d_XYZ(mblock, positrons, p, rx, ry, -1.0, 0.0, 0.0);
+        init_prtl_2d_XYZ(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
+        init_prtl_2d_XYZ(mblock, positrons, p, rx, ry, u2, 0.0, 0.0);
 
         random_pool.free_state(rand_gen);
       });
@@ -74,6 +82,6 @@ namespace ntt {
 
 } // namespace ntt
 
-// template struct ntt::ProblemGenerator<ntt::Dim1, ntt::TypePIC>;
-// template struct ntt::ProblemGenerator<ntt::Dim2, ntt::TypePIC>;
-// template struct ntt::ProblemGenerator<ntt::Dim3, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim1, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim2, ntt::TypePIC>;
+template struct ntt::ProblemGenerator<ntt::Dim3, ntt::TypePIC>;

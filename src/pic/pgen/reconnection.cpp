@@ -31,8 +31,8 @@ namespace ntt {
         coord_t<Dim2> x_code {i_, j_ + HALF};
         coord_t<Dim2> x_ph {ZERO};
         mblock.metric.x_Code2Cart(x_code, x_ph);
-        b_hat[0] = ONE + math::tanh((x_ph[1] - cY1) / cs_width)
-                   - math::tanh((x_ph[1] - cY2) / cs_width);
+        b_hat[0] = math::tanh((x_ph[1] - cY1) / cs_width)
+                   - math::tanh((x_ph[1] - cY2) / cs_width) - ONE;
         b_hat[1] = ZERO;
         b_hat[2] = ZERO;
         mblock.metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);
