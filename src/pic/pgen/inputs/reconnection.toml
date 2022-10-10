@@ -40,7 +40,7 @@ pusher   = "BORIS"
 # ...
 
 [visualization]
-fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez"]
+fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "density"]
 
 # [output]
 # format          = <string: { disabled, csv }>
