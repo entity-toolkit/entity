@@ -3,6 +3,7 @@
 
 #include "wrapper.h"
 #include "sim_params.h"
+#include "fields.h"
 #include "meshblock.h"
 #include "problem_generator.hpp"
 
@@ -46,6 +47,9 @@ namespace ntt {
     Simulation(const toml::value& inputdata);
     ~Simulation() = default;
 
+    /* -------------------------------------------------------------------------- */
+    /*                                Main routines                               */
+    /* -------------------------------------------------------------------------- */
     /**
      * @brief Initialize / allocate all the simulation objects based on the `m_params`.
      */
@@ -68,10 +72,24 @@ namespace ntt {
     void PrintDetails();
 
     /**
+     * @brief Output the simulation data to a file.
+     * @param tstep current timestep.
+     */
+    void WriteOutput();
+
+    /**
      * @brief Finalize the simulation objects.
      */
     void Finalize();
 
+    /**
+     * @brief Synchronize data from device to host.
+     */
+    void SynchronizeHostDevice();
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Getters                                  */
+    /* -------------------------------------------------------------------------- */
     /**
      * @brief Get pointer to `m_params`.
      */
@@ -82,22 +100,21 @@ namespace ntt {
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto rangeActiveCells() -> range_t<D>;
+
     /**
      * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
     auto rangeAllCells() -> range_t<D>;
 
+    /* -------------------------------------------------------------------------- */
+    /*                                 Converters                                 */
+    /* -------------------------------------------------------------------------- */
     /**
-     * @brief Output the simulation data to a file.
-     * @param tstep current timestep.
+     * @brief Fields on the host to hatted basis.
+     * Used for outputting/visualizing the fields.
      */
-    void WriteOutput(const unsigned long& tstep);
-
-    /**
-     * @brief Synchronize data from device to host.
-     */
-    void SynchronizeHostDevice();
+    virtual void ConvertFieldsToHat_h() = 0;
   };
 
 } // namespace ntt
