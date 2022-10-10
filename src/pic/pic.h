@@ -2,6 +2,7 @@
 #define PIC_PIC_H
 
 #include "wrapper.h"
+#include "fields.h"
 #include "simulation.h"
 
 #include <toml/toml.hpp>
@@ -119,6 +120,11 @@ namespace ntt {
      * @brief Benchmarking step.
      */
     void Benchmark();
+
+    /**
+     * @brief Convert a given field to the hatted basis on the host.
+     */
+    void ConvertFieldsToHat_h() override;
   };
 
 } // namespace ntt
