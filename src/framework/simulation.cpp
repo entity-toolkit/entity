@@ -91,6 +91,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::PrintDetails() {
+    // @TODO: make this prettier
     PLOGI << "[Simulation details]";
     PLOGI << "   title: " << m_params.title();
     PLOGI << "   type: " << stringifySimulationType(S);
@@ -171,7 +172,7 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  void Simulation<D, S>::WriteOutput(const unsigned long&) {
+  void Simulation<D, S>::WriteOutput() {
     WaitAndSynchronize();
     // auto output_format   = m_params.outputFormat();
     // auto output_interval = m_params.outputInterval();
