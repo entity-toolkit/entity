@@ -6,6 +6,7 @@
 namespace ntt {
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
   enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
+  enum fld { dens = 0 };
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.
@@ -48,13 +49,14 @@ namespace ntt {
     ndfield_t<D, 3>        cur;
     ndfield_mirror_t<D, 3> cur_h;
     /**
-     * Current fields at previous time step stored as Kokkos Views of dimension D * 3.
+     * Buffers fields used primarily to store currents at previous time step.
      *
      * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
      * component.
-     * @note Address : cur0(i, j, k, cur::***).
+     * @note Address : buff(i, j, k, ***).
      */
-    ndfield_t<D, 3> cur0;
+    ndfield_t<D, 3> buff;
+    ndfield_mirror_t<D, 3> buff_h;
 #ifdef GRPIC_SIMTYPE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific

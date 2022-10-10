@@ -176,7 +176,7 @@ namespace ntt {
      */
     void swapFieldsGR() {
       std::swap((this->m_mblock).em, (this->m_mblock).em0);
-      std::swap((this->m_mblock).cur, (this->m_mblock).cur0);
+      std::swap((this->m_mblock).cur, (this->m_mblock).buff);
     }
 
     /**

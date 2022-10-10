@@ -14,7 +14,7 @@ namespace ntt {
     auto  params = *(this->params());
     for (unsigned short i = 0; i < params.currentFilters(); ++i) {
       CurrentsExchange();
-      Kokkos::deep_copy(mblock.cur0, mblock.cur);
+      Kokkos::deep_copy(mblock.buff, mblock.cur);
       range_t<D> range = mblock.rangeActiveCells();
 #ifndef MINKOWSKI_METRIC
       if constexpr (D == Dim2) {
