@@ -29,7 +29,7 @@ namespace ntt {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
         StepForward();
-        Simulation<D, TypePIC>::WriteOutput(ti);
+        Simulation<D, TypePIC>::WriteOutput();
       }
       WaitAndSynchronize();
     }
