@@ -30,28 +30,33 @@ void initLogger(plog_t* console_appender);
 
 class NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
 protected:
-  int                                   sx1, sx2;
   ntt::SIMULATION_CONTAINER<ntt::Dim2>& m_sim;
-  std::vector<std::string>              m_fields_to_plot;
+  int                                   sx1, sx2;
+  const std::vector<std::string>        m_fields_to_plot;
+  const int                             m_fields_stride;
 
 public:
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dim2>& sim,
-                   const std::vector<std::string>&       fields_to_plot)
+                   const std::vector<std::string>&       fields_to_plot,
+                   const int&                            fields_stride)
 #ifdef PIC_SIMTYPE
     : nttiny::SimulationAPI<real_t, 2> {sim.meshblock.metric.label == "minkowski"
                                           ? nttiny::Coord::Cartesian
                                           : nttiny::Coord::Spherical,
-                                        {sim.meshblock.Ni1(), sim.meshblock.Ni2()},
+                                        {sim.meshblock.Ni1() / fields_stride,
+                                         sim.meshblock.Ni2() / fields_stride},
                                         N_GHOSTS},
 #elif defined(GRPIC_SIMTYPE)
     : nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
                                         {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
                                         N_GHOSTS},
 #endif
-      sx1 {sim.meshblock.Ni1()},
-      sx2 {sim.meshblock.Ni2()},
       m_sim(sim),
-      m_fields_to_plot(fields_to_plot) {
+      sx1 {sim.meshblock.Ni1() / fields_stride},
+      sx2 {sim.meshblock.Ni2() / fields_stride},
+      m_fields_to_plot(fields_to_plot),
+      m_fields_stride(fields_stride) {
+
     this->m_timestep = 0;
     this->m_time     = 0.0;
     generateFields();
@@ -66,21 +71,25 @@ public:
   }
 
   void setData() override {
-    m_sim.SynchronizeHostDevice();
-#ifdef GRPIC_SIMTYPE
-    Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
-    // compute the vector potential
-    m_sim.computeVectorPotential();
-#endif
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
+    // precompute necessary fields
+    for (auto& f : fields_to_plot) {
+      if (f == "density") { m_sim.ComputeDensity(); }
+    }
+    m_sim.SynchronizeHostDevice();
+    m_sim.ConvertFieldsToHat_h();
+#ifdef GRPIC_SIMTYPE
+    Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
+    // compute the vector potential
+    m_sim.computeVectorPotential();
+#endif
 
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
-    m_sim.ConvertFieldsToHat_h();
     Kokkos::parallel_for(
       "setData",
       m_sim.meshblock.rangeAllCellsOnHost(),
@@ -88,9 +97,9 @@ public:
         const auto i = (int)(i1 - ngh);
         const auto j = (int)(j1 - ngh);
         for (std::size_t fi = 0; fi < nfields; ++fi) {
-          auto    f   = fields_to_plot.at(fi);
-          auto    idx = Index(i, j);
-          ntt::em comp;
+          auto f   = fields_to_plot.at(fi);
+          auto idx = Index(i, j);
+          int  comp;
           if (f == "Ex" || f == "Er") {
             comp = ntt::em::ex1;
           } else if (f == "Ey" || f == "Etheta") {
@@ -103,8 +112,14 @@ public:
             comp = ntt::em::bx2;
           } else if (f == "Bz" || f == "Bphi") {
             comp = ntt::em::bx3;
+          } else if (f == "density") {
+            comp = ntt::fld::dens;
           }
-          Fields.at(f)[idx] = m_sim.meshblock.em_h(i1, j1, comp);
+          if (f.at(0) == 'E' || f.at(0) == 'B') {
+            Fields.at(f)[idx] = m_sim.meshblock.em_h(i1, j1, comp);
+          } else {
+            Fields.at(f)[idx] = m_sim.meshblock.buff_h(i1, j1, comp);
+          }
         }
       });
 
@@ -244,8 +259,9 @@ auto main(int argc, char* argv[]) -> int {
     auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
     auto& vis_data      = toml::find(inputdata, "visualization");
-    std::vector<std::string> fields_to_plot
-      = toml::find<std::vector<std::string>>(vis_data, "fields");
+
+    auto fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
+    auto fields_stride  = toml::find_or<int>(vis_data, "fields_stride", 1);
 
     ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
     sim.Initialize();
@@ -253,7 +269,7 @@ auto main(int argc, char* argv[]) -> int {
     sim.Verify();
     sim.PrintDetails();
     sim.InitialStep();
-    NTTSimulationVis visApi(sim, fields_to_plot);
+    NTTSimulationVis visApi(sim, fields_to_plot, fields_stride);
 
     nttiny::Visualization<real_t, 2> vis {scale};
     vis.bindSimulation(&visApi);
