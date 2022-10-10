@@ -50,8 +50,8 @@ namespace ntt {
   Inline void CurrentsFilter_kernel<Dim1>::operator()(index_t i) const {
     for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
       m_mblock.cur(i, comp)
-        = INV_2 * m_mblock.cur0(i, comp)
-          + INV_4 * (m_mblock.cur0(i - 1, comp) + m_mblock.cur0(i + 1, comp));
+        = INV_2 * m_mblock.buff(i, comp)
+          + INV_4 * (m_mblock.buff(i - 1, comp) + m_mblock.buff(i + 1, comp));
     }
   }
 
@@ -59,13 +59,13 @@ namespace ntt {
   Inline void CurrentsFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
     for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
       m_mblock.cur(i, j, comp)
-        = INV_4 * m_mblock.cur0(i, j, comp)
+        = INV_4 * m_mblock.buff(i, j, comp)
           + INV_8
-              * (m_mblock.cur0(i - 1, j, comp) + m_mblock.cur0(i + 1, j, comp)
-                 + m_mblock.cur0(i, j - 1, comp) + m_mblock.cur0(i, j + 1, comp))
+              * (m_mblock.buff(i - 1, j, comp) + m_mblock.buff(i + 1, j, comp)
+                 + m_mblock.buff(i, j - 1, comp) + m_mblock.buff(i, j + 1, comp))
           + INV_16
-              * (m_mblock.cur0(i - 1, j - 1, comp) + m_mblock.cur0(i + 1, j + 1, comp)
-                 + m_mblock.cur0(i - 1, j + 1, comp) + m_mblock.cur0(i + 1, j - 1, comp));
+              * (m_mblock.buff(i - 1, j - 1, comp) + m_mblock.buff(i + 1, j + 1, comp)
+                 + m_mblock.buff(i - 1, j + 1, comp) + m_mblock.buff(i + 1, j - 1, comp));
     }
   }
 
@@ -73,27 +73,27 @@ namespace ntt {
   Inline void CurrentsFilter_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
     for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
       m_mblock.cur(i, j, k, comp)
-        = INV_8 * m_mblock.cur0(i, j, k, comp)
+        = INV_8 * m_mblock.buff(i, j, k, comp)
           + INV_16
-              * (m_mblock.cur0(i - 1, j, k, comp) + m_mblock.cur0(i + 1, j, k, comp)
-                 + m_mblock.cur0(i, j - 1, k, comp) + m_mblock.cur0(i, j + 1, k, comp)
-                 + m_mblock.cur0(i, j, k - 1, comp) + m_mblock.cur0(i, j, k + 1, comp))
+              * (m_mblock.buff(i - 1, j, k, comp) + m_mblock.buff(i + 1, j, k, comp)
+                 + m_mblock.buff(i, j - 1, k, comp) + m_mblock.buff(i, j + 1, k, comp)
+                 + m_mblock.buff(i, j, k - 1, comp) + m_mblock.buff(i, j, k + 1, comp))
           + INV_32
-              * (m_mblock.cur0(i - 1, j - 1, k, comp) + m_mblock.cur0(i + 1, j + 1, k, comp)
-                 + m_mblock.cur0(i - 1, j + 1, k, comp) + m_mblock.cur0(i + 1, j - 1, k, comp)
-                 + m_mblock.cur0(i, j - 1, k - 1, comp) + m_mblock.cur0(i, j + 1, k + 1, comp)
-                 + m_mblock.cur0(i, j, k - 1, comp) + m_mblock.cur0(i, j, k + 1, comp)
-                 + m_mblock.cur0(i - 1, j, k - 1, comp) + m_mblock.cur0(i + 1, j, k + 1, comp)
-                 + m_mblock.cur0(i - 1, j, k + 1, comp) + m_mblock.cur0(i + 1, j, k - 1, comp))
+              * (m_mblock.buff(i - 1, j - 1, k, comp) + m_mblock.buff(i + 1, j + 1, k, comp)
+                 + m_mblock.buff(i - 1, j + 1, k, comp) + m_mblock.buff(i + 1, j - 1, k, comp)
+                 + m_mblock.buff(i, j - 1, k - 1, comp) + m_mblock.buff(i, j + 1, k + 1, comp)
+                 + m_mblock.buff(i, j, k - 1, comp) + m_mblock.buff(i, j, k + 1, comp)
+                 + m_mblock.buff(i - 1, j, k - 1, comp) + m_mblock.buff(i + 1, j, k + 1, comp)
+                 + m_mblock.buff(i - 1, j, k + 1, comp) + m_mblock.buff(i + 1, j, k - 1, comp))
           + INV_64
-              * (m_mblock.cur0(i - 1, j - 1, k - 1, comp)
-                 + m_mblock.cur0(i + 1, j + 1, k + 1, comp)
-                 + m_mblock.cur0(i - 1, j + 1, k + 1, comp)
-                 + m_mblock.cur0(i + 1, j - 1, k - 1, comp)
-                 + m_mblock.cur0(i - 1, j - 1, k + 1, comp)
-                 + m_mblock.cur0(i + 1, j + 1, k - 1, comp)
-                 + m_mblock.cur0(i - 1, j + 1, k - 1, comp)
-                 + m_mblock.cur0(i + 1, j - 1, k + 1, comp));
+              * (m_mblock.buff(i - 1, j - 1, k - 1, comp)
+                 + m_mblock.buff(i + 1, j + 1, k + 1, comp)
+                 + m_mblock.buff(i - 1, j + 1, k + 1, comp)
+                 + m_mblock.buff(i + 1, j - 1, k - 1, comp)
+                 + m_mblock.buff(i - 1, j - 1, k + 1, comp)
+                 + m_mblock.buff(i + 1, j + 1, k - 1, comp)
+                 + m_mblock.buff(i - 1, j + 1, k - 1, comp)
+                 + m_mblock.buff(i + 1, j - 1, k + 1, comp));
     }
   }
 #else
@@ -178,7 +178,7 @@ namespace ntt {
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1)
-        = INV_2 * m_mblock.cur0(i, j, cur::jx1) + INV_4 * m_mblock.cur0(i, j - 1, cur::jx1);
+        = INV_2 * m_mblock.buff(i, j, cur::jx1) + INV_4 * m_mblock.buff(i, j - 1, cur::jx1);
 
       // ... filter in r
       cur_ij   = FILTER_IN_I1(m_cur_b, cur::jx3, i, j);
@@ -186,7 +186,7 @@ namespace ntt {
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx3, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3)
-        = INV_2 * m_mblock.cur0(i, j, cur::jx3) + INV_4 * m_mblock.cur0(i, j - 1, cur::jx3);
+        = INV_2 * m_mblock.buff(i, j, cur::jx3) + INV_4 * m_mblock.buff(i, j - 1, cur::jx3);
     }
 #  elif defined(REGULAR_FILTER)
     if (j == j_min) {
@@ -212,7 +212,7 @@ namespace ntt {
       cur_ijm1 = FILTER_IN_I1(m_cur_b, cur::jx1, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1)
-        = INV_2 * m_mblock.cur0(i, j, cur::jx1) + INV_2 * m_mblock.cur0(i, j - 1, cur::jx1);
+        = INV_2 * m_mblock.buff(i, j, cur::jx1) + INV_2 * m_mblock.buff(i, j - 1, cur::jx1);
 
       // ... filter in r
       cur_ij = FILTER_IN_I1(m_cur_b, cur::jx2, i, j);
@@ -223,13 +223,13 @@ namespace ntt {
     else {
       for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
         m_mblock.cur(i, j, comp)
-          = INV_4 * m_mblock.cur0(i, j, comp)
+          = INV_4 * m_mblock.buff(i, j, comp)
             + INV_8
-                * (m_mblock.cur0(i - 1, j, comp) + m_mblock.cur0(i + 1, j, comp)
-                   + m_mblock.cur0(i, j - 1, comp) + m_mblock.cur0(i, j + 1, comp))
+                * (m_mblock.buff(i - 1, j, comp) + m_mblock.buff(i + 1, j, comp)
+                   + m_mblock.buff(i, j - 1, comp) + m_mblock.buff(i, j + 1, comp))
             + INV_16
-                * (m_mblock.cur0(i - 1, j - 1, comp) + m_mblock.cur0(i + 1, j + 1, comp)
-                   + m_mblock.cur0(i - 1, j + 1, comp) + m_mblock.cur0(i + 1, j - 1, comp));
+                * (m_mblock.buff(i - 1, j - 1, comp) + m_mblock.buff(i + 1, j + 1, comp)
+                   + m_mblock.buff(i - 1, j + 1, comp) + m_mblock.buff(i + 1, j - 1, comp));
       }
     }
   }
@@ -239,7 +239,7 @@ namespace ntt {
   template <>
   Inline void CurrentsFilter_kernel<Dim3>::operator()(index_t, index_t, index_t) const {}
 
-#endif 
+#endif
 
 } // namespace ntt
 
