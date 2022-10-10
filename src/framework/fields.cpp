@@ -16,41 +16,45 @@ namespace ntt {
   Fields<Dim1, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS},
-      cur0 {"J0", res[0] + 2 * N_GHOSTS} {
+      buff {"J0", res[0] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h  = Kokkos::create_mirror_view(em);
-    cur_h = Kokkos::create_mirror_view(cur);
+    em_h   = Kokkos::create_mirror_view(em);
+    cur_h  = Kokkos::create_mirror_view(cur);
+    buff_h = Kokkos::create_mirror_view(buff);
   }
 
   template <>
   Fields<Dim2, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
+      buff {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h  = Kokkos::create_mirror_view(em);
-    cur_h = Kokkos::create_mirror_view(cur);
+    em_h   = Kokkos::create_mirror_view(em);
+    cur_h  = Kokkos::create_mirror_view(cur);
+    buff_h = Kokkos::create_mirror_view(buff);
   }
 
   template <>
   Fields<Dim3, TypePIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
+      buff {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h  = Kokkos::create_mirror_view(em);
-    cur_h = Kokkos::create_mirror_view(cur);
+    em_h   = Kokkos::create_mirror_view(em);
+    cur_h  = Kokkos::create_mirror_view(cur);
+    buff_h = Kokkos::create_mirror_view(buff);
   }
 
   template <Dimension D, SimulationType S>
   void Fields<D, S>::SynchronizeHostDevice() {
     Kokkos::deep_copy(em_h, em);
     Kokkos::deep_copy(cur_h, cur);
-#ifdef GRPIC_SIMTYPE
-      Kokkos::deep_copy(aphi_h, aphi);
-#endif
+    Kokkos::deep_copy(buff_h, buff);
+#  ifdef GRPIC_SIMTYPE
+    Kokkos::deep_copy(aphi_h, aphi);
+#  endif
   }
-  
+
 #elif defined(GRPIC_SIMTYPE)
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
@@ -59,13 +63,14 @@ namespace ntt {
   Fields<Dim2, TypeGRPIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
-      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
+      buff {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       aux {"AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       em0 {"EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
     em_h   = Kokkos::create_mirror_view(em);
     cur_h  = Kokkos::create_mirror_view(cur);
+    buff_h = Kokkos::create_mirror_view(buff);
     aphi_h = Kokkos::create_mirror_view(aphi);
   }
 
@@ -73,13 +78,14 @@ namespace ntt {
   Fields<Dim3, TypeGRPIC>::Fields(resolution_t res)
     : em {"EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
-      cur0 {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
+      buff {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       aux {"AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       em0 {"EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
     em_h   = Kokkos::create_mirror_view(em);
     cur_h  = Kokkos::create_mirror_view(cur);
+    buff_h = Kokkos::create_mirror_view(buff);
     aphi_h = Kokkos::create_mirror_view(aphi);
   }
 #endif
