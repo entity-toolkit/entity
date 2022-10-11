@@ -46,10 +46,10 @@ public:
                                         {sim.meshblock.Ni1() / fields_stride,
                                          sim.meshblock.Ni2() / fields_stride},
                                         N_GHOSTS},
-#elif defined(GRPIC_SIMTYPE)
-    : nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
-                                        {sim.mblock()->Ni1(), sim.mblock()->Ni2()},
-                                        N_GHOSTS},
+// #elif defined(GRPIC_SIMTYPE)
+//: nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
+//{sim.mblock()->Ni1(), sim.mblock()->Ni2()},
+// N_GHOSTS},
 #endif
       m_sim(sim),
       sx1 {sim.meshblock.Ni1() / fields_stride},
@@ -73,6 +73,8 @@ public:
   void setData() override {
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
+    const auto nx1            = Grid.m_size[0] + Grid.m_ngh * 2;
+    const auto nx2            = Grid.m_size[1] + Grid.m_ngh * 2;
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
@@ -92,13 +94,23 @@ public:
     // ... need to clear this up
     Kokkos::parallel_for(
       "setData",
-      m_sim.meshblock.rangeAllCellsOnHost(),
+      // m_sim.meshblock.rangeAllCellsOnHost(),
+      ntt::CreateRangePolicyOnHost({0, 0}, {nx1, nx2}),
       Lambda(std::size_t i1, std::size_t j1) {
-        const auto i = (int)(i1 - ngh);
-        const auto j = (int)(j1 - ngh);
+        int i, j;
+        if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
+          i = i1;
+        } else {
+          i = ((int)i1 - ngh) * m_fields_stride + ngh;
+        }
+        if ((j1 < ngh) || (j1 >= nx2 - ngh)) {
+          j = j1;
+        } else {
+          j = ((int)j1 - ngh) * m_fields_stride + ngh;
+        }
         for (std::size_t fi = 0; fi < nfields; ++fi) {
           auto f   = fields_to_plot.at(fi);
-          auto idx = Index(i, j);
+          auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
           int  comp;
           if (f == "Ex" || f == "Er") {
             comp = ntt::em::ex1;
@@ -190,7 +202,7 @@ public:
       const auto sx1 {Grid.m_size[0]};
       const auto sx2 {Grid.m_size[1]};
       for (int i {0}; i <= sx1; ++i) {
-        auto                    i_ {(real_t)(i)};
+        auto                    i_ {(real_t)(i * m_fields_stride)};
         auto                    j_ {ZERO};
         ntt::coord_t<ntt::Dim2> rth_;
         m_sim.meshblock.metric.x_Code2Sph({i_, j_}, rth_);
@@ -198,7 +210,7 @@ public:
       }
       for (int j {0}; j <= sx2; ++j) {
         auto                    i_ {ZERO};
-        auto                    j_ {(real_t)(j)};
+        auto                    j_ {(real_t)(j * m_fields_stride)};
         ntt::coord_t<ntt::Dim2> rth_;
         m_sim.meshblock.metric.x_Code2Sph({i_, j_}, rth_);
         Grid.m_xi[1][j] = rth_[1];
