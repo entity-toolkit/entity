@@ -71,23 +71,3 @@ namespace ntt {
   }
 
 } // namespace ntt
-
-template ntt::range_t<ntt::Dim1>
-ntt::CreateRangePolicy<ntt::Dim1>(const ntt::tuple_t<int, ntt::Dim1>&,
-                                  const ntt::tuple_t<int, ntt::Dim1>&);
-template ntt::range_t<ntt::Dim2>
-ntt::CreateRangePolicy<ntt::Dim2>(const ntt::tuple_t<int, ntt::Dim2>&,
-                                  const ntt::tuple_t<int, ntt::Dim2>&);
-template ntt::range_t<ntt::Dim3>
-ntt::CreateRangePolicy<ntt::Dim3>(const ntt::tuple_t<int, ntt::Dim3>&,
-                                  const ntt::tuple_t<int, ntt::Dim3>&);
-
-template ntt::range_h_t<ntt::Dim1>
-ntt::CreateRangePolicyOnHost<ntt::Dim1>(const ntt::tuple_t<int, ntt::Dim1>&,
-                                        const ntt::tuple_t<int, ntt::Dim1>&);
-template ntt::range_h_t<ntt::Dim2>
-ntt::CreateRangePolicyOnHost<ntt::Dim2>(const ntt::tuple_t<int, ntt::Dim2>&,
-                                        const ntt::tuple_t<int, ntt::Dim2>&);
-template ntt::range_h_t<ntt::Dim3>
-ntt::CreateRangePolicyOnHost<ntt::Dim3>(const ntt::tuple_t<int, ntt::Dim3>&,
-                                        const ntt::tuple_t<int, ntt::Dim3>&);
