@@ -3,8 +3,8 @@ title   = "Reconnection"
 runtime = 100.0
 
 [domain]
-resolution = [1024, 512]
-extent     = [-512.0, 512.0, -256.0, 256.0]
+resolution = [256, 256]
+extent     = [-128.0, 128.0, -128.0, 128.0]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -40,7 +40,8 @@ pusher   = "BORIS"
 # ...
 
 [visualization]
-fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "density"]
+fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "density"]
+fields_stride = 4
 
 # [output]
 # format          = <string: { disabled, csv }>

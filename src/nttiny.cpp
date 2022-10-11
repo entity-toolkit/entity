@@ -95,7 +95,7 @@ public:
     Kokkos::parallel_for(
       "setData",
       // m_sim.meshblock.rangeAllCellsOnHost(),
-      ntt::CreateRangePolicyOnHost({0, 0}, {nx1, nx2}),
+      ntt::CreateRangePolicyOnHost<ntt::Dim2>({0, 0}, {nx1, nx2}),
       Lambda(std::size_t i1, std::size_t j1) {
         int i, j;
         if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
@@ -128,9 +128,9 @@ public:
             comp = ntt::fld::dens;
           }
           if (f.at(0) == 'E' || f.at(0) == 'B') {
-            Fields.at(f)[idx] = m_sim.meshblock.em_h(i1, j1, comp);
+            Fields.at(f)[idx] = m_sim.meshblock.em_h(i, j, comp);
           } else {
-            Fields.at(f)[idx] = m_sim.meshblock.buff_h(i1, j1, comp);
+            Fields.at(f)[idx] = m_sim.meshblock.buff_h(i, j, comp);
           }
         }
       });
