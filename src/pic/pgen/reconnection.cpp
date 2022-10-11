@@ -20,8 +20,8 @@ namespace ntt {
     real_t cY2      = Ymin + 0.75 * sY;
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        real_t i_ {static_cast<int>(i) - N_GHOSTS};
-        real_t j_ {static_cast<int>(j) - N_GHOSTS};
+        real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+        real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
         mblock.em(i, j, em::ex1) = ZERO;
         mblock.em(i, j, em::ex2) = ZERO;
         mblock.em(i, j, em::ex3) = ZERO;

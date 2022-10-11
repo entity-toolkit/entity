@@ -133,6 +133,6 @@ namespace ntt {
   void PIC<D>::StepBackward() {}
 } // namespace ntt
 
-template struct ntt::PIC<ntt::Dim1>;
-template struct ntt::PIC<ntt::Dim2>;
-template struct ntt::PIC<ntt::Dim3>;
+template class ntt::PIC<ntt::Dim1>;
+template class ntt::PIC<ntt::Dim2>;
+template class ntt::PIC<ntt::Dim3>;
