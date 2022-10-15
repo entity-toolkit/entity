@@ -29,7 +29,6 @@ namespace ntt {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
         StepForward();
-        Simulation<D, TypePIC>::WriteOutput();
       }
       WaitAndSynchronize();
     }
@@ -52,6 +51,7 @@ namespace ntt {
       {"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User"});
     auto  params = *(this->params());
     auto& mblock = this->meshblock;
+    auto& wrtr   = this->writer;
     auto& pgen   = this->problem_generator;
 
     if (params.fieldsolverEnabled()) {
@@ -123,6 +123,16 @@ namespace ntt {
       FieldsBoundaryConditions();
       timers.stop(2);
     }
+
+    if (this->m_tstep % params.outputInterval() == 0) {
+      if (params.outputFormat() != "disabled") {
+        WaitAndSynchronize();
+        this->SynchronizeHostDevice();
+        ConvertFieldsToHat_h();
+        wrtr.WriteFields(mblock, this->m_time, this->m_tstep);
+      }
+    }
+    
     timers.printAll(millisecond);
 
     this->m_time += mblock.timestep();
