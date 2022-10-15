@@ -36,6 +36,13 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/metric.h"
 )
 
+if(${output} STREQUAL "ON")
+  link_libraries(adios2::cxx11)
+endif()
+
+link_libraries(fmt::fmt)
+link_libraries(Kokkos::kokkos)
+
 add_library(${FRAMEWORK} STATIC)
 add_library(${PICSIM} STATIC)
 add_library(${WRAPPER} STATIC)
@@ -54,11 +61,11 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/framework framework)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/pic pic)
 
 add_executable(${ENTITY} entity.cpp)
-target_link_libraries(${ENTITY} PRIVATE Kokkos::kokkos ${WRAPPER} ${FRAMEWORK} ${PICSIM})
+target_link_libraries(${ENTITY} PRIVATE ${WRAPPER} ${FRAMEWORK} ${PICSIM})
 target_include_directories(${ENTITY} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pic)
 
-if (${nttiny} STREQUAL "ON")
+if(${nttiny} STREQUAL "ON")
   add_executable(${VIS} nttiny.cpp)
-  target_link_libraries(${VIS} PRIVATE Kokkos::kokkos nttiny ${WRAPPER} ${FRAMEWORK} ${PICSIM})
+  target_link_libraries(${VIS} PRIVATE nttiny ${WRAPPER} ${FRAMEWORK} ${PICSIM})
   target_include_directories(${VIS} PRIVATE ${EXTERN_DIR}/nttiny/ ${CMAKE_CURRENT_SOURCE_DIR}/pic/)
 endif()

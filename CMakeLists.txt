@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.0.2
+  VERSION 0.8.0.3
   LANGUAGES CXX
 )
 
@@ -87,17 +87,21 @@ if(${DEBUG} STREQUAL "OFF")
   set(Kokkos_ENABLE_COMPILER_WARNINGS OFF CACHE BOOL "Kokkos compiler warnings")
   set(Kokkos_ENABLE_DEBUG OFF CACHE BOOL "Kokkos debug")
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "Kokkos debug bounds check")
+  set(Kokkos_ENABLE_TESTS OFF CACHE BOOL "Kokkos tests")
   set(CMAKE_BUILD_TYPE Release CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+  set(BUILD_TESTING OFF CACHE BOOL "Build tests")
   message(STATUS "Release mode")
 else()
   set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF CACHE BOOL "Kokkos aggressive vectorization")
   set(Kokkos_ENABLE_COMPILER_WARNINGS ON CACHE BOOL "Kokkos compiler warnings")
   set(Kokkos_ENABLE_DEBUG ON CACHE BOOL "Kokkos debug")
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK ON CACHE BOOL "Kokkos debug bounds check")
+  set(Kokkos_ENABLE_TESTS ON CACHE BOOL "Kokkos tests")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+  set(BUILD_TESTING ON CACHE BOOL "Build tests")
   message(STATUS "Debug mode")
 endif()
 
@@ -144,9 +148,15 @@ endif()
 set(output ${default_output} CACHE BOOL "Enable output")
 
 if(${output} STREQUAL "ON")
+  set(ADIOS2_USE_Python OFF CACHE BOOL "Use Python for ADIOS2")
+  set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
+  set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
+  set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
-  set(BUILD_TESTING OFF CACHE BOOL "Build adios2 tests")
 endif()
+
+# ----------------------------------- fmt ---------------------------------- #
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/fmt extern/fmt)
 
 # ------------------------------- Main source ------------------------------ #
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
