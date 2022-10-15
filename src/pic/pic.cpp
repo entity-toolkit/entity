@@ -33,7 +33,6 @@ namespace ntt {
       WaitAndSynchronize();
     }
     PLOGI << "... mainloop finished";
-    // this->benchmark();
     Simulation<D, TypePIC>::Finalize();
     PLOGI << "... simulation finalized";
   }
@@ -47,83 +46,89 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepForward() {
-    TimerCollection timers(
-      {"Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User"});
-    auto  params = *(this->params());
-    auto& mblock = this->meshblock;
-    auto& wrtr   = this->writer;
-    auto& pgen   = this->problem_generator;
+    timer::Timers timers({"Field_Solver",
+                          "Field_BC",
+                          "Curr_Deposit",
+                          "Prtl_Pusher",
+                          "Prtl_BC",
+                          "User",
+                          "Output"});
+    auto          params = *(this->params());
+    auto&         mblock = this->meshblock;
+    auto&         wrtr   = this->writer;
+    auto&         pgen   = this->problem_generator;
 
     if (params.fieldsolverEnabled()) {
-      timers.start(1);
+      timers.start("Field_Solver");
       Faraday();
-      timers.stop(1);
+      timers.stop("Field_Solver");
 
-      timers.start(2);
+      timers.start("Field_BC");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop(2);
+      timers.stop("Field_BC");
     }
 
     {
-      timers.start(4);
+      timers.start("Prtl_Pusher");
       ParticlesPush();
-      timers.stop(4);
+      timers.stop("Prtl_Pusher");
 
-      timers.start(6);
+      timers.start("User");
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      timers.stop(6);
+      timers.stop("User");
 
-      timers.start(5);
+      timers.start("Prtl_BC");
       ParticlesBoundaryConditions();
-      timers.stop(5);
+      timers.stop("Prtl_BC");
 
       if (params.depositEnabled()) {
-        timers.start(3);
+        timers.start("Curr_Deposit");
         ResetCurrents();
         CurrentsDeposit();
 
-        timers.start(2);
+        timers.start("Field_BC");
         CurrentsSynchronize();
         CurrentsExchange();
         CurrentsBoundaryConditions();
-        timers.stop(2);
+        timers.stop("Field_BC");
 
         CurrentsFilter();
-        timers.stop(3);
+        timers.stop("Curr_Deposit");
       }
 
-      timers.start(5);
+      timers.start("Prtl_BC");
       ParticlesExchange();
-      timers.stop(5);
+      timers.stop("Prtl_BC");
     }
 
     if (params.fieldsolverEnabled()) {
-      timers.start(1);
+      timers.start("Field_Solver");
       Faraday();
-      timers.stop(1);
+      timers.stop("Field_Solver");
 
-      timers.start(2);
+      timers.start("Field_BC");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop(2);
+      timers.stop("Field_BC");
 
-      timers.start(1);
+      timers.start("Field_Solver");
       Ampere();
-      timers.stop(1);
+      timers.stop("Field_Solver");
 
       if (params.depositEnabled()) {
-        timers.start(3);
+        timers.start("Curr_Deposit");
         AmpereCurrents();
-        timers.stop(3);
+        timers.stop("Curr_Deposit");
       }
 
-      timers.start(2);
+      timers.start("Field_BC");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop(2);
+      timers.stop("Field_BC");
     }
 
+    timers.start("Output");
     if (this->m_tstep % params.outputInterval() == 0) {
       if (params.outputFormat() != "disabled") {
         WaitAndSynchronize();
@@ -132,8 +137,10 @@ namespace ntt {
         wrtr.WriteFields(mblock, this->m_time, this->m_tstep);
       }
     }
-    
-    timers.printAll(millisecond);
+    timers.stop("Output");
+
+    timers.printAll("time = " + std::to_string(this->m_time)
+                    + " : timestep = " + std::to_string(this->m_tstep));
 
     this->m_time += mblock.timestep();
     this->m_tstep++;
