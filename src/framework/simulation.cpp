@@ -56,14 +56,14 @@ namespace ntt {
                  m_params.extent(),
                  m_params.metricParameters(),
                  m_params.species()},
+      writer {m_params, meshblock},
       random_pool {constant::RandomSeed} {
     meshblock.random_pool_ptr = &random_pool;
+    meshblock.boundaries      = m_params.boundaries();
   }
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::Initialize() {
-    meshblock.boundaries = m_params.boundaries();
-
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.findSmallestCell());
     meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
@@ -169,26 +169,6 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   auto Simulation<D, S>::rangeAllCells() -> range_t<D> {
     return meshblock.rangeAllCells();
-  }
-
-  template <Dimension D, SimulationType S>
-  void Simulation<D, S>::WriteOutput() {
-    WaitAndSynchronize();
-    // auto output_format   = m_params.outputFormat();
-    // auto output_interval = m_params.outputInterval();
-    // if (output_format == "disabled") {
-    //   return;
-    // } else if (output_format == "csv") {
-    //   if ((tstep % output_interval == 0) && (output_interval > 0)) {
-    //     // csv::writeField(
-    //     //   "ex1-" + zeropad(std::to_string(tstep), 5) + ".csv", meshblock, em::ex1);
-    //     // csv::writeField(
-    //     //   "jx1-" + zeropad(std::to_string(tstep), 5) + ".csv", meshblock, cur::jx1);
-    //   }
-    // } else {
-    //   NTTHostError("unrecognized output format");
-    // }
-    // PLOGD << "Output written.";
   }
 
   template <Dimension D, SimulationType S>
