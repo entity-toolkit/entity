@@ -43,6 +43,6 @@ pusher   = "BORIS"
 fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "density"]
 fields_stride = 4
 
-# [output]
-# format          = <string: { disabled, csv }>
-# interval        = <int>
+[output]
+format          = "hdf5"
+interval        = 10
