@@ -3,8 +3,8 @@ title   = "Reconnection"
 runtime = 100.0
 
 [domain]
-resolution = [256, 256]
-extent     = [-128.0, 128.0, -128.0, 128.0]
+resolution = [2048, 1024]
+extent     = [-1024.0, 1024.0, -512.0, 512.0]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
