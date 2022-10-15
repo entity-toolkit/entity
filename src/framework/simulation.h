@@ -6,6 +6,7 @@
 #include "fields.h"
 #include "meshblock.h"
 #include "problem_generator.hpp"
+#include "writer.h"
 
 #include <toml/toml.hpp>
 
@@ -37,6 +38,8 @@ namespace ntt {
     ProblemGenerator<D, S> problem_generator;
     // meshblock with all the fields / metric / and particles
     Meshblock<D, S> meshblock;
+    // writer
+    Writer<D, S> writer;
     // random number pool
     RandomNumberPool_t random_pool;
 
@@ -72,12 +75,6 @@ namespace ntt {
     void PrintDetails();
 
     /**
-     * @brief Output the simulation data to a file.
-     * @param tstep current timestep.
-     */
-    void WriteOutput();
-
-    /**
      * @brief Finalize the simulation objects.
      */
     void Finalize();
@@ -94,6 +91,14 @@ namespace ntt {
      * @brief Get pointer to `m_params`.
      */
     [[nodiscard]] auto params() -> SimulationParams* { return &m_params; }
+    /**
+     * @brief Get the physical time
+     */
+    [[nodiscard]] auto time() const -> real_t { return m_time; }
+    /**
+     * @brief Get the current timestep
+     */
+    [[nodiscard]] auto tstep() const -> std::size_t { return m_tstep; }
 
     /**
      * @brief Loop over all active cells (disregard ghost cells).

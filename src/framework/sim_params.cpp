@@ -160,6 +160,6 @@ namespace ntt {
     m_output_format
       = readFromInput<std::string>(m_inputdata, "output", "format", defaults::output_format);
     m_output_interval
-      = readFromInput<real_t>(m_inputdata, "output", "interval", defaults::output_interval);
+      = readFromInput<int>(m_inputdata, "output", "interval", defaults::output_interval);
   }
 } // namespace ntt
