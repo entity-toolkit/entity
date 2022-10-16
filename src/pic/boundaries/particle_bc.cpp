@@ -68,3 +68,7 @@ namespace ntt {
   void PIC<Dim3>::ParticlesBoundaryConditions() {}
 
 } // namespace ntt
+
+template void ntt::PIC<ntt::Dim1>::ParticlesBoundaryConditions();
+template void ntt::PIC<ntt::Dim2>::ParticlesBoundaryConditions();
+template void ntt::PIC<ntt::Dim3>::ParticlesBoundaryConditions();

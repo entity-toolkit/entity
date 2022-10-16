@@ -27,6 +27,6 @@ namespace ntt {
   }
 } // namespace ntt
 
-template struct ntt::PIC<ntt::Dim1>;
-template struct ntt::PIC<ntt::Dim2>;
-template struct ntt::PIC<ntt::Dim3>;
+template void ntt::PIC<ntt::Dim1>::CurrentsFilter();
+template void ntt::PIC<ntt::Dim2>::CurrentsFilter();
+template void ntt::PIC<ntt::Dim3>::CurrentsFilter();

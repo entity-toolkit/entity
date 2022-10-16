@@ -21,23 +21,23 @@ namespace ntt {
                                 vec_t<Dim3>&         e_out,
                                 vec_t<Dim3>&         b_out,
                                 real_t               csW,
-                                real_t               cY1,
-                                real_t               cY2) {
-    b_out[1] = math::tanh((x_ph[0] - cY1) / csW) - math::tanh((x_ph[0] - cY2) / csW) - ONE;
+                                real_t               c1,
+                                real_t               c2) {
+    b_out[1] = math::tanh((x_ph[0] - c1) / csW) - math::tanh((x_ph[0] - c2) / csW) - ONE;
   }
 
   template <>
   void ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&   params,
                                                        Meshblock<Dim2, TypePIC>& mblock) {
-    real_t Ymin     = params.extent()[2];
-    real_t Ymax     = params.extent()[3];
-    real_t sY       = Ymax - Ymin;
+    real_t Xmin     = mblock.metric.x1_min;
+    real_t Xmax     = mblock.metric.x1_max;
+    real_t sX       = Xmax - Xmin;
     auto   cs_width = m_cs_width;
-    real_t cY1      = Ymin + 0.25 * sY;
-    real_t cY2      = Ymin + 0.75 * sY;
+    real_t cX1      = Xmin + 0.25 * sX;
+    real_t cX2      = Xmin + 0.75 * sX;
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        init_em_fields_2d(mblock, i, j, reconnectionField, cs_width, cY1, cY2);
+        init_em_fields_2d(mblock, i, j, reconnectionField, cs_width, cX1, cX2);
       });
   }
 

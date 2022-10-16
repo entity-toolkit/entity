@@ -64,21 +64,25 @@ namespace ntt {
         random_pool.free_state(rand_gen);
       });
   }
-  // 1D
   template <>
-  void ProblemGenerator<Dim1, TypePIC>::UserInitFields(const SimulationParams&,
-                                                       Meshblock<Dim1, TypePIC>&) {}
-  template <>
-  void ProblemGenerator<Dim1, TypePIC>::UserInitParticles(const SimulationParams&,
-                                                          Meshblock<Dim1, TypePIC>&) {}
+  void ProblemGenerator<Dim2, TypePIC>::UserDriveParticles(const real_t&,
+                                                           const SimulationParams&,
+                                                           Meshblock<Dim2, TypePIC>&) {}
 
-  // 3D
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::UserInitFields(const SimulationParams&,
-                                                       Meshblock<Dim3, TypePIC>&) {}
+  void ProblemGenerator<Dim2, TypePIC>::UserBCFields(const real_t&,
+                                                     const SimulationParams&,
+                                                     Meshblock<Dim2, TypePIC>&) {}
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::UserInitParticles(const SimulationParams&,
-                                                          Meshblock<Dim3, TypePIC>&) {}
+  Inline auto ProblemGenerator<Dim2, TypePIC>::UserTargetField_br_hat(
+    const Meshblock<Dim2, TypePIC>&, const coord_t<Dim2>&) const -> real_t {
+    return ZERO;
+  }
+
+  // clang-format off
+  @PgenPlaceholder1D@
+  @PgenPlaceholder3D@
+  // clang-format on
 
 } // namespace ntt
 

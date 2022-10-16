@@ -9,12 +9,18 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator {
+    ProblemGenerator(const SimulationParams&);
+
+    void        UserInitFields(const SimulationParams&, Meshblock<D, S>&);
+    void        UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
+    void        UserBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+    Inline auto UserTargetField_br_hat(const Meshblock<D, S>&, const coord_t<D>&) const
+      -> real_t;
+    void UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+
+  private:
     int    m_nx1, m_nx2;
     real_t m_amplitude;
-
-    ProblemGenerator(const SimulationParams&);
-    void userInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
-    void userInitFields(const SimulationParams&, Meshblock<D, S>&);
   };
 
 } // namespace ntt

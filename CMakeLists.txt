@@ -78,8 +78,6 @@ if(${PGEN_FOUND} EQUAL -1)
   message(FATAL_ERROR "Problem generator ${pgen}.cpp not found\nAvailable problem generators: ${problem_generators}")
 endif()
 
-# set(PGEN_SRC ${PGEN_DIRECTORY}${pgen}.cpp)
-
 # -------------------------- Compilation settings -------------------------- #
 set(DEBUG ${default_DEBUG} CACHE BOOL "Debug mode")
 
@@ -156,6 +154,7 @@ if(${output} STREQUAL "ON")
   set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
   set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
   set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
+  add_compile_options("-D OUTPUT_ENABLED")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
 endif()
 

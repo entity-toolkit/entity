@@ -83,7 +83,11 @@ public:
       if (f == "density") { m_sim.ComputeDensity(); }
     }
     m_sim.SynchronizeHostDevice();
-    m_sim.ConvertFieldsToHat_h();
+
+    // std::cout << m_sim.meshblock.em(10, 10, ntt::em::bx2) << " <<<1\n";
+    // std::cout << m_sim.meshblock.em_h(10, 10, ntt::em::bx2) << " <<<2\n";
+    // m_sim.ConvertFieldsToHat_h();
+    // std::cout << m_sim.meshblock.em_h(10, 10, ntt::em::bx2) << " <<<3\n";
 #ifdef GRPIC_SIMTYPE
     Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
     // compute the vector potential
@@ -94,7 +98,6 @@ public:
     // ... need to clear this up
     Kokkos::parallel_for(
       "setData",
-      // m_sim.meshblock.rangeAllCellsOnHost(),
       ntt::CreateRangePolicyOnHost<ntt::Dim2>({0, 0}, {nx1, nx2}),
       Lambda(std::size_t i1, std::size_t j1) {
         int i, j;
