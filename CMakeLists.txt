@@ -18,6 +18,11 @@ set(default_KOKKOS_ENABLE_OPENMP "OFF")
 
 # ----------------------------- Simulation type ---------------------------- #
 set(simtype ${default_simtype} CACHE STRING "Simulation type")
+
+if(simtype STREQUAL "grpic")
+  message(FATAL_ERROR "GRPIC is not supported yet. See the `dev/gr` branch.")
+endif()
+
 set(simulation_types "pic" "grpic")
 list(FIND simulation_types ${simtype} SIMTYPE_FOUND)
 
