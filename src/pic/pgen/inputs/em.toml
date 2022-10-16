@@ -3,8 +3,9 @@ title           = "Example"
 runtime         = 0.1
 
 [domain]
-resolution      = [512, 512]
-extent          = [-2.0, 2.0, -2.0, 2.0]
+resolution      = [128, 128]
+extent          = [-256.0, 256.0, -256.0, 256.0]
+# extent          = [-25.60, 25.60, -25.60, 25.60]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -13,8 +14,11 @@ correction      = 1.0
 
 [units]
 ppc0            = 0.1
-larmor0         = 0.1
-skindepth0      = 0.01
+larmor0         = 10.0
+skindepth0      = 10.0
+# larmor0         = 1.0
+# skindepth0      = 1.0
+
 
 [problem]
 amplitude       = 2.5
@@ -22,4 +26,5 @@ nx1             = 5
 nx2             = 5
 
 [visualization]
-fields          = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz"]
+fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "density"]
+fields_stride = 2

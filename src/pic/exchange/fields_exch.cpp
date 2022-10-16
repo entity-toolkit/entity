@@ -138,6 +138,6 @@ namespace ntt {
 
 } // namespace ntt
 
-template struct ntt::PIC<ntt::Dim1>;
-template struct ntt::PIC<ntt::Dim2>;
-template struct ntt::PIC<ntt::Dim3>;
+template void ntt::PIC<ntt::Dim1>::FieldsExchange();
+template void ntt::PIC<ntt::Dim2>::FieldsExchange();
+template void ntt::PIC<ntt::Dim3>::FieldsExchange();

@@ -40,6 +40,14 @@ namespace ntt {
   }
 } // namespace ntt
 
-template struct ntt::PIC<ntt::Dim1>;
-template struct ntt::PIC<ntt::Dim2>;
-template struct ntt::PIC<ntt::Dim3>;
+template void ntt::PIC<ntt::Dim1>::ResetParticles();
+template void ntt::PIC<ntt::Dim2>::ResetParticles();
+template void ntt::PIC<ntt::Dim3>::ResetParticles();
+
+template void ntt::PIC<ntt::Dim1>::ResetFields();
+template void ntt::PIC<ntt::Dim2>::ResetFields();
+template void ntt::PIC<ntt::Dim3>::ResetFields();
+
+template void ntt::PIC<ntt::Dim1>::ResetCurrents();
+template void ntt::PIC<ntt::Dim2>::ResetCurrents();
+template void ntt::PIC<ntt::Dim3>::ResetCurrents();
