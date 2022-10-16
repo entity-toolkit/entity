@@ -21,12 +21,10 @@ namespace ntt {
   Writer<D, S>::Writer(const SimulationParams& params, const Meshblock<D, S>& mblock) {
     m_io = m_adios.DeclareIO("WriteKokkos");
     m_io.SetEngine("HDF5");
-    writer = m_io.Open("flds.h5", adios2::Mode::Write);
-
     adios2::Dims shape, start, count;
     for (short d = 0; d < (short)D; ++d) {
-      shape.push_back(params.resolution()[d]);
-      count.push_back(params.resolution()[d]);
+      shape.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
+      count.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
       start.push_back(0);
     }
     std::reverse(shape.begin(), shape.end());
@@ -47,53 +45,69 @@ namespace ntt {
       m_io.DefineAttribute<real_t>("x3_min", mblock.metric.x3_min);
       m_io.DefineAttribute<real_t>("x3_max", mblock.metric.x3_max);
     }
+    m_io.DefineAttribute<int>("n_ghosts", N_GHOSTS);
 
     m_io.DefineAttribute<real_t>("dt", mblock.timestep());
 
     for (auto& var : {"ex1", "ex2", "ex3", "bx1", "bx2", "bx3"}) {
-      m_vars_r.emplace(var, m_io.DefineVariable<real_t>(var, shape, start, count));
+      m_vars_r.emplace(var, m_io.DefineVariable<real_t>(var, {}, {}, count));
     }
+    m_vars_r.emplace("density", m_io.DefineVariable<real_t>("density", {}, {}, count));
   }
 
   template <Dimension D, SimulationType S>
-  Writer<D, S>::~Writer() {
-    writer.Close();
-  }
+  Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationType S>
   void Writer<D, S>::WriteFields(const Meshblock<D, S>& mblock,
                                  const real_t&          time,
                                  const std::size_t&     tstep) {
-    writer.BeginStep();
+    m_writer = m_io.Open("flds.h5", m_mode);
+    m_mode   = adios2::Mode::Append;
+
+    m_writer.BeginStep();
 
     int step = (int)tstep;
-    writer.Put<int>(m_vars_i["step"], &step);
-    writer.Put<real_t>(m_vars_r["time"], &time);
+    m_writer.Put<int>(m_vars_i["step"], &step);
+    m_writer.Put<real_t>(m_vars_r["time"], &time);
 
     std::vector<std::string> field_names = {"ex1", "ex2", "ex3", "bx1", "bx2", "bx3"};
     std::vector<em>          fields = {em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3};
-    for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
-      if constexpr (D == Dim1) {
-        writer.Put<real_t>(m_vars_r[var_st],
-                           Kokkos::subview(mblock.em_h,
-                                           std::make_pair(N_GHOSTS, mblock.Ni(0) - N_GHOSTS),
-                                           (int)var));
-      } else if constexpr (D == Dim2) {
-        writer.Put<real_t>(m_vars_r[var_st],
-                           Kokkos::subview(mblock.em_h,
-                                           std::make_pair(N_GHOSTS, mblock.Ni(0) - N_GHOSTS),
-                                           std::make_pair(N_GHOSTS, mblock.Ni(1) - N_GHOSTS),
-                                           (int)var));
-      } else if constexpr (D == Dim3) {
-        writer.Put<real_t>(m_vars_r[var_st],
-                           Kokkos::subview(mblock.em_h,
-                                           std::make_pair(N_GHOSTS, mblock.Ni(0) - N_GHOSTS),
-                                           std::make_pair(N_GHOSTS, mblock.Ni(1) - N_GHOSTS),
-                                           std::make_pair(N_GHOSTS, mblock.Ni(2) - N_GHOSTS),
-                                           (int)var));
+
+    // auto slice_i1 = std::make_pair(mblock.i_min(0), mblock.i_max(0));
+    // auto slice_i2 = std::make_pair(mblock.i_min(1), mblock.i_max(1));
+    // auto slice_i3 = std::make_pair(mblock.i_min(2), mblock.i_max(2));
+    auto slice_i1 = Kokkos::ALL();
+    auto slice_i2 = Kokkos::ALL();
+    auto slice_i3 = Kokkos::ALL();
+
+    if constexpr (D == Dim1) {
+      for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
+        m_writer.Put<real_t>(m_vars_r[var_st],
+                             Kokkos::subview(mblock.em_h, slice_i1, (int)var));
       }
+      m_writer.Put<real_t>(m_vars_r["density"],
+                           Kokkos::subview(mblock.buff_h, slice_i1, (int)(fld::dens)));
+    } else if constexpr (D == Dim2) {
+      for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
+        m_writer.Put<real_t>(m_vars_r[var_st],
+                             Kokkos::subview(mblock.em_h, slice_i1, slice_i2, (int)var));
+      }
+      m_writer.Put<real_t>(
+        m_vars_r["density"],
+        Kokkos::subview(mblock.buff_h, slice_i1, slice_i2, (int)(fld::dens)));
+    } else if constexpr (D == Dim3) {
+      for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
+        m_writer.Put<real_t>(
+          m_vars_r[var_st],
+          Kokkos::subview(mblock.em_h, slice_i1, slice_i2, slice_i3, (int)var));
+      }
+      m_writer.Put<real_t>(
+        m_vars_r["density"],
+        Kokkos::subview(mblock.buff_h, slice_i1, slice_i2, slice_i3, (int)(fld::dens)));
     }
-    writer.EndStep();
+    m_writer.EndStep();
+    m_writer.Close();
     PLOGD << "Wrote fields to file.";
   }
 

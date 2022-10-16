@@ -165,6 +165,75 @@
 #define ATOMIC_JX3_3D(I, J, K)                                                                \
   (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, (K) + N_GHOSTS, cur::jx3))
 
+#define init_em_fields_2d(MBLOCK, I, J, FUNC, ...)                                            \
+  {                                                                                           \
+    real_t      i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                   \
+    real_t      j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                   \
+    vec_t<Dim3> e_hat {ZERO}, b_hat {ZERO};                                                   \
+    vec_t<Dim3> e_cntrv {ZERO}, b_cntrv {ZERO};                                               \
+                                                                                              \
+    { /* ex1 */                                                                               \
+      coord_t<Dim2> x_code {ZERO}, x_ph {ZERO};                                               \
+      x_code[0] = i_ + HALF;                                                                  \
+      x_code[1] = j_;                                                                         \
+                                                                                              \
+      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).em((I), (J), em::ex1) = e_cntrv[0];                                            \
+    }                                                                                         \
+    { /* ex2 */                                                                               \
+      coord_t<Dim2> x_code {ZERO}, x_ph {ZERO};                                               \
+      x_code[0] = i_;                                                                         \
+      x_code[1] = j_ + HALF;                                                                  \
+                                                                                              \
+      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).em((I), (J), em::ex2) = e_cntrv[1];                                            \
+    }                                                                                         \
+    { /* ex3 */                                                                               \
+      coord_t<Dim2> x_code {ZERO}, x_ph {ZERO};                                               \
+      x_code[0] = i_;                                                                         \
+      x_code[1] = j_;                                                                         \
+                                                                                              \
+      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).em((I), (J), em::ex3) = e_cntrv[2];                                            \
+    }                                                                                         \
+    { /* bx1 */                                                                               \
+      coord_t<Dim2> x_code {ZERO}, x_ph {ZERO};                                               \
+      x_code[0] = i_;                                                                         \
+      x_code[1] = j_ + HALF;                                                                  \
+                                                                                              \
+      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).em((I), (J), em::bx1) = b_cntrv[0];                                            \
+    }                                                                                         \
+    { /* bx2 */                                                                               \
+      coord_t<Dim2> x_code {ZERO}, x_ph {ZERO};                                               \
+      x_code[0] = i_ + HALF;                                                                  \
+      x_code[1] = j_;                                                                         \
+                                                                                              \
+      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).em((I), (J), em::bx2) = b_cntrv[1];                                            \
+    }                                                                                         \
+    { /* bx3 */                                                                               \
+      coord_t<Dim2> x_code {ZERO}, x_ph {ZERO};                                               \
+      x_code[0] = i_ + HALF;                                                                  \
+      x_code[1] = j_ + HALF;                                                                  \
+                                                                                              \
+      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).em((I), (J), em::bx3) = b_cntrv[2];                                            \
+    }                                                                                         \
+  }
+
 // regex
 
 // find: m_mblock.em\((.*?), em::bx(.*?)\)

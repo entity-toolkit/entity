@@ -1,10 +1,10 @@
 [simulation]
 title   = "Reconnection"
-runtime = 100.0
+runtime = 10000.0
 
 [domain]
-resolution = [2048, 1024]
-extent     = [-1024.0, 1024.0, -512.0, 512.0]
+resolution = [4096, 4096]
+extent     = [-2048.0, 2048.0, -2048.0, 2048.0]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -12,10 +12,10 @@ CFL             = 0.9
 correction      = 1.0
 fieldsolver_ON  = true
 deposit_ON      = true
-current_filters = 4
+current_filters = 8
 
 [units]
-ppc0       = 32.0
+ppc0       = 4.0
 larmor0    = 3.0
 skindepth0 = 3.0
 
@@ -26,14 +26,14 @@ n_species = 2
 label    = "e-"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 50000000.0
+maxnpart = 200000000.0
 pusher   = "BORIS"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
-maxnpart = 50000000.0
+maxnpart = 200000000.0
 pusher   = "BORIS"
 
 # [problem]
@@ -45,4 +45,4 @@ fields_stride = 4
 
 [output]
 format          = "hdf5"
-interval        = 10
+interval        = 100
