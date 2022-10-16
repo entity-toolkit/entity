@@ -19,12 +19,6 @@ namespace ntt {
     void UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&);
   };
 
-  // clang-format off
-  @PgenPlaceholder1D@
-  @PgenPlaceholder2D@
-  @PgenPlaceholder3D@
-  // clang-format on
-
 } // namespace ntt
 
 #endif

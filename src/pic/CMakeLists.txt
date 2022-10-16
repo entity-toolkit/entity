@@ -9,4 +9,4 @@ target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/particl
 target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/boundaries)
 target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/exchange)
 target_sources(${PICSIM} PRIVATE ${SRC_FILES})
-target_link_libraries(${PICSIM} PRIVATE Kokkos::kokkos ${FRAMEWORK} ${WRAPPER})
+target_link_libraries(${PICSIM} PRIVATE ${FRAMEWORK} ${WRAPPER})
