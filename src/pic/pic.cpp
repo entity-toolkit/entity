@@ -132,6 +132,7 @@ namespace ntt {
     if (this->m_tstep % params.outputInterval() == 0) {
       if (params.outputFormat() != "disabled") {
         WaitAndSynchronize();
+        ComputeDensity();
         this->SynchronizeHostDevice();
         ConvertFieldsToHat_h();
         wrtr.WriteFields(mblock, this->m_time, this->m_tstep);

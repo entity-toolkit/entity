@@ -1,13 +1,24 @@
 #include "wrapper.h"
 #include "sim_params.h"
 #include "meshblock.h"
+#include "field_macros.h"
 #include "particle_macros.h"
 
 #include "problem_generator.hpp"
 
 #include <cmath>
+#include <functional>
 
 namespace ntt {
+  
+  Inline void reconnectionField(const coord_t<Dim2>& x_ph,
+                                vec_t<Dim3>&         e_out,
+                                vec_t<Dim3>&         b_out,
+                                real_t               csW,
+                                real_t               cY1,
+                                real_t               cY2) {
+    b_out[1] = math::tanh((x_ph[0] - cY1) / csW) - math::tanh((x_ph[0] - cY2) / csW) - ONE;
+  }
 
   template <>
   void ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&   params,
@@ -20,38 +31,19 @@ namespace ntt {
     real_t cY2      = Ymin + 0.75 * sY;
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-        real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-        mblock.em(i, j, em::ex1) = ZERO;
-        mblock.em(i, j, em::ex2) = ZERO;
-        mblock.em(i, j, em::ex3) = ZERO;
-
-        vec_t<Dim3>   b_cntrv {ZERO};
-        vec_t<Dim3>   b_hat;
-        coord_t<Dim2> x_code {i_, j_ + HALF};
-        coord_t<Dim2> x_ph {ZERO};
-        mblock.metric.x_Code2Cart(x_code, x_ph);
-        b_hat[0] = math::tanh((x_ph[1] - cY1) / cs_width)
-                   - math::tanh((x_ph[1] - cY2) / cs_width) - ONE;
-        b_hat[1] = ZERO;
-        b_hat[2] = ZERO;
-        mblock.metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);
-        mblock.em(i, j, em::bx1) = b_cntrv[0];
-        mblock.em(i, j, em::bx2) = ZERO;
-        mblock.em(i, j, em::bx3) = ZERO;
+        init_em_fields_2d(mblock, i, j, reconnectionField, cs_width, cY1, cY2);
       });
   }
 
   template <>
   void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(const SimulationParams&   params,
                                                           Meshblock<Dim2, TypePIC>& mblock) {
-    std::size_t npart = (std::size_t)(
-      (double)(params.resolution()[0] * params.resolution()[1] * params.ppc0() * 0.5));
+    auto   npart = (std::size_t)((double)(mblock.Ni1() * mblock.Ni2() * params.ppc0() * 0.5));
     auto&  electrons   = mblock.particles[0];
     auto&  positrons   = mblock.particles[1];
     auto   random_pool = *(mblock.random_pool_ptr);
-    real_t Xmin = params.extent()[0], Xmax = params.extent()[1];
-    real_t Ymin = params.extent()[2], Ymax = params.extent()[3];
+    real_t Xmin = mblock.metric.x1_min, Xmax = mblock.metric.x1_max;
+    real_t Ymin = mblock.metric.x2_min, Ymax = mblock.metric.x2_max;
     electrons.setNpart(npart);
     positrons.setNpart(npart);
     Kokkos::parallel_for(
@@ -83,7 +75,3 @@ namespace ntt {
                                                           Meshblock<Dim3, TypePIC>&) {}
 
 } // namespace ntt
-
-// template struct ntt::ProblemGenerator<ntt::Dim1, ntt::TypePIC>;
-// template struct ntt::ProblemGenerator<ntt::Dim2, ntt::TypePIC>;
-// template struct ntt::ProblemGenerator<ntt::Dim3, ntt::TypePIC>;
