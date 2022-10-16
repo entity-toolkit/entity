@@ -32,6 +32,11 @@ configure_file(
   "${PGEN_DIRECTORY}/${pgen}.hpp"
   "${CMAKE_CURRENT_BINARY_DIR}/problem_generator.hpp"
 )
+set(PGEN_SRC ${CMAKE_CURRENT_BINARY_DIR}/problem_generator.cpp)
+configure_file(
+  "${PGEN_DIRECTORY}/${pgen}.cpp"
+  "${CMAKE_CURRENT_BINARY_DIR}/problem_generator.cpp"
+)
 
 # metric file
 configure_file(

@@ -20,3 +20,8 @@ ProblemGenerator<Dim1, TypePIC>::UserTargetField_br_hat(const Meshblock<Dim1, Ty
                                                         const coord_t<Dim1>&) const -> real_t {
   return ZERO;
 }
+
+template <>
+void ProblemGenerator<Dim1, TypePIC>::UserDriveParticles(const real_t&,
+                                                         const SimulationParams&,
+                                                         Meshblock<Dim1, TypePIC>&) {}

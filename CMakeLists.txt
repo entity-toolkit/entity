@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.0.3
+  VERSION 0.8.0.4
   LANGUAGES CXX
 )
 
@@ -61,7 +61,6 @@ if(${METRIC_FOUND} EQUAL -1)
 endif()
 
 # ---------------------------- Problem generator --------------------------- #
-# !TODO: add empty pgen
 set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${simtype}/pgen/)
 set(pgen ${default_pgen} CACHE STRING "Problem generator")
 file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.cpp)
@@ -79,7 +78,7 @@ if(${PGEN_FOUND} EQUAL -1)
   message(FATAL_ERROR "Problem generator ${pgen}.cpp not found\nAvailable problem generators: ${problem_generators}")
 endif()
 
-set(PGEN_SRC ${PGEN_DIRECTORY}${pgen}.cpp)
+# set(PGEN_SRC ${PGEN_DIRECTORY}${pgen}.cpp)
 
 # -------------------------- Compilation settings -------------------------- #
 set(DEBUG ${default_DEBUG} CACHE BOOL "Debug mode")
