@@ -5,8 +5,11 @@
 #include "sim_params.h"
 #include "utils.h"
 
-#include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
+#ifdef OUTPUT_ENABLED
+#  include <adios2.h>
+#  include <adios2/cxx11/KokkosView.h>
+#endif
+
 #include <plog/Log.h>
 #include <fmt/core.h>
 
@@ -17,6 +20,7 @@
 
 namespace ntt {
 
+#ifdef OUTPUT_ENABLED
   template <Dimension D, SimulationType S>
   Writer<D, S>::Writer(const SimulationParams& params, const Meshblock<D, S>& mblock) {
     m_io = m_adios.DeclareIO("WriteKokkos");
@@ -110,6 +114,19 @@ namespace ntt {
     m_writer.Close();
     PLOGD << "Wrote fields to file.";
   }
+
+#else
+
+  template <Dimension D, SimulationType S>
+  Writer<D, S>::Writer(const SimulationParams&, const Meshblock<D, S>&) {}
+
+  template <Dimension D, SimulationType S>
+  Writer<D, S>::~Writer() {}
+
+  template <Dimension D, SimulationType S>
+  void Writer<D, S>::WriteFields(const Meshblock<D, S>&, const real_t&, const std::size_t&) {}
+
+#endif
 
 } // namespace ntt
 

@@ -3,8 +3,9 @@ title   = "Reconnection"
 runtime = 10000.0
 
 [domain]
-resolution = [4096, 4096]
-extent     = [-2048.0, 2048.0, -2048.0, 2048.0]
+resolution = [256, 256]
+# extent     = [-128.0, 128.0, -128.0, 128.0]
+extent     = [-12.8, 12.8, -12.8, 12.8]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -16,8 +17,10 @@ current_filters = 8
 
 [units]
 ppc0       = 4.0
-larmor0    = 3.0
-skindepth0 = 3.0
+# larmor0    = 3.0
+# skindepth0 = 3.0
+larmor0    = 0.3
+skindepth0 = 0.3
 
 [particles]
 n_species = 2
@@ -36,12 +39,13 @@ charge   = 1.0
 maxnpart = 200000000.0
 pusher   = "BORIS"
 
-# [problem]
-# ...
+[problem]
+# cs_width = 10.0
+cs_width = 1.0
 
 [visualization]
 fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "density"]
-fields_stride = 4
+fields_stride = 2
 
 [output]
 format          = "hdf5"
