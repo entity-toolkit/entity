@@ -2,17 +2,18 @@ site_name: "Entity wiki"
 
 nav:
   - 'Home': 'index.md'
+  - 'Getting started':
+    - 'Configuring/compiling': 'getstarted/config_compile.md'
+    - 'Running': '404.md'
+    - 'Developing': '404.md'
+    - 'Testing': '404.md'
+    - 'Documenting': 'getstarted/docs.md'
+  - 'Code guide': 'guide/guide.md'
   - 'How it works':
     - '3+1 formulation': 'how/3p1.md'
     - 'Units': 'how/units.md'
     - 'PIC algorithm': 'how/pic.md'
     - 'Coordinate systems': 'how/coords.md'
-  - 'Guides':
-    - 'Configuring/compiling': '404.md'
-    - 'Running': '404.md'
-    - 'Developing': '404.md'
-    - 'Testing': '404.md'
-    - 'Documenting': 'guides/docs.md'
   - 'Fun': 
     - 'Cubed sphere': 'fun/cubed_sphere.md'
     - '"Reconnection"': 'fun/reconnection.md'
@@ -23,6 +24,8 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
+  - pymdownx.highlight:
+      use_pygments: true
   - pymdownx.tabbed:
       alternate_style: true 
   - attr_list
@@ -33,11 +36,11 @@ markdown_extensions:
       custom_checkbox: true
   - toc:
       permalink: true
-
-
+  - tables
 
 plugins:
   - search
+  - macros
 
 theme:
   name: material

@@ -85,6 +85,10 @@
   --md-code-hl-comment-color: #67737D;
 }
 
+.hide-overflow-x code {
+  white-space: pre-wrap !important;
+}
+
 /* Katex */
 .katex-display {
   margin: 0px;

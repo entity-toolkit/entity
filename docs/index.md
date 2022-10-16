@@ -12,8 +12,8 @@ __PIC__
 - [x] curvilinear field solver (2D)
 - [x] minkowski particle pusher (Boris; 1D/2D/3D)
 - [x] curvilinear particle pusher (Boris; 2D)
-- [ ] minkowski current deposition (1D/2D/3D)
-- [ ] curvilinear current deposition (2D)
+- [x] minkowski current deposition (1D/2D/3D)
+- [x] curvilinear current deposition (2D)
 - [ ] cubed sphere metric (3D)
 
 __GRPIC__
