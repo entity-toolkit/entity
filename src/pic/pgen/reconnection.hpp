@@ -9,7 +9,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator {
-    ProblemGenerator(const SimulationParams&) {}
+    ProblemGenerator(const SimulationParams&);
 
     void        UserInitFields(const SimulationParams&, Meshblock<D, S>&);
     void        UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
@@ -18,7 +18,10 @@ namespace ntt {
       -> real_t {
       return ZERO;
     }
-    void UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
+    void UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+
+  private:
+    real_t m_cs_width;
   };
 
 } // namespace ntt

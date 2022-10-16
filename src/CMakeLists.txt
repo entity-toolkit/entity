@@ -25,6 +25,9 @@ configure_file(
 )
 
 # problem generator
+file(READ "${PGEN_DIRECTORY}/placeholders/1d.h" PgenPlaceholder1D)
+file(READ "${PGEN_DIRECTORY}/placeholders/2d.h" PgenPlaceholder2D)
+file(READ "${PGEN_DIRECTORY}/placeholders/3d.h" PgenPlaceholder3D)
 configure_file(
   "${PGEN_DIRECTORY}/${pgen}.hpp"
   "${CMAKE_CURRENT_BINARY_DIR}/problem_generator.hpp"
