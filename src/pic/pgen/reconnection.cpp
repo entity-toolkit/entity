@@ -1,4 +1,5 @@
 #include "wrapper.h"
+#include "input.h"
 #include "sim_params.h"
 #include "meshblock.h"
 #include "field_macros.h"
@@ -10,7 +11,12 @@
 #include <functional>
 
 namespace ntt {
-  
+
+  template <>
+  ProblemGenerator<Dim2, TypePIC>::ProblemGenerator(const SimulationParams& params) {
+    m_cs_width = readFromInput<real_t>(params.inputdata(), "problem", "cs_width");
+  }
+
   Inline void reconnectionField(const coord_t<Dim2>& x_ph,
                                 vec_t<Dim3>&         e_out,
                                 vec_t<Dim3>&         b_out,
@@ -26,7 +32,7 @@ namespace ntt {
     real_t Ymin     = params.extent()[2];
     real_t Ymax     = params.extent()[3];
     real_t sY       = Ymax - Ymin;
-    real_t cs_width = 20.0;
+    auto   cs_width = m_cs_width;
     real_t cY1      = Ymin + 0.25 * sY;
     real_t cY2      = Ymin + 0.75 * sY;
     Kokkos::parallel_for(
@@ -58,20 +64,10 @@ namespace ntt {
         random_pool.free_state(rand_gen);
       });
   }
-  // 1D
-  template <>
-  void ProblemGenerator<Dim1, TypePIC>::UserInitFields(const SimulationParams&,
-                                                       Meshblock<Dim1, TypePIC>&) {}
-  template <>
-  void ProblemGenerator<Dim1, TypePIC>::UserInitParticles(const SimulationParams&,
-                                                          Meshblock<Dim1, TypePIC>&) {}
 
-  // 3D
   template <>
-  void ProblemGenerator<Dim3, TypePIC>::UserInitFields(const SimulationParams&,
-                                                       Meshblock<Dim3, TypePIC>&) {}
-  template <>
-  void ProblemGenerator<Dim3, TypePIC>::UserInitParticles(const SimulationParams&,
-                                                          Meshblock<Dim3, TypePIC>&) {}
+  void ProblemGenerator<Dim2, TypePIC>::UserDriveParticles(const real_t&,
+                                                           const SimulationParams&,
+                                                           Meshblock<Dim2, TypePIC>&) {}
 
 } // namespace ntt
