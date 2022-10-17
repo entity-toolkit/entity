@@ -1,0 +1,29 @@
+[simulation]
+title           = "GR_example"
+runtime         = 0.1
+
+[domain]
+qsph_r0         = 0.0
+qsph_h          = 0.1
+sph_rabsorb     = 8.0              # radius of absorbing boundary in units of r_H
+absorb_coeff    = 20.0              # absorption coefficient
+resolution      = [128, 512]
+extent          = [0.8, 10.0]       # radial extent in units of r_H
+boundaries      = ["USER", "USER"]
+a               = 0.99
+
+[algorithm]
+CFL             = 0.5
+correction      = 1.0
+
+[units]
+ppc0            = 0.1
+larmor0         = 0.1
+skindepth0      = 0.01
+
+[visualization]
+fields          = ["Dr", "Dtheta", "Dphi", 
+                   "Br", "Btheta", "Bphi", 
+                   "Er", "Etheta", "Ephi", 
+                   "Hr", "Htheta", "Hphi", 
+                   "Aphi"]
