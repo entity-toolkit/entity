@@ -42,8 +42,8 @@ namespace ntt {
       ux3 {label_ + "_ux3", maxnpart_},
       weight {label_ + "_w", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {
-    i1_h  = Kokkos::create_mirror_view(i1);
-    dx1_h = Kokkos::create_mirror_view(dx1);
+    i1_h  = Kokkos::create_mirror(i1);
+    dx1_h = Kokkos::create_mirror(dx1);
   }
 
 #ifdef MINKOWSKI_METRIC
@@ -62,10 +62,10 @@ namespace ntt {
       ux3 {label_ + "_ux3", maxnpart_},
       weight {label_ + "_w", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {
-    i1_h  = Kokkos::create_mirror_view(i1);
-    i2_h  = Kokkos::create_mirror_view(i2);
-    dx1_h = Kokkos::create_mirror_view(dx1);
-    dx2_h = Kokkos::create_mirror_view(dx2);
+    i1_h  = Kokkos::create_mirror(i1);
+    i2_h  = Kokkos::create_mirror(i2);
+    dx1_h = Kokkos::create_mirror(dx1);
+    dx2_h = Kokkos::create_mirror(dx2);
   }
 #else // axisymmetry
   template <>
@@ -84,10 +84,10 @@ namespace ntt {
       weight {label_ + "_w", maxnpart_},
       phi {label_ + "_phi", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {
-    i1_h  = Kokkos::create_mirror_view(i1);
-    i2_h  = Kokkos::create_mirror_view(i2);
-    dx1_h = Kokkos::create_mirror_view(dx1);
-    dx2_h = Kokkos::create_mirror_view(dx2);
+    i1_h  = Kokkos::create_mirror(i1);
+    i2_h  = Kokkos::create_mirror(i2);
+    dx1_h = Kokkos::create_mirror(dx1);
+    dx2_h = Kokkos::create_mirror(dx2);
   }
 #endif
   template <>
@@ -107,12 +107,12 @@ namespace ntt {
       ux3 {label_ + "_ux3", maxnpart_},
       weight {label_ + "_w", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {
-    i1_h  = Kokkos::create_mirror_view(i1);
-    i2_h  = Kokkos::create_mirror_view(i2);
-    i3_h  = Kokkos::create_mirror_view(i3);
-    dx1_h = Kokkos::create_mirror_view(dx1);
-    dx2_h = Kokkos::create_mirror_view(dx2);
-    dx3_h = Kokkos::create_mirror_view(dx3);
+    i1_h  = Kokkos::create_mirror(i1);
+    i2_h  = Kokkos::create_mirror(i2);
+    i3_h  = Kokkos::create_mirror(i3);
+    dx1_h = Kokkos::create_mirror(dx1);
+    dx2_h = Kokkos::create_mirror(dx2);
+    dx3_h = Kokkos::create_mirror(dx3);
   }
 
   // * * * * * * * * * * * * * * * * * * * *
@@ -138,10 +138,10 @@ namespace ntt {
       dx2_prev {label_ + "_dx2_prev", maxnpart_},
       phi {label_ + "_phi", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {
-    i1_h  = Kokkos::create_mirror_view(i1);
-    i2_h  = Kokkos::create_mirror_view(i2);
-    dx1_h = Kokkos::create_mirror_view(dx1);
-    dx2_h = Kokkos::create_mirror_view(dx2);
+    i1_h  = Kokkos::create_mirror(i1);
+    i2_h  = Kokkos::create_mirror(i2);
+    dx1_h = Kokkos::create_mirror(dx1);
+    dx2_h = Kokkos::create_mirror(dx2);
   }
 
   template <>
@@ -167,12 +167,12 @@ namespace ntt {
       dx2_prev {label_ + "_dx2_prev", maxnpart_},
       dx3_prev {label_ + "_dx3_prev", maxnpart_},
       is_dead {label_ + "_a", maxnpart_} {
-    i1_h  = Kokkos::create_mirror_view(i1);
-    i2_h  = Kokkos::create_mirror_view(i2);
-    i3_h  = Kokkos::create_mirror_view(i3);
-    dx1_h = Kokkos::create_mirror_view(dx1);
-    dx2_h = Kokkos::create_mirror_view(dx2);
-    dx3_h = Kokkos::create_mirror_view(dx3);
+    i1_h  = Kokkos::create_mirror(i1);
+    i2_h  = Kokkos::create_mirror(i2);
+    i3_h  = Kokkos::create_mirror(i3);
+    dx1_h = Kokkos::create_mirror(dx1);
+    dx2_h = Kokkos::create_mirror(dx2);
+    dx3_h = Kokkos::create_mirror(dx3);
   }
 
   template <Dimension D, SimulationType S>
