@@ -83,11 +83,7 @@ public:
       if (f == "density") { m_sim.ComputeDensity(); }
     }
     m_sim.SynchronizeHostDevice();
-
-    // std::cout << m_sim.meshblock.em(10, 10, ntt::em::bx2) << " <<<1\n";
-    // std::cout << m_sim.meshblock.em_h(10, 10, ntt::em::bx2) << " <<<2\n";
-    // m_sim.ConvertFieldsToHat_h();
-    // std::cout << m_sim.meshblock.em_h(10, 10, ntt::em::bx2) << " <<<3\n";
+    m_sim.ConvertFieldsToHat_h();
 #ifdef GRPIC_SIMTYPE
     Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
     // compute the vector potential

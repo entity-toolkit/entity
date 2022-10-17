@@ -4,7 +4,7 @@ runtime = 100.0
 
 [domain]
 resolution = [512, 512]
-extent     = [-256.0, 256.0, -256.0, 256.0]
+extent     = [-64.0, 64.0, -64.0, 64.0]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -16,8 +16,8 @@ current_filters = 4
 
 [units]
 ppc0       = 32.0
-larmor0    = 12.8
-skindepth0 = 12.8
+larmor0    = 10.0
+skindepth0 = 5.0
 
 [particles]
 n_species = 2
@@ -26,14 +26,14 @@ n_species = 2
 label    = "e-"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 5000000.0
+maxnpart = 5e7
 pusher   = "BORIS"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
-maxnpart = 5000000.0
+maxnpart = 5e7
 pusher   = "BORIS"
 
 [problem]
@@ -42,6 +42,8 @@ udrift_2   = -1.0
 
 [visualization]
 fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez"]
+fields_stride = 2
+
 
 # [output]
 # format          = <string: { disabled, csv }>
