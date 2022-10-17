@@ -3,15 +3,15 @@ title           = "Boris example"
 runtime         = 0.1
 
 [domain]
-resolution      = [256, 256]
+resolution      = [512, 512]
 extent          = [-2.0, 2.0, -2.0, 2.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
 CFL             = 0.9
 correction      = 1.0
-fieldsolver_ON  = true
-deposit_ON      = true
+fieldsolver_ON  = false
+deposit_ON      = false
 current_filters = 0
 
 [units]
@@ -53,4 +53,5 @@ pusher          = "Photon"
 [problem]
 
 [visualization]
-fields          = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz"]
+fields          = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz", "density"]
+fields_stride   = 4
