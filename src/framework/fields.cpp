@@ -18,9 +18,9 @@ namespace ntt {
       cur {"J", res[0] + 2 * N_GHOSTS},
       buff {"J0", res[0] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror_view(em);
-    cur_h  = Kokkos::create_mirror_view(cur);
-    buff_h = Kokkos::create_mirror_view(buff);
+    em_h   = Kokkos::create_mirror(em);
+    cur_h  = Kokkos::create_mirror(cur);
+    buff_h = Kokkos::create_mirror(buff);
   }
 
   template <>
@@ -29,9 +29,9 @@ namespace ntt {
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       buff {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror_view(em);
-    cur_h  = Kokkos::create_mirror_view(cur);
-    buff_h = Kokkos::create_mirror_view(buff);
+    em_h   = Kokkos::create_mirror(em);
+    cur_h  = Kokkos::create_mirror(cur);
+    buff_h = Kokkos::create_mirror(buff);
   }
 
   template <>
@@ -40,9 +40,9 @@ namespace ntt {
       cur {"J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       buff {"J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror_view(em);
-    cur_h  = Kokkos::create_mirror_view(cur);
-    buff_h = Kokkos::create_mirror_view(buff);
+    em_h   = Kokkos::create_mirror(em);
+    cur_h  = Kokkos::create_mirror(cur);
+    buff_h = Kokkos::create_mirror(buff);
   }
 
   template <Dimension D, SimulationType S>
@@ -68,10 +68,10 @@ namespace ntt {
       em0 {"EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS},
       aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror_view(em);
-    cur_h  = Kokkos::create_mirror_view(cur);
-    buff_h = Kokkos::create_mirror_view(buff);
-    aphi_h = Kokkos::create_mirror_view(aphi);
+    em_h   = Kokkos::create_mirror(em);
+    cur_h  = Kokkos::create_mirror(cur);
+    buff_h = Kokkos::create_mirror(buff);
+    aphi_h = Kokkos::create_mirror(aphi);
   }
 
   template <>
@@ -83,10 +83,10 @@ namespace ntt {
       em0 {"EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS},
       aphi {"APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS} {
     PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror_view(em);
-    cur_h  = Kokkos::create_mirror_view(cur);
-    buff_h = Kokkos::create_mirror_view(buff);
-    aphi_h = Kokkos::create_mirror_view(aphi);
+    em_h   = Kokkos::create_mirror(em);
+    cur_h  = Kokkos::create_mirror(cur);
+    buff_h = Kokkos::create_mirror(buff);
+    aphi_h = Kokkos::create_mirror(aphi);
   }
 #endif
 
