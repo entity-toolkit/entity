@@ -154,7 +154,7 @@ public:
     auto& Buffers = this->buffers;
     // if (m_sim.meshblock.metric.label != "minkowski") {
     Buffers["ex"].AddPoint(m_time,
-                           m_sim.meshblock.em_h((int)(m_sim.meshblock.Ni1() / 5.0),
+                           m_sim.meshblock.em_h((int)(m_sim.meshblock.Ni1() / 8.0),
                                                 (int)(m_sim.meshblock.Ni2() / 2.0),
                                                 ntt::em::ex1));
     // Buffers["u_prtl"].AddPoint(m_time, m_sim.meshblock.particles[0].ux1_h(0));

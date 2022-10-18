@@ -14,26 +14,7 @@ namespace ntt {
 
   template <>
   void ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&,
-                                                       Meshblock<Dim2, TypePIC>&) {
-    // real_t Ymin     = params.extent()[2];
-    // real_t Ymax     = params.extent()[3];
-    // real_t sY       = Ymax - Ymin;
-    // real_t cs_width = 20.0;
-    // real_t cY1      = Ymin + 0.25 * sY;
-    // real_t cY2      = Ymin + 0.75 * sY;
-    // Kokkos::parallel_for(
-    //   "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-    //     real_t i_ {static_cast<int>(i) - N_GHOSTS};
-    //     real_t j_ {static_cast<int>(j) - N_GHOSTS};
-    //     mblock.em(i, j, em::ex1) = ZERO;
-    //     mblock.em(i, j, em::ex2) = ZERO;
-    //     mblock.em(i, j, em::ex3) = ZERO;
-
-    //     mblock.em(i, j, em::bx1) = ZERO;
-    //     mblock.em(i, j, em::bx2) = ZERO;
-    //     mblock.em(i, j, em::bx3) = ZERO;
-    //   });
-  }
+                                                       Meshblock<Dim2, TypePIC>&) {}
 
   template <>
   void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(const SimulationParams&   params,
@@ -54,10 +35,9 @@ namespace ntt {
         real_t rx = rand_gen.frand(Xmin, Xmax);
         real_t ry = rand_gen.frand(Ymin, Ymax);
         real_t u1
-          = (real_t)(0.01) * math::sin((real_t)(5.0) * constant::TWO_PI * rx / (Xmax - Xmin));
+          = (real_t)(0.01) * math::sin((real_t)(2.0) * constant::TWO_PI * rx / (Xmax - Xmin));
 
         init_prtl_2d_XYZ(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
-        // init_prtl_2d_XYZ(mblock, positrons, p, rx, ry, u2, 0.0, 0.0);
         random_pool.free_state(rand_gen);
       });
   }
