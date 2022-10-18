@@ -13,14 +13,24 @@ namespace ntt {
     const auto dt     = mblock.timestep();
     const auto rho0   = params.larmor0();
     const auto de0    = params.skindepth0();
-    const auto n0     = params.ppc0();
-    const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+    const auto ncells = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
 #ifdef MINKOWSKI_METRIC
-    const auto dx = (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1;
+    const auto sx1    = (short)D > 0 ? (mblock.metric.x1_max - mblock.metric.x1_min) : 1.0;
+    const auto sx2    = (short)D > 1 ? (mblock.metric.x2_max - mblock.metric.x2_min) : 1.0;
+    const auto sx3    = (short)D > 2 ? (mblock.metric.x3_max - mblock.metric.x3_min) : 1.0;
+    const auto volume = sx1 * sx2 * sx3;
+    const auto n0     = params.ppc0() * (real_t)ncells / volume;
+    const auto dx     = (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1;
+    const auto coeff  = -dt * rho0 / (n0 * SQR(de0) * CUBE(dx));
     Kokkos::parallel_for("add_currents",
                          mblock.rangeActiveCells(),
-                         CurrentsAmpere_kernel<D>(mblock, coeff / CUBE(dx)));
+                         CurrentsAmpere_kernel<D>(mblock, coeff));
 #else
+    const auto rmin = mblock.metric.x1_min;
+    const auto volume = constant::TWO_PI * SQR(rmin);
+    const auto n0     = params.ppc0() * (real_t)ncells / volume;
+    const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+
     tuple_t<tuple_t<short, Dim2>, D> range;
     // skip the axis
     if constexpr (D == Dim1) {
