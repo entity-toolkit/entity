@@ -102,6 +102,8 @@ namespace ntt {
     array_mirror_t<float*> dx1_h, dx2_h, dx3_h;
     // Three spatial components of the covariant 4-velocity (physical units).
     array_t<real_t*> ux1, ux2, ux3;
+    // host mirrors for the 4-velocities.
+    array_mirror_t<real_t*> ux1_h, ux2_h, ux3_h;
     // Particle weights.
     array_t<float*> weight;
 

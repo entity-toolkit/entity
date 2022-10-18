@@ -3,8 +3,8 @@ title           = "Boris example"
 runtime         = 0.1
 
 [domain]
-resolution      = [512, 512]
-extent          = [-2.0, 2.0, -2.0, 2.0]
+resolution      = [128, 128]
+extent          = [-1.0, 1.0, -1.0, 1.0]
 boundaries      = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -16,11 +16,11 @@ current_filters = 0
 
 [units]
 ppc0            = 1.0
-larmor0         = 0.1
-skindepth0      = 10.0
+larmor0         = 0.04
+skindepth0      = 0.04
 
 [particles]
-n_species       = 2
+n_species       = 1
 
 [species_1]
 label           = "electron"

@@ -16,24 +16,24 @@ current_filters = 4
 
 [units]
 ppc0       = 32.0
-larmor0    = 10.0
-skindepth0 = 10.0
+larmor0    = 20.0
+skindepth0 = 20.0
 
 [particles]
-n_species = 2
+n_species = 1
 
 [species_1]
 label    = "e-"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 5e7
+maxnpart = 5e8
 pusher   = "BORIS"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
-maxnpart = 5e7
+maxnpart = 5e8
 pusher   = "BORIS"
 
 [problem]
@@ -42,7 +42,7 @@ udrift_2   = -1.0
 
 [visualization]
 fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez"]
-fields_stride = 2
+fields_stride = 8
 
 
 # [output]
