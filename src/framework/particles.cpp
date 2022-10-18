@@ -44,6 +44,9 @@ namespace ntt {
       is_dead {label_ + "_a", maxnpart_} {
     i1_h  = Kokkos::create_mirror(i1);
     dx1_h = Kokkos::create_mirror(dx1);
+    ux1_h = Kokkos::create_mirror(ux1);
+    ux2_h = Kokkos::create_mirror(ux2);
+    ux3_h = Kokkos::create_mirror(ux3);
   }
 
 #ifdef MINKOWSKI_METRIC
@@ -66,6 +69,9 @@ namespace ntt {
     i2_h  = Kokkos::create_mirror(i2);
     dx1_h = Kokkos::create_mirror(dx1);
     dx2_h = Kokkos::create_mirror(dx2);
+    ux1_h = Kokkos::create_mirror(ux1);
+    ux2_h = Kokkos::create_mirror(ux2);
+    ux3_h = Kokkos::create_mirror(ux3);
   }
 #else // axisymmetry
   template <>
@@ -88,6 +94,9 @@ namespace ntt {
     i2_h  = Kokkos::create_mirror(i2);
     dx1_h = Kokkos::create_mirror(dx1);
     dx2_h = Kokkos::create_mirror(dx2);
+    ux1_h = Kokkos::create_mirror(ux1);
+    ux2_h = Kokkos::create_mirror(ux2);
+    ux3_h = Kokkos::create_mirror(ux3);
   }
 #endif
   template <>
@@ -113,6 +122,9 @@ namespace ntt {
     dx1_h = Kokkos::create_mirror(dx1);
     dx2_h = Kokkos::create_mirror(dx2);
     dx3_h = Kokkos::create_mirror(dx3);
+    ux1_h = Kokkos::create_mirror(ux1);
+    ux2_h = Kokkos::create_mirror(ux2);
+    ux3_h = Kokkos::create_mirror(ux3);
   }
 
   // * * * * * * * * * * * * * * * * * * * *
@@ -142,6 +154,9 @@ namespace ntt {
     i2_h  = Kokkos::create_mirror(i2);
     dx1_h = Kokkos::create_mirror(dx1);
     dx2_h = Kokkos::create_mirror(dx2);
+    ux1_h = Kokkos::create_mirror(ux1);
+    ux2_h = Kokkos::create_mirror(ux2);
+    ux3_h = Kokkos::create_mirror(ux3);
   }
 
   template <>
@@ -173,6 +188,9 @@ namespace ntt {
     dx1_h = Kokkos::create_mirror(dx1);
     dx2_h = Kokkos::create_mirror(dx2);
     dx3_h = Kokkos::create_mirror(dx3);
+    ux1_h = Kokkos::create_mirror(ux1);
+    ux2_h = Kokkos::create_mirror(ux2);
+    ux3_h = Kokkos::create_mirror(ux3);
   }
 
   template <Dimension D, SimulationType S>
@@ -191,18 +209,21 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Particles<D, S>::SynchronizeHostDevice() {
-    if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
-      Kokkos::deep_copy(i1_h, i1);
-      Kokkos::deep_copy(dx1_h, dx1);
-    }
-    if constexpr (D == Dim2 || D == Dim3) {
-      Kokkos::deep_copy(i2_h, i2);
-      Kokkos::deep_copy(dx2_h, dx2);
-    }
-    if constexpr (D == Dim3) {
-      Kokkos::deep_copy(i3_h, i3);
-      Kokkos::deep_copy(dx3_h, dx3);
-    }
+    // if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
+    //   Kokkos::deep_copy(i1_h, i1);
+    //   Kokkos::deep_copy(dx1_h, dx1);
+    // }
+    // if constexpr (D == Dim2 || D == Dim3) {
+    //   Kokkos::deep_copy(i2_h, i2);
+    //   Kokkos::deep_copy(dx2_h, dx2);
+    // }
+    // if constexpr (D == Dim3) {
+    //   Kokkos::deep_copy(i3_h, i3);
+    //   Kokkos::deep_copy(dx3_h, dx3);
+    // }
+    // Kokkos::deep_copy(ux1_h, ux1);
+    // Kokkos::deep_copy(ux2_h, ux2);
+    // Kokkos::deep_copy(ux3_h, ux3);
   }
 
 } // namespace ntt

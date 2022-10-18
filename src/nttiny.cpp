@@ -63,10 +63,12 @@ public:
     generateGrid();
     // generateParticles();
 
-    if (sim.meshblock.metric.label != "minkowski") {
-      nttiny::ScrollingBuffer flux_E;
-      this->buffers.insert({"flux_Er", std::move(flux_E)});
-    }
+    // if (sim.meshblock.metric.label != "minkowski") {
+    nttiny::ScrollingBuffer ex;
+    this->buffers.insert({"ex", std::move(ex)});
+    // nttiny::ScrollingBuffer u_prtl;
+    // this->buffers.insert({"u_prtl", std::move(u_prtl)});
+    // }
     setData();
   }
 
@@ -149,9 +151,13 @@ public:
     //   ++s;
     // }
     // real_t flux_E = ZERO;
-    // auto& Buffers = this->buffers;
+    auto& Buffers = this->buffers;
     // if (m_sim.meshblock.metric.label != "minkowski") {
-    //   Buffers["flux_Er"].AddPoint(m_time, (float)(-flux_E));
+    Buffers["ex"].AddPoint(m_time,
+                           m_sim.meshblock.em_h((int)(m_sim.meshblock.Ni1() / 5.0),
+                                                (int)(m_sim.meshblock.Ni2() / 2.0),
+                                                ntt::em::ex1));
+    // Buffers["u_prtl"].AddPoint(m_time, m_sim.meshblock.particles[0].ux1_h(0));
     // }
   }
   void stepFwd() override {
