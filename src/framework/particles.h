@@ -151,7 +151,12 @@ namespace ntt {
      * @brief Set the number of particles.
      * @param npart number of particles.
      */
-    void setNpart(const std::size_t& N) { m_npart = N; }
+    void setNpart(const std::size_t& N) { 
+      if (N > maxnpart()) {
+        NTTHostError("Trying to set npart to a value larger than maxnpart.");
+      }
+      m_npart = N; 
+    }
 
     /**
      * @brief Synchronize data from device to host.
