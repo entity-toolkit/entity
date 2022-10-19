@@ -18,8 +18,8 @@ namespace ntt {
       range_t<D> range = mblock.rangeActiveCells();
 #ifndef MINKOWSKI_METRIC
       if constexpr (D == Dim2) {
-        range = CreateRangePolicy<Dim2>({m_mesh.i1_min(), m_mesh.i2_min()},
-                                        {m_mesh.i1_max(), m_mesh.i2_max() + 1});
+        range = CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()},
+                                        {mblock.i1_max(), mblock.i2_max() + 1});
       }
 #endif
       Kokkos::parallel_for("filter_pass", range, CurrentsFilter_kernel<D>(mblock));

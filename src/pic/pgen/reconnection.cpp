@@ -37,7 +37,7 @@ namespace ntt {
     real_t cX2      = Xmin + 0.75 * sX;
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        init_em_fields_2d(mblock, i, j, reconnectionField, cs_width, cX1, cX2);
+        set_em_fields_2d(mblock, i, j, reconnectionField, cs_width, cX1, cX2);
       });
   }
 
