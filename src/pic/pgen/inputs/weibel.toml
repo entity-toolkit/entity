@@ -4,7 +4,7 @@ runtime = 100.0
 
 [domain]
 resolution = [1024, 1024]
-extent     = [-256.0, 256.0, -256.0, 256.0]
+extent     = [-1.0, 1.0, -1.0, 1.0]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
@@ -16,8 +16,8 @@ current_filters = 4
 
 [units]
 ppc0       = 32.0
-larmor0    = 10.0
-skindepth0 = 10.0
+larmor0    = 0.1
+skindepth0 = 0.1
 
 [particles]
 n_species = 2
@@ -41,8 +41,8 @@ udrift_1   = 1.0
 udrift_2   = -1.0
 
 [visualization]
-fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez"]
-fields_stride = 2
+fields = ["Bz"]
+fields_stride = 4
 
 
 # [output]

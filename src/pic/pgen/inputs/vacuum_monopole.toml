@@ -1,0 +1,28 @@
+[simulation]
+title   = "Vacuum_monopole"
+runtime = 0.1
+
+[domain]
+qsph_r0     = 0.0
+qsph_h      = 0.001
+sph_rabsorb = 48.0
+resolution  = [128, 64]
+extent      = [1.0, 50.0]
+boundaries  = ["USER", "USER"]
+
+[algorithm]
+CFL        = 0.9
+correction = 1.0
+
+[units]
+ppc0       = 10.0
+larmor0    = 0.1
+skindepth0 = 0.01
+
+[problem]
+spinup_time = 20.0
+omega_max   = 0.01
+
+[visualization]
+fields        = ["Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi"]
+fields_stride = 1

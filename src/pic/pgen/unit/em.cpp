@@ -47,7 +47,7 @@ namespace ntt {
     ey_ampl = m_amplitude * ey_ampl / math::sqrt(ex_ampl * ex_ampl + ey_ampl * ey_ampl);
     Kokkos::parallel_for(
       "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        init_em_fields_2d(mblock, i, j, emWaveField, ex_ampl, ey_ampl, bz_ampl, kx, ky);
+        set_em_fields_2d(mblock, i, j, emWaveField, ex_ampl, ey_ampl, bz_ampl, kx, ky);
       });
   }
 

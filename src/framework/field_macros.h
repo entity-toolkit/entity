@@ -165,7 +165,7 @@
 #define ATOMIC_JX3_3D(I, J, K)                                                                \
   (cur_access((I) + N_GHOSTS, (J) + N_GHOSTS, (K) + N_GHOSTS, cur::jx3))
 
-#define init_em_fields_2d(MBLOCK, I, J, FUNC, ...)                                            \
+#define set_em_fields_2d(MBLOCK, I, J, FUNC, ...)                                             \
   {                                                                                           \
     real_t      i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                   \
     real_t      j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                   \
