@@ -16,6 +16,7 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
+    PLOGD << "... ... currents filter substep finished";
   }
 
 } // namespace ntt

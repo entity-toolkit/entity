@@ -24,6 +24,7 @@ namespace ntt {
     (void)(fraction);
     NTTHostError("ampere for this metric not defined");
 #endif
+    PLOGD << "... ... ampere substep finished";
   }
 
   template <>
@@ -45,6 +46,7 @@ namespace ntt {
                          CreateRangePolicy<Dim1>({mblock.i1_min()}, {mblock.i1_max()}),
                          AmperePoles_kernel<Dim2>(mblock, coeff));
 #endif
+    PLOGD << "... ... ampere substep finished";
   }
 
   template <>
@@ -61,6 +63,7 @@ namespace ntt {
     (void)(fraction);
     NTTHostError("ampere for this metric not defined");
 #endif
+    PLOGD << "... ... ampere substep finished";
   }
 
 } // namespace ntt
