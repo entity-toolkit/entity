@@ -58,6 +58,7 @@ namespace ntt {
                            CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
     }
 #endif
+    PLOGD << "... ... ampere currents substep finished";
   }
 } // namespace ntt
 
