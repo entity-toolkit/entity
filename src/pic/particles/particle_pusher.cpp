@@ -13,6 +13,7 @@ namespace ntt {
       Pusher_kernel<D> pusher(mblock, species, coeff, dt);
       pusher.apply();
     }
+    PLOGD << "... ... particle push substep finished";
   }
 
 } // namespace ntt
