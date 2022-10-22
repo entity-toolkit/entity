@@ -89,29 +89,34 @@ if(${DEBUG} STREQUAL "OFF")
   set(Kokkos_ENABLE_COMPILER_WARNINGS OFF CACHE BOOL "Kokkos compiler warnings")
   set(Kokkos_ENABLE_DEBUG OFF CACHE BOOL "Kokkos debug")
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "Kokkos debug bounds check")
-  set(Kokkos_ENABLE_TESTS OFF CACHE BOOL "Kokkos tests")
   set(CMAKE_BUILD_TYPE Release CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
-  set(BUILD_TESTING OFF CACHE BOOL "Build tests")
   message(STATUS "Release mode")
 else()
   set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF CACHE BOOL "Kokkos aggressive vectorization")
   set(Kokkos_ENABLE_COMPILER_WARNINGS ON CACHE BOOL "Kokkos compiler warnings")
   set(Kokkos_ENABLE_DEBUG ON CACHE BOOL "Kokkos debug")
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK ON CACHE BOOL "Kokkos debug bounds check")
-  set(Kokkos_ENABLE_TESTS ON CACHE BOOL "Kokkos tests")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  set(BUILD_TESTING ON CACHE BOOL "Build tests")
   message(STATUS "Debug mode")
+endif()
+
+# ---------------------------------- tests --------------------------------- #
+set(BUILD_TESTING OFF CACHE BOOL "Build tests")
+
+if(${BUILD_TESTING} STREQUAL "OFF")
+  set(Kokkos_ENABLE_TESTS OFF CACHE BOOL "Kokkos tests")
+else()
+  set(Kokkos_ENABLE_TESTS ON CACHE BOOL "Kokkos tests")
 endif()
 
 # ----------------------------------- GUI ---------------------------------- #
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
 if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nttiny extern/nttiny)
 endif()
 
 # ----------------------------- Kokkos settings ---------------------------- #
