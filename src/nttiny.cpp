@@ -57,8 +57,8 @@ public:
       m_fields_to_plot(fields_to_plot),
       m_fields_stride(fields_stride) {
 
-    this->m_timestep = 0;
-    this->m_time     = 0.0;
+    m_time     = 0.0;
+    m_timestep = 0;
     generateFields();
     generateGrid();
     // generateParticles();
@@ -141,9 +141,9 @@ public:
     // for (const auto& [lbl, species] : Particles) {
     //   auto sim_species = m_sim.meshblock.particles[s];
     //   for (int p {0}; p < species.first; ++p) {
-    //     real_t                  x1 {(real_t)(sim_species.i1_h(p)) + sim_species.dx1_h(p)};
-    //     real_t                  x2 {(real_t)(sim_species.i2_h(p)) + sim_species.dx2_h(p)};
-    //     ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
+    //     real_t                  x1 {(real_t)(sim_species.i1_h(p)) +
+    //     sim_species.dx1_h(p)}; real_t                  x2 {(real_t)(sim_species.i2_h(p))
+    //     + sim_species.dx2_h(p)}; ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
     //     m_sim.meshblock.metric.x_Code2Cart({x1, x2}, xy);
     //     species.second[0][p] = xy[0];
     //     species.second[1][p] = xy[1];
@@ -166,14 +166,11 @@ public:
     m_time += m_sim.meshblock.timestep();
   }
   void restart() override {
-    m_sim.ResetCurrents();
-    m_sim.ResetFields();
-    m_sim.ResetParticles();
-    m_sim.InitializeSetup();
-    m_sim.InitialStep();
-    setData();
     m_time     = 0.0;
     m_timestep = 0;
+    m_sim.ResetSimulation();
+    m_sim.InitialStep();
+    setData();
   }
   void stepBwd() override {}
 
@@ -278,15 +275,17 @@ auto main(int argc, char* argv[]) -> int {
 
     ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
     sim.Initialize();
-    sim.InitializeSetup();
     sim.Verify();
-    sim.PrintDetails();
+    sim.ResetSimulation();
     sim.InitialStep();
+    sim.PrintDetails();
     NTTSimulationVis visApi(sim, fields_to_plot, fields_stride);
 
     nttiny::Visualization<real_t, 2> vis {scale};
     vis.bindSimulation(&visApi);
     vis.loop();
+
+    sim.Finalize();
   }
   catch (std::exception& err) {
     std::cerr << err.what() << std::endl;

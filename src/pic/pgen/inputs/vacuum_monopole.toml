@@ -20,7 +20,7 @@ larmor0    = 0.1
 skindepth0 = 0.01
 
 [problem]
-spinup_time = 20.0
+spinup_time = 200.0
 omega_max   = 0.01
 
 [visualization]
