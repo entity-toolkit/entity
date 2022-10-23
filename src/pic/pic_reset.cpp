@@ -1,8 +1,24 @@
 #include "wrapper.h"
+#include "simulation.h"
 #include "pic.h"
 #include "pic_reset.hpp"
 
 namespace ntt {
+  /**
+   * @brief reset simulation.
+   *
+   */
+  template <Dimension D>
+  void PIC<D>::ResetSimulation() {
+    ResetFields();
+    ResetParticles();
+    ResetCurrents();
+    this->InitializeSetup();
+    FieldsExchange();
+    FieldsBoundaryConditions();
+    PLOGI << "... simulation was reset";
+  }
+
   /**
    * @brief reset fields.
    *
@@ -51,3 +67,7 @@ template void ntt::PIC<ntt::Dim3>::ResetFields();
 template void ntt::PIC<ntt::Dim1>::ResetCurrents();
 template void ntt::PIC<ntt::Dim2>::ResetCurrents();
 template void ntt::PIC<ntt::Dim3>::ResetCurrents();
+
+template void ntt::PIC<ntt::Dim1>::ResetSimulation();
+template void ntt::PIC<ntt::Dim2>::ResetSimulation();
+template void ntt::PIC<ntt::Dim3>::ResetSimulation();

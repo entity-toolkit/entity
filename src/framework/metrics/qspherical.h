@@ -131,6 +131,7 @@ namespace ntt {
         real_t chi {x[0] * dchi + chi_min};
         return dchi_sqr * math::exp(2.0 * chi);
       } else {
+        NTTError("1D qspherical not available");
         return ZERO;
       }
     }
@@ -148,6 +149,7 @@ namespace ntt {
         real_t dtheta_deta_ {dtheta_deta(eta)};
         return deta_sqr * SQR(dtheta_deta_) * r * r;
       } else {
+        NTTError("1D qspherical not available");
         return ZERO;
       }
     }
@@ -166,6 +168,7 @@ namespace ntt {
         real_t sin_theta {math::sin(theta)};
         return r * r * sin_theta * sin_theta;
       } else {
+        NTTError("1D qspherical not available");
         return ZERO;
       }
     }
@@ -185,6 +188,7 @@ namespace ntt {
         real_t dtheta_deta_ {dtheta_deta(eta)};
         return dchi * deta * math::exp(chi) * r * r * sin_theta * dtheta_deta_;
       } else {
+        NTTError("1D qspherical not available");
         return ZERO;
       }
     }
@@ -202,6 +206,7 @@ namespace ntt {
         real_t del_theta {eta2theta(del_eta)};
         return dchi * math::exp(chi) * r * r * (ONE - math::cos(del_theta));
       } else {
+        NTTError("1D qspherical not available");
         return ZERO;
       }
     }
