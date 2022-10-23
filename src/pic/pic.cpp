@@ -10,21 +10,14 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::Run() {
     Simulation<D, TypePIC>::Initialize();
-    PLOGI << "... simulation initialized";
-    Simulation<D, TypePIC>::InitializeSetup();
-    PLOGI << "... simulation setup initialized";
     Simulation<D, TypePIC>::Verify();
-    PLOGI << "... simulation verified";
-    Simulation<D, TypePIC>::PrintDetails();
-    PLOGI << "... simulation details printed";
     {
       auto  params = *(this->params());
       auto& mblock = this->meshblock;
       auto  timax  = (unsigned long)(params.totalRuntime() / mblock.timestep());
-      PLOGI << "simulation mainloop started ...";
 
-      FieldsExchange();
-      FieldsBoundaryConditions();
+      ResetSimulation();
+      Simulation<D, TypePIC>::PrintDetails();
       for (unsigned long ti {0}; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
@@ -32,9 +25,7 @@ namespace ntt {
       }
       WaitAndSynchronize();
     }
-    PLOGI << "... mainloop finished";
     Simulation<D, TypePIC>::Finalize();
-    PLOGI << "... simulation finalized";
   }
 
   template <Dimension D>

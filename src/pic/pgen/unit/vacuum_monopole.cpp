@@ -63,7 +63,10 @@ namespace ntt {
       CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()},
                               {mblock.i1_min() + 1, mblock.i2_max()}),
       Lambda(index_t i, index_t j) {
-        set_em_fields_2d(mblock, i, j, surfaceRotationField, r_min, omega);
+        // set_em_fields_2d(mblock, i, j, surfaceRotationField, r_min, omega);
+        set_ex2_2d(mblock, i, j, surfaceRotationField, r_min, omega);
+        set_ex3_2d(mblock, i, j, surfaceRotationField, r_min, omega);
+        set_bx1_2d(mblock, i, j, surfaceRotationField, r_min, omega);
       });
 
     Kokkos::parallel_for(

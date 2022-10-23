@@ -54,6 +54,10 @@ namespace ntt {
      * @brief Reset particles.
      */
     void ResetParticles();
+    /**
+     * @brief Reset whole simulation.
+     */
+    void ResetSimulation();
 
     /* --------------------------------- Fields --------------------------------- */
     /**
