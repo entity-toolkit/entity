@@ -81,19 +81,19 @@ endif()
 # ---------------------------- Problem generator --------------------------- #
 set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${simtype}/pgen/)
 set(pgen ${default_pgen} CACHE STRING "Problem generator")
-file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.cpp)
+file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
 set(problem_generators "")
 
 foreach(pgen_file ${PGENS})
   string(REPLACE ${PGEN_DIRECTORY} "" new_pgen ${pgen_file})
-  string(REPLACE ".cpp" "" new_pgen ${new_pgen})
+  string(REPLACE ".hpp" "" new_pgen ${new_pgen})
   list(APPEND problem_generators ${new_pgen})
 endforeach()
 
 list(FIND problem_generators ${pgen} PGEN_FOUND)
 
 if(${PGEN_FOUND} EQUAL -1)
-  message(FATAL_ERROR "Problem generator ${pgen}.cpp not found\nAvailable problem generators: ${problem_generators}")
+  message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
 endif()
 
 # -------------------------- Compilation settings -------------------------- #
