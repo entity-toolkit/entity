@@ -52,7 +52,7 @@ namespace ntt {
     // !TODO: no need to do all cells
     Kokkos::parallel_for("2d_absorbing bc",
                          mblock.rangeActiveCells(),
-                         AbsorbFields_kernel<Dim2>(mblock, pgen, r_absorb, r_max));
+                         AbsorbFields_kernel<Dim2>(mblock, r_absorb, r_max));
   }
 
   template <>
