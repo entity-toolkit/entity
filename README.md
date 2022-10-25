@@ -1,6 +1,8 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all.
 
+![image](assets/cover.gif)
+
 ## Code contributors (alphabetical)
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC}
