@@ -11,6 +11,14 @@
     throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                   \
                              "line: " LINE_STRING)
 
+#  define NTTHostErrorIf(condition, msg)                                                      \
+    {                                                                                         \
+      if ((condition)) {                                                                      \
+        throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "               \
+                                 "line: " LINE_STRING);                                       \
+      }                                                                                       \
+    }
+
 #  ifdef ENABLE_GPU
 #    define NTTError(msg) ({})
 #  else
@@ -31,4 +39,4 @@ inline constexpr int N_GHOSTS = 2;
 #define @METRIC_FLAG@
 // clang-format on
 
-#endif
+#endif // CONFIG_H

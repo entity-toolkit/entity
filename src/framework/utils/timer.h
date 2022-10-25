@@ -48,7 +48,7 @@ namespace ntt {
       void reset(const std::string& name) { m_timers[name].second = 0.0; }
 
       void printAll(const std::string& title = "",
-                    TimerFlags         flags = TimerFlags_Default,
+                    const TimerFlags   flags = TimerFlags_Default,
                     std::ostream&      os    = std::cout) const {
         os << std::setw(46) << std::setfill('-') << "" << std::endl;
         if ((flags & TimerFlags_PrintTitle) && !title.empty()) { os << title << std::endl; }

@@ -85,7 +85,7 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
     endif()
 
     if(${ch} STREQUAL ${Default})
-      set(col ${col}${Underline})
+      set(col ${col}*)
     endif()
 
     set(rstring_i "${rstring_i}${col}${ch}${ColourReset}")
@@ -279,8 +279,8 @@ ${DASHED_LINE_SYMBOL}
 ${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}
-  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, default (${Underline}underlined${ColourReset}${Dim}) 
-   :  value will be used unless a variable is explicitly set.${ColourReset}
+  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, the default (with a \"*\") 
+   :  value will be used unless the variable is explicitly set.${ColourReset}
 
 ")
 
