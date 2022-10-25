@@ -19,7 +19,9 @@
         "PIC_SIMTYPE",
         "SINGLE_PRECISION",
         "OMPENABLED",
-        "MINKOWSKI_METRIC"
+        // "MINKOWSKI_METRIC",
+        "QSPHERICAL_METRIC",
+        "NTTINY_ENABLED"
       ],
       "compilerPath": "${myCompilerPath}",
       "cStandard": "c17",
@@ -34,7 +36,6 @@
         "limitSymbolsToIncludedHeaders": true,
         "databaseFilename": ""
       },
-      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
       "configurationProvider": "ms-vscode.cmake-tools"
     }
   ],

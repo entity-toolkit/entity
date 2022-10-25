@@ -65,6 +65,7 @@ target_link_libraries(${ENTITY} PRIVATE ${WRAPPER} ${FRAMEWORK} ${PICSIM})
 target_include_directories(${ENTITY} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pic)
 
 if(${nttiny} STREQUAL "ON")
+  add_compile_options("-D NTTINY_ENABLED")
   add_executable(${VIS} nttiny.cpp)
   target_link_libraries(${VIS} PRIVATE nttiny ${WRAPPER} ${FRAMEWORK} ${PICSIM})
   target_include_directories(${VIS} PRIVATE ${EXTERN_DIR}/nttiny/ ${CMAKE_CURRENT_SOURCE_DIR}/pic/)
