@@ -90,9 +90,9 @@ TEST_CASE("testing PIC") {
           auto& positrons = mblock.particles[1];
           Kokkos::parallel_for(
             "set particles", CreateRangePolicy<Dim1>({0}, {1}), Lambda(const std::size_t p) {
-              init_prtl_2d_XYZ(
+              init_prtl_2d(
                 mblock, electrons, p, x_init[0], x_init[1], gammabeta, ZERO, ZERO);
-              init_prtl_2d_XYZ(
+              init_prtl_2d(
                 mblock, positrons, p, x_init[0], x_init[1], gammabeta, ZERO, ZERO);
             });
           electrons.setNpart(1);
@@ -342,7 +342,7 @@ TEST_CASE("testing PIC") {
           auto positrons = mblock.particles[1];
           Kokkos::parallel_for(
             "set particles", CreateRangePolicy<Dim1>({0}, {1}), Lambda(const std::size_t p) {
-              init_prtl_2d_XYZ(mblock,
+              init_prtl_2d(mblock,
                                electrons,
                                p,
                                x_init1[0],
@@ -350,7 +350,7 @@ TEST_CASE("testing PIC") {
                                ZERO,
                                gammabeta * math::cos(pitch_angle1),
                                gammabeta * math::sin(pitch_angle1));
-              init_prtl_2d_XYZ(mblock,
+              init_prtl_2d(mblock,
                                positrons,
                                p,
                                x_init2[0],

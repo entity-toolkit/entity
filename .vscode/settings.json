@@ -112,8 +112,14 @@
     "future": "cpp"
   },
   "editor.tokenColorCustomizations": {
-    "comments": "",
     "textMateRules": []
   },
   "C_Cpp.errorSquiggles": "Disabled",
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.configureSettings": {
+    "output": "OFF",
+    "nttiny": "ON",
+    "Kokkos_ENABLE_OPENMP": "ON",
+    "pgen": "langmuir"
+  },
 }

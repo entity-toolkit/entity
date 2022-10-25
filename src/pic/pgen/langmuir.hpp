@@ -38,7 +38,7 @@ namespace ntt {
             real_t u1 = (real_t)(0.01)
                         * math::sin((real_t)(2.0) * constant::TWO_PI * rx / (Xmax - Xmin));
 
-            init_prtl_2d_XYZ(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
+            init_prtl_2d(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
             random_pool.free_state(rand_gen);
           });
       }
@@ -65,7 +65,7 @@ namespace ntt {
     }
 
 #endif
-  };
+  }; // struct ProblemGenerator
 
 } // namespace ntt
 

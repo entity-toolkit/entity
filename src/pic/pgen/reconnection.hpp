@@ -13,7 +13,9 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator : public PGen<D, S> {
-    inline ProblemGenerator(const SimulationParams&);
+    inline ProblemGenerator(const SimulationParams& params) {
+      m_cs_width = readFromInput<real_t>(params.inputdata(), "problem", "cs_width");
+    }
 
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&);
     inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
@@ -21,11 +23,6 @@ namespace ntt {
   private:
     real_t m_cs_width;
   };
-
-  template <>
-  inline ProblemGenerator<Dim2, TypePIC>::ProblemGenerator(const SimulationParams& params) {
-    m_cs_width = readFromInput<real_t>(params.inputdata(), "problem", "cs_width");
-  }
 
   Inline void reconnectionField(const coord_t<Dim2>& x_ph,
                                 vec_t<Dim3>&         e_out,
@@ -70,8 +67,8 @@ namespace ntt {
 
         real_t rx = rand_gen.frand(Xmin, Xmax);
         real_t ry = rand_gen.frand(Ymin, Ymax);
-        init_prtl_2d_XYZ(mblock, electrons, p, rx, ry, 0.0, 0.0, 0.0);
-        init_prtl_2d_XYZ(mblock, positrons, p, rx, ry, 0.0, 0.0, 0.0);
+        init_prtl_2d(mblock, electrons, p, rx, ry, 0.0, 0.0, 0.0);
+        init_prtl_2d(mblock, positrons, p, rx, ry, 0.0, 0.0, 0.0);
 
         random_pool.free_state(rand_gen);
       });
