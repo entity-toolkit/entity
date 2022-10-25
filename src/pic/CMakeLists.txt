@@ -10,3 +10,7 @@ target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/boundar
 target_include_directories(${PICSIM} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/exchange)
 target_sources(${PICSIM} PRIVATE ${SRC_FILES})
 target_link_libraries(${PICSIM} PRIVATE ${FRAMEWORK} ${WRAPPER})
+
+if(${nttiny} STREQUAL "ON")
+  target_link_libraries(${PICSIM} PUBLIC nttiny)
+endif()

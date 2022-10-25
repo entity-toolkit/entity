@@ -5,6 +5,12 @@
 #include "sim_params.h"
 #include "meshblock.h"
 
+#ifdef NTTINY_ENABLED
+#  include "nttiny/api.h"
+#endif
+
+#include <map>
+
 namespace ntt {
 
   template <Dimension D, SimulationType S>
@@ -13,18 +19,22 @@ namespace ntt {
     virtual inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
     virtual inline void
     UserBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
-    // Inline virtual auto UserTargetField_br_hat(const Meshblock<D, S>&, const coord_t<D>&) const
-    //   -> real_t {
-    //   return ZERO;
-    // }
     virtual inline void
     UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
+
+#ifdef NTTINY_ENABLED
+    virtual inline void
+    UserInitBuffers_nttiny(const SimulationParams&,
+                           const Meshblock<D, S>&,
+                           std::map<std::string, nttiny::ScrollingBuffer>&) {}
+    virtual inline void
+    UserSetBuffers_nttiny(const real_t&,
+                          const SimulationParams&,
+                          const Meshblock<D, S>&,
+                          std::map<std::string, nttiny::ScrollingBuffer>&) {}
+#endif
   };
 
 } // namespace ntt
-
-template struct ntt::PGen<ntt::Dim1, ntt::TypePIC>;
-template struct ntt::PGen<ntt::Dim2, ntt::TypePIC>;
-template struct ntt::PGen<ntt::Dim3, ntt::TypePIC>;
 
 #endif // FRAMEWORK_PGEN_H
