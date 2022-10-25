@@ -47,6 +47,7 @@ After the compilation is successful, you will find the executables and compiled 
   - [ ] check allocation of proper fields
   - [x] add a simple current filtering
   - [x] field mirrors
+  - [ ] unit tests + implement with github actions
 
 ### Intermediate term things to do/fix
 
