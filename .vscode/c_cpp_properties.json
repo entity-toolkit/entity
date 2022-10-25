@@ -1,42 +1,42 @@
 {
-    "env": {
-        "myDefaultIncludePath": [
-            "${workspaceFolder}",
-            "${workspaceFolder}/src/**",
-            "${workspaceFolder}/build/src/",
-            "${workspaceFolder}/extern/**"
-        ],
-        "myCompilerPath": "/usr/bin/g++"
-    },
-    "configurations": [
-        {
-            "name": "default",
-            "intelliSenseMode": "linux-gcc-x64",
-            "includePath": [
-                "${myDefaultIncludePath}"
-            ],
-            "defines": [
-                "PIC_SIMTYPE",
-                "SINGLE_PRECISION",
-                "OMPENABLED",
-                "MINKOWSKI_METRIC"
-            ],
-            "compilerPath": "${myCompilerPath}",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
-            "forcedInclude": [
-                "${workspaceFolder}/.vscode/intellisense.h"
-            ],
-            "browse": {
-                "path": [
-                    "${workspaceFolder}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
-            "configurationProvider": "ms-vscode.cmake-tools"
-        }
+  "env": {
+    "myDefaultIncludePath": [
+      "${workspaceFolder}",
+      "${workspaceFolder}/src/**",
+      "${workspaceFolder}/build/src/",
+      "${workspaceFolder}/extern/**"
     ],
-    "version": 4
+    "myCompilerPath": "/usr/bin/g++"
+  },
+  "configurations": [
+    {
+      "name": "default",
+      "intelliSenseMode": "linux-gcc-x64",
+      "includePath": [
+        "${myDefaultIncludePath}"
+      ],
+      "defines": [
+        "PIC_SIMTYPE",
+        "SINGLE_PRECISION",
+        "OMPENABLED",
+        "MINKOWSKI_METRIC"
+      ],
+      "compilerPath": "${myCompilerPath}",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "forcedInclude": [
+        "${workspaceFolder}/.vscode/intellisense.h"
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}"
+        ],
+        "limitSymbolsToIncludedHeaders": true,
+        "databaseFilename": ""
+      },
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+      "configurationProvider": "ms-vscode.cmake-tools"
+    }
+  ],
+  "version": 4
 }
