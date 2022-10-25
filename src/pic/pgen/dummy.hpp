@@ -8,15 +8,8 @@
 namespace ntt {
 
   template <Dimension D, SimulationType S>
-  struct ProblemGenerator {
-    ProblemGenerator(const SimulationParams&);
-
-    void        UserInitFields(const SimulationParams&, Meshblock<D, S>&);
-    void        UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
-    void        UserBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&);
-    Inline auto UserTargetField_br_hat(const Meshblock<D, S>&, const coord_t<D>&) const
-      -> real_t;
-    void UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&);
+  struct ProblemGenerator : public PGen<D, S> {
+    inline ProblemGenerator(const SimulationParams&) {}
   };
 
 } // namespace ntt
