@@ -15,9 +15,6 @@ _Clone_ this repository and all its dependencies with the following command:
 
 ```sh
 git clone git@github.com:haykh/entity.git
-git submodule update --recursive --init
-# to update the submodules
-git submodule update --recursive --remote
 ```
 
 _Configure_ the code using `cmake` before compilation, e.g.:
@@ -40,7 +37,7 @@ After the compilation is successful, you will find the executables and compiled 
   - [ ] add metric as a template argument
   - [x] change metrics/aux foldername
   - [x] add time as a global parameter
-  - [ ] use `kokkos` methods for `vis/nttiny.cpp`
+  - [x] use `kokkos` methods for `vis/nttiny.cpp`
   - [ ] add disabled indicator for options in `report.cmake`
 
 ### Short term things to do/fix
@@ -53,7 +50,7 @@ After the compilation is successful, you will find the executables and compiled 
 
 ### Intermediate term things to do/fix
 
-  - [ ] test curvilinear particle pusher
+  - [x] test curvilinear particle pusher
   - [x] particle motion near the axes
   - [x] test curvilinear current deposit
   - [x] deposition near the axes
