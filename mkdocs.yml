@@ -1,4 +1,8 @@
-site_name: "Entity wiki"
+site_name: "Entity: wiki"
+
+changes:
+  v08: "_(TBR in v0.8)_"
+  v09: "_(TBR in v0.9)_"
 
 nav:
   - 'Home': 'index.md'
@@ -41,6 +45,7 @@ markdown_extensions:
 plugins:
   - search
   - macros
+  - git-revision-date-localized
 
 theme:
   name: material
