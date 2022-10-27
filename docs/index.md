@@ -5,33 +5,44 @@ hide:
 
 ## Development status
 
-__PIC__
+<!-- ### Active to-do
 
-- [x] spherical/qspherical metrics (2D)
-- [x] minkowski field solver (1D/2D/3D)
-- [x] curvilinear field solver (2D)
-- [x] minkowski particle pusher (Boris; 1D/2D/3D)
-- [x] curvilinear particle pusher (Boris; 2D)
-- [x] minkowski current deposition (1D/2D/3D)
-- [x] curvilinear current deposition (2D)
-- [x] current filtering (1D/2D/3D)
-- [ ] cubed sphere metric (3D)
-- [ ] unit tests
+  - [ ] add metric as a template argument
+  - [x] change metrics/aux foldername
+  - [x] add time as a global parameter
+  - [ ] use `kokkos` methods for `vis/nttiny.cpp`
+  - [ ] add disabled indicator for options in `report.cmake`
 
-__GRPIC__
+### Short term things to do/fix
 
-- [x] spherical/qspherical Kerr-Schild metrics (2D)
-- [x] field solver (2D)
-- [x] current filtering (1D/2D/3D)
-- [?] particle pusher (1D/2D/3D)
-- [ ] current deposition (2D)
-- [ ] cartesian Kerr-Schild metrics (1D/2D/3D)
-- [ ] unit tests
+  - [x] routine for easy side/corner range selection
+  - [x] aliases for fields/particles/currents
+  - [ ] check allocation of proper fields
+  - [x] add a simple current filtering
+  - [x] field mirrors
 
-__Known bugs / minor issues to fix__
+### Intermediate term things to do/fix
 
-- [ ] `$(CURDIR)` seems to fail in some instances (need a more robust apprch)
-- [x] check python `subprocess.run` command during the configure stage
-- [ ] check if compilation of `glfw` is possible (or if `glfw` is available)
-- [ ] same for `freetype`
-- [x] clarify `nttiny_path` w.r.t. what (maybe add an error messages in configure script)
+  - [ ] test curvilinear particle pusher
+  - [x] particle motion near the axes
+  - [x] test curvilinear current deposit
+  - [x] deposition near the axes
+  - [x] filtering near the axes
+
+### State of things
+
+* PIC
+  - [x] spherical/qspherical metrics (2D)
+  - [x] minkowski field solver (1D/2D/3D)
+  - [x] curvilinear field solver (2D)
+  - [x] minkowski particle pusher (Boris; 1D/2D/3D)
+  - [x] curvilinear particle pusher (Boris; 2D)
+  - [x] minkowski current deposition (1D/2D/3D)
+  - [x] curvilinear current deposition (2D)
+  - [ ] cubed sphere metric (3D)
+* GRPIC
+  - [x] spherical/qspherical Kerr-Schild metrics (2D)
+  - [x] field solver (2D)
+  - [ ] particle pusher (1D/2D/3D)
+  - [ ] current deposition (2D)
+  - [ ] cartesian Kerr-Schild metrics (1D/2D/3D) -->

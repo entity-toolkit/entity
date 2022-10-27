@@ -9,7 +9,7 @@ hide:
 
     Documentations are created using `markdown` syntax which is then automatically parsed and converted into `html`. As such, any `html`/`css`/`js` code you write in the documentation will be automatically rendered in the documentation. To add global external `css` or `js` files, add them to the `mkdocs.yml` file (`extra_javascript` and `extra_css`). If a script is meant to run on just one page, add it with a dedicated `<script></script>` tag.
 
-## Adding/editing documentation
+## Adding or editing the documentation
 
 1. Pull the `wiki` branch of the main repository (it is recommended to do this in a separate directory from the main code).
   ```shell

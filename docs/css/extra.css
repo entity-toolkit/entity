@@ -1,27 +1,22 @@
 :root {
   font-variant-ligatures: normal;
-  font-size: 1.4em;
+  font-size: 1.25em;
 }
 
 [data-md-color-scheme="default"] {
   --md-admonition-bg-color: hsl(232, 25%, 98%);
-  --md-shadow-z1: none;
 }
 
 [data-md-color-scheme="slate"] {
   --md-admonition-bg-color: hsl(232, 15%, 25%);
-  --md-shadow-z1: none;
   --md-typeset-a-color: hsl(231, 100%, 64%);
-}
-
-.md-typeset :is(.admonition),
-.md-typeset :is(.admonition) .admonition-title {
-  border-radius: 0px;
 }
 
 .md-header {
   box-shadow: none;
 }
+
+/* Header */
 
 @keyframes gradient {
   0% {
