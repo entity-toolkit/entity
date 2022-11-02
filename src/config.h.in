@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #  define CONFIG_H
 
+#  include <fmt/core.h>
+
 #  include <stdexcept>
 
 #  define STRINGIZE(x)        STRINGIZE_DETAIL(x)
@@ -8,14 +10,16 @@
 #  define LINE_STRING         STRINGIZE(__LINE__)
 
 #  define NTTHostError(msg)                                                                   \
-    throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                   \
-                             "line: " LINE_STRING)
+    {                                                                                         \
+      auto err                                                                                \
+        = fmt::format("# ERROR: {}  : filename: {} : line: {}", msg, __FILE__, LINE_STRING);  \
+      throw std::runtime_error(err);                                                          \
+    }
 
 #  define NTTHostErrorIf(condition, msg)                                                      \
     {                                                                                         \
       if ((condition)) {                                                                      \
-        throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "               \
-                                 "line: " LINE_STRING);                                       \
+        NTTHostError(msg);                                                                    \
       }                                                                                       \
     }
 
