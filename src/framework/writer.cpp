@@ -11,7 +11,6 @@
 #endif
 
 #include <plog/Log.h>
-#include <fmt/core.h>
 
 #include <string>
 #include <map>

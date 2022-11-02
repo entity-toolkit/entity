@@ -71,14 +71,18 @@ public:
   void setData() override {
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
+    auto&      Sim            = m_sim;
     const auto nx1            = Grid.m_size[0] + Grid.m_ngh * 2;
     const auto nx2            = Grid.m_size[1] + Grid.m_ngh * 2;
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
+    const auto fields_stride  = m_fields_stride;
     // precompute necessary fields
     for (auto& f : fields_to_plot) {
-      if (f == "density") { m_sim.ComputeDensity(); }
+      if (f == "density") {
+        m_sim.ComputeDensity();
+      }
     }
     m_sim.SynchronizeHostDevice();
     m_sim.ConvertFieldsToHat_h();
@@ -90,47 +94,46 @@ public:
 
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
-    Kokkos::parallel_for(
-      "setData",
-      ntt::CreateRangePolicyOnHost<ntt::Dim2>({0, 0}, {nx1, nx2}),
-      Lambda(std::size_t i1, std::size_t j1) {
-        int i, j;
-        if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
-          i = i1;
-        } else {
-          i = ((int)i1 - ngh) * m_fields_stride + ngh;
-        }
-        if ((j1 < ngh) || (j1 >= nx2 - ngh)) {
-          j = j1;
-        } else {
-          j = ((int)j1 - ngh) * m_fields_stride + ngh;
-        }
-        for (std::size_t fi = 0; fi < nfields; ++fi) {
-          auto f   = fields_to_plot.at(fi);
-          auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
-          int  comp;
-          if (f == "Ex" || f == "Er") {
-            comp = ntt::em::ex1;
-          } else if (f == "Ey" || f == "Etheta") {
-            comp = ntt::em::ex2;
-          } else if (f == "Ez" || f == "Ephi") {
-            comp = ntt::em::ex3;
-          } else if (f == "Bx" || f == "Br") {
-            comp = ntt::em::bx1;
-          } else if (f == "By" || f == "Btheta") {
-            comp = ntt::em::bx2;
-          } else if (f == "Bz" || f == "Bphi") {
-            comp = ntt::em::bx3;
-          } else if (f == "density") {
-            comp = ntt::fld::dens;
-          }
-          if (f.at(0) == 'E' || f.at(0) == 'B') {
-            Fields.at(f)[idx] = m_sim.meshblock.em_h(i, j, comp);
-          } else {
-            Fields.at(f)[idx] = m_sim.meshblock.buff_h(i, j, comp);
-          }
-        }
-      });
+    Kokkos::parallel_for("setData",
+                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({0, 0}, {nx1, nx2}),
+                         [=](std::size_t i1, std::size_t j1) {
+                           int i, j;
+                           if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
+                             i = i1;
+                           } else {
+                             i = ((int)i1 - ngh) * fields_stride + ngh;
+                           }
+                           if ((j1 < ngh) || (j1 >= nx2 - ngh)) {
+                             j = j1;
+                           } else {
+                             j = ((int)j1 - ngh) * fields_stride + ngh;
+                           }
+                           for (std::size_t fi = 0; fi < nfields; ++fi) {
+                             auto f   = fields_to_plot.at(fi);
+                             auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
+                             int  comp;
+                             if (f == "Ex" || f == "Er") {
+                               comp = ntt::em::ex1;
+                             } else if (f == "Ey" || f == "Etheta") {
+                               comp = ntt::em::ex2;
+                             } else if (f == "Ez" || f == "Ephi") {
+                               comp = ntt::em::ex3;
+                             } else if (f == "Bx" || f == "Br") {
+                               comp = ntt::em::bx1;
+                             } else if (f == "By" || f == "Btheta") {
+                               comp = ntt::em::bx2;
+                             } else if (f == "Bz" || f == "Bphi") {
+                               comp = ntt::em::bx3;
+                             } else if (f == "density") {
+                               comp = ntt::fld::dens;
+                             }
+                             if (f.at(0) == 'E' || f.at(0) == 'B') {
+                               Fields.at(f)[idx] = Sim.meshblock.em_h(i, j, comp);
+                             } else {
+                               Fields.at(f)[idx] = Sim.meshblock.buff_h(i, j, comp);
+                             }
+                           }
+                         });
 
     // auto  s         = 0;
     // auto& Particles = this->particles;

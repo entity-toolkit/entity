@@ -3,6 +3,8 @@
 
 // !TODO: this is a bad practice... wait until CUDA issue is fixed
 #pragma nv_diag_suppress 20011
+// !TODO: fmt unrecognized gcc pragma 
+#pragma nv_diag_suppress 1675
 
 #include "config.h"
 #include "definitions.h"
@@ -25,8 +27,9 @@
 #define HostMemSpace  @HOST_MEM_SPACE@
 // clang-format on
 
-#define Lambda KOKKOS_LAMBDA
-#define Inline KOKKOS_INLINE_FUNCTION
+#define Lambda   KOKKOS_LAMBDA
+#define Function KOKKOS_FUNCTION
+#define Inline   KOKKOS_INLINE_FUNCTION
 
 namespace math = Kokkos;
 

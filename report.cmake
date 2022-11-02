@@ -19,6 +19,8 @@ if(NOT WIN32)
   set(BoldWhite "${Esc}[1;37m")
   set(DarkGray "${Esc}[1;90m")
   set(Dim "${Esc}[2m")
+  set(StrikeBegin "${Esc}[9m")
+  set(StrikeEnd "${Esc}[0m")
 endif()
 
 function(PadTo Text Padding Target Result)
@@ -85,7 +87,14 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
     endif()
 
     if(${ch} STREQUAL ${Default})
-      set(col ${col}*)
+      set(col ${Underline}${col})
+    endif()
+
+    # disabled options
+    if("${Flag}" STREQUAL "simtype")
+      if(${ch} STREQUAL "grpic")
+        set(ch ${StrikeBegin}grpic${StrikeEnd})
+      endif()
     endif()
 
     set(rstring_i "${rstring_i}${col}${ch}${ColourReset}")
@@ -279,8 +288,8 @@ ${DASHED_LINE_SYMBOL}
 ${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}
-  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, the default (with a \"*\") 
-   :  value will be used unless the variable is explicitly set.${ColourReset}
+  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, the ${Underline}default${ColourReset}${Dim} value
+   :  will be used unless the variable is explicitly set.${ColourReset}
 
 ")
 

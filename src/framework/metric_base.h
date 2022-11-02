@@ -1,50 +1,52 @@
-#ifndef FRAMEWORK_METRICS_BASE_H
-#define FRAMEWORK_METRICS_BASE_H
+#ifndef FRAMEWORK_METRIC_BASE_H
+#define FRAMEWORK_METRIC_BASE_H
 
 #include "wrapper.h"
 
-#include <stdexcept>
-
-/*
- *
- * Vector transformations
- *
- * Cntrv (A^mu)
- *   ^  ^
- *   |  |
- *   |  v
- *   | Hat <---> Cart (A_xyz)
- *   |  ^
- *   |  |
- *   v  v
- *   Cov (A_mu)
- *
- * Cntrv: contravariant vector
- * Cov: covariant vector
- * Hat: hatted (orthonormal) basis vector
- * Cart: global Cartesian basis vector (defined for diagonal only)
- *
- */
-
-/*
- *
- * Coordinate transformations
- *
- *   +---> Cart
- *   |
- *   v
- * Code
- *   ^
- *   |
- *   +---> Sph
- *
- * Code: coordinates in code units
- * Cart: coordinates in global Cartesian basis
- * Sph: coordinates in spherical basis
- *
- */
+#include <string>
+#include <vector>
 
 namespace ntt {
+
+  /*
+   *
+   * Vector transformations
+   *
+   * Cntrv (A^mu)
+   *   ^  ^
+   *   |  |
+   *   |  v
+   *   | Hat <---> Cart (A_xyz)
+   *   |  ^
+   *   |  |
+   *   v  v
+   *   Cov (A_mu)
+   *
+   * Cntrv: contravariant vector
+   * Cov: covariant vector
+   * Hat: hatted (orthonormal) basis vector
+   * Cart: global Cartesian basis vector (defined for diagonal only)
+   *
+   */
+
+  /*
+   *
+   * Coordinate transformations
+   *
+   *   +---> Cart
+   *   |
+   *   v
+   * Code
+   *   ^
+   *   |
+   *   +---> Sph
+   *
+   * Code: coordinates in code units
+   * Cart: coordinates in global Cartesian basis
+   * Sph: coordinates in spherical basis
+   *
+   */
+
   /**
    * Parent metric class: h_ij. Coordinates vary from `0` to `nx1` ... (code units).
    *
@@ -81,4 +83,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif
+#endif // FRAMEWORK_METRIC_BASE_H
