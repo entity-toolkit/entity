@@ -87,6 +87,10 @@ namespace ntt {
   template <typename T, Dimension D>
   using tuple_t = T[static_cast<short>(D)];
 
+  // list alias of size N
+  template <typename T, int N>
+  using list_t = T[N];
+
   // ND coordinate alias
   template <Dimension D>
   using coord_t = tuple_t<real_t, D>;
