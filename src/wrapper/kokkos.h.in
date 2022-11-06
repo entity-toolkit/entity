@@ -3,7 +3,7 @@
 
 // !TODO: this is a bad practice... wait until CUDA issue is fixed
 #pragma nv_diag_suppress 20011
-// !TODO: fmt unrecognized gcc pragma 
+// !TODO: fmt unrecognized gcc pragma
 #pragma nv_diag_suppress 1675
 
 #include "config.h"
@@ -111,6 +111,11 @@ namespace ntt {
    */
   template <Dimension D>
   auto CreateRangePolicy(const tuple_t<int, D>&, const tuple_t<int, D>&) -> range_t<D>;
+  template <Dimension D>
+  auto CreateRangePolicy(const tuple_t<std::size_t, D>&, const tuple_t<std::size_t, D>&)
+    -> range_t<D>;
+  template <Dimension D>
+  auto CreateRangePolicy(const tuple_t<int, D>&, const tuple_t<std::size_t, D>&) -> range_t<D>;
 
   /**
    * @brief Function template for generating ND Kokkos range policy on the host.
