@@ -132,7 +132,8 @@ namespace ntt {
     /**
      * @brief Pick a particular region of cells.
      * @param boxRegion region of cells to pick: tuple of cellLayer objects.
-     * @returns Kokkos range policy in the host space with proper min/max indices and dimension.
+     * @returns Kokkos range policy in the host space with proper min/max indices and
+     * dimension.
      */
     auto rangeCellsOnHost(const boxRegion<D>&) -> range_h_t<D>;
 
@@ -217,6 +218,8 @@ namespace ntt {
         NTTHostError("Invalid dimension");
       }
     }
+
+    [[nodiscard]] auto extent() const -> std::vector<real_t>;
   };
 
   /**
