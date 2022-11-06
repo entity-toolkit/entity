@@ -168,9 +168,31 @@ namespace ntt {
       }
       imin[i] = i_min(i) + ranges[i][0];
       imax[i] = i_max(i) + ranges[i][1];
-      if (imin[i] >= imax[i]) { NTTHostError("Invalid cell layer picked"); }
+      if (imin[i] >= imax[i]) {
+        NTTHostError("Invalid cell layer picked");
+      }
     }
     return CreateRangePolicy<D>(imin, imax);
+  }
+
+  template <>
+  auto Mesh<Dim1>::extent() const -> std::vector<real_t> {
+    return {metric.x1_min, metric.x1_max};
+  }
+
+  template <>
+  auto Mesh<Dim2>::extent() const -> std::vector<real_t> {
+    return {metric.x1_min, metric.x1_max, metric.x2_min, metric.x2_max};
+  }
+
+  template <>
+  auto Mesh<Dim3>::extent() const -> std::vector<real_t> {
+    return {metric.x1_min,
+            metric.x1_max,
+            metric.x2_min,
+            metric.x2_max,
+            metric.x3_min,
+            metric.x3_max};
   }
 
   template <Dimension D, SimulationType S>
