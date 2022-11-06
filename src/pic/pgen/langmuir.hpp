@@ -2,7 +2,7 @@
 #define PROBLEM_GENERATOR_H
 
 #include "wrapper.h"
-#include "archetypes.h"
+#include "archetypes.hpp"
 #include "sim_params.h"
 #include "meshblock.h"
 #include "particle_macros.h"

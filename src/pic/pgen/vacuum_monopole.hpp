@@ -3,7 +3,7 @@
 
 #include "wrapper.h"
 #include "input.h"
-#include "archetypes.h"
+#include "archetypes.hpp"
 #include "sim_params.h"
 #include "meshblock.h"
 #include "field_macros.h"
