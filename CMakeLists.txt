@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.0.6
+  VERSION 0.8.0.7
   LANGUAGES CXX
 )
 
@@ -13,7 +13,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
   option(GIT_SUBMODULE "Check submodules during build" ON)
 
   if(GIT_SUBMODULE)
-    message(STATUS "Submodule update")
+    message(STATUS "Updating all the submodules")
     execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE GIT_SUBMOD_RESULT)
