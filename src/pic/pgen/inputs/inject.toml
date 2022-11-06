@@ -1,6 +1,6 @@
 [simulation]
-title   = "Reconnection"
-runtime = 100.0
+title   = "Injection test"
+runtime = 0.0001
 
 [domain]
 resolution = [256, 256]

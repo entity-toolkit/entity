@@ -3,7 +3,7 @@
 
 #include "wrapper.h"
 #include "pic.h"
-#include "archetypes.h"
+#include "archetypes.hpp"
 #include "problem_generator.hpp"
 
 #include "field_macros.h"
