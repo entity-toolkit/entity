@@ -181,9 +181,9 @@ namespace ntt {
   void Simulation<D, S>::SynchronizeHostDevice() {
     WaitAndSynchronize();
     meshblock.SynchronizeHostDevice();
-    for (auto& species : meshblock.particles) {
-      species.SynchronizeHostDevice();
-    }
+    // for (auto& species : meshblock.particles) {
+    //   species.SynchronizeHostDevice();
+    // }
     PLOGD << "... host-device synchronized";
   }
 
