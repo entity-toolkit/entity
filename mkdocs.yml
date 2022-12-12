@@ -1,4 +1,6 @@
 site_name: "Entity: wiki"
+repo_url: https://github.com/haykh/entity
+repo_name: haykh/entity
 
 changes:
   v08: "_(TBR in v0.8)_"
@@ -60,7 +62,7 @@ theme:
   favicon: assets/logo.svg
   logo: assets/logo.svg
   icon:
-    repo: fontawesome/brands/git 
+    repo: simple/git
     admonition:
       abstract: material/code-json
   palette:

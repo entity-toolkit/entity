@@ -33,11 +33,11 @@
 }
 
 [data-md-color-scheme="default"] .entity-cover {
-  background-image: url("/assets/cover_light.gif");
+  background-image: url("../assets/cover_light.gif");
 }
 
 [data-md-color-scheme="slate"] .entity-cover {
-  background-image: url("/assets/cover_dark.gif");
+  background-image: url("../assets/cover_dark.gif");
 }
 
 .nt-card {
@@ -52,15 +52,15 @@
 }
 
 [data-md-color-scheme="default"] .nt-card.core .nt-card-image {
-  background-image: url("/assets/icons/framework-icon-dark.svg") !important;
+  background-image: url("../assets/icons/framework-icon-dark.svg") !important;
 }
 
 [data-md-color-scheme="default"] .nt-card.sim .nt-card-image {
-  background-image: url("/assets/icons/engine-icon-dark.svg") !important;
+  background-image: url("../assets/icons/engine-icon-dark.svg") !important;
 }
 
 [data-md-color-scheme="default"] .nt-card.vis .nt-card-image {
-  background-image: url("/assets/icons/vis-icon-dark.svg") !important;
+  background-image: url("../assets/icons/vis-icon-dark.svg") !important;
 }
 
 .nt-timeline-item:nth-child(1) .nt-timeline-dot {

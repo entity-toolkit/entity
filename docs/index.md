@@ -19,21 +19,21 @@ hide:
 - title: Core framework
   content: |
     Provides predesigned low-level algorithm and data containers that can be adapted to particular physics routines and simulations at the higher level.
-  image: "/assets/icons/framework-icon.svg"
+  image: "assets/icons/framework-icon.svg"
   url: ./
   key: core
 
 - title: Simulation engines
   content: |
     Set of plasma physics simulation modules and algorithms for the high-energy astrophysical plasma simulations.
-  image: "/assets/icons/engine-icon.svg#dark_only"
+  image: "assets/icons/engine-icon.svg#dark_only"
   url: ./
   key: sim
 
 - title: Visualization tools
   content: |
     Runtime visualization, analysis and post-processing tools for the on-the-fly debugging, interactive data exploration and in-depth analysis. 
-  image: "/assets/icons/vis-icon.svg"
+  image: "assets/icons/vis-icon.svg"
   url: ./
   key: vis
 
