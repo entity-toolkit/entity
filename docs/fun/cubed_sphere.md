@@ -6,4 +6,4 @@ title: Cubed sphere
 
     The panel is interactive
 
-<div id="plot_cubed_sphere"></div>
+<div id="plot_cubed_sphere" class="p5canvas"></div>

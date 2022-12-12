@@ -93,11 +93,13 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js
   - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js
   - https://cdnjs.cloudflare.com/ajax/libs/d3/7.6.1/d3.min.js
-  - https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js
+  - https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.5.0/p5.js
+  - https://cdn.jsdelivr.net/npm/@davepagurek/p5.buildgeometry@0.0.4/build/p5.buildGeometry.js
   - js/how/pic_nongr.js
   - js/how/pic_gr.js
   - js/how/coord_sys_ax.js
-  - js/fun/cubed_sphere.js
+  # - js/fun/cubed_sphere.js
+  - js/fun/3d_cubed_sphere.js
   - js/fun/reconnection.js
 
 extra_css:

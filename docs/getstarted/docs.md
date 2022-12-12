@@ -14,30 +14,27 @@ hide:
 1. Pull the `wiki` branch of the main repository (it is recommended to do this in a separate directory from the main code).
   ```shell
   git clone -b wiki git@github.com:haykh/entity.git entity-wiki
+  cd entity-wiki
   ```
 
 2. Create an isolated python virtual environment and activate it.
   ```shell
-  virtualenv .venv
+  python -m venv .venv
   source .venv/bin/activate
   ```
 
-    !!! note
-
-        You might need to install `virtualenv` if you don't already have it: `pip install virtualenv`.
-
-3. Install the dependencies (everything is installed locally in the `.venv` directory).
+1. Install the dependencies (everything is installed locally in the `.venv` directory).
   ```shell
   pip install -r requirements.txt
   ```
 
-4. Start the reactive server that will generate the website and will dynamically update any changes made to the documentation.
+1. Start the reactive server that will generate the website and will dynamically update any changes made to the documentation.
   ```shell
   mkdocs serve
   ```
   To access the documentation simply open the [`http://127.0.0.1:8000/`](http://127.0.0.1:8000/) in your browser.
 
-5. When satisfied with all the changes made simply push them to the `wiki` branch.
+1. When satisfied with all the changes made simply push them to the `wiki` branch.
   ```shell
   git add .
   git commit -m "<reasonable comment>"
