@@ -1,48 +1,120 @@
 ---
+title: ""
 hide:
   - footer
 ---
 
-## Development status
+!!! warning
 
-<!-- ### Active to-do
+    This wiki page is under active construction and does not properly reflect the current development stage. If you are interested in working with us, please contact us at [haykh[dot]astro[at]gmail](mailto:haykh.astro+entity@gmail.com).
 
-  - [ ] add metric as a template argument
-  - [x] change metrics/aux foldername
-  - [x] add time as a global parameter
-  - [ ] use `kokkos` methods for `vis/nttiny.cpp`
-  - [ ] add disabled indicator for options in `report.cmake`
+<div class="entity-cover"></div>
 
-### Short term things to do/fix
+## `Entity`
 
-  - [x] routine for easy side/corner range selection
-  - [x] aliases for fields/particles/currents
-  - [ ] check allocation of proper fields
-  - [x] add a simple current filtering
-  - [x] field mirrors
+### Toolkit for astrophysical plasma simulations
 
-### Intermediate term things to do/fix
+::cards::cols=3 image-bg
 
-  - [ ] test curvilinear particle pusher
-  - [x] particle motion near the axes
-  - [x] test curvilinear current deposit
-  - [x] deposition near the axes
-  - [x] filtering near the axes
+- title: Core framework
+  content: |
+    Provides predesigned low-level algorithm and data containers that can be adapted to particular physics routines and simulations at the higher level.
+  image: "/assets/icons/framework-icon.svg"
+  url: ./
+  key: core
 
-### State of things
+- title: Simulation engines
+  content: |
+    Set of plasma physics simulation modules and algorithms for the high-energy astrophysical plasma simulations.
+  image: "/assets/icons/engine-icon.svg#dark_only"
+  url: ./
+  key: sim
 
-* PIC
-  - [x] spherical/qspherical metrics (2D)
-  - [x] minkowski field solver (1D/2D/3D)
-  - [x] curvilinear field solver (2D)
-  - [x] minkowski particle pusher (Boris; 1D/2D/3D)
-  - [x] curvilinear particle pusher (Boris; 2D)
-  - [x] minkowski current deposition (1D/2D/3D)
-  - [x] curvilinear current deposition (2D)
-  - [ ] cubed sphere metric (3D)
-* GRPIC
-  - [x] spherical/qspherical Kerr-Schild metrics (2D)
-  - [x] field solver (2D)
-  - [ ] particle pusher (1D/2D/3D)
-  - [ ] current deposition (2D)
-  - [ ] cartesian Kerr-Schild metrics (1D/2D/3D) -->
+- title: Visualization tools
+  content: |
+    Runtime visualization, analysis and post-processing tools for the on-the-fly debugging, interactive data exploration and in-depth analysis. 
+  image: "/assets/icons/vis-icon.svg"
+  url: ./
+  key: vis
+
+::/cards::
+
+::timeline::
+
+- title: First public version
+  content: v0.8 will include single-node PIC simulation engine in non-GR Cartesian, and curvilinear metrics, and the preliminary version of the on-the-fly visualization tool (nttiny).
+  icon: v0.8
+  sub_title: 2022-Dec
+  key: v0-8
+- title: GRPIC
+  content: v0.9 will introduce the GRPIC engine with a spherical and quasi-spherical 2.5D Kerr-Schild metric.
+  icon: v0.9
+  sub_title: 2023-Feb
+  key: v0-9
+- title: First official release
+  content: v1.0 will be the first official release of the Entity toolkit. It will fully support non-GR and GR PIC simulations on multiple nodes (GPU & CPU) in arbitrary geometries.
+  icon: v1.0
+  sub_title: 2023-Apr
+  key: v1-0
+- title: Advanced features
+  content: TBD (cubed-sphere, QED, force-free, etc.).
+  icon: v1.1
+  sub_title: 2023-Jun
+  key: v1-1
+
+::/timeline::
+
+
+---
+
+[Icons](https://game-icons.net/) used under [CC BY 3.0 license](https://creativecommons.org/licenses/by/3.0/); created by [Delapouite](https://delapouite.com/), and [Lorc](https://lorcblog.blogspot.com/).
+
+<!-- 
+### Core framework
+
+```mermaid
+flowchart LR
+  subgraph grid["grid geometry (metric)"]
+      mink("Minkowski (non-GR)")
+      spherical("2.5D axisymmetric (non-GR)")
+      KS("2.5D axisymmetric<br>Kerr-Schild (GR)")
+      cs("cubed-sphere<br>(GR/non-GR)")
+  end
+  data["data containers"]
+  loops["range policies"]
+  templates["kernel templates"]
+  output["logging and<br>data output"]
+```
+
+Simulation engines
+
+```mermaid
+flowchart LR 
+  subgraph pic["particle-in-cell"]
+      subgraph minkowski["Minkowski"]
+          fieldsolver_mink("field solver")
+          pusher_mink("particle pusher")
+      end
+      subgraph curvilinear["non-GR curvilinear"]
+          fieldsolver_curv("field solver")
+          pusher_curv("particle pusher")
+      end
+      subgraph GR
+          fieldsolver_gr("field solver")
+          pusher_gr("particle pusher")
+      end
+      deposit("current deposit")
+      flt("current filtering")
+  end
+  subgraph ff["<strike>force-free</strike>"]
+      etc("...")
+  end
+```
+
+Visualization toolkit
+
+```mermaid
+flowchart LR
+  nttiny([nttiny])
+  graphet(["graph-et"])
+``` -->

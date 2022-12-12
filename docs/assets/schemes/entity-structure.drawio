@@ -1,0 +1,215 @@
+<mxfile host="65bd71144e" scale="5" border="0">
+    <diagram id="vkuBGM6YTtbjuDHeNg9K" name="Page-1">
+        <mxGraphModel dx="1450" dy="673" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.003;entryY=0.065;entryDx=0;entryDy=0;entryPerimeter=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" source="nRPkvn1M7o0VNPniuzZG-5" target="nRPkvn1M7o0VNPniuzZG-11" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="70" y="465"/>
+                            <mxPoint x="70" y="303"/>
+                            <mxPoint x="180" y="303"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;entryX=0.001;entryY=0.111;entryDx=0;entryDy=0;entryPerimeter=0;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" source="nRPkvn1M7o0VNPniuzZG-5" target="nRPkvn1M7o0VNPniuzZG-15" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="208" y="420" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="70" y="465"/>
+                            <mxPoint x="70" y="425"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.002;entryY=0.333;entryDx=0;entryDy=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;entryPerimeter=0;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" source="nRPkvn1M7o0VNPniuzZG-5" target="nRPkvn1M7o0VNPniuzZG-33" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="70" y="465"/>
+                            <mxPoint x="70" y="515"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-5" value="Kokkos" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry y="450" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="46" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.002;entryY=0.147;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=blockThin;endFill=0;strokeColor=#000000;" parent="1" source="nRPkvn1M7o0VNPniuzZG-6" target="nRPkvn1M7o0VNPniuzZG-28" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-6" value="ADIOS2" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry y="675" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-39" value="&lt;font&gt;(b) simulation engines&lt;/font&gt;" style="swimlane;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;startSize=30;collapsible=0;fillColor=#526cfe;strokeColor=#526CFE;rounded=0;fontColor=#FFFFFF;" parent="1" vertex="1">
+                    <mxGeometry x="422" y="279" width="210" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-71" value="particle pusher" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="29" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-72" value="current deposition" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="89" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-73" value="current filtering" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="119" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-74" value="field solver" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="179" width="140" height="61" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-75" value="current reconstruction" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="240" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-76" value="electric field cleaning" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="270" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-89" value="particle injection/removal" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="59" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-91" value="radiation/QED&lt;b&gt;*&lt;/b&gt;" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#E6E6E6;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="70" y="149" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-69" value="particle-in-cell" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;horizontal=0;fillColor=#AFAAB0;fontColor=#3D445B;strokeColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry y="29" width="30" height="181" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-70" value="force-free MHD" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;horizontal=0;fillColor=#AFAAB0;fontColor=#3D445B;strokeColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry y="210" width="30" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-90" value="cartesian / curvilinear / general relativistic &lt;br&gt;&amp;amp; cubed-sphere &lt;b&gt;*&lt;/b&gt;" style="whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=12;horizontal=0;fillColor=#AFAAB0;fontColor=#3D445B;strokeColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-39" vertex="1">
+                    <mxGeometry x="30" y="29" width="40" height="271" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-7" value="&lt;span&gt;&lt;font&gt;(a) code framework&lt;/font&gt;&lt;/span&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fillColor=#526cfe;strokeColor=#526CFE;swimlaneFillColor=none;gradientColor=none;backgroundOutline=0;rounded=0;fontColor=#FFFFFF;" parent="1" vertex="1">
+                    <mxGeometry x="190" y="265" width="210" height="512" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-11" value="data containers" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fillColor=#afaab0;fontColor=#3D445B;strokeColor=#3D445B;swimlaneLine=1;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-7" vertex="1">
+                    <mxGeometry y="30" width="210" height="120" as="geometry">
+                        <mxRectangle y="30" width="210" height="30" as="alternateBounds"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-12" value="generic multi-D arrays" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;perimeterSpacing=0;glass=0;sketch=0;" parent="nRPkvn1M7o0VNPniuzZG-11" vertex="1">
+                    <mxGeometry y="30" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-13" value="fields" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-11" vertex="1">
+                    <mxGeometry y="60" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-14" value="particles" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-11" vertex="1">
+                    <mxGeometry y="90" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-15" value="geometry" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;fillColor=#AFAAB0;strokeColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-7" vertex="1">
+                    <mxGeometry y="150" width="210" height="90" as="geometry">
+                        <mxRectangle y="150" width="210" height="30" as="alternateBounds"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-16" value="conversion/transformation functions" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-15" vertex="1">
+                    <mxGeometry y="30" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-17" value="metric coefficients" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-15" vertex="1">
+                    <mxGeometry y="60" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-33" value="loop execution policies" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fillColor=#AFAAB0;fontColor=#3D445B;strokeColor=#3D445B;" parent="nRPkvn1M7o0VNPniuzZG-7" vertex="1">
+                    <mxGeometry y="240" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-19" value="algorithm templates" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;swimlaneLine=1;glass=0;shadow=0;fillColor=#AFAAB0;fontColor=#3D445B;strokeColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-7" vertex="1">
+                    <mxGeometry y="270" width="210" height="140" as="geometry">
+                        <mxRectangle y="240" width="210" height="30" as="alternateBounds"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-20" value="particle injection" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-19" vertex="1">
+                    <mxGeometry y="30" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-21" value="particle sorting" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-19" vertex="1">
+                    <mxGeometry y="60" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-22" value="field initialization" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-19" vertex="1">
+                    <mxGeometry y="90" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-23" value="etc..." style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-19" vertex="1">
+                    <mxGeometry y="120" width="210" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-28" value="output" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fillColor=#AFAAB0;fontColor=#3D445B;strokeColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-7" vertex="1">
+                    <mxGeometry y="410" width="210" height="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-29" value="diagnostics and logs" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-28" vertex="1">
+                    <mxGeometry y="30" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-30" value="data output for long-term storage &amp;amp; post-processing" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="nRPkvn1M7o0VNPniuzZG-28" vertex="1">
+                    <mxGeometry y="60" width="210" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-54" value="View/ScatterView" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=8;align=center;dashed=1;dashPattern=1 1;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#3D445B;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="294" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-56" value="KOKKOS_INLINE" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=8;dashed=1;dashPattern=1 1;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#3D445B;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="415" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-59" value="MDRangePolicy" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=8;align=center;dashed=1;dashPattern=1 1;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#3D445B;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="505" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;shadow=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=8;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" source="nRPkvn1M7o0VNPniuzZG-60" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="190" y="550" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nRPkvn1M7o0VNPniuzZG-60" value="C++ functors" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=8;align=center;dashed=1;dashPattern=1 1;fillColor=#FFFFFF;fontColor=#3D445B;strokeColor=#3D445B;" parent="1" vertex="1">
+                    <mxGeometry x="110" y="540" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="(c) problem generator" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#FFFFFF;fillColor=#526cfe;strokeColor=#526CFE;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="422" y="611" width="211" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="field/particle initialization" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="2" vertex="1">
+                    <mxGeometry y="30" width="211" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="specific boundary conditions" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="2" vertex="1">
+                    <mxGeometry y="60" width="211" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="custom particle injectors" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="2" vertex="1">
+                    <mxGeometry y="90" width="211" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="problem-specific diagnostics" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;rounded=0;" parent="2" vertex="1">
+                    <mxGeometry y="120" width="211" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" style="edgeStyle=none;html=1;entryX=0.476;entryY=1.008;entryDx=0;entryDy=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;entryPerimeter=0;rounded=0;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" target="39" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="874" y="368" as="targetPoint"/>
+                        <mxPoint x="683" y="746" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="12" value="GLFW, ImGui, ImPlot" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="645" y="743" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;entryPerimeter=0;rounded=0;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" target="9" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points"/>
+                        <mxPoint x="724" y="703" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="14" value="Dash, Datashader, Plotly" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="699" y="701" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="(d) visualization &amp; &#10;post-processing tools" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;shadow=0;glass=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fillColor=#526cfe;rounded=0;swimlaneLine=1;connectable=1;dropTarget=1;fontColor=#FFFFFF;strokeColor=#526CFE;" parent="1" vertex="1">
+                    <mxGeometry x="664" y="383" width="120" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="Horizontal Container" style="swimlane;horizontal=0;rounded=0;shadow=0;glass=0;comic=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;strokeColor=#AFAAB0;fillColor=default;gradientColor=none;collapsible=0;expand=1;noLabel=1;startSize=0;" parent="34" vertex="1">
+                    <mxGeometry y="40" width="120" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="39" value="on-the-fly visualization (nttiny)" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;shadow=0;glass=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;whiteSpace=wrap;horizontal=0;fontColor=#3D445B;rounded=0;" parent="38" vertex="1">
+                    <mxGeometry width="40" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="post-runtime visualization (graph-et)" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;shadow=0;glass=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;whiteSpace=wrap;horizontal=0;fontColor=#3D445B;rounded=0;" parent="38" vertex="1">
+                    <mxGeometry x="40" width="40" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="advanced post-processing tools &#10;(with python)" style="text;strokeColor=#E6E6E6;fillColor=#FFFFFF;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;shadow=0;glass=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;whiteSpace=wrap;horizontal=0;fontColor=#3D445B;rounded=0;" parent="38" vertex="1">
+                    <mxGeometry x="80" width="40" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" style="edgeStyle=none;html=1;exitX=0.312;exitY=-0.042;exitDx=0;exitDy=0;entryX=0.442;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;exitPerimeter=0;rounded=0;fontColor=#000000;strokeColor=#000000;endArrow=blockThin;endFill=0;" parent="1" source="42" target="40" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="scipy, numpy, xarray, pandas" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;whiteSpace=wrap;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="734" y="663" width="90" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="Entity: toolkit for astrophysical plasma simulations" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;glass=0;labelBorderColor=none;sketch=0;fontColor=#3D445B;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontSize=18;" parent="1" vertex="1">
+                    <mxGeometry x="205" y="221" width="440" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="49" value="[&lt;b&gt;*&lt;/b&gt;] focus of the code development plan" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Proxima Nova;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DProxima%2BNova;fontColor=#3D445B;" vertex="1" parent="1">
+                    <mxGeometry x="664" y="279" width="128" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

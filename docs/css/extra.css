@@ -12,8 +12,92 @@
   --md-typeset-a-color: hsl(231, 100%, 64%);
 }
 
+
+
 .md-header {
   box-shadow: none;
+}
+
+/* Home */
+.entity-cover {
+  width: 100%;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+}
+
+@media (max-width: 768px) {
+  .entity-cover {
+    height: 100px;
+  }
+}
+
+[data-md-color-scheme="default"] .entity-cover {
+  background-image: url("/assets/cover_light.gif");
+}
+
+[data-md-color-scheme="slate"] .entity-cover {
+  background-image: url("/assets/cover_dark.gif");
+}
+
+.nt-card {
+  background-color: var(--md-admonition-bg-color) !important;
+  box-shadow: var(--md-shadow-z1) !important;
+  border: .05rem solid #448aff !important;
+  border-radius: 2px;
+}
+
+.nt-card-image {
+  background-size: contain !important;
+}
+
+[data-md-color-scheme="default"] .nt-card.core .nt-card-image {
+  background-image: url("/assets/icons/framework-icon-dark.svg") !important;
+}
+
+[data-md-color-scheme="default"] .nt-card.sim .nt-card-image {
+  background-image: url("/assets/icons/engine-icon-dark.svg") !important;
+}
+
+[data-md-color-scheme="default"] .nt-card.vis .nt-card-image {
+  background-image: url("/assets/icons/vis-icon-dark.svg") !important;
+}
+
+.nt-timeline-item:nth-child(1) .nt-timeline-dot {
+  background-color: #0b7be3 !important;
+}
+
+.nt-timeline-item:nth-child(2) .nt-timeline-dot {
+  background-color: #7b5de7 !important;
+}
+
+.nt-timeline-item:nth-child(3) .nt-timeline-dot {
+  background-color: #c357de !important;
+}
+
+.nt-timeline-item:nth-child(4) .nt-timeline-dot {
+  background-color: #d63aa7 !important;
+}
+
+.nt-timeline-dot {
+  border-radius: 25% 0% 0% 25% !important;
+  border: 1px solid white !important;
+  width: 45px !important;
+}
+
+.nt-timeline.vertical.left .nt-timeline-items {
+  background: linear-gradient(#0b7be3,
+      #7b5de7,
+      #c357de,
+      #d63aa7) no-repeat 30px/2px 100% !important;
+}
+
+.nt-timeline.vertical.left .nt-timeline-before {
+  background: linear-gradient(rgba(252, 70, 107, 0) 0%, #0b7be3 100%) no-repeat 30px/2px 100% !important;
+}
+
+.nt-timeline.vertical.left .nt-timeline-after {
+  background: linear-gradient(#d63aa7 0%, rgba(252, 70, 107, 0) 100%) no-repeat 30px/2px 100% !important;
 }
 
 /* Header */
@@ -89,12 +173,13 @@
   margin: 0px;
 }
 
-.katex .text > .mord {
+.katex .text>.mord {
   font-family: var(--md-text-font);
   font-weight: normal;
 }
+
 .katex .tag {
-  right: 25px!important;
+  right: 25px !important;
 }
 
 /* p5 canvases */

@@ -3,13 +3,13 @@ hide:
   - footer
 ---
 
-`entity` documentation is automatically generated using the [`Material for mkdocs`](https://squidfunk.github.io/mkdocs-material/) framework and pushed to the `gh-pages` branch of the main repository. The source code for the documentation with all the texts for the pages you are currently viewing is contained in the [`wiki`](https://github.com/haykh/entity/tree/wiki) branch. 
+`entity` documentation is automatically generated using the `mkdocs` framework and the [`Material for mkdocs`](https://squidfunk.github.io/mkdocs-material/) theme. When you commit/push to the `wiki` branch the static website is automatically compiled and pushed to the `gh-pages` branch of the main repository.
 
 !!! hint
 
     Documentations are created using `markdown` syntax which is then automatically parsed and converted into `html`. As such, any `html`/`css`/`js` code you write in the documentation will be automatically rendered in the documentation. To add global external `css` or `js` files, add them to the `mkdocs.yml` file (`extra_javascript` and `extra_css`). If a script is meant to run on just one page, add it with a dedicated `<script></script>` tag.
 
-## Adding or editing the documentation
+## Workflow
 
 1. Pull the `wiki` branch of the main repository (it is recommended to do this in a separate directory from the main code).
   ```shell
@@ -28,7 +28,7 @@ hide:
 
 3. Install the dependencies (everything is installed locally in the `.venv` directory).
   ```shell
-  pip install -r pipreq.txt
+  pip install -r requirements.txt
   ```
 
 4. Start the reactive server that will generate the website and will dynamically update any changes made to the documentation.
