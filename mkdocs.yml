@@ -23,16 +23,17 @@ nav:
     - '"Reconnection"': 'fun/reconnection.md'
 
 markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.arithmatex:
       generic: true
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
   - pymdownx.highlight:
       use_pygments: true
   - pymdownx.tabbed:
       alternate_style: true 
-  - attr_list
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
@@ -41,6 +42,13 @@ markdown_extensions:
   - toc:
       permalink: true
   - tables
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - md_in_html
+  - neoteroi.cards
+  - neoteroi.timeline
 
 plugins:
   - search
@@ -92,6 +100,11 @@ extra_javascript:
 
 extra_css:
   - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
+  - css/neotoroi/neoteroi-mkdocs.min.css
+  - css/neotoroi/neoteroi-cards.css
+  - css/neotoroi/neoteroi-timeline.css
+  - css/neotoroi/neoteroi-gantt.css
+  - css/neotoroi/neoteroi-spantable.css
   - css/extra.css
 
 extra:
