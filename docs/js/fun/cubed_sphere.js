@@ -43,8 +43,6 @@ if (document.getElementById("plot_cubed_sphere")) {
       const width = w, height = parseInt(w * 0.75);
       const N = 15;
 
-      // let Ci;
-
       p.setup = () => {
         cnv = p.createCanvas(width, height, p.WEBGL);
         cnv.parent('plot_cubed_sphere');
@@ -93,7 +91,7 @@ if (document.getElementById("plot_cubed_sphere")) {
       p.draw = () => {
         getBGColor();
         const counter = { ci: 0 };
-        p.orbitControl();
+        p.orbitControl(1, 1, 0.1);
         p.background(color_bg);
 
         p.rotateX(Math.PI / 2);

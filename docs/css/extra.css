@@ -188,22 +188,27 @@
   background-color: var(--md-admonition-bg-color);
 }
 
-#plot_ax_01 th {
+.p5canvas th {
   min-width: 3rem !important;
 }
 
-#plot_ax_01 input {
+.p5canvas input {
   width: 60px;
 }
 
-#plot_ax_01 input[type="range"] {
+.p5canvas input[type="range"] {
   width: 120px;
 }
 
-#plot_ax_01 button {
+.p5canvas button {
   color: white;
   padding: 10px 0px 10px 0px;
   background-color: var(--md-primary-fg-color);
+}
+
+.p5canvas button:hover {
+  background-color: var(--md-primary-fg-color--light);
+  cursor: pointer;
 }
 
 div[id^="plot"] .label,
