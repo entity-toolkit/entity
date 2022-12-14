@@ -12,7 +12,7 @@ hide:
 
 ## `Entity`
 
-### Toolkit for astrophysical plasma simulations
+`Entity` is a toolkit for astrophysical plasma simulations.[^1]
 
 ::cards::cols=3 image-bg
 
@@ -26,7 +26,7 @@ hide:
 - title: Simulation engines
   content: |
     Set of plasma physics simulation modules and algorithms for the high-energy astrophysical plasma simulations.
-  image: "assets/icons/engine-icon.svg#dark_only"
+  image: "assets/icons/engine-icon.svg"
   url: ./
   key: sim
 
@@ -38,6 +38,16 @@ hide:
   key: vis
 
 ::/cards::
+
+### Contributors
+
+* :tea: Benjamin Crinquand {[@bcrinquand](https://github.com/bcrinquand): GR, cubed-sphere}
+* :bubble_tea: Alisa Galishnikova {[@alisagk](https://github.com/alisagk): GR}
+* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh): framework, PIC, GR, cubed-sphere}
+* :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann): cubed-sphere}
+* :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph): all-around}
+
+### Timeline
 
 ::timeline::
 
@@ -64,10 +74,7 @@ hide:
 
 ::/timeline::
 
-
----
-
-[Icons](https://game-icons.net/) used under [CC BY 3.0 license](https://creativecommons.org/licenses/by/3.0/); created by [Delapouite](https://delapouite.com/), and [Lorc](https://lorcblog.blogspot.com/).
+[^1]: [Icons](https://game-icons.net/) are used under the [CC BY 3.0 license](https://creativecommons.org/licenses/by/3.0/); created by [Delapouite](https://delapouite.com/), and [Lorc](https://lorcblog.blogspot.com/).
 
 <!-- 
 ### Core framework
