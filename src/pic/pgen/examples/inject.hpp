@@ -28,10 +28,20 @@ namespace ntt {
   };
 
   template <Dimension D, SimulationType S>
-  struct CoshDistribution : public SpatialDistribution<D, S> {
-    explicit CoshDistribution(const SimulationParams& params, Meshblock<D, S>& mblock)
+  struct CoshDist : public SpatialDistribution<D, S> {
+    explicit CoshDist(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
-    Inline real_t operator()(real_t x_ph) const { return 1.0 / x_ph; }
+    Inline real_t operator()(real_t x_ph) const { return 1.0 / math::cosh(x_ph / 0.2); }
+  };
+
+  template <Dimension D, SimulationType S>
+  struct EgtrBCrit : public InjectionCriterion<D, S> {
+    explicit EgtrBCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
+      : InjectionCriterion<D, S>(params, mblock) {}
+    Inline bool operator()(const coord_t<D>& xi) const {
+      mblock.em((int)xi[0], (int)xi[1], (int)xi[2], em::ex1);
+      ... return true / false;
+    }
   };
 
   template <Dimension D, SimulationType S>
@@ -46,8 +56,14 @@ namespace ntt {
                                                      Meshblock<Dim2, TypePIC>& mblock) {
     auto nppc_per_spec = (real_t)(params.ppc0()) * HALF;
     InjectUniform<Dim2, TypePIC, HotDist>(params, mblock, {1, 2}, nppc_per_spec);
+
     InjectUniform<Dim2, TypePIC, HotDist>(
       params, mblock, {1, 2}, nppc_per_spec, {-0.5, 0.5, -0.1, 0.2});
+
+    InjectInVolume<Dim2, TypePIC, HotDist, CoshDist>(params, mblock, {1, 2}, nppc_per_spec);
+
+    InjectInVolume<Dim2, TypePIC, HotDist, UniformDist, EgtrBCrit>(
+      params, mblock, {1, 2}, nppc_per_spec);
   }
 
 } // namespace ntt
