@@ -222,28 +222,28 @@ namespace ntt {
         inj_criterion {params, mblock},
         pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
     Inline void operator()(index_t i1) const {
-      // cell node
-      coord_t<Dim1> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS)};
-      // cell center
-      coord_t<Dim1> xc {xi[0] + HALF};
-      // physical coordinate
-      coord_t<Dim1> xph {ZERO};
+//       // cell node
+//       coord_t<Dim1> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS)};
+//       // cell center
+//       coord_t<Dim1> xc {xi[0] + HALF};
+//       // physical coordinate
+//       coord_t<Dim1> xph {ZERO};
 
-#ifdef MINKOWSKI_METRIC
-      mblock.metric.x_Code2Cart(xc, xph);
-#else
-      mblock.metric.x_Code2Sph(xc, xph);
-#endif
+// #ifdef MINKOWSKI_METRIC
+//       mblock.metric.x_Code2Cart(xc, xph);
+// #else
+//       mblock.metric.x_Code2Sph(xc, xph);
+// #endif
 
-      if (inj_criterion(xph)) {
-        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+//       if (inj_criterion(xph)) {
+//         typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-        real_t ninject = nppc * spatial_dist(xph);
-        while (ninject > ZERO) {
-          real_t random = rand_gen.frand();
-          if (random < ninject) {
-            vec_t<Dim3> v {ZERO};
-            energy_dist(xph, v);
+//         real_t ninject = nppc * spatial_dist(xph);
+//         while (ninject > ZERO) {
+//           real_t random = rand_gen.frand();
+//           if (random < ninject) {
+//             vec_t<Dim3> v {ZERO};
+//             energy_dist(xph, v);
 
             real_t dx1 = rand_gen.frand();
 
