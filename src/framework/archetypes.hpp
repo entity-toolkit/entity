@@ -98,7 +98,7 @@ namespace ntt {
     InjectionCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params {params}, m_mblock {mblock} {}
 
-  private:
+  protected:
     SimulationParams m_params;
     Meshblock<D, S>  m_mblock;
   };

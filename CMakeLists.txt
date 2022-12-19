@@ -133,7 +133,7 @@ endif()
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
 if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nttiny extern/nttiny)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
 endif()
 
 # ----------------------------- Kokkos settings ---------------------------- #
