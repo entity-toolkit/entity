@@ -31,18 +31,21 @@ namespace ntt {
   struct CoshDist : public SpatialDistribution<D, S> {
     explicit CoshDist(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
-    Inline real_t operator()(real_t x_ph) const { return 1.0 / math::cosh(x_ph / 0.2); }
+    Inline real_t operator()(coord_t<D> x_ph) const { return 1.0 / math::cosh(x_ph[0] / 0.2); }
   };
 
   template <Dimension D, SimulationType S>
   struct EgtrBCrit : public InjectionCriterion<D, S> {
     explicit EgtrBCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock) {}
-    Inline bool operator()(const coord_t<D>& xi) const {
-      mblock.em((int)xi[0], (int)xi[1], (int)xi[2], em::ex1);
-      ... return true / false;
-    }
+    Inline bool operator()(const coord_t<D>& xi) const;
   };
+
+  template <>
+  Inline bool EgtrBCrit<Dim2, TypePIC>::operator()(const coord_t<Dim2>& xi) const {
+    this->m_mblock.em((int)xi[0], (int)xi[1], em::ex1);
+    return true;
+  }
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator : public PGen<D, S> {

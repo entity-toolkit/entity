@@ -20,8 +20,8 @@ namespace ntt {
    * @brief 1D particle-vectorized injection kernel
    */
   template <SimulationType S, template <Dimension, SimulationType> class EnDist>
-  struct InjectorUniform1d_kernel {
-    InjectorUniform1d_kernel(const SimulationParams&   pr,
+  struct UniformInjector1d_kernel {
+    UniformInjector1d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim1, S>& mb,
                              const Particles<Dim1, S>& sp,
                              const std::size_t&        ofs,
@@ -59,8 +59,8 @@ namespace ntt {
    * @brief 2D particle-vectorized injection kernel
    */
   template <SimulationType S, template <Dimension, SimulationType> class EnDist>
-  struct InjectorUniform2d_kernel {
-    InjectorUniform2d_kernel(const SimulationParams&   pr,
+  struct UniformInjector2d_kernel {
+    UniformInjector2d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim2, S>& mb,
                              const Particles<Dim2, S>& sp,
                              const std::size_t&        ofs,
@@ -99,8 +99,8 @@ namespace ntt {
    * @brief 3D particle-vectorized injection kernel
    */
   template <SimulationType S, template <Dimension, SimulationType> class EnDist>
-  struct InjectorUniform3d_kernel {
-    InjectorUniform3d_kernel(const SimulationParams&   pr,
+  struct UniformInjector3d_kernel {
+    UniformInjector3d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim3, S>& mb,
                              const Particles<Dim3, S>& sp,
                              const std::size_t&        ofs,
@@ -179,17 +179,17 @@ namespace ntt {
         Kokkos::parallel_for(
           "inject",
           CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-          InjectorUniform1d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
+          UniformInjector1d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
       } else if constexpr (D == Dim2) {
         Kokkos::parallel_for(
           "inject",
           CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-          InjectorUniform2d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
+          UniformInjector2d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
       } else if constexpr (D == Dim3) {
         Kokkos::parallel_for(
           "inject",
           CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-          InjectorUniform3d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
+          UniformInjector3d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
       }
     }
   }
@@ -207,8 +207,8 @@ namespace ntt {
             class InjCrit>
   struct VolumeInjector1d_kernel {
     VolumeInjector1d_kernel(const SimulationParams&     pr,
-                            const Meshblock<Dim2, S>&   mb,
-                            const Particles<Dim2, S>&   sp,
+                            const Meshblock<Dim1, S>&   mb,
+                            const Particles<Dim1, S>&   sp,
                             const std::size_t&          ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
@@ -222,30 +222,31 @@ namespace ntt {
         inj_criterion {params, mblock},
         pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
     Inline void operator()(index_t i1) const {
-//       // cell node
-//       coord_t<Dim1> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS)};
-//       // cell center
-//       coord_t<Dim1> xc {xi[0] + HALF};
-//       // physical coordinate
-//       coord_t<Dim1> xph {ZERO};
+      // cell node
+      coord_t<Dim1> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS)};
+      // cell center
+      coord_t<Dim1> xc {xi[0] + HALF};
+      // physical coordinate
+      coord_t<Dim1> xph {ZERO};
 
-// #ifdef MINKOWSKI_METRIC
-//       mblock.metric.x_Code2Cart(xc, xph);
-// #else
-//       mblock.metric.x_Code2Sph(xc, xph);
-// #endif
+#ifdef MINKOWSKI_METRIC
+      mblock.metric.x_Code2Cart(xc, xph);
+#else
+      mblock.metric.x_Code2Sph(xc, xph);
+#endif
 
-//       if (inj_criterion(xph)) {
-//         typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+      if (inj_criterion(xph)) {
+        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-//         real_t ninject = nppc * spatial_dist(xph);
-//         while (ninject > ZERO) {
-//           real_t random = rand_gen.frand();
-//           if (random < ninject) {
-//             vec_t<Dim3> v {ZERO};
-//             energy_dist(xph, v);
+        real_t ninject = nppc * spatial_dist(xph);
+        while (ninject > ZERO) {
+          real_t random = rand_gen.frand();
+          if (random < ninject) {
+            vec_t<Dim3> v {ZERO};
+            energy_dist(xph, v);
 
             real_t dx1 = rand_gen.frand();
+            real_t dx2 = rand_gen.frand();
 
             auto p         = Kokkos::atomic_fetch_add(&npart(), 1);
             species.i1(p)  = static_cast<int>(i1) - N_GHOSTS;
@@ -272,6 +273,181 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
+  template <SimulationType S,
+            template <Dimension, SimulationType>
+            class EnDist,
+            template <Dimension, SimulationType>
+            class SpDist,
+            template <Dimension, SimulationType>
+            class InjCrit>
+  struct VolumeInjector2d_kernel {
+    VolumeInjector2d_kernel(const SimulationParams&     pr,
+                            const Meshblock<Dim2, S>&   mb,
+                            const Particles<Dim2, S>&   sp,
+                            const std::size_t&          ppc,
+                            const array_t<std::size_t>& nprt,
+                            const real_t&               time)
+      : params {pr},
+        mblock {mb},
+        species {sp},
+        nppc {(real_t)ppc},
+        npart {nprt},
+        energy_dist {params, mblock},
+        spatial_dist {params, mblock},
+        inj_criterion {params, mblock},
+        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+    Inline void operator()(index_t i1, index_t i2) const {
+      // cell node
+      coord_t<Dim2> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+                        static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS)};
+      // cell center
+      coord_t<Dim2> xc {xi[0] + HALF, xi[1] + HALF};
+      // physical coordinate
+      coord_t<Dim2> xph {ZERO};
+
+#ifdef MINKOWSKI_METRIC
+      mblock.metric.x_Code2Cart(xc, xph);
+#else
+      mblock.metric.x_Code2Sph(xc, xph);
+#endif
+
+      if (inj_criterion(xph)) {
+        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+
+        real_t ninject = nppc * spatial_dist(xph);
+        while (ninject > ZERO) {
+          real_t random = rand_gen.frand();
+          if (random < ninject) {
+            vec_t<Dim3> v {ZERO};
+            energy_dist(xph, v);
+
+            real_t dx1 = rand_gen.frand();
+            real_t dx2 = rand_gen.frand();
+
+            auto p         = Kokkos::atomic_fetch_add(&npart(), 1);
+            species.i1(p)  = static_cast<int>(i1) - N_GHOSTS;
+            species.dx1(p) = dx1;
+            species.i2(p)  = static_cast<int>(i2) - N_GHOSTS;
+            species.dx2(p) = dx2;
+            species.ux1(p) = v[0];
+            species.ux2(p) = v[1];
+            species.ux3(p) = v[2];
+          }
+          ninject -= ONE;
+        }
+        pool.free_state(rand_gen);
+      }
+    }
+
+  private:
+    SimulationParams     params;
+    Meshblock<Dim2, S>   mblock;
+    Particles<Dim2, S>   species;
+    const real_t         nppc;
+    array_t<std::size_t> npart;
+    EnDist<Dim2, S>      energy_dist;
+    SpDist<Dim2, S>      spatial_dist;
+    InjCrit<Dim2, S>     inj_criterion;
+    RandomNumberPool_t   pool;
+  };
+
+  template <SimulationType S,
+            template <Dimension, SimulationType>
+            class EnDist,
+            template <Dimension, SimulationType>
+            class SpDist,
+            template <Dimension, SimulationType>
+            class InjCrit>
+  struct VolumeInjector3d_kernel {
+    VolumeInjector3d_kernel(const SimulationParams&     pr,
+                            const Meshblock<Dim3, S>&   mb,
+                            const Particles<Dim3, S>&   sp,
+                            const std::size_t&          ppc,
+                            const array_t<std::size_t>& nprt,
+                            const real_t&               time)
+      : params {pr},
+        mblock {mb},
+        species {sp},
+        nppc {(real_t)ppc},
+        npart {nprt},
+        energy_dist {params, mblock},
+        spatial_dist {params, mblock},
+        inj_criterion {params, mblock},
+        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+      // cell node
+      coord_t<Dim3> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+                        static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS),
+                        static_cast<real_t>(static_cast<int>(i3) - N_GHOSTS)};
+      // cell center
+      coord_t<Dim3> xc {xi[0] + HALF, xi[1] + HALF, xi[2] + HALF};
+      // physical coordinate
+      coord_t<Dim3> xph {ZERO};
+
+#ifdef MINKOWSKI_METRIC
+      mblock.metric.x_Code2Cart(xc, xph);
+#else
+      mblock.metric.x_Code2Sph(xc, xph);
+#endif
+
+      if (inj_criterion(xph)) {
+        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+
+        real_t ninject = nppc * spatial_dist(xph);
+        while (ninject > ZERO) {
+          real_t random = rand_gen.frand();
+          if (random < ninject) {
+            vec_t<Dim3> v {ZERO};
+            energy_dist(xph, v);
+
+            real_t dx1 = rand_gen.frand();
+            real_t dx2 = rand_gen.frand();
+            real_t dx3 = rand_gen.frand();
+
+            auto p         = Kokkos::atomic_fetch_add(&npart(), 1);
+            species.i1(p)  = static_cast<int>(i1) - N_GHOSTS;
+            species.dx1(p) = dx1;
+            species.i2(p)  = static_cast<int>(i2) - N_GHOSTS;
+            species.dx2(p) = dx2;
+            species.i3(p)  = static_cast<int>(i3) - N_GHOSTS;
+            species.dx3(p) = dx3;
+            species.ux1(p) = v[0];
+            species.ux2(p) = v[1];
+            species.ux3(p) = v[2];
+          }
+          ninject -= ONE;
+        }
+        pool.free_state(rand_gen);
+      }
+    }
+
+  private:
+    SimulationParams     params;
+    Meshblock<Dim3, S>   mblock;
+    Particles<Dim3, S>   species;
+    const real_t         nppc;
+    array_t<std::size_t> npart;
+    EnDist<Dim3, S>      energy_dist;
+    SpDist<Dim3, S>      spatial_dist;
+    InjCrit<Dim3, S>     inj_criterion;
+    RandomNumberPool_t   pool;
+  };
+
+  /**
+   * @brief Particle injector parallelized by cells in a volume.
+   * @tparam D dimension.
+   * @tparam S simulation type.
+   * @tparam EnDist energy distribution [default = ColdDist].
+   * @tparam SpDist spatial distribution [default = UniformDist].
+   * @tparam InjCrit injection criterion [default = NoCriterion].
+   *
+   * @param params simulation parameters.
+   * @param mblock meshblock.
+   * @param species species to inject as a list.
+   * @param ppc_per_spec fiducial number of particles per cell per species.
+   * @param region region to inject particles as a list of coordinates.
+   * @param time current time.
+   */
   template <Dimension      D,
             SimulationType S,
             template <Dimension, SimulationType> class EnDist  = ColdDist,
@@ -286,54 +462,40 @@ namespace ntt {
     EnDist<D, S>  energy_dist(params, mblock);
     SpDist<D, S>  spatial_dist(params, mblock);
     InjCrit<D, S> inj_criterion(params, mblock);
+    range_t<D>    range_policy;
     if (region.size() == 0) {
-      region = mblock.extent();
+      range_policy = mblock.rangeActiveCells();
+    } else {
+      range_policy = mblock.rangeActiveCells();
+      NTTHostError("Non-trivial region not implemented yet");
     }
     for (auto& s : species) {
       auto&                sp = mblock.particles[s - 1];
       array_t<std::size_t> npart("npart_sp");
       auto                 npart_h = Kokkos::create_mirror(npart);
       npart_h()                    = sp.npart();
-      std::cout << "npart before: " << npart_h() << std::endl;
       Kokkos::deep_copy(npart, npart_h);
 
-      // Kokkos::parallel_for(
-      //   "inject",
-      //   CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-      //   InjectorUniform1d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
+      if constexpr (D == Dim1) {
+        Kokkos::parallel_for("inject",
+                             range_policy,
+                             VolumeInjector1d_kernel<S, EnDist, SpDist, InjCrit>(
+                               params, mblock, sp, ppc_per_spec, npart, time));
+      } else if constexpr (D == Dim2) {
+        Kokkos::parallel_for("inject",
+                             range_policy,
+                             VolumeInjector2d_kernel<S, EnDist, SpDist, InjCrit>(
+                               params, mblock, sp, ppc_per_spec, npart, time));
+      } else if constexpr (D == Dim3) {
+        Kokkos::parallel_for("inject",
+                             range_policy,
+                             VolumeInjector3d_kernel<S, EnDist, SpDist, InjCrit>(
+                               params, mblock, sp, ppc_per_spec, npart, time));
+      }
 
       Kokkos::deep_copy(npart_h, npart);
-      std::cout << "npart after: " << npart_h() << std::endl;
+      sp.setNpart(npart_h());
     }
-    //   if constexpr (D == Dim1) {
-    //     Kokkos::parallel_for(
-    //       "inject",
-    //       CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-    //       Injector1d_kernel<S, EnDist>(
-    //         params, mblock, sp, npart_before, {region[0], region[1]}, time));
-    //   } else if constexpr (D == Dim2) {
-    //     Kokkos::parallel_for(
-    //       "inject",
-    //       CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-    //       Injector2d_kernel<S, EnDist>(params,
-    //                                    mblock,
-    //                                    sp,
-    //                                    npart_before,
-    //                                    {region[0], region[1], region[2], region[3]},
-    //                                    time));
-    //   } else if constexpr (D == Dim3) {
-    //     Kokkos::parallel_for(
-    //       "inject",
-    //       CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
-    //       Injector3d_kernel<S, EnDist>(
-    //         params,
-    //         mblock,
-    //         sp,
-    //         npart_before,
-    //         {region[0], region[1], region[2], region[3], region[4], region[5]},
-    //         time));
-    //   }
-    // }
   }
 
 } // namespace ntt
