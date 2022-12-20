@@ -4,11 +4,58 @@
 #include "wrapper.h"
 #include "input.h"
 #include "archetypes.hpp"
+#include "injector.hpp"
 #include "sim_params.h"
 #include "meshblock.h"
 #include "field_macros.h"
 
 namespace ntt {
+
+  template <Dimension D, SimulationType S>
+  struct RadialKick : public EnergyDistribution<D, S> {
+    RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : EnergyDistribution<D, S>(params, mblock) {}
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v) const override { v[0] = 0.1; }
+  };
+
+  template <Dimension D, SimulationType S>
+  struct RadialDist : public SpatialDistribution<D, S> {
+    explicit RadialDist(const SimulationParams& params, Meshblock<D, S>& mblock)
+      : SpatialDistribution<D, S>(params, mblock) {}
+    Inline real_t operator()(const coord_t<D>&) const;
+  };
+
+  template <Dimension D, SimulationType S>
+  struct EdotBCrit : public InjectionCriterion<D, S> {
+    explicit EdotBCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
+      : InjectionCriterion<D, S>(params, mblock) {}
+    Inline bool operator()(const coord_t<D>& xi) const;
+  };
+
+  template <>
+  Inline real_t RadialDist<Dim2, TypePIC>::operator()(const coord_t<Dim2>& x_ph) const {
+    return (x_ph[0] <= 1.5) ? ONE : ZERO;
+  }
+
+  template <>
+  Inline bool EdotBCrit<Dim2, TypePIC>::operator()(const coord_t<Dim2>& xi) const {
+    std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
+    std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
+    vec_t<Dim3> e_hat {ZERO}, b_hat {ZERO};
+    this->m_mblock.metric.v_Cntrv2Hat(xi,
+                                      {this->m_mblock.em(i1, i2, em::ex1),
+                                       this->m_mblock.em(i1, i2, em::ex2),
+                                       this->m_mblock.em(i1, i2, em::ex3)},
+                                      e_hat);
+    this->m_mblock.metric.v_Cntrv2Hat(xi,
+                                      {this->m_mblock.em(i1, i2, em::bx1),
+                                       this->m_mblock.em(i1, i2, em::bx2),
+                                       this->m_mblock.em(i1, i2, em::bx3)},
+                                      b_hat);
+    real_t Bsqr  = SQR(b_hat[0]) + SQR(b_hat[1]) + SQR(b_hat[2]);
+    real_t EdotB = e_hat[0] * b_hat[0] + e_hat[1] * b_hat[1] + e_hat[2] * b_hat[2];
+    return ABS(EdotB / Bsqr) > 1e-5;
+  }
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator : public PGen<D, S> {
@@ -17,9 +64,22 @@ namespace ntt {
       omega_max   = readFromInput<real_t>(params.inputdata(), "problem", "omega_max");
     }
 
+    inline void UserInitParticles(const SimulationParams& params,
+                                  Meshblock<D, S>&        mblock) override {
+      // auto nppc_per_spec = (real_t)(params.ppc0()) * 0.1;
+      // InjectInVolume<D, S, RadialKick, RadialDist, EdotBCrit>(
+      //   params, mblock, {1, 2}, nppc_per_spec);
+    }
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override;
     inline void
     UserDriveFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) override;
+    inline void UserDriveParticles(const real_t&           time,
+                                   const SimulationParams& params,
+                                   Meshblock<D, S>&        mblock) override {
+      auto nppc_per_spec = (real_t)(params.ppc0()) * 0.01;
+      InjectInVolume<D, S, RadialKick, RadialDist, EdotBCrit>(
+        params, mblock, {1, 2}, nppc_per_spec, {}, time);
+    }
 
     inline real_t UserTargetField(const Meshblock<D, S>&,
                                   const em&,
@@ -104,6 +164,23 @@ namespace ntt {
         mblock.em(i, j, em::ex2) = 0.0;
         mblock.em(i, j, em::bx1) = 0.0;
       });
+  }
+
+  template <>
+  Inline real_t RadialDist<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {
+    return ZERO;
+  }
+  template <>
+  Inline real_t RadialDist<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
+    return ZERO;
+  }
+  template <>
+  Inline bool EdotBCrit<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
+    return false;
+  }
+  template <>
+  Inline bool EdotBCrit<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {
+    return false;
   }
 
   template <>

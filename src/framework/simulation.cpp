@@ -7,6 +7,7 @@
 #include <plog/Log.h>
 #include <toml/toml.hpp>
 
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -185,6 +186,15 @@ namespace ntt {
     //   species.SynchronizeHostDevice();
     // }
     PLOGD << "... host-device synchronized";
+  }
+
+  template <Dimension D, SimulationType S>
+  void Simulation<D, S>::PrintDiagnostics() {
+    for (std::size_t i {0}; i < meshblock.particles.size(); ++i) {
+      auto& species {meshblock.particles[i]};
+      std::cout << "species #" << i << ": " << species.npart() << " ("
+                << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
+    }
   }
 
 } // namespace ntt

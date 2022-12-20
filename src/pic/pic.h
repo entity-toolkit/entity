@@ -128,8 +128,9 @@ namespace ntt {
     /* ----------------- Additional conversions and computations ---------------- */
     /**
      * @brief Compute density for output or other usage.
+     * @param smooth smoothing window (default 2).
      */
-    void ComputeDensity();
+    void ComputeDensity(const short& smooth = 2);
     /**
      * @brief Convert a given field to the hatted basis on the host.
      */

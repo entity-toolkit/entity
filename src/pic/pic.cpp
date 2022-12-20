@@ -133,6 +133,7 @@ namespace ntt {
 
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
+    this->PrintDiagnostics();
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

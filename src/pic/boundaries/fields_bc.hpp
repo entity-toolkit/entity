@@ -15,9 +15,10 @@ namespace ntt {
    */
   template <Dimension D>
   class AbsorbFields_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_rabsorb;
-    real_t                m_rmax;
+    Meshblock<D, TypePIC>        m_mblock;
+    ProblemGenerator<D, TypePIC> m_pgen;
+    real_t                       m_rabsorb;
+    real_t                       m_rmax;
 
   public:
     /**
@@ -27,8 +28,11 @@ namespace ntt {
      * @param rabsorb Absorbing radius.
      * @param rmax Maximum radius.
      */
-    AbsorbFields_kernel(const Meshblock<D, TypePIC>& mblock, real_t r_absorb, real_t r_max)
-      : m_mblock {mblock}, m_rabsorb {r_absorb}, m_rmax {r_max} {}
+    AbsorbFields_kernel(const Meshblock<D, TypePIC>&        mblock,
+                        const ProblemGenerator<D, TypePIC>& pgen,
+                        real_t                              r_absorb,
+                        real_t                              r_max)
+      : m_mblock {mblock}, m_pgen {pgen}, m_rabsorb {r_absorb}, m_rmax {r_max} {}
 
     ~AbsorbFields_kernel() {}
     /**
@@ -58,8 +62,9 @@ namespace ntt {
     BX2(i, j) = (ONE - sigma_r2) * BX2(i, j);
     BX3(i, j) = (ONE - sigma_r2) * BX3(i, j);
 
-    real_t      br_target_hat {UserTargetField_br_hat(m_mblock, {i_, j_ + HALF})};
-    real_t      bx1_source_cntr {BX1(i, j)};
+    // !TODO: time here is explicitly set to zero
+    real_t br_target_hat {m_pgen.UserTargetField(m_mblock, em::bx1, 0.0, {i_, j_ + HALF})};
+    real_t bx1_source_cntr {BX1(i, j)};
     vec_t<Dim3> br_source_hat;
     m_mblock.metric.v_Cntrv2Hat({i_, j_ + HALF}, {bx1_source_cntr, ZERO, ZERO}, br_source_hat);
     real_t      br_interm_hat {(ONE - sigma_r1) * br_source_hat[0] + sigma_r1 * br_target_hat};

@@ -10,6 +10,8 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::ResetSimulation() {
+    this->m_tstep = 0;
+    this->m_time  = ZERO;
     ResetFields();
     ResetParticles();
     ResetCurrents();
@@ -30,6 +32,7 @@ namespace ntt {
       Kokkos::parallel_for("reset_particles",
                            species.rangeAllParticles(),
                            ResetParticles_kernel<D>(mblock, species));
+      species.setNpart(0);
     }
   }
 

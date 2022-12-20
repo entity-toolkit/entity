@@ -4,6 +4,7 @@
 #include "wrapper.h"
 #include "sim_params.h"
 #include "meshblock.h"
+#include "fields.h"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"
@@ -20,10 +21,18 @@ namespace ntt {
   struct PGen {
     virtual inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
     virtual inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
+
     virtual inline void
-    UserBCFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
+    UserDriveFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
     virtual inline void
     UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
+
+    virtual inline real_t UserTargetField(const Meshblock<D, S>&,
+                                          const em&,
+                                          const real_t&,
+                                          const coord_t<D>&) const {
+      return ZERO;
+    }
 
 #ifdef NTTINY_ENABLED
     virtual inline void

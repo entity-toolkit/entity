@@ -25,7 +25,7 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
     if (mblock.boundaries[0] == BoundaryCondition::USER) {
-      pgen.UserBCFields(this->m_time, params, mblock);
+      pgen.UserDriveFields(this->m_time, params, mblock);
     } else {
       NTTHostError("2d non-user boundary condition not implemented for curvilinear");
     }
@@ -52,7 +52,7 @@ namespace ntt {
     // !TODO: no need to do all cells
     Kokkos::parallel_for("2d_absorbing bc",
                          mblock.rangeActiveCells(),
-                         AbsorbFields_kernel<Dim2>(mblock, r_absorb, r_max));
+                         AbsorbFields_kernel<Dim2>(mblock, pgen, r_absorb, r_max));
   }
 
   template <>

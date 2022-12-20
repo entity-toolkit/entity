@@ -16,7 +16,7 @@ namespace ntt {
   /*                   Uniform injection kernels and routines                   */
   /* -------------------------------------------------------------------------- */
 
-  /*
+  /**
    * @brief 1D particle-vectorized injection kernel
    */
   template <SimulationType S, template <Dimension, SimulationType> class EnDist>
@@ -55,7 +55,7 @@ namespace ntt {
     RandomNumberPool_t pool {constant::RandomSeed};
   };
 
-  /*
+  /**
    * @brief 2D particle-vectorized injection kernel
    */
   template <SimulationType S, template <Dimension, SimulationType> class EnDist>
@@ -95,7 +95,7 @@ namespace ntt {
     RandomNumberPool_t pool;
   };
 
-  /*
+  /**
    * @brief 3D particle-vectorized injection kernel
    */
   template <SimulationType S, template <Dimension, SimulationType> class EnDist>
@@ -136,6 +136,19 @@ namespace ntt {
     RandomNumberPool_t pool;
   };
 
+  /**
+   * @brief Volumetrically uniform particle injector parallelized over particles.
+   * @tparam D dimension.
+   * @tparam S simulation type.
+   * @tparam EnDist energy distribution [default = ColdDist].
+   *
+   * @param params simulation parameters.
+   * @param mblock meshblock.
+   * @param species species to inject as a list.
+   * @param ppc_per_spec fiducial number of particles per cell per species.
+   * @param region region to inject particles as a list of coordinates.
+   * @param time current time.
+   */
   template <Dimension      D,
             SimulationType S,
             template <Dimension, SimulationType> class EnDist = ColdDist>
@@ -150,6 +163,7 @@ namespace ntt {
     if (region.size() == 0) {
       region = mblock.extent();
     }
+#ifdef MINKOWSKI_METRIC
     if constexpr (D == Dim1) {
       delta_V = (region[1] - region[0]);
       full_V  = (mblock.extent()[1] - mblock.extent()[0]);
@@ -163,6 +177,18 @@ namespace ntt {
                * (mblock.extent()[3] - mblock.extent()[2])
                * (mblock.extent()[5] - mblock.extent()[4]);
     }
+#else
+    if constexpr (D == Dim2) {
+      delta_V = (SQR(region[1]) - SQR(region[0])) * (region[3] - region[2]);
+      full_V  = (SQR(mblock.extent()[1]) - SQR(mblock.extent()[0])) * constant::PI * HALF;
+    } else if constexpr (D == Dim3) {
+      // !TODO: need to be a bit more careful
+      delta_V = (CUBE(region[1]) - CUBE(region[0])) * (region[3] - region[2])
+                * (region[5] - region[4]);
+      full_V
+        = (CUBE(mblock.extent()[1]) - CUBE(mblock.extent()[0])) * (4.0 / 3.0) * constant::PI;
+    }
+#endif
     ncells = (std::size_t)((real_t)ncells * delta_V / full_V);
 
     auto npart_per_spec = (std::size_t)((double)(ncells * ppc_per_spec));
@@ -209,13 +235,13 @@ namespace ntt {
     VolumeInjector1d_kernel(const SimulationParams&     pr,
                             const Meshblock<Dim1, S>&   mb,
                             const Particles<Dim1, S>&   sp,
-                            const std::size_t&          ppc,
+                            const real_t&               ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
       : params {pr},
         mblock {mb},
         species {sp},
-        nppc {(real_t)ppc},
+        nppc {ppc},
         npart {nprt},
         energy_dist {params, mblock},
         spatial_dist {params, mblock},
@@ -284,13 +310,13 @@ namespace ntt {
     VolumeInjector2d_kernel(const SimulationParams&     pr,
                             const Meshblock<Dim2, S>&   mb,
                             const Particles<Dim2, S>&   sp,
-                            const std::size_t&          ppc,
+                            const real_t&               ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
       : params {pr},
         mblock {mb},
         species {sp},
-        nppc {(real_t)ppc},
+        nppc {ppc},
         npart {nprt},
         energy_dist {params, mblock},
         spatial_dist {params, mblock},
@@ -318,9 +344,15 @@ namespace ntt {
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
-            vec_t<Dim3> v {ZERO};
+            vec_t<Dim3> v {ZERO}, v_cart {ZERO};
             energy_dist(xph, v);
-
+#ifdef MINKOWSKI_METRIC
+            v_cart[0] = v[0];
+            v_cart[1] = v[1];
+            v_cart[2] = v[2];
+#else
+            mblock.metric.v_Hat2Cart({xc[0], xc[1], ZERO}, v, v_cart);
+#endif
             real_t dx1 = rand_gen.frand();
             real_t dx2 = rand_gen.frand();
 
@@ -329,9 +361,9 @@ namespace ntt {
             species.dx1(p) = dx1;
             species.i2(p)  = static_cast<int>(i2) - N_GHOSTS;
             species.dx2(p) = dx2;
-            species.ux1(p) = v[0];
-            species.ux2(p) = v[1];
-            species.ux3(p) = v[2];
+            species.ux1(p) = v_cart[0];
+            species.ux2(p) = v_cart[1];
+            species.ux3(p) = v_cart[2];
           }
           ninject -= ONE;
         }
@@ -362,7 +394,7 @@ namespace ntt {
     VolumeInjector3d_kernel(const SimulationParams&     pr,
                             const Meshblock<Dim3, S>&   mb,
                             const Particles<Dim3, S>&   sp,
-                            const std::size_t&          ppc,
+                            const real_t&               ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
       : params {pr},
@@ -397,8 +429,15 @@ namespace ntt {
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
-            vec_t<Dim3> v {ZERO};
+            vec_t<Dim3> v {ZERO}, v_cart {ZERO};
             energy_dist(xph, v);
+#ifdef MINKOWSKI_METRIC
+            v_cart[0] = v[0];
+            v_cart[1] = v[1];
+            v_cart[2] = v[2];
+#else
+            mblock.metric.v_Hat2Cart({xc[0], xc[1], ZERO}, v, v_cart);
+#endif
 
             real_t dx1 = rand_gen.frand();
             real_t dx2 = rand_gen.frand();
@@ -411,9 +450,9 @@ namespace ntt {
             species.dx2(p) = dx2;
             species.i3(p)  = static_cast<int>(i3) - N_GHOSTS;
             species.dx3(p) = dx3;
-            species.ux1(p) = v[0];
-            species.ux2(p) = v[1];
-            species.ux3(p) = v[2];
+            species.ux1(p) = v_cart[0];
+            species.ux2(p) = v_cart[1];
+            species.ux3(p) = v_cart[2];
           }
           ninject -= ONE;
         }
