@@ -42,6 +42,7 @@ inline constexpr double INV_64 = 0.015625;
 #define SIGNd(x)     (((x) < 0.0) ? -1.0 : 1.0)
 #define SIGNf(x)     (((x) < 0.0f) ? -1.0f : 1.0f)
 #define SIGN(x)      (((x) < ZERO) ? -ONE : ONE)
+#define ABS(x)       (((x) < ZERO) ? -(x) : (x))
 #define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
 #define SQR(x)       ((x) * (x))
 #define CUBE(x)      ((x) * (x) * (x))

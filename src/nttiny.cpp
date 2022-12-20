@@ -81,7 +81,7 @@ public:
     // precompute necessary fields
     for (auto& f : fields_to_plot) {
       if (f == "density") {
-        m_sim.ComputeDensity();
+        m_sim.ComputeDensity(0);
       }
     }
     m_sim.SynchronizeHostDevice();
@@ -230,20 +230,11 @@ public:
     nttiny::tools::drawCircle(
       {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
 #elif defined(PIC_SIMTYPE)
-    if (m_sim.meshblock.metric.label != "minkowski") {
-      ntt::coord_t<ntt::Dim2> rth_;
-      m_sim.meshblock.metric.x_Code2Sph({(float)105 + HALF, HALF}, rth_);
-      nttiny::tools::drawCircle(
-        {0.0f, 0.0f}, rth_[0], {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
-    }
-
-    // nttiny::tools::drawCircle(
-    //   {0.1f + 0.1f * this->m_time, 0.12f + 0.1f},
-    //   0.1f,
-    //   {0.0f, 2.0 * ntt::constant::PI},
-    //   128,
-    //   ui_settings.OutlineColor);
-
+#  ifndef MINKOWSKI_METRIC
+    real_t r_absorb = m_sim.params()->metricParameters()[2];
+    nttiny::tools::drawCircle(
+      {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+#  endif
 #endif
   }
 };

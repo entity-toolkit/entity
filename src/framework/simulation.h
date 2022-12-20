@@ -84,6 +84,11 @@ namespace ntt {
      */
     void SynchronizeHostDevice();
 
+    /**
+     * @brief Diagnostic logging.
+    */
+    void PrintDiagnostics();
+
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */
     /* -------------------------------------------------------------------------- */

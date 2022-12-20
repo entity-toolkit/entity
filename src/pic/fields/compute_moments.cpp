@@ -4,11 +4,10 @@
 
 namespace ntt {
   template <>
-  void PIC<Dim1>::ComputeDensity() {
+  void PIC<Dim1>::ComputeDensity(const short& smooth) {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
-    int    smooth       = 2;
     real_t contrib      = 1.0 / (2.0 * smooth + 1.0);
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
@@ -26,11 +25,10 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dim2>::ComputeDensity() {
+  void PIC<Dim2>::ComputeDensity(const short& smooth) {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
-    int    smooth       = 2;
     real_t contrib      = 1.0 / SQR(2.0 * smooth + 1.0);
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
@@ -51,11 +49,10 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dim3>::ComputeDensity() {
+  void PIC<Dim3>::ComputeDensity(const short& smooth) {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
-    int    smooth       = 2;
     real_t contrib      = 1.0 / CUBE(2.0 * smooth + 1.0);
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
