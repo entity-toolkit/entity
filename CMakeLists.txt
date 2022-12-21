@@ -14,7 +14,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 
   if(GIT_SUBMODULE)
     message(STATUS "Updating all the submodules")
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --remote --recursive
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE GIT_SUBMOD_RESULT)
 
