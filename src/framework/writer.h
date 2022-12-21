@@ -1,9 +1,10 @@
 #ifndef FRAMEWORK_OUTPUT_WRITER_H
 #define FRAMEWORK_OUTPUT_WRITER_H
 
+#include "wrapper.h"
+
 #include "meshblock.h"
 #include "sim_params.h"
-#include "wrapper.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>

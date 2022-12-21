@@ -6,7 +6,7 @@
 #  include <stdexcept>
 
 #  define STRINGIZE(x)        STRINGIZE_DETAIL(x)
-#  define STRINGIZE_DETAIL(x) #  x
+#  define STRINGIZE_DETAIL(x) #x
 #  define LINE_STRING         STRINGIZE(__LINE__)
 
 #  define NTTHostError(msg)                                                                   \
@@ -43,4 +43,4 @@ inline constexpr int N_GHOSTS = 2;
 #define @METRIC_FLAG@
 // clang-format on
 
-#endif // CONFIG_H
+#endif    // CONFIG_H

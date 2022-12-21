@@ -1,6 +1,7 @@
+#include "wrapper.h"
+
 #include "particle_macros.h"
 #include "pic.h"
-#include "wrapper.h"
 
 namespace ntt {
   /**

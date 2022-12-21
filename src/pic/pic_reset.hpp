@@ -1,9 +1,10 @@
 #ifndef PIC_RESET_H
 #define PIC_RESET_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "pic.h"
-#include "wrapper.h"
 
 namespace ntt {
   /**

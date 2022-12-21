@@ -1,7 +1,8 @@
 #include "deposit_currents.hpp"
 
-#include "pic.h"
 #include "wrapper.h"
+
+#include "pic.h"
 
 namespace ntt {
   template <Dimension D>

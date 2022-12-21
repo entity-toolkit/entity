@@ -1,9 +1,10 @@
 #include "sim_params.h"
 
+#include "wrapper.h"
+
 #include "input.h"
 #include "particles.h"
 #include "qmath.h"
-#include "wrapper.h"
 
 #include <toml/toml.hpp>
 

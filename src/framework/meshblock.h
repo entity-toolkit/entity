@@ -1,10 +1,11 @@
 #ifndef FRAMEWORK_MESHBLOCK_H
 #define FRAMEWORK_MESHBLOCK_H
 
+#include "wrapper.h"
+
 #include "fields.h"
 #include "metric.h"
 #include "particles.h"
-#include "wrapper.h"
 
 #include <vector>
 

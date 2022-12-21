@@ -1,9 +1,10 @@
 #ifndef PIC_PIC_H
 #define PIC_PIC_H
 
+#include "wrapper.h"
+
 #include "fields.h"
 #include "simulation.h"
-#include "wrapper.h"
 
 #include <toml/toml.hpp>
 

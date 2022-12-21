@@ -1,8 +1,9 @@
 #include "pic.h"
 
+#include "wrapper.h"
+
 #include "sim_params.h"
 #include "timer.h"
-#include "wrapper.h"
 
 #include <plog/Log.h>
 

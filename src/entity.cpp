@@ -1,6 +1,7 @@
+#include "wrapper.h"
+
 #include "cargs.h"
 #include "input.h"
-#include "wrapper.h"
 
 #ifdef PIC_SIMTYPE
 #  include "pic.h"

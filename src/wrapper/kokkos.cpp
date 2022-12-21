@@ -1,5 +1,6 @@
-#include "definitions.h"
 #include "wrapper.h"
+
+#include "definitions.h"
 
 #include <Kokkos_Core.hpp>
 

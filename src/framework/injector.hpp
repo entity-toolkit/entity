@@ -1,11 +1,12 @@
 #ifndef FRAMEWORK_INJECTOR_H
 #define FRAMEWORK_INJECTOR_H
 
+#include "wrapper.h"
+
 #include "meshblock.h"
 #include "particle_macros.h"
 #include "particles.h"
 #include "sim_params.h"
-#include "wrapper.h"
 
 #include "archetypes.hpp"
 

@@ -1,11 +1,12 @@
 #ifndef PIC_FARADAY_CURVILINEAR_H
 #define PIC_FARADAY_CURVILINEAR_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "fields.h"
 #include "meshblock.h"
 #include "pic.h"
-#include "wrapper.h"
 
 #include <stdexcept>
 

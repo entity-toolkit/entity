@@ -1,11 +1,12 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "input.h"
 #include "meshblock.h"
 #include "sim_params.h"
-#include "wrapper.h"
 
 #include "archetypes.hpp"
 

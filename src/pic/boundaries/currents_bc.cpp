@@ -1,6 +1,7 @@
+#include "wrapper.h"
+
 #include "meshblock.h"
 #include "pic.h"
-#include "wrapper.h"
 
 #ifndef MINKOWSKI_METRIC
 #  include "currents_bc.hpp"
