@@ -1,8 +1,9 @@
 #ifndef FRAMEWORK_METRICS_MINKOWSKI_H
 #define FRAMEWORK_METRICS_MINKOWSKI_H
 
-#include "metric_base.h"
 #include "wrapper.h"
+
+#include "metric_base.h"
 
 #include <cmath>
 

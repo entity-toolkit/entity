@@ -66,16 +66,20 @@ EmptyLineAfterAccessModifier: Never
 FixNamespaceComments: true
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '^"[[:lower:]|_.]+\.h"'
+  - Regex: '^"config\.h"'
     Priority: 1
-  - Regex: '^"[[:lower:]|_.]+\/[[:lower:]|_.]+\.h"'
+  - Regex: '^"wrapper\.h"'
     Priority: 2
-  - Regex: '^".*\.hpp"'
+  - Regex: '^"[[:lower:]|_.]+\.h"'
     Priority: 3
-  - Regex: '^\<.*\.h'
+  - Regex: '^"[[:lower:]|_.]+\/[[:lower:]|_.]+\.h"'
     Priority: 4
-  - Regex: "<[[:lower:].]+>"
+  - Regex: '^".*\.hpp"'
     Priority: 5
+  - Regex: '^\<.*\.h'
+    Priority: 6
+  - Regex: "<[[:lower:].]+>"
+    Priority: 7
 IndentAccessModifiers: false
 IndentCaseLabels: false
 IndentCaseBlocks: false

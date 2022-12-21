@@ -1,6 +1,7 @@
+#include "wrapper.h"
+
 #include "fields.h"
 #include "pic.h"
-#include "wrapper.h"
 
 namespace ntt {
   template <>

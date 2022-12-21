@@ -1,7 +1,8 @@
 #include "currents_filter.hpp"
 
-#include "pic.h"
 #include "wrapper.h"
+
+#include "pic.h"
 
 namespace ntt {
 

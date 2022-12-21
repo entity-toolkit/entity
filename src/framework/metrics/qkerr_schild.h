@@ -1,8 +1,9 @@
 #ifndef FRAMEWORK_METRICS_QKERR_SCHILD_H
 #define FRAMEWORK_METRICS_QKERR_SCHILD_H
 
-#include "metric_base.h"
 #include "wrapper.h"
+
+#include "metric_base.h"
 
 #include <cassert>
 #include <cmath>

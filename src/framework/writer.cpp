@@ -1,10 +1,11 @@
 #include "writer.h"
 
+#include "wrapper.h"
+
 #include "fields.h"
 #include "meshblock.h"
 #include "sim_params.h"
 #include "utils.h"
-#include "wrapper.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>

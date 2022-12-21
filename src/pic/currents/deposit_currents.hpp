@@ -1,13 +1,14 @@
 #ifndef PIC_DEPOSIT_CURRENTS_H
 #define PIC_DEPOSIT_CURRENTS_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "fields.h"
 #include "meshblock.h"
 #include "particle_macros.h"
 #include "particles.h"
 #include "pic.h"
-#include "wrapper.h"
 
 #include <stdexcept>
 

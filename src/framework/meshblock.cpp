@@ -1,7 +1,8 @@
 #include "meshblock.h"
 
-#include "particles.h"
 #include "wrapper.h"
+
+#include "particles.h"
 
 #include <plog/Log.h>
 

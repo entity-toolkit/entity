@@ -1,8 +1,9 @@
 #include "simulation.h"
 
+#include "wrapper.h"
+
 #include "metric.h"
 #include "utils.h"
-#include "wrapper.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>

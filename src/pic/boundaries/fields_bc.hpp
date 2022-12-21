@@ -1,9 +1,10 @@
 #ifndef PIC_FIELDS_BC_H
 #define PIC_FIELDS_BC_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "pic.h"
-#include "wrapper.h"
 
 #include "archetypes.hpp"
 #include "problem_generator.hpp"

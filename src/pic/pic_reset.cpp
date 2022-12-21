@@ -1,8 +1,9 @@
 #include "pic_reset.hpp"
 
+#include "wrapper.h"
+
 #include "pic.h"
 #include "simulation.h"
-#include "wrapper.h"
 
 namespace ntt {
   /**

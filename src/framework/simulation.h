@@ -1,10 +1,11 @@
 #ifndef FRAMEWORK_SIMULATION_H
 #define FRAMEWORK_SIMULATION_H
 
+#include "wrapper.h"
+
 #include "fields.h"
 #include "meshblock.h"
 #include "sim_params.h"
-#include "wrapper.h"
 #include "writer.h"
 
 #include "problem_generator.hpp"

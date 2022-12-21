@@ -1,13 +1,14 @@
 #ifndef PIC_PARTICLE_PUSHER_H
 #define PIC_PARTICLE_PUSHER_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "fields.h"
 #include "meshblock.h"
 #include "particle_macros.h"
 #include "particles.h"
 #include "pic.h"
-#include "wrapper.h"
 
 #include <iostream>
 #include <stdexcept>

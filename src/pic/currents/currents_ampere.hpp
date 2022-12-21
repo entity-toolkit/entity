@@ -1,9 +1,10 @@
 #ifndef PIC_CURRENTS_AMPERE_H
 #define PIC_CURRENTS_AMPERE_H
 
+#include "wrapper.h"
+
 #include "field_macros.h"
 #include "pic.h"
-#include "wrapper.h"
 
 namespace ntt {
 #ifdef MINKOWSKI_METRIC

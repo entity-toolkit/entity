@@ -1,5 +1,6 @@
-#include "pic.h"
 #include "wrapper.h"
+
+#include "pic.h"
 
 #ifndef MINKOWSKI_METRIC
 #  include "fields_bc.hpp"

@@ -1,10 +1,11 @@
 #ifndef FRAMEWORK_ARCHETYPES_H
 #define FRAMEWORK_ARCHETYPES_H
 
+#include "wrapper.h"
+
 #include "fields.h"
 #include "meshblock.h"
 #include "sim_params.h"
-#include "wrapper.h"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"

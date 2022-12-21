@@ -1,7 +1,8 @@
+#include "wrapper.h"
+
 #include "fields.h"
 #include "meshblock.h"
 #include "pic.h"
-#include "wrapper.h"
 
 namespace ntt {
 #ifdef MINKOWSKI_METRIC
