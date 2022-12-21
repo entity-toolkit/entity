@@ -98,7 +98,7 @@ public:
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
     Kokkos::parallel_for("setData",
-                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
+                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 1 }, { nx1, nx2 - 1 }),
                          [=](std::size_t i1, std::size_t j1) {
                            int i, j;
                            if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
