@@ -1,9 +1,10 @@
-#include "wrapper.h"
 #include "writer.h"
+
 #include "fields.h"
 #include "meshblock.h"
 #include "sim_params.h"
 #include "utils.h"
+#include "wrapper.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>
@@ -12,10 +13,10 @@
 
 #include <plog/Log.h>
 
-#include <string>
-#include <map>
-#include <vector>
 #include <algorithm>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace ntt {
 
@@ -52,7 +53,7 @@ namespace ntt {
 
     m_io.DefineAttribute<real_t>("dt", mblock.timestep());
 
-    for (auto& var : {"ex1", "ex2", "ex3", "bx1", "bx2", "bx3"}) {
+    for (auto& var : { "ex1", "ex2", "ex3", "bx1", "bx2", "bx3" }) {
       m_vars_r.emplace(var, m_io.DefineVariable<real_t>(var, {}, {}, count));
     }
     m_vars_r.emplace("density", m_io.DefineVariable<real_t>("density", {}, {}, count));
@@ -74,15 +75,15 @@ namespace ntt {
     m_writer.Put<int>(m_vars_i["step"], &step);
     m_writer.Put<real_t>(m_vars_r["time"], &time);
 
-    std::vector<std::string> field_names = {"ex1", "ex2", "ex3", "bx1", "bx2", "bx3"};
-    std::vector<em>          fields = {em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3};
+    std::vector<std::string> field_names = { "ex1", "ex2", "ex3", "bx1", "bx2", "bx3" };
+    std::vector<em>          fields = { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 };
 
     // auto slice_i1 = std::make_pair(mblock.i_min(0), mblock.i_max(0));
     // auto slice_i2 = std::make_pair(mblock.i_min(1), mblock.i_max(1));
     // auto slice_i3 = std::make_pair(mblock.i_min(2), mblock.i_max(2));
-    auto slice_i1 = Kokkos::ALL();
-    auto slice_i2 = Kokkos::ALL();
-    auto slice_i3 = Kokkos::ALL();
+    auto                     slice_i1 = Kokkos::ALL();
+    auto                     slice_i2 = Kokkos::ALL();
+    auto                     slice_i3 = Kokkos::ALL();
 
     if constexpr (D == Dim1) {
       for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
@@ -127,7 +128,7 @@ namespace ntt {
 
 #endif
 
-} // namespace ntt
+}    // namespace ntt
 
 template class ntt::Writer<ntt::Dim1, ntt::TypePIC>;
 template class ntt::Writer<ntt::Dim2, ntt::TypePIC>;

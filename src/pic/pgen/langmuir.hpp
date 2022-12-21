@@ -1,11 +1,12 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
-#include "wrapper.h"
-#include "archetypes.hpp"
-#include "sim_params.h"
 #include "meshblock.h"
 #include "particle_macros.h"
+#include "sim_params.h"
+#include "wrapper.h"
+
+#include "archetypes.hpp"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"
@@ -30,12 +31,13 @@ namespace ntt {
         real_t      Ymax        = mblock.metric.x2_max;
         electrons.setNpart(npart);
         Kokkos::parallel_for(
-          "userInitPrtls", CreateRangePolicy<Dim1>({0}, {(int)npart}), Lambda(index_t p) {
+          "userInitPrtls", CreateRangePolicy<Dim1>({ 0 }, { (int)npart }), Lambda(index_t p) {
             typename RandomNumberPool_t::generator_type rand_gen = random_pool.get_state();
 
-            real_t rx {rand_gen.frand(Xmin, Xmax)};
-            real_t ry {rand_gen.frand(Ymin, Ymax)};
-            real_t u1 {(real_t)0.01 * math::sin(TWO * (real_t)(constant::TWO_PI) * rx / (Xmax - Xmin))};
+            real_t                                      rx { rand_gen.frand(Xmin, Xmax) };
+            real_t                                      ry { rand_gen.frand(Ymin, Ymax) };
+            real_t                                      u1 { (real_t)0.01
+                        * math::sin(TWO * (real_t)(constant::TWO_PI)*rx / (Xmax - Xmin)) };
 
             init_prtl_2d(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
             random_pool.free_state(rand_gen);
@@ -44,19 +46,17 @@ namespace ntt {
     }
 
 #ifdef NTTINY_ENABLED
-    inline void
-    UserInitBuffers_nttiny(const SimulationParams&,
-                           const Meshblock<D, S>&,
-                           std::map<std::string, nttiny::ScrollingBuffer>& buffers) {
+    inline void UserInitBuffers_nttiny(const SimulationParams&,
+                                       const Meshblock<D, S>&,
+                                       std::map<std::string, nttiny::ScrollingBuffer>& buffers) {
       nttiny::ScrollingBuffer ex;
-      buffers.insert({"Ex", std::move(ex)});
+      buffers.insert({ "Ex", std::move(ex) });
     }
 
-    inline void
-    UserSetBuffers_nttiny(const real_t& time,
-                          const SimulationParams&,
-                          const Meshblock<D, S>&                          mblock,
-                          std::map<std::string, nttiny::ScrollingBuffer>& buffers) {
+    inline void UserSetBuffers_nttiny(const real_t& time,
+                                      const SimulationParams&,
+                                      const Meshblock<D, S>& mblock,
+                                      std::map<std::string, nttiny::ScrollingBuffer>& buffers) {
       if constexpr (D == Dim2) {
         buffers["Ex"].AddPoint(
           time, mblock.em_h((int)(mblock.Ni1() / 8.0), (int)(mblock.Ni2() / 2.0), em::ex1));
@@ -64,8 +64,8 @@ namespace ntt {
     }
 #endif
 
-  }; // struct ProblemGenerator
+  };    // struct ProblemGenerator
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

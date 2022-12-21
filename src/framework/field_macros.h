@@ -169,9 +169,9 @@
 
 #  define set_em_E_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
     {                                                                                         \
-      vec_t<Dim3>   e_hat {ZERO}, b_hat {ZERO};                                               \
-      vec_t<Dim3>   e_cntrv {ZERO};                                                           \
-      coord_t<Dim2> x_ph {ZERO};                                                              \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   e_cntrv { ZERO };                                                         \
+      coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
       (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
@@ -180,9 +180,9 @@
 
 #  define set_em_B_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
     {                                                                                         \
-      vec_t<Dim3>   e_hat {ZERO}, b_hat {ZERO};                                               \
-      vec_t<Dim3>   b_cntrv {ZERO};                                                           \
-      coord_t<Dim2> x_ph {ZERO};                                                              \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   b_cntrv { ZERO };                                                         \
+      coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
       (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
@@ -193,9 +193,9 @@
 
 #  define set_em_E_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
     {                                                                                         \
-      vec_t<Dim3>   e_hat {ZERO}, b_hat {ZERO};                                               \
-      vec_t<Dim3>   e_cntrv {ZERO};                                                           \
-      coord_t<Dim2> x_ph {ZERO};                                                              \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   e_cntrv { ZERO };                                                         \
+      coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
       (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
@@ -204,9 +204,9 @@
 
 #  define set_em_B_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
     {                                                                                         \
-      vec_t<Dim3>   e_hat {ZERO}, b_hat {ZERO};                                               \
-      vec_t<Dim3>   b_cntrv {ZERO};                                                           \
-      coord_t<Dim2> x_ph {ZERO};                                                              \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   b_cntrv { ZERO };                                                         \
+      coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
       (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
@@ -217,8 +217,8 @@
 
 #define set_ex1_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
-    const real_t i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                  \
-    const real_t j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                  \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
     {                                                                                         \
       coord_t<Dim2> x_code;                                                                   \
       x_code[0] = i_ + HALF;                                                                  \
@@ -229,8 +229,8 @@
 
 #define set_ex2_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
-    const real_t i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                  \
-    const real_t j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                  \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
     {                                                                                         \
       coord_t<Dim2> x_code;                                                                   \
       x_code[0] = i_;                                                                         \
@@ -241,8 +241,8 @@
 
 #define set_ex3_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
-    const real_t i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                  \
-    const real_t j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                  \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
     {                                                                                         \
       coord_t<Dim2> x_code;                                                                   \
       x_code[0] = i_;                                                                         \
@@ -253,8 +253,8 @@
 
 #define set_bx1_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
-    const real_t i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                  \
-    const real_t j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                  \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
     {                                                                                         \
       coord_t<Dim2> x_code;                                                                   \
       x_code[0] = i_;                                                                         \
@@ -265,8 +265,8 @@
 
 #define set_bx2_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
-    const real_t i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                  \
-    const real_t j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                  \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
     {                                                                                         \
       coord_t<Dim2> x_code;                                                                   \
       x_code[0] = i_ + HALF;                                                                  \
@@ -277,8 +277,8 @@
 
 #define set_bx3_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
-    const real_t i_ {static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS)};                  \
-    const real_t j_ {static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS)};                  \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
     {                                                                                         \
       coord_t<Dim2> x_code;                                                                   \
       x_code[0] = i_ + HALF;                                                                  \

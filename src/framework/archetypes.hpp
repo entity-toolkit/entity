@@ -1,10 +1,10 @@
 #ifndef FRAMEWORK_ARCHETYPES_H
 #define FRAMEWORK_ARCHETYPES_H
 
-#include "wrapper.h"
-#include "sim_params.h"
-#include "meshblock.h"
 #include "fields.h"
+#include "meshblock.h"
+#include "sim_params.h"
+#include "wrapper.h"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"
@@ -19,13 +19,15 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationType S>
   struct PGen {
-    virtual inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
-    virtual inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
+    virtual inline void   UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
+    virtual inline void   UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
 
-    virtual inline void
-    UserDriveFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
-    virtual inline void
-    UserDriveParticles(const real_t&, const SimulationParams&, Meshblock<D, S>&) {}
+    virtual inline void   UserDriveFields(const real_t&,
+                                          const SimulationParams&,
+                                          Meshblock<D, S>&) {}
+    virtual inline void   UserDriveParticles(const real_t&,
+                                             const SimulationParams&,
+                                             Meshblock<D, S>&) {}
 
     virtual inline real_t UserTargetField(const Meshblock<D, S>&,
                                           const em&,
@@ -35,15 +37,15 @@ namespace ntt {
     }
 
 #ifdef NTTINY_ENABLED
-    virtual inline void
-    UserInitBuffers_nttiny(const SimulationParams&,
-                           const Meshblock<D, S>&,
-                           std::map<std::string, nttiny::ScrollingBuffer>&) {}
-    virtual inline void
-    UserSetBuffers_nttiny(const real_t&,
-                          const SimulationParams&,
-                          const Meshblock<D, S>&,
-                          std::map<std::string, nttiny::ScrollingBuffer>&) {}
+    virtual inline void UserInitBuffers_nttiny(const SimulationParams&,
+                                               const Meshblock<D, S>&,
+                                               std::map<std::string, nttiny::ScrollingBuffer>&) {
+    }
+    virtual inline void UserSetBuffers_nttiny(const real_t&,
+                                              const SimulationParams&,
+                                              const Meshblock<D, S>&,
+                                              std::map<std::string, nttiny::ScrollingBuffer>&) {
+    }
 #endif
   };
 
@@ -53,7 +55,7 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   struct EnergyDistribution {
     EnergyDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params {params}, m_mblock {mblock} {}
+      : m_params { params }, m_mblock { mblock } {}
 
     Inline virtual void operator()(const coord_t<D>&, vec_t<Dim3>& v) const {
       v[0] = ZERO;
@@ -83,9 +85,11 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   struct SpatialDistribution {
     SpatialDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params {params}, m_mblock {mblock} {}
+      : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual auto operator()(const coord_t<D>&) const -> real_t { return ONE; }
+    Inline virtual auto operator()(const coord_t<D>&) const -> real_t {
+      return ONE;
+    }
 
   private:
     SimulationParams m_params;
@@ -96,7 +100,9 @@ namespace ntt {
   struct UniformDist : public SpatialDistribution<D, S> {
     UniformDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
-    Inline auto operator()(const coord_t<D>&) const -> real_t override { return ONE; }
+    Inline auto operator()(const coord_t<D>&) const -> real_t override {
+      return ONE;
+    }
   };
 
   /* -------------------------------------------------------------------------- */
@@ -105,7 +111,7 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   struct InjectionCriterion {
     InjectionCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params {params}, m_mblock {mblock} {}
+      : m_params { params }, m_mblock { mblock } {}
 
   protected:
     SimulationParams m_params;
@@ -116,9 +122,11 @@ namespace ntt {
   struct NoCriterion : public InjectionCriterion<D, S> {
     NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock) {}
-    Inline bool operator()(const coord_t<D>&) const { return true; }
+    Inline bool operator()(const coord_t<D>&) const {
+      return true;
+    }
   };
 
-} // namespace ntt
+}    // namespace ntt
 
-#endif // FRAMEWORK_ARCHETYPES_H
+#endif    // FRAMEWORK_ARCHETYPES_H

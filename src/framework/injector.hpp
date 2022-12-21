@@ -1,12 +1,13 @@
 #ifndef FRAMEWORK_INJECTOR_H
 #define FRAMEWORK_INJECTOR_H
 
-#include "wrapper.h"
-#include "sim_params.h"
 #include "meshblock.h"
-#include "particles.h"
-#include "archetypes.hpp"
 #include "particle_macros.h"
+#include "particles.h"
+#include "sim_params.h"
+#include "wrapper.h"
+
+#include "archetypes.hpp"
 
 #include <vector>
 
@@ -27,18 +28,18 @@ namespace ntt {
                              const std::size_t&        ofs,
                              const list_t<real_t, 2>&  box,
                              const real_t&             time)
-      : params {pr},
-        mblock {mb},
-        species {sp},
-        offset {ofs},
-        region {box[0], box[1]},
-        energy_dist {params, mblock},
-        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+      : params { pr },
+        mblock { mb },
+        species { sp },
+        offset { ofs },
+        region { box[0], box[1] },
+        energy_dist { params, mblock },
+        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim1> x {ZERO};
-      vec_t<Dim3>   v {ZERO};
+      coord_t<Dim1>                               x { ZERO };
+      vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       energy_dist(x, v);
       init_prtl_1d(mblock, species, p + offset, x[0], v[0], v[1], v[2]);
@@ -52,7 +53,7 @@ namespace ntt {
     const std::size_t  offset;
     EnDist<Dim1, S>    energy_dist;
     list_t<real_t, 2>  region;
-    RandomNumberPool_t pool {constant::RandomSeed};
+    RandomNumberPool_t pool { constant::RandomSeed };
   };
 
   /**
@@ -66,18 +67,18 @@ namespace ntt {
                              const std::size_t&        ofs,
                              const list_t<real_t, 4>&  box,
                              const real_t&             time)
-      : params {pr},
-        mblock {mb},
-        species {sp},
-        offset {ofs},
-        region {box[0], box[1], box[2], box[3]},
-        energy_dist {params, mblock},
-        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+      : params { pr },
+        mblock { mb },
+        species { sp },
+        offset { ofs },
+        region { box[0], box[1], box[2], box[3] },
+        energy_dist { params, mblock },
+        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim2> x {ZERO};
-      vec_t<Dim3>   v {ZERO};
+      coord_t<Dim2>                               x { ZERO };
+      vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       energy_dist(x, v);
@@ -106,18 +107,18 @@ namespace ntt {
                              const std::size_t&        ofs,
                              const list_t<real_t, 6>&  box,
                              const real_t&             time)
-      : params {pr},
-        mblock {mb},
-        species {sp},
-        offset {ofs},
-        region {box[0], box[1], box[2], box[3], box[4], box[5]},
-        energy_dist {params, mblock},
-        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+      : params { pr },
+        mblock { mb },
+        species { sp },
+        offset { ofs },
+        region { box[0], box[1], box[2], box[3], box[4], box[5] },
+        energy_dist { params, mblock },
+        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim3> x {ZERO};
-      vec_t<Dim3>   v {ZERO};
+      coord_t<Dim3>                               x { ZERO };
+      vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       x[2] = rand_gen.frand(region[4], region[5]);
@@ -189,11 +190,11 @@ namespace ntt {
         = (CUBE(mblock.extent()[1]) - CUBE(mblock.extent()[0])) * (4.0 / 3.0) * constant::PI;
     }
 #endif
-    ncells = (std::size_t)((real_t)ncells * delta_V / full_V);
+    ncells              = (std::size_t)((real_t)ncells * delta_V / full_V);
 
     auto npart_per_spec = (std::size_t)((double)(ncells * ppc_per_spec));
-    list_t<real_t, 2 * static_cast<short>(D)> box {ZERO};
-    for (auto i {0}; i < 2 * static_cast<short>(D); ++i) {
+    list_t<real_t, 2 * static_cast<short>(D)> box { ZERO };
+    for (auto i { 0 }; i < 2 * static_cast<short>(D); ++i) {
       box[i] = region[i];
     }
 
@@ -204,17 +205,17 @@ namespace ntt {
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
           "inject",
-          CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
+          CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
           UniformInjector1d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
       } else if constexpr (D == Dim2) {
         Kokkos::parallel_for(
           "inject",
-          CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
+          CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
           UniformInjector2d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
       } else if constexpr (D == Dim3) {
         Kokkos::parallel_for(
           "inject",
-          CreateRangePolicy<Dim1>({0}, {npart_per_spec}),
+          CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
           UniformInjector3d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
       }
     }
@@ -238,22 +239,22 @@ namespace ntt {
                             const real_t&               ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
-      : params {pr},
-        mblock {mb},
-        species {sp},
-        nppc {ppc},
-        npart {nprt},
-        energy_dist {params, mblock},
-        spatial_dist {params, mblock},
-        inj_criterion {params, mblock},
-        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+      : params { pr },
+        mblock { mb },
+        species { sp },
+        nppc { ppc },
+        npart { nprt },
+        energy_dist { params, mblock },
+        spatial_dist { params, mblock },
+        inj_criterion { params, mblock },
+        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
     Inline void operator()(index_t i1) const {
       // cell node
-      coord_t<Dim1> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS)};
+      coord_t<Dim1> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS) };
       // cell center
-      coord_t<Dim1> xc {xi[0] + HALF};
+      coord_t<Dim1> xc { xi[0] + HALF };
       // physical coordinate
-      coord_t<Dim1> xph {ZERO};
+      coord_t<Dim1> xph { ZERO };
 
 #ifdef MINKOWSKI_METRIC
       mblock.metric.x_Code2Cart(xc, xph);
@@ -264,17 +265,17 @@ namespace ntt {
       if (inj_criterion(xph)) {
         typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-        real_t ninject = nppc * spatial_dist(xph);
+        real_t                                      ninject  = nppc * spatial_dist(xph);
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
-            vec_t<Dim3> v {ZERO};
+            vec_t<Dim3> v { ZERO };
             energy_dist(xph, v);
 
-            real_t dx1 = rand_gen.frand();
-            real_t dx2 = rand_gen.frand();
+            real_t dx1     = rand_gen.frand();
+            real_t dx2     = rand_gen.frand();
 
-            auto p         = Kokkos::atomic_fetch_add(&npart(), 1);
+            auto   p       = Kokkos::atomic_fetch_add(&npart(), 1);
             species.i1(p)  = static_cast<int>(i1) - N_GHOSTS;
             species.dx1(p) = dx1;
             species.ux1(p) = v[0];
@@ -313,23 +314,23 @@ namespace ntt {
                             const real_t&               ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
-      : params {pr},
-        mblock {mb},
-        species {sp},
-        nppc {ppc},
-        npart {nprt},
-        energy_dist {params, mblock},
-        spatial_dist {params, mblock},
-        inj_criterion {params, mblock},
-        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+      : params { pr },
+        mblock { mb },
+        species { sp },
+        nppc { ppc },
+        npart { nprt },
+        energy_dist { params, mblock },
+        spatial_dist { params, mblock },
+        inj_criterion { params, mblock },
+        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
-      coord_t<Dim2> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
-                        static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS)};
+      coord_t<Dim2> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+                         static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS) };
       // cell center
-      coord_t<Dim2> xc {xi[0] + HALF, xi[1] + HALF};
+      coord_t<Dim2> xc { xi[0] + HALF, xi[1] + HALF };
       // physical coordinate
-      coord_t<Dim2> xph {ZERO};
+      coord_t<Dim2> xph { ZERO };
 
 #ifdef MINKOWSKI_METRIC
       mblock.metric.x_Code2Cart(xc, xph);
@@ -340,23 +341,23 @@ namespace ntt {
       if (inj_criterion(xph)) {
         typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-        real_t ninject = nppc * spatial_dist(xph);
+        real_t                                      ninject  = nppc * spatial_dist(xph);
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
-            vec_t<Dim3> v {ZERO}, v_cart {ZERO};
+            vec_t<Dim3> v { ZERO }, v_cart { ZERO };
             energy_dist(xph, v);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
             v_cart[2] = v[2];
 #else
-            mblock.metric.v_Hat2Cart({xc[0], xc[1], ZERO}, v, v_cart);
+            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-            real_t dx1 = rand_gen.frand();
-            real_t dx2 = rand_gen.frand();
+            real_t dx1     = rand_gen.frand();
+            real_t dx2     = rand_gen.frand();
 
-            auto p         = Kokkos::atomic_fetch_add(&npart(), 1);
+            auto   p       = Kokkos::atomic_fetch_add(&npart(), 1);
             species.i1(p)  = static_cast<int>(i1) - N_GHOSTS;
             species.dx1(p) = dx1;
             species.i2(p)  = static_cast<int>(i2) - N_GHOSTS;
@@ -397,24 +398,24 @@ namespace ntt {
                             const real_t&               ppc,
                             const array_t<std::size_t>& nprt,
                             const real_t&               time)
-      : params {pr},
-        mblock {mb},
-        species {sp},
-        nppc {(real_t)ppc},
-        npart {nprt},
-        energy_dist {params, mblock},
-        spatial_dist {params, mblock},
-        inj_criterion {params, mblock},
-        pool {(uint64_t)(1e6 * (time / mb.timestep()))} {}
+      : params { pr },
+        mblock { mb },
+        species { sp },
+        nppc { (real_t)ppc },
+        npart { nprt },
+        energy_dist { params, mblock },
+        spatial_dist { params, mblock },
+        inj_criterion { params, mblock },
+        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       // cell node
-      coord_t<Dim3> xi {static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
-                        static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS),
-                        static_cast<real_t>(static_cast<int>(i3) - N_GHOSTS)};
+      coord_t<Dim3> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+                         static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS),
+                         static_cast<real_t>(static_cast<int>(i3) - N_GHOSTS) };
       // cell center
-      coord_t<Dim3> xc {xi[0] + HALF, xi[1] + HALF, xi[2] + HALF};
+      coord_t<Dim3> xc { xi[0] + HALF, xi[1] + HALF, xi[2] + HALF };
       // physical coordinate
-      coord_t<Dim3> xph {ZERO};
+      coord_t<Dim3> xph { ZERO };
 
 #ifdef MINKOWSKI_METRIC
       mblock.metric.x_Code2Cart(xc, xph);
@@ -425,25 +426,25 @@ namespace ntt {
       if (inj_criterion(xph)) {
         typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-        real_t ninject = nppc * spatial_dist(xph);
+        real_t                                      ninject  = nppc * spatial_dist(xph);
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
-            vec_t<Dim3> v {ZERO}, v_cart {ZERO};
+            vec_t<Dim3> v { ZERO }, v_cart { ZERO };
             energy_dist(xph, v);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
             v_cart[2] = v[2];
 #else
-            mblock.metric.v_Hat2Cart({xc[0], xc[1], ZERO}, v, v_cart);
+            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
 
-            real_t dx1 = rand_gen.frand();
-            real_t dx2 = rand_gen.frand();
-            real_t dx3 = rand_gen.frand();
+            real_t dx1     = rand_gen.frand();
+            real_t dx2     = rand_gen.frand();
+            real_t dx3     = rand_gen.frand();
 
-            auto p         = Kokkos::atomic_fetch_add(&npart(), 1);
+            auto   p       = Kokkos::atomic_fetch_add(&npart(), 1);
             species.i1(p)  = static_cast<int>(i1) - N_GHOSTS;
             species.dx1(p) = dx1;
             species.i2(p)  = static_cast<int>(i2) - N_GHOSTS;
@@ -537,6 +538,6 @@ namespace ntt {
     }
   }
 
-} // namespace ntt
+}    // namespace ntt
 
-#endif // FRAMEWORK_INJECTOR_H
+#endif    // FRAMEWORK_INJECTOR_H

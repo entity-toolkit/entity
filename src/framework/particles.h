@@ -13,13 +13,13 @@ namespace ntt {
   class ParticleSpecies {
   protected:
     // Species label.
-    std::string m_label;
+    std::string    m_label;
     // Species mass in units of m0.
-    float m_mass;
+    float          m_mass;
     // Species charge in units of q0.
-    float m_charge;
+    float          m_charge;
     // Max number of allocated particles for the species.
-    std::size_t m_maxnpart;
+    std::size_t    m_maxnpart;
     // Pusher assigned for the species.
     ParticlePusher m_pusher;
 
@@ -57,23 +57,33 @@ namespace ntt {
     /**
      * @brief Get the species label.
      */
-    [[nodiscard]] auto label() const -> std::string { return m_label; }
+    [[nodiscard]] auto label() const -> std::string {
+      return m_label;
+    }
     /**
      * @brief Get the species mass.
      */
-    [[nodiscard]] auto mass() const -> float { return m_mass; }
+    [[nodiscard]] auto mass() const -> float {
+      return m_mass;
+    }
     /**
      * @brief Get the species charge.
      */
-    [[nodiscard]] auto charge() const -> float { return m_charge; }
+    [[nodiscard]] auto charge() const -> float {
+      return m_charge;
+    }
     /**
      * @brief Get the max number of allocated particles.
      */
-    [[nodiscard]] auto maxnpart() const -> std::size_t { return m_maxnpart; }
+    [[nodiscard]] auto maxnpart() const -> std::size_t {
+      return m_maxnpart;
+    }
     /**
      * @brief Get the pusher assigned for the species.
      */
-    [[nodiscard]] auto pusher() const -> ParticlePusher { return m_pusher; }
+    [[nodiscard]] auto pusher() const -> ParticlePusher {
+      return m_pusher;
+    }
   };
 
   /**
@@ -85,7 +95,7 @@ namespace ntt {
   struct Particles : public ParticleSpecies {
   private:
     // Number of currently active (used) particles.
-    std::size_t m_npart {0};
+    std::size_t m_npart { 0 };
 
   public:
     /**
@@ -93,28 +103,28 @@ namespace ntt {
      * TODO: Perhaps try VPIC-style arrays.
      */
     // Cell number of the current particle.
-    array_t<int*> i1, i2, i3;
+    array_t<int*>           i1, i2, i3;
     // host mirrors for cell index.
-    array_mirror_t<int*> i1_h, i2_h, i3_h;
+    array_mirror_t<int*>    i1_h, i2_h, i3_h;
     // Displacement of a particle within the shell.
-    array_t<float*> dx1, dx2, dx3;
+    array_t<float*>         dx1, dx2, dx3;
     // host mirrors for the displacements.
-    array_mirror_t<float*> dx1_h, dx2_h, dx3_h;
+    array_mirror_t<float*>  dx1_h, dx2_h, dx3_h;
     // Three spatial components of the covariant 4-velocity (physical units).
-    array_t<real_t*> ux1, ux2, ux3;
+    array_t<real_t*>        ux1, ux2, ux3;
     // host mirrors for the 4-velocities.
     array_mirror_t<real_t*> ux1_h, ux2_h, ux3_h;
     // Particle weights.
-    array_t<float*> weight;
+    array_t<float*>         weight;
 
     // Additional variables (specific to different cases).
     // previous coordinates (GR specific)
-    array_t<real_t*> i1_prev, i2_prev, i3_prev;
-    array_t<real_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>        i1_prev, i2_prev, i3_prev;
+    array_t<real_t*>        dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
-    array_t<real_t*> phi;
+    array_t<real_t*>        phi;
 
-    array_t<bool*> is_dead;
+    array_t<bool*>          is_dead;
 
     /**
      * @brief Constructor for the particle container.
@@ -136,16 +146,18 @@ namespace ntt {
      * @brief Loop over all active particles.
      * @returns 1D Kokkos range policy of size of `npart`.
      */
-    auto rangeActiveParticles() -> range_t<Dim1>;
+    auto               rangeActiveParticles() -> range_t<Dim1>;
     /**
      * @brief Loop over all particles.
      * @returns 1D Kokkos range policy of size of `npart`.
      */
-    auto rangeAllParticles() -> range_t<Dim1>;
+    auto               rangeAllParticles() -> range_t<Dim1>;
     /**
      * @brief Get the number of active particles.
      */
-    [[nodiscard]] auto npart() const -> std::size_t { return m_npart; }
+    [[nodiscard]] auto npart() const -> std::size_t {
+      return m_npart;
+    }
 
     /**
      * @brief Set the number of particles.
@@ -165,6 +177,6 @@ namespace ntt {
     void SynchronizeHostDevice();
   };
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

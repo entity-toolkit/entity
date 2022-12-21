@@ -1,6 +1,7 @@
-#include "wrapper.h"
-#include "pic.h"
 #include "deposit_currents.hpp"
+
+#include "pic.h"
+#include "wrapper.h"
 
 namespace ntt {
   template <Dimension D>
@@ -9,8 +10,8 @@ namespace ntt {
     auto  scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
       if (species.charge() != 0.0) {
-        const real_t              dt {mblock.timestep()};
-        const real_t              charge {species.charge()};
+        const real_t              dt { mblock.timestep() };
+        const real_t              charge { species.charge() };
         DepositCurrents_kernel<D> deposit(mblock, species, scatter_cur, charge, dt);
         Kokkos::parallel_for("deposit", species.rangeActiveParticles(), deposit);
       }
@@ -19,7 +20,7 @@ namespace ntt {
     PLOGD << "... ... currents filter substep finished";
   }
 
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::CurrentsDeposit();
 template void ntt::PIC<ntt::Dim2>::CurrentsDeposit();

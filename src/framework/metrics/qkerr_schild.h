@@ -1,11 +1,11 @@
 #ifndef FRAMEWORK_METRICS_QKERR_SCHILD_H
 #define FRAMEWORK_METRICS_QKERR_SCHILD_H
 
-#include "wrapper.h"
 #include "metric_base.h"
+#include "wrapper.h"
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 namespace ntt {
   /**
@@ -29,25 +29,27 @@ namespace ntt {
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
-      : MetricBase<D> {"qkerr_schild", resolution, extent},
+      : MetricBase<D> { "qkerr_schild", resolution, extent },
         a(params[4]),
         r0(params[0]),
         h(params[1]),
-        chi_min {math::log(this->x1_min - r0)},
-        eta_min {ZERO},
-        phi_min {ZERO},
-        dchi {(math::log(this->x1_max - r0) - chi_min) / this->nx1},
-        deta {(real_t)constant::PI / this->nx2},
-        dphi {(real_t)constant::TWO_PI / this->nx3},
-        dchi_inv {ONE / dchi},
-        deta_inv {ONE / deta},
-        dphi_inv {ONE / dphi},
-        dchi_sqr {dchi * dchi},
-        deta_sqr {deta * deta},
-        dphi_sqr {dphi * dphi} {}
+        chi_min { math::log(this->x1_min - r0) },
+        eta_min { ZERO },
+        phi_min { ZERO },
+        dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
+        deta { (real_t)constant::PI / this->nx2 },
+        dphi { (real_t)constant::TWO_PI / this->nx3 },
+        dchi_inv { ONE / dchi },
+        deta_inv { ONE / deta },
+        dphi_inv { ONE / dphi },
+        dchi_sqr { dchi * dchi },
+        deta_sqr { deta * deta },
+        dphi_sqr { dphi * dphi } {}
     ~Metric() = default;
 
-    [[nodiscard]] Inline auto spin() const -> const real_t& { return a; }
+    [[nodiscard]] Inline auto spin() const -> const real_t& {
+      return a;
+    }
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
@@ -55,17 +57,19 @@ namespace ntt {
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dim2) {
-        real_t min_dx {-1.0};
-        for (int i {0}; i < this->nx1; ++i) {
-          for (int j {0}; j < this->nx2; ++j) {
-            real_t i_ {(real_t)(i) + HALF};
-            real_t j_ {(real_t)(j) + HALF};
-            real_t inv_dx1_ {this->h_11_inv({i_, j_})};
-            real_t inv_dx2_ {this->h_22_inv({i_, j_})};
+        real_t min_dx { -1.0 };
+        for (int i { 0 }; i < this->nx1; ++i) {
+          for (int j { 0 }; j < this->nx2; ++j) {
+            real_t i_ { (real_t)(i) + HALF };
+            real_t j_ { (real_t)(j) + HALF };
+            real_t inv_dx1_ { this->h_11_inv({ i_, j_ }) };
+            real_t inv_dx2_ { this->h_22_inv({ i_, j_ }) };
             real_t dx = 1.0
-                        / (this->alpha({i_, j_}) * math::sqrt(inv_dx1_ + inv_dx2_)
-                           + this->beta1u({i_, j_}));
-            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
+                        / (this->alpha({ i_, j_ }) * math::sqrt(inv_dx1_ + inv_dx2_)
+                           + this->beta1u({ i_, j_ }));
+            if ((min_dx >= dx) || (min_dx < 0.0)) {
+              min_dx = dx;
+            }
           }
         }
         return min_dx;
@@ -101,20 +105,20 @@ namespace ntt {
     Inline auto theta2eta(const real_t& theta) const -> real_t {
       // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y -
       // 108 h y^2))])^(1/3)
-      double R {math::pow(
+      double           R { math::pow(
         -9.0 * SQR(h) * (constant::PI - 2.0 * theta)
           + constant::SQRT3
               * math::sqrt(-(CUBE(h)
                              * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
                                 + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
-        static_cast<real_t>(1.0 / 3.0))};
+        static_cast<real_t>(1.0 / 3.0)) };
       // eta = Pi^(2/3)(6 Pi^(1/3) + 2 2^(1/3)(h-1)(3Pi)^(2/3)/R + 2^(2/3) 3^(1/3) R / h)/12
-      constexpr double PI_TO_TWO_THIRD {2.14502939711102560008};
-      constexpr double PI_TO_ONE_THIRD {1.46459188756152326302};
-      constexpr double TWO_TO_TWO_THIRD {1.58740105196819947475};
-      constexpr double THREE_TO_ONE_THIRD {1.442249570307408382321};
-      constexpr double TWO_TO_ONE_THIRD {1.2599210498948731647672};
-      constexpr double THREE_PI_TO_TWO_THIRD {4.46184094890142313715794};
+      constexpr double PI_TO_TWO_THIRD { 2.14502939711102560008 };
+      constexpr double PI_TO_ONE_THIRD { 1.46459188756152326302 };
+      constexpr double TWO_TO_TWO_THIRD { 1.58740105196819947475 };
+      constexpr double THREE_TO_ONE_THIRD { 1.442249570307408382321 };
+      constexpr double TWO_TO_ONE_THIRD { 1.2599210498948731647672 };
+      constexpr double THREE_PI_TO_TWO_THIRD { 4.46184094890142313715794 };
       return static_cast<real_t>(
         PI_TO_TWO_THIRD
         * (6.0 * PI_TO_ONE_THIRD
@@ -134,11 +138,11 @@ namespace ntt {
         NTTError("h_11 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t cth {math::cos(theta)};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t cth { math::cos(theta) };
         return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (r * r + a * a * cth * cth));
       }
     }
@@ -154,12 +158,12 @@ namespace ntt {
         NTTError("h_22 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t dtheta_deta_ {dtheta_deta(eta)};
-        real_t cth {math::cos(theta)};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t dtheta_deta_ { dtheta_deta(eta) };
+        real_t cth { math::cos(theta) };
         return deta_sqr * SQR(dtheta_deta_) * (r * r + a * a * cth * cth);
       }
     }
@@ -175,14 +179,14 @@ namespace ntt {
         NTTError("h_33 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t cth {math::cos(theta)};
-        real_t sth {math::sin(theta)};
-        real_t delta {r * r - TWO * r + a * a};
-        real_t As {(r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t cth { math::cos(theta) };
+        real_t sth { math::sin(theta) };
+        real_t delta { r * r - TWO * r + a * a };
+        real_t As { (r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth };
         return As * sth * sth / (r * r + a * a * cth * cth);
       }
     }
@@ -198,12 +202,12 @@ namespace ntt {
         NTTError("h_13 not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t cth {math::cos(theta)};
-        real_t sth {math::sin(theta)};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t cth { math::cos(theta) };
+        real_t sth { math::sin(theta) };
         return -dchi * math::exp(chi) * a * sth * sth
                * (ONE + TWO * r / (r * r + a * a * cth * cth));
       }
@@ -220,12 +224,12 @@ namespace ntt {
         NTTError("alpha not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t cth {math::cos(theta)};
-        real_t z {TWO * r / (r * r + a * a * cth * cth)};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t cth { math::cos(theta) };
+        real_t z { TWO * r / (r * r + a * a * cth * cth) };
         return ONE / math::sqrt(ONE + z);
       }
     }
@@ -241,12 +245,12 @@ namespace ntt {
         NTTError("beta1u not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t cth {math::cos(theta)};
-        real_t z {TWO * r / (r * r + a * a * cth * cth)};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t cth { math::cos(theta) };
+        real_t z { TWO * r / (r * r + a * a * cth * cth) };
         return math::exp(-chi) * dchi_inv * (z / (ONE + z));
       }
     }
@@ -273,10 +277,10 @@ namespace ntt {
         NTTError("polar_area not implemented for 1D qspherical");
         return ZERO;
       } else {
-        real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t del_eta {x[1] * deta + eta_min};
-        real_t del_theta {eta2theta(del_eta)};
+        real_t chi { x[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t del_eta { x[1] * deta + eta_min };
+        real_t del_theta { eta2theta(del_eta) };
         return dchi * math::exp(chi) * (SQR(r) + SQR(a))
                * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - math::cos(del_theta));
       }
@@ -346,14 +350,14 @@ namespace ntt {
       if constexpr (D == Dim1) {
         NTTError("x_Code2Sph not implemented for 1D");
       } else if constexpr (D == Dim2) {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t eta {xi[1] * deta + eta_min};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t eta { xi[1] * deta + eta_min };
         x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
       } else if constexpr (D == Dim3) {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t phi {xi[2] * dphi + phi_min};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t phi { xi[2] * dphi + phi_min };
         x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
         x[2] = phi;
@@ -371,14 +375,14 @@ namespace ntt {
       if constexpr (D == Dim1) {
         NTTError("x_Code2Sph not implemented for 1D");
       } else if constexpr (D == Dim2) {
-        real_t chi {math::log(x[0] - r0)};
-        real_t eta {theta2eta(x[1])};
+        real_t chi { math::log(x[0] - r0) };
+        real_t eta { theta2eta(x[1]) };
         xi[0] = (chi - chi_min) * dchi_inv;
         xi[1] = (eta - eta_min) * deta_inv;
       } else if constexpr (D == Dim3) {
-        real_t chi {math::log(x[0] - r0)};
-        real_t eta {theta2eta(x[1])};
-        real_t phi {x[2]};
+        real_t chi { math::log(x[0] - r0) };
+        real_t eta { theta2eta(x[1]) };
+        real_t phi { x[2] };
         xi[0] = (chi - chi_min) * dchi_inv;
         xi[1] = (eta - eta_min) * deta_inv;
         xi[2] = (phi - phi_min) * dphi_inv;
@@ -398,9 +402,9 @@ namespace ntt {
       if constexpr (D == Dim1) {
         NTTError("v_Cntr2SphCntrv not implemented for 1D");
       } else {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t deta_dtheta_ {ONE / dtheta_deta(eta)};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
         vsph_cntrv[0] = vi_cntrv[0] * math::exp(-chi) * dchi_inv;
         vsph_cntrv[1] = vi_cntrv[1] * deta_dtheta_ * deta_inv;
         vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
@@ -408,6 +412,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

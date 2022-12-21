@@ -1,9 +1,9 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
-#include "wrapper.h"
-#include "sim_params.h"
 #include "meshblock.h"
+#include "sim_params.h"
+#include "wrapper.h"
 
 namespace ntt {
 
@@ -20,9 +20,8 @@ namespace ntt {
   };
 
   template <>
-  inline void
-  ProblemGenerator<Dim2, TypePIC>::UserInitParticles(const SimulationParams&   params,
-                                                     Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
     std::size_t npart = (std::size_t)(
       (double)(params.resolution()[0] * params.resolution()[1] * params.ppc0() * 0.5));
     auto&  electrons   = mblock.particles[0];
@@ -35,11 +34,11 @@ namespace ntt {
     electrons.setNpart(npart);
     positrons.setNpart(npart);
     Kokkos::parallel_for(
-      "userInitPrtls", CreateRangePolicy<Dim1>({0}, {(int)npart}), Lambda(index_t p) {
+      "userInitPrtls", CreateRangePolicy<Dim1>({ 0 }, { (int)npart }), Lambda(index_t p) {
         typename RandomNumberPool_t::generator_type rand_gen = random_pool.get_state();
 
-        real_t rx = rand_gen.frand(Xmin, Xmax);
-        real_t ry = rand_gen.frand(Ymin, Ymax);
+        real_t                                      rx       = rand_gen.frand(Xmin, Xmax);
+        real_t                                      ry       = rand_gen.frand(Ymin, Ymax);
         init_prtl_2d(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
         init_prtl_2d(mblock, positrons, p, rx, ry, u2, 0.0, 0.0);
 
@@ -48,15 +47,13 @@ namespace ntt {
   }
 
   template <>
-  inline void
-  ProblemGenerator<Dim1, TypePIC>::UserInitParticles(const SimulationParams&   params,
-                                                     Meshblock<Dim1, TypePIC>& mblock) {}
+  inline void ProblemGenerator<Dim1, TypePIC>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim1, TypePIC>& mblock) {}
 
   template <>
-  inline void
-  ProblemGenerator<Dim3, TypePIC>::UserInitParticles(const SimulationParams&   params,
-                                                     Meshblock<Dim3, TypePIC>& mblock) {}
+  inline void ProblemGenerator<Dim3, TypePIC>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim3, TypePIC>& mblock) {}
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

@@ -1,9 +1,9 @@
 #ifndef FRAMEWORK_UTILS_TIMER_H
 #define FRAMEWORK_UTILS_TIMER_H
 
+#include <chrono>
 #include <iostream>
 #include <string>
-#include <chrono>
 
 using timestamp = std::chrono::time_point<std::chrono::system_clock>;
 
@@ -31,7 +31,9 @@ namespace ntt {
     public:
       Timers(std::initializer_list<std::string> names) {
         for (auto& name : names) {
-          m_timers.insert({name, {std::chrono::system_clock::now(), 0.0}});
+          m_timers.insert({
+            name, {std::chrono::system_clock::now(), 0.0}
+          });
         }
       }
       ~Timers() = default;
@@ -45,13 +47,17 @@ namespace ntt {
               .count();
         m_timers[name].second += elapsed;
       }
-      void reset(const std::string& name) { m_timers[name].second = 0.0; }
+      void reset(const std::string& name) {
+        m_timers[name].second = 0.0;
+      }
 
       void printAll(const std::string& title = "",
                     const TimerFlags   flags = TimerFlags_Default,
                     std::ostream&      os    = std::cout) const {
         os << std::setw(46) << std::setfill('-') << "" << std::endl;
-        if ((flags & TimerFlags_PrintTitle) && !title.empty()) { os << title << std::endl; }
+        if ((flags & TimerFlags_PrintTitle) && !title.empty()) {
+          os << title << std::endl;
+        }
         long double total = 0.0;
         for (auto& timer : m_timers) {
           total += timer.second.second;
@@ -71,10 +77,14 @@ namespace ntt {
               units = "ns";
             }
           }
-          if (flags & TimerFlags_PrintIndents) { os << "  "; }
+          if (flags & TimerFlags_PrintIndents) {
+            os << "  ";
+          }
           os << std::setw(20) << std::left << std::setfill('.') << timer.first;
           os << std::setw(12) << std::right << std::setfill('.') << value;
-          if (flags & TimerFlags_PrintUnits) { os << " " << units; }
+          if (flags & TimerFlags_PrintUnits) {
+            os << " " << units;
+          }
           if (flags & TimerFlags_PrintRelative) {
             os << " | " << std::setw(5) << std::right << std::setfill(' ') << std::fixed
                << std::setprecision(2) << (timer.second.second / total) * 100.0 << "%";
@@ -98,7 +108,9 @@ namespace ntt {
           }
           os << std::setw(22) << std::left << std::setfill(' ') << "Total";
           os << std::setw(12) << std::right << std::setfill(' ') << value;
-          if (flags & TimerFlags_PrintUnits) { os << " " << units; }
+          if (flags & TimerFlags_PrintUnits) {
+            os << " " << units;
+          }
           os << std::endl;
         }
       }
@@ -106,7 +118,7 @@ namespace ntt {
     private:
       std::map<std::string, std::pair<timestamp, long double>> m_timers;
     };
-  } // namespace timer
-} // namespace ntt
+  }    // namespace timer
+}    // namespace ntt
 
-#endif // FRAMEWORK_UTILS_TIMER_H
+#endif    // FRAMEWORK_UTILS_TIMER_H

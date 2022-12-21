@@ -1,10 +1,10 @@
 #ifndef FRAMEWORK_MESHBLOCK_H
 #define FRAMEWORK_MESHBLOCK_H
 
-#include "wrapper.h"
-#include "metric.h"
 #include "fields.h"
+#include "metric.h"
 #include "particles.h"
+#include "wrapper.h"
 
 #include <vector>
 
@@ -91,19 +91,19 @@ namespace ntt {
      * @brief Loop over all active cells (disregard ghost cells).
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto rangeActiveCells() -> range_t<D>;
+    auto                           rangeActiveCells() -> range_t<D>;
     /**
      * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto rangeAllCells() -> range_t<D>;
+    auto                           rangeAllCells() -> range_t<D>;
 
     /**
      * @brief Pick a particular region of cells.
      * @param boxRegion region of cells to pick: tuple of cellLayer objects.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto rangeCells(const boxRegion<D>&) -> range_t<D>;
+    auto                           rangeCells(const boxRegion<D>&) -> range_t<D>;
     /**
      * @brief Pick a particular region of cells.
      * @overload
@@ -112,7 +112,7 @@ namespace ntt {
      * @example {{0, 0}, {0, 0}, {0, 0}} corresponds to allActiveLayer in all 3 dimensions.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto rangeCells(const tuple_t<tuple_t<short, Dim2>, D>&) -> range_t<D>;
+    auto               rangeCells(const tuple_t<tuple_t<short, Dim2>, D>&) -> range_t<D>;
 
     /* -------------------------------------------------------------------------- */
     /*                     Ranges in the host execution space                     */
@@ -122,57 +122,75 @@ namespace ntt {
      * @returns Kokkos range policy in the host space with proper min/max indices and
      * dimension.
      */
-    auto rangeActiveCellsOnHost() -> range_h_t<D>;
+    auto               rangeActiveCellsOnHost() -> range_h_t<D>;
     /**
      * @brief Loop over all cells.
      * @returns Kokkos range policy in the host space with proper min/max indices and
      * dimension.
      */
-    auto rangeAllCellsOnHost() -> range_h_t<D>;
+    auto               rangeAllCellsOnHost() -> range_h_t<D>;
     /**
      * @brief Pick a particular region of cells.
      * @param boxRegion region of cells to pick: tuple of cellLayer objects.
      * @returns Kokkos range policy in the host space with proper min/max indices and
      * dimension.
      */
-    auto rangeCellsOnHost(const boxRegion<D>&) -> range_h_t<D>;
+    auto               rangeCellsOnHost(const boxRegion<D>&) -> range_h_t<D>;
 
     /**
      * @brief Get the first index of active zone along 1st dimension.
      */
-    [[nodiscard]] auto i1_min() const -> const int& { return m_i1min; }
+    [[nodiscard]] auto i1_min() const -> const int& {
+      return m_i1min;
+    }
     /**
      * @brief Get the last index of active zone along 1st dimension.
      */
-    [[nodiscard]] auto i1_max() const -> const int& { return m_i1max; }
+    [[nodiscard]] auto i1_max() const -> const int& {
+      return m_i1max;
+    }
     /**
      * @brief Get the number of active cells along 1st dimension.
      */
-    [[nodiscard]] auto Ni1() const -> const int& { return m_Ni1; }
+    [[nodiscard]] auto Ni1() const -> const int& {
+      return m_Ni1;
+    }
     /**
      * @brief Get the first index of active zone along 2nd dimension.
      */
-    [[nodiscard]] auto i2_min() const -> const int& { return m_i2min; }
+    [[nodiscard]] auto i2_min() const -> const int& {
+      return m_i2min;
+    }
     /**
      * @brief Get the last index of active zone along 2nd dimension.
      */
-    [[nodiscard]] auto i2_max() const -> const int& { return m_i2max; }
+    [[nodiscard]] auto i2_max() const -> const int& {
+      return m_i2max;
+    }
     /**
      * @brief Get the number of active cells along 2nd dimension.
      */
-    [[nodiscard]] auto Ni2() const -> const int& { return m_Ni2; }
+    [[nodiscard]] auto Ni2() const -> const int& {
+      return m_Ni2;
+    }
     /**
      * @brief Get the number of active cells along 3rd dimension.
      */
-    [[nodiscard]] auto i3_min() const -> const int& { return m_i3min; }
+    [[nodiscard]] auto i3_min() const -> const int& {
+      return m_i3min;
+    }
     /**
      * @brief Get the last index of active zone along 3rd dimension.
      */
-    [[nodiscard]] auto i3_max() const -> const int& { return m_i3max; }
+    [[nodiscard]] auto i3_max() const -> const int& {
+      return m_i3max;
+    }
     /**
      * @brief Get the number of active cells along 3rd dimension.
      */
-    [[nodiscard]] auto Ni3() const -> const int& { return m_Ni3; }
+    [[nodiscard]] auto Ni3() const -> const int& {
+      return m_Ni3;
+    }
     /**
      * @brief Get the first index of active zone along i-th dimension.
      */
@@ -257,24 +275,32 @@ namespace ntt {
     /**
      * @brief Get the timestep.
      */
-    [[nodiscard]] auto timestep() const -> const real_t& { return m_timestep; }
+    [[nodiscard]] auto timestep() const -> const real_t& {
+      return m_timestep;
+    }
     /**
      * @brief Get the minimum cell size.
      */
-    [[nodiscard]] auto minCellSize() const -> const real_t& { return m_min_cell_size; }
+    [[nodiscard]] auto minCellSize() const -> const real_t& {
+      return m_min_cell_size;
+    }
 
     /**
      * @brief Set the timestep of the meshblock.
      * @param timestep timestep in physical units.
      */
-    void setTimestep(const real_t& timestep) { m_timestep = timestep; }
+    void setTimestep(const real_t& timestep) {
+      m_timestep = timestep;
+    }
     /**
      * @brief Set the minimum cell size of the meshblock.
      * @param min_cell_size minimum cell size in physical units.
      */
-    void setMinCellSize(const real_t& min_cell_size) { m_min_cell_size = min_cell_size; }
+    void setMinCellSize(const real_t& min_cell_size) {
+      m_min_cell_size = min_cell_size;
+    }
   };
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

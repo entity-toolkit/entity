@@ -1,5 +1,5 @@
-#include "wrapper.h"
 #include "pic.h"
+#include "wrapper.h"
 
 namespace ntt {
 
@@ -81,9 +81,9 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::ParticlesExchange() {}
 
-#endif // MINKOWSKI_METRIC
+#endif    // MINKOWSKI_METRIC
 
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::ParticlesExchange();
 template void ntt::PIC<ntt::Dim2>::ParticlesExchange();

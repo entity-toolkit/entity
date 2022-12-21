@@ -1,12 +1,11 @@
 #ifndef PIC_FARADAY_MINKOWSKI_H
 #define PIC_FARADAY_MINKOWSKI_H
 
-#include "wrapper.h"
+#include "field_macros.h"
 #include "fields.h"
 #include "meshblock.h"
 #include "pic.h"
-
-#include "field_macros.h"
+#include "wrapper.h"
 
 namespace ntt {
 
@@ -69,6 +68,6 @@ namespace ntt {
     BX3(i, j, k)
       += m_coeff * (EX1(i, j + 1, k) - EX1(i, j, k) + EX2(i, j, k) - EX2(i + 1, j, k));
   }
-} // namespace ntt
+}    // namespace ntt
 
 #endif

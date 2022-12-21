@@ -1,11 +1,11 @@
 #ifndef FRAMEWORK_METRICS_SPHERICAL_H
 #define FRAMEWORK_METRICS_SPHERICAL_H
 
-#include "wrapper.h"
 #include "metric_base.h"
+#include "wrapper.h"
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 namespace ntt {
   /**
@@ -21,7 +21,7 @@ namespace ntt {
 
   public:
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
-      : MetricBase<D> {"spherical", resolution, extent},
+      : MetricBase<D> { "spherical", resolution, extent },
         dr((this->x1_max - this->x1_min) / this->nx1),
         dtheta(constant::PI / this->nx2),
         dphi(constant::TWO_PI / this->nx3),
@@ -37,8 +37,8 @@ namespace ntt {
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dim2) {
-        auto dx1 {dr};
-        auto dx2 {this->x1_min * dtheta};
+        auto dx1 { dr };
+        auto dx2 { this->x1_min * dtheta };
         return ONE / math::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
       } else {
         NTTHostError("min cell finding not implemented for 3D spherical");
@@ -52,7 +52,9 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_11 (covariant, lower index) metric component.
      */
-    Inline auto h_11(const coord_t<D>&) const -> real_t { return dr_sqr; }
+    Inline auto h_11(const coord_t<D>&) const -> real_t {
+      return dr_sqr;
+    }
     /**
      * Compute metric component 22.
      *
@@ -60,7 +62,7 @@ namespace ntt {
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
+      real_t r { x[0] * dr + this->x1_min };
       return dtheta_sqr * r * r;
     }
     /**
@@ -70,9 +72,9 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t sin_theta {math::sin(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t sin_theta { math::sin(theta) };
       return r * r * sin_theta * sin_theta;
     }
     /**
@@ -82,8 +84,8 @@ namespace ntt {
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
       return dr * dtheta * r * r * math::sin(theta);
     }
 
@@ -94,8 +96,8 @@ namespace ntt {
      * @returns Area at the pole.
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t del_theta {x[1] * dtheta};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t del_theta { x[1] * dtheta };
       return dr * r * r * (ONE - math::cos(del_theta));
     }
 
@@ -192,6 +194,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

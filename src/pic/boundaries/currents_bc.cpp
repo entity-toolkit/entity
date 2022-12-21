@@ -1,6 +1,6 @@
-#include "wrapper.h"
-#include "pic.h"
 #include "meshblock.h"
+#include "pic.h"
+#include "wrapper.h"
 
 #ifndef MINKOWSKI_METRIC
 #  include "currents_bc.hpp"
@@ -37,7 +37,7 @@ namespace ntt {
   }
 #endif
 
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::CurrentsBoundaryConditions();
 template void ntt::PIC<ntt::Dim2>::CurrentsBoundaryConditions();

@@ -1,6 +1,6 @@
-#include "wrapper.h"
 #include "fields.h"
 #include "pic.h"
+#include "wrapper.h"
 
 namespace ntt {
   template <>
@@ -74,4 +74,4 @@ namespace ntt {
     }
     Kokkos::Experimental::contribute(mblock.buff, scatter_buff);
   }
-} // namespace ntt
+}    // namespace ntt

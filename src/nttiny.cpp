@@ -1,28 +1,29 @@
-#include "nttiny/vis.h"
-#include "nttiny/api.h"
-#include "nttiny/tools.h"
-
-#include "wrapper.h"
 #include "cargs.h"
 #include "input.h"
+#include "wrapper.h"
+
+#include "nttiny/api.h"
+#include "nttiny/tools.h"
+#include "nttiny/vis.h"
 
 #ifdef PIC_SIMTYPE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
 #elif defined(GRPIC_SIMTYPE)
 #  include "grpic.h"
+
 #  include "init_fields.hpp"
 #  define SIMULATION_CONTAINER GRPIC
 #endif
 
-#include <toml/toml.hpp>
-#include <plog/Log.h>
-#include <plog/Init.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
+#include <plog/Init.h>
+#include <plog/Log.h>
+#include <toml/toml.hpp>
 
 #include <iostream>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
@@ -95,7 +96,7 @@ public:
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
     Kokkos::parallel_for("setData",
-                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({0, 0}, {nx1, nx2}),
+                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
                          [=](std::size_t i1, std::size_t j1) {
                            int i, j;
                            if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
@@ -169,10 +170,10 @@ public:
   void generateFields() {
     auto&      Fields = this->fields;
     auto&      Grid   = this->m_global_grid;
-    const auto nx1 {Grid.m_size[0] + Grid.m_ngh * 2};
-    const auto nx2 {Grid.m_size[1] + Grid.m_ngh * 2};
-    for (std::size_t i {0}; i < m_fields_to_plot.size(); ++i) {
-      Fields.insert({m_fields_to_plot[i], new real_t[nx1 * nx2]});
+    const auto nx1 { Grid.m_size[0] + Grid.m_ngh * 2 };
+    const auto nx2 { Grid.m_size[1] + Grid.m_ngh * 2 };
+    for (std::size_t i { 0 }; i < m_fields_to_plot.size(); ++i) {
+      Fields.insert({ m_fields_to_plot[i], new real_t[nx1 * nx2] });
     }
   }
 
@@ -180,8 +181,10 @@ public:
     auto& Particles = this->particles;
     int   s         = 0;
     for (auto& species : m_sim.meshblock.particles) {
-      auto nprtl {m_sim.meshblock.particles[s].npart()};
-      Particles.insert({species.label(), {nprtl, {new real_t[nprtl], new real_t[nprtl]}}});
+      auto nprtl { m_sim.meshblock.particles[s].npart() };
+      Particles.insert({
+        species.label(), {nprtl, { new real_t[nprtl], new real_t[nprtl] }}
+      });
       ++s;
     }
   }
@@ -189,32 +192,32 @@ public:
   void generateGrid() {
     auto& Grid = this->m_global_grid;
     if (Grid.m_coord == nttiny::Coord::Spherical) {
-      const auto sx1 {Grid.m_size[0]};
-      const auto sx2 {Grid.m_size[1]};
-      for (int i {0}; i <= sx1; ++i) {
-        auto                    i_ {(real_t)(i * m_fields_stride)};
-        auto                    j_ {ZERO};
+      const auto sx1 { Grid.m_size[0] };
+      const auto sx2 { Grid.m_size[1] };
+      for (int i { 0 }; i <= sx1; ++i) {
+        auto                    i_ { (real_t)(i * m_fields_stride) };
+        auto                    j_ { ZERO };
         ntt::coord_t<ntt::Dim2> rth_;
-        m_sim.meshblock.metric.x_Code2Sph({i_, j_}, rth_);
+        m_sim.meshblock.metric.x_Code2Sph({ i_, j_ }, rth_);
         Grid.m_xi[0][i] = rth_[0];
       }
-      for (int j {0}; j <= sx2; ++j) {
-        auto                    i_ {ZERO};
-        auto                    j_ {(real_t)(j * m_fields_stride)};
+      for (int j { 0 }; j <= sx2; ++j) {
+        auto                    i_ { ZERO };
+        auto                    j_ { (real_t)(j * m_fields_stride) };
         ntt::coord_t<ntt::Dim2> rth_;
-        m_sim.meshblock.metric.x_Code2Sph({i_, j_}, rth_);
+        m_sim.meshblock.metric.x_Code2Sph({ i_, j_ }, rth_);
         Grid.m_xi[1][j] = rth_[1];
       }
       Grid.ExtendGridWithGhosts();
     } else {
-      const auto s1 {m_sim.meshblock.metric.x1_max - m_sim.meshblock.metric.x1_min};
-      const auto s2 {m_sim.meshblock.metric.x2_max - m_sim.meshblock.metric.x2_min};
-      const auto sx1 {Grid.m_size[0]};
-      const auto sx2 {Grid.m_size[1]};
-      for (int i {0}; i <= sx1; ++i) {
+      const auto s1 { m_sim.meshblock.metric.x1_max - m_sim.meshblock.metric.x1_min };
+      const auto s2 { m_sim.meshblock.metric.x2_max - m_sim.meshblock.metric.x2_min };
+      const auto sx1 { Grid.m_size[0] };
+      const auto sx2 { Grid.m_size[1] };
+      for (int i { 0 }; i <= sx1; ++i) {
         Grid.m_xi[0][i] = m_sim.meshblock.metric.x1_min + s1 * (real_t)(i) / (real_t)(sx1);
       }
-      for (int j {0}; j <= sx2; ++j) {
+      for (int j { 0 }; j <= sx2; ++j) {
         Grid.m_xi[1][j] = m_sim.meshblock.metric.x2_min + s2 * (real_t)(j) / (real_t)(sx2);
       }
     }
@@ -226,14 +229,14 @@ public:
     real_t r_absorb = m_sim.sim_params()->metric_parameters()[2];
     real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
     nttiny::tools::drawCircle(
-      {0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+      { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
     nttiny::tools::drawCircle(
-      {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+      { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
 #elif defined(PIC_SIMTYPE)
 #  ifndef MINKOWSKI_METRIC
     real_t r_absorb = m_sim.params()->metricParameters()[2];
     nttiny::tools::drawCircle(
-      {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+      { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
 #  endif
 #endif
   }
@@ -247,14 +250,14 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale_str     = cl_args.getArgument("-scale", "1.0");
-    auto  scale         = std::stof(std::string(scale_str));
-    auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
-    auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
-    auto& vis_data      = toml::find(inputdata, "visualization");
+    auto  scale_str      = cl_args.getArgument("-scale", "1.0");
+    auto  scale          = std::stof(std::string(scale_str));
+    auto  inputfilename  = cl_args.getArgument("-input", ntt::defaults::input_filename);
+    auto  inputdata      = toml::parse(static_cast<std::string>(inputfilename));
+    auto& vis_data       = toml::find(inputdata, "visualization");
 
-    auto fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
-    auto fields_stride  = toml::find_or<int>(vis_data, "fields_stride", 1);
+    auto  fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
+    auto  fields_stride  = toml::find_or<int>(vis_data, "fields_stride", 1);
 
     ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
     sim.Initialize();
@@ -262,15 +265,14 @@ auto main(int argc, char* argv[]) -> int {
     sim.ResetSimulation();
     sim.InitialStep();
     sim.PrintDetails();
-    NTTSimulationVis visApi(sim, fields_to_plot, fields_stride);
+    NTTSimulationVis                 visApi(sim, fields_to_plot, fields_stride);
 
-    nttiny::Visualization<real_t, 2> vis {scale};
+    nttiny::Visualization<real_t, 2> vis { scale };
     vis.bindSimulation(&visApi);
     vis.loop();
 
     sim.Finalize();
-  }
-  catch (std::exception& err) {
+  } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();
 

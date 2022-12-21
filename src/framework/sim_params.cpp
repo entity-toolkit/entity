@@ -1,14 +1,15 @@
-#include "wrapper.h"
-#include "qmath.h"
 #include "sim_params.h"
+
 #include "input.h"
 #include "particles.h"
+#include "qmath.h"
+#include "wrapper.h"
 
 #include <toml/toml.hpp>
 
+#include <cassert>
 #include <stdexcept>
 #include <string>
-#include <cassert>
 #include <vector>
 
 namespace ntt {
@@ -27,7 +28,7 @@ namespace ntt {
     // reading particle parameters
     auto nspec
       = readFromInput<int>(m_inputdata, "particles", "n_species", defaults::n_species);
-    for (int i {0}; i < nspec; ++i) {
+    for (int i { 0 }; i < nspec; ++i) {
       auto label = readFromInput<std::string>(
         m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
       auto mass
@@ -38,7 +39,7 @@ namespace ntt {
         readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
       auto pusher_str = readFromInput<std::string>(
         m_inputdata, "species_" + std::to_string(i + 1), "pusher", defaults::pusher);
-      ParticlePusher pusher {ParticlePusher::UNDEFINED};
+      ParticlePusher pusher { ParticlePusher::UNDEFINED };
       if ((mass == 0.0) && (charge == 0.0)) {
         pusher = ParticlePusher::PHOTON;
       } else if (pusher_str == "Vay") {
@@ -73,13 +74,13 @@ namespace ntt {
                       || ((short)(m_extent.size()) < 2 * (short)(dim))),
                      "not enough values in `extent` or `resolution` input");
       // enforce dx = dy = dz
-      auto dx {(m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0])};
+      auto dx { (m_extent[1] - m_extent[0]) / (real_t)(m_resolution[0]) };
       if (m_resolution.size() > 1) {
-        auto dy {(m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1])};
+        auto dy { (m_extent[3] - m_extent[2]) / (real_t)(m_resolution[1]) };
         NTTHostErrorIf((dx != dy), "dx != dy in minkowski");
       }
       if (m_resolution.size() > 2) {
-        auto dz {(m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2])};
+        auto dz { (m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2]) };
         NTTHostErrorIf((dx != dz), "dx != dz in minkowski");
       }
     } else if ((m_metric == "spherical") || (m_metric == "qspherical")
@@ -98,8 +99,8 @@ namespace ntt {
         = readFromInput<real_t>(inputdata, "domain", "absorb_coeff", (real_t)(1.0));
 
       if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
-        real_t spin {readFromInput<real_t>(inputdata, "domain", "a")};
-        real_t rh {ONE + math::sqrt(ONE - spin * spin)};
+        real_t spin { readFromInput<real_t>(inputdata, "domain", "a") };
+        real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;
         m_extent[0] *= rh;
         m_extent[1] *= rh;
@@ -118,7 +119,7 @@ namespace ntt {
     if (m_metric == "minkowski") {
       auto boundaries
         = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
-      short b {0};
+      short b { 0 };
       for (auto& bc : boundaries) {
         if (bc == "PERIODIC") {
           m_boundaries.push_back(BoundaryCondition::PERIODIC);
@@ -149,7 +150,7 @@ namespace ntt {
     m_skindepth0 = readFromInput<real_t>(m_inputdata, "units", "skindepth0");
     m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
 
-    m_cfl = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", defaults::cfl);
+    m_cfl        = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
 
     // number of current filter passes
@@ -162,4 +163,4 @@ namespace ntt {
     m_output_interval
       = readFromInput<int>(m_inputdata, "output", "interval", defaults::output_interval);
   }
-} // namespace ntt
+}    // namespace ntt

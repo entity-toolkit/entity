@@ -1,12 +1,13 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
-#include "wrapper.h"
-#include "archetypes.hpp"
-#include "injector.hpp"
-#include "sim_params.h"
 #include "meshblock.h"
 #include "particle_macros.h"
+#include "sim_params.h"
+#include "wrapper.h"
+
+#include "archetypes.hpp"
+#include "injector.hpp"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"
@@ -42,7 +43,9 @@ namespace ntt {
   struct CoshDist : public SpatialDistribution<D, S> {
     explicit CoshDist(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
-    Inline real_t operator()(coord_t<D> x_ph) const { return 1.0 / math::cosh(x_ph[0] / 0.2); }
+    Inline real_t operator()(coord_t<D> x_ph) const {
+      return 1.0 / math::cosh(x_ph[0] / 0.2);
+    }
   };
 
   template <Dimension D, SimulationType S>
@@ -90,9 +93,9 @@ namespace ntt {
                                    const SimulationParams& params,
                                    Meshblock<D, S>&        mblock) override {
       auto nppc_per_spec = (real_t)(params.ppc0()) * HALF;
-      InjectInVolume<D, S, MyDist, ExpDist>(params, mblock, {1, 2}, nppc_per_spec, {}, time);
+      InjectInVolume<D, S, MyDist, ExpDist>(params, mblock, { 1, 2 }, nppc_per_spec, {}, time);
     }
-  }; // struct ProblemGenerator
+  };    // struct ProblemGenerator
 
   // template <>
   // inline void
@@ -111,6 +114,6 @@ namespace ntt {
   //   //   params, mblock, {1, 2}, nppc_per_spec);
   // }
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif
