@@ -98,14 +98,14 @@ namespace ntt {
   template <>
   Inline void AmperePoles_kernel<Dim2>::operator()(index_t i) const {
     index_t j_min { N_GHOSTS };
-    index_t j_max { m_nj + N_GHOSTS - 1 };
+    index_t j_max { m_nj + N_GHOSTS };
 
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
     real_t  j_max_ { static_cast<real_t>(static_cast<int>(j_max) - N_GHOSTS) };
 
     real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF, HALF }) };
     real_t  h3_min_iPjP { m_mblock.metric.h_33({ i_ + HALF, HALF }) };
-    real_t  h3_max_iPjP { m_mblock.metric.h_33({ i_ + HALF, j_max_ + HALF }) };
+    real_t  h3_max_iPjM { m_mblock.metric.h_33({ i_ + HALF, j_max_ - HALF }) };
 
     real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
     real_t  h3_min_iMjP { m_mblock.metric.h_33({ i_ - HALF, HALF }) };
@@ -113,7 +113,7 @@ namespace ntt {
     // theta = 0
     EX1(i, j_min) += inv_polar_area_iPj * m_coeff * (h3_min_iPjP * BX3(i, j_min));
     // theta = pi
-    EX1(i, j_max + 1) -= inv_polar_area_iPj * m_coeff * (h3_max_iPjP * BX3(i, j_max));
+    EX1(i, j_max) -= inv_polar_area_iPj * m_coeff * (h3_max_iPjM * BX3(i, j_max));
 
     // j = jmin + 1/2
     EX2(i, j_min) += inv_sqrt_detH_ijP * m_coeff

@@ -28,31 +28,24 @@ namespace ntt {
     Kokkos::parallel_for(
       "add_currents", mblock.rangeActiveCells(), CurrentsAmpere_kernel<D>(mblock, coeff));
 #else
-    const auto                       rmin   = mblock.metric.x1_min;
-    const auto                       volume = constant::TWO_PI * SQR(rmin);
-    const auto                       n0     = params.ppc0() * (real_t)ncells / volume;
-    const auto                       coeff  = -dt * rho0 / (n0 * SQR(de0));
+    const auto rmin   = mblock.metric.x1_min;
+    const auto volume = constant::TWO_PI * SQR(rmin);
+    const auto n0     = params.ppc0() * (real_t)ncells / volume;
+    const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
 
-    tuple_t<tuple_t<short, Dim2>, D> range;
+    range_t<D> range;
     // skip the axis
     if constexpr (D == Dim1) {
-      range[0][0] = 0;
-      range[0][1] = 0;
+      range = CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() });
     } else if constexpr (D == Dim2) {
-      range[0][0] = 0;
-      range[0][1] = 0;
-      range[1][0] = 1;
-      range[1][1] = -1;
+      range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
+                                      { mblock.i1_max(), mblock.i2_max() });
     } else if constexpr (D == Dim3) {
-      range[0][0] = 0;
-      range[0][1] = 0;
-      range[1][0] = 1;
-      range[1][1] = -1;
-      range[2][0] = 0;
-      range[2][1] = 0;
+      range
+        = CreateRangePolicy<Dim3>({ mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
+                                  { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
     }
-    Kokkos::parallel_for(
-      "add_currents", mblock.rangeCells(range), CurrentsAmpere_kernel<D>(mblock, coeff));
+    Kokkos::parallel_for("add_currents", range, CurrentsAmpere_kernel<D>(mblock, coeff));
     // do axes separately
     if constexpr (D == Dim2) {
       Kokkos::parallel_for("add_currents_pole",

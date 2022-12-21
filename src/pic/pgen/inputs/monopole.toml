@@ -1,22 +1,22 @@
 [simulation]
-title   = "Monopole"
+title   = "Monopole-7"
 runtime = 0.1
 
 [domain]
-qsph_r0     = 0.0
-qsph_h      = 0.3
-sph_rabsorb = 8.0
+qsph_r0     = -100.0
+qsph_h      = 0.1
+sph_rabsorb = 4.5
 resolution  = [256, 128]
-extent      = [1.0, 10.0]
+extent      = [1.0, 5.0]
 boundaries  = ["USER", "USER"]
 
 [algorithm]
-CFL        = 0.45
-correction = 1.0
-current_filters = 4
+CFL             = 0.45
+correction      = 1.0
+current_filters = 0
 
 [units]
-ppc0       = 10.0
+ppc0       = 100.0
 larmor0    = 1e-4
 skindepth0 = 0.02
 
@@ -38,8 +38,11 @@ maxnpart = 5e7
 pusher   = "BORIS"
 
 [problem]
-spinup_time = 0.25
-omega_max   = 0.25
+spinup_time  = 0.25
+omega_max    = 0.25
+inj_rmax     = 1.1
+inj_maxEdotB = 0
+inj_fraction = 1.0
 
 [visualization]
 fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jtheta"]

@@ -147,11 +147,13 @@ namespace ntt {
 #ifndef MINKOWSKI_METRIC
         if constexpr (D == Dim2) {
           if (i == 1) {
-            const bool northern_pole  = (I_i < 0);
-            const bool sourthern_pole = (I_i >= static_cast<int>(m_i2max));
+            // const bool northern_pole  = (I_i < 0);
+            // const bool sourthern_pole = (I_i >= static_cast<int>(m_i2max));
+            const bool northern_pole  = (xp_i[i] < 0);
+            const bool sourthern_pole = (xp_i[i] >= m_sx2);
             if (northern_pole || sourthern_pole) {
               I_i     = northern_pole ? 0 : m_i2max - 1;
-              xp_i[i] = northern_pole ? -xp_i[i] : m_sx2 - (xp_i[i] - m_sx2);
+              xp_i[i] = northern_pole ? -xp_i[i] : (m_sx2 - (xp_i[i] - m_sx2));
             }
           }
         }
