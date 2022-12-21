@@ -1,6 +1,7 @@
-#include "wrapper.h"
-#include "pic.h"
 #include "currents_ampere.hpp"
+
+#include "pic.h"
+#include "wrapper.h"
 
 namespace ntt {
   /**
@@ -21,15 +22,15 @@ namespace ntt {
     const auto volume = sx1 * sx2 * sx3;
     const auto n0     = params.ppc0() * (real_t)ncells / volume;
     const auto dx     = (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1;
-    const auto coeff  = -dt * rho0 * math::pow(dx, (3 - (int)D)) / (n0 * SQR(de0) * mblock.metric.sqrt_det_h({ZERO}));
-    Kokkos::parallel_for("add_currents",
-                         mblock.rangeActiveCells(),
-                         CurrentsAmpere_kernel<D>(mblock, coeff));
+    const auto coeff  = -dt * rho0 * math::pow(dx, (3 - (int)D))
+                       / (n0 * SQR(de0) * mblock.metric.sqrt_det_h({ ZERO }));
+    Kokkos::parallel_for(
+      "add_currents", mblock.rangeActiveCells(), CurrentsAmpere_kernel<D>(mblock, coeff));
 #else
-    const auto rmin = mblock.metric.x1_min;
-    const auto volume = constant::TWO_PI * SQR(rmin);
-    const auto n0     = params.ppc0() * (real_t)ncells / volume;
-    const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+    const auto                       rmin   = mblock.metric.x1_min;
+    const auto                       volume = constant::TWO_PI * SQR(rmin);
+    const auto                       n0     = params.ppc0() * (real_t)ncells / volume;
+    const auto                       coeff  = -dt * rho0 / (n0 * SQR(de0));
 
     tuple_t<tuple_t<short, Dim2>, D> range;
     // skip the axis
@@ -54,13 +55,13 @@ namespace ntt {
     // do axes separately
     if constexpr (D == Dim2) {
       Kokkos::parallel_for("add_currents_pole",
-                           CreateRangePolicy<Dim1>({mblock.i1_min()}, {mblock.i1_max()}),
+                           CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
                            CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
     }
 #endif
     PLOGD << "... ... ampere currents substep finished";
   }
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::AmpereCurrents();
 template void ntt::PIC<ntt::Dim2>::AmpereCurrents();

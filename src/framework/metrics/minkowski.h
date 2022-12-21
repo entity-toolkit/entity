@@ -1,8 +1,8 @@
 #ifndef FRAMEWORK_METRICS_MINKOWSKI_H
 #define FRAMEWORK_METRICS_MINKOWSKI_H
 
-#include "wrapper.h"
 #include "metric_base.h"
+#include "wrapper.h"
 
 #include <cmath>
 
@@ -20,7 +20,7 @@ namespace ntt {
 
   public:
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
-      : MetricBase<D> {"minkowski", resolution, extent},
+      : MetricBase<D> { "minkowski", resolution, extent },
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
         inv_dx(ONE / dx) {}
@@ -31,7 +31,9 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t { return dx / math::sqrt(static_cast<real_t>(D)); }
+    auto findSmallestCell() const -> real_t {
+      return dx / math::sqrt(static_cast<real_t>(D));
+    }
 
     /**
      * Compute metric component 11.
@@ -39,21 +41,27 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_11 (covariant, lower index) metric component.
      */
-    Inline auto h_11(const coord_t<D>&) const -> real_t { return dx_sqr; }
+    Inline auto h_11(const coord_t<D>&) const -> real_t {
+      return dx_sqr;
+    }
     /**
      * Compute metric component 22.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_22 (covariant, lower index) metric component.
      */
-    Inline auto h_22(const coord_t<D>&) const -> real_t { return dx_sqr; }
+    Inline auto h_22(const coord_t<D>&) const -> real_t {
+      return dx_sqr;
+    }
     /**
      * Compute metric component 33.
      *
      * @param x coordinate array in code units (size of the array is D).
      * @returns h_33 (covariant, lower index) metric component.
      */
-    Inline auto h_33(const coord_t<D>&) const -> real_t { return dx_sqr; }
+    Inline auto h_33(const coord_t<D>&) const -> real_t {
+      return dx_sqr;
+    }
 
     /**
      * Compute the square root of the determinant of h-matrix.
@@ -61,7 +69,9 @@ namespace ntt {
      * @param x coordinate array in code units (size of the array is D).
      * @returns sqrt(det(h_ij)).
      */
-    Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t { return dx_sqr * dx; }
+    Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t {
+      return dx_sqr * dx;
+    }
 
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
@@ -135,8 +145,9 @@ namespace ntt {
      * @param vi_cov vector in covariant basis (size of the array is 3).
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      */
-    Inline void
-    v_Cov2Cart(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov, vec_t<Dim3>& vi_cart) const {
+    Inline void v_Cov2Cart(const coord_t<D>&  xi,
+                           const vec_t<Dim3>& vi_cov,
+                           vec_t<Dim3>&       vi_cart) const {
       this->v_Cov2Hat(xi, vi_cov, vi_cart);
     }
 
@@ -147,8 +158,9 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      * @param vi_cov vector in covariant basis (size of the array is 3).
      */
-    Inline void
-    v_Cart2Cov(const coord_t<D>& xi, const vec_t<Dim3>& vi_cart, vec_t<Dim3>& vi_cov) const {
+    Inline void v_Cart2Cov(const coord_t<D>&  xi,
+                           const vec_t<Dim3>& vi_cart,
+                           vec_t<Dim3>&       vi_cov) const {
       this->v_Hat2Cov(xi, vi_cart, vi_cov);
     }
   };
@@ -184,15 +196,15 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
-    x_Code2Cart(xi, x);                           // convert to Cartesian coordinates
-    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]); // r = sqrt(x^2 + y^2)
-    x[1] = math::atan2(x[1], x[0]);               // theta = atan(y/x)
+    x_Code2Cart(xi, x);                              // convert to Cartesian coordinates
+    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);    // r = sqrt(x^2 + y^2)
+    x[1] = math::atan2(x[1], x[0]);                  // theta = atan(y/x)
   }
   template <>
   Inline void Metric<Dim2>::x_Sph2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
-    xi[0] = x[0] * math::cos(x[1]); // x = r * cos(theta)
-    xi[1] = x[0] * math::sin(x[1]); // y = r * sin(theta)
-    x_Cart2Code(xi, xi);            // convert to code units
+    xi[0] = x[0] * math::cos(x[1]);    // x = r * cos(theta)
+    xi[1] = x[0] * math::sin(x[1]);    // y = r * sin(theta)
+    x_Cart2Code(xi, xi);               // convert to code units
   }
 
   // * * * * * * * * * * * * * * *
@@ -212,19 +224,19 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
-    x_Code2Cart(xi, x); // convert to Cartesian coordinates
-    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]); // r = sqrt(x^2 + y^2 + z^2)
-    x[1] = math::atan2(x[1], x[0]);                             // theta = atan(y/x)
-    x[2] = math::acos(x[2] / x[0]);                             // phi = acos(z/r)
+    x_Code2Cart(xi, x);    // convert to Cartesian coordinates
+    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);    // r = sqrt(x^2 + y^2 + z^2)
+    x[1] = math::atan2(x[1], x[0]);                                // theta = atan(y/x)
+    x[2] = math::acos(x[2] / x[0]);                                // phi = acos(z/r)
   }
   template <>
   Inline void Metric<Dim3>::x_Sph2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
-    xi[0] = x[0] * math::sin(x[1]) * math::cos(x[2]); // x = r * sin(theta) * cos(phi)
-    xi[1] = x[0] * math::sin(x[1]) * math::sin(x[2]); // y = r * sin(theta) * sin(phi)
-    xi[2] = x[0] * math::cos(x[1]);                   // z = r * cos(theta)
-    x_Cart2Code(xi, xi);                              // convert to code units
+    xi[0] = x[0] * math::sin(x[1]) * math::cos(x[2]);    // x = r * sin(theta) * cos(phi)
+    xi[1] = x[0] * math::sin(x[1]) * math::sin(x[2]);    // y = r * sin(theta) * sin(phi)
+    xi[2] = x[0] * math::cos(x[1]);                      // z = r * cos(theta)
+    x_Cart2Code(xi, xi);                                 // convert to code units
   }
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

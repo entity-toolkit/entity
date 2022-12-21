@@ -1,5 +1,5 @@
-#include "wrapper.h"
 #include "pic.h"
+#include "wrapper.h"
 
 #ifndef MINKOWSKI_METRIC
 #  include "fields_bc.hpp"
@@ -32,7 +32,7 @@ namespace ntt {
     // theta = 0 boundary
     Kokkos::parallel_for(
       "2d_bc_theta0",
-      CreateRangePolicy<Dim2>({0, 0}, {mblock.i1_max() + N_GHOSTS, mblock.i2_min() + 1}),
+      CreateRangePolicy<Dim2>({ 0, 0 }, { mblock.i1_max() + N_GHOSTS, mblock.i2_min() + 1 }),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;
         mblock.em(i, j, em::ex3) = 0.0;
@@ -40,8 +40,8 @@ namespace ntt {
     // theta = pi boundary
     Kokkos::parallel_for(
       "2d_bc_thetaPi",
-      CreateRangePolicy<Dim2>({0, mblock.i2_max()},
-                              {mblock.i1_max() + N_GHOSTS, mblock.i2_max() + N_GHOSTS}),
+      CreateRangePolicy<Dim2>({ 0, mblock.i2_max() },
+                              { mblock.i1_max() + N_GHOSTS, mblock.i2_max() + N_GHOSTS }),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::bx2) = 0.0;
         mblock.em(i, j, em::ex3) = 0.0;
@@ -61,7 +61,7 @@ namespace ntt {
   }
 #endif
 
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::FieldsBoundaryConditions();
 template void ntt::PIC<ntt::Dim2>::FieldsBoundaryConditions();

@@ -20,6 +20,6 @@ namespace ntt {
    * @returns true/false.
    */
   bool AlmostEqual(double a, double b, double epsilon = 1e-8);
-} // namespace ntt
+}    // namespace ntt
 
 #endif

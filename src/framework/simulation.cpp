@@ -1,8 +1,8 @@
-#include "wrapper.h"
 #include "simulation.h"
-#include "metric.h"
 
+#include "metric.h"
 #include "utils.h"
+#include "wrapper.h"
 
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -51,14 +51,14 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
-    : m_params {inputdata, D},
-      problem_generator {m_params},
-      meshblock {m_params.resolution(),
-                 m_params.extent(),
-                 m_params.metricParameters(),
-                 m_params.species()},
-      writer {m_params, meshblock},
-      random_pool {constant::RandomSeed} {
+    : m_params { inputdata, D },
+      problem_generator { m_params },
+      meshblock { m_params.resolution(),
+                  m_params.extent(),
+                  m_params.metricParameters(),
+                  m_params.species() },
+      writer { m_params, meshblock },
+      random_pool { constant::RandomSeed } {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_params.boundaries();
   }
@@ -108,7 +108,7 @@ namespace ntt {
       PLOGI << "   Spin parameter: " << (m_params.metricParameters()[3]);
     }
 
-    std::string bc {"   boundary conditions: { "};
+    std::string bc { "   boundary conditions: { " };
     for (auto& b : m_params.boundaries()) {
       bc += stringifyBoundaryCondition(b) + " x ";
     }
@@ -116,7 +116,7 @@ namespace ntt {
     bc += " }";
     PLOGI << bc;
 
-    std::string res {"   resolution: { "};
+    std::string res { "   resolution: { " };
     for (auto& r : m_params.resolution()) {
       res += std::to_string(r) + " x ";
     }
@@ -124,14 +124,14 @@ namespace ntt {
     res += " }";
     PLOGI << res;
 
-    std::string ext {"   extent: "};
-    for (auto i {0}; i < (int)(m_params.extent().size()); i += 2) {
+    std::string ext { "   extent: " };
+    for (auto i { 0 }; i < (int)(m_params.extent().size()); i += 2) {
       ext += "{" + std::to_string(m_params.extent()[i]) + ", "
              + std::to_string(m_params.extent()[i + 1]) + "} ";
     }
     PLOGI << ext;
 
-    std::string cell {"   cell size: "};
+    std::string cell { "   cell size: " };
     cell += std::to_string(meshblock.minCellSize());
     PLOGI << cell;
 
@@ -145,7 +145,7 @@ namespace ntt {
 
     if (meshblock.particles.size() > 0) {
       PLOGI << "[particles]";
-      int i {0};
+      int i { 0 };
       for (auto& prtls : meshblock.particles) {
         PLOGI << "   [species #" << i + 1 << "]";
         PLOGI << "      label: " << prtls.label();
@@ -190,14 +190,14 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::PrintDiagnostics() {
-    for (std::size_t i {0}; i < meshblock.particles.size(); ++i) {
-      auto& species {meshblock.particles[i]};
+    for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
+      auto& species { meshblock.particles[i] };
       std::cout << "species #" << i << ": " << species.npart() << " ("
                 << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
     }
   }
 
-} // namespace ntt
+}    // namespace ntt
 
 #ifdef PIC_SIMTYPE
 template class ntt::Simulation<ntt::Dim1, ntt::TypePIC>;

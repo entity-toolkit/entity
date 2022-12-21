@@ -3,8 +3,8 @@
 
 #ifdef GRPIC_SIMTYPE
 
-#  include "global.h"
 #  include "fields.h"
+#  include "global.h"
 #  include "meshblock.h"
 
 #  include "problem_generator.hpp"
@@ -20,7 +20,6 @@ namespace ntt {
    */
   template <Dimension D>
   class initFieldsFromVectorPotential {
-
     ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
     Meshblock<D, SimulationType::GRPIC>        m_mblock;
     real_t                                     m_eps;
@@ -30,48 +29,48 @@ namespace ntt {
     initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationType::GRPIC>& pgen,
                                   const Meshblock<D, SimulationType::GRPIC>&        mblock,
                                   real_t                                            eps)
-      : m_pgen {pgen},
-        m_mblock {mblock},
-        m_eps {eps},
-        j_min {static_cast<index_t>(m_mblock.i2_min())} {}
+      : m_pgen { pgen },
+        m_mblock { mblock },
+        m_eps { eps },
+        j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
 
     Inline void operator()(index_t, index_t) const;
   };
 
   template <>
   Inline void initFieldsFromVectorPotential<Dim2>::operator()(index_t i, index_t j) const {
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
+    real_t        i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+    real_t        j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
     coord_t<Dim2> x0m, x0p;
 
-    real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
-    real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
-    real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
-    real_t inv_sqrt_detH_iPjP {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_ + HALF})};
-    real_t sqrt_detH_ij {m_mblock.metric.sqrt_det_h({i_, j_})};
-    real_t sqrt_detH_ijP {m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
-    real_t alpha_ij {m_mblock.metric.alpha({i_, j_})};
-    real_t alpha_ijP {m_mblock.metric.alpha({i_, j_ + HALF})};
-    real_t alpha_iPj {m_mblock.metric.alpha({i_ + HALF, j_})};
-    real_t beta_ij {m_mblock.metric.beta1u({i_, j_})};
-    real_t beta_ijP {m_mblock.metric.beta1u({i_, j_ + HALF})};
-    real_t h_11_inv_iPj {m_mblock.metric.h_11_inv({i_ + HALF, j_})};
-    real_t h_13_inv_iPj {m_mblock.metric.h_13_inv({i_ + HALF, j_})};
-    real_t h_22_inv_ijP {m_mblock.metric.h_22_inv({i_, j_ + HALF})};
-    real_t h_33_inv_ij {m_mblock.metric.h_33_inv({i_, j_})};
-    real_t h_13_inv_ij {m_mblock.metric.h_13_inv({i_, j_})};
+    real_t        inv_sqrt_detH_ij { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ }) };
+    real_t        inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
+    real_t        inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
+    real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ + HALF }) };
+    real_t sqrt_detH_ij { m_mblock.metric.sqrt_det_h({ i_, j_ }) };
+    real_t sqrt_detH_ijP { m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
+    real_t alpha_ij { m_mblock.metric.alpha({ i_, j_ }) };
+    real_t alpha_ijP { m_mblock.metric.alpha({ i_, j_ + HALF }) };
+    real_t alpha_iPj { m_mblock.metric.alpha({ i_ + HALF, j_ }) };
+    real_t beta_ij { m_mblock.metric.beta1u({ i_, j_ }) };
+    real_t beta_ijP { m_mblock.metric.beta1u({ i_, j_ + HALF }) };
+    real_t h_11_inv_iPj { m_mblock.metric.h_11_inv({ i_ + HALF, j_ }) };
+    real_t h_13_inv_iPj { m_mblock.metric.h_13_inv({ i_ + HALF, j_ }) };
+    real_t h_22_inv_ijP { m_mblock.metric.h_22_inv({ i_, j_ + HALF }) };
+    real_t h_33_inv_ij { m_mblock.metric.h_33_inv({ i_, j_ }) };
+    real_t h_13_inv_ij { m_mblock.metric.h_13_inv({ i_, j_ }) };
 
     x0m[0] = i_;
     x0m[1] = j_ + HALF - HALF * m_eps;
     x0p[0] = i_;
     x0p[1] = j_ + HALF + HALF * m_eps;
 
-    real_t E2d {(m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps};
-    real_t B1u {(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ijP
-                / m_eps};
-    real_t B3_aux {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_ijP
-                   / m_eps};
+    real_t E2d { (m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps };
+    real_t B1u { (m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_ijP
+                 / m_eps };
+    real_t B3_aux { -(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_ijP
+                    / m_eps };
 
     x0m[0] = i_ + HALF - HALF * m_eps;
     x0m[1] = j_;
@@ -84,15 +83,15 @@ namespace ntt {
     } else {
       B2u = -(m_pgen.A3(m_mblock, x0p) - m_pgen.A3(m_mblock, x0m)) * inv_sqrt_detH_iPj / m_eps;
     }
-    real_t E1d {(m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps};
+    real_t E1d { (m_pgen.A0(m_mblock, x0p) - m_pgen.A0(m_mblock, x0m)) / m_eps };
 
     x0m[0] = i_ + HALF;
     x0m[1] = j_ + HALF - HALF * m_eps;
     x0p[0] = i_ + HALF;
     x0p[1] = j_ + HALF + HALF * m_eps;
 
-    real_t B3u {-(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_iPjP
-                / m_eps};
+    real_t B3u { -(m_pgen.A1(m_mblock, x0p) - m_pgen.A1(m_mblock, x0m)) * inv_sqrt_detH_iPjP
+                 / m_eps };
 
     x0m[0] = i_ - HALF * m_eps;
     x0m[1] = j_;
@@ -108,13 +107,13 @@ namespace ntt {
     }
 
     // Compute covariant D
-    real_t D1d {E1d / alpha_iPj};
-    real_t D2d {E2d / alpha_ijP + sqrt_detH_ijP * beta_ijP * B3_aux / alpha_ijP};
-    real_t D3d {-sqrt_detH_ij * beta_ij * B2_aux / alpha_ij};
+    real_t D1d { E1d / alpha_iPj };
+    real_t D2d { E2d / alpha_ijP + sqrt_detH_ijP * beta_ijP * B3_aux / alpha_ijP };
+    real_t D3d { -sqrt_detH_ij * beta_ij * B2_aux / alpha_ij };
 
     // Covariant D to contravariant D
-    real_t D1u {h_11_inv_iPj * D1d + h_13_inv_iPj * D3d};
-    real_t D2u {h_22_inv_ijP * D2d};
+    real_t D1u { h_11_inv_iPj * D1d + h_13_inv_iPj * D3d };
+    real_t D2u { h_22_inv_ijP * D2d };
     real_t D3u;
 
     // h33_inv is singular at theta = 0.
@@ -131,7 +130,7 @@ namespace ntt {
     m_mblock.em(i, j, em::ex3) = D3u;
   }
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif
 

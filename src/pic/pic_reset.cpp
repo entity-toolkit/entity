@@ -1,7 +1,8 @@
-#include "wrapper.h"
-#include "simulation.h"
-#include "pic.h"
 #include "pic_reset.hpp"
+
+#include "pic.h"
+#include "simulation.h"
+#include "wrapper.h"
 
 namespace ntt {
   /**
@@ -43,8 +44,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::ResetFields() {
     auto& mblock = this->meshblock;
-    Kokkos::parallel_for(
-      "reset_fields", mblock.rangeAllCells(), ResetFields_kernel<D>(mblock));
+    Kokkos::parallel_for("reset_fields", mblock.rangeAllCells(), ResetFields_kernel<D>(mblock));
   }
 
   /**
@@ -57,7 +57,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "reset_currents", mblock.rangeAllCells(), ResetCurrents_kernel<D>(mblock));
   }
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::ResetParticles();
 template void ntt::PIC<ntt::Dim2>::ResetParticles();

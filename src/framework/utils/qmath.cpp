@@ -1,8 +1,8 @@
 #include "qmath.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cfloat>
+#include <cmath>
 
 namespace ntt {
 
@@ -21,8 +21,9 @@ namespace ntt {
   }
 
   bool AlmostEqual(double a, double b, double epsilon) {
-    double diff {std::abs(a - b)};
-    if (diff <= 1e-12) return true;
+    double diff { std::abs(a - b) };
+    if (diff <= 1e-12)
+      return true;
     a = std::abs(a);
     b = std::abs(b);
     if (a == b) {
@@ -36,4 +37,4 @@ namespace ntt {
       return (diff <= (std::max(a, b) * epsilon));
     }
   }
-} // namespace ntt
+}    // namespace ntt

@@ -1,12 +1,12 @@
 #ifndef FRAMEWORK_METRICS_QSPHERICAL_H
 #define FRAMEWORK_METRICS_QSPHERICAL_H
 
-#include "wrapper.h"
 #include "metric_base.h"
+#include "wrapper.h"
 
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 namespace ntt {
   /**
@@ -27,12 +27,12 @@ namespace ntt {
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
-      : MetricBase<D> {"qspherical", resolution, extent},
-        r0 {params[0]},
-        h {params[1]},
-        chi_min {math::log(this->x1_min - r0)},
-        eta_min {ZERO},
-        phi_min {ZERO},
+      : MetricBase<D> { "qspherical", resolution, extent },
+        r0 { params[0] },
+        h { params[1] },
+        chi_min { math::log(this->x1_min - r0) },
+        eta_min { ZERO },
+        phi_min { ZERO },
         dchi((math::log(this->x1_max - r0) - chi_min) / this->nx1),
         deta(constant::PI / this->nx2),
         dphi(constant::TWO_PI / this->nx3),
@@ -52,15 +52,17 @@ namespace ntt {
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dim2) {
-        real_t min_dx {-1.0};
-        for (int i {0}; i < this->nx1; ++i) {
-          for (int j {0}; j < this->nx2; ++j) {
-            real_t i_ {(real_t)(i) + HALF};
-            real_t j_ {(real_t)(j) + HALF};
-            real_t dx1_ {this->h_11({i_, j_})};
-            real_t dx2_ {this->h_22({i_, j_})};
+        real_t min_dx { -1.0 };
+        for (int i { 0 }; i < this->nx1; ++i) {
+          for (int j { 0 }; j < this->nx2; ++j) {
+            real_t i_ { (real_t)(i) + HALF };
+            real_t j_ { (real_t)(j) + HALF };
+            real_t dx1_ { this->h_11({ i_, j_ }) };
+            real_t dx2_ { this->h_22({ i_, j_ }) };
             real_t dx = 1.0 / math::sqrt(1.0 / dx1_ + 1.0 / dx2_);
-            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
+            if ((min_dx >= dx) || (min_dx < 0.0)) {
+              min_dx = dx;
+            }
           }
         }
         return min_dx;
@@ -98,20 +100,20 @@ namespace ntt {
       using namespace constant;
       // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y -
       // 108 h y^2))])^(1/3)
-      double R {
-        math::pow(-9.0 * SQR(h) * (PI - 2.0 * theta)
-                    + SQRT3
-                        * math::sqrt((CUBE(h)
-                                      * ((4.0 - h) * SQR(PI + h * TWO_PI)
-                                         - 108.0 * h * PI * theta + 108.0 * h * SQR(theta)))),
-                  1.0 / 3.0)};
+      double           R { math::pow(
+        -9.0 * SQR(h) * (PI - 2.0 * theta)
+          + SQRT3
+              * math::sqrt((CUBE(h)
+                            * ((4.0 - h) * SQR(PI + h * TWO_PI) - 108.0 * h * PI * theta
+                               + 108.0 * h * SQR(theta)))),
+        1.0 / 3.0) };
       // eta = Pi^(2/3)(6 Pi^(1/3) + 2 2^(1/3)(h-1)(3Pi)^(2/3)/R + 2^(2/3) 3^(1/3) R / h)/12
-      constexpr double PI_TO_TWO_THIRD {2.14502939711102560008};
-      constexpr double PI_TO_ONE_THIRD {1.46459188756152326302};
-      constexpr double TWO_TO_TWO_THIRD {1.58740105196819947475};
-      constexpr double THREE_TO_ONE_THIRD {1.442249570307408382321};
-      constexpr double TWO_TO_ONE_THIRD {1.2599210498948731647672};
-      constexpr double THREE_PI_TO_TWO_THIRD {4.46184094890142313715794};
+      constexpr double PI_TO_TWO_THIRD { 2.14502939711102560008 };
+      constexpr double PI_TO_ONE_THIRD { 1.46459188756152326302 };
+      constexpr double TWO_TO_TWO_THIRD { 1.58740105196819947475 };
+      constexpr double THREE_TO_ONE_THIRD { 1.442249570307408382321 };
+      constexpr double TWO_TO_ONE_THIRD { 1.2599210498948731647672 };
+      constexpr double THREE_PI_TO_TWO_THIRD { 4.46184094890142313715794 };
       return static_cast<real_t>(
         PI_TO_TWO_THIRD
         * (6.0 * PI_TO_ONE_THIRD
@@ -128,7 +130,7 @@ namespace ntt {
      */
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi {x[0] * dchi + chi_min};
+        real_t chi { x[0] * dchi + chi_min };
         return dchi_sqr * math::exp(2.0 * chi);
       } else {
         NTTError("1D qspherical not available");
@@ -143,10 +145,10 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
-        real_t dtheta_deta_ {dtheta_deta(eta)};
+        real_t chi { x[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { x[1] * deta + eta_min };
+        real_t dtheta_deta_ { dtheta_deta(eta) };
         return deta_sqr * SQR(dtheta_deta_) * r * r;
       } else {
         NTTError("1D qspherical not available");
@@ -161,11 +163,11 @@ namespace ntt {
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t sin_theta {math::sin(theta)};
+        real_t chi { x[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { x[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t sin_theta { math::sin(theta) };
         return r * r * sin_theta * sin_theta;
       } else {
         NTTError("1D qspherical not available");
@@ -180,12 +182,12 @@ namespace ntt {
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t eta {x[1] * deta + eta_min};
-        real_t theta {eta2theta(eta)};
-        real_t sin_theta {math::sin(theta)};
-        real_t dtheta_deta_ {dtheta_deta(eta)};
+        real_t chi { x[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t eta { x[1] * deta + eta_min };
+        real_t theta { eta2theta(eta) };
+        real_t sin_theta { math::sin(theta) };
+        real_t dtheta_deta_ { dtheta_deta(eta) };
         return dchi * deta * math::exp(chi) * r * r * sin_theta * dtheta_deta_;
       } else {
         NTTError("1D qspherical not available");
@@ -200,10 +202,10 @@ namespace ntt {
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi {x[0] * dchi + chi_min};
-        real_t r {r0 + math::exp(chi)};
-        real_t del_eta {x[1] * deta + eta_min};
-        real_t del_theta {eta2theta(del_eta)};
+        real_t chi { x[0] * dchi + chi_min };
+        real_t r { r0 + math::exp(chi) };
+        real_t del_eta { x[1] * deta + eta_min };
+        real_t del_theta { eta2theta(del_eta) };
         return dchi * math::exp(chi) * r * r * (ONE - math::cos(del_theta));
       } else {
         NTTError("1D qspherical not available");
@@ -269,14 +271,14 @@ namespace ntt {
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dim2) {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t eta {xi[1] * deta + eta_min};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t eta { xi[1] * deta + eta_min };
         x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
       } else if constexpr (D == Dim3) {
-        real_t chi {xi[0] * dchi + chi_min};
-        real_t eta {xi[1] * deta + eta_min};
-        real_t phi {xi[2] * dphi + phi_min};
+        real_t chi { xi[0] * dchi + chi_min };
+        real_t eta { xi[1] * deta + eta_min };
+        real_t phi { xi[2] * dphi + phi_min };
         x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
         x[2] = phi;
@@ -291,20 +293,20 @@ namespace ntt {
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dim2) {
-        real_t chi {math::log(x[0] - r0)};
-        real_t eta {theta2eta(x[1])};
+        real_t chi { math::log(x[0] - r0) };
+        real_t eta { theta2eta(x[1]) };
         xi[0] = (chi - chi_min) / dchi;
         xi[1] = (eta - eta_min) / deta;
       } else if constexpr (D == Dim3) {
-        real_t chi {math::log(x[0] - r0)};
-        real_t eta {theta2eta(x[1])};
-        real_t phi {x[2]};
+        real_t chi { math::log(x[0] - r0) };
+        real_t eta { theta2eta(x[1]) };
+        real_t phi { x[2] };
         xi[0] = (chi - chi_min) / dchi;
         xi[1] = (eta - eta_min) / deta;
         xi[2] = (phi - phi_min) / dphi;
       }
     }
   };
-} // namespace ntt
+}    // namespace ntt
 
 #endif

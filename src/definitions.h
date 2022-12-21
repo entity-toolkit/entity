@@ -3,9 +3,10 @@
 
 #include <plog/Log.h>
 
-#include <iomanip>
 #include <cstdint>
+#include <iomanip>
 #include <string>
+
 #include <string_view>
 
 /* -------------------------------------------------------------------------- */
@@ -63,8 +64,8 @@ namespace ntt {
     inline constexpr double        SQRT2      = 1.41421356237309504880;
     inline constexpr double        INV_SQRT2  = 0.70710678118654752440;
     inline constexpr double        SQRT3      = 1.73205080756887729352;
-  } // namespace constant
-} // namespace ntt
+  }    // namespace constant
+}    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
 /*                           Enums and type aliases                           */
@@ -98,10 +99,10 @@ namespace ntt {
 
   // ND vector alias
   template <Dimension D>
-  using vec_t = tuple_t<real_t, D>;
+  using vec_t   = tuple_t<real_t, D>;
 
   using index_t = const std::size_t;
-} // namespace ntt
+}    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
 /*                                  Defaults                                  */
@@ -109,24 +110,24 @@ namespace ntt {
 
 namespace ntt {
   namespace defaults {
-    constexpr std::string_view input_filename = "input";
-    constexpr std::string_view output_path    = "output";
+    constexpr std::string_view input_filename  = "input";
+    constexpr std::string_view output_path     = "output";
 
-    const std::string title     = "PIC_Sim";
-    const int         n_species = 0;
-    const std::string pusher    = "Boris";
-    const std::string metric    = "minkowski";
+    const std::string          title           = "PIC_Sim";
+    const int                  n_species       = 0;
+    const std::string          pusher          = "Boris";
+    const std::string          metric          = "minkowski";
 
-    const real_t runtime    = 1e10;
-    const real_t correction = 1.0;
-    const real_t cfl        = 0.95;
+    const real_t               runtime         = 1e10;
+    const real_t               correction      = 1.0;
+    const real_t               cfl             = 0.95;
 
-    const unsigned short current_filters = 0;
+    const unsigned short       current_filters = 0;
 
-    const std::string output_format   = "disabled";
-    const int         output_interval = 1;
-  } // namespace defaults
-} // namespace ntt
+    const std::string          output_format   = "disabled";
+    const int                  output_interval = 1;
+  }    // namespace defaults
+}    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
 /*                                Log formatter                               */
@@ -135,7 +136,9 @@ namespace ntt {
 namespace plog {
   class NTTFormatter {
   public:
-    static auto header() -> util::nstring { return util::nstring(); }
+    static auto header() -> util::nstring {
+      return util::nstring();
+    }
     static auto format(const Record& record) -> util::nstring {
       util::nostringstream ss;
       if (record.getSeverity() == plog::debug
@@ -149,6 +152,6 @@ namespace plog {
       return ss.str();
     }
   };
-} // namespace plog
+}    // namespace plog
 
 #endif

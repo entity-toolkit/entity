@@ -1,9 +1,10 @@
 #ifndef IO_CARGS_H
 #define IO_CARGS_H
 
-#include <string_view>
 #include <string>
 #include <vector>
+
+#include <string_view>
 
 namespace ntt {
   class CommandLineArguments {
@@ -18,6 +19,6 @@ namespace ntt {
     [[nodiscard]] auto getArgument(std::string_view key) -> std::string_view;
     auto               isSpecified(std::string_view key) -> bool;
   };
-} // namespace ntt
+}    // namespace ntt
 
 #endif

@@ -1,13 +1,14 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
-#include "wrapper.h"
+#include "field_macros.h"
 #include "input.h"
+#include "meshblock.h"
+#include "sim_params.h"
+#include "wrapper.h"
+
 #include "archetypes.hpp"
 #include "injector.hpp"
-#include "sim_params.h"
-#include "meshblock.h"
-#include "field_macros.h"
 
 namespace ntt {
 
@@ -22,7 +23,7 @@ namespace ntt {
 
   private:
     real_t m_cs_width;
-  }; // struct ProblemGenerator
+  };    // struct ProblemGenerator
 
   Inline void reconnectionField(const coord_t<Dim2>& x_ph,
                                 vec_t<Dim3>&         e_out,
@@ -34,9 +35,8 @@ namespace ntt {
   }
 
   template <>
-  inline void
-  ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&   params,
-                                                  Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, TypePIC>::UserInitFields(
+    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
     real_t Xmin     = mblock.metric.x1_min;
     real_t Xmax     = mblock.metric.x1_max;
     real_t sX       = Xmax - Xmin;
@@ -50,11 +50,10 @@ namespace ntt {
   }
 
   template <>
-  inline void
-  ProblemGenerator<Dim2, TypePIC>::UserInitParticles(const SimulationParams&   params,
-                                                     Meshblock<Dim2, TypePIC>& mblock) {
-    InjectUniform<Dim2, TypePIC>(params, mblock, {1, 2}, params.ppc0() * 0.5);
+  inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
+    InjectUniform<Dim2, TypePIC>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
   }
-} // namespace ntt
+}    // namespace ntt
 
 #endif

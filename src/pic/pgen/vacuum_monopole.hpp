@@ -1,12 +1,13 @@
 #ifndef PROBLEM_GENERATOR_H
 #define PROBLEM_GENERATOR_H
 
-#include "wrapper.h"
-#include "input.h"
-#include "archetypes.hpp"
-#include "sim_params.h"
-#include "meshblock.h"
 #include "field_macros.h"
+#include "input.h"
+#include "meshblock.h"
+#include "sim_params.h"
+#include "wrapper.h"
+
+#include "archetypes.hpp"
 
 namespace ntt {
 
@@ -17,9 +18,10 @@ namespace ntt {
       omega_max   = readFromInput<real_t>(params.inputdata(), "problem", "omega_max");
     }
 
-    inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override;
-    inline void
-    UserDriveFields(const real_t&, const SimulationParams&, Meshblock<D, S>&) override;
+    inline void   UserInitFields(const SimulationParams&, Meshblock<D, S>&) override;
+    inline void   UserDriveFields(const real_t&,
+                                  const SimulationParams&,
+                                  Meshblock<D, S>&) override;
 
     inline real_t UserTargetField(const Meshblock<D, S>&,
                                   const em&,
@@ -37,8 +39,8 @@ namespace ntt {
                                                         const real_t&          time,
                                                         const coord_t<D>&      xi) const {
     if (comp == em::bx1) {
-      coord_t<D> rth_ {ZERO};
-      real_t     r_min {mblock.metric.x1_min};
+      coord_t<D> rth_ { ZERO };
+      real_t     r_min { mblock.metric.x1_min };
       mblock.metric.x_Code2Sph(xi, rth_);
       return ONE * SQR(r_min / rth_[0]);
     } else {
@@ -64,9 +66,8 @@ namespace ntt {
   }
 
   template <>
-  inline void
-  ProblemGenerator<Dim2, TypePIC>::UserInitFields(const SimulationParams&,
-                                                  Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, TypePIC>::UserInitFields(
+    const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
     auto r_min = mblock.metric.x1_min;
     Kokkos::parallel_for(
       "UserInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -86,8 +87,8 @@ namespace ntt {
     }
     Kokkos::parallel_for(
       "UserBcFlds_rmin",
-      CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()},
-                              {mblock.i1_min() + 1, mblock.i2_max()}),
+      CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() },
+                              { mblock.i1_min() + 1, mblock.i2_max() }),
       Lambda(index_t i, index_t j) {
         // set_em_fields_2d(mblock, i, j, surfaceRotationField, r_min, omega);
         set_ex2_2d(mblock, i, j, surfaceRotationField, r_min, omega);
@@ -97,8 +98,8 @@ namespace ntt {
 
     Kokkos::parallel_for(
       "UserBcFlds_rmax",
-      CreateRangePolicy<Dim2>({mblock.i1_max(), mblock.i2_min()},
-                              {mblock.i1_max() + 1, mblock.i2_max()}),
+      CreateRangePolicy<Dim2>({ mblock.i1_max(), mblock.i2_min() },
+                              { mblock.i1_max() + 1, mblock.i2_max() }),
       Lambda(index_t i, index_t j) {
         mblock.em(i, j, em::ex3) = 0.0;
         mblock.em(i, j, em::ex2) = 0.0;
@@ -124,6 +125,6 @@ namespace ntt {
                                                                const SimulationParams&,
                                                                Meshblock<Dim3, TypePIC>&) {}
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

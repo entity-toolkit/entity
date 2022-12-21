@@ -1,8 +1,8 @@
 #ifndef PIC_CURRENTS_FILTER_H
 #define PIC_CURRENTS_FILTER_H
 
-#include "wrapper.h"
 #include "pic.h"
+#include "wrapper.h"
 
 namespace ntt {
   /**
@@ -19,7 +19,7 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock object.
      */
-    CurrentsFilter_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock {mblock} {
+    CurrentsFilter_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {
       for (short d = 0; d < (short)D; ++d) {
         m_size[d] = m_mblock.Ni(d);
       }
@@ -48,7 +48,7 @@ namespace ntt {
 #ifdef MINKOWSKI_METRIC
   template <>
   Inline void CurrentsFilter_kernel<Dim1>::operator()(index_t i) const {
-    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+    for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
       m_mblock.cur(i, comp)
         = INV_2 * m_mblock.buff(i, comp)
           + INV_4 * (m_mblock.buff(i - 1, comp) + m_mblock.buff(i + 1, comp));
@@ -57,7 +57,7 @@ namespace ntt {
 
   template <>
   Inline void CurrentsFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
-    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+    for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
       m_mblock.cur(i, j, comp)
         = INV_4 * m_mblock.buff(i, j, comp)
           + INV_8
@@ -71,7 +71,7 @@ namespace ntt {
 
   template <>
   Inline void CurrentsFilter_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+    for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
       m_mblock.cur(i, j, k, comp)
         = INV_8 * m_mblock.buff(i, j, k, comp)
           + INV_16
@@ -116,58 +116,58 @@ namespace ntt {
     if (j == j_min) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijp1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3) = INV_2 * cur_ij + INV_4 * cur_ijp1;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j + 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j + 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx2) = INV_4 * cur_ij + INV_4 * cur_ijp1;
     } else if (j == j_min_p1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
     } else if (j == j_max_m1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx2) = INV_4 * cur_ij + INV_4 * cur_ijm1;
     } else if (j == j_max) {
@@ -192,15 +192,15 @@ namespace ntt {
     if (j == j_min) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_2 * cur_ijp1;
       // FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij;
       // FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
@@ -215,13 +215,13 @@ namespace ntt {
         = INV_2 * m_mblock.buff(i, j, cur::jx1) + INV_2 * m_mblock.buff(i, j - 1, cur::jx1);
 
       // ... filter in r
-      cur_ij = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij;
     }
 #  endif
     else {
-      for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+      for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
         m_mblock.cur(i, j, comp)
           = INV_4 * m_mblock.buff(i, j, comp)
             + INV_8
@@ -241,6 +241,6 @@ namespace ntt {
 
 #endif
 
-} // namespace ntt
+}    // namespace ntt
 
-#endif // PIC_CURRENTS_FILTER_H
+#endif    // PIC_CURRENTS_FILTER_H

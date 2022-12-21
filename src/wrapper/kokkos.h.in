@@ -13,11 +13,12 @@
 #include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
 
-#include <type_traits>
-#include <vector>
 #include <cstddef>
-#include <string>
 #include <iomanip>
+#include <string>
+#include <vector>
+
+#include <type_traits>
 
 // clang-format off
 #define AccelExeSpace @ACC_EXE_SPACE@
@@ -54,8 +55,8 @@ namespace ntt {
     typename std::conditional<
       D == Dim2,
       array_t<real_t** [N]>,
-      typename std::conditional<D == Dim3, array_t<real_t*** [N]>, std::nullptr_t>::type>::
-      type>::type;
+      typename std::conditional<D == Dim3, array_t<real_t*** [N]>, std::nullptr_t>::type>::type>::
+    type;
 
   // D x N dimensional array (host memspace) for storing fields on ND hypercube
   template <Dimension D, int N>
@@ -133,6 +134,6 @@ namespace ntt {
    */
   void WaitAndSynchronize();
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

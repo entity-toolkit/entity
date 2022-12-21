@@ -1,5 +1,5 @@
-#include "wrapper.h"
 #include "pic.h"
+#include "wrapper.h"
 
 #include <plog/Log.h>
 
@@ -17,9 +17,9 @@ namespace ntt {
 #ifdef MINKOWSKI_METRIC
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
-    const real_t coeff {fraction * params.correction() * mblock.timestep()};
+    const real_t coeff { fraction * params.correction() * mblock.timestep() };
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1};
+    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim1>(mblock, coeff / dx));
 #else
@@ -33,10 +33,10 @@ namespace ntt {
   void PIC<Dim2>::Faraday(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
-    const real_t coeff {fraction * params.correction() * mblock.timestep()};
+    const real_t coeff { fraction * params.correction() * mblock.timestep() };
 #ifdef MINKOWSKI_METRIC
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1};
+    const auto dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff / dx));
 #else
@@ -51,9 +51,9 @@ namespace ntt {
 #ifdef MINKOWSKI_METRIC
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
-    const real_t coeff {fraction * params.correction() * mblock.timestep()};
+    const real_t coeff { fraction * params.correction() * mblock.timestep() };
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1};
+    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim3>(mblock, coeff / dx));
 #else
@@ -63,4 +63,4 @@ namespace ntt {
     PLOGD << "... ... faraday substep finished";
   }
 
-} // namespace ntt
+}    // namespace ntt
