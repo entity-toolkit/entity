@@ -42,7 +42,8 @@ public:
                    const std::vector<std::string>&       fields_to_plot,
                    const int&                            fields_stride)
 #ifdef PIC_SIMTYPE
-    : nttiny::SimulationAPI<real_t, 2> {sim.meshblock.metric.label == "minkowski"
+    : nttiny::SimulationAPI<real_t, 2> {sim.params()->title(), 
+                                        sim.meshblock.metric.label == "minkowski"
                                           ? nttiny::Coord::Cartesian
                                           : nttiny::Coord::Spherical,
                                         {sim.meshblock.Ni1() / fields_stride,

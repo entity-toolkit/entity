@@ -25,20 +25,31 @@ namespace ntt {
   template <Dimension D, SimulationType S>
   struct RadialDist : public SpatialDistribution<D, S> {
     explicit RadialDist(const SimulationParams& params, Meshblock<D, S>& mblock)
-      : SpatialDistribution<D, S>(params, mblock) {}
+      : SpatialDistribution<D, S>(params, mblock) {
+      inj_rmax = readFromInput<real_t>(params.inputdata(), "problem", "inj_rmax", 1.1);
+    }
     Inline real_t operator()(const coord_t<D>&) const;
+
+  private:
+    real_t inj_rmax;
   };
 
   template <Dimension D, SimulationType S>
   struct EdotBCrit : public InjectionCriterion<D, S> {
     explicit EdotBCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
-      : InjectionCriterion<D, S>(params, mblock) {}
+      : InjectionCriterion<D, S>(params, mblock) {
+      inj_maxEdotB
+        = readFromInput<real_t>(params.inputdata(), "problem", "inj_maxEdotB", 0.01);
+    }
     Inline bool operator()(const coord_t<D>& xi) const;
+
+  private:
+    real_t inj_maxEdotB;
   };
 
   template <>
   Inline real_t RadialDist<Dim2, TypePIC>::operator()(const coord_t<Dim2>& x_ph) const {
-    return (x_ph[0] <= 1.1) ? ONE : ZERO;
+    return (x_ph[0] <= inj_rmax) ? ONE : ZERO;
   }
 
   template <>
@@ -58,22 +69,19 @@ namespace ntt {
                                       b_hat);
     real_t Bsqr  = SQR(b_hat[0]) + SQR(b_hat[1]) + SQR(b_hat[2]);
     real_t EdotB = e_hat[0] * b_hat[0] + e_hat[1] * b_hat[1] + e_hat[2] * b_hat[2];
-    return ABS(EdotB / Bsqr) > 0.01;
+    return ABS(EdotB / Bsqr) > inj_maxEdotB;
   }
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params) {
-      spinup_time = readFromInput<real_t>(params.inputdata(), "problem", "spinup_time");
-      omega_max   = readFromInput<real_t>(params.inputdata(), "problem", "omega_max");
+      spinup_time  = readFromInput<real_t>(params.inputdata(), "problem", "spinup_time");
+      omega_max    = readFromInput<real_t>(params.inputdata(), "problem", "omega_max");
+      inj_fraction = readFromInput<real_t>(params.inputdata(), "problem", "inj_fraction");
     }
 
     inline void UserInitParticles(const SimulationParams& params,
-                                  Meshblock<D, S>&        mblock) override {
-      // auto nppc_per_spec = (real_t)(params.ppc0()) * 0.1;
-      // InjectInVolume<D, S, RadialKick, RadialDist, EdotBCrit>(
-      //   params, mblock, {1, 2}, nppc_per_spec);
-    }
+                                  Meshblock<D, S>&        mblock) override {}
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override;
     inline void UserDriveFields(const real_t&,
                                 const SimulationParams&,
@@ -81,7 +89,7 @@ namespace ntt {
     inline void UserDriveParticles(const real_t&           time,
                                    const SimulationParams& params,
                                    Meshblock<D, S>&        mblock) override {
-      auto nppc_per_spec = (real_t)(params.ppc0()) * 1;
+      auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction;
       InjectInVolume<D, S, ColdDist, RadialDist, NoCriterion>(
         params, mblock, { 1, 2 }, nppc_per_spec, {}, time);
     }
@@ -92,8 +100,7 @@ namespace ntt {
                                   const coord_t<D>&) const override;
 
   private:
-    real_t spinup_time;
-    real_t omega_max;
+    real_t spinup_time, omega_max, inj_fraction;
   };
 
   template <Dimension D, SimulationType S>
@@ -153,7 +160,6 @@ namespace ntt {
       CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() },
                               { mblock.i1_min() + 1, mblock.i2_max() }),
       Lambda(index_t i, index_t j) {
-        // set_em_fields_2d(mblock, i, j, surfaceRotationField, r_min, omega);
         set_ex2_2d(mblock, i, j, surfaceRotationField, r_min, omega);
         set_ex3_2d(mblock, i, j, surfaceRotationField, r_min, omega);
         set_bx1_2d(mblock, i, j, surfaceRotationField, r_min, omega);
@@ -169,6 +175,10 @@ namespace ntt {
         mblock.em(i, j, em::bx1) = 0.0;
       });
   }
+
+  /**
+   *  1D and 3D dummy functions
+   */
 
   template <>
   Inline real_t RadialDist<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {

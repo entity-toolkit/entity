@@ -160,7 +160,7 @@ namespace ntt {
   template <>
   Inline void CurrentsAmperePoles_kernel<Dim2>::operator()(index_t i) const {
     index_t j_min { N_GHOSTS };
-    index_t j_max { m_nj + N_GHOSTS - 1 };
+    index_t j_max { m_nj + N_GHOSTS };
 
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
@@ -169,7 +169,7 @@ namespace ntt {
     // theta = 0
     EX1(i, j_min) += m_coeff * JX1(i, j_min) * HALF * inv_polar_area_iPj;
     // theta = pi
-    EX1(i, j_max + 1) += m_coeff * JX1(i, j_max + 1) * HALF * inv_polar_area_iPj;
+    EX1(i, j_max) += m_coeff * JX1(i, j_max) * HALF * inv_polar_area_iPj;
 
     // j = jmin + 1/2
     EX2(i, j_min) += m_coeff * JX2(i, j_min) * inv_sqrt_detH_ijP;
