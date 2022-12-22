@@ -122,7 +122,7 @@ namespace ntt {
         WaitAndSynchronize();
         ComputeDensity();
         this->SynchronizeHostDevice();
-        ConvertFieldsToHat_h();
+        InterpolateAndConvertFieldsToHat();
         wrtr.WriteFields(mblock, this->m_time, this->m_tstep);
       }
     }

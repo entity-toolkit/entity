@@ -4,9 +4,10 @@
 #include "wrapper.h"
 
 namespace ntt {
+  using resolution_t = std::vector<unsigned int>;
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
   enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
-  enum fld { dens = 0 };
+  enum fld { dens = 0, x1 = 0, x2 = 1, x3 = 2 };
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.
@@ -35,6 +36,15 @@ namespace ntt {
      */
     ndfield_t<D, 6>        em;
     ndfield_mirror_t<D, 6> em_h;
+    /**
+     * Backup fields used for intermediate operations.
+     *
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
+     * component.
+     * @note Address : bckp(i, j, k, ***).
+     */
+    ndfield_t<D, 6>        bckp;
+    ndfield_mirror_t<D, 6> bckp_h;
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
@@ -93,7 +103,7 @@ namespace ntt {
      * @brief Constructor for the fields container. Also sets the active cell sizes and ranges.
      * @param res resolution vector of size D (dimension).
      */
-    Fields(std::vector<unsigned int> res);
+    Fields(resolution_t res);
     ~Fields() = default;
 
     /**

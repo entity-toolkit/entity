@@ -17,33 +17,39 @@ namespace ntt {
   Fields<Dim1, TypePIC>::Fields(resolution_t res)
     : em { "EM", res[0] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS } {
+      buff { "J0", res[0] + 2 * N_GHOSTS },
+      bckp { "bckp", res[0] + 2 * N_GHOSTS } {
     PLOGD << "Allocated field arrays.";
     em_h   = Kokkos::create_mirror(em);
     cur_h  = Kokkos::create_mirror(cur);
     buff_h = Kokkos::create_mirror(buff);
+    bckp_h = Kokkos::create_mirror(bckp);
   }
 
   template <>
   Fields<Dim2, TypePIC>::Fields(resolution_t res)
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
+      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
+      bckp { "bckp", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
     PLOGD << "Allocated field arrays.";
     em_h   = Kokkos::create_mirror(em);
     cur_h  = Kokkos::create_mirror(cur);
     buff_h = Kokkos::create_mirror(buff);
+    bckp_h = Kokkos::create_mirror(bckp);
   }
 
   template <>
   Fields<Dim3, TypePIC>::Fields(resolution_t res)
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
+      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
+      bckp { "bckp", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
     PLOGD << "Allocated field arrays.";
     em_h   = Kokkos::create_mirror(em);
     cur_h  = Kokkos::create_mirror(cur);
     buff_h = Kokkos::create_mirror(buff);
+    bckp_h = Kokkos::create_mirror(bckp);
   }
 
   template <Dimension D, SimulationType S>
@@ -51,6 +57,7 @@ namespace ntt {
     Kokkos::deep_copy(em_h, em);
     Kokkos::deep_copy(cur_h, cur);
     Kokkos::deep_copy(buff_h, buff);
+    Kokkos::deep_copy(bckp_h, bckp);
 #  ifdef GRPIC_SIMTYPE
     Kokkos::deep_copy(aphi_h, aphi);
 #  endif

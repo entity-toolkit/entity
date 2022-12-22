@@ -87,14 +87,18 @@ public:
         m_sim.ComputeDensity(0);
       }
     }
+    m_sim.InterpolateAndConvertFieldsToHat();
     m_sim.SynchronizeHostDevice();
-    m_sim.ConvertFieldsToHat_h();
 #ifdef GRPIC_SIMTYPE
     Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
     // compute the vector potential
     m_sim.computeVectorPotential();
 #endif
-
+    // std::cout << std::setprecision(12) << "fields: up -- "
+    //           << Sim.meshblock.bckp_h(20, ngh, ntt::em::ex1) << " - "
+    //           << Sim.meshblock.bckp_h(20, ngh + 1, ntt::em::ex1) << " -- dwn -- ";
+    // std::cout << Sim.meshblock.bckp_h(20, nx2 - ngh - 1, ntt::em::ex1) << " - "
+    //           << Sim.meshblock.bckp_h(20, nx2 - ngh - 2, ntt::em::ex1) << "\n";
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
     Kokkos::parallel_for("setData",
@@ -127,11 +131,19 @@ public:
                                comp = ntt::em::bx2;
                              } else if (f == "Bz" || f == "Bphi") {
                                comp = ntt::em::bx3;
+                             } else if (f == "Jx" || f == "Jr") {
+                               comp = ntt::cur::jx1;
+                             } else if (f == "Jy" || f == "Jtheta") {
+                               comp = ntt::cur::jx2;
+                             } else if (f == "Jz" || f == "Jphi") {
+                               comp = ntt::cur::jx3;
                              } else if (f == "density") {
                                comp = ntt::fld::dens;
                              }
                              if (f.at(0) == 'E' || f.at(0) == 'B') {
-                               Fields.at(f)[idx] = Sim.meshblock.em_h(i, j, comp);
+                               Fields.at(f)[idx] = Sim.meshblock.bckp_h(i, j, comp);
+                             } else if (f.at(0) == 'J') {
+                               Fields.at(f)[idx] = Sim.meshblock.cur_h(i, j, comp);
                              } else {
                                Fields.at(f)[idx] = Sim.meshblock.buff_h(i, j, comp);
                              }

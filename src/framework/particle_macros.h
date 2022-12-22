@@ -2,7 +2,7 @@
 #define FRAMEWORK_PARTICLE_MACROS_H
 
 #define from_Xi_to_i(XI, I)                                                                   \
-  { I = static_cast<int>((XI) + N_GHOSTS) - N_GHOSTS; }
+  { I = static_cast<int>((XI)); }
 
 #define from_Xi_to_i_di(XI, I, DI)                                                            \
   {                                                                                           \
