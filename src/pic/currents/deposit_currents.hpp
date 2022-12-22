@@ -24,8 +24,7 @@ namespace ntt {
     Particles<D, TypePIC>   m_particles;
     scatter_ndfield_t<D, 3> m_scatter_cur;
     const real_t            m_charge, m_dt;
-    const std::size_t       m_i2max;
-    const real_t            m_sx2;
+    const real_t            m_xi2max;
 
   public:
     /**
@@ -46,8 +45,7 @@ namespace ntt {
         m_scatter_cur(scatter_cur),
         m_charge(charge),
         m_dt(dt),
-        m_i2max(m_mblock.i2_max()),
-        m_sx2((real_t)m_mblock.Ni2()) {}
+        m_xi2max((real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS)) {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -147,13 +145,11 @@ namespace ntt {
 #ifndef MINKOWSKI_METRIC
         if constexpr (D == Dim2) {
           if (i == 1) {
-            // const bool northern_pole  = (I_i < 0);
-            // const bool sourthern_pole = (I_i >= static_cast<int>(m_i2max));
-            const bool northern_pole  = (xp_i[i] < 0);
-            const bool sourthern_pole = (xp_i[i] >= m_sx2);
+            const bool northern_pole  = (I_i < 0);
+            const bool sourthern_pole = (I_i >= static_cast<int>(m_xi2max));
             if (northern_pole || sourthern_pole) {
-              I_i     = northern_pole ? 0 : m_i2max - 1;
-              xp_i[i] = northern_pole ? -xp_i[i] : (m_sx2 - (xp_i[i] - m_sx2));
+              I_i     = northern_pole ? 0 : m_xi2max - 1;
+              xp_i[i] = northern_pole ? -xp_i[i] : (TWO * m_xi2max - xp_i[i]);
             }
           }
         }

@@ -1,10 +1,10 @@
 [simulation]
-title   = "Monopole-7"
+title   = "Monopole-1"
 runtime = 0.1
 
 [domain]
-qsph_r0     = -100.0
-qsph_h      = 0.1
+qsph_r0     = 0.0
+qsph_h      = 0.25
 sph_rabsorb = 4.5
 resolution  = [256, 128]
 extent      = [1.0, 5.0]
@@ -16,7 +16,7 @@ correction      = 1.0
 current_filters = 0
 
 [units]
-ppc0       = 100.0
+ppc0       = 10.0
 larmor0    = 1e-4
 skindepth0 = 0.02
 
@@ -42,7 +42,7 @@ spinup_time  = 0.25
 omega_max    = 0.25
 inj_rmax     = 1.1
 inj_maxEdotB = 0
-inj_fraction = 1.0
+inj_fraction = 0.1
 
 [visualization]
 fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jtheta"]

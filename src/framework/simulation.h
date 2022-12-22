@@ -132,7 +132,7 @@ namespace ntt {
      * @brief Fields on the host to hatted basis.
      * Used for outputting/visualizing the fields.
      */
-    virtual void ConvertFieldsToHat_h() = 0;
+    virtual void InterpolateAndConvertFieldsToHat() = 0;
   };
 
 }    // namespace ntt

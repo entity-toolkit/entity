@@ -78,6 +78,7 @@ namespace ntt {
       spinup_time  = readFromInput<real_t>(params.inputdata(), "problem", "spinup_time");
       omega_max    = readFromInput<real_t>(params.inputdata(), "problem", "omega_max");
       inj_fraction = readFromInput<real_t>(params.inputdata(), "problem", "inj_fraction");
+      inj_rmax     = readFromInput<real_t>(params.inputdata(), "problem", "inj_rmax", 1.1);
     }
 
     inline void UserInitParticles(const SimulationParams& params,
@@ -93,6 +94,35 @@ namespace ntt {
       InjectInVolume<D, S, ColdDist, RadialDist, NoCriterion>(
         params, mblock, { 1, 2 }, nppc_per_spec, {}, time);
     }
+    // inline void UserDriveParticles(const real_t&           time,
+    //                                const SimulationParams& params,
+    //                                Meshblock<D, S>&        mblock) override {
+    //   auto nppc_per_spec  = (real_t)(params.ppc0()) * inj_fraction;
+    //   auto ncells         = (std::size_t)(mblock.Ni1() * mblock.Ni2() * mblock.Ni3());
+    //   auto npart_per_spec = (std::size_t)((double)(ncells * nppc_per_spec));
+    //   if constexpr (D == Dim2) {
+    //     auto  random_pool   = *(mblock.random_pool_ptr);
+    //     auto& sp1           = mblock.particles[0];
+    //     auto& sp2           = mblock.particles[1];
+    //     auto  npart_before1 = sp1.npart();
+    //     auto  npart_before2 = sp2.npart();
+    //     sp1.setNpart(npart_before1 + npart_per_spec);
+    //     sp2.setNpart(npart_before2 + npart_per_spec);
+    //     Kokkos::parallel_for(
+    //       "inject", CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }), Lambda(index_t p) {
+    //         typename RandomNumberPool_t::generator_type rand_gen = random_pool.get_state();
+    //         coord_t<Dim2>                               x { ZERO };
+    //         x[0] = rand_gen.frand(1.05, 1.1);
+    //         x[1] = rand_gen.frand(0.1, constant::PI - 0.1);
+    //         init_prtl_2d(mblock, sp1, p + npart_before1, x[0], x[1], 0.0, 0.0, 0.0);
+    //         init_prtl_2d(mblock, sp2, p + npart_before2, x[0], x[1], 0.0, 0.0, 0.0);
+    //         random_pool.free_state(rand_gen);
+    //       });
+    //   }
+    //   // InjectUniform<D, TypePIC, ColdDist>(
+    //   //   params, mblock, { 1, 2 }, nppc_per_spec, { 1.0, inj_rmax, 0.0, constant::PI },
+    //   //   time);
+    // }
 
     inline real_t UserTargetField(const Meshblock<D, S>&,
                                   const em&,
@@ -100,7 +130,7 @@ namespace ntt {
                                   const coord_t<D>&) const override;
 
   private:
-    real_t spinup_time, omega_max, inj_fraction;
+    real_t spinup_time, omega_max, inj_fraction, inj_rmax;
   };
 
   template <Dimension D, SimulationType S>

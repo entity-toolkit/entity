@@ -133,9 +133,9 @@ namespace ntt {
      */
     void ComputeDensity(const short& smooth = 2);
     /**
-     * @brief Convert a given field to the hatted basis on the host.
+     * @brief Interpolate fields to cell centers & convert to the hatted basis.
      */
-    void ConvertFieldsToHat_h() override;
+    void InterpolateAndConvertFieldsToHat() override;
   };
 
 }    // namespace ntt
