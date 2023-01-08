@@ -1,6 +1,8 @@
 #ifndef FRAMEWORK_UTILS_TIMER_H
 #define FRAMEWORK_UTILS_TIMER_H
 
+#include "wrapper.h"
+
 #include <chrono>
 #include <iostream>
 #include <string>
@@ -29,7 +31,8 @@ namespace ntt {
 
     class Timers {
     public:
-      Timers(std::initializer_list<std::string> names) {
+      Timers(std::initializer_list<std::string> names, const bool& blocking = false)
+        : m_blocking { blocking } {
         for (auto& name : names) {
           m_timers.insert({
             name, {std::chrono::system_clock::now(), 0.0}
@@ -41,6 +44,9 @@ namespace ntt {
         m_timers[name].first = std::chrono::system_clock::now();
       }
       void stop(const std::string& name) {
+        if (m_blocking) {
+          WaitAndSynchronize();
+        }
         auto end = std::chrono::system_clock::now();
         auto elapsed
           = std::chrono::duration_cast<std::chrono::microseconds>(end - m_timers[name].first)
@@ -117,6 +123,7 @@ namespace ntt {
 
     private:
       std::map<std::string, std::pair<timestamp, long double>> m_timers;
+      const bool                                               m_blocking;
     };
   }    // namespace timer
 }    // namespace ntt

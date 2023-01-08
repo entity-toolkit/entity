@@ -27,6 +27,8 @@ namespace ntt {
     switch (bc) {
     case BoundaryCondition::PERIODIC:
       return "Periodic";
+    case BoundaryCondition::ABSORB:
+      return "Absorbing";
     case BoundaryCondition::OPEN:
       return "Open";
     case BoundaryCondition::USER:
@@ -190,11 +192,11 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationType S>
-  void Simulation<D, S>::PrintDiagnostics() {
+  void Simulation<D, S>::PrintDiagnostics(std::ostream& os) {
     for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
       auto& species { meshblock.particles[i] };
-      std::cout << "species #" << i << ": " << species.npart() << " ("
-                << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
+      os << "species #" << i << ": " << species.npart() << " ("
+         << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
     }
   }
 

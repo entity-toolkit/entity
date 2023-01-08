@@ -93,12 +93,12 @@ namespace ntt {
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x1 radial coordinate along the axis (code units).
      * @returns Area at the pole.
      */
-    Inline auto polar_area(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t del_theta { x[1] * dtheta };
+    Inline auto polar_area(const real_t& x1) const -> real_t {
+      real_t r { x1 * dr + this->x1_min };
+      real_t del_theta { HALF * dtheta };
       return dr * r * r * (ONE - math::cos(del_theta));
     }
 

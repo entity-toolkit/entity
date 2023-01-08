@@ -38,17 +38,70 @@ namespace ntt {
     m_vars_i.emplace("step", m_io.DefineVariable<int>("step"));
     m_vars_r.emplace("time", m_io.DefineVariable<real_t>("time"));
 
+    m_io.DefineAttribute<std::string>("metric", mblock.metric.label);
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
       m_io.DefineAttribute<real_t>("x1_min", mblock.metric.x1_min);
       m_io.DefineAttribute<real_t>("x1_max", mblock.metric.x1_max);
+
+      auto x1 = new real_t[mblock.Ni1() + 1];
+      for (std::size_t i { 0 }; i <= mblock.Ni1(); ++i) {
+        auto x_ = mblock.metric.x1_min
+                  + (mblock.metric.x1_max - mblock.metric.x1_min) * i / mblock.Ni1();
+        coord_t<D> xph { ZERO }, xi;
+        for (short d { 0 }; d < (short)D; ++d) {
+          xi[d] = ONE;
+        }
+        xi[0] = (real_t)(i);
+#  ifdef MINKOWSKI_METRIC
+        mblock.metric.x_Code2Cart(xi, xph);
+#  else
+        mblock.metric.x_Code2Sph(xi, xph);
+#  endif
+        x1[i] = xph[0];
+      }
+      m_io.DefineAttribute<real_t>("x1", x1, mblock.Ni1() + 1);
     }
     if constexpr (D == Dim2 || D == Dim3) {
       m_io.DefineAttribute<real_t>("x2_min", mblock.metric.x2_min);
       m_io.DefineAttribute<real_t>("x2_max", mblock.metric.x2_max);
+
+      auto x2 = new real_t[mblock.Ni2() + 1];
+      for (std::size_t i { 0 }; i <= mblock.Ni2(); ++i) {
+        auto x_ = mblock.metric.x2_min
+                  + (mblock.metric.x2_max - mblock.metric.x2_min) * i / mblock.Ni2();
+        coord_t<D> xph { ZERO }, xi;
+        for (short d { 0 }; d < (short)D; ++d) {
+          xi[d] = ONE;
+        }
+        xi[1] = (real_t)(i);
+#  ifdef MINKOWSKI_METRIC
+        mblock.metric.x_Code2Cart(xi, xph);
+#  else
+        mblock.metric.x_Code2Sph(xi, xph);
+#  endif
+        x2[i] = xph[1];
+      }
+      m_io.DefineAttribute<real_t>("x2", x2, mblock.Ni2() + 1);
     }
     if constexpr (D == Dim3) {
       m_io.DefineAttribute<real_t>("x3_min", mblock.metric.x3_min);
       m_io.DefineAttribute<real_t>("x3_max", mblock.metric.x3_max);
+
+      auto x3 = new real_t[mblock.Ni3() + 1];
+      for (std::size_t i { 0 }; i <= mblock.Ni3(); ++i) {
+        coord_t<D> xph { ZERO }, xi;
+        for (short d { 0 }; d < (short)D; ++d) {
+          xi[d] = ONE;
+        }
+        xi[2] = (real_t)(i);
+#  ifdef MINKOWSKI_METRIC
+        mblock.metric.x_Code2Cart(xi, xph);
+#  else
+        mblock.metric.x_Code2Sph(xi, xph);
+#  endif
+        x3[i] = xph[2];
+      }
+      m_io.DefineAttribute<real_t>("x3", x3, mblock.Ni3() + 1);
     }
     m_io.DefineAttribute<int>("n_ghosts", N_GHOSTS);
 

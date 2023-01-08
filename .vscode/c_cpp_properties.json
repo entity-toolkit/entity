@@ -19,6 +19,7 @@
         "PIC_SIMTYPE",
         "SINGLE_PRECISION",
         "OMPENABLED",
+        "OUTPUT_ENABLED",
         // "MINKOWSKI_METRIC",
         "QSPHERICAL_METRIC",
         "NTTINY_ENABLED"

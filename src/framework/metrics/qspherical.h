@@ -14,13 +14,13 @@ namespace ntt {
    * Flat metric in quasi-spherical system.
    * chi, eta, phi = log(r-r0), f(h, theta), phi
    *
-   * TODO: change `eta_min`, `phi_min`.
+   * TODO: change `phi_min`.
    * @tparam D dimension.
    */
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t r0, h, chi_min, eta_min, phi_min;
+    const real_t r0, h, chi_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
@@ -32,7 +32,6 @@ namespace ntt {
         r0 { params[0] },
         h { params[1] },
         chi_min { math::log(this->x1_min - r0) },
-        eta_min { ZERO },
         phi_min { ZERO },
         dchi((math::log(this->x1_max - r0) - chi_min) / this->nx1),
         deta(constant::PI / this->nx2),
@@ -148,7 +147,7 @@ namespace ntt {
       if constexpr (D != Dim1) {
         real_t chi { x[0] * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta + eta_min };
+        real_t eta { x[1] * deta };
         real_t dtheta_deta_ { dtheta_deta(eta) };
         return deta_sqr * SQR(dtheta_deta_) * r * r;
       } else {
@@ -166,7 +165,7 @@ namespace ntt {
       if constexpr (D != Dim1) {
         real_t chi { x[0] * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta + eta_min };
+        real_t eta { x[1] * deta };
         real_t theta { eta2theta(eta) };
         real_t sin_theta { math::sin(theta) };
         return r * r * sin_theta * sin_theta;
@@ -185,7 +184,7 @@ namespace ntt {
       if constexpr (D != Dim1) {
         real_t chi { x[0] * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta + eta_min };
+        real_t eta { x[1] * deta };
         real_t theta { eta2theta(eta) };
         real_t sin_theta { math::sin(theta) };
         real_t dtheta_deta_ { dtheta_deta(eta) };
@@ -198,14 +197,14 @@ namespace ntt {
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x1 radial coordinate along the axis (code units).
      * @returns Area at the pole.
      */
-    Inline auto polar_area(const coord_t<D>& x) const -> real_t {
+    Inline auto polar_area(const real_t& x1) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
+        real_t chi { x1 * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t del_eta { x[1] * deta + eta_min };
+        real_t del_eta { HALF * deta };
         real_t del_theta { eta2theta(del_eta) };
         return dchi * math::exp(chi) * r * r * (ONE - math::cos(del_theta));
       } else {
@@ -273,12 +272,12 @@ namespace ntt {
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dim2) {
         real_t chi { xi[0] * dchi + chi_min };
-        real_t eta { xi[1] * deta + eta_min };
+        real_t eta { xi[1] * deta };
         x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
       } else if constexpr (D == Dim3) {
         real_t chi { xi[0] * dchi + chi_min };
-        real_t eta { xi[1] * deta + eta_min };
+        real_t eta { xi[1] * deta };
         real_t phi { xi[2] * dphi + phi_min };
         x[0] = r0 + math::exp(chi);
         x[1] = eta2theta(eta);
@@ -297,13 +296,13 @@ namespace ntt {
         real_t chi { math::log(x[0] - r0) };
         real_t eta { theta2eta(x[1]) };
         xi[0] = (chi - chi_min) / dchi;
-        xi[1] = (eta - eta_min) / deta;
+        xi[1] = (eta) / deta;
       } else if constexpr (D == Dim3) {
         real_t chi { math::log(x[0] - r0) };
         real_t eta { theta2eta(x[1]) };
         real_t phi { x[2] };
         xi[0] = (chi - chi_min) / dchi;
-        xi[1] = (eta - eta_min) / deta;
+        xi[1] = (eta) / deta;
         xi[2] = (phi - phi_min) / dphi;
       }
     }

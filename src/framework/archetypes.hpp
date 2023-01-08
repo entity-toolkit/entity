@@ -20,22 +20,15 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationType S>
   struct PGen {
-    virtual inline void   UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
-    virtual inline void   UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
+    virtual inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
+    virtual inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
 
-    virtual inline void   UserDriveFields(const real_t&,
-                                          const SimulationParams&,
-                                          Meshblock<D, S>&) {}
-    virtual inline void   UserDriveParticles(const real_t&,
-                                             const SimulationParams&,
-                                             Meshblock<D, S>&) {}
-
-    virtual inline real_t UserTargetField(const Meshblock<D, S>&,
-                                          const em&,
-                                          const real_t&,
-                                          const coord_t<D>&) const {
-      return ZERO;
-    }
+    virtual inline void UserDriveFields(const real_t&,
+                                        const SimulationParams&,
+                                        Meshblock<D, S>&) {}
+    virtual inline void UserDriveParticles(const real_t&,
+                                           const SimulationParams&,
+                                           Meshblock<D, S>&) {}
 
 #ifdef NTTINY_ENABLED
     virtual inline void UserInitBuffers_nttiny(const SimulationParams&,
@@ -48,6 +41,23 @@ namespace ntt {
                                               std::map<std::string, nttiny::ScrollingBuffer>&) {
     }
 #endif
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /*                             Target field class                             */
+  /* -------------------------------------------------------------------------- */
+  template <Dimension D, SimulationType S>
+  struct TargetFields {
+    TargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : m_params { params }, m_mblock { mblock } {}
+
+    Inline virtual real_t operator()(const em&, const coord_t<D>&) const {
+      return ZERO;
+    }
+
+  protected:
+    SimulationParams m_params;
+    Meshblock<D, S>  m_mblock;
   };
 
   /* -------------------------------------------------------------------------- */

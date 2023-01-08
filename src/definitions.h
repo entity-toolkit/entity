@@ -76,7 +76,7 @@ namespace ntt {
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
   enum class SimulationType { UNDEFINED, PIC, GRPIC };
-  enum class BoundaryCondition { UNDEFINED, PERIODIC, USER, OPEN, COMM };
+  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
 
   inline constexpr auto Dim1      = Dimension::ONE_D;

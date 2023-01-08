@@ -117,32 +117,25 @@ namespace ntt {
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
     m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
-    if (m_metric == "minkowski") {
-      auto boundaries
-        = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
-      short b { 0 };
-      for (auto& bc : boundaries) {
-        if (bc == "PERIODIC") {
-          m_boundaries.push_back(BoundaryCondition::PERIODIC);
-        } else if (bc == "OPEN") {
-          m_boundaries.push_back(BoundaryCondition::OPEN);
-        } else if (bc == "USER") {
-          m_boundaries.push_back(BoundaryCondition::USER);
-        } else {
-          m_boundaries.push_back(BoundaryCondition::UNDEFINED);
-        }
-        ++b;
-        if (b >= (short)(dim)) {
-          break;
-        }
+    auto boundaries
+      = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
+    short b { 0 };
+    for (auto& bc : boundaries) {
+      if (bc == "PERIODIC") {
+        m_boundaries.push_back(BoundaryCondition::PERIODIC);
+      } else if (bc == "ABSORB") {
+        m_boundaries.push_back(BoundaryCondition::ABSORB);
+      } else if (bc == "OPEN") {
+        m_boundaries.push_back(BoundaryCondition::OPEN);
+      } else if (bc == "USER") {
+        m_boundaries.push_back(BoundaryCondition::USER);
+      } else {
+        m_boundaries.push_back(BoundaryCondition::UNDEFINED);
       }
-    } else if ((m_metric == "spherical") || (m_metric == "qspherical")
-               || (m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
-      // rmin, rmax boundaries only
-      m_boundaries.push_back(BoundaryCondition::USER);
-      m_boundaries.push_back(BoundaryCondition::USER);
-    } else {
-      NTTHostError("coordinate system not implemented");
+      ++b;
+      if (b >= (short)(dim)) {
+        break;
+      }
     }
 
     // plasma params

@@ -230,7 +230,7 @@ if(${Kokkos_ENABLE_CUDA})
     0
     42
   )
-  set(COMPILERS_REPORT "${COMPILERS_REPORT}\n  ${CUDA_COMPILER_REPORT}")
+  set(COMPILERS_REPORT "${COMPILERS_REPORT}\n\n  ${CUDA_COMPILER_REPORT}")
 endif()
 
 set(DOT_SYMBOL "${ColourReset}.")

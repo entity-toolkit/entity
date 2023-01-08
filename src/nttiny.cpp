@@ -94,15 +94,10 @@ public:
     // compute the vector potential
     m_sim.computeVectorPotential();
 #endif
-    // std::cout << std::setprecision(12) << "fields: up -- "
-    //           << Sim.meshblock.bckp_h(20, ngh, ntt::em::ex1) << " - "
-    //           << Sim.meshblock.bckp_h(20, ngh + 1, ntt::em::ex1) << " -- dwn -- ";
-    // std::cout << Sim.meshblock.bckp_h(20, nx2 - ngh - 1, ntt::em::ex1) << " - "
-    //           << Sim.meshblock.bckp_h(20, nx2 - ngh - 2, ntt::em::ex1) << "\n";
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
     Kokkos::parallel_for("setData",
-                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 1 }, { nx1, nx2 - 1 }),
+                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
                          [=](std::size_t i1, std::size_t j1) {
                            int i, j;
                            if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
@@ -140,13 +135,22 @@ public:
                              } else if (f == "density") {
                                comp = ntt::fld::dens;
                              }
+                             real_t val;
                              if (f.at(0) == 'E' || f.at(0) == 'B') {
-                               Fields.at(f)[idx] = Sim.meshblock.bckp_h(i, j, comp);
+                               val = Sim.meshblock.bckp_h(i, j, comp);
                              } else if (f.at(0) == 'J') {
-                               Fields.at(f)[idx] = Sim.meshblock.cur_h(i, j, comp);
+                               val = Sim.meshblock.cur_h(i, j, comp);
                              } else {
-                               Fields.at(f)[idx] = Sim.meshblock.buff_h(i, j, comp);
+                               val = Sim.meshblock.buff_h(i, j, comp);
                              }
+                             if (!math::isfinite(val)) {
+                               val = -100000.0;
+                             }
+                             if ((i1 < ngh) || (i1 >= nx1 - ngh) || (j1 < ngh)
+                                 || (j1 >= nx2 - ngh)) {
+                               val = 0.0;
+                             }
+                             Fields.at(f)[idx] = val;
                            }
                          });
 

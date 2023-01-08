@@ -50,27 +50,24 @@ namespace ntt {
 
         mblock.em(i1, i2_min - 1, em::ex2) = -mblock.em(i1, i2_min, em::ex2);
         mblock.em(i1, i2_max, em::ex2)     = -mblock.em(i1, i2_max - 1, em::ex2);
-
-        // mblock.em(i1, i2_min, em::bx3) = 0.0;
-        // mblock.em(i, j, em::bx2) = 0.0;
-        // mblock.em(i, j, em::ex3) = 0.0;
       });
-    // // theta = pi boundary
-    // Kokkos::parallel_for(
-    //   "2d_bc_thetaPi",
-    //   CreateRangePolicy<Dim2>({ 0, mblock.i2_max() },
-    //                           { mblock.i1_max() + N_GHOSTS, mblock.i2_max() + N_GHOSTS }),
-    //   Lambda(index_t i, index_t j) {
-    //     mblock.em(i, j, em::bx2) = 0.0;
-    //     mblock.em(i, j, em::ex3) = 0.0;
-    //   });
 
-    auto r_absorb = params.metricParameters()[2];
-    auto r_max    = mblock.metric.x1_max;
-    // !TODO: no need to do all cells
-    Kokkos::parallel_for("2d_absorbing bc",
-                         mblock.rangeActiveCells(),
-                         AbsorbFields_kernel<Dim2>(mblock, pgen, r_absorb, r_max));
+    if (mblock.boundaries[1] == BoundaryCondition::ABSORB) {
+      auto          r_absorb = params.metricParameters()[2];
+      auto          r_max    = mblock.metric.x1_max;
+      coord_t<Dim2> xc { ZERO };
+      mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xc);
+      auto range = mblock.rangeCells({
+        { IMAX((int)(xc[0]) - 4, 0), 0 },
+        { 0, 0 },
+      });
+      Kokkos::parallel_for(
+        "2d_absorbing bc", range, AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
+    } else {
+      NTTHostError(
+        "2d axisymmetry requires absorbing boundary conditions at rmax. Currently specified: `"
+        + stringifyBoundaryCondition(mblock.boundaries[1]) + "`.");
+    }
   }
 
   template <>

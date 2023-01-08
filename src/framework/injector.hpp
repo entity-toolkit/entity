@@ -554,7 +554,6 @@ namespace ntt {
     auto& sp1 = mblock.particles[species[0] - 1];
     auto& sp2 = mblock.particles[species[1] - 1];
     if (sp1.charge() != -sp2.charge()) {
-      std::cout << sp1.charge() << " " << sp2.charge() << "\n";
       NTTHostError("Injected species must have the same but opposite charge: q1 = -q2");
     }
     array_t<std::size_t> ind("ind_inj");

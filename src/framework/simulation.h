@@ -88,8 +88,9 @@ namespace ntt {
 
     /**
      * @brief Diagnostic logging.
+     * @param os output stream.
      */
-    void               PrintDiagnostics();
+    void               PrintDiagnostics(std::ostream& os = std::cout);
 
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */
