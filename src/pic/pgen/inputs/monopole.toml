@@ -6,7 +6,7 @@ runtime = 50.0
 qsph_r0     = 0.0
 qsph_h      = 0.25
 sph_rabsorb = 4.5
-resolution  = [512, 512]
+resolution  = [256, 257]
 extent      = [1.0, 5.0]
 boundaries  = ["USER", "ABSORB"]
 
@@ -39,13 +39,13 @@ pusher   = "BORIS"
 
 [problem]
 spin_omega   = 0.25
-bc_rmin      = 1.5
-inj_rmax     = 2.0
+buff_cells   = 10
+inj_rmax     = 1.5
 inj_fraction = 0.1
 
 [visualization]
 fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jtheta"]
-fields_stride = 4
+fields_stride = 1
 
 [output]
 format   = "disabled"

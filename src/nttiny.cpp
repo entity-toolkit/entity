@@ -100,19 +100,22 @@ public:
                          ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
                          [=](std::size_t i1, std::size_t j1) {
                            int i, j;
-                           if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
+                           if (i1 < ngh) {
                              i = i1;
+                           } else if (i1 >= nx1 - ngh) {
+                             i = (nx1 - 2 * ngh) * fields_stride + 2 * ngh + (int)i1 - nx1;
                            } else {
                              i = ((int)i1 - ngh) * fields_stride + ngh;
                            }
-                           if ((j1 < ngh) || (j1 >= nx2 - ngh)) {
+                           if (j1 < ngh) {
                              j = j1;
+                           } else if (j1 >= nx2 - ngh) {
+                             j = (nx2 - 2 * ngh) * fields_stride + 2 * ngh + (int)j1 - nx2;
                            } else {
                              j = ((int)j1 - ngh) * fields_stride + ngh;
                            }
                            for (std::size_t fi = 0; fi < nfields; ++fi) {
-                             auto f   = fields_to_plot.at(fi);
-                             auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
+                             auto f = fields_to_plot.at(fi);
                              int  comp;
                              if (f == "Ex" || f == "Er") {
                                comp = ntt::em::ex1;
@@ -146,10 +149,7 @@ public:
                              if (!math::isfinite(val)) {
                                val = -100000.0;
                              }
-                             if ((i1 < ngh) || (i1 >= nx1 - ngh) || (j1 < ngh)
-                                 || (j1 >= nx2 - ngh)) {
-                               val = 0.0;
-                             }
+                             auto idx          = Index((int)i1 - ngh, (int)j1 - ngh);
                              Fields.at(f)[idx] = val;
                            }
                          });
@@ -214,13 +214,13 @@ public:
       const auto sx2 { Grid.m_size[1] };
       for (int i { 0 }; i <= sx1; ++i) {
         auto                    i_ { (real_t)(i * m_fields_stride) };
-        auto                    j_ { ZERO };
+        auto                    j_ { (real_t)(sx2 * m_fields_stride) * HALF };
         ntt::coord_t<ntt::Dim2> rth_;
         m_sim.meshblock.metric.x_Code2Sph({ i_, j_ }, rth_);
         Grid.m_xi[0][i] = rth_[0];
       }
       for (int j { 0 }; j <= sx2; ++j) {
-        auto                    i_ { ZERO };
+        auto                    i_ { (real_t)(sx1 * m_fields_stride) * HALF };
         auto                    j_ { (real_t)(j * m_fields_stride) };
         ntt::coord_t<ntt::Dim2> rth_;
         m_sim.meshblock.metric.x_Code2Sph({ i_, j_ }, rth_);
