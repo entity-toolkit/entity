@@ -37,8 +37,8 @@ namespace ntt {
     Kokkos::parallel_for(
       "int_and_conv",
       mblock.rangeCells({
-        {-1, 1},
-        {-1, 1}
+        {0, 1},
+        {0, 1}
     }),
       Lambda(index_t i, index_t j) {
         real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };

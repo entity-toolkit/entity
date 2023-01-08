@@ -59,7 +59,6 @@ namespace ntt {
       // non-periodic
       NTTHostError("2d boundary condition for minkowski not implemented");
     }
-    WaitAndSynchronize();
     if (mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
       /**
        * @note: no corners
@@ -85,7 +84,6 @@ namespace ntt {
       // non-periodic
       NTTHostError("2d boundary condition for minkowski not implemented");
     }
-    WaitAndSynchronize();
     /**
      * @note: corners treated separately
      */

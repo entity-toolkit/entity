@@ -164,7 +164,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  auto Mesh<D>::rangeCells(const tuple_t<tuple_t<short, Dim2>, D>& ranges) -> range_t<D> {
+  auto Mesh<D>::rangeCells(const tuple_t<tuple_t<int, Dim2>, D>& ranges) -> range_t<D> {
     tuple_t<int, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
       if ((ranges[i][0] < -N_GHOSTS) || (ranges[i][1] > N_GHOSTS)) {

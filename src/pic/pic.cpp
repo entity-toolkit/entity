@@ -106,7 +106,7 @@ namespace ntt {
 
       if (params.depositEnabled()) {
         timers.start("Curr_Deposit");
-        AmpereCurrents();
+        // AmpereCurrents();
         timers.stop("Curr_Deposit");
       }
 

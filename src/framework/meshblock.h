@@ -113,7 +113,7 @@ namespace ntt {
      * @example {{0, 0}, {0, 0}, {0, 0}} corresponds to allActiveLayer in all 3 dimensions.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto               rangeCells(const tuple_t<tuple_t<short, Dim2>, D>&) -> range_t<D>;
+    auto               rangeCells(const tuple_t<tuple_t<int, Dim2>, D>&) -> range_t<D>;
 
     /* -------------------------------------------------------------------------- */
     /*                     Ranges in the host execution space                     */

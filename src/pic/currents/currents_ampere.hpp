@@ -165,7 +165,7 @@ namespace ntt {
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
     real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF, HALF }) };
+    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF }) };
     // theta = 0
     EX1(i, j_min) += m_coeff * JX1(i, j_min) * HALF * inv_polar_area_iPj;
     // theta = pi
