@@ -6,14 +6,14 @@ runtime = 50.0
 qsph_r0     = 0.0
 qsph_h      = 0.25
 sph_rabsorb = 4.5
-resolution  = [256, 257]
+resolution  = [512, 513]
 extent      = [1.0, 5.0]
 boundaries  = ["USER", "ABSORB"]
 
 [algorithm]
 CFL             = 0.5
 correction      = 1.0
-current_filters = 0
+current_filters = 8
 
 [units]
 ppc0       = 10.0
@@ -45,7 +45,7 @@ inj_fraction = 0.1
 
 [visualization]
 fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jtheta"]
-fields_stride = 1
+fields_stride = 4
 
 [output]
 format   = "disabled"
