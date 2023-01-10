@@ -18,7 +18,7 @@ namespace ntt {
     RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
     Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v) const override {
-      v[0] = 0.1;
+      v[0] = 0.5;
     }
   };
 
@@ -39,18 +39,18 @@ namespace ntt {
     real_t inj_rmax, inj_rmin;
   };
 
-  // template <Dimension D, SimulationType S>
-  // struct EdotBCrit : public InjectionCriterion<D, S> {
-  //   explicit EdotBCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
-  //     : InjectionCriterion<D, S>(params, mblock) {
-  //     inj_maxEdotB
-  //       = readFromInput<real_t>(params.inputdata(), "problem", "inj_maxEdotB", 0.01);
-  //   }
-  //   Inline bool operator()(const coord_t<D>& xi) const;
+  template <Dimension D, SimulationType S>
+  struct MaxDensCrit : public InjectionCriterion<D, S> {
+    explicit MaxDensCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
+      : InjectionCriterion<D, S>(params, mblock),
+        inj_maxDens { readFromInput<real_t>(
+          params.inputdata(), "problem", "inj_maxDens", 5.0) },
+        ppc0 { params.ppc0() } {}
+    Inline bool operator()(const coord_t<D>&) const;
 
-  // private:
-  //   real_t inj_maxEdotB;
-  // };
+  private:
+    const real_t inj_maxDens, ppc0;
+  };
 
   template <>
   Inline real_t RadialDist<Dim2, TypePIC>::operator()(const coord_t<Dim2>& x_ph) const {
@@ -93,25 +93,14 @@ namespace ntt {
     e_out[2] = 0.0;
   }
 
-  // template <>
-  // Inline bool EdotBCrit<Dim2, TypePIC>::operator()(const coord_t<Dim2>& xi) const {
-  //   std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
-  //   std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
-  //   vec_t<Dim3> e_hat { ZERO }, b_hat { ZERO };
-  //   this->m_mblock.metric.v_Cntrv2Hat(xi,
-  //                                     { this->m_mblock.em(i1, i2, em::ex1),
-  //                                       this->m_mblock.em(i1, i2, em::ex2),
-  //                                       this->m_mblock.em(i1, i2, em::ex3) },
-  //                                     e_hat);
-  //   this->m_mblock.metric.v_Cntrv2Hat(xi,
-  //                                     { this->m_mblock.em(i1, i2, em::bx1),
-  //                                       this->m_mblock.em(i1, i2, em::bx2),
-  //                                       this->m_mblock.em(i1, i2, em::bx3) },
-  //                                     b_hat);
-  //   real_t Bsqr  = SQR(b_hat[0]) + SQR(b_hat[1]) + SQR(b_hat[2]);
-  //   real_t EdotB = e_hat[0] * b_hat[0] + e_hat[1] * b_hat[1] + e_hat[2] * b_hat[2];
-  //   return ABS(EdotB / Bsqr) > inj_maxEdotB;
-  // }
+  template <>
+  Inline bool MaxDensCrit<Dim2, TypePIC>::operator()(const coord_t<Dim2>& xph) const {
+    coord_t<Dim2> xi { ZERO };
+    this->m_mblock.metric.x_Sph2Code(xph, xi);
+    std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
+    std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
+    return this->m_mblock.buff(i1, i2, fld::dens) < inj_maxDens;
+  }
 
   template <Dimension D, SimulationType S>
   struct ProblemGenerator : public PGen<D, S> {
@@ -131,7 +120,7 @@ namespace ntt {
                                    const SimulationParams& params,
                                    Meshblock<D, S>&        mblock) override {
       auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction;
-      InjectInVolume<D, S, ColdDist, RadialDist, NoCriterion>(
+      InjectInVolume<D, S, RadialKick, RadialDist, MaxDensCrit>(
         params, mblock, { 1, 2 }, nppc_per_spec, {}, time);
     }
 
@@ -163,7 +152,7 @@ namespace ntt {
         NTTHostError("buff_cells > ni1");
       }
 
-      /** \See comments.hpp
+      /**
        *
        *    ...........................................
        *    .                                         .
@@ -199,7 +188,7 @@ namespace ntt {
     {
       // Set the boundary conditions at r-max
       const auto i1_max = mblock.i1_max();
-      /** \See comments.hpp
+      /**
        *
        *    ...........................................
        *    .                                         .
@@ -241,14 +230,14 @@ namespace ntt {
   Inline real_t RadialDist<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
     return ZERO;
   }
-  // template <>
-  // Inline bool EdotBCrit<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
-  //   return false;
-  // }
-  // template <>
-  // Inline bool EdotBCrit<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {
-  //   return false;
-  // }
+  template <>
+  Inline bool MaxDensCrit<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {
+    return false;
+  }
+  template <>
+  Inline bool MaxDensCrit<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
+    return false;
+  }
 
   template <>
   inline void ProblemGenerator<Dim1, TypePIC>::UserInitFields(const SimulationParams&,
