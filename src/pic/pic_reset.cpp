@@ -31,9 +31,24 @@ namespace ntt {
   void PIC<D>::ResetParticles() {
     auto& mblock = this->meshblock;
     for (auto& species : mblock.particles) {
-      Kokkos::parallel_for("reset_particles",
-                           species.rangeAllParticles(),
-                           ResetParticles_kernel<D>(mblock, species));
+      if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
+        Kokkos::deep_copy(species.i1, 0);
+        Kokkos::deep_copy(species.dx1, ZERO);
+      }
+      if constexpr ((D == Dim2) || (D == Dim3)) {
+        Kokkos::deep_copy(species.i2, 0);
+        Kokkos::deep_copy(species.dx2, ZERO);
+#ifndef MINKOWSKI_METRIC
+        Kokkos::deep_copy(species.phi, ZERO);
+#endif
+      }
+      if constexpr (D == Dim3) {
+        Kokkos::deep_copy(species.i3, 0);
+        Kokkos::deep_copy(species.dx3, ZERO);
+      }
+      Kokkos::deep_copy(species.ux1, ZERO);
+      Kokkos::deep_copy(species.ux2, ZERO);
+      Kokkos::deep_copy(species.ux3, ZERO);
       species.setNpart(0);
     }
   }
@@ -45,7 +60,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::ResetFields() {
     auto& mblock = this->meshblock;
-    Kokkos::parallel_for("reset_fields", mblock.rangeAllCells(), ResetFields_kernel<D>(mblock));
+    Kokkos::deep_copy(mblock.em, ZERO);
   }
 
   /**
@@ -55,8 +70,8 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::ResetCurrents() {
     auto& mblock = this->meshblock;
-    Kokkos::parallel_for(
-      "reset_currents", mblock.rangeAllCells(), ResetCurrents_kernel<D>(mblock));
+    Kokkos::deep_copy(mblock.buff, ZERO);
+    Kokkos::deep_copy(mblock.cur, ZERO);
   }
 }    // namespace ntt
 
