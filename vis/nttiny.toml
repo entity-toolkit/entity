@@ -5,8 +5,8 @@ type = "Pcolor2d"
 ID = 0
 log = false
 autoscale = false
-vmin = -0.005149
-vmax = 0.005149
+vmin = -0.000678
+vmax = 0.000678
 
 [Plot.1]
 cmap = "Jet"
@@ -25,8 +25,8 @@ type = "Pcolor2d"
 ID = 2
 log = false
 autoscale = false
-vmin = -0.1825
-vmax = 0.1825
+vmin = -0.01353
+vmax = 0.01353
 
 [Plot.3]
 cmap = "BrBG"
@@ -35,8 +35,8 @@ type = "Pcolor2d"
 ID = 3
 log = false
 autoscale = false
-vmin = -0.1773
-vmax = 0.1773
+vmin = -0.02121
+vmax = 0.02121
 
 [Plot.4]
 cmap = "BrBG"
@@ -45,8 +45,8 @@ type = "Pcolor2d"
 ID = 4
 log = false
 autoscale = false
-vmin = -0.006691
-vmax = 0.006691
+vmin = -2.203e-05
+vmax = 2.203e-05
 
 [Plot.5]
 cmap = "PiYG"
@@ -55,11 +55,11 @@ type = "Pcolor2d"
 ID = 5
 log = false
 autoscale = false
-vmin = -846.0
-vmax = 846.0
+vmin = -0.1165
+vmax = 0.1165
 
 [Plot]
 npanels = 6
 outline_color = [1.000, 0.398, 0.359, 1.000]
-range = [-2.571, 7.583, -5.013, 5.013]
+range = [-0.820, 2.888, -1.807, 1.678]
 collapsed_controls = false

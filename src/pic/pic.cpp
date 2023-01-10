@@ -63,6 +63,7 @@ namespace ntt {
       timers.stop("Prtl_Pusher");
 
       timers.start("User");
+      this->ComputeDensity(ZERO);
       pgen.UserDriveParticles(this->m_time, params, mblock);
       timers.stop("User");
 
