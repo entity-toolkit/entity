@@ -7,9 +7,10 @@ namespace ntt {
   template <>
   void PIC<Dim1>::ComputeDensity(const short& smooth) {
     auto& mblock = this->meshblock;
+    auto& params = *(this->params());
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
-    real_t contrib      = 1.0 / (2.0 * smooth + 1.0);
+    real_t contrib      = (1.0 / params.ppc0()) / (2.0 * smooth + 1.0);
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
@@ -28,9 +29,10 @@ namespace ntt {
   template <>
   void PIC<Dim2>::ComputeDensity(const short& smooth) {
     auto& mblock = this->meshblock;
+    auto& params = *(this->params());
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
-    real_t contrib      = 1.0 / SQR(2.0 * smooth + 1.0);
+    real_t contrib      = (1.0 / params.ppc0()) / SQR(2.0 * smooth + 1.0);
     auto   ni1          = mblock.Ni1();
     auto   ni2          = mblock.Ni2();
     for (auto& species : mblock.particles) {
@@ -40,16 +42,15 @@ namespace ntt {
             auto i1          = species.i1(p);
             auto i2          = species.i2(p);
             auto dens_access = scatter_buff.access();
-            dens_access(i1 + N_GHOSTS, i2 + N_GHOSTS, fld::dens) += contrib;
-            //   for (int i2_ { IMIN(IMAX(i2 - smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS) };
-            //        i2_ <= IMIN(IMAX(i2 + smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS);
-            //        ++i2_) {
-            //     for (int i1_ { IMIN(IMAX(i1 - smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS) };
-            //          i1_ <= IMIN(IMAX(i1 + smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
-            //          ++i1_) {
-            //       dens_access(i1_, i2_, fld::dens) += contrib;
-            //     }
-            //   }
+            for (int i2_ { IMIN(IMAX(i2 - smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS) };
+                 i2_ <= IMIN(IMAX(i2 + smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS);
+                 ++i2_) {
+              for (int i1_ { IMIN(IMAX(i1 - smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS) };
+                   i1_ <= IMIN(IMAX(i1 + smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
+                   ++i1_) {
+                dens_access(i1_, i2_, fld::dens) += contrib;
+              }
+            }
           });
       }
     }
@@ -59,9 +60,10 @@ namespace ntt {
   template <>
   void PIC<Dim3>::ComputeDensity(const short& smooth) {
     auto& mblock = this->meshblock;
+    auto& params = *(this->params());
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
-    real_t contrib      = 1.0 / CUBE(2.0 * smooth + 1.0);
+    real_t contrib      = (1.0 / params.ppc0()) / CUBE(2.0 * smooth + 1.0);
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
