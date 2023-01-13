@@ -149,6 +149,14 @@ namespace ntt {
       cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
+
+      /* ---------------------------------- theta --------------------------------- */
+      // ... filter in r
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j - 1);
+      // ... filter in theta
+      m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij + INV_4 * (cur_ijm1 + cur_ijp1);
     } else if (j == j_max_m1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
@@ -202,7 +210,7 @@ namespace ntt {
       m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij;
       // FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
       // INV_2 * cur_ij;
-    } else if (j == j_max + 1) {
+    } else if (j == j_max) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
       cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
