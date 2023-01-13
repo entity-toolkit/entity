@@ -1,3 +1,17 @@
+/**
+ * @file fields_bc.cpp
+ * @brief Boundary conditions for the fields (for 2D axisymmetric) ...
+ *        ... (a) on the axis
+ *        ... (b) absorbing boundaries at rmax
+ *        ... (c) user-defined field driving
+ * @describes: `FieldsBoundaryConditions` method of the `PIC` class
+ * @includes: `fields_bc.hpp
+ * @depends: `pic.h`
+ *
+ * @notes: - Periodic boundary conditions are implemented in `fields_exch.cpp`
+ *
+ */
+
 #include "wrapper.h"
 
 #include "pic.h"
@@ -15,8 +29,6 @@ namespace ntt {
   void PIC<D>::FieldsBoundaryConditions() {}
 
 #else
-  template <>
-  void PIC<Dim1>::FieldsBoundaryConditions() {}
 
   template <>
   void PIC<Dim2>::FieldsBoundaryConditions() {
@@ -32,8 +44,23 @@ namespace ntt {
     }
     const std::size_t i2_min = mblock.i2_min();    // N_GHOSTS
     const std::size_t i2_max = mblock.i2_max();    // N_GHOSTS + sx2
+
+    /**
+     *    . . . . . . . . . . . . . . . .
+     *    .   *   *                 *   .
+     *    .   *   *                 *   .
+     *    .     ^ = = = = = = = = ^     .
+     *    .   * | *               \ *   .
+     *    .   * | *               \ *   .
+     *    .   * | *               \ *   .
+     *    .   * | *               \ *   .
+     *    .     ^ - - - - - - - - ^     .
+     *    .   *   *                 *   .
+     *    .   *   *                 *   .
+     *    . . . . . . . . . . . . . . . .
+     */
     Kokkos::parallel_for(
-      "2d_bc_theta0-Pi",
+      "FieldsBoundaryConditions-1",
       CreateRangePolicy<Dim1>({ 0 }, { mblock.i1_max() + N_GHOSTS }),
       Lambda(index_t i1) {
         // first active cell (axis):
@@ -61,8 +88,23 @@ namespace ntt {
         { IMAX((int)(xc[0]) - 4, 0), 0 },
         { 0, 0 },
       });
-      Kokkos::parallel_for(
-        "2d_absorbing bc", range, AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
+      /**
+       *    . . . . . . . . . . . . . . . .
+       *    .                             .
+       *    .                             .
+       *    .     ^ = = = = = = = = ^     .
+       *    .     |             * * \     .
+       *    .     |             * * \     .
+       *    .     |             * * \     .
+       *    .     |             * * \     .
+       *    .     ^ - - - - - - - - ^     .
+       *    .                             .
+       *    .                             .
+       *    . . . . . . . . . . . . . . . .
+       */
+      Kokkos::parallel_for("FieldsBoundaryConditions-2",
+                           range,
+                           AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
     } else {
       NTTHostError(
         "2d axisymmetry requires absorbing boundary conditions at rmax. Currently specified: `"
@@ -70,6 +112,10 @@ namespace ntt {
     }
   }
 
+  template <>
+  void PIC<Dim1>::FieldsBoundaryConditions() {
+    NTTHostError("not applicable");
+  }
   template <>
   void PIC<Dim3>::FieldsBoundaryConditions() {
     NTTHostError("not implemented");

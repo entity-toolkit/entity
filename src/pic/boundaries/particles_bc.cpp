@@ -1,44 +1,52 @@
+/**
+ * @file particles_bc.cpp
+ * @brief Special "reflecting" boundary conditions on the axis ...
+ *        ... for particles in 2D axisymmetric simulations.
+ * @describes: `ParticlesBoundaryConditions` method of the `PIC` class
+ * @includes: --
+ * @depends: `pic.h`
+ *
+ * @notes: - Periodic boundary conditions are implemented in `particles_exch.cpp`
+ *
+ */
+
 #include "wrapper.h"
 
 #include "particle_macros.h"
 #include "pic.h"
 
 namespace ntt {
-  /**
-   * @brief 1d particle bc.
-   *
-   */
-  template <>
-  void PIC<Dim1>::ParticlesBoundaryConditions() {}
 
+#ifdef MINKOWSKI_METRIC
+  template <Dimension D>
+  void PIC<D>::ParticlesBoundaryConditions() {}
+#else
   /**
    * @brief 2d particle bc.
-   *
    */
   template <>
   void PIC<Dim2>::ParticlesBoundaryConditions() {
-#ifndef MINKOWSKI_METRIC
     auto& mblock   = this->meshblock;
     auto  params   = *(this->params());
     auto  r_absorb = params.metricParameters()[2];
     auto  r_max    = mblock.metric.x1_max;
     for (auto& species : mblock.particles) {
-      auto ni = mblock.Ni1();
-      auto nj = mblock.Ni2();
+      auto ni1 = mblock.Ni1();
+      auto ni2 = mblock.Ni2();
       Kokkos::parallel_for(
         "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
           // radial boundary conditions
-          species.is_dead(p) = ((species.i1(p) < -1) || (species.i1(p) >= ni + 1));
+          species.is_dead(p) = ((species.i1(p) < -1) || (species.i1(p) >= ni1 + 1));
           // axis boundaries
-          if ((species.i2(p) < 0) || (species.i2(p) >= nj)) {
+          if ((species.i2(p) < 0) || (species.i2(p) >= ni2)) {
             if (species.i2(p) < 0) {
               // reflect particle coordinate
               species.i2(p) = 0;
             } else {
               // reflect particle coordinate
-              species.i2(p) = nj - 1;
+              species.i2(p) = ni2 - 1;
             }
-            // !TODO: what happens to prtl phi?
+            species.phi(p) = species.phi(p) + constant::PI;
             species.dx2(p) = 1.0f - species.dx2(p);
             // reverse u^theta
             coord_t<Dim3> x_p { get_prtl_x1(species, p),
@@ -55,17 +63,28 @@ namespace ntt {
           // absorbing boundaries
           coord_t<Dim2> x_sph { ZERO };
           mblock.metric.x_Code2Sph({ get_prtl_x1(species, p), ZERO }, x_sph);
+          // particles penetrate 80% of the absorbing region
           species.is_dead(p) |= (x_sph[0] > r_absorb + (real_t)(0.8) * (r_max - r_absorb));
         });
     }
-#endif
   }
 
+  /**
+   * @brief 1d particle bc.
+   */
+  template <>
+  void PIC<Dim1>::ParticlesBoundaryConditions() {
+    NTTHostError("not applicable");
+  }
   /**
    * @brief 3d particle bc.
    */
   template <>
-  void PIC<Dim3>::ParticlesBoundaryConditions() {}
+  void PIC<Dim3>::ParticlesBoundaryConditions() {
+    NTTHostError("not implemented");
+  }
+
+#endif
 
 }    // namespace ntt
 

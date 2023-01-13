@@ -13,7 +13,7 @@ boundaries  = ["USER", "ABSORB"]
 [algorithm]
 CFL             = 0.5
 correction      = 1.0
-current_filters = 1
+current_filters = 0
 
 [units]
 ppc0       = 10.0
@@ -27,14 +27,14 @@ n_species = 2
 label    = "e-"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 5e7
+maxnpart = 1e7
 pusher   = "BORIS"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
-maxnpart = 5e7
+maxnpart = 1e7
 pusher   = "BORIS"
 
 [problem]
