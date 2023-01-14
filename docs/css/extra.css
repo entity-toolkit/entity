@@ -1,18 +1,29 @@
 :root {
   font-variant-ligatures: normal;
   font-size: 1.25em;
+  --color-one: #0b7be3;
+  --color-two: #7b5de7;
+  --color-three: #c357de;
+  --color-four: #d63aa7;
+  --border-color: #448aff;
 }
 
 [data-md-color-scheme="default"] {
   --md-admonition-bg-color: hsl(232, 25%, 98%);
+  --gradient-color-one: #301330;
+  --gradient-color-two: #2f2f2f;
+  --gradient-color-three: #311953;
+  --gradient-color-four: #1f1919;
 }
 
 [data-md-color-scheme="slate"] {
   --md-admonition-bg-color: hsl(232, 15%, 25%);
   --md-typeset-a-color: hsl(231, 100%, 64%);
+  --gradient-color-one: var(--color-one);
+  --gradient-color-two: var(--color-two);
+  --gradient-color-three: var(--color-three);
+  --gradient-color-four: var(--color-four);
 }
-
-
 
 .md-header {
   box-shadow: none;
@@ -43,7 +54,7 @@
 .nt-card {
   background-color: var(--md-admonition-bg-color) !important;
   box-shadow: var(--md-shadow-z1) !important;
-  border: .05rem solid #448aff !important;
+  border: .05rem solid var(--border-color) !important;
   border-radius: 2px;
 }
 
@@ -64,19 +75,19 @@
 }
 
 .nt-timeline-item:nth-child(1) .nt-timeline-dot {
-  background-color: #0b7be3 !important;
+  background-color: var(--color-one) !important;
 }
 
 .nt-timeline-item:nth-child(2) .nt-timeline-dot {
-  background-color: #7b5de7 !important;
+  background-color: var(--color-two) !important;
 }
 
 .nt-timeline-item:nth-child(3) .nt-timeline-dot {
-  background-color: #c357de !important;
+  background-color: var(--color-three) !important;
 }
 
 .nt-timeline-item:nth-child(4) .nt-timeline-dot {
-  background-color: #d63aa7 !important;
+  background-color: var(--color-three) !important;
 }
 
 .nt-timeline-dot {
@@ -86,18 +97,49 @@
 }
 
 .nt-timeline.vertical.left .nt-timeline-items {
-  background: linear-gradient(#0b7be3,
-      #7b5de7,
-      #c357de,
-      #d63aa7) no-repeat 30px/2px 100% !important;
+  background: linear-gradient(var(--color-one) 0%,
+      var(--color-two) 25%,
+      var(--color-three) 50%,
+      var(--color-four) 100%) no-repeat 30px/2px 100% !important;
 }
 
 .nt-timeline.vertical.left .nt-timeline-before {
-  background: linear-gradient(rgba(252, 70, 107, 0) 0%, #0b7be3 100%) no-repeat 30px/2px 100% !important;
+  background: linear-gradient(rgba(252, 70, 107, 0) 0%, var(--color-one) 100%) no-repeat 30px/2px 100% !important;
 }
 
 .nt-timeline.vertical.left .nt-timeline-after {
-  background: linear-gradient(#d63aa7 0%, rgba(252, 70, 107, 0) 100%) no-repeat 30px/2px 100% !important;
+  background: linear-gradient(var(--color-four) 0%, rgba(252, 70, 107, 0) 100%) no-repeat 30px/2px 100% !important;
+}
+
+#contributors+ul li {
+  list-style-type: circle;
+}
+
+#contributors+ul li span {
+  padding: 0 0.3em;
+  margin: 0 0.1em;
+  border-radius: 0.4em;
+  color: white;
+}
+
+#contributors+ul .tag.framework {
+  background-color: var(--color-one);
+}
+
+#contributors+ul .tag.pic {
+  background-color: var(--color-two);
+}
+
+#contributors+ul .tag.gr {
+  background-color: var(--color-three);
+}
+
+#contributors+ul .tag.cubed-sphere {
+  background-color: var(--color-four);
+}
+
+#contributors+ul .tag.all-around {
+  background-color: var(--border-color);
 }
 
 /* Header */
@@ -116,16 +158,15 @@
   }
 }
 
-[data-md-color-scheme="slate"] header {
-  background: linear-gradient(-45deg, #0b7be3, #7b5de7, #c357de, #d63aa7);
+header {
+  background: linear-gradient(-45deg, var(--gradient-color-one), var(--gradient-color-two), var(--gradient-color-three), var(--gradient-color-four));
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
 }
 
-[data-md-color-scheme="default"] header {
-  background: linear-gradient(-45deg, #301330, #2f2f2f, #311953, #1f1919);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
+.md-header__source {
+  width: 7rem;
+  max-width: 11.7rem;
 }
 
 /* Additional admonition */

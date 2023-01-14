@@ -46,6 +46,7 @@ markdown_extensions:
   - tables
   - attr_list
   - admonition
+  - footnotes
   - pymdownx.details
   - pymdownx.superfences
   - md_in_html
@@ -115,5 +116,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/haykh/entity/
+
+copyright: Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton
 
 copyright: Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton
