@@ -53,7 +53,7 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
     const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
-    InjectUniform<Dim2, TypePIC, DistribFunc>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
+    InjectUniform<Dim2, TypePIC>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
   }
 }    // namespace ntt
 

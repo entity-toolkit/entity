@@ -84,7 +84,7 @@ public:
     // precompute necessary fields
     for (auto& f : fields_to_plot) {
       if (f == "density") {
-        m_sim.ComputeDensity(0);
+        m_sim.ComputeDensity();
       }
     }
     m_sim.InterpolateAndConvertFieldsToHat();
