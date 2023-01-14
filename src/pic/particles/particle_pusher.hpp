@@ -9,6 +9,7 @@
 #include "particle_macros.h"
 #include "particles.h"
 #include "pic.h"
+#include "qmath.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -86,6 +87,10 @@ namespace ntt {
         vec_t<Dim3> v;
         m_mblock.metric.v_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
+        // avoid problem for a particle right at the top axis
+        if ((m_particles.i2(p) == 0) && AlmostEqual(m_particles.dx2(p), 0.0f)) {
+          v[2] = ZERO;
+        }
         v[0] *= inv_energy;
         v[1] *= inv_energy;
         v[2] *= inv_energy;
