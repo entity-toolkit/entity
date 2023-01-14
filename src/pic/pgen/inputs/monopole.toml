@@ -13,7 +13,7 @@ boundaries  = ["USER", "ABSORB"]
 [algorithm]
 CFL             = 0.5
 correction      = 1.0
-current_filters = 0
+current_filters = 8
 
 [units]
 ppc0       = 10.0
@@ -48,5 +48,5 @@ fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr"
 fields_stride = 4
 
 [output]
-format   = "HDF5"
+format   = "disabled"
 interval = 5

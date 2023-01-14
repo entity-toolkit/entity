@@ -45,7 +45,7 @@ namespace ntt {
     real_t cX1      = Xmin + 0.25 * sX;
     real_t cX2      = Xmin + 0.75 * sX;
     Kokkos::parallel_for(
-      "userInitFlds", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
+      "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         set_em_fields_2d(mblock, i, j, reconnectionField, cs_width, cX1, cX2);
       });
   }
@@ -53,7 +53,7 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
     const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
-    InjectUniform<Dim2, TypePIC>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
+    InjectUniform<Dim2, TypePIC, DistribFunc>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
   }
 }    // namespace ntt
 
