@@ -1,5 +1,7 @@
-#include "wrapper.h"
 #include "meshblock.h"
+
+#include "wrapper.h"
+
 #include "particles.h"
 
 #include <plog/Log.h>
@@ -11,46 +13,47 @@ namespace ntt {
   Mesh<D>::Mesh(const std::vector<unsigned int>& res,
                 const std::vector<real_t>&       ext,
                 const real_t*                    params)
-    : m_i1min {res.size() > 0 ? N_GHOSTS : 0},
-      m_i1max {res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1},
-      m_i2min {res.size() > 1 ? N_GHOSTS : 0},
-      m_i2max {res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1},
-      m_i3min {res.size() > 2 ? N_GHOSTS : 0},
-      m_i3max {res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1},
-      m_Ni1 {res.size() > 0 ? (int)(res[0]) : 1},
-      m_Ni2 {res.size() > 1 ? (int)(res[1]) : 1},
-      m_Ni3 {res.size() > 2 ? (int)(res[2]) : 1},
-      metric {res, ext, params} {}
+    : m_i1min { res.size() > 0 ? N_GHOSTS : 0 },
+      m_i1max { res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1 },
+      m_i2min { res.size() > 1 ? N_GHOSTS : 0 },
+      m_i2max { res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1 },
+      m_i3min { res.size() > 2 ? N_GHOSTS : 0 },
+      m_i3max { res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1 },
+      m_Ni1 { res.size() > 0 ? (int)(res[0]) : 1 },
+      m_Ni2 { res.size() > 1 ? (int)(res[1]) : 1 },
+      m_Ni3 { res.size() > 2 ? (int)(res[2]) : 1 },
+      metric { res, ext, params } {}
 
   template <>
   auto Mesh<Dim1>::rangeAllCells() -> range_t<Dim1> {
-    boxRegion<Dim1> region {CellLayer::allLayer};
+    boxRegion<Dim1> region { CellLayer::allLayer };
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim2>::rangeAllCells() -> range_t<Dim2> {
-    boxRegion<Dim2> region {CellLayer::allLayer, CellLayer::allLayer};
+    boxRegion<Dim2> region { CellLayer::allLayer, CellLayer::allLayer };
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim3>::rangeAllCells() -> range_t<Dim3> {
-    boxRegion<Dim3> region {CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer};
+    boxRegion<Dim3> region { CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer };
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim1>::rangeActiveCells() -> range_t<Dim1> {
-    boxRegion<Dim1> region {CellLayer::activeLayer};
+    boxRegion<Dim1> region { CellLayer::activeLayer };
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim2>::rangeActiveCells() -> range_t<Dim2> {
-    boxRegion<Dim2> region {CellLayer::activeLayer, CellLayer::activeLayer};
+    boxRegion<Dim2> region { CellLayer::activeLayer, CellLayer::activeLayer };
     return rangeCells(region);
   }
   template <>
   auto Mesh<Dim3>::rangeActiveCells() -> range_t<Dim3> {
-    boxRegion<Dim3> region {
-      CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer};
+    boxRegion<Dim3> region { CellLayer::activeLayer,
+                             CellLayer::activeLayer,
+                             CellLayer::activeLayer };
     return rangeCells(region);
   }
 
@@ -129,38 +132,39 @@ namespace ntt {
 
   template <>
   auto Mesh<Dim1>::rangeAllCellsOnHost() -> range_h_t<Dim1> {
-    boxRegion<Dim1> region {CellLayer::allLayer};
+    boxRegion<Dim1> region { CellLayer::allLayer };
     return rangeCellsOnHost(region);
   }
   template <>
   auto Mesh<Dim2>::rangeAllCellsOnHost() -> range_h_t<Dim2> {
-    boxRegion<Dim2> region {CellLayer::allLayer, CellLayer::allLayer};
+    boxRegion<Dim2> region { CellLayer::allLayer, CellLayer::allLayer };
     return rangeCellsOnHost(region);
   }
   template <>
   auto Mesh<Dim3>::rangeAllCellsOnHost() -> range_h_t<Dim3> {
-    boxRegion<Dim3> region {CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer};
+    boxRegion<Dim3> region { CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer };
     return rangeCellsOnHost(region);
   }
   template <>
   auto Mesh<Dim1>::rangeActiveCellsOnHost() -> range_h_t<Dim1> {
-    boxRegion<Dim1> region {CellLayer::activeLayer};
+    boxRegion<Dim1> region { CellLayer::activeLayer };
     return rangeCellsOnHost(region);
   }
   template <>
   auto Mesh<Dim2>::rangeActiveCellsOnHost() -> range_h_t<Dim2> {
-    boxRegion<Dim2> region {CellLayer::activeLayer, CellLayer::activeLayer};
+    boxRegion<Dim2> region { CellLayer::activeLayer, CellLayer::activeLayer };
     return rangeCellsOnHost(region);
   }
   template <>
   auto Mesh<Dim3>::rangeActiveCellsOnHost() -> range_h_t<Dim3> {
-    boxRegion<Dim3> region {
-      CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer};
+    boxRegion<Dim3> region { CellLayer::activeLayer,
+                             CellLayer::activeLayer,
+                             CellLayer::activeLayer };
     return rangeCellsOnHost(region);
   }
 
   template <Dimension D>
-  auto Mesh<D>::rangeCells(const tuple_t<tuple_t<short, Dim2>, D>& ranges) -> range_t<D> {
+  auto Mesh<D>::rangeCells(const tuple_t<tuple_t<int, Dim2>, D>& ranges) -> range_t<D> {
     tuple_t<int, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
       if ((ranges[i][0] < -N_GHOSTS) || (ranges[i][1] > N_GHOSTS)) {
@@ -168,9 +172,27 @@ namespace ntt {
       }
       imin[i] = i_min(i) + ranges[i][0];
       imax[i] = i_max(i) + ranges[i][1];
-      if (imin[i] >= imax[i]) { NTTHostError("Invalid cell layer picked"); }
+      if (imin[i] >= imax[i]) {
+        NTTHostError("Invalid cell layer picked");
+      }
     }
     return CreateRangePolicy<D>(imin, imax);
+  }
+
+  template <>
+  auto Mesh<Dim1>::extent() const -> std::vector<real_t> {
+    return { metric.x1_min, metric.x1_max };
+  }
+
+  template <>
+  auto Mesh<Dim2>::extent() const -> std::vector<real_t> {
+    return { metric.x1_min, metric.x1_max, metric.x2_min, metric.x2_max };
+  }
+
+  template <>
+  auto Mesh<Dim3>::extent() const -> std::vector<real_t> {
+    return { metric.x1_min, metric.x1_max, metric.x2_min,
+             metric.x2_max, metric.x3_min, metric.x3_max };
   }
 
   template <Dimension D, SimulationType S>
@@ -183,7 +205,7 @@ namespace ntt {
       particles.emplace_back(part);
     }
   }
-} // namespace ntt
+}    // namespace ntt
 
 template class ntt::Mesh<ntt::Dim1>;
 template class ntt::Mesh<ntt::Dim2>;

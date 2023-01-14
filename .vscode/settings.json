@@ -9,6 +9,7 @@
     "docs/": true
   },
   "files.associations": {
+    "*.h.in": "cpp",
     "*.in": "cpp",
     "string_view": "cpp",
     "vector": "cpp",
@@ -109,7 +110,9 @@
     "regex": "cpp",
     "shared_mutex": "cpp",
     "filesystem": "cpp",
-    "future": "cpp"
+    "future": "cpp",
+    "*.inc": "cpp",
+    "__std_stream": "cpp"
   },
   "editor.tokenColorCustomizations": {
     "textMateRules": []

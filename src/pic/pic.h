@@ -2,6 +2,7 @@
 #define PIC_PIC_H
 
 #include "wrapper.h"
+
 #include "fields.h"
 #include "simulation.h"
 
@@ -128,14 +129,15 @@ namespace ntt {
     /* ----------------- Additional conversions and computations ---------------- */
     /**
      * @brief Compute density for output or other usage.
+     * @param smooth smoothing window (default 2).
      */
-    void ComputeDensity();
+    void ComputeDensity(const short& smooth = 2);
     /**
-     * @brief Convert a given field to the hatted basis on the host.
+     * @brief Interpolate fields to cell centers & convert to the hatted basis.
      */
-    void ConvertFieldsToHat_h() override;
+    void InterpolateAndConvertFieldsToHat() override;
   };
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

@@ -1,15 +1,27 @@
 #ifndef CONFIG_H
 #  define CONFIG_H
 
+#  include <fmt/core.h>
+
 #  include <stdexcept>
 
 #  define STRINGIZE(x)        STRINGIZE_DETAIL(x)
-#  define STRINGIZE_DETAIL(x) #  x
+#  define STRINGIZE_DETAIL(x) #x
 #  define LINE_STRING         STRINGIZE(__LINE__)
 
 #  define NTTHostError(msg)                                                                   \
-    throw std::runtime_error("# ERROR: " msg " : filename: " __FILE__ " : "                   \
-                             "line: " LINE_STRING)
+    {                                                                                         \
+      auto err                                                                                \
+        = fmt::format("# ERROR: {}  : filename: {} : line: {}", msg, __FILE__, LINE_STRING);  \
+      throw std::runtime_error(err);                                                          \
+    }
+
+#  define NTTHostErrorIf(condition, msg)                                                      \
+    {                                                                                         \
+      if ((condition)) {                                                                      \
+        NTTHostError(msg);                                                                    \
+      }                                                                                       \
+    }
 
 #  ifdef ENABLE_GPU
 #    define NTTError(msg) ({})
@@ -31,4 +43,4 @@ inline constexpr int N_GHOSTS = 2;
 #define @METRIC_FLAG@
 // clang-format on
 
-#endif
+#endif    // CONFIG_H

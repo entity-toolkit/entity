@@ -30,7 +30,7 @@ maxnpart = 1e7
 pusher   = "BORIS"
 
 [visualization]
-fields = ["Ex"]
+fields = ["Ex", "density"]
 fields_stride = 1
 
 

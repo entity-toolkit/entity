@@ -2,6 +2,7 @@
 #define PIC_CURRENTS_FILTER_H
 
 #include "wrapper.h"
+
 #include "pic.h"
 
 namespace ntt {
@@ -19,7 +20,7 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock object.
      */
-    CurrentsFilter_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock {mblock} {
+    CurrentsFilter_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {
       for (short d = 0; d < (short)D; ++d) {
         m_size[d] = m_mblock.Ni(d);
       }
@@ -48,7 +49,7 @@ namespace ntt {
 #ifdef MINKOWSKI_METRIC
   template <>
   Inline void CurrentsFilter_kernel<Dim1>::operator()(index_t i) const {
-    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+    for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
       m_mblock.cur(i, comp)
         = INV_2 * m_mblock.buff(i, comp)
           + INV_4 * (m_mblock.buff(i - 1, comp) + m_mblock.buff(i + 1, comp));
@@ -57,7 +58,7 @@ namespace ntt {
 
   template <>
   Inline void CurrentsFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
-    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+    for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
       m_mblock.cur(i, j, comp)
         = INV_4 * m_mblock.buff(i, j, comp)
           + INV_8
@@ -71,7 +72,7 @@ namespace ntt {
 
   template <>
   Inline void CurrentsFilter_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+    for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
       m_mblock.cur(i, j, k, comp)
         = INV_8 * m_mblock.buff(i, j, k, comp)
           + INV_16
@@ -107,121 +108,81 @@ namespace ntt {
   template <>
   Inline void CurrentsFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
     const std::size_t j_min = N_GHOSTS, j_min_p1 = j_min + 1;
-    const std::size_t j_max = m_size[1] + N_GHOSTS - 1, j_max_m1 = j_max - 1;
+    const std::size_t j_max = m_size[1] + N_GHOSTS, j_max_m1 = j_max - 1;
     real_t            cur_ij, cur_ijp1, cur_ijm1;
-#  define BELYAEV_FILTER
-    // #  define REGULAR_FILTER
-
-#  ifdef BELYAEV_FILTER
     if (j == j_min) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijp1;
 
-      // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
-      // ... filter in theta
-      m_mblock.cur(i, j, cur::jx3) = INV_2 * cur_ij + INV_4 * cur_ijp1;
+      m_mblock.cur(i, j, cur::jx3) = ZERO;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j + 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j + 1);
       // ... filter in theta
-      m_mblock.cur(i, j, cur::jx2) = INV_4 * cur_ij + INV_4 * cur_ijp1;
+      m_mblock.cur(i, j, cur::jx2) = INV_4 * (cur_ij + cur_ijp1);
     } else if (j == j_min_p1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
+      cur_ijm1                     = ZERO;
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
+
+      /* ---------------------------------- theta --------------------------------- */
+      // ... filter in r
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j - 1);
+      // ... filter in theta
+      m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij + INV_4 * (cur_ijm1 + cur_ijp1);
     } else if (j == j_max_m1) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijp1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
 
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
+      cur_ijp1                     = ZERO;
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
       // ... filter in theta
       m_mblock.cur(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j - 1);
       // ... filter in theta
-      m_mblock.cur(i, j, cur::jx2) = INV_4 * cur_ij + INV_4 * cur_ijm1;
+      m_mblock.cur(i, j, cur::jx2) = INV_4 * (cur_ij + cur_ijm1);
     } else if (j == j_max) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
+      cur_ij                       = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
+      cur_ijm1                     = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
       // ... filter in theta
-      m_mblock.cur(i, j, cur::jx1)
-        = INV_2 * m_mblock.buff(i, j, cur::jx1) + INV_4 * m_mblock.buff(i, j - 1, cur::jx1);
+      m_mblock.cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijm1;
 
-      // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j + 1);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx3, i, j - 1);
-      // ... filter in theta
-      m_mblock.cur(i, j, cur::jx3)
-        = INV_2 * m_mblock.buff(i, j, cur::jx3) + INV_4 * m_mblock.buff(i, j - 1, cur::jx3);
+      m_mblock.cur(i, j, cur::jx3) = ZERO;
     }
-#  elif defined(REGULAR_FILTER)
-    if (j == j_min) {
-      /* --------------------------------- r, phi --------------------------------- */
-      // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijp1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j + 1);
-      // ... filter in theta
-      m_mblock.cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_2 * cur_ijp1;
-      // FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-
-      /* ---------------------------------- theta --------------------------------- */
-      // ... filter in r
-      cur_ij = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      // ... filter in theta
-      m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij;
-      // FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      // INV_2 * cur_ij;
-    } else if (j == j_max + 1) {
-      /* --------------------------------- r, phi --------------------------------- */
-      // ... filter in r
-      cur_ij   = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j);
-      cur_ijm1 = FILTER_IN_I1(m_mblock.buff, cur::jx1, i, j - 1);
-      // ... filter in theta
-      m_mblock.cur(i, j, cur::jx1)
-        = INV_2 * m_mblock.buff(i, j, cur::jx1) + INV_2 * m_mblock.buff(i, j - 1, cur::jx1);
-
-      // ... filter in r
-      cur_ij = FILTER_IN_I1(m_mblock.buff, cur::jx2, i, j);
-      // ... filter in theta
-      m_mblock.cur(i, j, cur::jx2) = INV_2 * cur_ij;
-    }
-#  endif
     else {
-      for (auto& comp : {cur::jx1, cur::jx2, cur::jx3}) {
+      for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
         m_mblock.cur(i, j, comp)
           = INV_4 * m_mblock.buff(i, j, comp)
             + INV_8
@@ -241,6 +202,6 @@ namespace ntt {
 
 #endif
 
-} // namespace ntt
+}    // namespace ntt
 
-#endif // PIC_CURRENTS_FILTER_H
+#endif    // PIC_CURRENTS_FILTER_H

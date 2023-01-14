@@ -1,9 +1,10 @@
 #ifndef UTILS_UTILS_H
 #define UTILS_UTILS_H
 
-#include <type_traits>
-#include <vector>
 #include <string>
+#include <vector>
+
+#include <type_traits>
 
 namespace ntt {
   // auto zeropad(const std::string& str, const size_t& num) -> std::string {
@@ -18,12 +19,11 @@ namespace ntt {
      */
 
     template <typename Iter>
-    using select_access_type_for = std::conditional_t<
-      std::is_same_v<Iter,
-                     std::vector<bool>::
-                       iterator> || std::is_same_v<Iter, std::vector<bool>::const_iterator>,
-      typename Iter::value_type,
-      typename Iter::reference>;
+    using select_access_type_for
+      = std::conditional_t<std::is_same_v<Iter, std::vector<bool>::iterator>
+                             || std::is_same_v<Iter, std::vector<bool>::const_iterator>,
+                           typename Iter::value_type,
+                           typename Iter::reference>;
 
     template <typename Iter1, typename Iter2>
     class zip_iterator {
@@ -34,7 +34,7 @@ namespace ntt {
       zip_iterator() = delete;
 
       zip_iterator(Iter1 iter_1_begin, Iter2 iter_2_begin)
-        : m_iter_1_begin {iter_1_begin}, m_iter_2_begin {iter_2_begin} {}
+        : m_iter_1_begin { iter_1_begin }, m_iter_2_begin { iter_2_begin } {}
 
       auto operator++() -> zip_iterator& {
         ++m_iter_1_begin;
@@ -48,14 +48,18 @@ namespace ntt {
         return tmp;
       }
 
-      auto operator!=(zip_iterator const& other) { return !(*this == other); }
+      auto operator!=(zip_iterator const& other) {
+        return !(*this == other);
+      }
 
       auto operator==(zip_iterator const& other) {
         return m_iter_1_begin == other.m_iter_1_begin
                || m_iter_2_begin == other.m_iter_2_begin;
       }
 
-      auto operator*() -> value_type { return value_type {*m_iter_1_begin, *m_iter_2_begin}; }
+      auto operator*() -> value_type {
+        return value_type { *m_iter_1_begin, *m_iter_2_begin };
+      }
 
     private:
       Iter1 m_iter_1_begin;
@@ -70,16 +74,20 @@ namespace ntt {
     template <typename T, typename U>
     class zipper {
     public:
-      using Iter1 = select_iterator_for<T>;
-      using Iter2 = select_iterator_for<U>;
+      using Iter1    = select_iterator_for<T>;
+      using Iter2    = select_iterator_for<U>;
 
       using zip_type = zip_iterator<Iter1, Iter2>;
 
       template <typename V, typename W>
-      zipper(V&& a, W&& b) : m_a {a}, m_b {b} {}
+      zipper(V&& a, W&& b) : m_a { a }, m_b { b } {}
 
-      auto begin() -> zip_type { return zip_type {std::begin(m_a), std::begin(m_b)}; }
-      auto end() -> zip_type { return zip_type {std::end(m_a), std::end(m_b)}; }
+      auto begin() -> zip_type {
+        return zip_type { std::begin(m_a), std::begin(m_b) };
+      }
+      auto end() -> zip_type {
+        return zip_type { std::end(m_a), std::end(m_b) };
+      }
 
     private:
       T m_a;
@@ -88,11 +96,11 @@ namespace ntt {
 
     template <typename T, typename U>
     auto zip(T&& t, U&& u) {
-      return zipper<T, U> {std::forward<T>(t), std::forward<U>(u)};
+      return zipper<T, U> { std::forward<T>(t), std::forward<U>(u) };
     }
 
-  } // namespace c9
+  }    // namespace c9
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

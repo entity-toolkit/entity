@@ -1,0 +1,48 @@
+[simulation]
+title   = "Injection test"
+runtime = 0.0001
+
+[domain]
+resolution = [256, 256]
+extent     = [-1.0, 1.0, -1.0, 1.0]
+boundaries = ["PERIODIC", "PERIODIC"]
+
+[algorithm]
+CFL             = 0.9
+correction      = 1.0
+fieldsolver_ON  = true
+deposit_ON      = true
+current_filters = 4
+
+[units]
+ppc0       = 10.0
+larmor0    = 0.1
+skindepth0 = 0.1
+
+[particles]
+n_species = 2
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 5e7
+pusher   = "BORIS"
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 5e7
+pusher   = "BORIS"
+
+[problem]
+
+[visualization]
+fields = ["density"]
+fields_stride = 1
+
+
+# [output]
+# format          = <string: { disabled, csv }>
+# interval        = <int>

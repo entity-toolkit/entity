@@ -2,9 +2,9 @@
 #define PIC_CURRENTS_AMPERE_H
 
 #include "wrapper.h"
-#include "pic.h"
 
 #include "field_macros.h"
+#include "pic.h"
 
 namespace ntt {
 #ifdef MINKOWSKI_METRIC
@@ -24,7 +24,7 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmpere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
-      : m_mblock {mblock}, m_coeff {coeff} {}
+      : m_mblock { mblock }, m_coeff { coeff } {}
     /**
      * @brief 1D version of the add current.
      * @param i1 index.
@@ -82,7 +82,7 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmpere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
-      : m_mblock {mblock}, m_coeff {coeff} {}
+      : m_mblock { mblock }, m_coeff { coeff } {}
     /**
      * @brief 1D version of the add current.
      * @param i1 index.
@@ -105,9 +105,9 @@ namespace ntt {
 
   template <>
   Inline void CurrentsAmpere_kernel<Dim1>::operator()(index_t i) const {
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t inv_sqrt_detH_i {ONE / m_mblock.metric.sqrt_det_h({i_})};
-    real_t inv_sqrt_detH_iP {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF})};
+    real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+    real_t inv_sqrt_detH_i { ONE / m_mblock.metric.sqrt_det_h({ i_ }) };
+    real_t inv_sqrt_detH_iP { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF }) };
     EX1(i) += m_coeff * JX1(i) * inv_sqrt_detH_iP;
     EX2(i) += m_coeff * JX2(i) * inv_sqrt_detH_i;
     EX3(i) += m_coeff * JX3(i) * inv_sqrt_detH_i;
@@ -115,11 +115,11 @@ namespace ntt {
 
   template <>
   Inline void CurrentsAmpere_kernel<Dim2>::operator()(index_t i, index_t j) const {
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-    real_t inv_sqrt_detH_ij {ONE / m_mblock.metric.sqrt_det_h({i_, j_})};
-    real_t inv_sqrt_detH_iPj {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_})};
-    real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF})};
+    real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+    real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+    real_t inv_sqrt_detH_ij { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ }) };
+    real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
+    real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
     EX1(i, j) += m_coeff * JX1(i, j) * inv_sqrt_detH_iPj;
     EX2(i, j) += m_coeff * JX2(i, j) * inv_sqrt_detH_ijP;
     EX3(i, j) += m_coeff * JX3(i, j) * inv_sqrt_detH_ij;
@@ -127,12 +127,12 @@ namespace ntt {
 
   template <>
   Inline void CurrentsAmpere_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
-    real_t j_ {static_cast<real_t>(static_cast<int>(j) - N_GHOSTS)};
-    real_t k_ {static_cast<real_t>(static_cast<int>(k) - N_GHOSTS)};
-    real_t inv_sqrt_detH_iPjk {ONE / m_mblock.metric.sqrt_det_h({i_ + HALF, j_, k_})};
-    real_t inv_sqrt_detH_ijPk {ONE / m_mblock.metric.sqrt_det_h({i_, j_ + HALF, k_})};
-    real_t inv_sqrt_detH_ijkP {ONE / m_mblock.metric.sqrt_det_h({i_, j_, k_ + HALF})};
+    real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+    real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+    real_t k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
+    real_t inv_sqrt_detH_iPjk { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_, k_ }) };
+    real_t inv_sqrt_detH_ijPk { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF, k_ }) };
+    real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_, k_ + HALF }) };
     EX1(i, j, k) += m_coeff * JX1(i, j, k) * inv_sqrt_detH_iPjk;
     EX2(i, j, k) += m_coeff * JX2(i, j, k) * inv_sqrt_detH_ijPk;
     EX3(i, j, k) += m_coeff * JX3(i, j, k) * inv_sqrt_detH_ijkP;
@@ -150,7 +150,7 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmperePoles_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
-      : m_mblock {mblock}, m_coeff {coeff}, m_nj(m_mblock.Ni2()) {}
+      : m_mblock { mblock }, m_coeff { coeff }, m_nj(m_mblock.Ni2()) {}
     /**
      * @param i index.
      */
@@ -159,23 +159,23 @@ namespace ntt {
 
   template <>
   Inline void CurrentsAmperePoles_kernel<Dim2>::operator()(index_t i) const {
-    index_t j_min {N_GHOSTS};
-    index_t j_max {m_nj + N_GHOSTS - 1};
+    index_t j_min { N_GHOSTS };
+    index_t j_max { m_nj + N_GHOSTS };
 
-    real_t i_ {static_cast<real_t>(static_cast<int>(i) - N_GHOSTS)};
+    real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
-    real_t inv_sqrt_detH_ijP {ONE / m_mblock.metric.sqrt_det_h({i_, HALF})};
-    real_t inv_polar_area_iPj {ONE / m_mblock.metric.polar_area({i_ + HALF, HALF})};
+    real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
+    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF }) };
     // theta = 0
     EX1(i, j_min) += m_coeff * JX1(i, j_min) * HALF * inv_polar_area_iPj;
     // theta = pi
-    EX1(i, j_max + 1) += m_coeff * JX1(i, j_max + 1) * HALF * inv_polar_area_iPj;
+    EX1(i, j_max) += m_coeff * JX1(i, j_max) * HALF * inv_polar_area_iPj;
 
     // j = jmin + 1/2
     EX2(i, j_min) += m_coeff * JX2(i, j_min) * inv_sqrt_detH_ijP;
   }
 
-#endif 
-} // namespace ntt
+#endif
+}    // namespace ntt
 
-#endif // PIC_CURRENTS_AMPERE_H
+#endif    // PIC_CURRENTS_AMPERE_H

@@ -1,24 +1,24 @@
 [submodule "extern/plog"]
 	path = extern/plog
-	url = git@github.com:haykh/plog.git
+	url = https://github.com/SergiusTheBest/plog.git
 [submodule "extern/toml"]
 	path = extern/toml
-	url = git@github.com:ToruNiina/toml11.git
+	url = https://github.com/ToruNiina/toml11.git
 [submodule "extern/doctest"]
 	path = extern/doctest
-	url = git@github.com:doctest/doctest.git
+	url = https://github.com/doctest/doctest.git
 [submodule "extern/nttiny"]
 	path = extern/nttiny
-	url = git@github.com:haykh/nttiny.git
+	url = https://github.com/haykh/nttiny.git
 	branch = master
 [submodule "extern/kokkos"]
 	path = extern/kokkos
-	url = git@github.com:kokkos/kokkos.git
+	url = https://github.com/kokkos/kokkos.git
 	branch = master
 [submodule "extern/adios2"]
 	path = extern/adios2
-	url = git@github.com:ornladios/ADIOS2.git
+	url = https://github.com/ornladios/ADIOS2.git
 	branch = master
 [submodule "extern/fmt"]
 	path = extern/fmt
-	url = git@github.com:fmtlib/fmt.git
+	url = https://github.com/fmtlib/fmt.git

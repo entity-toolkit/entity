@@ -2,7 +2,7 @@
 #define FRAMEWORK_PARTICLE_MACROS_H
 
 #define from_Xi_to_i(XI, I)                                                                   \
-  { I = static_cast<int>((XI) + N_GHOSTS) - N_GHOSTS; }
+  { I = static_cast<int>((XI)); }
 
 #define from_Xi_to_i_di(XI, I, DI)                                                            \
   {                                                                                           \
@@ -33,7 +33,7 @@
       coord_t<Dim1> X_CU;                                                                     \
       int           I;                                                                        \
       float         DX;                                                                       \
-      ((MBLOCK).metric).x_Cart2Code({(X1)}, X_CU);                                            \
+      ((MBLOCK).metric).x_Cart2Code({ (X1) }, X_CU);                                          \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
       (SPECIES).i1((INDEX))  = I;                                                             \
       (SPECIES).dx1((INDEX)) = DX;                                                            \
@@ -47,7 +47,7 @@
       coord_t<Dim2> X_CU;                                                                     \
       int           I;                                                                        \
       float         DX;                                                                       \
-      ((MBLOCK).metric).x_Cart2Code({(X1), (X2)}, X_CU);                                      \
+      ((MBLOCK).metric).x_Cart2Code({ (X1), (X2) }, X_CU);                                    \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
       (SPECIES).i1((INDEX))  = I;                                                             \
       (SPECIES).dx1((INDEX)) = DX;                                                            \
@@ -64,7 +64,7 @@
       coord_t<Dim3> X_CU;                                                                     \
       int           I;                                                                        \
       float         DX;                                                                       \
-      ((MBLOCK).metric).x_Cart2Code({(X1), (X2), (X3)}, X_CU);                                \
+      ((MBLOCK).metric).x_Cart2Code({ (X1), (X2), (X3) }, X_CU);                              \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
       (SPECIES).i1((INDEX))  = I;                                                             \
       (SPECIES).dx1((INDEX)) = DX;                                                            \
@@ -84,11 +84,11 @@
 #  define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
     {                                                                                         \
       coord_t<Dim2> X_CU;                                                                     \
-      vec_t<Dim3>   U_C {ZERO, ZERO, ZERO};                                                   \
+      vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
       int           I;                                                                        \
       float         DX;                                                                       \
-      ((MBLOCK).metric).x_Sph2Code({(X1), (X2)}, X_CU);                                       \
-      ((MBLOCK).metric).v_Hat2Cart({X_CU[0], X_CU[1], ZERO}, {U1, U2, U3}, U_C);              \
+      ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                     \
+      ((MBLOCK).metric).v_Hat2Cart({ X_CU[0], X_CU[1], ZERO }, { U1, U2, U3 }, U_C);          \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
       (SPECIES).i1((INDEX))  = I;                                                             \
       (SPECIES).dx1((INDEX)) = DX;                                                            \
@@ -103,11 +103,11 @@
 #  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
     {                                                                                         \
       coord_t<Dim3> X_CU;                                                                     \
-      vec_t<Dim3>   U_C {ZERO, ZERO, ZERO};                                                   \
+      vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
       int           I;                                                                        \
       float         DX;                                                                       \
-      ((MBLOCK).metric).x_Sph2Code({(X1), (X2), (X3)}, X_CU);                                 \
-      ((MBLOCK).metric).v_Hat2Cart(X_CU, {U1, U2, U3}, U_C);                                  \
+      ((MBLOCK).metric).x_Sph2Code({ (X1), (X2), (X3) }, X_CU);                               \
+      ((MBLOCK).metric).v_Hat2Cart(X_CU, { U1, U2, U3 }, U_C);                                \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
       (SPECIES).i1((INDEX))  = I;                                                             \
       (SPECIES).dx1((INDEX)) = DX;                                                            \

@@ -2,10 +2,11 @@
 #define FRAMEWORK_METRICS_KERR_SCHILD_H
 
 #include "wrapper.h"
+
 #include "metric_base.h"
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 namespace ntt {
   /**
@@ -27,20 +28,22 @@ namespace ntt {
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
-      : MetricBase<D> {"kerr_schild", resolution, extent},
-        a {params[4]},
-        dr {(this->x1_max - this->x1_min) / this->nx1},
-        dtheta {(real_t)(constant::PI) / this->nx2},
-        dphi {(real_t)(constant::TWO_PI) / this->nx3},
-        dr_inv {ONE / dr},
-        dtheta_inv {ONE / dtheta},
-        dphi_inv {ONE / dphi},
-        dr_sqr {dr * dr},
-        dtheta_sqr {dtheta * dtheta},
-        dphi_sqr {dphi * dphi} {}
+      : MetricBase<D> { "kerr_schild", resolution, extent },
+        a { params[4] },
+        dr { (this->x1_max - this->x1_min) / this->nx1 },
+        dtheta { (real_t)(constant::PI) / this->nx2 },
+        dphi { (real_t)(constant::TWO_PI) / this->nx3 },
+        dr_inv { ONE / dr },
+        dtheta_inv { ONE / dtheta },
+        dphi_inv { ONE / dphi },
+        dr_sqr { dr * dr },
+        dtheta_sqr { dtheta * dtheta },
+        dphi_sqr { dphi * dphi } {}
     ~Metric() = default;
 
-    [[nodiscard]] auto spin() const -> const real_t& { return a; }
+    [[nodiscard]] auto spin() const -> const real_t& {
+      return a;
+    }
 
     /**
      * Compute metric component 11.
@@ -49,9 +52,9 @@ namespace ntt {
      * @returns h_11 (covariant, lower index) metric component.
      */
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {math::cos(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t cth { math::cos(theta) };
       return dr_sqr * (ONE + TWO * r / (r * r + a * a * cth * cth));
     }
 
@@ -62,9 +65,9 @@ namespace ntt {
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {math::cos(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t cth { math::cos(theta) };
       return dtheta_sqr * (r * r + a * a * cth * cth);
     }
 
@@ -75,13 +78,13 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {math::cos(theta)};
-      real_t sth {math::sin(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t cth { math::cos(theta) };
+      real_t sth { math::sin(theta) };
 
-      real_t delta {r * r - TWO * r + a * a};
-      real_t As {(r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth};
+      real_t delta { r * r - TWO * r + a * a };
+      real_t As { (r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth };
       return As * sth * sth / (r * r + a * a * cth * cth);
     }
 
@@ -92,10 +95,10 @@ namespace ntt {
      * @returns h_13 (covariant, lower index) metric component.
      */
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {math::cos(theta)};
-      real_t sth {math::sin(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t cth { math::cos(theta) };
+      real_t sth { math::sin(theta) };
       return -dr * a * sth * sth * (ONE + TWO * r / (r * r + a * a * cth * cth));
     }
 
@@ -106,11 +109,11 @@ namespace ntt {
      * @returns alpha.
      */
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {math::cos(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t cth { math::cos(theta) };
 
-      real_t z {TWO * r / (r * r + a * a * cth * cth)};
+      real_t z { TWO * r / (r * r + a * a * cth * cth) };
       return ONE / math::sqrt(ONE + z);
     }
 
@@ -121,11 +124,11 @@ namespace ntt {
      * @returns beta^1 (contravariant).
      */
     Inline auto beta1u(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t theta {x[1] * dtheta};
-      real_t cth {math::cos(theta)};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t theta { x[1] * dtheta };
+      real_t cth { math::cos(theta) };
 
-      real_t z {TWO * r / (r * r + a * a * cth * cth)};
+      real_t z { TWO * r / (r * r + a * a * cth * cth) };
       return (z / (ONE + z)) * dr_inv;
     }
 
@@ -147,8 +150,8 @@ namespace ntt {
      * @returns Area at the pole.
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
-      real_t r {x[0] * dr + this->x1_min};
-      real_t del_theta {x[1] * dtheta};
+      real_t r { x[0] * dr + this->x1_min };
+      real_t del_theta { x[1] * dtheta };
       return dr * (SQR(r) + SQR(a)) * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a)))
              * (ONE - math::cos(del_theta));
     }
@@ -165,17 +168,19 @@ namespace ntt {
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dim2) {
-        real_t min_dx {-1.0};
-        for (int i {0}; i < this->nx1; ++i) {
-          for (int j {0}; j < this->nx2; ++j) {
-            real_t i_ {(real_t)(i) + HALF};
-            real_t j_ {(real_t)(j) + HALF};
-            real_t inv_dx1_ {this->h_11_inv({i_, j_})};
-            real_t inv_dx2_ {this->h_22_inv({i_, j_})};
+        real_t min_dx { -1.0 };
+        for (int i { 0 }; i < this->nx1; ++i) {
+          for (int j { 0 }; j < this->nx2; ++j) {
+            real_t i_ { (real_t)(i) + HALF };
+            real_t j_ { (real_t)(j) + HALF };
+            real_t inv_dx1_ { this->h_11_inv({ i_, j_ }) };
+            real_t inv_dx2_ { this->h_22_inv({ i_, j_ }) };
             real_t dx = 1.0
-                        / (this->alpha({i_, j_}) * math::sqrt(inv_dx1_ + inv_dx2_)
-                           + this->beta1u({i_, j_}));
-            if ((min_dx >= dx) || (min_dx < 0.0)) { min_dx = dx; }
+                        / (this->alpha({ i_, j_ }) * math::sqrt(inv_dx1_ + inv_dx2_)
+                           + this->beta1u({ i_, j_ }));
+            if ((min_dx >= dx) || (min_dx < 0.0)) {
+              min_dx = dx;
+            }
           }
         }
         return min_dx;
@@ -292,6 +297,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

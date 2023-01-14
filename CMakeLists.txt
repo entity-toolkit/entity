@@ -3,18 +3,28 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.0.6
+  VERSION 0.8.0.7
   LANGUAGES CXX
 )
 
+# ----------------------------- Submodules ------------------------------- #
 find_package(Git QUIET)
 
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+file(GLOB SUBMODULES_LOADED extern/kokkos/*)
+list(LENGTH SUBMODULES_LOADED SUBMODULES_LOADED)
+
+if(${SUBMODULES_LOADED} GREATER 0)
+  set(SUBMODULES_LOADED TRUE)
+else()
+  set(SUBMODULES_LOADED FALSE)
+endif()
+
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND NOT ${SUBMODULES_LOADED})
   option(GIT_SUBMODULE "Check submodules during build" ON)
 
   if(GIT_SUBMODULE)
-    message(STATUS "Submodule update")
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+    message(STATUS "Updating all the submodules")
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --remote --recursive
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE GIT_SUBMOD_RESULT)
 
@@ -24,10 +34,11 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
   endif()
 endif()
 
+# ----------------------------- Defaults ---------------------------------- #
 set(default_simtype "pic")
 set(default_precision "single")
 set(default_pgen "dummy")
-set(default_output "ON")
+set(default_output "OFF")
 set(default_DEBUG "OFF")
 set(default_nttiny "OFF")
 set(default_KOKKOS_ENABLE_CUDA "OFF")
@@ -133,7 +144,7 @@ endif()
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
 if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nttiny extern/nttiny)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
 endif()
 
 # ----------------------------- Kokkos settings ---------------------------- #
@@ -176,6 +187,11 @@ if(${output} STREQUAL "ON")
   set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
   set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
   set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
+
+  # !TODO: add CUDA-enabled ADIOS2
+  set(ADIOS2_USE_CUDA OFF CACHE BOOL "Use CUDA for ADIOS2")
+
+  # set(ADIOS2_USE_CUDA ${Kokkos_ENABLE_CUDA} CACHE BOOL "Use CUDA for ADIOS2")
   add_compile_options("-D OUTPUT_ENABLED")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
 endif()

@@ -2,11 +2,11 @@
 #define PIC_AMPERE_MINKOWSKI_H
 
 #include "wrapper.h"
+
+#include "field_macros.h"
 #include "fields.h"
 #include "meshblock.h"
 #include "pic.h"
-
-#include "field_macros.h"
 
 namespace ntt {
   /**
@@ -71,5 +71,5 @@ namespace ntt {
     EX3(i, j, k)
       += m_coeff * (BX1(i, j - 1, k) - BX1(i, j, k) + BX2(i, j, k) - BX2(i - 1, j, k));
   }
-} // namespace ntt
-#endif // PIC_AMPERE_MINKOWSKI_H
+}    // namespace ntt
+#endif    // PIC_AMPERE_MINKOWSKI_H

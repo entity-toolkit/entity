@@ -1,0 +1,59 @@
+[simulation]
+title   = "debug-deposit-fltr"
+runtime = 0.1
+
+[domain]
+qsph_r0     = -100.0
+qsph_h      = 0.001
+sph_rabsorb = 4.5
+resolution  = [256, 128]
+extent      = [1.0, 5.0]
+boundaries  = ["USER", "USER"]
+
+[algorithm]
+CFL             = 0.45
+correction      = 1.0
+fieldsolver_ON  = true
+deposit_ON      = true
+current_filters = 0
+
+[units]
+ppc0       = 100.0
+larmor0    = 1e-4
+skindepth0 = 0.02
+
+[particles]
+n_species = 2
+
+[species_1]
+label    = "electron"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e2
+
+[species_2]
+label    = "positron"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e2
+
+[species_3]
+label    = "ion"
+mass     = 5.0
+charge   = 1.0
+maxnpart = 1e2
+
+[species_4]
+label    = "photon"
+mass     = 0.0
+charge   = 0.0
+maxnpart = 1e2
+
+[visualization]
+fields = ["density", "Er", "Etheta", "Ephi", "Br", "Btheta", "Bphi", "Jr", "Jtheta", "Jphi"]
+
+[output]
+format = "disabled"
+# interval        = 1
+
+[problem]

@@ -1,5 +1,7 @@
-#include "wrapper.h"
 #include "currents_filter.hpp"
+
+#include "wrapper.h"
+
 #include "pic.h"
 
 namespace ntt {
@@ -18,14 +20,14 @@ namespace ntt {
       range_t<D> range = mblock.rangeActiveCells();
 #ifndef MINKOWSKI_METRIC
       if constexpr (D == Dim2) {
-        range = CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min()},
-                                        {mblock.i1_max(), mblock.i2_max() + 1});
+        range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() },
+                                        { mblock.i1_max(), mblock.i2_max() + 1 });
       }
 #endif
       Kokkos::parallel_for("filter_pass", range, CurrentsFilter_kernel<D>(mblock));
     }
   }
-} // namespace ntt
+}    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::CurrentsFilter();
 template void ntt::PIC<ntt::Dim2>::CurrentsFilter();

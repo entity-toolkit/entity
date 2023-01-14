@@ -52,7 +52,9 @@ Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
  * @param x coordinate array in code units (size of the array is D).
  * @returns h^22 (contravariant, upper index) metric component.
  */
-Inline auto h_22_inv(const coord_t<D>& x) const -> real_t { return ONE / h_22(x); }
+Inline auto h_22_inv(const coord_t<D>& x) const -> real_t {
+  return ONE / h_22(x);
+}
 
 /**
  * Compute inverse metric component 33 from h_ij.
@@ -105,9 +107,10 @@ Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
  * @param vi_hat vector in hatted basis (size of the array is 3).
  * @param vi_cntrv vector in contravariant basis (size of the array is 3).
  */
-Inline void
-v_Hat2Cntrv(const coord_t<D>& xi, const vec_t<Dim3>& vi_hat, vec_t<Dim3>& vi_cntrv) const {
-  real_t A0 {math::sqrt(h_11_inv(xi))};
+Inline void v_Hat2Cntrv(const coord_t<D>&  xi,
+                        const vec_t<Dim3>& vi_hat,
+                        vec_t<Dim3>&       vi_cntrv) const {
+  real_t A0 { math::sqrt(h_11_inv(xi)) };
   vi_cntrv[0] = vi_hat[0] * A0;
   vi_cntrv[1] = vi_hat[1] / math::sqrt(h_22(xi));
   vi_cntrv[2] = vi_hat[2] / math::sqrt(h_33(xi)) - vi_hat[0] * A0 * h_13(xi) / h_33(xi);
@@ -120,8 +123,9 @@ v_Hat2Cntrv(const coord_t<D>& xi, const vec_t<Dim3>& vi_hat, vec_t<Dim3>& vi_cnt
  * @param vi_cntrv vector in contravariant basis (size of the array is 3).
  * @param vi_hat vector in hatted basis (size of the array is 3).
  */
-Inline void
-v_Cntrv2Hat(const coord_t<D>& xi, const vec_t<Dim3>& vi_cntrv, vec_t<Dim3>& vi_hat) const {
+Inline void v_Cntrv2Hat(const coord_t<D>&  xi,
+                        const vec_t<Dim3>& vi_cntrv,
+                        vec_t<Dim3>&       vi_hat) const {
   vi_hat[0] = vi_cntrv[0] / math::sqrt(h_11_inv(xi));
   vi_hat[1] = vi_cntrv[1] * math::sqrt(h_22(xi));
   vi_hat[2]
@@ -135,8 +139,9 @@ v_Cntrv2Hat(const coord_t<D>& xi, const vec_t<Dim3>& vi_cntrv, vec_t<Dim3>& vi_h
  * @param vi_hat vector in hatted basis (size of the array is 3).
  * @param vi_cov vector in covariant basis (size of the array is 3).
  */
-Inline void
-v_Hat2Cov(const coord_t<D>& xi, const vec_t<Dim3>& vi_hat, vec_t<Dim3>& vi_cov) const {
+Inline void v_Hat2Cov(const coord_t<D>&  xi,
+                      const vec_t<Dim3>& vi_hat,
+                      vec_t<Dim3>&       vi_cov) const {
   vi_cov[0]
     = vi_hat[0] / math::sqrt(h_11_inv(xi)) + vi_hat[2] * h_13(xi) / math::sqrt(h_33(xi));
   vi_cov[1] = vi_hat[1] * math::sqrt(h_22(xi));
@@ -150,9 +155,10 @@ v_Hat2Cov(const coord_t<D>& xi, const vec_t<Dim3>& vi_hat, vec_t<Dim3>& vi_cov) 
  * @param vi_cov vector in covariant basis (size of the array is 3).
  * @param vi_hat vector in hatted basis (size of the array is 3).
  */
-Inline void
-v_Cov2Hat(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov, vec_t<Dim3>& v_hat) const {
-  real_t A0 {math::sqrt(h_11_inv(xi))};
+Inline void v_Cov2Hat(const coord_t<D>&  xi,
+                      const vec_t<Dim3>& vi_cov,
+                      vec_t<Dim3>&       v_hat) const {
+  real_t A0 { math::sqrt(h_11_inv(xi)) };
   v_hat[0] = vi_cov[0] * A0 - vi_cov[2] * A0 * h_13(xi) / h_33(xi);
   v_hat[1] = vi_cov[1] / math::sqrt(h_22(xi));
   v_hat[2] = vi_cov[2] / math::sqrt(h_33(xi));
@@ -165,8 +171,9 @@ v_Cov2Hat(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov, vec_t<Dim3>& v_hat) c
  * @param vi_cov vector in covariant basis (size of the array is 3).
  * @param vi_cntrv vector in contravariant basis (size of the array is 3).
  */
-Inline void
-v_Cov2Cntrv(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov, vec_t<Dim3>& vi_cntrv) const {
+Inline void v_Cov2Cntrv(const coord_t<D>&  xi,
+                        const vec_t<Dim3>& vi_cov,
+                        vec_t<Dim3>&       vi_cntrv) const {
   vi_cntrv[0] = vi_cov[0] * h_11_inv(xi) + vi_cov[2] * h_13_inv(xi);
   vi_cntrv[1] = vi_cov[1] * h_22_inv(xi);
   vi_cntrv[2] = vi_cov[2] * h_33_inv(xi) + vi_cov[0] * h_13_inv(xi);
@@ -179,8 +186,9 @@ v_Cov2Cntrv(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov, vec_t<Dim3>& vi_cnt
  * @param vi_cntrv vector in contravariant basis (size of the array is 3).
  * @param vi_cov vector in covaraint basis (size of the array is 3).
  */
-Inline void
-v_Cntrv2Cov(const coord_t<D>& xi, const vec_t<Dim3>& vi_cntrv, vec_t<Dim3>& vi_cov) const {
+Inline void v_Cntrv2Cov(const coord_t<D>&  xi,
+                        const vec_t<Dim3>& vi_cntrv,
+                        vec_t<Dim3>&       vi_cov) const {
   vi_cov[0] = vi_cntrv[0] * h_11(xi) + vi_cntrv[2] * h_13(xi);
   vi_cov[1] = vi_cntrv[1] * h_22(xi);
   vi_cov[2] = vi_cntrv[2] * h_33(xi) + vi_cntrv[0] * h_13(xi);

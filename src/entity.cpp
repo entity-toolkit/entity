@@ -1,4 +1,5 @@
 #include "wrapper.h"
+
 #include "cargs.h"
 #include "input.h"
 
@@ -10,15 +11,14 @@
 #  define SIMULATION_CONTAINER GRPIC
 #endif
 
+#include <plog/Appenders/ColorConsoleAppender.h>
+#include <plog/Init.h>
+#include <plog/Log.h>
 #include <toml/toml.hpp>
 
-#include <plog/Log.h>
-#include <plog/Init.h>
-#include <plog/Appenders/ColorConsoleAppender.h>
-
 #include <iostream>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
 
@@ -43,7 +43,7 @@ auto main(int argc, char* argv[]) -> int {
     cl_args.readCommandLineArguments(argc, argv);
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     // auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
-    auto inputdata = toml::parse(static_cast<std::string>(inputfilename));
+    auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
     PLOGI << "input file parsed";
     short res = static_cast<short>(
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
@@ -62,8 +62,7 @@ auto main(int argc, char* argv[]) -> int {
     } else {
       NTTHostError("wrong dimension specified");
     }
-  }
-  catch (std::exception& err) {
+  } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();
 

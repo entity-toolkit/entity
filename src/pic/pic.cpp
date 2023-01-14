@@ -1,7 +1,9 @@
-#include "wrapper.h"
-#include "timer.h"
 #include "pic.h"
+
+#include "wrapper.h"
+
 #include "sim_params.h"
+#include "timer.h"
 
 #include <plog/Log.h>
 
@@ -18,7 +20,7 @@ namespace ntt {
 
       ResetSimulation();
       Simulation<D, TypePIC>::PrintDetails();
-      for (unsigned long ti {0}; ti < timax; ++ti) {
+      for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
         StepForward();
@@ -37,17 +39,12 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepForward() {
-    timer::Timers timers({"Field_Solver",
-                          "Field_BC",
-                          "Curr_Deposit",
-                          "Prtl_Pusher",
-                          "Prtl_BC",
-                          "User",
-                          "Output"});
-    auto          params = *(this->params());
-    auto&         mblock = this->meshblock;
-    auto&         wrtr   = this->writer;
-    auto&         pgen   = this->problem_generator;
+    timer::Timers timers(
+      { "Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User", "Output" });
+    auto  params = *(this->params());
+    auto& mblock = this->meshblock;
+    auto& wrtr   = this->writer;
+    auto& pgen   = this->problem_generator;
 
     if (params.fieldsolverEnabled()) {
       timers.start("Field_Solver");
@@ -125,7 +122,7 @@ namespace ntt {
         WaitAndSynchronize();
         ComputeDensity();
         this->SynchronizeHostDevice();
-        ConvertFieldsToHat_h();
+        InterpolateAndConvertFieldsToHat();
         wrtr.WriteFields(mblock, this->m_time, this->m_tstep);
       }
     }
@@ -133,6 +130,7 @@ namespace ntt {
 
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
+    this->PrintDiagnostics();
 
     this->m_time += mblock.timestep();
     this->m_tstep++;
@@ -140,7 +138,7 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepBackward() {}
-} // namespace ntt
+}    // namespace ntt
 
 template class ntt::PIC<ntt::Dim1>;
 template class ntt::PIC<ntt::Dim2>;

@@ -1,4 +1,5 @@
 #include "wrapper.h"
+
 #include "pic.h"
 
 #ifdef MINKOWSKI_METRIC
@@ -15,9 +16,9 @@ namespace ntt {
 #ifdef MINKOWSKI_METRIC
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
-    const real_t coeff {fraction * params.correction() * mblock.timestep()};
+    const real_t coeff { fraction * params.correction() * mblock.timestep() };
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1};
+    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "ampere", mblock.rangeActiveCells(), Ampere_kernel<Dim1>(mblock, coeff / dx));
 #else
@@ -31,19 +32,19 @@ namespace ntt {
   void PIC<Dim2>::Ampere(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
-    const real_t coeff {fraction * params.correction() * mblock.timestep()};
+    const real_t coeff { fraction * params.correction() * mblock.timestep() };
 #ifdef MINKOWSKI_METRIC
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1};
+    const auto dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "ampere", mblock.rangeActiveCells(), Ampere_kernel<Dim2>(mblock, coeff / dx));
 #else
     Kokkos::parallel_for("ampere",
-                         CreateRangePolicy<Dim2>({mblock.i1_min(), mblock.i2_min() + 1},
-                                                 {mblock.i1_max(), mblock.i2_max()}),
+                         CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
+                                                 { mblock.i1_max(), mblock.i2_max() }),
                          Ampere_kernel<Dim2>(mblock, coeff));
     Kokkos::parallel_for("ampere_pole",
-                         CreateRangePolicy<Dim1>({mblock.i1_min()}, {mblock.i1_max()}),
+                         CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
                          AmperePoles_kernel<Dim2>(mblock, coeff));
 #endif
     PLOGD << "... ... ampere substep finished";
@@ -54,9 +55,9 @@ namespace ntt {
 #ifdef MINKOWSKI_METRIC
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
-    const real_t coeff {fraction * params.correction() * mblock.timestep()};
+    const real_t coeff { fraction * params.correction() * mblock.timestep() };
     // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx {(mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1};
+    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "ampere", mblock.rangeActiveCells(), Ampere_kernel<Dim3>(mblock, coeff / dx));
 #else
@@ -66,4 +67,4 @@ namespace ntt {
     PLOGD << "... ... ampere substep finished";
   }
 
-} // namespace ntt
+}    // namespace ntt

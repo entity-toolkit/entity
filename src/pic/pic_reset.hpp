@@ -2,9 +2,9 @@
 #define PIC_RESET_H
 
 #include "wrapper.h"
-#include "pic.h"
 
 #include "field_macros.h"
+#include "pic.h"
 
 namespace ntt {
   /**
@@ -65,7 +65,7 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    ResetCurrents_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock {mblock} {}
+    ResetCurrents_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {}
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.
@@ -129,7 +129,7 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    ResetFields_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock {mblock} {}
+    ResetFields_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {}
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.
@@ -179,6 +179,6 @@ namespace ntt {
     BX2(i, j, k) = ZERO;
     BX3(i, j, k) = ZERO;
   }
-} // namespace ntt
+}    // namespace ntt
 
 #endif

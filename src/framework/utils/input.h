@@ -1,11 +1,11 @@
 #ifndef IO_INPUT_H
 #define IO_INPUT_H
 
-#include <toml/toml.hpp>
 #include <plog/Log.h>
+#include <toml/toml.hpp>
 
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace ntt {
   namespace {
@@ -18,7 +18,7 @@ namespace ntt {
       }
       return false;
     }
-  } // namespace
+  }    // namespace
 
   template <typename T>
   auto readFromInput(const toml::value& inputdata,
@@ -44,6 +44,6 @@ namespace ntt {
     return defval;
   }
 
-} // namespace ntt
+}    // namespace ntt
 
 #endif

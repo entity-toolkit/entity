@@ -1,28 +1,30 @@
-#include "nttiny/vis.h"
-#include "nttiny/api.h"
-#include "nttiny/tools.h"
-
 #include "wrapper.h"
+
 #include "cargs.h"
 #include "input.h"
+
+#include "nttiny/api.h"
+#include "nttiny/tools.h"
+#include "nttiny/vis.h"
 
 #ifdef PIC_SIMTYPE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
 #elif defined(GRPIC_SIMTYPE)
 #  include "grpic.h"
+
 #  include "init_fields.hpp"
 #  define SIMULATION_CONTAINER GRPIC
 #endif
 
-#include <toml/toml.hpp>
-#include <plog/Log.h>
-#include <plog/Init.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
+#include <plog/Init.h>
+#include <plog/Log.h>
+#include <toml/toml.hpp>
 
 #include <iostream>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
@@ -40,7 +42,8 @@ public:
                    const std::vector<std::string>&       fields_to_plot,
                    const int&                            fields_stride)
 #ifdef PIC_SIMTYPE
-    : nttiny::SimulationAPI<real_t, 2> {sim.meshblock.metric.label == "minkowski"
+    : nttiny::SimulationAPI<real_t, 2> {sim.params()->title(), 
+                                        sim.meshblock.metric.label == "minkowski"
                                           ? nttiny::Coord::Cartesian
                                           : nttiny::Coord::Spherical,
                                         {sim.meshblock.Ni1() / fields_stride,
@@ -71,66 +74,85 @@ public:
   void setData() override {
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
+    auto&      Sim            = m_sim;
     const auto nx1            = Grid.m_size[0] + Grid.m_ngh * 2;
     const auto nx2            = Grid.m_size[1] + Grid.m_ngh * 2;
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
+    const auto fields_stride  = m_fields_stride;
     // precompute necessary fields
     for (auto& f : fields_to_plot) {
-      if (f == "density") { m_sim.ComputeDensity(); }
+      if (f == "density") {
+        m_sim.ComputeDensity();
+      }
     }
+    m_sim.InterpolateAndConvertFieldsToHat();
     m_sim.SynchronizeHostDevice();
-    m_sim.ConvertFieldsToHat_h();
 #ifdef GRPIC_SIMTYPE
     Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
     // compute the vector potential
     m_sim.computeVectorPotential();
 #endif
-
     // @HACK: this is so ugly i almost feel ashamed
     // ... need to clear this up
-    Kokkos::parallel_for(
-      "setData",
-      ntt::CreateRangePolicyOnHost<ntt::Dim2>({0, 0}, {nx1, nx2}),
-      Lambda(std::size_t i1, std::size_t j1) {
-        int i, j;
-        if ((i1 < ngh) || (i1 >= nx1 - ngh)) {
-          i = i1;
-        } else {
-          i = ((int)i1 - ngh) * m_fields_stride + ngh;
-        }
-        if ((j1 < ngh) || (j1 >= nx2 - ngh)) {
-          j = j1;
-        } else {
-          j = ((int)j1 - ngh) * m_fields_stride + ngh;
-        }
-        for (std::size_t fi = 0; fi < nfields; ++fi) {
-          auto f   = fields_to_plot.at(fi);
-          auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
-          int  comp;
-          if (f == "Ex" || f == "Er") {
-            comp = ntt::em::ex1;
-          } else if (f == "Ey" || f == "Etheta") {
-            comp = ntt::em::ex2;
-          } else if (f == "Ez" || f == "Ephi") {
-            comp = ntt::em::ex3;
-          } else if (f == "Bx" || f == "Br") {
-            comp = ntt::em::bx1;
-          } else if (f == "By" || f == "Btheta") {
-            comp = ntt::em::bx2;
-          } else if (f == "Bz" || f == "Bphi") {
-            comp = ntt::em::bx3;
-          } else if (f == "density") {
-            comp = ntt::fld::dens;
-          }
-          if (f.at(0) == 'E' || f.at(0) == 'B') {
-            Fields.at(f)[idx] = m_sim.meshblock.em_h(i, j, comp);
-          } else {
-            Fields.at(f)[idx] = m_sim.meshblock.buff_h(i, j, comp);
-          }
-        }
-      });
+    Kokkos::parallel_for("setData",
+                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
+                         [=](std::size_t i1, std::size_t j1) {
+                           int i, j;
+                           if (i1 < ngh) {
+                             i = i1;
+                           } else if (i1 >= nx1 - ngh) {
+                             i = (nx1 - 2 * ngh) * fields_stride + 2 * ngh + (int)i1 - nx1;
+                           } else {
+                             i = ((int)i1 - ngh) * fields_stride + ngh;
+                           }
+                           if (j1 < ngh) {
+                             j = j1;
+                           } else if (j1 >= nx2 - ngh) {
+                             j = (nx2 - 2 * ngh) * fields_stride + 2 * ngh + (int)j1 - nx2;
+                           } else {
+                             j = ((int)j1 - ngh) * fields_stride + ngh;
+                           }
+                           for (std::size_t fi = 0; fi < nfields; ++fi) {
+                             auto f = fields_to_plot.at(fi);
+                             int  comp;
+                             if (f == "Ex" || f == "Er") {
+                               comp = ntt::em::ex1;
+                             } else if (f == "Ey" || f == "Etheta") {
+                               comp = ntt::em::ex2;
+                             } else if (f == "Ez" || f == "Ephi") {
+                               comp = ntt::em::ex3;
+                             } else if (f == "Bx" || f == "Br") {
+                               comp = ntt::em::bx1;
+                             } else if (f == "By" || f == "Btheta") {
+                               comp = ntt::em::bx2;
+                             } else if (f == "Bz" || f == "Bphi") {
+                               comp = ntt::em::bx3;
+                             } else if (f == "Jx" || f == "Jr") {
+                               comp = ntt::cur::jx1;
+                             } else if (f == "Jy" || f == "Jtheta") {
+                               comp = ntt::cur::jx2;
+                             } else if (f == "Jz" || f == "Jphi") {
+                               comp = ntt::cur::jx3;
+                             } else if (f == "density") {
+                               comp = ntt::fld::dens;
+                             }
+                             real_t val;
+                             if (f.at(0) == 'E' || f.at(0) == 'B') {
+                               val = Sim.meshblock.bckp_h(i, j, comp);
+                             } else if (f.at(0) == 'J') {
+                               val = Sim.meshblock.cur_h(i, j, comp);
+                             } else {
+                               val = Sim.meshblock.buff_h(i, j, comp);
+                             }
+                             if (!math::isfinite(val)) {
+                               val = -100000.0;
+                             }
+                             auto idx          = Index((int)i1 - ngh, (int)j1 - ngh);
+                             Fields.at(f)[idx] = val;
+                           }
+                         });
 
     // auto  s         = 0;
     // auto& Particles = this->particles;
@@ -166,10 +188,10 @@ public:
   void generateFields() {
     auto&      Fields = this->fields;
     auto&      Grid   = this->m_global_grid;
-    const auto nx1 {Grid.m_size[0] + Grid.m_ngh * 2};
-    const auto nx2 {Grid.m_size[1] + Grid.m_ngh * 2};
-    for (std::size_t i {0}; i < m_fields_to_plot.size(); ++i) {
-      Fields.insert({m_fields_to_plot[i], new real_t[nx1 * nx2]});
+    const auto nx1 { Grid.m_size[0] + Grid.m_ngh * 2 };
+    const auto nx2 { Grid.m_size[1] + Grid.m_ngh * 2 };
+    for (std::size_t i { 0 }; i < m_fields_to_plot.size(); ++i) {
+      Fields.insert({ m_fields_to_plot[i], new real_t[nx1 * nx2] });
     }
   }
 
@@ -177,8 +199,10 @@ public:
     auto& Particles = this->particles;
     int   s         = 0;
     for (auto& species : m_sim.meshblock.particles) {
-      auto nprtl {m_sim.meshblock.particles[s].npart()};
-      Particles.insert({species.label(), {nprtl, {new real_t[nprtl], new real_t[nprtl]}}});
+      auto nprtl { m_sim.meshblock.particles[s].npart() };
+      Particles.insert({
+        species.label(), {nprtl, { new real_t[nprtl], new real_t[nprtl] }}
+      });
       ++s;
     }
   }
@@ -186,32 +210,32 @@ public:
   void generateGrid() {
     auto& Grid = this->m_global_grid;
     if (Grid.m_coord == nttiny::Coord::Spherical) {
-      const auto sx1 {Grid.m_size[0]};
-      const auto sx2 {Grid.m_size[1]};
-      for (int i {0}; i <= sx1; ++i) {
-        auto                    i_ {(real_t)(i * m_fields_stride)};
-        auto                    j_ {ZERO};
+      const auto sx1 { Grid.m_size[0] };
+      const auto sx2 { Grid.m_size[1] };
+      for (int i { 0 }; i <= sx1; ++i) {
+        auto                    i_ { (real_t)(i * m_fields_stride) };
+        auto                    j_ { (real_t)(sx2 * m_fields_stride) * HALF };
         ntt::coord_t<ntt::Dim2> rth_;
-        m_sim.meshblock.metric.x_Code2Sph({i_, j_}, rth_);
+        m_sim.meshblock.metric.x_Code2Sph({ i_, j_ }, rth_);
         Grid.m_xi[0][i] = rth_[0];
       }
-      for (int j {0}; j <= sx2; ++j) {
-        auto                    i_ {ZERO};
-        auto                    j_ {(real_t)(j * m_fields_stride)};
+      for (int j { 0 }; j <= sx2; ++j) {
+        auto                    i_ { (real_t)(sx1 * m_fields_stride) * HALF };
+        auto                    j_ { (real_t)(j * m_fields_stride) };
         ntt::coord_t<ntt::Dim2> rth_;
-        m_sim.meshblock.metric.x_Code2Sph({i_, j_}, rth_);
+        m_sim.meshblock.metric.x_Code2Sph({ i_, j_ }, rth_);
         Grid.m_xi[1][j] = rth_[1];
       }
       Grid.ExtendGridWithGhosts();
     } else {
-      const auto s1 {m_sim.meshblock.metric.x1_max - m_sim.meshblock.metric.x1_min};
-      const auto s2 {m_sim.meshblock.metric.x2_max - m_sim.meshblock.metric.x2_min};
-      const auto sx1 {Grid.m_size[0]};
-      const auto sx2 {Grid.m_size[1]};
-      for (int i {0}; i <= sx1; ++i) {
+      const auto s1 { m_sim.meshblock.metric.x1_max - m_sim.meshblock.metric.x1_min };
+      const auto s2 { m_sim.meshblock.metric.x2_max - m_sim.meshblock.metric.x2_min };
+      const auto sx1 { Grid.m_size[0] };
+      const auto sx2 { Grid.m_size[1] };
+      for (int i { 0 }; i <= sx1; ++i) {
         Grid.m_xi[0][i] = m_sim.meshblock.metric.x1_min + s1 * (real_t)(i) / (real_t)(sx1);
       }
-      for (int j {0}; j <= sx2; ++j) {
+      for (int j { 0 }; j <= sx2; ++j) {
         Grid.m_xi[1][j] = m_sim.meshblock.metric.x2_min + s2 * (real_t)(j) / (real_t)(sx2);
       }
     }
@@ -223,24 +247,15 @@ public:
     real_t r_absorb = m_sim.sim_params()->metric_parameters()[2];
     real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
     nttiny::tools::drawCircle(
-      {0.0f, 0.0f}, rh, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+      { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
     nttiny::tools::drawCircle(
-      {0.0f, 0.0f}, r_absorb, {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
+      { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
 #elif defined(PIC_SIMTYPE)
-    if (m_sim.meshblock.metric.label != "minkowski") {
-      ntt::coord_t<ntt::Dim2> rth_;
-      m_sim.meshblock.metric.x_Code2Sph({(float)105 + HALF, HALF}, rth_);
-      nttiny::tools::drawCircle(
-        {0.0f, 0.0f}, rth_[0], {0.0f, ntt::constant::PI}, 128, ui_settings.OutlineColor);
-    }
-
-    // nttiny::tools::drawCircle(
-    //   {0.1f + 0.1f * this->m_time, 0.12f + 0.1f},
-    //   0.1f,
-    //   {0.0f, 2.0 * ntt::constant::PI},
-    //   128,
-    //   ui_settings.OutlineColor);
-
+#  ifndef MINKOWSKI_METRIC
+    real_t r_absorb = m_sim.params()->metricParameters()[2];
+    nttiny::tools::drawCircle(
+      { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
+#  endif
 #endif
   }
 };
@@ -253,14 +268,14 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale_str     = cl_args.getArgument("-scale", "1.0");
-    auto  scale         = std::stof(std::string(scale_str));
-    auto  inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
-    auto  inputdata     = toml::parse(static_cast<std::string>(inputfilename));
-    auto& vis_data      = toml::find(inputdata, "visualization");
+    auto  scale_str      = cl_args.getArgument("-scale", "1.0");
+    auto  scale          = std::stof(std::string(scale_str));
+    auto  inputfilename  = cl_args.getArgument("-input", ntt::defaults::input_filename);
+    auto  inputdata      = toml::parse(static_cast<std::string>(inputfilename));
+    auto& vis_data       = toml::find(inputdata, "visualization");
 
-    auto fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
-    auto fields_stride  = toml::find_or<int>(vis_data, "fields_stride", 1);
+    auto  fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
+    auto  fields_stride  = toml::find_or<int>(vis_data, "fields_stride", 1);
 
     ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
     sim.Initialize();
@@ -268,15 +283,14 @@ auto main(int argc, char* argv[]) -> int {
     sim.ResetSimulation();
     sim.InitialStep();
     sim.PrintDetails();
-    NTTSimulationVis visApi(sim, fields_to_plot, fields_stride);
+    NTTSimulationVis                 visApi(sim, fields_to_plot, fields_stride);
 
-    nttiny::Visualization<real_t, 2> vis {scale};
+    nttiny::Visualization<real_t, 2> vis { scale };
     vis.bindSimulation(&visApi);
     vis.loop();
 
     sim.Finalize();
-  }
-  catch (std::exception& err) {
+  } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();
 
