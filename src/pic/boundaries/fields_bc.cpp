@@ -82,12 +82,12 @@ namespace ntt {
     if (mblock.boundaries[1] == BoundaryCondition::ABSORB) {
       auto          r_absorb = params.metricParameters()[2];
       auto          r_max    = mblock.metric.x1_max;
-      coord_t<Dim2> xc { ZERO };
-      mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xc);
-      auto range = mblock.rangeCells({
-        { IMAX((int)(xc[0]) - 4, 0), 0 },
-        { 0, 0 },
-      });
+      coord_t<Dim2> xcu;
+      mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
+      const auto i1_absorb = (int)(xcu[0]);
+      if (i1_absorb >= mblock.i1_max()) {
+        NTTHostError("Absorbing layer is too small, consider increasing r_absorb");
+      }
       /**
        *    . . . . . . . . . . . . . . . .
        *    .                             .
@@ -102,9 +102,10 @@ namespace ntt {
        *    .                             .
        *    . . . . . . . . . . . . . . . .
        */
-      Kokkos::parallel_for("FieldsBoundaryConditions-2",
-                           range,
-                           AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
+      Kokkos::parallel_for(
+        "FieldsBoundaryConditions-2",
+        CreateRangePolicy<Dim2>({ i1_absorb, 0 }, { mblock.i1_max(), mblock.i2_max() }),
+        AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
     } else {
       NTTHostError(
         "2d axisymmetry requires absorbing boundary conditions at rmax. Currently specified: `"
