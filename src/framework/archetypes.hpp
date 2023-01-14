@@ -85,7 +85,9 @@ namespace ntt {
   struct ColdDist : public EnergyDistribution<D, S> {
     ColdDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
-    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v) const override {
+    Inline void operator()(const coord_t<D>&,
+                           vec_t<Dim3>& v,
+                           const int&   species = 0) const override {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;

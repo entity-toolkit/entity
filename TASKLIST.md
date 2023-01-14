@@ -1,10 +1,10 @@
 # v0.8
 
-- [ ] thick layer boundary for the monopole
-- [ ] test with filters
+- [x] thick layer boundary for the monopole
+- [x] test with filters
 - [ ] add diagnostics for nans in fields and particles
 - [ ] add gravitationally bound atmosphere
-- [ ] rewrite UniformInjector with global random pool
+- [x] rewrite UniformInjector with global random pool
 - [ ] add particle deletion routine
 - [ ] make more user-friendly and understandable boundary conditions
 - [ ] refine output
