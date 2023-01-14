@@ -3,21 +3,38 @@
 
 #include "wrapper.h"
 
+#include "input.h"
 #include "meshblock.h"
 #include "sim_params.h"
+
+#include "archetypes.hpp"
+#include "injector.hpp"
 
 namespace ntt {
 
   template <Dimension D, SimulationType S>
-  struct ProblemGenerator : public PGen<D, S> {
-    inline ProblemGenerator(const SimulationParams& params) {
-      udrift_1 = readFromInput<real_t>(params.inputdata(), "problem", "udrift_1", 1.0);
-      udrift_2 = readFromInput<real_t>(params.inputdata(), "problem", "udrift_2", -udrift_1);
+  struct Drift : public EnergyDistribution<D, S> {
+    Drift(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : EnergyDistribution<D, S>(params, mblock),
+        udrift { readFromInput<real_t>(params.inputdata(), "problem", "udrift", 1.0) } {}
+    Inline void operator()(const coord_t<D>&,
+                           vec_t<Dim3>& v,
+                           const int&   species) const override {
+      if (species == 0) {
+        v[0] = udrift;
+      } else {
+        v[0] = -udrift;
+      }
     }
-    inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&);
 
   private:
-    real_t udrift_1, udrift_2;
+    const real_t udrift;
+  };
+
+  template <Dimension D, SimulationType S>
+  struct ProblemGenerator : public PGen<D, S> {
+    inline ProblemGenerator(const SimulationParams& params) {}
+    inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) override {}
   };
 
   template <>
@@ -25,15 +42,6 @@ namespace ntt {
     const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
     InjectUniform<Dim2, TypePIC, Drift>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
   }
-
-  // template <>
-  // inline void ProblemGenerator<Dim1, TypePIC>::UserInitParticles(
-  //   const SimulationParams& params, Meshblock<Dim1, TypePIC>& mblock) {}
-
-  // template <>
-  // inline void ProblemGenerator<Dim3, TypePIC>::UserInitParticles(
-  //   const SimulationParams& params, Meshblock<Dim3, TypePIC>& mblock) {}
-
 }    // namespace ntt
 
 #endif

@@ -68,7 +68,9 @@ namespace ntt {
     EnergyDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual void operator()(const coord_t<D>&, vec_t<Dim3>& v) const {
+    Inline virtual void operator()(const coord_t<D>&,
+                                   vec_t<Dim3>& v,
+                                   const int&   species = 0) const {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;

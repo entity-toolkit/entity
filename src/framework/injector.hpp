@@ -84,9 +84,9 @@ namespace ntt {
       vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
-      energy_dist(x, v);
+      energy_dist(x, v, 0);
       init_prtl_2d(mblock, species1, p + offset1, x[0], x[1], v[0], v[1], v[2]);
-      energy_dist(x, v);
+      energy_dist(x, v, 1);
       init_prtl_2d(mblock, species2, p + offset2, x[0], x[1], v[0], v[1], v[2]);
       pool.free_state(rand_gen);
     }
@@ -288,7 +288,7 @@ namespace ntt {
             auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
 
             vec_t<Dim3> v { ZERO }, v_cart { ZERO };
-            energy_dist(xph, v);
+            energy_dist(xph, v, 0);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
@@ -302,7 +302,7 @@ namespace ntt {
             species1.ux2(offset1 + p) = v[1];
             species1.ux3(offset1 + p) = v[2];
 
-            energy_dist(xph, v);
+            energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
@@ -389,7 +389,7 @@ namespace ntt {
             auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
 
             vec_t<Dim3> v { ZERO }, v_cart { ZERO };
-            energy_dist(xph, v);
+            energy_dist(xph, v, 0);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
@@ -405,7 +405,7 @@ namespace ntt {
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
 
-            energy_dist(xph, v);
+            energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
@@ -497,7 +497,7 @@ namespace ntt {
             auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
 
             vec_t<Dim3> v { ZERO }, v_cart { ZERO };
-            energy_dist(xph, v);
+            energy_dist(xph, v, 0);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
@@ -515,7 +515,7 @@ namespace ntt {
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
 
-            energy_dist(xph, v);
+            energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
             v_cart[0] = v[0];
             v_cart[1] = v[1];
