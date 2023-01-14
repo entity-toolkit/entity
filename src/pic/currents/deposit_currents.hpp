@@ -9,6 +9,7 @@
 #include "particle_macros.h"
 #include "particles.h"
 #include "pic.h"
+#include "qmath.h"
 
 #include <stdexcept>
 
@@ -129,6 +130,11 @@ namespace ntt {
       xp[2] = m_particles.phi(p);
       m_mblock.metric.v_Cart2Cntrv(
         xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
+      if constexpr (D == Dim2) {
+        if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {
+          vp[2] = ZERO;
+        }
+      }
 #endif
       inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
 
