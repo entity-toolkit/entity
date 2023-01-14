@@ -18,44 +18,44 @@ namespace ntt {
   /*                   Uniform injection kernels and routines                   */
   /* -------------------------------------------------------------------------- */
 
-  /**
-   * @brief 1D particle-vectorized injection kernel
-   */
-  template <SimulationType S, template <Dimension, SimulationType> class EnDist>
-  struct UniformInjector1d_kernel {
-    UniformInjector1d_kernel(const SimulationParams&   pr,
-                             const Meshblock<Dim1, S>& mb,
-                             const Particles<Dim1, S>& sp,
-                             const std::size_t&        ofs,
-                             const list_t<real_t, 2>&  box,
-                             const real_t&             time)
-      : params { pr },
-        mblock { mb },
-        species { sp },
-        offset { ofs },
-        region { box[0], box[1] },
-        energy_dist { params, mblock },
-        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
-    Inline void operator()(index_t p) const {
-      typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+  // /**
+  //  * @brief 1D particle-vectorized injection kernel
+  //  */
+  // template <SimulationType S, template <Dimension, SimulationType> class EnDist>
+  // struct UniformInjector1d_kernel {
+  //   UniformInjector1d_kernel(const SimulationParams&   pr,
+  //                            const Meshblock<Dim1, S>& mb,
+  //                            const Particles<Dim1, S>& sp,
+  //                            const std::size_t&        ofs,
+  //                            const list_t<real_t, 2>&  box,
+  //                            const real_t&             time)
+  //     : params { pr },
+  //       mblock { mb },
+  //       species { sp },
+  //       offset { ofs },
+  //       region { box[0], box[1] },
+  //       energy_dist { params, mblock },
+  //       pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
+  //   Inline void operator()(index_t p) const {
+  //     typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim1>                               x { ZERO };
-      vec_t<Dim3>                                 v { ZERO };
-      x[0] = rand_gen.frand(region[0], region[1]);
-      energy_dist(x, v);
-      init_prtl_1d(mblock, species, p + offset, x[0], v[0], v[1], v[2]);
-      pool.free_state(rand_gen);
-    }
+  //     coord_t<Dim1>                               x { ZERO };
+  //     vec_t<Dim3>                                 v { ZERO };
+  //     x[0] = rand_gen.frand(region[0], region[1]);
+  //     energy_dist(x, v);
+  //     init_prtl_1d(mblock, species, p + offset, x[0], v[0], v[1], v[2]);
+  //     pool.free_state(rand_gen);
+  //   }
 
-  private:
-    SimulationParams   params;
-    Meshblock<Dim1, S> mblock;
-    Particles<Dim1, S> species;
-    const std::size_t  offset;
-    EnDist<Dim1, S>    energy_dist;
-    list_t<real_t, 2>  region;
-    RandomNumberPool_t pool { constant::RandomSeed };
-  };
+  // private:
+  //   SimulationParams   params;
+  //   Meshblock<Dim1, S> mblock;
+  //   Particles<Dim1, S> species;
+  //   const std::size_t  offset;
+  //   EnDist<Dim1, S>    energy_dist;
+  //   list_t<real_t, 2>  region;
+  //   RandomNumberPool_t pool { constant::RandomSeed };
+  // };
 
   /**
    * @brief 2D particle-vectorized injection kernel
@@ -64,17 +64,19 @@ namespace ntt {
   struct UniformInjector2d_kernel {
     UniformInjector2d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim2, S>& mb,
-                             const Particles<Dim2, S>& sp,
-                             const std::size_t&        ofs,
+                             const Particles<Dim2, S>& sp1,
+                             const Particles<Dim2, S>& sp2,
                              const list_t<real_t, 4>&  box,
                              const real_t&             time)
       : params { pr },
         mblock { mb },
-        species { sp },
-        offset { ofs },
+        species1 { sp1 },
+        species2 { sp2 },
+        offset1 { sp1.npart() },
+        offset2 { sp2.npart() },
         region { box[0], box[1], box[2], box[3] },
         energy_dist { params, mblock },
-        pool { *(mb.random_pool_ptr) } {}
+        pool { *(mblock.random_pool_ptr) } {}
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
@@ -83,60 +85,62 @@ namespace ntt {
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       energy_dist(x, v);
-      init_prtl_2d(mblock, species, p + offset, x[0], x[1], v[0], v[1], v[2]);
-      pool.free_state(rand_gen);
-    }
-
-  private:
-    SimulationParams    params;
-    Meshblock<Dim2, S>  mblock;
-    Particles<Dim2, S>  species;
-    const std::size_t   offset;
-    EnDist<Dim2, S>     energy_dist;
-    list_t<real_t, 4>   region;
-    RandomNumberPool_t& pool;
-  };
-
-  /**
-   * @brief 3D particle-vectorized injection kernel
-   */
-  template <SimulationType S, template <Dimension, SimulationType> class EnDist>
-  struct UniformInjector3d_kernel {
-    UniformInjector3d_kernel(const SimulationParams&   pr,
-                             const Meshblock<Dim3, S>& mb,
-                             const Particles<Dim3, S>& sp,
-                             const std::size_t&        ofs,
-                             const list_t<real_t, 6>&  box,
-                             const real_t&             time)
-      : params { pr },
-        mblock { mb },
-        species { sp },
-        offset { ofs },
-        region { box[0], box[1], box[2], box[3], box[4], box[5] },
-        energy_dist { params, mblock },
-        pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
-    Inline void operator()(index_t p) const {
-      typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
-
-      coord_t<Dim3>                               x { ZERO };
-      vec_t<Dim3>                                 v { ZERO };
-      x[0] = rand_gen.frand(region[0], region[1]);
-      x[1] = rand_gen.frand(region[2], region[3]);
-      x[2] = rand_gen.frand(region[4], region[5]);
+      init_prtl_2d(mblock, species1, p + offset1, x[0], x[1], v[0], v[1], v[2]);
       energy_dist(x, v);
-      init_prtl_3d(mblock, species, p + offset, x[0], x[1], x[2], v[0], v[1], v[2]);
+      init_prtl_2d(mblock, species2, p + offset2, x[0], x[1], v[0], v[1], v[2]);
       pool.free_state(rand_gen);
     }
 
   private:
     SimulationParams   params;
-    Meshblock<Dim3, S> mblock;
-    Particles<Dim3, S> species;
-    const std::size_t  offset;
-    EnDist<Dim3, S>    energy_dist;
-    list_t<real_t, 6>  region;
+    Meshblock<Dim2, S> mblock;
+    Particles<Dim2, S> species1, species2;
+    const std::size_t  offset1, offset2;
+    EnDist<Dim2, S>    energy_dist;
+    list_t<real_t, 4>  region;
     RandomNumberPool_t pool;
   };
+
+  // /**
+  //  * @brief 3D particle-vectorized injection kernel
+  //  */
+  // template <SimulationType S, template <Dimension, SimulationType> class EnDist>
+  // struct UniformInjector3d_kernel {
+  //   UniformInjector3d_kernel(const SimulationParams&   pr,
+  //                            const Meshblock<Dim3, S>& mb,
+  //                            const Particles<Dim3, S>& sp,
+  //                            const std::size_t&        ofs,
+  //                            const list_t<real_t, 6>&  box,
+  //                            const real_t&             time)
+  //     : params { pr },
+  //       mblock { mb },
+  //       species { sp },
+  //       offset { ofs },
+  //       region { box[0], box[1], box[2], box[3], box[4], box[5] },
+  //       energy_dist { params, mblock },
+  //       pool { (uint64_t)(1e6 * (time / mb.timestep())) } {}
+  //   Inline void operator()(index_t p) const {
+  //     typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+
+  //     coord_t<Dim3>                               x { ZERO };
+  //     vec_t<Dim3>                                 v { ZERO };
+  //     x[0] = rand_gen.frand(region[0], region[1]);
+  //     x[1] = rand_gen.frand(region[2], region[3]);
+  //     x[2] = rand_gen.frand(region[4], region[5]);
+  //     energy_dist(x, v);
+  //     init_prtl_3d(mblock, species, p + offset, x[0], x[1], x[2], v[0], v[1], v[2]);
+  //     pool.free_state(rand_gen);
+  //   }
+
+  // private:
+  //   SimulationParams   params;
+  //   Meshblock<Dim3, S> mblock;
+  //   Particles<Dim3, S> species;
+  //   const std::size_t  offset;
+  //   EnDist<Dim3, S>    energy_dist;
+  //   list_t<real_t, 6>  region;
+  //   RandomNumberPool_t pool;
+  // };
 
   /**
    * @brief Volumetrically uniform particle injector parallelized over particles.
@@ -160,6 +164,14 @@ namespace ntt {
                             const real_t&           ppc_per_spec,
                             std::vector<real_t>     region = {},
                             const real_t&           time   = ZERO) {
+    if (species.size() != 2) {
+      NTTHostError("Exactly two species can be injected at the same time");
+    }
+    auto& sp1 = mblock.particles[species[0] - 1];
+    auto& sp2 = mblock.particles[species[1] - 1];
+    if (sp1.charge() != -sp2.charge()) {
+      NTTHostError("Injected species must have the same but opposite charge: q1 = -q2");
+    }
     auto   ncells = (std::size_t)(mblock.Ni1() * mblock.Ni2() * mblock.Ni3());
     real_t delta_V, full_V;
     if (region.size() == 0) {
@@ -199,27 +211,24 @@ namespace ntt {
       box[i] = region[i];
     }
 
-    for (auto& s : species) {
-      auto& sp           = mblock.particles[s - 1];
-      auto  npart_before = sp.npart();
-      sp.setNpart(npart_before + npart_per_spec);
-      if constexpr (D == Dim1) {
-        Kokkos::parallel_for(
-          "inject",
-          CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-          UniformInjector1d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
-      } else if constexpr (D == Dim2) {
-        Kokkos::parallel_for(
-          "inject",
-          CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-          UniformInjector2d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
-      } else if constexpr (D == Dim3) {
-        Kokkos::parallel_for(
-          "inject",
-          CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-          UniformInjector3d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
-      }
+    if constexpr (D == Dim1) {
+      // Kokkos::parallel_for(
+      //   "InjectUniform",
+      //   CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+      //   UniformInjector1d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
+    } else if constexpr (D == Dim2) {
+      Kokkos::parallel_for(
+        "InjectUniform",
+        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+        UniformInjector2d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
+    } else if constexpr (D == Dim3) {
+      // Kokkos::parallel_for(
+      //   "InjectUniform",
+      //   CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+      //   UniformInjector3d_kernel<S, EnDist>(params, mblock, sp, npart_before, box, time));
     }
+    sp1.setNpart(sp1.npart() + npart_per_spec);
+    sp2.setNpart(sp2.npart() + npart_per_spec);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -273,19 +282,34 @@ namespace ntt {
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
-            vec_t<Dim3> v { ZERO };
+            real_t      dx1 = rand_gen.frand();
+            real_t      dx2 = rand_gen.frand();
+
+            auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
+
+            vec_t<Dim3> v { ZERO }, v_cart { ZERO };
             energy_dist(xph, v);
-
-            real_t dx1                = rand_gen.frand();
-            real_t dx2                = rand_gen.frand();
-
-            auto   p                  = Kokkos::atomic_fetch_add(&index(), 1);
+#ifdef MINKOWSKI_METRIC
+            v_cart[0] = v[0];
+            v_cart[1] = v[1];
+            v_cart[2] = v[2];
+#else
+            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+#endif
             species1.i1(offset1 + p)  = static_cast<int>(i1) - N_GHOSTS;
             species1.dx1(offset1 + p) = dx1;
             species1.ux1(offset1 + p) = v[0];
             species1.ux2(offset1 + p) = v[1];
             species1.ux3(offset1 + p) = v[2];
 
+            energy_dist(xph, v);
+#ifdef MINKOWSKI_METRIC
+            v_cart[0] = v[0];
+            v_cart[1] = v[1];
+            v_cart[2] = v[2];
+#else
+            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+#endif
             species2.i1(offset2 + p)  = static_cast<int>(i1) - N_GHOSTS;
             species2.dx1(offset2 + p) = dx1;
             species2.ux1(offset2 + p) = v[0];
@@ -359,6 +383,11 @@ namespace ntt {
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
+            real_t      dx1 = rand_gen.frand();
+            real_t      dx2 = rand_gen.frand();
+
+            auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
+
             vec_t<Dim3> v { ZERO }, v_cart { ZERO };
             energy_dist(xph, v);
 #ifdef MINKOWSKI_METRIC
@@ -368,10 +397,6 @@ namespace ntt {
 #else
             mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-            real_t dx1                = rand_gen.frand();
-            real_t dx2                = rand_gen.frand();
-
-            auto   p                  = Kokkos::atomic_fetch_add(&index(), 1);
             species1.i1(offset1 + p)  = static_cast<int>(i1) - N_GHOSTS;
             species1.dx1(offset1 + p) = dx1;
             species1.i2(offset1 + p)  = static_cast<int>(i2) - N_GHOSTS;
@@ -380,6 +405,14 @@ namespace ntt {
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
 
+            energy_dist(xph, v);
+#ifdef MINKOWSKI_METRIC
+            v_cart[0] = v[0];
+            v_cart[1] = v[1];
+            v_cart[2] = v[2];
+#else
+            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+#endif
             species2.i1(offset2 + p)  = static_cast<int>(i1) - N_GHOSTS;
             species2.dx1(offset2 + p) = dx1;
             species2.i2(offset2 + p)  = static_cast<int>(i2) - N_GHOSTS;
@@ -457,6 +490,12 @@ namespace ntt {
         while (ninject > ZERO) {
           real_t random = rand_gen.frand();
           if (random < ninject) {
+            real_t      dx1 = rand_gen.frand();
+            real_t      dx2 = rand_gen.frand();
+            real_t      dx3 = rand_gen.frand();
+
+            auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
+
             vec_t<Dim3> v { ZERO }, v_cart { ZERO };
             energy_dist(xph, v);
 #ifdef MINKOWSKI_METRIC
@@ -466,12 +505,6 @@ namespace ntt {
 #else
             mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-
-            real_t dx1                = rand_gen.frand();
-            real_t dx2                = rand_gen.frand();
-            real_t dx3                = rand_gen.frand();
-
-            auto   p                  = Kokkos::atomic_fetch_add(&index(), 1);
             species1.i1(offset1 + p)  = static_cast<int>(i1) - N_GHOSTS;
             species1.dx1(offset1 + p) = dx1;
             species1.i2(offset1 + p)  = static_cast<int>(i2) - N_GHOSTS;
@@ -482,6 +515,14 @@ namespace ntt {
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
 
+            energy_dist(xph, v);
+#ifdef MINKOWSKI_METRIC
+            v_cart[0] = v[0];
+            v_cart[1] = v[1];
+            v_cart[2] = v[2];
+#else
+            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+#endif
             species2.i1(offset2 + p)  = static_cast<int>(i1) - N_GHOSTS;
             species2.dx1(offset2 + p) = dx1;
             species2.i2(offset2 + p)  = static_cast<int>(i2) - N_GHOSTS;
