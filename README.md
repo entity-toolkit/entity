@@ -1,5 +1,5 @@
 # `Entity` a.k.a. `ntt`
-One particle-in-cell code to rule them all.
+One particle-in-cell code to rule them all. Find our detailed documentation [here](https://haykh.github.io/entity/).
 
 ![image](assets/cover.gif)
 
@@ -11,36 +11,16 @@ One particle-in-cell code to rule them all.
 
 ☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC}
 
-## Getting started
-
-_Clone_ this repository and all its dependencies with the following command:
-
-```sh
-git clone git@github.com:haykh/entity.git
-```
-
-_Configure_ the code using `cmake` before compilation, e.g.:
-
-```sh
-# from the root of the repository
-cmake -B build -D pgen=<PROBLEM_GENERATOR> -D Kokkos_ENABLE_CUDA=ON <...>
-```
-
-> This generates a configuration report where both the selected and all the available flags are highlighted.
-
-Once the code is configured, proceed to the `build/` directory and _compile_ the code by running `make -j`. 
-
-After the compilation is successful, you will find the executables and compiled static libraries in the `build/src` directory. That's it!
+🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI}
 
 ## Development status
 
 ### Active to-do
 
-  - [ ] add metric as a template argument
   - [x] change metrics/aux foldername
   - [x] add time as a global parameter
   - [x] use `kokkos` methods for `vis/nttiny.cpp`
-  - [ ] add disabled indicator for options in `report.cmake`
+  - [x] add disabled indicator for options in `report.cmake`
 
 ### Short term things to do/fix
 
