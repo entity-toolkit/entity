@@ -23,4 +23,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+
+  // const cards = document.getElementsByClassName('nt-card');
+  // const collapsables = document.getElementsByClassName('abstract');
+  // cards.forEach((card, i) => {
+  //   card.addEventListener('click', () => {
+  //     cards.forEach(c => c.classList.remove('active'));
+  //     card.classList.add('active');
+  //     collapsables.forEach(c => c.removeAttribute('open'));
+  //     collapsables[i].setAttribute('open', true);
+  //   });
+  // });
 });

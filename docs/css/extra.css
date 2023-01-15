@@ -1,19 +1,39 @@
 :root {
   font-variant-ligatures: normal;
   font-size: 1.25em;
-  --color-one: #0b7be3;
-  --color-two: #7b5de7;
-  --color-three: #c357de;
-  --color-four: #d63aa7;
-  --border-color: #448aff;
+  --color-one-h: 209;
+  --color-one-s: 91%;
+  --color-one-l: 47%;
+
+  --color-two-h: 253;
+  --color-two-s: 74%;
+  --color-two-l: 64%;
+
+  --color-three-h: 288;
+  --color-three-s: 67%;
+  --color-three-l: 61%;
+
+  --color-four-h: 318;
+  --color-four-s: 66%;
+  --color-four-l: 53%;
+
+  --border-color-h: 218;
+  --border-color-s: 100%;
+  --border-color-l: 63%;
+
+  --color-one: hsl(var(--color-one-h), var(--color-one-s), var(--color-one-l));
+  --color-two: hsl(var(--color-two-h), var(--color-two-s), var(--color-two-l));
+  --color-three: hsl(var(--color-three-h), var(--color-three-s), var(--color-three-l));
+  --color-four: hsl(var(--color-four-h), var(--color-four-s), var(--color-four-l));
+  --border-color: hsl(var(--border-color-h), var(--border-color-s), var(--border-color-l));
 }
 
 [data-md-color-scheme="default"] {
   --md-admonition-bg-color: hsl(232, 25%, 98%);
-  --gradient-color-one: #301330;
-  --gradient-color-two: #2f2f2f;
-  --gradient-color-three: #311953;
-  --gradient-color-four: #1f1919;
+  --gradient-color-one: hsl(300, 43%, 13%);
+  --gradient-color-two: hsl(0, 0%, 18%);
+  --gradient-color-three: hsl(265, 54%, 21%);
+  --gradient-color-four: hsl(0, 11%, 11%);
 }
 
 [data-md-color-scheme="slate"] {
@@ -54,8 +74,9 @@
 .nt-card {
   background-color: var(--md-admonition-bg-color) !important;
   box-shadow: var(--md-shadow-z1) !important;
-  border: .05rem solid var(--border-color) !important;
+  border: .05rem solid hsl(199, 100%, 50%) !important;
   border-radius: 2px;
+  padding-top: 20px;
 }
 
 .nt-card-image {
@@ -111,6 +132,10 @@
   background: linear-gradient(var(--color-four) 0%, rgba(252, 70, 107, 0) 100%) no-repeat 30px/2px 100% !important;
 }
 
+.nt-timeline-content {
+  border: none !important;
+}
+
 #contributors+ul li {
   list-style-type: circle;
 }
@@ -140,6 +165,27 @@
 
 #contributors+ul .tag.all-around {
   background-color: var(--border-color);
+}
+
+/* Collapsable in header */
+.nt-cards {
+  overflow: visible !important;
+}
+
+/* .nt-card:hover {
+  cursor: pointer;
+} */
+
+.nt-card.active {
+  background-color: hsla(199, 100%, 50%, 0.102) !important;
+}
+
+.collapsable {
+  display: inline-block;
+}
+
+.collapsable.collapsed {
+  display: none;
 }
 
 /* Header */
