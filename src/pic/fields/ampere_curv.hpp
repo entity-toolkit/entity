@@ -15,8 +15,8 @@ namespace ntt {
    */
   template <Dimension D>
   class Ampere_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_coeff;
+    Meshblock<D, PICEngine> m_mblock;
+    real_t                  m_coeff;
 
   public:
     /**
@@ -24,7 +24,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    Ampere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
+    Ampere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
     /**
      * @brief 2D version of the algorithm.
@@ -76,9 +76,9 @@ namespace ntt {
    */
   template <Dimension D>
   class AmperePoles_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_coeff;
-    const std::size_t     m_nj;
+    Meshblock<D, PICEngine> m_mblock;
+    real_t                  m_coeff;
+    const std::size_t       m_nj;
 
   public:
     /**
@@ -86,7 +86,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    AmperePoles_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
+    AmperePoles_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
     /**
      * @brief Implementation of the algorithm.

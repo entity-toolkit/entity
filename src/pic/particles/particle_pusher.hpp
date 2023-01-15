@@ -24,9 +24,9 @@ namespace ntt {
    */
   template <Dimension D>
   class Pusher_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    Particles<D, TypePIC> m_particles;
-    real_t                m_coeff, m_dt;
+    Meshblock<D, PICEngine> m_mblock;
+    Particles<D, PICEngine> m_particles;
+    real_t                  m_coeff, m_dt;
 
   public:
     /**
@@ -36,10 +36,10 @@ namespace ntt {
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      * @param dt Time step.
      */
-    Pusher_kernel(const Meshblock<D, TypePIC>& mblock,
-                  const Particles<D, TypePIC>& particles,
-                  const real_t&                coeff,
-                  const real_t&                dt)
+    Pusher_kernel(const Meshblock<D, PICEngine>& mblock,
+                  const Particles<D, PICEngine>& particles,
+                  const real_t&                  coeff,
+                  const real_t&                  dt)
       : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
     /**
      * @brief Loop over all active particles of the given species and call the appropriate

@@ -91,7 +91,7 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
     endif()
 
     # disabled options
-    if("${Flag}" STREQUAL "simtype")
+    if("${Flag}" STREQUAL "engine")
       if(${ch} STREQUAL "grpic")
         set(ch ${StrikeBegin}grpic${StrikeEnd})
       endif()
@@ -108,13 +108,13 @@ endfunction()
 
 set(ON_OFF_VALUES "ON" "OFF")
 
-PrintChoices("Simulation type"
-  "simtype"
-  "${simulation_types}"
-  ${simtype}
-  ${default_simtype}
+PrintChoices("Simulation engine"
+  "engine"
+  "${simulation_engines}"
+  ${engine}
+  ${default_engine}
   "${Blue}"
-  SIMTYPE_REPORT
+  ENGINE_REPORT
   1
   36
 )
@@ -262,7 +262,7 @@ ${DOTTED_LINE_SYMBOL}
 ${DASHED_LINE_SYMBOL}
 Main configurations ${Dim}[1]${ColourReset}
 ${DASHED_LINE_SYMBOL}
-  ${SIMTYPE_REPORT}
+  ${ENGINE_REPORT}
 
   ${METRIC_REPORT}
 

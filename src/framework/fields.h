@@ -12,9 +12,9 @@ namespace ntt {
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.
    * @tparam D Dimension.
-   * @tparam S Simulation type.
+   * @tparam S Simulation engine.
    */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct Fields {
     // * * * * * * * * * * * * * * * * * * * *
     // PIC-specific
@@ -67,7 +67,7 @@ namespace ntt {
      */
     ndfield_t<D, 3>        buff;
     ndfield_mirror_t<D, 3> buff_h;
-#ifdef GRPIC_SIMTYPE
+#ifdef GRPIC_ENGINE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific
     // * * * * * * * * * * * * * * * * * * * *

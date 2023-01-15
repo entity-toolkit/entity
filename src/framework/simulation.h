@@ -15,7 +15,7 @@
 #include <string>
 
 namespace ntt {
-  auto stringifySimulationType(const SimulationType&) -> std::string;
+  auto stringifySimulationEngine(const SimulationEngine&) -> std::string;
   auto stringifyBoundaryCondition(const BoundaryCondition&) -> std::string;
   auto stringifyParticlePusher(const ParticlePusher&) -> std::string;
 
@@ -23,9 +23,9 @@ namespace ntt {
    * @brief Main class of the simulation containing all the necessary methods and
    * configurations.
    * @tparam D dimension.
-   * @tparam S simulation type.
+   * @tparam S simulation engine.
    */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   class Simulation {
   protected:
     // user-defined and inferred simulation parameters

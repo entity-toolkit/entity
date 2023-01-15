@@ -3,10 +3,10 @@
 #include "cargs.h"
 #include "input.h"
 
-#ifdef PIC_SIMTYPE
+#ifdef PIC_ENGINE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
-#elif defined(GRPIC_SIMTYPE)
+#elif defined(GRPIC_ENGINE)
 #  include "grpic.h"
 #  define SIMULATION_CONTAINER GRPIC
 #endif

@@ -13,7 +13,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params) {}
 
@@ -22,8 +22,8 @@ namespace ntt {
   };
 
   template <>
-  inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
-    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     auto& electrons = mblock.particles[0];
     auto& positrons = mblock.particles[1];
     electrons.setNpart(2);
@@ -38,11 +38,11 @@ namespace ntt {
   }
 
   template <>
-  inline void ProblemGenerator<Dim1, TypePIC>::UserInitParticles(const SimulationParams&,
-                                                                 Meshblock<Dim1, TypePIC>&) {}
+  inline void ProblemGenerator<Dim1, PICEngine>::UserInitParticles(
+    const SimulationParams&, Meshblock<Dim1, PICEngine>&) {}
   template <>
-  inline void ProblemGenerator<Dim3, TypePIC>::UserInitParticles(const SimulationParams&,
-                                                                 Meshblock<Dim3, TypePIC>&) {}
+  inline void ProblemGenerator<Dim3, PICEngine>::UserInitParticles(
+    const SimulationParams&, Meshblock<Dim3, PICEngine>&) {}
 
 }    // namespace ntt
 

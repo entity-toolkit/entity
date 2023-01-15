@@ -35,7 +35,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND NOT ${SUBMODULES_LOADED
 endif()
 
 # ----------------------------- Defaults ---------------------------------- #
-set(default_simtype "pic")
+set(default_engine "pic")
 set(default_precision "single")
 set(default_pgen "dummy")
 set(default_output "OFF")
@@ -44,18 +44,18 @@ set(default_nttiny "OFF")
 set(default_KOKKOS_ENABLE_CUDA "OFF")
 set(default_KOKKOS_ENABLE_OPENMP "OFF")
 
-# ----------------------------- Simulation type ---------------------------- #
-set(simtype ${default_simtype} CACHE STRING "Simulation type")
+# ----------------------------- Simulation engine ---------------------------- #
+set(engine ${default_engine} CACHE STRING "Simulation engine")
 
-if(simtype STREQUAL "grpic")
+if(engine STREQUAL "grpic")
   message(FATAL_ERROR "GRPIC is not supported yet. See the `dev/gr` branch.")
 endif()
 
-set(simulation_types "pic" "grpic")
-list(FIND simulation_types ${simtype} SIMTYPE_FOUND)
+set(simulation_engines "pic" "grpic")
+list(FIND simulation_engines ${engine} ENGINE_FOUND)
 
-if(${SIMTYPE_FOUND} EQUAL -1)
-  message(FATAL_ERROR "Invalid simulation type: ${simtype}\nValid options are: ${simulation_types}")
+if(${ENGINE_FOUND} EQUAL -1)
+  message(FATAL_ERROR "Invalid simulation engine: ${engine}\nValid options are: ${simulation_engines}")
 endif()
 
 # -------------------------------- Precision ------------------------------- #
@@ -72,11 +72,11 @@ if(${precision} STREQUAL "single")
 endif()
 
 # --------------------------------- Metric --------------------------------- #
-if(${simtype} STREQUAL "pic")
+if(${engine} STREQUAL "pic")
   set(default_metric "minkowski")
   set(metric ${default_metric} CACHE STRING "Metric")
   set(metrics "minkowski" "spherical" "qspherical")
-elseif(${simtype} STREQUAL "grpic")
+elseif(${engine} STREQUAL "grpic")
   set(default_metric "qkerr_schild")
   set(metric ${default_metric} CACHE STRING "Metric")
   set(metrics "kerr_schild" "qkerr_schild")
@@ -89,7 +89,7 @@ if(${METRIC_FOUND} EQUAL -1)
 endif()
 
 # ---------------------------- Problem generator --------------------------- #
-set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${simtype}/pgen/)
+set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${engine}/pgen/)
 set(pgen ${default_pgen} CACHE STRING "Problem generator")
 file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
 set(problem_generators "")

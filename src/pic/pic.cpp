@@ -11,15 +11,15 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::Run() {
-    Simulation<D, TypePIC>::Initialize();
-    Simulation<D, TypePIC>::Verify();
+    Simulation<D, PICEngine>::Initialize();
+    Simulation<D, PICEngine>::Verify();
     {
       auto  params = *(this->params());
       auto& mblock = this->meshblock;
       auto  timax  = (unsigned long)(params.totalRuntime() / mblock.timestep());
 
       ResetSimulation();
-      Simulation<D, TypePIC>::PrintDetails();
+      Simulation<D, PICEngine>::PrintDetails();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
@@ -27,7 +27,7 @@ namespace ntt {
       }
       WaitAndSynchronize();
     }
-    Simulation<D, TypePIC>::Finalize();
+    Simulation<D, PICEngine>::Finalize();
   }
 
   template <Dimension D>
@@ -89,6 +89,7 @@ namespace ntt {
 
       timers.start("Prtl_BC");
       ParticlesExchange();
+      mblock.RemoveDeadParticles();
       timers.stop("Prtl_BC");
     }
 

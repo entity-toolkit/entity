@@ -39,7 +39,7 @@ using real_t = double;
 inline constexpr int N_GHOSTS = 2;
 
 // clang-format off
-#define @SIMTYPE_FLAG@
+#define @ENGINE_FLAG@
 #define @METRIC_FLAG@
 // clang-format on
 

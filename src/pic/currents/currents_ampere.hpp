@@ -15,15 +15,15 @@ namespace ntt {
    */
   template <Dimension D>
   class CurrentsAmpere_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_coeff;
+    Meshblock<D, PICEngine> m_mblock;
+    real_t                  m_coeff;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
+    CurrentsAmpere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
       : m_mblock { mblock }, m_coeff { coeff } {}
     /**
      * @brief 1D version of the add current.
@@ -73,15 +73,15 @@ namespace ntt {
    */
   template <Dimension D>
   class CurrentsAmpere_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_coeff;
+    Meshblock<D, PICEngine> m_mblock;
+    real_t                  m_coeff;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
+    CurrentsAmpere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
       : m_mblock { mblock }, m_coeff { coeff } {}
     /**
      * @brief 1D version of the add current.
@@ -140,16 +140,16 @@ namespace ntt {
 
   template <Dimension D>
   class CurrentsAmperePoles_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_coeff;
-    const std::size_t     m_nj;
+    Meshblock<D, PICEngine> m_mblock;
+    real_t                  m_coeff;
+    const std::size_t       m_nj;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmperePoles_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
+    CurrentsAmperePoles_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
       : m_mblock { mblock }, m_coeff { coeff }, m_nj(m_mblock.Ni2()) {}
     /**
      * @param i index.

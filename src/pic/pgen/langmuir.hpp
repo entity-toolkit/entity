@@ -17,7 +17,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams&) {}
     inline void UserInitParticles(const SimulationParams& params, Meshblock<D, S>& mblock) {

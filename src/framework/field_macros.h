@@ -18,7 +18,7 @@
 #define BX3_2D(I, J)                     (m_mblock.em((I), (J), em::bx3))
 #define BX3_3D(I, J, K)                  (m_mblock.em((I), (J), (K), em::bx3))
 
-#ifdef PIC_SIMTYPE
+#ifdef PIC_ENGINE
 
 #  define EX1(...)        GET_MACRO(__VA_ARGS__, EX1_3D, EX1_2D, EX1_1D, )(__VA_ARGS__)
 #  define EX1_1D(I)       (m_mblock.em((I), em::ex1))

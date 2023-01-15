@@ -21,8 +21,8 @@ namespace ntt {
    */
   template <Dimension D>
   class DepositCurrents_kernel {
-    Meshblock<D, TypePIC>   m_mblock;
-    Particles<D, TypePIC>   m_particles;
+    Meshblock<D, PICEngine> m_mblock;
+    Particles<D, PICEngine> m_particles;
     scatter_ndfield_t<D, 3> m_scatter_cur;
     const real_t            m_charge, m_dt;
     const real_t            m_xi2max;
@@ -36,8 +36,8 @@ namespace ntt {
      * @param charge charge of the species (code units).
      * @param dt Time step.
      */
-    DepositCurrents_kernel(const Meshblock<D, TypePIC>&   mblock,
-                           const Particles<D, TypePIC>&   particles,
+    DepositCurrents_kernel(const Meshblock<D, PICEngine>& mblock,
+                           const Particles<D, PICEngine>& particles,
                            const scatter_ndfield_t<D, 3>& scatter_cur,
                            const real_t&                  charge,
                            const real_t&                  dt)

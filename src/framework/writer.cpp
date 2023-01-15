@@ -22,7 +22,7 @@
 namespace ntt {
 
 #ifdef OUTPUT_ENABLED
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Writer<D, S>::Writer(const SimulationParams& params, const Meshblock<D, S>& mblock) {
     m_io = m_adios.DeclareIO("WriteKokkos");
     m_io.SetEngine("HDF5");
@@ -113,10 +113,10 @@ namespace ntt {
     m_vars_r.emplace("density", m_io.DefineVariable<real_t>("density", {}, {}, count));
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Writer<D, S>::~Writer() {}
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const Meshblock<D, S>& mblock,
                                  const real_t&          time,
                                  const std::size_t&     tstep) {
@@ -171,22 +171,22 @@ namespace ntt {
 
 #else
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Writer<D, S>::Writer(const SimulationParams&, const Meshblock<D, S>&) {}
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Writer<D, S>::~Writer() {}
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const Meshblock<D, S>&, const real_t&, const std::size_t&) {}
 
 #endif
 
 }    // namespace ntt
 
-template class ntt::Writer<ntt::Dim1, ntt::TypePIC>;
-template class ntt::Writer<ntt::Dim2, ntt::TypePIC>;
-template class ntt::Writer<ntt::Dim3, ntt::TypePIC>;
+template class ntt::Writer<ntt::Dim1, ntt::PICEngine>;
+template class ntt::Writer<ntt::Dim2, ntt::PICEngine>;
+template class ntt::Writer<ntt::Dim3, ntt::PICEngine>;
 
 // if constexpr (D == Dim1) {
 //   extent = fmt::format("{} {} 0 0 0 0", params.extent()[0], params.extent()[1]);

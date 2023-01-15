@@ -89,9 +89,9 @@ namespace ntt {
   /**
    * @brief Container class to carry particle information for a specific species.
    * @tparam D Dimension.
-   * @tparam S Simulation type.
+   * @tparam S Simulation engine.
    */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct Particles : public ParticleSpecies {
   private:
     // Number of currently active (used) particles.
@@ -175,6 +175,12 @@ namespace ntt {
      * @brief Synchronize data from device to host.
      */
     void SynchronizeHostDevice();
+
+    /**
+     * @brief Remove dead particles by sorting and reducing the `npart`.
+     *
+     */
+    void RemoveDead();
   };
 
 }    // namespace ntt

@@ -291,9 +291,9 @@ namespace ntt {
    * @brief Container for the fields, particles and coordinate system. This is the main subject
    * of the simulation.
    * @tparam D Dimension.
-   * @tparam S Simulation type.
+   * @tparam S Simulation engine.
    */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   class Meshblock : public Mesh<D>, public Fields<D, S> {
   private:
     // Timestep duration in physical units defined at the meshblock.
@@ -351,6 +351,11 @@ namespace ntt {
      * @brief Verify that all the specified parameters are valid.
      */
     void Verify();
+
+    /**
+     * @brief Remove dead particles.
+     */
+    void RemoveDeadParticles();
   };
 
 }    // namespace ntt

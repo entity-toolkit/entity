@@ -10,16 +10,16 @@
 
 namespace ntt {
   /**
-   * @brief Class for PIC simulations, inherits from `Simulation<D, TypePIC>`.
+   * @brief Class for PIC simulations, inherits from `Simulation<D, PICEngine>`.
    * @tparam D dimension.
    */
   template <Dimension D>
-  struct PIC : public Simulation<D, TypePIC> {
+  struct PIC : public Simulation<D, PICEngine> {
     /**
      * @brief Constructor for PIC class.
      * @param inputdata toml-object with parsed toml parameters.
      */
-    PIC(const toml::value& inputdata) : Simulation<D, TypePIC>(inputdata) {}
+    PIC(const toml::value& inputdata) : Simulation<D, PICEngine>(inputdata) {}
     ~PIC() = default;
 
     /**

@@ -19,8 +19,8 @@ namespace ntt {
    */
   template <Dimension D>
   class Faraday_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    real_t                m_coeff;
+    Meshblock<D, PICEngine> m_mblock;
+    real_t                  m_coeff;
 
   public:
     /**
@@ -28,7 +28,7 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dB/dt = coeff * -curl E.
      */
-    Faraday_kernel(const Meshblock<D, TypePIC>& mblock, const real_t& coeff)
+    Faraday_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
       : m_mblock(mblock), m_coeff(coeff) {}
 
     /**

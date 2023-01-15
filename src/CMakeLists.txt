@@ -8,8 +8,8 @@ set(VIS nttiny.xc)
 set(EXTERN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../extern)
 
 # configuration file
-set(SIMTYPE_FLAG ${simtype}_simtype)
-string(TOUPPER ${SIMTYPE_FLAG} SIMTYPE_FLAG)
+set(ENGINE_FLAG ${engine}_engine)
+string(TOUPPER ${ENGINE_FLAG} ENGINE_FLAG)
 set(METRIC_FLAG ${metric}_metric)
 string(TOUPPER ${METRIC_FLAG} METRIC_FLAG)
 

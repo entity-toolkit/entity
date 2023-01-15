@@ -12,7 +12,7 @@ namespace ntt {
    */
   template <Dimension D>
   class CurrentsFilter_kernel {
-    Meshblock<D, TypePIC>   m_mblock;
+    Meshblock<D, PICEngine> m_mblock;
     tuple_t<std::size_t, D> m_size;
 
   public:
@@ -20,7 +20,7 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock object.
      */
-    CurrentsFilter_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {
+    CurrentsFilter_kernel(const Meshblock<D, PICEngine>& mblock) : m_mblock { mblock } {
       for (short d = 0; d < (short)D; ++d) {
         m_size[d] = m_mblock.Ni(d);
       }
@@ -180,8 +180,7 @@ namespace ntt {
       m_mblock.cur(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijm1;
 
       m_mblock.cur(i, j, cur::jx3) = ZERO;
-    }
-    else {
+    } else {
       for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
         m_mblock.cur(i, j, comp)
           = INV_4 * m_mblock.buff(i, j, comp)

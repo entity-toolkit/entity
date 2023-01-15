@@ -18,7 +18,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct MyDist : public EnergyDistribution<D, S> {
     MyDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
@@ -29,7 +29,7 @@ namespace ntt {
     }
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct MyDist2 : public EnergyDistribution<D, S> {
     MyDist2(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
@@ -40,7 +40,7 @@ namespace ntt {
     }
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct CoshDist : public SpatialDistribution<D, S> {
     explicit CoshDist(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
@@ -49,7 +49,7 @@ namespace ntt {
     }
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ExpDist : public SpatialDistribution<D, S> {
     explicit ExpDist(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
@@ -57,17 +57,17 @@ namespace ntt {
   };
 
   template <>
-  Inline real_t ExpDist<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {}
+  Inline real_t ExpDist<Dim1, PICEngine>::operator()(const coord_t<Dim1>&) const {}
 
   template <>
-  Inline real_t ExpDist<Dim2, TypePIC>::operator()(const coord_t<Dim2>& x_ph) const {
+  Inline real_t ExpDist<Dim2, PICEngine>::operator()(const coord_t<Dim2>& x_ph) const {
     return math::exp(-(SQR(x_ph[0]) + SQR(x_ph[1])) / SQR(0.05));
   }
 
   template <>
-  Inline real_t ExpDist<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {}
+  Inline real_t ExpDist<Dim3, PICEngine>::operator()(const coord_t<Dim3>&) const {}
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct EgtrBCrit : public InjectionCriterion<D, S> {
     explicit EgtrBCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock) {}
@@ -75,18 +75,18 @@ namespace ntt {
   };
 
   template <>
-  Inline bool EgtrBCrit<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {}
+  Inline bool EgtrBCrit<Dim1, PICEngine>::operator()(const coord_t<Dim1>&) const {}
 
   template <>
-  Inline bool EgtrBCrit<Dim2, TypePIC>::operator()(const coord_t<Dim2>& xi) const {
+  Inline bool EgtrBCrit<Dim2, PICEngine>::operator()(const coord_t<Dim2>& xi) const {
     this->m_mblock.em((int)xi[0], (int)xi[1], em::ex1);
     return true;
   }
 
   template <>
-  Inline bool EgtrBCrit<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {}
+  Inline bool EgtrBCrit<Dim3, PICEngine>::operator()(const coord_t<Dim3>&) const {}
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams&) {}
     inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) override {}
@@ -100,18 +100,18 @@ namespace ntt {
 
   // template <>
   // inline void
-  // ProblemGenerator<Dim2, TypePIC>::UserInitParticles(const SimulationParams&   params,
-  //                                                    Meshblock<Dim2, TypePIC>& mblock) {
+  // ProblemGenerator<Dim2, PICEngine>::UserInitParticles(const SimulationParams&   params,
+  //                                                    Meshblock<Dim2, PICEngine>& mblock) {
   //   auto nppc_per_spec = (real_t)(params.ppc0()) * HALF;
-  //   InjectUniform<Dim2, TypePIC, MyDist>(params, mblock, {1, 2}, nppc_per_spec);
+  //   InjectUniform<Dim2, PICEngine, MyDist>(params, mblock, {1, 2}, nppc_per_spec);
 
-  //   InjectUniform<Dim2, TypePIC, MyDist2>(
+  //   InjectUniform<Dim2, PICEngine, MyDist2>(
   //     params, mblock, {1, 2}, nppc_per_spec, {-0.5, 0.5, -0.1, 0.2});
 
-  //   InjectInVolume<Dim2, TypePIC, ColdDist, CoshDist>(params, mblock, {1, 2},
+  //   InjectInVolume<Dim2, PICEngine, ColdDist, CoshDist>(params, mblock, {1, 2},
   //   nppc_per_spec);
 
-  //   // InjectInVolume<Dim2, TypePIC, HotDist, UniformDist, EgtrBCrit>(
+  //   // InjectInVolume<Dim2, PICEngine, HotDist, UniformDist, EgtrBCrit>(
   //   //   params, mblock, {1, 2}, nppc_per_spec);
   // }
 

@@ -20,8 +20,8 @@ larmor0    = 0.1
 skindepth0 = 0.01
 
 [problem]
-spinup_time  = 0.25
-omega_max    = 0.25
+spinup_time = 0.25
+omega_max   = 0.25
 
 [visualization]
 fields        = ["Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi"]

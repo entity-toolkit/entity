@@ -1,7 +1,7 @@
 #ifndef GRPIC_INIT_FIELDS
 #define GRPIC_INIT_FIELDS
 
-#ifdef GRPIC_SIMTYPE
+#ifdef GRPIC_ENGINE
 
 #  include "fields.h"
 #  include "global.h"
@@ -20,15 +20,15 @@ namespace ntt {
    */
   template <Dimension D>
   class initFieldsFromVectorPotential {
-    ProblemGenerator<D, SimulationType::GRPIC> m_pgen;
-    Meshblock<D, SimulationType::GRPIC>        m_mblock;
-    real_t                                     m_eps;
-    index_t                                    j_min;
+    ProblemGenerator<D, SimulationEngine::GRPIC> m_pgen;
+    Meshblock<D, SimulationEngine::GRPIC>        m_mblock;
+    real_t                                       m_eps;
+    index_t                                      j_min;
 
   public:
-    initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationType::GRPIC>& pgen,
-                                  const Meshblock<D, SimulationType::GRPIC>&        mblock,
-                                  real_t                                            eps)
+    initFieldsFromVectorPotential(const ProblemGenerator<D, SimulationEngine::GRPIC>& pgen,
+                                  const Meshblock<D, SimulationEngine::GRPIC>&        mblock,
+                                  real_t                                              eps)
       : m_pgen { pgen },
         m_mblock { mblock },
         m_eps { eps },

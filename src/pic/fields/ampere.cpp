@@ -61,7 +61,7 @@ namespace ntt {
   void PIC<Dim3>::Ampere(const real_t&) {
     NTTHostError("not implemented");
   }
- 
+
 #endif
 
 }    // namespace ntt

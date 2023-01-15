@@ -50,7 +50,18 @@ charge   = 0.0
 maxnpart = 1e2
 
 [visualization]
-fields = ["density", "Er", "Etheta", "Ephi", "Br", "Btheta", "Bphi", "Jr", "Jtheta", "Jphi"]
+fields = [
+"density",
+"Er",
+"Etheta",
+"Ephi",
+"Br",
+"Btheta",
+"Bphi",
+"Jr",
+"Jtheta",
+"Jphi",
+]
 
 [output]
 format = "disabled"

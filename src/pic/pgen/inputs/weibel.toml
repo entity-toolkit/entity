@@ -37,13 +37,12 @@ maxnpart = 5e7
 pusher   = "BORIS"
 
 [problem]
-udrift_1   = 1.0
-udrift_2   = -1.0
+udrift_1 = 1.0
+udrift_2 = -1.0
 
 [visualization]
-fields = ["Bz"]
+fields        = ["Bz"]
 fields_stride = 4
-
 
 # [output]
 # format          = <string: { disabled, csv }>

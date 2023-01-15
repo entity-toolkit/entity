@@ -31,10 +31,10 @@ namespace ntt {
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Particles<Dim1, TypePIC>::Particles(const std::string& label_,
-                                      const float&       m_,
-                                      const float&       ch_,
-                                      const std::size_t& maxnpart_)
+  Particles<Dim1, PICEngine>::Particles(const std::string& label_,
+                                        const float&       m_,
+                                        const float&       ch_,
+                                        const std::size_t& maxnpart_)
     : ParticleSpecies { label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       dx1 { label_ + "_dx1", maxnpart_ },
@@ -52,10 +52,10 @@ namespace ntt {
 
 #ifdef MINKOWSKI_METRIC
   template <>
-  Particles<Dim2, TypePIC>::Particles(const std::string& label_,
-                                      const float&       m_,
-                                      const float&       ch_,
-                                      const std::size_t& maxnpart_)
+  Particles<Dim2, PICEngine>::Particles(const std::string& label_,
+                                        const float&       m_,
+                                        const float&       ch_,
+                                        const std::size_t& maxnpart_)
     : ParticleSpecies { label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
@@ -76,10 +76,10 @@ namespace ntt {
   }
 #else    // axisymmetry
   template <>
-  Particles<Dim2, TypePIC>::Particles(const std::string& label_,
-                                      const float&       m_,
-                                      const float&       ch_,
-                                      const std::size_t& maxnpart_)
+  Particles<Dim2, PICEngine>::Particles(const std::string& label_,
+                                        const float&       m_,
+                                        const float&       ch_,
+                                        const std::size_t& maxnpart_)
     : ParticleSpecies { label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
@@ -101,10 +101,10 @@ namespace ntt {
   }
 #endif
   template <>
-  Particles<Dim3, TypePIC>::Particles(const std::string& label_,
-                                      const float&       m_,
-                                      const float&       ch_,
-                                      const std::size_t& maxnpart_)
+  Particles<Dim3, PICEngine>::Particles(const std::string& label_,
+                                        const float&       m_,
+                                        const float&       ch_,
+                                        const std::size_t& maxnpart_)
     : ParticleSpecies { label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
@@ -194,21 +194,21 @@ namespace ntt {
     ux3_h = Kokkos::create_mirror(ux3);
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Particles<D, S>::Particles(const ParticleSpecies& spec)
     : Particles(spec.label(), spec.mass(), spec.charge(), spec.maxnpart()) {}
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeActiveParticles() -> range_t<Dim1> {
     return CreateRangePolicy<Dim1>({ 0 }, { (int)(npart()) });
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeAllParticles() -> range_t<Dim1> {
     return CreateRangePolicy<Dim1>({ 0 }, { (int)(maxnpart()) });
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Particles<D, S>::SynchronizeHostDevice() {
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
       Kokkos::deep_copy(i1_h, i1);
@@ -227,13 +227,68 @@ namespace ntt {
     Kokkos::deep_copy(ux3_h, ux3);
   }
 
+  template <Dimension D, SimulationEngine S>
+  void Particles<D, S>::RemoveDead() {
+    // count the number of living particles
+    std::size_t npart_alive = 0;
+    auto        isdead      = this->is_dead;
+    Kokkos::parallel_reduce(
+      "RemoveDead",
+      rangeActiveParticles(),
+      Lambda(index_t & p, std::size_t & cnt) {
+        if (!isdead(p)) {
+          cnt++;
+        }
+      },
+      npart_alive);
+    PLOGI.printf("npart_alive = %d", npart_alive);
+    // using KeyType = array_t<bool*>;
+    // using BinOp   = Kokkos::BinOp1D<KeyType>;
+    // BinOp                           bin_op({ 2 }, { true }, { false });
+    // Kokkos::BinSort<KeyType, BinOp> Sorter(isdead, bin_op, false);
+    // Sorter.create_permute_vector();
+    // Sorter.sort(this->is_dead);
+    //     Sorter.sort(this->i1);
+    //     Sorter.sort(this->dx1);
+    //     if constexpr (D == Dim2 || D == Dim3) {
+    //       Sorter.sort(this->i2);
+    //       Sorter.sort(this->dx2);
+    //     }
+    //     if constexpr (D == Dim3) {
+    //       Sorter.sort(this->i3);
+    //       Sorter.sort(this->dx3);
+    //     }
+    //     Sorter.sort(this->ux1);
+    //     Sorter.sort(this->ux2);
+    //     Sorter.sort(this->ux3);
+    // #ifndef MINKOWSKI_METRIC
+    //     if constexpr (D == Dim2) {
+    //       Sorter.sort(this->phi);
+    //     }
+    // #endif
+    //     if constexpr (S == TypeGRPIC) {
+    //       Sorter.sort(this->i1_prev);
+    //       Sorter.sort(this->dx1_prev);
+    //       if constexpr (D == Dim2 || D == Dim3) {
+    //         Sorter.sort(this->i2_prev);
+    //         Sorter.sort(this->dx2_prev);
+    //       }
+    //       if constexpr (D == Dim3) {
+    //         Sorter.sort(this->i3_prev);
+    //         Sorter.sort(this->dx3_prev);
+    //       }
+    //     }
+    //     // !TODO: sort weights
+    //     this->setNpart(npart_alive);
+  }
+
 }    // namespace ntt
 
-#ifdef PIC_SIMTYPE
-template struct ntt::Particles<ntt::Dim1, ntt::TypePIC>;
-template struct ntt::Particles<ntt::Dim2, ntt::TypePIC>;
-template struct ntt::Particles<ntt::Dim3, ntt::TypePIC>;
-#elif defined(GRPIC_SIMTYPE)
-template struct ntt::Particles<ntt::Dim2, ntt::SimulationType::GRPIC>;
-template struct ntt::Particles<ntt::Dim3, ntt::SimulationType::GRPIC>;
+#ifdef PIC_ENGINE
+template struct ntt::Particles<ntt::Dim1, ntt::PICEngine>;
+template struct ntt::Particles<ntt::Dim2, ntt::PICEngine>;
+template struct ntt::Particles<ntt::Dim3, ntt::PICEngine>;
+#elif defined(GRPIC_ENGINE)
+template struct ntt::Particles<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
+template struct ntt::Particles<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
 #endif

@@ -13,7 +13,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct RadialKick : public EnergyDistribution<D, S> {
     RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
@@ -22,7 +22,7 @@ namespace ntt {
     }
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct RadialDist : public SpatialDistribution<D, S> {
     explicit RadialDist(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {
@@ -39,7 +39,7 @@ namespace ntt {
     real_t inj_rmax, inj_rmin;
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct MaxDensCrit : public InjectionCriterion<D, S> {
     explicit MaxDensCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock),
@@ -53,11 +53,11 @@ namespace ntt {
   };
 
   template <>
-  Inline real_t RadialDist<Dim2, TypePIC>::operator()(const coord_t<Dim2>& x_ph) const {
+  Inline real_t RadialDist<Dim2, PICEngine>::operator()(const coord_t<Dim2>& x_ph) const {
     return ((x_ph[0] <= inj_rmax) && (x_ph[0] > inj_rmin)) ? ONE : ZERO;
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct PgenTargetFields : public TargetFields<D, S> {
     PgenTargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : TargetFields<D, S>(params, mblock), r_min { mblock.metric.x1_min } {}
@@ -94,7 +94,7 @@ namespace ntt {
   }
 
   template <>
-  Inline bool MaxDensCrit<Dim2, TypePIC>::operator()(const coord_t<Dim2>& xph) const {
+  Inline bool MaxDensCrit<Dim2, PICEngine>::operator()(const coord_t<Dim2>& xph) const {
     coord_t<Dim2> xi { ZERO };
     this->m_mblock.metric.x_Sph2Code(xph, xi);
     std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
@@ -102,7 +102,7 @@ namespace ntt {
     return this->m_mblock.buff(i1, i2, fld::dens) < inj_maxDens;
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params)
       : spin_omega { readFromInput<real_t>(params.inputdata(), "problem", "spin_omega") },
@@ -130,8 +130,8 @@ namespace ntt {
   };
 
   template <>
-  inline void ProblemGenerator<Dim2, TypePIC>::UserInitFields(
-    const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, PICEngine>::UserInitFields(
+    const SimulationParams&, Meshblock<Dim2, PICEngine>& mblock) {
     auto rmin = mblock.metric.x1_min;
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -140,8 +140,8 @@ namespace ntt {
   }
 
   template <>
-  inline void ProblemGenerator<Dim2, TypePIC>::UserDriveFields(
-    const real_t& time, const SimulationParams&, Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, PICEngine>::UserDriveFields(
+    const real_t& time, const SimulationParams&, Meshblock<Dim2, PICEngine>& mblock) {
     {
       // Set the boundary conditions at r-min
       const auto omega  = spin_omega;
@@ -223,39 +223,41 @@ namespace ntt {
    */
 
   template <>
-  Inline real_t RadialDist<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {
+  Inline real_t RadialDist<Dim1, PICEngine>::operator()(const coord_t<Dim1>&) const {
     return ZERO;
   }
   template <>
-  Inline real_t RadialDist<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
+  Inline real_t RadialDist<Dim3, PICEngine>::operator()(const coord_t<Dim3>&) const {
     return ZERO;
   }
   template <>
-  Inline bool MaxDensCrit<Dim1, TypePIC>::operator()(const coord_t<Dim1>&) const {
+  Inline bool MaxDensCrit<Dim1, PICEngine>::operator()(const coord_t<Dim1>&) const {
     return false;
   }
   template <>
-  Inline bool MaxDensCrit<Dim3, TypePIC>::operator()(const coord_t<Dim3>&) const {
+  Inline bool MaxDensCrit<Dim3, PICEngine>::operator()(const coord_t<Dim3>&) const {
     return false;
   }
 
   template <>
-  inline void ProblemGenerator<Dim1, TypePIC>::UserInitFields(const SimulationParams&,
-                                                              Meshblock<Dim1, TypePIC>&) {}
+  inline void ProblemGenerator<Dim1, PICEngine>::UserInitFields(const SimulationParams&,
+                                                                Meshblock<Dim1, PICEngine>&) {}
 
   template <>
-  inline void ProblemGenerator<Dim1, TypePIC>::UserDriveFields(const real_t&,
-                                                               const SimulationParams&,
-                                                               Meshblock<Dim1, TypePIC>&) {}
+  inline void ProblemGenerator<Dim1, PICEngine>::UserDriveFields(const real_t&,
+                                                                 const SimulationParams&,
+                                                                 Meshblock<Dim1, PICEngine>&) {
+  }
 
   template <>
-  inline void ProblemGenerator<Dim3, TypePIC>::UserInitFields(const SimulationParams&,
-                                                              Meshblock<Dim3, TypePIC>&) {}
+  inline void ProblemGenerator<Dim3, PICEngine>::UserInitFields(const SimulationParams&,
+                                                                Meshblock<Dim3, PICEngine>&) {}
 
   template <>
-  inline void ProblemGenerator<Dim3, TypePIC>::UserDriveFields(const real_t&,
-                                                               const SimulationParams&,
-                                                               Meshblock<Dim3, TypePIC>&) {}
+  inline void ProblemGenerator<Dim3, PICEngine>::UserDriveFields(const real_t&,
+                                                                 const SimulationParams&,
+                                                                 Meshblock<Dim3, PICEngine>&) {
+  }
 
 }    // namespace ntt
 

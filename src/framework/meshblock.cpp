@@ -195,7 +195,7 @@ namespace ntt {
              metric.x2_max, metric.x3_min, metric.x3_max };
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Meshblock<D, S>::Meshblock(const std::vector<unsigned int>&    res,
                              const std::vector<real_t>&          ext,
                              const real_t*                       params,
@@ -206,10 +206,10 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::Verify() {
     // verifying that the correct particle arrays are allocated for a given dimension ...
-    // ... and a given simulation type
+    // ... and a given simulation engine
     for (auto& species : particles) {
       if constexpr (D == Dim1) {
         NTTHostErrorIf(
@@ -218,7 +218,7 @@ namespace ntt {
             || (species.i2_prev.extent(0) != 0) || (species.i3_prev.extent(0) != 0)
             || (species.dx2_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
           "Wrong particle arrays allocated for 1D mesh");
-        if constexpr (S == TypePIC) {
+        if constexpr (S == PICEngine) {
           NTTHostErrorIf((species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0),
                          "Wrong particle arrays allocated for 1D mesh PIC");
         }
@@ -231,7 +231,7 @@ namespace ntt {
                          || (species.i3_prev.extent(0) != 0)
                          || (species.dx3_prev.extent(0) != 0),
                        "Wrong particle arrays allocated for 2D mesh");
-        if constexpr (S == TypePIC) {
+        if constexpr (S == PICEngine) {
           NTTHostErrorIf((species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0)
                            || (species.i2_prev.extent(0) != 0)
                            || (species.dx2_prev.extent(0) != 0),
@@ -242,7 +242,7 @@ namespace ntt {
                        "Wrong particle arrays allocated for 2D mesh MINKOWSKI");
 #endif
       } else {
-        if constexpr (S == TypePIC) {
+        if constexpr (S == PICEngine) {
           NTTHostErrorIf(
             (species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0)
               || (species.i2_prev.extent(0) != 0) || (species.dx2_prev.extent(0) != 0)
@@ -256,17 +256,23 @@ namespace ntt {
       }
     }
   }
+  template <Dimension D, SimulationEngine S>
+  void Meshblock<D, S>::RemoveDeadParticles() {
+    for (auto& species : particles) {
+      species.RemoveDead();
+    }
+  }
 }    // namespace ntt
 
 template class ntt::Mesh<ntt::Dim1>;
 template class ntt::Mesh<ntt::Dim2>;
 template class ntt::Mesh<ntt::Dim3>;
 
-#ifdef PIC_SIMTYPE
-template class ntt::Meshblock<ntt::Dim1, ntt::TypePIC>;
-template class ntt::Meshblock<ntt::Dim2, ntt::TypePIC>;
-template class ntt::Meshblock<ntt::Dim3, ntt::TypePIC>;
-#elif defined(GRPIC_SIMTYPE)
-template class ntt::Meshblock<ntt::Dim2, ntt::SimulationType::GRPIC>;
-template class ntt::Meshblock<ntt::Dim3, ntt::SimulationType::GRPIC>;
+#ifdef PIC_ENGINE
+template class ntt::Meshblock<ntt::Dim1, ntt::PICEngine>;
+template class ntt::Meshblock<ntt::Dim2, ntt::PICEngine>;
+template class ntt::Meshblock<ntt::Dim3, ntt::PICEngine>;
+#elif defined(GRPIC_ENGINE)
+template class ntt::Meshblock<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
+template class ntt::Meshblock<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
 #endif

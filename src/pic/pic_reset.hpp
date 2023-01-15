@@ -13,8 +13,8 @@ namespace ntt {
    */
   template <Dimension D>
   class ResetParticles_kernel {
-    Meshblock<D, TypePIC> m_mblock;
-    Particles<D, TypePIC> m_particles;
+    Meshblock<D, PICEngine> m_mblock;
+    Particles<D, PICEngine> m_particles;
 
   public:
     /**
@@ -22,8 +22,8 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param particles Particles.
      */
-    ResetParticles_kernel(const Meshblock<D, TypePIC>& mblock,
-                          const Particles<D, TypePIC>& particles)
+    ResetParticles_kernel(const Meshblock<D, PICEngine>& mblock,
+                          const Particles<D, PICEngine>& particles)
       : m_mblock(mblock), m_particles(particles) {}
 
     /**
@@ -58,14 +58,14 @@ namespace ntt {
    */
   template <Dimension D>
   class ResetCurrents_kernel {
-    Meshblock<D, TypePIC> m_mblock;
+    Meshblock<D, PICEngine> m_mblock;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    ResetCurrents_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {}
+    ResetCurrents_kernel(const Meshblock<D, PICEngine>& mblock) : m_mblock { mblock } {}
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.
@@ -122,14 +122,14 @@ namespace ntt {
    */
   template <Dimension D>
   class ResetFields_kernel {
-    Meshblock<D, TypePIC> m_mblock;
+    Meshblock<D, PICEngine> m_mblock;
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    ResetFields_kernel(const Meshblock<D, TypePIC>& mblock) : m_mblock { mblock } {}
+    ResetFields_kernel(const Meshblock<D, PICEngine>& mblock) : m_mblock { mblock } {}
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.

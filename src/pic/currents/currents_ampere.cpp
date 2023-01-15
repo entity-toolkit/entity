@@ -107,7 +107,7 @@ namespace ntt {
        *    .                       .
        *    .                       .
        *    . . . . . . . . . . . . .
-       * 
+       *
        */
       Kokkos::parallel_for("AmpereCurrents-2",
                            CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),

@@ -18,7 +18,7 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                              Master pgen class                             */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct PGen {
     virtual inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
     virtual inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
@@ -46,7 +46,7 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                             Target field class                             */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct TargetFields {
     TargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
@@ -63,7 +63,7 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                             Energy distribution                            */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct EnergyDistribution {
     EnergyDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
@@ -81,7 +81,7 @@ namespace ntt {
     Meshblock<D, S>  m_mblock;
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ColdDist : public EnergyDistribution<D, S> {
     ColdDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
@@ -97,7 +97,7 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                            Spatial distribution                            */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct SpatialDistribution {
     SpatialDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
@@ -111,7 +111,7 @@ namespace ntt {
     Meshblock<D, S>  m_mblock;
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct UniformDist : public SpatialDistribution<D, S> {
     UniformDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {}
@@ -123,7 +123,7 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                             Injection criterion                            */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct InjectionCriterion {
     InjectionCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
@@ -133,7 +133,7 @@ namespace ntt {
     Meshblock<D, S>  m_mblock;
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct NoCriterion : public InjectionCriterion<D, S> {
     NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock) {}

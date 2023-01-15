@@ -30,9 +30,8 @@ maxnpart = 1e7
 pusher   = "BORIS"
 
 [visualization]
-fields = ["Ex", "density"]
+fields        = ["Ex", "density"]
 fields_stride = 1
-
 
 # [output]
 # format          = <string: { disabled, csv }>

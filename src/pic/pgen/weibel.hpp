@@ -12,7 +12,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct Drift : public EnergyDistribution<D, S> {
     Drift(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock),
@@ -31,16 +31,16 @@ namespace ntt {
     const real_t udrift;
   };
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params) {}
     inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) override {}
   };
 
   template <>
-  inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
-    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
-    InjectUniform<Dim2, TypePIC, Drift>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
+  inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    InjectUniform<Dim2, PICEngine, Drift>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
   }
 }    // namespace ntt
 

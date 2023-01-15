@@ -1,55 +1,55 @@
 [simulation]
-title           = "Benchmark"
-runtime         = 0.1
+title   = "Benchmark"
+runtime = 0.1
 
 [domain]
-resolution      = [32000, 32000]
-extent          = [-2.0, 2.0, -2.0, 2.0]
-boundaries      = ["PERIODIC", "PERIODIC"]
+resolution = [32000, 32000]
+extent     = [-2.0, 2.0, -2.0, 2.0]
+boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.9
-correction      = 1.0
-fieldsolver_ON  = true
-deposit_ON      = false
+CFL            = 0.9
+correction     = 1.0
+fieldsolver_ON = true
+deposit_ON     = false
 
 [units]
-ppc0            = 0.1
-larmor0         = 0.1
-skindepth0      = 0.01
+ppc0       = 0.1
+larmor0    = 0.1
+skindepth0 = 0.01
 
 [particles]
-n_species       = 0
+n_species = 0
 
 [species_1]
-label           = "electron"
-mass            = 1.0
-charge          = -1.0
-maxnpart        = 1e2
-pusher          = "Boris"
+label    = "electron"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e2
+pusher   = "Boris"
 
 [species_2]
-label           = "positron"
-mass            = 1.0
-charge          = 1.0
-maxnpart        = 1e2
-pusher          = "Boris"
+label    = "positron"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e2
+pusher   = "Boris"
 
 [species_3]
-label           = "ion"
-mass            = 2.0
-charge          = 1.0
-maxnpart        = 1e2
-pusher          = "Boris"
+label    = "ion"
+mass     = 2.0
+charge   = 1.0
+maxnpart = 1e2
+pusher   = "Boris"
 
 [species_4]
-label           = "photon"
-mass            = 0.0
-charge          = 0.0
-maxnpart        = 1e2
-pusher          = "Photon"
+label    = "photon"
+mass     = 0.0
+charge   = 0.0
+maxnpart = 1e2
+pusher   = "Photon"
 
 [problem]
 
 [visualization]
-fields          = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz"]
+fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz"]

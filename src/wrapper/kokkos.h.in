@@ -7,11 +7,13 @@
 #pragma nv_diag_suppress 1675
 
 #include "config.h"
+
 #include "definitions.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <Kokkos_Sort.hpp>
 
 #include <cstddef>
 #include <iomanip>

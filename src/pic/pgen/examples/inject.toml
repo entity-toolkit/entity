@@ -39,9 +39,8 @@ pusher   = "BORIS"
 [problem]
 
 [visualization]
-fields = ["density"]
+fields        = ["density"]
 fields_stride = 1
-
 
 # [output]
 # format          = <string: { disabled, csv }>

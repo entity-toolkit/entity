@@ -13,7 +13,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params) {
       m_cs_width = readFromInput<real_t>(params.inputdata(), "problem", "cs_width");
@@ -36,8 +36,8 @@ namespace ntt {
   }
 
   template <>
-  inline void ProblemGenerator<Dim2, TypePIC>::UserInitFields(
-    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
+  inline void ProblemGenerator<Dim2, PICEngine>::UserInitFields(
+    const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     real_t Xmin     = mblock.metric.x1_min;
     real_t Xmax     = mblock.metric.x1_max;
     real_t sX       = Xmax - Xmin;
@@ -51,9 +51,9 @@ namespace ntt {
   }
 
   template <>
-  inline void ProblemGenerator<Dim2, TypePIC>::UserInitParticles(
-    const SimulationParams& params, Meshblock<Dim2, TypePIC>& mblock) {
-    InjectUniform<Dim2, TypePIC>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
+  inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    InjectUniform<Dim2, PICEngine>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
   }
 }    // namespace ntt
 

@@ -16,7 +16,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   class Writer {
 #ifdef OUTPUT_ENABLED
     adios2::ADIOS                                   m_adios;

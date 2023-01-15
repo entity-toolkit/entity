@@ -15,10 +15,10 @@ namespace ntt {
    */
   template <Dimension D>
   class AbsorbCurrents_kernel {
-    Meshblock<D, TypePIC>        m_mblock;
-    ProblemGenerator<D, TypePIC> m_pgen;
-    real_t                       m_rabsorb;
-    real_t                       m_rmax;
+    Meshblock<D, PICEngine>        m_mblock;
+    ProblemGenerator<D, PICEngine> m_pgen;
+    real_t                         m_rabsorb;
+    real_t                         m_rmax;
 
   public:
     /**
@@ -28,10 +28,10 @@ namespace ntt {
      * @param rabsorb Absorbing radius.
      * @param rmax Maximum radius.
      */
-    AbsorbCurrents_kernel(const Meshblock<D, TypePIC>&        mblock,
-                          const ProblemGenerator<D, TypePIC>& pgen,
-                          real_t                              r_absorb,
-                          real_t                              r_max)
+    AbsorbCurrents_kernel(const Meshblock<D, PICEngine>&        mblock,
+                          const ProblemGenerator<D, PICEngine>& pgen,
+                          real_t                                r_absorb,
+                          real_t                                r_max)
       : m_mblock { mblock }, m_pgen { pgen }, m_rabsorb { r_absorb }, m_rmax { r_max } {}
     /**
      * @brief 2D implementation of the algorithm.

@@ -7,10 +7,10 @@
 #include "nttiny/tools.h"
 #include "nttiny/vis.h"
 
-#ifdef PIC_SIMTYPE
+#ifdef PIC_ENGINE
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
-#elif defined(GRPIC_SIMTYPE)
+#elif defined(GRPIC_ENGINE)
 #  include "grpic.h"
 
 #  include "init_fields.hpp"
@@ -41,7 +41,7 @@ public:
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dim2>& sim,
                    const std::vector<std::string>&       fields_to_plot,
                    const int&                            fields_stride)
-#ifdef PIC_SIMTYPE
+#ifdef PIC_ENGINE
     : nttiny::SimulationAPI<real_t, 2> {sim.params()->title(), 
                                         sim.meshblock.metric.label == "minkowski"
                                           ? nttiny::Coord::Cartesian
@@ -49,7 +49,7 @@ public:
                                         {sim.meshblock.Ni1() / fields_stride,
                                          sim.meshblock.Ni2() / fields_stride},
                                         N_GHOSTS},
-// #elif defined(GRPIC_SIMTYPE)
+// #elif defined(GRPIC_ENGINE)
 //: nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
 //{sim.mblock()->Ni1(), sim.mblock()->Ni2()},
 // N_GHOSTS},
@@ -89,7 +89,7 @@ public:
     }
     m_sim.InterpolateAndConvertFieldsToHat();
     m_sim.SynchronizeHostDevice();
-#ifdef GRPIC_SIMTYPE
+#ifdef GRPIC_ENGINE
     Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
     // compute the vector potential
     m_sim.computeVectorPotential();
@@ -242,7 +242,7 @@ public:
   }
 
   void customAnnotatePcolor2d(const nttiny::UISettings& ui_settings) override {
-#if GRPIC_SIMTYPE
+#if GRPIC_ENGINE
     real_t a        = m_sim.sim_params()->metric_parameters()[4];
     real_t r_absorb = m_sim.sim_params()->metric_parameters()[2];
     real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
@@ -250,7 +250,7 @@ public:
       { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
     nttiny::tools::drawCircle(
       { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
-#elif defined(PIC_SIMTYPE)
+#elif defined(PIC_ENGINE)
 #  ifndef MINKOWSKI_METRIC
     real_t r_absorb = m_sim.params()->metricParameters()[2];
     nttiny::tools::drawCircle(
@@ -311,7 +311,7 @@ void initLogger(plog_t* console_appender) {
   plog::init(max_severity, console_appender);
 }
 
-// #elif defined(GRPIC_SIMTYPE)
+// #elif defined(GRPIC_ENGINE)
 //           // interpolate and transform to spherical
 //           // !TODO: mirrors for em0, aux etc
 //           ntt::vec_t<ntt::Dim3> Dsph {ZERO}, Bsph {ZERO}, D0sph {ZERO}, B0sph {ZERO};

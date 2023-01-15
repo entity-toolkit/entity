@@ -75,15 +75,15 @@ namespace ntt {
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
-  enum class SimulationType { UNDEFINED, PIC, GRPIC };
+  enum class SimulationEngine { UNDEFINED, PIC, GRPIC };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
 
   inline constexpr auto Dim1      = Dimension::ONE_D;
   inline constexpr auto Dim2      = Dimension::TWO_D;
   inline constexpr auto Dim3      = Dimension::THREE_D;
-  inline constexpr auto TypePIC   = SimulationType::PIC;
-  inline constexpr auto TypeGRPIC = SimulationType::GRPIC;
+  inline constexpr auto PICEngine = SimulationEngine::PIC;
+  inline constexpr auto TypeGRPIC = SimulationEngine::GRPIC;
 
   // ND list alias
   template <typename T, Dimension D>

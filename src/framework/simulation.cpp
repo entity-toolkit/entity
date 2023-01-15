@@ -13,11 +13,11 @@
 #include <string>
 
 namespace ntt {
-  auto stringifySimulationType(const SimulationType& sim) -> std::string {
+  auto stringifySimulationEngine(const SimulationEngine& sim) -> std::string {
     switch (sim) {
-    case TypePIC:
+    case PICEngine:
       return "PIC";
-    case SimulationType::GRPIC:
+    case SimulationEngine::GRPIC:
       return "GRPIC";
     default:
       return "N/A";
@@ -52,7 +52,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_params { inputdata, D },
       problem_generator { m_params },
@@ -66,7 +66,7 @@ namespace ntt {
     meshblock.boundaries      = m_params.boundaries();
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Initialize() {
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.findSmallestCell());
@@ -76,7 +76,7 @@ namespace ntt {
     PLOGD << "Simulation initialized.";
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::InitializeSetup() {
     problem_generator.UserInitFields(m_params, meshblock);
     problem_generator.UserInitParticles(m_params, meshblock);
@@ -85,19 +85,19 @@ namespace ntt {
     PLOGD << "Setup initialized.";
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Verify() {
     meshblock.Verify();
     WaitAndSynchronize();
     PLOGD << "Prerun check passed.";
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDetails() {
     // !TODO: make this prettier
     PLOGI << "[Simulation details]";
     PLOGI << "   title: " << m_params.title();
-    PLOGI << "   type: " << stringifySimulationType(S);
+    PLOGI << "   engine: " << stringifySimulationEngine(S);
     PLOGI << "   total runtime: " << m_params.totalRuntime();
     PLOGI << "   dt: " << meshblock.timestep() << " ["
           << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]";
@@ -106,7 +106,7 @@ namespace ntt {
     PLOGI << "   dimension: " << static_cast<short>(D) << "D";
     PLOGI << "   metric: " << (meshblock.metric.label);
 
-    if constexpr (S == SimulationType::GRPIC) {
+    if constexpr (S == SimulationEngine::GRPIC) {
       PLOGI << "   Spin parameter: " << (m_params.metricParameters()[3]);
     }
 
@@ -164,23 +164,23 @@ namespace ntt {
     PLOGD << "Simulation details printed.";
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   auto Simulation<D, S>::rangeActiveCells() -> range_t<D> {
     return meshblock.rangeActiveCells();
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   auto Simulation<D, S>::rangeAllCells() -> range_t<D> {
     return meshblock.rangeAllCells();
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
     WaitAndSynchronize();
     PLOGD << "Simulation finalized.";
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::SynchronizeHostDevice() {
     WaitAndSynchronize();
     meshblock.SynchronizeHostDevice();
@@ -190,7 +190,7 @@ namespace ntt {
     PLOGD << "... host-device synchronized";
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDiagnostics(std::ostream& os) {
     for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
       auto& species { meshblock.particles[i] };
@@ -201,11 +201,11 @@ namespace ntt {
 
 }    // namespace ntt
 
-#ifdef PIC_SIMTYPE
-template class ntt::Simulation<ntt::Dim1, ntt::TypePIC>;
-template class ntt::Simulation<ntt::Dim2, ntt::TypePIC>;
-template class ntt::Simulation<ntt::Dim3, ntt::TypePIC>;
-#elif defined(GRPIC_SIMTYPE)
-template class ntt::Simulation<ntt::Dim2, ntt::SimulationType::GRPIC>;
-template class ntt::Simulation<ntt::Dim3, ntt::SimulationType::GRPIC>;
+#ifdef PIC_ENGINE
+template class ntt::Simulation<ntt::Dim1, ntt::PICEngine>;
+template class ntt::Simulation<ntt::Dim2, ntt::PICEngine>;
+template class ntt::Simulation<ntt::Dim3, ntt::PICEngine>;
+#elif defined(GRPIC_ENGINE)
+template class ntt::Simulation<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
+template class ntt::Simulation<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
 #endif

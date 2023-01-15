@@ -16,7 +16,7 @@
         "${myDefaultIncludePath}"
       ],
       "defines": [
-        "PIC_SIMTYPE",
+        "PIC_ENGINE",
         "SINGLE_PRECISION",
         "OMPENABLED",
         "OUTPUT_ENABLED",

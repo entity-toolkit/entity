@@ -9,12 +9,12 @@
 namespace ntt {
   using resolution_t = std::vector<unsigned int>;
 
-#ifdef PIC_SIMTYPE
+#ifdef PIC_ENGINE
   // * * * * * * * * * * * * * * * * * * * *
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Fields<Dim1, TypePIC>::Fields(resolution_t res)
+  Fields<Dim1, PICEngine>::Fields(resolution_t res)
     : em { "EM", res[0] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS },
       buff { "J0", res[0] + 2 * N_GHOSTS },
@@ -27,7 +27,7 @@ namespace ntt {
   }
 
   template <>
-  Fields<Dim2, TypePIC>::Fields(resolution_t res)
+  Fields<Dim2, PICEngine>::Fields(resolution_t res)
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
@@ -40,7 +40,7 @@ namespace ntt {
   }
 
   template <>
-  Fields<Dim3, TypePIC>::Fields(resolution_t res)
+  Fields<Dim3, PICEngine>::Fields(resolution_t res)
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
@@ -52,18 +52,15 @@ namespace ntt {
     bckp_h = Kokkos::create_mirror(bckp);
   }
 
-  template <Dimension D, SimulationType S>
+  template <Dimension D, SimulationEngine S>
   void Fields<D, S>::SynchronizeHostDevice() {
     Kokkos::deep_copy(em_h, em);
     Kokkos::deep_copy(cur_h, cur);
     Kokkos::deep_copy(buff_h, buff);
     Kokkos::deep_copy(bckp_h, bckp);
-#  ifdef GRPIC_SIMTYPE
-    Kokkos::deep_copy(aphi_h, aphi);
-#  endif
   }
 
-#elif defined(GRPIC_SIMTYPE)
+#elif defined(GRPIC_ENGINE)
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -96,15 +93,25 @@ namespace ntt {
     buff_h = Kokkos::create_mirror(buff);
     aphi_h = Kokkos::create_mirror(aphi);
   }
+
+  template <Dimension D, SimulationEngine S>
+  void Fields<D, S>::SynchronizeHostDevice() {
+    Kokkos::deep_copy(em_h, em);
+    Kokkos::deep_copy(cur_h, cur);
+    Kokkos::deep_copy(buff_h, buff);
+    Kokkos::deep_copy(bckp_h, bckp);
+    Kokkos::deep_copy(aphi_h, aphi);
+  }
+
 #endif
 
 }    // namespace ntt
 
-#ifdef PIC_SIMTYPE
-template struct ntt::Fields<ntt::Dim1, ntt::TypePIC>;
-template struct ntt::Fields<ntt::Dim2, ntt::TypePIC>;
-template struct ntt::Fields<ntt::Dim3, ntt::TypePIC>;
-#elif defined(GRPIC_SIMTYPE)
-template struct ntt::Fields<ntt::Dim2, ntt::SimulationType::GRPIC>;
-template struct ntt::Fields<ntt::Dim3, ntt::SimulationType::GRPIC>;
+#ifdef PIC_ENGINE
+template struct ntt::Fields<ntt::Dim1, ntt::PICEngine>;
+template struct ntt::Fields<ntt::Dim2, ntt::PICEngine>;
+template struct ntt::Fields<ntt::Dim3, ntt::PICEngine>;
+#elif defined(GRPIC_ENGINE)
+template struct ntt::Fields<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
+template struct ntt::Fields<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
 #endif

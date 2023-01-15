@@ -17,12 +17,12 @@ namespace ntt {
    */
   template <Dimension D>
   class AbsorbFields_kernel {
-    SimulationParams             m_params;
-    Meshblock<D, TypePIC>        m_mblock;
-    real_t                       m_rabsorb;
-    real_t                       m_rmax;
-    const int                    m_i2_min;
-    PgenTargetFields<D, TypePIC> m_target_fields;
+    SimulationParams               m_params;
+    Meshblock<D, PICEngine>        m_mblock;
+    real_t                         m_rabsorb;
+    real_t                         m_rmax;
+    const int                      m_i2_min;
+    PgenTargetFields<D, PICEngine> m_target_fields;
 
   public:
     /**
@@ -32,10 +32,10 @@ namespace ntt {
      * @param rabsorb Absorbing radius.
      * @param rmax Maximum radius.
      */
-    AbsorbFields_kernel(const SimulationParams&      params,
-                        const Meshblock<D, TypePIC>& mblock,
-                        real_t                       r_absorb,
-                        real_t                       r_max)
+    AbsorbFields_kernel(const SimulationParams&        params,
+                        const Meshblock<D, PICEngine>& mblock,
+                        real_t                         r_absorb,
+                        real_t                         r_max)
       : m_params { params },
         m_mblock { mblock },
         m_rabsorb { r_absorb },

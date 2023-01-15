@@ -21,7 +21,7 @@ namespace ntt {
   /**
    * @brief 1D particle-vectorized injection kernel
    */
-  template <SimulationType S, template <Dimension, SimulationType> class EnDist>
+  template <SimulationEngine S, template <Dimension, SimulationEngine> class EnDist>
   struct UniformInjector1d_kernel {
     UniformInjector1d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim1, S>& mb,
@@ -64,7 +64,7 @@ namespace ntt {
   /**
    * @brief 2D particle-vectorized injection kernel
    */
-  template <SimulationType S, template <Dimension, SimulationType> class EnDist>
+  template <SimulationEngine S, template <Dimension, SimulationEngine> class EnDist>
   struct UniformInjector2d_kernel {
     UniformInjector2d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim2, S>& mb,
@@ -108,7 +108,7 @@ namespace ntt {
   /**
    * @brief 3D particle-vectorized injection kernel
    */
-  template <SimulationType S, template <Dimension, SimulationType> class EnDist>
+  template <SimulationEngine S, template <Dimension, SimulationEngine> class EnDist>
   struct UniformInjector3d_kernel {
     UniformInjector3d_kernel(const SimulationParams&   pr,
                              const Meshblock<Dim3, S>& mb,
@@ -153,7 +153,7 @@ namespace ntt {
   /**
    * @brief Volumetrically uniform particle injector parallelized over particles.
    * @tparam D dimension.
-   * @tparam S simulation type.
+   * @tparam S simulation engine.
    * @tparam EnDist energy distribution [default = ColdDist].
    *
    * @param params simulation parameters.
@@ -163,9 +163,9 @@ namespace ntt {
    * @param region region to inject particles as a list of coordinates.
    * @param time current time.
    */
-  template <Dimension      D,
-            SimulationType S,
-            template <Dimension, SimulationType> class EnDist = ColdDist>
+  template <Dimension        D,
+            SimulationEngine S,
+            template <Dimension, SimulationEngine> class EnDist = ColdDist>
   inline void InjectUniform(const SimulationParams& params,
                             Meshblock<D, S>&        mblock,
                             const std::vector<int>& species,
@@ -240,12 +240,12 @@ namespace ntt {
   /*                    Volume injection kernels and routines                   */
   /* -------------------------------------------------------------------------- */
 
-  template <SimulationType S,
-            template <Dimension, SimulationType>
+  template <SimulationEngine S,
+            template <Dimension, SimulationEngine>
             class EnDist,
-            template <Dimension, SimulationType>
+            template <Dimension, SimulationEngine>
             class SpDist,
-            template <Dimension, SimulationType>
+            template <Dimension, SimulationEngine>
             class InjCrit>
   struct VolumeInjector1d_kernel {
     VolumeInjector1d_kernel(const SimulationParams&     pr,
@@ -340,12 +340,12 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
-  template <SimulationType S,
-            template <Dimension, SimulationType>
+  template <SimulationEngine S,
+            template <Dimension, SimulationEngine>
             class EnDist,
-            template <Dimension, SimulationType>
+            template <Dimension, SimulationEngine>
             class SpDist,
-            template <Dimension, SimulationType>
+            template <Dimension, SimulationEngine>
             class InjCrit>
   struct VolumeInjector2d_kernel {
     VolumeInjector2d_kernel(const SimulationParams&     pr,
@@ -445,12 +445,12 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
-  template <SimulationType S,
-            template <Dimension, SimulationType>
+  template <SimulationEngine S,
+            template <Dimension, SimulationEngine>
             class EnDist,
-            template <Dimension, SimulationType>
+            template <Dimension, SimulationEngine>
             class SpDist,
-            template <Dimension, SimulationType>
+            template <Dimension, SimulationEngine>
             class InjCrit>
   struct VolumeInjector3d_kernel {
     VolumeInjector3d_kernel(const SimulationParams&     pr,
@@ -560,7 +560,7 @@ namespace ntt {
   /**
    * @brief Particle injector parallelized by cells in a volume.
    * @tparam D dimension.
-   * @tparam S simulation type.
+   * @tparam S simulation engine.
    * @tparam EnDist energy distribution [default = ColdDist].
    * @tparam SpDist spatial distribution [default = UniformDist].
    * @tparam InjCrit injection criterion [default = NoCriterion].
@@ -572,11 +572,11 @@ namespace ntt {
    * @param region region to inject particles as a list of coordinates.
    * @param time current time.
    */
-  template <Dimension      D,
-            SimulationType S,
-            template <Dimension, SimulationType> class EnDist  = ColdDist,
-            template <Dimension, SimulationType> class SpDist  = UniformDist,
-            template <Dimension, SimulationType> class InjCrit = NoCriterion>
+  template <Dimension        D,
+            SimulationEngine S,
+            template <Dimension, SimulationEngine> class EnDist  = ColdDist,
+            template <Dimension, SimulationEngine> class SpDist  = UniformDist,
+            template <Dimension, SimulationEngine> class InjCrit = NoCriterion>
   inline void InjectInVolume(const SimulationParams& params,
                              Meshblock<D, S>&        mblock,
                              const std::vector<int>& species,
