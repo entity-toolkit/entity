@@ -3,6 +3,16 @@ hide:
   - footer
 ---
 
+## Pre-requisites
+
+To compile the code you need to have the following dependencies installed:
+
+  - [`CMake`](https://cmake.org/) (version >= 3.16; verify by running `cmake --version`).
+  - [`GCC`](https://gcc.gnu.org/) (version >= 8.3.1; verify by running `gcc --version`) or [Intel C++ compiler](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html) (version >= 19.1 or higher; verify by running `icc --version`).
+  - to compile for GPUs, you need to have [`CUDA`](https://developer.nvidia.com/cuda-toolkit) (11.0 <= version < 12; verify by running `nvcc --version`) installed.
+
+## Compilation workflow
+
 1. _Clone_ the repository with the following command:
   ```shell
   git clone git@github.com:haykh/entity.git
@@ -15,7 +25,7 @@ hide:
         git clone https://github.com/haykh/entity.git
         ```
 
-2. _Configure_ the code from the root directory using `cmake`, e.g.:
+1. _Configure_ the code from the root directory using `cmake`, e.g.:
   ```shell
   # from the root of the repository
   cmake -B build -D pgen=<PROBLEM_GENERATOR> -D Kokkos_ENABLE_CUDA=ON <...>
@@ -48,6 +58,21 @@ hide:
 
 4. After the compilation is done, you will find the corresponding executable called `<executable>.xc` in the `build/src/` directory. That's it! You can now run the code.
 
+## Running
+
+There are two types of executables produced after the compilation is done: `entity.xc` and `nttiny.xc` (if compiled with the `nttiny` GUI). In both cases one can run the code with the following command:
+
+```shell
+<path/to/executable>.xc -input <path/to/input_file>.toml
+```
+`entity.xc` runs headlessly, producing a generic diagnostic output. To enable data dumping (output), one needs to compile with the `-D output=ON` flag. 
+
+`nttiny.xc` runs the simulation together with the GUI. The simulation lives as long as the GUI window is open. Additionally, `nttiny.xc` also accepts the `-scale <S>` flag, where `<S>` is the scale factor for the GUI (e.g. `-scale 2` will make the GUI twice as big; this setting depends on the personal preference and the monitor DPI/resolution used).
+
+!!! note
+    
+    When running the `nttiny.xc` on a remote machine (e.g., via a `vnc` server), one needs to run with `vglrun ./path/to/nttiny.xc`. This is because `nttiny.xc` uses OpenGL for rendering the GUI, and `vglrun` is a wrapper that enables OpenGL on a remote machine.
+      
 ## Docker 
 
 !!! warning

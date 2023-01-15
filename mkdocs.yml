@@ -9,8 +9,7 @@ changes:
 nav:
   - 'Home': 'index.md'
   - 'Getting started':
-    - 'Configuring/compiling': 'getstarted/config_compile.md'
-    - 'Running': '404.md'
+    - 'Compiling/running': 'getstarted/compile-run.md'
     - 'Developing': '404.md'
     - 'Testing': '404.md'
     - 'Documenting': 'getstarted/docs.md'
