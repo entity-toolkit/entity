@@ -9,11 +9,11 @@
 - [ ] make more user-friendly and understandable boundary conditions
 - [ ] refine output
 - [ ] fix bugs in `nttiny`
-  - [ ] delete plot removes all labels
+  - [x] delete plot removes all labels
   - [ ] add particles to `nttiny`
   - [ ] state should also save skip interval
   - [ ] (?) add autosave state
-  - [ ] why last cell does not work?
+  - [x] why last cell does not work?
 - [ ] add different moments (momX, momY, momZ, meanGamma)
 - [ ] add charge
 - [ ] add per species densities
