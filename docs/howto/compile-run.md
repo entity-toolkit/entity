@@ -34,8 +34,8 @@ To compile the code you need to have the following dependencies installed:
 
     | Option | Description | Values | Default |
     | --- | --- | --- | --- |
-    | `simtype` | simulation type | `pic`, `grpic` {{config.changes.v09}} | `pic` |
-    | `pgen` | problem generator | see `<simtype>/pgen/` directory | `dummy` |
+    | `engine` | simulation type | `pic`, `grpic` {{config.changes.v09}} | `pic` |
+    | `pgen` | problem generator | see `<engine>/pgen/` directory | `dummy` |
     | `metric` | metric | `minkowski`, `spherical`, `qspherical`, `kerr_schild`, `qkerr_schild` | `minkowski` for `pic`, and `kerr_schild` for `grpic` |
     | `precision` | floating point precision | `single`, `double` | `single` |
     | `output` | enable output | `ON`, `OFF` | `OFF` |
@@ -51,12 +51,17 @@ To compile the code you need to have the following dependencies installed:
     | `CMAKE_CXX_COMPILER` | C++ compiler | whichever compiler is available on your system | CMake/Kokkos will attempt to find automatically |
 
 
-3. After `cmake` is done configuring the code, a directory named `build` will be created in the root directory. Proceed there and _compile_ the code using `make`:
+    !!! note
+        
+        When simply compiling with `-D Kokkos_ENABLE_CUDA=ON` without additional flags, `CMake` will try to deduce the GPU architecture based on the machine you are compiling on. Oftentimes this might not be the same as the architecture of the machine you are planning to run on (and sometimes the former might lack GPU altogether). To be more explicit, you can specify the GPU architecture manually using the `-D Kokkos_ARCH_XXX=ON` flags. For example, to explicitly compile for `A100` GPUs, you can use `-D Kokkos_ARCH_AMPERE80=ON`. For `V100` -- use `-D Kokkos_ARCH_VOLTA70=ON`.
+
+
+1. After `cmake` is done configuring the code, a directory named `build` will be created in the root directory. Proceed there and _compile_ the code using `make`:
   ```shell
   make -j
   ```
 
-4. After the compilation is done, you will find the corresponding executable called `<executable>.xc` in the `build/src/` directory. That's it! You can now run the code.
+1. After the compilation is done, you will find the corresponding executable called `<executable>.xc` in the `build/src/` directory. That's it! You can now run the code.
 
 ## Running
 

@@ -76,7 +76,7 @@
   box-shadow: var(--md-shadow-z1) !important;
   border: .05rem solid hsl(199, 100%, 50%) !important;
   border-radius: 2px;
-  padding-top: 20px;
+  padding-top: 0.8rem;
 }
 
 .nt-card-image {
@@ -318,4 +318,23 @@ div[id^="grplot"] .tick text {
 [data-md-color-scheme="slate"] div[id^="plot"] .label,
 [data-md-color-scheme="slate"] div[id^="grplot"] .label {
   fill: var(--md-default-fg-color--light);
+}
+
+/* Extra */
+figure.under-construction {
+  margin-top: -3rem !important;
+}
+
+figure.under-construction:before {
+  content: "under construction"; 
+  position: relative;
+  font-size: 2rem;
+  line-height: 2rem;
+  top: 9rem;
+  color: white;
+  text-shadow: 0 0 0.5rem #000000;
+  -moz-text-shadow: 0 0 0.5rem #000000;
+  -o-text-shadow: 0 0 0.5rem #000000;
+  -webkit-text-shadow: 0 0 0.5rem #000000;
+  -ms-text-shadow: 0 0 0.5rem #000000;
 }

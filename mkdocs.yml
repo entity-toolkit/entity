@@ -8,17 +8,19 @@ changes:
 
 nav:
   - 'Home': 'index.md'
-  - 'Getting started':
-    - 'Compiling/running': 'getstarted/compile-run.md'
+  - 'How-to':
+    - 'Compiling/running': 'howto/compile-run.md'
+    - 'Writing a problem generator': 'howto/pgen.md'
+    - 'Writing an input file': 'howto/input.md'
     - 'Developing': '404.md'
     - 'Testing': '404.md'
-    - 'Documenting': 'getstarted/docs.md'
-  - 'Code guide': 'guide/guide.md'
+    - 'Documenting': 'howto/docs.md'
   - 'How it works':
     - '3+1 formulation': 'how/3p1.md'
     - 'Units': 'how/units.md'
     - 'PIC algorithm': 'how/pic.md'
     - 'Coordinate systems': 'how/coords.md'
+  - 'Code guide': 'guide/guide.md'
   - 'Fun': 
     - 'Cubed sphere': 'fun/cubed_sphere.md'
     - '"Reconnection"': 'fun/reconnection.md'
@@ -59,6 +61,7 @@ plugins:
 
 theme:
   name: material
+  custom_dir: overrides
   favicon: assets/logo.svg
   logo: assets/logo.svg
   icon:
@@ -85,6 +88,7 @@ theme:
     - navigation.expand
     - toc.integrate
     - content.code.annotate
+    - content.code.copy
     - navigation.indexes
 
 extra_javascript:
