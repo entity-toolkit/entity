@@ -33,7 +33,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
-    inline ProblemGenerator(const SimulationParams& params) {}
+    inline ProblemGenerator(const SimulationParams&) {}
     inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) override {}
   };
 
