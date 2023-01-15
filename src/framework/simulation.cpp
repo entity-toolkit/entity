@@ -95,7 +95,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::PrintDetails() {
-    // @TODO: make this prettier
+    // !TODO: make this prettier
     PLOGI << "[Simulation details]";
     PLOGI << "   title: " << m_params.title();
     PLOGI << "   type: " << stringifySimulationType(S);

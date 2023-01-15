@@ -73,7 +73,7 @@ namespace ntt {
                                                         scatter_array_t<real_t*** [N]>,
                                                         std::nullptr_t>::type>::type>::type;
 
-  // @TODO: this looks ugly, template it...
+  // !TODO: this looks ugly, template it...
 
   // Defining aliases for `RangePolicy` and `MDRangePolicy` for the device space
   template <Dimension D>

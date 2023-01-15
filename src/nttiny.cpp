@@ -313,7 +313,7 @@ void initLogger(plog_t* console_appender) {
 
 // #elif defined(GRPIC_SIMTYPE)
 //           // interpolate and transform to spherical
-//           // @TODO: mirrors for em0, aux etc
+//           // !TODO: mirrors for em0, aux etc
 //           ntt::vec_t<ntt::Dim3> Dsph {ZERO}, Bsph {ZERO}, D0sph {ZERO}, B0sph {ZERO};
 //           if ((i >= 0) && (i < sx1) && (j >= 0) && (j < sx2)) {
 //             if (m_fields_to_plot[f].at(0) == 'D') {

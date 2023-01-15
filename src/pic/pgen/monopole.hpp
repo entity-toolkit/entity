@@ -17,7 +17,7 @@ namespace ntt {
   struct RadialKick : public EnergyDistribution<D, S> {
     RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
-    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v) const override {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
       v[0] = 0.5;
     }
   };
