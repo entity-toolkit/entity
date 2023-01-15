@@ -1,7 +1,7 @@
 /**
  * @file currents_ampere.cpp
  * @brief E^(n+1) = E' - 4 pi * dt * J
- * @describes: `AmpereCurrents` method of the `PIC` class
+ * @implements: `AmpereCurrents` method of the `PIC` class
  * @includes: `currents_ampere.hpp
  * @depends: `pic.h`
  *
@@ -77,35 +77,37 @@ namespace ntt {
     }
 
     /**
-     *    . . . . . . . . . . . . . . . .
-     *    .                             .
-     *    .                             .
-     *    .     ^ = = = = = = = = ^     .
-     *    .     |   * * * * * * * \     .
-     *    .     |   * * * * * * * \     .
-     *    .     |   * * * * * * * \     .
-     *    .     |   * * * * * * * \     .
-     *    .     ^ - - - - - - - - ^     .
-     *    .                             .
-     *    .                             .
-     *    . . . . . . . . . . . . . . . .
+     *    . . . . . . . . . . . . .
+     *    .                       .
+     *    .                       .
+     *    .   ^= = = = = = = =^   .
+     *    .   |  * * * * * * *\   .
+     *    .   |  * * * * * * *\   .
+     *    .   |  * * * * * * *\   .
+     *    .   |  * * * * * * *\   .
+     *    .   ^- - - - - - - -^   .
+     *    .                       .
+     *    .                       .
+     *    . . . . . . . . . . . . .
+     *
      */
     Kokkos::parallel_for("AmpereCurrents-1", range, CurrentsAmpere_kernel<D>(mblock, coeff));
     // do axes separately
     if constexpr (D == Dim2) {
       /**
-       *    . . . . . . . . . . . . . . .
-       *    .                           .
-       *    .                           .
-       *    .     ^ = = = = = = = ^     .
-       *    .     | *             \ *   .
-       *    .     | *             \ *   .
-       *    .     | *             \ *   .
-       *    .     | *             \ *   .
-       *    .     ^ - - - - - - - ^     .
-       *    .                           .
-       *    .                           .
-       *    . . . . . . . . . . . . . . .
+       *    . . . . . . . . . . . . .
+       *    .                       .
+       *    .                       .
+       *    .   ^= = = = = = = =^   .
+       *    .   |*              \*  .
+       *    .   |*              \*  .
+       *    .   |*              \*  .
+       *    .   |*              \*  .
+       *    .   ^- - - - - - - -^   .
+       *    .                       .
+       *    .                       .
+       *    . . . . . . . . . . . . .
+       * 
        */
       Kokkos::parallel_for("AmpereCurrents-2",
                            CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),

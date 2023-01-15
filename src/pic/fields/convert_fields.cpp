@@ -4,10 +4,6 @@
 #include "pic.h"
 
 namespace ntt {
-  template <>
-  void PIC<Dim1>::InterpolateAndConvertFieldsToHat() {
-    NTTHostError("Not implemented.");
-  }
 
   template <>
   void PIC<Dim2>::InterpolateAndConvertFieldsToHat() {
@@ -44,6 +40,10 @@ namespace ntt {
       });
   }
 
+  template <>
+  void PIC<Dim1>::InterpolateAndConvertFieldsToHat() {
+    NTTHostError("Not implemented.");
+  }
   template <>
   void PIC<Dim3>::InterpolateAndConvertFieldsToHat() {
     NTTHostError("Not implemented.");

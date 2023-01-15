@@ -172,14 +172,11 @@ namespace ntt {
                             const real_t&           ppc_per_spec,
                             std::vector<real_t>     region = {},
                             const real_t&           time   = ZERO) {
-    if (species.size() != 2) {
-      NTTHostError("Exactly two species can be injected at the same time");
-    }
+    NTTHostErrorIf(species.size() != 2, "Exactly two species can be injected at the same time");
     auto& sp1 = mblock.particles[species[0] - 1];
     auto& sp2 = mblock.particles[species[1] - 1];
-    if (sp1.charge() != -sp2.charge()) {
-      NTTHostError("Injected species must have the same but opposite charge: q1 = -q2");
-    }
+    NTTHostErrorIf(sp1.charge() != -sp2.charge(),
+                   "Injected species must have the same but opposite charge: q1 = -q2");
     auto   ncells = (std::size_t)(mblock.Ni1() * mblock.Ni2() * mblock.Ni3());
     real_t delta_V, full_V;
     if (region.size() == 0) {
@@ -597,14 +594,11 @@ namespace ntt {
       NTTHostError("Non-trivial region not implemented yet");
     }
 
-    if (species.size() != 2) {
-      NTTHostError("Exactly two species can be injected at the same time");
-    }
+    NTTHostErrorIf(species.size() != 2, "Exactly two species can be injected at the same time");
     auto& sp1 = mblock.particles[species[0] - 1];
     auto& sp2 = mblock.particles[species[1] - 1];
-    if (sp1.charge() != -sp2.charge()) {
-      NTTHostError("Injected species must have the same but opposite charge: q1 = -q2");
-    }
+    NTTHostErrorIf(sp1.charge() != -sp2.charge(),
+                   "Injected species must have the same but opposite charge: q1 = -q2");
     array_t<std::size_t> ind("ind_inj");
     if constexpr (D == Dim1) {
       Kokkos::parallel_for("inject",

@@ -1,3 +1,15 @@
+/**
+ * @file ampere.cpp
+ * @brief E' = E^n + dt * curl B^(n+1/2)
+ * @implements: `Ampere` method of the `PIC` class
+ * @includes: `ampere_mink.hpp` or `ampere_curv.hpp`
+ * @depends: `pic.h`
+ *
+ * @notes: - `dx` (cell size) is passed to the solver explicitly ...
+ *           ... in minkowski case to avoid trivial metric computations.
+ *
+ */
+
 #include "wrapper.h"
 
 #include "pic.h"
@@ -11,34 +23,26 @@
 #include <stdexcept>
 
 namespace ntt {
-  template <>
-  void PIC<Dim1>::Ampere(const real_t& fraction) {
+
 #ifdef MINKOWSKI_METRIC
+  template <>
+  void PIC<D>::Ampere(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
-      "ampere", mblock.rangeActiveCells(), Ampere_kernel<Dim1>(mblock, coeff / dx));
-#else
-    (void)(fraction);
-    NTTHostError("ampere for this metric not defined");
-#endif
+      "ampere", mblock.rangeActiveCells(), Ampere_kernel<D>(mblock, coeff / dx));
     PLOGD << "... ... ampere substep finished";
   }
+
+#else
 
   template <>
   void PIC<Dim2>::Ampere(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-#ifdef MINKOWSKI_METRIC
-    // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
-    Kokkos::parallel_for(
-      "ampere", mblock.rangeActiveCells(), Ampere_kernel<Dim2>(mblock, coeff / dx));
-#else
     Kokkos::parallel_for("ampere",
                          CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
                                                  { mblock.i1_max(), mblock.i2_max() }),
@@ -46,25 +50,22 @@ namespace ntt {
     Kokkos::parallel_for("ampere_pole",
                          CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
                          AmperePoles_kernel<Dim2>(mblock, coeff));
-#endif
     PLOGD << "... ... ampere substep finished";
   }
 
   template <>
-  void PIC<Dim3>::Ampere(const real_t& fraction) {
-#ifdef MINKOWSKI_METRIC
-    auto&        mblock = this->meshblock;
-    auto         params = *(this->params());
-    const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
-    Kokkos::parallel_for(
-      "ampere", mblock.rangeActiveCells(), Ampere_kernel<Dim3>(mblock, coeff / dx));
-#else
-    (void)(fraction);
-    NTTHostError("ampere for this metric not defined");
-#endif
-    PLOGD << "... ... ampere substep finished";
+  void PIC<Dim1>::Ampere(const real_t&) {
+    NTTHostError("not applicable");
   }
+  template <>
+  void PIC<Dim3>::Ampere(const real_t&) {
+    NTTHostError("not implemented");
+  }
+ 
+#endif
 
 }    // namespace ntt
+
+template void ntt::PIC<ntt::Dim1>::Ampere(const real_t&);
+template void ntt::PIC<ntt::Dim2>::Ampere(const real_t&);
+template void ntt::PIC<ntt::Dim3>::Ampere(const real_t&);

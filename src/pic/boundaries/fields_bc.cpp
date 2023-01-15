@@ -4,7 +4,7 @@
  *        ... (a) on the axis
  *        ... (b) absorbing boundaries at rmax
  *        ... (c) user-defined field driving
- * @describes: `FieldsBoundaryConditions` method of the `PIC` class
+ * @implements: `FieldsBoundaryConditions` method of the `PIC` class
  * @includes: `fields_bc.hpp
  * @depends: `pic.h`
  *
@@ -46,18 +46,19 @@ namespace ntt {
     const std::size_t i2_max = mblock.i2_max();    // N_GHOSTS + sx2
 
     /**
-     *    . . . . . . . . . . . . . . . .
-     *    .   *   *                 *   .
-     *    .   *   *                 *   .
-     *    .     ^ = = = = = = = = ^     .
-     *    .   * | *               \ *   .
-     *    .   * | *               \ *   .
-     *    .   * | *               \ *   .
-     *    .   * | *               \ *   .
-     *    .     ^ - - - - - - - - ^     .
-     *    .   *   *                 *   .
-     *    .   *   *                 *   .
-     *    . . . . . . . . . . . . . . . .
+     *    . . . . . . . . . . . . .
+     *    .  * *               *  .
+     *    .  * *               *  .
+     *    .   ^= = = = = = = =^   .
+     *    .  *|*              \*  .
+     *    .  *|*              \*  .
+     *    .  *|*              \*  .
+     *    .  *|*              \*  .
+     *    .   ^- - - - - - - -^   .
+     *    .  * *               *  .
+     *    .  * *               *  .
+     *    . . . . . . . . . . . . .
+     *
      */
     Kokkos::parallel_for(
       "FieldsBoundaryConditions-1",
@@ -85,22 +86,23 @@ namespace ntt {
       coord_t<Dim2> xcu;
       mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
       const auto i1_absorb = (int)(xcu[0]);
-      if (i1_absorb >= mblock.i1_max()) {
-        NTTHostError("Absorbing layer is too small, consider increasing r_absorb");
-      }
+      NTTHostErrorIf(i1_absorb >= mblock.i1_max(),
+                     "Absorbing layer is too small, consider "
+                     "increasing r_absorb");
       /**
-       *    . . . . . . . . . . . . . . . .
-       *    .                             .
-       *    .                             .
-       *    .     ^ = = = = = = = = ^     .
-       *    .     |             * * \     .
-       *    .     |             * * \     .
-       *    .     |             * * \     .
-       *    .     |             * * \     .
-       *    .     ^ - - - - - - - - ^     .
-       *    .                             .
-       *    .                             .
-       *    . . . . . . . . . . . . . . . .
+       *    . . . . . . . . . . . . .
+       *    .                       .
+       *    .                       .
+       *    .   ^= = = = = = = =^   .
+       *    .   |* * * * * * * *\   .
+       *    .   |* * * * * * * *\   .
+       *    .   |               \   .
+       *    .   |               \   .
+       *    .   ^- - - - - - - -^   .
+       *    .                       .
+       *    .                       .
+       *    . . . . . . . . . . . . .
+       *
        */
       Kokkos::parallel_for(
         "FieldsBoundaryConditions-2",

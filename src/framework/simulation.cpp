@@ -87,8 +87,7 @@ namespace ntt {
 
   template <Dimension D, SimulationType S>
   void Simulation<D, S>::Verify() {
-    // m_params.verify();
-    // mblock.verify(m_params);
+    meshblock.Verify();
     WaitAndSynchronize();
     PLOGD << "Prerun check passed.";
   }

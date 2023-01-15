@@ -2,7 +2,7 @@
  * @file particles_bc.cpp
  * @brief Special "reflecting" boundary conditions on the axis ...
  *        ... for particles in 2D axisymmetric simulations.
- * @describes: `ParticlesBoundaryConditions` method of the `PIC` class
+ * @implements: `ParticlesBoundaryConditions` method of the `PIC` class
  * @includes: --
  * @depends: `pic.h`
  *

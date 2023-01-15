@@ -1,3 +1,16 @@
+/**
+ * @file deposit_currents.cpp
+ * @brief Atomic current deposition for all charged particles.
+ * @implements: `CurrentsDeposit` method of the `PIC` class
+ * @includes: `deposit_currents.hpp
+ * @depends: `pic.h`
+ *
+ * @notes: - The deposited currents are not the "physical" currents used ...
+ *           ... in the Ampere's law, they need to be converted further.
+ *         - Previous coordinate of the particle is recovered from its velocity.
+ *
+ */
+
 #include "deposit_currents.hpp"
 
 #include "wrapper.h"

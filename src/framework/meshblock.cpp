@@ -205,6 +205,57 @@ namespace ntt {
       particles.emplace_back(part);
     }
   }
+
+  template <Dimension D, SimulationType S>
+  void Meshblock<D, S>::Verify() {
+    // verifying that the correct particle arrays are allocated for a given dimension ...
+    // ... and a given simulation type
+    for (auto& species : particles) {
+      if constexpr (D == Dim1) {
+        NTTHostErrorIf(
+          (species.i2.extent(0) != 0) || (species.i3.extent(0) != 0)
+            || (species.dx2.extent(0) != 0) || (species.dx3.extent(0) != 0)
+            || (species.i2_prev.extent(0) != 0) || (species.i3_prev.extent(0) != 0)
+            || (species.dx2_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
+          "Wrong particle arrays allocated for 1D mesh");
+        if constexpr (S == TypePIC) {
+          NTTHostErrorIf((species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0),
+                         "Wrong particle arrays allocated for 1D mesh PIC");
+        }
+#ifdef MINKOWSKI_METRIC
+        NTTHostErrorIf(species.phi.extent(0) != 0,
+                       "Wrong particle arrays allocated for 1D mesh MINKOWSKI");
+#endif
+      } else if constexpr (D == Dim2) {
+        NTTHostErrorIf((species.i3.extent(0) != 0) || (species.dx3.extent(0) != 0)
+                         || (species.i3_prev.extent(0) != 0)
+                         || (species.dx3_prev.extent(0) != 0),
+                       "Wrong particle arrays allocated for 2D mesh");
+        if constexpr (S == TypePIC) {
+          NTTHostErrorIf((species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0)
+                           || (species.i2_prev.extent(0) != 0)
+                           || (species.dx2_prev.extent(0) != 0),
+                         "Wrong particle arrays allocated for 2D mesh PIC");
+        }
+#ifdef MINKOWSKI_METRIC
+        NTTHostErrorIf(species.phi.extent(0) != 0,
+                       "Wrong particle arrays allocated for 2D mesh MINKOWSKI");
+#endif
+      } else {
+        if constexpr (S == TypePIC) {
+          NTTHostErrorIf(
+            (species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0)
+              || (species.i2_prev.extent(0) != 0) || (species.dx2_prev.extent(0) != 0)
+              || (species.i3_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
+            "Wrong particle arrays allocated for 2D mesh PIC");
+        }
+#ifdef MINKOWSKI_METRIC
+        NTTHostErrorIf(species.phi.extent(0) != 0,
+                       "Wrong particle arrays allocated for 2D mesh MINKOWSKI");
+#endif
+      }
+    }
+  }
 }    // namespace ntt
 
 template class ntt::Mesh<ntt::Dim1>;

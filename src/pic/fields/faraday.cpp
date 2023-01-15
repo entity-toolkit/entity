@@ -1,3 +1,15 @@
+/**
+ * @file faraday.cpp
+ * @brief B^n = B^n-1/2 - (dt/2) * curl E^(n)
+ * @implements: `Faraday` method of the `PIC` class
+ * @includes: `faraday_mink.hpp` or `faraday_curv.hpp`
+ * @depends: `pic.h`
+ *
+ * @notes: - `dx` (cell size) is passed to the solver explicitly ...
+ *           ... in minkowski case to avoid trivial metric computations.
+ *
+ */
+
 #include "wrapper.h"
 
 #include "pic.h"
@@ -13,55 +25,44 @@
 #include <stdexcept>
 
 namespace ntt {
-  template <>
-  void PIC<Dim1>::Faraday(const real_t& fraction) {
+
 #ifdef MINKOWSKI_METRIC
+  template <>
+  void PIC<D>::Faraday(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    // dx is passed only in minkowski case to avoid trivial metric computations.
     const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
-      "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim1>(mblock, coeff / dx));
-#else
-    (void)(fraction);
-    NTTHostError("faraday for this metric not defined");
-#endif
+      "faraday", mblock.rangeActiveCells(), Faraday_kernel<D>(mblock, coeff / dx));
     PLOGD << "... ... faraday substep finished";
   }
+
+#else
 
   template <>
   void PIC<Dim2>::Faraday(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-#ifdef MINKOWSKI_METRIC
-    // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
-    Kokkos::parallel_for(
-      "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff / dx));
-#else
     Kokkos::parallel_for(
       "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff));
-#endif
     PLOGD << "... ... faraday substep finished";
   }
 
   template <>
-  void PIC<Dim3>::Faraday(const real_t& fraction) {
-#ifdef MINKOWSKI_METRIC
-    auto&        mblock = this->meshblock;
-    auto         params = *(this->params());
-    const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    // dx is passed only in minkowski case to avoid trivial metric computations.
-    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
-    Kokkos::parallel_for(
-      "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim3>(mblock, coeff / dx));
-#else
-    (void)(fraction);
-    NTTHostError("faraday for this metric not defined");
-#endif
-    PLOGD << "... ... faraday substep finished";
+  void PIC<Dim1>::Faraday(const real_t&) {
+    NTTHostError("not applicable");
+  }
+  template <>
+  void PIC<Dim3>::Faraday(const real_t&) {
+    NTTHostError("not implemented");
   }
 
+#endif
+
 }    // namespace ntt
+
+template void ntt::PIC<ntt::Dim1>::Faraday(const real_t&);
+template void ntt::PIC<ntt::Dim2>::Faraday(const real_t&);
+template void ntt::PIC<ntt::Dim3>::Faraday(const real_t&);
