@@ -259,7 +259,7 @@ private:
 
 ### Final result
 
-That's it, the final result is shown below. To select your newly created problem generator during compilation, simply configure the code using `-D pgen=weibel_custom` (or whatever the filename was chosen before). To run the code with the new problem generator you will also need an input file, which you can learn how to write [here](/howto/input).
+That's it, the final result is shown below. To select your newly created problem generator during compilation, simply configure the code using `-D pgen=weibel_custom` (or whatever the filename was chosen before). To run the code with the new problem generator you will also need an input file, which you can learn how to write [here](../input).
 
 ```cpp title="Weibel problem generator (final)"
 #ifndef PROBLEM_GENERATOR_H

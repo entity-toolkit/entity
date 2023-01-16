@@ -34,7 +34,7 @@ To compile the code you need to have the following dependencies installed:
 
     | Option | Description | Values | Default |
     | --- | --- | --- | --- |
-    | `engine` | simulation type | `pic`, `grpic` {{config.changes.v09}} | `pic` |
+    | `engine` | simulation type | `pic`, `grpic` _(TBR in v0.9)_ | `pic` |
     | `pgen` | problem generator | see `<engine>/pgen/` directory | `dummy` |
     | `metric` | metric | `minkowski`, `spherical`, `qspherical`, `kerr_schild`, `qkerr_schild` | `minkowski` for `pic`, and `kerr_schild` for `grpic` |
     | `precision` | floating point precision | `single`, `double` | `single` |

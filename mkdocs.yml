@@ -1,19 +1,16 @@
 site_name: "Entity: wiki"
 repo_url: https://github.com/haykh/entity
-repo_name: haykh/entity
-
-changes:
-  v08: "_(TBR in v0.8)_"
-  v09: "_(TBR in v0.9)_"
+repo_name: entity
+site_url: https://haykh.github.io/entity
 
 nav:
   - 'Home': 'index.md'
   - 'How-to':
     - 'Compiling/running': 'howto/compile-run.md'
     - 'Writing a problem generator': 'howto/pgen.md'
-    - 'Writing an input file': 'howto/input.md'
-    - 'Developing': '404.md'
-    - 'Testing': '404.md'
+    # - 'Writing an input file': 'howto/input.md'
+    # - 'Developing': ''
+    # - 'Testing': ''
     - 'Documenting': 'howto/docs.md'
   - 'How it works':
     - '3+1 formulation': 'how/3p1.md'
@@ -58,6 +55,8 @@ plugins:
   - search
   - macros
   - git-revision-date-localized
+
+use_directory_urls: true
 
 theme:
   name: material
@@ -119,7 +118,5 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/haykh/entity/
-
-copyright: Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton
 
 copyright: Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton
