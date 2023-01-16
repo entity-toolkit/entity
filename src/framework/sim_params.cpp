@@ -157,4 +157,38 @@ namespace ntt {
     m_output_interval
       = readFromInput<int>(m_inputdata, "output", "interval", defaults::output_interval);
   }
+
+  template <typename T>
+  auto SimulationParams::get<T>(const std::string& block,
+                                const std::string& key,
+                                const T&           defval) const -> T {
+    return readFromInput<T>(m_inputdata, block, key, defval);
+  }
+
+  template <typename T>
+  auto SimulationParams::get<T>(const std::string& block, const std::string& key) const -> T {
+    return readFromInput<T>(m_inputdata, block, key);
+  }
+
 }    // namespace ntt
+
+template auto ntt::SimulationParams::get<float>(const std::string&,
+                                                const std::string&,
+                                                const float&) const -> float;
+template auto ntt::SimulationParams::get<float>(const std::string&, const std::string&) const
+  -> float;
+template auto ntt::SimulationParams::get<double>(const std::string&,
+                                                 const std::string&,
+                                                 const double&) const -> double;
+template auto ntt::SimulationParams::get<double>(const std::string&, const std::string&) const
+  -> double;
+template auto ntt::SimulationParams::get<int>(const std::string&,
+                                              const std::string&,
+                                              const int&) const -> int;
+template auto ntt::SimulationParams::get<int>(const std::string&, const std::string&) const
+  -> int;
+template auto ntt::SimulationParams::get<bool>(const std::string&,
+                                               const std::string&,
+                                               const bool&) const -> bool;
+template auto ntt::SimulationParams::get<bool>(const std::string&, const std::string&) const
+  -> bool;

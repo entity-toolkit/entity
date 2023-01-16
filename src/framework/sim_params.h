@@ -188,6 +188,15 @@ namespace ntt {
     [[nodiscard]] auto outputInterval() const -> const int& {
       return m_output_interval;
     }
+
+    /**
+     * @brief Get parameters read from the input
+     */
+    template <typename T>
+    [[nodiscard]] auto get(const std::string&, const std::string&, const T&) const -> T;
+
+    template <typename T>
+    [[nodiscard]] auto get(const std::string&, const std::string&) const -> T;
   };
 
 }    // namespace ntt
