@@ -4,7 +4,6 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "input.h"
 #include "meshblock.h"
 #include "sim_params.h"
 
@@ -16,7 +15,7 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params) {
-      m_cs_width = readFromInput<real_t>(params.inputdata(), "problem", "cs_width");
+      m_cs_width = params.get<real_t>("problem", "cs_width");
     }
 
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override {}

@@ -4,7 +4,6 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "input.h"
 #include "meshblock.h"
 #include "sim_params.h"
 

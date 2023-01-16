@@ -3,7 +3,6 @@
 
 #include "wrapper.h"
 
-#include "input.h"
 #include "meshblock.h"
 #include "sim_params.h"
 
@@ -16,7 +15,7 @@ namespace ntt {
   struct Drift : public EnergyDistribution<D, S> {
     Drift(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock),
-        udrift { readFromInput<real_t>(params.inputdata(), "problem", "udrift", 1.0) } {}
+        udrift { params.get<real_t>("problem", "udrift", 1.0) } {}
     Inline void operator()(const coord_t<D>&,
                            vec_t<Dim3>& v,
                            const int&   species) const override {
