@@ -105,7 +105,7 @@ namespace ntt {
     // Bx3 : i + 1/2, j + 1/2
     BX3(i, j) = ((ONE - sigma_r2)
                    * (math::sqrt(m_mblock.metric.h_33({ i_ + HALF, j_ + HALF })) * BX3(i, j))
-                 + sigma_r2 * m_target_fields(em::bx2, { i_ + HALF, j_ + HALF }))
+                 + sigma_r2 * m_target_fields(em::bx3, { i_ + HALF, j_ + HALF }))
                 / math::sqrt(m_mblock.metric.h_33({ i_ + HALF, j_ + HALF }));
   }
 }    // namespace ntt
