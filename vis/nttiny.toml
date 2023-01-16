@@ -1,0 +1,71 @@
+[Plot.0]
+field_selected = 4
+cmap = "BrBG"
+vmax = 0.005474
+symmetric = true
+autoscale = false
+vmin = -0.005474
+log = false
+type = "Pcolor2d"
+ID = 0
+
+[Plot.1]
+field_selected = 5
+cmap = "BrBG"
+vmax = 0.01762
+symmetric = true
+autoscale = false
+vmin = -0.01762
+log = false
+type = "Pcolor2d"
+ID = 1
+
+[Plot.2]
+field_selected = 3
+cmap = "BrBG"
+vmax = 0.0001926
+symmetric = true
+autoscale = false
+vmin = -0.0001926
+log = false
+type = "Pcolor2d"
+ID = 2
+
+[Plot.3]
+field_selected = 0
+cmap = "RdBu"
+vmax = 0.01
+symmetric = true
+autoscale = false
+vmin = -0.01
+log = false
+type = "Pcolor2d"
+ID = 3
+
+[Plot.4]
+field_selected = 8
+cmap = "Jet"
+vmax = 23.29
+symmetric = false
+autoscale = false
+vmin = 0.0
+log = false
+type = "Pcolor2d"
+ID = 4
+
+[Plot.5]
+field_selected = 6
+cmap = "PiYG"
+vmax = 0.03425
+symmetric = true
+autoscale = false
+vmin = -0.03425
+log = false
+type = "Pcolor2d"
+ID = 5
+
+[Plot]
+npanels = 6
+outline_color = [1.000, 1.000, 1.000, 1.000]
+range = [-1.511, 5.971, -4.035, 3.751]
+collapsed_controls = false
