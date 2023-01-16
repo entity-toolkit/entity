@@ -1,5 +1,5 @@
 [simulation]
-title   = "Monopole"
+title   = "Magnetosphere"
 runtime = 50.0
 
 [domain]
@@ -27,21 +27,23 @@ n_species = 2
 label    = "e-"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 1e7
+maxnpart = 1e8
 pusher   = "BORIS"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
-maxnpart = 1e7
+maxnpart = 1e8
 pusher   = "BORIS"
 
 [problem]
+bsurf        = 1.0
 spin_omega   = 0.02
-buff_cells   = 10
 inj_rmax     = 1.5
 inj_fraction = 0.1
+inj_maxDens  = 5.0
+field_mode   = 1    # 1 = Monopole, 2 = Dipole
 
 [visualization]
 fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jphi"]
