@@ -180,7 +180,7 @@ namespace ntt {
   Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationEngine S>
-  void Writer<D, S>::WriteFields(const Meshblock<D, S>&, const real_t&, const std::size_t&) {}
+  void Writer<D, S>::WriteFields(const SimulationParams&, const Meshblock<D, S>&, const real_t&, const std::size_t&) {}
 
 #endif
 

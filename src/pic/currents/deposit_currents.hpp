@@ -133,6 +133,8 @@ namespace ntt {
       if constexpr (D == Dim2) {
         if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {
           vp[2] = ZERO;
+        } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1 && AlmostEqual(dIp_f[1], 1.0f)) {
+          vp[2] = ZERO;
         }
       }
 #endif
@@ -154,7 +156,7 @@ namespace ntt {
             const bool northern_pole  = (I_i < 0);
             const bool sourthern_pole = (I_i >= static_cast<int>(m_xi2max));
             if (northern_pole || sourthern_pole) {
-              I_i     = northern_pole ? 0 : m_xi2max - 1;
+              I_i     = northern_pole ? 0 : static_cast<int>(m_xi2max) - 1;
               xp_i[i] = northern_pole ? -xp_i[i] : (TWO * m_xi2max - xp_i[i]);
             }
           }
