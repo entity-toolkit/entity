@@ -32,7 +32,10 @@ namespace ntt {
     Writer(const SimulationParams&, const Meshblock<D, S>&);
     ~Writer();
 
-    void WriteFields(const Meshblock<D, S>&, const real_t&, const std::size_t&);
+    void WriteFields(const SimulationParams&,
+                     const Meshblock<D, S>&,
+                     const real_t&,
+                     const std::size_t&);
   };
 
 }    // namespace ntt

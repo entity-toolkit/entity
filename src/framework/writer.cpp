@@ -104,6 +104,7 @@ namespace ntt {
       m_io.DefineAttribute<real_t>("x3", x3, mblock.Ni3() + 1);
     }
     m_io.DefineAttribute<int>("n_ghosts", N_GHOSTS);
+    m_io.DefineAttribute<int>("dimension", (int)D);
 
     m_io.DefineAttribute<real_t>("dt", mblock.timestep());
 
@@ -117,10 +118,11 @@ namespace ntt {
   Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationEngine S>
-  void Writer<D, S>::WriteFields(const Meshblock<D, S>& mblock,
-                                 const real_t&          time,
-                                 const std::size_t&     tstep) {
-    m_writer = m_io.Open("flds.h5", m_mode);
+  void Writer<D, S>::WriteFields(const SimulationParams& params,
+                                 const Meshblock<D, S>&  mblock,
+                                 const real_t&           time,
+                                 const std::size_t&      tstep) {
+    m_writer = m_io.Open(params.title() + ".flds.h5", m_mode);
     m_mode   = adios2::Mode::Append;
 
     m_writer.BeginStep();
