@@ -41,6 +41,6 @@ script_vis
 *.png
 *.mov
 *.mp4
-vis/videos/
-vis/frames/
-vis/.venv/
+
+temp/
+logs/

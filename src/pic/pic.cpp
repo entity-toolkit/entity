@@ -126,7 +126,7 @@ namespace ntt {
         ComputeDensity();
         this->SynchronizeHostDevice();
         InterpolateAndConvertFieldsToHat();
-        wrtr.WriteFields(mblock, this->m_time, this->m_tstep);
+        wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
       }
     }
     timers.stop("Output");

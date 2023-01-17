@@ -5,9 +5,9 @@ runtime = 50.0
 [domain]
 qsph_r0     = 0.0
 qsph_h      = 0.25
-sph_rabsorb = 24.0
+sph_rabsorb = 14.0
 resolution  = [1024, 1024]
-extent      = [1.0, 25.0]
+extent      = [1.0, 15.0]
 boundaries  = ["USER", "ABSORB"]
 
 [algorithm]
@@ -17,7 +17,7 @@ current_filters = 8
 
 [units]
 ppc0       = 10.0
-larmor0    = 1e-3
+larmor0    = 2e-3
 skindepth0 = 0.1
 
 [particles]
@@ -39,7 +39,7 @@ pusher   = "BORIS"
 
 [problem]
 bsurf        = 1.0
-spin_omega   = 0.05
+spin_omega   = 0.1
 inj_rmax     = 1.1
 inj_fraction = 0.1
 inj_maxDens  = 5.0
@@ -51,5 +51,5 @@ fields        = ["density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr"
 fields_stride = 8
 
 [output]
-format   = "disabled"
-interval = 5
+format   = "HDF5"
+interval = 100

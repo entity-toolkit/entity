@@ -4,7 +4,9 @@
       "${workspaceFolder}",
       "${workspaceFolder}/src/**",
       "${workspaceFolder}/build/src/",
-      "${workspaceFolder}/extern/**"
+      "${workspaceFolder}/extern/**",
+      "${workspaceFolder}/build/extern/kokkos/",
+      "${workspaceFolder}/build/extern/adios2/source/"
     ],
     "myCompilerPath": "/usr/bin/g++"
   },

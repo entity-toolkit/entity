@@ -115,9 +115,9 @@
     "__std_stream": "cpp"
   },
   "editor.tokenColorCustomizations": {
-    "textMateRules": []
+    "textMateRules": [],
   },
-  "C_Cpp.errorSquiggles": "Disabled",
+  "C_Cpp.errorSquiggles": "disabled",
   "cmake.buildDirectory": "${workspaceFolder}/build",
   "cmake.configureSettings": {
     "output": "OFF",

@@ -20,6 +20,7 @@ namespace ntt {
      * @param inputdata toml-object with parsed toml parameters.
      */
     PIC(const toml::value& inputdata) : Simulation<D, PICEngine>(inputdata) {}
+    PIC(const PIC<D>&) = delete;
     ~PIC() = default;
 
     /**
