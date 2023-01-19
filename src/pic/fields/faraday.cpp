@@ -27,7 +27,7 @@
 namespace ntt {
 
 #ifdef MINKOWSKI_METRIC
-  template <>
+  template <Dimension D>
   void PIC<D>::Faraday(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
