@@ -1,5 +1,10 @@
+#
+# Documentation to be added...
+#
+
 import xarray as xr
 import numpy as np
+import multiprocessing as mp
 
 
 def EdgeToCenter(arr):
@@ -28,7 +33,7 @@ class NTPlotAccessor:
         assert ax.name != "polar", "`ax` must be a rectilinear projection"
         assert len(self._obj.values.shape) == 2, "Data must be 2D"
         ax.grid(False)
-        if type (kwargs.get("norm", None)) == mpl.colors.LogNorm:
+        if type(kwargs.get("norm", None)) == mpl.colors.LogNorm:
             cm = kwargs.get("cmap", "viridis")
             cm = plt.get_cmap(cm)
             cm.set_bad(cm(0))
@@ -53,6 +58,21 @@ class NTPlotAccessor:
         else:
             ax.set_title(kwargs.get("title"))
         plt.colorbar(im, cax=cax, label=self._obj.name)
+
+
+def makeMovie(plot, steps, fpath, dpi=300, num_cpus=mp.cpu_count()):
+    from p_tqdm import p_umap
+    import matplotlib.pyplot as plt
+    import os
+
+    def plotAndSave(plot, st, fpath):
+        plot(st)
+        plt.savefig(f"{fpath}/{st:05d}.png", dpi=dpi, bbox_inches="tight")
+        plt.close()
+
+    if not os.path.exists(fpath):
+        os.makedirs(fpath)
+    p_umap(lambda st: plotAndSave(plot, st, fpath), steps, num_cpus=num_cpus)
 
 
 def getFields(fname, steps=None):
