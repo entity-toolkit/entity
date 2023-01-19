@@ -1,5 +1,5 @@
 [simulation]
-title   = "Magnetosphere"
+title   = "thm3e-3_flt2"
 runtime = 50.0
 
 [domain]
@@ -14,10 +14,10 @@ boundaries  = ["USER", "ABSORB"]
 [algorithm]
 CFL             = 0.5
 correction      = 1.0
-current_filters = 8
+current_filters = 2
 
 [units]
-ppc0       = 1.0
+ppc0       = 10.0
 larmor0    = 2e-3
 skindepth0 = 0.1
 
@@ -43,6 +43,7 @@ bsurf        = 1.0
 spin_omega   = 0.1
 spinup_time  = 1.0
 inj_rmax     = 1.2
+inj_thmin    = 3e-3
 inj_fraction = 0.1
 inj_maxDens  = 5.0
 field_mode   = 1    # 1 = Monopole, 2 = Dipole
