@@ -28,7 +28,7 @@ class NTPlotAccessor:
         assert ax.name != "polar", "`ax` must be a rectilinear projection"
         assert len(self._obj.values.shape) == 2, "Data must be 2D"
         ax.grid(False)
-        if type (kwargs.get("norm", None)) == mpl.colors.LogNorm:
+        if type(kwargs.get("norm", None)) == mpl.colors.LogNorm:
             cm = kwargs.get("cmap", "viridis")
             cm = plt.get_cmap(cm)
             cm.set_bad(cm(0))
