@@ -108,13 +108,6 @@ namespace ntt {
         "FieldsBoundaryConditions-2",
         CreateRangePolicy<Dim2>({ i1_absorb, 0 }, { mblock.i1_max(), mblock.i2_max() }),
         AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
-      Kokkos::parallel_for(
-        "FieldsBoundaryConditions-1",
-        mblock.rangeAllCells(),
-        Lambda(index_t i1, index_t i2) {
-          mblock.em(i1, i2, em::bx2) = 0.0;
-          mblock.em(i1, i2, em::ex3) = 0.0;
-        });
     } else {
       NTTHostError(
         "2d axisymmetry requires absorbing boundary conditions at rmax. Currently specified: `"

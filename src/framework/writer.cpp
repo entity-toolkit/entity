@@ -144,14 +144,14 @@ namespace ntt {
     if constexpr (D == Dim1) {
       for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
         m_writer.Put<real_t>(m_vars_r[var_st],
-                             Kokkos::subview(mblock.em_h, slice_i1, (int)var));
+                             Kokkos::subview(mblock.bckp_h, slice_i1, (int)var));
       }
       m_writer.Put<real_t>(m_vars_r["density"],
                            Kokkos::subview(mblock.buff_h, slice_i1, (int)(fld::dens)));
     } else if constexpr (D == Dim2) {
       for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
         m_writer.Put<real_t>(m_vars_r[var_st],
-                             Kokkos::subview(mblock.em_h, slice_i1, slice_i2, (int)var));
+                             Kokkos::subview(mblock.bckp_h, slice_i1, slice_i2, (int)var));
       }
       m_writer.Put<real_t>(
         m_vars_r["density"],
@@ -160,7 +160,7 @@ namespace ntt {
       for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
         m_writer.Put<real_t>(
           m_vars_r[var_st],
-          Kokkos::subview(mblock.em_h, slice_i1, slice_i2, slice_i3, (int)var));
+          Kokkos::subview(mblock.bckp_h, slice_i1, slice_i2, slice_i3, (int)var));
       }
       m_writer.Put<real_t>(
         m_vars_r["density"],
@@ -180,7 +180,10 @@ namespace ntt {
   Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationEngine S>
-  void Writer<D, S>::WriteFields(const SimulationParams&, const Meshblock<D, S>&, const real_t&, const std::size_t&) {}
+  void Writer<D, S>::WriteFields(const SimulationParams&,
+                                 const Meshblock<D, S>&,
+                                 const real_t&,
+                                 const std::size_t&) {}
 
 #endif
 
@@ -189,71 +192,3 @@ namespace ntt {
 template class ntt::Writer<ntt::Dim1, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim2, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim3, ntt::PICEngine>;
-
-// if constexpr (D == Dim1) {
-//   extent = fmt::format("{} {} 0 0 0 0", params.extent()[0], params.extent()[1]);
-// } else if constexpr (D == Dim2) {
-//   extent = fmt::format("{} {} {} {} 0 0",
-//                        params.extent()[0],
-//                        params.extent()[1],
-//                        params.extent()[2],
-//                        params.extent()[3]);
-// } else if constexpr (D == Dim3) {
-//   extent = fmt::format("{} {} {} {} {} {}",
-//                        params.extent()[0],
-//                        params.extent()[1],
-//                        params.extent()[2],
-//                        params.extent()[3],
-//                        params.extent()[4],
-//                        params.extent()[5]);
-// }
-
-// const std::string vtk_xml = R"(
-//   <?xml version="1.0"?>
-//   <VTKFile type="RectilinearGrid" version="0.1" byte_order="LittleEndian">
-//     <RectilinearGrid WholeExtent=")"
-//                             + extent + R"(>"
-//         <Piece Extent=")" + extent
-//                             + R"(">
-//           <CellData Scalars="DUMMY">
-//             <DataArray Name="DUMMY"/>
-//             <DataArray Name="TIME">
-//               step
-//             </DataArray>
-//           </CellData>
-//         </Piece>
-//       </RectilinearGrid>
-//   </VTKFile>)";
-
-// if constexpr (D == Dim1) {
-//   extent = fmt::format("0 {} 0 0 0 0", params.resolution()[0] + 1);
-// } else if constexpr (D == Dim2) {
-//   extent
-//     = fmt::format("0 {} 0 {} 0 0", params.resolution()[0] + 1, params.resolution()[1] +
-//     1);
-// } else if constexpr (D == Dim3) {
-//   extent = fmt::format("0 {} 0 {} 0 {}",
-//                        params.resolution()[0] + 1,
-//                        params.resolution()[1] + 1,
-//                        params.resolution()[2] + 1);
-// }
-// const std::string vtk_xml = R"(
-//   <?xml version="1.0"?>
-//   <VTKFile type="ImageData" version="0.1" byte_order="LittleEndian">
-//     <ImageData WholeExtent=")"
-//                             + extent + R"(" Origin="0 0 0" Spacing="1 1 1">
-//       <Piece Extent=")" + extent
-//                             + R"(">
-//         <CellData Scalars="DUMMY">
-//           <DataArray Name="DUMMY"/>
-//           <DataArray Name="TIME">
-//             time
-//           </DataArray>
-//         </CellData>
-//       </Piece>
-//     </ImageData>
-//   </VTKFile>)";
-
-// std::cout << vtk_xml << std::endl;
-
-// m_io.DefineAttribute<std::string>("vtk.xml", vtk_xml);
