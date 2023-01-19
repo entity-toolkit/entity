@@ -178,13 +178,29 @@ PrintChoices("Debug mode"
   0
   42
 )
+get_directory_property(KOKKOS_VERSION
+    DIRECTORY ${CMAKE_SOURCE_DIR}/extern/kokkos
+    DEFINITION Kokkos_VERSION)
 PrintChoices("Main framework"
   ""
-  "Kokkos"
-  "Kokkos"
+  "Kokkos v${KOKKOS_VERSION}"
+  "Kokkos v${KOKKOS_VERSION}"
   "N/A"
   "${Blue}"
   FRAMEWORK_REPORT
+  0
+  39
+)
+get_directory_property(ENABLED_ARCHS
+    DIRECTORY ${CMAKE_SOURCE_DIR}/extern/kokkos
+    DEFINITION KOKKOS_ENABLED_ARCH_LIST)
+PrintChoices("CPU/GPU architecture"
+  ""
+  "${ENABLED_ARCHS}"
+  "${ENABLED_ARCHS}"
+  "N/A"
+  "${Blue}"
+  ARCH_REPORT
   0
   39
 )
@@ -219,11 +235,18 @@ PrintChoices("C++ compiler"
   42
 )
 
+# check if empty
+if ("${CMAKE_CUDA_COMPILER}" STREQUAL "")
+  execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
+else()
+  set(CUDACOMP ${CMAKE_CUDA_COMPILER})
+endif()
+
 if(${Kokkos_ENABLE_CUDA})
   PrintChoices("CUDA compiler"
     "CMAKE_CUDA_COMPILER"
-    "${CMAKE_CUDA_COMPILER}"
-    ${CMAKE_CUDA_COMPILER}
+    "${CUDACOMP}"
+    ${CUDACOMP}
     "N/A"
     "${White}"
     CUDA_COMPILER_REPORT
@@ -279,6 +302,8 @@ ${DASHED_LINE_SYMBOL}
   ${DEBUG_REPORT}
 
   ${FRAMEWORK_REPORT}
+
+  ${ARCH_REPORT}
 
   ${CUDA_REPORT}
 
