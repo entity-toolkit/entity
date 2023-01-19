@@ -167,6 +167,10 @@
   background-color: var(--border-color);
 }
 
+#contributors+ul .tag.mpi {
+  background-color: var(--color-three);
+}
+
 /* Collapsable in header */
 .nt-cards {
   overflow: visible !important;
@@ -326,7 +330,7 @@ figure.under-construction {
 }
 
 figure.under-construction:before {
-  content: "under construction"; 
+  content: "under construction";
   position: relative;
   font-size: 2rem;
   line-height: 2rem;

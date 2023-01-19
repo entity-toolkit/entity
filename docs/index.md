@@ -39,7 +39,7 @@ hide:
 * :tea: Benjamin Crinquand {[@bcrinquand](https://github.com/bcrinquand): GR, cubed-sphere}
 * :bubble_tea: Alisa Galishnikova {[@alisagk](https://github.com/alisagk): GR}
 * :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh): framework, PIC, GR, cubed-sphere}
-* :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann): cubed-sphere}
+* :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann): cubed-sphere, framework, MPI}
 * :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph): all-around}
 
 ### Timeline
