@@ -24,15 +24,19 @@ namespace ntt {
     ParticlePusher m_pusher;
 
   public:
+    const int m_index;
+
     /**
      * @brief Constructor for the particle species container.
+     * @param index species index (meshblock::particles vector index + 1).
      * @param label species label.
      * @param m species mass.
      * @param ch species charge.
      * @param maxnpart max number of allocated particles.
      * @param pusher pusher assigned for the species.
      */
-    ParticleSpecies(std::string           label,
+    ParticleSpecies(const int&            index,
+                    const std::string&    label,
                     const float&          m,
                     const float&          ch,
                     const std::size_t&    maxnpart,
@@ -40,12 +44,14 @@ namespace ntt {
     /**
      * @brief Constructor for the particle species container which deduces the pusher itself.
      * @overload
+     * @param index species index (meshblock::particles vector index + 1).
      * @param label species label.
      * @param m species mass.
      * @param ch species charge.
      * @param maxnpart max number of allocated particles.
      */
-    ParticleSpecies(std::string, const float&, const float&, const std::size_t&);
+    ParticleSpecies(
+      const int&, const std::string&, const float&, const float&, const std::size_t&);
     /**
      * @brief Copy constructor for the particle species container.
      * @overload
@@ -83,6 +89,12 @@ namespace ntt {
      */
     [[nodiscard]] auto pusher() const -> ParticlePusher {
       return m_pusher;
+    }
+    /**
+     * @brief Get the species index.
+     */
+    [[nodiscard]] auto index() const -> int {
+      return m_index;
     }
   };
 
@@ -128,12 +140,13 @@ namespace ntt {
 
     /**
      * @brief Constructor for the particle container.
+     * @param index species index (meshblock::particles vector index + 1).
      * @param label species label.
      * @param m species mass.
      * @param ch species charge.
      * @param maxnpart max number of allocated particles.
      */
-    Particles(const std::string&, const float&, const float&, const std::size_t&);
+    Particles(const int&, const std::string&, const float&, const float&, const std::size_t&);
     /**
      * @brief Constructor for the particle container.
      * @overload

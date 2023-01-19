@@ -33,6 +33,8 @@ namespace ntt {
         mblock { mb },
         species1 { sp1 },
         species2 { sp2 },
+        species_index1 { sp1.index() },
+        species_index2 { sp2.index() },
         offset1 { sp1.npart() },
         offset2 { sp2.npart() },
         region { box[0], box[1] },
@@ -44,9 +46,9 @@ namespace ntt {
       coord_t<Dim1>                               x { ZERO };
       vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
-      energy_dist(x, v, 0);
+      energy_dist(x, v, species_index1);
       init_prtl_1d(mblock, species1, p + offset1, x[0], v[0], v[1], v[2]);
-      energy_dist(x, v, 1);
+      energy_dist(x, v, species_index2);
       init_prtl_1d(mblock, species2, p + offset2, x[0], v[0], v[1], v[2]);
       pool.free_state(rand_gen);
     }
@@ -55,6 +57,7 @@ namespace ntt {
     SimulationParams   params;
     Meshblock<Dim1, S> mblock;
     Particles<Dim1, S> species1, species2;
+    const int          species_index1, species_index2;
     const std::size_t  offset1, offset2;
     EnDist<Dim1, S>    energy_dist;
     list_t<real_t, 2>  region;
@@ -76,6 +79,8 @@ namespace ntt {
         mblock { mb },
         species1 { sp1 },
         species2 { sp2 },
+        species_index1 { sp1.index() },
+        species_index2 { sp2.index() },
         offset1 { sp1.npart() },
         offset2 { sp2.npart() },
         region { box[0], box[1], box[2], box[3] },
@@ -88,9 +93,9 @@ namespace ntt {
       vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
-      energy_dist(x, v, 0);
+      energy_dist(x, v, species_index1);
       init_prtl_2d(mblock, species1, p + offset1, x[0], x[1], v[0], v[1], v[2]);
-      energy_dist(x, v, 1);
+      energy_dist(x, v, species_index2);
       init_prtl_2d(mblock, species2, p + offset2, x[0], x[1], v[0], v[1], v[2]);
       pool.free_state(rand_gen);
     }
@@ -99,6 +104,7 @@ namespace ntt {
     SimulationParams   params;
     Meshblock<Dim2, S> mblock;
     Particles<Dim2, S> species1, species2;
+    const int          species_index1, species_index2;
     const std::size_t  offset1, offset2;
     EnDist<Dim2, S>    energy_dist;
     list_t<real_t, 4>  region;
@@ -120,6 +126,8 @@ namespace ntt {
         mblock { mb },
         species1 { sp1 },
         species2 { sp2 },
+        species_index1 { sp1.index() },
+        species_index2 { sp2.index() },
         offset1 { sp1.npart() },
         offset2 { sp2.npart() },
         region { box[0], box[1], box[2], box[3], box[4], box[5] },
@@ -133,9 +141,9 @@ namespace ntt {
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       x[2] = rand_gen.frand(region[4], region[5]);
-      energy_dist(x, v, 0);
+      energy_dist(x, v, species_index1);
       init_prtl_3d(mblock, species1, p + offset1, x[0], x[1], x[2], v[0], v[1], v[2]);
-      energy_dist(x, v, 1);
+      energy_dist(x, v, species_index2);
       init_prtl_3d(mblock, species2, p + offset2, x[0], x[1], x[2], v[0], v[1], v[2]);
       pool.free_state(rand_gen);
     }
@@ -144,6 +152,7 @@ namespace ntt {
     SimulationParams   params;
     Meshblock<Dim3, S> mblock;
     Particles<Dim3, S> species1, species2;
+    const int          species_index1, species_index2;
     const std::size_t  offset1, offset2;
     EnDist<Dim3, S>    energy_dist;
     list_t<real_t, 6>  region;
@@ -217,20 +226,20 @@ namespace ntt {
     }
 
     if constexpr (D == Dim1) {
-      Kokkos::parallel_for(
-        "InjectUniform",
-        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-        UniformInjector1d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
+      Kokkos::parallel_for("InjectUniform",
+                           CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+                           UniformInjector1d_kernel<S, EnDist>(
+                             params, mblock, sp1, sp2, box, time));
     } else if constexpr (D == Dim2) {
-      Kokkos::parallel_for(
-        "InjectUniform",
-        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-        UniformInjector2d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
+      Kokkos::parallel_for("InjectUniform",
+                           CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+                           UniformInjector2d_kernel<S, EnDist>(
+                             params, mblock, sp1, sp2, box, time));
     } else if constexpr (D == Dim3) {
-      Kokkos::parallel_for(
-        "InjectUniform",
-        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-        UniformInjector3d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
+      Kokkos::parallel_for("InjectUniform",
+                           CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+                           UniformInjector3d_kernel<S, EnDist>(
+                             params, mblock, sp1, sp2, box, time));
     }
     sp1.setNpart(sp1.npart() + npart_per_spec);
     sp2.setNpart(sp2.npart() + npart_per_spec);
@@ -259,6 +268,8 @@ namespace ntt {
         mblock { mb },
         species1 { sp1 },
         species2 { sp2 },
+        species_index1 { sp1.index() },
+        species_index2 { sp2.index() },
         offset1 { sp1.npart() },
         offset2 { sp2.npart() },
         index { ind },
@@ -331,6 +342,7 @@ namespace ntt {
     SimulationParams     params;
     Meshblock<Dim1, S>   mblock;
     Particles<Dim1, S>   species1, species2;
+    const int            species_index1, species_index2;
     const std::size_t    offset1, offset2;
     array_t<std::size_t> index;
     const real_t         nppc;
@@ -359,6 +371,8 @@ namespace ntt {
         mblock { mb },
         species1 { sp1 },
         species2 { sp2 },
+        species_index1 { sp1.index() },
+        species_index2 { sp2.index() },
         offset1 { sp1.npart() },
         offset2 { sp2.npart() },
         index { ind },
@@ -436,6 +450,7 @@ namespace ntt {
     SimulationParams     params;
     Meshblock<Dim2, S>   mblock;
     Particles<Dim2, S>   species1, species2;
+    const int            species_index1, species_index2;
     const std::size_t    offset1, offset2;
     array_t<std::size_t> index;
     const real_t         nppc;

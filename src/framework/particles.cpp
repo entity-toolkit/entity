@@ -6,22 +6,26 @@
 #include <string>
 
 namespace ntt {
-  ParticleSpecies::ParticleSpecies(std::string           label_,
+  ParticleSpecies::ParticleSpecies(const int&            index_,
+                                   const std::string&    label_,
                                    const float&          m_,
                                    const float&          ch_,
                                    const std::size_t&    maxnpart_,
                                    const ParticlePusher& pusher_)
-    : m_label(std::move(label_)),
+    : m_index(index_),
+      m_label(std::move(label_)),
       m_mass(m_),
       m_charge(ch_),
       m_maxnpart(maxnpart_),
       m_pusher(pusher_) {}
 
-  ParticleSpecies::ParticleSpecies(std::string        label_,
+  ParticleSpecies::ParticleSpecies(const int&         index_,
+                                   const std::string& label_,
                                    const float&       m_,
                                    const float&       ch_,
                                    const std::size_t& maxnpart_)
-    : m_label(std::move(label_)),
+    : m_index(index_),
+      m_label(std::move(label_)),
       m_mass(m_),
       m_charge(ch_),
       m_maxnpart(maxnpart_),
@@ -31,11 +35,12 @@ namespace ntt {
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Particles<Dim1, PICEngine>::Particles(const std::string& label_,
+  Particles<Dim1, PICEngine>::Particles(const int&         index_,
+                                        const std::string& label_,
                                         const float&       m_,
                                         const float&       ch_,
                                         const std::size_t& maxnpart_)
-    : ParticleSpecies { label_, m_, ch_, maxnpart_ },
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       dx1 { label_ + "_dx1", maxnpart_ },
       ux1 { label_ + "_ux1", maxnpart_ },
@@ -52,11 +57,12 @@ namespace ntt {
 
 #ifdef MINKOWSKI_METRIC
   template <>
-  Particles<Dim2, PICEngine>::Particles(const std::string& label_,
+  Particles<Dim2, PICEngine>::Particles(const int&         index_,
+                                        const std::string& label_,
                                         const float&       m_,
                                         const float&       ch_,
                                         const std::size_t& maxnpart_)
-    : ParticleSpecies { label_, m_, ch_, maxnpart_ },
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
       dx1 { label_ + "_dx1", maxnpart_ },
@@ -76,11 +82,12 @@ namespace ntt {
   }
 #else    // axisymmetry
   template <>
-  Particles<Dim2, PICEngine>::Particles(const std::string& label_,
+  Particles<Dim2, PICEngine>::Particles(const int&         index_,
+                                        const std::string& label_,
                                         const float&       m_,
                                         const float&       ch_,
                                         const std::size_t& maxnpart_)
-    : ParticleSpecies { label_, m_, ch_, maxnpart_ },
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
       dx1 { label_ + "_dx1", maxnpart_ },
@@ -101,11 +108,12 @@ namespace ntt {
   }
 #endif
   template <>
-  Particles<Dim3, PICEngine>::Particles(const std::string& label_,
+  Particles<Dim3, PICEngine>::Particles(const int&         index_,
+                                        const std::string& label_,
                                         const float&       m_,
                                         const float&       ch_,
                                         const std::size_t& maxnpart_)
-    : ParticleSpecies { label_, m_, ch_, maxnpart_ },
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
       i3 { label_ + "_i3", maxnpart_ },
@@ -132,11 +140,12 @@ namespace ntt {
   // GRPIC-specific (not Cartesian)
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Particles<Dim2, TypeGRPIC>::Particles(const std::string& label_,
+  Particles<Dim2, TypeGRPIC>::Particles(const int&         index_,
+                                        const std::string& label_,
                                         const float&       m_,
                                         const float&       ch_,
                                         const std::size_t& maxnpart_)
-    : ParticleSpecies { label_, m_, ch_, maxnpart_ },
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
       dx1 { label_ + "_dx1", maxnpart_ },
@@ -161,11 +170,12 @@ namespace ntt {
   }
 
   template <>
-  Particles<Dim3, TypeGRPIC>::Particles(const std::string& label_,
+  Particles<Dim3, TypeGRPIC>::Particles(const int&         index_,
+                                        const std::string& label_,
                                         const float&       m_,
                                         const float&       ch_,
                                         const std::size_t& maxnpart_)
-    : ParticleSpecies { label_, m_, ch_, maxnpart_ },
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
       i3 { label_ + "_i3", maxnpart_ },
@@ -196,7 +206,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   Particles<D, S>::Particles(const ParticleSpecies& spec)
-    : Particles(spec.label(), spec.mass(), spec.charge(), spec.maxnpart()) {}
+    : Particles(spec.index(), spec.label(), spec.mass(), spec.charge(), spec.maxnpart()) {}
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeActiveParticles() -> range_t<Dim1> {
