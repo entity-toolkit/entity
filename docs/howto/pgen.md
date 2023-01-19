@@ -213,7 +213,7 @@ struct WeibelDrift : public EnergyDistribution<D, S> {
   Inline void operator()(const coord_t<D>&,
                           vec_t<Dim3>& v,
                           const int&   species) const override { // (1)!
-    if (species == 0) { // (2)!
+    if (species == 1) { // (2)!
       v[0] = 0.1;
     } else {
       v[0] = -0.1;
@@ -222,7 +222,7 @@ struct WeibelDrift : public EnergyDistribution<D, S> {
 };
 ```
 
-1. accepts three arguments: the coordinate, the velocity to be set, and the species number (0 or 1)
+1. accepts three arguments: the coordinate, the velocity to be set, and the species index
 2. set positive for electrons and negative for positrons
 
 All we need to do now is to pass that class template to the `InjectUniform` routine as shown above. We can also read the drift velocity from the input file:
@@ -237,7 +237,7 @@ struct WeibelDrift : public EnergyDistribution<D, S> {
   Inline void operator()(const coord_t<D>&,
                           vec_t<Dim3>& v,
                           const int&   species) const override {
-    if (species == 0) {
+    if (species == 1) {
       v[0] = udrift;
     } else {
       v[0] = -udrift;
@@ -275,7 +275,7 @@ namespace ntt {
     Inline void operator()(const coord_t<D>&,
                            vec_t<Dim3>& v,
                            const int&   species) const override {
-      if (species == 0) {
+      if (species == 1) {
         v[0] = udrift;
       } else {
         v[0] = -udrift;
