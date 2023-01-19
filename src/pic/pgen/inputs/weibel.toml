@@ -1,49 +1,65 @@
 [simulation]
-title   = "Reconnection"
+title   = "Weibel-sprec"
 runtime = 100.0
 
 [domain]
 resolution = [1024, 1024]
-extent     = [-1.0, 1.0, -1.0, 1.0]
+extent     = [-51.2, 51.2, -51.2, 51.2]
 boundaries = ["PERIODIC", "PERIODIC"]
 
 [algorithm]
-CFL             = 0.9
+CFL             = 0.5
 correction      = 1.0
 fieldsolver_ON  = true
 deposit_ON      = true
-current_filters = 4
+current_filters = 25
 
 [units]
 ppc0       = 32.0
-larmor0    = 0.1
-skindepth0 = 0.1
+larmor0    = 1.0
+skindepth0 = 1.0
 
 [particles]
-n_species = 2
+n_species = 4
 
 [species_1]
-label    = "e-"
+label    = "e-_p"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 5e7
+maxnpart = 1e8
 pusher   = "BORIS"
 
 [species_2]
-label    = "e+"
-mass     = 1.0
+label    = "e+_p"
+mass     = 25.0
 charge   = 1.0
-maxnpart = 5e7
+maxnpart = 1e8
+pusher   = "BORIS"
+
+[species_3]
+label    = "e-_b"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+pusher   = "BORIS"
+
+[species_4]
+label    = "e+_b"
+mass     = 50.0
+charge   = 1.0
+maxnpart = 1e8
 pusher   = "BORIS"
 
 [problem]
-udrift_1 = 1.0
-udrift_2 = -1.0
+udrift_1 = -10.0
+udrift_2 = -10.0
+udrift_3 = 10.0
+udrift_4 = 10.0
 
 [visualization]
-fields        = ["Bz"]
+fields        = ["Bx", "By", "density"]
 fields_stride = 4
 
-# [output]
-# format          = <string: { disabled, csv }>
-# interval        = <int>
+[output]
+format   = "HDF5"
+interval = 100

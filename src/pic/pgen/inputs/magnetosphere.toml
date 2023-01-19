@@ -1,23 +1,22 @@
 [simulation]
-title   = "thm3e-3_flt2"
+title   = "Magnetosphere"
 runtime = 50.0
 
 [domain]
 qsph_r0     = 0.0
 qsph_h      = 0.001
 sph_rabsorb = 4.5
-#resolution  = [1024, 1024]
-resolution  = [512, 512]
+resolution  = [1024, 1024]
 extent      = [1.0, 5.0]
 boundaries  = ["USER", "ABSORB"]
 
 [algorithm]
 CFL             = 0.5
 correction      = 1.0
-current_filters = 2
+current_filters = 4
 
 [units]
-ppc0       = 10.0
+ppc0       = 4.0
 larmor0    = 2e-3
 skindepth0 = 0.1
 
@@ -43,7 +42,7 @@ bsurf        = 1.0
 spin_omega   = 0.1
 spinup_time  = 1.0
 inj_rmax     = 1.2
-inj_thmin    = 3e-3
+inj_thmin    = 1e-2
 inj_fraction = 0.1
 inj_maxDens  = 5.0
 field_mode   = 1    # 1 = Monopole, 2 = Dipole
@@ -56,4 +55,4 @@ fields_stride = 4
 
 [output]
 format   = "HDF5"
-interval = 500
+interval = 100
