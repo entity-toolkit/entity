@@ -5,13 +5,13 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 ## Code contributors (alphabetical)
 
-🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC}
+🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
 
 🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
 
-☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC}
+☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
 
-🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI}
+🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI, cubed-sphere}
 
 🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph): all-around}
 
