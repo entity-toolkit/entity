@@ -13,6 +13,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI}
 
+🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): PIC}
+
 ## Development status
 
 ### Active to-do
