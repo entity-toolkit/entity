@@ -5,6 +5,7 @@
 
 #include "fields.h"
 #include "meshblock.h"
+#include "qmath.h"
 #include "sim_params.h"
 
 #ifdef NTTINY_ENABLED
@@ -92,6 +93,88 @@ namespace ntt {
       v[1] = ZERO;
       v[2] = ZERO;
     }
+  };
+
+  template <Dimension D, SimulationEngine S>
+  struct Maxwellian {
+    Maxwellian(const Meshblock<D, S>& mblock) : pool { *(mblock.random_pool_ptr) } {}
+    // Juttner-Synge distribution
+    Inline void JS(vec_t<Dim3>& v, const real_t& temp) const {
+      typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+      real_t                                      u { ZERO }, eta { ZERO }, theta { ZERO };
+      real_t                                      X1 { ZERO }, X2 { ZERO };
+      if (temp < 0.1) {
+        // Juttner-Synge distribution using the Box-Muller method - non-relativistic
+        while (AlmostEqual(u, ZERO)) {
+          u = rand_gen.frand();
+        }
+        eta = math::sqrt(-TWO * math::log(u));
+        while (AlmostEqual(theta, ZERO)) {
+          theta = constant::TWO_PI * rand_gen.frand();
+        }
+        u = eta * math::cos(theta) * math::sqrt(temp);
+      } else {
+        // Juttner-Synge distribution using the Sobol method - relativistic
+        u = ONE;
+        while (SQR(eta) <= SQR(u)) {
+          while (AlmostEqual(X1, ZERO)) {
+            X1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
+          }
+          u  = -temp * math::log(X1);
+          X1 = rand_gen.frand();
+          while (AlmostEqual(X1, 0)) {
+            X1 = rand_gen.frand();
+          }
+          eta = u - temp * math::log(X1);
+        }
+      }
+      X1   = rand_gen.frand();
+      X2   = rand_gen.frand();
+      v[0] = u * (TWO * X1 - ONE);
+      v[2] = TWO * u * math::sqrt(X1 * (ONE - X1));
+      v[1] = v[2] * math::cos(constant::TWO_PI * X2);
+      v[2] = v[2] * math::sin(constant::TWO_PI * X2);
+      pool.free_state(rand_gen);
+    }
+    // Boost a symmetric distribution to a relativistic speed using flipping method
+    // https://arxiv.org/pdf/1504.03910.pdf
+    Inline void boost(vec_t<Dim3>&  v,
+                      const real_t& boost_vel,
+                      const short&  boost_direction) const {
+      typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
+      real_t boost_beta { boost_vel / math::sqrt(ONE + SQR(boost_vel)) };
+      real_t boost_gamma { boost_vel / boost_beta };
+      real_t ut { math::sqrt(ONE + SQR(v[0]) + SQR(v[1]) + SQR(v[2])) };
+      if (-boost_beta * v[boost_direction] > ut * rand_gen.frand()) {
+        v[boost_direction] = -v[boost_direction];
+      }
+      pool.free_state(rand_gen);
+      v[boost_direction] = boost_gamma * (v[boost_direction] + boost_beta * ut);
+    }
+
+    Inline void operator()(vec_t<Dim3>&  v,
+                           const real_t& temp,
+                           const real_t& boost_vel       = ZERO,
+                           const short&  boost_direction = 0) const {
+      if (AlmostEqual(temp, ZERO)) {
+        v[0] = ZERO;
+        v[1] = ZERO;
+        v[2] = ZERO;
+      } else {
+        JS(v, temp);
+      }
+      if (!AlmostEqual(boost_vel, ZERO)) {
+        if (boost_direction < 0) {
+          boost(v, -boost_vel, -boost_direction - 1);
+        } else if (boost_direction > 0) {
+          boost(v, boost_vel, boost_direction - 1);
+        }
+        // no boost when boost_direction == 0
+      }
+    }
+
+  private:
+    RandomNumberPool_t pool;
   };
 
   /* -------------------------------------------------------------------------- */
