@@ -41,7 +41,7 @@ hide:
 * :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh): framework, PIC, GR, cubed-sphere}
 * :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann): cubed-sphere, framework, MPI}
 * :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph): all-around}
-* 🤷🏽‍♂️ Arno Vanthieghem {[@vanthieg](https://github.com/vanthieg): PIC}
+* 🤷‍♂️ Arno Vanthieghem {[@vanthieg](https://github.com/vanthieg): PIC}
 
 ### Timeline
 
