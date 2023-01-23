@@ -1,11 +1,13 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all. Find our detailed documentation [here](https://haykh.github.io/entity/).
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://haykh.github.io/entity/assets/cover_dark.gif">
-  <source media="(prefers-color-scheme: light)" srcset="https://haykh.github.io/entity/assets/cover_light.gif">
-  <img alt="cover" src="https://haykh.github.io/entity/assets/cover_light.gif">
-</picture>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/cover_dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="assets/cover_light.gif">
+    <img alt="cover" src="assets/cover_light.gif">
+  </picture>
+</p>
 
 ## Code contributors (alphabetical)
 
