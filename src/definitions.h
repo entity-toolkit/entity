@@ -110,22 +110,25 @@ namespace ntt {
 
 namespace ntt {
   namespace defaults {
-    constexpr std::string_view input_filename  = "input";
-    constexpr std::string_view output_path     = "output";
+    constexpr std::string_view input_filename   = "input";
+    constexpr std::string_view output_path      = "output";
 
-    const std::string          title           = "PIC_Sim";
-    const int                  n_species       = 0;
-    const std::string          pusher          = "Boris";
-    const std::string          metric          = "minkowski";
+    const std::string          title            = "PIC_Sim";
+    const int                  n_species        = 0;
+    const std::string          pusher           = "Boris";
+    const std::string          metric           = "minkowski";
 
-    const real_t               runtime         = 1e10;
-    const real_t               correction      = 1.0;
-    const real_t               cfl             = 0.95;
+    const real_t               runtime          = 1e10;
+    const real_t               correction       = 1.0;
+    const real_t               cfl              = 0.95;
 
-    const unsigned short       current_filters = 0;
+    const unsigned short       current_filters  = 0;
 
-    const std::string          output_format   = "disabled";
-    const int                  output_interval = 1;
+    const int                  shuffle_interval = 0;
+    const float                max_dead_frac    = 0.0f;
+
+    const std::string          output_format    = "disabled";
+    const int                  output_interval  = 1;
   }    // namespace defaults
 }    // namespace ntt
 

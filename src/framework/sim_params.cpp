@@ -50,6 +50,10 @@ namespace ntt {
       }
       m_species.emplace_back(ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher));
     }
+    m_shuffle_interval = readFromInput<int>(
+      m_inputdata, "particles", "shuffle_step", defaults::shuffle_interval);
+    m_max_dead_frac = readFromInput<float>(
+      m_inputdata, "particles", "max_dead_frac", defaults::max_dead_frac);
 
 #ifdef MINKOWSKI_METRIC
     m_metric = "minkowski";
@@ -92,8 +96,7 @@ namespace ntt {
       if ((m_metric == "qspherical") || (m_metric == "qkerr_schild")) {
         m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
         m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
-        NTTHostErrorIf((AlmostEqual(m_metric_parameters[1], ZERO, (real_t)(1e-6))),
-                       "qsph_h must be non-zero");
+        NTTHostErrorIf((AlmostEqual(m_metric_parameters[1], ZERO)), "qsph_h must be non-zero");
       }
       m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
       m_metric_parameters[3]

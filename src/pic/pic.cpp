@@ -89,7 +89,9 @@ namespace ntt {
 
       timers.start("Prtl_BC");
       ParticlesExchange();
-      mblock.RemoveDeadParticles();
+      if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
+        mblock.RemoveDeadParticles(params.maxDeadFraction());
+      }
       timers.stop("Prtl_BC");
     }
 
@@ -120,14 +122,13 @@ namespace ntt {
     }
 
     timers.start("Output");
-    if (this->m_tstep % params.outputInterval() == 0) {
-      if (params.outputFormat() != "disabled") {
-        WaitAndSynchronize();
-        ComputeDensity();
-        this->SynchronizeHostDevice();
-        InterpolateAndConvertFieldsToHat();
-        wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
-      }
+    if ((params.outputFormat() != "disabled")
+        && (this->m_tstep % params.outputInterval() == 0)) {
+      WaitAndSynchronize();
+      ComputeDensity();
+      this->SynchronizeHostDevice();
+      InterpolateAndConvertFieldsToHat();
+      wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
     }
     timers.stop("Output");
 
