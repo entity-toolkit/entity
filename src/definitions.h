@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <string>
+#include <vector>
 
 #include <string_view>
 
@@ -130,6 +131,13 @@ namespace ntt {
     const std::string          output_format    = "disabled";
     const int                  output_interval  = 1;
   }    // namespace defaults
+
+  namespace options {
+    const std::vector<std::string> pushers = { "BORIS", "PHOTON" };
+    const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
+    // const std::vector<
+
+  }
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
