@@ -2,6 +2,8 @@
 
 #include "wrapper.h"
 
+#include "utils.h"
+
 #include <cstddef>
 #include <string>
 
@@ -238,58 +240,61 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Particles<D, S>::RemoveDead() {
-    // count the number of living particles
+  auto Particles<D, S>::CountLiving() const -> std::size_t {
     std::size_t npart_alive = 0;
-    auto        isdead      = this->is_dead;
+    auto        is_dead_    = this->is_dead;
     Kokkos::parallel_reduce(
       "RemoveDead",
       rangeActiveParticles(),
       Lambda(index_t & p, std::size_t & cnt) {
-        if (!isdead(p)) {
+        if (!is_dead_(p)) {
           cnt++;
         }
       },
       npart_alive);
-    PLOGI.printf("npart_alive = %d", npart_alive);
-    // using KeyType = array_t<bool*>;
-    // using BinOp   = Kokkos::BinOp1D<KeyType>;
-    // BinOp                           bin_op({ 2 }, { true }, { false });
-    // Kokkos::BinSort<KeyType, BinOp> Sorter(isdead, bin_op, false);
-    // Sorter.create_permute_vector();
-    // Sorter.sort(this->is_dead);
-    //     Sorter.sort(this->i1);
-    //     Sorter.sort(this->dx1);
-    //     if constexpr (D == Dim2 || D == Dim3) {
-    //       Sorter.sort(this->i2);
-    //       Sorter.sort(this->dx2);
-    //     }
-    //     if constexpr (D == Dim3) {
-    //       Sorter.sort(this->i3);
-    //       Sorter.sort(this->dx3);
-    //     }
-    //     Sorter.sort(this->ux1);
-    //     Sorter.sort(this->ux2);
-    //     Sorter.sort(this->ux3);
-    // #ifndef MINKOWSKI_METRIC
-    //     if constexpr (D == Dim2) {
-    //       Sorter.sort(this->phi);
-    //     }
-    // #endif
-    //     if constexpr (S == TypeGRPIC) {
-    //       Sorter.sort(this->i1_prev);
-    //       Sorter.sort(this->dx1_prev);
-    //       if constexpr (D == Dim2 || D == Dim3) {
-    //         Sorter.sort(this->i2_prev);
-    //         Sorter.sort(this->dx2_prev);
-    //       }
-    //       if constexpr (D == Dim3) {
-    //         Sorter.sort(this->i3_prev);
-    //         Sorter.sort(this->dx3_prev);
-    //       }
-    //     }
-    //     // !TODO: sort weights
-    //     this->setNpart(npart_alive);
+    return npart_alive;
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Particles<D, S>::ReshuffleDead() {
+    using KeyType                         = array_t<bool*>;
+    using BinOp                           = BinBool<KeyType>;
+    auto                            slice = std::pair<std::size_t, std::size_t>(0, npart());
+    BinOp                           bin_op;
+    Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(is_dead, slice), bin_op);
+    Sorter.create_permute_vector();
+    Sorter.sort(Kokkos::subview(is_dead, slice));
+    Sorter.sort(Kokkos::subview(i1, slice));
+    Sorter.sort(Kokkos::subview(dx1, slice));
+    if constexpr (D == Dim2 || D == Dim3) {
+      Sorter.sort(Kokkos::subview(i2, slice));
+      Sorter.sort(Kokkos::subview(dx2, slice));
+    }
+    if constexpr (D == Dim3) {
+      Sorter.sort(Kokkos::subview(i3, slice));
+      Sorter.sort(Kokkos::subview(dx3, slice));
+    }
+    Sorter.sort(Kokkos::subview(ux1, slice));
+    Sorter.sort(Kokkos::subview(ux2, slice));
+    Sorter.sort(Kokkos::subview(ux3, slice));
+#ifndef MINKOWSKI_METRIC
+    if constexpr (D == Dim2) {
+      Sorter.sort(Kokkos::subview(phi, slice));
+    }
+#endif
+    if constexpr (S == TypeGRPIC) {
+      Sorter.sort(Kokkos::subview(i1_prev, slice));
+      Sorter.sort(Kokkos::subview(dx1_prev, slice));
+      if constexpr (D == Dim2 || D == Dim3) {
+        Sorter.sort(Kokkos::subview(i2_prev, slice));
+        Sorter.sort(Kokkos::subview(dx2_prev, slice));
+      }
+      if constexpr (D == Dim3) {
+        Sorter.sort(Kokkos::subview(i3_prev, slice));
+        Sorter.sort(Kokkos::subview(dx3_prev, slice));
+      }
+    }
+    //  !TODO: sort weights
   }
 
 }    // namespace ntt
