@@ -257,9 +257,13 @@ namespace ntt {
     }
   }
   template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::RemoveDeadParticles() {
+  void Meshblock<D, S>::RemoveDeadParticles(const float& max_dead_frac) {
     for (auto& species : particles) {
-      species.RemoveDead();
+      auto npart_alive = species.CountLiving();
+      if ((species.npart() > 0) && ((float)(npart_alive / species.npart()) >= max_dead_frac)) {
+        species.ReshuffleDead();
+        species.setNpart(npart_alive);
+      }
     }
   }
 }    // namespace ntt

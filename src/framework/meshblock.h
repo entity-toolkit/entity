@@ -354,8 +354,10 @@ namespace ntt {
 
     /**
      * @brief Remove dead particles.
+     * @param max_dead_frac Maximum fraction of dead particles allowed ...
+     * ... w.r.t. the living ones (npart).
      */
-    void RemoveDeadParticles();
+    void RemoveDeadParticles(const float&);
   };
 
 }    // namespace ntt
