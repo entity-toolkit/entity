@@ -110,13 +110,26 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
+  namespace options {
+    const std::vector<std::string> pushers    = { "Boris", "photon" };
+    const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
+    const std::vector<std::string> fields
+      = { "Ex",     "Ey",     "Ez",     "Bx",           "By",          "Bz",        "Er",
+          "Etheta", "Ephi",   "Br",     "Btheta",       "Bphi",        "Dr",        "Dtheta",
+          "Dphi",   "Hr",     "Htheta", "Hphi",         "Jx",          "Jy",        "Jz",
+          "Jr",     "Jtheta", "Jphi",   "mass_density", "num_density", "ch_density" };
+
+    const std::vector<std::string> outputs = { "disabled", "HDF5" };
+  }    // namespace options
+
   namespace defaults {
     constexpr std::string_view input_filename   = "input";
     constexpr std::string_view output_path      = "output";
 
     const std::string          title            = "PIC_Sim";
     const int                  n_species        = 0;
-    const std::string          pusher           = "Boris";
+    const std::string          em_pusher        = "Boris";
+    const std::string          ph_pusher        = "photon";
     const std::string          metric           = "minkowski";
 
     const real_t               runtime          = 1e10;
@@ -126,18 +139,11 @@ namespace ntt {
     const unsigned short       current_filters  = 0;
 
     const int                  shuffle_interval = 0;
-    const float                max_dead_frac    = 0.0f;
+    const double               max_dead_frac    = 0.0;
 
-    const std::string          output_format    = "disabled";
+    const std::string          output_format    = options::outputs[0];
     const int                  output_interval  = 1;
   }    // namespace defaults
-
-  namespace options {
-    const std::vector<std::string> pushers = { "BORIS", "PHOTON" };
-    const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
-    // const std::vector<
-
-  }
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */

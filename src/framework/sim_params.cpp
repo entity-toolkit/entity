@@ -5,6 +5,7 @@
 #include "input.h"
 #include "particles.h"
 #include "qmath.h"
+#include "utils.h"
 
 #include <toml/toml.hpp>
 
@@ -16,32 +17,29 @@
 namespace ntt {
 
   SimulationParams::SimulationParams(const toml::value& inputdata, Dimension dim) {
-    m_inputdata = inputdata;
-    m_title = readFromInput<std::string>(m_inputdata, "simulation", "title", defaults::title);
-    m_total_runtime
-      = readFromInput<real_t>(m_inputdata, "simulation", "runtime", defaults::runtime);
-    m_correction
-      = readFromInput<real_t>(m_inputdata, "algorithm", "correction", defaults::correction);
-    m_enable_fieldsolver
-      = readFromInput<bool>(m_inputdata, "algorithm", "fieldsolver_ON", true);
-    m_enable_deposit = readFromInput<bool>(m_inputdata, "algorithm", "deposit_ON", true);
+    m_inputdata          = inputdata;
+    m_title              = get<std::string>("simulation", "title", defaults::title);
+    m_total_runtime      = get<real_t>("simulation", "runtime", defaults::runtime);
+    m_correction         = get<real_t>("algorithm", "correction", defaults::correction);
+    m_enable_fieldsolver = get<bool>("algorithm", "fieldsolver_ON", true);
+    m_enable_deposit     = get<bool>("algorithm", "deposit_ON", true);
 
     // reading particle parameters
-    auto nspec
-      = readFromInput<int>(m_inputdata, "particles", "n_species", defaults::n_species);
+    auto nspec           = get<int>("particles", "n_species", defaults::n_species);
     for (int i { 0 }; i < nspec; ++i) {
-      auto label = readFromInput<std::string>(
-        m_inputdata, "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
-      auto mass
-        = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "mass");
-      auto charge
-        = readFromInput<float>(m_inputdata, "species_" + std::to_string(i + 1), "charge");
-      auto maxnpart = (std::size_t)(
-        readFromInput<double>(m_inputdata, "species_" + std::to_string(i + 1), "maxnpart"));
-      auto pusher_str = readFromInput<std::string>(
-        m_inputdata, "species_" + std::to_string(i + 1), "pusher", defaults::pusher);
+      auto label = get<std::string>(
+        "species_" + std::to_string(i + 1), "label", "s" + std::to_string(i + 1));
+      auto mass   = get<float>("species_" + std::to_string(i + 1), "mass");
+      auto charge = get<float>("species_" + std::to_string(i + 1), "charge");
+      auto maxnpart
+        = (std::size_t)(get<double>("species_" + std::to_string(i + 1), "maxnpart"));
+      auto pusher_str = get<std::string>(
+        "species_" + std::to_string(i + 1),
+        "pusher",
+        (mass == 0.0) && (charge == 0.0) ? defaults::ph_pusher : defaults::em_pusher,
+        options::pushers);
       ParticlePusher pusher { ParticlePusher::UNDEFINED };
-      if ((mass == 0.0) && (charge == 0.0)) {
+      if (pusher_str == "photon") {
         pusher = ParticlePusher::PHOTON;
       } else if (pusher_str == "Vay") {
         pusher = ParticlePusher::VAY;
@@ -50,10 +48,8 @@ namespace ntt {
       }
       m_species.emplace_back(ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher));
     }
-    m_shuffle_interval = readFromInput<int>(
-      m_inputdata, "particles", "shuffle_step", defaults::shuffle_interval);
-    m_max_dead_frac = readFromInput<float>(
-      m_inputdata, "particles", "max_dead_frac", defaults::max_dead_frac);
+    m_shuffle_interval = get<int>("particles", "shuffle_step", defaults::shuffle_interval);
+    m_max_dead_frac    = get<double>("particles", "max_dead_frac", defaults::max_dead_frac);
 
 #ifdef MINKOWSKI_METRIC
     m_metric = "minkowski";
@@ -70,9 +66,8 @@ namespace ntt {
 #endif
 
     // domain size / resolution
-    m_resolution
-      = readFromInput<std::vector<unsigned int>>(m_inputdata, "domain", "resolution");
-    m_extent = readFromInput<std::vector<real_t>>(m_inputdata, "domain", "extent");
+    m_resolution = get<std::vector<unsigned int>>("domain", "resolution");
+    m_extent     = get<std::vector<real_t>>("domain", "extent");
     if (m_metric == "minkowski") {
       // minkowski
       NTTHostErrorIf((((short)(m_resolution.size()) < (short)(dim))
@@ -94,16 +89,15 @@ namespace ntt {
       NTTHostErrorIf((m_extent.size() < 2), "not enough values in `extent` input");
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
       if ((m_metric == "qspherical") || (m_metric == "qkerr_schild")) {
-        m_metric_parameters[0] = readFromInput<real_t>(inputdata, "domain", "qsph_r0");
-        m_metric_parameters[1] = readFromInput<real_t>(inputdata, "domain", "qsph_h");
+        m_metric_parameters[0] = get<real_t>("domain", "qsph_r0");
+        m_metric_parameters[1] = get<real_t>("domain", "qsph_h");
         NTTHostErrorIf((AlmostEqual(m_metric_parameters[1], ZERO)), "qsph_h must be non-zero");
       }
-      m_metric_parameters[2] = readFromInput<real_t>(inputdata, "domain", "sph_rabsorb");
-      m_metric_parameters[3]
-        = readFromInput<real_t>(inputdata, "domain", "absorb_coeff", (real_t)(1.0));
+      m_metric_parameters[2] = get<real_t>("domain", "sph_rabsorb");
+      m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));
 
       if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
-        real_t spin { readFromInput<real_t>(inputdata, "domain", "a") };
+        real_t spin { get<real_t>("domain", "a") };
         real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;
         m_extent[0] *= rh;
@@ -120,10 +114,10 @@ namespace ntt {
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
     m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
-    auto boundaries
-      = readFromInput<std::vector<std::string>>(m_inputdata, "domain", "boundaries");
+    auto  boundaries = get<std::vector<std::string>>("domain", "boundaries");
     short b { 0 };
     for (auto& bc : boundaries) {
+      TestValidOption(bc, options::boundaries);
       if (bc == "PERIODIC") {
         m_boundaries.push_back(BoundaryCondition::PERIODIC);
       } else if (bc == "ABSORB") {
@@ -142,23 +136,26 @@ namespace ntt {
     }
 
     // plasma params
-    m_ppc0       = readFromInput<real_t>(m_inputdata, "units", "ppc0");
-    m_larmor0    = readFromInput<real_t>(m_inputdata, "units", "larmor0");
-    m_skindepth0 = readFromInput<real_t>(m_inputdata, "units", "skindepth0");
+    m_ppc0       = get<real_t>("units", "ppc0");
+    m_larmor0    = get<real_t>("units", "larmor0");
+    m_skindepth0 = get<real_t>("units", "skindepth0");
     m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
 
-    m_cfl        = readFromInput<real_t>(m_inputdata, "algorithm", "CFL", defaults::cfl);
+    m_cfl        = get<real_t>("algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
 
     // number of current filter passes
-    m_current_filters = readFromInput<unsigned short>(
-      m_inputdata, "algorithm", "current_filters", defaults::current_filters);
+    m_current_filters
+      = get<unsigned short>("algorithm", "current_filters", defaults::current_filters);
 
     // output params
     m_output_format
-      = readFromInput<std::string>(m_inputdata, "output", "format", defaults::output_format);
-    m_output_interval
-      = readFromInput<int>(m_inputdata, "output", "interval", defaults::output_interval);
+      = get<std::string>("output", "format", defaults::output_format, options::outputs);
+    m_output_interval = get<int>("output", "interval", defaults::output_interval);
+    m_output_fields   = get<std::vector<std::string>>("output", "fields");
+    for (auto& field : m_output_fields) {
+      TestValidOption(field, options::fields);
+    }
   }
 
   template <typename T>
@@ -171,6 +168,25 @@ namespace ntt {
   template <typename T>
   auto SimulationParams::get<T>(const std::string& block, const std::string& key) const -> T {
     return readFromInput<T>(m_inputdata, block, key);
+  }
+
+  template <typename T>
+  auto SimulationParams::get(const std::string&    block,
+                             const std::string&    key,
+                             const std::vector<T>& valid) const -> T {
+    auto val = readFromInput<T>(m_inputdata, block, key);
+    TestValidOption(val, valid);
+    return val;
+  }
+
+  template <typename T>
+  auto SimulationParams::get(const std::string&    block,
+                             const std::string&    key,
+                             const T&              defval,
+                             const std::vector<T>& valid) const -> T {
+    auto val = readFromInput<T>(m_inputdata, block, key, defval);
+    TestValidOption(val, valid);
+    return val;
   }
 
 }    // namespace ntt
