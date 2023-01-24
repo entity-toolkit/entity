@@ -41,10 +41,12 @@ namespace ntt {
   void PIC<D>::StepForward() {
     timer::Timers timers(
       { "Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User", "Output" });
-    auto  params = *(this->params());
-    auto& mblock = this->meshblock;
-    auto& wrtr   = this->writer;
-    auto& pgen   = this->problem_generator;
+    auto                params         = *(this->params());
+    auto&               mblock         = this->meshblock;
+    auto&               wrtr           = this->writer;
+    auto&               pgen           = this->problem_generator;
+
+    static std::vector<double> dead_fractions = {};
 
     if (params.fieldsolverEnabled()) {
       timers.start("Field_Solver");
@@ -90,7 +92,7 @@ namespace ntt {
       timers.start("Prtl_BC");
       ParticlesExchange();
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
-        mblock.RemoveDeadParticles(params.maxDeadFraction());
+        dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }
       timers.stop("Prtl_BC");
     }
@@ -134,7 +136,7 @@ namespace ntt {
 
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
-    this->PrintDiagnostics();
+    this->PrintDiagnostics(std::cout, dead_fractions);
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

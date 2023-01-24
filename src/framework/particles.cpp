@@ -245,7 +245,7 @@ namespace ntt {
     auto        is_dead_    = this->is_dead;
     Kokkos::parallel_reduce(
       "RemoveDead",
-      rangeActiveParticles(),
+      npart(),
       Lambda(index_t & p, std::size_t & cnt) {
         if (!is_dead_(p)) {
           cnt++;

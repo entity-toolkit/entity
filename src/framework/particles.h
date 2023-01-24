@@ -170,8 +170,6 @@ namespace ntt {
     array_mirror_t<real_t*> phi_h;
     // host mirrors for is_dead
     array_mirror_t<bool*>   is_dead_h;
-    // host mirrors for is_dead
-    array_mirror_t<bool*>   is_dead_h;
 
     /**
      * @brief Constructor for the particle container.

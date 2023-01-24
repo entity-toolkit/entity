@@ -356,8 +356,9 @@ namespace ntt {
      * @brief Remove dead particles.
      * @param max_dead_frac Maximum fraction of dead particles allowed ...
      * ... w.r.t. the living ones (npart).
+     * @return Vector of the fraction of dead particles pre deletion.
      */
-    void RemoveDeadParticles(const float&);
+    auto RemoveDeadParticles(const float&) -> std::vector<double>;
   };
 
 }    // namespace ntt

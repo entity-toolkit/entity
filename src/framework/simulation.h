@@ -90,7 +90,8 @@ namespace ntt {
      * @brief Diagnostic logging.
      * @param os output stream.
      */
-    void               PrintDiagnostics(std::ostream& os = std::cout);
+    void               PrintDiagnostics(std::ostream&              os        = std::cout,
+                                        const std::vector<double>& fractions = {});
 
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */
