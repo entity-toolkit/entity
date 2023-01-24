@@ -25,7 +25,7 @@
 namespace ntt {
 
 #ifdef MINKOWSKI_METRIC
-  template <>
+  template <Dimension D>
   void PIC<D>::Ampere(const real_t& fraction) {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());

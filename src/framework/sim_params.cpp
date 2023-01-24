@@ -48,7 +48,7 @@ namespace ntt {
       } else if (pusher_str == "Boris") {
         pusher = ParticlePusher::BORIS;
       }
-      m_species.emplace_back(ParticleSpecies(label, mass, charge, maxnpart, pusher));
+      m_species.emplace_back(ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher));
     }
 
 #ifdef MINKOWSKI_METRIC

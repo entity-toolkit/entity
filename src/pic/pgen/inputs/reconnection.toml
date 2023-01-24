@@ -1,6 +1,6 @@
 [simulation]
 title   = "Reconnection"
-runtime = 10000.0
+runtime = 2.0
 
 [domain]
 resolution = [1600, 2048]
@@ -44,5 +44,5 @@ fields        = ["By", "density"]
 fields_stride = 4
 
 [output]
-format   = "disabled"
-interval = 100
+format   = "HDF5"
+interval = 10

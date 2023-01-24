@@ -26,7 +26,8 @@ namespace ntt {
   class Pusher_kernel {
     Meshblock<D, PICEngine> m_mblock;
     Particles<D, PICEngine> m_particles;
-    real_t                  m_coeff, m_dt;
+    const real_t            m_coeff, m_dt;
+    const int               m_ni2;
 
   public:
     /**
@@ -40,7 +41,11 @@ namespace ntt {
                   const Particles<D, PICEngine>& particles,
                   const real_t&                  coeff,
                   const real_t&                  dt)
-      : m_mblock(mblock), m_particles(particles), m_coeff(coeff), m_dt(dt) {}
+      : m_mblock(mblock),
+        m_particles(particles),
+        m_coeff(coeff),
+        m_dt(dt),
+        m_ni2 { mblock.Ni2() } {}
     /**
      * @brief Loop over all active particles of the given species and call the appropriate
      * pusher.
@@ -87,8 +92,10 @@ namespace ntt {
         vec_t<Dim3> v;
         m_mblock.metric.v_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
-        // avoid problem for a particle right at the top axis
+        // avoid problem for a particle right at the axes
         if ((m_particles.i2(p) == 0) && AlmostEqual(m_particles.dx2(p), 0.0f)) {
+          v[2] = ZERO;
+        } else if ((m_particles.i2(p) == m_ni2 - 1) && AlmostEqual(m_particles.dx2(p), 1.0f)) {
           v[2] = ZERO;
         }
         v[0] *= inv_energy;
