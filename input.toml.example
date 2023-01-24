@@ -33,7 +33,7 @@ label           = <string>
 mass            = <float>
 charge          = <float>
 maxnpart        = <int>
-pusher          = <string: { "BORIS" }>
+pusher          = <string: { "Boris" }>
 
 [problem]
 ...

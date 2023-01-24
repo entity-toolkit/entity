@@ -257,7 +257,7 @@ namespace ntt {
     }
   }
   template <Dimension D, SimulationEngine S>
-  auto Meshblock<D, S>::RemoveDeadParticles(const float& max_dead_frac)
+  auto Meshblock<D, S>::RemoveDeadParticles(const double& max_dead_frac)
     -> std::vector<double> {
     std::vector<double> dead_fractions = {};
     for (auto& species : particles) {

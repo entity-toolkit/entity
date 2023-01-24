@@ -27,28 +27,28 @@ label    = "e-_p"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_2]
 label    = "e+_p"
 mass     = 25.0
 charge   = 1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_3]
 label    = "e-_b"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_4]
 label    = "e+_b"
 mass     = 50.0
 charge   = 1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [problem]
 udrift_1 = -10.0

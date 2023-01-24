@@ -358,7 +358,7 @@ namespace ntt {
      * ... w.r.t. the living ones (npart).
      * @return Vector of the fraction of dead particles pre deletion.
      */
-    auto RemoveDeadParticles(const float&) -> std::vector<double>;
+    auto RemoveDeadParticles(const double&) -> std::vector<double>;
   };
 
 }    // namespace ntt

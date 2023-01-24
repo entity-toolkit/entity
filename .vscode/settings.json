@@ -116,6 +116,7 @@
   },
   "editor.tokenColorCustomizations": {
     "textMateRules": [],
+    "comments": ""
   },
   "C_Cpp.errorSquiggles": "disabled",
   "cmake.buildDirectory": "${workspaceFolder}/build",
