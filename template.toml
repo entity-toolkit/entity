@@ -25,6 +25,8 @@ skindepth0      = <float>
 
 [particles]
 n_species       = <int>
+shuffle_step    = <int>
+max_dead_frac   = <float>
 
 [species_<INT>]
 label           = <string>
