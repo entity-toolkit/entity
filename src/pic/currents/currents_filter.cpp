@@ -53,7 +53,7 @@ namespace ntt {
                                         { mblock.i1_max(), mblock.i2_max() + 1 });
       }
 #endif
-      Kokkos::parallel_for("filter_pass", range, CurrentsFilter_kernel<D>(mblock));
+      Kokkos::parallel_for("CurrentsFilter", range, CurrentsFilter_kernel<D>(mblock));
     }
   }
 }    // namespace ntt

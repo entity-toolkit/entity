@@ -39,7 +39,7 @@ pusher   = "BORIS"
 [problem]
 
 [visualization]
-fields        = ["density"]
+fields        = ["mass_density"]
 fields_stride = 1
 
 # [output]

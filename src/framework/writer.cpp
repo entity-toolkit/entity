@@ -111,7 +111,7 @@ namespace ntt {
     for (auto& var : { "ex1", "ex2", "ex3", "bx1", "bx2", "bx3" }) {
       m_vars_r.emplace(var, m_io.DefineVariable<real_t>(var, {}, {}, count));
     }
-    m_vars_r.emplace("density", m_io.DefineVariable<real_t>("density", {}, {}, count));
+    m_vars_r.emplace("mass_density", m_io.DefineVariable<real_t>("mass_density", {}, {}, count));
   }
 
   template <Dimension D, SimulationEngine S>
@@ -146,7 +146,7 @@ namespace ntt {
         m_writer.Put<real_t>(m_vars_r[var_st],
                              Kokkos::subview(mblock.bckp_h, slice_i1, (int)var));
       }
-      m_writer.Put<real_t>(m_vars_r["density"],
+      m_writer.Put<real_t>(m_vars_r["mass_density"],
                            Kokkos::subview(mblock.buff_h, slice_i1, (int)(fld::dens)));
     } else if constexpr (D == Dim2) {
       for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
@@ -154,7 +154,7 @@ namespace ntt {
                              Kokkos::subview(mblock.bckp_h, slice_i1, slice_i2, (int)var));
       }
       m_writer.Put<real_t>(
-        m_vars_r["density"],
+        m_vars_r["mass_density"],
         Kokkos::subview(mblock.buff_h, slice_i1, slice_i2, (int)(fld::dens)));
     } else if constexpr (D == Dim3) {
       for (auto&& [var_st, var] : c9::zip(field_names, fields)) {
@@ -163,7 +163,7 @@ namespace ntt {
           Kokkos::subview(mblock.bckp_h, slice_i1, slice_i2, slice_i3, (int)var));
       }
       m_writer.Put<real_t>(
-        m_vars_r["density"],
+        m_vars_r["mass_density"],
         Kokkos::subview(mblock.buff_h, slice_i1, slice_i2, slice_i3, (int)(fld::dens)));
     }
     m_writer.EndStep();

@@ -51,7 +51,7 @@ maxnpart = 1e2
 
 [visualization]
 fields = [
-"density",
+"mass_density",
 "Er",
 "Etheta",
 "Ephi",

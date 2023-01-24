@@ -57,7 +57,7 @@ udrift_3 = 10.0
 udrift_4 = 10.0
 
 [visualization]
-fields        = ["Bx", "By", "density"]
+fields        = ["Bx", "By", "mass_density"]
 fields_stride = 4
 
 [output]

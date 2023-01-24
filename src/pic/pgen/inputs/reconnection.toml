@@ -40,7 +40,7 @@ pusher   = "BORIS"
 cs_width = 0.000125
 
 [visualization]
-fields        = ["By", "density"]
+fields        = ["By", "mass_density"]
 fields_stride = 4
 
 [output]

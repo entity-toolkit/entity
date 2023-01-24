@@ -14,7 +14,7 @@ namespace ntt {
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
-          "density", species.rangeActiveParticles(), Lambda(index_t p) {
+          "ComputeDensity_1D", species.rangeActiveParticles(), Lambda(index_t p) {
             auto i1          = species.i1(p);
             auto dens_access = scatter_buff.access();
             for (int i1_ = i1 - smooth + N_GHOSTS; i1_ <= i1 + smooth + N_GHOSTS; ++i1_) {
@@ -38,7 +38,7 @@ namespace ntt {
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
-          "density", species.rangeActiveParticles(), Lambda(index_t p) {
+          "ComputeDensity_2D", species.rangeActiveParticles(), Lambda(index_t p) {
             auto i1          = species.i1(p);
             auto i2          = species.i2(p);
             auto dens_access = scatter_buff.access();
@@ -67,7 +67,7 @@ namespace ntt {
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
-          "density", species.rangeActiveParticles(), Lambda(index_t p) {
+          "ComputeDensity_3D", species.rangeActiveParticles(), Lambda(index_t p) {
             auto i1          = species.i1(p);
             auto i2          = species.i2(p);
             auto i3          = species.i3(p);
