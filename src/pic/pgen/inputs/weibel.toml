@@ -1,5 +1,5 @@
 [simulation]
-title   = "Weibel-sprec"
+title   = "Weibel"
 runtime = 100.0
 
 [domain]
@@ -15,7 +15,7 @@ deposit_ON      = true
 current_filters = 25
 
 [units]
-ppc0       = 32.0
+ppc0       = 16.0
 larmor0    = 1.0
 skindepth0 = 1.0
 
@@ -51,15 +51,15 @@ maxnpart = 1e8
 pusher   = "BORIS"
 
 [problem]
-udrift_1 = -10.0
-udrift_2 = -10.0
-udrift_3 = 10.0
-udrift_4 = 10.0
+drift_p  = 10.0
+drift_b  = 10.0
+temperature_p = 0.1
+temperature_b = 0.1
 
 [visualization]
 fields        = ["Bx", "By", "mass_density"]
 fields_stride = 4
 
 [output]
-format   = "HDF5"
+format   = "disabled"
 interval = 100
