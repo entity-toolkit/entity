@@ -13,6 +13,8 @@ namespace ntt {
 
   /**
    * @brief To keep track what fields are stored in buffer arrays we use an enum indicator.
+   * Nothing really depends on the actual values, they are purely to help ...
+   * ... guide the development, and make catching bugs easier.
    */
   enum class Content : int {
     empty = 0,
@@ -45,18 +47,49 @@ namespace ntt {
     bx2_cov,
     bx3_cov,
 
+    jx1_hat,
+    jx2_hat,
+    jx3_hat,
+    jx1_hat_int,
+    jx2_hat_int,
+    jx3_hat_int,
+
+    jx1_cntrv,
+    jx2_cntrv,
+    jx3_cntrv,
+
+    jx1_cov,
+    jx2_cov,
+    jx3_cov,
+
     jx1_curly,
     jx2_curly,
     jx3_curly,
-
-    jx1_curly_backup,
-    jx2_curly_backup,
-    jx3_curly_backup,
 
     mass_density,
     ch_density,
     num_density
   };
+
+  /**
+   * @brief Assert that the content of a vector of Content is empty.
+   */
+  void AssertEmptyContent(const std::vector<Content>&);
+
+  /**
+   * @brief Assert particular content of a vector of Content.
+   */
+  void AssertContent(const std::vector<Content>&, const std::vector<Content>&);
+
+  /**
+   * @brief Impose particular Content.
+   */
+  void ImposeContent(std::vector<Content>&, const std::vector<Content>&);
+
+  /**
+   * @brief Impose empty Content.
+   */
+  void ImposeEmptyContent(std::vector<Content>&);
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.

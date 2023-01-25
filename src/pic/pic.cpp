@@ -35,13 +35,14 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::InitialStep() {
-    auto& mblock         = this->meshblock;
-    mblock.em_content[0] = Content::ex1_cntrv;
-    mblock.em_content[1] = Content::ex2_cntrv;
-    mblock.em_content[2] = Content::ex3_cntrv;
-    mblock.em_content[3] = Content::bx1_cntrv;
-    mblock.em_content[4] = Content::bx2_cntrv;
-    mblock.em_content[5] = Content::bx3_cntrv;
+    auto& mblock = this->meshblock;
+    ImposeContent(mblock.em_content,
+                  { Content::ex1_cntrv,
+                    Content::ex2_cntrv,
+                    Content::ex3_cntrv,
+                    Content::bx1_cntrv,
+                    Content::bx2_cntrv,
+                    Content::bx3_cntrv });
   }
 
   template <Dimension D>
@@ -87,6 +88,7 @@ namespace ntt {
       // !TODO: this needs to move (or become optional)
       this->ComputeDensity(0);
       pgen.UserDriveParticles(this->m_time, params, mblock);
+      ImposeEmptyContent(mblock.buff_content);
       timers.stop("UserSpecific");
 
       timers.start("ParticleBoundaries");
@@ -146,9 +148,9 @@ namespace ntt {
     if ((params.outputFormat() != "disabled")
         && (this->m_tstep % params.outputInterval() == 0)) {
       WaitAndSynchronize();
+      InterpolateAndConvertFieldsToHat();
       ComputeDensity();
       this->SynchronizeHostDevice();
-      InterpolateAndConvertFieldsToHat();
       wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
     }
     timers.stop("Output");
@@ -156,6 +158,10 @@ namespace ntt {
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
     this->PrintDiagnostics(std::cout, dead_fractions);
+
+    ImposeEmptyContent(mblock.buff_content);
+    ImposeEmptyContent(mblock.cur_content);
+    ImposeEmptyContent(mblock.bckp_content);
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

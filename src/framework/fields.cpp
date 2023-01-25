@@ -7,6 +7,32 @@
 #include <vector>
 
 namespace ntt {
+  void AssertEmptyContent(const std::vector<Content>& content) {
+    for (auto c : content) {
+      NTTHostErrorIf(c != Content::empty, "Content is not empty.");
+    }
+  }
+
+  void AssertContent(const std::vector<Content>& content, const std::vector<Content>& target) {
+    NTTHostErrorIf(content.size() != target.size(), "Content size mismatch.");
+    for (unsigned int i = 0; i < content.size(); ++i) {
+      NTTHostErrorIf(content[i] != target[i], "Content mismatch.");
+    }
+  }
+
+  void ImposeContent(std::vector<Content>& content, const std::vector<Content>& target) {
+    NTTHostErrorIf(content.size() != target.size(), "Content size mismatch.");
+    for (unsigned int i = 0; i < content.size(); ++i) {
+      content[i] = target[i];
+    }
+  }
+
+  void ImposeEmptyContent(std::vector<Content>& content) {
+    for (auto& c : content) {
+      c = Content::empty;
+    }
+  }
+
   using resolution_t = std::vector<unsigned int>;
 
 #ifdef PIC_ENGINE

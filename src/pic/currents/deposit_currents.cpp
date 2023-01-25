@@ -21,8 +21,11 @@
 namespace ntt {
   template <Dimension D>
   void PIC<D>::CurrentsDeposit() {
-    auto& mblock      = this->meshblock;
-    auto  scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
+    auto& mblock = this->meshblock;
+
+    AssertEmptyContent(mblock.cur_content);
+
+    auto scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
       if (species.charge() != 0.0) {
         const real_t              dt { mblock.timestep() };
@@ -32,9 +35,10 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
-    mblock.cur_content[0] = Content::jx1_curly;
-    mblock.cur_content[1] = Content::jx2_curly;
-    mblock.cur_content[2] = Content::jx3_curly;
+
+    ImposeContent(mblock.cur_content,
+                  { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly });
+
     PLOGD << "... ... currents filter substep finished";
   }
 }    // namespace ntt

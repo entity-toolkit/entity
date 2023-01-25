@@ -11,6 +11,8 @@ namespace ntt {
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
     real_t contrib      = (1.0 / params.ppc0()) / (2.0 * smooth + 1.0);
+    NTTHostErrorIf(mblock.buff_content[fld::dens] != Content::empty,
+                   "ComputeDensity: buffer is not empty");
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
@@ -36,6 +38,8 @@ namespace ntt {
     real_t contrib      = (1.0 / params.ppc0()) / SQR(2.0 * smooth + 1.0);
     auto   ni1          = mblock.Ni1();
     auto   ni2          = mblock.Ni2();
+    NTTHostErrorIf(mblock.buff_content[fld::dens] != Content::empty,
+                   "ComputeDensity: buffer is not empty");
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(
@@ -66,6 +70,8 @@ namespace ntt {
     Kokkos::deep_copy(mblock.buff, ZERO);
     auto   scatter_buff = Kokkos::Experimental::create_scatter_view(mblock.buff);
     real_t contrib      = (1.0 / params.ppc0()) / CUBE(2.0 * smooth + 1.0);
+    NTTHostErrorIf(mblock.buff_content[fld::dens] != Content::empty,
+                   "ComputeDensity: buffer is not empty");
     for (auto& species : mblock.particles) {
       if (species.mass() != 0.0) {
         Kokkos::parallel_for(

@@ -31,11 +31,12 @@ namespace ntt {
     auto  params = *(this->params());
     for (unsigned short i = 0; i < params.currentFilters(); ++i) {
       CurrentsExchange();
+
+      AssertEmptyContent(mblock.buff_content);
       Kokkos::deep_copy(mblock.buff, mblock.cur);
-      mblock.buff_content[0] = Content::jx1_curly_backup;
-      mblock.buff_content[1] = Content::jx2_curly_backup;
-      mblock.buff_content[2] = Content::jx3_curly_backup;
-      range_t<D> range       = mblock.rangeActiveCells();
+      ImposeContent(mblock.buff_content, mblock.cur_content);
+
+      range_t<D> range = mblock.rangeActiveCells();
 #ifndef MINKOWSKI_METRIC
       /**
        *    . . . . . . . . . . . . .
@@ -58,6 +59,8 @@ namespace ntt {
       }
 #endif
       Kokkos::parallel_for("CurrentsFilter", range, CurrentsFilter_kernel<D>(mblock));
+
+      ImposeEmptyContent(mblock.buff_content);
     }
   }
 }    // namespace ntt

@@ -263,7 +263,6 @@ namespace ntt {
     for (auto& species : particles) {
       auto npart_alive   = species.CountLiving();
       auto dead_fraction = 1.0 - (double)(npart_alive) / (double)(species.npart());
-      printf("alive_fraction: %f\n", dead_fraction);
       if ((species.npart() > 0) && dead_fraction >= (double)max_dead_frac) {
         species.ReshuffleDead();
         species.setNpart(npart_alive);
