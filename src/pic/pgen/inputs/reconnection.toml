@@ -44,5 +44,6 @@ fields        = ["By", "mass_density"]
 fields_stride = 4
 
 [output]
+fields   = ["By", "mass_density"]
 format   = "HDF5"
 interval = 10
