@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "pic.h"
 #include "simulation.h"
 
@@ -61,6 +62,7 @@ namespace ntt {
   void PIC<D>::ResetFields() {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.em, ZERO);
+    mblock.em_content = std::vector<Content>(6, Content::empty);
   }
 
   /**
@@ -71,7 +73,9 @@ namespace ntt {
   void PIC<D>::ResetCurrents() {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.buff, ZERO);
+    mblock.buff_content = std::vector<Content>(3, Content::empty);
     Kokkos::deep_copy(mblock.cur, ZERO);
+    mblock.cur_content = std::vector<Content>(3, Content::empty);
   }
 }    // namespace ntt
 

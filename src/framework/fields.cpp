@@ -55,9 +55,13 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Fields<D, S>::SynchronizeHostDevice() {
     Kokkos::deep_copy(em_h, em);
+    em_h_content = em_content;
     Kokkos::deep_copy(cur_h, cur);
+    cur_h_content = cur_content;
     Kokkos::deep_copy(buff_h, buff);
+    buff_h_content = buff_content;
     Kokkos::deep_copy(bckp_h, bckp);
+    bckp_h_content = bckp_content;
   }
 
 #elif defined(GRPIC_ENGINE)

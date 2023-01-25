@@ -21,7 +21,7 @@ namespace ntt {
      */
     PIC(const toml::value& inputdata) : Simulation<D, PICEngine>(inputdata) {}
     PIC(const PIC<D>&) = delete;
-    ~PIC() = default;
+    ~PIC()             = default;
 
     /**
      * @brief Advance the simulation forward for one timestep.
@@ -39,9 +39,9 @@ namespace ntt {
     void Run();
 
     /**
-     * @brief Dummy function to match with GRPIC
+     * @brief Initial step performed before the main loop.
      */
-    void InitialStep() {}
+    void InitialStep();
 
     /* ---------------------------------- Reset --------------------------------- */
     /**

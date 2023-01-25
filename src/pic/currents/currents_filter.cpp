@@ -16,6 +16,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "pic.h"
 
 namespace ntt {
@@ -31,7 +32,10 @@ namespace ntt {
     for (unsigned short i = 0; i < params.currentFilters(); ++i) {
       CurrentsExchange();
       Kokkos::deep_copy(mblock.buff, mblock.cur);
-      range_t<D> range = mblock.rangeActiveCells();
+      mblock.buff_content[0] = Content::jx1_curly_backup;
+      mblock.buff_content[1] = Content::jx2_curly_backup;
+      mblock.buff_content[2] = Content::jx3_curly_backup;
+      range_t<D> range       = mblock.rangeActiveCells();
 #ifndef MINKOWSKI_METRIC
       /**
        *    . . . . . . . . . . . . .

@@ -11,6 +11,14 @@ namespace ntt {
     auto  ni1    = mblock.Ni1();
     auto  ni2    = mblock.Ni2();
     Kokkos::deep_copy(mblock.bckp, mblock.em);
+    mblock.bckp_content = mblock.em_content;
+    NTTHostErrorIf(mblock.em_content[0] != Content::ex1_cntrv
+                     || mblock.em_content[1] != Content::ex2_cntrv
+                     || mblock.em_content[2] != Content::ex3_cntrv
+                     || mblock.em_content[3] != Content::bx1_cntrv
+                     || mblock.em_content[4] != Content::bx2_cntrv
+                     || mblock.em_content[5] != Content::bx3_cntrv,
+                   "InterpolateAndConvertFieldsToHat: fields are not contravariant.");
     Kokkos::parallel_for(
       "int_and_conv", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
@@ -38,6 +46,12 @@ namespace ntt {
         mblock.bckp(i, j, em::bx2) = b_hat[1];
         mblock.bckp(i, j, em::bx3) = b_hat[2];
       });
+    mblock.bckp_content[0] = Content::ex1_hat_int;
+    mblock.bckp_content[1] = Content::ex2_hat_int;
+    mblock.bckp_content[2] = Content::ex3_hat_int;
+    mblock.bckp_content[3] = Content::bx1_hat_int;
+    mblock.bckp_content[4] = Content::bx2_hat_int;
+    mblock.bckp_content[5] = Content::bx3_hat_int;
   }
 
   template <>

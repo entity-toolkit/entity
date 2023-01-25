@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "sim_params.h"
 #include "timer.h"
 
@@ -11,6 +12,7 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::Run() {
+    // register the content of em fields
     Simulation<D, PICEngine>::Initialize();
     Simulation<D, PICEngine>::Verify();
     {
@@ -20,6 +22,7 @@ namespace ntt {
 
       ResetSimulation();
       Simulation<D, PICEngine>::PrintDetails();
+      InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
@@ -31,6 +34,17 @@ namespace ntt {
   }
 
   template <Dimension D>
+  void PIC<D>::InitialStep() {
+    auto& mblock         = this->meshblock;
+    mblock.em_content[0] = Content::ex1_cntrv;
+    mblock.em_content[1] = Content::ex2_cntrv;
+    mblock.em_content[2] = Content::ex3_cntrv;
+    mblock.em_content[3] = Content::bx1_cntrv;
+    mblock.em_content[4] = Content::bx2_cntrv;
+    mblock.em_content[5] = Content::bx3_cntrv;
+  }
+
+  template <Dimension D>
   void PIC<D>::Benchmark() {
     Faraday();
     Ampere();
@@ -39,88 +53,93 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepForward() {
-    timer::Timers timers(
-      { "Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User", "Output" });
-    auto                       params         = *(this->params());
-    auto&                      mblock         = this->meshblock;
-    auto&                      wrtr           = this->writer;
-    auto&                      pgen           = this->problem_generator;
+    auto                       params = *(this->params());
+    auto&                      mblock = this->meshblock;
+    auto&                      wrtr   = this->writer;
+    auto&                      pgen   = this->problem_generator;
 
+    timer::Timers              timers({ "FieldSolver",
+                                        "FieldBoundaries",
+                                        "CurrentDeposit",
+                                        "ParticlePusher",
+                                        "ParticleBoundaries",
+                                        "UserSpecific",
+                                        "Output" });
     static std::vector<double> dead_fractions = {};
 
     if (params.fieldsolverEnabled()) {
-      timers.start("Field_Solver");
+      timers.start("FieldSolver");
       Faraday();
-      timers.stop("Field_Solver");
+      timers.stop("FieldSolver");
 
-      timers.start("Field_BC");
+      timers.start("FieldBoundaries");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop("Field_BC");
+      timers.stop("FieldBoundaries");
     }
 
     {
-      timers.start("Prtl_Pusher");
+      timers.start("ParticlePusher");
       ParticlesPush();
-      timers.stop("Prtl_Pusher");
+      timers.stop("ParticlePusher");
 
-      timers.start("User");
+      timers.start("UserSpecific");
       // !TODO: this needs to move (or become optional)
       this->ComputeDensity(0);
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      timers.stop("User");
+      timers.stop("UserSpecific");
 
-      timers.start("Prtl_BC");
+      timers.start("ParticleBoundaries");
       ParticlesBoundaryConditions();
-      timers.stop("Prtl_BC");
+      timers.stop("ParticleBoundaries");
 
       if (params.depositEnabled()) {
-        timers.start("Curr_Deposit");
+        timers.start("CurrentDeposit");
         ResetCurrents();
         CurrentsDeposit();
 
-        timers.start("Field_BC");
+        timers.start("FieldBoundaries");
         CurrentsSynchronize();
         CurrentsExchange();
         CurrentsBoundaryConditions();
-        timers.stop("Field_BC");
+        timers.stop("FieldBoundaries");
 
         CurrentsFilter();
-        timers.stop("Curr_Deposit");
+        timers.stop("CurrentDeposit");
       }
 
-      timers.start("Prtl_BC");
+      timers.start("ParticleBoundaries");
       ParticlesExchange();
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }
-      timers.stop("Prtl_BC");
+      timers.stop("ParticleBoundaries");
     }
 
     if (params.fieldsolverEnabled()) {
-      timers.start("Field_Solver");
+      timers.start("FieldSolver");
       Faraday();
-      timers.stop("Field_Solver");
+      timers.stop("FieldSolver");
 
-      timers.start("Field_BC");
+      timers.start("FieldBoundaries");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop("Field_BC");
+      timers.stop("FieldBoundaries");
 
-      timers.start("Field_Solver");
+      timers.start("FieldSolver");
       Ampere();
-      timers.stop("Field_Solver");
+      timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
-        timers.start("Curr_Deposit");
+        timers.start("CurrentDeposit");
         AmpereCurrents();
-        timers.stop("Curr_Deposit");
+        timers.stop("CurrentDeposit");
       }
 
-      timers.start("Field_BC");
+      timers.start("FieldBoundaries");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop("Field_BC");
+      timers.stop("FieldBoundaries");
     }
 
     timers.start("Output");

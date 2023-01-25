@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "metric.h"
 #include "utils.h"
 

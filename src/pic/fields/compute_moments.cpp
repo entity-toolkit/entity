@@ -24,6 +24,7 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.buff, scatter_buff);
+    mblock.buff_content[fld::dens] = Content::num_density;
   }
 
   template <>
@@ -55,6 +56,7 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.buff, scatter_buff);
+    mblock.buff_content[fld::dens] = Content::num_density;
   }
 
   template <>
@@ -83,5 +85,6 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.buff, scatter_buff);
+    mblock.buff_content[fld::dens] = Content::num_density;
   }
 }    // namespace ntt

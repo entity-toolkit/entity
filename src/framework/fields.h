@@ -3,11 +3,60 @@
 
 #include "wrapper.h"
 
+#include <vector>
+
 namespace ntt {
   using resolution_t = std::vector<unsigned int>;
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
   enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
   enum fld { dens = 0 };
+
+  /**
+   * @brief To keep track what fields are stored in buffer arrays we use an enum indicator.
+   */
+  enum class Content : int {
+    empty = 0,
+
+    ex1_hat,
+    ex2_hat,
+    ex3_hat,
+    ex1_hat_int,
+    ex2_hat_int,
+    ex3_hat_int,
+
+    bx1_hat,
+    bx2_hat,
+    bx3_hat,
+    bx1_hat_int,
+    bx2_hat_int,
+    bx3_hat_int,
+
+    ex1_cntrv,
+    ex2_cntrv,
+    ex3_cntrv,
+    bx1_cntrv,
+    bx2_cntrv,
+    bx3_cntrv,
+
+    ex1_cov,
+    ex2_cov,
+    ex3_cov,
+    bx1_cov,
+    bx2_cov,
+    bx3_cov,
+
+    jx1_curly,
+    jx2_curly,
+    jx3_curly,
+
+    jx1_curly_backup,
+    jx2_curly_backup,
+    jx3_curly_backup,
+
+    mass_density,
+    ch_density,
+    num_density
+  };
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.
@@ -36,6 +85,8 @@ namespace ntt {
      */
     ndfield_t<D, 6>        em;
     ndfield_mirror_t<D, 6> em_h;
+    std::vector<Content>   em_content   = std::vector<Content>(6, Content::empty);
+    std::vector<Content>   em_h_content = std::vector<Content>(6, Content::empty);
     /**
      * Backup fields used for intermediate operations.
      *
@@ -45,6 +96,8 @@ namespace ntt {
      */
     ndfield_t<D, 6>        bckp;
     ndfield_mirror_t<D, 6> bckp_h;
+    std::vector<Content>   bckp_content   = std::vector<Content>(6, Content::empty);
+    std::vector<Content>   bckp_h_content = std::vector<Content>(6, Content::empty);
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
@@ -58,6 +111,8 @@ namespace ntt {
      */
     ndfield_t<D, 3>        cur;
     ndfield_mirror_t<D, 3> cur_h;
+    std::vector<Content>   cur_content   = std::vector<Content>(3, Content::empty);
+    std::vector<Content>   cur_h_content = std::vector<Content>(3, Content::empty);
     /**
      * Buffers fields used primarily to store currents at previous time step.
      *
@@ -67,6 +122,8 @@ namespace ntt {
      */
     ndfield_t<D, 3>        buff;
     ndfield_mirror_t<D, 3> buff_h;
+    std::vector<Content>   buff_content   = std::vector<Content>(3, Content::empty);
+    std::vector<Content>   buff_h_content = std::vector<Content>(3, Content::empty);
 #ifdef GRPIC_ENGINE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific

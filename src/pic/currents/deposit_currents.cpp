@@ -15,6 +15,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "pic.h"
 
 namespace ntt {
@@ -31,9 +32,11 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
+    mblock.cur_content[0] = Content::jx1_curly;
+    mblock.cur_content[1] = Content::jx2_curly;
+    mblock.cur_content[2] = Content::jx3_curly;
     PLOGD << "... ... currents filter substep finished";
   }
-
 }    // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::CurrentsDeposit();
