@@ -224,10 +224,11 @@ PrintChoices("OpenMP"
   0
   42
 )
+
 PrintChoices("C++ compiler"
   "CMAKE_CXX_COMPILER"
-  "${CMAKE_CXX_COMPILER}"
-  ${CMAKE_CXX_COMPILER}
+  "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
+  "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
   "N/A"
   "${White}"
   COMPILERS_REPORT
@@ -235,18 +236,24 @@ PrintChoices("C++ compiler"
   42
 )
 
-# check if empty
-if ("${CMAKE_CUDA_COMPILER}" STREQUAL "")
-  execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
-else()
-  set(CUDACOMP ${CMAKE_CUDA_COMPILER})
-endif()
-
 if(${Kokkos_ENABLE_CUDA})
+  # check if empty
+  if ("${CMAKE_CUDA_COMPILER}" STREQUAL "")
+    execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
+  else()
+    set(CUDACOMP ${CMAKE_CUDA_COMPILER})
+  endif()
+
+  message(STATUS "CUDA compiler: ${CUDACOMP}")
+  execute_process(COMMAND bash "-c" 
+                  "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'" 
+                  OUTPUT_VARIABLE CUDACOMP_VERSION 
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
   PrintChoices("CUDA compiler"
     "CMAKE_CUDA_COMPILER"
-    "${CUDACOMP}"
-    ${CUDACOMP}
+    "${CUDACOMP} v${CUDACOMP_VERSION}"
+    "${CUDACOMP} v${CUDACOMP_VERSION}"
     "N/A"
     "${White}"
     CUDA_COMPILER_REPORT
