@@ -4,23 +4,24 @@ repo_name: entity
 site_url: https://haykh.github.io/entity
 
 nav:
-  - 'Home': 'index.md'
-  - 'How-to':
-    - 'Compiling/running': 'howto/compile-run.md'
-    - 'Writing a problem generator': 'howto/pgen.md'
-    # - 'Writing an input file': 'howto/input.md'
-    # - 'Developing': ''
-    # - 'Testing': ''
-    - 'Documenting': 'howto/docs.md'
-  - 'How it works':
-    - '3+1 formulation': 'how/3p1.md'
-    - 'Units': 'how/units.md'
-    - 'PIC algorithm': 'how/pic.md'
-    - 'Coordinate systems': 'how/coords.md'
-  - 'Code guide': 'guide/guide.md'
-  - 'Fun': 
-    - 'Cubed sphere': 'fun/cubed_sphere.md'
-    - '"Reconnection"': 'fun/reconnection.md'
+  - "Home": "index.md"
+  - "How-to":
+      - "Compiling/running": "howto/compile-run.md"
+      - "Writing a problem generator": "howto/pgen.md"
+      # - 'Writing an input file': 'howto/input.md'
+      - "Understanding the units": "howto/units.md"
+      - "Output & visualization": "howto/vis.md"
+      # - 'Testing': ''
+      - "Documenting": "howto/docs.md"
+  - "How it works":
+      - "3+1 formulation": "how/3p1.md"
+      # - "Units": "how/units.md"
+      - "PIC algorithm": "how/pic.md"
+      - "Coordinate systems": "how/coords.md"
+  - "Code guide": "guide/guide.md"
+  - "Fun":
+      - "Cubed sphere": "fun/cubed_sphere.md"
+      - '"Reconnection"': "fun/reconnection.md"
 
 markdown_extensions:
   - pymdownx.superfences:
@@ -33,7 +34,7 @@ markdown_extensions:
   - pymdownx.highlight:
       use_pygments: true
   - pymdownx.tabbed:
-      alternate_style: true 
+      alternate_style: true
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
@@ -80,8 +81,8 @@ theme:
         icon: material/lightbulb-outline
         name: Switch to light mode
   font:
-    text: 'IBM Plex Sans'
-    code: 'JetBrains Mono'
+    text: "IBM Plex Sans"
+    code: "JetBrains Mono"
   features:
     - navigation.tracking
     - navigation.expand
