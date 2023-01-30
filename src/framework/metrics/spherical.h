@@ -21,6 +21,8 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
+    const real_t dx_min;
+
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> { "spherical", resolution, extent },
         dr((this->x1_max - this->x1_min) / this->nx1),
@@ -28,7 +30,8 @@ namespace ntt {
         dphi(constant::TWO_PI / this->nx3),
         dr_sqr(dr * dr),
         dtheta_sqr(dtheta * dtheta),
-        dphi_sqr(dphi * dphi) {}
+        dphi_sqr(dphi * dphi),
+        dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
     /**
@@ -88,6 +91,14 @@ namespace ntt {
       real_t r { x[0] * dr + this->x1_min };
       real_t theta { x[1] * dtheta };
       return dr * dtheta * r * r * math::sin(theta);
+    }
+    /**
+     * Compute the fiducial minimum cell volume.
+     *
+     * @returns Minimum cell volume of the grid [code units].
+     */
+    Inline auto min_cell_volume() const -> real_t {
+      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
     }
 
     /**

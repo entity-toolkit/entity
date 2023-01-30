@@ -3,10 +3,7 @@
 #include "wrapper.h"
 
 #include "particles.h"
-
-#include <plog/Log.h>
-
-#include <cassert>
+#include "sim_params.h"
 
 namespace ntt {
   template <Dimension D>
@@ -256,20 +253,25 @@ namespace ntt {
       }
     }
   }
+
   template <Dimension D, SimulationEngine S>
-  auto Meshblock<D, S>::RemoveDeadParticles(const double& max_dead_frac)
-    -> std::vector<double> {
-    std::vector<double> dead_fractions = {};
-    for (auto& species : particles) {
-      auto npart_alive   = species.CountLiving();
-      auto dead_fraction = 1.0 - (double)(npart_alive) / (double)(species.npart());
-      if ((species.npart() > 0) && dead_fraction >= (double)max_dead_frac) {
-        species.ReshuffleDead();
-        species.setNpart(npart_alive);
-      }
-      dead_fractions.push_back(dead_fraction);
+  void Meshblock<D, S>::SynchronizeHostDevice(const SynchronizeFlags& flags) {
+    if (flags & Synchronize_em) {
+      Kokkos::deep_copy(this->em_h, this->em);
+      this->em_h_content = this->em_content;
     }
-    return dead_fractions;
+    if (flags & Synchronize_cur) {
+      Kokkos::deep_copy(this->cur_h, this->cur);
+      this->cur_h_content = this->cur_content;
+    }
+    if (flags & Synchronize_buff) {
+      Kokkos::deep_copy(this->buff_h, this->buff);
+      this->buff_h_content = this->buff_content;
+    }
+    if (flags & Synchronize_bckp) {
+      Kokkos::deep_copy(this->bckp_h, this->bckp);
+      this->bckp_h_content = this->bckp_content;
+    }
   }
 }    // namespace ntt
 

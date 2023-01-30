@@ -9,7 +9,7 @@ namespace ntt {
   using resolution_t = std::vector<unsigned int>;
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
   enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
-  enum fld { dens = 0 };
+  enum fld { dens = 0, chdens = 1, enrgdens = 2 };
 
   /**
    * @brief To keep track what fields are stored in buffer arrays we use an enum indicator.
@@ -67,8 +67,11 @@ namespace ntt {
     jx3_curly,
 
     mass_density,
-    ch_density,
-    num_density
+    number_density,
+    charge_density,
+    energy_density,
+    photon_number_density,
+    photon_energy_density
   };
 
   /**
@@ -85,11 +88,22 @@ namespace ntt {
    * @brief Impose particular Content.
    */
   void ImposeContent(std::vector<Content>&, const std::vector<Content>&);
+  /**
+   * @brief Impose particular Content.
+   * @overload
+   */
+  void ImposeContent(Content&, const Content&);
 
   /**
    * @brief Impose empty Content.
    */
   void ImposeEmptyContent(std::vector<Content>&);
+
+  /**
+   * @brief Impose empty Content.
+   * @overload
+   */
+  void ImposeEmptyContent(Content&);
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.
@@ -195,11 +209,6 @@ namespace ntt {
      */
     Fields(resolution_t res);
     ~Fields() = default;
-
-    /**
-     * @brief Synchronize data from device to host.
-     */
-    void SynchronizeHostDevice();
   };
 
 }    // namespace ntt
