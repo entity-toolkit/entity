@@ -1,5 +1,5 @@
 [simulation]
-title   = "Weibel-sprec"
+title   = "Weibel"
 runtime = 100.0
 
 [domain]

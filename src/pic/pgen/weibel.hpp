@@ -46,8 +46,8 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
     const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    InjectUniform<Dim2, PICEngine, Drift>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
-    InjectUniform<Dim2, PICEngine, Drift>(params, mblock, { 3, 4 }, params.ppc0() * 0.5);
+    InjectUniform<Dim2, PICEngine, Drift>(params, mblock, { 1, 2 }, params.ppc0() * 0.25);
+    InjectUniform<Dim2, PICEngine, Drift>(params, mblock, { 3, 4 }, params.ppc0() * 0.25);
   }
 }    // namespace ntt
 

@@ -113,13 +113,38 @@ namespace ntt {
   namespace options {
     const std::vector<std::string> pushers    = { "Boris", "photon" };
     const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
-    const std::vector<std::string> fields
-      = { "Ex",     "Ey",     "Ez",     "Bx",           "By",          "Bz",        "Er",
-          "Etheta", "Ephi",   "Br",     "Btheta",       "Bphi",        "Dr",        "Dtheta",
-          "Dphi",   "Hr",     "Htheta", "Hphi",         "Jx",          "Jy",        "Jz",
-          "Jr",     "Jtheta", "Jphi",   "mass_density", "num_density", "ch_density" };
+    const std::vector<std::string> fields     = { "Ex",
+                                                  "Ey",
+                                                  "Ez",
+                                                  "Bx",
+                                                  "By",
+                                                  "Bz",
+                                                  "Er",
+                                                  "Etheta",
+                                                  "Ephi",
+                                                  "Br",
+                                                  "Btheta",
+                                                  "Bphi",
+                                                  "Dr",
+                                                  "Dtheta",
+                                                  "Dphi",
+                                                  "Hr",
+                                                  "Htheta",
+                                                  "Hphi",
+                                                  "Jx",
+                                                  "Jy",
+                                                  "Jz",
+                                                  "Jr",
+                                                  "Jtheta",
+                                                  "Jphi",
+                                                  "mass_density",
+                                                  "number_density",
+                                                  "charge_density",
+                                                  "energy_density",
+                                                  "photon_number_density",
+                                                  "photon_energy_density" };
 
-    const std::vector<std::string> outputs = { "disabled", "HDF5" };
+    const std::vector<std::string> outputs    = { "disabled", "HDF5" };
   }    // namespace options
 
   namespace defaults {
@@ -144,6 +169,18 @@ namespace ntt {
     const std::string          output_format    = options::outputs[0];
     const int                  output_interval  = 1;
   }    // namespace defaults
+
+  // Flags
+  enum SynchronizeFlags_ {
+    Synchronize_None = 0,
+    Synchronize_em   = 1 << 0,
+    Synchronize_bckp = 1 << 1,
+    Synchronize_cur  = 1 << 2,
+    Synchronize_buff = 1 << 3,
+    Synchronize_All  = Synchronize_em | Synchronize_bckp | Synchronize_cur | Synchronize_buff,
+    Synchronize_Default = Synchronize_All,
+  };
+  typedef int SynchronizeFlags;
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
