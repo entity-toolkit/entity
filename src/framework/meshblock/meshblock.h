@@ -11,6 +11,10 @@
 #include <vector>
 
 namespace ntt {
+  namespace dir {
+    enum Direction { x = 1, y = 2, z = 3, r = 1, theta = 2, phi = 3, x1 = 1, x2 = 2, x3 = 3 };
+  }    // namespace dir
+
   enum class CellLayer {
     allLayer,
     activeLayer,
