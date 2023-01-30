@@ -82,6 +82,7 @@ def getFields(fname):
     dimension = file.attrs["dimension"]
     metric = file.attrs["metric"].decode("UTF-8")
     coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
+    times = np.array([file[f"Step{s}"]["time"][()] for s in range(nsteps)])
 
     ds = xr.Dataset()
 
@@ -95,10 +96,8 @@ def getFields(fname):
 
     for k in fields:
         dask_arrays = []
-        times = []
         for s in range(nsteps):
             array = da.from_array(file[f"Step{s}/{k}"])
-            times.append(file[f"Step{s}"]["time"][()])
             dask_arrays.append(array[ngh:-ngh, ngh:-ngh])
 
         k_ = reduce(
