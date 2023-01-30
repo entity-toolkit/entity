@@ -136,7 +136,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const SimulationParams& params,
-                                 const Meshblock<D, S>&  mblock,
+                                 Meshblock<D, S>&        mblock,
                                  const real_t&           time,
                                  const std::size_t&      tstep) {
     m_writer = m_io.Open(params.title() + ".flds.h5", m_mode);
@@ -147,6 +147,9 @@ namespace ntt {
     int step = (int)tstep;
     m_writer.Put<int>(m_vars_i["step"], &step);
     m_writer.Put<real_t>(m_vars_r["time"], &time);
+
+    mblock.InterpolateAndConvertFieldsToHat();
+    mblock.SynchronizeHostDevice();
 
     // traverse all the fields and put them. ...
     // ... also make sure that the fields are ready for output, ...
@@ -189,8 +192,29 @@ namespace ntt {
         NTTHostErrorIf(mblock.cur_h_content[cur::jx3] != Content::jx3_hat_int,
                        "Jx3 is not ready for output");
         PutField<D, 3>(m_writer, var, mblock.cur_h, cur::jx3);
-      } else if (var_str == "mass_density") {
-        PutField<D, 3>(m_writer, var, mblock.buff_h, fld::dens);
+      } else {
+        const std::vector<fld> fld_comps
+          = { fld::dens, fld::chdens, fld::enrgdens, fld::dens };
+        const std::vector<std::string> fld_labels
+          = { "mass_density", "charge_density", "energy_density", "number_density" };
+        const std::vector<Content> fld_contents = { Content::mass_density,
+                                                    Content::charge_density,
+                                                    Content::energy_density,
+                                                    Content::number_density };
+        for (int f { 0 }; f < fld_comps.size(); ++f) {
+          if (var_str == fld_labels[f]) {
+            if (mblock.buff_h_content[fld_comps[f]] != fld_contents[f]) {
+              mblock.ComputeMoments(params, fld_contents[f], fld_comps[f]);
+              mblock.SynchronizeHostDevice(Synchronize_buff);
+            }
+            NTTHostErrorIf(mblock.buff_h_content[fld_comps[f]] != fld_contents[f],
+                           var_str + " is not ready for output");
+            PutField<D, 3>(m_writer, var, mblock.buff_h, fld_comps[f]);
+            ImposeEmptyContent(mblock.buff_h_content[fld_comps[f]]);
+            ImposeEmptyContent(mblock.buff_content[fld_comps[f]]);
+            break;
+          }
+        }
       }
     }
 
