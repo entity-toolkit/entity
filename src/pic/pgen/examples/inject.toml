@@ -27,19 +27,19 @@ label    = "e-"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 5e7
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
 maxnpart = 5e7
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [problem]
 
 [visualization]
-fields        = ["density"]
+fields        = ["mass_density"]
 fields_stride = 1
 
 # [output]

@@ -27,22 +27,23 @@ label    = "e-"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [problem]
 cs_width = 0.000125
 
 [visualization]
-fields        = ["By", "density"]
+fields        = ["By", "mass_density"]
 fields_stride = 4
 
 [output]
+fields   = ["By", "mass_density"]
 format   = "HDF5"
 interval = 10

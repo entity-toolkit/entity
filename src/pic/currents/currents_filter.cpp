@@ -16,6 +16,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "pic.h"
 
 namespace ntt {
@@ -30,7 +31,11 @@ namespace ntt {
     auto  params = *(this->params());
     for (unsigned short i = 0; i < params.currentFilters(); ++i) {
       CurrentsExchange();
+
+      AssertEmptyContent(mblock.buff_content);
       Kokkos::deep_copy(mblock.buff, mblock.cur);
+      ImposeContent(mblock.buff_content, mblock.cur_content);
+
       range_t<D> range = mblock.rangeActiveCells();
 #ifndef MINKOWSKI_METRIC
       /**
@@ -53,7 +58,9 @@ namespace ntt {
                                         { mblock.i1_max(), mblock.i2_max() + 1 });
       }
 #endif
-      Kokkos::parallel_for("filter_pass", range, CurrentsFilter_kernel<D>(mblock));
+      Kokkos::parallel_for("CurrentsFilter", range, CurrentsFilter_kernel<D>(mblock));
+
+      ImposeEmptyContent(mblock.buff_content);
     }
   }
 }    // namespace ntt

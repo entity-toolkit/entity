@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.0.9
+  VERSION 0.8.1.0
   LANGUAGES CXX
 )
 
@@ -24,6 +24,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND NOT ${SUBMODULES_LOADED
 
   if(GIT_SUBMODULE)
     message(STATUS "Updating all the submodules")
+    message(STATUS "  During the first-time configure this may take a couple of minutes")
     execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --remote --recursive
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE GIT_SUBMOD_RESULT)
@@ -183,10 +184,23 @@ endif()
 set(output ${default_output} CACHE BOOL "Enable output")
 
 if(${output} STREQUAL "ON")
+  set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
+  # Language support
   set(ADIOS2_USE_Python OFF CACHE BOOL "Use Python for ADIOS2")
   set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
+  # Format/compression support
   set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
-  set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
+  set(ADIOS2_USE_ZeroMQ OFF CACHE BOOL "Use ZeroMQ for ADIOS2")
+  set(ADIOS2_USE_SST OFF CACHE BOOL "Use SST for ADIOS2")
+  set(ADIOS2_USE_BZip2 OFF CACHE BOOL "Use BZip2 for ADIOS2")
+  set(ADIOS2_USE_ZFP OFF CACHE BOOL "Use ZFP for ADIOS2")
+  set(ADIOS2_USE_SZ OFF CACHE BOOL "Use SZ for ADIOS2")
+  set(ADIOS2_USE_MGARD OFF CACHE BOOL "Use MGARD for ADIOS2")
+  set(ADIOS2_USE_PNG OFF CACHE BOOL "Use PNG for ADIOS2")
+  set(ADIOS2_USE_Blosc OFF CACHE BOOL "Use Blosc for ADIOS2")
+
+  # !TODO: add MPI-enabled ADIOS2
+  set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
 
   # !TODO: add CUDA-enabled ADIOS2
   set(ADIOS2_USE_CUDA OFF CACHE BOOL "Use CUDA for ADIOS2")

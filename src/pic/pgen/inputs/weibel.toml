@@ -27,28 +27,28 @@ label    = "e-_p"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_2]
 label    = "e+_p"
 mass     = 25.0
 charge   = 1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_3]
 label    = "e-_b"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_4]
 label    = "e+_b"
 mass     = 50.0
 charge   = 1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [problem]
 drift_p  = 10.0
@@ -57,9 +57,10 @@ temperature_p = 0.1
 temperature_b = 0.1
 
 [visualization]
-fields        = ["Bx", "By", "density"]
-fields_stride = 8
+fields        = ["Bx", "By", "mass_density"]
+fields_stride = 4
 
 [output]
-format   = "disabled"
+fields        = ["Bx", "By", "mass_density"]
+format   = "HDF5"
 interval = 100

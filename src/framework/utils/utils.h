@@ -1,17 +1,39 @@
 #ifndef UTILS_UTILS_H
 #define UTILS_UTILS_H
 
+#include "wrapper.h"
+
 #include <string>
 #include <vector>
 
 #include <type_traits>
 
 namespace ntt {
-  // auto zeropad(const std::string& str, const size_t& num) -> std::string {
-  //   std::string out {str};
-  //   if (num > str.size()) { out.insert(0, num - str.size(), '0'); }
-  //   return out;
-  // }
+  template <class KeyViewType>
+  struct BinBool {
+    BinBool() = default;
+    template <class ViewType>
+    Inline auto bin(ViewType& keys, const int& i) const -> int {
+      return keys(i) ? 1 : 0;
+    }
+    Inline auto max_bins() const -> int {
+      return 2;
+    }
+    template <class ViewType, typename iT1, typename iT2>
+    Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
+      return false;
+    }
+  };
+
+  template <typename T>
+  void TestValidOption(const T& option, const std::vector<T>& valid_options) {
+    for (const auto& valid_option : valid_options) {
+      if (option == valid_option) {
+        return;
+      }
+    }
+    NTTHostError("Invalid option: " + option);
+  }
 
   namespace c9 {
     /**

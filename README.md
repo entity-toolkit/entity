@@ -1,17 +1,27 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all. Find our detailed documentation [here](https://haykh.github.io/entity/).
 
-![image](assets/cover.gif)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/cover_dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="assets/cover_light.gif">
+    <img alt="cover" src="assets/cover_light.gif">
+  </picture>
+</p>
 
 ## Code contributors (alphabetical)
 
-🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC}
+🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
 
 🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
 
-☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC}
+☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
 
-🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI}
+🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI, cubed-sphere}
+
+🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph): all-around}
+
+🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): PIC}
 
 ## Development status
 

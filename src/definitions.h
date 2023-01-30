@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <string>
+#include <vector>
 
 #include <string_view>
 
@@ -109,24 +110,77 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
+  namespace options {
+    const std::vector<std::string> pushers    = { "Boris", "photon" };
+    const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
+    const std::vector<std::string> fields     = { "Ex",
+                                                  "Ey",
+                                                  "Ez",
+                                                  "Bx",
+                                                  "By",
+                                                  "Bz",
+                                                  "Er",
+                                                  "Etheta",
+                                                  "Ephi",
+                                                  "Br",
+                                                  "Btheta",
+                                                  "Bphi",
+                                                  "Dr",
+                                                  "Dtheta",
+                                                  "Dphi",
+                                                  "Hr",
+                                                  "Htheta",
+                                                  "Hphi",
+                                                  "Jx",
+                                                  "Jy",
+                                                  "Jz",
+                                                  "Jr",
+                                                  "Jtheta",
+                                                  "Jphi",
+                                                  "mass_density",
+                                                  "number_density",
+                                                  "charge_density",
+                                                  "energy_density",
+                                                  "photon_number_density",
+                                                  "photon_energy_density" };
+
+    const std::vector<std::string> outputs    = { "disabled", "HDF5" };
+  }    // namespace options
+
   namespace defaults {
-    constexpr std::string_view input_filename  = "input";
-    constexpr std::string_view output_path     = "output";
+    constexpr std::string_view input_filename   = "input";
+    constexpr std::string_view output_path      = "output";
 
-    const std::string          title           = "PIC_Sim";
-    const int                  n_species       = 0;
-    const std::string          pusher          = "Boris";
-    const std::string          metric          = "minkowski";
+    const std::string          title            = "PIC_Sim";
+    const int                  n_species        = 0;
+    const std::string          em_pusher        = "Boris";
+    const std::string          ph_pusher        = "photon";
+    const std::string          metric           = "minkowski";
 
-    const real_t               runtime         = 1e10;
-    const real_t               correction      = 1.0;
-    const real_t               cfl             = 0.95;
+    const real_t               runtime          = 1e10;
+    const real_t               correction       = 1.0;
+    const real_t               cfl              = 0.95;
 
-    const unsigned short       current_filters = 0;
+    const unsigned short       current_filters  = 0;
 
-    const std::string          output_format   = "disabled";
-    const int                  output_interval = 1;
+    const int                  shuffle_interval = 0;
+    const double               max_dead_frac    = 0.0;
+
+    const std::string          output_format    = options::outputs[0];
+    const int                  output_interval  = 1;
   }    // namespace defaults
+
+  // Flags
+  enum SynchronizeFlags_ {
+    Synchronize_None = 0,
+    Synchronize_em   = 1 << 0,
+    Synchronize_bckp = 1 << 1,
+    Synchronize_cur  = 1 << 2,
+    Synchronize_buff = 1 << 3,
+    Synchronize_All  = Synchronize_em | Synchronize_bckp | Synchronize_cur | Synchronize_buff,
+    Synchronize_Default = Synchronize_All,
+  };
+  typedef int SynchronizeFlags;
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */

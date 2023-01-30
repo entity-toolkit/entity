@@ -5,6 +5,8 @@
 #pragma nv_diag_suppress 20011
 // !TODO: fmt unrecognized gcc pragma
 #pragma nv_diag_suppress 1675
+// !TODO: toml11 result of call is not used in `parser.hpp`
+#pragma nv_diag_suppress 1650
 
 #include "config.h"
 

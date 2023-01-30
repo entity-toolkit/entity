@@ -27,10 +27,10 @@ label    = "e-"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e7
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [visualization]
-fields        = ["Ex", "density"]
+fields        = ["Ex", "mass_density"]
 fields_stride = 1
 
 # [output]

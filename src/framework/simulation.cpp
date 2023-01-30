@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "metric.h"
 #include "utils.h"
 
@@ -69,7 +70,7 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Initialize() {
     // find timestep and effective cell size
-    meshblock.setMinCellSize(meshblock.metric.findSmallestCell());
+    meshblock.setMinCellSize(meshblock.metric.dx_min);
     meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
 
     WaitAndSynchronize();
@@ -181,9 +182,9 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::SynchronizeHostDevice() {
+  void Simulation<D, S>::SynchronizeHostDevice(const SynchronizeFlags& flags) {
     WaitAndSynchronize();
-    meshblock.SynchronizeHostDevice();
+    meshblock.SynchronizeHostDevice(flags);
     // for (auto& species : meshblock.particles) {
     //   species.SynchronizeHostDevice();
     // }
@@ -191,11 +192,18 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::PrintDiagnostics(std::ostream& os) {
+  void Simulation<D, S>::PrintDiagnostics(std::ostream&              os,
+                                          const std::vector<double>& fractions) {
     for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
       auto& species { meshblock.particles[i] };
       os << "species #" << i << ": " << species.npart() << " ("
-         << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
+         << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%";
+      if (fractions.size() == meshblock.particles.size()) {
+        auto fraction = fractions[i];
+        os << ", " << fraction * 100 << "% dead)\n";
+      } else {
+        os << ")\n";
+      }
     }
   }
 

@@ -20,11 +20,14 @@ namespace ntt {
     const real_t dx, dx_sqr, inv_dx;
 
   public:
+    const real_t dx_min;
+
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> { "minkowski", resolution, extent },
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
-        inv_dx(ONE / dx) {}
+        inv_dx(ONE / dx),
+        dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
     /**
@@ -71,7 +74,16 @@ namespace ntt {
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t {
-      return dx_sqr * dx;
+      return math::pow(dx, static_cast<short>(D));
+    }
+
+    /**
+     * Compute the fiducial minimum cell volume.
+     *
+     * @returns Minimum cell volume of the grid [code units].
+     */
+    Inline auto min_cell_volume() const -> real_t {
+      return math::pow(dx, static_cast<short>(D));
     }
 
 /**
