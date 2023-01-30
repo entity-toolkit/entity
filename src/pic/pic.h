@@ -126,17 +126,6 @@ namespace ntt {
      * @brief Benchmarking step.
      */
     void Benchmark();
-
-    /* ----------------- Additional conversions and computations ---------------- */
-    /**
-     * @brief Compute density for output or other usage.
-     * @param smooth smoothing window (default 2).
-     */
-    void ComputeDensity(const short& smooth = 2);
-    /**
-     * @brief Interpolate fields to cell centers & convert to the hatted basis.
-     */
-    void InterpolateAndConvertFieldsToHat() override;
   };
 
 }    // namespace ntt

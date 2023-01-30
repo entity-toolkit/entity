@@ -86,9 +86,9 @@ namespace ntt {
 
       timers.start("UserSpecific");
       // !TODO: this needs to move (or become optional)
-      this->ComputeDensity(0);
+      mblock.ComputeMoments(params, Content::mass_density, fld::dens, 0);
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      ImposeEmptyContent(mblock.buff_content);
+      ImposeEmptyContent(mblock.buff_content[fld::dens]);
       timers.stop("UserSpecific");
 
       timers.start("ParticleBoundaries");
@@ -148,9 +148,6 @@ namespace ntt {
     if ((params.outputFormat() != "disabled")
         && (this->m_tstep % params.outputInterval() == 0)) {
       WaitAndSynchronize();
-      InterpolateAndConvertFieldsToHat();
-      ComputeDensity();
-      this->SynchronizeHostDevice();
       wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
     }
     timers.stop("Output");
