@@ -9,7 +9,7 @@ qsph_r0         = <float: -infinity < ... < r_min>
 qsph_h          = <float: -1 < ... < 1>
 resolution      = <array of int of size 1, 2 or 3>
 extent          = <array of float of size 2, 4 or 6>, ex. [x1min, x1max, x2min, x2max, x3min, x3max]
-boundaries      = <array of strings of size 1, 2 or 3: { "PERIODIC" | "ABSORB" | "OPEN" | "USER_BC" }>
+boundaries      = <array of strings of size 1, 2 or 3: { "PERIODIC" | "ABSORB" | "OPEN" | "USER" }>
 
 [algorithm]
 CFL             = <float: 0.0 < ... < 1.0>
@@ -33,15 +33,16 @@ label           = <string>
 mass            = <float>
 charge          = <float>
 maxnpart        = <int>
-pusher          = <string: { BORIS }>
+pusher          = <string: { "Boris" }>
 
 [problem]
 ...
 
 [visualization]
-fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see vis/nttiny.cpp for ref>
+fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see src/definitions.h for ref>
 fields_stride   = <int>
 
 [output]
+fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see src/definitions.h for ref>
 format          = <string: { disabled, hdf5 }>
 interval        = <int>

@@ -31,7 +31,7 @@ namespace ntt {
 
     // Particle shuffle interval.
     int                            m_shuffle_interval;
-    float                          m_max_dead_frac;
+    double                         m_max_dead_frac;
 
     // Enable/disable algorithms
     bool                           m_enable_fieldsolver;
@@ -59,6 +59,7 @@ namespace ntt {
     // Output parameters
     std::string                    m_output_format;
     int                            m_output_interval;
+    std::vector<std::string>       m_output_fields;
 
     // Container with data from the parsed input file.
     toml::value                    m_inputdata;
@@ -193,6 +194,12 @@ namespace ntt {
       return m_output_interval;
     }
     /**
+     * @brief Get output field labels.
+     */
+    [[nodiscard]] auto outputFields() const -> const std::vector<std::string>& {
+      return m_output_fields;
+    }
+    /**
      * @brief Get the particle shuffle interval.
      */
     [[nodiscard]] auto shuffleInterval() const -> const int& {
@@ -201,18 +208,40 @@ namespace ntt {
     /**
      * @brief Get maximum number of dead particles (as a fraction of current active particles).
      */
-    [[nodiscard]] auto maxDeadFraction() const -> const float& {
+    [[nodiscard]] auto maxDeadFraction() const -> const double& {
       return m_max_dead_frac;
     }
 
     /**
-     * @brief Get parameters read from the input
+     * @brief Get parameters read from the input (with default value if not found)
      */
     template <typename T>
     [[nodiscard]] auto get(const std::string&, const std::string&, const T&) const -> T;
 
+    /**
+     * @brief Get parameters read from the input (no default)
+     * @overload
+     */
     template <typename T>
     [[nodiscard]] auto get(const std::string&, const std::string&) const -> T;
+
+    /**
+     * @brief Get parameters read from the input (with valid values, no default)
+     * @overload
+     */
+    template <typename T>
+    [[nodiscard]] auto get(const std::string&, const std::string&, const std::vector<T>&) const
+      -> T;
+
+    /**
+     * @brief Get parameters read from the input (with valid values, and with default)
+     * @overload
+     */
+    template <typename T>
+    [[nodiscard]] auto get(const std::string&,
+                           const std::string&,
+                           const T&,
+                           const std::vector<T>&) const -> T;
   };
 
 }    // namespace ntt

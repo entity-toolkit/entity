@@ -21,7 +21,7 @@ namespace ntt {
      */
     PIC(const toml::value& inputdata) : Simulation<D, PICEngine>(inputdata) {}
     PIC(const PIC<D>&) = delete;
-    ~PIC() = default;
+    ~PIC()             = default;
 
     /**
      * @brief Advance the simulation forward for one timestep.
@@ -39,9 +39,9 @@ namespace ntt {
     void Run();
 
     /**
-     * @brief Dummy function to match with GRPIC
+     * @brief Initial step performed before the main loop.
      */
-    void InitialStep() {}
+    void InitialStep();
 
     /* ---------------------------------- Reset --------------------------------- */
     /**
@@ -126,17 +126,6 @@ namespace ntt {
      * @brief Benchmarking step.
      */
     void Benchmark();
-
-    /* ----------------- Additional conversions and computations ---------------- */
-    /**
-     * @brief Compute density for output or other usage.
-     * @param smooth smoothing window (default 2).
-     */
-    void ComputeDensity(const short& smooth = 2);
-    /**
-     * @brief Interpolate fields to cell centers & convert to the hatted basis.
-     */
-    void InterpolateAndConvertFieldsToHat() override;
   };
 
 }    // namespace ntt

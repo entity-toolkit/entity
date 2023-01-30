@@ -28,14 +28,14 @@ label    = "e-"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
 maxnpart = 1e8
-pusher   = "BORIS"
+pusher   = "Boris"
 
 [problem]
 bsurf        = 1.0
@@ -54,5 +54,6 @@ fields        = ["mass_density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi",
 fields_stride = 4
 
 [output]
+fields        = ["mass_density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jphi"]
 format   = "HDF5"
 interval = 100

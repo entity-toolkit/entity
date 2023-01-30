@@ -7,6 +7,38 @@
 #include <vector>
 
 namespace ntt {
+  void AssertEmptyContent(const std::vector<Content>& content) {
+    for (auto c : content) {
+      NTTHostErrorIf(c != Content::empty, "Content is not empty.");
+    }
+  }
+
+  void AssertContent(const std::vector<Content>& content, const std::vector<Content>& target) {
+    NTTHostErrorIf(content.size() != target.size(), "Content size mismatch.");
+    for (unsigned int i = 0; i < content.size(); ++i) {
+      NTTHostErrorIf(content[i] != target[i], "Content mismatch.");
+    }
+  }
+
+  void ImposeContent(std::vector<Content>& content, const std::vector<Content>& target) {
+    NTTHostErrorIf(content.size() != target.size(), "Content size mismatch.");
+    for (unsigned int i = 0; i < content.size(); ++i) {
+      content[i] = target[i];
+    }
+  }
+  void ImposeContent(Content& content, const Content& target) {
+    content = target;
+  }
+
+  void ImposeEmptyContent(std::vector<Content>& content) {
+    for (auto& c : content) {
+      c = Content::empty;
+    }
+  }
+  void ImposeEmptyContent(Content& content) {
+    content = Content::empty;
+  }
+
   using resolution_t = std::vector<unsigned int>;
 
 #ifdef PIC_ENGINE
@@ -50,14 +82,6 @@ namespace ntt {
     cur_h  = Kokkos::create_mirror(cur);
     buff_h = Kokkos::create_mirror(buff);
     bckp_h = Kokkos::create_mirror(bckp);
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Fields<D, S>::SynchronizeHostDevice() {
-    Kokkos::deep_copy(em_h, em);
-    Kokkos::deep_copy(cur_h, cur);
-    Kokkos::deep_copy(buff_h, buff);
-    Kokkos::deep_copy(bckp_h, bckp);
   }
 
 #elif defined(GRPIC_ENGINE)

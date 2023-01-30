@@ -6,6 +6,7 @@
 #include "fields.h"
 #include "metric.h"
 #include "particles.h"
+#include "sim_params.h"
 
 #include <vector>
 
@@ -362,7 +363,34 @@ namespace ntt {
      * ... w.r.t. the living ones (npart).
      * @return Vector of the fraction of dead particles pre deletion.
      */
-    auto RemoveDeadParticles(const float&) -> std::vector<double>;
+    auto RemoveDeadParticles(const double&) -> std::vector<double>;
+
+    /* ----------------- Additional conversions and computations ---------------- */
+
+    /**
+     * @brief Fields on the host to hatted basis.
+     * Used for outputting/visualizing the fields.
+     */
+    void InterpolateAndConvertFieldsToHat();
+
+    /**
+     * @brief Compute particle moment for output or other usage.
+     * @param params SimulationParams object.
+     * @param content type of the moment (density, charge density, etc.) of type enum Content.
+     * @param int index of the buff array to put the computed moment into.
+     * @param smooth smoothing window (default 2).
+     *
+     * @note Content of the meshblock::buff(*, fld) has to be Content::empty.
+     */
+    void ComputeMoments(const SimulationParams&,
+                        const Content&,
+                        const int&,
+                        const short& smooth = 2);
+
+    /**
+     * @brief Synchronize data from device to host.
+     */
+    void SynchronizeHostDevice(const SynchronizeFlags& flags = Synchronize_All);
   };
 
 }    // namespace ntt

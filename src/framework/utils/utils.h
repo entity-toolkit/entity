@@ -25,6 +25,16 @@ namespace ntt {
     }
   };
 
+  template <typename T>
+  void TestValidOption(const T& option, const std::vector<T>& valid_options) {
+    for (const auto& valid_option : valid_options) {
+      if (option == valid_option) {
+        return;
+      }
+    }
+    NTTHostError("Invalid option: " + option);
+  }
+
   namespace c9 {
     /**
      * @link https://github.com/CommitThis/zip-iterator

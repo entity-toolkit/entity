@@ -70,9 +70,9 @@ def getFields(fname):
         return (arr[1:] + arr[:-1]) / 2
 
     CoordinateDict = {
-        "minkowski": {"X1": "x", "X2": "y", "X3": "z"},
-        "spherical": {"X1": "r", "X2": "θ", "X3": "φ"},
-        "qspherical": {"X1": "r", "X2": "θ", "X3": "φ"},
+        "minkowski": {"x": "x", "y": "y", "z": "z"},
+        "spherical": {"r": "r", "theta": "θ", "phi": "φ"},
+        "qspherical": {"r": "r", "theta": "θ", "phi": "φ"},
     }
 
     file = h5py.File(fname, "r")
@@ -82,6 +82,7 @@ def getFields(fname):
     dimension = file.attrs["dimension"]
     metric = file.attrs["metric"].decode("UTF-8")
     coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
+    times = np.array([file[f"Step{s}"]["time"][()] for s in range(nsteps)])
 
     ds = xr.Dataset()
 
@@ -95,14 +96,13 @@ def getFields(fname):
 
     for k in fields:
         dask_arrays = []
-        times = []
         for s in range(nsteps):
             array = da.from_array(file[f"Step{s}/{k}"])
-            times.append(file[f"Step{s}"]["time"][()])
             dask_arrays.append(array[ngh:-ngh, ngh:-ngh])
+
         k_ = reduce(
             lambda x, y: x.replace(*y),
-            [k.upper(), *list(CoordinateDict[metric].items())],
+            [k, *list(CoordinateDict[metric].items())],
         )
         x = xr.DataArray(
             da.stack(dask_arrays, axis=0),

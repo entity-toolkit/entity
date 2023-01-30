@@ -47,23 +47,35 @@ namespace ntt {
 
   template <>
   Inline void CurrentsAmpere_kernel<Dim1>::operator()(index_t i) const {
-    EX1(i) += m_coeff * JX1(i);
-    EX2(i) += m_coeff * JX2(i);
-    EX3(i) += m_coeff * JX3(i);
+    JX1(i) *= m_coeff;
+    JX2(i) *= m_coeff;
+    JX3(i) *= m_coeff;
+
+    EX1(i) += JX1(i);
+    EX2(i) += JX2(i);
+    EX3(i) += JX3(i);
   }
 
   template <>
   Inline void CurrentsAmpere_kernel<Dim2>::operator()(index_t i, index_t j) const {
-    EX1(i, j) += m_coeff * JX1(i, j);
-    EX2(i, j) += m_coeff * JX2(i, j);
-    EX3(i, j) += m_coeff * JX3(i, j);
+    JX1(i, j) *= m_coeff;
+    JX2(i, j) *= m_coeff;
+    JX3(i, j) *= m_coeff;
+
+    EX1(i, j) += JX1(i, j);
+    EX2(i, j) += JX2(i, j);
+    EX3(i, j) += JX3(i, j);
   }
 
   template <>
   Inline void CurrentsAmpere_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    EX1(i, j, k) += m_coeff * JX1(i, j, k);
-    EX2(i, j, k) += m_coeff * JX2(i, j, k);
-    EX3(i, j, k) += m_coeff * JX3(i, j, k);
+    JX1(i, j, k) *= m_coeff;
+    JX2(i, j, k) *= m_coeff;
+    JX3(i, j, k) *= m_coeff;
+
+    EX1(i, j, k) += JX1(i, j, k);
+    EX2(i, j, k) += JX2(i, j, k);
+    EX3(i, j, k) += JX3(i, j, k);
   }
 #else
 
@@ -108,9 +120,14 @@ namespace ntt {
     real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
     real_t inv_sqrt_detH_i { ONE / m_mblock.metric.sqrt_det_h({ i_ }) };
     real_t inv_sqrt_detH_iP { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF }) };
-    EX1(i) += m_coeff * JX1(i) * inv_sqrt_detH_iP;
-    EX2(i) += m_coeff * JX2(i) * inv_sqrt_detH_i;
-    EX3(i) += m_coeff * JX3(i) * inv_sqrt_detH_i;
+
+    JX1(i) *= m_coeff * inv_sqrt_detH_iP;
+    JX2(i) *= m_coeff * inv_sqrt_detH_i;
+    JX3(i) *= m_coeff * inv_sqrt_detH_i;
+
+    EX1(i) += JX1(i);
+    EX2(i) += JX2(i);
+    EX3(i) += JX3(i);
   }
 
   template <>
@@ -120,9 +137,14 @@ namespace ntt {
     real_t inv_sqrt_detH_ij { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ }) };
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
-    EX1(i, j) += m_coeff * JX1(i, j) * inv_sqrt_detH_iPj;
-    EX2(i, j) += m_coeff * JX2(i, j) * inv_sqrt_detH_ijP;
-    EX3(i, j) += m_coeff * JX3(i, j) * inv_sqrt_detH_ij;
+
+    JX1(i, j) *= m_coeff * inv_sqrt_detH_iPj;
+    JX2(i, j) *= m_coeff * inv_sqrt_detH_ijP;
+    JX3(i, j) *= m_coeff * inv_sqrt_detH_ij;
+
+    EX1(i, j) += JX1(i, j);
+    EX2(i, j) += JX2(i, j);
+    EX3(i, j) += JX3(i, j);
   }
 
   template <>
@@ -133,9 +155,14 @@ namespace ntt {
     real_t inv_sqrt_detH_iPjk { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_, k_ }) };
     real_t inv_sqrt_detH_ijPk { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF, k_ }) };
     real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_, k_ + HALF }) };
-    EX1(i, j, k) += m_coeff * JX1(i, j, k) * inv_sqrt_detH_iPjk;
-    EX2(i, j, k) += m_coeff * JX2(i, j, k) * inv_sqrt_detH_ijPk;
-    EX3(i, j, k) += m_coeff * JX3(i, j, k) * inv_sqrt_detH_ijkP;
+
+    JX1(i, j, k) *= m_coeff * inv_sqrt_detH_iPjk;
+    JX2(i, j, k) *= m_coeff * inv_sqrt_detH_ijPk;
+    JX3(i, j, k) *= m_coeff * inv_sqrt_detH_ijkP;
+
+    EX1(i, j, k) += JX1(i, j, k);
+    EX2(i, j, k) += JX2(i, j, k);
+    EX3(i, j, k) += JX3(i, j, k);
   }
 
   template <Dimension D>
@@ -167,12 +194,16 @@ namespace ntt {
     real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
     real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF }) };
     // theta = 0
-    EX1(i, j_min) += m_coeff * JX1(i, j_min) * HALF * inv_polar_area_iPj;
+    JX1(i, j_min) *= HALF * m_coeff * inv_polar_area_iPj;
+    EX1(i, j_min) += JX1(i, j_min);
+
     // theta = pi
-    EX1(i, j_max) += m_coeff * JX1(i, j_max) * HALF * inv_polar_area_iPj;
+    JX1(i, j_max) *= HALF * m_coeff * inv_polar_area_iPj;
+    EX1(i, j_max) += JX1(i, j_max);
 
     // j = jmin + 1/2
-    EX2(i, j_min) += m_coeff * JX2(i, j_min) * inv_sqrt_detH_ijP;
+    JX2(i, j_min) *= m_coeff * inv_sqrt_detH_ijP;
+    EX2(i, j_min) += JX2(i, j_min);
   }
 
 #endif

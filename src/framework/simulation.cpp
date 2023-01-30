@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "metric.h"
 #include "utils.h"
 
@@ -69,7 +70,7 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Initialize() {
     // find timestep and effective cell size
-    meshblock.setMinCellSize(meshblock.metric.findSmallestCell());
+    meshblock.setMinCellSize(meshblock.metric.dx_min);
     meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
 
     WaitAndSynchronize();
@@ -181,9 +182,9 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::SynchronizeHostDevice() {
+  void Simulation<D, S>::SynchronizeHostDevice(const SynchronizeFlags& flags) {
     WaitAndSynchronize();
-    meshblock.SynchronizeHostDevice();
+    meshblock.SynchronizeHostDevice(flags);
     // for (auto& species : meshblock.particles) {
     //   species.SynchronizeHostDevice();
     // }
