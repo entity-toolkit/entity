@@ -113,37 +113,6 @@ namespace ntt {
   namespace options {
     const std::vector<std::string> pushers    = { "Boris", "photon" };
     const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
-    const std::vector<std::string> fields     = { "Ex",
-                                                  "Ey",
-                                                  "Ez",
-                                                  "Bx",
-                                                  "By",
-                                                  "Bz",
-                                                  "Er",
-                                                  "Etheta",
-                                                  "Ephi",
-                                                  "Br",
-                                                  "Btheta",
-                                                  "Bphi",
-                                                  "Dr",
-                                                  "Dtheta",
-                                                  "Dphi",
-                                                  "Hr",
-                                                  "Htheta",
-                                                  "Hphi",
-                                                  "Jx",
-                                                  "Jy",
-                                                  "Jz",
-                                                  "Jr",
-                                                  "Jtheta",
-                                                  "Jphi",
-                                                  "mass_density",
-                                                  "number_density",
-                                                  "charge_density",
-                                                  "energy_density",
-                                                  "photon_number_density",
-                                                  "photon_energy_density" };
-
     const std::vector<std::string> outputs    = { "disabled", "HDF5" };
   }    // namespace options
 
