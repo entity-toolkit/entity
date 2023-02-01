@@ -139,6 +139,35 @@ namespace ntt {
     const int                  output_interval  = 1;
   }    // namespace defaults
 
+  // Field IDs used for io
+  enum class FieldID {
+    E,      // Electric fields
+    B,      // Magnetic fields
+    J,      // Current density
+    T,      // Particle distribution moments
+    Rho,    // Particle density
+    N       // Particle number density
+  };
+
+  inline auto StringizeFieldID(const FieldID& id) -> std::string {
+    switch (id) {
+    case FieldID::E:
+      return "E";
+    case FieldID::B:
+      return "B";
+    case FieldID::J:
+      return "J";
+    case FieldID::T:
+      return "T";
+    case FieldID::Rho:
+      return "Rho";
+    case FieldID::N:
+      return "N";
+    default:
+      return "UNKNOWN";
+    }
+  }
+
   // Flags
   enum SynchronizeFlags_ {
     Synchronize_None = 0,
