@@ -3,6 +3,7 @@
 #include "wrapper.h"
 
 #include "input.h"
+#include "output.h"
 #include "particles.h"
 #include "qmath.h"
 #include "utils.h"
@@ -153,9 +154,6 @@ namespace ntt {
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
     m_output_interval = get<int>("output", "interval", defaults::output_interval);
     m_output_fields   = get<std::vector<std::string>>("output", "fields");
-    for (auto& field : m_output_fields) {
-      TestValidOption(field, options::fields);
-    }
   }
 
   template <typename T>
