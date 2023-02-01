@@ -3,38 +3,20 @@
 
 #include "wrapper.h"
 
+#include "meshblock.h"
+#include "sim_params.h"
+
+#ifdef OUTPUT_ENABLED
+#  include <adios2.h>
+#  include <adios2/cxx11/KokkosView.h>
+#endif
+
+#include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace ntt {
-  enum class FieldID {
-    E,      // Electric fields
-    B,      // Magnetic fields
-    J,      // Current density
-    T,      // Particle distribution moments
-    Rho,    // Particle density
-    N       // Particle number density
-  };
-
-  inline auto StringizeFieldID(const FieldID& id) -> std::string {
-    switch (id) {
-    case FieldID::E:
-      return "E";
-    case FieldID::B:
-      return "B";
-    case FieldID::J:
-      return "J";
-    case FieldID::T:
-      return "T";
-    case FieldID::Rho:
-      return "Rho";
-    case FieldID::N:
-      return "N";
-    default:
-      return "UNKNOWN";
-    }
-  }
-
   class OutputField {
     std::string m_name;
     FieldID     m_id;
@@ -61,19 +43,15 @@ namespace ntt {
       return m_id;
     }
 
-    void show() const {
-      std::cout << "OutputField: " << m_name << " (" << StringizeFieldID(m_id) << ")\n";
-      if (comp.size() == 2) {
-        std::cout << "  comp: " << comp[0] << " " << comp[1] << "\n";
-      } else if (comp.size() == 1) {
-        std::cout << "  comp: " << comp[0] << "\n";
-      }
-      std::cout << "  species: ";
-      for (const auto& s : species) {
-        std::cout << s << " ";
-      }
-      std::cout << "\n";
-    }
+    void show(std::ostream& os = std::cout) const;
+
+#ifdef OUTPUT_ENABLED
+    template <Dimension D, SimulationEngine S>
+    void put(adios2::Engine&,
+             const adios2::Variable<real_t>&,
+             const SimulationParams&,
+             Meshblock<D, S>&) const;
+#endif
   };
 
   auto InterpretInputField(const std::string&) -> std::vector<OutputField>;

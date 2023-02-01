@@ -376,16 +376,20 @@ namespace ntt {
     /**
      * @brief Compute particle moment for output or other usage.
      * @param params SimulationParams object.
-     * @param content type of the moment (density, charge density, etc.) of type enum Content.
-     * @param int index of the buff array to put the computed moment into.
-     * @param smooth smoothing window (default 2).
+     * @param field FieldID for the moment to compute.
+     * @param components Components of the field to compute (if applicable).
+     * @param prtl_species Particle species to compute the moment for.
+     * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
+     * @param smooth Smoothing order (default: 2).
      *
-     * @note Content of the meshblock::buff(*, fld) has to be Content::empty.
+     * @note Content of the meshblock::buff(*, buff_ind) has to be Content::empty.
      */
-    void ComputeMoments(const SimulationParams&,
-                        const Content&,
-                        const int&,
-                        const short& smooth = 2);
+    void ComputeMoments(const SimulationParams& params,
+                        const FieldID&          field,
+                        const std::vector<int>& components,
+                        const std::vector<int>& prtl_species,
+                        const int&              buff_ind,
+                        const short&            smooth = 2);
 
     /**
      * @brief Synchronize data from device to host.

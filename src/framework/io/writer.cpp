@@ -109,30 +109,16 @@ namespace ntt {
     m_io.DefineAttribute<real_t>("dt", mblock.timestep());
 
     for (auto& var : params.outputFields()) {
-      m_vars_r.emplace(var, m_io.DefineVariable<real_t>(var, {}, {}, count));
+      auto flds = InterpretInputField(var);
+      m_fields.insert(m_fields.end(), flds.begin(), flds.end());
+    }
+    for (auto& fld : m_fields) {
+      m_vars_r.emplace(fld.name(), m_io.DefineVariable<real_t>(fld.name(), {}, {}, count));
     }
   }
 
   template <Dimension D, SimulationEngine S>
   Writer<D, S>::~Writer() {}
-
-  template <Dimension D, int N>
-  void PutField(adios2::Engine&                 writer,
-                const adios2::Variable<real_t>& var,
-                const ndfield_mirror_t<D, N>&   field,
-                const int&                      comp) {
-    auto slice_i1 = Kokkos::ALL();
-    auto slice_i2 = Kokkos::ALL();
-    auto slice_i3 = Kokkos::ALL();
-
-    if constexpr (D == Dim1) {
-      writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, comp));
-    } else if constexpr (D == Dim2) {
-      writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, slice_i2, comp));
-    } else if constexpr (D == Dim3) {
-      writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp));
-    }
-  }
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const SimulationParams& params,
@@ -154,68 +140,8 @@ namespace ntt {
     // traverse all the fields and put them. ...
     // ... also make sure that the fields are ready for output, ...
     // ... i.e. they have been written into proper arrays
-    for (auto& var_str : params.outputFields()) {
-      auto var = m_vars_r[var_str];
-      if (var_str == "Ex" || var_str == "Er") {
-        NTTHostErrorIf(mblock.bckp_h_content[em::ex1] != Content::ex1_hat_int,
-                       "Ex1 is not ready for output");
-        PutField<D, 6>(m_writer, var, mblock.bckp_h, em::ex1);
-      } else if (var_str == "Ey" || var_str == "Etheta") {
-        NTTHostErrorIf(mblock.bckp_h_content[em::ex2] != Content::ex2_hat_int,
-                       "Ex2 is not ready for output");
-        PutField<D, 6>(m_writer, var, mblock.bckp_h, em::ex2);
-      } else if (var_str == "Ez" || var_str == "Ephi") {
-        NTTHostErrorIf(mblock.bckp_h_content[em::ex3] != Content::ex3_hat_int,
-                       "Ex3 is not ready for output");
-        PutField<D, 6>(m_writer, var, mblock.bckp_h, em::ex3);
-      } else if (var_str == "Bx" || var_str == "Br") {
-        NTTHostErrorIf(mblock.bckp_h_content[em::bx1] != Content::bx1_hat_int,
-                       "Bx1 is not ready for output");
-        PutField<D, 6>(m_writer, var, mblock.bckp_h, em::bx1);
-      } else if (var_str == "By" || var_str == "Btheta") {
-        NTTHostErrorIf(mblock.bckp_h_content[em::bx2] != Content::bx2_hat_int,
-                       "Bx2 is not ready for output");
-        PutField<D, 6>(m_writer, var, mblock.bckp_h, em::bx2);
-      } else if (var_str == "Bz" || var_str == "Bphi") {
-        NTTHostErrorIf(mblock.bckp_h_content[em::bx3] != Content::bx3_hat_int,
-                       "Bx3 is not ready for output");
-        PutField<D, 6>(m_writer, var, mblock.bckp_h, em::bx3);
-      } else if (var_str == "Jx" || var_str == "Jr") {
-        NTTHostErrorIf(mblock.cur_h_content[cur::jx1] != Content::jx1_hat_int,
-                       "Jx1 is not ready for output");
-        PutField<D, 3>(m_writer, var, mblock.cur_h, cur::jx1);
-      } else if (var_str == "Jy" || var_str == "Jtheta") {
-        NTTHostErrorIf(mblock.cur_h_content[cur::jx2] != Content::jx2_hat_int,
-                       "Jx2 is not ready for output");
-        PutField<D, 3>(m_writer, var, mblock.cur_h, cur::jx2);
-      } else if (var_str == "Jz" || var_str == "Jphi") {
-        NTTHostErrorIf(mblock.cur_h_content[cur::jx3] != Content::jx3_hat_int,
-                       "Jx3 is not ready for output");
-        PutField<D, 3>(m_writer, var, mblock.cur_h, cur::jx3);
-      } else {
-        const std::vector<fld> fld_comps
-          = { fld::dens, fld::chdens, fld::enrgdens, fld::dens };
-        const std::vector<std::string> fld_labels
-          = { "mass_density", "charge_density", "energy_density", "number_density" };
-        const std::vector<Content> fld_contents = { Content::mass_density,
-                                                    Content::charge_density,
-                                                    Content::energy_density,
-                                                    Content::number_density };
-        for (int f { 0 }; f < fld_comps.size(); ++f) {
-          if (var_str == fld_labels[f]) {
-            if (mblock.buff_h_content[fld_comps[f]] != fld_contents[f]) {
-              mblock.ComputeMoments(params, fld_contents[f], fld_comps[f]);
-              mblock.SynchronizeHostDevice(Synchronize_buff);
-            }
-            NTTHostErrorIf(mblock.buff_h_content[fld_comps[f]] != fld_contents[f],
-                           var_str + " is not ready for output");
-            PutField<D, 3>(m_writer, var, mblock.buff_h, fld_comps[f]);
-            ImposeEmptyContent(mblock.buff_h_content[fld_comps[f]]);
-            ImposeEmptyContent(mblock.buff_content[fld_comps[f]]);
-            break;
-          }
-        }
-      }
+    for (auto& fld : m_fields) {
+      fld.put<D, S>(m_writer, m_vars_r[fld.name()], params, mblock);
     }
 
     m_writer.EndStep();
@@ -244,3 +170,29 @@ namespace ntt {
 template class ntt::Writer<ntt::Dim1, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim2, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim3, ntt::PICEngine>;
+
+// } else {
+//   const std::vector<fld> fld_comps
+//     = { fld::dens, fld::chdens, fld::enrgdens, fld::dens };
+//   const std::vector<std::string> fld_labels
+//     = { "mass_density", "charge_density", "energy_density", "number_density" };
+//   const std::vector<Content> fld_contents = { Content::mass_density,
+//                                               Content::charge_density,
+//                                               Content::energy_density,
+//                                               Content::number_density };
+//   for (int f { 0 }; f < fld_comps.size(); ++f) {
+//     if (var_str == fld_labels[f]) {
+//       if (mblock.buff_h_content[fld_comps[f]] != fld_contents[f]) {
+//         mblock.ComputeMoments(params, fld_contents[f], fld_comps[f]);
+//         mblock.SynchronizeHostDevice(Synchronize_buff);
+//       }
+//       NTTHostErrorIf(mblock.buff_h_content[fld_comps[f]] != fld_contents[f],
+//                      var_str + " is not ready for output");
+//       PutField<D, 3>(m_writer, var, mblock.buff_h, fld_comps[f]);
+//       ImposeEmptyContent(mblock.buff_h_content[fld_comps[f]]);
+//       ImposeEmptyContent(mblock.buff_content[fld_comps[f]]);
+//       break;
+//     }
+//   }
+// }
+// }

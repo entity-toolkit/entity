@@ -2,7 +2,15 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
+#include "meshblock.h"
+#include "sim_params.h"
 #include "utils.h"
+
+#ifdef OUTPUT_ENABLED
+#  include <adios2.h>
+#  include <adios2/cxx11/KokkosView.h>
+#endif
 
 #include <iostream>
 #include <string>
@@ -108,6 +116,22 @@ namespace ntt {
     }
   }    // namespace
 
+  void OutputField::show(std::ostream& os) const {
+    os << "OutputField: " << m_name << " (" << StringizeFieldID(m_id) << ")\n";
+    if (comp.size() == 2) {
+      os << "  comp: " << comp[0] << " " << comp[1] << "\n";
+    } else if (comp.size() == 1) {
+      os << "  comp: " << comp[0] << "\n";
+    }
+    if (species.size() > 0) {
+      os << "  species: ";
+      for (const auto& s : species) {
+        os << s << " ";
+      }
+    }
+    os << "\n";
+  }
+
   auto InterpretInputField(const std::string& fld) -> std::vector<OutputField> {
     std::vector<OutputField> ofs;
     if (fld.find("T") == 0) {
@@ -148,4 +172,98 @@ namespace ntt {
     }
     return ofs;
   }
+
+#ifdef OUTPUT_ENABLED
+  namespace {
+    template <Dimension D, int N>
+    void PutField(adios2::Engine&                 writer,
+                  const adios2::Variable<real_t>& var,
+                  const ndfield_mirror_t<D, N>&   field,
+                  const int&                      comp) {
+      auto slice_i1 = Kokkos::ALL();
+      auto slice_i2 = Kokkos::ALL();
+      auto slice_i3 = Kokkos::ALL();
+
+      if constexpr (D == Dim1) {
+        writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, comp));
+      } else if constexpr (D == Dim2) {
+        writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, slice_i2, comp));
+      } else if constexpr (D == Dim3) {
+        writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp));
+      }
+    }
+  }    // namespace
+
+  template <Dimension D, SimulationEngine S>
+  void OutputField::put(adios2::Engine&                 writer,
+                        const adios2::Variable<real_t>& var,
+                        const SimulationParams&         params,
+                        Meshblock<D, S>&                mblock) const {
+    if ((m_id == FieldID::E) || (m_id == FieldID::B)) {
+      // EM fields (vector)
+      std::vector<em>      comp_options;
+      std::vector<Content> content_options;
+      if (m_id == FieldID::E) {
+        comp_options    = { em::ex1, em::ex2, em::ex3 };
+        content_options = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int };
+      } else if (m_id == FieldID::B) {
+        comp_options    = { em::bx1, em::bx2, em::bx3 };
+        content_options = { Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
+      }
+      for (int i { 0 }; i < 3; ++i) {
+        if (comp[0] == comp_options[i]) {
+          if (mblock.bckp_h_content[comp_options[i]] != content_options[i]) {
+            mblock.InterpolateAndConvertFieldsToHat();
+            mblock.SynchronizeHostDevice(Synchronize_bckp);
+          }
+          PutField<D, 6>(writer, var, mblock.bckp_h, (int)(comp_options[i]));
+          ImposeEmptyContent(mblock.bckp_h_content[comp_options[i]]);
+          return;
+        }
+      }
+    } else if (m_id == FieldID::J) {
+      // Currents (vector)
+      std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
+      std::vector<Content> content_options
+        = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
+      for (int i { 0 }; i < 3; ++i) {
+        if (comp[0] == comp_options[i]) {
+          if (mblock.cur_h_content[comp_options[i]] != content_options[i]) {
+            mblock.InterpolateAndConvertFieldsToHat();
+            mblock.SynchronizeHostDevice(Synchronize_cur);
+          }
+          PutField<D, 3>(writer, var, mblock.cur_h, (int)(comp_options[i]));
+          ImposeEmptyContent(mblock.cur_h_content[comp_options[i]]);
+          return;
+        }
+      }
+    } else {
+      mblock.ComputeMoments(params, m_id, comp, species, 0);
+      mblock.SynchronizeHostDevice(Synchronize_buff);
+      PutField<D, 3>(writer, var, mblock.buff_h, 0);
+      ImposeEmptyContent(mblock.buff_h_content[0]);
+    }
+  }
+
+#endif
 }    // namespace ntt
+
+#ifdef OUTPUT_ENABLED
+
+template void ntt::OutputField::put<ntt::Dim1, ntt::PICEngine>(
+  adios2::Engine&,
+  const adios2::Variable<real_t>&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim1, ntt::PICEngine>&) const;
+template void ntt::OutputField::put<ntt::Dim2, ntt::PICEngine>(
+  adios2::Engine&,
+  const adios2::Variable<real_t>&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::PICEngine>&) const;
+template void ntt::OutputField::put<ntt::Dim3, ntt::PICEngine>(
+  adios2::Engine&,
+  const adios2::Variable<real_t>&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
+
+#endif
