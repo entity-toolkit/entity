@@ -85,10 +85,10 @@ namespace ntt {
       timers.stop("ParticlePusher");
 
       timers.start("UserSpecific");
-      // !TODO: this needs to move (or become optional)
-      mblock.ComputeMoments(params, Content::mass_density, fld::dens, 0);
+      // !HACK: this needs to move (or become optional)
+      // mblock.ComputeMoments(params, Content::mass_density, 0, 0);
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      ImposeEmptyContent(mblock.buff_content[fld::dens]);
+      // ImposeEmptyContent(mblock.buff_content[0]);
       timers.stop("UserSpecific");
 
       timers.start("ParticleBoundaries");
