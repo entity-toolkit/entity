@@ -26,7 +26,9 @@ namespace ntt {
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
+        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
         StepForward();
+        PLOGI_(LogFile) << "[OK] ti " << this->m_tstep;
       }
       WaitAndSynchronize();
     }
@@ -54,6 +56,7 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepForward() {
+    NTTLog();
     auto                       params = *(this->params());
     auto&                      mblock = this->meshblock;
     auto&                      wrtr   = this->writer;

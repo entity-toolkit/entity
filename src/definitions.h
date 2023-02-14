@@ -73,6 +73,8 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
+  enum { LogFile = 1 };
+
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 

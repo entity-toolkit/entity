@@ -3,7 +3,9 @@
 
 #include "wrapper.h"
 
+#include "input.h"
 #include "particles.h"
+#include "utils.h"
 
 #include <toml/toml.hpp>
 
@@ -216,32 +218,47 @@ namespace ntt {
      * @brief Get parameters read from the input (with default value if not found)
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&, const std::string&, const T&) const -> T;
+    [[nodiscard]] auto get(const std::string& block,
+                           const std::string& key,
+                           const T&           defval) const -> T {
+      return readFromInput<T>(m_inputdata, block, key, defval);
+    }
 
     /**
      * @brief Get parameters read from the input (no default)
      * @overload
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&, const std::string&) const -> T;
+    [[nodiscard]] auto get(const std::string& block, const std::string& key) const -> T {
+      return readFromInput<T>(m_inputdata, block, key);
+    }
 
     /**
      * @brief Get parameters read from the input (with valid values, no default)
      * @overload
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&, const std::string&, const std::vector<T>&) const
-      -> T;
+    [[nodiscard]] auto get(const std::string&    block,
+                           const std::string&    key,
+                           const std::vector<T>& valid) const -> T {
+      auto val = readFromInput<T>(m_inputdata, block, key);
+      TestValidOption(val, valid);
+      return val;
+    }
 
     /**
      * @brief Get parameters read from the input (with valid values, and with default)
      * @overload
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&,
-                           const std::string&,
-                           const T&,
-                           const std::vector<T>&) const -> T;
+    [[nodiscard]] auto get(const std::string&    block,
+                           const std::string&    key,
+                           const T&              defval,
+                           const std::vector<T>& valid) const -> T {
+      auto val = readFromInput<T>(m_inputdata, block, key, defval);
+      TestValidOption(val, valid);
+      return val;
+    }
   };
 
 }    // namespace ntt
