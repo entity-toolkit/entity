@@ -39,7 +39,7 @@ auto main(int argc, char* argv[]) -> int {
 #endif
   plog::ColorConsoleAppender<plog::NTTFormatter> consoleAppender;
   plog::RollingFileAppender<plog::TxtFormatter>  fileAppender("entity.log", 1048576, 3);
-  plog::init(plog::info, &consoleAppender);
+  plog::init(max_severity, &consoleAppender);
   plog::init<ntt::LogFile>(plog::verbose, &fileAppender);
 
   Kokkos::initialize();
