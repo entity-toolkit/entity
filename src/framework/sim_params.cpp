@@ -3,6 +3,7 @@
 #include "wrapper.h"
 
 #include "input.h"
+#include "output.h"
 #include "particles.h"
 #include "qmath.h"
 #include "utils.h"
@@ -151,63 +152,8 @@ namespace ntt {
     // output params
     m_output_format
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
-    m_output_interval = get<int>("output", "interval", defaults::output_interval);
-    m_output_fields   = get<std::vector<std::string>>("output", "fields");
-    for (auto& field : m_output_fields) {
-      TestValidOption(field, options::fields);
-    }
+    m_output_interval   = get<int>("output", "interval", defaults::output_interval);
+    m_output_fields     = get<std::vector<std::string>>("output", "fields");
+    m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
   }
-
-  template <typename T>
-  auto SimulationParams::get<T>(const std::string& block,
-                                const std::string& key,
-                                const T&           defval) const -> T {
-    return readFromInput<T>(m_inputdata, block, key, defval);
-  }
-
-  template <typename T>
-  auto SimulationParams::get<T>(const std::string& block, const std::string& key) const -> T {
-    return readFromInput<T>(m_inputdata, block, key);
-  }
-
-  template <typename T>
-  auto SimulationParams::get(const std::string&    block,
-                             const std::string&    key,
-                             const std::vector<T>& valid) const -> T {
-    auto val = readFromInput<T>(m_inputdata, block, key);
-    TestValidOption(val, valid);
-    return val;
-  }
-
-  template <typename T>
-  auto SimulationParams::get(const std::string&    block,
-                             const std::string&    key,
-                             const T&              defval,
-                             const std::vector<T>& valid) const -> T {
-    auto val = readFromInput<T>(m_inputdata, block, key, defval);
-    TestValidOption(val, valid);
-    return val;
-  }
-
 }    // namespace ntt
-
-template auto ntt::SimulationParams::get<float>(const std::string&,
-                                                const std::string&,
-                                                const float&) const -> float;
-template auto ntt::SimulationParams::get<float>(const std::string&, const std::string&) const
-  -> float;
-template auto ntt::SimulationParams::get<double>(const std::string&,
-                                                 const std::string&,
-                                                 const double&) const -> double;
-template auto ntt::SimulationParams::get<double>(const std::string&, const std::string&) const
-  -> double;
-template auto ntt::SimulationParams::get<int>(const std::string&,
-                                              const std::string&,
-                                              const int&) const -> int;
-template auto ntt::SimulationParams::get<int>(const std::string&, const std::string&) const
-  -> int;
-template auto ntt::SimulationParams::get<bool>(const std::string&,
-                                               const std::string&,
-                                               const bool&) const -> bool;
-template auto ntt::SimulationParams::get<bool>(const std::string&, const std::string&) const
-  -> bool;

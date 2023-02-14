@@ -1,9 +1,10 @@
-#ifndef FRAMEWORK_OUTPUT_WRITER_H
-#define FRAMEWORK_OUTPUT_WRITER_H
+#ifndef IO_WRITER_H
+#define IO_WRITER_H
 
 #include "wrapper.h"
 
 #include "meshblock.h"
+#include "output.h"
 #include "sim_params.h"
 
 #ifdef OUTPUT_ENABLED
@@ -26,6 +27,8 @@ namespace ntt {
 
     std::map<std::string, adios2::Variable<real_t>> m_vars_r;
     std::map<std::string, adios2::Variable<int>>    m_vars_i;
+
+    std::vector<OutputField>                        m_fields;
 #endif
 
   public:
@@ -40,4 +43,4 @@ namespace ntt {
 
 }    // namespace ntt
 
-#endif    // FRAMEWORK_OUTPUT_WRITER_H
+#endif    // IO_WRITER_H

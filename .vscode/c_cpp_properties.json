@@ -8,7 +8,7 @@
       "${workspaceFolder}/build/extern/kokkos/",
       "${workspaceFolder}/build/extern/adios2/source/"
     ],
-    "myCompilerPath": "/usr/bin/g++"
+    "myCompilerPath": "g++"
   },
   "configurations": [
     {

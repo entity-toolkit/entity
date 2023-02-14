@@ -9,7 +9,6 @@ namespace ntt {
   using resolution_t = std::vector<unsigned int>;
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
   enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
-  enum fld { dens = 0, chdens = 1, enrgdens = 2 };
 
   /**
    * @brief To keep track what fields are stored in buffer arrays we use an enum indicator.

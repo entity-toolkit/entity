@@ -12,6 +12,8 @@
 #endif
 
 #include <plog/Appenders/ColorConsoleAppender.h>
+#include <plog/Appenders/RollingFileAppender.h>
+#include <plog/Formatters/TxtFormatter.h>
 #include <plog/Init.h>
 #include <plog/Log.h>
 #include <toml/toml.hpp>
@@ -19,10 +21,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
-
-using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
-
-void initLogger(plog_t* console_appender);
 
 // Logging is done via `plog` library...
 // ... Use the following commands:
@@ -33,8 +31,16 @@ void initLogger(plog_t* console_appender);
 //  `PLOGW << ...` for warnings
 
 auto main(int argc, char* argv[]) -> int {
-  plog_t console_appender;
-  initLogger(&console_appender);
+  plog::Severity max_severity;
+#ifdef DEBUG
+  max_severity = plog::verbose;
+#else
+  max_severity = plog::info;
+#endif
+  plog::ColorConsoleAppender<plog::NTTFormatter> consoleAppender;
+  plog::RollingFileAppender<plog::TxtFormatter>  fileAppender("entity.log", 1048576, 3);
+  plog::init(max_severity, &consoleAppender);
+  plog::init<ntt::LogFile>(plog::verbose, &fileAppender);
 
   Kokkos::initialize();
   try {
@@ -71,14 +77,4 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::finalize();
 
   return 0;
-}
-
-void initLogger(plog_t* console_appender) {
-  plog::Severity max_severity;
-#ifdef DEBUG
-  max_severity = plog::verbose;
-#else
-  max_severity = plog::info;
-#endif
-  plog::init(max_severity, console_appender);
 }

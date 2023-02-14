@@ -24,7 +24,9 @@
     + (PARTICLES).ux3((P)) * (PARTICLES).ux3((P))
 
 #define get_prtl_Gamma_SR(PARTICLES, P)                                                       \
-  math::sqrt(static_cast<real_t>(1.0) + get_prtl_Usqr_SR((PARTICLES), (P)))
+  (math::sqrt(static_cast<real_t>(1.0) + get_prtl_Usqr_SR((PARTICLES), (P))))
+
+#define get_photon_Energy_SR(PARTICLES, P) (math::sqrt(get_prtl_Usqr_SR((PARTICLES), (P))))
 
 #ifdef MINKOWSKI_METRIC
 

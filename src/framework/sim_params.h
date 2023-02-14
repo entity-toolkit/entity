@@ -3,7 +3,9 @@
 
 #include "wrapper.h"
 
+#include "input.h"
 #include "particles.h"
+#include "utils.h"
 
 #include <toml/toml.hpp>
 
@@ -60,6 +62,7 @@ namespace ntt {
     std::string                    m_output_format;
     int                            m_output_interval;
     std::vector<std::string>       m_output_fields;
+    int                            m_output_mom_smooth;
 
     // Container with data from the parsed input file.
     toml::value                    m_inputdata;
@@ -200,6 +203,12 @@ namespace ntt {
       return m_output_fields;
     }
     /**
+     * @brief Get the smoothing size for moments.
+     */
+    [[nodiscard]] auto outputMomSmooth() const -> const int& {
+      return m_output_mom_smooth;
+    }
+    /**
      * @brief Get the particle shuffle interval.
      */
     [[nodiscard]] auto shuffleInterval() const -> const int& {
@@ -216,32 +225,47 @@ namespace ntt {
      * @brief Get parameters read from the input (with default value if not found)
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&, const std::string&, const T&) const -> T;
+    [[nodiscard]] auto get(const std::string& block,
+                           const std::string& key,
+                           const T&           defval) const -> T {
+      return readFromInput<T>(m_inputdata, block, key, defval);
+    }
 
     /**
      * @brief Get parameters read from the input (no default)
      * @overload
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&, const std::string&) const -> T;
+    [[nodiscard]] auto get(const std::string& block, const std::string& key) const -> T {
+      return readFromInput<T>(m_inputdata, block, key);
+    }
 
     /**
      * @brief Get parameters read from the input (with valid values, no default)
      * @overload
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&, const std::string&, const std::vector<T>&) const
-      -> T;
+    [[nodiscard]] auto get(const std::string&    block,
+                           const std::string&    key,
+                           const std::vector<T>& valid) const -> T {
+      auto val = readFromInput<T>(m_inputdata, block, key);
+      TestValidOption(val, valid);
+      return val;
+    }
 
     /**
      * @brief Get parameters read from the input (with valid values, and with default)
      * @overload
      */
     template <typename T>
-    [[nodiscard]] auto get(const std::string&,
-                           const std::string&,
-                           const T&,
-                           const std::vector<T>&) const -> T;
+    [[nodiscard]] auto get(const std::string&    block,
+                           const std::string&    key,
+                           const T&              defval,
+                           const std::vector<T>& valid) const -> T {
+      auto val = readFromInput<T>(m_inputdata, block, key, defval);
+      TestValidOption(val, valid);
+      return val;
+    }
   };
 
 }    // namespace ntt

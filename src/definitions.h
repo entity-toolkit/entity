@@ -73,6 +73,8 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
+  enum { LogFile = 1 };
+
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
@@ -113,62 +115,61 @@ namespace ntt {
   namespace options {
     const std::vector<std::string> pushers    = { "Boris", "photon" };
     const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
-    const std::vector<std::string> fields     = { "Ex",
-                                                  "Ey",
-                                                  "Ez",
-                                                  "Bx",
-                                                  "By",
-                                                  "Bz",
-                                                  "Er",
-                                                  "Etheta",
-                                                  "Ephi",
-                                                  "Br",
-                                                  "Btheta",
-                                                  "Bphi",
-                                                  "Dr",
-                                                  "Dtheta",
-                                                  "Dphi",
-                                                  "Hr",
-                                                  "Htheta",
-                                                  "Hphi",
-                                                  "Jx",
-                                                  "Jy",
-                                                  "Jz",
-                                                  "Jr",
-                                                  "Jtheta",
-                                                  "Jphi",
-                                                  "mass_density",
-                                                  "number_density",
-                                                  "charge_density",
-                                                  "energy_density",
-                                                  "photon_number_density",
-                                                  "photon_energy_density" };
-
     const std::vector<std::string> outputs    = { "disabled", "HDF5" };
   }    // namespace options
 
   namespace defaults {
-    constexpr std::string_view input_filename   = "input";
-    constexpr std::string_view output_path      = "output";
+    constexpr std::string_view input_filename    = "input";
+    constexpr std::string_view output_path       = "output";
 
-    const std::string          title            = "PIC_Sim";
-    const int                  n_species        = 0;
-    const std::string          em_pusher        = "Boris";
-    const std::string          ph_pusher        = "photon";
-    const std::string          metric           = "minkowski";
+    const std::string          title             = "PIC_Sim";
+    const int                  n_species         = 0;
+    const std::string          em_pusher         = "Boris";
+    const std::string          ph_pusher         = "photon";
+    const std::string          metric            = "minkowski";
 
-    const real_t               runtime          = 1e10;
-    const real_t               correction       = 1.0;
-    const real_t               cfl              = 0.95;
+    const real_t               runtime           = 1e10;
+    const real_t               correction        = 1.0;
+    const real_t               cfl               = 0.95;
 
-    const unsigned short       current_filters  = 0;
+    const unsigned short       current_filters   = 0;
 
-    const int                  shuffle_interval = 0;
-    const double               max_dead_frac    = 0.0;
+    const int                  shuffle_interval  = 0;
+    const double               max_dead_frac     = 0.0;
 
-    const std::string          output_format    = options::outputs[0];
-    const int                  output_interval  = 1;
+    const std::string          output_format     = options::outputs[0];
+    const int                  output_interval   = 1;
+    const int                  output_mom_smooth = 1;
   }    // namespace defaults
+
+  // Field IDs used for io
+  enum class FieldID {
+    E,      // Electric fields
+    B,      // Magnetic fields
+    J,      // Current density
+    T,      // Particle distribution moments
+    Rho,    // Particle density
+    N       // Particle number density
+  };
+
+  inline auto StringizeFieldID(const FieldID& id) -> std::string {
+    switch (id) {
+    case FieldID::E:
+      return "E";
+    case FieldID::B:
+      return "B";
+    case FieldID::J:
+      return "J";
+    case FieldID::T:
+      return "T";
+    case FieldID::Rho:
+      return "Rho";
+    case FieldID::N:
+      return "N";
+    default:
+      return "UNKNOWN";
+    }
+  }
 
   // Flags
   enum SynchronizeFlags_ {

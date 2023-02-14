@@ -231,7 +231,7 @@ PrintChoices("C++ compiler"
   "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
   "N/A"
   "${White}"
-  COMPILERS_REPORT
+  CXX_COMPILER_REPORT
   0
   42
 )
@@ -260,7 +260,7 @@ if(${Kokkos_ENABLE_CUDA})
     0
     42
   )
-  set(COMPILERS_REPORT "${COMPILERS_REPORT}\n\n  ${CUDA_COMPILER_REPORT}")
+  # set(COMPILERS_REPORT "${COMPILERS_REPORT}\n\n  ${CUDA_COMPILER_REPORT}")
 endif()
 
 set(DOT_SYMBOL "${ColourReset}.")
@@ -287,42 +287,35 @@ ${DOT_SYMBOL}${Blue}                                                /\\___/     
 ${DOT_SYMBOL}${Blue}                                                \\/__/                ${DOT_SYMBOL}
 ${DOT_SYMBOL}                                                                     ${DOT_SYMBOL}
 ${DOT_SYMBOL}${Blue}                              ${VERSION_SYMBOL}                             ${DOT_SYMBOL}
-${DOTTED_LINE_SYMBOL}
-
-${DASHED_LINE_SYMBOL}
+${DOTTED_LINE_SYMBOL}")
+message("${DASHED_LINE_SYMBOL}
 Main configurations ${Dim}[1]${ColourReset}
-${DASHED_LINE_SYMBOL}
-  ${ENGINE_REPORT}
-
-  ${METRIC_REPORT}
-
-  ${PGEN_REPORT}
-
-  ${PRECISION_REPORT}
-
-  ${OUTPUT_REPORT}
-
-  ${NTTINY_REPORT}
-${DASHED_LINE_SYMBOL}
+${DASHED_LINE_SYMBOL}")
+message("  ${ENGINE_REPORT}\n")
+message("  ${METRIC_REPORT}\n")
+message("  ${PGEN_REPORT}\n")
+message("  ${PRECISION_REPORT}\n")
+message("  ${OUTPUT_REPORT}\n")
+message("  ${NTTINY_REPORT}\n")
+message("${DASHED_LINE_SYMBOL}
 Framework configurations
-${DASHED_LINE_SYMBOL}
-  ${DEBUG_REPORT}
-
-  ${FRAMEWORK_REPORT}
-
-  ${ARCH_REPORT}
-
-  ${CUDA_REPORT}
-
-  ${OPENMP_REPORT}
-
-  ${COMPILERS_REPORT}
-${DASHED_LINE_SYMBOL}
+${DASHED_LINE_SYMBOL}")
+  message("  ${DEBUG_REPORT}\n")
+  message("  ${FRAMEWORK_REPORT}\n")
+  if (NOT "${ARCH_REPORT}" STREQUAL "")
+    message("  ${ARCH_REPORT}\n")
+  endif()
+  message("  ${CUDA_REPORT}\n")
+  message("  ${OPENMP_REPORT}\n")
+  message("  ${CXX_COMPILER_REPORT}\n")
+  if (NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
+    message("  ${CUDA_COMPILER_REPORT}\n")
+  endif()
+message("${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}
   ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, the ${Underline}default${ColourReset}${Dim} value
    :  will be used unless the variable is explicitly set.${ColourReset}
-
 ")
 
 # message("This is normal")

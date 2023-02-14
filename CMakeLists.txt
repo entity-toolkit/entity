@@ -3,11 +3,12 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.1.0
+  VERSION 0.8.2.1
   LANGUAGES CXX
 )
 
 # ----------------------------- Submodules ------------------------------- #
+# !TODO: this is quite ugly, update submodules as needed (below)
 find_package(Git QUIET)
 
 file(GLOB SUBMODULES_LOADED extern/kokkos/*)
@@ -132,7 +133,7 @@ else()
   message(STATUS "Debug mode")
 endif()
 
-# ---------------------------------- tests --------------------------------- #
+# ---------------------------------- Tests --------------------------------- #
 set(BUILD_TESTING OFF CACHE BOOL "Build tests")
 
 if(${BUILD_TESTING} STREQUAL "OFF")
@@ -144,16 +145,10 @@ endif()
 # ----------------------------------- GUI ---------------------------------- #
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
-if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
-endif()
-
 # ----------------------------- Kokkos settings ---------------------------- #
 if(${Kokkos_ENABLE_CUDA})
   set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable CUDA lambda")
 endif()
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
 
 # set memory space
 if(${Kokkos_ENABLE_CUDA})
@@ -207,11 +202,17 @@ if(${output} STREQUAL "ON")
 
   # set(ADIOS2_USE_CUDA ${Kokkos_ENABLE_CUDA} CACHE BOOL "Use CUDA for ADIOS2")
   add_compile_options("-D OUTPUT_ENABLED")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
 endif()
 
-# ----------------------------------- fmt ---------------------------------- #
+# ------------------------------ Dependencies ------------------------------ #
+if(${nttiny} STREQUAL "ON")
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
+endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/fmt extern/fmt)
+if (${output} STREQUAL "ON")
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
+endif()
 
 # ------------------------------- Main source ------------------------------ #
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)

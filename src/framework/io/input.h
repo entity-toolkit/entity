@@ -46,4 +46,4 @@ namespace ntt {
 
 }    // namespace ntt
 
-#endif
+#endif    // IO_INPUT_H

@@ -45,4 +45,5 @@ fields_stride   = <int>
 [output]
 fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see src/definitions.h for ref>
 format          = <string: { disabled, hdf5 }>
+mom_smooth      = <int>
 interval        = <int>

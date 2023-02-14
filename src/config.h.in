@@ -9,6 +9,9 @@
 #  define STRINGIZE_DETAIL(x) #x
 #  define LINE_STRING         STRINGIZE(__LINE__)
 
+#  define NTTLog()                                                                            \
+    { PLOGV_(LogFile); }
+
 #  define NTTHostError(msg)                                                                   \
     {                                                                                         \
       auto err                                                                                \

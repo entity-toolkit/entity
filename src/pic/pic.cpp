@@ -26,7 +26,9 @@ namespace ntt {
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
+        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
         StepForward();
+        PLOGI_(LogFile) << "[OK] ti " << this->m_tstep;
       }
       WaitAndSynchronize();
     }
@@ -54,6 +56,7 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepForward() {
+    NTTLog();
     auto                       params = *(this->params());
     auto&                      mblock = this->meshblock;
     auto&                      wrtr   = this->writer;
@@ -85,10 +88,10 @@ namespace ntt {
       timers.stop("ParticlePusher");
 
       timers.start("UserSpecific");
-      // !TODO: this needs to move (or become optional)
-      mblock.ComputeMoments(params, Content::mass_density, fld::dens, 0);
+      // !HACK: this needs to move (or become optional)
+      // mblock.ComputeMoments(params, Content::mass_density, 0, 0);
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      ImposeEmptyContent(mblock.buff_content[fld::dens]);
+      // ImposeEmptyContent(mblock.buff_content[0]);
       timers.stop("UserSpecific");
 
       timers.start("ParticleBoundaries");
