@@ -62,6 +62,7 @@ namespace ntt {
     std::string                    m_output_format;
     int                            m_output_interval;
     std::vector<std::string>       m_output_fields;
+    int                            m_output_mom_smooth;
 
     // Container with data from the parsed input file.
     toml::value                    m_inputdata;
@@ -200,6 +201,12 @@ namespace ntt {
      */
     [[nodiscard]] auto outputFields() const -> const std::vector<std::string>& {
       return m_output_fields;
+    }
+    /**
+     * @brief Get the smoothing size for moments.
+     */
+    [[nodiscard]] auto outputMomSmooth() const -> const int& {
+      return m_output_mom_smooth;
     }
     /**
      * @brief Get the particle shuffle interval.

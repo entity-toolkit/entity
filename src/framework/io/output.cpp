@@ -230,7 +230,7 @@ namespace ntt {
       AssertContent({ mblock.cur_h_content[comp_id] }, { cont_id });
       PutField<D, 3>(writer, var, mblock.cur_h, (int)(comp_id));
     } else {
-      mblock.ComputeMoments(params, m_id, comp, species, 0);
+      mblock.ComputeMoments(params, m_id, comp, species, 0, params.outputMomSmooth());
       mblock.SynchronizeHostDevice(Synchronize_buff);
       PutField<D, 3>(writer, var, mblock.buff_h, 0);
       ImposeEmptyContent(mblock.buff_h_content[0]);
