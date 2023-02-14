@@ -200,6 +200,9 @@ namespace ntt {
                         const SimulationParams&         params,
                         Meshblock<D, S>&                mblock) const {
     if ((m_id == FieldID::E) || (m_id == FieldID::B)) {
+      mblock.InterpolateAndConvertFieldsToHat();
+      mblock.SynchronizeHostDevice(Synchronize_bckp);
+      ImposeEmptyContent(mblock.bckp_content);
       // EM fields (vector)
       std::vector<em>      comp_options;
       std::vector<Content> content_options;
@@ -210,33 +213,22 @@ namespace ntt {
         comp_options    = { em::bx1, em::bx2, em::bx3 };
         content_options = { Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
       }
-      for (int i { 0 }; i < 3; ++i) {
-        if (comp[0] == comp_options[i]) {
-          if (mblock.bckp_h_content[comp_options[i]] != content_options[i]) {
-            mblock.InterpolateAndConvertFieldsToHat();
-            mblock.SynchronizeHostDevice(Synchronize_bckp);
-          }
-          PutField<D, 6>(writer, var, mblock.bckp_h, (int)(comp_options[i]));
-          ImposeEmptyContent(mblock.bckp_h_content[comp_options[i]]);
-          return;
-        }
-      }
+      auto comp_id = comp_options[comp[0] - 1];
+      auto cont_id = content_options[comp[0] - 1];
+      AssertContent({ mblock.bckp_h_content[comp_id] }, { cont_id });
+      PutField<D, 6>(writer, var, mblock.bckp_h, (int)(comp_id));
     } else if (m_id == FieldID::J) {
+      mblock.InterpolateAndConvertCurrentsToHat();
+      mblock.SynchronizeHostDevice(Synchronize_cur);
+      ImposeEmptyContent(mblock.cur_content);
       // Currents (vector)
       std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
       std::vector<Content> content_options
         = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
-      for (int i { 0 }; i < 3; ++i) {
-        if (comp[0] == comp_options[i]) {
-          if (mblock.cur_h_content[comp_options[i]] != content_options[i]) {
-            mblock.InterpolateAndConvertFieldsToHat();
-            mblock.SynchronizeHostDevice(Synchronize_cur);
-          }
-          PutField<D, 3>(writer, var, mblock.cur_h, (int)(comp_options[i]));
-          ImposeEmptyContent(mblock.cur_h_content[comp_options[i]]);
-          return;
-        }
-      }
+      auto comp_id = comp_options[comp[0] - 1];
+      auto cont_id = content_options[comp[0] - 1];
+      AssertContent({ mblock.cur_h_content[comp_id] }, { cont_id });
+      PutField<D, 3>(writer, var, mblock.cur_h, (int)(comp_id));
     } else {
       mblock.ComputeMoments(params, m_id, comp, species, 0);
       mblock.SynchronizeHostDevice(Synchronize_buff);
