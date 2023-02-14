@@ -368,10 +368,16 @@ namespace ntt {
     /* ----------------- Additional conversions and computations ---------------- */
 
     /**
-     * @brief Fields on the host to hatted basis.
+     * @brief Fields to hatted basis.
      * Used for outputting/visualizing the fields.
      */
     void InterpolateAndConvertFieldsToHat();
+
+    /**
+     * @brief Currents to hatted basis.
+     * Used for outputting/visualizing the currents.
+     */
+    void InterpolateAndConvertCurrentsToHat();
 
     /**
      * @brief Compute particle moment for output or other usage.
