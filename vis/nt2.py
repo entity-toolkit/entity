@@ -5,6 +5,13 @@
 import xarray as xr
 import multiprocessing as mp
 
+useGreek = False
+
+
+def configure(use_greek):
+    global useGreek
+    useGreek = use_greek
+
 
 @xr.register_dataarray_accessor("nttplot")
 class NTPlotAccessor:
@@ -69,10 +76,25 @@ def getFields(fname):
     def EdgeToCenter(arr):
         return (arr[1:] + arr[:-1]) / 2
 
+    QuantityDict = {
+        "Ttt": "E",
+        "Ttx": "Px",
+        "Tty": "Py",
+        "Ttz": "Pz",
+    }
+
     CoordinateDict = {
         "minkowski": {"x": "x", "y": "y", "z": "z"},
-        "spherical": {"r": "r", "theta": "θ", "phi": "φ"},
-        "qspherical": {"r": "r", "theta": "θ", "phi": "φ"},
+        "spherical": {
+            "r": "r",
+            "theta": "θ" if useGreek else "th",
+            "phi": "φ" if useGreek else "ph",
+        },
+        "qspherical": {
+            "r": "r",
+            "theta": "θ" if useGreek else "th",
+            "phi": "φ" if useGreek else "ph",
+        },
     }
 
     file = h5py.File(fname, "r")
@@ -103,6 +125,10 @@ def getFields(fname):
         k_ = reduce(
             lambda x, y: x.replace(*y),
             [k, *list(CoordinateDict[metric].items())],
+        )
+        k_ = reduce(
+            lambda x, y: x.replace(*y),
+            [k_, *list(QuantityDict.items())],
         )
         x = xr.DataArray(
             da.stack(dask_arrays, axis=0),
@@ -183,4 +209,8 @@ def makeMovie(plot, steps, fpath, dpi=300, num_cpus=mp.cpu_count()):
     #             total=len(steps),
     #         )
     #     )
+    # retur
+    # retur
+    # retur
+    # return resultn resultn resultn result
     # return result
