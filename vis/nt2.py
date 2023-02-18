@@ -84,16 +84,22 @@ def getFields(fname):
     }
 
     CoordinateDict = {
-        "minkowski": {"x": "x", "y": "y", "z": "z"},
+        "minkowski": {"x": "x", "y": "y", "z": "z", "1": "x", "2": "y", "3": "z"},
         "spherical": {
             "r": "r",
             "theta": "θ" if useGreek else "th",
             "phi": "φ" if useGreek else "ph",
+            "1": "r",
+            "2": "θ" if useGreek else "th",
+            "3": "φ" if useGreek else "ph",
         },
         "qspherical": {
             "r": "r",
             "theta": "θ" if useGreek else "th",
             "phi": "φ" if useGreek else "ph",
+            "1": "r",
+            "2": "θ" if useGreek else "th",
+            "3": "φ" if useGreek else "ph",
         },
     }
 
