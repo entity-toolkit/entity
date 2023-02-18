@@ -38,7 +38,7 @@ auto main(int argc, char* argv[]) -> int {
   max_severity = plog::info;
 #endif
   plog::ColorConsoleAppender<plog::NTTFormatter> consoleAppender;
-  plog::RollingFileAppender<plog::TxtFormatter>  fileAppender("entity.log", 1048576, 3);
+  plog::RollingFileAppender<plog::TxtFormatter>  fileAppender("entity.log");
   plog::init(max_severity, &consoleAppender);
   plog::init<ntt::LogFile>(plog::verbose, &fileAppender);
 
