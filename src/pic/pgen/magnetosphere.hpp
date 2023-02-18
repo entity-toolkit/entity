@@ -179,7 +179,7 @@ namespace ntt {
       : InjectionCriterion<D, S>(params, mblock),
         inj_maxDens { params.get<real_t>("problem", "inj_maxDens", 5.0) } {}
     Inline bool operator()(const coord_t<D>&) const {
-      return false;
+      return true;
     }
 
   private:
@@ -192,20 +192,18 @@ namespace ntt {
     (this->m_mblock).metric.x_Sph2Code(xph, xi);
     std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
     std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
-    return (this->m_mblock).buff(i1, i2, fld::dens) < inj_maxDens;
+    return (this->m_mblock).buff(i1, i2, 0) < inj_maxDens;
   }
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 0, 0);
     auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction;
     InjectInVolume<Dim2, PICEngine, RadialKick, InjectionShell, MaxDensCrit>(
       params, mblock, { 1, 2 }, nppc_per_spec);
   }
 
 }    // namespace ntt
-
-#undef FIELD_DIPOLE
-#undef FIELD_MONOPOLE
 
 #endif
