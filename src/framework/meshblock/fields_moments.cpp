@@ -30,11 +30,11 @@ namespace ntt {
     }
 
     // if species not specified, use all massive particles
-    std::vector<int> sp;
-    if (prtl_species.size() == 0) {
+    std::vector<int> out_species = prtl_species;
+    if (out_species.size() == 0) {
       for (auto& specs : particles) {
         if (specs.mass() > 0.0) {
-          sp.push_back(specs.index() + 1);
+          out_species.push_back(specs.index());
         }
       }
     }
@@ -50,7 +50,7 @@ namespace ntt {
 
     auto this_metric = this->metric;
 
-    for (auto& sp : prtl_species) {
+    for (auto& sp : out_species) {
       auto species      = particles[sp - 1];
       auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
       auto mass         = species.mass();
