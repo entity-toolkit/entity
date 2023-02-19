@@ -28,10 +28,11 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
-    auto& mblock = this->meshblock;
+    auto&                mblock = this->meshblock;
+    std::vector<Content> J_curly
+      = { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly };
 
-    AssertContent(mblock.cur_content,
-                  { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly });
+    AssertContent(mblock.cur_content, J_curly);
 
     auto       params = *(this->params());
     const auto dt     = mblock.timestep();
@@ -54,10 +55,11 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
-    auto& mblock = this->meshblock;
+    auto&                mblock = this->meshblock;
+    std::vector<Content> J_curly
+      = { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly };
 
-    AssertContent(mblock.cur_content,
-                  { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly });
+    AssertContent(mblock.cur_content, J_curly);
 
     auto       params = *(this->params());
     const auto dt     = mblock.timestep();

@@ -15,7 +15,8 @@ namespace ntt {
                                        const short&            smooth) {
     NTTLog();
     // clear the buffer
-    AssertEmptyContent({ this->buff_content[buff_ind] });
+    std::vector<Content> A = { this->buff_content[buff_ind] };
+    AssertEmptyContent(A);
     std::size_t ni1 = this->Ni1(), ni2 = this->Ni2(), ni3 = this->Ni3();
     real_t weight = (1.0 / params.ppc0()) / math::pow(2.0 * smooth + 1.0, static_cast<int>(D));
     if constexpr (D == Dim1) {

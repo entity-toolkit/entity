@@ -215,7 +215,8 @@ namespace ntt {
       }
       auto comp_id = comp_options[comp[0] - 1];
       auto cont_id = content_options[comp[0] - 1];
-      AssertContent({ mblock.bckp_h_content[comp_id] }, { cont_id });
+      std::vector<Content> A = { mblock.bckp_h_content[comp_id] }, B = { cont_id };
+      AssertContent(A, B);
       PutField<D, 6>(writer, var, mblock.bckp_h, (int)(comp_id));
     } else if (m_id == FieldID::J) {
       mblock.InterpolateAndConvertCurrentsToHat();
@@ -227,7 +228,8 @@ namespace ntt {
         = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
       auto comp_id = comp_options[comp[0] - 1];
       auto cont_id = content_options[comp[0] - 1];
-      AssertContent({ mblock.cur_h_content[comp_id] }, { cont_id });
+      std::vector<Content> A = { mblock.cur_h_content[comp_id] }, B = { cont_id };
+      AssertContent(A, B);
       PutField<D, 3>(writer, var, mblock.cur_h, (int)(comp_id));
     } else {
       mblock.ComputeMoments(params, m_id, comp, species, 0, params.outputMomSmooth());
