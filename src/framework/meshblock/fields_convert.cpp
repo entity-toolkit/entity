@@ -86,10 +86,6 @@ namespace ntt {
     AssertEmptyContent(buff_content);
     Kokkos::deep_copy(buff, cur);
     ImposeContent(buff_content, cur_content);
-    std::cout << "buff_content = " << (int)buff_content[0] << " " << (int)buff_content[1]
-              << " " << (int)buff_content[2] << std::endl;
-    std::cout << "cur_content = " << (int)cur_content[0] << " " << (int)cur_content[1] << " "
-              << (int)cur_content[2] << std::endl;
     ImposeEmptyContent(cur_content);
 
     auto                 this_buff   = this->buff;
