@@ -5,6 +5,18 @@
 
 #include <vector>
 
+#define AssertContent(a, b)                                                                   \
+  {                                                                                           \
+    NTTLog();                                                                                 \
+    ntt::AssertContent_((a), (b));                                                            \
+  }
+
+#define AssertEmptyContent(a)                                                                 \
+  {                                                                                           \
+    NTTLog();                                                                                 \
+    ntt::AssertEmptyContent_((a));                                                            \
+  }
+
 namespace ntt {
   using resolution_t = std::vector<unsigned int>;
   enum em { ex1 = 0, ex2 = 1, ex3 = 2, bx1 = 3, bx2 = 4, bx3 = 5 };
@@ -75,13 +87,17 @@ namespace ntt {
 
   /**
    * @brief Assert that the content of a vector of Content is empty.
+   * Should be accessed through the macro AssertEmptyContent, ...
+   * ... which also prints the line number/file name.
    */
-  void AssertEmptyContent(const std::vector<Content>&);
+  void AssertEmptyContent_(const std::vector<Content>&);
 
   /**
    * @brief Assert particular content of a vector of Content.
+   * Should be accessed through the macro AssertContent, ...
+   * ... which also prints the line number/file name.
    */
-  void AssertContent(const std::vector<Content>&, const std::vector<Content>&);
+  void AssertContent_(const std::vector<Content>&, const std::vector<Content>&);
 
   /**
    * @brief Impose particular Content.

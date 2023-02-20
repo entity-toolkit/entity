@@ -109,14 +109,13 @@ namespace ntt {
     m_io.DefineAttribute<real_t>("dt", mblock.timestep());
 
     for (auto& var : params.outputFields()) {
-      auto flds = InterpretInputField(var);
-      m_fields.insert(m_fields.end(), flds.begin(), flds.end());
+      m_fields.push_back(InterpretInputField(var));
     }
     for (auto& fld : m_fields) {
-      m_vars_r.emplace(fld.name(), m_io.DefineVariable<real_t>(fld.name(), {}, {}, count));
+      for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
+        m_vars_r.emplace(fld.name(i), m_io.DefineVariable<real_t>(fld.name(i), {}, {}, count));
+      }
     }
-    // !HACK
-    // m_vars_r.emplace("Bx", m_io.DefineVariable<real_t>("Bx", {}, {}, count));
   }
 
   template <Dimension D, SimulationEngine S>
@@ -141,18 +140,8 @@ namespace ntt {
     // ... also make sure that the fields are ready for output, ...
     // ... i.e. they have been written into proper arrays
     for (auto& fld : m_fields) {
-      fld.put<D, S>(m_writer, m_vars_r[fld.name()], params, mblock);
+      fld.put<D, S>(m_io, m_writer, params, mblock);
     }
-    // !HACK
-    // if constexpr (D == Dim2) {
-    //   mblock.InterpolateAndConvertFieldsToHat();
-    //   mblock.SynchronizeHostDevice();
-    //   auto slice_i1 = Kokkos::ALL();
-    //   auto slice_i2 = Kokkos::ALL();
-    //   m_writer.Put<real_t>(m_vars_r["Bx"],
-    //                        Kokkos::subview(mblock.bckp_h, slice_i1, slice_i2,
-    //                        (int)(em::bx1)));
-    // }
 
     m_writer.EndStep();
     m_writer.Close();

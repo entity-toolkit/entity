@@ -20,24 +20,19 @@ namespace ntt {
     if (array_filled) {
       // do nothing since the array is already filled with the right quantities
       return;
-    } else {
-      AssertEmptyContent(bckp_content);
     }
-
+    AssertEmptyContent(bckp_content);
     Kokkos::deep_copy(bckp, em);
     ImposeContent(bckp_content, em_content);
 
-    auto this_em     = this->em;
-    auto this_bckp   = this->bckp;
-    auto this_metric = this->metric;
+    auto                 this_em     = this->em;
+    auto                 this_bckp   = this->bckp;
+    auto                 this_metric = this->metric;
 
-    AssertContent(em_content,
-                  { Content::ex1_cntrv,
-                    Content::ex2_cntrv,
-                    Content::ex3_cntrv,
-                    Content::bx1_cntrv,
-                    Content::bx2_cntrv,
-                    Content::bx3_cntrv });
+    std::vector<Content> EB_cntrv
+      = { Content::ex1_cntrv, Content::ex2_cntrv, Content::ex3_cntrv,
+          Content::bx1_cntrv, Content::bx2_cntrv, Content::bx3_cntrv };
+    AssertContent(em_content, EB_cntrv);
 
     Kokkos::parallel_for(
       "InterpolateAndConvertFieldsToHat", rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -75,19 +70,31 @@ namespace ntt {
   template <>
   void Meshblock<Dim2, PICEngine>::InterpolateAndConvertCurrentsToHat() {
     NTTLog();
-    auto ni1 = Ni1();
-    auto ni2 = Ni2();
+    auto                 ni1          = Ni1();
+    auto                 ni2          = Ni2();
 
+    auto                 array_filled = true;
+    std::vector<Content> int_fld_content
+      = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
+    for (auto i { 0 }; i < 3; ++i) {
+      array_filled &= (cur_content[i] == int_fld_content[i]);
+    }
+    if (array_filled) {
+      // do nothing since the array is already filled with the right quantities
+      return;
+    }
     AssertEmptyContent(buff_content);
     Kokkos::deep_copy(buff, cur);
     ImposeContent(buff_content, cur_content);
     ImposeEmptyContent(cur_content);
 
-    auto this_buff   = this->buff;
-    auto this_cur    = this->cur;
-    auto this_metric = this->metric;
+    auto                 this_buff   = this->buff;
+    auto                 this_cur    = this->cur;
+    auto                 this_metric = this->metric;
 
-    AssertContent(buff_content, { Content::jx1_cntrv, Content::jx2_cntrv, Content::jx3_cntrv });
+    std::vector<Content> J_cntrv
+      = { Content::jx1_cntrv, Content::jx2_cntrv, Content::jx3_cntrv };
+    AssertContent(buff_content, J_cntrv);
 
     Kokkos::parallel_for(
       "InterpolateAndConvertCurrentsToHat", rangeActiveCells(), Lambda(index_t i, index_t j) {

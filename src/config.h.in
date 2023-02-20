@@ -10,12 +10,16 @@
 #  define LINE_STRING         STRINGIZE(__LINE__)
 
 #  define NTTLog()                                                                            \
-    { PLOGV_(LogFile); }
+    { PLOGV_(ntt::LogFile); }
+
+#  define NTTFatal()                                                                          \
+    { PLOGF_(ntt::LogFile); }
 
 #  define NTTHostError(msg)                                                                   \
     {                                                                                         \
       auto err                                                                                \
         = fmt::format("# ERROR: {}  : filename: {} : line: {}", msg, __FILE__, LINE_STRING);  \
+      NTTFatal();                                                                        \
       throw std::runtime_error(err);                                                          \
     }
 

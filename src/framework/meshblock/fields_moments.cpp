@@ -15,7 +15,8 @@ namespace ntt {
                                        const short&            smooth) {
     NTTLog();
     // clear the buffer
-    AssertEmptyContent({ this->buff_content[buff_ind] });
+    std::vector<Content> A = { this->buff_content[buff_ind] };
+    AssertEmptyContent(A);
     std::size_t ni1 = this->Ni1(), ni2 = this->Ni2(), ni3 = this->Ni3();
     real_t weight = (1.0 / params.ppc0()) / math::pow(2.0 * smooth + 1.0, static_cast<int>(D));
     if constexpr (D == Dim1) {
@@ -30,11 +31,11 @@ namespace ntt {
     }
 
     // if species not specified, use all massive particles
-    std::vector<int> sp;
-    if (prtl_species.size() == 0) {
+    std::vector<int> out_species = prtl_species;
+    if (out_species.size() == 0) {
       for (auto& specs : particles) {
         if (specs.mass() > 0.0) {
-          sp.push_back(specs.index() + 1);
+          out_species.push_back(specs.index());
         }
       }
     }
@@ -50,7 +51,7 @@ namespace ntt {
 
     auto this_metric = this->metric;
 
-    for (auto& sp : prtl_species) {
+    for (auto& sp : out_species) {
       auto species      = particles[sp - 1];
       auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
       auto mass         = species.mass();

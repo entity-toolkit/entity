@@ -7,13 +7,13 @@
 #include <vector>
 
 namespace ntt {
-  void AssertEmptyContent(const std::vector<Content>& content) {
+  void AssertEmptyContent_(const std::vector<Content>& content) {
     for (auto c : content) {
       NTTHostErrorIf(c != Content::empty, "Content is not empty.");
     }
   }
 
-  void AssertContent(const std::vector<Content>& content, const std::vector<Content>& target) {
+  void AssertContent_(const std::vector<Content>& content, const std::vector<Content>& target) {
     NTTHostErrorIf(content.size() != target.size(), "Content size mismatch.");
     for (unsigned int i = 0; i < content.size(); ++i) {
       NTTHostErrorIf(content[i] != target[i], "Content mismatch.");
