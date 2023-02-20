@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "fields.h"
 #include "sim_params.h"
 #include "timer.h"
 
@@ -11,6 +12,7 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::Run() {
+    // register the content of em fields
     Simulation<D, PICEngine>::Initialize();
     Simulation<D, PICEngine>::Verify();
     {
@@ -20,14 +22,29 @@ namespace ntt {
 
       ResetSimulation();
       Simulation<D, PICEngine>::PrintDetails();
+      InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGD << "t = " << this->m_time;
         PLOGD << "ti = " << this->m_tstep;
+        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
         StepForward();
+        PLOGI_(LogFile) << "[OK] ti " << this->m_tstep;
       }
       WaitAndSynchronize();
     }
     Simulation<D, PICEngine>::Finalize();
+  }
+
+  template <Dimension D>
+  void PIC<D>::InitialStep() {
+    auto& mblock = this->meshblock;
+    ImposeContent(mblock.em_content,
+                  { Content::ex1_cntrv,
+                    Content::ex2_cntrv,
+                    Content::ex3_cntrv,
+                    Content::bx1_cntrv,
+                    Content::bx2_cntrv,
+                    Content::bx3_cntrv });
   }
 
   template <Dimension D>
@@ -39,101 +56,109 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepForward() {
-    timer::Timers timers(
-      { "Field_Solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher", "Prtl_BC", "User", "Output" });
-    auto  params = *(this->params());
-    auto& mblock = this->meshblock;
-    auto& wrtr   = this->writer;
-    auto& pgen   = this->problem_generator;
+    NTTLog();
+    auto                       params = *(this->params());
+    auto&                      mblock = this->meshblock;
+    auto&                      wrtr   = this->writer;
+    auto&                      pgen   = this->problem_generator;
+
+    timer::Timers              timers({ "FieldSolver",
+                                        "FieldBoundaries",
+                                        "CurrentDeposit",
+                                        "ParticlePusher",
+                                        "ParticleBoundaries",
+                                        "UserSpecific",
+                                        "Output" });
+    static std::vector<double> dead_fractions = {};
 
     if (params.fieldsolverEnabled()) {
-      timers.start("Field_Solver");
+      timers.start("FieldSolver");
       Faraday();
-      timers.stop("Field_Solver");
+      timers.stop("FieldSolver");
 
-      timers.start("Field_BC");
+      timers.start("FieldBoundaries");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop("Field_BC");
+      timers.stop("FieldBoundaries");
     }
 
     {
-      timers.start("Prtl_Pusher");
+      timers.start("ParticlePusher");
       ParticlesPush();
-      timers.stop("Prtl_Pusher");
+      timers.stop("ParticlePusher");
 
-      timers.start("User");
-      // !TODO: this needs to move (or become optional)
-      this->ComputeDensity(0);
+      timers.start("UserSpecific");
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      timers.stop("User");
+      timers.stop("UserSpecific");
 
-      timers.start("Prtl_BC");
+      timers.start("ParticleBoundaries");
       ParticlesBoundaryConditions();
-      timers.stop("Prtl_BC");
+      timers.stop("ParticleBoundaries");
 
       if (params.depositEnabled()) {
-        timers.start("Curr_Deposit");
+        timers.start("CurrentDeposit");
         ResetCurrents();
         CurrentsDeposit();
 
-        timers.start("Field_BC");
+        timers.start("FieldBoundaries");
         CurrentsSynchronize();
         CurrentsExchange();
         CurrentsBoundaryConditions();
-        timers.stop("Field_BC");
+        timers.stop("FieldBoundaries");
 
         CurrentsFilter();
-        timers.stop("Curr_Deposit");
+        timers.stop("CurrentDeposit");
       }
 
-      timers.start("Prtl_BC");
+      timers.start("ParticleBoundaries");
       ParticlesExchange();
-      mblock.RemoveDeadParticles();
-      timers.stop("Prtl_BC");
+      if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
+        dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
+      }
+      timers.stop("ParticleBoundaries");
     }
 
     if (params.fieldsolverEnabled()) {
-      timers.start("Field_Solver");
+      timers.start("FieldSolver");
       Faraday();
-      timers.stop("Field_Solver");
+      timers.stop("FieldSolver");
 
-      timers.start("Field_BC");
+      timers.start("FieldBoundaries");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop("Field_BC");
+      timers.stop("FieldBoundaries");
 
-      timers.start("Field_Solver");
+      timers.start("FieldSolver");
       Ampere();
-      timers.stop("Field_Solver");
+      timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
-        timers.start("Curr_Deposit");
+        timers.start("CurrentDeposit");
         AmpereCurrents();
-        timers.stop("Curr_Deposit");
+        timers.stop("CurrentDeposit");
       }
 
-      timers.start("Field_BC");
+      timers.start("FieldBoundaries");
       FieldsExchange();
       FieldsBoundaryConditions();
-      timers.stop("Field_BC");
+      timers.stop("FieldBoundaries");
     }
 
     timers.start("Output");
-    if (this->m_tstep % params.outputInterval() == 0) {
-      if (params.outputFormat() != "disabled") {
-        WaitAndSynchronize();
-        ComputeDensity();
-        this->SynchronizeHostDevice();
-        InterpolateAndConvertFieldsToHat();
-        wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
-      }
+    if ((params.outputFormat() != "disabled")
+        && (this->m_tstep % params.outputInterval() == 0)) {
+      WaitAndSynchronize();
+      wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
     }
     timers.stop("Output");
 
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
-    this->PrintDiagnostics();
+    this->PrintDiagnostics(std::cout, dead_fractions);
+
+    ImposeEmptyContent(mblock.buff_content);
+    ImposeEmptyContent(mblock.cur_content);
+    ImposeEmptyContent(mblock.bckp_content);
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

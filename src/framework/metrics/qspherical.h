@@ -25,6 +25,8 @@ namespace ntt {
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
+    const real_t dx_min;
+
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
@@ -38,7 +40,8 @@ namespace ntt {
         dphi(constant::TWO_PI / this->nx3),
         dchi_sqr(dchi * dchi),
         deta_sqr(deta * deta),
-        dphi_sqr(dphi * dphi) {
+        dphi_sqr(dphi * dphi),
+        dx_min { findSmallestCell() } {
       if constexpr ((D == Dim1) || (D == Dim3)) {
         NTTHostError("Qspherical can only be defined for 2D");
       }
@@ -194,6 +197,15 @@ namespace ntt {
         return ZERO;
       }
     }
+    /**
+     * Compute the fiducial minimum cell volume.
+     *
+     * @returns Minimum cell volume of the grid [code units].
+     */
+    Inline auto min_cell_volume() const -> real_t {
+      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
+    }
+
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
      *

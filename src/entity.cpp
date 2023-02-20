@@ -12,17 +12,17 @@
 #endif
 
 #include <plog/Appenders/ColorConsoleAppender.h>
+#include <plog/Appenders/RollingFileAppender.h>
+#include <plog/Formatters/TxtFormatter.h>
 #include <plog/Init.h>
 #include <plog/Log.h>
 #include <toml/toml.hpp>
 
+#include <cstdio>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
-
-using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
-
-void initLogger(plog_t* console_appender);
 
 // Logging is done via `plog` library...
 // ... Use the following commands:
@@ -33,18 +33,28 @@ void initLogger(plog_t* console_appender);
 //  `PLOGW << ...` for warnings
 
 auto main(int argc, char* argv[]) -> int {
-  plog_t console_appender;
-  initLogger(&console_appender);
-
   Kokkos::initialize();
   try {
-    PLOGI << "Kokkos initialized";
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
-    // auto outputpath = cl_args.getArgument("-output", ntt::DEF_output_path);
     auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
-    PLOGI << "input file parsed";
+
+    plog::Severity max_severity;
+#ifdef DEBUG
+    max_severity = plog::verbose;
+#else
+    max_severity = plog::info;
+#endif
+    auto sim_title = ntt::readFromInput<std::string>(
+      inputdata, "simulation", "title", ntt::defaults::title);
+    auto logfile_name = sim_title + ".log";
+    std::remove(logfile_name.c_str());
+    plog::ColorConsoleAppender<plog::NTTFormatter> consoleAppender;
+    plog::RollingFileAppender<plog::TxtFormatter>  fileAppender(logfile_name.c_str());
+    plog::init(max_severity, &consoleAppender);
+    plog::init<ntt::LogFile>(plog::verbose, &fileAppender);
+
     short res = static_cast<short>(
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
     if (res == 1) {
@@ -71,14 +81,4 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::finalize();
 
   return 0;
-}
-
-void initLogger(plog_t* console_appender) {
-  plog::Severity max_severity;
-#ifdef DEBUG
-  max_severity = plog::verbose;
-#else
-  max_severity = plog::info;
-#endif
-  plog::init(max_severity, console_appender);
 }

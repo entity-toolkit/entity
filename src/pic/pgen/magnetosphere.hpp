@@ -154,8 +154,7 @@ namespace ntt {
   struct InjectionShell : public SpatialDistribution<D, S> {
     explicit InjectionShell(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock) {
-      inj_rmax  = params.get<real_t>("problem", "inj_rmax", 1.5 * mblock.metric.x1_min);
-      inj_thmin = params.get<real_t>("problem", "inj_thmin", 0.0);
+      inj_rmax = params.get<real_t>("problem", "inj_rmax", 1.5 * mblock.metric.x1_min);
       const int  buff_cells = 10;
       coord_t<D> xcu { ZERO }, xph { ZERO };
       xcu[0] = (real_t)buff_cells;
@@ -163,14 +162,11 @@ namespace ntt {
       inj_rmin = xph[0];
     }
     Inline real_t operator()(const coord_t<D>& x_ph) const {
-      return ((x_ph[0] <= inj_rmax) && (x_ph[0] > inj_rmin)
-              && ((x_ph[1] > inj_thmin) && (x_ph[1] <= constant::PI - inj_thmin)))
-               ? ONE
-               : ZERO;
+      return ((x_ph[0] <= inj_rmax) && (x_ph[0] > inj_rmin)) ? ONE : ZERO;
     }
 
   private:
-    real_t inj_rmax, inj_rmin, inj_thmin;
+    real_t inj_rmax, inj_rmin;
   };
 
   template <Dimension D, SimulationEngine S>
@@ -179,7 +175,7 @@ namespace ntt {
       : InjectionCriterion<D, S>(params, mblock),
         inj_maxDens { params.get<real_t>("problem", "inj_maxDens", 5.0) } {}
     Inline bool operator()(const coord_t<D>&) const {
-      return false;
+      return true;
     }
 
   private:
@@ -192,20 +188,18 @@ namespace ntt {
     (this->m_mblock).metric.x_Sph2Code(xph, xi);
     std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
     std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
-    return (this->m_mblock).buff(i1, i2, fld::dens) < inj_maxDens;
+    return (this->m_mblock).buff(i1, i2, 0) < inj_maxDens;
   }
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 0, 0);
     auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction;
     InjectInVolume<Dim2, PICEngine, RadialKick, InjectionShell, MaxDensCrit>(
       params, mblock, { 1, 2 }, nppc_per_spec);
   }
 
 }    // namespace ntt
-
-#undef FIELD_DIPOLE
-#undef FIELD_MONOPOLE
 
 #endif

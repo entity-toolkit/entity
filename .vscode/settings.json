@@ -121,8 +121,8 @@
   "cmake.buildDirectory": "${workspaceFolder}/build",
   "cmake.configureSettings": {
     "output": "OFF",
-    "nttiny": "ON",
+    "nttiny": "OFF",
     "Kokkos_ENABLE_OPENMP": "ON",
-    "pgen": "langmuir"
+    "pgen": "weibel"
   },
 }

@@ -139,6 +139,10 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifndef MINKOWSKI_METRIC
+
 template void ntt::PIC<ntt::Dim1>::FieldsExchange();
 template void ntt::PIC<ntt::Dim2>::FieldsExchange();
 template void ntt::PIC<ntt::Dim3>::FieldsExchange();
+
+#endif
