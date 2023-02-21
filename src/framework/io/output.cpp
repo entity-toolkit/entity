@@ -136,7 +136,6 @@ namespace ntt {
       return InterpretInputField_helper(id, comps, {});
     }
     NTTHostError("Invalid field name");
-    return;
   }
 
 #ifdef OUTPUT_ENABLED
