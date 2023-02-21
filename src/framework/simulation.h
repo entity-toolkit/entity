@@ -82,11 +82,6 @@ namespace ntt {
     void               Finalize();
 
     /**
-     * @brief Synchronize data from device to host.
-     */
-    void               SynchronizeHostDevice(const SynchronizeFlags& flags = Synchronize_All);
-
-    /**
      * @brief Diagnostic logging.
      * @param os output stream.
      */

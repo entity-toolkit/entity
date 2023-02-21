@@ -145,10 +145,8 @@ namespace ntt {
      * @note Ex2 is stored at (    i, j+1/2,     k,     n)
      * @note Ex3 is stored at (    i,     j, k+1/2,     n)
      */
-    ndfield_t<D, 6>        em;
-    ndfield_mirror_t<D, 6> em_h;
-    std::vector<Content>   em_content   = std::vector<Content>(6, Content::empty);
-    std::vector<Content>   em_h_content = std::vector<Content>(6, Content::empty);
+    ndfield_t<D, 6>      em;
+    std::vector<Content> em_content = std::vector<Content>(6, Content::empty);
     /**
      * Backup fields used for intermediate operations.
      *
@@ -156,10 +154,8 @@ namespace ntt {
      * component.
      * @note Address : bckp(i, j, k, ***).
      */
-    ndfield_t<D, 6>        bckp;
-    ndfield_mirror_t<D, 6> bckp_h;
-    std::vector<Content>   bckp_content   = std::vector<Content>(6, Content::empty);
-    std::vector<Content>   bckp_h_content = std::vector<Content>(6, Content::empty);
+    ndfield_t<D, 6>      bckp;
+    std::vector<Content> bckp_content = std::vector<Content>(6, Content::empty);
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
@@ -171,10 +167,8 @@ namespace ntt {
      * @note Jx2 is deposited at (    i, j+1/2,     k, n+1/2)
      * @note Jx3 is deposited at (    i,     j, k+1/2, n+1/2)
      */
-    ndfield_t<D, 3>        cur;
-    ndfield_mirror_t<D, 3> cur_h;
-    std::vector<Content>   cur_content   = std::vector<Content>(3, Content::empty);
-    std::vector<Content>   cur_h_content = std::vector<Content>(3, Content::empty);
+    ndfield_t<D, 3>      cur;
+    std::vector<Content> cur_content = std::vector<Content>(3, Content::empty);
     /**
      * Buffers fields used primarily to store currents at previous time step.
      *
@@ -182,10 +176,8 @@ namespace ntt {
      * component.
      * @note Address : buff(i, j, k, ***).
      */
-    ndfield_t<D, 3>        buff;
-    ndfield_mirror_t<D, 3> buff_h;
-    std::vector<Content>   buff_content   = std::vector<Content>(3, Content::empty);
-    std::vector<Content>   buff_h_content = std::vector<Content>(3, Content::empty);
+    ndfield_t<D, 3>      buff;
+    std::vector<Content> buff_content = std::vector<Content>(3, Content::empty);
 #ifdef GRPIC_ENGINE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific

@@ -51,11 +51,7 @@ namespace ntt {
       cur { "J", res[0] + 2 * N_GHOSTS },
       buff { "J0", res[0] + 2 * N_GHOSTS },
       bckp { "bckp", res[0] + 2 * N_GHOSTS } {
-    PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror(em);
-    cur_h  = Kokkos::create_mirror(cur);
-    buff_h = Kokkos::create_mirror(buff);
-    bckp_h = Kokkos::create_mirror(bckp);
+    NTTLog();
   }
 
   template <>
@@ -64,11 +60,7 @@ namespace ntt {
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       bckp { "bckp", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
-    PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror(em);
-    cur_h  = Kokkos::create_mirror(cur);
-    buff_h = Kokkos::create_mirror(buff);
-    bckp_h = Kokkos::create_mirror(bckp);
+    NTTLog();
   }
 
   template <>
@@ -77,11 +69,7 @@ namespace ntt {
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       bckp { "bckp", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
-    PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror(em);
-    cur_h  = Kokkos::create_mirror(cur);
-    buff_h = Kokkos::create_mirror(buff);
-    bckp_h = Kokkos::create_mirror(bckp);
+    NTTLog();
   }
 
 #elif defined(GRPIC_ENGINE)
@@ -96,11 +84,7 @@ namespace ntt {
       aux { "AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       em0 { "EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       aphi { "APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
-    PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror(em);
-    cur_h  = Kokkos::create_mirror(cur);
-    buff_h = Kokkos::create_mirror(buff);
-    aphi_h = Kokkos::create_mirror(aphi);
+    NTTLog();
   }
 
   template <>
@@ -111,20 +95,7 @@ namespace ntt {
       aux { "AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       em0 { "EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       aphi { "APHI", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
-    PLOGD << "Allocated field arrays.";
-    em_h   = Kokkos::create_mirror(em);
-    cur_h  = Kokkos::create_mirror(cur);
-    buff_h = Kokkos::create_mirror(buff);
-    aphi_h = Kokkos::create_mirror(aphi);
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Fields<D, S>::SynchronizeHostDevice() {
-    Kokkos::deep_copy(em_h, em);
-    Kokkos::deep_copy(cur_h, cur);
-    Kokkos::deep_copy(buff_h, buff);
-    Kokkos::deep_copy(bckp_h, bckp);
-    Kokkos::deep_copy(aphi_h, aphi);
+    NTTLog();
   }
 
 #endif

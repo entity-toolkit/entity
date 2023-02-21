@@ -226,12 +226,6 @@ namespace ntt {
     }
 
     /**
-     * @brief Synchronize data from device to host.
-     * Synchronize all the arrays that have host mirrors.
-     */
-    void SynchronizeHostDevice();
-
-    /**
      * @brief Count the number of living particles
      * @return The number of living particles as a std::size_t.
      */
