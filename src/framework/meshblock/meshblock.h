@@ -12,8 +12,7 @@
 
 namespace ntt {
   /**
-   * @brief Container for the fields, particles and coordinate system. This is the main subject
-   * of the simulation.
+   * @brief Container for the fields, particles and coordinate system.
    * @tparam D Dimension.
    * @tparam S Simulation engine.
    */

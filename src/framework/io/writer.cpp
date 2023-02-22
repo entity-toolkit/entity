@@ -165,6 +165,14 @@ namespace ntt {
 
 }    // namespace ntt
 
+/**
+ * Engine specific instantiations
+ */
+#if defined(PIC_ENGINE)
 template class ntt::Writer<ntt::Dim1, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim2, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim3, ntt::PICEngine>;
+#elif defined(GRPIC_ENGINE)
+template class ntt::Writer<ntt::Dim2, ntt::GRPICEngine>;
+template class ntt::Writer<ntt::Dim3, ntt::GRPICEngine>;
+#endif

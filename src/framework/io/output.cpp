@@ -225,6 +225,10 @@ namespace ntt {
 
 #ifdef OUTPUT_ENABLED
 
+/**
+ * Engine specific instantiations
+ */
+#  if defined(PIC_ENGINE)
 template void ntt::OutputField::put<ntt::Dim1, ntt::PICEngine>(
   adios2::IO&,
   adios2::Engine&,
@@ -240,5 +244,17 @@ template void ntt::OutputField::put<ntt::Dim3, ntt::PICEngine>(
   adios2::Engine&,
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
+#  elif defined(GRPIC_ENGINE)
+template void ntt::OutputField::put<ntt::Dim2, ntt::GRPICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&) const;
+template void ntt::OutputField::put<ntt::Dim3, ntt::GRPICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
+#  endif
 
 #endif
