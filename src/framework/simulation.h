@@ -8,8 +8,6 @@
 #include "sim_params.h"
 #include "writer.h"
 
-#include "problem_generator.hpp"
-
 #include <toml/toml.hpp>
 
 #include <string>
@@ -36,8 +34,6 @@ namespace ntt {
     std::size_t      m_tstep { 0 };
 
   public:
-    // problem setup generator
-    ProblemGenerator<D, S> problem_generator;
     // meshblock with all the fields / metric / and particles
     Meshblock<D, S>        meshblock;
     // writer
@@ -59,11 +55,6 @@ namespace ntt {
      * @brief Initialize / allocate all the simulation objects based on the `m_params`.
      */
     void               Initialize();
-
-    /**
-     * @brief Setup the problem using the problem generator.
-     */
-    void               InitializeSetup();
 
     /**
      * @brief Verify that all the specified parameters are compatible before beginning the

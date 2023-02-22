@@ -4,14 +4,31 @@ set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
   VERSION 0.8.2.1
-  LANGUAGES CXX
+  LANGUAGES CXX C
 )
+
+function(find_or_fetch_package package_name)
+  find_package(${package_name} QUIET)
+
+  if(NOT ${package_name}_FOUND)
+    message(STATUS "${package_name} not found. Fetching submodule...")
+    execute_process(
+      COMMAND git submodule update --remote ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
+    set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
+    set(${package_name}_FOUND TRUE CACHE BOOL "Whether ${package_name} was found")
+  else()
+    message(STATUS "${package_name} found.")
+  endif()
+endfunction()
 
 # ----------------------------- Submodules ------------------------------- #
 # !TODO: this is quite ugly, update submodules as needed (below)
 find_package(Git QUIET)
 
-file(GLOB SUBMODULES_LOADED extern/kokkos/*)
+file(GLOB SUBMODULES_LOADED extern/fmt/*)
 list(LENGTH SUBMODULES_LOADED SUBMODULES_LOADED)
 
 if(${SUBMODULES_LOADED} GREATER 0)
@@ -180,11 +197,12 @@ set(output ${default_output} CACHE BOOL "Enable output")
 
 if(${output} STREQUAL "ON")
   set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
+
   # Language support
   set(ADIOS2_USE_Python OFF CACHE BOOL "Use Python for ADIOS2")
   set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
+
   # Format/compression support
-  set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
   set(ADIOS2_USE_ZeroMQ OFF CACHE BOOL "Use ZeroMQ for ADIOS2")
   set(ADIOS2_USE_SST OFF CACHE BOOL "Use SST for ADIOS2")
   set(ADIOS2_USE_BZip2 OFF CACHE BOOL "Use BZip2 for ADIOS2")
@@ -208,10 +226,12 @@ endif()
 if(${nttiny} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
 endif()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
+
+find_or_fetch_package(kokkos)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/fmt extern/fmt)
-if (${output} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
+
+if(${output} STREQUAL "ON")
+  find_or_fetch_package(adios2)
 endif()
 
 # ------------------------------- Main source ------------------------------ #

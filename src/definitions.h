@@ -82,11 +82,11 @@ namespace ntt {
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
 
-  inline constexpr auto Dim1      = Dimension::ONE_D;
-  inline constexpr auto Dim2      = Dimension::TWO_D;
-  inline constexpr auto Dim3      = Dimension::THREE_D;
-  inline constexpr auto PICEngine = SimulationEngine::PIC;
-  inline constexpr auto TypeGRPIC = SimulationEngine::GRPIC;
+  inline constexpr auto Dim1        = Dimension::ONE_D;
+  inline constexpr auto Dim2        = Dimension::TWO_D;
+  inline constexpr auto Dim3        = Dimension::THREE_D;
+  inline constexpr auto PICEngine   = SimulationEngine::PIC;
+  inline constexpr auto GRPICEngine = SimulationEngine::GRPIC;
 
   // ND list alias
   template <typename T, Dimension D>

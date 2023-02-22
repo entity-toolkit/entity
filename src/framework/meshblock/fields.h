@@ -190,7 +190,7 @@ namespace ntt {
      * component.
      * @note Address : aux(i, j, k, em::***).
      */
-    ndfield_t<D, 6>        aux;
+    ndfield_t<D, 6> aux;
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
@@ -198,7 +198,7 @@ namespace ntt {
      * component.
      * @note Address : em0(i, j, k, em::***).
      */
-    ndfield_t<D, 6>        em0;
+    ndfield_t<D, 6> em0;
     /**
      * Vector potential
      *
@@ -206,8 +206,7 @@ namespace ntt {
      * component.
      * @note Address : aphi(i, j, k, 0).
      */
-    ndfield_t<D, 1>        aphi;
-    ndfield_mirror_t<D, 1> aphi_h;
+    ndfield_t<D, 1> aphi;
 #endif
 
     /**

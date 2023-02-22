@@ -18,7 +18,7 @@ namespace ntt {
     switch (sim) {
     case PICEngine:
       return "PIC";
-    case SimulationEngine::GRPIC:
+    case GRPICEngine:
       return "GRPIC";
     default:
       return "N/A";
@@ -56,7 +56,6 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_params { inputdata, D },
-      problem_generator { m_params },
       meshblock { m_params.resolution(),
                   m_params.extent(),
                   m_params.metricParameters(),
@@ -69,28 +68,19 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Initialize() {
+    NTTLog();
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.dx_min);
     meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
 
     WaitAndSynchronize();
-    PLOGD << "Simulation initialized.";
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::InitializeSetup() {
-    problem_generator.UserInitFields(m_params, meshblock);
-    problem_generator.UserInitParticles(m_params, meshblock);
-
-    WaitAndSynchronize();
-    PLOGD << "Setup initialized.";
   }
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Verify() {
+    NTTLog();
     meshblock.Verify();
     WaitAndSynchronize();
-    PLOGD << "Prerun check passed.";
   }
 
   template <Dimension D, SimulationEngine S>
@@ -204,6 +194,6 @@ template class ntt::Simulation<ntt::Dim1, ntt::PICEngine>;
 template class ntt::Simulation<ntt::Dim2, ntt::PICEngine>;
 template class ntt::Simulation<ntt::Dim3, ntt::PICEngine>;
 #elif defined(GRPIC_ENGINE)
-template class ntt::Simulation<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
-template class ntt::Simulation<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
+template class ntt::Simulation<ntt::Dim2, ntt::GRPICEngine>;
+template class ntt::Simulation<ntt::Dim3, ntt::GRPICEngine>;
 #endif
