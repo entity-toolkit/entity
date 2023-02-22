@@ -35,8 +35,8 @@ namespace ntt {
     std::reverse(shape.begin(), shape.end());
     std::reverse(count.begin(), count.end());
 
-    m_vars_i.emplace("step", m_io.DefineVariable<int>("step"));
-    m_vars_r.emplace("time", m_io.DefineVariable<real_t>("time"));
+    m_io.DefineVariable<int>("step");
+    m_io.DefineVariable<real_t>("time");
 
     m_io.DefineAttribute<std::string>("metric", mblock.metric.label);
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
@@ -113,7 +113,7 @@ namespace ntt {
     }
     for (auto& fld : m_fields) {
       for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
-        m_vars_r.emplace(fld.name(i), m_io.DefineVariable<real_t>(fld.name(i), {}, {}, count));
+        m_io.DefineVariable<real_t>(fld.name(i), shape, start, count, adios2::ConstantDims);
       }
     }
   }
@@ -133,8 +133,8 @@ namespace ntt {
     m_writer.BeginStep();
 
     int step = (int)tstep;
-    m_writer.Put<int>(m_vars_i["step"], &step);
-    m_writer.Put<real_t>(m_vars_r["time"], &time);
+    m_writer.Put<int>(m_io.InquireVariable<int>("step"), &step);
+    m_writer.Put<real_t>(m_io.InquireVariable<real_t>("time"), &time);
 
     // traverse all the fields and put them. ...
     // ... also make sure that the fields are ready for output, ...

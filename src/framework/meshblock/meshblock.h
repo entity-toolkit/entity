@@ -115,11 +115,6 @@ namespace ntt {
                         const std::vector<int>& prtl_species,
                         const int&              buff_ind,
                         const short&            smooth = 2);
-
-    /**
-     * @brief Synchronize data from device to host.
-     */
-    void SynchronizeHostDevice(const SynchronizeFlags& flags = Synchronize_All);
   };
 
 }    // namespace ntt

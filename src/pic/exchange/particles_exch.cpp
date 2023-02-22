@@ -86,6 +86,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifndef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::ParticlesExchange();
 template void ntt::PIC<ntt::Dim2>::ParticlesExchange();
 template void ntt::PIC<ntt::Dim3>::ParticlesExchange();
+#endif

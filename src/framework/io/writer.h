@@ -25,9 +25,6 @@ namespace ntt {
     adios2::Engine                                  m_writer;
     adios2::Mode                                    m_mode { adios2::Mode::Write };
 
-    std::map<std::string, adios2::Variable<real_t>> m_vars_r;
-    std::map<std::string, adios2::Variable<int>>    m_vars_i;
-
     std::vector<OutputField>                        m_fields;
 #endif
 

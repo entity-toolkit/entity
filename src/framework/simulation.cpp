@@ -172,16 +172,6 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::SynchronizeHostDevice(const SynchronizeFlags& flags) {
-    WaitAndSynchronize();
-    meshblock.SynchronizeHostDevice(flags);
-    // for (auto& species : meshblock.particles) {
-    //   species.SynchronizeHostDevice();
-    // }
-    PLOGD << "... host-device synchronized";
-  }
-
-  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDiagnostics(std::ostream&              os,
                                           const std::vector<double>& fractions) {
     for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {

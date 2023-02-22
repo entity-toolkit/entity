@@ -145,8 +145,8 @@ namespace ntt {
      * @note Ex2 is stored at (    i, j+1/2,     k,     n)
      * @note Ex3 is stored at (    i,     j, k+1/2,     n)
      */
-    ndfield_t<D, 6>        em;
-    std::vector<Content>   em_content   = std::vector<Content>(6, Content::empty);
+    ndfield_t<D, 6>      em;
+    std::vector<Content> em_content = std::vector<Content>(6, Content::empty);
     /**
      * Backup fields used for intermediate operations.
      *
@@ -154,8 +154,8 @@ namespace ntt {
      * component.
      * @note Address : bckp(i, j, k, ***).
      */
-    ndfield_t<D, 6>        bckp;
-    std::vector<Content>   bckp_content   = std::vector<Content>(6, Content::empty);
+    ndfield_t<D, 6>      bckp;
+    std::vector<Content> bckp_content = std::vector<Content>(6, Content::empty);
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
@@ -167,8 +167,8 @@ namespace ntt {
      * @note Jx2 is deposited at (    i, j+1/2,     k, n+1/2)
      * @note Jx3 is deposited at (    i,     j, k+1/2, n+1/2)
      */
-    ndfield_t<D, 3>        cur;
-    std::vector<Content>   cur_content   = std::vector<Content>(3, Content::empty);
+    ndfield_t<D, 3>      cur;
+    std::vector<Content> cur_content = std::vector<Content>(3, Content::empty);
     /**
      * Buffers fields used primarily to store currents at previous time step.
      *
@@ -176,8 +176,8 @@ namespace ntt {
      * component.
      * @note Address : buff(i, j, k, ***).
      */
-    ndfield_t<D, 3>        buff;
-    std::vector<Content>   buff_content   = std::vector<Content>(3, Content::empty);
+    ndfield_t<D, 3>      buff;
+    std::vector<Content> buff_content = std::vector<Content>(3, Content::empty);
 #ifdef GRPIC_ENGINE
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific
@@ -190,7 +190,7 @@ namespace ntt {
      * component.
      * @note Address : aux(i, j, k, em::***).
      */
-    ndfield_t<D, 6>        aux;
+    ndfield_t<D, 6> aux;
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
@@ -198,7 +198,7 @@ namespace ntt {
      * component.
      * @note Address : em0(i, j, k, em::***).
      */
-    ndfield_t<D, 6>        em0;
+    ndfield_t<D, 6> em0;
     /**
      * Vector potential
      *
@@ -206,7 +206,7 @@ namespace ntt {
      * component.
      * @note Address : aphi(i, j, k, 0).
      */
-    ndfield_t<D, 1>        aphi;
+    ndfield_t<D, 1> aphi;
 #endif
 
     /**
