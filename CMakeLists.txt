@@ -7,6 +7,21 @@ project(${PROJECT_NAME}
   LANGUAGES CXX
 )
 
+function(find_or_fetch_package package_name)
+  find_package(${package_name} QUIET)
+  if (NOT ${package_name}_FOUND)
+    message(STATUS "${package_name} not found. Fetching submodule...")
+    execute_process(
+      COMMAND git submodule update --remote ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
+    set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
+  else()
+    message(STATUS "${package_name} found.")
+  endif()
+endfunction()
+
 # ----------------------------- Submodules ------------------------------- #
 # !TODO: this is quite ugly, update submodules as needed (below)
 find_package(Git QUIET)
@@ -184,7 +199,6 @@ if(${output} STREQUAL "ON")
   set(ADIOS2_USE_Python OFF CACHE BOOL "Use Python for ADIOS2")
   set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
   # Format/compression support
-  set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
   set(ADIOS2_USE_ZeroMQ OFF CACHE BOOL "Use ZeroMQ for ADIOS2")
   set(ADIOS2_USE_SST OFF CACHE BOOL "Use SST for ADIOS2")
   set(ADIOS2_USE_BZip2 OFF CACHE BOOL "Use BZip2 for ADIOS2")
@@ -211,7 +225,7 @@ endif()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/fmt extern/fmt)
 if (${output} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
+  find_or_fetch_package(adios2)
 endif()
 
 # ------------------------------- Main source ------------------------------ #
