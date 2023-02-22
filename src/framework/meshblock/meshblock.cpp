@@ -5,6 +5,7 @@
 #include "particle_macros.h"
 #include "particles.h"
 #include "sim_params.h"
+#include "species.h"
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>
@@ -432,15 +433,3 @@ namespace ntt {
     return dead_fractions;
   }
 }    // namespace ntt
-
-/**
- * Engine specific instantiations
- */
-#if defined(PIC_ENGINE)
-template class ntt::Meshblock<ntt::Dim1, ntt::PICEngine>;
-template class ntt::Meshblock<ntt::Dim2, ntt::PICEngine>;
-template class ntt::Meshblock<ntt::Dim3, ntt::PICEngine>;
-#elif defined(GRPIC_ENGINE)
-template class ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>;
-template class ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>;
-#endif

@@ -41,7 +41,6 @@ namespace ntt {
 
   using resolution_t = std::vector<unsigned int>;
 
-#ifdef PIC_ENGINE
   // * * * * * * * * * * * * * * * * * * * *
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -72,7 +71,6 @@ namespace ntt {
     NTTLog();
   }
 
-#elif defined(GRPIC_ENGINE)
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -98,18 +96,16 @@ namespace ntt {
     NTTLog();
   }
 
-#endif
-
+  template <>
+  Fields<Dim1, SANDBOXEngine>::Fields(resolution_t) {
+    NTTLog();
+  }
+  template <>
+  Fields<Dim2, SANDBOXEngine>::Fields(resolution_t) {
+    NTTLog();
+  }
+  template <>
+  Fields<Dim3, SANDBOXEngine>::Fields(resolution_t) {
+    NTTLog();
+  }
 }    // namespace ntt
-
-/**
- * Engine specific instantiations
- */
-#if defined(PIC_ENGINE)
-template struct ntt::Fields<ntt::Dim1, ntt::PICEngine>;
-template struct ntt::Fields<ntt::Dim2, ntt::PICEngine>;
-template struct ntt::Fields<ntt::Dim3, ntt::PICEngine>;
-#elif defined(GRPIC_ENGINE)
-template struct ntt::Fields<ntt::Dim2, ntt::GRPICEngine>;
-template struct ntt::Fields<ntt::Dim3, ntt::GRPICEngine>;
-#endif

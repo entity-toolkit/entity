@@ -16,6 +16,8 @@
 namespace ntt {
   auto stringifySimulationEngine(const SimulationEngine& sim) -> std::string {
     switch (sim) {
+    case SANDBOXEngine:
+      return "Sandbox";
     case PICEngine:
       return "PIC";
     case GRPICEngine:
@@ -188,12 +190,3 @@ namespace ntt {
   }
 
 }    // namespace ntt
-
-#ifdef PIC_ENGINE
-template class ntt::Simulation<ntt::Dim1, ntt::PICEngine>;
-template class ntt::Simulation<ntt::Dim2, ntt::PICEngine>;
-template class ntt::Simulation<ntt::Dim3, ntt::PICEngine>;
-#elif defined(GRPIC_ENGINE)
-template class ntt::Simulation<ntt::Dim2, ntt::GRPICEngine>;
-template class ntt::Simulation<ntt::Dim3, ntt::GRPICEngine>;
-#endif

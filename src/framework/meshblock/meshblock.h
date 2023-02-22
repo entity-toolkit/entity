@@ -4,9 +4,10 @@
 #include "wrapper.h"
 
 #include "fields.h"
+#include "mesh.h"
 #include "particles.h"
 #include "sim_params.h"
-#include "mesh.h"
+#include "species.h"
 
 #include <vector>
 

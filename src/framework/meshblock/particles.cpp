@@ -2,37 +2,13 @@
 
 #include "wrapper.h"
 
+#include "species.h"
 #include "utils.h"
 
 #include <cstddef>
 #include <string>
 
 namespace ntt {
-  ParticleSpecies::ParticleSpecies(const int&            index_,
-                                   const std::string&    label_,
-                                   const float&          m_,
-                                   const float&          ch_,
-                                   const std::size_t&    maxnpart_,
-                                   const ParticlePusher& pusher_)
-    : m_index(index_),
-      m_label(std::move(label_)),
-      m_mass(m_),
-      m_charge(ch_),
-      m_maxnpart(maxnpart_),
-      m_pusher(pusher_) {}
-
-  ParticleSpecies::ParticleSpecies(const int&         index_,
-                                   const std::string& label_,
-                                   const float&       m_,
-                                   const float&       ch_,
-                                   const std::size_t& maxnpart_)
-    : m_index(index_),
-      m_label(std::move(label_)),
-      m_mass(m_),
-      m_charge(ch_),
-      m_maxnpart(maxnpart_),
-      m_pusher((m_charge == 0.0 ? ParticlePusher::PHOTON : ParticlePusher::BORIS)) {}
-
   // * * * * * * * * * * * * * * * * * * * *
   // PIC-specific
   // * * * * * * * * * * * * * * * * * * * *
@@ -49,7 +25,9 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {}
+      is_dead { label_ + "_a", maxnpart_ } {
+    NTTLog();
+  }
 
 #ifdef MINKOWSKI_METRIC
   template <>
@@ -67,7 +45,9 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {}
+      is_dead { label_ + "_a", maxnpart_ } {
+    NTTLog();
+  }
 #else    // axisymmetry
   template <>
   Particles<Dim2, PICEngine>::Particles(const int&         index_,
@@ -85,7 +65,9 @@ namespace ntt {
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
       phi { label_ + "_phi", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {}
+      is_dead { label_ + "_a", maxnpart_ } {
+    NTTLog();
+  }
 #endif
   template <>
   Particles<Dim3, PICEngine>::Particles(const int&         index_,
@@ -104,7 +86,9 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {}
+      is_dead { label_ + "_a", maxnpart_ } {
+    NTTLog();
+  }
 
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific (not Cartesian)
@@ -129,7 +113,9 @@ namespace ntt {
       dx1_prev { label_ + "_dx1_prev", maxnpart_ },
       dx2_prev { label_ + "_dx2_prev", maxnpart_ },
       phi { label_ + "_phi", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {}
+      is_dead { label_ + "_a", maxnpart_ } {
+    NTTLog();
+  }
 
   template <>
   Particles<Dim3, GRPICEngine>::Particles(const int&         index_,
@@ -154,7 +140,39 @@ namespace ntt {
       dx1_prev { label_ + "_dx1_prev", maxnpart_ },
       dx2_prev { label_ + "_dx2_prev", maxnpart_ },
       dx3_prev { label_ + "_dx3_prev", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {}
+      is_dead { label_ + "_a", maxnpart_ } {
+    NTTLog();
+  }
+
+  template <>
+  Particles<Dim1, SANDBOXEngine>::Particles(const int&         index_,
+                                            const std::string& label_,
+                                            const float&       m_,
+                                            const float&       ch_,
+                                            const std::size_t& maxnpart_)
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ } {
+    NTTLog();
+  }
+
+  template <>
+  Particles<Dim2, SANDBOXEngine>::Particles(const int&         index_,
+                                            const std::string& label_,
+                                            const float&       m_,
+                                            const float&       ch_,
+                                            const std::size_t& maxnpart_)
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ } {
+    NTTLog();
+  }
+
+  template <>
+  Particles<Dim3, SANDBOXEngine>::Particles(const int&         index_,
+                                            const std::string& label_,
+                                            const float&       m_,
+                                            const float&       ch_,
+                                            const std::size_t& maxnpart_)
+    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ } {
+    NTTLog();
+  }
 
   template <Dimension D, SimulationEngine S>
   Particles<D, S>::Particles(const ParticleSpecies& spec)
@@ -229,15 +247,3 @@ namespace ntt {
   }
 
 }    // namespace ntt
-
-/**
- * Engine specific instantiations
- */
-#if defined(PIC_ENGINE)
-template struct ntt::Particles<ntt::Dim1, ntt::PICEngine>;
-template struct ntt::Particles<ntt::Dim2, ntt::PICEngine>;
-template struct ntt::Particles<ntt::Dim3, ntt::PICEngine>;
-#elif defined(GRPIC_ENGINE)
-template struct ntt::Particles<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
-template struct ntt::Particles<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
-#endif
