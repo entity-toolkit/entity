@@ -407,13 +407,54 @@ namespace ntt {
   void Meshblock<Dim3, PICEngine>::InterpolateAndConvertFieldsToHat() {
     NTTHostError("Not implemented.");
   }
-
   template <>
   void Meshblock<Dim1, PICEngine>::InterpolateAndConvertCurrentsToHat() {
     NTTHostError("Not implemented.");
   }
   template <>
   void Meshblock<Dim3, PICEngine>::InterpolateAndConvertCurrentsToHat() {
+    NTTHostError("Not implemented.");
+  }
+
+  template <>
+  void Meshblock<Dim1, SANDBOXEngine>::InterpolateAndConvertFieldsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim2, SANDBOXEngine>::InterpolateAndConvertFieldsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim3, SANDBOXEngine>::InterpolateAndConvertFieldsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim1, SANDBOXEngine>::InterpolateAndConvertCurrentsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim2, SANDBOXEngine>::InterpolateAndConvertCurrentsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim3, SANDBOXEngine>::InterpolateAndConvertCurrentsToHat() {
+    NTTHostError("Not implemented.");
+  }
+
+  template <>
+  void Meshblock<Dim2, GRPICEngine>::InterpolateAndConvertFieldsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim3, GRPICEngine>::InterpolateAndConvertFieldsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim2, GRPICEngine>::InterpolateAndConvertCurrentsToHat() {
+    NTTHostError("Not implemented.");
+  }
+  template <>
+  void Meshblock<Dim3, GRPICEngine>::InterpolateAndConvertCurrentsToHat() {
     NTTHostError("Not implemented.");
   }
 
