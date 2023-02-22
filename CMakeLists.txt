@@ -70,7 +70,7 @@ if(engine STREQUAL "grpic")
   message(FATAL_ERROR "GRPIC is not supported yet. See the `dev/gr` branch.")
 endif()
 
-set(simulation_engines "pic" "grpic")
+set(simulation_engines "sandbox" "pic" "grpic")
 list(FIND simulation_engines ${engine} ENGINE_FOUND)
 
 if(${ENGINE_FOUND} EQUAL -1)
@@ -91,15 +91,18 @@ if(${precision} STREQUAL "single")
 endif()
 
 # --------------------------------- Metric --------------------------------- #
-if(${engine} STREQUAL "pic")
+if(${engine} STREQUAL "sandbox")
   set(default_metric "minkowski")
-  set(metric ${default_metric} CACHE STRING "Metric")
+  set(metrics "minkowski" "spherical" "qspherical" "kerr_schild" "qkerr_schild")
+elseif(${engine} STREQUAL "pic")
+  set(default_metric "minkowski")
   set(metrics "minkowski" "spherical" "qspherical")
 elseif(${engine} STREQUAL "grpic")
   set(default_metric "qkerr_schild")
-  set(metric ${default_metric} CACHE STRING "Metric")
   set(metrics "kerr_schild" "qkerr_schild")
 endif()
+
+set(metric ${default_metric} CACHE STRING "Metric")
 
 list(FIND metrics ${metric} METRIC_FOUND)
 
@@ -108,21 +111,23 @@ if(${METRIC_FOUND} EQUAL -1)
 endif()
 
 # ---------------------------- Problem generator --------------------------- #
-set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${engine}/pgen/)
-set(pgen ${default_pgen} CACHE STRING "Problem generator")
-file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
-set(problem_generators "")
+if(NOT ${engine} STREQUAL "sandbox")
+  set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${engine}/pgen/)
+  set(pgen ${default_pgen} CACHE STRING "Problem generator")
+  file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
+  set(problem_generators "")
 
-foreach(pgen_file ${PGENS})
-  string(REPLACE ${PGEN_DIRECTORY} "" new_pgen ${pgen_file})
-  string(REPLACE ".hpp" "" new_pgen ${new_pgen})
-  list(APPEND problem_generators ${new_pgen})
-endforeach()
+  foreach(pgen_file ${PGENS})
+    string(REPLACE ${PGEN_DIRECTORY} "" new_pgen ${pgen_file})
+    string(REPLACE ".hpp" "" new_pgen ${new_pgen})
+    list(APPEND problem_generators ${new_pgen})
+  endforeach()
 
-list(FIND problem_generators ${pgen} PGEN_FOUND)
+  list(FIND problem_generators ${pgen} PGEN_FOUND)
 
-if(${PGEN_FOUND} EQUAL -1)
-  message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
+  if(NOT ${PGEN_FOUND})
+    message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
+  endif()
 endif()
 
 # -------------------------- Compilation settings -------------------------- #

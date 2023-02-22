@@ -128,16 +128,20 @@ PrintChoices("Metric"
   1
   36
 )
-PrintChoices("Problem generator"
-  "pgen"
-  "${problem_generators}"
-  ${pgen}
-  ${default_pgen}
-  "${Blue}"
-  PGEN_REPORT
-  1
-  36
-)
+
+if(${PGEN_FOUND})
+  PrintChoices("Problem generator"
+    "pgen"
+    "${problem_generators}"
+    ${pgen}
+    ${default_pgen}
+    "${Blue}"
+    PGEN_REPORT
+    1
+    36
+  )
+endif()
+
 PrintChoices("Precision"
   "precision"
   "${precisions}"
@@ -297,7 +301,11 @@ Main configurations ${Dim}[1]${ColourReset}
 ${DASHED_LINE_SYMBOL}")
 message("  ${ENGINE_REPORT}\n")
 message("  ${METRIC_REPORT}\n")
-message("  ${PGEN_REPORT}\n")
+
+if(${PGEN_FOUND})
+  message("  ${PGEN_REPORT}\n")
+endif()
+
 message("  ${PRECISION_REPORT}\n")
 message("  ${OUTPUT_REPORT}\n")
 message("  ${NTTINY_REPORT}\n")

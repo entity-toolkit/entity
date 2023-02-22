@@ -78,15 +78,16 @@ namespace ntt {
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
-  enum class SimulationEngine { UNDEFINED, PIC, GRPIC };
+  enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
   enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
 
-  inline constexpr auto Dim1        = Dimension::ONE_D;
-  inline constexpr auto Dim2        = Dimension::TWO_D;
-  inline constexpr auto Dim3        = Dimension::THREE_D;
-  inline constexpr auto PICEngine   = SimulationEngine::PIC;
-  inline constexpr auto GRPICEngine = SimulationEngine::GRPIC;
+  inline constexpr auto Dim1          = Dimension::ONE_D;
+  inline constexpr auto Dim2          = Dimension::TWO_D;
+  inline constexpr auto Dim3          = Dimension::THREE_D;
+  inline constexpr auto SANDBOXEngine = SimulationEngine::SANDBOX;
+  inline constexpr auto PICEngine     = SimulationEngine::PIC;
+  inline constexpr auto GRPICEngine   = SimulationEngine::GRPIC;
 
   // ND list alias
   template <typename T, Dimension D>
@@ -122,7 +123,7 @@ namespace ntt {
     constexpr std::string_view input_filename    = "input";
     constexpr std::string_view output_path       = "output";
 
-    const std::string          title             = "PIC_Sim";
+    const std::string          title             = "EntitySimulation";
     const int                  n_species         = 0;
     const std::string          em_pusher         = "Boris";
     const std::string          ph_pusher         = "photon";

@@ -3,7 +3,13 @@
 #include "cargs.h"
 #include "input.h"
 
-#ifdef PIC_ENGINE
+/**
+ * Engine specific instantiations
+ */
+#if defined(SANDBOX_ENGINE)
+#  include "sandbox.h"
+#  define SIMULATION_CONTAINER SANDBOX
+#elif defined(PIC_ENGINE)
 #  include "pic.h"
 #  define SIMULATION_CONTAINER PIC
 #elif defined(GRPIC_ENGINE)
