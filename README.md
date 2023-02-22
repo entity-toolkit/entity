@@ -3,8 +3,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/cover_dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="assets/cover_light.gif">
+    <source media="(prefers-color-scheme: dark)" style="width:100%" srcset="assets/cover_dark-opt.gif">
+    <source media="(prefers-color-scheme: light)" style="width:100%" srcset="assets/cover_light-opt.gif">
     <img alt="cover" src="assets/cover_light.gif">
   </picture>
 </p>

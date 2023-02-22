@@ -221,25 +221,6 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Particles<D, S>::SynchronizeHostDevice() {
-    if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
-      Kokkos::deep_copy(i1_h, i1);
-      Kokkos::deep_copy(dx1_h, dx1);
-    }
-    if constexpr (D == Dim2 || D == Dim3) {
-      Kokkos::deep_copy(i2_h, i2);
-      Kokkos::deep_copy(dx2_h, dx2);
-    }
-    if constexpr (D == Dim3) {
-      Kokkos::deep_copy(i3_h, i3);
-      Kokkos::deep_copy(dx3_h, dx3);
-    }
-    Kokkos::deep_copy(ux1_h, ux1);
-    Kokkos::deep_copy(ux2_h, ux2);
-    Kokkos::deep_copy(ux3_h, ux3);
-  }
-
-  template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::CountLiving() const -> std::size_t {
     std::size_t npart_alive = 0;
     auto        is_dead_    = this->is_dead;

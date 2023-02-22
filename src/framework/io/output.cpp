@@ -136,29 +136,45 @@ namespace ntt {
       return InterpretInputField_helper(id, comps, {});
     }
     NTTHostError("Invalid field name");
-    return;
   }
 
 #ifdef OUTPUT_ENABLED
   namespace {
     template <Dimension D, int N>
-    void PutField(adios2::IO&                   io,
-                  adios2::Engine&               writer,
-                  const std::string&            varname,
-                  const ndfield_mirror_t<D, N>& field,
-                  const int&                    comp) {
-      auto slice_i1 = Kokkos::ALL();
-      auto slice_i2 = Kokkos::ALL();
-      auto slice_i3 = Kokkos::ALL();
+    void PutField(adios2::IO&            io,
+                  adios2::Engine&        writer,
+                  const std::string&     varname,
+                  const ndfield_t<D, N>& field,
+                  const int&             comp) {
+      auto slice_i1 = Kokkos::ALL;
+      auto slice_i2 = Kokkos::ALL;
+      auto slice_i3 = Kokkos::ALL;
 
       auto var      = io.InquireVariable<real_t>(varname);
 
       if constexpr (D == Dim1) {
-        writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, comp));
+        auto slice        = Kokkos::subview(field, slice_i1, comp);
+        auto output_field = array_t<real_t*>("output_field", slice.extent(0));
+        Kokkos::deep_copy(output_field, slice);
+        auto output_field_host = Kokkos::create_mirror(output_field);
+        Kokkos::deep_copy(output_field_host, output_field);
+        writer.Put<real_t>(var, output_field_host);
       } else if constexpr (D == Dim2) {
-        writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, slice_i2, comp));
+        auto slice = Kokkos::subview(field, slice_i1, slice_i2, comp);
+        auto output_field
+          = array_t<real_t**>("output_field", slice.extent(0), slice.extent(1));
+        Kokkos::deep_copy(output_field, slice);
+        auto output_field_host = Kokkos::create_mirror(output_field);
+        Kokkos::deep_copy(output_field_host, output_field);
+        writer.Put<real_t>(var, output_field_host);
       } else if constexpr (D == Dim3) {
-        writer.Put<real_t>(var, Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp));
+        auto slice        = Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp);
+        auto output_field = array_t<real_t***>(
+          "output_field", slice.extent(0), slice.extent(1), slice.extent(2));
+        Kokkos::deep_copy(output_field, slice);
+        auto output_field_host = Kokkos::create_mirror(output_field);
+        Kokkos::deep_copy(output_field_host, output_field);
+        writer.Put<real_t>(var, output_field_host);
       }
     }
   }    // namespace
@@ -170,7 +186,6 @@ namespace ntt {
                         Meshblock<D, S>&        mblock) const {
     if ((m_id == FieldID::E) || (m_id == FieldID::B)) {
       mblock.InterpolateAndConvertFieldsToHat();
-      mblock.SynchronizeHostDevice(Synchronize_bckp);
       ImposeEmptyContent(mblock.bckp_content);
       // EM fields (vector)
       std::vector<em>      comp_options;
@@ -182,32 +197,26 @@ namespace ntt {
       } else if (m_id == FieldID::B) {
         comp_options = { em::bx1, em::bx2, em::bx3 };
       }
-      AssertContent(mblock.bckp_h_content, content_options);
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 6>(io, writer, name(i), mblock.bckp_h, (int)(comp_id));
+        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
       }
     } else if (m_id == FieldID::J) {
       mblock.InterpolateAndConvertCurrentsToHat();
-      mblock.SynchronizeHostDevice(Synchronize_cur);
       ImposeEmptyContent(mblock.cur_content);
       // Currents (vector)
       std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
       std::vector<Content> content_options
         = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
-      AssertContent(mblock.cur_h_content, content_options);
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 3>(io, writer, name(i), mblock.cur_h, (int)(comp_id));
+        PutField<D, 3>(io, writer, name(i), mblock.cur, (int)(comp_id));
       }
     } else {
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         mblock.ComputeMoments(params, m_id, comp[i], species, i % 3, params.outputMomSmooth());
-        mblock.SynchronizeHostDevice(Synchronize_buff);
-        PutField<D, 3>(io, writer, name(i), mblock.buff_h, i % 3);
-        ImposeEmptyContent(mblock.buff_h_content[i % 3]);
+        PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
       }
-      ImposeEmptyContent(mblock.buff_h_content);
     }
   }
 

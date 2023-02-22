@@ -239,10 +239,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifndef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::CurrentsSynchronize();
 template void ntt::PIC<ntt::Dim2>::CurrentsSynchronize();
 template void ntt::PIC<ntt::Dim3>::CurrentsSynchronize();
-
-template void ntt::PIC<ntt::Dim1>::CurrentsExchange();
-template void ntt::PIC<ntt::Dim2>::CurrentsExchange();
-template void ntt::PIC<ntt::Dim3>::CurrentsExchange();
+#endif
