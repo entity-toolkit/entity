@@ -36,6 +36,14 @@ namespace ntt {
   }
 
   template <Dimension D>
+  void PIC<D>::InitializeSetup() {
+    auto  params = *(this->params());
+    auto& mblock = this->meshblock;
+    problem_generator.UserInitFields(params, mblock);
+    problem_generator.UserInitParticles(params, mblock);
+  }
+
+  template <Dimension D>
   void PIC<D>::InitialStep() {
     auto& mblock = this->meshblock;
     ImposeContent(mblock.em_content,
