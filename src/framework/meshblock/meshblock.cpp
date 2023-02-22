@@ -70,26 +70,6 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::SynchronizeHostDevice(const SynchronizeFlags& flags) {
-    if (flags & Synchronize_em) {
-      Kokkos::deep_copy(this->em_h, this->em);
-      this->em_h_content = this->em_content;
-    }
-    if (flags & Synchronize_cur) {
-      Kokkos::deep_copy(this->cur_h, this->cur);
-      this->cur_h_content = this->cur_content;
-    }
-    if (flags & Synchronize_buff) {
-      Kokkos::deep_copy(this->buff_h, this->buff);
-      this->buff_h_content = this->buff_content;
-    }
-    if (flags & Synchronize_bckp) {
-      Kokkos::deep_copy(this->bckp_h, this->bckp);
-      this->bckp_h_content = this->bckp_content;
-    }
-  }
-
-  template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::ComputeMoments(const SimulationParams& params,
                                        const FieldID&          field,
                                        const std::vector<int>& components,

@@ -171,17 +171,6 @@ namespace ntt {
     }
   }
 
-  // Flags
-  enum SynchronizeFlags_ {
-    Synchronize_None = 0,
-    Synchronize_em   = 1 << 0,
-    Synchronize_bckp = 1 << 1,
-    Synchronize_cur  = 1 << 2,
-    Synchronize_buff = 1 << 3,
-    Synchronize_All  = Synchronize_em | Synchronize_bckp | Synchronize_cur | Synchronize_buff,
-    Synchronize_Default = Synchronize_All,
-  };
-  typedef int SynchronizeFlags;
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
