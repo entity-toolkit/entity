@@ -18,7 +18,7 @@ namespace ntt {
     switch (sim) {
     case PICEngine:
       return "PIC";
-    case SimulationEngine::GRPIC:
+    case GRPICEngine:
       return "GRPIC";
     default:
       return "N/A";
@@ -204,6 +204,6 @@ template class ntt::Simulation<ntt::Dim1, ntt::PICEngine>;
 template class ntt::Simulation<ntt::Dim2, ntt::PICEngine>;
 template class ntt::Simulation<ntt::Dim3, ntt::PICEngine>;
 #elif defined(GRPIC_ENGINE)
-template class ntt::Simulation<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
-template class ntt::Simulation<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
+template class ntt::Simulation<ntt::Dim2, ntt::GRPICEngine>;
+template class ntt::Simulation<ntt::Dim3, ntt::GRPICEngine>;
 #endif

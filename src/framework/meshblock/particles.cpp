@@ -49,13 +49,7 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {
-    i1_h  = Kokkos::create_mirror(i1);
-    dx1_h = Kokkos::create_mirror(dx1);
-    ux1_h = Kokkos::create_mirror(ux1);
-    ux2_h = Kokkos::create_mirror(ux2);
-    ux3_h = Kokkos::create_mirror(ux3);
-  }
+      is_dead { label_ + "_a", maxnpart_ } {}
 
 #ifdef MINKOWSKI_METRIC
   template <>
@@ -73,15 +67,7 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {
-    i1_h  = Kokkos::create_mirror(i1);
-    i2_h  = Kokkos::create_mirror(i2);
-    dx1_h = Kokkos::create_mirror(dx1);
-    dx2_h = Kokkos::create_mirror(dx2);
-    ux1_h = Kokkos::create_mirror(ux1);
-    ux2_h = Kokkos::create_mirror(ux2);
-    ux3_h = Kokkos::create_mirror(ux3);
-  }
+      is_dead { label_ + "_a", maxnpart_ } {}
 #else    // axisymmetry
   template <>
   Particles<Dim2, PICEngine>::Particles(const int&         index_,
@@ -99,15 +85,7 @@ namespace ntt {
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
       phi { label_ + "_phi", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {
-    i1_h  = Kokkos::create_mirror(i1);
-    i2_h  = Kokkos::create_mirror(i2);
-    dx1_h = Kokkos::create_mirror(dx1);
-    dx2_h = Kokkos::create_mirror(dx2);
-    ux1_h = Kokkos::create_mirror(ux1);
-    ux2_h = Kokkos::create_mirror(ux2);
-    ux3_h = Kokkos::create_mirror(ux3);
-  }
+      is_dead { label_ + "_a", maxnpart_ } {}
 #endif
   template <>
   Particles<Dim3, PICEngine>::Particles(const int&         index_,
@@ -126,27 +104,17 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {
-    i1_h  = Kokkos::create_mirror(i1);
-    i2_h  = Kokkos::create_mirror(i2);
-    i3_h  = Kokkos::create_mirror(i3);
-    dx1_h = Kokkos::create_mirror(dx1);
-    dx2_h = Kokkos::create_mirror(dx2);
-    dx3_h = Kokkos::create_mirror(dx3);
-    ux1_h = Kokkos::create_mirror(ux1);
-    ux2_h = Kokkos::create_mirror(ux2);
-    ux3_h = Kokkos::create_mirror(ux3);
-  }
+      is_dead { label_ + "_a", maxnpart_ } {}
 
   // * * * * * * * * * * * * * * * * * * * *
   // GRPIC-specific (not Cartesian)
   // * * * * * * * * * * * * * * * * * * * *
   template <>
-  Particles<Dim2, TypeGRPIC>::Particles(const int&         index_,
-                                        const std::string& label_,
-                                        const float&       m_,
-                                        const float&       ch_,
-                                        const std::size_t& maxnpart_)
+  Particles<Dim2, GRPICEngine>::Particles(const int&         index_,
+                                          const std::string& label_,
+                                          const float&       m_,
+                                          const float&       ch_,
+                                          const std::size_t& maxnpart_)
     : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
@@ -161,22 +129,14 @@ namespace ntt {
       dx1_prev { label_ + "_dx1_prev", maxnpart_ },
       dx2_prev { label_ + "_dx2_prev", maxnpart_ },
       phi { label_ + "_phi", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {
-    i1_h  = Kokkos::create_mirror(i1);
-    i2_h  = Kokkos::create_mirror(i2);
-    dx1_h = Kokkos::create_mirror(dx1);
-    dx2_h = Kokkos::create_mirror(dx2);
-    ux1_h = Kokkos::create_mirror(ux1);
-    ux2_h = Kokkos::create_mirror(ux2);
-    ux3_h = Kokkos::create_mirror(ux3);
-  }
+      is_dead { label_ + "_a", maxnpart_ } {}
 
   template <>
-  Particles<Dim3, TypeGRPIC>::Particles(const int&         index_,
-                                        const std::string& label_,
-                                        const float&       m_,
-                                        const float&       ch_,
-                                        const std::size_t& maxnpart_)
+  Particles<Dim3, GRPICEngine>::Particles(const int&         index_,
+                                          const std::string& label_,
+                                          const float&       m_,
+                                          const float&       ch_,
+                                          const std::size_t& maxnpart_)
     : ParticleSpecies { index_, label_, m_, ch_, maxnpart_ },
       i1 { label_ + "_i1", maxnpart_ },
       i2 { label_ + "_i2", maxnpart_ },
@@ -194,17 +154,7 @@ namespace ntt {
       dx1_prev { label_ + "_dx1_prev", maxnpart_ },
       dx2_prev { label_ + "_dx2_prev", maxnpart_ },
       dx3_prev { label_ + "_dx3_prev", maxnpart_ },
-      is_dead { label_ + "_a", maxnpart_ } {
-    i1_h  = Kokkos::create_mirror(i1);
-    i2_h  = Kokkos::create_mirror(i2);
-    i3_h  = Kokkos::create_mirror(i3);
-    dx1_h = Kokkos::create_mirror(dx1);
-    dx2_h = Kokkos::create_mirror(dx2);
-    dx3_h = Kokkos::create_mirror(dx3);
-    ux1_h = Kokkos::create_mirror(ux1);
-    ux2_h = Kokkos::create_mirror(ux2);
-    ux3_h = Kokkos::create_mirror(ux3);
-  }
+      is_dead { label_ + "_a", maxnpart_ } {}
 
   template <Dimension D, SimulationEngine S>
   Particles<D, S>::Particles(const ParticleSpecies& spec)
@@ -218,25 +168,6 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeAllParticles() -> range_t<Dim1> {
     return CreateRangePolicy<Dim1>({ 0 }, { (int)(maxnpart()) });
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Particles<D, S>::SynchronizeHostDevice() {
-    if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
-      Kokkos::deep_copy(i1_h, i1);
-      Kokkos::deep_copy(dx1_h, dx1);
-    }
-    if constexpr (D == Dim2 || D == Dim3) {
-      Kokkos::deep_copy(i2_h, i2);
-      Kokkos::deep_copy(dx2_h, dx2);
-    }
-    if constexpr (D == Dim3) {
-      Kokkos::deep_copy(i3_h, i3);
-      Kokkos::deep_copy(dx3_h, dx3);
-    }
-    Kokkos::deep_copy(ux1_h, ux1);
-    Kokkos::deep_copy(ux2_h, ux2);
-    Kokkos::deep_copy(ux3_h, ux3);
   }
 
   template <Dimension D, SimulationEngine S>
@@ -282,7 +213,7 @@ namespace ntt {
       Sorter.sort(Kokkos::subview(phi, slice));
     }
 #endif
-    if constexpr (S == TypeGRPIC) {
+    if constexpr (S == GRPICEngine) {
       Sorter.sort(Kokkos::subview(i1_prev, slice));
       Sorter.sort(Kokkos::subview(dx1_prev, slice));
       if constexpr (D == Dim2 || D == Dim3) {
@@ -299,7 +230,10 @@ namespace ntt {
 
 }    // namespace ntt
 
-#ifdef PIC_ENGINE
+/**
+ * Engine specific instantiations
+ */
+#if defined(PIC_ENGINE)
 template struct ntt::Particles<ntt::Dim1, ntt::PICEngine>;
 template struct ntt::Particles<ntt::Dim2, ntt::PICEngine>;
 template struct ntt::Particles<ntt::Dim3, ntt::PICEngine>;

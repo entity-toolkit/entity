@@ -139,37 +139,21 @@ namespace ntt {
      * Arrays containing particle data.
      */
     // Cell indices of the current particle.
-    array_t<int*>           i1, i2, i3;
+    array_t<int*>    i1, i2, i3;
     // Displacement of a particle within the cell.
-    array_t<float*>         dx1, dx2, dx3;
+    array_t<float*>  dx1, dx2, dx3;
     // Three spatial components of the covariant 4-velocity (physical units).
-    array_t<real_t*>        ux1, ux2, ux3;
+    array_t<real_t*> ux1, ux2, ux3;
     // Particle weights.
-    array_t<float*>         weight;
+    array_t<float*>  weight;
     // Additional variables (specific to different cases).
     // previous coordinates (GR specific)
-    array_t<real_t*>        i1_prev, i2_prev, i3_prev;
-    array_t<real_t*>        dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*> i1_prev, i2_prev, i3_prev;
+    array_t<real_t*> dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
-    array_t<real_t*>        phi;
+    array_t<real_t*> phi;
     // Array to track whether a particle is dead or not.
-    array_t<bool*>          is_dead;
-
-    // Host mirrors for cell indices.
-    array_mirror_t<int*>    i1_h, i2_h, i3_h;
-    // Host mirrors for displacement.
-    array_mirror_t<float*>  dx1_h, dx2_h, dx3_h;
-    // Host mirrors for the 4-velocities.
-    array_mirror_t<real_t*> ux1_h, ux2_h, ux3_h;
-    // Host mirrors for the particle weights.
-    array_mirror_t<float*>  weight_h;
-    // host mirrors for previous coordinates
-    array_mirror_t<real_t*> i1_prev_h, i2_prev_h, i3_prev_h;
-    array_mirror_t<real_t*> dx1_prev_h, dx2_prev_h, dx3_prev_h;
-    // host mirrors for phi
-    array_mirror_t<real_t*> phi_h;
-    // host mirrors for is_dead
-    array_mirror_t<bool*>   is_dead_h;
+    array_t<bool*>   is_dead;
 
     /**
      * @brief Constructor for the particle container.
@@ -224,12 +208,6 @@ namespace ntt {
                                  maxnpart()));
       m_npart = npart;
     }
-
-    /**
-     * @brief Synchronize data from device to host.
-     * Synchronize all the arrays that have host mirrors.
-     */
-    void SynchronizeHostDevice();
 
     /**
      * @brief Count the number of living particles
