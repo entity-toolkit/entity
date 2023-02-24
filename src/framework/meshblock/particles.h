@@ -9,6 +9,8 @@
 #include <string>
 
 namespace ntt {
+  enum prtl { alive = 0, dead };
+
   /**
    * @brief Container class to carry particle information for a specific species.
    * @tparam D The dimension of the simulation.
@@ -38,8 +40,8 @@ namespace ntt {
     array_t<real_t*> dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
     array_t<real_t*> phi;
-    // Array to track whether a particle is dead or not.
-    array_t<bool*>   is_dead;
+    // Array to tag the particles.
+    array_t<short*>  tag;
 
     /**
      * @brief Constructor for the particle container.

@@ -122,7 +122,7 @@ namespace ntt {
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (!species.is_dead(p)) {
+            if (species.tag(p) == prtl::alive) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               real_t x1          = get_prtl_x1(species, p);
@@ -158,7 +158,7 @@ namespace ntt {
       } else if constexpr (D == Dim2) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (!species.is_dead(p)) {
+            if (species.tag(p) == prtl::alive) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               auto   i2          = species.i2(p);
@@ -216,7 +216,7 @@ namespace ntt {
       } else if constexpr (D == Dim3) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (!species.is_dead(p)) {
+            if (species.tag(p) == prtl::alive) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               auto   i2          = species.i2(p);

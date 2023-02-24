@@ -74,7 +74,7 @@ namespace ntt {
           if (flags & TimerFlags_AutoConvert) {
             if (value > 1e6) {
               value /= 1e6;
-              units = "s";
+              units = " s";
             } else if (value > 1e3) {
               value /= 1e3;
               units = "ms";
