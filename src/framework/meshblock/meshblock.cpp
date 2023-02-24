@@ -113,12 +113,12 @@ namespace ntt {
       comp2 = components[1];
     }
 
-    auto this_metric = this->metric;
+    auto this_metric  = this->metric;
 
+    auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
     for (auto& sp : out_species) {
-      auto species      = particles[sp - 1];
-      auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
-      auto mass         = species.mass();
+      auto species = particles[sp - 1];
+      auto mass    = species.mass();
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
@@ -277,6 +277,7 @@ namespace ntt {
           });
       }
     }
+    Kokkos::Experimental::contribute(this->buff, scatter_buff);
   }
 
   template <>
@@ -463,11 +464,11 @@ namespace ntt {
     -> std::vector<double> {
     std::vector<double> dead_fractions = {};
     for (auto& species : particles) {
-      auto npart_alive   = species.CountLiving();
-      auto dead_fraction = 1.0 - (double)(npart_alive) / (double)(species.npart());
+      auto npart_tag     = species.CountTaggedParticles();
+      auto dead_fraction = (double)(npart_tag[(int)(prtl::dead)]) / (double)(species.npart());
       if ((species.npart() > 0) && dead_fraction >= (double)max_dead_frac) {
-        species.ReshuffleDead();
-        species.setNpart(npart_alive);
+        species.ReshuffleByTags();
+        species.setNpart(npart_tag[(int)(prtl::alive)]);
       }
       dead_fractions.push_back(dead_fraction);
     }

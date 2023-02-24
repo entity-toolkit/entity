@@ -189,59 +189,64 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  auto Particles<D, S>::CountLiving() const -> std::size_t {
-    std::size_t npart_alive = 0;
-    auto        tag_        = this->tag;
-    Kokkos::parallel_reduce(
-      "RemoveDead",
-      npart(),
-      Lambda(index_t & p, std::size_t & cnt) {
-        if (tag_(p) == prtl::alive) {
-          cnt++;
-        }
-      },
-      npart_alive);
-    return npart_alive;
+  auto Particles<D, S>::CountTaggedParticles() const -> std::vector<std::size_t> {
+    auto                      this_tag = this->tag;
+    array_t<std::size_t[100]> npart_tag("npart_tags");
+    auto npart_tag_scatter { Kokkos::Experimental::create_scatter_view(npart_tag) };
+    Kokkos::parallel_for(
+      "CountTaggedParticles", npart(), Lambda(index_t p) {
+        auto npart_tag_scatter_access = npart_tag_scatter.access();
+        npart_tag_scatter_access((int)(this_tag(p))) += 1;
+      });
+    Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
+    auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
+    Kokkos::deep_copy(npart_tag_host, npart_tag);
+    std::vector<std::size_t> npart_tag_vec;
+    for (auto i { 0 }; i < 100; ++i) {
+      npart_tag_vec.push_back(npart_tag_host(i));
+    }
+    return npart_tag_vec;
   }
 
   template <Dimension D, SimulationEngine S>
-  void Particles<D, S>::ReshuffleDead() {
-    //     using KeyType                         = array_t<bool*>;
-    //     using BinOp                           = BinBool<KeyType>;
-    //     auto                            slice = std::pair<std::size_t, std::size_t>(0,
-    //     npart()); BinOp                           bin_op; Kokkos::BinSort<KeyType, BinOp>
-    //     Sorter(Kokkos::subview(is_dead, slice), bin_op); Sorter.create_permute_vector();
-    //     Sorter.sort(Kokkos::subview(is_dead, slice));
-    //     Sorter.sort(Kokkos::subview(i1, slice));
-    //     Sorter.sort(Kokkos::subview(dx1, slice));
-    //     if constexpr (D == Dim2 || D == Dim3) {
-    //       Sorter.sort(Kokkos::subview(i2, slice));
-    //       Sorter.sort(Kokkos::subview(dx2, slice));
-    //     }
-    //     if constexpr (D == Dim3) {
-    //       Sorter.sort(Kokkos::subview(i3, slice));
-    //       Sorter.sort(Kokkos::subview(dx3, slice));
-    //     }
-    //     Sorter.sort(Kokkos::subview(ux1, slice));
-    //     Sorter.sort(Kokkos::subview(ux2, slice));
-    //     Sorter.sort(Kokkos::subview(ux3, slice));
-    // #ifndef MINKOWSKI_METRIC
-    //     if constexpr (D == Dim2) {
-    //       Sorter.sort(Kokkos::subview(phi, slice));
-    //     }
-    // #endif
-    //     if constexpr (S == GRPICEngine) {
-    //       Sorter.sort(Kokkos::subview(i1_prev, slice));
-    //       Sorter.sort(Kokkos::subview(dx1_prev, slice));
-    //       if constexpr (D == Dim2 || D == Dim3) {
-    //         Sorter.sort(Kokkos::subview(i2_prev, slice));
-    //         Sorter.sort(Kokkos::subview(dx2_prev, slice));
-    //       }
-    //       if constexpr (D == Dim3) {
-    //         Sorter.sort(Kokkos::subview(i3_prev, slice));
-    //         Sorter.sort(Kokkos::subview(dx3_prev, slice));
-    //       }
-    //     }
+  void Particles<D, S>::ReshuffleByTags() {
+    using KeyType                         = array_t<short*>;
+    using BinOp                           = BinTag<KeyType>;
+    auto                            slice = std::pair<std::size_t, std::size_t>(0, npart());
+    BinOp                           bin_op;
+    Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op);
+    Sorter.create_permute_vector();
+    Sorter.sort(Kokkos::subview(tag, slice));
+    Sorter.sort(Kokkos::subview(i1, slice));
+    Sorter.sort(Kokkos::subview(dx1, slice));
+    if constexpr (D == Dim2 || D == Dim3) {
+      Sorter.sort(Kokkos::subview(i2, slice));
+      Sorter.sort(Kokkos::subview(dx2, slice));
+    }
+    if constexpr (D == Dim3) {
+      Sorter.sort(Kokkos::subview(i3, slice));
+      Sorter.sort(Kokkos::subview(dx3, slice));
+    }
+    Sorter.sort(Kokkos::subview(ux1, slice));
+    Sorter.sort(Kokkos::subview(ux2, slice));
+    Sorter.sort(Kokkos::subview(ux3, slice));
+#ifndef MINKOWSKI_METRIC
+    if constexpr (D == Dim2) {
+      Sorter.sort(Kokkos::subview(phi, slice));
+    }
+#endif
+    if constexpr (S == GRPICEngine) {
+      Sorter.sort(Kokkos::subview(i1_prev, slice));
+      Sorter.sort(Kokkos::subview(dx1_prev, slice));
+      if constexpr (D == Dim2 || D == Dim3) {
+        Sorter.sort(Kokkos::subview(i2_prev, slice));
+        Sorter.sort(Kokkos::subview(dx2_prev, slice));
+      }
+      if constexpr (D == Dim3) {
+        Sorter.sort(Kokkos::subview(i3_prev, slice));
+        Sorter.sort(Kokkos::subview(dx3_prev, slice));
+      }
+    }
     //  !TODO: sort weights
   }
 

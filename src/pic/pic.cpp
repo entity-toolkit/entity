@@ -122,6 +122,7 @@ namespace ntt {
       ParticlesExchange();
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
+        std::cout <<"shuffle\n";
       }
       timers.stop("ParticleBoundaries");
     }

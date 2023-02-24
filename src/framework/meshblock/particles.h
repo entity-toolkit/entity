@@ -98,15 +98,15 @@ namespace ntt {
     }
 
     /**
-     * @brief Count the number of living particles
-     * @return The number of living particles as a std::size_t.
+     * @brief Count the number of particles with a specific tag.
+     * @return The vector of counts for each tag.
      */
-    auto CountLiving() const -> std::size_t;
+    auto CountTaggedParticles() const -> std::vector<std::size_t>;
 
     /**
-     * @brief Reshuffle dead particles to the end of all arrays.
+     * @brief Reshuffle particles by their tags.
      */
-    void ReshuffleDead();
+    void ReshuffleByTags();
   };
 
 }    // namespace ntt
