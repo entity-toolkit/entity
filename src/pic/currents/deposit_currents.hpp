@@ -53,7 +53,7 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(index_t p) const {
-      if (m_particles.tag(p) == prtl::alive) {
+      if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
         // _f = final, _i = initial
         tuple_t<int, D> Ip_f, Ip_i;
         coord_t<D>      xp_f, xp_i, xp_r;

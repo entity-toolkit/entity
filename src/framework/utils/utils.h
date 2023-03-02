@@ -26,19 +26,21 @@ namespace ntt {
 
   template <class KeyViewType>
   struct BinTag {
-    BinTag() = default;
+    BinTag(const int& max_bins) : m_max_bins { max_bins } {}
     template <class ViewType>
     Inline auto bin(ViewType& keys, const int& i) const -> int {
-      // return keys(i) == 1 ? 0 : (keys(i) == 0 ? 1 : static_cast<int>(keys(i)));
-      return -static_cast<int>(keys(i));
+      return (keys(i) == 0) ? 1 : ((keys(i) == 1) ? 0 : keys(i));
     }
     Inline auto max_bins() const -> int {
-      return 100;
+      return m_max_bins;
     }
     template <class ViewType, typename iT1, typename iT2>
     Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
       return false;
     }
+
+  private:
+    const int m_max_bins;
   };
 
   /**

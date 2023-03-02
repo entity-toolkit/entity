@@ -122,7 +122,7 @@ namespace ntt {
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (species.tag(p) == prtl::alive) {
+            if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               real_t x1          = get_prtl_x1(species, p);
@@ -158,7 +158,7 @@ namespace ntt {
       } else if constexpr (D == Dim2) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (species.tag(p) == prtl::alive) {
+            if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               auto   i2          = species.i2(p);
@@ -216,7 +216,7 @@ namespace ntt {
       } else if constexpr (D == Dim3) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (species.tag(p) == prtl::alive) {
+            if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               auto   i2          = species.i2(p);
@@ -464,17 +464,13 @@ namespace ntt {
     -> std::vector<double> {
     std::vector<double> dead_fractions = {};
     for (auto& species : particles) {
-      auto npart_tag     = species.CountTaggedParticles();
-      auto dead_fraction = (double)(npart_tag[(int)(prtl::dead)]) / (double)(species.npart());
+      auto npart_tag = species.CountTaggedParticles();
+      auto dead_fraction
+        = (double)(npart_tag[(short)(ParticleTag::dead)]) / (double)(species.npart());
       std::cout << "dead fraction: " << dead_fraction << std::endl;
-      std::cout << "alive fraction: "
-                << (double)(npart_tag[(int)(prtl::alive)]) / (double)(species.npart())
-                << std::endl;
       if ((species.npart() > 0) && (dead_fraction >= (double)max_dead_frac)) {
         species.ReshuffleByTags();
-        std::cout << "aliveN: " << species.npart() << " " << npart_tag[(int)(prtl::alive)]
-                  << std::endl;
-        species.setNpart(npart_tag[(int)(prtl::alive)]);
+        species.setNpart(npart_tag[(short)(ParticleTag::alive)]);
       }
       dead_fractions.push_back(dead_fraction);
     }

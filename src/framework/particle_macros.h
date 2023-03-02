@@ -42,7 +42,7 @@
       (SPECIES).ux1((INDEX)) = U1;                                                            \
       (SPECIES).ux2((INDEX)) = U2;                                                            \
       (SPECIES).ux3((INDEX)) = U3;                                                            \
-      (SPECIES).tag((INDEX)) = static_cast<int>(prtl::alive);                               \
+      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
     }
 
 #  define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
@@ -60,7 +60,7 @@
       (SPECIES).ux1((INDEX)) = U1;                                                            \
       (SPECIES).ux2((INDEX)) = U2;                                                            \
       (SPECIES).ux3((INDEX)) = U3;                                                            \
-      (SPECIES).tag((INDEX)) = static_cast<int>(prtl::alive);                               \
+      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
     }
 
 #  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
@@ -81,7 +81,7 @@
       (SPECIES).ux1((INDEX)) = U1;                                                            \
       (SPECIES).ux2((INDEX)) = U2;                                                            \
       (SPECIES).ux3((INDEX)) = U3;                                                            \
-      (SPECIES).tag((INDEX)) = static_cast<int>(prtl::alive);                               \
+      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
     }
 
 #else
@@ -103,7 +103,7 @@
       (SPECIES).ux1((INDEX)) = U_C[0];                                                        \
       (SPECIES).ux2((INDEX)) = U_C[1];                                                        \
       (SPECIES).ux3((INDEX)) = U_C[2];                                                        \
-      (SPECIES).tag((INDEX)) = static_cast<int>(prtl::alive);                               \
+      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
     }
 
 #  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
@@ -126,7 +126,7 @@
       (SPECIES).ux1((INDEX)) = U_C[0];                                                        \
       (SPECIES).ux2((INDEX)) = U_C[1];                                                        \
       (SPECIES).ux3((INDEX)) = U_C[2];                                                        \
-      (SPECIES).tag((INDEX)) = static_cast<int>(prtl::alive);                               \
+      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
     }
 
 #endif

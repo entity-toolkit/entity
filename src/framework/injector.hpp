@@ -317,7 +317,7 @@ namespace ntt {
             species1.ux1(offset1 + p) = v[0];
             species1.ux2(offset1 + p) = v[1];
             species1.ux3(offset1 + p) = v[2];
-            species1.tag(offset1 + p) = static_cast<int>(prtl::alive);
+            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
 
             energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
@@ -332,7 +332,7 @@ namespace ntt {
             species2.ux1(offset2 + p) = v[0];
             species2.ux2(offset2 + p) = v[1];
             species2.ux3(offset2 + p) = v[2];
-            species2.tag(offset2 + p) = static_cast<int>(prtl::alive);
+            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
           }
           ninject -= ONE;
         }
@@ -425,7 +425,7 @@ namespace ntt {
             species1.ux1(offset1 + p) = v_cart[0];
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
-            species1.tag(offset1 + p) = static_cast<int>(prtl::alive);
+            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
 
             energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
@@ -442,7 +442,7 @@ namespace ntt {
             species2.ux1(offset2 + p) = v_cart[0];
             species2.ux2(offset2 + p) = v_cart[1];
             species2.ux3(offset2 + p) = v_cart[2];
-            species2.tag(offset2 + p) = static_cast<int>(prtl::alive);
+            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
           }
           ninject -= ONE;
         }
@@ -538,7 +538,7 @@ namespace ntt {
             species1.ux1(offset1 + p) = v_cart[0];
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
-            species1.tag(offset1 + p) = static_cast<int>(prtl::alive);
+            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
 
             energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
@@ -557,7 +557,7 @@ namespace ntt {
             species2.ux1(offset2 + p) = v_cart[0];
             species2.ux2(offset2 + p) = v_cart[1];
             species2.ux3(offset2 + p) = v_cart[2];
-            species2.tag(offset2 + p) = static_cast<int>(prtl::alive);
+            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
           }
           ninject -= ONE;
         }

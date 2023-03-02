@@ -29,7 +29,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
             if ((species.i1(p) < 0) || (species.i1(p) >= ni)) {
-              species.tag(p) = static_cast<int>(prtl::dead);
+              species.tag(p) = static_cast<short>(ParticleTag::dead);
             }
           });
       }
@@ -68,7 +68,7 @@ namespace ntt {
           "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
             if ((species.i1(p) < 0) || (species.i1(p) >= ni) || (species.i2(p) < 0)
                 || (species.i2(p) >= nj)) {
-              species.tag(p) = static_cast<int>(prtl::dead);
+              species.tag(p) = static_cast<short>(ParticleTag::dead);
             }
           });
       }

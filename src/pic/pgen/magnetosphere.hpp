@@ -83,7 +83,7 @@ namespace ntt {
       const auto rmin        = mblock.metric.x1_min;
       const auto bsurf_      = bsurf;
       const auto i1_min      = mblock.i1_min();
-      const auto buff_cells  = (int)(params.currentFilters());
+      const auto buff_cells  = IMIN((int)(params.currentFilters()), 5);
       const auto i1_max      = mblock.i1_min() + buff_cells;
       const auto omega = (time < spinup_time) ? (time / spinup_time) * spin_omega : spin_omega;
       NTTHostErrorIf(buff_cells > mblock.Ni1(), "buff_cells > ni1");

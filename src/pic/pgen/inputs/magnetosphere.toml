@@ -42,18 +42,17 @@ bsurf        = 1.0
 spin_omega   = 0.1
 spinup_time  = 1.0
 inj_rmax     = 1.2
-inj_thmin    = 1e-2
 inj_fraction = 0.1
 inj_maxDens  = 5.0
 field_mode   = 1    # 1 = Monopole, 2 = Dipole
 u_kick       = 0.5
 
 [visualization]
-fields        = ["mass_density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jphi"]
+fields = ["mass_density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jphi"]
 #fields_stride = 8
 fields_stride = 4
 
 [output]
-fields        = ["mass_density", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jphi"]
+fields   = ["Rho", "Bi", "Ei"]
 format   = "HDF5"
 interval = 100

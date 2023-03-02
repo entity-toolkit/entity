@@ -9,7 +9,7 @@
 #include <string>
 
 namespace ntt {
-  enum prtl : short { dead = 0, alive };
+  enum ParticleTag : short { dead = 0, alive, NTags };
 
   /**
    * @brief Container class to carry particle information for a specific species.
@@ -41,7 +41,7 @@ namespace ntt {
     // phi coordinate (for axisymmetry)
     array_t<real_t*> phi;
     // Array to tag the particles.
-    array_t<int*>    tag;
+    array_t<short*>  tag;
 
     /**
      * @brief Constructor for the particle container.

@@ -37,7 +37,7 @@ namespace ntt {
         "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
           // radial boundary conditions
           if ((species.i1(p) < -1) || (species.i1(p) >= ni1 + 1)) {
-            species.tag(p) = static_cast<int>(prtl::dead);
+            species.tag(p) = static_cast<short>(ParticleTag::dead);
           }
           // axis boundaries
           if ((species.i2(p) < 0) || (species.i2(p) >= ni2)) {
@@ -67,7 +67,7 @@ namespace ntt {
           mblock.metric.x_Code2Sph({ get_prtl_x1(species, p), ZERO }, x_sph);
           // particles penetrate 80% of the absorbing region
           if ((x_sph[0] > r_absorb + (real_t)(0.8) * (r_max - r_absorb))) {
-            species.tag(p) = static_cast<int>(prtl::dead);
+            species.tag(p) = static_cast<short>(ParticleTag::dead);
           }
         });
     }
