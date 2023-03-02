@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include <type_traits>
+
 namespace ntt {
 
 #ifdef OUTPUT_ENABLED
@@ -32,8 +34,16 @@ namespace ntt {
       count.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
       start.push_back(0);
     }
-    std::reverse(shape.begin(), shape.end());
-    std::reverse(count.begin(), count.end());
+    auto isLayoutRight
+      = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
+
+    if (isLayoutRight) {
+      m_io.DefineAttribute<int>("LayoutRight", 1);
+    } else {
+      std::reverse(shape.begin(), shape.end());
+      std::reverse(count.begin(), count.end());
+      m_io.DefineAttribute<int>("LayoutRight", 0);
+    }
 
     m_io.DefineVariable<int>("step");
     m_io.DefineVariable<real_t>("time");

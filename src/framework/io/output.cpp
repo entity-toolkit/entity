@@ -156,7 +156,7 @@ namespace ntt {
         auto slice        = Kokkos::subview(field, slice_i1, comp);
         auto output_field = array_t<real_t*>("output_field", slice.extent(0));
         Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror(output_field);
+        auto output_field_host = Kokkos::create_mirror_view(output_field);
         Kokkos::deep_copy(output_field_host, output_field);
         writer.Put<real_t>(var, output_field_host);
       } else if constexpr (D == Dim2) {
@@ -164,7 +164,7 @@ namespace ntt {
         auto output_field
           = array_t<real_t**>("output_field", slice.extent(0), slice.extent(1));
         Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror(output_field);
+        auto output_field_host = Kokkos::create_mirror_view(output_field);
         Kokkos::deep_copy(output_field_host, output_field);
         writer.Put<real_t>(var, output_field_host);
       } else if constexpr (D == Dim3) {
@@ -172,7 +172,7 @@ namespace ntt {
         auto output_field = array_t<real_t***>(
           "output_field", slice.extent(0), slice.extent(1), slice.extent(2));
         Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror(output_field);
+        auto output_field_host = Kokkos::create_mirror_view(output_field);
         Kokkos::deep_copy(output_field_host, output_field);
         writer.Put<real_t>(var, output_field_host);
       }
