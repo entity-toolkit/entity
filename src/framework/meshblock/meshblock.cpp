@@ -466,8 +466,14 @@ namespace ntt {
     for (auto& species : particles) {
       auto npart_tag     = species.CountTaggedParticles();
       auto dead_fraction = (double)(npart_tag[(int)(prtl::dead)]) / (double)(species.npart());
-      if ((species.npart() > 0) && dead_fraction >= (double)max_dead_frac) {
+      std::cout << "dead fraction: " << dead_fraction << std::endl;
+      std::cout << "alive fraction: "
+                << (double)(npart_tag[(int)(prtl::alive)]) / (double)(species.npart())
+                << std::endl;
+      if ((species.npart() > 0) && (dead_fraction >= (double)max_dead_frac)) {
         species.ReshuffleByTags();
+        std::cout << "aliveN: " << species.npart() << " " << npart_tag[(int)(prtl::alive)]
+                  << std::endl;
         species.setNpart(npart_tag[(int)(prtl::alive)]);
       }
       dead_fractions.push_back(dead_fraction);

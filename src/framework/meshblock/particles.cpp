@@ -210,11 +210,13 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Particles<D, S>::ReshuffleByTags() {
-    using KeyType                         = array_t<short*>;
-    using BinOp                           = BinTag<KeyType>;
+    using KeyType = array_t<int*>;
+    using BinOp   = Kokkos::BinOp1D<KeyType>;
+    BinOp                           bin_op(100, 0, 10);
     auto                            slice = std::pair<std::size_t, std::size_t>(0, npart());
-    BinOp                           bin_op;
-    Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op);
+    Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op, false);
+    Sorter.create_permute_vector();
+
     Sorter.create_permute_vector();
     Sorter.sort(Kokkos::subview(tag, slice));
     Sorter.sort(Kokkos::subview(i1, slice));

@@ -29,10 +29,11 @@ namespace ntt {
     BinTag() = default;
     template <class ViewType>
     Inline auto bin(ViewType& keys, const int& i) const -> int {
-      return static_cast<int>(keys(i));
+      // return keys(i) == 1 ? 0 : (keys(i) == 0 ? 1 : static_cast<int>(keys(i)));
+      return -static_cast<int>(keys(i));
     }
     Inline auto max_bins() const -> int {
-      return 101;
+      return 100;
     }
     template <class ViewType, typename iT1, typename iT2>
     Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
