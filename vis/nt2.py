@@ -35,7 +35,7 @@ class NTPlotAccessor:
             cm = plt.get_cmap(cm)
             cm.set_bad(cm(0))
             kwargs["cmap"] = cm
-        r, th = np.meshgrid(self._obj.coords["r"], self._obj.coords["θ"])
+        r, th = np.meshgrid(self._obj.coords["r"], self._obj.coords["θ" if useGreek else "th"])
         y, x = r * np.cos(th), r * np.sin(th)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -107,6 +107,7 @@ def getFields(fname):
     step0 = list(file.keys())[0]
     nsteps = file.attrs["NumSteps"]
     ngh = file.attrs["n_ghosts"]
+    layout = "right" if file.attrs["LayoutRight"] == 1 else "left"
     dimension = file.attrs["dimension"]
     metric = file.attrs["metric"].decode("UTF-8")
     coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
@@ -125,7 +126,7 @@ def getFields(fname):
     for k in fields:
         dask_arrays = []
         for s in range(nsteps):
-            array = da.from_array(file[f"Step{s}/{k}"])
+            array = da.from_array(np.transpose(file[f"Step{s}/{k}"]) if layout == "right" else file[f"Step{s}/{k}"])
             dask_arrays.append(array[ngh:-ngh, ngh:-ngh])
 
         k_ = reduce(
