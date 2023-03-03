@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-using plog_t = plog::ColorConsoleAppender<plog::NTTFormatter>;
+using plog_t = plog::ColorConsoleAppender<plog::Nt2ConsoleFormatter>;
 void initLogger(plog_t* console_appender);
 
 class NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {

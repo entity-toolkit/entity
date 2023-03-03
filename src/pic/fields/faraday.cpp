@@ -35,7 +35,7 @@ namespace ntt {
     const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "faraday", mblock.rangeActiveCells(), Faraday_kernel<D>(mblock, coeff / dx));
-    PLOGD << "... ... faraday substep finished";
+    NTTLog();
   }
 
 #else
@@ -47,7 +47,7 @@ namespace ntt {
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
     Kokkos::parallel_for(
       "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff));
-    PLOGD << "... ... faraday substep finished";
+    NTTLog();
   }
 
   template <>

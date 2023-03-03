@@ -33,7 +33,7 @@ namespace ntt {
     const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
       "ampere", mblock.rangeActiveCells(), Ampere_kernel<D>(mblock, coeff / dx));
-    PLOGD << "... ... ampere substep finished";
+    NTTLog();
   }
 
 #else
@@ -50,7 +50,7 @@ namespace ntt {
     Kokkos::parallel_for("ampere_pole",
                          CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
                          AmperePoles_kernel<Dim2>(mblock, coeff));
-    PLOGD << "... ... ampere substep finished";
+    NTTLog();
   }
 
   template <>

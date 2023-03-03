@@ -21,7 +21,7 @@ namespace ntt {
     InitializeSetup();
     FieldsExchange();
     FieldsBoundaryConditions();
-    PLOGI << "... simulation was reset";
+    NTTLog();
   }
 
   /**

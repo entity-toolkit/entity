@@ -210,7 +210,6 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Particles<D, S>::ReshuffleByTags() {
-    std::cout << "sorting with " << npart() << " particles" << std::endl;
     using KeyType = array_t<short*>;
     using BinOp   = BinTag<KeyType>;
     BinOp                           bin_op(ParticleTag::NTags);
