@@ -6,6 +6,8 @@
 #include "fields.h"
 #include "simulation.h"
 
+#include "problem_generator.hpp"
+
 #include <toml/toml.hpp>
 
 namespace ntt {
@@ -15,11 +17,15 @@ namespace ntt {
    */
   template <Dimension D>
   struct PIC : public Simulation<D, PICEngine> {
+    // problem setup generator
+    ProblemGenerator<D, PICEngine> problem_generator;
+
     /**
      * @brief Constructor for PIC class.
      * @param inputdata toml-object with parsed toml parameters.
      */
-    PIC(const toml::value& inputdata) : Simulation<D, PICEngine>(inputdata) {}
+    PIC(const toml::value& inputdata)
+      : Simulation<D, PICEngine>(inputdata), problem_generator { this->m_params } {}
     PIC(const PIC<D>&) = delete;
     ~PIC()             = default;
 
@@ -37,6 +43,11 @@ namespace ntt {
      * @brief Run the simulation (calling initialize, verify, mainloop, etc).
      */
     void Run();
+
+    /**
+     * @brief Initialize the setup with a problem generator.
+     */
+    void InitializeSetup();
 
     /**
      * @brief Initial step performed before the main loop.

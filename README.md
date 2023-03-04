@@ -1,6 +1,8 @@
 # `Entity` a.k.a. `ntt`
 One particle-in-cell code to rule them all. Find our detailed documentation [here](https://haykh.github.io/entity/).
 
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" style="width:100%" srcset="assets/cover_dark-opt.gif">
@@ -83,12 +85,12 @@ _[under construction]_
 
 ## Third-party libraries
 
-All the third-party libraries are added as git submodules. If the code is cloned recursively, the submodules are automatically included updated.
+All the third-party libraries are added as git submodules. If the code is cloned recursively, the submodules are automatically included, otherwise they are downloaded during the first configuration.
 
-1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability;
-2. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging;
-3. [`doctest`](https://github.com/doctest/doctest): for unit testing (header-only);
-4. [`toml11`](https://github.com/ToruNiina/toml11): for `toml` file parsing (header-only);
+1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
+2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
+3. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging
+4. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
 
 > All the third-party libraries reside in the `extern` directory.
 
@@ -100,7 +102,3 @@ While we try to keep the code as compatible as possible, there are certain strin
 2. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`; optionally `nvcc` compilers: `nvcc --version`).
 
 > For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries, atomic operations etc. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
-
----
-
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)

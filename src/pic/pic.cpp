@@ -24,8 +24,6 @@ namespace ntt {
       Simulation<D, PICEngine>::PrintDetails();
       InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGD << "t = " << this->m_time;
-        PLOGD << "ti = " << this->m_tstep;
         PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
         StepForward();
         PLOGI_(LogFile) << "[OK] ti " << this->m_tstep;
@@ -33,6 +31,14 @@ namespace ntt {
       WaitAndSynchronize();
     }
     Simulation<D, PICEngine>::Finalize();
+  }
+
+  template <Dimension D>
+  void PIC<D>::InitializeSetup() {
+    auto  params = *(this->params());
+    auto& mblock = this->meshblock;
+    problem_generator.UserInitFields(params, mblock);
+    problem_generator.UserInitParticles(params, mblock);
   }
 
   template <Dimension D>

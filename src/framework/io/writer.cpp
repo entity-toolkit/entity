@@ -19,11 +19,13 @@
 #include <string>
 #include <vector>
 
+#include <type_traits>
+
 namespace ntt {
 
 #ifdef OUTPUT_ENABLED
   template <Dimension D, SimulationEngine S>
-  Writer<D, S>::Writer(const SimulationParams& params, const Meshblock<D, S>& mblock) {
+  void Writer<D, S>::Initialize(const SimulationParams& params, const Meshblock<D, S>& mblock) {
     m_io = m_adios.DeclareIO("WriteKokkos");
     m_io.SetEngine("HDF5");
     adios2::Dims shape, start, count;
@@ -32,16 +34,24 @@ namespace ntt {
       count.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
       start.push_back(0);
     }
-    std::reverse(shape.begin(), shape.end());
-    std::reverse(count.begin(), count.end());
+    auto isLayoutRight
+      = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
 
-    m_vars_i.emplace("step", m_io.DefineVariable<int>("step"));
-    m_vars_r.emplace("time", m_io.DefineVariable<real_t>("time"));
+    if (isLayoutRight) {
+      m_io.DefineAttribute<int>("LayoutRight", 1);
+    } else {
+      std::reverse(shape.begin(), shape.end());
+      std::reverse(count.begin(), count.end());
+      m_io.DefineAttribute<int>("LayoutRight", 0);
+    }
 
-    m_io.DefineAttribute<std::string>("metric", mblock.metric.label);
+    m_io.DefineVariable<int>("Step");
+    m_io.DefineVariable<real_t>("Time");
+
+    m_io.DefineAttribute<std::string>("Metric", mblock.metric.label);
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
-      m_io.DefineAttribute<real_t>("x1_min", mblock.metric.x1_min);
-      m_io.DefineAttribute<real_t>("x1_max", mblock.metric.x1_max);
+      m_io.DefineAttribute<real_t>("X1Min", mblock.metric.x1_min);
+      m_io.DefineAttribute<real_t>("X1Max", mblock.metric.x1_max);
 
       auto x1 = new real_t[mblock.Ni1() + 1];
       for (std::size_t i { 0 }; i <= mblock.Ni1(); ++i) {
@@ -59,11 +69,11 @@ namespace ntt {
 #  endif
         x1[i] = xph[0];
       }
-      m_io.DefineAttribute<real_t>("x1", x1, mblock.Ni1() + 1);
+      m_io.DefineAttribute<real_t>("X1", x1, mblock.Ni1() + 1);
     }
     if constexpr (D == Dim2 || D == Dim3) {
-      m_io.DefineAttribute<real_t>("x2_min", mblock.metric.x2_min);
-      m_io.DefineAttribute<real_t>("x2_max", mblock.metric.x2_max);
+      m_io.DefineAttribute<real_t>("X2Min", mblock.metric.x2_min);
+      m_io.DefineAttribute<real_t>("X2Max", mblock.metric.x2_max);
 
       auto x2 = new real_t[mblock.Ni2() + 1];
       for (std::size_t i { 0 }; i <= mblock.Ni2(); ++i) {
@@ -81,11 +91,11 @@ namespace ntt {
 #  endif
         x2[i] = xph[1];
       }
-      m_io.DefineAttribute<real_t>("x2", x2, mblock.Ni2() + 1);
+      m_io.DefineAttribute<real_t>("X2", x2, mblock.Ni2() + 1);
     }
     if constexpr (D == Dim3) {
-      m_io.DefineAttribute<real_t>("x3_min", mblock.metric.x3_min);
-      m_io.DefineAttribute<real_t>("x3_max", mblock.metric.x3_max);
+      m_io.DefineAttribute<real_t>("X3Min", mblock.metric.x3_min);
+      m_io.DefineAttribute<real_t>("X3Max", mblock.metric.x3_max);
 
       auto x3 = new real_t[mblock.Ni3() + 1];
       for (std::size_t i { 0 }; i <= mblock.Ni3(); ++i) {
@@ -101,19 +111,19 @@ namespace ntt {
 #  endif
         x3[i] = xph[2];
       }
-      m_io.DefineAttribute<real_t>("x3", x3, mblock.Ni3() + 1);
+      m_io.DefineAttribute<real_t>("X3", x3, mblock.Ni3() + 1);
     }
-    m_io.DefineAttribute<int>("n_ghosts", N_GHOSTS);
-    m_io.DefineAttribute<int>("dimension", (int)D);
+    m_io.DefineAttribute<int>("NGhosts", N_GHOSTS);
+    m_io.DefineAttribute<int>("Dimension", (int)D);
 
-    m_io.DefineAttribute<real_t>("dt", mblock.timestep());
+    m_io.DefineAttribute<real_t>("Timestep", mblock.timestep());
 
     for (auto& var : params.outputFields()) {
       m_fields.push_back(InterpretInputField(var));
     }
     for (auto& fld : m_fields) {
       for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
-        m_vars_r.emplace(fld.name(i), m_io.DefineVariable<real_t>(fld.name(i), {}, {}, count));
+        m_io.DefineVariable<real_t>(fld.name(i), shape, start, count, adios2::ConstantDims);
       }
     }
   }
@@ -133,8 +143,8 @@ namespace ntt {
     m_writer.BeginStep();
 
     int step = (int)tstep;
-    m_writer.Put<int>(m_vars_i["step"], &step);
-    m_writer.Put<real_t>(m_vars_r["time"], &time);
+    m_writer.Put<int>(m_io.InquireVariable<int>("Step"), &step);
+    m_writer.Put<real_t>(m_io.InquireVariable<real_t>("Time"), &time);
 
     // traverse all the fields and put them. ...
     // ... also make sure that the fields are ready for output, ...
@@ -164,7 +174,3 @@ namespace ntt {
 #endif
 
 }    // namespace ntt
-
-template class ntt::Writer<ntt::Dim1, ntt::PICEngine>;
-template class ntt::Writer<ntt::Dim2, ntt::PICEngine>;
-template class ntt::Writer<ntt::Dim3, ntt::PICEngine>;

@@ -226,20 +226,20 @@ namespace ntt {
     }
 
     if constexpr (D == Dim1) {
-      Kokkos::parallel_for("InjectUniform",
-                           CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-                           UniformInjector1d_kernel<S, EnDist>(
-                             params, mblock, sp1, sp2, box, time));
+      Kokkos::parallel_for(
+        "InjectUniform",
+        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+        UniformInjector1d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
     } else if constexpr (D == Dim2) {
-      Kokkos::parallel_for("InjectUniform",
-                           CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-                           UniformInjector2d_kernel<S, EnDist>(
-                             params, mblock, sp1, sp2, box, time));
+      Kokkos::parallel_for(
+        "InjectUniform",
+        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+        UniformInjector2d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
     } else if constexpr (D == Dim3) {
-      Kokkos::parallel_for("InjectUniform",
-                           CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
-                           UniformInjector3d_kernel<S, EnDist>(
-                             params, mblock, sp1, sp2, box, time));
+      Kokkos::parallel_for(
+        "InjectUniform",
+        CreateRangePolicy<Dim1>({ 0 }, { npart_per_spec }),
+        UniformInjector3d_kernel<S, EnDist>(params, mblock, sp1, sp2, box, time));
     }
     sp1.setNpart(sp1.npart() + npart_per_spec);
     sp2.setNpart(sp2.npart() + npart_per_spec);
@@ -317,6 +317,7 @@ namespace ntt {
             species1.ux1(offset1 + p) = v[0];
             species1.ux2(offset1 + p) = v[1];
             species1.ux3(offset1 + p) = v[2];
+            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
 
             energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
@@ -331,6 +332,7 @@ namespace ntt {
             species2.ux1(offset2 + p) = v[0];
             species2.ux2(offset2 + p) = v[1];
             species2.ux3(offset2 + p) = v[2];
+            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
           }
           ninject -= ONE;
         }
@@ -423,6 +425,7 @@ namespace ntt {
             species1.ux1(offset1 + p) = v_cart[0];
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
+            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
 
             energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
@@ -439,6 +442,7 @@ namespace ntt {
             species2.ux1(offset2 + p) = v_cart[0];
             species2.ux2(offset2 + p) = v_cart[1];
             species2.ux3(offset2 + p) = v_cart[2];
+            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
           }
           ninject -= ONE;
         }
@@ -534,6 +538,7 @@ namespace ntt {
             species1.ux1(offset1 + p) = v_cart[0];
             species1.ux2(offset1 + p) = v_cart[1];
             species1.ux3(offset1 + p) = v_cart[2];
+            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
 
             energy_dist(xph, v, 1);
 #ifdef MINKOWSKI_METRIC
@@ -552,6 +557,7 @@ namespace ntt {
             species2.ux1(offset2 + p) = v_cart[0];
             species2.ux2(offset2 + p) = v_cart[1];
             species2.ux3(offset2 + p) = v_cart[2];
+            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
           }
           ninject -= ONE;
         }

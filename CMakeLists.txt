@@ -3,15 +3,32 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.2.1
-  LANGUAGES CXX
+  VERSION 0.8.3
+  LANGUAGES CXX C
 )
+
+function(find_or_fetch_package package_name)
+  find_package(${package_name} QUIET)
+
+  if(NOT ${package_name}_FOUND)
+    message(STATUS "${package_name} not found. Fetching submodule...")
+    execute_process(
+      COMMAND git submodule update --remote ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
+    set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
+    set(${package_name}_FOUND TRUE CACHE BOOL "Whether ${package_name} was found")
+  else()
+    message(STATUS "${package_name} found.")
+  endif()
+endfunction()
 
 # ----------------------------- Submodules ------------------------------- #
 # !TODO: this is quite ugly, update submodules as needed (below)
 find_package(Git QUIET)
 
-file(GLOB SUBMODULES_LOADED extern/kokkos/*)
+file(GLOB SUBMODULES_LOADED extern/fmt/*)
 list(LENGTH SUBMODULES_LOADED SUBMODULES_LOADED)
 
 if(${SUBMODULES_LOADED} GREATER 0)
@@ -53,7 +70,7 @@ if(engine STREQUAL "grpic")
   message(FATAL_ERROR "GRPIC is not supported yet. See the `dev/gr` branch.")
 endif()
 
-set(simulation_engines "pic" "grpic")
+set(simulation_engines "sandbox" "pic" "grpic")
 list(FIND simulation_engines ${engine} ENGINE_FOUND)
 
 if(${ENGINE_FOUND} EQUAL -1)
@@ -74,15 +91,18 @@ if(${precision} STREQUAL "single")
 endif()
 
 # --------------------------------- Metric --------------------------------- #
-if(${engine} STREQUAL "pic")
+if(${engine} STREQUAL "sandbox")
   set(default_metric "minkowski")
-  set(metric ${default_metric} CACHE STRING "Metric")
+  set(metrics "minkowski" "spherical" "qspherical" "kerr_schild" "qkerr_schild")
+elseif(${engine} STREQUAL "pic")
+  set(default_metric "minkowski")
   set(metrics "minkowski" "spherical" "qspherical")
 elseif(${engine} STREQUAL "grpic")
   set(default_metric "qkerr_schild")
-  set(metric ${default_metric} CACHE STRING "Metric")
   set(metrics "kerr_schild" "qkerr_schild")
 endif()
+
+set(metric ${default_metric} CACHE STRING "Metric")
 
 list(FIND metrics ${metric} METRIC_FOUND)
 
@@ -91,21 +111,23 @@ if(${METRIC_FOUND} EQUAL -1)
 endif()
 
 # ---------------------------- Problem generator --------------------------- #
-set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${engine}/pgen/)
-set(pgen ${default_pgen} CACHE STRING "Problem generator")
-file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
-set(problem_generators "")
+if(NOT ${engine} STREQUAL "sandbox")
+  set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${engine}/pgen/)
+  set(pgen ${default_pgen} CACHE STRING "Problem generator")
+  file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
+  set(problem_generators "")
 
-foreach(pgen_file ${PGENS})
-  string(REPLACE ${PGEN_DIRECTORY} "" new_pgen ${pgen_file})
-  string(REPLACE ".hpp" "" new_pgen ${new_pgen})
-  list(APPEND problem_generators ${new_pgen})
-endforeach()
+  foreach(pgen_file ${PGENS})
+    string(REPLACE ${PGEN_DIRECTORY} "" new_pgen ${pgen_file})
+    string(REPLACE ".hpp" "" new_pgen ${new_pgen})
+    list(APPEND problem_generators ${new_pgen})
+  endforeach()
 
-list(FIND problem_generators ${pgen} PGEN_FOUND)
+  list(FIND problem_generators ${pgen} PGEN_FOUND)
 
-if(${PGEN_FOUND} EQUAL -1)
-  message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
+  if(NOT ${PGEN_FOUND})
+    message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
+  endif()
 endif()
 
 # -------------------------- Compilation settings -------------------------- #
@@ -180,11 +202,12 @@ set(output ${default_output} CACHE BOOL "Enable output")
 
 if(${output} STREQUAL "ON")
   set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "Build ADIOS2 examples")
+
   # Language support
   set(ADIOS2_USE_Python OFF CACHE BOOL "Use Python for ADIOS2")
   set(ADIOS2_USE_Fortran OFF CACHE BOOL "Use Fortran for ADIOS2")
+
   # Format/compression support
-  set(ADIOS2_USE_MPI OFF CACHE BOOL "Use MPI for ADIOS2")
   set(ADIOS2_USE_ZeroMQ OFF CACHE BOOL "Use ZeroMQ for ADIOS2")
   set(ADIOS2_USE_SST OFF CACHE BOOL "Use SST for ADIOS2")
   set(ADIOS2_USE_BZip2 OFF CACHE BOOL "Use BZip2 for ADIOS2")
@@ -208,10 +231,12 @@ endif()
 if(${nttiny} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
 endif()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/kokkos extern/kokkos)
+
+find_or_fetch_package(kokkos)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/fmt extern/fmt)
-if (${output} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/adios2 extern/adios2)
+
+if(${output} STREQUAL "ON")
+  find_or_fetch_package(adios2)
 endif()
 
 # ------------------------------- Main source ------------------------------ #

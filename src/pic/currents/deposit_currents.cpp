@@ -39,7 +39,7 @@ namespace ntt {
     ImposeContent(mblock.cur_content,
                   { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly });
 
-    PLOGD << "... ... currents filter substep finished";
+    NTTLog();
   }
 }    // namespace ntt
 

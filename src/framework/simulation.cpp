@@ -16,9 +16,11 @@
 namespace ntt {
   auto stringifySimulationEngine(const SimulationEngine& sim) -> std::string {
     switch (sim) {
+    case SANDBOXEngine:
+      return "Sandbox";
     case PICEngine:
       return "PIC";
-    case SimulationEngine::GRPIC:
+    case GRPICEngine:
       return "GRPIC";
     default:
       return "N/A";
@@ -48,6 +50,8 @@ namespace ntt {
       return "Vay";
     case ParticlePusher::PHOTON:
       return "Photon";
+    case ParticlePusher::NONE:
+      return "None";
     default:
       return "N/A";
     }
@@ -56,12 +60,11 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_params { inputdata, D },
-      problem_generator { m_params },
       meshblock { m_params.resolution(),
                   m_params.extent(),
                   m_params.metricParameters(),
                   m_params.species() },
-      writer { m_params, meshblock },
+      writer {},
       random_pool { constant::RandomSeed } {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_params.boundaries();
@@ -69,100 +72,112 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Initialize() {
+    NTTLog();
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.dx_min);
     meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
 
-    WaitAndSynchronize();
-    PLOGD << "Simulation initialized.";
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::InitializeSetup() {
-    problem_generator.UserInitFields(m_params, meshblock);
-    problem_generator.UserInitParticles(m_params, meshblock);
+    // initialize writer
+    writer.Initialize(m_params, meshblock);
 
     WaitAndSynchronize();
-    PLOGD << "Setup initialized.";
   }
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Verify() {
+    NTTLog();
     meshblock.Verify();
     WaitAndSynchronize();
-    PLOGD << "Prerun check passed.";
   }
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDetails() {
-    // !TODO: make this prettier
-    PLOGI << "[Simulation details]";
-    PLOGI << "   title: " << m_params.title();
-    PLOGI << "   engine: " << stringifySimulationEngine(S);
-    PLOGI << "   total runtime: " << m_params.totalRuntime();
-    PLOGI << "   dt: " << meshblock.timestep() << " ["
-          << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]";
-
-    PLOGI << "[domain]";
-    PLOGI << "   dimension: " << static_cast<short>(D) << "D";
-    PLOGI << "   metric: " << (meshblock.metric.label);
-
-    if constexpr (S == SimulationEngine::GRPIC) {
-      PLOGI << "   Spin parameter: " << (m_params.metricParameters()[3]);
-    }
-
-    std::string bc { "   boundary conditions: { " };
+    std::string bc { "{ " };
     for (auto& b : m_params.boundaries()) {
       bc += stringifyBoundaryCondition(b) + " x ";
     }
     bc.erase(bc.size() - 3);
     bc += " }";
-    PLOGI << bc;
 
-    std::string res { "   resolution: { " };
+    std::string res { "{ " };
     for (auto& r : m_params.resolution()) {
       res += std::to_string(r) + " x ";
     }
     res.erase(res.size() - 3);
     res += " }";
-    PLOGI << res;
 
-    std::string ext { "   extent: " };
+    std::string ext { "" };
     for (auto i { 0 }; i < (int)(m_params.extent().size()); i += 2) {
       ext += "{" + std::to_string(m_params.extent()[i]) + ", "
              + std::to_string(m_params.extent()[i + 1]) + "} ";
     }
-    PLOGI << ext;
 
-    std::string cell { "   cell size: " };
+    std::string cell { "" };
     cell += std::to_string(meshblock.minCellSize());
-    PLOGI << cell;
 
-    PLOGI << "[fiducial parameters]";
-    PLOGI << "   ppc0: " << m_params.ppc0();
-    PLOGI << "   rho0: " << m_params.larmor0() << " ["
-          << m_params.larmor0() / meshblock.minCellSize() << " cells]";
-    PLOGI << "   c_omp0: " << m_params.skindepth0() << " ["
-          << m_params.skindepth0() / meshblock.minCellSize() << " cells]";
-    PLOGI << "   sigma0: " << m_params.sigma0();
+    PLOGN_(InfoFile)
+      << "============================================================\n"
+      << "Entity v" << ENTITY_VERSION << "\n"
+      << "============================================================\n\n"
+      << "[Simulation parameters]\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  title:" << m_params.title()
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  engine:" << stringifySimulationEngine(S) << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  timestep:" << meshblock.timestep() << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  total runtime:" << m_params.totalRuntime() << " ["
+      << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]\n"
+      << "[domain]\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  dimension:" << static_cast<short>(D) << "D\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  metric:" << (meshblock.metric.label) << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  boundary conditions:" << bc
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  resolution:" << res << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  extent:" << ext << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  cell size:" << cell << "\n"
+      << "[fiducial parameters]\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  particles per cell [ppc0]:" << m_params.ppc0() << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  Larmor radius [rho0]:" << m_params.larmor0() << " ["
+      << m_params.larmor0() / meshblock.minCellSize() << " cells]\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  Larmor frequency [omegaB0 * dt]:" << m_params.larmor0() * meshblock.timestep()
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  skin depth [d0]:" << m_params.skindepth0() << " ["
+      << m_params.skindepth0() / meshblock.minCellSize() << " cells]\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  plasma frequency [omp0 * dt]:" << m_params.skindepth0() * meshblock.timestep()
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  magnetization [sigma0]:" << m_params.sigma0();
 
     if (meshblock.particles.size() > 0) {
-      PLOGI << "[particles]";
+      PLOGN_(InfoFile) << "[particles]";
       int i { 0 };
       for (auto& prtls : meshblock.particles) {
-        PLOGI << "   [species #" << i + 1 << "]";
-        PLOGI << "      label: " << prtls.label();
-        PLOGI << "      mass: " << prtls.mass();
-        PLOGI << "      charge: " << prtls.charge();
-        PLOGI << "      pusher: " << stringifyParticlePusher(prtls.pusher());
-        PLOGI << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
+        PLOGN_(InfoFile)
+          << "  [species #" << i + 1 << "]\n"
+          << std::setw(42) << std::setfill('.') << std::left << "    label: " << prtls.label()
+          << "\n"
+          << std::setw(42) << std::setfill('.') << std::left << "    mass: " << prtls.mass()
+          << "\n"
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    charge: " << prtls.charge() << "\n"
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    pusher: " << stringifyParticlePusher(prtls.pusher()) << "\n"
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    maxnpart: " << prtls.maxnpart() << " (active: " << prtls.npart() << ")";
         ++i;
       }
     } else {
-      PLOGI << "[no particles]";
+      PLOGN_(InfoFile) << "[no particles]";
     }
-    WaitAndSynchronize();
-    PLOGD << "Simulation details printed.";
   }
 
   template <Dimension D, SimulationEngine S>
@@ -178,17 +193,7 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
     WaitAndSynchronize();
-    PLOGD << "Simulation finalized.";
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::SynchronizeHostDevice(const SynchronizeFlags& flags) {
-    WaitAndSynchronize();
-    meshblock.SynchronizeHostDevice(flags);
-    // for (auto& species : meshblock.particles) {
-    //   species.SynchronizeHostDevice();
-    // }
-    PLOGD << "... host-device synchronized";
+    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>
@@ -208,12 +213,3 @@ namespace ntt {
   }
 
 }    // namespace ntt
-
-#ifdef PIC_ENGINE
-template class ntt::Simulation<ntt::Dim1, ntt::PICEngine>;
-template class ntt::Simulation<ntt::Dim2, ntt::PICEngine>;
-template class ntt::Simulation<ntt::Dim3, ntt::PICEngine>;
-#elif defined(GRPIC_ENGINE)
-template class ntt::Simulation<ntt::Dim2, ntt::SimulationEngine::GRPIC>;
-template class ntt::Simulation<ntt::Dim3, ntt::SimulationEngine::GRPIC>;
-#endif

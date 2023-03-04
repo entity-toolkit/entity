@@ -61,16 +61,19 @@ namespace ntt {
         auto range_policy
           = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
         Kokkos::parallel_for("pusher", range_policy, *this);
+      } else if (m_particles.pusher() == ParticlePusher::NONE) {
+        // do nothing
       } else {
         NTTHostError("pusher not implemented");
       }
     }
+
     /**
      * @brief Pusher for the forward Boris algorithm.
      * @param p index.
      */
     Inline void operator()(const Boris_t&, index_t p) const {
-      if (!m_particles.is_dead(p)) {
+      if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
         vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
         interpolateFields(p, e_int, b_int);
 
@@ -110,7 +113,7 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(const Photon_t&, index_t p) const {
-      if (!m_particles.is_dead(p)) {
+      if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
 #ifdef MINKOWSKI_METRIC
         coord_t<D> xp;
 #else

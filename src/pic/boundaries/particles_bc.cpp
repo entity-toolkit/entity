@@ -36,7 +36,9 @@ namespace ntt {
       Kokkos::parallel_for(
         "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
           // radial boundary conditions
-          species.is_dead(p) = ((species.i1(p) < -1) || (species.i1(p) >= ni1 + 1));
+          if ((species.i1(p) < -1) || (species.i1(p) >= ni1 + 1)) {
+            species.tag(p) = static_cast<short>(ParticleTag::dead);
+          }
           // axis boundaries
           if ((species.i2(p) < 0) || (species.i2(p) >= ni2)) {
             if (species.i2(p) < 0) {
@@ -64,7 +66,9 @@ namespace ntt {
           coord_t<Dim2> x_sph { ZERO };
           mblock.metric.x_Code2Sph({ get_prtl_x1(species, p), ZERO }, x_sph);
           // particles penetrate 80% of the absorbing region
-          species.is_dead(p) |= (x_sph[0] > r_absorb + (real_t)(0.8) * (r_max - r_absorb));
+          if ((x_sph[0] > r_absorb + (real_t)(0.8) * (r_max - r_absorb))) {
+            species.tag(p) = static_cast<short>(ParticleTag::dead);
+          }
         });
     }
   }

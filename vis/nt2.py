@@ -32,10 +32,12 @@ class NTPlotAccessor:
         ax.grid(False)
         if type(kwargs.get("norm", None)) == mpl.colors.LogNorm:
             cm = kwargs.get("cmap", "viridis")
-            cm = plt.get_cmap(cm)
+            cm = mpl.colormaps[cm]
             cm.set_bad(cm(0))
             kwargs["cmap"] = cm
-        r, th = np.meshgrid(self._obj.coords["r"], self._obj.coords["θ"])
+        r, th = np.meshgrid(
+            self._obj.coords["r"], self._obj.coords["θ" if useGreek else "th"]
+        )
         y, x = r * np.cos(th), r * np.sin(th)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -106,15 +108,23 @@ def getFields(fname):
     file = h5py.File(fname, "r")
     step0 = list(file.keys())[0]
     nsteps = file.attrs["NumSteps"]
-    ngh = file.attrs["n_ghosts"]
-    dimension = file.attrs["dimension"]
-    metric = file.attrs["metric"].decode("UTF-8")
+    ngh = file.attrs["NGhosts"]
+    layout = "right" if file.attrs["LayoutRight"] == 1 else "left"
+    dimension = file.attrs["Dimension"]
+    metric = file.attrs["Metric"].decode("UTF-8")
     coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
-    times = np.array([file[f"Step{s}"]["time"][()] for s in range(nsteps)])
+    times = np.array([file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
+
+    if dimension == 1:
+        noghosts = slice(ngh, -ngh)
+    elif dimension == 2:
+        noghosts = (slice(ngh, -ngh), slice(ngh, -ngh))
+    elif dimension == 3:
+        noghosts = (slice(ngh, -ngh), slice(ngh, -ngh), slice(ngh, -ngh))
 
     ds = xr.Dataset()
 
-    fields = [k for k in file[step0].keys() if k not in ["time", "step"]]
+    fields = [k for k in file[step0].keys() if k not in ["Time", "Step"]]
 
     for k in file.attrs.keys():
         if type(file.attrs[k]) == bytes or type(file.attrs[k]) == np.bytes_:
@@ -125,8 +135,12 @@ def getFields(fname):
     for k in fields:
         dask_arrays = []
         for s in range(nsteps):
-            array = da.from_array(file[f"Step{s}/{k}"])
-            dask_arrays.append(array[ngh:-ngh, ngh:-ngh])
+            array = da.from_array(
+                np.transpose(file[f"Step{s}/{k}"])
+                if layout == "right"
+                else file[f"Step{s}/{k}"]
+            )
+            dask_arrays.append(array[noghosts])
 
         k_ = reduce(
             lambda x, y: x.replace(*y)
@@ -145,7 +159,7 @@ def getFields(fname):
             coords={
                 "t": times,
                 **{
-                    k: EdgeToCenter(file.attrs[f"x{i+1}"])
+                    k: EdgeToCenter(file.attrs[f"X{i+1}"])
                     for i, k in enumerate(coords[::-1])
                 },
             },

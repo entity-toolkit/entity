@@ -8,8 +8,6 @@
 #include "sim_params.h"
 #include "writer.h"
 
-#include "problem_generator.hpp"
-
 #include <toml/toml.hpp>
 
 #include <string>
@@ -36,14 +34,12 @@ namespace ntt {
     std::size_t      m_tstep { 0 };
 
   public:
-    // problem setup generator
-    ProblemGenerator<D, S> problem_generator;
     // meshblock with all the fields / metric / and particles
-    Meshblock<D, S>        meshblock;
+    Meshblock<D, S>    meshblock;
     // writer
-    Writer<D, S>           writer;
+    Writer<D, S>       writer;
     // random number pool
-    RandomNumberPool_t     random_pool;
+    RandomNumberPool_t random_pool;
 
     /**
      * @brief Constructor for simulation class.
@@ -61,11 +57,6 @@ namespace ntt {
     void               Initialize();
 
     /**
-     * @brief Setup the problem using the problem generator.
-     */
-    void               InitializeSetup();
-
-    /**
      * @brief Verify that all the specified parameters are compatible before beginning the
      * simulation.
      */
@@ -80,11 +71,6 @@ namespace ntt {
      * @brief Finalize the simulation objects.
      */
     void               Finalize();
-
-    /**
-     * @brief Synchronize data from device to host.
-     */
-    void               SynchronizeHostDevice(const SynchronizeFlags& flags = Synchronize_All);
 
     /**
      * @brief Diagnostic logging.

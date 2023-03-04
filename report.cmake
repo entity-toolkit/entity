@@ -128,16 +128,20 @@ PrintChoices("Metric"
   1
   36
 )
-PrintChoices("Problem generator"
-  "pgen"
-  "${problem_generators}"
-  ${pgen}
-  ${default_pgen}
-  "${Blue}"
-  PGEN_REPORT
-  1
-  36
-)
+
+if(${PGEN_FOUND})
+  PrintChoices("Problem generator"
+    "pgen"
+    "${problem_generators}"
+    ${pgen}
+    ${default_pgen}
+    "${Blue}"
+    PGEN_REPORT
+    1
+    36
+  )
+endif()
+
 PrintChoices("Precision"
   "precision"
   "${precisions}"
@@ -178,52 +182,55 @@ PrintChoices("Debug mode"
   0
   42
 )
-get_directory_property(KOKKOS_VERSION
-    DIRECTORY ${CMAKE_SOURCE_DIR}/extern/kokkos
+
+if(${kokkos_FOUND})
+  get_directory_property(KOKKOS_VERSION
+    DIRECTORY ${kokkos_ROOT}
     DEFINITION Kokkos_VERSION)
-PrintChoices("Main framework"
-  ""
-  "Kokkos v${KOKKOS_VERSION}"
-  "Kokkos v${KOKKOS_VERSION}"
-  "N/A"
-  "${Blue}"
-  FRAMEWORK_REPORT
-  0
-  39
-)
-get_directory_property(ENABLED_ARCHS
-    DIRECTORY ${CMAKE_SOURCE_DIR}/extern/kokkos
+  PrintChoices("Kokkos"
+    ""
+    "v${KOKKOS_VERSION}"
+    "v${KOKKOS_VERSION}"
+    "N/A"
+    "${Blue}"
+    FRAMEWORK_REPORT
+    0
+    39
+  )
+  get_directory_property(ENABLED_ARCHS
+    DIRECTORY ${kokkos_ROOT}
     DEFINITION KOKKOS_ENABLED_ARCH_LIST)
-PrintChoices("CPU/GPU architecture"
-  ""
-  "${ENABLED_ARCHS}"
-  "${ENABLED_ARCHS}"
-  "N/A"
-  "${Blue}"
-  ARCH_REPORT
-  0
-  39
-)
-PrintChoices("CUDA"
-  "Kokkos_ENABLE_CUDA"
-  "${ON_OFF_VALUES}"
-  ${Kokkos_ENABLE_CUDA}
-  "OFF"
-  "${Green}"
-  CUDA_REPORT
-  0
-  42
-)
-PrintChoices("OpenMP"
-  "Kokkos_ENABLE_OPENMP"
-  "${ON_OFF_VALUES}"
-  ${Kokkos_ENABLE_OPENMP}
-  "OFF"
-  "${Green}"
-  OPENMP_REPORT
-  0
-  42
-)
+  PrintChoices("CPU/GPU architecture"
+    ""
+    "${ENABLED_ARCHS}"
+    "${ENABLED_ARCHS}"
+    "N/A"
+    "${Blue}"
+    ARCH_REPORT
+    0
+    39
+  )
+  PrintChoices("CUDA"
+    "Kokkos_ENABLE_CUDA"
+    "${ON_OFF_VALUES}"
+    ${Kokkos_ENABLE_CUDA}
+    "OFF"
+    "${Green}"
+    CUDA_REPORT
+    0
+    42
+  )
+  PrintChoices("OpenMP"
+    "Kokkos_ENABLE_OPENMP"
+    "${ON_OFF_VALUES}"
+    ${Kokkos_ENABLE_OPENMP}
+    "OFF"
+    "${Green}"
+    OPENMP_REPORT
+    0
+    42
+  )
+endif()
 
 PrintChoices("C++ compiler"
   "CMAKE_CXX_COMPILER"
@@ -238,17 +245,17 @@ PrintChoices("C++ compiler"
 
 if(${Kokkos_ENABLE_CUDA})
   # check if empty
-  if ("${CMAKE_CUDA_COMPILER}" STREQUAL "")
+  if("${CMAKE_CUDA_COMPILER}" STREQUAL "")
     execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
   else()
     set(CUDACOMP ${CMAKE_CUDA_COMPILER})
   endif()
 
   message(STATUS "CUDA compiler: ${CUDACOMP}")
-  execute_process(COMMAND bash "-c" 
-                  "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'" 
-                  OUTPUT_VARIABLE CUDACOMP_VERSION 
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND bash "-c"
+    "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'"
+    OUTPUT_VARIABLE CUDACOMP_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   PrintChoices("CUDA compiler"
     "CMAKE_CUDA_COMPILER"
@@ -260,6 +267,7 @@ if(${Kokkos_ENABLE_CUDA})
     0
     42
   )
+
   # set(COMPILERS_REPORT "${COMPILERS_REPORT}\n\n  ${CUDA_COMPILER_REPORT}")
 endif()
 
@@ -293,24 +301,43 @@ Main configurations ${Dim}[1]${ColourReset}
 ${DASHED_LINE_SYMBOL}")
 message("  ${ENGINE_REPORT}\n")
 message("  ${METRIC_REPORT}\n")
-message("  ${PGEN_REPORT}\n")
+
+if(${PGEN_FOUND})
+  message("  ${PGEN_REPORT}\n")
+endif()
+
 message("  ${PRECISION_REPORT}\n")
 message("  ${OUTPUT_REPORT}\n")
 message("  ${NTTINY_REPORT}\n")
 message("${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}")
-  message("  ${DEBUG_REPORT}\n")
+message("  ${DEBUG_REPORT}\n")
+
+if(${kokkos_FOUND})
   message("  ${FRAMEWORK_REPORT}\n")
-  if (NOT "${ARCH_REPORT}" STREQUAL "")
+
+  if(NOT "${ARCH_REPORT}" STREQUAL "")
     message("  ${ARCH_REPORT}\n")
   endif()
+
   message("  ${CUDA_REPORT}\n")
   message("  ${OPENMP_REPORT}\n")
-  message("  ${CXX_COMPILER_REPORT}\n")
-  if (NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
-    message("  ${CUDA_COMPILER_REPORT}\n")
-  endif()
+else()
+  message("  - Kokkos [${Magenta}kokkos_ROOT${ColourReset}]:\t\t  ${kokkos_ROOT}\n")
+endif()
+
+if(${adios2_FOUND})
+else()
+  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColourReset}]:\t\t  ${adios2_ROOT}\n")
+endif()
+
+message("  ${CXX_COMPILER_REPORT}\n")
+
+if(NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
+  message("  ${CUDA_COMPILER_REPORT}\n")
+endif()
+
 message("${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}

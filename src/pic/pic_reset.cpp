@@ -18,10 +18,10 @@ namespace ntt {
     ResetFields();
     ResetParticles();
     ResetCurrents();
-    this->InitializeSetup();
+    InitializeSetup();
     FieldsExchange();
     FieldsBoundaryConditions();
-    PLOGI << "... simulation was reset";
+    NTTLog();
   }
 
   /**

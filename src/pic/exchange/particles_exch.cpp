@@ -28,7 +28,9 @@ namespace ntt {
         auto ni = mblock.Ni1();
         Kokkos::parallel_for(
           "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
-            species.is_dead(p) = ((species.i1(p) < 0) || (species.i1(p) >= ni));
+            if ((species.i1(p) < 0) || (species.i1(p) >= ni)) {
+              species.tag(p) = static_cast<short>(ParticleTag::dead);
+            }
           });
       }
     }
@@ -64,8 +66,10 @@ namespace ntt {
         auto nj = mblock.Ni2();
         Kokkos::parallel_for(
           "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
-            species.is_dead(p) = ((species.i1(p) < 0) || (species.i1(p) >= ni)
-                                  || (species.i2(p) < 0) || (species.i2(p) >= nj));
+            if ((species.i1(p) < 0) || (species.i1(p) >= ni) || (species.i2(p) < 0)
+                || (species.i2(p) >= nj)) {
+              species.tag(p) = static_cast<short>(ParticleTag::dead);
+            }
           });
       }
     }
@@ -86,6 +90,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifndef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::ParticlesExchange();
 template void ntt::PIC<ntt::Dim2>::ParticlesExchange();
 template void ntt::PIC<ntt::Dim3>::ParticlesExchange();
+#endif

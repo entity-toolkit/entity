@@ -73,20 +73,21 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
-  enum { LogFile = 1 };
+  enum { LogFile = 1, InfoFile };
 
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
-  enum class SimulationEngine { UNDEFINED, PIC, GRPIC };
+  enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
-  enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
+  enum class ParticlePusher { UNDEFINED, NONE, BORIS, VAY, PHOTON };
 
-  inline constexpr auto Dim1      = Dimension::ONE_D;
-  inline constexpr auto Dim2      = Dimension::TWO_D;
-  inline constexpr auto Dim3      = Dimension::THREE_D;
-  inline constexpr auto PICEngine = SimulationEngine::PIC;
-  inline constexpr auto TypeGRPIC = SimulationEngine::GRPIC;
+  inline constexpr auto Dim1          = Dimension::ONE_D;
+  inline constexpr auto Dim2          = Dimension::TWO_D;
+  inline constexpr auto Dim3          = Dimension::THREE_D;
+  inline constexpr auto SANDBOXEngine = SimulationEngine::SANDBOX;
+  inline constexpr auto PICEngine     = SimulationEngine::PIC;
+  inline constexpr auto GRPICEngine   = SimulationEngine::GRPIC;
 
   // ND list alias
   template <typename T, Dimension D>
@@ -113,7 +114,7 @@ namespace ntt {
 
 namespace ntt {
   namespace options {
-    const std::vector<std::string> pushers    = { "Boris", "photon" };
+    const std::vector<std::string> pushers    = { "Boris", "Photon", "None" };
     const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
     const std::vector<std::string> outputs    = { "disabled", "HDF5" };
   }    // namespace options
@@ -122,7 +123,7 @@ namespace ntt {
     constexpr std::string_view input_filename    = "input";
     constexpr std::string_view output_path       = "output";
 
-    const std::string          title             = "PIC_Sim";
+    const std::string          title             = "EntitySimulation";
     const int                  n_species         = 0;
     const std::string          em_pusher         = "Boris";
     const std::string          ph_pusher         = "photon";
@@ -171,17 +172,6 @@ namespace ntt {
     }
   }
 
-  // Flags
-  enum SynchronizeFlags_ {
-    Synchronize_None = 0,
-    Synchronize_em   = 1 << 0,
-    Synchronize_bckp = 1 << 1,
-    Synchronize_cur  = 1 << 2,
-    Synchronize_buff = 1 << 3,
-    Synchronize_All  = Synchronize_em | Synchronize_bckp | Synchronize_cur | Synchronize_buff,
-    Synchronize_Default = Synchronize_All,
-  };
-  typedef int SynchronizeFlags;
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
@@ -189,7 +179,7 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace plog {
-  class NTTFormatter {
+  class Nt2ConsoleFormatter {
   public:
     static auto header() -> util::nstring {
       return util::nstring();
@@ -203,6 +193,18 @@ namespace plog {
       }
       ss << std::setw(9) << std::left << severityToString(record.getSeverity())
          << PLOG_NSTR(": ");
+      ss << record.getMessage() << PLOG_NSTR("\n");
+      return ss.str();
+    }
+  };
+
+  class Nt2InfoFormatter {
+  public:
+    static auto header() -> util::nstring {
+      return util::nstring();
+    }
+    static auto format(const Record& record) -> util::nstring {
+      util::nostringstream ss;
       ss << record.getMessage() << PLOG_NSTR("\n");
       return ss.str();
     }

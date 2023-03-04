@@ -46,7 +46,7 @@ namespace ntt {
     ImposeContent(mblock.cur_content,
                   { Content::jx1_cntrv, Content::jx2_cntrv, Content::jx3_cntrv });
 
-    PLOGD << "... ... ampere currents substep finished";
+    NTTLog();
   }
 #else
 
@@ -125,7 +125,7 @@ namespace ntt {
     ImposeContent(mblock.cur_content,
                   { Content::jx1_cntrv, Content::jx2_cntrv, Content::jx3_cntrv });
 
-    PLOGD << "... ... ampere currents substep finished";
+    NTTLog();
   }
 #endif
 }    // namespace ntt
