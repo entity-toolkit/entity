@@ -61,10 +61,13 @@ namespace ntt {
         auto range_policy
           = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
         Kokkos::parallel_for("pusher", range_policy, *this);
+      } else if (m_particles.pusher() == ParticlePusher::NONE) {
+        // do nothing
       } else {
         NTTHostError("pusher not implemented");
       }
     }
+
     /**
      * @brief Pusher for the forward Boris algorithm.
      * @param p index.

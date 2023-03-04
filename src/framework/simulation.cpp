@@ -50,6 +50,8 @@ namespace ntt {
       return "Vay";
     case ParticlePusher::PHOTON:
       return "Photon";
+    case ParticlePusher::NONE:
+      return "None";
     default:
       return "N/A";
     }
@@ -62,7 +64,7 @@ namespace ntt {
                   m_params.extent(),
                   m_params.metricParameters(),
                   m_params.species() },
-      writer { m_params, meshblock },
+      writer {},
       random_pool { constant::RandomSeed } {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_params.boundaries();
@@ -74,6 +76,9 @@ namespace ntt {
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.dx_min);
     meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
+
+    // initialize writer
+    writer.Initialize(m_params, meshblock);
 
     WaitAndSynchronize();
   }
@@ -87,29 +92,12 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDetails() {
-    // !TODO: make this prettier
-    PLOGI << "[Simulation details]";
-    PLOGI << "   title: " << m_params.title();
-    PLOGI << "   engine: " << stringifySimulationEngine(S);
-    PLOGI << "   total runtime: " << m_params.totalRuntime();
-    PLOGI << "   dt: " << meshblock.timestep() << " ["
-          << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]";
-
-    PLOGI << "[domain]";
-    PLOGI << "   dimension: " << static_cast<short>(D) << "D";
-    PLOGI << "   metric: " << (meshblock.metric.label);
-
-    if constexpr (S == SimulationEngine::GRPIC) {
-      PLOGI << "   Spin parameter: " << (m_params.metricParameters()[3]);
-    }
-
     std::string bc { "   boundary conditions: { " };
     for (auto& b : m_params.boundaries()) {
       bc += stringifyBoundaryCondition(b) + " x ";
     }
     bc.erase(bc.size() - 3);
     bc += " }";
-    PLOGI << bc;
 
     std::string res { "   resolution: { " };
     for (auto& r : m_params.resolution()) {
@@ -117,44 +105,55 @@ namespace ntt {
     }
     res.erase(res.size() - 3);
     res += " }";
-    PLOGI << res;
 
     std::string ext { "   extent: " };
     for (auto i { 0 }; i < (int)(m_params.extent().size()); i += 2) {
       ext += "{" + std::to_string(m_params.extent()[i]) + ", "
              + std::to_string(m_params.extent()[i + 1]) + "} ";
     }
-    PLOGI << ext;
 
     std::string cell { "   cell size: " };
     cell += std::to_string(meshblock.minCellSize());
-    PLOGI << cell;
 
-    PLOGI << "[fiducial parameters]";
-    PLOGI << "   ppc0: " << m_params.ppc0();
-    PLOGI << "   rho0: " << m_params.larmor0() << " ["
-          << m_params.larmor0() / meshblock.minCellSize() << " cells]";
-    PLOGI << "   c_omp0: " << m_params.skindepth0() << " ["
-          << m_params.skindepth0() / meshblock.minCellSize() << " cells]";
-    PLOGI << "   sigma0: " << m_params.sigma0();
+    PLOGN_(InfoFile)
+      << "[Simulation details]\n"
+      << "   title: " << m_params.title() << "\n"
+      << "   engine: " << stringifySimulationEngine(S) << "\n"
+      << "   total runtime: " << m_params.totalRuntime() << "\n"
+      << "   dt: " << meshblock.timestep() << " ["
+      << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]\n"
+      << "[domain]\n"
+      << "   dimension: " << static_cast<short>(D) << "D\n"
+      << "   metric: " << (meshblock.metric.label) << "\n"
+      << bc << "\n"
+      << res << "\n"
+      << ext << "\n"
+      << cell << "\n"
+      << "[fiducial parameters]\n"
+      << "   ppc0: " << m_params.ppc0() << "\n"
+      << "   rho0: " << m_params.larmor0() << " ["
+      << m_params.larmor0() / meshblock.minCellSize() << " cells]\n"
+      << "   c_omp0: " << m_params.skindepth0() << " ["
+      << m_params.skindepth0() / meshblock.minCellSize() << " cells]\n"
+      << "   omp0 * dt: " << m_params.skindepth0() * meshblock.timestep() << "\n"
+      << "   sigma0: " << m_params.sigma0();
 
     if (meshblock.particles.size() > 0) {
-      PLOGI << "[particles]";
+      PLOGN_(InfoFile) << "[particles]";
       int i { 0 };
       for (auto& prtls : meshblock.particles) {
-        PLOGI << "   [species #" << i + 1 << "]";
-        PLOGI << "      label: " << prtls.label();
-        PLOGI << "      mass: " << prtls.mass();
-        PLOGI << "      charge: " << prtls.charge();
-        PLOGI << "      pusher: " << stringifyParticlePusher(prtls.pusher());
-        PLOGI << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
+        PLOGN_(InfoFile)
+          << "   [species #" << i + 1 << "]\n"
+          << "      label: " << prtls.label() << "\n"
+          << "      mass: " << prtls.mass() << "\n"
+          << "      charge: " << prtls.charge() << "\n"
+          << "      pusher: " << stringifyParticlePusher(prtls.pusher()) << "\n"
+          << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
         ++i;
       }
     } else {
-      PLOGI << "[no particles]";
+      PLOGN_(InfoFile) << "[no particles]";
     }
-    WaitAndSynchronize();
-    PLOGD << "Simulation details printed.";
   }
 
   template <Dimension D, SimulationEngine S>
@@ -170,7 +169,7 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
     WaitAndSynchronize();
-    PLOGD << "Simulation finalized.";
+    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>

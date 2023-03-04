@@ -50,12 +50,14 @@ namespace ntt {
      * @param m The mass of the species.
      * @param ch The charge of the species.
      * @param maxnpart The maximum number of allocated particles for the species.
+     * @param pusher The pusher assigned for the species.
      */
-    Particles(const int&         index,
-              const std::string& label,
-              const float&       m,
-              const float&       ch,
-              const std::size_t& maxnpart);
+    Particles(const int&            index,
+              const std::string&    label,
+              const float&          m,
+              const float&          ch,
+              const std::size_t&    maxnpart,
+              const ParticlePusher& pusher);
 
     /**
      * @brief Constructor for the particle container.

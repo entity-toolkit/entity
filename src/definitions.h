@@ -73,14 +73,14 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
-  enum { LogFile = 1 };
+  enum { LogFile = 1, InfoFile };
 
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
   enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
-  enum class ParticlePusher { UNDEFINED, BORIS, VAY, PHOTON };
+  enum class ParticlePusher { UNDEFINED, NONE, BORIS, VAY, PHOTON };
 
   inline constexpr auto Dim1          = Dimension::ONE_D;
   inline constexpr auto Dim2          = Dimension::TWO_D;
@@ -114,7 +114,7 @@ namespace ntt {
 
 namespace ntt {
   namespace options {
-    const std::vector<std::string> pushers    = { "Boris", "photon" };
+    const std::vector<std::string> pushers    = { "Boris", "Photon", "None" };
     const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
     const std::vector<std::string> outputs    = { "disabled", "HDF5" };
   }    // namespace options
@@ -179,7 +179,7 @@ namespace ntt {
 /* -------------------------------------------------------------------------- */
 
 namespace plog {
-  class NTTFormatter {
+  class Nt2ConsoleFormatter {
   public:
     static auto header() -> util::nstring {
       return util::nstring();
@@ -193,6 +193,18 @@ namespace plog {
       }
       ss << std::setw(9) << std::left << severityToString(record.getSeverity())
          << PLOG_NSTR(": ");
+      ss << record.getMessage() << PLOG_NSTR("\n");
+      return ss.str();
+    }
+  };
+
+  class Nt2InfoFormatter {
+  public:
+    static auto header() -> util::nstring {
+      return util::nstring();
+    }
+    static auto format(const Record& record) -> util::nstring {
+      util::nostringstream ss;
       ss << record.getMessage() << PLOG_NSTR("\n");
       return ss.str();
     }

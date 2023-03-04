@@ -46,6 +46,10 @@ namespace ntt {
         pusher = ParticlePusher::VAY;
       } else if (pusher_str == "Boris") {
         pusher = ParticlePusher::BORIS;
+      } else if (pusher_str == "None") {
+        pusher = ParticlePusher::NONE;
+      } else {
+        NTTHostError("unrecognized pusher");
       }
       m_species.emplace_back(ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher));
     }

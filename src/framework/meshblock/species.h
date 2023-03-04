@@ -43,19 +43,6 @@ namespace ntt {
                     const ParticlePusher& pusher);
 
     /**
-     * @brief Constructor for the particle species container which deduces the pusher itself.
-     *
-     * @overload
-     * @param index The index of the species in the meshblock::particles vector (index + 1).
-     * @param label The label for the species.
-     * @param m The mass of the species.
-     * @param ch The charge of the species.
-     * @param maxnpart The maximum number of allocated particles for the species.
-     */
-    ParticleSpecies(
-      const int&, const std::string&, const float&, const float&, const std::size_t&);
-
-    /**
      * @brief Copy constructor for the particle species container.
      *
      * @overload
