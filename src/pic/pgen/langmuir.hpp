@@ -8,6 +8,7 @@
 #include "sim_params.h"
 
 #include "archetypes.hpp"
+#include "injector.hpp"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"
@@ -18,32 +19,38 @@
 namespace ntt {
 
   template <Dimension D, SimulationEngine S>
+  struct LangmuirInit : public EnergyDistribution<D, S> {
+    LangmuirInit(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : EnergyDistribution<D, S>(params, mblock),
+        maxwellian { mblock },
+        temperature { params.get<real_t>("problem", "temperature", 0.0) },
+        amplitude { params.get<real_t>("problem", "amplitude", 0.01) },
+        kx { (real_t)(constant::TWO_PI) * (real_t)(params.get<int>("problem", "nx", 1))
+             / (mblock.metric.x1_max - mblock.metric.x1_min) } {}
+    Inline void operator()(const coord_t<D>& x,
+                           vec_t<Dim3>&      v,
+                           const int&        species) const override {
+      if (species == 1) {
+        maxwellian(v, temperature);
+        real_t u1 { amplitude * math::sin(x[0] * kx) };
+        v[0] += u1;
+      } else {
+        v[0] = 0.0;
+        v[1] = 0.0;
+        v[2] = 0.0;
+      }
+    }
+
+  private:
+    const Maxwellian<D, S> maxwellian;
+    const real_t           temperature, amplitude, kx;
+  };
+
+  template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams&) {}
     inline void UserInitParticles(const SimulationParams& params, Meshblock<D, S>& mblock) {
-      if constexpr (D == Dim2) {
-        auto        ncells      = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
-        std::size_t npart       = (std::size_t)((double)(ncells * params.ppc0() * 0.5));
-        auto&       electrons   = mblock.particles[0];
-        auto        random_pool = *(mblock.random_pool_ptr);
-        real_t      Xmin        = mblock.metric.x1_min;
-        real_t      Xmax        = mblock.metric.x1_max;
-        real_t      Ymin        = mblock.metric.x2_min;
-        real_t      Ymax        = mblock.metric.x2_max;
-        electrons.setNpart(npart);
-        Kokkos::parallel_for(
-          "userInitPrtls", CreateRangePolicy<Dim1>({ 0 }, { (int)npart }), Lambda(index_t p) {
-            typename RandomNumberPool_t::generator_type rand_gen = random_pool.get_state();
-
-            real_t                                      rx { rand_gen.frand(Xmin, Xmax) };
-            real_t                                      ry { rand_gen.frand(Ymin, Ymax) };
-            real_t                                      u1 { (real_t)0.01
-                        * math::sin(TWO * (real_t)(constant::TWO_PI)*rx / (Xmax - Xmin)) };
-
-            init_prtl_2d(mblock, electrons, p, rx, ry, u1, 0.0, 0.0);
-            random_pool.free_state(rand_gen);
-          });
-      }
+      InjectUniform<D, PICEngine, LangmuirInit>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
     }
 
 #ifdef NTTINY_ENABLED
