@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.2.1
+  VERSION 0.8.3
   LANGUAGES CXX C
 )
 

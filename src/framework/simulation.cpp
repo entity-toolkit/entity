@@ -92,63 +92,87 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDetails() {
-    std::string bc { "   boundary conditions: { " };
+    std::string bc { "{ " };
     for (auto& b : m_params.boundaries()) {
       bc += stringifyBoundaryCondition(b) + " x ";
     }
     bc.erase(bc.size() - 3);
     bc += " }";
 
-    std::string res { "   resolution: { " };
+    std::string res { "{ " };
     for (auto& r : m_params.resolution()) {
       res += std::to_string(r) + " x ";
     }
     res.erase(res.size() - 3);
     res += " }";
 
-    std::string ext { "   extent: " };
+    std::string ext { "" };
     for (auto i { 0 }; i < (int)(m_params.extent().size()); i += 2) {
       ext += "{" + std::to_string(m_params.extent()[i]) + ", "
              + std::to_string(m_params.extent()[i + 1]) + "} ";
     }
 
-    std::string cell { "   cell size: " };
+    std::string cell { "" };
     cell += std::to_string(meshblock.minCellSize());
 
     PLOGN_(InfoFile)
-      << "[Simulation details]\n"
-      << "   title: " << m_params.title() << "\n"
-      << "   engine: " << stringifySimulationEngine(S) << "\n"
-      << "   total runtime: " << m_params.totalRuntime() << "\n"
-      << "   dt: " << meshblock.timestep() << " ["
+      << "============================================================\n"
+      << "Entity v" << ENTITY_VERSION << "\n"
+      << "============================================================\n\n"
+      << "[Simulation parameters]\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  title:" << m_params.title()
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  engine:" << stringifySimulationEngine(S) << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  timestep:" << meshblock.timestep() << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  total runtime:" << m_params.totalRuntime() << " ["
       << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]\n"
       << "[domain]\n"
-      << "   dimension: " << static_cast<short>(D) << "D\n"
-      << "   metric: " << (meshblock.metric.label) << "\n"
-      << bc << "\n"
-      << res << "\n"
-      << ext << "\n"
-      << cell << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  dimension:" << static_cast<short>(D) << "D\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  metric:" << (meshblock.metric.label) << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  boundary conditions:" << bc
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  resolution:" << res << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  extent:" << ext << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  cell size:" << cell << "\n"
       << "[fiducial parameters]\n"
-      << "   ppc0: " << m_params.ppc0() << "\n"
-      << "   rho0: " << m_params.larmor0() << " ["
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  particles per cell [ppc0]:" << m_params.ppc0() << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  Larmor radius [rho0]:" << m_params.larmor0() << " ["
       << m_params.larmor0() / meshblock.minCellSize() << " cells]\n"
-      << "   c_omp0: " << m_params.skindepth0() << " ["
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  Larmor frequency [omegaB0 * dt]:" << m_params.larmor0() * meshblock.timestep()
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  skin depth [d0]:" << m_params.skindepth0() << " ["
       << m_params.skindepth0() / meshblock.minCellSize() << " cells]\n"
-      << "   omp0 * dt: " << m_params.skindepth0() * meshblock.timestep() << "\n"
-      << "   sigma0: " << m_params.sigma0();
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  plasma frequency [omp0 * dt]:" << m_params.skindepth0() * meshblock.timestep()
+      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  magnetization [sigma0]:" << m_params.sigma0();
 
     if (meshblock.particles.size() > 0) {
       PLOGN_(InfoFile) << "[particles]";
       int i { 0 };
       for (auto& prtls : meshblock.particles) {
         PLOGN_(InfoFile)
-          << "   [species #" << i + 1 << "]\n"
-          << "      label: " << prtls.label() << "\n"
-          << "      mass: " << prtls.mass() << "\n"
-          << "      charge: " << prtls.charge() << "\n"
-          << "      pusher: " << stringifyParticlePusher(prtls.pusher()) << "\n"
-          << "      maxnpart: " << prtls.maxnpart() << " (" << prtls.npart() << ")";
+          << "  [species #" << i + 1 << "]\n"
+          << std::setw(42) << std::setfill('.') << std::left << "    label: " << prtls.label()
+          << "\n"
+          << std::setw(42) << std::setfill('.') << std::left << "    mass: " << prtls.mass()
+          << "\n"
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    charge: " << prtls.charge() << "\n"
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    pusher: " << stringifyParticlePusher(prtls.pusher()) << "\n"
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    maxnpart: " << prtls.maxnpart() << " (active: " << prtls.npart() << ")";
         ++i;
       }
     } else {
