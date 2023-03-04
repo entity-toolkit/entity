@@ -29,8 +29,10 @@ namespace ntt {
 #endif
 
   public:
-    Writer(const SimulationParams&, const Meshblock<D, S>&);
+    Writer() = default;
     ~Writer();
+
+    void Initialize(const SimulationParams&, const Meshblock<D, S>&);
 
     void WriteFields(const SimulationParams&,
                      Meshblock<D, S>&,
