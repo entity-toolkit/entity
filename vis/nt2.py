@@ -115,6 +115,13 @@ def getFields(fname):
     coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
     times = np.array([file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
 
+    if dimension == 1:
+        noghosts = slice(ngh, -ngh)
+    elif dimension == 2:
+        noghosts = (slice(ngh, -ngh), slice(ngh, -ngh))
+    elif dimension == 3:
+        noghosts = (slice(ngh, -ngh), slice(ngh, -ngh), slice(ngh, -ngh))
+
     ds = xr.Dataset()
 
     fields = [k for k in file[step0].keys() if k not in ["Time", "Step"]]
@@ -133,7 +140,7 @@ def getFields(fname):
                 if layout == "right"
                 else file[f"Step{s}/{k}"]
             )
-            dask_arrays.append(array[ngh:-ngh, ngh:-ngh])
+            dask_arrays.append(array[noghosts])
 
         k_ = reduce(
             lambda x, y: x.replace(*y)

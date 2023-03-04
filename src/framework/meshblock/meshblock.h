@@ -90,13 +90,17 @@ namespace ntt {
      * @brief Fields to hatted basis.
      * Used for outputting/visualizing the fields.
      */
-    void InterpolateAndConvertFieldsToHat();
+    void InterpolateAndConvertFieldsToHat() {
+      NTTHostError("Not implemented.");
+    }
 
     /**
      * @brief Currents to hatted basis.
      * Used for outputting/visualizing the currents.
      */
-    void InterpolateAndConvertCurrentsToHat();
+    void InterpolateAndConvertCurrentsToHat() {
+      NTTHostError("Not implemented.");
+    }
 
     /**
      * @brief Compute particle moment for output or other usage.
