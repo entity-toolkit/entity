@@ -40,10 +40,10 @@ pusher   = "Boris"
 cs_width = 0.000125
 
 [visualization]
-fields        = ["By", "mass_density"]
+fields        = ["By", "Rho"]
 fields_stride = 4
 
 [output]
-fields   = ["By", "mass_density"]
+fields   = ["By", "Rho"]
 format   = "HDF5"
 interval = 10

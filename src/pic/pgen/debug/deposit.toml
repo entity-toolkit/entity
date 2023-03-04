@@ -50,21 +50,9 @@ charge   = 0.0
 maxnpart = 1e2
 
 [visualization]
-fields = [
-"mass_density",
-"Er",
-"Etheta",
-"Ephi",
-"Br",
-"Btheta",
-"Bphi",
-"Jr",
-"Jtheta",
-"Jphi",
-]
+fields = ["Rho", "Ei", "Bi", "Ji"]
 
 [output]
-format = "disabled"
-# interval        = 1
+format   = "disabled"
 
 [problem]

@@ -108,16 +108,16 @@ def getFields(fname):
     file = h5py.File(fname, "r")
     step0 = list(file.keys())[0]
     nsteps = file.attrs["NumSteps"]
-    ngh = file.attrs["n_ghosts"]
+    ngh = file.attrs["NGhosts"]
     layout = "right" if file.attrs["LayoutRight"] == 1 else "left"
-    dimension = file.attrs["dimension"]
-    metric = file.attrs["metric"].decode("UTF-8")
+    dimension = file.attrs["Dimension"]
+    metric = file.attrs["Metric"].decode("UTF-8")
     coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
-    times = np.array([file[f"Step{s}"]["time"][()] for s in range(nsteps)])
+    times = np.array([file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
 
     ds = xr.Dataset()
 
-    fields = [k for k in file[step0].keys() if k not in ["time", "step"]]
+    fields = [k for k in file[step0].keys() if k not in ["Time", "Step"]]
 
     for k in file.attrs.keys():
         if type(file.attrs[k]) == bytes or type(file.attrs[k]) == np.bytes_:
@@ -152,7 +152,7 @@ def getFields(fname):
             coords={
                 "t": times,
                 **{
-                    k: EdgeToCenter(file.attrs[f"x{i+1}"])
+                    k: EdgeToCenter(file.attrs[f"X{i+1}"])
                     for i, k in enumerate(coords[::-1])
                 },
             },

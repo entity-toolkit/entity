@@ -33,17 +33,17 @@ label           = <string>
 mass            = <float>
 charge          = <float>
 maxnpart        = <int>
-pusher          = <string: { "Boris" }>
+pusher          = <string: { "Boris" | "Photon" | "None" }>
 
 [problem]
 ...
 
 [visualization]
-fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see src/definitions.h for ref>
+fields          = <array of strings, ex. ["Ei", "Bi", "Rho", "T0i", ...], see wiki>
 fields_stride   = <int>
 
 [output]
-fields          = <array of strings, ex. ["Dr", "Dtheta", ...], see src/definitions.h for ref>
-format          = <string: { disabled, hdf5 }>
+fields          = <array of strings, ex. ["Ei", "Bi", "Rho", "T0i", ...], see wiki>
+format          = <string: { "disabled", "hdf5" }>
 mom_smooth      = <int>
 interval        = <int>

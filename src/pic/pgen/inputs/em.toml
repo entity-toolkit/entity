@@ -22,5 +22,5 @@ nx1       = 5
 nx2       = 5
 
 [visualization]
-fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "mass_density"]
+fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Rho"]
 fields_stride = 1

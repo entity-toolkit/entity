@@ -82,7 +82,7 @@ public:
     const auto fields_stride  = m_fields_stride;
     // precompute necessary fields
     for (auto& f : fields_to_plot) {
-      if (f == "mass_density") {
+      if (f == "Rho") {
         m_sim.ComputeDensity();
       }
     }
@@ -134,7 +134,7 @@ public:
                                comp = ntt::cur::jx2;
                              } else if (f == "Jz" || f == "Jphi") {
                                comp = ntt::cur::jx3;
-                             } else if (f == "mass_density") {
+                             } else if (f == "Rho") {
                                comp = ntt::fld::dens;
                              }
                              real_t val;

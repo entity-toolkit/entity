@@ -154,7 +154,7 @@ namespace ntt {
 
     Inline void operator()(vec_t<Dim3>&  v,
                            const real_t& temp,
-                           const real_t& boost_vel       = ZERO,
+                           const real_t& boost_vel       = 0.0,
                            const short&  boost_direction = 0) const {
       if (AlmostEqual(temp, ZERO)) {
         v[0] = ZERO;

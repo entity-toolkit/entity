@@ -75,14 +75,7 @@ namespace ntt {
 
     jx1_curly,
     jx2_curly,
-    jx3_curly,
-
-    mass_density,
-    number_density,
-    charge_density,
-    energy_density,
-    photon_number_density,
-    photon_energy_density
+    jx3_curly
   };
 
   /**
