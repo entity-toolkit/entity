@@ -82,7 +82,7 @@ The following parameters are parsed from the `input` file to define the fiducial
 
 * `larmor0`: fiducial Larmor radius, $\rho_0$, of a particle with charge $q_0$ and mass $m_0$ moving in a uniform magnetic field of strength $B_0$ in the perpendicular plane with a velocity $\bm{\beta}\gamma=1$.
 * `skindepth0`: fiducial skin depth for plasma consisting of static particles (ions) of charge $-q_0$ and fiducial particles of charge $q_0$ with both species having a number density $n_0$ (fiducial number density).
-* `ppc0`: fiducial number of particles per cell, defined as $n_0 / \Delta V_0$. If the domain of physical extent of size $1$ is filled with `ppc0` simulation particles per each cell, then the average number density of the simulation is $n_0$ (in physical units).
+* `ppc0`: fiducial number of particles per cell, defined as $n_0 \Delta V_0$. If the domain of physical extent of size $1$ is filled with `ppc0` simulation particles per each cell, then the average number density of the simulation is $n_0$ (in physical units).
 
 !!! important
 

@@ -18,11 +18,13 @@ title   = "MySimulation"
 
 [output]
 # fields to write
-fields    = ["Bx", "By", "mass_density", ...]
+fields     = ["Bx", "Ei", "Rho_1_2", ...]
 # output format (current supported: "HDF5", or "disabled" for no output)
-format    = "HDF5"
+format     = "HDF5"
 # interval between outputs (in the number of time steps)
-interval  = 100
+interval   = 100
+# smoothing stencil size for moments (in the number of cells) [defaults to 1]
+mom_smooth = 2
 ```
 
 Output is written in the run directory in a single `hdf5` file: `MySimulation.flds.h5` (at the moment only field output is supported). All the steps are written in the same file, and the time step is stored as an attribute of the dataset: `Step0`, `Step1`, `Step2`, etc. Thus to access, say, the `Ez` field at the 10th output step (not the same as the simulation timestep), one has to access the dataset `/Step9/Ez` in the `hdf5` file.
@@ -31,21 +33,18 @@ Following is the list of the supported fields:
 
 | Field name | Description | Units |
 |------------|-------------|------|
-| `Ex`/`Er` | Electric field in the `x` or `r` direction | $B_0$ |
-| `Ey`/`Etheta` | Electric field in the `y` or `theta` direction |  $B_0$ |
-| `Ez`/`Ephi` | Electric field in the `z` or `phi` direction | $B_0$ |
-| `Bx`/`Br` | Magnetic field in the `x` or `r` direction | $B_0$ |
-| `By`/`Btheta` | Magnetic field in the `y` or `theta` direction | $B_0$ |
-| `Bz`/`Bphi` | Magnetic field in the `z` or `phi` direction | $B_0$ |
-| `Jx`/`Jr` | Current density in the `x` or `r` direction | $B_0$ |
-| `Jy`/`Jtheta` | Current density in the `y` or `theta` direction | $B_0$ |
-| `Jz`/`Jphi` | Current density in the `z` or `phi` direction | $B_0$ |
-| `mass_density` | Mass density | $m_0 n_0$ |
-| `charge_density` | Charge density |  $q_0 n_0$ |
-| `number_density` | Number density | $n_0$ |
-| `energy_density` | Energy density | $m_0 n_0$ |
+| `Ei` | Electric field (all components) | $B_0$ |
+| `Bi` | Magnetic field (all components) |  $B_0$ |
+| `Ji` | Current density (all components) | $q_0 n_0$ |
+| `Rho` | Mass density | $m_0 n_0$ |
+| `N` | Number density |  $n_0$ |
+| `Tij` | Energy-momentum tensor (all components) | $m_0 n_0$ |
 
-All of the vector fields are interpolated to cell centers before the output, and converted to orthonormal basis. The particle-based densities are smoothed with a window of 2 cells for each particle.
+!!! note
+
+    One can specify particular components to output. For instance, `E1` (or, e.g., `By`) will only output `Ex` (or, correspondigly, `By`). The same applies to the `Ji` and `Tij` fields. Additionally, `T0i` will output the `T00`, `T01`, and `T02` components, while `Tii` will output only the diagonal components: `T11`, `T22`, and `T33`. One can also specify the particle species which will be used to compute the moments: `Rho_1` (density of species 1), `N_2_3` (number density of species 2 and 3), `Tij_1_3` (energy-momentum tensor for species 1 and 3), etc. If no species are specified, the moments will be computed for all the species with $m_s \ne 0$.
+
+All of the vector fields are interpolated to cell centers before the output, and converted to orthonormal basis. The particle-based moments are smoothed with a stencil (specified in the input file; `mom_smooth`) for each particle.
 
 ## `nt2.py`
 
@@ -99,7 +98,7 @@ flds.mass_density\
 If the resolution is too high, one can also coarsen the data before plotting:
 
 ```python
-flds.mass_density\
+flds.Rho\
   .sel(t=98, method="nearest")\
   .coarsen(x=16, y=4).mean()\
   .plot(
@@ -110,7 +109,7 @@ flds.mass_density\
 or downsample:
 
 ```python
-flds.mass_density\
+flds.Rho\
   .sel(t=98, method="nearest")\
   .isel(x=slice(None, None, 16), y=slice(None, None, 4))\ # (1)!
   .plot(
