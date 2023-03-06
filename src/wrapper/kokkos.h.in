@@ -103,8 +103,22 @@ namespace ntt {
                                 Kokkos::MDRangePolicy<Kokkos::Rank<3>, HostExeSpace>,
                                 std::nullptr_t>::type>::type>::type;
 
-  // Random number pool alias
+  // Random number pool/generator type alias
   using RandomNumberPool_t = Kokkos::Random_XorShift1024_Pool<AccelExeSpace>;
+  using RandomGenerator_t  = typename RandomNumberPool_t::generator_type;
+
+  template <typename T>
+  Inline auto Random(RandomGenerator_t&) -> T;
+
+  template <>
+  Inline auto Random<float>(RandomGenerator_t& gen) -> float {
+    return gen.frand();
+  }
+
+  template <>
+  Inline auto Random<double>(RandomGenerator_t& gen) -> double {
+    return gen.drand();
+  }
 
   /**
    * @brief Function template for generating ND Kokkos range policy.
