@@ -82,7 +82,10 @@ namespace ntt {
     std::vector<Content> A = { this->buff_content[buff_ind] };
     AssertEmptyContent(A);
     std::size_t ni1 = this->Ni1(), ni2 = this->Ni2(), ni3 = this->Ni3();
-    real_t weight = (1.0 / params.ppc0()) / math::pow(2.0 * smooth + 1.0, static_cast<int>(D));
+    real_t      weight = ONE / math::pow(2.0 * smooth + 1.0, static_cast<int>(D));
+    if (field != FieldID::Nppc) {
+      weight /= params.ppc0();
+    }
     if constexpr (D == Dim1) {
       Kokkos::deep_copy(Kokkos::subview(this->buff, Kokkos::ALL(), (int)buff_ind), ZERO);
     } else if constexpr (D == Dim2) {
@@ -131,7 +134,7 @@ namespace ntt {
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
-              } else if (field == FieldID::N) {
+              } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
                 real_t energy { ((mass == ZERO) ? get_photon_Energy_SR(species, p)
@@ -149,9 +152,11 @@ namespace ntt {
                   }
                 }
               }
+              if (fieldID != FieldID::Nppc) {
+                contrib *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1 });
+              }
               for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
-                buff_access(i1_, buff_ind) += contrib * weight * this_metric.min_cell_volume()
-                                              / this_metric.sqrt_det_h({ x1 });
+                buff_access(i1_, buff_ind) += contrib * weight;
               }
             }
           });
@@ -171,7 +176,7 @@ namespace ntt {
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
-              } else if (field == FieldID::N) {
+              } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
                 real_t energy { ((mass == ZERO) ? get_photon_Energy_SR(species, p)
@@ -204,11 +209,12 @@ namespace ntt {
                   }
 #endif
               }
+              if (fieldID != FieldID::Nppc) {
+                contrib *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1, x2 });
+              }
               for (int i2_ = i2_min; i2_ <= i2_max; ++i2_) {
                 for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
-                  buff_access(i1_, i2_, buff_ind) += contrib * weight
-                                                     * this_metric.min_cell_volume()
-                                                     / this_metric.sqrt_det_h({ x1, x2 });
+                  buff_access(i1_, i2_, buff_ind) += contrib * weight;
                 }
               }
             }
@@ -233,7 +239,7 @@ namespace ntt {
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
-              } else if (field == FieldID::N) {
+              } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
                 real_t energy { ((mass == ZERO) ? get_photon_Energy_SR(species, p)
@@ -264,12 +270,14 @@ namespace ntt {
                 }
 #endif
               }
+              if (fieldID != FieldID::Nppc) {
+                contrib
+                  *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1, x2, x3 });
+              }
               for (int i3_ = i3_min; i3_ <= i3_max; ++i3_) {
                 for (int i2_ = i2_min; i2_ <= i2_max; ++i2_) {
                   for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
-                    buff_access(i1_, i2_, i3_, buff_ind)
-                      += contrib * weight * this_metric.min_cell_volume()
-                         / this_metric.sqrt_det_h({ x1, x2, x3 });
+                    buff_access(i1_, i2_, i3_, buff_ind) += contrib * weight;
                   }
                 }
               }

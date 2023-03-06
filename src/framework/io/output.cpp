@@ -118,6 +118,10 @@ namespace ntt {
       const auto id      = FieldID::Rho;
       auto       species = InterpretInputField_getspecies(fld);
       return InterpretInputField_helper(id, { {} }, species);
+    } else if (fld.find("Nppc") == 0) {
+      const auto id      = FieldID::Nppc;
+      auto       species = InterpretInputField_getspecies(fld);
+      return InterpretInputField_helper(id, { {} }, species);
     } else if (fld.find("N") == 0) {
       const auto id      = FieldID::N;
       auto       species = InterpretInputField_getspecies(fld);
@@ -214,7 +218,13 @@ namespace ntt {
       }
     } else {
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        mblock.ComputeMoments(params, m_id, comp[i], species, i % 3, params.outputMomSmooth());
+        // no smoothing for FieldID::Nppc
+        mblock.ComputeMoments(params,
+                              m_id,
+                              comp[i],
+                              species,
+                              i % 3,
+                              m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
         PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
       }
     }

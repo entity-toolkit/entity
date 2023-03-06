@@ -150,7 +150,8 @@ namespace ntt {
     J,      // Current density
     T,      // Particle distribution moments
     Rho,    // Particle density
-    N       // Particle number density
+    N,      // Particle number density
+    Nppc    // Raw number of particles per each cell
   };
 
   inline auto StringizeFieldID(const FieldID& id) -> std::string {
@@ -167,6 +168,8 @@ namespace ntt {
       return "Rho";
     case FieldID::N:
       return "N";
+    case FieldID::Nppc:
+      return "Nppc";
     default:
       return "UNKNOWN";
     }
