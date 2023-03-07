@@ -153,8 +153,8 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   struct InjectionShell : public SpatialDistribution<D, S> {
     explicit InjectionShell(const SimulationParams& params, Meshblock<D, S>& mblock)
-      : SpatialDistribution<D, S>(params, mblock) {
-      inj_rmax = params.get<real_t>("problem", "inj_rmax", 1.5 * mblock.metric.x1_min);
+      : SpatialDistribution<D, S>(params, mblock),
+        inj_rmax { params.get<real_t>("problem", "inj_rmax", 1.5 * mblock.metric.x1_min) } {
       const int  buff_cells = 10;
       coord_t<D> xcu { ZERO }, xph { ZERO };
       xcu[0] = (real_t)buff_cells;
@@ -166,7 +166,8 @@ namespace ntt {
     }
 
   private:
-    real_t inj_rmax, inj_rmin;
+    const real_t inj_rmax;
+    real_t       inj_rmin;
   };
 
   template <Dimension D, SimulationEngine S>
