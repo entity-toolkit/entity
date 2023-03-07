@@ -117,6 +117,7 @@ namespace ntt {
     }
 
     auto this_metric  = this->metric;
+    auto use_weights  = params.useWeights();
 
     auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
     for (auto& sp : out_species) {
@@ -152,8 +153,11 @@ namespace ntt {
                   }
                 }
               }
-              if (fieldID != FieldID::Nppc) {
+              if (field != FieldID::Nppc) {
                 contrib *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1 });
+                if (use_weights) {
+                  contrib *= species.weight(p);
+                }
               }
               for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
                 buff_access(i1_, buff_ind) += contrib * weight;
@@ -209,8 +213,11 @@ namespace ntt {
                   }
 #endif
               }
-              if (fieldID != FieldID::Nppc) {
+              if (field != FieldID::Nppc) {
                 contrib *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1, x2 });
+                if (use_weights) {
+                  contrib *= species.weight(p);
+                }
               }
               for (int i2_ = i2_min; i2_ <= i2_max; ++i2_) {
                 for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
@@ -270,9 +277,12 @@ namespace ntt {
                 }
 #endif
               }
-              if (fieldID != FieldID::Nppc) {
+              if (field != FieldID::Nppc) {
                 contrib
                   *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1, x2, x3 });
+                if (use_weights) {
+                  contrib *= species.weight(p);
+                }
               }
               for (int i3_ = i3_min; i3_ <= i3_max; ++i3_) {
                 for (int i2_ = i2_min; i2_ <= i2_max; ++i2_) {

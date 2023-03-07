@@ -259,7 +259,7 @@ namespace ntt {
         Sorter.sort(Kokkos::subview(dx3_prev, slice));
       }
     }
-    //  !TODO: sort weights
+    Sorter.sort(Kokkos::subview(weight, slice));
   }
 
 }    // namespace ntt

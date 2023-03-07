@@ -135,6 +135,8 @@ namespace ntt {
 
     const unsigned short       current_filters   = 0;
 
+    const bool                 use_weights       = false;
+
     const int                  shuffle_interval  = 0;
     const double               max_dead_frac     = 0.0;
 
