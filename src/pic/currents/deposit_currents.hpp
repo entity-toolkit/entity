@@ -26,6 +26,7 @@ namespace ntt {
     scatter_ndfield_t<D, 3> m_scatter_cur;
     const real_t            m_charge, m_dt;
     const real_t            m_xi2max;
+    const bool              m_use_weights;
 
   public:
     /**
@@ -40,11 +41,13 @@ namespace ntt {
                            const Particles<D, PICEngine>& particles,
                            const scatter_ndfield_t<D, 3>& scatter_cur,
                            const real_t&                  charge,
+                           const bool&                    use_weights,
                            const real_t&                  dt)
       : m_mblock(mblock),
         m_particles(particles),
         m_scatter_cur(scatter_cur),
         m_charge(charge),
+        m_use_weights { use_weights },
         m_dt(dt),
         m_xi2max((real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS)) {}
 
@@ -61,12 +64,20 @@ namespace ntt {
 
         // get [i, di]_init and [i, di]_final (per dimension)
         getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-        depositCurrentsFromParticle(vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+        depositCurrentsFromParticle(m_use_weights ? static_cast<real_t>(m_particles.weight(p))
+                                                  : ONE,
+                                    vp,
+                                    Ip_f,
+                                    Ip_i,
+                                    xp_f,
+                                    xp_i,
+                                    xp_r);
       }
     }
 
     /**
      * @brief Deposit currents from a single particle.
+     * @param[in] weight Particle weight or 1 if no weights used.
      * @param[in] vp Particle 3-velocity.
      * @param[in] Ip_f Final position of the particle (cell index).
      * @param[in] Ip_i Initial position of the particle (cell index).
@@ -74,7 +85,8 @@ namespace ntt {
      * @param[in] xp_i Previous step position.
      * @param[in] xp_r Intermediate point used in zig-zag deposit.
      */
-    Inline void depositCurrentsFromParticle(const vec_t<Dim3>&     vp,
+    Inline void depositCurrentsFromParticle(const real_t&          weight,
+                                            const vec_t<Dim3>&     vp,
                                             const tuple_t<int, D>& Ip_f,
                                             const tuple_t<int, D>& Ip_i,
                                             const coord_t<D>&      xp_f,
@@ -171,8 +183,12 @@ namespace ntt {
     }
   };
 
+  /**
+   * !TODO: fix the conversion to I+di
+   */
   template <>
   Inline void DepositCurrents_kernel<Dim1>::depositCurrentsFromParticle(
+    const real_t&             weight,
     const vec_t<Dim3>&        vp,
     const tuple_t<int, Dim1>& Ip_f,
     const tuple_t<int, Dim1>& Ip_i,
@@ -181,14 +197,14 @@ namespace ntt {
     const coord_t<Dim1>&      xp_r) const {
     real_t Wx1_1 { HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0]) };
     real_t Wx1_2 { HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0]) };
-    real_t Fx1_1 { (xp_r[0] - xp_i[0]) * m_charge / m_dt };
-    real_t Fx1_2 { (xp_f[0] - xp_r[0]) * m_charge / m_dt };
+    real_t Fx1_1 { (xp_r[0] - xp_i[0]) * weight * m_charge / m_dt };
+    real_t Fx1_2 { (xp_f[0] - xp_r[0]) * weight * m_charge / m_dt };
 
-    real_t Fx2_1 { HALF * vp[1] * m_charge };
-    real_t Fx2_2 { HALF * vp[1] * m_charge };
+    real_t Fx2_1 { HALF * vp[1] * weight * m_charge };
+    real_t Fx2_2 { HALF * vp[1] * weight * m_charge };
 
-    real_t Fx3_1 { HALF * vp[2] * m_charge };
-    real_t Fx3_2 { HALF * vp[2] * m_charge };
+    real_t Fx3_1 { HALF * vp[2] * weight * m_charge };
+    real_t Fx3_2 { HALF * vp[2] * weight * m_charge };
 
     auto   cur_access = m_scatter_cur.access();
     ATOMIC_JX1(Ip_i[0]) += Fx1_1;
@@ -205,11 +221,9 @@ namespace ntt {
     ATOMIC_JX3(Ip_f[0] + 1) += Fx3_2 * Wx1_2;
   }
 
-  /**
-   * !TODO: fix the conversion to I+di
-   */
   template <>
   Inline void DepositCurrents_kernel<Dim2>::depositCurrentsFromParticle(
+    const real_t&             weight,
     const vec_t<Dim3>&        vp,
     const tuple_t<int, Dim2>& Ip_f,
     const tuple_t<int, Dim2>& Ip_i,
@@ -218,16 +232,16 @@ namespace ntt {
     const coord_t<Dim2>&      xp_r) const {
     real_t Wx1_1 { HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0]) };
     real_t Wx1_2 { HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0]) };
-    real_t Fx1_1 { (xp_r[0] - xp_i[0]) * m_charge / m_dt };
-    real_t Fx1_2 { (xp_f[0] - xp_r[0]) * m_charge / m_dt };
+    real_t Fx1_1 { (xp_r[0] - xp_i[0]) * weight * m_charge / m_dt };
+    real_t Fx1_2 { (xp_f[0] - xp_r[0]) * weight * m_charge / m_dt };
 
     real_t Wx2_1 { HALF * (xp_i[1] + xp_r[1]) - static_cast<real_t>(Ip_i[1]) };
     real_t Wx2_2 { HALF * (xp_f[1] + xp_r[1]) - static_cast<real_t>(Ip_f[1]) };
-    real_t Fx2_1 { (xp_r[1] - xp_i[1]) * m_charge / m_dt };
-    real_t Fx2_2 { (xp_f[1] - xp_r[1]) * m_charge / m_dt };
+    real_t Fx2_1 { (xp_r[1] - xp_i[1]) * weight * m_charge / m_dt };
+    real_t Fx2_2 { (xp_f[1] - xp_r[1]) * weight * m_charge / m_dt };
 
-    real_t Fx3_1 { HALF * vp[2] * m_charge };
-    real_t Fx3_2 { HALF * vp[2] * m_charge };
+    real_t Fx3_1 { HALF * vp[2] * weight * m_charge };
+    real_t Fx3_2 { HALF * vp[2] * weight * m_charge };
 
     auto   cur_access = m_scatter_cur.access();
     ATOMIC_JX1(Ip_i[0], Ip_i[1]) += Fx1_1 * (ONE - Wx2_1);
@@ -253,6 +267,7 @@ namespace ntt {
 
   template <>
   Inline void DepositCurrents_kernel<Dim3>::depositCurrentsFromParticle(
+    const real_t& weight,
     const vec_t<Dim3>&,
     const tuple_t<int, Dim3>& Ip_f,
     const tuple_t<int, Dim3>& Ip_i,
@@ -261,18 +276,18 @@ namespace ntt {
     const coord_t<Dim3>&      xp_r) const {
     real_t Wx1_1 { HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0]) };
     real_t Wx1_2 { HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0]) };
-    real_t Fx1_1 { (xp_r[0] - xp_i[0]) * m_charge / m_dt };
-    real_t Fx1_2 { (xp_f[0] - xp_r[0]) * m_charge / m_dt };
+    real_t Fx1_1 { (xp_r[0] - xp_i[0]) * weight * m_charge / m_dt };
+    real_t Fx1_2 { (xp_f[0] - xp_r[0]) * weight * m_charge / m_dt };
 
     real_t Wx2_1 { HALF * (xp_i[1] + xp_r[1]) - static_cast<real_t>(Ip_i[1]) };
     real_t Wx2_2 { HALF * (xp_f[1] + xp_r[1]) - static_cast<real_t>(Ip_f[1]) };
-    real_t Fx2_1 { (xp_r[1] - xp_i[1]) * m_charge / m_dt };
-    real_t Fx2_2 { (xp_f[1] - xp_r[1]) * m_charge / m_dt };
+    real_t Fx2_1 { (xp_r[1] - xp_i[1]) * weight * m_charge / m_dt };
+    real_t Fx2_2 { (xp_f[1] - xp_r[1]) * weight * m_charge / m_dt };
 
     real_t Wx3_1 { HALF * (xp_i[2] + xp_r[2]) - static_cast<real_t>(Ip_i[2]) };
     real_t Wx3_2 { HALF * (xp_f[2] + xp_r[2]) - static_cast<real_t>(Ip_f[2]) };
-    real_t Fx3_1 { (xp_r[2] - xp_i[2]) * m_charge / m_dt };
-    real_t Fx3_2 { (xp_f[2] - xp_r[2]) * m_charge / m_dt };
+    real_t Fx3_1 { (xp_r[2] - xp_i[2]) * weight * m_charge / m_dt };
+    real_t Fx3_2 { (xp_f[2] - xp_r[2]) * weight * m_charge / m_dt };
 
     auto   cur_access = m_scatter_cur.access();
     ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2]) += Fx1_1 * (ONE - Wx2_1) * (ONE - Wx3_1);

@@ -55,6 +55,7 @@ namespace ntt {
     }
     m_shuffle_interval = get<int>("particles", "shuffle_step", defaults::shuffle_interval);
     m_max_dead_frac    = get<double>("particles", "max_dead_frac", defaults::max_dead_frac);
+    m_use_weights      = get<bool>("particles", "use_weights", defaults::use_weights);
 
 #ifdef MINKOWSKI_METRIC
     m_metric = "minkowski";

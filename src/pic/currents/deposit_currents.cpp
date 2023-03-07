@@ -22,6 +22,7 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::CurrentsDeposit() {
     auto& mblock = this->meshblock;
+    auto  params = *(this->params());
 
     AssertEmptyContent(mblock.cur_content);
 
@@ -30,7 +31,8 @@ namespace ntt {
       if (species.charge() != 0.0) {
         const real_t              dt { mblock.timestep() };
         const real_t              charge { species.charge() };
-        DepositCurrents_kernel<D> deposit(mblock, species, scatter_cur, charge, dt);
+        DepositCurrents_kernel<D> deposit(
+          mblock, species, scatter_cur, charge, params.useWeights(), dt);
         Kokkos::parallel_for("deposit", species.rangeActiveParticles(), deposit);
       }
     }

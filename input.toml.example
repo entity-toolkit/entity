@@ -27,6 +27,7 @@ skindepth0      = <float>
 n_species       = <int>
 shuffle_step    = <int>
 max_dead_frac   = <float>
+use_weights     = <bool>
 
 [species_<INT>]
 label           = <string>

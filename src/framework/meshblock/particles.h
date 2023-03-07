@@ -33,11 +33,11 @@ namespace ntt {
     // Three spatial components of the covariant 4-velocity (physical units).
     array_t<real_t*> ux1, ux2, ux3;
     // Particle weights.
-    array_t<float*>  weight;
+    array_t<real_t*>  weight;
     // Additional variables (specific to different cases).
     // previous coordinates (GR specific)
     array_t<real_t*> i1_prev, i2_prev, i3_prev;
-    array_t<real_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<float*> dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
     array_t<real_t*> phi;
     // Array to tag the particles.

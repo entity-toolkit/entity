@@ -47,9 +47,9 @@ namespace ntt {
       vec_t<Dim3>                                 v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       energy_dist(x, v, species_index1);
-      init_prtl_1d(mblock, species1, p + offset1, x[0], v[0], v[1], v[2]);
+      init_prtl_1d(mblock, species1, p + offset1, x[0], v[0], v[1], v[2], ONE);
       energy_dist(x, v, species_index2);
-      init_prtl_1d(mblock, species2, p + offset2, x[0], v[0], v[1], v[2]);
+      init_prtl_1d(mblock, species2, p + offset2, x[0], v[0], v[1], v[2], ONE);
       pool.free_state(rand_gen);
     }
 
@@ -94,9 +94,9 @@ namespace ntt {
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       energy_dist(x, v, species_index1);
-      init_prtl_2d(mblock, species1, p + offset1, x[0], x[1], v[0], v[1], v[2]);
+      init_prtl_2d(mblock, species1, p + offset1, x[0], x[1], v[0], v[1], v[2], ONE);
       energy_dist(x, v, species_index2);
-      init_prtl_2d(mblock, species2, p + offset2, x[0], x[1], v[0], v[1], v[2]);
+      init_prtl_2d(mblock, species2, p + offset2, x[0], x[1], v[0], v[1], v[2], ONE);
       pool.free_state(rand_gen);
     }
 
@@ -142,9 +142,9 @@ namespace ntt {
       x[1] = rand_gen.frand(region[2], region[3]);
       x[2] = rand_gen.frand(region[4], region[5]);
       energy_dist(x, v, species_index1);
-      init_prtl_3d(mblock, species1, p + offset1, x[0], x[1], x[2], v[0], v[1], v[2]);
+      init_prtl_3d(mblock, species1, p + offset1, x[0], x[1], x[2], v[0], v[1], v[2], ONE);
       energy_dist(x, v, species_index2);
-      init_prtl_3d(mblock, species2, p + offset2, x[0], x[1], x[2], v[0], v[1], v[2]);
+      init_prtl_3d(mblock, species2, p + offset2, x[0], x[1], x[2], v[0], v[1], v[2], ONE);
       pool.free_state(rand_gen);
     }
 
@@ -248,7 +248,6 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                    Volume injection kernels and routines                   */
   /* -------------------------------------------------------------------------- */
-
   template <SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
@@ -274,70 +273,62 @@ namespace ntt {
         offset2 { sp2.npart() },
         index { ind },
         nppc { ppc },
+        use_weights { params.useWeights() },
         energy_dist { params, mblock },
         spatial_dist { params, mblock },
         inj_criterion { params, mblock },
         pool { *(mblock.random_pool_ptr) } {}
     Inline void operator()(index_t i1) const {
       // cell node
-      coord_t<Dim1> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS) };
-      // cell center
-      coord_t<Dim1> xc { xi[0] + HALF };
-      // physical coordinate
-      coord_t<Dim1> xph { ZERO };
+      coord_t<Dim1>     xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS) };
+      RandomGenerator_t rand_gen { pool.get_state() };
+      real_t            n_inject { nppc };
+      coord_t<Dim1>     xc { ZERO };
+      coord_t<Dim1>     xph { ZERO };
+      float             dx1, dx2;
+      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t            cell_vol;
 
-#ifdef MINKOWSKI_METRIC
-      mblock.metric.x_Code2Cart(xc, xph);
-#else
-      mblock.metric.x_Code2Sph(xc, xph);
-#endif
+      while (n_inject > ZERO) {
+        dx1   = Random<float>(rand_gen);
+        xc[0] = xi[0] + dx1;
+        mblock.metric.x_Code2Cart(xc, xph);
+        if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
+            inj_criterion(xph) &&                             // injection criterion
+            (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
+        ) {
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
+          cell_vol = mblock.metric.sqrt_det_h(xc) / mblock.metric.min_cell_volume();
 
-      if (inj_criterion(xph)) {
-        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
-        real_t                                      ninject  = nppc * spatial_dist(xph);
-        while (ninject > ZERO) {
-          real_t random = rand_gen.frand();
-          if (random < ninject) {
-            real_t      dx1 = rand_gen.frand();
-            real_t      dx2 = rand_gen.frand();
+          energy_dist(xph, v, species_index1);
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
+          init_prtl_1d_i_di(species1,
+                            offset1 + p,
+                            static_cast<int>(i1) - N_GHOSTS,
+                            dx1,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            use_weights ? cell_vol : ONE);
 
-            auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
-
-            vec_t<Dim3> v { ZERO }, v_cart { ZERO };
-            energy_dist(xph, v, 0);
-#ifdef MINKOWSKI_METRIC
-            v_cart[0] = v[0];
-            v_cart[1] = v[1];
-            v_cart[2] = v[2];
-#else
-            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
-#endif
-            species1.i1(offset1 + p)  = static_cast<int>(i1) - N_GHOSTS;
-            species1.dx1(offset1 + p) = dx1;
-            species1.ux1(offset1 + p) = v[0];
-            species1.ux2(offset1 + p) = v[1];
-            species1.ux3(offset1 + p) = v[2];
-            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
-
-            energy_dist(xph, v, 1);
-#ifdef MINKOWSKI_METRIC
-            v_cart[0] = v[0];
-            v_cart[1] = v[1];
-            v_cart[2] = v[2];
-#else
-            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
-#endif
-            species2.i1(offset2 + p)  = static_cast<int>(i1) - N_GHOSTS;
-            species2.dx1(offset2 + p) = dx1;
-            species2.ux1(offset2 + p) = v[0];
-            species2.ux2(offset2 + p) = v[1];
-            species2.ux3(offset2 + p) = v[2];
-            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
-          }
-          ninject -= ONE;
+          energy_dist(xph, v, species_index2);
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
+          init_prtl_1d_i_di(species2,
+                            offset2 + p,
+                            static_cast<int>(i1) - N_GHOSTS,
+                            dx1,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            use_weights ? cell_vol : ONE);
         }
-        pool.free_state(rand_gen);
+        n_inject -= ONE;
       }
+      pool.free_state(rand_gen);
     }
 
   private:
@@ -348,6 +339,7 @@ namespace ntt {
     const std::size_t    offset1, offset2;
     array_t<std::size_t> index;
     const real_t         nppc;
+    const bool           use_weights;
     EnDist<Dim1, S>      energy_dist;
     SpDist<Dim1, S>      spatial_dist;
     InjCrit<Dim1, S>     inj_criterion;
@@ -379,75 +371,81 @@ namespace ntt {
         offset2 { sp2.npart() },
         index { ind },
         nppc { ppc },
+        use_weights { params.useWeights() },
         energy_dist { params, mblock },
         spatial_dist { params, mblock },
         inj_criterion { params, mblock },
         pool { *(mblock.random_pool_ptr) } {}
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
-      coord_t<Dim2> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+      coord_t<Dim2>     xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
                          static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS) };
-      // cell center
-      coord_t<Dim2> xc { xi[0] + HALF, xi[1] + HALF };
-      // physical coordinate
-      coord_t<Dim2> xph { ZERO };
+      RandomGenerator_t rand_gen { pool.get_state() };
+      real_t            n_inject { nppc };
+      coord_t<Dim2>     xc { ZERO };
+      coord_t<Dim2>     xph { ZERO };
+      float             dx1, dx2;
+      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t            cell_vol;
 
+      while (n_inject > ZERO) {
+        dx1   = Random<float>(rand_gen);
+        dx2   = Random<float>(rand_gen);
+        xc[0] = xi[0] + dx1;
+        xc[1] = xi[1] + dx2;
 #ifdef MINKOWSKI_METRIC
-      mblock.metric.x_Code2Cart(xc, xph);
+        mblock.metric.x_Code2Cart(xc, xph);
 #else
-      mblock.metric.x_Code2Sph(xc, xph);
+        mblock.metric.x_Code2Sph(xc, xph);
 #endif
+        if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
+            inj_criterion(xph) &&                             // injection criterion
+            (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
+        ) {
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
+          cell_vol = mblock.metric.sqrt_det_h(xc) / mblock.metric.min_cell_volume();
 
-      if (inj_criterion(xph)) {
-        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
-        real_t                                      ninject  = nppc * spatial_dist(xph);
-        while (ninject > ZERO) {
-          real_t random = rand_gen.frand();
-          if (random < ninject) {
-            real_t      dx1 = rand_gen.frand();
-            real_t      dx2 = rand_gen.frand();
-
-            auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
-
-            vec_t<Dim3> v { ZERO }, v_cart { ZERO };
-            energy_dist(xph, v, 0);
+          energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
-            v_cart[0] = v[0];
-            v_cart[1] = v[1];
-            v_cart[2] = v[2];
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
 #else
-            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-            species1.i1(offset1 + p)  = static_cast<int>(i1) - N_GHOSTS;
-            species1.dx1(offset1 + p) = dx1;
-            species1.i2(offset1 + p)  = static_cast<int>(i2) - N_GHOSTS;
-            species1.dx2(offset1 + p) = dx2;
-            species1.ux1(offset1 + p) = v_cart[0];
-            species1.ux2(offset1 + p) = v_cart[1];
-            species1.ux3(offset1 + p) = v_cart[2];
-            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
+          init_prtl_2d_i_di(species1,
+                            offset1 + p,
+                            static_cast<int>(i1) - N_GHOSTS,
+                            static_cast<int>(i2) - N_GHOSTS,
+                            dx1,
+                            dx2,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            use_weights ? cell_vol : ONE);
 
-            energy_dist(xph, v, 1);
+          energy_dist(xph, v, species_index2);
 #ifdef MINKOWSKI_METRIC
-            v_cart[0] = v[0];
-            v_cart[1] = v[1];
-            v_cart[2] = v[2];
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
 #else
-            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-            species2.i1(offset2 + p)  = static_cast<int>(i1) - N_GHOSTS;
-            species2.dx1(offset2 + p) = dx1;
-            species2.i2(offset2 + p)  = static_cast<int>(i2) - N_GHOSTS;
-            species2.dx2(offset2 + p) = dx2;
-            species2.ux1(offset2 + p) = v_cart[0];
-            species2.ux2(offset2 + p) = v_cart[1];
-            species2.ux3(offset2 + p) = v_cart[2];
-            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
-          }
-          ninject -= ONE;
+          init_prtl_2d_i_di(species2,
+                            offset2 + p,
+                            static_cast<int>(i1) - N_GHOSTS,
+                            static_cast<int>(i2) - N_GHOSTS,
+                            dx1,
+                            dx2,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            use_weights ? cell_vol : ONE);
         }
-        pool.free_state(rand_gen);
+        n_inject -= ONE;
       }
+      pool.free_state(rand_gen);
     }
 
   private:
@@ -458,6 +456,7 @@ namespace ntt {
     const std::size_t    offset1, offset2;
     array_t<std::size_t> index;
     const real_t         nppc;
+    const bool           use_weights;
     EnDist<Dim2, S>      energy_dist;
     SpDist<Dim2, S>      spatial_dist;
     InjCrit<Dim2, S>     inj_criterion;
@@ -483,95 +482,105 @@ namespace ntt {
         mblock { mb },
         species1 { sp1 },
         species2 { sp2 },
+        species_index1 { sp1.index() },
+        species_index2 { sp2.index() },
         offset1 { sp1.npart() },
         offset2 { sp2.npart() },
         index { ind },
         nppc { ppc },
+        use_weights { params.useWeights() },
         energy_dist { params, mblock },
         spatial_dist { params, mblock },
         inj_criterion { params, mblock },
         pool { *(mblock.random_pool_ptr) } {}
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       // cell node
-      coord_t<Dim3> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+      coord_t<Dim3>     xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
                          static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS),
                          static_cast<real_t>(static_cast<int>(i3) - N_GHOSTS) };
-      // cell center
-      coord_t<Dim3> xc { xi[0] + HALF, xi[1] + HALF, xi[2] + HALF };
-      // physical coordinate
-      coord_t<Dim3> xph { ZERO };
+      RandomGenerator_t rand_gen { pool.get_state() };
+      real_t            n_inject { nppc };
+      coord_t<Dim3>     xc { ZERO };
+      coord_t<Dim3>     xph { ZERO };
+      float             dx1, dx2, dx3;
+      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t            cell_vol;
 
+      while (n_inject > ZERO) {
+        dx1   = Random<float>(rand_gen);
+        dx2   = Random<float>(rand_gen);
+        dx3   = Random<float>(rand_gen);
+        xc[0] = xi[0] + dx1;
+        xc[1] = xi[1] + dx2;
+        xc[2] = xi[2] + dx3;
 #ifdef MINKOWSKI_METRIC
-      mblock.metric.x_Code2Cart(xc, xph);
+        mblock.metric.x_Code2Cart(xc, xph);
 #else
-      mblock.metric.x_Code2Sph(xc, xph);
+        mblock.metric.x_Code2Sph(xc, xph);
 #endif
+        if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
+            inj_criterion(xph) &&                             // injection criterion
+            (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
+        ) {
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
+          cell_vol = mblock.metric.sqrt_det_h(xc) / mblock.metric.min_cell_volume();
 
-      if (inj_criterion(xph)) {
-        typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
-
-        real_t                                      ninject  = nppc * spatial_dist(xph);
-        while (ninject > ZERO) {
-          real_t random = rand_gen.frand();
-          if (random < ninject) {
-            real_t      dx1 = rand_gen.frand();
-            real_t      dx2 = rand_gen.frand();
-            real_t      dx3 = rand_gen.frand();
-
-            auto        p   = Kokkos::atomic_fetch_add(&index(), 1);
-
-            vec_t<Dim3> v { ZERO }, v_cart { ZERO };
-            energy_dist(xph, v, 0);
+          energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
-            v_cart[0] = v[0];
-            v_cart[1] = v[1];
-            v_cart[2] = v[2];
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
 #else
-            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
 #endif
-            species1.i1(offset1 + p)  = static_cast<int>(i1) - N_GHOSTS;
-            species1.dx1(offset1 + p) = dx1;
-            species1.i2(offset1 + p)  = static_cast<int>(i2) - N_GHOSTS;
-            species1.dx2(offset1 + p) = dx2;
-            species1.i3(offset1 + p)  = static_cast<int>(i3) - N_GHOSTS;
-            species1.dx3(offset1 + p) = dx3;
-            species1.ux1(offset1 + p) = v_cart[0];
-            species1.ux2(offset1 + p) = v_cart[1];
-            species1.ux3(offset1 + p) = v_cart[2];
-            species1.tag(offset1 + p) = static_cast<short>(ParticleTag::alive);
+          init_prtl_3d_i_di(species1,
+                            offset1 + p,
+                            static_cast<int>(i1) - N_GHOSTS,
+                            static_cast<int>(i2) - N_GHOSTS,
+                            static_cast<int>(i3) - N_GHOSTS,
+                            dx1,
+                            dx2,
+                            dx3,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            use_weights ? cell_vol : ONE);
 
-            energy_dist(xph, v, 1);
+          energy_dist(xph, v, species_index2);
 #ifdef MINKOWSKI_METRIC
-            v_cart[0] = v[0];
-            v_cart[1] = v[1];
-            v_cart[2] = v[2];
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
 #else
-            mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
 #endif
-            species2.i1(offset2 + p)  = static_cast<int>(i1) - N_GHOSTS;
-            species2.dx1(offset2 + p) = dx1;
-            species2.i2(offset2 + p)  = static_cast<int>(i2) - N_GHOSTS;
-            species2.dx2(offset2 + p) = dx2;
-            species2.i3(offset2 + p)  = static_cast<int>(i3) - N_GHOSTS;
-            species2.dx3(offset2 + p) = dx3;
-            species2.ux1(offset2 + p) = v_cart[0];
-            species2.ux2(offset2 + p) = v_cart[1];
-            species2.ux3(offset2 + p) = v_cart[2];
-            species2.tag(offset2 + p) = static_cast<short>(ParticleTag::alive);
-          }
-          ninject -= ONE;
+          init_prtl_3d_i_di(species2,
+                            offset2 + p,
+                            static_cast<int>(i1) - N_GHOSTS,
+                            static_cast<int>(i2) - N_GHOSTS,
+                            static_cast<int>(i3) - N_GHOSTS,
+                            dx1,
+                            dx2,
+                            dx3,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            use_weights ? cell_vol : ONE);
         }
-        pool.free_state(rand_gen);
+        n_inject -= ONE;
       }
+      pool.free_state(rand_gen);
     }
 
   private:
     SimulationParams     params;
     Meshblock<Dim3, S>   mblock;
     Particles<Dim3, S>   species1, species2;
+    const int            species_index1, species_index2;
     const std::size_t    offset1, offset2;
     array_t<std::size_t> index;
     const real_t         nppc;
+    const bool           use_weights;
     EnDist<Dim3, S>      energy_dist;
     SpDist<Dim3, S>      spatial_dist;
     InjCrit<Dim3, S>     inj_criterion;

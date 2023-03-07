@@ -135,6 +135,8 @@ namespace ntt {
 
     const unsigned short       current_filters   = 0;
 
+    const bool                 use_weights       = false;
+
     const int                  shuffle_interval  = 0;
     const double               max_dead_frac     = 0.0;
 
@@ -150,7 +152,8 @@ namespace ntt {
     J,      // Current density
     T,      // Particle distribution moments
     Rho,    // Particle density
-    N       // Particle number density
+    N,      // Particle number density
+    Nppc    // Raw number of particles per each cell
   };
 
   inline auto StringizeFieldID(const FieldID& id) -> std::string {
@@ -167,6 +170,8 @@ namespace ntt {
       return "Rho";
     case FieldID::N:
       return "N";
+    case FieldID::Nppc:
+      return "Nppc";
     default:
       return "UNKNOWN";
     }

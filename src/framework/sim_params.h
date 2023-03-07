@@ -31,6 +31,9 @@ namespace ntt {
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies>   m_species;
 
+    // Use particle weights
+    bool                           m_use_weights;
+
     // Particle shuffle interval.
     int                            m_shuffle_interval;
     double                         m_max_dead_frac;
@@ -131,6 +134,21 @@ namespace ntt {
       return m_species;
     }
     /**
+     * @brief Get the particle shuffle interval.
+     */
+    [[nodiscard]] auto shuffleInterval() const -> const int& {
+      return m_shuffle_interval;
+    }
+    /**
+     * @brief Get maximum number of dead particles (as a fraction of current active particles).
+     */
+    [[nodiscard]] auto maxDeadFraction() const -> const double& {
+      return m_max_dead_frac;
+    }
+    [[nodiscard]] auto useWeights() const -> const bool& {
+      return m_use_weights;
+    }
+    /**
      * @brief Get the extent of the simulation box.
      */
     [[nodiscard]] auto extent() const -> const std::vector<real_t>& {
@@ -207,18 +225,6 @@ namespace ntt {
      */
     [[nodiscard]] auto outputMomSmooth() const -> const int& {
       return m_output_mom_smooth;
-    }
-    /**
-     * @brief Get the particle shuffle interval.
-     */
-    [[nodiscard]] auto shuffleInterval() const -> const int& {
-      return m_shuffle_interval;
-    }
-    /**
-     * @brief Get maximum number of dead particles (as a fraction of current active particles).
-     */
-    [[nodiscard]] auto maxDeadFraction() const -> const double& {
-      return m_max_dead_frac;
     }
 
     /**

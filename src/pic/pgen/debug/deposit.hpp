@@ -29,10 +29,10 @@ namespace ntt {
     positrons.setNpart(2);
     Kokkos::parallel_for(
       "init", CreateRangePolicy<Dim1>({ 0 }, { 1 }), Lambda(index_t) {
-        init_prtl_2d(mblock, electrons, 0, 1.2, 0.1, 0.0, -0.2, 0.0);
-        init_prtl_2d(mblock, positrons, 0, 1.2, 0.1, 0.0, 0.2, 0.0);
-        init_prtl_2d(mblock, electrons, 1, 1.2, constant::PI - 0.1, 0.0, 0.2, 0.0);
-        init_prtl_2d(mblock, positrons, 1, 1.2, constant::PI - 0.1, 0.0, -0.2, 0.0);
+        init_prtl_2d(mblock, electrons, 0, 1.2, 0.1, 0.0, -0.2, 0.0, 1.0);
+        init_prtl_2d(mblock, positrons, 0, 1.2, 0.1, 0.0, 0.2, 0.0, 1.0);
+        init_prtl_2d(mblock, electrons, 1, 1.2, constant::PI - 0.1, 0.0, 0.2, 0.0, 1.0);
+        init_prtl_2d(mblock, positrons, 1, 1.2, constant::PI - 0.1, 0.0, -0.2, 0.0, 1.0);
       });
   }
 

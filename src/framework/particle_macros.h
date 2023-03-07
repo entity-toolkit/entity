@@ -28,105 +28,108 @@
 
 #define get_photon_Energy_SR(PARTICLES, P) (math::sqrt(get_prtl_Usqr_SR((PARTICLES), (P))))
 
+#define init_prtl_1d_i_di(SPECIES, INDEX, I1, DI1, U1, U2, U3, WEIGHT)                        \
+  {                                                                                           \
+    (SPECIES).i1((INDEX))     = I1;                                                           \
+    (SPECIES).dx1((INDEX))    = DI1;                                                          \
+    (SPECIES).ux1((INDEX))    = U1;                                                           \
+    (SPECIES).ux2((INDEX))    = U2;                                                           \
+    (SPECIES).ux3((INDEX))    = U3;                                                           \
+    (SPECIES).tag((INDEX))    = static_cast<short>(ParticleTag::alive);                       \
+    (SPECIES).weight((INDEX)) = WEIGHT;                                                       \
+  }
+
+#define init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DI1, DI2, U1, U2, U3, WEIGHT)               \
+  {                                                                                           \
+    (SPECIES).i1((INDEX))     = I1;                                                           \
+    (SPECIES).dx1((INDEX))    = DI1;                                                          \
+    (SPECIES).i2((INDEX))     = I2;                                                           \
+    (SPECIES).dx2((INDEX))    = DI2;                                                          \
+    (SPECIES).ux1((INDEX))    = U1;                                                           \
+    (SPECIES).ux2((INDEX))    = U2;                                                           \
+    (SPECIES).ux3((INDEX))    = U3;                                                           \
+    (SPECIES).tag((INDEX))    = static_cast<short>(ParticleTag::alive);                       \
+    (SPECIES).weight((INDEX)) = WEIGHT;                                                       \
+  }
+
+#define init_prtl_3d_i_di(SPECIES, INDEX, I1, I2, I3, DI1, DI2, DI3, U1, U2, U3, WEIGHT)      \
+  {                                                                                           \
+    (SPECIES).i1((INDEX))     = I1;                                                           \
+    (SPECIES).dx1((INDEX))    = DI1;                                                          \
+    (SPECIES).i2((INDEX))     = I2;                                                           \
+    (SPECIES).dx2((INDEX))    = DI2;                                                          \
+    (SPECIES).i3((INDEX))     = I3;                                                           \
+    (SPECIES).dx3((INDEX))    = DI3;                                                          \
+    (SPECIES).ux1((INDEX))    = U1;                                                           \
+    (SPECIES).ux2((INDEX))    = U2;                                                           \
+    (SPECIES).ux3((INDEX))    = U3;                                                           \
+    (SPECIES).tag((INDEX))    = static_cast<short>(ParticleTag::alive);                       \
+    (SPECIES).weight((INDEX)) = WEIGHT;                                                       \
+  }
+
 #ifdef MINKOWSKI_METRIC
 
-#  define init_prtl_1d(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3)                                \
+#  define init_prtl_1d(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3, WEIGHT)                        \
     {                                                                                         \
       coord_t<Dim1> X_CU;                                                                     \
       int           I;                                                                        \
       float         DX;                                                                       \
       ((MBLOCK).metric).x_Cart2Code({ (X1) }, X_CU);                                          \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
-      (SPECIES).i1((INDEX))  = I;                                                             \
-      (SPECIES).dx1((INDEX)) = DX;                                                            \
-      (SPECIES).ux1((INDEX)) = U1;                                                            \
-      (SPECIES).ux2((INDEX)) = U2;                                                            \
-      (SPECIES).ux3((INDEX)) = U3;                                                            \
-      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
+      init_prtl_1d_i_di(SPECIES, INDEX, I, DX, U1, U2, U3, WEIGHT);                           \
     }
 
-#  define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
+#  define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3, WEIGHT)                    \
     {                                                                                         \
       coord_t<Dim2> X_CU;                                                                     \
-      int           I;                                                                        \
-      float         DX;                                                                       \
+      int           I1, I2;                                                                   \
+      float         DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Cart2Code({ (X1), (X2) }, X_CU);                                    \
-      from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
-      (SPECIES).i1((INDEX))  = I;                                                             \
-      (SPECIES).dx1((INDEX)) = DX;                                                            \
-      from_Xi_to_i_di(X_CU[1], I, DX);                                                        \
-      (SPECIES).i2((INDEX))  = I;                                                             \
-      (SPECIES).dx2((INDEX)) = DX;                                                            \
-      (SPECIES).ux1((INDEX)) = U1;                                                            \
-      (SPECIES).ux2((INDEX)) = U2;                                                            \
-      (SPECIES).ux3((INDEX)) = U3;                                                            \
-      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
+      from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
+      from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
+      init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U1, U2, U3, WEIGHT);                \
     }
 
-#  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
+#  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3, WEIGHT)                \
     {                                                                                         \
       coord_t<Dim3> X_CU;                                                                     \
-      int           I;                                                                        \
-      float         DX;                                                                       \
+      int           I1, I2, I3;                                                               \
+      float         DX1, DX2, DX3;                                                            \
       ((MBLOCK).metric).x_Cart2Code({ (X1), (X2), (X3) }, X_CU);                              \
-      from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
-      (SPECIES).i1((INDEX))  = I;                                                             \
-      (SPECIES).dx1((INDEX)) = DX;                                                            \
-      from_Xi_to_i_di(X_CU[1], I, DX);                                                        \
-      (SPECIES).i2((INDEX))  = I;                                                             \
-      (SPECIES).dx2((INDEX)) = DX;                                                            \
-      from_Xi_to_i_di(X_CU[2], I, DX);                                                        \
-      (SPECIES).i3((INDEX))  = I;                                                             \
-      (SPECIES).dx3((INDEX)) = DX;                                                            \
-      (SPECIES).ux1((INDEX)) = U1;                                                            \
-      (SPECIES).ux2((INDEX)) = U2;                                                            \
-      (SPECIES).ux3((INDEX)) = U3;                                                            \
-      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
+      from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
+      from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
+      from_Xi_to_i_di(X_CU[2], I3, DX3);                                                      \
+      init_prtl_3d_i_di(SPECIES, INDEX, I1, I2, I3, DX1, DX2, DX3, U1, U2, U3, WEIGHT);       \
     }
 
 #else
 
-#  define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3)                            \
+#  define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3, WEIGHT)                    \
     {                                                                                         \
       coord_t<Dim2> X_CU;                                                                     \
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
-      int           I;                                                                        \
-      float         DX;                                                                       \
+      int           I1, I2;                                                                   \
+      float         DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                     \
       ((MBLOCK).metric).v_Hat2Cart({ X_CU[0], X_CU[1], ZERO }, { U1, U2, U3 }, U_C);          \
-      from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
-      (SPECIES).i1((INDEX))  = I;                                                             \
-      (SPECIES).dx1((INDEX)) = DX;                                                            \
-      from_Xi_to_i_di(X_CU[1], I, DX);                                                        \
-      (SPECIES).i2((INDEX))  = I;                                                             \
-      (SPECIES).dx2((INDEX)) = DX;                                                            \
-      (SPECIES).ux1((INDEX)) = U_C[0];                                                        \
-      (SPECIES).ux2((INDEX)) = U_C[1];                                                        \
-      (SPECIES).ux3((INDEX)) = U_C[2];                                                        \
-      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
+      from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
+      from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
+      init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U_C[0], U_C[1], U_C[2], WEIGHT);    \
     }
 
-#  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3)                        \
+#  define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3, WEIGHT)                \
     {                                                                                         \
       coord_t<Dim3> X_CU;                                                                     \
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
-      int           I;                                                                        \
-      float         DX;                                                                       \
+      int           I1, I2, I3;                                                               \
+      float         DX1, DX2, DX3;                                                            \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2), (X3) }, X_CU);                               \
       ((MBLOCK).metric).v_Hat2Cart(X_CU, { U1, U2, U3 }, U_C);                                \
-      from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
-      (SPECIES).i1((INDEX))  = I;                                                             \
-      (SPECIES).dx1((INDEX)) = DX;                                                            \
-      from_Xi_to_i_di(X_CU[1], I, DX);                                                        \
-      (SPECIES).i2((INDEX))  = I;                                                             \
-      (SPECIES).dx2((INDEX)) = DX;                                                            \
-      from_Xi_to_i_di(X_CU[2], I, DX);                                                        \
-      (SPECIES).i3((INDEX))  = I;                                                             \
-      (SPECIES).dx3((INDEX)) = DX;                                                            \
-      (SPECIES).ux1((INDEX)) = U_C[0];                                                        \
-      (SPECIES).ux2((INDEX)) = U_C[1];                                                        \
-      (SPECIES).ux3((INDEX)) = U_C[2];                                                        \
-      (SPECIES).tag((INDEX)) = static_cast<short>(ParticleTag::alive);                               \
+      from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
+      from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
+      from_Xi_to_i_di(X_CU[2], I3, DX3);                                                      \
+      init_prtl_3d_i_di(                                                                      \
+        SPECIES, INDEX, I1, I2, I3, DX1, DX2, DX3, U_C[0], U_C[1], U_C[2], WEIGHT);           \
     }
 
 #endif
