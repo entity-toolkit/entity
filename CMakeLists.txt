@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.4.2
+  VERSION 0.9.0.1
   LANGUAGES CXX C
 )
 
@@ -83,10 +83,6 @@ set(default_KOKKOS_ENABLE_OPENMP "OFF")
 
 # ----------------------------- Simulation engine ---------------------------- #
 set(engine ${default_engine} CACHE STRING "Simulation engine")
-
-if(engine STREQUAL "grpic")
-  message(FATAL_ERROR "GRPIC is not supported yet. See the `dev/gr` branch.")
-endif()
 
 set(simulation_engines "sandbox" "pic" "grpic")
 list(FIND simulation_engines ${engine} ENGINE_FOUND)
