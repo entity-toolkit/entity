@@ -6,6 +6,8 @@
 #include "meshblock.h"
 #include "sim_params.h"
 
+#include "archetypes.hpp"
+
 namespace ntt {
 
   template <Dimension D, SimulationEngine S>

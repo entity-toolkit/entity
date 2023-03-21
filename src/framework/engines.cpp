@@ -10,8 +10,6 @@
 #include "simulation.h"
 #include "writer.h"
 
-#include <vector>
-
 #include "fields.cpp"
 #include "meshblock.cpp"
 #include "output.cpp"
