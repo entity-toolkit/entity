@@ -192,14 +192,14 @@ namespace ntt {
      * @note Address : em0(i, j, k, em::***).
      */
     ndfield_t<D, 6>      em0;
-    /**
-     * Vector potential
-     *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
-     * component.
-     * @note Address : aphi(i, j, k, 0).
-     */
-    ndfield_t<D, 1>      aphi;
+    // /**
+    //  * Vector potential
+    //  *
+    //  * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
+    //  * component.
+    //  * @note Address : aphi(i, j, k, 0).
+    //  */
+    // ndfield_t<D, 1>      aphi;
 
     /**
      * @brief Constructor for the fields container. Also sets the active cell sizes and ranges.
