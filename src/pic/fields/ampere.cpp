@@ -32,7 +32,7 @@ namespace ntt {
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
     const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
-      "ampere", mblock.rangeActiveCells(), Ampere_kernel<D>(mblock, coeff / dx));
+      "Ampere", mblock.rangeActiveCells(), Ampere_kernel<D>(mblock, coeff / dx));
     NTTLog();
   }
 
@@ -43,11 +43,11 @@ namespace ntt {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    Kokkos::parallel_for("ampere",
+    Kokkos::parallel_for("Ampere",
                          CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
                                                  { mblock.i1_max(), mblock.i2_max() }),
                          Ampere_kernel<Dim2>(mblock, coeff));
-    Kokkos::parallel_for("ampere_pole",
+    Kokkos::parallel_for("Ampere-1",
                          CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
                          AmperePoles_kernel<Dim2>(mblock, coeff));
     NTTLog();

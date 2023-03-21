@@ -34,7 +34,7 @@ namespace ntt {
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
     const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
     Kokkos::parallel_for(
-      "faraday", mblock.rangeActiveCells(), Faraday_kernel<D>(mblock, coeff / dx));
+      "Faraday", mblock.rangeActiveCells(), Faraday_kernel<D>(mblock, coeff / dx));
     NTTLog();
   }
 
@@ -46,7 +46,7 @@ namespace ntt {
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
     Kokkos::parallel_for(
-      "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff));
+      "Faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff));
     NTTLog();
   }
 

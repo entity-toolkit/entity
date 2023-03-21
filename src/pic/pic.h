@@ -3,7 +3,6 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
 #include "simulation.h"
 
 #include "problem_generator.hpp"
