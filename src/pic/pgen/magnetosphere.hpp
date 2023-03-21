@@ -196,7 +196,7 @@ namespace ntt {
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 0, 0);
-    auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction;
+    auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction * HALF;
     InjectInVolume<Dim2, PICEngine, RadialKick, InjectionShell, MaxDensCrit>(
       params, mblock, { 1, 2 }, nppc_per_spec);
   }

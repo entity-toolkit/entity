@@ -3,22 +3,40 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.4.1
+  VERSION 0.8.4.2
   LANGUAGES CXX C
 )
 
+set(kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
+set(fmt_REPOSITORY https://github.com/fmtlib/fmt.git CACHE STRING "fmt repository")
+
+# set (adios2_REPOSITORY https://github.com/ornladios/ADIOS2.git CACHE STRING "ADIOS2 repository")
 function(find_or_fetch_package package_name)
   find_package(${package_name} QUIET)
 
-  if(NOT ${package_name}_FOUND)
-    message(STATUS "${package_name} not found. Fetching submodule...")
-    execute_process(
-      COMMAND git submodule update --remote ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
-    set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
-    set(${package_name}_FOUND TRUE CACHE BOOL "Whether ${package_name} was found")
+  if(NOT(${package_name}_FOUND))
+    if(DEFINED ${package_name}_REPOSITORY)
+      # fetching package
+      message(STATUS "${package_name} not found. Fetching.")
+      include(FetchContent)
+      FetchContent_Declare(
+        ${package_name}
+        GIT_REPOSITORY ${${package_name}_REPOSITORY}
+      )
+      FetchContent_MakeAvailable(${package_name})
+      set(${package_name}_ROOT ${CMAKE_CURRENT_BINARY_DIR}/_deps/${package_name}-build CACHE PATH "Path to ${package_name} build")
+      set(${package_name}_FETCHED TRUE CACHE BOOL "Whether ${package_name} was fetched")
+      message(STATUS "${package_name} fetched.")
+    else()
+      # get as submodule
+      message(STATUS "${package_name} not found. Getting as submodule.")
+      execute_process(
+        COMMAND git submodule update --init --remote ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      )
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
+      set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
+    endif()
   else()
     message(STATUS "${package_name} found.")
   endif()
@@ -28,7 +46,7 @@ endfunction()
 # !TODO: this is quite ugly, update submodules as needed (below)
 find_package(Git QUIET)
 
-file(GLOB SUBMODULES_LOADED extern/fmt/*)
+file(GLOB SUBMODULES_LOADED extern/plog/*)
 list(LENGTH SUBMODULES_LOADED SUBMODULES_LOADED)
 
 if(${SUBMODULES_LOADED} GREATER 0)
@@ -233,7 +251,7 @@ if(${nttiny} STREQUAL "ON")
 endif()
 
 find_or_fetch_package(kokkos)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/fmt extern/fmt)
+find_or_fetch_package(fmt)
 
 if(${output} STREQUAL "ON")
   find_or_fetch_package(adios2)

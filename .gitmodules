@@ -11,14 +11,7 @@
 	path = extern/nttiny
 	url = https://github.com/haykh/nttiny.git
 	branch = master
-[submodule "extern/kokkos"]
-	path = extern/kokkos
-	url = https://github.com/kokkos/kokkos.git
-	branch = master
 [submodule "extern/adios2"]
 	path = extern/adios2
-	url = https://github.com/ornladios/ADIOS2.git
+	url = git@github.com:ornladios/ADIOS2.git
 	branch = master
-[submodule "extern/fmt"]
-	path = extern/fmt
-	url = https://github.com/fmtlib/fmt.git

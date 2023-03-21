@@ -183,54 +183,53 @@ PrintChoices("Debug mode"
   42
 )
 
-if(${kokkos_FOUND})
-  get_directory_property(KOKKOS_VERSION
-    DIRECTORY ${kokkos_ROOT}
-    DEFINITION Kokkos_VERSION)
-  PrintChoices("Kokkos"
-    ""
-    "v${KOKKOS_VERSION}"
-    "v${KOKKOS_VERSION}"
-    "N/A"
-    "${Blue}"
-    FRAMEWORK_REPORT
-    0
-    39
-  )
-  get_directory_property(ENABLED_ARCHS
-    DIRECTORY ${kokkos_ROOT}
-    DEFINITION KOKKOS_ENABLED_ARCH_LIST)
-  PrintChoices("CPU/GPU architecture"
-    ""
-    "${ENABLED_ARCHS}"
-    "${ENABLED_ARCHS}"
-    "N/A"
-    "${Blue}"
-    ARCH_REPORT
-    0
-    39
-  )
-  PrintChoices("CUDA"
-    "Kokkos_ENABLE_CUDA"
-    "${ON_OFF_VALUES}"
-    ${Kokkos_ENABLE_CUDA}
-    "OFF"
-    "${Green}"
-    CUDA_REPORT
-    0
-    42
-  )
-  PrintChoices("OpenMP"
-    "Kokkos_ENABLE_OPENMP"
-    "${ON_OFF_VALUES}"
-    ${Kokkos_ENABLE_OPENMP}
-    "OFF"
-    "${Green}"
-    OPENMP_REPORT
-    0
-    42
-  )
-endif()
+# message(STATUS ${kokkos_ROOT})
+# get_directory_property(KOKKOS_VERSION
+# DIRECTORY ${kokkos_ROOT}
+# DEFINITION Kokkos_VERSION)
+# PrintChoices("Kokkos"
+# ""
+# "v${KOKKOS_VERSION}"
+# "v${KOKKOS_VERSION}"
+# "N/A"
+# "${Blue}"
+# FRAMEWORK_REPORT
+# 0
+# 39
+# )
+# get_directory_property(ENABLED_ARCHS
+# DIRECTORY ${kokkos_ROOT}
+# DEFINITION KOKKOS_ENABLED_ARCH_LIST)
+# PrintChoices("CPU/GPU architecture"
+# ""
+# "${ENABLED_ARCHS}"
+# "${ENABLED_ARCHS}"
+# "N/A"
+# "${Blue}"
+# ARCH_REPORT
+# 0
+# 39
+# )
+PrintChoices("CUDA"
+  "Kokkos_ENABLE_CUDA"
+  "${ON_OFF_VALUES}"
+  ${Kokkos_ENABLE_CUDA}
+  "OFF"
+  "${Green}"
+  CUDA_REPORT
+  0
+  42
+)
+PrintChoices("OpenMP"
+  "Kokkos_ENABLE_OPENMP"
+  "${ON_OFF_VALUES}"
+  ${Kokkos_ENABLE_OPENMP}
+  "OFF"
+  "${Green}"
+  OPENMP_REPORT
+  0
+  42
+)
 
 PrintChoices("C++ compiler"
   "CMAKE_CXX_COMPILER"
@@ -314,21 +313,16 @@ Framework configurations
 ${DASHED_LINE_SYMBOL}")
 message("  ${DEBUG_REPORT}\n")
 
-if(${kokkos_FOUND})
-  message("  ${FRAMEWORK_REPORT}\n")
+# message("  ${FRAMEWORK_REPORT}\n")
 
-  if(NOT "${ARCH_REPORT}" STREQUAL "")
-    message("  ${ARCH_REPORT}\n")
-  endif()
+# if(NOT "${ARCH_REPORT}" STREQUAL "")
+# message("  ${ARCH_REPORT}\n")
+# endif()
+message("  - Kokkos [${Magenta}kokkos_ROOT${ColourReset}]:\t\t  ${kokkos_ROOT}\n")
+message("  ${CUDA_REPORT}\n")
+message("  ${OPENMP_REPORT}\n")
 
-  message("  ${CUDA_REPORT}\n")
-  message("  ${OPENMP_REPORT}\n")
-else()
-  message("  - Kokkos [${Magenta}kokkos_ROOT${ColourReset}]:\t\t  ${kokkos_ROOT}\n")
-endif()
-
-if(${adios2_FOUND})
-else()
+if(NOT "${adios2_ROOT}" STREQUAL "")
   message("  - ADIOS2 [${Magenta}adios2_ROOT${ColourReset}]:\t\t  ${adios2_ROOT}\n")
 endif()
 
