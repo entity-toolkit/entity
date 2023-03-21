@@ -136,39 +136,51 @@
   border: none !important;
 }
 
-#contributors+ul li {
+#contributors+ul li,
+#core-developers+ul li {
   list-style-type: circle;
 }
 
-#contributors+ul li span {
+#contributors+ul li span,
+#core-developers+ul li span {
   padding: 0 0.3em;
   margin: 0 0.1em;
   border-radius: 0.4em;
   color: white;
 }
 
-#contributors+ul .tag.framework {
+#contributors+ul .tag.framework,
+#core-developers+ul .tag.framework {
   background-color: var(--color-one);
 }
 
-#contributors+ul .tag.pic {
+#contributors+ul .tag.pic,
+#core-developers+ul .tag.pic {
   background-color: var(--color-two);
 }
 
-#contributors+ul .tag.gr {
+#contributors+ul .tag.gr,
+#core-developers+ul .tag.gr {
   background-color: var(--color-three);
 }
 
-#contributors+ul .tag.cubed-sphere {
+#contributors+ul .tag.cubed-sphere,
+#core-developers+ul .tag.cubed-sphere {
   background-color: var(--color-four);
 }
 
-#contributors+ul .tag.all-around {
+#contributors+ul .tag.all-around,
+#core-developers+ul .tag.all-around {
   background-color: var(--border-color);
 }
 
-#contributors+ul .tag.mpi {
+#contributors+ul .tag.mpi,
+#core-developers+ul .tag.mpi {
   background-color: var(--color-three);
+}
+
+#supporting-grants+p span {
+  text-decoration: underline;
 }
 
 /* Collapsable in header */
