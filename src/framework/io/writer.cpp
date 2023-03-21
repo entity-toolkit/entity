@@ -158,18 +158,17 @@ namespace ntt {
   }
 
 #else
-
   template <Dimension D, SimulationEngine S>
-  Writer<D, S>::Writer(const SimulationParams&, const Meshblock<D, S>&) {}
-
-  template <Dimension D, SimulationEngine S>
-  Writer<D, S>::~Writer() {}
+  void Writer<D, S>::Initialize(const SimulationParams&, const Meshblock<D, S>&) {}
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const SimulationParams&,
                                  Meshblock<D, S>&,
                                  const real_t&,
                                  const std::size_t&) {}
+
+  template <Dimension D, SimulationEngine S>
+  Writer<D, S>::~Writer() {}
 
 #endif
 
