@@ -25,6 +25,8 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
+    const real_t dx_min;
+
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
@@ -38,7 +40,8 @@ namespace ntt {
         dphi_inv { ONE / dphi },
         dr_sqr { dr * dr },
         dtheta_sqr { dtheta * dtheta },
-        dphi_sqr { dphi * dphi } {}
+        dphi_sqr { dphi * dphi },
+        dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
     [[nodiscard]] auto spin() const -> const real_t& {
@@ -141,6 +144,14 @@ namespace ntt {
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
       return h_22(x) / alpha(x);
     }
+    /**
+     * Compute the fiducial minimum cell volume.
+     *
+     * @returns Minimum cell volume of the grid [code units].
+     */
+    Inline auto min_cell_volume() const -> real_t {
+      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
+    }
 
     /**
      * Compute the area at the pole (used in axisymmetric solvers).
@@ -161,6 +172,7 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "nondiag_vtrans.h"
+#include "sph_vtrans.h"
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
