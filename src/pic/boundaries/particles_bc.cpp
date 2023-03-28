@@ -29,14 +29,13 @@ namespace ntt {
     auto& mblock   = this->meshblock;
     auto  params   = *(this->params());
     auto  r_absorb = params.metricParameters()[2];
-    auto  r_max    = mblock.metric.x1_max;
     for (auto& species : mblock.particles) {
       auto ni1 = mblock.Ni1();
       auto ni2 = mblock.Ni2();
       Kokkos::parallel_for(
         "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
           // radial boundary conditions
-          if ((species.i1(p) < -1) || (species.i1(p) >= ni1 + 1)) {
+          if ((species.i1(p) < 0) || (species.i1(p) >= ni1)) {
             species.tag(p) = static_cast<short>(ParticleTag::dead);
           }
           // axis boundaries
@@ -61,13 +60,6 @@ namespace ntt {
             species.ux1(p) = u_cart[0];
             species.ux2(p) = u_cart[1];
             species.ux3(p) = u_cart[2];
-          }
-          // absorbing boundaries
-          coord_t<Dim2> x_sph { ZERO };
-          mblock.metric.x_Code2Sph({ get_prtl_x1(species, p), ZERO }, x_sph);
-          // particles penetrate 80% of the absorbing region
-          if ((x_sph[0] > r_absorb + (real_t)(0.8) * (r_max - r_absorb))) {
-            species.tag(p) = static_cast<short>(ParticleTag::dead);
           }
         });
     }
