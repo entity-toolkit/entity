@@ -250,9 +250,11 @@ if(${Kokkos_ENABLE_CUDA})
     set(CUDACOMP ${CMAKE_CUDA_COMPILER})
   endif()
 
+  string(STRIP ${CUDACOMP} CUDACOMP)
+
   message(STATUS "CUDA compiler: ${CUDACOMP}")
-  execute_process(COMMAND bash "-c"
-    "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'"
+  execute_process(COMMAND bash -c "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'"
+
     OUTPUT_VARIABLE CUDACOMP_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
