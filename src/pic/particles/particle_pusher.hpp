@@ -582,4 +582,67 @@ namespace ntt {
 //   BorisUpdate(p, e_int_Cart, b_int_Cart);
 // }
 
+// !HACK: hack for sync. radiation
+// real_t ux1_init { m_particles.ux1(p) };
+// real_t ux2_init { m_particles.ux2(p) };
+// real_t ux3_init { m_particles.ux3(p) };
+// real_t ex1 { e0[0] };
+// real_t ex2 { e0[1] };
+// real_t ex3 { e0[2] };
+// real_t bx1 { b0[0] };
+// real_t bx2 { b0[1] };
+// real_t bx3 { b0[2] };
+
+// {
+// !HACK: radiation
+// ux1_init     = HALF * (ux1_init + u0[0]);
+// ux2_init     = HALF * (ux2_init + u0[1]);
+// ux3_init     = HALF * (ux3_init + u0[2]);
+// real_t gamma = math::sqrt(ONE + SQR(ux1_init) + SQR(ux2_init) + SQR(ux3_init));
+// if (gamma > 5.0) {
+//   real_t beta       = math::sqrt(ONE - ONE / SQR(gamma));
+//   real_t e_bar_x1   = ex1 + (ux2_init * bx3 - ux3_init * bx2) / gamma;
+//   real_t e_bar_x2   = ex2 + (ux3_init * bx1 - ux1_init * bx3) / gamma;
+//   real_t e_bar_x3   = ex3 + (ux1_init * bx2 - ux2_init * bx1) / gamma;
+//   real_t e_bar_sq   = SQR(e_bar_x1) + SQR(e_bar_x2) + SQR(e_bar_x3);
+//   real_t beta_dot_e = (ex1 * ux1_init + ex2 * ux2_init + ex3 * ux3_init) / gamma;
+//   real_t chiR_sq    = math::abs(e_bar_sq - beta_dot_e * beta_dot_e);
+//   real_t kappaR_x1  = (bx3 * e_bar_x2 - bx2 * e_bar_x3) + ex1 * beta_dot_e;
+//   real_t kappaR_x2  = (bx1 * e_bar_x3 - bx3 * e_bar_x1) + ex2 * beta_dot_e;
+//   real_t kappaR_x3  = (bx2 * e_bar_x1 - bx1 * e_bar_x2) + ex3 * beta_dot_e;
+
+//   real_t dummy = TWO * COEFF * static_cast<real_t>(0.1) / SQR(static_cast<real_t>(1.0));
+//   u0[0] += dummy * (kappaR_x1 - chiR_sq * gamma * ux1_init);
+//   u0[1] += dummy * (kappaR_x2 - chiR_sq * gamma * ux2_init);
+//   u0[2] += dummy * (kappaR_x3 - chiR_sq * gamma * ux3_init);
+// }
+// !HACK: parallel + ExB velocity only
+// real_t b_sq { SQR(bx1) + SQR(bx2) + SQR(bx3) };
+// if (b_sq > 0.1) {
+//   real_t Gamma { math::sqrt(ONE + SQR(u0[0]) + SQR(u0[1]) + SQR(u0[2])) };
+//   real_t e_sq { SQR(ex1) + SQR(ex2) + SQR(ex3) };
+//   real_t e_dot_b { ex1 * bx1 + ex2 * bx2 + ex3 * bx3 };
+//   real_t e_prime_sq { TWO * SQR(e_dot_b)
+//                       / ((b_sq - e_sq)
+//                          + math::sqrt(SQR(b_sq - e_sq) + FOUR * SQR(e_dot_b))) };
+//   real_t beta0_x1 { (ex2 * bx3 - ex3 * bx2) / (b_sq + e_prime_sq) };
+//   real_t beta0_x2 { (ex3 * bx1 - ex1 * bx3) / (b_sq + e_prime_sq) };
+//   real_t beta0_x3 { (ex1 * bx2 - ex2 * bx1) / (b_sq + e_prime_sq) };
+//   real_t beta0_sq { SQR(beta0_x1) + SQR(beta0_x2) + SQR(beta0_x3) };
+//   real_t bprime_x1 { bx1 - (beta0_x2 * ex3 - beta0_x3 * ex2) };
+//   real_t bprime_x2 { bx2 - (beta0_x3 * ex1 - beta0_x1 * ex3) };
+//   real_t bprime_x3 { bx3 - (beta0_x1 * ex2 - beta0_x2 * ex1) };
+//   real_t bprime_sq { SQR(bprime_x1) + SQR(bprime_x2) + SQR(bprime_x3) };
+//   real_t u_dot_bprime { u0[0] * bprime_x1 + u0[1] * bprime_x2 + u0[2] * bprime_x3 };
+//   real_t uprime_x1 { u_dot_bprime * bprime_x1 / bprime_sq };
+//   real_t uprime_x2 { u_dot_bprime * bprime_x2 / bprime_sq };
+//   real_t uprime_x3 { u_dot_bprime * bprime_x3 / bprime_sq };
+//   real_t uprime_sq { SQR(uprime_x1) + SQR(uprime_x2) + SQR(uprime_x3) };
+//   Gamma = math::sqrt((ONE + uprime_sq) / (ONE - beta0_sq));
+//   u0[0] = beta0_x1 * Gamma + uprime_x1;
+//   u0[1] = beta0_x2 * Gamma + uprime_x2;
+//   u0[2] = beta0_x3 * Gamma + uprime_x3;
+// }
+// }
+
 #endif
