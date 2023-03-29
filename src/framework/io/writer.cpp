@@ -160,7 +160,7 @@ namespace ntt {
 #else
 
   template <Dimension D, SimulationEngine S>
-  Writer<D, S>::Writer(const SimulationParams&, const Meshblock<D, S>&) {}
+  void Writer<D, S>::Initialize(const SimulationParams&, const Meshblock<D, S>&) {}
 
   template <Dimension D, SimulationEngine S>
   Writer<D, S>::~Writer() {}
