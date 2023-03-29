@@ -3,6 +3,7 @@
 #include "wrapper.h"
 
 #include "fields.h"
+#include "progressbar.h"
 #include "sim_params.h"
 #include "timer.h"
 
@@ -63,19 +64,21 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::StepForward() {
     NTTLog();
-    auto                       params = *(this->params());
-    auto&                      mblock = this->meshblock;
-    auto&                      wrtr   = this->writer;
-    auto&                      pgen   = this->problem_generator;
+    auto                            params = *(this->params());
+    auto&                           mblock = this->meshblock;
+    auto&                           wrtr   = this->writer;
+    auto&                           pgen   = this->problem_generator;
 
-    timer::Timers              timers({ "FieldSolver",
-                                        "FieldBoundaries",
-                                        "CurrentDeposit",
-                                        "ParticlePusher",
-                                        "ParticleBoundaries",
-                                        "UserSpecific",
-                                        "Output" });
-    static std::vector<double> dead_fractions = {};
+    timer::Timers                   timers({ "FieldSolver",
+                                             "FieldBoundaries",
+                                             "CurrentDeposit",
+                                             "ParticlePusher",
+                                             "ParticleBoundaries",
+                                             "UserSpecific",
+                                             "Output" });
+
+    static std::vector<double>      dead_fractions  = {};
+    static std::vector<long double> tstep_durations = {};
 
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
@@ -161,6 +164,10 @@ namespace ntt {
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
     this->PrintDiagnostics(std::cout, dead_fractions);
+    tstep_durations.push_back(timers.get("Total"));
+    std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
+    ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
+    std::cout << std::setw(46) << std::setfill('=') << "" << std::endl;
 
     ImposeEmptyContent(mblock.buff_content);
     ImposeEmptyContent(mblock.cur_content);
