@@ -1,9 +1,12 @@
-[submodule "extern/plog"]
-	path = extern/plog
-	url = https://github.com/SergiusTheBest/plog.git
 [submodule "extern/toml11"]
 	path = extern/toml11
 	url = https://github.com/ToruNiina/toml11.git
+[submodule "extern/plog"]
+	path = extern/plog
+	url = https://github.com/SergiusTheBest/plog.git
+[submodule "extern/fmt"]
+	path = extern/fmt
+	url = https://github.com/fmtlib/fmt.git
 [submodule "extern/nttiny"]
 	path = extern/nttiny
 	url = https://github.com/haykh/nttiny.git
@@ -11,4 +14,8 @@
 [submodule "extern/adios2"]
 	path = extern/adios2
 	url = git@github.com:ornladios/ADIOS2.git
+	branch = master
+[submodule "extern/kokkos"]
+	path = extern/kokkos
+	url = https://github.com/kokkos/kokkos.git
 	branch = master

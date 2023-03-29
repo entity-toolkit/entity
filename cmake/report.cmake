@@ -1,28 +1,3 @@
-if(NOT WIN32)
-  string(ASCII 27 Esc)
-  set(ColourReset "${Esc}[m")
-  set(ColourBold "${Esc}[1m")
-  set(Underline "${Esc}[4m")
-  set(Red "${Esc}[31m")
-  set(Green "${Esc}[32m")
-  set(Yellow "${Esc}[33m")
-  set(Blue "${Esc}[34m")
-  set(Magenta "${Esc}[35m")
-  set(Cyan "${Esc}[36m")
-  set(White "${Esc}[37m")
-  set(BoldRed "${Esc}[1;31m")
-  set(BoldGreen "${Esc}[1;32m")
-  set(BoldYellow "${Esc}[1;33m")
-  set(BoldBlue "${Esc}[1;34m")
-  set(BoldMagenta "${Esc}[1;35m")
-  set(BoldCyan "${Esc}[1;36m")
-  set(BoldWhite "${Esc}[1;37m")
-  set(DarkGray "${Esc}[1;90m")
-  set(Dim "${Esc}[2m")
-  set(StrikeBegin "${Esc}[9m")
-  set(StrikeEnd "${Esc}[0m")
-endif()
-
 function(PadTo Text Padding Target Result)
   set(rt ${Text})
   string(FIND ${rt} "${Magenta}" mg_fnd)
@@ -56,7 +31,7 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
       set(rstring_i "- ${Label}")
 
       if(NOT "${Flag}" STREQUAL "")
-        set(rstring_i "${rstring_i} [${Magenta}${Flag}${ColourReset}]")
+        set(rstring_i "${rstring_i} [${Magenta}${Flag}${ColorReset}]")
       endif()
 
       set(rstring_i "${rstring_i}:")
@@ -97,7 +72,7 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
       endif()
     endif()
 
-    set(rstring_i "${rstring_i}${col}${ch}${ColourReset}")
+    set(rstring_i "${rstring_i}${col}${ch}${ColorReset}")
     math(EXPR counter "${counter} + 1")
     set(rstring "${rstring}${rstring_i}")
     set(rstring_i "")
@@ -272,10 +247,10 @@ if(${Kokkos_ENABLE_CUDA})
   # set(COMPILERS_REPORT "${COMPILERS_REPORT}\n\n  ${CUDA_COMPILER_REPORT}")
 endif()
 
-set(DOT_SYMBOL "${ColourReset}.")
-set(DOTTED_LINE_SYMBOL "${ColourReset}. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ")
+set(DOT_SYMBOL "${ColorReset}.")
+set(DOTTED_LINE_SYMBOL "${ColorReset}. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ")
 
-set(DASHED_LINE_SYMBOL "${ColourReset}- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ")
+set(DASHED_LINE_SYMBOL "${ColorReset}- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ")
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
   set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}")
@@ -298,7 +273,7 @@ ${DOT_SYMBOL}                                                                   
 ${DOT_SYMBOL}${Blue}                              ${VERSION_SYMBOL}                             ${DOT_SYMBOL}
 ${DOTTED_LINE_SYMBOL}")
 message("${DASHED_LINE_SYMBOL}
-Main configurations ${Dim}[1]${ColourReset}
+Main configurations ${Dim}[1]${ColorReset}
 ${DASHED_LINE_SYMBOL}")
 message("  ${ENGINE_REPORT}\n")
 message("  ${METRIC_REPORT}\n")
@@ -320,12 +295,12 @@ message("  ${DEBUG_REPORT}\n")
 # if(NOT "${ARCH_REPORT}" STREQUAL "")
 # message("  ${ARCH_REPORT}\n")
 # endif()
-message("  - Kokkos [${Magenta}kokkos_ROOT${ColourReset}]:\t\t  ${kokkos_ROOT}\n")
+message("  - Kokkos [${Magenta}kokkos_ROOT${ColorReset}]:\t\t  ${kokkos_ROOT}\n")
 message("  ${CUDA_REPORT}\n")
 message("  ${OPENMP_REPORT}\n")
 
 if(NOT "${adios2_ROOT}" STREQUAL "")
-  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColourReset}]:\t\t  ${adios2_ROOT}\n")
+  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT}\n")
 endif()
 
 message("  ${CXX_COMPILER_REPORT}\n")
@@ -337,24 +312,6 @@ endif()
 message("${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}
-  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColourReset}${Dim}=<VALUE>`, the ${Underline}default${ColourReset}${Dim} value
-   :  will be used unless the variable is explicitly set.${ColourReset}
+  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value
+   :  will be used unless the variable is explicitly set.${ColorReset}
 ")
-
-# message("This is normal")
-# message("${Red}This is Red${ColourReset}")
-# message("${Green}This is Green${ColourReset}")
-# message("${Yellow}This is Yellow${ColourReset}")
-# message("${Blue}This is Blue${ColourReset}")
-# message("${Magenta}This is Magenta${ColourReset}")
-# message("${Cyan}This is Cyan${ColourReset}")
-# message("${White}This is White${ColourReset}")
-# message("${BoldRed}This is BoldRed${ColourReset}")
-# message("${BoldGreen}This is BoldGreen${ColourReset}")
-# message("${BoldYellow}This is BoldYellow${ColourReset}")
-# message("${BoldBlue}This is BoldBlue${ColourReset}")
-# message("${BoldMagenta}This is BoldMagenta${ColourReset}")
-# message("${BoldCyan}This is BoldCyan${ColourReset}")
-# message("${BoldWhite}This is BoldWhite\n\n${ColourReset}")
-
-# message()

@@ -6,70 +6,7 @@ project(${PROJECT_NAME}
   VERSION 0.8.5
   LANGUAGES CXX C
 )
-
-set(kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
-set(fmt_REPOSITORY https://github.com/fmtlib/fmt.git CACHE STRING "fmt repository")
-
-# set (adios2_REPOSITORY https://github.com/ornladios/ADIOS2.git CACHE STRING "ADIOS2 repository")
-function(find_or_fetch_package package_name)
-  find_package(${package_name} QUIET)
-
-  if(NOT(${package_name}_FOUND))
-    if(DEFINED ${package_name}_REPOSITORY)
-      # fetching package
-      message(STATUS "${package_name} not found. Fetching.")
-      include(FetchContent)
-      FetchContent_Declare(
-        ${package_name}
-        GIT_REPOSITORY ${${package_name}_REPOSITORY}
-      )
-      FetchContent_MakeAvailable(${package_name})
-      set(${package_name}_ROOT ${CMAKE_CURRENT_BINARY_DIR}/_deps/${package_name}-build CACHE PATH "Path to ${package_name} build")
-      set(${package_name}_FETCHED TRUE CACHE BOOL "Whether ${package_name} was fetched")
-      message(STATUS "${package_name} fetched.")
-    else()
-      # get as submodule
-      message(STATUS "${package_name} not found. Getting as submodule.")
-      execute_process(
-        COMMAND git submodule update --init --remote ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      )
-      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
-      set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
-    endif()
-  else()
-    message(STATUS "${package_name} found.")
-  endif()
-endfunction()
-
-# ----------------------------- Submodules ------------------------------- #
-# !TODO: this is quite ugly, update submodules as needed (below)
-find_package(Git QUIET)
-
-file(GLOB SUBMODULES_LOADED extern/plog/*)
-list(LENGTH SUBMODULES_LOADED SUBMODULES_LOADED)
-
-if(${SUBMODULES_LOADED} GREATER 0)
-  set(SUBMODULES_LOADED TRUE)
-else()
-  set(SUBMODULES_LOADED FALSE)
-endif()
-
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND NOT ${SUBMODULES_LOADED})
-  option(GIT_SUBMODULE "Check submodules during build" ON)
-
-  if(GIT_SUBMODULE)
-    message(STATUS "Updating all the submodules")
-    message(STATUS "  During the first-time configure this may take a couple of minutes")
-    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --remote --recursive
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      RESULT_VARIABLE GIT_SUBMOD_RESULT)
-
-    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-      message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-    endif()
-  endif()
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 
 # ----------------------------- Defaults ---------------------------------- #
 set(default_engine "pic")
@@ -246,18 +183,9 @@ if(${output} STREQUAL "ON")
 endif()
 
 # ------------------------------ Dependencies ------------------------------ #
-if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
-endif()
-
-find_or_fetch_package(kokkos)
-find_or_fetch_package(fmt)
-
-if(${output} STREQUAL "ON")
-  find_or_fetch_package(adios2)
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 # ------------------------------- Main source ------------------------------ #
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/report.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)

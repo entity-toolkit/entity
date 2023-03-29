@@ -8,7 +8,7 @@
 
 #include "problem_generator.hpp"
 
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 namespace ntt {
   /**

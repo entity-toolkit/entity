@@ -7,7 +7,7 @@
 #include "utils.h"
 
 #include <plog/Log.h>
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <iostream>
 #include <stdexcept>

@@ -7,7 +7,7 @@
 #include "particles.h"
 #include "utils.h"
 
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <vector>
 
