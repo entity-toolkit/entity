@@ -17,10 +17,14 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams& params)
-      : bsurf { params.get<real_t>("problem", "bsurf", (real_t)(1.0)) },
+      : r_surf { params.get<real_t>("problem", "r_surf", (real_t)(1.0)) },
+        b_surf { params.get<real_t>("problem", "b_surf", (real_t)(1.0)) },
+        spin_omega { params.get<real_t>("problem", "spin_omega") },
+        spinup_time { params.get<real_t>("problem", "spinup_time", 0.0) },
         inj_fraction { params.get<real_t>("problem", "inj_fraction", (real_t)(0.1)) },
         field_mode { params.get<int>("problem", "field_mode", 2) == 2 ? DipoleField
-                                                                      : MonopoleField } {}
+                                                                      : MonopoleField },
+        inj_rmax { params.get<real_t>("problem", "inj_rmax", (real_t)(1.5)) } {}
 
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override {}
     inline void UserDriveFields(const real_t&,
@@ -31,45 +35,57 @@ namespace ntt {
                                    Meshblock<D, S>&) override {}
 
   private:
-    const real_t    bsurf, inj_fraction;
+    const real_t    r_surf, b_surf, spin_omega, spinup_time, inj_fraction, inj_rmax;
     const FieldMode field_mode;
   };
 
   Inline void mainBField(const coord_t<Dim2>& x_ph,
                          vec_t<Dim3>&,
                          vec_t<Dim3>& b_out,
-                         real_t       rmin,
-                         real_t       bsurf,
-                         int          mode) {
-    if (mode == 2) {
-      b_out[0] = bsurf * TWO * math::cos(x_ph[1]) / CUBE(x_ph[0] / rmin);
-      b_out[1] = bsurf * math::sin(x_ph[1]) / CUBE(x_ph[0] / rmin);
+                         real_t       _rsurf,
+                         real_t       _bsurf,
+                         int          _mode) {
+    if (_mode == 2) {
+      b_out[0] = _bsurf * math::cos(x_ph[1]) / CUBE(x_ph[0] / _rsurf);
+      b_out[1] = _bsurf * HALF * math::sin(x_ph[1]) / CUBE(x_ph[0] / _rsurf);
+      b_out[2] = ZERO;
     } else {
-      b_out[0] = bsurf * SQR(rmin / x_ph[0]);
+      b_out[0] = _bsurf * SQR(_rsurf / x_ph[0]);
+      b_out[1] = ZERO;
+      b_out[2] = ZERO;
     }
   }
 
   Inline void surfaceRotationField(const coord_t<Dim2>& x_ph,
                                    vec_t<Dim3>&         e_out,
                                    vec_t<Dim3>&         b_out,
-                                   real_t               rmin,
-                                   real_t               bsurf,
-                                   int                  mode,
-                                   real_t               omega) {
-    mainBField(x_ph, e_out, b_out, rmin, bsurf, mode);
-    e_out[1] = omega * bsurf * math::sin(x_ph[1]);
+                                   real_t               _rsurf,
+                                   real_t               _bsurf,
+                                   int                  _mode,
+                                   real_t               _omega) {
+    mainBField(x_ph, e_out, b_out, _rsurf, _bsurf, _mode);
+    e_out[0] = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
+    e_out[1] = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
     e_out[2] = 0.0;
   }
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserInitFields(
     const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    const auto rmin   = mblock.metric.x1_min;
-    const auto bsurf_ = bsurf;
-    const int  mode   = field_mode;
+    const auto _rsurf = r_surf;
+    {
+      const auto    _rmin = mblock.metric.x1_min;
+      coord_t<Dim2> x_ph { r_surf, ZERO };
+      coord_t<Dim2> xi { ZERO };
+      mblock.metric.x_Sph2Code(x_ph, xi);
+      NTTHostErrorIf(_rmin >= _rsurf, "rmin > r_surf");
+      NTTHostErrorIf(xi[0] < params.currentFilters(), "r_surf - rmin < filters");
+    }
+    const auto _bsurf = b_surf;
+    const int  _mode  = field_mode;
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        set_em_fields_2d(mblock, i, j, mainBField, rmin, bsurf_, mode);
+        set_em_fields_2d(mblock, i, j, mainBField, _rsurf, _bsurf, _mode);
       });
   }
 
@@ -77,27 +93,29 @@ namespace ntt {
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveFields(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     {
-      const auto spin_omega  = params.get<real_t>("problem", "spin_omega");
-      const auto spinup_time = params.get<real_t>("problem", "spinup_time", 0.0);
-      const int  mode        = field_mode;
-      const auto rmin        = mblock.metric.x1_min;
-      const auto bsurf_      = bsurf;
-      const auto i1_min      = mblock.i1_min();
-      const auto buff_cells  = IMIN((int)(params.currentFilters()), 5);
-      const auto i1_max      = mblock.i1_min() + buff_cells;
-      const auto omega = (time < spinup_time) ? (time / spinup_time) * spin_omega : spin_omega;
-      NTTHostErrorIf(buff_cells > mblock.Ni1(), "buff_cells > ni1");
+      coord_t<Dim2> x_ph { r_surf, ZERO };
+      coord_t<Dim2> xi { ZERO };
+      mblock.metric.x_Sph2Code(x_ph, xi);
+      const int  i1_surf = xi[0] + N_GHOSTS;
+      const int  _mode   = field_mode;
+      const auto _rsurf  = r_surf;
+      const auto _bsurf  = b_surf;
+      const auto i1_min  = mblock.i1_min();
+      const auto _omega
+        = (time < spinup_time) ? (time / spinup_time) * spin_omega : spin_omega;
 
       Kokkos::parallel_for(
         "UserDriveFields_rmin",
-        CreateRangePolicy<Dim2>({ i1_min, mblock.i2_min() }, { i1_max, mblock.i2_max() }),
+        CreateRangePolicy<Dim2>({ i1_min, mblock.i2_min() }, { i1_surf, mblock.i2_max() }),
         Lambda(index_t i1, index_t i2) {
-          if (i1 < i1_max - 1) {
-            mblock.em(i1, i2, em::ex1) = ZERO;
+          set_ex2_2d(mblock, i1, i2, surfaceRotationField, _rsurf, _bsurf, _mode, _omega);
+          set_ex3_2d(mblock, i1, i2, surfaceRotationField, _rsurf, _bsurf, _mode, _omega);
+          set_bx1_2d(mblock, i1, i2, surfaceRotationField, _rsurf, _bsurf, _mode, _omega);
+          if (i1 < i1_surf - 1) {
+            set_ex1_2d(mblock, i1, i2, surfaceRotationField, _rsurf, _bsurf, _mode, _omega);
+            set_bx2_2d(mblock, i1, i2, surfaceRotationField, _rsurf, _bsurf, _mode, _omega);
+            set_bx3_2d(mblock, i1, i2, surfaceRotationField, _rsurf, _bsurf, _mode, _omega);
           }
-          set_ex2_2d(mblock, i1, i2, surfaceRotationField, rmin, bsurf_, mode, omega);
-          set_ex3_2d(mblock, i1, i2, surfaceRotationField, rmin, bsurf_, mode, omega);
-          set_bx1_2d(mblock, i1, i2, surfaceRotationField, rmin, bsurf_, mode, omega);
         });
     }
     {
@@ -106,9 +124,9 @@ namespace ntt {
         "UserDriveFields_rmax",
         CreateRangePolicy<Dim1>({ mblock.i2_min() }, { mblock.i2_max() }),
         Lambda(index_t i2) {
-          mblock.em(i1_max, i2, em::ex2) = 0.0;
-          mblock.em(i1_max, i2, em::ex3) = 0.0;
-          mblock.em(i1_max, i2, em::bx1) = 0.0;
+          mblock.em(i1_max, i2, em::ex2) = mblock.em(i1_max - 1, i2, em::ex2);
+          mblock.em(i1_max, i2, em::ex3) = mblock.em(i1_max - 1, i2, em::ex3);
+          mblock.em(i1_max, i2, em::bx1) = mblock.em(i1_max - 1, i2, em::bx1);
         });
     }
   }
@@ -117,15 +135,15 @@ namespace ntt {
   struct PgenTargetFields : public TargetFields<D, S> {
     PgenTargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : TargetFields<D, S>(params, mblock),
-        rmin { mblock.metric.x1_min },
-        bsurf { params.get<real_t>("problem", "bsurf", (real_t)(1.0)) },
-        mode { params.get<int>("problem", "field_mode", 2) } {}
+        _rsurf { params.get<real_t>("problem", "r_surf", (real_t)(1.0)) },
+        _bsurf { params.get<real_t>("problem", "b_surf", (real_t)(1.0)) },
+        _mode { params.get<int>("problem", "field_mode", 2) } {}
     Inline real_t operator()(const em& comp, const coord_t<D>& xi) const override {
       if ((comp == em::bx1) || (comp == em::bx2)) {
         vec_t<Dim3> e_out { ZERO }, b_out { ZERO };
         coord_t<D>  x_ph { ZERO };
         (this->m_mblock).metric.x_Code2Sph(xi, x_ph);
-        mainBField(x_ph, e_out, b_out, rmin, bsurf, mode);
+        mainBField(x_ph, e_out, b_out, _rsurf, _bsurf, _mode);
         return (comp == em::bx1) ? b_out[0] : b_out[1];
       } else {
         return ZERO;
@@ -133,8 +151,8 @@ namespace ntt {
     }
 
   private:
-    const real_t rmin, bsurf;
-    const int    mode;
+    const real_t _rsurf, _bsurf;
+    const int    _mode;
   };
 
   template <Dimension D, SimulationEngine S>
@@ -154,33 +172,29 @@ namespace ntt {
   struct InjectionShell : public SpatialDistribution<D, S> {
     explicit InjectionShell(const SimulationParams& params, Meshblock<D, S>& mblock)
       : SpatialDistribution<D, S>(params, mblock),
-        inj_rmax { params.get<real_t>("problem", "inj_rmax", 1.5 * mblock.metric.x1_min) } {
-      const int  buff_cells = 10;
-      coord_t<D> xcu { ZERO }, xph { ZERO };
-      xcu[0] = (real_t)buff_cells;
-      mblock.metric.x_Code2Sph(xcu, xph);
-      inj_rmin = xph[0];
+        _inj_rmin { params.get<real_t>("problem", "r_surf", (real_t)(1.0)) },
+        _inj_rmax { params.get<real_t>("problem", "inj_rmax", (real_t)(1.5)) } {
+      NTTHostErrorIf(_inj_rmin >= _inj_rmax, "inj_rmin >= inj_rmax");
     }
     Inline real_t operator()(const coord_t<D>& x_ph) const {
-      return ((x_ph[0] <= inj_rmax) && (x_ph[0] > inj_rmin)) ? ONE : ZERO;
+      return ((x_ph[0] <= _inj_rmax) && (x_ph[0] > _inj_rmin)) ? ONE : ZERO;
     }
 
   private:
-    const real_t inj_rmax;
-    real_t       inj_rmin;
+    const real_t _inj_rmin, _inj_rmax;
   };
 
   template <Dimension D, SimulationEngine S>
   struct MaxDensCrit : public InjectionCriterion<D, S> {
     explicit MaxDensCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock),
-        inj_maxDens { params.get<real_t>("problem", "inj_maxDens", 5.0) } {}
+        _inj_maxdens { params.get<real_t>("problem", "inj_maxdens", (real_t)(5.0)) } {}
     Inline bool operator()(const coord_t<D>&) const {
       return true;
     }
 
   private:
-    const real_t inj_maxDens;
+    const real_t _inj_maxdens;
   };
 
   template <>
@@ -189,16 +203,20 @@ namespace ntt {
     (this->m_mblock).metric.x_Sph2Code(xph, xi);
     std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
     std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
-    return (this->m_mblock).buff(i1, i2, 0) < inj_maxDens;
+    return (this->m_mblock).buff(i1, i2, 0) < _inj_maxdens;
   }
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 0, 0);
-    auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction;
+    auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction * HALF;
     InjectInVolume<Dim2, PICEngine, RadialKick, InjectionShell, MaxDensCrit>(
-      params, mblock, { 1, 2 }, nppc_per_spec);
+      params,
+      mblock,
+      { 1, 2 },
+      nppc_per_spec,
+      { mblock.metric.x1_min, (real_t)1.5 * inj_rmax, mblock.metric.x2_min, mblock.metric.x2_max });
   }
 
 }    // namespace ntt

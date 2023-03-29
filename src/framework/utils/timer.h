@@ -7,10 +7,9 @@
 #include <iostream>
 #include <string>
 
-using timestamp = std::chrono::time_point<std::chrono::system_clock>;
-
 namespace ntt {
   namespace timer {
+    using timestamp = std::chrono::time_point<std::chrono::system_clock>;
     enum TimerFlags_ {
       TimerFlags_None          = 0,
       TimerFlags_PrintRelative = 1 << 0,
@@ -56,11 +55,21 @@ namespace ntt {
       void reset(const std::string& name) {
         m_timers[name].second = 0.0;
       }
+      [[nodiscard]] auto get(const std::string& name) const -> long double {
+        if (name == "Total") {
+          long double total = 0.0;
+          for (auto& timer : m_timers) {
+            total += timer.second.second;
+          }
+          return total;
+        } else {
+          return m_timers.at(name).second;
+        }
+      }
 
       void printAll(const std::string& title = "",
                     const TimerFlags   flags = TimerFlags_Default,
                     std::ostream&      os    = std::cout) const {
-        os << std::setw(46) << std::setfill('-') << "" << std::endl;
         if ((flags & TimerFlags_PrintTitle) && !title.empty()) {
           os << title << std::endl;
         }
@@ -122,8 +131,8 @@ namespace ntt {
       }
 
     private:
-      std::map<std::string, std::pair<timestamp, long double>> m_timers;
-      const bool                                               m_blocking;
+      std::map<std::string, std::pair<timer::timestamp, long double>> m_timers;
+      const bool                                                      m_blocking;
     };
   }    // namespace timer
 }    // namespace ntt

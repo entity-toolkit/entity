@@ -38,13 +38,6 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/metric.h"
 )
 
-if(${output} STREQUAL "ON")
-  link_libraries(adios2::cxx11)
-endif()
-
-link_libraries(fmt::fmt)
-link_libraries(Kokkos::kokkos)
-
 add_library(${FRAMEWORK} STATIC)
 add_library(${SIMENGINE} STATIC)
 add_library(${WRAPPER} STATIC)
@@ -57,19 +50,18 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/io)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/utils)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/vec_transforms)
 include_directories(${EXTERN_DIR})
-include_directories(${EXTERN_DIR}/plog/include)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wrapper wrapper)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/framework framework)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${engine} ${engine})
 
 add_executable(${ENTITY} entity.cpp)
-target_link_libraries(${ENTITY} PRIVATE ${WRAPPER} ${FRAMEWORK} ${SIMENGINE})
-target_include_directories(${ENTITY} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${engine})
+target_link_libraries(${ENTITY} PUBLIC ${WRAPPER} ${FRAMEWORK} ${SIMENGINE})
+target_include_directories(${ENTITY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${engine})
 
 if(${nttiny} STREQUAL "ON")
   add_compile_options("-D NTTINY_ENABLED")
   add_executable(${VIS} nttiny.cpp)
   target_link_libraries(${VIS} PRIVATE nttiny ${WRAPPER} ${FRAMEWORK} ${SIMENGINE})
-  target_include_directories(${VIS} PRIVATE ${EXTERN_DIR}/nttiny/ ${CMAKE_CURRENT_SOURCE_DIR}/engine/)
+  target_include_directories(${VIS} PRIVATE ${EXTERN_DIR}/nttiny/ ${CMAKE_CURRENT_SOURCE_DIR}/${engine}/)
 endif()

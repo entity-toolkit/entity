@@ -7,7 +7,7 @@
 #include "utils.h"
 
 #include <plog/Log.h>
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -146,14 +146,13 @@ namespace ntt {
       << "  Larmor radius [rho0]:" << m_params.larmor0() << " ["
       << m_params.larmor0() / meshblock.minCellSize() << " cells]\n"
       << std::setw(42) << std::setfill('.') << std::left
-      << "  Larmor frequency [omegaB0 * dt]:" << m_params.larmor0() * meshblock.timestep()
+      << "  Larmor frequency [omegaB0 * dt]:" << meshblock.timestep() / m_params.larmor0()
       << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  skin depth [d0]:" << m_params.skindepth0() << " ["
       << m_params.skindepth0() / meshblock.minCellSize() << " cells]\n"
-      << std::setw(42) << std::setfill('.') << std::left
-      << "  plasma frequency [omp0 * dt]:" << m_params.skindepth0() * meshblock.timestep()
-      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  plasma frequency [omp0 * dt]:"
+      << (ONE / m_params.skindepth0()) * meshblock.timestep() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  magnetization [sigma0]:" << m_params.sigma0();
 
