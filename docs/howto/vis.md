@@ -65,7 +65,7 @@ Now simply import the `nt2` module and load the output data:
 
 ```python
 import nt2 # (1)!
-flds = nt2.getFields("MySimulation.flds.h5")
+flds = nt2.Data("MySimulation.flds.h5")
 ```
 
 1. If working outside the `vis/` directory you might need to add the `vis/` to your path: `import sys; sys.path.append("vis")` in order to import `nt2`.
@@ -75,7 +75,7 @@ Note, that even though the `h5` file can be quite large, the data is loaded lazi
 Data selection is conveniently done with the `sel` and `isel` methods for the `xarray` Datasets ([more info](https://docs.xarray.dev/en/stable/user-guide/indexing.html)). For example, to select the `mass_density` field around physical time `t=98`, one can do:
 
 ```python
-flds.mass_density.sel(t=98, method="nearest") # (1)!
+flds.Rho_1.sel(t=98, method="nearest") # (1)!
 ```
 
 1. The `method="nearest"` is used to select the closest time step to the requested time.
@@ -85,7 +85,7 @@ flds.mass_density.sel(t=98, method="nearest") # (1)!
 We can then plot the selected data using the `plot` method of the `xarray` Dataset:
 
 ```python
-flds.mass_density\
+flds.Rho_1\
   .sel(t=98, method="nearest")\
   .plot(
     norm=mpl.colors.Normalize(0, 1e2),  # (2)!
@@ -98,7 +98,7 @@ flds.mass_density\
 If the resolution is too high, one can also coarsen the data before plotting:
 
 ```python
-flds.Rho\
+flds.Rho_1\
   .sel(t=98, method="nearest")\
   .coarsen(x=16, y=4).mean()\
   .plot(
@@ -109,7 +109,7 @@ flds.Rho\
 or downsample:
 
 ```python
-flds.Rho\
+flds.Rho_1\
   .sel(t=98, method="nearest")\
   .isel(x=slice(None, None, 16), y=slice(None, None, 4))\ # (1)!
   .plot(
@@ -132,7 +132,11 @@ flds.Bx**2 + flds.By**2 + flds.Bz**2\
 or make "waterfall" plots, collapsing the quantity along one of the axis, and plotting vs the other axis and time:
 
 ```python
-flds.charge_density\
+(flds.Rho_2 - flds.Rho_1)\
   .mean(dim="x")\
   .plot(yincrease=False)
 ```
+
+!!! note
+
+    You can access the documentation of the `nt2` functions and methods of the `Data` object by calling `nt2.<function>?` in the jupyter notebook or `help(nt2.<function>)` in the python console.
