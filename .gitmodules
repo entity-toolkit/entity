@@ -1,8 +1,8 @@
 [submodule "extern/plog"]
 	path = extern/plog
 	url = https://github.com/SergiusTheBest/plog.git
-[submodule "extern/toml"]
-	path = extern/toml
+[submodule "extern/toml11"]
+	path = extern/toml11
 	url = https://github.com/ToruNiina/toml11.git
 [submodule "extern/nttiny"]
 	path = extern/nttiny
