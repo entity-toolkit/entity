@@ -2,7 +2,7 @@
 #define IO_INPUT_H
 
 #include <plog/Log.h>
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <stdexcept>
 #include <string>

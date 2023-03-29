@@ -8,7 +8,7 @@
 #include "qmath.h"
 #include "utils.h"
 
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <cassert>
 #include <stdexcept>

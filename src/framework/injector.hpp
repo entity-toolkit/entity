@@ -619,9 +619,29 @@ namespace ntt {
     range_t<D>    range_policy;
     if (region.size() == 0) {
       range_policy = mblock.rangeActiveCells();
+    } else if (region.size() == 2 * static_cast<short>(D)) {
+      tuple_t<std::size_t, D> region_min;
+      tuple_t<std::size_t, D> region_max;
+      coord_t<D>              xmin_ph { ZERO }, xmax_ph { ZERO };
+      coord_t<D>              xmin_cu { ZERO }, xmax_cu { ZERO };
+      for (short i = 0; i < static_cast<short>(D); ++i) {
+        xmin_ph[i] = region[2 * i];
+        xmax_ph[i] = region[2 * i + 1];
+      }
+#ifdef MINKOWSKI_METRIC
+      mblock.metric.x_Cart2Code(xmin_ph, xmin_cu);
+      mblock.metric.x_Cart2Code(xmax_ph, xmax_cu);
+#else
+      mblock.metric.x_Sph2Code(xmin_ph, xmin_cu);
+      mblock.metric.x_Sph2Code(xmax_ph, xmax_cu);
+#endif
+      for (short i = 0; i < static_cast<short>(D); ++i) {
+        region_min[i] = static_cast<std::size_t>(xmin_cu[i]);
+        region_max[i] = static_cast<std::size_t>(xmax_cu[i]);
+      }
+      range_policy = CreateRangePolicy<D>(region_min, region_max);
     } else {
-      range_policy = mblock.rangeActiveCells();
-      NTTHostError("Non-trivial region not implemented yet");
+      NTTHostError("region must be empty or have 2 * D elements");
     }
 
     NTTHostErrorIf(species.size() != 2, "Exactly two species can be injected at the same time");
