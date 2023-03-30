@@ -35,7 +35,7 @@ namespace ntt {
     case BoundaryCondition::OPEN:
       return "Open";
     case BoundaryCondition::CUSTOM:
-      return "CUSTOM";
+      return "Custom";
     case BoundaryCondition::AXIS:
       return "Axis";
     case BoundaryCondition::COMM:
@@ -94,16 +94,16 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDetails() {
-    std::string bc { "{ " };
+    std::string bc { "" };
     for (auto& boundaries_xi : m_params.boundaries()) {
       bc += "{";
       for (auto& boundaries : boundaries_xi) {
-        bc += stringizeBoundaryCondition(boundaries) + " x ";
+        bc += stringizeBoundaryCondition(boundaries) + ", ";
       }
-      bc += "}, ";
+      bc.erase(bc.size() - 2);
+      bc += "} ";
     }
-    bc.erase(bc.size() - 3);
-    bc += " }";
+    bc.erase(bc.size() - 1);
 
     std::string res { "{ " };
     for (auto& r : m_params.resolution()) {
