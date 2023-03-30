@@ -181,6 +181,7 @@ namespace ntt {
 
       m_mblock.cur(i, j, cur::jx3) = ZERO;
     } else {
+#  pragma unroll
       for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
         m_mblock.cur(i, j, comp)
           = INV_4 * m_mblock.buff(i, j, comp)

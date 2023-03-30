@@ -5,7 +5,7 @@
 
 #include "simulation.h"
 
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 namespace ntt {
   /**

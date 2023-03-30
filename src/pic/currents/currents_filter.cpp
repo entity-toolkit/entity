@@ -30,8 +30,6 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
     for (unsigned short i = 0; i < params.currentFilters(); ++i) {
-      CurrentsExchange();
-
       AssertEmptyContent(mblock.buff_content);
       Kokkos::deep_copy(mblock.buff, mblock.cur);
       ImposeContent(mblock.buff_content, mblock.cur_content);
@@ -59,6 +57,7 @@ namespace ntt {
       }
 #endif
       Kokkos::parallel_for("CurrentsFilter", range, CurrentsFilter_kernel<D>(mblock));
+      CurrentsExchange();
 
       ImposeEmptyContent(mblock.buff_content);
     }

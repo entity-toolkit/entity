@@ -6,6 +6,7 @@ project(${PROJECT_NAME}
   VERSION 0.9.0.1
   LANGUAGES CXX C
 )
+<<<<<<< HEAD
 
 set(kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
 
@@ -69,6 +70,9 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND NOT ${SUBMODULES_LOADED
     endif()
   endif()
 endif()
+=======
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
+>>>>>>> 08d0a00f643eb9824a60e7dc805b36bb7b613221
 
 # ----------------------------- Defaults ---------------------------------- #
 set(default_engine "pic")
@@ -244,18 +248,9 @@ if(${output} STREQUAL "ON")
 endif()
 
 # ------------------------------ Dependencies ------------------------------ #
-if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
-endif()
-
-find_or_fetch_package(kokkos)
-find_or_fetch_package(fmt)
-
-if(${output} STREQUAL "ON")
-  find_or_fetch_package(adios2)
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 # ------------------------------- Main source ------------------------------ #
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/report.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)

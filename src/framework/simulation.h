@@ -8,7 +8,7 @@
 #include "sim_params.h"
 #include "writer.h"
 
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <string>
 

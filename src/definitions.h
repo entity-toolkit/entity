@@ -18,6 +18,8 @@
 #ifdef SINGLE_PRECISION
 inline constexpr float ONE    = 1.0f;
 inline constexpr float TWO    = 2.0f;
+inline constexpr float THREE  = 3.0f;
+inline constexpr float FOUR   = 4.0f;
 inline constexpr float ZERO   = 0.0f;
 inline constexpr float HALF   = 0.5f;
 inline constexpr float INV_2  = 0.5f;
@@ -29,6 +31,8 @@ inline constexpr float INV_64 = 0.015625f;
 #else
 inline constexpr double ONE    = 1.0;
 inline constexpr double TWO    = 2.0;
+inline constexpr double THREE  = 3.0f;
+inline constexpr double FOUR   = 4.0f;
 inline constexpr double ZERO   = 0.0;
 inline constexpr double HALF   = 0.5;
 inline constexpr double INV_2  = 0.5;

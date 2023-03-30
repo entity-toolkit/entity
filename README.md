@@ -11,15 +11,17 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
   </picture>
 </p>
 
-## Code contributors (alphabetical)
-
-🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
-
-🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
+## Core developers
 
 ☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
 
 🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI, cubed-sphere}
+
+## Contributors
+
+🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
+
+🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
 
 🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph): all-around}
 
@@ -79,26 +81,16 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 _[under construction]_
 
-### Logging
-
-_[under construction]_
-
 ## Third-party libraries
-
-All the third-party libraries are added as git submodules. If the code is cloned recursively, the submodules are automatically included, otherwise they are downloaded during the first configuration.
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
 2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
 3. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging
 4. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
 
-> All the third-party libraries reside in the `extern` directory.
-
 ## Dependencies
 
 While we try to keep the code as compatible as possible, there are certain stringent requirements we impose.
 
 1. `cmake>=3.16`: for configuration (verify: `cmake --version`);
-2. `icc>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icc|gcc] -std=c++17 -v`; optionally `nvcc` compilers: `nvcc --version`).
-
-> For `apple` users: the default `clang` compilers that ship now with macOS systems have trouble with some of the default math libraries, atomic operations etc. For that reason we highly encourage to use macOS package manager such as `brew` to [install](https://formulae.brew.sh/formula/gcc) the `gnu` compilers. `clang` also does not natively support `OpenMP`, while `gcc` compilers have no problem with that.
+2. `icx>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icx|gcc] -std=c++17 -v`; optionally `nvcc` compilers: `nvcc --version`).

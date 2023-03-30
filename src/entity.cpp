@@ -21,7 +21,7 @@
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Init.h>
 #include <plog/Log.h>
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 #include <cstdio>
 #include <iostream>
