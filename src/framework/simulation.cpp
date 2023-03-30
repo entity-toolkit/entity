@@ -14,7 +14,7 @@
 #include <string>
 
 namespace ntt {
-  auto stringifySimulationEngine(const SimulationEngine& sim) -> std::string {
+  auto stringizeSimulationEngine(const SimulationEngine& sim) -> std::string {
     switch (sim) {
     case SANDBOXEngine:
       return "Sandbox";
@@ -26,7 +26,7 @@ namespace ntt {
       return "N/A";
     }
   }
-  auto stringifyBoundaryCondition(const BoundaryCondition& bc) -> std::string {
+  auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
     switch (bc) {
     case BoundaryCondition::PERIODIC:
       return "Periodic";
@@ -36,13 +36,15 @@ namespace ntt {
       return "Open";
     case BoundaryCondition::USER:
       return "User";
+    case BoundaryCondition::AXIS:
+      return "Axis";
     case BoundaryCondition::COMM:
       return "Communicate";
     default:
       return "N/A";
     }
   }
-  auto stringifyParticlePusher(const ParticlePusher& pusher) -> std::string {
+  auto stringizeParticlePusher(const ParticlePusher& pusher) -> std::string {
     switch (pusher) {
     case ParticlePusher::BORIS:
       return "Boris";
@@ -93,8 +95,12 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::PrintDetails() {
     std::string bc { "{ " };
-    for (auto& b : m_params.boundaries()) {
-      bc += stringifyBoundaryCondition(b) + " x ";
+    for (auto& boundaries_xi : m_params.boundaries()) {
+      bc += "{";
+      for (auto& boundaries : boundaries_xi) {
+        bc += stringizeBoundaryCondition(boundaries) + " x ";
+      }
+      bc += "}, ";
     }
     bc.erase(bc.size() - 3);
     bc += " }";
@@ -123,7 +129,7 @@ namespace ntt {
       << std::setw(42) << std::setfill('.') << std::left << "  title:" << m_params.title()
       << "\n"
       << std::setw(42) << std::setfill('.') << std::left
-      << "  engine:" << stringifySimulationEngine(S) << "\n"
+      << "  engine:" << stringizeSimulationEngine(S) << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  timestep:" << meshblock.timestep() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
@@ -170,7 +176,7 @@ namespace ntt {
           << std::setw(42) << std::setfill('.') << std::left
           << "    charge: " << prtls.charge() << "\n"
           << std::setw(42) << std::setfill('.') << std::left
-          << "    pusher: " << stringifyParticlePusher(prtls.pusher()) << "\n"
+          << "    pusher: " << stringizeParticlePusher(prtls.pusher()) << "\n"
           << std::setw(42) << std::setfill('.') << std::left
           << "    maxnpart: " << prtls.maxnpart() << " (active: " << prtls.npart() << ")";
         ++i;

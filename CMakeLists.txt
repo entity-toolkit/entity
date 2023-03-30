@@ -8,7 +8,6 @@ project(${PROJECT_NAME}
 )
 
 set(kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
-set(fmt_REPOSITORY https://github.com/fmtlib/fmt.git CACHE STRING "fmt repository")
 
 # set (adios2_REPOSITORY https://github.com/ornladios/ADIOS2.git CACHE STRING "ADIOS2 repository")
 function(find_or_fetch_package package_name)
@@ -139,8 +138,8 @@ if(NOT ${engine} STREQUAL "sandbox")
 
   list(FIND problem_generators ${pgen} PGEN_FOUND)
 
-  if(NOT ${PGEN_FOUND})
-    message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
+  if(${PGEN_FOUND} EQUAL -1)
+    message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}.")
   endif()
 endif()
 
@@ -182,6 +181,9 @@ endif()
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
 # ----------------------------- Kokkos settings ---------------------------- #
+set(Kokkos_ENABLE_CUDA ${default_KOKKOS_ENABLE_CUDA} CACHE BOOL "Enable CUDA")
+set(Kokkos_ENABLE_OPENMP ${default_KOKKOS_ENABLE_OPENMP} CACHE BOOL "Enable OpenMP")
+
 if(${Kokkos_ENABLE_CUDA})
   set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable CUDA lambda")
 endif()

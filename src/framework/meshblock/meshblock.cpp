@@ -298,9 +298,8 @@ namespace ntt {
     Kokkos::Experimental::contribute(this->buff, scatter_buff);
   }
 
-  // Field interpolation
   template <>
-  void Meshblock<Dim1, PICEngine>::InterpolateAndConvertFieldsToHat() {
+  void Meshblock<Dim1, PICEngine>::PrepareFieldsForOutput(const PrepareOutputFlags& flags) {
     NTTLog();
 
     auto                 array_filled = true;
@@ -333,19 +332,37 @@ namespace ntt {
 
         // interpolate to cell centers
         vec_t<Dim3> e_cntr { ZERO }, b_cntr { ZERO };
-        // from edges
-        e_cntr[0] = this_em(i, em::ex1);
-        e_cntr[1] = INV_2 * (this_em(i, em::ex2) + this_em(i + 1, em::ex2));
-        e_cntr[2] = INV_2 * (this_em(i, em::ex3) + this_em(i + 1, em::ex3));
-        // from faces
-        b_cntr[0] = INV_2 * (this_em(i, em::bx1) + this_em(i + 1, em::bx1));
-        b_cntr[1] = this_em(i, em::bx2);
-        b_cntr[2] = this_em(i, em::bx3);
-
+        if (flags & PrepareOutput_InterpToCellCent) {
+          // from edges
+          e_cntr[0] = this_em(i, em::ex1);
+          e_cntr[1] = INV_2 * (this_em(i, em::ex2) + this_em(i + 1, em::ex2));
+          e_cntr[2] = INV_2 * (this_em(i, em::ex3) + this_em(i + 1, em::ex3));
+          // from faces
+          b_cntr[0] = INV_2 * (this_em(i, em::bx1) + this_em(i + 1, em::bx1));
+          b_cntr[1] = this_em(i, em::bx2);
+          b_cntr[2] = this_em(i, em::bx3);
+        } else {
+          e_cntr[0] = this_em(i, em::ex1);
+          e_cntr[1] = this_em(i, em::ex2);
+          e_cntr[2] = this_em(i, em::ex3);
+          b_cntr[0] = this_em(i, em::bx1);
+          b_cntr[1] = this_em(i, em::bx2);
+          b_cntr[2] = this_em(i, em::bx3);
+        }
         // convert to hat
         vec_t<Dim3> e_hat { ZERO }, b_hat { ZERO };
-        this_metric.v_Cntrv2Hat({ i_ + HALF }, e_cntr, e_hat);
-        this_metric.v_Cntrv2Hat({ i_ + HALF }, b_cntr, b_hat);
+        if (flags & PrepareOutput_ConvertToHat) {
+          // !TODO: not quite correct when not in cell center
+          this_metric.v_Cntrv2Hat({ i_ + HALF }, e_cntr, e_hat);
+          this_metric.v_Cntrv2Hat({ i_ + HALF }, b_cntr, b_hat);
+        } else {
+          e_hat[0] = e_cntr[0];
+          e_hat[1] = e_cntr[1];
+          e_hat[2] = e_cntr[2];
+          b_hat[0] = b_cntr[0];
+          b_hat[1] = b_cntr[1];
+          b_hat[2] = b_cntr[2];
+        }
         this_bckp(i, em::ex1) = e_hat[0];
         this_bckp(i, em::ex2) = e_hat[1];
         this_bckp(i, em::ex3) = e_hat[2];
@@ -358,7 +375,7 @@ namespace ntt {
   }
 
   template <>
-  void Meshblock<Dim2, PICEngine>::InterpolateAndConvertFieldsToHat() {
+  void Meshblock<Dim2, PICEngine>::PrepareFieldsForOutput(const PrepareOutputFlags& flags) {
     NTTLog();
 
     auto                 array_filled = true;
@@ -392,21 +409,40 @@ namespace ntt {
 
         // interpolate to cell centers
         vec_t<Dim3> e_cntr { ZERO }, b_cntr { ZERO };
-        // from edges
-        e_cntr[0] = INV_2 * (this_em(i, j, em::ex1) + this_em(i, j + 1, em::ex1));
-        e_cntr[1] = INV_2 * (this_em(i, j, em::ex2) + this_em(i + 1, j, em::ex2));
-        e_cntr[2] = INV_4
-                    * (this_em(i, j, em::ex3) + this_em(i + 1, j, em::ex3)
-                       + this_em(i, j + 1, em::ex3) + this_em(i + 1, j + 1, em::ex3));
-        // from faces
-        b_cntr[0] = INV_2 * (this_em(i, j, em::bx1) + this_em(i + 1, j, em::bx1));
-        b_cntr[1] = INV_2 * (this_em(i, j, em::bx2) + this_em(i, j + 1, em::bx2));
-        b_cntr[2] = this_em(i, j, em::bx3);
+        if (flags & PrepareOutput_InterpToCellCent) {
+          // from edges
+          e_cntr[0] = INV_2 * (this_em(i, j, em::ex1) + this_em(i, j + 1, em::ex1));
+          e_cntr[1] = INV_2 * (this_em(i, j, em::ex2) + this_em(i + 1, j, em::ex2));
+          e_cntr[2] = INV_4
+                      * (this_em(i, j, em::ex3) + this_em(i + 1, j, em::ex3)
+                         + this_em(i, j + 1, em::ex3) + this_em(i + 1, j + 1, em::ex3));
+          // from faces
+          b_cntr[0] = INV_2 * (this_em(i, j, em::bx1) + this_em(i + 1, j, em::bx1));
+          b_cntr[1] = INV_2 * (this_em(i, j, em::bx2) + this_em(i, j + 1, em::bx2));
+          b_cntr[2] = this_em(i, j, em::bx3);
+        } else {
+          e_cntr[0] = this_em(i, j, em::ex1);
+          e_cntr[1] = this_em(i, j, em::ex2);
+          e_cntr[2] = this_em(i, j, em::ex3);
+          b_cntr[0] = this_em(i, j, em::bx1);
+          b_cntr[1] = this_em(i, j, em::bx2);
+          b_cntr[2] = this_em(i, j, em::bx3);
+        }
 
         // convert to hat
         vec_t<Dim3> e_hat { ZERO }, b_hat { ZERO };
-        this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, e_cntr, e_hat);
-        this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, b_cntr, b_hat);
+        if (flags & PrepareOutput_ConvertToHat) {
+          // !TODO: not quite correct when not in cell center
+          this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, e_cntr, e_hat);
+          this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, b_cntr, b_hat);
+        } else {
+          e_hat[0] = e_cntr[0];
+          e_hat[1] = e_cntr[1];
+          e_hat[2] = e_cntr[2];
+          b_hat[0] = b_cntr[0];
+          b_hat[1] = b_cntr[1];
+          b_hat[2] = b_cntr[2];
+        }
         this_bckp(i, j, em::ex1) = e_hat[0];
         this_bckp(i, j, em::ex2) = e_hat[1];
         this_bckp(i, j, em::ex3) = e_hat[2];
@@ -420,7 +456,7 @@ namespace ntt {
 
   // Currents interpolation
   template <>
-  void Meshblock<Dim1, PICEngine>::InterpolateAndConvertCurrentsToHat() {
+  void Meshblock<Dim1, PICEngine>::PrepareCurrentsForOutput(const PrepareOutputFlags& flags) {
     NTTLog();
 
     auto                 array_filled = true;
@@ -452,14 +488,26 @@ namespace ntt {
 
         // interpolate to cell centers
         vec_t<Dim3> j_cntr { ZERO };
-        // from edges
-        j_cntr[0] = this_buff(i, cur::jx1);
-        j_cntr[1] = INV_2 * (this_buff(i, cur::jx2) + this_buff(i + 1, cur::jx2));
-        j_cntr[2] = INV_2 * (this_buff(i, cur::jx3) + this_buff(i + 1, cur::jx3));
+        if (flags & PrepareOutput_InterpToCellCent) {
+          // from edges
+          j_cntr[0] = this_buff(i, cur::jx1);
+          j_cntr[1] = INV_2 * (this_buff(i, cur::jx2) + this_buff(i + 1, cur::jx2));
+          j_cntr[2] = INV_2 * (this_buff(i, cur::jx3) + this_buff(i + 1, cur::jx3));
+        } else {
+          j_cntr[0] = this_buff(i, cur::jx1);
+          j_cntr[1] = this_buff(i, cur::jx2);
+          j_cntr[2] = this_buff(i, cur::jx3);
+        }
 
         // convert to hat
         vec_t<Dim3> j_hat { ZERO };
-        this_metric.v_Cntrv2Hat({ i_ + HALF }, j_cntr, j_hat);
+        if (flags & PrepareOutput_ConvertToHat) {
+          this_metric.v_Cntrv2Hat({ i_ + HALF }, j_cntr, j_hat);
+        } else {
+          j_hat[0] = j_cntr[0];
+          j_hat[1] = j_cntr[1];
+          j_hat[2] = j_cntr[2];
+        }
 
         this_cur(i, cur::jx1) = j_hat[0];
         this_cur(i, cur::jx2) = j_hat[1];
@@ -472,7 +520,7 @@ namespace ntt {
   }
 
   template <>
-  void Meshblock<Dim2, PICEngine>::InterpolateAndConvertCurrentsToHat() {
+  void Meshblock<Dim2, PICEngine>::PrepareCurrentsForOutput(const PrepareOutputFlags& flags) {
     NTTLog();
 
     auto                 array_filled = true;
@@ -505,16 +553,28 @@ namespace ntt {
 
         // interpolate to cell centers
         vec_t<Dim3> j_cntr { ZERO };
-        // from edges
-        j_cntr[0] = INV_2 * (this_buff(i, j, cur::jx1) + this_buff(i, j + 1, cur::jx1));
-        j_cntr[1] = INV_2 * (this_buff(i, j, cur::jx2) + this_buff(i + 1, j, cur::jx2));
-        j_cntr[2] = INV_4
-                    * (this_buff(i, j, cur::jx3) + this_buff(i + 1, j, cur::jx3)
-                       + this_buff(i, j + 1, cur::jx3) + this_buff(i + 1, j + 1, cur::jx3));
+        if (flags & PrepareOutput_InterpToCellCent) {
+          // from edges
+          j_cntr[0] = INV_2 * (this_buff(i, j, cur::jx1) + this_buff(i, j + 1, cur::jx1));
+          j_cntr[1] = INV_2 * (this_buff(i, j, cur::jx2) + this_buff(i + 1, j, cur::jx2));
+          j_cntr[2] = INV_4
+                      * (this_buff(i, j, cur::jx3) + this_buff(i + 1, j, cur::jx3)
+                         + this_buff(i, j + 1, cur::jx3) + this_buff(i + 1, j + 1, cur::jx3));
+        } else {
+          j_cntr[0] = this_buff(i, j, cur::jx1);
+          j_cntr[1] = this_buff(i, j, cur::jx2);
+          j_cntr[2] = this_buff(i, j, cur::jx3);
+        }
 
         // convert to hat
         vec_t<Dim3> j_hat { ZERO };
-        this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, j_cntr, j_hat);
+        if (flags & PrepareOutput_ConvertToHat) {
+          this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, j_cntr, j_hat);
+        } else {
+          j_hat[0] = j_cntr[0];
+          j_hat[1] = j_cntr[1];
+          j_hat[2] = j_cntr[2];
+        }
 
         this_cur(i, j, cur::jx1) = j_hat[0];
         this_cur(i, j, cur::jx2) = j_hat[1];

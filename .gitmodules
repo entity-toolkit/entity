@@ -15,3 +15,6 @@
 	path = extern/adios2
 	url = git@github.com:ornladios/ADIOS2.git
 	branch = master
+[submodule "extern/fmt"]
+	path = extern/fmt
+	url = https://github.com/fmtlib/fmt.git

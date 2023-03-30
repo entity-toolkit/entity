@@ -111,7 +111,7 @@ namespace ntt {
     } else {
       NTTHostError(
         "2d axisymmetry requires absorbing boundary conditions at rmax. Currently specified: `"
-        + stringifyBoundaryCondition(mblock.boundaries[1]) + "`.");
+        + stringizeBoundaryCondition(mblock.boundaries[1]) + "`.");
     }
   }
 

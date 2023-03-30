@@ -7,7 +7,6 @@
  * @implements: `FieldsBoundaryConditions` method of the `GRPIC` class
  * @includes: `fields_bc.hpp
  * @depends: `grpic.h`
- *
  */
 
 #include "fields_bc.hpp"

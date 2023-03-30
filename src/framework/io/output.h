@@ -17,6 +17,27 @@
 #include <vector>
 
 namespace ntt {
+  inline auto StringizeFieldID(const FieldID& id) -> std::string {
+    switch (id) {
+    case FieldID::E:
+      return "E";
+    case FieldID::B:
+      return "B";
+    case FieldID::J:
+      return "J";
+    case FieldID::T:
+      return "T";
+    case FieldID::Rho:
+      return "Rho";
+    case FieldID::N:
+      return "N";
+    case FieldID::Nppc:
+      return "Nppc";
+    default:
+      return "UNKNOWN";
+    }
+  }
+
   class OutputField {
     std::string m_name;
     FieldID     m_id;

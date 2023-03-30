@@ -104,7 +104,7 @@ namespace ntt {
     ~Mesh() = default;
 
     // Boundary conditions.
-    std::vector<BoundaryCondition> boundaries;
+    std::vector<std::vector<BoundaryCondition>> boundaries;
 
     /* -------------------------------------------------------------------------- */
     /*                    Ranges in the device execution space                    */
@@ -126,7 +126,7 @@ namespace ntt {
      *    .                       .
      *    . . . . . . . . . . . . .
      */
-    auto                           rangeActiveCells() -> range_t<D>;
+    auto                                        rangeActiveCells() -> range_t<D>;
     /**
      * @brief Loop over all cells.
      * @returns Kokkos range policy with proper min/max indices and dimension.
@@ -145,14 +145,14 @@ namespace ntt {
      *    . . . . . . . . . . . . .
      *
      */
-    auto                           rangeAllCells() -> range_t<D>;
+    auto                                        rangeAllCells() -> range_t<D>;
 
     /**
      * @brief Pick a particular region of cells.
      * @param boxRegion region of cells to pick: tuple of cellLayer objects.
      * @returns Kokkos range policy with proper min/max indices and dimension.
      */
-    auto                           rangeCells(const boxRegion<D>&) -> range_t<D>;
+    auto                                        rangeCells(const boxRegion<D>&) -> range_t<D>;
     /**
      * @brief Pick a particular region of cells.
      * @overload
@@ -287,6 +287,21 @@ namespace ntt {
     }
 
     [[nodiscard]] auto extent() const -> std::vector<real_t>;
+
+    [[nodiscard]] auto isPeriodicInX1() const -> bool {
+      NTTHostErrorIf(boundaries.size() < 1, "Invalid number of boundaries");
+      return (boundaries[0][0] == BoundaryCondition::PERIODIC);
+    }
+
+    [[nodiscard]] auto isPeriodicInX2() const -> bool {
+      NTTHostErrorIf(boundaries.size() < 2, "Invalid number of boundaries");
+      return (boundaries[1][0] == BoundaryCondition::PERIODIC);
+    }
+
+    [[nodiscard]] auto isPeriodicInX3() const -> bool {
+      NTTHostErrorIf(boundaries.size() < 3, "Invalid number of boundaries");
+      return (boundaries[2][0] == BoundaryCondition::PERIODIC);
+    }
   };
 }    // namespace ntt
 

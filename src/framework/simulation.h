@@ -13,9 +13,9 @@
 #include <string>
 
 namespace ntt {
-  auto stringifySimulationEngine(const SimulationEngine&) -> std::string;
-  auto stringifyBoundaryCondition(const BoundaryCondition&) -> std::string;
-  auto stringifyParticlePusher(const ParticlePusher&) -> std::string;
+  auto stringizeSimulationEngine(const SimulationEngine&) -> std::string;
+  auto stringizeBoundaryCondition(const BoundaryCondition&) -> std::string;
+  auto stringizeParticlePusher(const ParticlePusher&) -> std::string;
 
   /**
    * @brief Main class of the simulation containing all the necessary methods and

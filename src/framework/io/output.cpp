@@ -188,10 +188,15 @@ namespace ntt {
                         adios2::Engine&         writer,
                         const SimulationParams& params,
                         Meshblock<D, S>&        mblock) const {
+    PrepareOutputFlags flags;
+    if constexpr (S != GRPICEngine) {
+      flags = PrepareOutput_Default;
+    } else {
+      flags = PrepareOutput_InterpToCellCent;
+    }
     if ((m_id == FieldID::E) || (m_id == FieldID::B)) {
-      mblock.InterpolateAndConvertFieldsToHat();
+      mblock.PrepareFieldsForOutput(flags);
       ImposeEmptyContent(mblock.bckp_content);
-      // EM fields (vector)
       std::vector<em>      comp_options;
       std::vector<Content> content_options
         = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
@@ -206,9 +211,8 @@ namespace ntt {
         PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
       }
     } else if (m_id == FieldID::J) {
-      mblock.InterpolateAndConvertCurrentsToHat();
+      mblock.PrepareCurrentsForOutput(flags);
       ImposeEmptyContent(mblock.cur_content);
-      // Currents (vector)
       std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
       std::vector<Content> content_options
         = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };

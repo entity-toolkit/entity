@@ -120,21 +120,27 @@ namespace ntt {
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
     m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
-    auto  boundaries = get<std::vector<std::string>>("domain", "boundaries");
+    auto  boundaries = get<std::vector<std::vector<std::string>>>("domain", "boundaries");
     short b { 0 };
-    for (auto& bc : boundaries) {
-      TestValidOption(bc, options::boundaries);
-      if (bc == "PERIODIC") {
-        m_boundaries.push_back(BoundaryCondition::PERIODIC);
-      } else if (bc == "ABSORB") {
-        m_boundaries.push_back(BoundaryCondition::ABSORB);
-      } else if (bc == "OPEN") {
-        m_boundaries.push_back(BoundaryCondition::OPEN);
-      } else if (bc == "USER") {
-        m_boundaries.push_back(BoundaryCondition::USER);
-      } else {
-        m_boundaries.push_back(BoundaryCondition::UNDEFINED);
+    for (auto& bc_xi : boundaries) {
+      std::vector<BoundaryCondition> boundaries_xi;
+      for (auto& bc : bc_xi) {
+        TestValidOption(bc, options::boundaries);
+        if (bc == "PERIODIC") {
+          boundaries_xi.push_back(BoundaryCondition::PERIODIC);
+        } else if (bc == "ABSORB") {
+          boundaries_xi.push_back(BoundaryCondition::ABSORB);
+        } else if (bc == "OPEN") {
+          boundaries_xi.push_back(BoundaryCondition::OPEN);
+        } else if (bc == "USER") {
+          boundaries_xi.push_back(BoundaryCondition::USER);
+        } else if (bc == "AXIS") {
+          boundaries_xi.push_back(BoundaryCondition::AXIS);
+        } else {
+          boundaries_xi.push_back(BoundaryCondition::UNDEFINED);
+        }
       }
+      m_boundaries.push_back(boundaries_xi);
       ++b;
       if (b >= (short)(dim)) {
         break;

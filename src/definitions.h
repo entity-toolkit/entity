@@ -79,7 +79,7 @@ namespace ntt {
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
   enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
-  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
+  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM, AXIS };
   enum class ParticlePusher { UNDEFINED, NONE, BORIS, VAY, PHOTON };
 
   inline constexpr auto Dim1          = Dimension::ONE_D;
@@ -114,9 +114,10 @@ namespace ntt {
 
 namespace ntt {
   namespace options {
-    const std::vector<std::string> pushers    = { "Boris", "Photon", "None" };
-    const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
-    const std::vector<std::string> outputs    = { "disabled", "HDF5" };
+    const std::vector<std::string> pushers = { "Boris", "Photon", "None" };
+    const std::vector<std::string> boundaries
+      = { "PERIODIC", "ABSORB", "USER", "OPEN", "AXIS" };
+    const std::vector<std::string> outputs = { "disabled", "HDF5" };
   }    // namespace options
 
   namespace defaults {
@@ -155,28 +156,6 @@ namespace ntt {
     N,      // Particle number density
     Nppc    // Raw number of particles per each cell
   };
-
-  inline auto StringizeFieldID(const FieldID& id) -> std::string {
-    switch (id) {
-    case FieldID::E:
-      return "E";
-    case FieldID::B:
-      return "B";
-    case FieldID::J:
-      return "J";
-    case FieldID::T:
-      return "T";
-    case FieldID::Rho:
-      return "Rho";
-    case FieldID::N:
-      return "N";
-    case FieldID::Nppc:
-      return "Nppc";
-    default:
-      return "UNKNOWN";
-    }
-  }
-
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
