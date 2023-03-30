@@ -132,8 +132,8 @@ namespace ntt {
           boundaries_xi.push_back(BoundaryCondition::ABSORB);
         } else if (bc == "OPEN") {
           boundaries_xi.push_back(BoundaryCondition::OPEN);
-        } else if (bc == "USER") {
-          boundaries_xi.push_back(BoundaryCondition::USER);
+        } else if (bc == "CUSTOM") {
+          boundaries_xi.push_back(BoundaryCondition::CUSTOM);
         } else if (bc == "AXIS") {
           boundaries_xi.push_back(BoundaryCondition::AXIS);
         } else {

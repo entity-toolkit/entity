@@ -5,7 +5,7 @@ runtime = 0.1
 [domain]
 resolution = [512, 512]
 extent     = [-1.0, 1.0, -1.0, 1.0]
-boundaries = ["PERIODIC", "PERIODIC"]
+boundaries = [["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
 CFL        = 0.5

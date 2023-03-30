@@ -83,7 +83,7 @@ namespace ntt {
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
   enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
-  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM, AXIS };
+  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, CUSTOM, OPEN, COMM, AXIS };
   enum class ParticlePusher { UNDEFINED, NONE, BORIS, VAY, PHOTON };
 
   inline constexpr auto Dim1          = Dimension::ONE_D;
@@ -120,7 +120,7 @@ namespace ntt {
   namespace options {
     const std::vector<std::string> pushers = { "Boris", "Photon", "None" };
     const std::vector<std::string> boundaries
-      = { "PERIODIC", "ABSORB", "USER", "OPEN", "AXIS" };
+      = { "PERIODIC", "ABSORB", "CUSTOM", "OPEN", "AXIS" };
     const std::vector<std::string> outputs = { "disabled", "HDF5" };
   }    // namespace options
 

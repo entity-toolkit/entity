@@ -15,13 +15,7 @@
 	path = extern/adios2
 	url = git@github.com:ornladios/ADIOS2.git
 	branch = master
-<<<<<<< HEAD
-[submodule "extern/fmt"]
-	path = extern/fmt
-	url = https://github.com/fmtlib/fmt.git
-=======
 [submodule "extern/kokkos"]
 	path = extern/kokkos
 	url = https://github.com/kokkos/kokkos.git
 	branch = master
->>>>>>> 08d0a00f643eb9824a60e7dc805b36bb7b613221

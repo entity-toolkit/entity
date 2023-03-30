@@ -9,7 +9,7 @@ namespace ntt {
   template <>
   void PIC<Dim1>::CurrentsSynchronize() {
     auto& mblock = this->meshblock;
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
       // periodic
 
       auto ni = mblock.Ni1();
@@ -37,7 +37,7 @@ namespace ntt {
      * @note: no corners in each direction
      */
     auto& mblock = this->meshblock;
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
       auto ni = mblock.Ni1();
       Kokkos::parallel_for(
         "2d_bc_x1m",
@@ -59,7 +59,7 @@ namespace ntt {
       // non-periodic
       NTTHostError("2d boundary condition for minkowski not implemented");
     }
-    if (mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC) {
       /**
        * @note: no corners
        */
@@ -87,8 +87,8 @@ namespace ntt {
     /**
      * @note: corners treated separately
      */
-    if ((mblock.boundaries[0] == BoundaryCondition::PERIODIC)
-        && (mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
+    if ((mblock.boundaries[0][0] == BoundaryCondition::PERIODIC)
+        && (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC)) {
       auto ni = mblock.Ni1();
       auto nj = mblock.Ni2();
       Kokkos::parallel_for(
@@ -140,7 +140,7 @@ namespace ntt {
   void PIC<Dim1>::CurrentsExchange() {
     auto& mblock = this->meshblock;
     auto  ni     = mblock.Ni1();
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
       Kokkos::parallel_for(
         "1d_gh_x1m", mblock.rangeCells({ CellLayer::minGhostLayer }), Lambda(index_t i) {
           for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
@@ -161,7 +161,7 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  ni     = mblock.Ni1();
     auto  nj     = mblock.Ni2();
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
       Kokkos::parallel_for(
         "2d_gh_x1m",
         mblock.rangeCells({ CellLayer::minGhostLayer, CellLayer::activeLayer }),
@@ -179,7 +179,7 @@ namespace ntt {
           }
         });
     }
-    if (mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC) {
       Kokkos::parallel_for(
         "2d_gh_x2m",
         mblock.rangeCells({ CellLayer::activeLayer, CellLayer::minGhostLayer }),
@@ -197,8 +197,8 @@ namespace ntt {
           }
         });
     }
-    if ((mblock.boundaries[0] == BoundaryCondition::PERIODIC)
-        && (mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
+    if ((mblock.boundaries[0][0] == BoundaryCondition::PERIODIC)
+        && (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC)) {
       Kokkos::parallel_for(
         "2d_bc_corner1",
         mblock.rangeCells({ CellLayer::minGhostLayer, CellLayer::minGhostLayer }),

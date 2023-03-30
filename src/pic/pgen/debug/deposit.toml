@@ -8,7 +8,7 @@ qsph_h      = 0.001
 sph_rabsorb = 4.5
 resolution  = [256, 128]
 extent      = [1.0, 5.0]
-boundaries  = ["USER", "USER"]
+boundaries  = ["CUSTOM", "CUSTOM"]
 
 [algorithm]
 CFL             = 0.45

@@ -34,8 +34,8 @@ namespace ntt {
       return "Absorbing";
     case BoundaryCondition::OPEN:
       return "Open";
-    case BoundaryCondition::USER:
-      return "User";
+    case BoundaryCondition::CUSTOM:
+      return "CUSTOM";
     case BoundaryCondition::AXIS:
       return "Axis";
     case BoundaryCondition::COMM:

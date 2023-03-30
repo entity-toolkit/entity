@@ -12,7 +12,7 @@ namespace ntt {
   template <>
   void PIC<Dim1>::FieldsExchange() {
     auto& mblock = this->meshblock;
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
       auto ni = mblock.Ni1();
       // in x1_min
       Kokkos::parallel_for(
@@ -40,7 +40,7 @@ namespace ntt {
   template <>
   void PIC<Dim2>::FieldsExchange() {
     auto& mblock = this->meshblock;
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
       auto ni = mblock.Ni1();
       Kokkos::parallel_for(
         "2d_bc_x1m",
@@ -62,7 +62,7 @@ namespace ntt {
       // non-periodic
       NTTHostError("2d boundary condition for minkowski not implemented");
     }
-    if (mblock.boundaries[1] == BoundaryCondition::PERIODIC) {
+    if (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC) {
       auto nj = mblock.Ni2();
       Kokkos::parallel_for(
         "2d_bc_x2m",
@@ -85,8 +85,8 @@ namespace ntt {
       NTTHostError("2d boundary condition for minkowski not implemented");
     }
 
-    if ((mblock.boundaries[1] == BoundaryCondition::PERIODIC)
-        && (mblock.boundaries[1] == BoundaryCondition::PERIODIC)) {
+    if ((mblock.boundaries[0][0] == BoundaryCondition::PERIODIC)
+        && (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC)) {
       auto ni = mblock.Ni1();
       auto nj = mblock.Ni2();
       Kokkos::parallel_for(

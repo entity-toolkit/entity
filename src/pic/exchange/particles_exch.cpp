@@ -10,29 +10,24 @@ namespace ntt {
    */
   template <>
   void PIC<Dim1>::ParticlesExchange() {
-    auto& mblock = this->meshblock;
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
-      for (auto& species : mblock.particles) {
-        auto ni = mblock.Ni1();
-        Kokkos::parallel_for(
-          "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
+    auto& mblock      = this->meshblock;
+    auto  periodic_x1 = (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC);
+    auto  ni1         = mblock.Ni1();
+    for (auto& species : mblock.particles) {
+      Kokkos::parallel_for(
+        "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
+          if (periodic_x1) {
             if (species.i1(p) < 0) {
-              species.i1(p) += ni;
-            } else if (species.i1(p) >= ni) {
-              species.i1(p) -= ni;
+              species.i1(p) += ni1;
+            } else if (species.i1(p) >= ni1) {
+              species.i1(p) -= ni1;
             }
-          });
-      }
-    } else {
-      for (auto& species : mblock.particles) {
-        auto ni = mblock.Ni1();
-        Kokkos::parallel_for(
-          "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
-            if ((species.i1(p) < 0) || (species.i1(p) >= ni)) {
+          } else {
+            if ((species.i1(p) < 0) || (species.i1(p) >= ni1)) {
               species.tag(p) = static_cast<short>(ParticleTag::dead);
             }
-          });
-      }
+          }
+        });
     }
   }
 
@@ -41,37 +36,37 @@ namespace ntt {
    */
   template <>
   void PIC<Dim2>::ParticlesExchange() {
-    auto& mblock = this->meshblock;
-    if (mblock.boundaries[0] == BoundaryCondition::PERIODIC) {
-      for (auto& species : mblock.particles) {
-        auto ni = mblock.Ni1();
-        auto nj = mblock.Ni2();
-        Kokkos::parallel_for(
-          "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
+    auto& mblock      = this->meshblock;
+    auto  periodic_x1 = (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC);
+    auto  periodic_x2 = (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC);
+    auto  ni1         = mblock.Ni1();
+    auto  ni2         = mblock.Ni2();
+    for (auto& species : mblock.particles) {
+      Kokkos::parallel_for(
+        "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
+          if (periodic_x1) {
             if (species.i1(p) < 0) {
-              species.i1(p) += ni;
-            } else if (species.i1(p) >= ni) {
-              species.i1(p) -= ni;
+              species.i1(p) += ni1;
+            } else if (species.i1(p) >= ni1) {
+              species.i1(p) -= ni1;
             }
-            if (species.i2(p) < 0) {
-              species.i2(p) += nj;
-            } else if (species.i2(p) >= nj) {
-              species.i2(p) -= nj;
-            }
-          });
-      }
-    } else {
-      for (auto& species : mblock.particles) {
-        auto ni = mblock.Ni1();
-        auto nj = mblock.Ni2();
-        Kokkos::parallel_for(
-          "prtl_bc", species.rangeActiveParticles(), Lambda(index_t p) {
-            if ((species.i1(p) < 0) || (species.i1(p) >= ni) || (species.i2(p) < 0)
-                || (species.i2(p) >= nj)) {
+          } else {
+            if ((species.i1(p) < 0) || (species.i1(p) >= ni1)) {
               species.tag(p) = static_cast<short>(ParticleTag::dead);
             }
-          });
-      }
+          }
+          if (periodic_x2) {
+            if (species.i2(p) < 0) {
+              species.i2(p) += ni2;
+            } else if (species.i2(p) >= ni2) {
+              species.i2(p) -= ni2;
+            }
+          } else {
+            if ((species.i2(p) < 0) || (species.i2(p) >= ni2)) {
+              species.tag(p) = static_cast<short>(ParticleTag::dead);
+            }
+          }
+        });
     }
   }
 
