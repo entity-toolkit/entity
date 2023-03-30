@@ -5,8 +5,6 @@
 #include "sim_params.h"
 #include "timer.h"
 
-#include "init_fields.hpp"
-
 #include <plog/Log.h>
 
 namespace ntt {

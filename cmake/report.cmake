@@ -65,13 +65,6 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
       set(col ${Underline}${col})
     endif()
 
-    # disabled options
-    if("${Flag}" STREQUAL "engine")
-      if(${ch} STREQUAL "grpic")
-        set(ch ${StrikeBegin}grpic${StrikeEnd})
-      endif()
-    endif()
-
     set(rstring_i "${rstring_i}${col}${ch}${ColorReset}")
     math(EXPR counter "${counter} + 1")
     set(rstring "${rstring}${rstring_i}")

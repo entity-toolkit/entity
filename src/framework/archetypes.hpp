@@ -211,6 +211,10 @@ namespace ntt {
     InjectionCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
 
+    Inline virtual auto operator()(const coord_t<D>&) const -> bool {
+      return true;
+    }
+
   protected:
     SimulationParams m_params;
     Meshblock<D, S>  m_mblock;
@@ -220,9 +224,35 @@ namespace ntt {
   struct NoCriterion : public InjectionCriterion<D, S> {
     NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : InjectionCriterion<D, S>(params, mblock) {}
-    Inline bool operator()(const coord_t<D>&) const {
+    Inline auto operator()(const coord_t<D>&) const -> bool {
       return true;
     }
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Vector potential                              */
+  /* -------------------------------------------------------------------------- */
+  template <Dimension D, SimulationEngine S>
+  struct VectorPotential {
+    VectorPotential(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : m_params { params }, m_mblock { mblock } {}
+
+    Inline virtual auto A_x0(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto A_x1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto A_x2(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto A_x3(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+  protected:
+    SimulationParams m_params;
+    Meshblock<D, S>  m_mblock;
   };
 
 }    // namespace ntt

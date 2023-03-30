@@ -170,9 +170,6 @@ namespace ntt {
                                  const real_t&,
                                  const std::size_t&) {}
 
-  template <Dimension D, SimulationEngine S>
-  Writer<D, S>::~Writer() {}
-
 #endif
 
 }    // namespace ntt

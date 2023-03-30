@@ -7,7 +7,7 @@
 
 #include "problem_generator.hpp"
 
-#include <toml/toml.hpp>
+#include <toml.hpp>
 
 namespace ntt {
   enum class gr_bc { Dfield, Efield, Bfield, Hfield };
