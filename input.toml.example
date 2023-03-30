@@ -9,7 +9,8 @@ qsph_r0         = <float: -infinity < ... < r_min>
 qsph_h          = <float: -1 < ... < 1>
 resolution      = <array of int of size 1, 2 or 3>
 extent          = <array of float of size 2, 4 or 6>, ex. [x1min, x1max, x2min, x2max, x3min, x3max]
-boundaries      = <array of strings of size 1, 2 or 3: { "PERIODIC" | "ABSORB" | "OPEN" | "USER" }>
+boundaries      = <2xD array of strings: { "PERIODIC" | "ABSORB" | "OPEN" | "CUSTOM" }>
+                  ex. [["CUSTOM", "ABSORB"], ["AXIS"]], [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
 CFL             = <float: 0.0 < ... < 1.0>
