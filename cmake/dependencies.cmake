@@ -44,11 +44,11 @@ if(${nttiny} STREQUAL "ON")
 endif()
 
 find_or_fetch_dependency(kokkos FALSE)
-find_or_fetch_dependency(fmt FALSE)
+find_or_fetch_dependency(fmt TRUE)
 find_or_fetch_dependency(plog TRUE)
 find_or_fetch_dependency(toml11 TRUE)
 
-list(APPEND DEPENDENCIES Kokkos::kokkos fmt::fmt)
+list(APPEND DEPENDENCIES Kokkos::kokkos fmt::fmt-header-only)
 
 if(${output} STREQUAL "ON")
   find_or_fetch_dependency(adios2 FALSE)
