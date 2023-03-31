@@ -153,7 +153,9 @@ namespace ntt {
   // Field IDs used for io
   enum class FieldID {
     E,      // Electric fields
+    D,      // Electric fields (GR)
     B,      // Magnetic fields
+    H,      // Magnetic fields (GR)
     J,      // Current density
     T,      // Particle distribution moments
     Rho,    // Particle density

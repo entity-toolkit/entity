@@ -33,7 +33,6 @@ namespace ntt {
   template <>
   void PIC<Dim2>::FieldsBoundaryConditions() {
     /* ----------------------- axisymmetric spherical grid ---------------------- */
-    // r = rmin boundary
     auto& pgen   = this->problem_generator;
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
@@ -60,7 +59,7 @@ namespace ntt {
           mblock.em(i1_max, i2, em::bx1) = mblock.em(i1_max - 1, i2, em::bx1);
         });
     }
-    if (mblock.boundaries[0][1] == BoundaryCondition::OPEN) {
+    if (mblock.boundaries[0][1] == BoundaryCondition::ABSORB) {
       /**
        * r = rmax (absorbing boundary)
        *    . . . . . . . . . . . . .
@@ -76,8 +75,8 @@ namespace ntt {
        *    .                       .
        *    . . . . . . . . . . . . .
        */
-      auto          r_absorb = params.metricParameters()[2];
-      auto          r_max    = mblock.metric.x1_max;
+      const auto    r_absorb = params.metricParameters()[2];
+      const auto    r_max    = mblock.metric.x1_max;
       coord_t<Dim2> xcu;
       mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
       const auto i1_absorb = (int)(xcu[0]);

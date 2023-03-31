@@ -62,7 +62,6 @@ namespace ntt {
     void InitialStep();
 
     /* ---------------------------------- Reset --------------------------------- */
-    // !ADD: #GR
     /**
      * @brief Reset field arrays.
      */

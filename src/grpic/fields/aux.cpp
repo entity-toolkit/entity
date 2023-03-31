@@ -20,6 +20,7 @@ namespace ntt {
     } else {
       NTTHostError("Wrong option for `g`");
     }
+    NTTLog();
   }
 
   template <>
@@ -34,6 +35,7 @@ namespace ntt {
     } else {
       NTTHostError("Wrong option for `g`");
     }
+    NTTLog();
   }
 
   template <>
@@ -41,6 +43,7 @@ namespace ntt {
     auto& mblock = this->meshblock;
     Kokkos::parallel_for(
       "TimeAverageDB", mblock.rangeActiveCells(), TimeAverageDB_kernel<Dim2>(mblock));
+    NTTLog();
   }
 
   template <>
@@ -48,6 +51,7 @@ namespace ntt {
     auto& mblock = this->meshblock;
     Kokkos::parallel_for(
       "TimeAverageJ", mblock.rangeActiveCells(), TimeAverageJ_kernel<Dim2>(mblock));
+    NTTLog();
   }
 
   template <>

@@ -21,8 +21,12 @@ namespace ntt {
     switch (id) {
     case FieldID::E:
       return "E";
+    case FieldID::D:
+      return "D";
     case FieldID::B:
       return "B";
+    case FieldID::H:
+      return "H";
     case FieldID::J:
       return "J";
     case FieldID::T:

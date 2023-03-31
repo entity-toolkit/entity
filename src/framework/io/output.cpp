@@ -109,37 +109,43 @@ namespace ntt {
   }    // namespace
 
   auto InterpretInputField(const std::string& fld) -> OutputField {
+    FieldID                       id;
+    std::vector<std::vector<int>> comps   = { {} };
+    std::vector<int>              species = {};
     if (fld.find("T") == 0) {
-      const auto id      = FieldID::T;
-      auto       species = InterpretInputField_getspecies(fld);
-      auto comps = InterpretInputField_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
-      return InterpretInputField_helper(id, comps, species);
+      id = FieldID::T;
     } else if (fld.find("Rho") == 0) {
-      const auto id      = FieldID::Rho;
-      auto       species = InterpretInputField_getspecies(fld);
-      return InterpretInputField_helper(id, { {} }, species);
+      id = FieldID::Rho;
     } else if (fld.find("Nppc") == 0) {
-      const auto id      = FieldID::Nppc;
-      auto       species = InterpretInputField_getspecies(fld);
-      return InterpretInputField_helper(id, { {} }, species);
+      id = FieldID::Nppc;
     } else if (fld.find("N") == 0) {
-      const auto id      = FieldID::N;
-      auto       species = InterpretInputField_getspecies(fld);
-      return InterpretInputField_helper(id, { {} }, species);
+      id = FieldID::N;
     } else if (fld.find("E") == 0) {
-      const auto id    = FieldID::E;
-      auto       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
-      return InterpretInputField_helper(id, comps, {});
+      id = FieldID::E;
     } else if (fld.find("B") == 0) {
-      const auto id    = FieldID::B;
-      auto       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
-      return InterpretInputField_helper(id, comps, {});
+      id = FieldID::B;
+    } else if (fld.find("D") == 0) {
+      id = FieldID::D;
+    } else if (fld.find("H") == 0) {
+      id = FieldID::H;
     } else if (fld.find("J") == 0) {
-      const auto id    = FieldID::J;
-      auto       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
-      return InterpretInputField_helper(id, comps, {});
+      id = FieldID::J;
+    } else {
+      NTTHostError("Invalid field name");
     }
-    NTTHostError("Invalid field name");
+    auto is_moment
+      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N);
+    auto is_field = (id == FieldID::E || id == FieldID::B || id == FieldID::D
+                     || id == FieldID::H || id == FieldID::J);
+    if (is_moment) {
+      species = InterpretInputField_getspecies(fld);
+    } else if (is_field) {
+      comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
+    }
+    if (id == FieldID::T) {
+      comps = InterpretInputField_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
+    }
+    return InterpretInputField_helper(id, comps, species);
   }
 
 #ifdef OUTPUT_ENABLED
@@ -188,22 +194,28 @@ namespace ntt {
                         adios2::Engine&         writer,
                         const SimulationParams& params,
                         Meshblock<D, S>&        mblock) const {
-    PrepareOutputFlags flags;
-    if constexpr (S != GRPICEngine) {
-      flags = PrepareOutput_Default;
-    } else {
-      flags = PrepareOutput_InterpToCellCent;
+    // PrepareOutputFlags flags;
+    // if constexpr (S != GRPICEngine) {
+    //   flags = PrepareOutput_Default;
+    // } else {
+    if constexpr (S == GRPICEngine) {
+      if (m_id == FieldID::E || m_id == FieldID::H) {
+        NTTHostError("Output of E and H (aux) fields is not supported yet");
+      }
     }
-    if ((m_id == FieldID::E) || (m_id == FieldID::B)) {
-      mblock.PrepareFieldsForOutput(flags);
+    //   flags = PrepareOutput_InterpToCellCenter;
+    // }
+    if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)
+        || (m_id == FieldID::H)) {
+      mblock.PrepareFieldsForOutput();
       ImposeEmptyContent(mblock.bckp_content);
       std::vector<em>      comp_options;
       std::vector<Content> content_options
         = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
             Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
-      if (m_id == FieldID::E) {
+      if (m_id == FieldID::E || m_id == FieldID::D) {
         comp_options = { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 };
-      } else if (m_id == FieldID::B) {
+      } else if (m_id == FieldID::B || m_id == FieldID::H) {
         comp_options = { em::bx1, em::bx2, em::bx3 };
       }
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
@@ -211,7 +223,7 @@ namespace ntt {
         PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
       }
     } else if (m_id == FieldID::J) {
-      mblock.PrepareCurrentsForOutput(flags);
+      mblock.PrepareCurrentsForOutput();
       ImposeEmptyContent(mblock.cur_content);
       std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
       std::vector<Content> content_options

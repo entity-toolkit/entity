@@ -13,10 +13,10 @@
 
 namespace ntt {
   enum PrepareOutputFlags_ {
-    PrepareOutput_None             = 0,
-    PrepareOutput_InterpToCellCent = 1 << 0,
-    PrepareOutput_ConvertToHat     = 1 << 1,
-    PrepareOutput_Default = PrepareOutput_InterpToCellCent | PrepareOutput_ConvertToHat,
+    PrepareOutput_None               = 0,
+    PrepareOutput_InterpToCellCenter = 1 << 0,
+    PrepareOutput_ConvertToHat       = 1 << 1,
+    PrepareOutput_Default = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToHat,
   };
   typedef int PrepareOutputFlags;
 
@@ -99,18 +99,14 @@ namespace ntt {
      * @brief Used for outputting/visualizing the fields.
      * @note Specializations defined.
      */
-    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default) {
-      NTTHostError("Not implemented.");
-    }
+    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
 
     /**
      * @brief Currents to hatted basis.
      * @brief Used for outputting/visualizing the currents.
      * @note Specializations defined.
      */
-    void PrepareCurrentsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default) {
-      NTTHostError("Not implemented.");
-    }
+    void PrepareCurrentsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
 
     /**
      * @brief Compute particle moment for output or other usage.

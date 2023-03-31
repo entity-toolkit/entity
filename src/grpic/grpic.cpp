@@ -2,6 +2,7 @@
 
 #include "wrapper.h"
 
+#include "progressbar.h"
 #include "sim_params.h"
 #include "timer.h"
 
@@ -25,7 +26,6 @@ namespace ntt {
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
         StepForward();
-        PLOGI_(LogFile) << "[OK] ti " << this->m_tstep;
       }
       WaitAndSynchronize();
     }
@@ -188,6 +188,14 @@ namespace ntt {
      *          x_prtl   at 1
      *          u_prtl   at 1/2
      */
+    auto& mblock = this->meshblock;
+    ImposeContent(mblock.em_content,
+                  { Content::ex1_cntrv,
+                    Content::ex2_cntrv,
+                    Content::ex3_cntrv,
+                    Content::bx1_cntrv,
+                    Content::bx2_cntrv,
+                    Content::bx3_cntrv });
   }
 
   template <Dimension D>
@@ -200,6 +208,7 @@ namespace ntt {
 
     timer::Timers timers(
       { "FieldSolver", "FieldBoundaries", "CurrentDeposit", "ParticlePusher" });
+    static std::vector<long double> tstep_durations = {};
     /**
      * Initially: em0::B   at n-3/2
      *            em0::D   at n-1
@@ -377,8 +386,25 @@ namespace ntt {
      *          x_prtl   at n+1
      *          u_prtl   at n+1/2
      */
+    timers.start("Output");
+    if ((params.outputFormat() != "disabled")
+        && (this->m_tstep % params.outputInterval() == 0)) {
+      WaitAndSynchronize();
+      wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
+    }
+    timers.stop("Output");
+
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
+    tstep_durations.push_back(timers.get("Total"));
+    std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
+    ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
+    std::cout << std::setw(46) << std::setfill('=') << "" << std::endl;
+
+    ImposeEmptyContent(mblock.buff_content);
+    ImposeEmptyContent(mblock.cur_content);
+    ImposeEmptyContent(mblock.bckp_content);
+
     this->m_time += mblock.timestep();
     this->m_tstep++;
   }

@@ -27,6 +27,7 @@ namespace ntt {
     } else {
       NTTHostError("Wrong option for `g`");
     }
+    NTTLog();
   }
 
   template <>
