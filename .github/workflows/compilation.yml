@@ -1,9 +1,9 @@
 name: Compilation
 
 on:
-  push:
+  pull_request:
     branches:
-      - dev/gr
+      - master
 
 jobs:
   build-pic:

@@ -7,7 +7,7 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
   <picture>
     <source media="(prefers-color-scheme: dark)" style="width:100%" srcset="assets/cover_dark-opt.gif">
     <source media="(prefers-color-scheme: light)" style="width:100%" srcset="assets/cover_light-opt.gif">
-    <img alt="cover" src="assets/cover_light.gif">
+    <img alt="cover"/>
   </picture>
 </p>
 
@@ -28,15 +28,6 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): PIC}
 
 ## Development status
-
-[![Compilation](https://github.com/haykh/entity/actions/workflows/compilation.yml/badge.svg)](https://github.com/haykh/entity/actions/workflows/compilation.yml)
-
-### Active to-do
-
-  - [x] change metrics/aux foldername
-  - [x] add time as a global parameter
-  - [x] use `kokkos` methods for `vis/nttiny.cpp`
-  - [x] add disabled indicator for options in `report.cmake`
 
 ### Short term things to do/fix
 
