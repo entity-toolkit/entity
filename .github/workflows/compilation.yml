@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
-      - name: Compile PIC
+      - name: Compile
         run: |
           cmake -B build -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON
           cd build
@@ -42,7 +42,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
-      - name: Compile GRPIC
+      - name: Compile
         run: |
           cmake -B build -D engine=grpic -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON
           cd build
