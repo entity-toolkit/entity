@@ -29,6 +29,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 ## Development status
 
+[![Compilation](https://github.com/haykh/entity/actions/workflows/compilation.yml/badge.svg)](https://github.com/haykh/entity/actions/workflows/compilation.yml)
+
 ### Active to-do
 
   - [x] change metrics/aux foldername
