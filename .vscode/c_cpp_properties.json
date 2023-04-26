@@ -1,32 +1,29 @@
 {
-  "env": {
-    "myDefaultIncludePath": [
-      "${workspaceFolder}",
-      "${workspaceFolder}/src/**",
-      "${workspaceFolder}/build/src/",
-      "${workspaceFolder}/extern/**",
-      "${workspaceFolder}/build/extern/kokkos/",
-      "${workspaceFolder}/build/extern/adios2/source/"
-    ],
-    "myCompilerPath": "g++"
-  },
   "configurations": [
     {
       "name": "default",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
-        "${myDefaultIncludePath}"
+        "${workspaceFolder}/build/**",
+        "${workspaceFolder}/build/_deps/kokkos-build/core/src",
+        // "/home/hayk/Codes/adios2/install/include",
+        // "/usr/local/cuda/include",
+        "${workspaceFolder}/src/**",
+        "${workspaceFolder}/build/src/",
+        "${workspaceFolder}/extern/**"
       ],
       "defines": [
-        "PIC_ENGINE",
+        // "PIC_ENGINE",
+        "GRPIC_ENGINE",
         "SINGLE_PRECISION",
         "OMPENABLED",
         "OUTPUT_ENABLED",
         // "MINKOWSKI_METRIC",
-        "QSPHERICAL_METRIC",
-        "NTTINY_ENABLED"
+        // "QSPHERICAL_METRIC",
+        "QKERR_SCHILD_METRIC"
+        // "NTTINY_ENABLED"
       ],
-      "compilerPath": "${myCompilerPath}",
+      "compilerPath": "/usr/bin/g++",
       "cStandard": "c17",
       "cppStandard": "c++17",
       "forcedInclude": [

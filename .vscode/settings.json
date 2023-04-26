@@ -9,6 +9,7 @@
     "docs/": true
   },
   "files.associations": {
+    "*.cmake": "cmake",
     "*.h.in": "cpp",
     "*.in": "cpp",
     "string_view": "cpp",
@@ -112,12 +113,13 @@
     "filesystem": "cpp",
     "future": "cpp",
     "*.inc": "cpp",
-    "__std_stream": "cpp"
+    "__std_stream": "cpp",
+    "span": "cpp"
   },
   "editor.tokenColorCustomizations": {
     "textMateRules": [],
   },
-  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.errorSquiggles": "enabled",
   "cmake.buildDirectory": "${workspaceFolder}/build",
   "cmake.configureSettings": {
     "output": "OFF",

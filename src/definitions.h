@@ -162,6 +162,12 @@ namespace ntt {
     N,      // Particle number density
     Nppc    // Raw number of particles per each cell
   };
+
+  enum class PrtlID {
+    X,    // Position
+    U,    // 4-Velocity / 4-Momentum
+    W     // Weight
+  };
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */

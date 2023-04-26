@@ -42,6 +42,17 @@ namespace ntt {
     }
   }
 
+  inline auto StringizePrtlID(const PrtlID& id) -> std::string {
+    switch (id) {
+    case PrtlID::X:
+      return "X";
+    case PrtlID::U:
+      return "U";
+    case PrtlID::W:
+      return "W";
+    }
+  }
+
   class OutputField {
     std::string m_name;
     FieldID     m_id;
@@ -91,7 +102,42 @@ namespace ntt {
 #endif
   };
 
+  class OutputParticles {
+    std::string m_name;
+    int         m_species_id;
+    PrtlID      m_id;
+
+  public:
+    OutputParticles() = default;
+    OutputParticles(const std::string& name, const int& species_id, const PrtlID& id)
+      : m_name(name), m_species_id(species_id), m_id(id) {}
+    ~OutputParticles() = default;
+
+    void setName(const std::string& name) {
+      m_name = name;
+    }
+    void setSpeciesID(const int& species_id) {
+      m_species_id = species_id;
+    }
+    void setId(const PrtlID& id) {
+      m_id = id;
+    }
+
+    [[nodiscard]] auto name() const -> std::string {
+      return "species_" + m_name;
+    }
+
+    [[nodiscard]] auto speciesID() const -> int {
+      return m_species_id;
+    }
+
+    [[nodiscard]] auto id() const -> PrtlID {
+      return m_id;
+    }
+  };
+
   auto InterpretInputField(const std::string&) -> OutputField;
+  auto InterpretInputParticles(const std::string&) -> OutputParticles;
 }    // namespace ntt
 
 #endif    // IO_OUTPUT_H

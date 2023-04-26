@@ -118,9 +118,9 @@ namespace ntt {
     m_io.DefineAttribute<int>("NGhosts", N_GHOSTS);
     m_io.DefineAttribute<int>("Dimension", (int)D);
 
-    if constexpr (S == GRPICEngine) {
-      m_io.DefineAttribute<real_t>("a", mblock.metric.spin());
-    }
+#  ifdef GRPIC_ENGINE
+    m_io.DefineAttribute<real_t>("a", mblock.metric.spin());
+#  endif
 
     m_io.DefineAttribute<real_t>("Timestep", mblock.timestep());
 
