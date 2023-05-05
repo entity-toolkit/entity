@@ -34,11 +34,17 @@ namespace ntt {
     ~Writer();
 
     void Initialize(const SimulationParams&, const Meshblock<D, S>&);
+    void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);
 
     void WriteFields(const SimulationParams&,
                      Meshblock<D, S>&,
                      const real_t&,
                      const std::size_t&);
+                     
+    void WriteParticles(const SimulationParams&,
+                        Meshblock<D, S>&,
+                        const real_t&,
+                        const std::size_t&);
   };
 
 }    // namespace ntt

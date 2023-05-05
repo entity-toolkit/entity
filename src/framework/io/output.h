@@ -138,6 +138,11 @@ namespace ntt {
     [[nodiscard]] auto id() const -> PrtlID {
       return m_id;
     }
+
+#ifdef OUTPUT_ENABLED
+    template <Dimension D, SimulationEngine S>
+    void put(adios2::IO&, adios2::Engine&, const SimulationParams&, Meshblock<D, S>&) const;
+#endif
   };
 
   auto InterpretInputField(const std::string&) -> OutputField;

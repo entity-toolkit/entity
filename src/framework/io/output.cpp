@@ -4,6 +4,7 @@
 
 #include "fields.h"
 #include "meshblock.h"
+#include "particle_macros.h"
 #include "sim_params.h"
 #include "utils.h"
 
@@ -209,17 +210,11 @@ namespace ntt {
                         adios2::Engine&         writer,
                         const SimulationParams& params,
                         Meshblock<D, S>&        mblock) const {
-    // PrepareOutputFlags flags;
-    // if constexpr (S != GRPICEngine) {
-    //   flags = PrepareOutput_Default;
-    // } else {
     if constexpr (S == GRPICEngine) {
       if (m_id == FieldID::E || m_id == FieldID::H) {
         NTTHostError("Output of E and H (aux) fields is not supported yet");
       }
     }
-    //   flags = PrepareOutput_InterpToCellCenter;
-    // }
     if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)
         || (m_id == FieldID::H)) {
       mblock.PrepareFieldsForOutput();
@@ -257,6 +252,47 @@ namespace ntt {
                               i % 3,
                               m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
         PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
+      }
+    }
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void OutputParticles::put(adios2::IO&             io,
+                            adios2::Engine&         writer,
+                            const SimulationParams& params,
+                            Meshblock<D, S>&        mblock) const {
+    for (auto& s : speciesID()) {
+      auto prtls = mblock.particles[s - 1];
+      if (m_id == PrtlID::X) {
+        for (auto d { 0 }; d < (short)D; ++d) {
+          array_t<real_t*> xi("xi", prtls.npart());
+          Kokkos::parallel_for(
+            "ParticlesOutput_Xi", prtls.npart(), Lambda(index_t p) {
+              coord_t<D> xcode { ZERO }, xph { ZERO };
+              if (d == 0) {
+                xcode[0] = get_prtl_x1(prtls, p);
+              } else if (d == 1) {
+                xcode[1] = get_prtl_x2(prtls, p);
+              } else if (d == 2) {
+                xcode[2] = get_prtl_x3(prtls, p);
+              }
+#  ifdef MINKOWSKI_METRIC
+              mblock.metric.x_Code2Cart(xcode, xph);
+#  else
+              mblock.metric.x_Code2Sph(xcode, xph);
+#  endif
+              if (d == 0) {
+                xi(p) = xph[0];
+              } else if (d == 1) {
+                xi(p) = xph[1];
+              } else if (d == 2) {
+                xi(p) = xph[2];
+              }
+            });
+        }
+        // mblock.particles[s].i1
+      } else if (m_id == PrtlID::U) {
+      } else if (m_id == PrtlID::W) {
       }
     }
   }

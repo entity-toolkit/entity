@@ -134,7 +134,16 @@ namespace ntt {
       m_fields.push_back(InterpretInputField(var));
     }
     for (auto& var : params.outputParticles()) {
-      m_particles.push_back(InterpretInputParticles(var));
+      auto prtl_to_output = InterpretInputParticles(var);
+      if (prtl_to_output.speciesID().size() == 0) {
+        // if no species specified, pick all
+        std::vector<int> species;
+        for (auto s { 0 }; s < params.species().size(); ++s) {
+          species.push_back(s + 1);
+        }
+        prtl_to_output.setSpeciesID(species);
+      }
+      m_particles.push_back(prtl_to_output);
     }
     for (auto& fld : m_fields) {
       for (auto i { 0 }; i < fld.comp.size(); ++i) {
@@ -142,20 +151,11 @@ namespace ntt {
       }
     }
     for (auto& prtl : m_particles) {
-      std::vector<int> species;
-      // if no species specified, pick all
-      if (prtl.speciesID().size() == 0) {
-        for (auto s { 0 }; s < params.species().size(); ++s) {
-          species.push_back(s + 1);
-        }
-      } else {
-        species = prtl.speciesID();
-      }
-      for (auto s { 0 }; s < species.size(); ++s) {
-        m_io.DefineVariable<real_t>(prtl.name(species[s]),
-                                    prtl_shape[species[s] - 1],
-                                    prtl_start[species[s] - 1],
-                                    prtl_count[species[s] - 1],
+      for (auto s { 0 }; s < prtl.speciesID().size(); ++s) {
+        m_io.DefineVariable<real_t>(prtl.name(prtl.speciesID()[s]),
+                                    prtl_shape[prtl.speciesID()[s] - 1],
+                                    prtl_start[prtl.speciesID()[s] - 1],
+                                    prtl_count[prtl.speciesID()[s] - 1],
                                     adios2::ConstantDims);
       }
     }
@@ -165,29 +165,48 @@ namespace ntt {
   Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationEngine S>
+  void Writer<D, S>::WriteAll(const SimulationParams& params,
+                              Meshblock<D, S>&        mblock,
+                              const real_t&           time,
+                              const std::size_t&      tstep) {
+    NTTLog();
+    m_writer = m_io.Open(params.title() + ".flds.h5", m_mode);
+    m_mode   = adios2::Mode::Append;
+    m_writer.BeginStep();
+    int step = (int)tstep;
+
+    m_writer.Put<int>(m_io.InquireVariable<int>("Step"), &step);
+    m_writer.Put<real_t>(m_io.InquireVariable<real_t>("Time"), &time);
+
+    WriteFields(params, mblock, time, tstep);
+    WriteParticles(params, mblock, time, tstep);
+
+    m_writer.EndStep();
+    m_writer.Close();
+  }
+
+  template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const SimulationParams& params,
                                  Meshblock<D, S>&        mblock,
                                  const real_t&           time,
                                  const std::size_t&      tstep) {
-    NTTLog();
-    m_writer = m_io.Open(params.title() + ".flds.h5", m_mode);
-    m_mode   = adios2::Mode::Append;
-
-    m_writer.BeginStep();
-
-    int step = (int)tstep;
-    m_writer.Put<int>(m_io.InquireVariable<int>("Step"), &step);
-    m_writer.Put<real_t>(m_io.InquireVariable<real_t>("Time"), &time);
-
     // traverse all the fields and put them. ...
     // ... also make sure that the fields are ready for output, ...
     // ... i.e. they have been written into proper arrays
     for (auto& fld : m_fields) {
       fld.put<D, S>(m_io, m_writer, params, mblock);
     }
+  }
 
-    m_writer.EndStep();
-    m_writer.Close();
+  template <Dimension D, SimulationEngine S>
+  void Writer<D, S>::WriteParticles(const SimulationParams& params,
+                                    Meshblock<D, S>&        mblock,
+                                    const real_t&           time,
+                                    const std::size_t&      tstep) {
+    // traverse all the particle quantities and put them.
+    for (auto& prtl : m_particles) {
+      prtl.put<D, S>(m_io, m_writer, params, mblock);
+    }
   }
 
 #else
@@ -198,10 +217,22 @@ namespace ntt {
   Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationEngine S>
+  void Writer<D, S>::WriteAll(const SimulationParams&,
+                              Meshblock<D, S>&,
+                              const real_t&,
+                              const std::size_t&) {}
+
+  template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const SimulationParams&,
                                  Meshblock<D, S>&,
                                  const real_t&,
                                  const std::size_t&) {}
+
+  template <Dimension D, SimulationEngine S>
+  void Writer<D, S>::WriteParticles(const SimulationParams&,
+                                    Meshblock<D, S>&,
+                                    const real_t&,
+                                    const std::size_t&) {}
 
 #endif
 
