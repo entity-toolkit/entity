@@ -151,26 +151,21 @@ PrintChoices("Debug mode"
   42
 )
 
-message(STATUS ${kokkos_SRC})
-get_directory_property(KOKKOS_VERSION
-  DIRECTORY ${kokkos_ROOT}
-  DEFINITION Kokkos_VERSION)
-
-get_directory_property(ENABLED_ARCHS
-  DIRECTORY ${kokkos_SRC}
-  DEFINITION KOKKOS_ENABLED_ARCH_LIST)
-string(REPLACE ";" " + " ARCHS "${ENABLED_ARCHS}")
-message(STATUS "ARCHS: ${ARCHS}")
-PrintChoices("CPU/GPU architecture"
-  ""
-  "${ARCHS}"
-  "${ARCHS}"
-  "N/A"
-  "${White}"
-  ARCH_REPORT
-  0
-  39
-)
+# get_directory_property(ENABLED_ARCHS
+# DIRECTORY ${kokkos_ROOT}/lib/cmake/Kokkos/
+# DEFINITION Kokkos_ARCH)
+# string(REPLACE ";" " + " ARCHS "${ENABLED_ARCHS}")
+# message(STATUS "ARCHS: ${ARCHS}")
+# PrintChoices("CPU/GPU architecture"
+# ""
+# "${ARCHS}"
+# "${ARCHS}"
+# "N/A"
+# "${White}"
+# ARCH_REPORT
+# 0
+# 39
+# )
 PrintChoices("CUDA"
   "Kokkos_ENABLE_CUDA"
   "${ON_OFF_VALUES}"
@@ -273,18 +268,17 @@ message("${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}")
 
-string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" kokkos_ROOT_rel "${kokkos_ROOT}")
-message("  - Kokkos [${Magenta}kokkos_ROOT${ColorReset}]:\t\t  ${kokkos_ROOT_rel} v${KOKKOS_VERSION}\n")
+string(REPLACE ${CMAKE_SOURCE_DIR} "./" kokkos_ROOT_rel "${kokkos_ROOT}")
+message("  - Kokkos [${Magenta}kokkos_ROOT${ColorReset}]:\t\t  ${kokkos_ROOT_rel} v${kokkos_VERSION}\n")
 
 if(NOT "${adios2_ROOT}" STREQUAL "" AND ${output} STREQUAL "ON")
-  string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_ROOT}")
-  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT}\n")
+  string(REPLACE ${CMAKE_SOURCE_DIR} "./" adios2_ROOT_rel "${adios2_ROOT}")
+  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT} v${adios2_VERSION}\n")
 endif()
 
-if(ENABLED_ARCHS)
-  message("  ${ARCH_REPORT}\n")
-endif()
-
+# if(ENABLED_ARCHS)
+# message("  ${ARCH_REPORT}\n")
+# endif()
 message("  ${CUDA_REPORT}\n")
 message("  ${OPENMP_REPORT}\n")
 

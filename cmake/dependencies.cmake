@@ -6,7 +6,7 @@ set(toml11_REPOSITORY https://github.com/ToruNiina/toml11 CACHE STRING "toml11 r
 # set (adios2_REPOSITORY https://github.com/ornladios/ADIOS2.git CACHE STRING "ADIOS2 repository")
 function(find_or_fetch_dependency package_name header_only)
   if(NOT header_only)
-    find_package(${package_name} QUIET)
+    find_package(${package_name})
   endif()
 
   if(NOT(${package_name}_FOUND))
@@ -36,6 +36,7 @@ function(find_or_fetch_dependency package_name header_only)
     endif()
   else()
     message(STATUS "${Green}${package_name} found.${ColorReset}")
+    set(${package_name}_VERSION ${${package_name}_VERSION} CACHE INTERNAL "${package_name} version")
   endif()
 endfunction()
 
