@@ -268,11 +268,11 @@ message("${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}")
 
-string(REPLACE ${CMAKE_SOURCE_DIR} "./" kokkos_ROOT_rel "${kokkos_ROOT}")
+string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" kokkos_ROOT_rel "${kokkos_ROOT}")
 message("  - Kokkos [${Magenta}kokkos_ROOT${ColorReset}]:\t\t  ${kokkos_ROOT_rel} v${kokkos_VERSION}\n")
 
 if(NOT "${adios2_ROOT}" STREQUAL "" AND ${output} STREQUAL "ON")
-  string(REPLACE ${CMAKE_SOURCE_DIR} "./" adios2_ROOT_rel "${adios2_ROOT}")
+  string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_ROOT}")
   message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT} v${adios2_VERSION}\n")
 endif()
 

@@ -6,7 +6,7 @@ set(toml11_REPOSITORY https://github.com/ToruNiina/toml11 CACHE STRING "toml11 r
 # set (adios2_REPOSITORY https://github.com/ornladios/ADIOS2.git CACHE STRING "ADIOS2 repository")
 function(find_or_fetch_dependency package_name header_only)
   if(NOT header_only)
-    find_package(${package_name})
+    find_package(${package_name} QUIET)
   endif()
 
   if(NOT(${package_name}_FOUND))
@@ -23,6 +23,13 @@ function(find_or_fetch_dependency package_name header_only)
       set(${package_name}_SRC ${CMAKE_CURRENT_BINARY_DIR}/_deps/${package_name}-src CACHE PATH "Path to ${package_name} src")
       set(${package_name}_FETCHED TRUE CACHE BOOL "Whether ${package_name} was fetched")
       message(STATUS "${Green}${package_name} fetched.${ColorReset}")
+
+      if(${package_name} STREQUAL "kokkos")
+        get_directory_property(kokkos_VERSION
+          DIRECTORY ${${package_name}_SRC}/
+          DEFINITION Kokkos_VERSION)
+        set(${package_name}_VERSION ${kokkos_VERSION} CACHE INTERNAL "${package_name} version")
+      endif()
     else()
       # get as submodule
       message(STATUS "${Yellow}${package_name} not found. Getting as submodule.${ColorReset}")
