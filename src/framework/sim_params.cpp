@@ -165,6 +165,7 @@ namespace ntt {
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
     m_output_interval   = get<int>("output", "interval", defaults::output_interval);
     m_output_fields     = get<std::vector<std::string>>("output", "fields");
+    m_output_particles  = get<std::vector<std::string>>("output", "particles");
     m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
   }
 }    // namespace ntt

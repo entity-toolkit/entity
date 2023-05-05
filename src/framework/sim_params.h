@@ -65,6 +65,7 @@ namespace ntt {
     std::string                                 m_output_format;
     int                                         m_output_interval;
     std::vector<std::string>                    m_output_fields;
+    std::vector<std::string>                    m_output_particles;
     int                                         m_output_mom_smooth;
 
     // Container with data from the parsed input file.
@@ -220,6 +221,12 @@ namespace ntt {
      */
     [[nodiscard]] auto outputFields() const -> const std::vector<std::string>& {
       return m_output_fields;
+    }
+    /**
+     * @brief Get output particles labels.
+     */
+    [[nodiscard]] auto outputParticles() const -> const std::vector<std::string>& {
+      return m_output_particles;
     }
     /**
      * @brief Get the smoothing size for moments.

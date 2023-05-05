@@ -28,9 +28,10 @@ namespace ntt {
       auto& val_block = toml::find(inputdata, blockname);
       return toml::find<T>(val_block, variable);
     }
-    PLOGE_(LogFile) << "Cannot find variable <" << variable << "> from block [" << blockname
-                    << "] in the input file.";
-    throw std::invalid_argument("cannot find variable in the input");
+    auto msg = "Cannot find variable <" + variable + "> from block [" + blockname
+               + "] in the input file.";
+    PLOGE_(LogFile) << msg;
+    throw std::invalid_argument(msg);
   }
   template <typename T>
   auto readFromInput(const toml::value& inputdata,

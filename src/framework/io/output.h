@@ -50,6 +50,8 @@ namespace ntt {
       return "U";
     case PrtlID::W:
       return "W";
+    default:
+      return "UNKNOWN";
     }
   }
 
@@ -103,31 +105,33 @@ namespace ntt {
   };
 
   class OutputParticles {
-    std::string m_name;
-    int         m_species_id;
-    PrtlID      m_id;
+    std::string      m_name;
+    std::vector<int> m_species_id;
+    PrtlID           m_id;
 
   public:
     OutputParticles() = default;
-    OutputParticles(const std::string& name, const int& species_id, const PrtlID& id)
-      : m_name(name), m_species_id(species_id), m_id(id) {}
+    OutputParticles(const std::string&      name,
+                    const std::vector<int>& species_id,
+                    const PrtlID&           id)
+      : m_name(name), m_species_id { species_id }, m_id(id) {}
     ~OutputParticles() = default;
 
     void setName(const std::string& name) {
       m_name = name;
     }
-    void setSpeciesID(const int& species_id) {
-      m_species_id = species_id;
+    void setSpeciesID(const std::vector<int>& species_id) {
+      std::copy(species_id.begin(), species_id.end(), std::back_inserter(m_species_id));
     }
     void setId(const PrtlID& id) {
       m_id = id;
     }
 
-    [[nodiscard]] auto name() const -> std::string {
-      return "species_" + m_name;
+    [[nodiscard]] auto name(const int& i) const -> std::string {
+      return m_name + "p_" + std::to_string(i);
     }
 
-    [[nodiscard]] auto speciesID() const -> int {
+    [[nodiscard]] auto speciesID() const -> std::vector<int> {
       return m_species_id;
     }
 

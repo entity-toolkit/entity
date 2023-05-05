@@ -96,10 +96,11 @@ namespace ntt {
       return comps_ints;
     }
 
-    auto InterpretInputField_getspecies(const std::string& fld) -> std::vector<int> {
+    auto InterpretInput_getspecies(const std::string& input_quantities) -> std::vector<int> {
       std::vector<int> species;
-      if (fld.find("_") < fld.size()) {
-        auto species_str = SplitString(fld.substr(fld.find("_") + 1), "_");
+      if (input_quantities.find("_") < input_quantities.size()) {
+        auto species_str
+          = SplitString(input_quantities.substr(input_quantities.find("_") + 1), "_");
         for (const auto& specie : species_str) {
           species.push_back(std::stoi(specie));
         }
@@ -138,7 +139,7 @@ namespace ntt {
     auto is_field = (id == FieldID::E || id == FieldID::B || id == FieldID::D
                      || id == FieldID::H || id == FieldID::J);
     if (is_moment) {
-      species = InterpretInputField_getspecies(fld);
+      species = InterpretInput_getspecies(fld);
     } else if (is_field) {
       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
     }
@@ -146,6 +147,20 @@ namespace ntt {
       comps = InterpretInputField_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
     }
     return InterpretInputField_helper(id, comps, species);
+  }
+
+  auto InterpretInputParticles(const std::string& prtl) -> OutputParticles {
+    PrtlID id;
+    if (prtl.find("X") == 0) {
+      id = PrtlID::X;
+    } else if (prtl.find("U") == 0) {
+      id = PrtlID::U;
+    } else if (prtl.find("W") == 0) {
+      id = PrtlID::W;
+    } else {
+      NTTHostError("Invalid particle quantity ");
+    }
+    return OutputParticles(StringizePrtlID(id), InterpretInput_getspecies(prtl), id);
   }
 
 #ifdef OUTPUT_ENABLED

@@ -32,8 +32,14 @@ namespace ntt {
     adios2::Dims shape, start, count;
     for (short d = 0; d < (short)D; ++d) {
       shape.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
-      count.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
       start.push_back(0);
+      count.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
+    }
+    std::vector<adios2::Dims> prtl_shape, prtl_start, prtl_count;
+    for (auto s = 0; s < mblock.particles.size(); ++s) {
+      prtl_shape.push_back(adios2::Dims { mblock.particles[s].npart() });
+      prtl_start.push_back(adios2::Dims { 0 });
+      prtl_count.push_back(adios2::Dims { mblock.particles[s].npart() });
     }
     auto isLayoutRight
       = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
@@ -127,9 +133,30 @@ namespace ntt {
     for (auto& var : params.outputFields()) {
       m_fields.push_back(InterpretInputField(var));
     }
+    for (auto& var : params.outputParticles()) {
+      m_particles.push_back(InterpretInputParticles(var));
+    }
     for (auto& fld : m_fields) {
-      for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
+      for (auto i { 0 }; i < fld.comp.size(); ++i) {
         m_io.DefineVariable<real_t>(fld.name(i), shape, start, count, adios2::ConstantDims);
+      }
+    }
+    for (auto& prtl : m_particles) {
+      std::vector<int> species;
+      // if no species specified, pick all
+      if (prtl.speciesID().size() == 0) {
+        for (auto s { 0 }; s < params.species().size(); ++s) {
+          species.push_back(s + 1);
+        }
+      } else {
+        species = prtl.speciesID();
+      }
+      for (auto s { 0 }; s < species.size(); ++s) {
+        m_io.DefineVariable<real_t>(prtl.name(species[s]),
+                                    prtl_shape[species[s] - 1],
+                                    prtl_start[species[s] - 1],
+                                    prtl_count[species[s] - 1],
+                                    adios2::ConstantDims);
       }
     }
   }
