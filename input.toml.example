@@ -46,7 +46,8 @@ fields_stride   = <int>
 
 [output]
 fields          = <array of strings, ex. ["Ei", "Bi", "Rho", "T0i", ...], see wiki>
-particles       = <array of array of strings (for each species), ex. [["Xi", "U1", "U2", "W"], ["Xi"], [],...], see wiki>
+particles       = <array of strings, ex. [["X_1_2", "U_3_4", "W"], ["U"], [],...], see wiki>
 format          = <string: { "disabled", "hdf5" }>
 mom_smooth      = <int>
+prtl_stride     = <int>
 interval        = <int>
