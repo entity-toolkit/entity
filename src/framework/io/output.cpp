@@ -4,7 +4,6 @@
 
 #include "fields.h"
 #include "meshblock.h"
-#include "particle_macros.h"
 #include "sim_params.h"
 #include "utils.h"
 
@@ -13,15 +12,14 @@
 #  include <adios2/cxx11/KokkosView.h>
 #endif
 
-#include <iostream>
 #include <string>
 #include <vector>
 
 namespace ntt {
   namespace {
-    auto InterpretInputField_helper(const FieldID&                       fid,
-                                    const std::vector<std::vector<int>>& comps,
-                                    const std::vector<int>& species) -> OutputField {
+    auto InterpretInputForFieldOutput_helper(const FieldID&                       fid,
+                                             const std::vector<std::vector<int>>& comps,
+                                             const std::vector<int>& species) -> OutputField {
       OutputField of;
       of.setId(fid);
       for (auto ci : comps) {
@@ -38,7 +36,7 @@ namespace ntt {
       return of;
     }
 
-    auto InterpretInputField_getcomponents(const std::vector<std::string>& comps)
+    auto InterpretInputForFieldOutput_getcomponents(const std::vector<std::string>& comps)
       -> std::vector<std::vector<int>> {
       NTTHostErrorIf(comps.size() > 2, "Invalid field name");
       std::vector<int> comps_int;
@@ -110,7 +108,7 @@ namespace ntt {
     }
   }    // namespace
 
-  auto InterpretInputField(const std::string& fld) -> OutputField {
+  auto InterpretInputForFieldOutput(const std::string& fld) -> OutputField {
     FieldID                       id;
     std::vector<std::vector<int>> comps   = { {} };
     std::vector<int>              species = {};
@@ -142,15 +140,16 @@ namespace ntt {
     if (is_moment) {
       species = InterpretInput_getspecies(fld);
     } else if (is_field) {
-      comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
+      comps = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1) });
     }
     if (id == FieldID::T) {
-      comps = InterpretInputField_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
+      comps
+        = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
     }
-    return InterpretInputField_helper(id, comps, species);
+    return InterpretInputForFieldOutput_helper(id, comps, species);
   }
 
-  auto InterpretInputParticles(const std::string& prtl) -> OutputParticles {
+  auto InterpretInputForParticleOutput(const std::string& prtl) -> OutputParticles {
     PrtlID id;
     if (prtl.find("X") == 0) {
       id = PrtlID::X;
@@ -164,138 +163,4 @@ namespace ntt {
     return OutputParticles(StringizePrtlID(id), InterpretInput_getspecies(prtl), id);
   }
 
-#ifdef OUTPUT_ENABLED
-  namespace {
-    template <Dimension D, int N>
-    void PutField(adios2::IO&            io,
-                  adios2::Engine&        writer,
-                  const std::string&     varname,
-                  const ndfield_t<D, N>& field,
-                  const int&             comp) {
-      auto slice_i1 = Kokkos::ALL;
-      auto slice_i2 = Kokkos::ALL;
-      auto slice_i3 = Kokkos::ALL;
-
-      auto var      = io.InquireVariable<real_t>(varname);
-
-      if constexpr (D == Dim1) {
-        auto slice        = Kokkos::subview(field, slice_i1, comp);
-        auto output_field = array_t<real_t*>("output_field", slice.extent(0));
-        Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror_view(output_field);
-        Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
-      } else if constexpr (D == Dim2) {
-        auto slice = Kokkos::subview(field, slice_i1, slice_i2, comp);
-        auto output_field
-          = array_t<real_t**>("output_field", slice.extent(0), slice.extent(1));
-        Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror_view(output_field);
-        Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
-      } else if constexpr (D == Dim3) {
-        auto slice        = Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp);
-        auto output_field = array_t<real_t***>(
-          "output_field", slice.extent(0), slice.extent(1), slice.extent(2));
-        Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror_view(output_field);
-        Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
-      }
-    }
-  }    // namespace
-
-  template <Dimension D, SimulationEngine S>
-  void OutputField::put(adios2::IO&             io,
-                        adios2::Engine&         writer,
-                        const SimulationParams& params,
-                        Meshblock<D, S>&        mblock) const {
-    if constexpr (S == GRPICEngine) {
-      if (m_id == FieldID::E || m_id == FieldID::H) {
-        NTTHostError("Output of E and H (aux) fields is not supported yet");
-      }
-    }
-    if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)
-        || (m_id == FieldID::H)) {
-      mblock.PrepareFieldsForOutput();
-      ImposeEmptyContent(mblock.bckp_content);
-      std::vector<em>      comp_options;
-      std::vector<Content> content_options
-        = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
-            Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
-      if (m_id == FieldID::E || m_id == FieldID::D) {
-        comp_options = { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 };
-      } else if (m_id == FieldID::B || m_id == FieldID::H) {
-        comp_options = { em::bx1, em::bx2, em::bx3 };
-      }
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
-      }
-    } else if (m_id == FieldID::J) {
-      mblock.PrepareCurrentsForOutput();
-      ImposeEmptyContent(mblock.cur_content);
-      std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
-      std::vector<Content> content_options
-        = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 3>(io, writer, name(i), mblock.cur, (int)(comp_id));
-      }
-    } else {
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        // no smoothing for FieldID::Nppc
-        mblock.ComputeMoments(params,
-                              m_id,
-                              comp[i],
-                              species,
-                              i % 3,
-                              m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
-        PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
-      }
-    }
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void OutputParticles::put(adios2::IO&             io,
-                            adios2::Engine&         writer,
-                            const SimulationParams& params,
-                            Meshblock<D, S>&        mblock) const {
-    for (auto& s : speciesID()) {
-      auto prtls = mblock.particles[s - 1];
-      if (m_id == PrtlID::X) {
-        for (auto d { 0 }; d < (short)D; ++d) {
-          array_t<real_t*> xi("xi", prtls.npart());
-          Kokkos::parallel_for(
-            "ParticlesOutput_Xi", prtls.npart(), Lambda(index_t p) {
-              coord_t<D> xcode { ZERO }, xph { ZERO };
-              if (d == 0) {
-                xcode[0] = get_prtl_x1(prtls, p);
-              } else if (d == 1) {
-                xcode[1] = get_prtl_x2(prtls, p);
-              } else if (d == 2) {
-                xcode[2] = get_prtl_x3(prtls, p);
-              }
-#  ifdef MINKOWSKI_METRIC
-              mblock.metric.x_Code2Cart(xcode, xph);
-#  else
-              mblock.metric.x_Code2Sph(xcode, xph);
-#  endif
-              if (d == 0) {
-                xi(p) = xph[0];
-              } else if (d == 1) {
-                xi(p) = xph[1];
-              } else if (d == 2) {
-                xi(p) = xph[2];
-              }
-            });
-        }
-        // mblock.particles[s].i1
-      } else if (m_id == PrtlID::U) {
-      } else if (m_id == PrtlID::W) {
-      }
-    }
-  }
-
-#endif
 }    // namespace ntt

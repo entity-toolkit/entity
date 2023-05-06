@@ -125,29 +125,30 @@ namespace ntt {
   }    // namespace options
 
   namespace defaults {
-    constexpr std::string_view input_filename    = "input";
-    constexpr std::string_view output_path       = "output";
+    constexpr std::string_view input_filename     = "input";
+    constexpr std::string_view output_path        = "output";
 
-    const std::string          title             = "EntitySimulation";
-    const int                  n_species         = 0;
-    const std::string          em_pusher         = "Boris";
-    const std::string          ph_pusher         = "photon";
-    const std::string          metric            = "minkowski";
+    const std::string          title              = "EntitySimulation";
+    const int                  n_species          = 0;
+    const std::string          em_pusher          = "Boris";
+    const std::string          ph_pusher          = "photon";
+    const std::string          metric             = "minkowski";
 
-    const real_t               runtime           = 1e10;
-    const real_t               correction        = 1.0;
-    const real_t               cfl               = 0.95;
+    const real_t               runtime            = 1e10;
+    const real_t               correction         = 1.0;
+    const real_t               cfl                = 0.95;
 
-    const unsigned short       current_filters   = 0;
+    const unsigned short       current_filters    = 0;
 
-    const bool                 use_weights       = false;
+    const bool                 use_weights        = false;
 
-    const int                  shuffle_interval  = 0;
-    const double               max_dead_frac     = 0.0;
+    const int                  shuffle_interval   = 0;
+    const double               max_dead_frac      = 0.0;
 
-    const std::string          output_format     = options::outputs[0];
-    const int                  output_interval   = 1;
-    const int                  output_mom_smooth = 1;
+    const std::string          output_format      = options::outputs[0];
+    const int                  output_interval    = 1;
+    const int                  output_mom_smooth  = 1;
+    const std::size_t          output_prtl_stride = 100;
   }    // namespace defaults
 
   // Field IDs used for io

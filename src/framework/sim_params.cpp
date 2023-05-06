@@ -167,5 +167,6 @@ namespace ntt {
     m_output_fields     = get<std::vector<std::string>>("output", "fields");
     m_output_particles  = get<std::vector<std::string>>("output", "particles");
     m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
+    m_output_prtl_stride = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
   }
 }    // namespace ntt

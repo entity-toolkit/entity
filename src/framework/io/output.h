@@ -38,6 +38,7 @@ namespace ntt {
     case FieldID::Nppc:
       return "Nppc";
     default:
+      NTTHostError("Unknown field ID");
       return "UNKNOWN";
     }
   }
@@ -51,6 +52,7 @@ namespace ntt {
     case PrtlID::W:
       return "W";
     default:
+      NTTHostError("Unknown particle ID");
       return "UNKNOWN";
     }
   }
@@ -145,8 +147,8 @@ namespace ntt {
 #endif
   };
 
-  auto InterpretInputField(const std::string&) -> OutputField;
-  auto InterpretInputParticles(const std::string&) -> OutputParticles;
+  auto InterpretInputForFieldOutput(const std::string&) -> OutputField;
+  auto InterpretInputForParticleOutput(const std::string&) -> OutputParticles;
 }    // namespace ntt
 
 #endif    // IO_OUTPUT_H

@@ -35,12 +35,6 @@ namespace ntt {
       start.push_back(0);
       count.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
     }
-    std::vector<adios2::Dims> prtl_shape, prtl_start, prtl_count;
-    for (auto s = 0; s < mblock.particles.size(); ++s) {
-      prtl_shape.push_back(adios2::Dims { mblock.particles[s].npart() });
-      prtl_start.push_back(adios2::Dims { 0 });
-      prtl_count.push_back(adios2::Dims { mblock.particles[s].npart() });
-    }
     auto isLayoutRight
       = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
 
@@ -128,13 +122,18 @@ namespace ntt {
     m_io.DefineAttribute<real_t>("a", mblock.metric.spin());
 #  endif
 
-    m_io.DefineAttribute<real_t>("Timestep", mblock.timestep());
+    for (auto sp { 0 }; sp < mblock.particles.size(); ++sp) {
+      m_io.DefineAttribute<std::string>("species-" + std::to_string(sp + 1),
+                                        mblock.particles[sp].label());
+    }
 
+    m_io.DefineAttribute<real_t>("Timestep", mblock.timestep());
+    // interpret input for output variables
     for (auto& var : params.outputFields()) {
-      m_fields.push_back(InterpretInputField(var));
+      m_fields.push_back(InterpretInputForFieldOutput(var));
     }
     for (auto& var : params.outputParticles()) {
-      auto prtl_to_output = InterpretInputParticles(var);
+      auto prtl_to_output = InterpretInputForParticleOutput(var);
       if (prtl_to_output.speciesID().size() == 0) {
         // if no species specified, pick all
         std::vector<int> species;
@@ -145,6 +144,7 @@ namespace ntt {
       }
       m_particles.push_back(prtl_to_output);
     }
+    // Define variables
     for (auto& fld : m_fields) {
       for (auto i { 0 }; i < fld.comp.size(); ++i) {
         m_io.DefineVariable<real_t>(fld.name(i), shape, start, count, adios2::ConstantDims);
@@ -152,11 +152,20 @@ namespace ntt {
     }
     for (auto& prtl : m_particles) {
       for (auto s { 0 }; s < prtl.speciesID().size(); ++s) {
-        m_io.DefineVariable<real_t>(prtl.name(prtl.speciesID()[s]),
-                                    prtl_shape[prtl.speciesID()[s] - 1],
-                                    prtl_start[prtl.speciesID()[s] - 1],
-                                    prtl_count[prtl.speciesID()[s] - 1],
-                                    adios2::ConstantDims);
+        auto sp_index = prtl.speciesID()[s];
+        if ((prtl.id() == PrtlID::X) || (prtl.id() == PrtlID::U)) {
+          auto tag = (prtl.id() == PrtlID::X) ? "X" : "U";
+          for (auto d { 0 }; d < (short)D; ++d) {
+            m_io.DefineVariable<real_t>(
+              tag + std::to_string(d + 1) + "_" + std::to_string(sp_index),
+              {},
+              {},
+              { adios2::UnknownDim });
+          }
+        } else if (prtl.id() == PrtlID::W) {
+          m_io.DefineVariable<real_t>(
+            "W_" + std::to_string(sp_index), {}, {}, { adios2::UnknownDim });
+        }
       }
     }
   }
@@ -170,7 +179,7 @@ namespace ntt {
                               const real_t&           time,
                               const std::size_t&      tstep) {
     NTTLog();
-    m_writer = m_io.Open(params.title() + ".flds.h5", m_mode);
+    m_writer = m_io.Open(params.title() + ".h5", m_mode);
     m_mode   = adios2::Mode::Append;
     m_writer.BeginStep();
     int step = (int)tstep;

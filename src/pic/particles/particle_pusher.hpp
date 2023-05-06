@@ -197,7 +197,7 @@ namespace ntt {
 #else
   template <>
   Inline void Pusher_kernel<Dim1>::getParticleCoordinate(index_t&, coord_t<Dim3>&) const {
-    NTTError("not implemented");
+    NTTError("not applicable");
   }
   template <>
   Inline void Pusher_kernel<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {

@@ -67,6 +67,7 @@ namespace ntt {
     std::vector<std::string>                    m_output_fields;
     std::vector<std::string>                    m_output_particles;
     int                                         m_output_mom_smooth;
+    std::size_t                                 m_output_prtl_stride;
 
     // Container with data from the parsed input file.
     toml::value                                 m_inputdata;
@@ -233,6 +234,12 @@ namespace ntt {
      */
     [[nodiscard]] auto outputMomSmooth() const -> const int& {
       return m_output_mom_smooth;
+    }
+    /**
+     * @brief Get the particle stride for the output.
+    */
+   [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
+      return m_output_prtl_stride;
     }
 
     /**

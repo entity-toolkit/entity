@@ -12,7 +12,8 @@
 
 #include "fields.cpp"
 #include "meshblock.cpp"
-#include "output.cpp"
+#include "output_flds.cpp"
+#include "output_prtls.cpp"
 #include "particles.cpp"
 #include "simulation.cpp"
 #include "species.cpp"
@@ -127,6 +128,49 @@ template void ntt::OutputField::put<ntt::Dim2, ntt::GRPICEngine>(
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&) const;
 template void ntt::OutputField::put<ntt::Dim3, ntt::GRPICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
+
+template void ntt::OutputParticles::put<ntt::Dim1, ntt::SANDBOXEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim1, ntt::SANDBOXEngine>&) const;
+template void ntt::OutputParticles::put<ntt::Dim2, ntt::SANDBOXEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::SANDBOXEngine>&) const;
+template void ntt::OutputParticles::put<ntt::Dim3, ntt::SANDBOXEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::SANDBOXEngine>&) const;
+
+template void ntt::OutputParticles::put<ntt::Dim1, ntt::PICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim1, ntt::PICEngine>&) const;
+template void ntt::OutputParticles::put<ntt::Dim2, ntt::PICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::PICEngine>&) const;
+template void ntt::OutputParticles::put<ntt::Dim3, ntt::PICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
+
+template void ntt::OutputParticles::put<ntt::Dim2, ntt::GRPICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&) const;
+template void ntt::OutputParticles::put<ntt::Dim3, ntt::GRPICEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
