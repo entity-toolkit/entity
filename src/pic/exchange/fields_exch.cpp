@@ -11,25 +11,25 @@ namespace ntt {
    */
   template <>
   void PIC<Dim1>::FieldsExchange() {
-    auto& mblock = this->meshblock;
-    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
-      auto ni = mblock.Ni1();
-      // in x1_min
-      Kokkos::parallel_for(
-        "1d_bc_x1m", mblock.rangeCells({ CellLayer::minGhostLayer }), Lambda(index_t i) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, comp) = mblock.em(i + ni, comp);
-          }
-        });
-      // in x1_max
-      Kokkos::parallel_for(
-        "1d_bc_x1p", mblock.rangeCells({ CellLayer::maxGhostLayer }), Lambda(index_t i) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, comp) = mblock.em(i - ni, comp);
-          }
-        });
-    } else {
-      NTTHostError("boundary condition not implemented");
+    auto&         mblock = this->meshblock;
+    const auto    i1min = mblock.i1_min(), i1max = mblock.i1_max();
+    range_tuple_t i1_range_to;
+    range_tuple_t i1_range_from;
+    NTTHostErrorIf((mblock.boundaries[0][0] != BoundaryCondition::PERIODIC),
+                   "1d minkowski only supports periodic boundaries");
+
+    for (auto dir1 { -1 }; dir1 < 2; ++dir1) {
+      if (dir1 == -1) {
+        i1_range_to   = range_tuple_t(i1min - N_GHOSTS, i1min);
+        i1_range_from = range_tuple_t(i1max - N_GHOSTS, i1max);
+      } else if (dir1 == 0) {
+        continue;
+      } else {
+        i1_range_to   = range_tuple_t(i1max, i1max + N_GHOSTS);
+        i1_range_from = range_tuple_t(i1min, i1min + N_GHOSTS);
+      }
+      Kokkos::deep_copy(Kokkos::subview(mblock.em, i1_range_to, Kokkos::ALL()),
+                        Kokkos::subview(mblock.em, i1_range_from, Kokkos::ALL()));
     }
   }
 
@@ -39,88 +39,44 @@ namespace ntt {
    */
   template <>
   void PIC<Dim2>::FieldsExchange() {
-    auto& mblock = this->meshblock;
-    if (mblock.boundaries[0][0] == BoundaryCondition::PERIODIC) {
-      auto ni = mblock.Ni1();
-      Kokkos::parallel_for(
-        "2d_bc_x1m",
-        mblock.rangeCells({ CellLayer::minGhostLayer, CellLayer::activeLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i + ni, j, comp);
-          }
-        });
-      Kokkos::parallel_for(
-        "2d_bc_x1p",
-        mblock.rangeCells({ CellLayer::maxGhostLayer, CellLayer::activeLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i - ni, j, comp);
-          }
-        });
-    } else {
-      // non-periodic
-      NTTHostError("2d boundary condition for minkowski not implemented");
-    }
-    if (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC) {
-      auto nj = mblock.Ni2();
-      Kokkos::parallel_for(
-        "2d_bc_x2m",
-        mblock.rangeCells({ CellLayer::activeLayer, CellLayer::minGhostLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i, j + nj, comp);
-          }
-        });
-      Kokkos::parallel_for(
-        "2d_bc_x2p",
-        mblock.rangeCells({ CellLayer::activeLayer, CellLayer::maxGhostLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i, j - nj, comp);
-          }
-        });
-    } else {
-      // non-periodic
-      NTTHostError("2d boundary condition for minkowski not implemented");
-    }
+    auto&         mblock = this->meshblock;
+    const auto    i1min = mblock.i1_min(), i1max = mblock.i1_max();
+    const auto    i2min = mblock.i2_min(), i2max = mblock.i2_max();
+    range_tuple_t i1_range_to, i2_range_to;
+    range_tuple_t i1_range_from, i2_range_from;
+    NTTHostErrorIf((mblock.boundaries[0][0] != BoundaryCondition::PERIODIC)
+                     || (mblock.boundaries[1][0] != BoundaryCondition::PERIODIC),
+                   "2d minkowski only supports periodic boundaries");
 
-    if ((mblock.boundaries[0][0] == BoundaryCondition::PERIODIC)
-        && (mblock.boundaries[1][0] == BoundaryCondition::PERIODIC)) {
-      auto ni = mblock.Ni1();
-      auto nj = mblock.Ni2();
-      Kokkos::parallel_for(
-        "2d_bc_corner1",
-        mblock.rangeCells({ CellLayer::minGhostLayer, CellLayer::minGhostLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i + ni, j + nj, comp);
-          }
-        });
-      Kokkos::parallel_for(
-        "2d_bc_corner2",
-        mblock.rangeCells({ CellLayer::minGhostLayer, CellLayer::maxGhostLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i + ni, j - nj, comp);
-          }
-        });
-      Kokkos::parallel_for(
-        "2d_bc_corner3",
-        mblock.rangeCells({ CellLayer::maxGhostLayer, CellLayer::minGhostLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i - ni, j + nj, comp);
-          }
-        });
-      Kokkos::parallel_for(
-        "2d_bc_corner4",
-        mblock.rangeCells({ CellLayer::maxGhostLayer, CellLayer::maxGhostLayer }),
-        Lambda(index_t i, index_t j) {
-          for (auto& comp : { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
-            mblock.em(i, j, comp) = mblock.em(i - ni, j - nj, comp);
-          }
-        });
+    for (auto dir1 { -1 }; dir1 < 2; ++dir1) {
+      if (dir1 == -1) {
+        i1_range_to   = range_tuple_t(i1min - N_GHOSTS, i1min);
+        i1_range_from = range_tuple_t(i1max - N_GHOSTS, i1max);
+      } else if (dir1 == 0) {
+        i1_range_to   = range_tuple_t(i1min, i1max);
+        i1_range_from = range_tuple_t(i1min, i1max);
+      } else {
+        i1_range_to   = range_tuple_t(i1max, i1max + N_GHOSTS);
+        i1_range_from = range_tuple_t(i1min, i1min + N_GHOSTS);
+      }
+      for (auto dir2 { -1 }; dir2 < 2; ++dir2) {
+        if (dir2 == -1) {
+          i2_range_to   = range_tuple_t(i2min - N_GHOSTS, i2min);
+          i2_range_from = range_tuple_t(i2max - N_GHOSTS, i2max);
+        } else if (dir2 == 0) {
+          i2_range_to   = range_tuple_t(i2min, i2max);
+          i2_range_from = range_tuple_t(i2min, i2max);
+        } else {
+          i2_range_to   = range_tuple_t(i2max, i2max + N_GHOSTS);
+          i2_range_from = range_tuple_t(i2min, i2min + N_GHOSTS);
+        }
+        if (dir1 == 0 && dir2 == 0) {
+          continue;
+        }
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.em, i1_range_to, i2_range_to, Kokkos::ALL()),
+          Kokkos::subview(mblock.em, i1_range_from, i2_range_from, Kokkos::ALL()));
+      }
     }
   }
 
@@ -130,7 +86,60 @@ namespace ntt {
    */
   template <>
   void PIC<Dim3>::FieldsExchange() {
-    NTTHostError("not implemented");
+    auto&         mblock = this->meshblock;
+    const auto    i1min = mblock.i1_min(), i1max = mblock.i1_max();
+    const auto    i2min = mblock.i2_min(), i2max = mblock.i2_max();
+    const auto    i3min = mblock.i3_min(), i3max = mblock.i3_max();
+    range_tuple_t i1_range_to, i2_range_to, i3_range_to;
+    range_tuple_t i1_range_from, i2_range_from, i3_range_from;
+    NTTHostErrorIf((mblock.boundaries[0][0] != BoundaryCondition::PERIODIC)
+                     || (mblock.boundaries[1][0] != BoundaryCondition::PERIODIC)
+                     || (mblock.boundaries[2][0] != BoundaryCondition::PERIODIC),
+                   "3d minkowski only supports periodic boundaries");
+
+    for (auto dir1 { -1 }; dir1 < 2; ++dir1) {
+      if (dir1 == -1) {
+        i1_range_to   = range_tuple_t(i1min - N_GHOSTS, i1min);
+        i1_range_from = range_tuple_t(i1max - N_GHOSTS, i1max);
+      } else if (dir1 == 0) {
+        i1_range_to   = range_tuple_t(i1min, i1max);
+        i1_range_from = range_tuple_t(i1min, i1max);
+      } else {
+        i1_range_to   = range_tuple_t(i1max, i1max + N_GHOSTS);
+        i1_range_from = range_tuple_t(i1min, i1min + N_GHOSTS);
+      }
+      for (auto dir2 { -1 }; dir2 < 2; ++dir2) {
+        if (dir2 == -1) {
+          i2_range_to   = range_tuple_t(i2min - N_GHOSTS, i2min);
+          i2_range_from = range_tuple_t(i2max - N_GHOSTS, i2max);
+        } else if (dir2 == 0) {
+          i2_range_to   = range_tuple_t(i2min, i2max);
+          i2_range_from = range_tuple_t(i2min, i2max);
+        } else {
+          i2_range_to   = range_tuple_t(i2max, i2max + N_GHOSTS);
+          i2_range_from = range_tuple_t(i2min, i2min + N_GHOSTS);
+        }
+        for (auto dir3 { -1 }; dir3 < 2; ++dir3) {
+          if (dir3 == -1) {
+            i3_range_to   = range_tuple_t(i3min - N_GHOSTS, i3min);
+            i3_range_from = range_tuple_t(i3max - N_GHOSTS, i3max);
+          } else if (dir2 == 0) {
+            i3_range_to   = range_tuple_t(i3min, i3max);
+            i3_range_from = range_tuple_t(i3min, i3max);
+          } else {
+            i3_range_to   = range_tuple_t(i3max, i3max + N_GHOSTS);
+            i3_range_from = range_tuple_t(i3min, i3min + N_GHOSTS);
+          }
+          if (dir1 == 0 && dir2 == 0 && dir3 == 0) {
+            continue;
+          }
+          Kokkos::deep_copy(
+            Kokkos::subview(mblock.em, i1_range_to, i2_range_to, i3_range_to, Kokkos::ALL()),
+            Kokkos::subview(
+              mblock.em, i1_range_from, i2_range_from, i3_range_from, Kokkos::ALL()));
+        }
+      }
+    }
   }
 #else
   template <Dimension D>
