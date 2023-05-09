@@ -166,6 +166,12 @@ PrintChoices("Debug mode"
 # 0
 # 39
 # )
+if(NOT DEFINED ${adios2_VERSION})
+  get_directory_property(adios2_VERSION
+    DIRECTORY ${adios2_BUILD_DIR}
+    DEFINITION ADIOS2_VERSION)
+endif()
+
 PrintChoices("CUDA"
   "Kokkos_ENABLE_CUDA"
   "${ON_OFF_VALUES}"

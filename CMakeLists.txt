@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.9.0.2
+  VERSION 0.9.0.3
   LANGUAGES CXX C
 )
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)

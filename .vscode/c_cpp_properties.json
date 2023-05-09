@@ -6,7 +6,7 @@
       "includePath": [
         "${workspaceFolder}",
         "${workspaceFolder}/src/**",
-        "${workspaceFolder}/build/src",
+        "${workspaceFolder}/build/src/",
         "${workspaceFolder}/build",
         "${workspaceFolder}/build/_deps/**/**/",
         "${workspaceFolder}/extern/**"
@@ -26,7 +26,7 @@
         "path": [
           "${workspaceFolder}"
         ],
-        "limitSymbolsToIncludedHeaders": true,
+        "limitSymbolsToIncludedHeaders": false,
         "databaseFilename": ""
       },
       "configurationProvider": "ms-vscode.cmake-tools"
@@ -64,7 +64,7 @@
         "path": [
           "${workspaceFolder}"
         ],
-        "limitSymbolsToIncludedHeaders": true,
+        "limitSymbolsToIncludedHeaders": false,
         "databaseFilename": ""
       },
       "configurationProvider": "ms-vscode.cmake-tools"
