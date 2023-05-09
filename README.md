@@ -3,14 +3,6 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" style="width:100%" srcset="assets/cover_dark-opt.gif">
-    <source media="(prefers-color-scheme: light)" style="width:100%" srcset="assets/cover_light-opt.gif">
-    <img alt="cover"/>
-  </picture>
-</p>
-
 ## Core developers
 
 ☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
