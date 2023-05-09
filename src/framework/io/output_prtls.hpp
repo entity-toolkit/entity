@@ -108,11 +108,10 @@ namespace ntt {
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
     const OutputVelocities_t&, index_t p) const {
-    coord_t<Dim3> xcode { ZERO };
+    coord_t<Dim2> xcode { ZERO };
     vec_t<Dim3>   vcov { ZERO }, vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
     xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-    xcode[2] = m_particles.phi(p * m_stride);
     vcov[0]  = m_particles.ux1(p * m_stride);
     vcov[1]  = m_particles.ux2(p * m_stride);
     vcov[2]  = m_particles.ux3(p * m_stride);
