@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Compile
         run: |
-          cmake -B build -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON
+          cmake -B build -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON -D output=ON
           cd build
           make -j
 
@@ -44,6 +44,6 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Compile
         run: |
-          cmake -B build -D engine=grpic -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON
+          cmake -B build -D engine=grpic -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON -D output=ON
           cd build
           make -j
