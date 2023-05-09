@@ -65,7 +65,9 @@ namespace ntt {
     const real_t pct     = time / runtime * static_cast<real_t>(100.0);
     os << "Average timestep: " << avg_reduced << " " << avg_units << " (last " << window
        << " steps)" << std::endl;
-    os << "Remaining time: " << remain_time << " " << remain_units << std::endl;
+    if (durations.size() > 1) {
+      os << "Remaining time: " << remain_time << " " << remain_units << std::endl;
+    }
     os << pbar::start;
     for (std::size_t i { 0 }; i < nfilled; ++i) {
       os << pbar::fill;

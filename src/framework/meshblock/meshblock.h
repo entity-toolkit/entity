@@ -12,6 +12,14 @@
 #include <vector>
 
 namespace ntt {
+  enum PrepareOutputFlags_ {
+    PrepareOutput_None               = 0,
+    PrepareOutput_InterpToCellCenter = 1 << 0,
+    PrepareOutput_ConvertToHat       = 1 << 1,
+    PrepareOutput_Default = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToHat,
+  };
+  typedef int PrepareOutputFlags;
+
   /**
    * @brief Container for the fields, particles and coordinate system.
    * @tparam D Dimension.
@@ -88,19 +96,17 @@ namespace ntt {
 
     /**
      * @brief Fields to hatted basis.
-     * Used for outputting/visualizing the fields.
+     * @brief Used for outputting/visualizing the fields.
+     * @note Specializations defined.
      */
-    void InterpolateAndConvertFieldsToHat() {
-      NTTHostError("Not implemented.");
-    }
+    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
 
     /**
      * @brief Currents to hatted basis.
-     * Used for outputting/visualizing the currents.
+     * @brief Used for outputting/visualizing the currents.
+     * @note Specializations defined.
      */
-    void InterpolateAndConvertCurrentsToHat() {
-      NTTHostError("Not implemented.");
-    }
+    void PrepareCurrentsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
 
     /**
      * @brief Compute particle moment for output or other usage.

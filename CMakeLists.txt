@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.8.5
+  VERSION 0.9.0.3
   LANGUAGES CXX C
 )
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
@@ -20,10 +20,6 @@ set(default_KOKKOS_ENABLE_OPENMP "OFF")
 
 # ----------------------------- Simulation engine ---------------------------- #
 set(engine ${default_engine} CACHE STRING "Simulation engine")
-
-if(engine STREQUAL "grpic")
-  message(FATAL_ERROR "GRPIC is not supported yet. See the `dev/gr` branch.")
-endif()
 
 set(simulation_engines "sandbox" "pic" "grpic")
 list(FIND simulation_engines ${engine} ENGINE_FOUND)
@@ -80,8 +76,8 @@ if(NOT ${engine} STREQUAL "sandbox")
 
   list(FIND problem_generators ${pgen} PGEN_FOUND)
 
-  if(NOT ${PGEN_FOUND})
-    message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}")
+  if(${PGEN_FOUND} EQUAL -1)
+    message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}.")
   endif()
 endif()
 
@@ -123,6 +119,9 @@ endif()
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 
 # ----------------------------- Kokkos settings ---------------------------- #
+set(Kokkos_ENABLE_CUDA ${default_KOKKOS_ENABLE_CUDA} CACHE BOOL "Enable CUDA")
+set(Kokkos_ENABLE_OPENMP ${default_KOKKOS_ENABLE_OPENMP} CACHE BOOL "Enable OpenMP")
+
 if(${Kokkos_ENABLE_CUDA})
   set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable CUDA lambda")
 endif()

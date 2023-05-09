@@ -44,3 +44,5 @@ script_vis
 
 temp/
 logs/
+
+*ipynb_checkpoints

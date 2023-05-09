@@ -120,21 +120,27 @@ namespace ntt {
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
     m_resolution.erase(m_resolution.begin() + (short)(dim), m_resolution.end());
 
-    auto  boundaries = get<std::vector<std::string>>("domain", "boundaries");
+    auto  boundaries = get<std::vector<std::vector<std::string>>>("domain", "boundaries");
     short b { 0 };
-    for (auto& bc : boundaries) {
-      TestValidOption(bc, options::boundaries);
-      if (bc == "PERIODIC") {
-        m_boundaries.push_back(BoundaryCondition::PERIODIC);
-      } else if (bc == "ABSORB") {
-        m_boundaries.push_back(BoundaryCondition::ABSORB);
-      } else if (bc == "OPEN") {
-        m_boundaries.push_back(BoundaryCondition::OPEN);
-      } else if (bc == "USER") {
-        m_boundaries.push_back(BoundaryCondition::USER);
-      } else {
-        m_boundaries.push_back(BoundaryCondition::UNDEFINED);
+    for (auto& bc_xi : boundaries) {
+      std::vector<BoundaryCondition> boundaries_xi;
+      for (auto& bc : bc_xi) {
+        TestValidOption(bc, options::boundaries);
+        if (bc == "PERIODIC") {
+          boundaries_xi.push_back(BoundaryCondition::PERIODIC);
+        } else if (bc == "ABSORB") {
+          boundaries_xi.push_back(BoundaryCondition::ABSORB);
+        } else if (bc == "OPEN") {
+          boundaries_xi.push_back(BoundaryCondition::OPEN);
+        } else if (bc == "CUSTOM") {
+          boundaries_xi.push_back(BoundaryCondition::CUSTOM);
+        } else if (bc == "AXIS") {
+          boundaries_xi.push_back(BoundaryCondition::AXIS);
+        } else {
+          boundaries_xi.push_back(BoundaryCondition::UNDEFINED);
+        }
       }
+      m_boundaries.push_back(boundaries_xi);
       ++b;
       if (b >= (short)(dim)) {
         break;
@@ -159,6 +165,8 @@ namespace ntt {
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
     m_output_interval   = get<int>("output", "interval", defaults::output_interval);
     m_output_fields     = get<std::vector<std::string>>("output", "fields");
+    m_output_particles  = get<std::vector<std::string>>("output", "particles");
     m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
+    m_output_prtl_stride = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
   }
 }    // namespace ntt

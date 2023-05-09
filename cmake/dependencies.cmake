@@ -23,6 +23,13 @@ function(find_or_fetch_dependency package_name header_only)
       set(${package_name}_SRC ${CMAKE_CURRENT_BINARY_DIR}/_deps/${package_name}-src CACHE PATH "Path to ${package_name} src")
       set(${package_name}_FETCHED TRUE CACHE BOOL "Whether ${package_name} was fetched")
       message(STATUS "${Green}${package_name} fetched.${ColorReset}")
+
+      if(${package_name} STREQUAL "kokkos")
+        get_directory_property(kokkos_VERSION
+          DIRECTORY ${${package_name}_SRC}/
+          DEFINITION Kokkos_VERSION)
+        set(${package_name}_VERSION ${kokkos_VERSION} CACHE INTERNAL "${package_name} version")
+      endif()
     else()
       # get as submodule
       message(STATUS "${Yellow}${package_name} not found. Getting as submodule.${ColorReset}")
@@ -33,9 +40,11 @@ function(find_or_fetch_dependency package_name header_only)
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
       set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
       set(${package_name}_SRC ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} src")
+      set(${package_name}_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/build/extern/${package_name} CACHE PATH "Path to ${package_name} build")
     endif()
   else()
     message(STATUS "${Green}${package_name} found.${ColorReset}")
+    set(${package_name}_VERSION ${${package_name}_VERSION} CACHE INTERNAL "${package_name} version")
   endif()
 endfunction()
 
@@ -44,11 +53,11 @@ if(${nttiny} STREQUAL "ON")
 endif()
 
 find_or_fetch_dependency(kokkos FALSE)
-find_or_fetch_dependency(fmt FALSE)
+find_or_fetch_dependency(fmt TRUE)
 find_or_fetch_dependency(plog TRUE)
 find_or_fetch_dependency(toml11 TRUE)
 
-list(APPEND DEPENDENCIES Kokkos::kokkos fmt::fmt)
+list(APPEND DEPENDENCIES Kokkos::kokkos fmt::fmt-header-only)
 
 if(${output} STREQUAL "ON")
   find_or_fetch_dependency(adios2 FALSE)

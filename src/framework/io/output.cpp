@@ -12,15 +12,14 @@
 #  include <adios2/cxx11/KokkosView.h>
 #endif
 
-#include <iostream>
 #include <string>
 #include <vector>
 
 namespace ntt {
   namespace {
-    auto InterpretInputField_helper(const FieldID&                       fid,
-                                    const std::vector<std::vector<int>>& comps,
-                                    const std::vector<int>& species) -> OutputField {
+    auto InterpretInputForFieldOutput_helper(const FieldID&                       fid,
+                                             const std::vector<std::vector<int>>& comps,
+                                             const std::vector<int>& species) -> OutputField {
       OutputField of;
       of.setId(fid);
       for (auto ci : comps) {
@@ -37,7 +36,7 @@ namespace ntt {
       return of;
     }
 
-    auto InterpretInputField_getcomponents(const std::vector<std::string>& comps)
+    auto InterpretInputForFieldOutput_getcomponents(const std::vector<std::string>& comps)
       -> std::vector<std::vector<int>> {
       NTTHostErrorIf(comps.size() > 2, "Invalid field name");
       std::vector<int> comps_int;
@@ -96,10 +95,11 @@ namespace ntt {
       return comps_ints;
     }
 
-    auto InterpretInputField_getspecies(const std::string& fld) -> std::vector<int> {
+    auto InterpretInput_getspecies(const std::string& input_quantities) -> std::vector<int> {
       std::vector<int> species;
-      if (fld.find("_") < fld.size()) {
-        auto species_str = SplitString(fld.substr(fld.find("_") + 1), "_");
+      if (input_quantities.find("_") < input_quantities.size()) {
+        auto species_str
+          = SplitString(input_quantities.substr(input_quantities.find("_") + 1), "_");
         for (const auto& specie : species_str) {
           species.push_back(std::stoi(specie));
         }
@@ -108,127 +108,59 @@ namespace ntt {
     }
   }    // namespace
 
-  auto InterpretInputField(const std::string& fld) -> OutputField {
+  auto InterpretInputForFieldOutput(const std::string& fld) -> OutputField {
+    FieldID                       id;
+    std::vector<std::vector<int>> comps   = { {} };
+    std::vector<int>              species = {};
     if (fld.find("T") == 0) {
-      const auto id      = FieldID::T;
-      auto       species = InterpretInputField_getspecies(fld);
-      auto comps = InterpretInputField_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
-      return InterpretInputField_helper(id, comps, species);
+      id = FieldID::T;
     } else if (fld.find("Rho") == 0) {
-      const auto id      = FieldID::Rho;
-      auto       species = InterpretInputField_getspecies(fld);
-      return InterpretInputField_helper(id, { {} }, species);
+      id = FieldID::Rho;
     } else if (fld.find("Nppc") == 0) {
-      const auto id      = FieldID::Nppc;
-      auto       species = InterpretInputField_getspecies(fld);
-      return InterpretInputField_helper(id, { {} }, species);
+      id = FieldID::Nppc;
     } else if (fld.find("N") == 0) {
-      const auto id      = FieldID::N;
-      auto       species = InterpretInputField_getspecies(fld);
-      return InterpretInputField_helper(id, { {} }, species);
+      id = FieldID::N;
     } else if (fld.find("E") == 0) {
-      const auto id    = FieldID::E;
-      auto       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
-      return InterpretInputField_helper(id, comps, {});
+      id = FieldID::E;
     } else if (fld.find("B") == 0) {
-      const auto id    = FieldID::B;
-      auto       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
-      return InterpretInputField_helper(id, comps, {});
+      id = FieldID::B;
+    } else if (fld.find("D") == 0) {
+      id = FieldID::D;
+    } else if (fld.find("H") == 0) {
+      id = FieldID::H;
     } else if (fld.find("J") == 0) {
-      const auto id    = FieldID::J;
-      auto       comps = InterpretInputField_getcomponents({ fld.substr(1, 1) });
-      return InterpretInputField_helper(id, comps, {});
-    }
-    NTTHostError("Invalid field name");
-  }
-
-#ifdef OUTPUT_ENABLED
-  namespace {
-    template <Dimension D, int N>
-    void PutField(adios2::IO&            io,
-                  adios2::Engine&        writer,
-                  const std::string&     varname,
-                  const ndfield_t<D, N>& field,
-                  const int&             comp) {
-      auto slice_i1 = Kokkos::ALL;
-      auto slice_i2 = Kokkos::ALL;
-      auto slice_i3 = Kokkos::ALL;
-
-      auto var      = io.InquireVariable<real_t>(varname);
-
-      if constexpr (D == Dim1) {
-        auto slice        = Kokkos::subview(field, slice_i1, comp);
-        auto output_field = array_t<real_t*>("output_field", slice.extent(0));
-        Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror_view(output_field);
-        Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
-      } else if constexpr (D == Dim2) {
-        auto slice = Kokkos::subview(field, slice_i1, slice_i2, comp);
-        auto output_field
-          = array_t<real_t**>("output_field", slice.extent(0), slice.extent(1));
-        Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror_view(output_field);
-        Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
-      } else if constexpr (D == Dim3) {
-        auto slice        = Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp);
-        auto output_field = array_t<real_t***>(
-          "output_field", slice.extent(0), slice.extent(1), slice.extent(2));
-        Kokkos::deep_copy(output_field, slice);
-        auto output_field_host = Kokkos::create_mirror_view(output_field);
-        Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
-      }
-    }
-  }    // namespace
-
-  template <Dimension D, SimulationEngine S>
-  void OutputField::put(adios2::IO&             io,
-                        adios2::Engine&         writer,
-                        const SimulationParams& params,
-                        Meshblock<D, S>&        mblock) const {
-    if ((m_id == FieldID::E) || (m_id == FieldID::B)) {
-      mblock.InterpolateAndConvertFieldsToHat();
-      ImposeEmptyContent(mblock.bckp_content);
-      // EM fields (vector)
-      std::vector<em>      comp_options;
-      std::vector<Content> content_options
-        = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
-            Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
-      if (m_id == FieldID::E) {
-        comp_options = { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 };
-      } else if (m_id == FieldID::B) {
-        comp_options = { em::bx1, em::bx2, em::bx3 };
-      }
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
-      }
-    } else if (m_id == FieldID::J) {
-      mblock.InterpolateAndConvertCurrentsToHat();
-      ImposeEmptyContent(mblock.cur_content);
-      // Currents (vector)
-      std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
-      std::vector<Content> content_options
-        = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 3>(io, writer, name(i), mblock.cur, (int)(comp_id));
-      }
+      id = FieldID::J;
     } else {
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        // no smoothing for FieldID::Nppc
-        mblock.ComputeMoments(params,
-                              m_id,
-                              comp[i],
-                              species,
-                              i % 3,
-                              m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
-        PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
-      }
+      NTTHostError("Invalid field name");
     }
+    auto is_moment
+      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N);
+    auto is_field = (id == FieldID::E || id == FieldID::B || id == FieldID::D
+                     || id == FieldID::H || id == FieldID::J);
+    if (is_moment) {
+      species = InterpretInput_getspecies(fld);
+    } else if (is_field) {
+      comps = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1) });
+    }
+    if (id == FieldID::T) {
+      comps
+        = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1), fld.substr(2, 1) });
+    }
+    return InterpretInputForFieldOutput_helper(id, comps, species);
   }
 
-#endif
+  auto InterpretInputForParticleOutput(const std::string& prtl) -> OutputParticles {
+    PrtlID id;
+    if (prtl.find("X") == 0) {
+      id = PrtlID::X;
+    } else if (prtl.find("U") == 0) {
+      id = PrtlID::U;
+    } else if (prtl.find("W") == 0) {
+      id = PrtlID::W;
+    } else {
+      NTTHostError("Invalid particle quantity ");
+    }
+    return OutputParticles(StringizePrtlID(id), InterpretInput_getspecies(prtl), id);
+  }
+
 }    // namespace ntt

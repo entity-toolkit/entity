@@ -118,17 +118,6 @@ namespace ntt {
           }
         });
     }
-    {
-      const auto i1_max = mblock.i1_max();
-      Kokkos::parallel_for(
-        "UserDriveFields_rmax",
-        CreateRangePolicy<Dim1>({ mblock.i2_min() }, { mblock.i2_max() }),
-        Lambda(index_t i2) {
-          mblock.em(i1_max, i2, em::ex2) = mblock.em(i1_max - 1, i2, em::ex2);
-          mblock.em(i1_max, i2, em::ex3) = mblock.em(i1_max - 1, i2, em::ex3);
-          mblock.em(i1_max, i2, em::bx1) = mblock.em(i1_max - 1, i2, em::bx1);
-        });
-    }
   }
 
   template <Dimension D, SimulationEngine S>
@@ -216,7 +205,10 @@ namespace ntt {
       mblock,
       { 1, 2 },
       nppc_per_spec,
-      { mblock.metric.x1_min, (real_t)1.5 * inj_rmax, mblock.metric.x2_min, mblock.metric.x2_max });
+      { mblock.metric.x1_min,
+        (real_t)1.5 * inj_rmax,
+        mblock.metric.x2_min,
+        mblock.metric.x2_max });
   }
 
 }    // namespace ntt

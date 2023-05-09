@@ -27,7 +27,6 @@ namespace ntt {
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
         PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
         StepForward();
-        PLOGI_(LogFile) << "[OK] ti " << this->m_tstep;
       }
       WaitAndSynchronize();
     }
@@ -76,7 +75,6 @@ namespace ntt {
                                              "ParticleBoundaries",
                                              "UserSpecific",
                                              "Output" });
-
     static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
 
@@ -157,7 +155,7 @@ namespace ntt {
     if ((params.outputFormat() != "disabled")
         && (this->m_tstep % params.outputInterval() == 0)) {
       WaitAndSynchronize();
-      wrtr.WriteFields(params, mblock, this->m_time, this->m_tstep);
+      wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
     }
     timers.stop("Output");
 

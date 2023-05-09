@@ -1,5 +1,3 @@
-#include "pic_reset.hpp"
-
 #include "wrapper.h"
 
 #include "fields.h"

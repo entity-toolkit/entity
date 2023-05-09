@@ -25,7 +25,7 @@ configure_file(
 )
 
 # problem generator
-if(${PGEN_FOUND})
+if(NOT ${PGEN_FOUND} EQUAL -1)
   configure_file(
     "${PGEN_DIRECTORY}/${pgen}.hpp"
     "${CMAKE_CURRENT_BINARY_DIR}/problem_generator.hpp"

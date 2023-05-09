@@ -17,33 +17,33 @@ namespace ntt {
    */
   class SimulationParams {
     // User defined simualation title
-    std::string                    m_title;
+    std::string                                 m_title;
     // User defined CFL
-    real_t                         m_cfl;
+    real_t                                      m_cfl;
     // User defined correction to the speed of light
-    real_t                         m_correction;
+    real_t                                      m_correction;
     // User defined total runtime in physical units
-    real_t                         m_total_runtime;
+    real_t                                      m_total_runtime;
     // Independent simulation parameters.
-    real_t                         m_ppc0, m_larmor0, m_skindepth0;
+    real_t                                      m_ppc0, m_larmor0, m_skindepth0;
     // Deduced simulation parameters.
-    real_t                         m_sigma0;
+    real_t                                      m_sigma0;
     // Vector of user-defined species parameters.
-    std::vector<ParticleSpecies>   m_species;
+    std::vector<ParticleSpecies>                m_species;
 
     // Use particle weights
-    bool                           m_use_weights;
+    bool                                        m_use_weights;
 
     // Particle shuffle interval.
-    int                            m_shuffle_interval;
-    double                         m_max_dead_frac;
+    int                                         m_shuffle_interval;
+    double                                      m_max_dead_frac;
 
     // Enable/disable algorithms
-    bool                           m_enable_fieldsolver;
-    bool                           m_enable_deposit;
+    bool                                        m_enable_fieldsolver;
+    bool                                        m_enable_deposit;
 
     // current filtering passes
-    unsigned short                 m_current_filters;
+    unsigned short                              m_current_filters;
 
     /**
      * Extent of the whole domain in physical units
@@ -51,24 +51,26 @@ namespace ntt {
      *
      * @warning Size of the vector is 2*D (dimension).
      */
-    std::vector<real_t>            m_extent;
+    std::vector<real_t>                         m_extent;
     // User-defined resolution.
-    std::vector<unsigned int>      m_resolution;
+    std::vector<unsigned int>                   m_resolution;
     // User-defined boundary conditions.
-    std::vector<BoundaryCondition> m_boundaries;
+    std::vector<std::vector<BoundaryCondition>> m_boundaries;
     // User-defined metric.
-    std::string                    m_metric;
+    std::string                                 m_metric;
     // User-defined real-valued parameters for the metric [10 max].
-    real_t                         m_metric_parameters[10];
+    real_t                                      m_metric_parameters[10];
 
     // Output parameters
-    std::string                    m_output_format;
-    int                            m_output_interval;
-    std::vector<std::string>       m_output_fields;
-    int                            m_output_mom_smooth;
+    std::string                                 m_output_format;
+    int                                         m_output_interval;
+    std::vector<std::string>                    m_output_fields;
+    std::vector<std::string>                    m_output_particles;
+    int                                         m_output_mom_smooth;
+    std::size_t                                 m_output_prtl_stride;
 
     // Container with data from the parsed input file.
-    toml::value                    m_inputdata;
+    toml::value                                 m_inputdata;
 
   public:
     /**
@@ -163,7 +165,8 @@ namespace ntt {
     /**
      * @brief Get the boundary conditions of the simulation box.
      */
-    [[nodiscard]] auto boundaries() const -> const std::vector<BoundaryCondition>& {
+    [[nodiscard]] auto boundaries() const
+      -> const std::vector<std::vector<BoundaryCondition>>& {
       return m_boundaries;
     }
     /**
@@ -221,10 +224,22 @@ namespace ntt {
       return m_output_fields;
     }
     /**
+     * @brief Get output particles labels.
+     */
+    [[nodiscard]] auto outputParticles() const -> const std::vector<std::string>& {
+      return m_output_particles;
+    }
+    /**
      * @brief Get the smoothing size for moments.
      */
     [[nodiscard]] auto outputMomSmooth() const -> const int& {
       return m_output_mom_smooth;
+    }
+    /**
+     * @brief Get the particle stride for the output.
+    */
+   [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
+      return m_output_prtl_stride;
     }
 
     /**

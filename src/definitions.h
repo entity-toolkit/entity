@@ -83,7 +83,7 @@ namespace ntt {
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
 
   enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
-  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, USER, OPEN, COMM };
+  enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, CUSTOM, OPEN, COMM, AXIS };
   enum class ParticlePusher { UNDEFINED, NONE, BORIS, VAY, PHOTON };
 
   inline constexpr auto Dim1          = Dimension::ONE_D;
@@ -118,41 +118,45 @@ namespace ntt {
 
 namespace ntt {
   namespace options {
-    const std::vector<std::string> pushers    = { "Boris", "Photon", "None" };
-    const std::vector<std::string> boundaries = { "PERIODIC", "ABSORB", "USER", "OPEN" };
-    const std::vector<std::string> outputs    = { "disabled", "HDF5" };
+    const std::vector<std::string> pushers = { "Boris", "Photon", "None" };
+    const std::vector<std::string> boundaries
+      = { "PERIODIC", "ABSORB", "CUSTOM", "OPEN", "AXIS" };
+    const std::vector<std::string> outputs = { "disabled", "HDF5" };
   }    // namespace options
 
   namespace defaults {
-    constexpr std::string_view input_filename    = "input";
-    constexpr std::string_view output_path       = "output";
+    constexpr std::string_view input_filename     = "input";
+    constexpr std::string_view output_path        = "output";
 
-    const std::string          title             = "EntitySimulation";
-    const int                  n_species         = 0;
-    const std::string          em_pusher         = "Boris";
-    const std::string          ph_pusher         = "photon";
-    const std::string          metric            = "minkowski";
+    const std::string          title              = "EntitySimulation";
+    const int                  n_species          = 0;
+    const std::string          em_pusher          = "Boris";
+    const std::string          ph_pusher          = "photon";
+    const std::string          metric             = "minkowski";
 
-    const real_t               runtime           = 1e10;
-    const real_t               correction        = 1.0;
-    const real_t               cfl               = 0.95;
+    const real_t               runtime            = 1e10;
+    const real_t               correction         = 1.0;
+    const real_t               cfl                = 0.95;
 
-    const unsigned short       current_filters   = 0;
+    const unsigned short       current_filters    = 0;
 
-    const bool                 use_weights       = false;
+    const bool                 use_weights        = false;
 
-    const int                  shuffle_interval  = 0;
-    const double               max_dead_frac     = 0.0;
+    const int                  shuffle_interval   = 0;
+    const double               max_dead_frac      = 0.0;
 
-    const std::string          output_format     = options::outputs[0];
-    const int                  output_interval   = 1;
-    const int                  output_mom_smooth = 1;
+    const std::string          output_format      = options::outputs[0];
+    const int                  output_interval    = 1;
+    const int                  output_mom_smooth  = 1;
+    const std::size_t          output_prtl_stride = 100;
   }    // namespace defaults
 
   // Field IDs used for io
   enum class FieldID {
     E,      // Electric fields
+    D,      // Electric fields (GR)
     B,      // Magnetic fields
+    H,      // Magnetic fields (GR)
     J,      // Current density
     T,      // Particle distribution moments
     Rho,    // Particle density
@@ -160,27 +164,11 @@ namespace ntt {
     Nppc    // Raw number of particles per each cell
   };
 
-  inline auto StringizeFieldID(const FieldID& id) -> std::string {
-    switch (id) {
-    case FieldID::E:
-      return "E";
-    case FieldID::B:
-      return "B";
-    case FieldID::J:
-      return "J";
-    case FieldID::T:
-      return "T";
-    case FieldID::Rho:
-      return "Rho";
-    case FieldID::N:
-      return "N";
-    case FieldID::Nppc:
-      return "Nppc";
-    default:
-      return "UNKNOWN";
-    }
-  }
-
+  enum class PrtlID {
+    X,    // Position
+    U,    // 4-Velocity / 4-Momentum
+    W     // Weight
+  };
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */

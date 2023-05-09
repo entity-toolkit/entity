@@ -242,8 +242,8 @@ public:
 
   void customAnnotatePcolor2d(const nttiny::UISettings& ui_settings) override {
 #if GRPIC_ENGINE
-    real_t a        = m_sim.sim_params()->metric_parameters()[4];
-    real_t r_absorb = m_sim.sim_params()->metric_parameters()[2];
+    real_t a        = m_sim.sim_params()->metricParameters()[4];
+    real_t r_absorb = m_sim.sim_params()->metricParameters()[2];
     real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
     nttiny::tools::drawCircle(
       { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);

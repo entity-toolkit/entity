@@ -8,7 +8,7 @@ qsph_h      = 0.001
 sph_rabsorb = 4.5
 resolution  = [1024, 1024]
 extent      = [1.0, 5.0]
-boundaries  = ["USER", "ABSORB"]
+boundaries  = [["CUSTOM", "ABSORB"], ["AXIS"]]
 
 [algorithm]
 CFL             = 0.5
@@ -44,7 +44,7 @@ spinup_time  = 1.0
 inj_rmax     = 1.2
 inj_fraction = 0.1
 inj_maxDens  = 5.0
-field_mode   = 1    # 1 = Monopole, 2 = Dipole
+field_mode   = 1   # 1 = Monopole, 2 = Dipole
 u_kick       = 0.5
 
 [visualization]

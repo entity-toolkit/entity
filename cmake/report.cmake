@@ -65,13 +65,6 @@ function(PrintChoices Label Flag Choices Value Default Color OutputString Multil
       set(col ${Underline}${col})
     endif()
 
-    # disabled options
-    if("${Flag}" STREQUAL "engine")
-      if(${ch} STREQUAL "grpic")
-        set(ch ${StrikeBegin}grpic${StrikeEnd})
-      endif()
-    endif()
-
     set(rstring_i "${rstring_i}${col}${ch}${ColorReset}")
     math(EXPR counter "${counter} + 1")
     set(rstring "${rstring}${rstring_i}")
@@ -158,33 +151,27 @@ PrintChoices("Debug mode"
   42
 )
 
-# message(STATUS ${kokkos_ROOT})
-# get_directory_property(KOKKOS_VERSION
-# DIRECTORY ${kokkos_ROOT}
-# DEFINITION Kokkos_VERSION)
-# PrintChoices("Kokkos"
-# ""
-# "v${KOKKOS_VERSION}"
-# "v${KOKKOS_VERSION}"
-# "N/A"
-# "${Blue}"
-# FRAMEWORK_REPORT
-# 0
-# 39
-# )
 # get_directory_property(ENABLED_ARCHS
-# DIRECTORY ${kokkos_ROOT}
-# DEFINITION KOKKOS_ENABLED_ARCH_LIST)
+# DIRECTORY ${kokkos_ROOT}/lib/cmake/Kokkos/
+# DEFINITION Kokkos_ARCH)
+# string(REPLACE ";" " + " ARCHS "${ENABLED_ARCHS}")
+# message(STATUS "ARCHS: ${ARCHS}")
 # PrintChoices("CPU/GPU architecture"
 # ""
-# "${ENABLED_ARCHS}"
-# "${ENABLED_ARCHS}"
+# "${ARCHS}"
+# "${ARCHS}"
 # "N/A"
-# "${Blue}"
+# "${White}"
 # ARCH_REPORT
 # 0
 # 39
 # )
+if(NOT DEFINED ${adios2_VERSION})
+  get_directory_property(adios2_VERSION
+    DIRECTORY ${adios2_BUILD_DIR}
+    DEFINITION ADIOS2_VERSION)
+endif()
+
 PrintChoices("CUDA"
   "Kokkos_ENABLE_CUDA"
   "${ON_OFF_VALUES}"
@@ -243,8 +230,6 @@ if(${Kokkos_ENABLE_CUDA})
     0
     42
   )
-
-  # set(COMPILERS_REPORT "${COMPILERS_REPORT}\n\n  ${CUDA_COMPILER_REPORT}")
 endif()
 
 set(DOT_SYMBOL "${ColorReset}.")
@@ -288,20 +273,20 @@ message("  ${NTTINY_REPORT}\n")
 message("${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}")
-message("  ${DEBUG_REPORT}\n")
 
-# message("  ${FRAMEWORK_REPORT}\n")
+string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" kokkos_ROOT_rel "${kokkos_ROOT}")
+message("  - Kokkos [${Magenta}kokkos_ROOT${ColorReset}]:\t\t  ${kokkos_ROOT_rel} v${kokkos_VERSION}\n")
 
-# if(NOT "${ARCH_REPORT}" STREQUAL "")
+if(NOT "${adios2_ROOT}" STREQUAL "" AND ${output} STREQUAL "ON")
+  string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_ROOT}")
+  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT} v${adios2_VERSION}\n")
+endif()
+
+# if(ENABLED_ARCHS)
 # message("  ${ARCH_REPORT}\n")
 # endif()
-message("  - Kokkos [${Magenta}kokkos_ROOT${ColorReset}]:\t\t  ${kokkos_ROOT}\n")
 message("  ${CUDA_REPORT}\n")
 message("  ${OPENMP_REPORT}\n")
-
-if(NOT "${adios2_ROOT}" STREQUAL "")
-  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT}\n")
-endif()
 
 message("  ${CXX_COMPILER_REPORT}\n")
 
@@ -309,6 +294,9 @@ if(NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
   message("  ${CUDA_COMPILER_REPORT}\n")
 endif()
 
+message("  ${DEBUG_REPORT}\n")
+
+# message("  ${FRAMEWORK_REPORT}\n")
 message("${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}

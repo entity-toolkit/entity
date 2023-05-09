@@ -1,7 +1,3 @@
-#
-# Documentation to be added...
-#
-
 import xarray as xr
 
 useGreek = False
@@ -398,25 +394,42 @@ class Data:
             "Tty": "Py",
             "Ttz": "Pz",
         }
-
+        _polar = {
+            "r": "r",
+            "theta": "θ" if useGreek else "th",
+            "phi": "φ" if useGreek else "ph",
+            "1": "r",
+            "2": "θ" if useGreek else "th",
+            "3": "φ" if useGreek else "ph",
+        }
         CoordinateDict = {
             "minkowski": {"x": "x", "y": "y", "z": "z", "1": "x", "2": "y", "3": "z"},
-            "spherical": {
-                "r": "r",
-                "theta": "θ" if useGreek else "th",
-                "phi": "φ" if useGreek else "ph",
-                "1": "r",
-                "2": "θ" if useGreek else "th",
-                "3": "φ" if useGreek else "ph",
+            "spherical": _polar,
+            "qspherical": _polar,
+            "kerr_schild": _polar,
+            "qkerr_schild": _polar,
+        }
+        _prtl_polar = {
+            "X1": "r",
+            "X2": "θ" if useGreek else "th",
+            "X3": "φ" if useGreek else "ph",
+            "U1": "ur",
+            "U2": "uΘ" if useGreek else "uth",
+            "U3": "uφ" if useGreek else "uph",
+        }
+        PrtlDict = {
+            "minkowski": {
+                "X1": "x",
+                "X2": "y",
+                "X3": "z",
+                "U1": "ux",
+                "U2": "uy",
+                "U3": "uz",
             },
-            "qspherical": {
-                "r": "r",
-                "theta": "θ" if useGreek else "th",
-                "phi": "φ" if useGreek else "ph",
-                "1": "r",
-                "2": "θ" if useGreek else "th",
-                "3": "φ" if useGreek else "ph",
-            },
+            "spherical": _prtl_polar,
+            "qspherical": _prtl_polar,
+            "kerr_schild": _prtl_polar,
+            "qkerr_schild": _prtl_polar,
         }
         self.fname = fname
         self.file = h5py.File(self.fname, "r")
@@ -438,7 +451,22 @@ class Data:
 
         self.dataset = xr.Dataset()
 
-        fields = [k for k in self.file[step0].keys() if k not in ["Time", "Step"]]
+        fields = [
+            k
+            for k in self.file[step0].keys()
+            if (
+                k not in ["Time", "Step"]
+                and not (k.startswith("X") or k.startswith("U") or k.startswith("W"))
+            )
+        ]
+        prtls = [
+            k
+            for k in self.file[step0].keys()
+            if (k.startswith("X") or k.startswith("U") or k.startswith("W"))
+        ]
+        species = np.unique(
+            [int(pq.split("_")[1]) for pq in self.file[step0].keys() if pq in prtls]
+        )
 
         for k in self.file.attrs.keys():
             if (
@@ -483,6 +511,27 @@ class Data:
             )
             self.dataset[k_] = x
 
+        prtl_quantities = np.unique(list(map(lambda x: x.split("_")[0], prtls)))
+        self._particles = {}
+        for specie in species:
+            self._particles[specie] = xr.Dataset(
+                {
+                    PrtlDict[metric][q]: (
+                        ["t", "prtl"],
+                        da.stack(
+                            [
+                                da.from_array(self.file[f"Step{s}/{q}_{specie}"])
+                                for s in range(nsteps)
+                            ]
+                        ),
+                    )
+                    for q in prtl_quantities
+                    if f"{q}_{specie}" in self.file[step0].keys()
+                },
+                coords={"t": times},
+                attrs={"label": self.attrs[f"species-{specie}"]},
+            )
+
     def __del__(self):
         self.file.close()
 
@@ -496,7 +545,13 @@ class Data:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        for _, v in self._particles.items():
+            del v
         del self
+
+    @property
+    def particles(self):
+        return self._particles
 
 
 def makeMovie(**ffmpeg_kwargs):

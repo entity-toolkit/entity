@@ -51,9 +51,13 @@ auto main(int argc, char* argv[]) -> int {
     short res = static_cast<short>(
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
     if (res == 1) {
+#ifndef GRPIC_ENGINE
       ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
       NTTLog();
       sim.Run();
+#else
+      NTTHostError("GRPIC engine does not support 1D");
+#endif
     } else if (res == 2) {
       ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
       NTTLog();
