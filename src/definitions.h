@@ -107,9 +107,11 @@ namespace ntt {
 
   // ND vector alias
   template <Dimension D>
-  using vec_t   = tuple_t<real_t, D>;
+  using vec_t         = tuple_t<real_t, D>;
 
-  using index_t = const std::size_t;
+  using index_t       = const std::size_t;
+
+  using range_tuple_t = std::pair<std::size_t, std::size_t>;
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
