@@ -1,13 +1,44 @@
 {
   "configurations": [
     {
-      "name": "default",
+      "name": "stellar",
+      "intelliSenseMode": "linux-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/src/**",
+        "${workspaceFolder}/build/src",
+        "${workspaceFolder}/build",
+        "${workspaceFolder}/build/_deps/**/**/",
+        "${workspaceFolder}/extern/**"
+      ],
+      "defines": [
+        "GRPIC_ENGINE",
+        "OUTPUT_ENABLED",
+        "KERR_SCHILD_METRIC",
+        "NTTINY_ENABLED"
+      ],
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "forcedInclude": [
+        "${workspaceFolder}/.vscode/intellisense.h"
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}"
+        ],
+        "limitSymbolsToIncludedHeaders": true,
+        "databaseFilename": ""
+      },
+      "configurationProvider": "ms-vscode.cmake-tools"
+    },
+    {
+      "name": "wsl",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
         "${workspaceFolder}/build/**",
         "${workspaceFolder}/build/_deps/kokkos-build/core/src",
-        // "/home/hayk/Codes/adios2/install/include",
-        // "/usr/local/cuda/include",
+        "/home/hayk/Codes/adios2/install/include",
+        "/usr/local/cuda/include",
         "${workspaceFolder}/src/**",
         "${workspaceFolder}/build/src/",
         "${workspaceFolder}/extern/**"
