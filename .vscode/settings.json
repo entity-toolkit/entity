@@ -117,12 +117,4 @@
   "editor.tokenColorCustomizations": {
     "textMateRules": [],
   },
-  "C_Cpp.errorSquiggles": "disabled",
-  "cmake.buildDirectory": "${workspaceFolder}/build",
-  "cmake.configureSettings": {
-    "output": "OFF",
-    "nttiny": "OFF",
-    "Kokkos_ENABLE_OPENMP": "ON",
-    "pgen": "weibel"
-  },
 }
