@@ -11,25 +11,30 @@ The output is configured using the following configurations in the `input` file:
 
 ```toml
 [simulation]
-# title used for the output filename
-title   = "MySimulation"
+title   = "MySimulation" # (5)!
 
 # ...
 
 [output]
-# fields to write
-fields     = ["Bx", "Ei", "Rho_1_2", ...]
-# output format (current supported: "HDF5", or "disabled" for no output)
-format     = "HDF5"
-# interval between outputs (in the number of time steps)
-interval   = 100
-# smoothing stencil size for moments (in the number of cells) [defaults to 1]
-mom_smooth = 2
+format       = "HDF5" # (2)!
+fields       = ["Bx", "Ei", "Rho_1_2", ...] # (1)!
+particles    = ["X_1_2", "U_3_4", "W"] # (7)!
+interval     = 100 # (3)!
+mom_smooth   = 2 # (4)!
+prtl_stride  = 10 # (6)!
 ```
 
-Output is written in the run directory in a single `hdf5` file: `MySimulation.flds.h5` (at the moment only field output is supported). All the steps are written in the same file, and the time step is stored as an attribute of the dataset: `Step0`, `Step1`, `Step2`, etc. Thus to access, say, the `Ez` field at the 10th output step (not the same as the simulation timestep), one has to access the dataset `/Step9/Ez` in the `hdf5` file.
+1. fields to write
+2. output format (current supported: "HDF5", or "disabled" for no output)
+3. output interval (in the number of time steps)
+4. smoothing stencil size for moments (in the number of cells) [defaults to 1]
+5. title is used for the output filename
+6. stride used for particle output (write every `prtl_stride`-th particle) [defaults to 100]
+7. particle quantities to write
 
-Following is the list of the supported fields:
+Output is written in the run directory in a single `hdf5` file: `MySimulation.h5`. All the steps are written in the same file, and the time step is stored as an attribute of the dataset: `Step0`, `Step1`, `Step2`, etc. Thus to access, say, the `Ez` field at the 10th output step (not the same as the simulation timestep), one has to access the dataset `/Step9/Ez` in the `hdf5` file. If one needs the `X1` coordinates of particles of species 2 at the 5th output step, one has to access the dataset `/Step4/X1_2` in the `hdf5` file, etc.
+
+Following is the list of the supported fields
 
 | Field name | Description | Units |
 |------------|-------------|------|
@@ -40,11 +45,23 @@ Following is the list of the supported fields:
 | `N` | Number density |  $n_0$ |
 | `Tij` | Energy-momentum tensor (all components) | $m_0 n_0$ |
 
-!!! note
+and particle quantities
 
-    One can specify particular components to output. For instance, `E1` (or, e.g., `By`) will only output `Ex` (or, correspondigly, `By`). The same applies to the `Ji` and `Tij` fields. Additionally, `T0i` will output the `T00`, `T01`, and `T02` components, while `Tii` will output only the diagonal components: `T11`, `T22`, and `T33`. One can also specify the particle species which will be used to compute the moments: `Rho_1` (density of species 1), `N_2_3` (number density of species 2 and 3), `Tij_1_3` (energy-momentum tensor for species 1 and 3), etc. If no species are specified, the moments will be computed for all the species with $m_s \ne 0$.
+| Particle quantity | Description | Units |
+|-------------------|-------------|-------|
+| `X` | Coordinates (all components) | physical |
+| `U` | Four-velocities in the orthonormal frame (all components) | dimensionless |
+| `W` | Weights | dimensionless |
+
+!!! note "Refining fields and particle quantities for the output"
+
+    One can specify particular components to output for the fields. For instance, `E1` (or, e.g., `By`) will only output `Ex` (or, correspondigly, `By`). The same applies to the `Ji` and `Tij` fields. Additionally, `T0i` will output the `T00`, `T01`, and `T02` components, while `Tii` will output only the diagonal components: `T11`, `T22`, and `T33`. One can also specify the particle species which will be used to compute the moments or output particle quantities: `Rho_1` (density of species 1), `N_2_3` (number density of species 2 and 3), `Tij_1_3` (energy-momentum tensor for species 1 and 3), etc. Or for the particle quantities: `X_1_2` will write the coordinates of particles of species 1 and 2 only. If no species are specified, the moments will be computed for all the species with $m_s \ne 0$.
 
 All of the vector fields are interpolated to cell centers before the output, and converted to orthonormal basis. The particle-based moments are smoothed with a stencil (specified in the input file; `mom_smooth`) for each particle.
+
+!!! failure "Can one track particles at different times?"
+
+    Particle tracking (outputting the same batch of particles at every timestep) is unfortunately not yet implemented.
 
 ## `nt2.py`
 
@@ -65,17 +82,19 @@ Now simply import the `nt2` module and load the output data:
 
 ```python
 import nt2 # (1)!
-flds = nt2.Data("MySimulation.flds.h5")
+data = nt2.Data("MySimulation.h5")
 ```
 
 1. If working outside the `vis/` directory you might need to add the `vis/` to your path: `import sys; sys.path.append("vis")` in order to import `nt2`.
 
 Note, that even though the `h5` file can be quite large, the data is loaded lazily, so the memory consumption is minimal; data chunks are only loaded when they are actually needed for the analysis or visualization.
 
-Data selection is conveniently done with the `sel` and `isel` methods for the `xarray` Datasets ([more info](https://docs.xarray.dev/en/stable/user-guide/indexing.html)). For example, to select the `mass_density` field around physical time `t=98`, one can do:
+### Accessing fields
+
+Data selection is conveniently done with the `sel` and `isel` methods for the `xarray` Datasets ([more info](https://docs.xarray.dev/en/stable/user-guide/indexing.html)). For example, to select the `Rho` field around physical time `t=98`, one can do:
 
 ```python
-flds.Rho_1.sel(t=98, method="nearest") # (1)!
+data.Rho.sel(t=98, method="nearest") # (1)!
 ```
 
 1. The `method="nearest"` is used to select the closest time step to the requested time.
@@ -85,7 +104,7 @@ flds.Rho_1.sel(t=98, method="nearest") # (1)!
 We can then plot the selected data using the `plot` method of the `xarray` Dataset:
 
 ```python
-flds.Rho_1\
+data.Rho\
   .sel(t=98, method="nearest")\
   .plot(
     norm=mpl.colors.Normalize(0, 1e2),  # (2)!
@@ -98,7 +117,7 @@ flds.Rho_1\
 If the resolution is too high, one can also coarsen the data before plotting:
 
 ```python
-flds.Rho_1\
+data.Rho\
   .sel(t=98, method="nearest")\
   .coarsen(x=16, y=4).mean()\
   .plot(
@@ -109,7 +128,7 @@ flds.Rho_1\
 or downsample:
 
 ```python
-flds.Rho_1\
+data.Rho\
   .sel(t=98, method="nearest")\
   .isel(x=slice(None, None, 16), y=slice(None, None, 4))\ # (1)!
   .plot(
@@ -119,12 +138,12 @@ flds.Rho_1\
 
 1. The difference between `isel` and `sel` is that `isel` uses the integer indices along the given dimension, while `sel` uses the physical coordinates.
 
-![nt2demo1](../assets/images/howto/nt2-demo-2.png){width=50%, align=right} 
+![nt2demo2](../assets/images/howto/nt2-demo-2.png){width=50%, align=right} 
 
 One can also do more complicated things, such as building a 1D plot of the evolution of the mean $B^2$ in the box:
 
 ```python
-flds.Bx**2 + flds.By**2 + flds.Bz**2\
+data.Bx**2 + data.By**2 + data.Bz**2\
   .mean(dim=["x", "y"])\
   .plot()
 ```
@@ -132,11 +151,60 @@ flds.Bx**2 + flds.By**2 + flds.Bz**2\
 or make "waterfall" plots, collapsing the quantity along one of the axis, and plotting vs the other axis and time:
 
 ```python
-(flds.Rho_2 - flds.Rho_1)\
+(data.Rho_2 - data.Rho_1)\
   .mean(dim="x")\
   .plot(yincrease=False)
 ```
 
-!!! note
+### Accessing particles
+
+Particles are stored in the same `data` object and are lazily preloaded when one calls `nt2.Data(...)`, as we did above. To access the particle data, use `data.particles`, which returns a python dictionary where the key is particles species index, and the value is an `xarray` Dataset with the particle data. For example, to access the `x` and `y` coordinates of the first species, one can do:
+
+```python
+data.particles[1].x
+data.particles[1].y
+```
+
+The shape of the returned dataset is number of particles times the number of time steps. To select the data at a specific time step, one can use the same `sel` or `isel` methods mentioned above. For example, to access the 10-th output timestep of the 3-rd species, one can do:
+
+```python
+data.particles[3].isel(t=10).x
+```
+
+![nt2demo3](../assets/images/howto/nt2-demo-3.png){width=50%, align=right} 
+
+Scatter plotting the particles on a 2D plane is quite easy, since `xarray` has a built-in `plot.scatter` method:
+
+```python
+species_3 = data.particles[3]
+species_4 = data.particles[4]
+
+species_3.isel(t=-1)\
+  .plot.scatter(x="x", y="y", 
+                label=species_3.attrs["label"])
+species_4.isel(t=-1)\
+  .plot.scatter(x="x", y="y", 
+                label=species_4.attrs["label"])
+```
+
+!!! note "`isel` indexing"
+
+    `isel(t=-1)` selects the last time step.
+
+![nt2demo4](../assets/images/howto/nt2-demo-4.png){width=50%, align=right} 
+
+Or one can plot the same in phase space:
+
+```python
+species_3.isel(t=-1)\
+  .plot.scatter(x="ux", y="uy", 
+                label=species_3.attrs["label"])
+species_4.isel(t=-1)\
+  .plot.scatter(x="ux", y="uy", 
+                label=species_4.attrs["label"])
+```
+
+
+!!! note "`nt2` documentation"
 
     You can access the documentation of the `nt2` functions and methods of the `Data` object by calling `nt2.<function>?` in the jupyter notebook or `help(nt2.<function>)` in the python console.

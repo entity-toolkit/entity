@@ -30,7 +30,7 @@ hide:
 
 ::/cards::
 
-!!! warning
+!!! warning "Wiki is under construction"
 
     This wiki page is under active construction and does not properly reflect the current development stage. If you don't find answers to your questions, please feel free to contact via email [haykh[dot]astro[at]gmail](mailto:haykh.astro+entity@gmail.com) or submit a [github issue](https://github.com/haykh/entity/issues). If you are interested in working with us, please contact us at [haykh[dot]astro[at]gmail](mailto:haykh.astro+entity@gmail.com).
 

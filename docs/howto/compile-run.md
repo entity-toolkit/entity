@@ -8,8 +8,8 @@ hide:
 To compile the code you need to have the following dependencies installed:
 
   - [`CMake`](https://cmake.org/) (version >= 3.16; verify by running `cmake --version`).
-  - [`GCC`](https://gcc.gnu.org/) (version >= 8.3.1; verify by running `gcc --version`) or [Intel C++ compiler](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html) (version >= 19.1 or higher; verify by running `icc --version`).
-  - to compile for GPUs, you need to have [`CUDA`](https://developer.nvidia.com/cuda-toolkit) (11.0 <= version < 12; verify by running `nvcc --version`) installed.
+  - [`GCC`](https://gcc.gnu.org/) (version >= 8.3.1; verify by running `gcc --version`) or [Intel C++ compiler](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html) (version >= 19.1 or higher; verify by running `icx --version`).
+  - to compile for GPUs, you need to have [`CUDA`](https://developer.nvidia.com/cuda-toolkit) (version >= 11.0; verify by running `nvcc --version`) installed.
 
 ## Compilation workflow
 
@@ -48,12 +48,12 @@ To compile the code you need to have the following dependencies installed:
     | --- | --- | --- | --- |
     | `Kokkos_ENABLE_CUDA` | enable CUDA | `ON`, `OFF` | `OFF` |
     | `Kokkos_ENABLE_OPENMP` | enable OpenMP | `ON`, `OFF` | `OFF` |
-    | `CMAKE_CXX_COMPILER` | C++ compiler | whichever compiler is available on your system | CMake/Kokkos will attempt to find automatically |
+    | `Kokkos_ARCH_***` | use particular CPU/GPU architecture | see [Kokkos documentation](https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords) | `Kokkos` attempts to determine automatically |
 
 
     !!! note
         
-        When simply compiling with `-D Kokkos_ENABLE_CUDA=ON` without additional flags, `CMake` will try to deduce the GPU architecture based on the machine you are compiling on. Oftentimes this might not be the same as the architecture of the machine you are planning to run on (and sometimes the former might lack GPU altogether). To be more explicit, you can specify the GPU architecture manually using the `-D Kokkos_ARCH_XXX=ON` flags. For example, to explicitly compile for `A100` GPUs, you can use `-D Kokkos_ARCH_AMPERE80=ON`. For `V100` -- use `-D Kokkos_ARCH_VOLTA70=ON`.
+        When simply compiling with `-D Kokkos_ENABLE_CUDA=ON` without additional flags, `CMake` will try to deduce the GPU architecture based on the machine you are compiling on. Oftentimes this might not be the same as the architecture of the machine you are planning to run on (and sometimes the former might lack GPU altogether). To be more explicit, you can specify the GPU architecture manually using the `-D Kokkos_ARCH_***=ON` flags. For example, to explicitly compile for `A100` GPUs, you can use `-D Kokkos_ARCH_AMPERE80=ON`. For `V100` -- use `-D Kokkos_ARCH_VOLTA70=ON`.
 
 
 1. After `cmake` is done configuring the code, a directory named `build` will be created in the root directory. Proceed there and _compile_ the code using `make`:
@@ -61,7 +61,7 @@ To compile the code you need to have the following dependencies installed:
   make -j
   ```
 
-1. After the compilation is done, you will find the corresponding executable called `<executable>.xc` in the `build/src/` directory. That's it! You can now run the code.
+1. After the compilation is done, you will find the corresponding executable called `<executable>.xc` in the `build/src/` directory. That's it! You can now finally _run_ the code.
 
 ## Running
 

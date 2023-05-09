@@ -14,11 +14,12 @@ nav:
       # - 'Testing': ''
       - "Documenting": "howto/docs.md"
   - "How it works":
-      - "3+1 formulation": "how/3p1.md"
+      - "3+1 formulation": "info/3p1.md"
       # - "Units": "how/units.md"
-      - "PIC algorithm": "how/pic.md"
-      - "Coordinate systems": "how/coords.md"
-  - "Code guide": "guide/guide.md"
+      - "PIC algorithm": "info/pic.md"
+      - "Coordinate systems": "info/coords.md"
+  - "Code guide": 
+      - "Ranges": "guide/ranges.md"
   - "Fun":
       - "Cubed sphere": "fun/cubed_sphere.md"
       - '"Reconnection"': "fun/reconnection.md"
