@@ -52,7 +52,7 @@ namespace ntt {
           writer.Put<real_t>(var, xi_host);
         }
       } else if (m_id == PrtlID::U) {
-        for (auto d { 0 }; d < (short)D; ++d) {
+        for (auto d { 0 }; d < 3; ++d) {
           array_t<real_t*> ui("ui", size);
 
           Kokkos::parallel_for(
