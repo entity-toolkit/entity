@@ -153,11 +153,18 @@ namespace ntt {
     for (auto& prtl : m_particles) {
       for (auto s { 0 }; s < prtl.speciesID().size(); ++s) {
         auto sp_index = prtl.speciesID()[s];
-        if ((prtl.id() == PrtlID::X) || (prtl.id() == PrtlID::U)) {
-          auto tag = (prtl.id() == PrtlID::X) ? "X" : "U";
+        if (prtl.id() == PrtlID::X) {
           for (auto d { 0 }; d < (short)D; ++d) {
             m_io.DefineVariable<real_t>(
-              tag + std::to_string(d + 1) + "_" + std::to_string(sp_index),
+              "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
+              {},
+              {},
+              { adios2::UnknownDim });
+          }
+        } else if (prtl.id() == PrtlID::U) {
+          for (auto d { 0 }; d < 3; ++d) {
+            m_io.DefineVariable<real_t>(
+              "U" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
               {},
               {},
               { adios2::UnknownDim });
