@@ -84,7 +84,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
-      FieldsExchange();
+      Exchange(GhostCells::fields);
       FieldsBoundaryConditions();
       timers.stop("FieldBoundaries");
     }
@@ -109,7 +109,7 @@ namespace ntt {
 
         timers.start("FieldBoundaries");
         CurrentsSynchronize();
-        CurrentsExchange();
+        Exchange(GhostCells::currents);
         CurrentsBoundaryConditions();
         timers.stop("FieldBoundaries");
 
@@ -118,7 +118,7 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
-      ParticlesExchange();
+      Exchange(GhostCells::particles);
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }
@@ -131,7 +131,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
-      FieldsExchange();
+      Exchange(GhostCells::fields);
       FieldsBoundaryConditions();
       timers.stop("FieldBoundaries");
 
@@ -146,7 +146,7 @@ namespace ntt {
       }
 
       timers.start("FieldBoundaries");
-      FieldsExchange();
+      Exchange(GhostCells::fields);
       FieldsBoundaryConditions();
       timers.stop("FieldBoundaries");
     }

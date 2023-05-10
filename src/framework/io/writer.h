@@ -40,7 +40,7 @@ namespace ntt {
                      Meshblock<D, S>&,
                      const real_t&,
                      const std::size_t&);
-                     
+
     void WriteParticles(const SimulationParams&,
                         Meshblock<D, S>&,
                         const real_t&,

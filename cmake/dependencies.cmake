@@ -1,4 +1,4 @@
-set(kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
+set(Kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
 set(fmt_REPOSITORY https://github.com/fmtlib/fmt.git CACHE STRING "fmt repository")
 set(plog_REPOSITORY https://github.com/SergiusTheBest/plog.git CACHE STRING "plog repository")
 set(toml11_REPOSITORY https://github.com/ToruNiina/toml11 CACHE STRING "toml11 repository")
@@ -19,16 +19,20 @@ function(find_or_fetch_dependency package_name header_only)
         GIT_REPOSITORY ${${package_name}_REPOSITORY}
       )
       FetchContent_MakeAvailable(${package_name})
-      set(${package_name}_ROOT ${CMAKE_CURRENT_BINARY_DIR}/_deps/${package_name}-build CACHE PATH "Path to ${package_name} build")
-      set(${package_name}_SRC ${CMAKE_CURRENT_BINARY_DIR}/_deps/${package_name}-src CACHE PATH "Path to ${package_name} src")
+
+      set(lower_pckg_name ${package_name})
+      string(TOLOWER ${lower_pckg_name} lower_pckg_name)
+
+      set(${package_name}_ROOT ${CMAKE_CURRENT_BINARY_DIR}/_deps/${lower_pckg_name}-build CACHE PATH "Path to ${package_name} build")
+      set(${package_name}_SRC ${CMAKE_CURRENT_BINARY_DIR}/_deps/${lower_pckg_name}-src CACHE PATH "Path to ${package_name} src")
       set(${package_name}_FETCHED TRUE CACHE BOOL "Whether ${package_name} was fetched")
       message(STATUS "${Green}${package_name} fetched.${ColorReset}")
 
-      if(${package_name} STREQUAL "kokkos")
-        get_directory_property(kokkos_VERSION
+      if(${package_name} STREQUAL "Kokkos")
+        get_directory_property(Kokkos_VERSION
           DIRECTORY ${${package_name}_SRC}/
           DEFINITION Kokkos_VERSION)
-        set(${package_name}_VERSION ${kokkos_VERSION} CACHE INTERNAL "${package_name} version")
+        set(${package_name}_VERSION ${Kokkos_VERSION} CACHE INTERNAL "${package_name} version")
       endif()
     else()
       # get as submodule
@@ -52,7 +56,7 @@ if(${nttiny} STREQUAL "ON")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
 endif()
 
-find_or_fetch_dependency(kokkos FALSE)
+find_or_fetch_dependency(Kokkos FALSE)
 find_or_fetch_dependency(fmt TRUE)
 find_or_fetch_dependency(plog TRUE)
 find_or_fetch_dependency(toml11 TRUE)
