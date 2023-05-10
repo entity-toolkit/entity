@@ -1,61 +1,68 @@
 {
+  "env": {
+    "myDefaultIncludePath": [
+      "${workspaceFolder}/**",
+      "${workspaceFolder}/../kokkos/install/include",
+      "${workspaceFolder}/../ADIOS2/install/include"
+    ],
+    "myDefaultDefines": [
+      // "PIC_ENGINE",
+      "GRPIC_ENGINE",
+      "SINGLE_PRECISION",
+      "OMPENABLED",
+      "OUTPUT_ENABLED",
+      // "MINKOWSKI_METRIC",
+      // "QSPHERICAL_METRIC",
+      "QKERR_SCHILD_METRIC"
+    ]
+  },
   "configurations": [
     {
       "name": "stellar",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
-        "${workspaceFolder}",
-        "${workspaceFolder}/src/**",
-        "${workspaceFolder}/build/src/",
-        "${workspaceFolder}/build",
-        "${workspaceFolder}/build/_deps/**/**/",
-        "${workspaceFolder}/extern/**"
+        "${myDefaultIncludePath}"
       ],
       "defines": [
-        "GRPIC_ENGINE",
-        "OUTPUT_ENABLED",
-        "KERR_SCHILD_METRIC",
-        "NTTINY_ENABLED"
+        "${myDefaultDefines}"
       ],
       "cStandard": "c17",
       "cppStandard": "c++17",
       "forcedInclude": [
         "${workspaceFolder}/.vscode/intellisense.h"
-      ],
-      "configurationProvider": "ms-vscode.cmake-tools"
+      ]
     },
     {
       "name": "wsl",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
-        "${workspaceFolder}/build/**",
-        "${workspaceFolder}/build/_deps/fmt-src/include/",
-        "${workspaceFolder}/build/_deps/plog-src/include/",
-        "${workspaceFolder}/build/_deps/kokkos-build/core/src",
-        "${HOME}/Codes/kokkos/install/include",
-        "${HOME}/Codes/adios2/install/include",
-        "/usr/local/cuda/include",
-        "${workspaceFolder}/src/**",
-        "${workspaceFolder}/build/src/",
-        "${workspaceFolder}/extern/**"
+        "${myDefaultIncludePath}"
       ],
       "defines": [
-        // "PIC_ENGINE",
-        "GRPIC_ENGINE",
-        "SINGLE_PRECISION",
-        "OMPENABLED",
-        "OUTPUT_ENABLED",
-        // "MINKOWSKI_METRIC",
-        // "QSPHERICAL_METRIC",
-        "QKERR_SCHILD_METRIC"
+        "${myDefaultDefines}"
       ],
       "compilerPath": "/usr/bin/g++",
       "cStandard": "c17",
       "cppStandard": "c++17",
       "forcedInclude": [
         "${workspaceFolder}/.vscode/intellisense.h"
+      ]
+    },
+    {
+      "name": "mac",
+      "intelliSenseMode": "macos-gcc-x64",
+      "includePath": [
+        "${myDefaultIncludePath}"
       ],
-      "configurationProvider": "ms-vscode.cmake-tools"
+      "defines": [
+        "${myDefaultDefines}"
+      ],
+      "compilerPath": "/usr/local/bin/g++-10",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "forcedInclude": [
+        "${workspaceFolder}/.vscode/intellisense.h"
+      ]
     }
   ],
   "version": 4
