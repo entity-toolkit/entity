@@ -30,6 +30,7 @@
       "includePath": [
         "${workspaceFolder}/build/**",
         "${workspaceFolder}/build/_deps/fmt-src/include/",
+        "${workspaceFolder}/build/_deps/plog-src/include/",
         "${workspaceFolder}/build/_deps/kokkos-build/core/src",
         "${HOME}/Codes/kokkos/install/include",
         "${HOME}/Codes/adios2/install/include",

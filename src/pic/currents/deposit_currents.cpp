@@ -33,7 +33,7 @@ namespace ntt {
         const real_t              charge { species.charge() };
         DepositCurrents_kernel<D> deposit(
           mblock, species, scatter_cur, charge, params.useWeights(), dt);
-        Kokkos::parallel_for("deposit", species.rangeActiveParticles(), deposit);
+        Kokkos::parallel_for("CurrentsDeposit", species.rangeActiveParticles(), deposit);
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
