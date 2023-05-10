@@ -57,7 +57,7 @@ namespace ntt {
       }
 #endif
       Kokkos::parallel_for("CurrentsFilter", range, CurrentsFilter_kernel<D>(mblock));
-      CurrentsExchange();
+      Exchange(GhostCells::currents);
 
       ImposeEmptyContent(mblock.buff_content);
     }

@@ -92,8 +92,9 @@ namespace ntt {
     void FieldsBoundaryConditions();
     /**
      * @brief Synchronize ghost zones between the meshblocks.
+     * @param f flag to synchronize fields, currents or particles.
      */
-    void FieldsExchange();
+    void Exchange(const GhostCells&);
 
     /* -------------------------------- Currents -------------------------------- */
     /**
@@ -112,10 +113,6 @@ namespace ntt {
      * @brief Synchronize currents deposited in different meshblocks.
      */
     void CurrentsSynchronize();
-    /**
-     * @brief Exchange currents in ghost zones between the meshblocks.
-     */
-    void CurrentsExchange();
 
     /* -------------------------------- Particles ------------------------------- */
     /**
@@ -127,10 +124,6 @@ namespace ntt {
      * @brief Apply boundary conditions for particles.
      */
     void ParticlesBoundaryConditions();
-    /**
-     * @brief Exchange particles between the meshblocks (incl. periodic BCs).
-     */
-    void ParticlesExchange();
 
     /**
      * @brief Benchmarking step.

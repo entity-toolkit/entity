@@ -17,7 +17,7 @@ namespace ntt {
     ResetParticles();
     ResetCurrents();
     InitializeSetup();
-    FieldsExchange();
+    Exchange(GhostCells::fields);
     FieldsBoundaryConditions();
     NTTLog();
   }
