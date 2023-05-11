@@ -40,7 +40,7 @@ namespace ntt {
         (mass == 0.0) && (charge == 0.0) ? defaults::ph_pusher : defaults::em_pusher,
         options::pushers);
       ParticlePusher pusher { ParticlePusher::UNDEFINED };
-      if (pusher_str == "photon") {
+      if (pusher_str == "Photon") {
         pusher = ParticlePusher::PHOTON;
       } else if (pusher_str == "Vay") {
         pusher = ParticlePusher::VAY;

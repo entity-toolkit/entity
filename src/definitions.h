@@ -60,6 +60,7 @@ inline constexpr double INV_64 = 0.015625;
 namespace ntt {
   namespace constant {
     inline constexpr std::uint64_t RandomSeed = 0x123456789abcdef0;
+    inline constexpr double        HALF_PI    = 1.57079632679489661923;
     inline constexpr double        PI         = 3.14159265358979323846;
     inline constexpr double        INV_PI     = 0.31830988618379067154;
     inline constexpr double        PI_SQR     = 9.86960440108935861882;
@@ -133,7 +134,7 @@ namespace ntt {
     const std::string          title              = "EntitySimulation";
     const int                  n_species          = 0;
     const std::string          em_pusher          = "Boris";
-    const std::string          ph_pusher          = "photon";
+    const std::string          ph_pusher          = "Photon";
     const std::string          metric             = "minkowski";
 
     const real_t               runtime            = 1e10;
