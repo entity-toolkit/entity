@@ -64,7 +64,7 @@ namespace ntt {
       } else if (m_particles.pusher() == ParticlePusher::NONE) {
         // do nothing
       } else {
-        NTTHostError("pusher not implemented");
+        NTTHostError("not implemented");
       }
     }
 
