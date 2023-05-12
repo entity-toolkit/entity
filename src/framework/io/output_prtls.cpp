@@ -40,7 +40,13 @@ namespace ntt {
       }
 
       if (m_id == PrtlID::X) {
-        for (auto d { 0 }; d < (short)D; ++d) {
+        // phi is treated separately for 2D non-Minkowski metric
+#  ifndef MINKOWSKI_METRIC
+        const auto dmax = (D == Dim2) ? 3 : (short)D;
+#  else
+        const auto dmax = (short)D;
+#  endif
+        for (auto d { 0 }; d < dmax; ++d) {
           array_t<real_t*> xi("xi", size);
 
           Kokkos::parallel_for(

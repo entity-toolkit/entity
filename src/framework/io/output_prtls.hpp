@@ -31,6 +31,7 @@ namespace ntt {
         m_stride(stride),
         m_component(component) {}
 
+#ifdef MINKOWSKI_METRIC
     Inline void operator()(const OutputPositions_t&, index_t p) const {
       coord_t<D> xcode { ZERO }, xph { ZERO };
       if (m_component == 0) {
@@ -40,19 +41,13 @@ namespace ntt {
       } else if (m_component == 2) {
         xcode[2] = get_prtl_x3(m_particles, p * m_stride);
       }
-#ifdef MINKOWSKI_METRIC
       m_mblock.metric.x_Code2Cart(xcode, xph);
-#else
-      m_mblock.metric.x_Code2Sph(xcode, xph);
-#endif
-      if (m_component == 0) {
-        m_buffer(p) = xph[0];
-      } else if (m_component == 1) {
-        m_buffer(p) = xph[1];
-      } else if (m_component == 2) {
-        m_buffer(p) = xph[2];
-      }
+      m_buffer(p) = xph[m_component];
     }
+#else
+    Inline void operator()(const OutputPositions_t&, index_t p) const {}
+#endif
+
 #ifdef MINKOWSKI_METRIC
     Inline void operator()(const OutputVelocities_t&, index_t p) const {
       if (m_component == 0) {
@@ -69,6 +64,70 @@ namespace ntt {
   };
 
 #ifndef MINKOWSKI_METRIC
+  template <>
+  Inline void PreparePrtlQuantities_kernel<Dim2, PICEngine>::operator()(
+    const OutputPositions_t&, index_t p) const {
+    if (m_component == 2) {
+      m_buffer(p) = m_particles.phi(p);
+    } else {
+      coord_t<Dim2> xcode { ZERO }, xph { ZERO };
+      if (m_component == 0) {
+        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+      } else if (m_component == 1) {
+        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+      }
+      m_mblock.metric.x_Code2Sph(xcode, xph);
+      m_buffer(p) = xph[m_component];
+    }
+  }
+
+  template <>
+  Inline void PreparePrtlQuantities_kernel<Dim3, PICEngine>::operator()(
+    const OutputPositions_t&, index_t p) const {
+    coord_t<Dim3> xcode { ZERO }, xph { ZERO };
+    if (m_component == 0) {
+      xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+    } else if (m_component == 1) {
+      xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+    } else if (m_component == 2) {
+      xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+    }
+    m_mblock.metric.x_Code2Sph(xcode, xph);
+    m_buffer(p) = xph[m_component];
+  }
+
+  template <>
+  Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
+    const OutputPositions_t&, index_t p) const {
+    if (m_component == 2) {
+      m_buffer(p) = m_particles.phi(p);
+    } else {
+      coord_t<Dim2> xcode { ZERO }, xph { ZERO };
+      if (m_component == 0) {
+        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+      } else if (m_component == 1) {
+        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+      }
+      m_mblock.metric.x_Code2Sph(xcode, xph);
+      m_buffer(p) = xph[m_component];
+    }
+  }
+
+  template <>
+  Inline void PreparePrtlQuantities_kernel<Dim3, GRPICEngine>::operator()(
+    const OutputPositions_t&, index_t p) const {
+    coord_t<Dim3> xcode { ZERO }, xph { ZERO };
+    if (m_component == 0) {
+      xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+    } else if (m_component == 1) {
+      xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+    } else if (m_component == 2) {
+      xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+    }
+    m_mblock.metric.x_Code2Sph(xcode, xph);
+    m_buffer(p) = xph[m_component];
+  }
+
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim1, PICEngine>::operator()(
     const OutputVelocities_t&, index_t) const {

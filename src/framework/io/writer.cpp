@@ -155,7 +155,13 @@ namespace ntt {
       for (auto s { 0 }; s < prtl.speciesID().size(); ++s) {
         auto sp_index = prtl.speciesID()[s];
         if (prtl.id() == PrtlID::X) {
-          for (auto d { 0 }; d < (short)D; ++d) {
+          // !TODO: change this to a pre-defined argument (number of coords or smth)
+#  ifndef MINKOWSKI_METRIC
+          const auto dmax = (D == Dim2) ? 3 : (short)D;
+#  else
+          const auto dmax = (short)D;
+#  endif
+          for (auto d { 0 }; d < dmax; ++d) {
             m_io.DefineVariable<real_t>(
               "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
               {},

@@ -126,13 +126,16 @@ namespace ntt {
      */
     Inline void BorisUpdate(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
-    Inline auto ComputeEnergy(const Photon_t&, vec_t<Dim3>& u) const -> real_t {
-      return math::sqrt(SQR(u[0]) + SQR(u[1]) + SQR(u[2]));
+    Inline auto ComputeEnergy(const Photon_t&, vec_t<Dim3>& u_cov, vec_t<Dim3> u_cntrv) const
+      -> real_t {
+      return math::sqrt(u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1] + u_cov[2] * u_cntrv[2]);
     }
 
-    Inline auto ComputeEnergy(const Massive_t&, vec_t<Dim3>& u) const -> real_t {
-      return math::sqrt(ONE + SQR(u[0]) + SQR(u[1]) + SQR(u[2]));
-    }
+    //Inline auto ComputeEnergy(const Massive_t&, vec_t<Dim3>& u_cov, vec_t<Dim3> u_cntrv) const
+    //  -> real_t {
+    //  return math::sqrt(ONE + u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1]
+    //                    + u_cov[2] * u_cntrv[2]);
+    //}
   };
 
   template <>
@@ -158,13 +161,8 @@ namespace ntt {
       // initialize midpoint values & updated values
       coord_t<Dim2> xp_mid { ZERO }, xp_upd { xp[0], xp[1] };
       vec_t<Dim3>   vp_mid { ZERO };
-      vec_t<Dim3>   vp_mid_upd { ZERO };
+      vec_t<Dim3>   vp_mid_cntrv { ZERO };
       vec_t<Dim3>   vp_upd { vp[0], vp[1], vp[2] };
-
-      coord_t<Dim2> xp_dr_P { xp[0] + EPSILON, xp[1] };
-      coord_t<Dim2> xp_dr_M { xp[0] - EPSILON, xp[1] };
-      coord_t<Dim2> xp_dth_P { xp[0], xp[1] + EPSILON };
-      coord_t<Dim2> xp_dth_M { xp[0], xp[1] - EPSILON };
 
       // iterate
 #pragma unroll
@@ -172,21 +170,32 @@ namespace ntt {
         // find midpoint values
         xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
         xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
+
         vp_mid[0] = HALF * (vp[0] + vp_upd[0]);
         vp_mid[1] = HALF * (vp[1] + vp_upd[1]);
         vp_mid[2] = HALF * (vp[2] + vp_upd[2]);
 
         // find contravariant midpoint velocity
-        m_mblock.metric.v_Cov2Cntrv(xp_mid, vp_mid, vp_mid_upd);
+        m_mblock.metric.v_Cov2Cntrv(xp_mid, vp_mid, vp_mid_cntrv);
 
         // find spacial derivatives
+        coord_t<Dim2> xp_dr_P { xp_mid[0] + EPSILON, xp_mid[1] };
+        coord_t<Dim2> xp_dr_M { xp_mid[0] - EPSILON, xp_mid[1] };
+        coord_t<Dim2> xp_dth_P { xp_mid[0], xp_mid[1] + EPSILON };
+        coord_t<Dim2> xp_dth_M { xp_mid[0], xp_mid[1] - EPSILON };
+
         real_t dalpha_dr {
           HALF_OVR_EPSILON * (m_mblock.metric.alpha(xp_dr_P) - m_mblock.metric.alpha(xp_dr_M))
+        };
+        real_t dalpha_dth {
+          HALF_OVR_EPSILON * (m_mblock.metric.alpha(xp_dth_P) - m_mblock.metric.alpha(xp_dth_M))
         };
         real_t dbeta_dr { HALF_OVR_EPSILON
                           * (m_mblock.metric.beta1u(xp_dr_P)
                              - m_mblock.metric.beta1u(xp_dr_M)) };
-
+        real_t dbeta_dth { HALF_OVR_EPSILON
+                          * (m_mblock.metric.beta1u(xp_dth_P)
+                             - m_mblock.metric.beta1u(xp_dth_M)) };
         real_t dh11_dr { HALF_OVR_EPSILON
                          * (m_mblock.metric.h_11_inv(xp_dr_P)
                             - m_mblock.metric.h_11_inv(xp_dr_M)) };
@@ -196,17 +205,28 @@ namespace ntt {
         real_t dh33_dr { HALF_OVR_EPSILON
                          * (m_mblock.metric.h_33_inv(xp_dr_P)
                             - m_mblock.metric.h_33_inv(xp_dr_M)) };
-
+        real_t dh11_dth { HALF_OVR_EPSILON
+                         * (m_mblock.metric.h_11_inv(xp_dth_P)
+                            - m_mblock.metric.h_11_inv(xp_dth_M)) };
+        real_t dh22_dth { HALF_OVR_EPSILON
+                         * (m_mblock.metric.h_22_inv(xp_dth_P)
+                            - m_mblock.metric.h_22_inv(xp_dth_M)) };
         real_t dh33_dth { HALF_OVR_EPSILON
                           * (m_mblock.metric.h_33_inv(xp_dth_P)
                              - m_mblock.metric.h_33_inv(xp_dth_M)) };
+        real_t dh13_dr { HALF_OVR_EPSILON
+                          * (m_mblock.metric.h_13_inv(xp_dr_P)
+                             - m_mblock.metric.h_13_inv(xp_dr_M)) };
+        real_t dh13_dth { HALF_OVR_EPSILON
+                          * (m_mblock.metric.h_13_inv(xp_dth_P)
+                             - m_mblock.metric.h_13_inv(xp_dth_M)) };
 
         // find midpoint coefficients
-        real_t u0 { ComputeEnergy(T {}, vp_mid) / m_mblock.metric.alpha(xp_mid) };
+        real_t u0 { ComputeEnergy(T {}, vp_mid, vp_mid_cntrv) / m_mblock.metric.alpha(xp_mid) };
 
         // find updated coordinate shift
-        xp_upd[0] = xp[0] + m_dt * (vp_mid_upd[0] / u0 - m_mblock.metric.beta1u(xp_mid));
-        xp_upd[1] = xp[1] + m_dt * (vp_mid_upd[1] / u0);
+        xp_upd[0] = xp[0] + m_dt * (vp_mid_cntrv[0] / u0 - m_mblock.metric.beta1u(xp_mid));
+        xp_upd[1] = xp[1] + m_dt * (vp_mid_cntrv[1] / u0);
 
         // find updated velocity
         vp_upd[0]
@@ -215,8 +235,15 @@ namespace ntt {
                 * (-m_mblock.metric.alpha(xp_mid) * u0 * dalpha_dr + vp_mid[0] * dbeta_dr
                    - (HALF / u0)
                        * (dh11_dr * SQR(vp_mid[0]) + dh22_dr * SQR(vp_mid[1])
-                          + dh33_dr * SQR(vp_mid[2])));
-        vp_upd[1] = vp[1] - m_dt * (HALF / u0) * (dh33_dth * SQR(vp_mid[2]));
+                          + dh33_dr * SQR(vp_mid[2])
+                             + 2 * dh13_dr * vp_mid[0] * vp_mid[2]));
+        vp_upd[1]
+          = vp[1]
+            + m_dt
+                * (-m_mblock.metric.alpha(xp_mid) * u0 * dalpha_dth + vp_mid[1] * dbeta_dth
+                   - (HALF / u0)
+                       * (dh11_dth * SQR(vp_mid[0]) + dh22_dth * SQR(vp_mid[1])
+                          + dh33_dth * SQR(vp_mid[2]) + 2 * dh13_dth * vp_mid[0] * vp_mid[2]));
         vp_upd[2] = vp[2];
       }
 
@@ -229,6 +256,9 @@ namespace ntt {
       m_particles.dx1(p) = dx1;
       m_particles.i2(p)  = i2;
       m_particles.dx2(p) = dx2;
+      // update phi
+      // real_t u0 { ComputeEnergy(T {}, vp_upd) / m_mblock.metric.alpha(xp_upd) };
+      // m_particles.phi(p) += m_dt * vp_upd[2] / u0;
 
       // update velocity
       m_particles.ux1(p) = vp_upd[0];

@@ -54,8 +54,8 @@ namespace ntt {
               // reflect particle coordinate
               species.i2(p) = ni2 - 1;
             }
-            // species.phi(p) = species.phi(p) + constant::PI;
             species.dx2(p) = 1.0f - species.dx2(p);
+            species.phi(p) = species.phi(p) + constant::PI;
             // reverse u^theta
             species.ux2(p) = -species.ux2(p);
           }

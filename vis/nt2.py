@@ -1,11 +1,13 @@
 import xarray as xr
 
 useGreek = False
+usePickle = False
 
-
-def configure(use_greek):
+def configure(use_greek = False, use_pickle = False):
     global useGreek
+    global usePickle
     useGreek = use_greek
+    usePickle = use_pickle
 
 
 def DataIs2DPolar(ds):
@@ -380,7 +382,10 @@ class Data:
     """
 
     def __init__(self, fname):
-        import h5pickle as h5py
+        if usePickle:
+            import h5pickle as h5py
+        else:
+            import h5py
         import dask.array as da
         from functools import reduce
         import numpy as np
@@ -432,7 +437,10 @@ class Data:
             "qkerr_schild": _prtl_polar,
         }
         self.fname = fname
-        self.file = h5py.File(self.fname, "r")
+        try:
+            self.file = h5py.File(self.fname, "r")
+        except OSError:
+            raise OSError(f"Could not open file {self.fname}")
         step0 = list(self.file.keys())[0]
         nsteps = self.file.attrs["NumSteps"]
         ngh = self.file.attrs["NGhosts"]
@@ -459,14 +467,6 @@ class Data:
                 and not (k.startswith("X") or k.startswith("U") or k.startswith("W"))
             )
         ]
-        prtls = [
-            k
-            for k in self.file[step0].keys()
-            if (k.startswith("X") or k.startswith("U") or k.startswith("W"))
-        ]
-        species = np.unique(
-            [int(pq.split("_")[1]) for pq in self.file[step0].keys() if pq in prtls]
-        )
 
         for k in self.file.attrs.keys():
             if (
@@ -510,27 +510,39 @@ class Data:
                 },
             )
             self.dataset[k_] = x
+            
+        prtls = [
+            k
+            for k in self.file[step0].keys()
+            if (k.startswith("X") or k.startswith("U") or k.startswith("W"))
+        ]
 
-        prtl_quantities = np.unique(list(map(lambda x: x.split("_")[0], prtls)))
+        species = np.unique(
+            [int(pq.split("_")[1]) for pq in self.file[step0].keys() if pq in prtls]
+        )
+        def list_to_ragged(arr):
+            max_len = np.max([len(a) for a in arr])
+            return map(lambda a: np.concatenate([a, np.full(max_len - len(a), np.nan)]), arr)
+
         self._particles = {}
-        for specie in species:
-            self._particles[specie] = xr.Dataset(
-                {
-                    PrtlDict[metric][q]: (
-                        ["t", "prtl"],
-                        da.stack(
-                            [
-                                da.from_array(self.file[f"Step{s}/{q}_{specie}"])
-                                for s in range(nsteps)
-                            ]
-                        ),
-                    )
-                    for q in prtl_quantities
-                    if f"{q}_{specie}" in self.file[step0].keys()
-                },
-                coords={"t": times},
-                attrs={"label": self.attrs[f"species-{specie}"]},
-            )
+        for s in species:
+            prtl_data = {}
+            for q in [f"X1_{s}", f"X2_{s}", f"X3_{s}", f"U1_{s}", f"U2_{s}", f"U3_{s}"]:
+                q_ = PrtlDict[metric][q.split("_")[0]]
+                if q not in prtls:
+                    continue
+                if q not in prtl_data.keys():
+                    prtl_data[q_] = []
+                for k in range(nsteps):
+                    step_k = f"Step{k}"
+                    if q in self.file[step_k].keys():
+                        prtl_data[q_].append(self.file[step_k][q])
+                    else:
+                        prtl_data[q_].append(np.full_like(prtl_data[q_][-1], np.nan))
+                prtl_data[q_] = list_to_ragged(prtl_data[q_])
+                prtl_data[q_] = da.from_array(list(prtl_data[q_]))
+                prtl_data[q_] = xr.DataArray(prtl_data[q_], dims=["t", "id"], name=q_, coords={"t": times})
+            self._particles[s] = xr.Dataset(prtl_data)
 
     def __del__(self):
         self.file.close()
@@ -545,14 +557,68 @@ class Data:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        for _, v in self._particles.items():
-            del v
+        self.file.close()
+        self.close()
+        # for _, v in self._particles.items():
+            # del v
         del self
 
     @property
     def particles(self):
         return self._particles
 
+
+# class Particles:
+#     """
+#     Temporary class to load particle data from the Entity single-HDF5 file and store it as a pre-loaded dictionary of numpy arrays. 
+#     This class will be replaced by a proper xarray Dataset with the `nt2.Data` class in the future.
+#     Parameters
+#     ----------
+#     fname : str
+#         The name of the HDF5 file to read.
+
+#     """
+#     def __init__(self, fname):
+#         import h5py
+#         import numpy as np
+#         import dask.array as da
+        
+#         _prtl_polar = {
+#             "X1": "r",
+#             "X2": "θ" if useGreek else "th",
+#             "X3": "φ" if useGreek else "ph",
+#             "U1": "ur",
+#             "U2": "uΘ" if useGreek else "uth",
+#             "U3": "uφ" if useGreek else "uph",
+#         }
+#         PrtlDict = {
+#             "minkowski": {
+#                 "X1": "x",
+#                 "X2": "y",
+#                 "X3": "z",
+#                 "U1": "ux",
+#                 "U2": "uy",
+#                 "U3": "uz",
+#             },
+#             "spherical": _prtl_polar,
+#             "qspherical": _prtl_polar,
+#             "kerr_schild": _prtl_polar,
+#             "qkerr_schild": _prtl_polar,
+#         }
+#         self.fname = fname
+#         try:
+#             self.file = h5py.File(self.fname, "r")
+#         except OSError:
+#             raise OSError(f"Could not open file {self.fname}")
+#         step0 = list(self.file.keys())[0]
+#         nsteps = self.file.attrs["NumSteps"]
+#         dimension = self.file.attrs["Dimension"]
+#         metric = self.file.attrs["Metric"].decode("UTF-8")
+#         times = np.array([self.file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
+    
+#     @property
+#     def particles(self):
+#         return self._particles
 
 def makeMovie(**ffmpeg_kwargs):
     """

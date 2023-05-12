@@ -45,8 +45,8 @@ namespace ntt {
               // reflect particle coordinate
               species.i2(p) = ni2 - 1;
             }
-            species.phi(p) = species.phi(p) + constant::PI;
             species.dx2(p) = 1.0f - species.dx2(p);
+            species.phi(p) = species.phi(p) + constant::PI;
             // reverse u^theta
             coord_t<Dim3> x_p { get_prtl_x1(species, p),
                                 get_prtl_x2(species, p),
