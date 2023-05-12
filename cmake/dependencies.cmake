@@ -5,17 +5,22 @@ set(toml11_REPOSITORY https://github.com/ToruNiina/toml11 CACHE STRING "toml11 r
 
 # set (adios2_REPOSITORY https://github.com/ornladios/ADIOS2.git CACHE STRING "ADIOS2 repository")
 function(check_internet_connection)
-  execute_process(
-    COMMAND ping 8.8.8.8 -c 2
-    RESULT_VARIABLE NO_CONNECTION
-  )
-
-  if(NO_CONNECTION GREATER 0)
+  if(OFFLINE STREQUAL "ON")
     set(FETCHCONTENT_FULLY_DISCONNECTED ON CACHE BOOL "Connection status")
-    message(STATUS "${Red}No internet connection. Fetching disabled.${ColorReset}")
+    message(STATUS "${Blue}Offline mode.${ColorReset}")
   else()
-    set(FETCHCONTENT_FULLY_DISCONNECTED OFF CACHE BOOL "Connection status")
-    message(STATUS "${Green}Internet connection established.${ColorReset}")
+    execute_process(
+      COMMAND ping 8.8.8.8 -c 2
+      RESULT_VARIABLE NO_CONNECTION
+    )
+
+    if(NO_CONNECTION GREATER 0)
+      set(FETCHCONTENT_FULLY_DISCONNECTED ON CACHE BOOL "Connection status")
+      message(STATUS "${Red}No internet connection. Fetching disabled.${ColorReset}")
+    else()
+      set(FETCHCONTENT_FULLY_DISCONNECTED OFF CACHE BOOL "Connection status")
+      message(STATUS "${Green}Internet connection established.${ColorReset}")
+    endif()
   endif()
 endfunction()
 

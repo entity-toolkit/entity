@@ -74,10 +74,13 @@ if(NOT ${engine} STREQUAL "sandbox")
     list(APPEND problem_generators ${new_pgen})
   endforeach()
 
-  list(FIND problem_generators ${pgen} PGEN_FOUND)
+  # list(FIND problem_generators ${pgen} PGEN_FOUND)
 
-  if(${PGEN_FOUND} EQUAL -1)
+  # if(${PGEN_FOUND} EQUAL -1)
+  if(NOT ${pgen} IN_LIST problem_generators)
     message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}.")
+  else()
+    set(PGEN_FOUND 1 CACHE BOOL "Problem generator found")
   endif()
 endif()
 
