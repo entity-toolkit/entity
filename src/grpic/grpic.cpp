@@ -122,6 +122,8 @@ namespace ntt {
     AuxFieldsBoundaryConditions(gr_bc::Efield);
     AuxFieldsBoundaryConditions(gr_bc::Hfield);
 
+    // !ADD: GR -- particles?
+
     /**
      * em0::B <- (em::B) <- -curl aux::E
      *
@@ -201,13 +203,18 @@ namespace ntt {
   template <Dimension D>
   void GRPIC<D>::StepForward() {
     NTTLog();
-    auto          params = *(this->params());
-    auto&         mblock = this->meshblock;
-    auto&         wrtr   = this->writer;
-    auto&         pgen   = this->problem_generator;
+    auto                            params = *(this->params());
+    auto&                           mblock = this->meshblock;
+    auto&                           wrtr   = this->writer;
+    auto&                           pgen   = this->problem_generator;
 
-    timer::Timers timers(
-      { "FieldSolver", "FieldBoundaries", "CurrentDeposit", "ParticlePusher" });
+    timer::Timers                   timers({ "FieldSolver",
+                                             "FieldBoundaries",
+                                             "CurrentDeposit",
+                                             "ParticlePusher",
+                                             "ParticleBoundaries",
+                                             "UserSpecific" });
+    static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
     /**
      * Initially: em0::B   at n-3/2
@@ -274,17 +281,46 @@ namespace ntt {
       timers.stop("FieldSolver");
     }
 
-    // Push particles
-    // x at n+1, u at n+1/2
-    // using em:e at n & em0:b at n
-    timers.start("ParticlePusher");
-    timers.stop("ParticlePusher");
+    {
+      // Push particles
+      // x at n+1, u at n+1/2
+      // using em:e at n & em0:b at n
+      timers.start("ParticlePusher");
+      ParticlesPush();
+      timers.stop("ParticlePusher");
 
-    /**
-     * cur0::J <- current deposition
-     *
-     * Now: cur0::J at n+1/2
-     */
+      timers.start("UserSpecific");
+      pgen.UserDriveParticles(this->m_time, params, mblock);
+      timers.stop("UserSpecific");
+
+      timers.start("ParticleBoundaries");
+      ParticlesBoundaryConditions();
+      timers.stop("ParticleBoundaries");
+
+      /**
+       * cur0::J <- current deposition
+       *
+       * Now: cur0::J at n+1/2
+       */
+      if (params.depositEnabled()) {
+        timers.start("CurrentDeposit");
+        // !ADD: GR -- reset + deposit
+
+        timers.start("FieldBoundaries");
+        // !ADD: GR -- synchronize + exchange + bc
+        timers.stop("FieldBoundaries");
+
+        // !ADD: GR -- filter
+        timers.stop("CurrentDeposit");
+      }
+
+      timers.start("ParticleBoundaries");
+      // !ADD: GR -- particle exchange ?
+      if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
+        dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
+      }
+      timers.stop("ParticleBoundaries");
+    }
 
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
@@ -396,6 +432,7 @@ namespace ntt {
 
     timers.printAll("time = " + std::to_string(this->m_time)
                     + " : timestep = " + std::to_string(this->m_tstep));
+    this->PrintDiagnostics(std::cout, dead_fractions);
     tstep_durations.push_back(timers.get("Total"));
     std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
     ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
