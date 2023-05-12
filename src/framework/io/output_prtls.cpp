@@ -34,6 +34,10 @@ namespace ntt {
       }
       auto prtl_stride = params.outputPrtlStride();
       auto size        = static_cast<std::size_t>(prtls.npart() / prtl_stride);
+      if (size == 0 and prtls.npart() > 0) {
+        size        = prtls.npart();
+        prtl_stride = 1;
+      }
 
       if (m_id == PrtlID::X) {
         for (auto d { 0 }; d < (short)D; ++d) {

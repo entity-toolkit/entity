@@ -6,7 +6,7 @@
  * @includes: --
  * @depends: `pic.h`
  *
- * @notes: - Periodic boundary conditions are implemented in `particles_exch.cpp`
+ * @notes: - Periodic boundary conditions are implemented in `exchange.cpp`
  *
  */
 
@@ -26,9 +26,7 @@ namespace ntt {
    */
   template <>
   void PIC<Dim2>::ParticlesBoundaryConditions() {
-    auto& mblock   = this->meshblock;
-    auto  params   = *(this->params());
-    auto  r_absorb = params.metricParameters()[2];
+    auto& mblock = this->meshblock;
     for (auto& species : mblock.particles) {
       auto ni1 = mblock.Ni1();
       auto ni2 = mblock.Ni2();

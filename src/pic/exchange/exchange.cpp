@@ -216,7 +216,7 @@ namespace ntt {
   }
 #else
   template <Dimension D>
-  void PIC<D>::Exchange(const GhostCells& quantity) {}
+  void PIC<D>::Exchange(const GhostCells&) {}
 #endif
 }    // namespace ntt
 

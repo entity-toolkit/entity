@@ -543,7 +543,9 @@ namespace ntt {
     for (auto& species : particles) {
       auto npart_tag = species.CountTaggedParticles();
       auto dead_fraction
-        = (double)(npart_tag[(short)(ParticleTag::dead)]) / (double)(species.npart());
+        = species.npart() > 0
+            ? (double)(npart_tag[(short)(ParticleTag::dead)]) / (double)(species.npart())
+            : 0.0;
       if ((species.npart() > 0) && (dead_fraction >= (double)max_dead_frac)) {
         species.ReshuffleByTags();
         species.setNpart(npart_tag[(short)(ParticleTag::alive)]);

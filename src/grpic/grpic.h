@@ -107,9 +107,9 @@ namespace ntt {
     void FieldsBoundaryConditions(const gr_bc&);
     /**
      * @brief Synchronize ghost zones between the meshblocks.
-     * @param g select quantity to synchronize.
+     * @param f flag to synchronize fields, currents or particles.
      */
-    void Exchange(const GhostCells&) {}
+    void Exchange(const GhostCells&);
 
     /* ----------------------------- Aux fields --------------------------------- */
     /**
@@ -160,17 +160,14 @@ namespace ntt {
 
     /* -------------------------------- Particles ------------------------------- */
     /**
-     * !ADD: #GR
-     */
-    /**
      * @brief Advance particle positions and velocities.
      * @param f coefficient that gets multiplied by the timestep (def. 1.0).
      */
-    void ParticlesPush(const real_t& f = 1.0) {}
+    void ParticlesPush(const real_t& f = 1.0);
     /**
      * @brief Apply boundary conditions for particles.
      */
-    void ParticlesBoundaryConditions() {}
+    void ParticlesBoundaryConditions();
 
     /**
      * @brief Swaps em and em0 fields, cur and cur0 currents.
