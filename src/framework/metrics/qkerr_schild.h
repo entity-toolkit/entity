@@ -18,13 +18,15 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    // Spin parameter, in [0,1[
-    const real_t a;
     const real_t r0, h;
     const real_t chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_inv, deta_inv, dphi_inv;
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
+    // Spin parameter, in [0,1[
+    // and horizon size in units of rg
+    // all physical extents are in units of rg
+    const real_t rh, a;
 
   public:
     const real_t dx_min;
@@ -34,6 +36,7 @@ namespace ntt {
            const real_t*             params)
       : MetricBase<D> { "qkerr_schild", resolution, extent },
         a(params[4]),
+        rh(params[5]),
         r0(params[0]),
         h(params[1]),
         chi_min { math::log(this->x1_min - r0) },
@@ -53,6 +56,10 @@ namespace ntt {
 
     [[nodiscard]] Inline auto spin() const -> const real_t& {
       return a;
+    }
+
+    [[nodiscard]] auto rhorizon() const -> const real_t& {
+      return rh;
     }
 
     /**

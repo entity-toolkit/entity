@@ -106,9 +106,10 @@ namespace ntt {
         real_t spin { get<real_t>("domain", "a") };
         real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;
-        m_extent[0] *= rh;
-        m_extent[1] *= rh;
-        m_metric_parameters[2] *= rh;
+        // m_extent[0] *= rh;
+        // m_extent[1] *= rh;
+        // m_metric_parameters[2] *= rh;
+        m_metric_parameters[5] = rh;
       }
 
       m_extent.push_back(0.0);
@@ -167,6 +168,7 @@ namespace ntt {
     m_output_fields     = get<std::vector<std::string>>("output", "fields");
     m_output_particles  = get<std::vector<std::string>>("output", "particles");
     m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
-    m_output_prtl_stride = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
+    m_output_prtl_stride
+      = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
   }
 }    // namespace ntt
