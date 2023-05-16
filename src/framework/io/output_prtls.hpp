@@ -167,30 +167,25 @@ namespace ntt {
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
     const OutputVelocities_t&, index_t p) const {
-    coord_t<Dim2> xcode { ZERO };
-    vec_t<Dim3>   vcov { ZERO }, vhat { ZERO };
-    xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-    xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-    vcov[0]  = m_particles.ux1(p * m_stride);
-    vcov[1]  = m_particles.ux2(p * m_stride);
-    vcov[2]  = m_particles.ux3(p * m_stride);
-    m_mblock.metric.v_Cov2Hat(xcode, vcov, vhat);
-    m_buffer(p) = vhat[m_component];
+    if (m_component == 0) {
+      m_buffer(p) = m_particles.ux1(p * m_stride);
+    } else if (m_component == 1) {
+      m_buffer(p) = m_particles.ux2(p * m_stride);
+    } else if (m_component == 2) {
+      m_buffer(p) = m_particles.ux3(p * m_stride);
+    }
   }
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, GRPICEngine>::operator()(
     const OutputVelocities_t&, index_t p) const {
-    coord_t<Dim3> xcode { ZERO };
-    vec_t<Dim3>   vcov { ZERO }, vhat { ZERO };
-    xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-    xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-    xcode[2] = get_prtl_x3(m_particles, p * m_stride);
-    vcov[0]  = m_particles.ux1(p * m_stride);
-    vcov[1]  = m_particles.ux2(p * m_stride);
-    vcov[2]  = m_particles.ux3(p * m_stride);
-    m_mblock.metric.v_Cov2Hat(xcode, vcov, vhat);
-    m_buffer(p) = vhat[m_component];
+    if (m_component == 0) {
+      m_buffer(p) = m_particles.ux1(p * m_stride);
+    } else if (m_component == 1) {
+      m_buffer(p) = m_particles.ux2(p * m_stride);
+    } else if (m_component == 2) {
+      m_buffer(p) = m_particles.ux3(p * m_stride);
+    }
   }
 
 #endif
