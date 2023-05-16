@@ -1,5 +1,5 @@
-#ifndef FRAMEWORK_AUX_DIAG_VTRANS_H
-#define FRAMEWORK_AUX_DIAG_VTRANS_H
+#ifndef FRAMEWORK_AUX_SR_VTRANS_H
+#define FRAMEWORK_AUX_SR_VTRANS_H
 
 #include "wrapper.h"
 

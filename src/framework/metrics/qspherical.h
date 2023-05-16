@@ -230,7 +230,7 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "diag_vtrans.h"
+#include "sr_vtrans.h"
 #include "sph_vtrans.h"
 
     /**

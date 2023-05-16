@@ -26,7 +26,7 @@ namespace ntt {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t rh, a;
+    const real_t rh, a, a_sqr;
 
   public:
     const real_t dx_min;
@@ -36,6 +36,7 @@ namespace ntt {
            const real_t*             params)
       : MetricBase<D> { "qkerr_schild", resolution, extent },
         a(params[4]),
+        a_sqr { a_sqr },
         rh(params[5]),
         r0(params[0]),
         h(params[1]),
@@ -68,26 +69,25 @@ namespace ntt {
      */
     auto findSmallestCell() const -> real_t {
       if constexpr (D == Dim2) {
-        real_t min_dx { -1.0 };
+        real_t min_dx { -ONE };
         for (int i { 0 }; i < this->nx1; ++i) {
           for (int j { 0 }; j < this->nx2; ++j) {
-            real_t i_ { (real_t)(i) + HALF };
-            real_t j_ { (real_t)(j) + HALF };
-            real_t inv_dx1_ { this->h_11_inv({ i_, j_ }) };
-            real_t inv_dx2_ { this->h_22_inv({ i_, j_ }) };
-            real_t dx = 1.0
-                        / (this->alpha({ i_, j_ }) * math::sqrt(inv_dx1_ + inv_dx2_)
-                           + this->beta1u({ i_, j_ }));
-            if ((min_dx >= dx) || (min_dx < 0.0)) {
+            real_t        i_ { static_cast<real_t>(i) + HALF };
+            real_t        j_ { static_cast<real_t>(j) + HALF };
+            coord_t<Dim2> ij { i_, j_ };
+            real_t        dx = ONE
+                        / (this->alpha(ij) * std::sqrt(this->h11(ij) + this->h22(ij))
+                           + this->beta1(ij));
+            if ((min_dx > dx) || (min_dx < 0.0)) {
               min_dx = dx;
             }
           }
         }
         return min_dx;
       } else {
-        NTTHostError("min cell finding not implemented for 3D qspherical");
+        NTTHostError("min cell finding not implemented for 3D");
+        return ZERO;
       }
-      return ZERO;
     }
 
     /**
@@ -154,7 +154,7 @@ namespace ntt {
         real_t eta { xi[1] * deta + eta_min };
         real_t theta { eta2theta(eta) };
         real_t cth { math::cos(theta) };
-        return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (r * r + a * a * cth * cth));
+        return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
       }
     }
 
@@ -175,7 +175,7 @@ namespace ntt {
         real_t theta { eta2theta(eta) };
         real_t dtheta_deta_ { dtheta_deta(eta) };
         real_t cth { math::cos(theta) };
-        return deta_sqr * SQR(dtheta_deta_) * (r * r + a * a * cth * cth);
+        return deta_sqr * SQR(dtheta_deta_) * (SQR(r) + a_sqr * SQR(cth));
       }
     }
 
@@ -196,9 +196,9 @@ namespace ntt {
         real_t theta { eta2theta(eta) };
         real_t cth { math::cos(theta) };
         real_t sth { math::sin(theta) };
-        real_t delta { r * r - TWO * r + a * a };
-        real_t As { (r * r + a * a) * (r * r + a * a) - a * a * delta * sth * sth };
-        return As * sth * sth / (r * r + a * a * cth * cth);
+        real_t delta { SQR(r) - TWO * r + a_sqr };
+        real_t As { (SQR(r) + a_sqr) * (SQR(r) + a_sqr) - a_sqr * delta * SQR(sth) };
+        return As * SQR(sth) / (SQR(r) + a_sqr * SQR(cth));
       }
     }
 
@@ -219,8 +219,8 @@ namespace ntt {
         real_t theta { eta2theta(eta) };
         real_t cth { math::cos(theta) };
         real_t sth { math::sin(theta) };
-        return -dchi * math::exp(chi) * a * sth * sth
-               * (ONE + TWO * r / (r * r + a * a * cth * cth));
+        return -dchi * math::exp(chi) * a * SQR(sth)
+               * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
       }
     }
 
@@ -240,7 +240,7 @@ namespace ntt {
         real_t eta { xi[1] * deta + eta_min };
         real_t theta { eta2theta(eta) };
         real_t cth { math::cos(theta) };
-        real_t z { TWO * r / (r * r + a * a * cth * cth) };
+        real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
         return ONE / math::sqrt(ONE + z);
       }
     }
@@ -251,9 +251,9 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      * @returns beta^1 (contravariant).
      */
-    Inline auto beta1u(const coord_t<D>& xi) const -> real_t {
+    Inline auto beta1(const coord_t<D>& xi) const -> real_t {
       if constexpr (D == Dim1) {
-        NTTError("beta1u not implemented for 1D qspherical");
+        NTTError("beta1 not implemented for 1D qspherical");
         return ZERO;
       } else {
         real_t chi { xi[0] * dchi + chi_min };
@@ -261,7 +261,7 @@ namespace ntt {
         real_t eta { xi[1] * deta + eta_min };
         real_t theta { eta2theta(eta) };
         real_t cth { math::cos(theta) };
-        real_t z { TWO * r / (r * r + a * a * cth * cth) };
+        real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
         return math::exp(-chi) * dchi_inv * (z / (ONE + z));
       }
     }
@@ -300,8 +300,8 @@ namespace ntt {
         real_t r { r0 + math::exp(chi) };
         real_t del_eta { x[1] * deta + eta_min };
         real_t del_theta { eta2theta(del_eta) };
-        return dchi * math::exp(chi) * (SQR(r) + SQR(a))
-               * math::sqrt(ONE + TWO * r / (SQR(r) + SQR(a))) * (ONE - math::cos(del_theta));
+        return dchi * math::exp(chi) * (SQR(r) + a_sqr)
+               * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) * (ONE - math::cos(del_theta));
       }
     }
 /**
@@ -309,7 +309,7 @@ namespace ntt {
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
-#include "nondiag_vtrans.h"
+#include "gr_vtrans.h"
 #include "sph_vtrans.h"
 
     /**

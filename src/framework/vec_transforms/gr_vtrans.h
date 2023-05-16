@@ -1,5 +1,5 @@
-#ifndef FRAMEWORK_AUX_NONDIAG_VTRANS_H
-#define FRAMEWORK_AUX_NONDIAG_VTRANS_H
+#ifndef FRAMEWORK_AUX_GR_VTRANS_H
+#define FRAMEWORK_AUX_GR_VTRANS_H
 
 #include "wrapper.h"
 
@@ -21,29 +21,8 @@ Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
  * @details Finite limit at theta=0. Here, defined only in terms of the direct metric.
  * But this introduces a singularity at theta=0, so take the limit as theta->0.
  */
-Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
-  coord_t<D> y;
-  coord_t<D> rth_;
-  real_t     h_33_cov, h_13_cov, inv1, inv2;
-  for (short d = 0; d < static_cast<short>(D); ++d) {
-    y[d] = x[d];
-  }
-  x_Code2Sph(x, rth_);
-  if (math::sin(rth_[1]) == ZERO) {
-    y[1]     = x[1] + 1e-1;
-    h_33_cov = h_33(y);
-    h_13_cov = h_13(y);
-    inv1     = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
-    y[1]     = x[1] - 1e-1;
-    h_33_cov = h_33(y);
-    h_13_cov = h_13(y);
-    inv2     = h_33_cov / (h_11(y) * h_33_cov - h_13_cov * h_13_cov);
-    return HALF * (inv1 + inv2);
-  } else {
-    h_33_cov = h_33(x);
-    h_13_cov = h_13(x);
-    return h_33_cov / (h_11(x) * h_33_cov - h_13_cov * h_13_cov);
-  }
+Inline auto h11(const coord_t<D>& x) const -> real_t {
+  return h_33(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
 }
 
 /**
@@ -52,7 +31,7 @@ Inline auto h_11_inv(const coord_t<D>& x) const -> real_t {
  * @param x coordinate array in code units (size of the array is D).
  * @returns h^22 (contravariant, upper index) metric component.
  */
-Inline auto h_22_inv(const coord_t<D>& x) const -> real_t {
+Inline auto h22(const coord_t<D>& x) const -> real_t {
   return ONE / h_22(x);
 }
 
@@ -63,11 +42,8 @@ Inline auto h_22_inv(const coord_t<D>& x) const -> real_t {
  * @returns h^33 (contravariant, upper index) metric component.
  * @details Singular at theta=0.
  */
-Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
-  real_t h_11_cov, h_13_cov;
-  h_11_cov = h_11(x);
-  h_13_cov = h_13(x);
-  return h_11_cov / (h_11_cov * h_33(x) - h_13_cov * h_13_cov);
+Inline auto h33(const coord_t<D>& x) const -> real_t {
+  return h_11(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
 }
 
 /**
@@ -78,26 +54,8 @@ Inline auto h_33_inv(const coord_t<D>& x) const -> real_t {
  * @details Finite limit at theta=0. Here, defined only in terms of the direct metric.
  * But this introduces a singularity at theta=0, so take the limit as theta->0.
  */
-Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
-  coord_t<D> y;
-  coord_t<D> rth_;
-  real_t     h_13_cov, inv1, inv2;
-  for (short d = 0; d < static_cast<short>(D); ++d) {
-    y[d] = x[d];
-  }
-  x_Code2Sph(x, rth_);
-  if (math::sin(rth_[1]) == ZERO) {
-    y[1]     = x[1] + 1e-1;
-    h_13_cov = h_13(y);
-    inv1     = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
-    y[1]     = x[1] - 1e-1;
-    h_13_cov = h_13(y);
-    inv2     = -h_13_cov / (h_11(y) * h_33(y) - h_13_cov * h_13_cov);
-    return HALF * (inv1 + inv2);
-  } else {
-    h_13_cov = h_13(x);
-    return -h_13_cov / (h_11(x) * h_33(x) - h_13_cov * h_13_cov);
-  }
+Inline auto h13(const coord_t<D>& x) const -> real_t {
+  return -h_13(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
 }
 
 /**
@@ -110,7 +68,7 @@ Inline auto h_13_inv(const coord_t<D>& x) const -> real_t {
 Inline void v_Hat2Cntrv(const coord_t<D>&  xi,
                         const vec_t<Dim3>& vi_hat,
                         vec_t<Dim3>&       vi_cntrv) const {
-  real_t A0 { math::sqrt(h_11_inv(xi)) };
+  real_t A0 { math::sqrt(h11(xi)) };
   vi_cntrv[0] = vi_hat[0] * A0;
   vi_cntrv[1] = vi_hat[1] / math::sqrt(h_22(xi));
   vi_cntrv[2] = vi_hat[2] / math::sqrt(h_33(xi)) - vi_hat[0] * A0 * h_13(xi) / h_33(xi);
@@ -126,7 +84,7 @@ Inline void v_Hat2Cntrv(const coord_t<D>&  xi,
 Inline void v_Cntrv2Hat(const coord_t<D>&  xi,
                         const vec_t<Dim3>& vi_cntrv,
                         vec_t<Dim3>&       vi_hat) const {
-  vi_hat[0] = vi_cntrv[0] / math::sqrt(h_11_inv(xi));
+  vi_hat[0] = vi_cntrv[0] / math::sqrt(h11(xi));
   vi_hat[1] = vi_cntrv[1] * math::sqrt(h_22(xi));
   vi_hat[2]
     = vi_cntrv[2] * math::sqrt(h_33(xi)) + vi_cntrv[0] * h_13(xi) / math::sqrt(h_33(xi));
@@ -142,8 +100,7 @@ Inline void v_Cntrv2Hat(const coord_t<D>&  xi,
 Inline void v_Hat2Cov(const coord_t<D>&  xi,
                       const vec_t<Dim3>& vi_hat,
                       vec_t<Dim3>&       vi_cov) const {
-  vi_cov[0]
-    = vi_hat[0] / math::sqrt(h_11_inv(xi)) + vi_hat[2] * h_13(xi) / math::sqrt(h_33(xi));
+  vi_cov[0] = vi_hat[0] / math::sqrt(h11(xi)) + vi_hat[2] * h_13(xi) / math::sqrt(h_33(xi));
   vi_cov[1] = vi_hat[1] * math::sqrt(h_22(xi));
   vi_cov[2] = vi_hat[2] * math::sqrt(h_33(xi));
 }
@@ -158,7 +115,7 @@ Inline void v_Hat2Cov(const coord_t<D>&  xi,
 Inline void v_Cov2Hat(const coord_t<D>&  xi,
                       const vec_t<Dim3>& vi_cov,
                       vec_t<Dim3>&       v_hat) const {
-  real_t A0 { math::sqrt(h_11_inv(xi)) };
+  real_t A0 { math::sqrt(h11(xi)) };
   v_hat[0] = vi_cov[0] * A0 - vi_cov[2] * A0 * h_13(xi) / h_33(xi);
   v_hat[1] = vi_cov[1] / math::sqrt(h_22(xi));
   v_hat[2] = vi_cov[2] / math::sqrt(h_33(xi));
@@ -174,9 +131,9 @@ Inline void v_Cov2Hat(const coord_t<D>&  xi,
 Inline void v_Cov2Cntrv(const coord_t<D>&  xi,
                         const vec_t<Dim3>& vi_cov,
                         vec_t<Dim3>&       vi_cntrv) const {
-  vi_cntrv[0] = vi_cov[0] * h_11_inv(xi) + vi_cov[2] * h_13_inv(xi);
-  vi_cntrv[1] = vi_cov[1] * h_22_inv(xi);
-  vi_cntrv[2] = vi_cov[2] * h_33_inv(xi) + vi_cov[0] * h_13_inv(xi);
+  vi_cntrv[0] = vi_cov[0] * h11(xi) + vi_cov[2] * h13(xi);
+  vi_cntrv[1] = vi_cov[1] * h22(xi);
+  vi_cntrv[2] = vi_cov[0] * h13(xi) + vi_cov[2] * h33(xi);
 }
 
 /**
@@ -191,7 +148,7 @@ Inline void v_Cntrv2Cov(const coord_t<D>&  xi,
                         vec_t<Dim3>&       vi_cov) const {
   vi_cov[0] = vi_cntrv[0] * h_11(xi) + vi_cntrv[2] * h_13(xi);
   vi_cov[1] = vi_cntrv[1] * h_22(xi);
-  vi_cov[2] = vi_cntrv[2] * h_33(xi) + vi_cntrv[0] * h_13(xi);
+  vi_cov[2] = vi_cntrv[0] * h_13(xi) + vi_cntrv[2] * h_33(xi);
 }
 
 /**
@@ -202,8 +159,8 @@ Inline void v_Cntrv2Cov(const coord_t<D>&  xi,
  * @return Norm of the covariant vector.
  */
 Inline auto v_CovNorm(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov) const -> real_t {
-  return vi_cov[0] * vi_cov[0] * h_11_inv(xi) + vi_cov[1] * vi_cov[1] * h_22_inv(xi)
-         + vi_cov[2] * vi_cov[2] * h_33_inv(xi) + TWO * vi_cov[0] * vi_cov[2] * h_13_inv(xi);
+  return vi_cov[0] * vi_cov[0] * h11(xi) + vi_cov[1] * vi_cov[1] * h22(xi)
+         + vi_cov[2] * vi_cov[2] * h33(xi) + TWO * vi_cov[0] * vi_cov[2] * h13(xi);
 }
 
 /**
