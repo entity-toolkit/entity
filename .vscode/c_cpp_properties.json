@@ -13,7 +13,7 @@
       "OUTPUT_ENABLED",
       // "MINKOWSKI_METRIC",
       // "QSPHERICAL_METRIC",
-      "QKERR_SCHILD_METRIC"
+      "KERR_SCHILD_METRIC"
     ]
   },
   "configurations": [
@@ -36,7 +36,8 @@
       "name": "wsl",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
-        "${myDefaultIncludePath}"
+        "${myDefaultIncludePath}",
+        "/usr/local/cuda/include/"
       ],
       "defines": [
         "${myDefaultDefines}"
