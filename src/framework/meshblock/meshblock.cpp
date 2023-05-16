@@ -21,6 +21,8 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::Verify() {
+    NTTHostErrorIf(std::isnan(minCellSize()), "Minimum cell size evaluated to NaN");
+
     // verifying that the correct particle arrays are allocated for a given dimension ...
     // ... and a given simulation engine
     for (auto& species : particles) {
