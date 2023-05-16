@@ -3,8 +3,8 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
 #include "field_macros.h"
+#include "meshblock.h"
 #include "sim_params.h"
 
 #include "archetypes.hpp"
@@ -41,13 +41,13 @@ namespace ntt {
       real_t alpha_ij { m_mblock.metric.alpha({ i_, j_ }) };
       real_t alpha_ijP { m_mblock.metric.alpha({ i_, j_ + HALF }) };
       real_t alpha_iPj { m_mblock.metric.alpha({ i_ + HALF, j_ }) };
-      real_t beta_ij { m_mblock.metric.beta1u({ i_, j_ }) };
-      real_t beta_ijP { m_mblock.metric.beta1u({ i_, j_ + HALF }) };
-      real_t h_11_inv_iPj { m_mblock.metric.h_11_inv({ i_ + HALF, j_ }) };
-      real_t h_13_inv_iPj { m_mblock.metric.h_13_inv({ i_ + HALF, j_ }) };
-      real_t h_22_inv_ijP { m_mblock.metric.h_22_inv({ i_, j_ + HALF }) };
-      real_t h_33_inv_ij { m_mblock.metric.h_33_inv({ i_, j_ }) };
-      real_t h_13_inv_ij { m_mblock.metric.h_13_inv({ i_, j_ }) };
+      real_t beta_ij { m_mblock.metric.beta1({ i_, j_ }) };
+      real_t beta_ijP { m_mblock.metric.beta1({ i_, j_ + HALF }) };
+      real_t h11_iPj { m_mblock.metric.h11({ i_ + HALF, j_ }) };
+      real_t h13_iPj { m_mblock.metric.h13({ i_ + HALF, j_ }) };
+      real_t h22_ijP { m_mblock.metric.h22({ i_, j_ + HALF }) };
+      real_t h33_ij { m_mblock.metric.h33({ i_, j_ }) };
+      real_t h13_ij { m_mblock.metric.h13({ i_, j_ }) };
 
       x0m[0] = i_;
       x0m[1] = j_ + HALF - HALF * m_eps;
@@ -96,15 +96,15 @@ namespace ntt {
       real_t D3d { -sqrt_detH_ij * beta_ij * B2_aux / alpha_ij };
 
       // Covariant D to contravariant D
-      real_t D1u { h_11_inv_iPj * D1d + h_13_inv_iPj * D3d };
-      real_t D2u { h_22_inv_ijP * D2d };
+      real_t D1u { h11_iPj * D1d + h13_iPj * D3d };
+      real_t D2u { h22_ijP * D2d };
       real_t D3u;
 
       // h33_inv is singular at theta = 0.
       if (j == j_min) {
         D3u = ZERO;
       } else {
-        D3u = h_33_inv_ij * D3d + h_13_inv_ij * D1d;
+        D3u = h33_ij * D3d + h13_ij * D1d;
       }
       BX1(i, j) = B1u;
       BX2(i, j) = B2u;

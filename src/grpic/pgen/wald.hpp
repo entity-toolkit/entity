@@ -52,10 +52,10 @@ namespace ntt {
   Inline auto WaldPotential<Dim2, GRPICEngine>::A_x0(const coord_t<Dim2>& x_cu) const
     -> real_t {
     real_t g00 { -(this->m_mblock).metric.alpha(x_cu) * (this->m_mblock).metric.alpha(x_cu)
-                 + (this->m_mblock).metric.h_11(x_cu) * (this->m_mblock).metric.beta1u(x_cu)
-                     * (this->m_mblock).metric.beta1u(x_cu) };
+                 + (this->m_mblock).metric.h_11(x_cu) * (this->m_mblock).metric.beta1(x_cu)
+                     * (this->m_mblock).metric.beta1(x_cu) };
     return HALF
-           * ((this->m_mblock).metric.h_13(x_cu) * (this->m_mblock).metric.beta1u(x_cu)
+           * ((this->m_mblock).metric.h_13(x_cu) * (this->m_mblock).metric.beta1(x_cu)
               + TWO * (this->m_mblock).metric.spin() * g00);
   }
 
@@ -65,7 +65,7 @@ namespace ntt {
     return HALF
            * ((this->m_mblock).metric.h_13(x_cu)
               + TWO * (this->m_mblock).metric.spin() * (this->m_mblock).metric.h_11(x_cu)
-                  * (this->m_mblock).metric.beta1u(x_cu));
+                  * (this->m_mblock).metric.beta1(x_cu));
   }
 
   template <>
@@ -74,7 +74,7 @@ namespace ntt {
     return HALF
            * ((this->m_mblock).metric.h_33(x_cu)
               + TWO * (this->m_mblock).metric.spin() * (this->m_mblock).metric.h_13(x_cu)
-                  * (this->m_mblock).metric.beta1u(x_cu));
+                  * (this->m_mblock).metric.beta1(x_cu));
   }
 
   template <>
