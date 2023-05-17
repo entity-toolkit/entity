@@ -287,7 +287,7 @@ namespace ntt {
     b0[0] *= COEFF;
     b0[1] *= COEFF;
     b0[2] *= COEFF;
-    COEFF = 2.0 / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
+    COEFF = TWO / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
 
     vec_t<Dim3> u1 { (u0[0] + u0[1] * b0[2] - u0[2] * b0[1]) * COEFF,
                      (u0[1] + u0[2] * b0[0] - u0[0] * b0[2]) * COEFF,

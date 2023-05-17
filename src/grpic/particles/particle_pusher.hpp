@@ -114,32 +114,43 @@ namespace ntt {
      * @param Bp_hat hatted magnetic field at the particle position.
      * @param v_upd updated covarient velocity of the particle [return].
      */
-    Inline void EMPush(const coord_t<D>&  xp,
-                       const vec_t<Dim3>& vp,
-                       const vec_t<Dim3>& Dp_hat,
-                       const vec_t<Dim3>& Bp_hat,
-                       vec_t<Dim3>&       vp_upd) const {
+    Inline void EMHalfPush(const coord_t<D>&  xp,
+                           const vec_t<Dim3>& vp,
+                           vec_t<Dim3>&       Dp_hat,
+                           vec_t<Dim3>&       Bp_hat,
+                           vec_t<Dim3>&       vp_upd) const {
       vec_t<Dim3> vp_hat { ZERO }, vp_upd_hat { ZERO };
-      m_mblock.metric.v_Cov2Hat(xp, vp, vp_hat);
+      m_mblock.metric.v_Cov2Hat(xp, vp, vp_upd_hat);
 
-      // !ASK: is this correct?
-      vp_hat[0] += Dp_hat[0];
-      vp_hat[1] += Dp_hat[1];
-      vp_hat[2] += Dp_hat[2];
+      // this is a half-push
+      real_t COEFF { m_coeff * HALF };
 
-      const real_t inv_gamma {
-        ONE / math::sqrt(ONE + SQR(vp_hat[0]) + SQR(vp_hat[1]) + SQR(vp_hat[2]))
-      };
-      const real_t prefactor { m_dt / TWO * m_mblock.metric.alpha(xp) };
+      Dp_hat[0] *= COEFF;
+      Dp_hat[1] *= COEFF;
+      Dp_hat[2] *= COEFF;
 
-      vec_t<Dim3>  tt { prefactor * inv_gamma * Bp_hat[0],
-                       prefactor * inv_gamma * Bp_hat[1],
-                       prefactor * inv_gamma * Bp_hat[2] };
-      const real_t ff { ONE / math::sqrt(ONE + SQR(tt[0]) + SQR(tt[1]) + SQR(tt[2])) };
+      vp_upd_hat[0] += Dp_hat[0];
+      vp_upd_hat[1] += Dp_hat[1];
+      vp_upd_hat[2] += Dp_hat[2];
 
-      vp_upd_hat[0] = ff * (vp_hat[0] + vp_hat[1] * tt[2] - vp_hat[2] * tt[1]);
-      vp_upd_hat[1] = ff * (vp_hat[1] + vp_hat[2] * tt[0] - vp_hat[0] * tt[2]);
-      vp_upd_hat[2] = ff * (vp_hat[2] + vp_hat[0] * tt[1] - vp_hat[1] * tt[0]);
+      COEFF
+        *= ONE
+           / math::sqrt(ONE + SQR(vp_upd_hat[0]) + SQR(vp_upd_hat[1]) + SQR(vp_upd_hat[2]));
+      Bp_hat[0] *= COEFF;
+      Bp_hat[1] *= COEFF;
+      Bp_hat[2] *= COEFF;
+      COEFF = TWO / (ONE + SQR(Bp_hat[0]) + SQR(Bp_hat[1]) + SQR(Bp_hat[2]));
+
+      vp_hat[0]
+        = (vp_upd_hat[0] + vp_upd_hat[1] * Bp_hat[2] - vp_upd_hat[2] * Bp_hat[1]) * COEFF;
+      vp_hat[1]
+        = (vp_upd_hat[1] + vp_upd_hat[2] * Bp_hat[0] - vp_upd_hat[0] * Bp_hat[2]) * COEFF;
+      vp_hat[2]
+        = (vp_upd_hat[2] + vp_upd_hat[0] * Bp_hat[1] - vp_upd_hat[1] * Bp_hat[0]) * COEFF;
+
+      vp_upd_hat[0] += vp_hat[1] * Bp_hat[2] - vp_hat[2] * Bp_hat[1] + Dp_hat[0];
+      vp_upd_hat[1] += vp_hat[2] * Bp_hat[0] - vp_hat[0] * Bp_hat[2] + Dp_hat[1];
+      vp_upd_hat[2] += vp_hat[0] * Bp_hat[1] - vp_hat[1] * Bp_hat[0] + Dp_hat[2];
 
       m_mblock.metric.v_Hat2Cov(xp, vp_upd_hat, vp_upd);
     }
@@ -161,22 +172,21 @@ namespace ntt {
      */
     Inline void interpolateFields(index_t& p, vec_t<Dim3>& e, vec_t<Dim3>& b) const {};
 
-    // /**
-    //  * @brief Boris algorithm.
-    //  * @note Fields are modified inside the function and cannot be reused.
-    //  * @param p index of the particle.
-    //  * @param e interpolated e-field vector of size 3 [modified].
-    //  * @param b interpolated b-field vector of size 3 [modified].
-    //  */
-    // Inline void BorisUpdate(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
-
-    Inline auto ComputeEnergy(const Photon_t&, vec_t<Dim3>& u_cov, vec_t<Dim3>& u_cntrv) const
-      -> real_t {
+    /**
+     * @brief Compute the gamma parameter Gamma = sqrt(u_i u_j h^ij) for massless particles.
+     */
+    Inline auto computeGamma(const Photon_t&,
+                             const vec_t<Dim3>& u_cov,
+                             const vec_t<Dim3>& u_cntrv) const -> real_t {
       return math::sqrt(u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1] + u_cov[2] * u_cntrv[2]);
     }
 
-    Inline auto ComputeEnergy(const Massive_t&, vec_t<Dim3>& u_cov, vec_t<Dim3>& u_cntrv) const
-      -> real_t {
+    /**
+     * @brief Compute the gamma parameter Gamma = sqrt(1 + u_i u_j h^ij) for massive particles.
+     */
+    Inline auto computeGamma(const Massive_t&,
+                             const vec_t<Dim3>& u_cov,
+                             const vec_t<Dim3>& u_cntrv) const -> real_t {
       return math::sqrt(ONE + u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1]
                         + u_cov[2] * u_cntrv[2]);
     }
@@ -188,6 +198,7 @@ namespace ntt {
   namespace {
     inline constexpr real_t EPSILON { 1e-2 };
     inline constexpr real_t HALF_OVR_EPSILON { HALF / EPSILON };
+    inline constexpr int    N_ITER { 10 };
   }    // namespace
 
 #define DERIVATIVE_IN_R(func)                                                                 \
@@ -214,9 +225,8 @@ namespace ntt {
     vec_t<Dim3>   vp_mid { ZERO };
     vec_t<Dim3>   vp_mid_cntrv { ZERO };
 
-    // iterate
 #pragma unroll
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < N_ITER; i++) {
       // find midpoint values
       xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
       xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
@@ -229,7 +239,7 @@ namespace ntt {
       m_mblock.metric.v_Cov2Cntrv(xp_mid, vp_mid, vp_mid_cntrv);
 
       // find Gamma / alpha at midpoint
-      real_t u0 { ComputeEnergy(T {}, vp_mid, vp_mid_cntrv) / ATMIDPOINT(alpha) };
+      real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / ATMIDPOINT(alpha) };
 
       // find updated coordinate shift
       xp_upd[0] = xp[0] + m_dt * (vp_mid_cntrv[0] / u0 - ATMIDPOINT(beta1));
@@ -263,22 +273,17 @@ namespace ntt {
                                                           const vec_t<Dim3>&   vp,
                                                           coord_t<Dim2>&       xp_upd) const {
     vec_t<Dim3>   vp_cntrv { ZERO };
-    // vec_t<Dimension::THREE_D> v { vx1, vx2, vx3 };
-    // vec_t<Dimension::THREE_D> vu { v[0], v[1], v[2] };
-    // real_t                    gamma { math::sqrt(v[0] * vu[0] + v[1] * vu[1] + v[2] * vu[2])
-    // };
+    coord_t<Dim2> xp_mid { ZERO };
 
-    // initialize midpoint values & updated values
-    coord_t<Dim2> xp_mid {ZERO};
-
-    // iterate
-    for (int i = 0; i < 10; i++) {
+#pragma unroll
+    for (int i = 0; i < N_ITER; i++) {
       // find midpoint values
       xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
       xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
 
       // find contravariant midpoint velocity
       m_mblock.metric.v_Cov2Cntrv(xp_mid, vp, vp_cntrv);
+      real_t gamma = computeGamma(Massive_t {}, vp, vp_cntrv);
 
       // find midpoint coefficients
       real_t u0 { gamma / m_mblock.metric.alpha(xp_mid) };
@@ -351,6 +356,12 @@ namespace ntt {
   template <>
   Inline void Pusher_kernel<Dim2>::operator()(Photon_t, index_t p) const {
     if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
+      // record previous coordinate
+      m_particles.i1_prev(p)  = m_particles.i1(p);
+      m_particles.i2_prev(p)  = m_particles.i2(p);
+      m_particles.dx1_prev(p) = m_particles.dx1(p);
+      m_particles.dx2_prev(p) = m_particles.dx2(p);
+
       coord_t<Dim2> xp { ZERO };
       vec_t<Dim3>   vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
 
@@ -375,7 +386,7 @@ namespace ntt {
       // update phi
       // vp used to store contravariant velocity
       m_mblock.metric.v_Cov2Cntrv(xp_upd, vp_upd, vp);
-      real_t u0 { ComputeEnergy(Photon_t {}, vp_upd, vp) / m_mblock.metric.alpha(xp_upd) };
+      real_t u0 { computeGamma(Photon_t {}, vp_upd, vp) / m_mblock.metric.alpha(xp_upd) };
       m_particles.phi(p) += m_dt * vp[2] / u0;
 
       // update velocity
@@ -387,25 +398,15 @@ namespace ntt {
 
   /* ------------------------- Massive particle pusher ------------------------ */
 
-  // coord_t<D> xp;
-  // getParticleCoordinate(p, xp);
-
-  // vec_t<Dim3> Dp_cntrv, Bp_cntrv, Dp_hat, Bp_hat;
-  // interpolateFields(p, Dp_cntrv, Bp_cntrv);
-  // m_mblock.metric.v_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
-  // m_mblock.metric.v_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
-
-  // BorisUpdate(p, Dp_hat, Bp_hat);
-  // velocityUpdate(p, m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p));
-  // BorisUpdate(p, Dp_hat, Bp_hat);
-  // coordinateUpdate(p, m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p));
-
-  // GeodesicPush<Massive_t>(Massive_t {}, p);
-  // }
-
   template <>
   Inline void Pusher_kernel<Dim2>::operator()(Massive_t, index_t p) const {
     if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
+      // record previous coordinate
+      m_particles.i1_prev(p)  = m_particles.i1(p);
+      m_particles.i2_prev(p)  = m_particles.i2(p);
+      m_particles.dx1_prev(p) = m_particles.dx1(p);
+      m_particles.dx2_prev(p) = m_particles.dx2(p);
+
       coord_t<Dim2> xp { ZERO }, xp_upd { ZERO };
 
       xp[0] = get_prtl_x1(m_particles, p);
@@ -419,83 +420,41 @@ namespace ntt {
       vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
       vec_t<Dim3> vp_upd { ZERO };
 
-      // xp: old particle coordinate
-      // vp: particle velocity
-      // vp_upd = vp
-      EMPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      // vp_upd: updated particle velocity
-
-      // xp: old particle coordinate
-      // vp: updated particle velocity
-      // xp_upd = xp
-      // vp_upd = vp
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       xp_upd[0] = xp[0];
       xp_upd[1] = xp[1];
       vp[0]     = vp_upd[0];
       vp[1]     = vp_upd[1];
       vp[2]     = vp_upd[2];
-      // only the updated velocity matters after this step
       GeodesicPush<Massive_t>(Massive_t {}, xp, vp, xp_upd, vp_upd);
+      xp_upd[0] = xp[0];
+      xp_upd[1] = xp[1];
       vp[0]     = vp_upd[0];
       vp[1]     = vp_upd[1];
       vp[2]     = vp_upd[2];
-      xp_upd[0] = xp[0];
-      xp_upd[1] = xp[1];
-      // vp_upd: updated particle velocity
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      GeodesicCoordinatePush(xp, vp_upd, xp_upd);
 
-      // xp: old particle coordinate
-      // vp: updated particle velocity
-      // xp_upd = xp
-      // vp_upd = vp
-      EMPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      vp[0] = vp_upd[0];
-      vp[1] = vp_upd[1];
-      vp[2] = vp_upd[2];
-      // vp_upd: updated particle velocity
+      // update coordinate
+      int   i1, i2;
+      float dx1, dx2;
+      from_Xi_to_i_di(xp_upd[0], i1, dx1);
+      from_Xi_to_i_di(xp_upd[1], i2, dx2);
+      m_particles.i1(p)  = i1;
+      m_particles.dx1(p) = dx1;
+      m_particles.i2(p)  = i2;
+      m_particles.dx2(p) = dx2;
+      // update phi
 
-      // xp: old particle coordinate
-      // vp: updated particle velocity
-      // xp_upd = xp
-      // vp_upd = vp
+      // vp used to store contravariant velocity
+      m_mblock.metric.v_Cov2Cntrv(xp_upd, vp_upd, vp);
+      real_t u0 { computeGamma(Photon_t {}, vp_upd, vp) / m_mblock.metric.alpha(xp_upd) };
+      m_particles.phi(p) += m_dt * vp[2] / u0;
 
-      // GeodesicPush<Massive_t>(Massive_t {}, xp, vp, xp_upd, vp_upd);
-
-      // Inline void EMPush(const coord_t<D>&  xp,
-      //              const vec_t<Dim3>& vp,
-      //              const vec_t<Dim3>& Dp_hat,
-      //              const vec_t<Dim3>& Bp_hat,
-      //              vec_t<Dim3>&       vp_upd) const {
-
-      // vec_t<Dim3>   vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
-
-      // xp[0] = get_prtl_x1(m_particles, p);
-      // xp[1] = get_prtl_x2(m_particles, p);
-
-      // coord_t<Dim2> xp_upd { xp[0], xp[1] };
-      // vec_t<Dim3>   vp_upd { vp[0], vp[1], vp[2] };
-
-      // GeodesicPush<Photon_t>(Photon_t {}, p, xp, vp, xp_upd, vp_upd);
-
-      // // update coordinate
-      // int   i1, i2;
-      // float dx1, dx2;
-      // from_Xi_to_i_di(xp_upd[0], i1, dx1);
-      // from_Xi_to_i_di(xp_upd[1], i2, dx2);
-      // m_particles.i1(p)  = i1;
-      // m_particles.dx1(p) = dx1;
-      // m_particles.i2(p)  = i2;
-      // m_particles.dx2(p) = dx2;
-      // // update phi
-
-      // // vp used to store contravariant velocity
-      // m_mblock.metric.v_Cov2Cntrv(xp_upd, vp_upd, vp);
-      // real_t u0 { ComputeEnergy(Photon_t {}, vp_upd, vp) / m_mblock.metric.alpha(xp_upd) };
-      // m_particles.phi(p) += m_dt * vp[2] / u0;
-
-      // // update velocity
-      // m_particles.ux1(p) = vp_upd[0];
-      // m_particles.ux2(p) = vp_upd[1];
-      // m_particles.ux3(p) = vp_upd[2];
+      // update velocity
+      m_particles.ux1(p) = vp_upd[0];
+      m_particles.ux2(p) = vp_upd[1];
+      m_particles.ux3(p) = vp_upd[2];
     }
   }
 
