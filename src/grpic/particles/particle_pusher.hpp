@@ -420,24 +420,24 @@ namespace ntt {
       vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
       vec_t<Dim3> vp_upd { ZERO };
 
-      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       xp_upd[0] = xp[0];
       xp_upd[1] = xp[1];
 
       vp_upd[0] = vp[0];
       vp_upd[1] = vp[1];
       vp_upd[2] = vp[2];
-      // vp[0]     = vp_upd[0];
-      // vp[1]     = vp_upd[1];
-      // vp[2]     = vp_upd[2];
+      vp[0]     = vp_upd[0];
+      vp[1]     = vp_upd[1];
+      vp[2]     = vp_upd[2];
       GeodesicPush<Massive_t>(Massive_t {}, xp, vp, xp_upd, vp_upd);
-      // xp_upd[0] = xp[0];
-      // xp_upd[1] = xp[1];
-      // vp[0]     = vp_upd[0];
-      // vp[1]     = vp_upd[1];
-      // vp[2]     = vp_upd[2];
-      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      // GeodesicCoordinatePush(xp, vp_upd, xp_upd);
+      xp_upd[0] = xp[0];
+      xp_upd[1] = xp[1];
+      vp[0]     = vp_upd[0];
+      vp[1]     = vp_upd[1];
+      vp[2]     = vp_upd[2];
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      GeodesicCoordinatePush(xp, vp_upd, xp_upd);
 
       // update coordinate
       int   i1, i2;

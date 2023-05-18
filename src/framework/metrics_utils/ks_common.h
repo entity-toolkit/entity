@@ -1,7 +1,11 @@
-#ifndef FRAMEWORK_AUX_GR_VTRANS_H
-#define FRAMEWORK_AUX_GR_VTRANS_H
+#ifndef FRAMEWORK_METRICS_KS_COMMON_H
+#define FRAMEWORK_METRICS_KS_COMMON_H
 
-#include "wrapper.h"
+#ifdef __INTELLISENSE__
+#  pragma diag_suppress 1670
+#  pragma diag_suppress 864
+#  pragma diag_suppress 20
+#endif
 
 /**
  * Compute the square root of the determinant of h-matrix.
@@ -18,8 +22,6 @@ Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
  *
  * @param x coordinate array in code units (size of the array is D).
  * @returns h^11 (contravariant, upper index) metric component.
- * @details Finite limit at theta=0. Here, defined only in terms of the direct metric.
- * But this introduces a singularity at theta=0, so take the limit as theta->0.
  */
 Inline auto h11(const coord_t<D>& x) const -> real_t {
   return h_33(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
@@ -40,7 +42,6 @@ Inline auto h22(const coord_t<D>& x) const -> real_t {
  *
  * @param x coordinate array in code units (size of the array is D).
  * @returns h^33 (contravariant, upper index) metric component.
- * @details Singular at theta=0.
  */
 Inline auto h33(const coord_t<D>& x) const -> real_t {
   return h_11(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
@@ -51,8 +52,6 @@ Inline auto h33(const coord_t<D>& x) const -> real_t {
  *
  * @param x coordinate array in code units (size of the array is D).
  * @returns h^13 (contravariant, upper index) metric component.
- * @details Finite limit at theta=0. Here, defined only in terms of the direct metric.
- * But this introduces a singularity at theta=0, so take the limit as theta->0.
  */
 Inline auto h13(const coord_t<D>& x) const -> real_t {
   return -h_13(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
@@ -174,5 +173,11 @@ Inline auto v_CntrvNorm(const coord_t<D>& xi, const vec_t<Dim3>& vi_cntrv) const
   return vi_cntrv[0] * vi_cntrv[0] * h_11(xi) + vi_cntrv[1] * vi_cntrv[1] * h_22(xi)
          + vi_cntrv[2] * vi_cntrv[2] * h_33(xi) + TWO * vi_cntrv[0] * vi_cntrv[2] * h_13(xi);
 }
+
+#ifdef __INTELLISENSE__
+#  pragma diag_default 20
+#  pragma diag_default 864
+#  pragma diag_default 1670
+#endif
 
 #endif

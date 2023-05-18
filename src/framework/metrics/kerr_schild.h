@@ -179,8 +179,8 @@ namespace ntt {
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
-#include "gr_vtrans.h"
-#include "sph_vtrans.h"
+#include "metrics_utils/ks_common.h"
+#include "metrics_utils/sph_vtrans.h"
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
@@ -216,9 +216,7 @@ namespace ntt {
      * @param x coordinate array in Cartesian physical units (size of the array is D).
      */
     Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Cart not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
         x[0] = x_sph[0] * math::sin(x_sph[1]);
@@ -240,9 +238,7 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Cart2Code not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         coord_t<D> x_sph;
         x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
         x_sph[1] = math::atan2(x[1], x[0]);
@@ -264,9 +260,7 @@ namespace ntt {
      * is D).
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         x[0] = xi[0] * dr + this->x1_min;
         x[1] = xi[1] * dtheta;
       } else if constexpr (D == Dim3) {
@@ -284,9 +278,7 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         xi[0] = (x[0] - this->x1_min) * dr_inv;
         xi[1] = x[1] * dtheta_inv;
       } else if constexpr (D == Dim3) {
@@ -303,15 +295,72 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
      */
-    Inline void v_Cntr2SphCntrv(const coord_t<D>&,
-                                const vec_t<Dim3>& vi_cntrv,
-                                vec_t<Dim3>&       vsph_cntrv) const {
-      if constexpr (D == Dim1) {
-        NTTError("v_Cntr2SphCntrv not implemented for 1D");
+    Inline void v_Cntrv2SphCntrv(const coord_t<D>&,
+                                 const vec_t<Dim3>& vi_cntrv,
+                                 vec_t<Dim3>&       vsph_cntrv) const {
+      vsph_cntrv[0] = vi_cntrv[0] * dr_inv;
+      vsph_cntrv[1] = vi_cntrv[1] * dtheta_inv;
+      if constexpr (D == Dim2) {
+        vsph_cntrv[2] = vi_cntrv[2];
       } else {
-        vsph_cntrv[0] = vi_cntrv[0] * dr_inv;
-        vsph_cntrv[1] = vi_cntrv[1] * dtheta_inv;
         vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from spherical contravariant to contravariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
+     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+     */
+    Inline void v_SphCntrv2Cntrv(const coord_t<D>&,
+                                 const vec_t<Dim3>& vsph_cntrv,
+                                 vec_t<Dim3>&       vi_cntrv) const {
+      vi_cntrv[0] = vsph_cntrv[0] / dr_inv;
+      vi_cntrv[1] = vsph_cntrv[1] / dtheta_inv;
+      if constexpr (D == Dim2) {
+        vi_cntrv[2] = vsph_cntrv[2];
+      } else {
+        vi_cntrv[2] = vsph_cntrv[2] / dphi_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from covariant to spherical covariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi_cov vector in covariant basis (size of the array is 3).
+     * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
+     */
+    Inline void v_Cov2SphCov(const coord_t<D>&,
+                             const vec_t<Dim3>& vi_cov,
+                             vec_t<Dim3>&       vsph_cov) const {
+      vsph_cov[0] = vi_cov[0] / dr_inv;
+      vsph_cov[1] = vi_cov[1] / dtheta_inv;
+      if constexpr (D == Dim2) {
+        vsph_cov[2] = vi_cov[2];
+      } else {
+        vsph_cov[2] = vi_cov[2] / dphi_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from covariant to spherical covariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
+     * @param vi_cov vector in covariant basis (size of the array is 3).
+     */
+    Inline void v_SphCov2Cov(const coord_t<D>&,
+                             const vec_t<Dim3>& vsph_cov,
+                             vec_t<Dim3>&       vi_cov) const {
+      vi_cov[0] = vsph_cov[0] * dr_inv;
+      vi_cov[1] = vsph_cov[1] * dtheta_inv;
+      if constexpr (D == Dim2) {
+        vi_cov[2] = vsph_cov[2];
+      } else {
+        vi_cov[2] = vsph_cov[2] * dphi_inv;
       }
     }
   };

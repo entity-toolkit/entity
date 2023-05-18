@@ -1,7 +1,10 @@
-#ifndef FRAMEWORK_AUX_SR_VTRANS_H
-#define FRAMEWORK_AUX_SR_VTRANS_H
+#ifndef FRAMEWORK_METRICS_SPHERICAL_COMMON_H
+#define FRAMEWORK_METRICS_SPHERICAL_COMMON_H
 
-#include "wrapper.h"
+#ifdef __INTELLISENSE__
+#  pragma diag_suppress 77
+#  pragma diag_suppress 65
+#endif
 
 /**
  * Vector conversion from hatted to contravariant basis.
@@ -104,5 +107,10 @@ Inline auto v_CovNorm(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov) const -> 
   return vi_cov[0] * vi_cov[0] / h_11(xi) + vi_cov[1] * vi_cov[1] / h_22(xi)
          + vi_cov[2] * vi_cov[2] / h_33(xi);
 }
+
+#ifdef __INTELLISENSE__
+#  pragma diag_default 65
+#  pragma diag_default 77
+#endif
 
 #endif

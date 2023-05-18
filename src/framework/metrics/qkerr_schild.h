@@ -145,17 +145,12 @@ namespace ntt {
      * @returns h_11 (covariant, lower index) metric component.
      */
     Inline auto h_11(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("h_11 not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t cth { math::cos(theta) };
-        return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
-      }
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t theta { eta2theta(eta) };
+      real_t cth { math::cos(theta) };
+      return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
     }
 
     /**
@@ -165,18 +160,13 @@ namespace ntt {
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("h_22 not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t dtheta_deta_ { dtheta_deta(eta) };
-        real_t cth { math::cos(theta) };
-        return deta_sqr * SQR(dtheta_deta_) * (SQR(r) + a_sqr * SQR(cth));
-      }
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t theta { eta2theta(eta) };
+      real_t dtheta_deta_ { dtheta_deta(eta) };
+      real_t cth { math::cos(theta) };
+      return deta_sqr * SQR(dtheta_deta_) * (SQR(r) + a_sqr * SQR(cth));
     }
 
     /**
@@ -186,20 +176,15 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("h_33 not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t cth { math::cos(theta) };
-        real_t sth { math::sin(theta) };
-        real_t delta { SQR(r) - TWO * r + a_sqr };
-        real_t As { (SQR(r) + a_sqr) * (SQR(r) + a_sqr) - a_sqr * delta * SQR(sth) };
-        return As * SQR(sth) / (SQR(r) + a_sqr * SQR(cth));
-      }
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t theta { eta2theta(eta) };
+      real_t cth { math::cos(theta) };
+      real_t sth { math::sin(theta) };
+      real_t delta { SQR(r) - TWO * r + a_sqr };
+      real_t As { (SQR(r) + a_sqr) * (SQR(r) + a_sqr) - a_sqr * delta * SQR(sth) };
+      return As * SQR(sth) / (SQR(r) + a_sqr * SQR(cth));
     }
 
     /**
@@ -209,19 +194,14 @@ namespace ntt {
      * @returns h_13 (covariant, lower index) metric component.
      */
     Inline auto h_13(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("h_13 not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t cth { math::cos(theta) };
-        real_t sth { math::sin(theta) };
-        return -dchi * math::exp(chi) * a * SQR(sth)
-               * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
-      }
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t theta { eta2theta(eta) };
+      real_t cth { math::cos(theta) };
+      real_t sth { math::sin(theta) };
+      return -dchi * math::exp(chi) * a * SQR(sth)
+             * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
     }
 
     /**
@@ -231,18 +211,13 @@ namespace ntt {
      * @returns alpha.
      */
     Inline auto alpha(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("alpha not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t cth { math::cos(theta) };
-        real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
-        return ONE / math::sqrt(ONE + z);
-      }
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t theta { eta2theta(eta) };
+      real_t cth { math::cos(theta) };
+      real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
+      return ONE / math::sqrt(ONE + z);
     }
 
     /**
@@ -252,18 +227,13 @@ namespace ntt {
      * @returns beta^1 (contravariant).
      */
     Inline auto beta1(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("beta1 not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t cth { math::cos(theta) };
-        real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
-        return math::exp(-chi) * dchi_inv * (z / (ONE + z));
-      }
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t theta { eta2theta(eta) };
+      real_t cth { math::cos(theta) };
+      real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
+      return math::exp(-chi) * dchi_inv * (z / (ONE + z));
     }
 
     /**
@@ -292,25 +262,21 @@ namespace ntt {
      * @returns Area at the pole.
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
-      if constexpr (D == Dim1) {
-        NTTError("polar_area not implemented for 1D qspherical");
-        return ZERO;
-      } else {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t del_eta { x[1] * deta + eta_min };
-        real_t del_theta { eta2theta(del_eta) };
-        return dchi * math::exp(chi) * (SQR(r) + a_sqr)
-               * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) * (ONE - math::cos(del_theta));
-      }
+      real_t chi { x[0] * dchi + chi_min };
+      real_t r { r0 + math::exp(chi) };
+      real_t del_eta { x[1] * deta + eta_min };
+      real_t del_theta { eta2theta(del_eta) };
+      return dchi * math::exp(chi) * (SQR(r) + a_sqr)
+             * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) * (ONE - math::cos(del_theta));
     }
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
+ * TODO @ Hackathon -- fix this (make base class)
  */
-#include "gr_vtrans.h"
-#include "sph_vtrans.h"
+#include "metrics_utils/ks_common.h"
+#include "metrics_utils/sph_vtrans.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
@@ -319,9 +285,7 @@ namespace ntt {
      * @param x coordinate array in Cartesian physical units (size of the array is D).
      */
     Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Cart not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         coord_t<D> x_sph;
         x_Code2Sph(xi, x_sph);
         x[0] = x_sph[0] * math::sin(x_sph[1]);
@@ -343,9 +307,7 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Cart2Code not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         coord_t<D> x_sph;
         x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
         x_sph[1] = math::atan2(x[1], x[0]);
@@ -367,9 +329,7 @@ namespace ntt {
      * is D).
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         real_t chi { xi[0] * dchi + chi_min };
         real_t eta { xi[1] * deta + eta_min };
         x[0] = r0 + math::exp(chi);
@@ -392,9 +352,7 @@ namespace ntt {
      * @param xi coordinate array in code units (size of the array is D).
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dim2) {
+      if constexpr (D == Dim2) {
         real_t chi { math::log(x[0] - r0) };
         real_t eta { theta2eta(x[1]) };
         xi[0] = (chi - chi_min) * dchi_inv;
@@ -416,18 +374,84 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
      */
-    Inline void v_Cntr2SphCntrv(const coord_t<D>&  xi,
-                                const vec_t<Dim3>& vi_cntrv,
-                                vec_t<Dim3>&       vsph_cntrv) const {
-      if constexpr (D == Dim1) {
-        NTTError("v_Cntr2SphCntrv not implemented for 1D");
+    Inline void v_Cntrv2SphCntrv(const coord_t<D>&  xi,
+                                 const vec_t<Dim3>& vi_cntrv,
+                                 vec_t<Dim3>&       vsph_cntrv) const {
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
+      vsph_cntrv[0] = vi_cntrv[0] * math::exp(-chi) * dchi_inv;
+      vsph_cntrv[1] = vi_cntrv[1] * deta_dtheta_ * deta_inv;
+      if constexpr (D == Dim2) {
+        vsph_cntrv[2] = vi_cntrv[2];
       } else {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
-        vsph_cntrv[0] = vi_cntrv[0] * math::exp(-chi) * dchi_inv;
-        vsph_cntrv[1] = vi_cntrv[1] * deta_dtheta_ * deta_inv;
         vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from spherical contravariant to contravariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
+     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+     */
+    Inline void v_SphCntrv2Cntrv(const coord_t<D>&  xi,
+                                 const vec_t<Dim3>& vsph_cntrv,
+                                 vec_t<Dim3>&       vi_cntrv) const {
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
+      vi_cntrv[0] = vsph_cntrv[0] / (math::exp(-chi) * dchi_inv);
+      vi_cntrv[1] = vsph_cntrv[1] / (deta_dtheta_ * deta_inv);
+      if constexpr (D == Dim2) {
+        vi_cntrv[2] = vsph_cntrv[2];
+      } else {
+        vi_cntrv[2] = vsph_cntrv[2] / (dphi_inv);
+      }
+    }
+
+    /**
+     * Vector conversion from covariant to spherical covariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vi_cov vector in covariant basis (size of the array is 3).
+     * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
+     */
+    Inline void v_Cov2SphCov(const coord_t<D>&,
+                             const vec_t<Dim3>& vi_cov,
+                             vec_t<Dim3>&       vsph_cov) const {
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
+      vsph_cov[0] = vi_cov[0] / (math::exp(-chi) * dchi_inv);
+      vsph_cov[1] = vi_cov[1] / (deta_dtheta_ * deta_inv);
+      if constexpr (D == Dim2) {
+        vsph_cov[2] = vi_cov[2];
+      } else {
+        vsph_cov[2] = vi_cov[2] / (dphi_inv);
+      }
+    }
+
+    /**
+     * Vector conversion from spherical covariant to covariant.
+     *
+     * @param xi coordinate array in code units (size of the array is D).
+     * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
+     * @param vi_cov vector in covariant basis (size of the array is 3).
+     */
+    Inline void v_SphCov2Cov(const coord_t<D>&,
+                             const vec_t<Dim3>& vsph_cov,
+                             vec_t<Dim3>&       vi_cov) const {
+      real_t chi { xi[0] * dchi + chi_min };
+      real_t eta { xi[1] * deta + eta_min };
+      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
+      vi_cov[0] = vsph_cov[0] * (math::exp(-chi) * dchi_inv);
+      vi_cov[1] = vsph_cov[1] * (deta_dtheta_ * deta_inv);
+      if constexpr (D == Dim2) {
+        vi_cov[2] = vsph_cov[2];
+      } else {
+        vi_cov[2] = vsph_cov[2] * (dphi_inv);
       }
     }
   };
