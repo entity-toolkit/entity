@@ -107,7 +107,7 @@ namespace ntt {
                                        coord_t<D>&        xp_upd) const {}
 
     /**
-     * @brief EM pusher substep.
+     * @brief EM pusher (Boris) substep.
      * @param xp coordinate of the particle.
      * @param vp covariant velocity of the particle.
      * @param Dp_hat hatted electric field at the particle position.
@@ -123,7 +123,7 @@ namespace ntt {
       m_mblock.metric.v_Cov2Hat(xp, vp, vp_upd_hat);
 
       // this is a half-push
-      real_t COEFF { m_coeff * HALF };
+      real_t COEFF { m_coeff * HALF * m_mblock.metric.alpha(xp) };
 
       Dp_hat[0] *= COEFF;
       Dp_hat[1] *= COEFF;
@@ -420,20 +420,24 @@ namespace ntt {
       vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
       vec_t<Dim3> vp_upd { ZERO };
 
-      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       xp_upd[0] = xp[0];
       xp_upd[1] = xp[1];
-      vp[0]     = vp_upd[0];
-      vp[1]     = vp_upd[1];
-      vp[2]     = vp_upd[2];
+
+      vp_upd[0] = vp[0];
+      vp_upd[1] = vp[1];
+      vp_upd[2] = vp[2];
+      // vp[0]     = vp_upd[0];
+      // vp[1]     = vp_upd[1];
+      // vp[2]     = vp_upd[2];
       GeodesicPush<Massive_t>(Massive_t {}, xp, vp, xp_upd, vp_upd);
-      xp_upd[0] = xp[0];
-      xp_upd[1] = xp[1];
-      vp[0]     = vp_upd[0];
-      vp[1]     = vp_upd[1];
-      vp[2]     = vp_upd[2];
-      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      GeodesicCoordinatePush(xp, vp_upd, xp_upd);
+      // xp_upd[0] = xp[0];
+      // xp_upd[1] = xp[1];
+      // vp[0]     = vp_upd[0];
+      // vp[1]     = vp_upd[1];
+      // vp[2]     = vp_upd[2];
+      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      // GeodesicCoordinatePush(xp, vp_upd, xp_upd);
 
       // update coordinate
       int   i1, i2;
@@ -448,7 +452,7 @@ namespace ntt {
 
       // vp used to store contravariant velocity
       m_mblock.metric.v_Cov2Cntrv(xp_upd, vp_upd, vp);
-      real_t u0 { computeGamma(Photon_t {}, vp_upd, vp) / m_mblock.metric.alpha(xp_upd) };
+      real_t u0 { computeGamma(Massive_t {}, vp_upd, vp) / m_mblock.metric.alpha(xp_upd) };
       m_particles.phi(p) += m_dt * vp[2] / u0;
 
       // update velocity
