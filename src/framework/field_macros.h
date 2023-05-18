@@ -174,7 +174,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
       (MBLOCK).em((I), (J), COMP) = e_cntrv[COMPI];                                           \
     }
 
@@ -185,7 +185,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
       (MBLOCK).em((I), (J), COMP) = b_cntrv[COMPI];                                           \
     }
 
@@ -198,7 +198,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
       (MBLOCK).em((I), (J), COMP) = e_cntrv[COMPI];                                           \
     }
 
@@ -209,7 +209,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
       (MBLOCK).em((I), (J), COMP) = b_cntrv[COMPI];                                           \
     }
 

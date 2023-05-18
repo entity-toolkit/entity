@@ -374,7 +374,7 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
      */
-    Inline void v_Cntrv2SphCntrv(const coord_t<D>&  xi,
+    Inline void v3_Cntrv2SphCntrv(const coord_t<D>&  xi,
                                  const vec_t<Dim3>& vi_cntrv,
                                  vec_t<Dim3>&       vsph_cntrv) const {
       real_t chi { xi[0] * dchi + chi_min };
@@ -418,7 +418,7 @@ namespace ntt {
      * @param vi_cov vector in covariant basis (size of the array is 3).
      * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
      */
-    Inline void v_Cov2SphCov(const coord_t<D>&,
+    Inline void v3_Cov2SphCov(const coord_t<D>&,
                              const vec_t<Dim3>& vi_cov,
                              vec_t<Dim3>&       vsph_cov) const {
       real_t chi { xi[0] * dchi + chi_min };

@@ -48,28 +48,28 @@ class Metric:
             self.h_11(x) * self.h_33(x) - self.h_13(x) ** 2
         )
 
-    def v_Cov2Cntrv(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
+    def v3_Cov2Cntrv(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
         return (
             self.h11(x) * u[0] + self.h13(x) * u[2],
             self.h22(x) * u[1],
             self.h13(x) * u[0] + self.h33(x) * u[2],
         )
 
-    def v_Cntrv2Cov(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
+    def v3_Cntrv2Cov(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
         return (
             self.h_11(x) * u[0] + self.h_13(x) * u[2],
             self.h_22(x) * u[1],
             self.h_13(x) * u[0] + self.h_33(x) * u[2],
         )
 
-    def v_Cov2Hat(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
+    def v3_Cov2Hat(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
         return (
             math.sqrt(self.h11(x)) * (u[0] - (self.h_13(x) / self.h_33(x)) * u[2]),
             u[1] / math.sqrt(self.h_22(x)),
             u[2] / math.sqrt(self.h_33(x)),
         )
 
-    def v_Hat2Cov(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
+    def v3_Hat2Cov(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
         return (
             u[0] / math.sqrt(self.h11(x))
             + (self.h_13(x) / math.sqrt(self.h_33(x))) * u[2],
@@ -77,11 +77,11 @@ class Metric:
             u[2] * math.sqrt(self.h_33(x)),
         )
 
-    def v_Cntrv2Hat(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
-        return self.v_Cov2Hat(self.v_Cntrv2Cov(u, x), x)
+    def v3_Cntrv2Hat(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
+        return self.v3_Cov2Hat(self.v3_Cntrv2Cov(u, x), x)
 
-    def v_Hat2Cntrv(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
-        return self.v_Cov2Cntrv(self.v_Hat2Cov(u, x), x)
+    def v3_Hat2Cntrv(self, u: Tuple[float], x: Tuple[float]) -> Tuple[float]:
+        return self.v3_Cov2Cntrv(self.v3_Hat2Cov(u, x), x)
 
 
 class Minkowski(Metric):
@@ -163,7 +163,7 @@ class FourVector:
 
     @property
     def cov(self) -> Tuple[float]:
-        return self.metric.v_Cntrv2Cov(self.cntrv, self.x)
+        return self.metric.v3_Cntrv2Cov(self.cntrv, self.x)
 
     @property
     def norm(self) -> float:

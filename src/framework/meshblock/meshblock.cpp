@@ -203,7 +203,7 @@ namespace ntt {
 #else
                   real_t      phi = species.phi(p);
                   vec_t<Dim3> u_hat;
-                  this_metric.v_Cart2Hat({ x1, x2, phi },
+                  this_metric.v3_Cart2Hat({ x1, x2, phi },
                                          { species.ux1(p), species.ux2(p), species.ux3(p) },
                                          u_hat);
                   for (auto& c : { comp1, comp2 }) {
@@ -268,7 +268,7 @@ namespace ntt {
                 }
 #else
                 vec_t<Dim3> u_hat;
-                this_metric.v_Cart2Hat(
+                this_metric.v3_Cart2Hat(
                   { x1, x2, x3 }, { species.ux1(p), species.ux2(p), species.ux3(p) }, u_hat);
                 for (auto& c : { comp1, comp2 }) {
                   if (c == 0) {
@@ -357,8 +357,8 @@ namespace ntt {
           vec_t<Dim3> e_hat { ZERO }, b_hat { ZERO };
           if (flags & PrepareOutput_ConvertToHat) {
             // !TODO: not quite correct when not in cell center
-            this_metric.v_Cntrv2Hat({ i_ + HALF }, e_cntr, e_hat);
-            this_metric.v_Cntrv2Hat({ i_ + HALF }, b_cntr, b_hat);
+            this_metric.v3_Cntrv2Hat({ i_ + HALF }, e_cntr, e_hat);
+            this_metric.v3_Cntrv2Hat({ i_ + HALF }, b_cntr, b_hat);
           } else {
             e_hat[0] = e_cntr[0];
             e_hat[1] = e_cntr[1];
@@ -408,8 +408,8 @@ namespace ntt {
           vec_t<Dim3> e_hat { ZERO }, b_hat { ZERO };
           if (flags & PrepareOutput_ConvertToHat) {
             // !TODO: not quite correct when not in cell center
-            this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, e_cntr, e_hat);
-            this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, b_cntr, b_hat);
+            this_metric.v3_Cntrv2Hat({ i_ + HALF, j_ + HALF }, e_cntr, e_hat);
+            this_metric.v3_Cntrv2Hat({ i_ + HALF, j_ + HALF }, b_cntr, b_hat);
           } else {
             e_hat[0] = e_cntr[0];
             e_hat[1] = e_cntr[1];
@@ -479,7 +479,7 @@ namespace ntt {
           // convert to hat
           vec_t<Dim3> j_hat { ZERO };
           if (flags & PrepareOutput_ConvertToHat) {
-            this_metric.v_Cntrv2Hat({ i_ + HALF }, j_cntr, j_hat);
+            this_metric.v3_Cntrv2Hat({ i_ + HALF }, j_cntr, j_hat);
           } else {
             j_hat[0] = j_cntr[0];
             j_hat[1] = j_cntr[1];
@@ -517,7 +517,7 @@ namespace ntt {
           // convert to hat
           vec_t<Dim3> j_hat { ZERO };
           if (flags & PrepareOutput_ConvertToHat) {
-            this_metric.v_Cntrv2Hat({ i_ + HALF, j_ + HALF }, j_cntr, j_hat);
+            this_metric.v3_Cntrv2Hat({ i_ + HALF, j_ + HALF }, j_cntr, j_hat);
           } else {
             j_hat[0] = j_cntr[0];
             j_hat[1] = j_cntr[1];

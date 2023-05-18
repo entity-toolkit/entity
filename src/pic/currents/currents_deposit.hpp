@@ -133,14 +133,14 @@ namespace ntt {
       }
 
 #ifdef MINKOWSKI_METRIC
-      m_mblock.metric.v_Cart2Cntrv(
+      m_mblock.metric.v3_Cart2Cntrv(
         xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
 #else
       coord_t<Dim3> xp;
       xp[0] = xp_f[0];
       xp[1] = xp_f[1];
       xp[2] = m_particles.phi(p);
-      m_mblock.metric.v_Cart2Cntrv(
+      m_mblock.metric.v3_Cart2Cntrv(
         xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
       if constexpr (D == Dim2) {
         if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {

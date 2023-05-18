@@ -295,7 +295,7 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
      */
-    Inline void v_Cntrv2SphCntrv(const coord_t<D>&,
+    Inline void v3_Cntrv2SphCntrv(const coord_t<D>&,
                                  const vec_t<Dim3>& vi_cntrv,
                                  vec_t<Dim3>&       vsph_cntrv) const {
       vsph_cntrv[0] = vi_cntrv[0] * dr_inv;
@@ -333,7 +333,7 @@ namespace ntt {
      * @param vi_cov vector in covariant basis (size of the array is 3).
      * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
      */
-    Inline void v_Cov2SphCov(const coord_t<D>&,
+    Inline void v3_Cov2SphCov(const coord_t<D>&,
                              const vec_t<Dim3>& vi_cov,
                              vec_t<Dim3>&       vsph_cov) const {
       vsph_cov[0] = vi_cov[0] / dr_inv;

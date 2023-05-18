@@ -83,8 +83,8 @@ namespace ntt {
         coord_t<Dim3> xp;
 #endif
         getParticleCoordinate(p, xp);
-        m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-        m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+        m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
+        m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
 
         BorisUpdate(p, e_int_Cart, b_int_Cart);
 
@@ -93,7 +93,7 @@ namespace ntt {
 
         // contravariant 3-velocity: u^i / gamma
         vec_t<Dim3> v;
-        m_mblock.metric.v_Cart2Cntrv(
+        m_mblock.metric.v3_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
         // avoid problem for a particle right at the axes
         if ((m_particles.i2(p) == 0) && AlmostEqual(m_particles.dx2(p), 0.0f)) {
@@ -121,7 +121,7 @@ namespace ntt {
 #endif
         getParticleCoordinate(p, xp);
         vec_t<Dim3> v;
-        m_mblock.metric.v_Cart2Cntrv(
+        m_mblock.metric.v3_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
 
         real_t inv_energy;
@@ -565,7 +565,7 @@ namespace ntt {
 //   getParticleCoordinate(p, xp);
 
 //   vec_t<Dim3> v;
-//   m_mblock.metric.v_Cart2Cntrv(
+//   m_mblock.metric.v3_Cart2Cntrv(
 //     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
 //   v[0] *= inv_energy;
 //   v[1] *= inv_energy;
@@ -576,8 +576,8 @@ namespace ntt {
 //   vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
 //   interpolateFields(p, e_int, b_int);
 
-//   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-//   m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+//   m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
+//   m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
 
 //   BorisUpdate(p, e_int_Cart, b_int_Cart);
 // }

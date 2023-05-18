@@ -411,7 +411,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
           init_prtl_2d_i_di(species1,
                             offset1 + p,
@@ -430,7 +430,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
           init_prtl_2d_i_di(species2,
                             offset2 + p,
@@ -531,7 +531,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
 #endif
           init_prtl_3d_i_di(species1,
                             offset1 + p,
@@ -552,7 +552,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
 #endif
           init_prtl_3d_i_di(species2,
                             offset2 + p,

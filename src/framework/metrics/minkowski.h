@@ -132,10 +132,10 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      */
-    Inline void v_Cntrv2Cart(const coord_t<D>&  xi,
+    Inline void v3_Cntrv2Cart(const coord_t<D>&  xi,
                              const vec_t<Dim3>& vi_cntrv,
                              vec_t<Dim3>&       vi_cart) const {
-      this->v_Cntrv2Hat(xi, vi_cntrv, vi_cart);
+      this->v3_Cntrv2Hat(xi, vi_cntrv, vi_cart);
     }
 
     /**
@@ -145,10 +145,10 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      * @param vi_cntrv vector in contravariant basis (size of the array is 3).
      */
-    Inline void v_Cart2Cntrv(const coord_t<D>&  xi,
+    Inline void v3_Cart2Cntrv(const coord_t<D>&  xi,
                              const vec_t<Dim3>& vi_cart,
                              vec_t<Dim3>&       vi_cntrv) const {
-      this->v_Hat2Cntrv(xi, vi_cart, vi_cntrv);
+      this->v3_Hat2Cntrv(xi, vi_cart, vi_cntrv);
     }
 
     /**
@@ -158,10 +158,10 @@ namespace ntt {
      * @param vi_cov vector in covariant basis (size of the array is 3).
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      */
-    Inline void v_Cov2Cart(const coord_t<D>&  xi,
+    Inline void v3_Cov2Cart(const coord_t<D>&  xi,
                            const vec_t<Dim3>& vi_cov,
                            vec_t<Dim3>&       vi_cart) const {
-      this->v_Cov2Hat(xi, vi_cov, vi_cart);
+      this->v3_Cov2Hat(xi, vi_cov, vi_cart);
     }
 
     /**
@@ -171,10 +171,10 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis (size of the array is 3).
      * @param vi_cov vector in covariant basis (size of the array is 3).
      */
-    Inline void v_Cart2Cov(const coord_t<D>&  xi,
+    Inline void v3_Cart2Cov(const coord_t<D>&  xi,
                            const vec_t<Dim3>& vi_cart,
                            vec_t<Dim3>&       vi_cov) const {
-      this->v_Hat2Cov(xi, vi_cart, vi_cov);
+      this->v3_Hat2Cov(xi, vi_cart, vi_cov);
     }
   };
 
