@@ -118,8 +118,8 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "sph_vtrans.h"
-#include "spherical_common.h"
+#include "metrics_utils/sph_common.h"
+#include "metrics_utils/sr_common.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.

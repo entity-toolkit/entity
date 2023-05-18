@@ -180,7 +180,7 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metrics_utils/ks_common.h"
-#include "metrics_utils/sph_vtrans.h"
+#include "metrics_utils/sph_common.h"
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).

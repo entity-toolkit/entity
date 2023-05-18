@@ -276,7 +276,7 @@ namespace ntt {
  * TODO @ Hackathon -- fix this (make base class)
  */
 #include "metrics_utils/ks_common.h"
-#include "metrics_utils/sph_vtrans.h"
+#include "metrics_utils/sph_common.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
