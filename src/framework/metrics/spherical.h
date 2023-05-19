@@ -53,7 +53,7 @@ namespace ntt {
     /**
      * Compute metric component 11.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_11 (covariant, lower index) metric component.
      */
     Inline auto h_11(const coord_t<D>&) const -> real_t {
@@ -62,7 +62,7 @@ namespace ntt {
     /**
      * Compute metric component 22.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
@@ -72,7 +72,7 @@ namespace ntt {
     /**
      * Compute metric component 33.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
@@ -84,7 +84,7 @@ namespace ntt {
     /**
      * Compute the square root of the determinant of h-matrix.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
@@ -124,8 +124,8 @@ namespace ntt {
     /**
      * Coordinate conversion from code units to Cartesian physical units.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Cartesian physical units (size of the array is D).
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Cartesian physical units
      */
     Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dim1) {
@@ -147,8 +147,8 @@ namespace ntt {
      * Coordinate conversion from Cartesian physical units to code units.
      *
      * @param x coordinate array in Cartesian coordinates in
-     * physical units (size of the array is D).
-     * @param xi coordinate array in code units (size of the array is D).
+     * physical units
+     * @param xi coordinate array in code units
      */
     Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dim1) {
@@ -169,9 +169,8 @@ namespace ntt {
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array
-     * is D).
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Spherical coordinates in physical units
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dim1) {
@@ -188,9 +187,8 @@ namespace ntt {
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array
-     * is D).
-     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units
+     * @param xi coordinate array in code units
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dim1) {

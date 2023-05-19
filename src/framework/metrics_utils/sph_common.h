@@ -20,9 +20,9 @@
 /**
  * Vector conversion from contravariant to global Cartesian basis.
  *
- * @param xi coordinate array in code units (size of the array is 3).
- * @param vi_cntrv vector in contravariant basis (size of the array is 3).
- * @param vi_cart vector in global Cartesian basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cntrv vector in contravariant basis
+ * @param vi_cart vector in global Cartesian basis
  */
 Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
                           const vec_t<Dim3>&   vi_cntrv,
@@ -41,9 +41,9 @@ Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
 /**
  * Vector conversion from global Cartesian to contravariant basis.
  *
- * @param xi coordinate array in code units (size of the array is 3).
- * @param vi_cart vector in global Cartesian basis (size of the array is 3).
- * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cart vector in global Cartesian basis
+ * @param vi_cntrv vector in contravariant basis
  */
 Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
                           const vec_t<Dim3>&   vi_cart,
@@ -62,9 +62,9 @@ Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
 /**
  * Vector conversion from covariant to global Cartesian basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cov vector in covariant basis (size of the array is 3).
- * @param vi_cart vector in global Cartesian basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cov vector in covariant basis
+ * @param vi_cart vector in global Cartesian basis
  */
 Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cov,
@@ -77,9 +77,9 @@ Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
 /**
  * Vector conversion from global Cartesian to covariant basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cart vector in global Cartesian basis (size of the array is 3).
- * @param vi_cov vector in covariant basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cart vector in global Cartesian basis
+ * @param vi_cov vector in covariant basis
  */
 Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cart,
@@ -98,9 +98,9 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
 /**
  * Vector conversion from hatted (spherical) to global Cartesian basis.
  *
- * @param xi coordinate array in code units (size of the array is 3).
- * @param vi_hat vector in hatted (spherical) basis (size of the array is 3).
- * @param vi_cart vector in global Cartesian basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_hat vector in hatted (spherical) basis
+ * @param vi_cart vector in global Cartesian basis
  */
 Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_hat,
@@ -129,9 +129,9 @@ Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
 /**
  * Vector conversion global Cartesian to hatted (spherical) basis.
  *
- * @param xi coordinate array in code units (size of the array is 3).
- * @param vi_cart vector in global Cartesian basis (size of the array is 3).
- * @param vi_hat vector in hatted (spherical) basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cart vector in global Cartesian basis
+ * @param vi_hat vector in hatted (spherical) basis
  */
 Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cart,

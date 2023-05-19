@@ -9,9 +9,9 @@
 /**
  * Vector conversion from hatted to contravariant basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_hat vector in hatted basis (size of the array is 3).
- * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_hat vector in hatted basis
+ * @param vi_cntrv vector in contravariant basis
  */
 Inline void v3_Hat2Cntrv(const coord_t<D>&  xi,
                          const vec_t<Dim3>& vi_hat,
@@ -24,9 +24,9 @@ Inline void v3_Hat2Cntrv(const coord_t<D>&  xi,
 /**
  * Vector conversion from contravariant to hatted basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cntrv vector in contravariant basis (size of the array is 3).
- * @param vi_hat vector in hatted basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cntrv vector in contravariant basis
+ * @param vi_hat vector in hatted basis
  */
 Inline void v3_Cntrv2Hat(const coord_t<D>&  xi,
                          const vec_t<Dim3>& vi_cntrv,
@@ -39,9 +39,9 @@ Inline void v3_Cntrv2Hat(const coord_t<D>&  xi,
 /**
  * Vector conversion from hatted to covariant basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_hat vector in hatted basis (size of the array is 3).
- * @param vi_cov vector in covariant basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_hat vector in hatted basis
+ * @param vi_cov vector in covariant basis
  */
 Inline void v3_Hat2Cov(const coord_t<D>&  xi,
                        const vec_t<Dim3>& vi_hat,
@@ -54,9 +54,9 @@ Inline void v3_Hat2Cov(const coord_t<D>&  xi,
 /**
  * Vector conversion from covariant to hatted basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cov vector in covariant basis (size of the array is 3).
- * @param vi_hat vector in hatted basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cov vector in covariant basis
+ * @param vi_hat vector in hatted basis
  */
 Inline void v3_Cov2Hat(const coord_t<D>&  xi,
                        const vec_t<Dim3>& vi_cov,
@@ -69,9 +69,9 @@ Inline void v3_Cov2Hat(const coord_t<D>&  xi,
 /**
  * Vector conversion from covariant to contravariant basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cov vector in covariant basis (size of the array is 3).
- * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cov vector in covariant basis
+ * @param vi_cntrv vector in contravariant basis
  */
 Inline void v3_Cov2Cntrv(const coord_t<D>&  xi,
                          const vec_t<Dim3>& vi_cov,
@@ -84,9 +84,9 @@ Inline void v3_Cov2Cntrv(const coord_t<D>&  xi,
 /**
  * Vector conversion from contravariant to covariant basis.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cntrv vector in contravariant basis (size of the array is 3).
- * @param vi_cov vector in covaraint basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cntrv vector in contravariant basis
+ * @param vi_cov vector in covaraint basis
  */
 Inline void v3_Cntrv2Cov(const coord_t<D>&  xi,
                          const vec_t<Dim3>& vi_cntrv,
@@ -99,8 +99,8 @@ Inline void v3_Cntrv2Cov(const coord_t<D>&  xi,
 /**
  * Compute the norm of a covariant vector.
  *
- * @param xi coordinate array in code units (size of the array is D).
- * @param vi_cov vector in covariant basis (size of the array is 3).
+ * @param xi coordinate array in code units
+ * @param vi_cov vector in covariant basis
  * @return Norm of the covariant vector.
  */
 Inline auto v3_CovNorm(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov) const -> real_t {

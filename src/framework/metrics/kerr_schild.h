@@ -59,7 +59,7 @@ namespace ntt {
     /**
      * Compute metric component 11.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_11 (covariant, lower index) metric component.
      */
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
@@ -72,7 +72,7 @@ namespace ntt {
     /**
      * Compute metric component 22.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
@@ -85,7 +85,7 @@ namespace ntt {
     /**
      * Compute metric component 33.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
@@ -102,7 +102,7 @@ namespace ntt {
     /**
      * Compute metric component 13.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_13 (covariant, lower index) metric component.
      */
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
@@ -116,7 +116,7 @@ namespace ntt {
     /**
      * Compute lapse function.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns alpha.
      */
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
@@ -131,7 +131,7 @@ namespace ntt {
     /**
      * Compute radial component of shift vector.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns beta^1 (contravariant).
      */
     Inline auto beta1(const coord_t<D>& x) const -> real_t {
@@ -146,7 +146,7 @@ namespace ntt {
     /**
      * Compute the square root of the determinant of h-matrix divided by sin(theta).
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns sqrt(det(h))/sin(theta).
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
@@ -165,7 +165,7 @@ namespace ntt {
      * Compute the area at the pole (used in axisymmetric solvers).
      * Approximate solution for the polar area.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns Area at the pole.
      */
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
@@ -212,8 +212,8 @@ namespace ntt {
     /**
      * Coordinate conversion from code units to Cartesian physical units.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Cartesian physical units (size of the array is D).
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Cartesian physical units
      */
     Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dim2) {
@@ -233,9 +233,8 @@ namespace ntt {
     /**
      * Coordinate conversion from Cartesian physical units to code units.
      *
-     * @param x coordinate array in Cartesian coordinates in
-     * physical units (size of the array is D).
-     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Cartesian coordinates in physical units
+     * @param xi coordinate array in code units
      */
     Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dim2) {
@@ -255,9 +254,8 @@ namespace ntt {
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array
-     * is D).
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Spherical coordinates in physical units
      */
     Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
       if constexpr (D == Dim2) {
@@ -273,9 +271,8 @@ namespace ntt {
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array
-     * is D).
-     * @param xi coordinate array in code units (size of the array is D).
+     * @param x coordinate array in Spherical coordinates in physical units
+     * @param xi coordinate array in code units
      */
     Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       if constexpr (D == Dim2) {
@@ -291,13 +288,13 @@ namespace ntt {
     /**
      * Vector conversion from contravariant to spherical contravariant.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
-     * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vi_cntrv vector in contravariant basis
+     * @param vsph_cntrv vector in spherical contravariant basis
      */
     Inline void v3_Cntrv2SphCntrv(const coord_t<D>&,
-                                 const vec_t<Dim3>& vi_cntrv,
-                                 vec_t<Dim3>&       vsph_cntrv) const {
+                                  const vec_t<Dim3>& vi_cntrv,
+                                  vec_t<Dim3>&       vsph_cntrv) const {
       vsph_cntrv[0] = vi_cntrv[0] * dr_inv;
       vsph_cntrv[1] = vi_cntrv[1] * dtheta_inv;
       if constexpr (D == Dim2) {
@@ -310,13 +307,13 @@ namespace ntt {
     /**
      * Vector conversion from spherical contravariant to contravariant.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vsph_cntrv vector in spherical contravariant basis (size of the array is 3).
-     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vsph_cntrv vector in spherical contravariant basis
+     * @param vi_cntrv vector in contravariant basis
      */
-    Inline void v_SphCntrv2Cntrv(const coord_t<D>&,
-                                 const vec_t<Dim3>& vsph_cntrv,
-                                 vec_t<Dim3>&       vi_cntrv) const {
+    Inline void v3_SphCntrv2Cntrv(const coord_t<D>&,
+                                  const vec_t<Dim3>& vsph_cntrv,
+                                  vec_t<Dim3>&       vi_cntrv) const {
       vi_cntrv[0] = vsph_cntrv[0] / dr_inv;
       vi_cntrv[1] = vsph_cntrv[1] / dtheta_inv;
       if constexpr (D == Dim2) {
@@ -329,13 +326,13 @@ namespace ntt {
     /**
      * Vector conversion from covariant to spherical covariant.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_cov vector in covariant basis (size of the array is 3).
-     * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vi_cov vector in covariant basis
+     * @param vsph_cov vector in spherical covariant basis
      */
     Inline void v3_Cov2SphCov(const coord_t<D>&,
-                             const vec_t<Dim3>& vi_cov,
-                             vec_t<Dim3>&       vsph_cov) const {
+                              const vec_t<Dim3>& vi_cov,
+                              vec_t<Dim3>&       vsph_cov) const {
       vsph_cov[0] = vi_cov[0] / dr_inv;
       vsph_cov[1] = vi_cov[1] / dtheta_inv;
       if constexpr (D == Dim2) {
@@ -348,13 +345,13 @@ namespace ntt {
     /**
      * Vector conversion from covariant to spherical covariant.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vsph_cov vector in spherical covariant basis (size of the array is 3).
-     * @param vi_cov vector in covariant basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vsph_cov vector in spherical covariant basis
+     * @param vi_cov vector in covariant basis
      */
-    Inline void v_SphCov2Cov(const coord_t<D>&,
-                             const vec_t<Dim3>& vsph_cov,
-                             vec_t<Dim3>&       vi_cov) const {
+    Inline void v3_SphCov2Cov(const coord_t<D>&,
+                              const vec_t<Dim3>& vsph_cov,
+                              vec_t<Dim3>&       vi_cov) const {
       vi_cov[0] = vsph_cov[0] * dr_inv;
       vi_cov[1] = vsph_cov[1] * dtheta_inv;
       if constexpr (D == Dim2) {

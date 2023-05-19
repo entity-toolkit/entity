@@ -42,7 +42,7 @@ namespace ntt {
     /**
      * Compute metric component 11.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_11 (covariant, lower index) metric component.
      */
     Inline auto h_11(const coord_t<D>&) const -> real_t {
@@ -51,7 +51,7 @@ namespace ntt {
     /**
      * Compute metric component 22.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>&) const -> real_t {
@@ -60,7 +60,7 @@ namespace ntt {
     /**
      * Compute metric component 33.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>&) const -> real_t {
@@ -70,7 +70,7 @@ namespace ntt {
     /**
      * Compute the square root of the determinant of h-matrix.
      *
-     * @param x coordinate array in code units (size of the array is D).
+     * @param x coordinate array in code units
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t {
@@ -96,41 +96,39 @@ namespace ntt {
     /**
      * Coordinate conversion from code units to Cartesian physical units.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Cartesian physical units (size of the array is D).
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Cartesian physical units
      */
     Inline void x_Code2Cart(const coord_t<D>&, coord_t<D>&) const;
     /**
      * Coordinate conversion from Cartesian physical units to code units.
      *
      * @param x coordinate array in Cartesian coordinates in
-     * physical units (size of the array is D).
-     * @param xi coordinate array in code units (size of the array is D).
+     * physical units
+     * @param xi coordinate array in code units
      */
     Inline void x_Cart2Code(const coord_t<D>&, coord_t<D>&) const;
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param x coordinate array in Spherical coordinates in physical units (size of the array
-     * is D).
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Spherical coordinates in physical units
      */
     Inline void x_Code2Sph(const coord_t<D>&, coord_t<D>&) const;
     /**
      * Coordinate conversion from Spherical physical units to code units.
      *
-     * @param xi coordinate array in Spherical coordinates in physical units (size of the array
-     * is D).
-     * @param x coordinate array in code units (size of the array is D).
+     * @param xi coordinate array in Spherical coordinates in physical units
+     * @param x coordinate array in code units
      */
     Inline void x_Sph2Code(const coord_t<D>&, coord_t<D>&) const;
 
     /**
      * Vector conversion from contravariant to global Cartesian basis.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
-     * @param vi_cart vector in global Cartesian basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vi_cntrv vector in contravariant basis
+     * @param vi_cart vector in global Cartesian basis
      */
     Inline void v3_Cntrv2Cart(const coord_t<D>&  xi,
                              const vec_t<Dim3>& vi_cntrv,
@@ -141,9 +139,9 @@ namespace ntt {
     /**
      * Vector conversion from global Cartesian to contravariant basis.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_cart vector in global Cartesian basis (size of the array is 3).
-     * @param vi_cntrv vector in contravariant basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vi_cart vector in global Cartesian basis
+     * @param vi_cntrv vector in contravariant basis
      */
     Inline void v3_Cart2Cntrv(const coord_t<D>&  xi,
                              const vec_t<Dim3>& vi_cart,
@@ -154,9 +152,9 @@ namespace ntt {
     /**
      * Vector conversion from covariant to global Cartesian basis.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_cov vector in covariant basis (size of the array is 3).
-     * @param vi_cart vector in global Cartesian basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vi_cov vector in covariant basis
+     * @param vi_cart vector in global Cartesian basis
      */
     Inline void v3_Cov2Cart(const coord_t<D>&  xi,
                            const vec_t<Dim3>& vi_cov,
@@ -167,9 +165,9 @@ namespace ntt {
     /**
      * Vector conversion from global Cartesian to covariant basis.
      *
-     * @param xi coordinate array in code units (size of the array is D).
-     * @param vi_cart vector in global Cartesian basis (size of the array is 3).
-     * @param vi_cov vector in covariant basis (size of the array is 3).
+     * @param xi coordinate array in code units
+     * @param vi_cart vector in global Cartesian basis
+     * @param vi_cov vector in covariant basis
      */
     Inline void v3_Cart2Cov(const coord_t<D>&  xi,
                            const vec_t<Dim3>& vi_cart,
