@@ -410,28 +410,32 @@ namespace ntt {
       xp[0] = get_prtl_x1(m_particles, p);
       xp[1] = get_prtl_x2(m_particles, p);
 
-      vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO }, Bp_hat { ZERO };
-      interpolateFields(p, Dp_cntrv, Bp_cntrv);
-      m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
-      m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
+      // vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO }, Bp_hat { ZERO };
+      // interpolateFields(p, Dp_cntrv, Bp_cntrv);
+      // m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
+      // m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
 
       vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
       vec_t<Dim3> vp_upd { ZERO };
 
       // u_i(n - 1/2) -> u*_i(n - 1/2)
-      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      vp[0] = vp_upd[0];
-      vp[1] = vp_upd[1];
-      vp[2] = vp_upd[2];
+      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      // vp[0] = vp_upd[0];
+      // vp[1] = vp_upd[1];
+      // vp[2] = vp_upd[2];
+      // !TEMP
+      vp_upd[0] = vp[0];
+      vp_upd[1] = vp[1];
+      vp_upd[2] = vp[2];
       // u*_i(n - 1/2) -> u*_i(n + 1/2)
       GeodesicMomentumPush<Massive_t>(Massive_t {}, xp, vp, vp_upd);
       vp[0] = vp_upd[0];
       vp[1] = vp_upd[1];
       vp[2] = vp_upd[2];
       // u*_i(n + 1/2) -> u_i(n + 1/2)
-      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      xp_upd[0] = xp[0];
-      xp_upd[1] = xp[1];
+      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      // xp_upd[0] = xp[0];
+      // xp_upd[1] = xp[1];
       // x^i(n) -> x^i(n + 1)
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
 

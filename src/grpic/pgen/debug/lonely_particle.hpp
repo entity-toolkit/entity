@@ -69,7 +69,7 @@ namespace ntt {
     Kokkos::deep_copy(uph0_d, uph0_h);
     Kokkos::parallel_for(
       "UserInitParticles", npart, ClassLambda(index_t p) {
-        init_prtl_2d(
+        init_prtl_2d_covariant(
           mblock, species, p, r0_d(p), th0_d(p), ur0_d(p), uth0_d(p), uph0_d(p), ONE);
         species.phi(p) = ph0_d(p);
       });
