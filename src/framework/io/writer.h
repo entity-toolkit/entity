@@ -27,6 +27,8 @@ namespace ntt {
 
     std::vector<OutputField>     m_fields;
     std::vector<OutputParticles> m_particles;
+
+    real_t                       m_last_output_time { -1.0 };
 #endif
 
   public:

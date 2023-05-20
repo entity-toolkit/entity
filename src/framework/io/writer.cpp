@@ -192,20 +192,39 @@ namespace ntt {
                               Meshblock<D, S>&        mblock,
                               const real_t&           time,
                               const std::size_t&      tstep) {
-    NTTLog();
-    m_writer = m_io.Open(params.title() + ".h5", m_mode);
-    m_mode   = adios2::Mode::Append;
-    m_writer.BeginStep();
-    int step = (int)tstep;
+    // check if output is enabled
+    auto output_enabled = (params.outputFormat() != "disabled");
+    // check if output is done by # of steps or by physical time
+    auto output_by_step = (params.outputIntervalTime() <= 0.0);
+    auto output_by_time = !output_by_step;
+    // check if current timestep is an output step
+    // based on # of steps or passed time since last output
+    auto is_output_step = (tstep % params.outputInterval() == 0);
+    auto is_output_time = (time - m_last_output_time >= params.outputIntervalTime())
+                          || (m_last_output_time <= 0.0);
+    // combine the logic
+    auto do_output
+      = (output_enabled
+         && ((output_by_step && is_output_step) || (output_by_time && is_output_time)));
 
-    m_writer.Put<int>(m_io.InquireVariable<int>("Step"), &step);
-    m_writer.Put<real_t>(m_io.InquireVariable<real_t>("Time"), &time);
+    if (do_output) {
+      WaitAndSynchronize();
+      NTTLog();
+      m_writer = m_io.Open(params.title() + ".h5", m_mode);
+      m_mode   = adios2::Mode::Append;
+      m_writer.BeginStep();
+      int step = (int)tstep;
 
-    WriteFields(params, mblock, time, tstep);
-    WriteParticles(params, mblock, time, tstep);
+      m_writer.Put<int>(m_io.InquireVariable<int>("Step"), &step);
+      m_writer.Put<real_t>(m_io.InquireVariable<real_t>("Time"), &time);
 
-    m_writer.EndStep();
-    m_writer.Close();
+      WriteFields(params, mblock, time, tstep);
+      WriteParticles(params, mblock, time, tstep);
+
+      m_writer.EndStep();
+      m_writer.Close();
+      m_last_output_time = time;
+    }
   }
 
   template <Dimension D, SimulationEngine S>

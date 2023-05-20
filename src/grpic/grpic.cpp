@@ -424,11 +424,7 @@ namespace ntt {
      *          u_prtl   at n+1/2
      */
     timers.start("Output");
-    if ((params.outputFormat() != "disabled")
-        && (this->m_tstep % params.outputInterval() == 0)) {
-      WaitAndSynchronize();
-      wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
-    }
+    wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
     this->PrintDiagnostics(

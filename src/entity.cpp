@@ -37,7 +37,7 @@ auto main(int argc, char* argv[]) -> int {
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
     auto log_level     = ntt::readFromInput<std::string>(
-      inputdata, "simulation", "log_level", ntt::defaults::log_level);
+      inputdata, "diagnostics", "log_level", ntt::defaults::log_level);
     plog::Severity log_level_enum { plog::info };
     if (log_level == "DEBUG") {
       log_level_enum = plog::verbose;

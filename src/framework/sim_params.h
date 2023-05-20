@@ -64,6 +64,7 @@ namespace ntt {
     // Output parameters
     std::string                                 m_output_format;
     int                                         m_output_interval;
+    real_t                                      m_output_interval_time;
     std::vector<std::string>                    m_output_fields;
     std::vector<std::string>                    m_output_particles;
     int                                         m_output_mom_smooth;
@@ -220,6 +221,12 @@ namespace ntt {
      */
     [[nodiscard]] auto outputInterval() const -> const int& {
       return m_output_interval;
+    }
+    /**
+     * @brief Get the output interval in physical time units.
+     */
+    [[nodiscard]] auto outputIntervalTime() const -> const real_t& {
+      return m_output_interval_time;
     }
     /**
      * @brief Get output field labels.

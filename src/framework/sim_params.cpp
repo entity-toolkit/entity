@@ -164,10 +164,11 @@ namespace ntt {
     // output params
     m_output_format
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
-    m_output_interval   = get<int>("output", "interval", defaults::output_interval);
-    m_output_fields     = get<std::vector<std::string>>("output", "fields");
-    m_output_particles  = get<std::vector<std::string>>("output", "particles");
-    m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
+    m_output_interval      = get<int>("output", "interval", defaults::output_interval);
+    m_output_interval_time = get<real_t>("output", "interval_time", -1.0);
+    m_output_fields        = get<std::vector<std::string>>("output", "fields");
+    m_output_particles     = get<std::vector<std::string>>("output", "particles");
+    m_output_mom_smooth    = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
     m_output_prtl_stride
       = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
 

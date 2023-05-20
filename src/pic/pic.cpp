@@ -3,7 +3,6 @@
 #include "wrapper.h"
 
 #include "fields.h"
-#include "progressbar.h"
 #include "sim_params.h"
 #include "timer.h"
 
@@ -154,20 +153,11 @@ namespace ntt {
     }
 
     timers.start("Output");
-    if ((params.outputFormat() != "disabled")
-        && (this->m_tstep % params.outputInterval() == 0)) {
-      WaitAndSynchronize();
-      wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
-    }
+    wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
-    timers.printAll("time = " + std::to_string(this->m_time)
-                    + " : timestep = " + std::to_string(this->m_tstep));
-    this->PrintDiagnostics(std::cout, dead_fractions);
-    tstep_durations.push_back(timers.get("Total"));
-    std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
-    ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
-    std::cout << std::setw(46) << std::setfill('=') << "" << std::endl;
+    this->PrintDiagnostics(
+      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations);
 
     ImposeEmptyContent(mblock.buff_content);
     ImposeEmptyContent(mblock.cur_content);

@@ -51,6 +51,7 @@ format          = <string: { "disabled", "hdf5" }>
 mom_smooth      = <int>
 prtl_stride     = <int>
 interval        = <int>
+interval_time   = <float>
 
 [diagnostics]
 interval        = <int>
