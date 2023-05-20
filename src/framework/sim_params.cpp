@@ -170,5 +170,9 @@ namespace ntt {
     m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
     m_output_prtl_stride
       = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
+
+    // diagnostic params
+    m_diag_interval   = get<int>("diagnostics", "interval", defaults::diag_interval);
+    m_blocking_timers = get<bool>("diagnostics", "blocking_timers", defaults::blocking_timers);
   }
 }    // namespace ntt

@@ -6,6 +6,7 @@
 #include "fields.h"
 #include "meshblock.h"
 #include "sim_params.h"
+#include "timer.h"
 #include "writer.h"
 
 #include <toml.hpp>
@@ -76,8 +77,12 @@ namespace ntt {
      * @brief Diagnostic logging.
      * @param os output stream.
      */
-    void               PrintDiagnostics(std::ostream&              os        = std::cout,
-                                        const std::vector<double>& fractions = {});
+    void               PrintDiagnostics(const std::size_t&         step,
+                                        const real_t&              time,
+                                        const std::vector<double>& fractions,
+                                        const timer::Timers&       timer,
+                                        std::vector<long double>&  tstep_durations,
+                                        std::ostream&              os = std::cout);
 
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */

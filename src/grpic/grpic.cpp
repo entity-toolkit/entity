@@ -2,7 +2,6 @@
 
 #include "wrapper.h"
 
-#include "progressbar.h"
 #include "sim_params.h"
 #include "timer.h"
 
@@ -24,7 +23,8 @@ namespace ntt {
       Simulation<D, GRPICEngine>::PrintDetails();
       InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
+        PLOGV_(LogFile) << "step = " << this->m_tstep;
+        PLOGV_(LogFile) << std::endl;
         StepForward();
       }
       WaitAndSynchronize();
@@ -102,7 +102,7 @@ namespace ntt {
      *
      * Now: em::D at 0
      */
-    Ampere(0.5, gr_ampere::init);
+    Ampere(HALF, gr_ampere::init);
     /**
      * em0::D, em::D <- boundary conditions
      */
@@ -129,7 +129,7 @@ namespace ntt {
      *
      * Now: em0::B at 1/2
      */
-    Faraday(1.0, gr_faraday::main);
+    Faraday(ONE, gr_faraday::main);
     /**
      * em0::B, em::B <- boundary conditions
      */
@@ -140,7 +140,7 @@ namespace ntt {
      *
      * Now: em0::D at 1/2
      */
-    Ampere(1.0, gr_ampere::aux);
+    Ampere(ONE, gr_ampere::aux);
     /**
      * em0::D, em::D <- boundary conditions
      */
@@ -163,7 +163,7 @@ namespace ntt {
      * Now: em0::D at 1
      *      em::D at 0
      */
-    Ampere(1.0, gr_ampere::main);
+    Ampere(ONE, gr_ampere::main);
     /**
      * em0::D, em::D <- boundary conditions
      */
@@ -213,7 +213,8 @@ namespace ntt {
                                              "CurrentDeposit",
                                              "ParticlePusher",
                                              "ParticleBoundaries",
-                                             "UserSpecific" });
+                                             "UserSpecific" },
+                         params.blockingTimers());
     static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
     /**
@@ -257,7 +258,7 @@ namespace ntt {
        *
        * Now: em0::B at n
        */
-      Faraday(1.0, gr_faraday::aux);
+      Faraday(ONE, gr_faraday::aux);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
@@ -346,7 +347,7 @@ namespace ntt {
        * Now: em0::B at n+1/2
        *      em::B at n-1/2
        */
-      Faraday(1.0, gr_faraday::main);
+      Faraday(ONE, gr_faraday::main);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
@@ -362,7 +363,7 @@ namespace ntt {
        *
        * Now: em0::D at n+1/2
        */
-      Ampere(1.0, gr_ampere::aux);
+      Ampere(ONE, gr_ampere::aux);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
@@ -389,7 +390,7 @@ namespace ntt {
        * Now: em0::D at n+1
        *      em::D at n
        */
-      Ampere(1.0, gr_ampere::main);
+      Ampere(ONE, gr_ampere::main);
 
       /**
        * em::D <-> em0::D
@@ -430,13 +431,8 @@ namespace ntt {
     }
     timers.stop("Output");
 
-    timers.printAll("time = " + std::to_string(this->m_time)
-                    + " : timestep = " + std::to_string(this->m_tstep));
-    this->PrintDiagnostics(std::cout, dead_fractions);
-    tstep_durations.push_back(timers.get("Total"));
-    std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
-    ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
-    std::cout << std::setw(46) << std::setfill('=') << "" << std::endl;
+    this->PrintDiagnostics(
+      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations);
 
     ImposeEmptyContent(mblock.buff_content);
     ImposeEmptyContent(mblock.cur_content);

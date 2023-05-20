@@ -14,6 +14,9 @@
 #  define NTTLog()                                                                            \
     { PLOGV_(ntt::LogFile); }
 
+#  define NTTWarn(msg)                                                                        \
+    { PLOGW_(ntt::LogFile) << msg; }
+
 #  define NTTFatal()                                                                          \
     { PLOGF_(ntt::LogFile); }
 

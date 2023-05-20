@@ -152,6 +152,10 @@ namespace ntt {
     const int                  output_interval    = 1;
     const int                  output_mom_smooth  = 1;
     const std::size_t          output_prtl_stride = 100;
+
+    const std::string          log_level          = "info";
+    const int                  diag_interval      = 1;
+    const bool                 blocking_timers    = false;
   }    // namespace defaults
 
   // Field IDs used for io

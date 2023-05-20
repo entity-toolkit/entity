@@ -69,6 +69,10 @@ namespace ntt {
     int                                         m_output_mom_smooth;
     std::size_t                                 m_output_prtl_stride;
 
+    // Diagnostic parameters
+    int                                         m_diag_interval;
+    bool                                        m_blocking_timers;
+
     // Container with data from the parsed input file.
     toml::value                                 m_inputdata;
 
@@ -237,9 +241,21 @@ namespace ntt {
     }
     /**
      * @brief Get the particle stride for the output.
-    */
-   [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
+     */
+    [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
       return m_output_prtl_stride;
+    }
+    /**
+     * @brief Get the diagnostic printout interval.
+     */
+    [[nodiscard]] auto diagInterval() const -> const int& {
+      return m_diag_interval;
+    }
+    /**
+     * @brief Get the blocking timers flag.
+     */
+    [[nodiscard]] auto blockingTimers() const -> const bool& {
+      return m_blocking_timers;
     }
 
     /**

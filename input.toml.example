@@ -51,3 +51,8 @@ format          = <string: { "disabled", "hdf5" }>
 mom_smooth      = <int>
 prtl_stride     = <int>
 interval        = <int>
+
+[diagnostics]
+interval        = <int>
+log_level       = <string: {"DEBUG" | "INFO" | "WARNING" | "ERROR"}>
+blocking_timers = <bool>

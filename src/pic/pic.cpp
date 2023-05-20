@@ -25,7 +25,8 @@ namespace ntt {
       Simulation<D, PICEngine>::PrintDetails();
       InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
+        PLOGV_(LogFile) << "step = " << this->m_tstep;
+        PLOGV_(LogFile) << std::endl;
         StepForward();
       }
       WaitAndSynchronize();
@@ -74,7 +75,8 @@ namespace ntt {
                                              "ParticlePusher",
                                              "ParticleBoundaries",
                                              "UserSpecific",
-                                             "Output" });
+                                             "Output" },
+                         params.blockingTimers());
     static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
 

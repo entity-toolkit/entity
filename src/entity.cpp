@@ -36,8 +36,20 @@ auto main(int argc, char* argv[]) -> int {
     cl_args.readCommandLineArguments(argc, argv);
     auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
     auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
+    auto log_level     = ntt::readFromInput<std::string>(
+      inputdata, "simulation", "log_level", ntt::defaults::log_level);
+    plog::Severity log_level_enum { plog::info };
+    if (log_level == "DEBUG") {
+      log_level_enum = plog::verbose;
+    } else if (log_level == "INFO") {
+      log_level_enum = plog::info;
+    } else if (log_level == "WARNING") {
+      log_level_enum = plog::warning;
+    } else if (log_level == "ERROR") {
+      log_level_enum = plog::error;
+    }
 
-    auto sim_title     = ntt::readFromInput<std::string>(
+    auto sim_title = ntt::readFromInput<std::string>(
       inputdata, "simulation", "title", ntt::defaults::title);
     auto logfile_name  = sim_title + ".log";
     auto infofile_name = sim_title + ".info";
@@ -45,7 +57,7 @@ auto main(int argc, char* argv[]) -> int {
     std::remove(infofile_name.c_str());
     plog::RollingFileAppender<plog::TxtFormatter>     logfileAppender(logfile_name.c_str());
     plog::RollingFileAppender<plog::Nt2InfoFormatter> infofileAppender(infofile_name.c_str());
-    plog::init<ntt::LogFile>(plog::verbose, &logfileAppender);
+    plog::init<ntt::LogFile>(log_level_enum, &logfileAppender);
     plog::init<ntt::InfoFile>(plog::verbose, &infofileAppender);
 
     short res = static_cast<short>(
