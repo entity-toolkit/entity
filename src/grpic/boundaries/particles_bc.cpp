@@ -29,8 +29,10 @@ namespace ntt {
     // !TODO: make this more rigorous
     const auto buffer_h = 5;
     i1h -= buffer_h;
+    if (i1h < 0) {
+      NTTWarn("not enough buffer at rmin below the horizon, setting i1 of horizon to 0");
+    }
     i1h = std::max(i1h, 0);
-    // NTTHostErrorIf(i1h <= 0, "not enough buffer at rmin below the horizon");
 
     for (auto& species : mblock.particles) {
       auto ni1 = mblock.Ni1();

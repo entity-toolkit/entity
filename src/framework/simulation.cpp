@@ -11,8 +11,6 @@
 #include <plog/Log.h>
 #include <toml.hpp>
 
-#include <iostream>
-#include <stdexcept>
 #include <string>
 
 namespace ntt {

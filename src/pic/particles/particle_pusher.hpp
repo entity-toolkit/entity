@@ -11,9 +11,6 @@
 #include "pic.h"
 #include "qmath.h"
 
-#include <iostream>
-#include <stdexcept>
-
 namespace ntt {
   struct Boris_t {};
   struct Photon_t {};

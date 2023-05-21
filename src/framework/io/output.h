@@ -11,7 +11,6 @@
 #  include <adios2/cxx11/KokkosView.h>
 #endif
 
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>

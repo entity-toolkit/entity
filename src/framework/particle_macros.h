@@ -19,6 +19,18 @@
 #define get_prtl_x3(PARTICLES, P)                                                             \
   (static_cast<real_t>((PARTICLES).i3((P))) + static_cast<real_t>((PARTICLES).dx3((P))))
 
+#ifdef GRPIC_ENGINE
+#  define get_prtl_x1_prev(PARTICLES, P)                                                      \
+    (static_cast<real_t>((PARTICLES).i1_prev((P)))                                            \
+     + static_cast<real_t>((PARTICLES).dx1_prev((P))))
+#  define get_prtl_x2_prev(PARTICLES, P)                                                      \
+    (static_cast<real_t>((PARTICLES).i2_prev((P)))                                            \
+     + static_cast<real_t>((PARTICLES).dx2_prev((P))))
+#  define get_prtl_x3_prev(PARTICLES, P)                                                      \
+    (static_cast<real_t>((PARTICLES).i3_prev((P)))                                            \
+     + static_cast<real_t>((PARTICLES).dx3_prev((P))))
+#endif
+
 #define get_prtl_Usqr_SR(PARTICLES, P)                                                        \
   (PARTICLES).ux1((P)) * (PARTICLES).ux1((P)) + (PARTICLES).ux2((P)) * (PARTICLES).ux2((P))   \
     + (PARTICLES).ux3((P)) * (PARTICLES).ux3((P))

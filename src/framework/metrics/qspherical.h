@@ -5,10 +5,6 @@
 
 #include "metric_base.h"
 
-#include <cmath>
-#include <iostream>
-#include <stdexcept>
-
 namespace ntt {
   /**
    * Flat metric in quasi-spherical system.

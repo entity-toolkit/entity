@@ -4,7 +4,6 @@
 #include "wrapper.h"
 
 #include <chrono>
-#include <iostream>
 #include <string>
 
 namespace ntt {
