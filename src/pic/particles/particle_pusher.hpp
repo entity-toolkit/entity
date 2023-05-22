@@ -95,7 +95,8 @@ namespace ntt {
         // avoid problem for a particle right at the axes
         if ((m_particles.i2(p) == 0) && AlmostEqual(m_particles.dx2(p), 0.0f)) {
           v[2] = ZERO;
-        } else if ((m_particles.i2(p) == m_ni2 - 1) && AlmostEqual(m_particles.dx2(p), 1.0f)) {
+        } else if ((m_particles.i2(p) == m_ni2 - 1)
+                   && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
           v[2] = ZERO;
         }
         v[0] *= inv_energy;
@@ -235,30 +236,33 @@ namespace ntt {
 
   template <Dimension D>
   Inline void Pusher_kernel<D>::positionUpdate_x1(index_t& p, const real_t& vx1) const {
-    m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
-    int   temp_i { static_cast<int>(m_particles.dx1(p)) };
-    float temp_r { math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i))
-                   - 1.0f };
+    m_particles.dx1(p) = m_particles.dx1(p) + static_cast<prtldx_t>(m_dt * vx1);
+    int      temp_i { static_cast<int>(m_particles.dx1(p)) };
+    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx1(p)) + temp_i,
+                                 static_cast<prtldx_t>(temp_i))
+                      - static_cast<prtldx_t>(1.0) };
     temp_i             = static_cast<int>(temp_r);
     m_particles.i1(p)  = m_particles.i1(p) + temp_i;
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
   }
   template <Dimension D>
   Inline void Pusher_kernel<D>::positionUpdate_x2(index_t& p, const real_t& vx2) const {
-    m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
-    int   temp_i { static_cast<int>(m_particles.dx2(p)) };
-    float temp_r { math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i))
-                   - 1.0f };
+    m_particles.dx2(p) = m_particles.dx2(p) + static_cast<prtldx_t>(m_dt * vx2);
+    int      temp_i { static_cast<int>(m_particles.dx2(p)) };
+    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx2(p)) + temp_i,
+                                 static_cast<prtldx_t>(temp_i))
+                      - static_cast<prtldx_t>(1.0) };
     temp_i             = static_cast<int>(temp_r);
     m_particles.i2(p)  = m_particles.i2(p) + temp_i;
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
   }
   template <Dimension D>
   Inline void Pusher_kernel<D>::positionUpdate_x3(index_t& p, const real_t& vx3) const {
-    m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
-    int   temp_i { static_cast<int>(m_particles.dx3(p)) };
-    float temp_r { math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i))
-                   - 1.0f };
+    m_particles.dx3(p) = m_particles.dx3(p) + static_cast<prtldx_t>(m_dt * vx3);
+    int      temp_i { static_cast<int>(m_particles.dx3(p)) };
+    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx3(p)) + temp_i,
+                                 static_cast<prtldx_t>(temp_i))
+                      - static_cast<prtldx_t>(1.0) };
     temp_i             = static_cast<int>(temp_r);
     m_particles.i3(p)  = m_particles.i3(p) + temp_i;
     m_particles.dx3(p) = m_particles.dx3(p) - temp_r;

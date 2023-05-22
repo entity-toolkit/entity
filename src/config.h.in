@@ -42,6 +42,7 @@
 #  endif
 
 // Defining precision-based constants and types
+using prtldx_t = float;
 #  ifdef SINGLE_PRECISION
 using real_t = float;
 #  else

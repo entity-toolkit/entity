@@ -77,7 +77,11 @@ namespace ntt {
     NTTLog();
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.dx_min);
-    meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
+    if (m_params.dt() <= ZERO) {
+      meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
+    } else {
+      meshblock.setTimestep(m_params.dt());
+    }
 
     // initialize writer
     writer.Initialize(m_params, meshblock);
@@ -132,6 +136,8 @@ namespace ntt {
       << "  engine:" << stringizeSimulationEngine(S) << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  timestep:" << meshblock.timestep() << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  CFL:" << meshblock.timestep() / meshblock.minCellSize() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  total runtime:" << m_params.totalRuntime() << " ["
       << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]\n"

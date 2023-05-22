@@ -470,8 +470,8 @@ namespace ntt {
                           m_particles.phi(p));
 
       // update coordinate
-      int   i1, i2;
-      float dx1, dx2;
+      int      i1, i2;
+      prtldx_t dx1, dx2;
       from_Xi_to_i_di(xp_upd[0], i1, dx1);
       from_Xi_to_i_di(xp_upd[1], i2, dx2);
       m_particles.i1(p)  = i1;
@@ -540,8 +540,8 @@ namespace ntt {
       // m_particles.phi(p));
 
       // update coordinate
-      int   i1, i2;
-      float dx1, dx2;
+      int      i1, i2;
+      prtldx_t dx1, dx2;
       from_Xi_to_i_di(xp_upd[0], i1, dx1);
       from_Xi_to_i_di(xp_upd[1], i2, dx2);
       m_particles.i1(p)  = i1;

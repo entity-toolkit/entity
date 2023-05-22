@@ -7,7 +7,7 @@
 #define from_Xi_to_i_di(XI, I, DI)                                                            \
   {                                                                                           \
     from_Xi_to_i((XI), (I));                                                                  \
-    DI = static_cast<float>((XI)) - static_cast<float>(I);                                    \
+    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);                              \
   }
 
 #define get_prtl_x1(PARTICLES, P)                                                             \
@@ -85,7 +85,7 @@
     {                                                                                         \
       coord_t<Dim1> X_CU;                                                                     \
       int           I;                                                                        \
-      float         DX;                                                                       \
+      prtldx_t      DX;                                                                       \
       ((MBLOCK).metric).x_Cart2Code({ (X1) }, X_CU);                                          \
       from_Xi_to_i_di(X_CU[0], I, DX);                                                        \
       init_prtl_1d_i_di(SPECIES, INDEX, I, DX, U1, U2, U3, WEIGHT);                           \
@@ -95,7 +95,7 @@
     {                                                                                         \
       coord_t<Dim2> X_CU;                                                                     \
       int           I1, I2;                                                                   \
-      float         DX1, DX2;                                                                 \
+      prtldx_t      DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Cart2Code({ (X1), (X2) }, X_CU);                                    \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
       from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
@@ -106,7 +106,7 @@
     {                                                                                         \
       coord_t<Dim3> X_CU;                                                                     \
       int           I1, I2, I3;                                                               \
-      float         DX1, DX2, DX3;                                                            \
+      prtldx_t      DX1, DX2, DX3;                                                            \
       ((MBLOCK).metric).x_Cart2Code({ (X1), (X2), (X3) }, X_CU);                              \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
       from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
@@ -121,7 +121,7 @@
       coord_t<Dim2> X_CU;                                                                     \
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
       int           I1, I2;                                                                   \
-      float         DX1, DX2;                                                                 \
+      prtldx_t      DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                     \
       ((MBLOCK).metric).v3_Hat2Cart({ X_CU[0], X_CU[1], ZERO }, { U1, U2, U3 }, U_C);         \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
@@ -134,7 +134,7 @@
       coord_t<Dim3> X_CU;                                                                     \
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
       int           I1, I2, I3;                                                               \
-      float         DX1, DX2, DX3;                                                            \
+      prtldx_t      DX1, DX2, DX3;                                                            \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2), (X3) }, X_CU);                               \
       ((MBLOCK).metric).v3_Hat2Cart(X_CU, { U1, U2, U3 }, U_C);                               \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
@@ -151,7 +151,7 @@
       coord_t<Dim2> X_CU;                                                                     \
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
       int           I1, I2;                                                                   \
-      float         DX1, DX2;                                                                 \
+      prtldx_t      DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                     \
       ((MBLOCK).metric).v3_Hat2Cov({ X_CU[0], X_CU[1] }, { U1, U2, U3 }, U_C);                \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
@@ -164,7 +164,7 @@
       coord_t<Dim2> X_CU;                                                                     \
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                                 \
       int           I1, I2;                                                                   \
-      float         DX1, DX2;                                                                 \
+      prtldx_t      DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                     \
       ((MBLOCK).metric).v3_SphCov2Cov({ X_CU[0], X_CU[1] }, { U1, U2, U3 }, U_C);             \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \

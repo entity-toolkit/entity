@@ -12,6 +12,7 @@ set(ENGINE_FLAG ${engine}_engine)
 string(TOUPPER ${ENGINE_FLAG} ENGINE_FLAG)
 set(METRIC_FLAG ${metric}_metric)
 string(TOUPPER ${METRIC_FLAG} METRIC_FLAG)
+set(METRIC_STRING ${metric})
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"

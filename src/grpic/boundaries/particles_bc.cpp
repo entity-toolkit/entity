@@ -57,7 +57,7 @@ namespace ntt {
               // reflect particle coordinate
               species.i2(p) = ni2 - 1;
             }
-            species.dx2(p) = 1.0f - species.dx2(p);
+            species.dx2(p) = static_cast<prtldx_t>(1.0) - species.dx2(p);
             species.phi(p) = species.phi(p) + constant::PI;
             // reverse u^theta
             species.ux2(p) = -species.ux2(p);

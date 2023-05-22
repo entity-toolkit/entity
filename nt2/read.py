@@ -414,6 +414,7 @@ class Data:
             "qspherical": _polar,
             "kerr_schild": _polar,
             "qkerr_schild": _polar,
+            "schwarzschild": _polar,
         }
         _prtl_polar = {
             "X1": "r",
@@ -436,6 +437,7 @@ class Data:
             "qspherical": _prtl_polar,
             "kerr_schild": _prtl_polar,
             "qkerr_schild": _prtl_polar,
+            "schwarzschild": _prtl_polar,
         }
         self.fname = fname
         try:

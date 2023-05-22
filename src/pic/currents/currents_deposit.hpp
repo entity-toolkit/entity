@@ -110,8 +110,8 @@ namespace ntt {
                                    coord_t<D>&      xp_f,
                                    coord_t<D>&      xp_i,
                                    coord_t<D>&      xp_r) const {
-      real_t            inv_energy;
-      tuple_t<float, D> dIp_f;
+      real_t               inv_energy;
+      tuple_t<prtldx_t, D> dIp_f;
 
       if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
         Ip_f[0]  = m_particles.i1(p);
@@ -145,7 +145,8 @@ namespace ntt {
       if constexpr (D == Dim2) {
         if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {
           vp[2] = ZERO;
-        } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1 && AlmostEqual(dIp_f[1], 1.0f)) {
+        } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
+                   && AlmostEqual(dIp_f[1], static_cast<prtldx_t>(1.0))) {
           vp[2] = ZERO;
         }
       }

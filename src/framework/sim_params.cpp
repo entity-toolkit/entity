@@ -65,6 +65,8 @@ namespace ntt {
     m_metric = "qspherical";
 #elif defined(KERR_SCHILD_METRIC)
     m_metric = "kerr_schild";
+#elif defined(SCHWARZSCHILD_METRIC)
+    m_metric = "schwarzschild";
 #elif defined(QKERR_SCHILD_METRIC)
     m_metric = "qkerr_schild";
 #else
@@ -90,7 +92,8 @@ namespace ntt {
         NTTHostErrorIf((dx != dz), "dx != dz in minkowski");
       }
     } else if ((m_metric == "spherical") || (m_metric == "qspherical")
-               || (m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
+               || (m_metric == "kerr_schild") || (m_metric == "qkerr_schild")
+               || (m_metric == "schwarzschild")) {
       // spherical (quasi-spherical) grid
       NTTHostErrorIf((m_extent.size() < 2), "not enough values in `extent` input");
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
@@ -102,8 +105,9 @@ namespace ntt {
       m_metric_parameters[2] = get<real_t>("domain", "sph_rabsorb");
       m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));
 
-      if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
-        real_t spin { get<real_t>("domain", "a") };
+      if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")
+          || (m_metric == "schwarzschild")) {
+        real_t spin { get<real_t>("domain", "a", ZERO) };
         real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;
         // m_extent[0] *= rh;
@@ -154,6 +158,8 @@ namespace ntt {
     m_skindepth0 = get<real_t>("units", "skindepth0");
     m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
 
+    // if dt not specified (== -1), will used CFL to calculate it
+    m_dt         = get<real_t>("algorithm", "dt", -ONE);
     m_cfl        = get<real_t>("algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
 

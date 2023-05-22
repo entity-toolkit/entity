@@ -285,12 +285,12 @@ namespace ntt {
       real_t            n_inject { nppc };
       coord_t<Dim1>     xc { ZERO };
       coord_t<Dim1>     xph { ZERO };
-      float             dx1, dx2;
+      prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
       real_t            cell_vol;
 
       while (n_inject > ZERO) {
-        dx1   = Random<float>(rand_gen);
+        dx1   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         mblock.metric.x_Code2Cart(xc, xph);
         if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
@@ -384,13 +384,13 @@ namespace ntt {
       real_t            n_inject { nppc };
       coord_t<Dim2>     xc { ZERO };
       coord_t<Dim2>     xph { ZERO };
-      float             dx1, dx2;
+      prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
       real_t            cell_vol;
 
       while (n_inject > ZERO) {
-        dx1   = Random<float>(rand_gen);
-        dx2   = Random<float>(rand_gen);
+        dx1   = Random<prtldx_t>(rand_gen);
+        dx2   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         xc[1] = xi[1] + dx2;
 #ifdef MINKOWSKI_METRIC
@@ -502,14 +502,14 @@ namespace ntt {
       real_t            n_inject { nppc };
       coord_t<Dim3>     xc { ZERO };
       coord_t<Dim3>     xph { ZERO };
-      float             dx1, dx2, dx3;
+      prtldx_t          dx1, dx2, dx3;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
       real_t            cell_vol;
 
       while (n_inject > ZERO) {
-        dx1   = Random<float>(rand_gen);
-        dx2   = Random<float>(rand_gen);
-        dx3   = Random<float>(rand_gen);
+        dx1   = Random<prtldx_t>(rand_gen);
+        dx2   = Random<prtldx_t>(rand_gen);
+        dx3   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         xc[1] = xi[1] + dx2;
         xc[2] = xi[2] + dx3;

@@ -20,6 +20,8 @@ namespace ntt {
     std::string                                 m_title;
     // User defined CFL
     real_t                                      m_cfl;
+    // User enforced timestep
+    real_t                                      m_dt;
     // User defined correction to the speed of light
     real_t                                      m_correction;
     // User defined total runtime in physical units
@@ -97,6 +99,12 @@ namespace ntt {
      */
     [[nodiscard]] auto cfl() const -> const real_t& {
       return m_cfl;
+    }
+    /**
+     * @brief Get the dt.
+     */
+    [[nodiscard]] auto dt() const -> const real_t& {
+      return m_dt;
     }
     /**
      * @brief Get the correction to the speed of light.
