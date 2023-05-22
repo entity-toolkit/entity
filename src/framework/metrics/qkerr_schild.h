@@ -373,17 +373,14 @@ namespace ntt {
      * @param vsph_cntrv vector in spherical contravariant basis
      */
     Inline void v3_Cntrv2SphCntrv(const coord_t<D>&  xi,
-                                 const vec_t<Dim3>& vi_cntrv,
-                                 vec_t<Dim3>&       vsph_cntrv) const {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
-      vsph_cntrv[0] = vi_cntrv[0] * math::exp(-chi) * dchi_inv;
-      vsph_cntrv[1] = vi_cntrv[1] * deta_dtheta_ * deta_inv;
+                                  const vec_t<Dim3>& vi_cntrv,
+                                  vec_t<Dim3>&       vsph_cntrv) const {
+      vsph_cntrv[0] = vi_cntrv[0] * math::exp(xi[0] * dchi + chi_min) * dchi;
+      vsph_cntrv[1] = vi_cntrv[1] * dtheta_deta(xi[1] * deta + eta_min) * deta;
       if constexpr (D == Dim2) {
         vsph_cntrv[2] = vi_cntrv[2];
       } else {
-        vsph_cntrv[2] = vi_cntrv[2] * dphi_inv;
+        vsph_cntrv[2] = vi_cntrv[2] * dphi;
       }
     }
 
@@ -395,17 +392,14 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis
      */
     Inline void v3_SphCntrv2Cntrv(const coord_t<D>&  xi,
-                                 const vec_t<Dim3>& vsph_cntrv,
-                                 vec_t<Dim3>&       vi_cntrv) const {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
-      vi_cntrv[0] = vsph_cntrv[0] / (math::exp(-chi) * dchi_inv);
-      vi_cntrv[1] = vsph_cntrv[1] / (deta_dtheta_ * deta_inv);
+                                  const vec_t<Dim3>& vsph_cntrv,
+                                  vec_t<Dim3>&       vi_cntrv) const {
+      vi_cntrv[0] = vsph_cntrv[0] * dchi_inv / (math::exp(xi[0] * dchi + chi_min));
+      vi_cntrv[1] = vsph_cntrv[1] * deta_inv / (dtheta_deta(xi[1] * deta + eta_min));
       if constexpr (D == Dim2) {
         vi_cntrv[2] = vsph_cntrv[2];
       } else {
-        vi_cntrv[2] = vsph_cntrv[2] / (dphi_inv);
+        vi_cntrv[2] = vsph_cntrv[2] * dphi_inv;
       }
     }
 
@@ -416,18 +410,15 @@ namespace ntt {
      * @param vi_cov vector in covariant basis
      * @param vsph_cov vector in spherical covariant basis
      */
-    Inline void v3_Cov2SphCov(const coord_t<D>&,
-                             const vec_t<Dim3>& vi_cov,
-                             vec_t<Dim3>&       vsph_cov) const {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
-      vsph_cov[0] = vi_cov[0] / (math::exp(-chi) * dchi_inv);
-      vsph_cov[1] = vi_cov[1] / (deta_dtheta_ * deta_inv);
+    Inline void v3_Cov2SphCov(const coord_t<D>&  xi,
+                              const vec_t<Dim3>& vi_cov,
+                              vec_t<Dim3>&       vsph_cov) const {
+      vsph_cov[0] = vi_cov[0] * dchi_inv / (math::exp(xi[0] * dchi + chi_min));
+      vsph_cov[1] = vi_cov[1] * deta_inv / (dtheta_deta(xi[1] * deta + eta_min));
       if constexpr (D == Dim2) {
         vsph_cov[2] = vi_cov[2];
       } else {
-        vsph_cov[2] = vi_cov[2] / (dphi_inv);
+        vsph_cov[2] = vi_cov[2] * dphi_inv;
       }
     }
 
@@ -438,18 +429,15 @@ namespace ntt {
      * @param vsph_cov vector in spherical covariant basis
      * @param vi_cov vector in covariant basis
      */
-    Inline void v3_SphCov2Cov(const coord_t<D>&,
-                             const vec_t<Dim3>& vsph_cov,
-                             vec_t<Dim3>&       vi_cov) const {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t deta_dtheta_ { ONE / dtheta_deta(eta) };
-      vi_cov[0] = vsph_cov[0] * (math::exp(-chi) * dchi_inv);
-      vi_cov[1] = vsph_cov[1] * (deta_dtheta_ * deta_inv);
+    Inline void v3_SphCov2Cov(const coord_t<D>&  xi,
+                              const vec_t<Dim3>& vsph_cov,
+                              vec_t<Dim3>&       vi_cov) const {
+      vi_cov[0] = vsph_cov[0] * (math::exp(xi[0] * dchi + chi_min) * dchi);
+      vi_cov[1] = vsph_cov[1] * (dtheta_deta(xi[1] * deta + eta_min) * deta);
       if constexpr (D == Dim2) {
         vi_cov[2] = vsph_cov[2];
       } else {
-        vi_cov[2] = vsph_cov[2] * (dphi_inv);
+        vi_cov[2] = vsph_cov[2] * dphi;
       }
     }
   };

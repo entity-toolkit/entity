@@ -56,102 +56,208 @@ namespace ntt {
       return rh;
     }
 
-    /**
-     * Compute metric component 11.
-     *
-     * @param x coordinate array in code units
-     * @returns h_11 (covariant, lower index) metric component.
-     */
+    Inline auto Delta(const real_t& r) const -> real_t {
+      return SQR(r) - TWO * r + a_sqr;
+    }
+
+    Inline auto Sigma(const real_t& r, const real_t& theta) const -> real_t {
+      return SQR(r) + a_sqr * SQR(math::cos(theta));
+    }
+
+    Inline auto A(const real_t& r, const real_t& theta) const -> real_t {
+      return SQR(SQR(r) + a_sqr) - a_sqr * Delta(r) * SQR(math::sin(theta));
+    }
+
+    Inline auto z(const real_t& r, const real_t& theta) const -> real_t {
+      return TWO * r / Sigma(r, theta);
+    }
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t theta { x[1] * dtheta };
-      real_t cth { math::cos(theta) };
-      return dr_sqr * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      return dr_sqr * (ONE + z(r, theta));
     }
-
-    /**
-     * Compute metric component 22.
-     *
-     * @param x coordinate array in code units
-     * @returns h_22 (covariant, lower index) metric component.
-     */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t theta { x[1] * dtheta };
-      real_t cth { math::cos(theta) };
-      return dtheta_sqr * (SQR(r) + a_sqr * SQR(cth));
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      return dtheta_sqr * Sigma(r, theta);
     }
-
-    /**
-     * Compute metric component 33.
-     *
-     * @param x coordinate array in code units
-     * @returns h_33 (covariant, lower index) metric component.
-     */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t theta { x[1] * dtheta };
-      real_t cth { math::cos(theta) };
-      real_t sth { math::sin(theta) };
-
-      real_t delta { SQR(r) - TWO * r + a_sqr };
-      real_t As { (SQR(r) + a_sqr) * (SQR(r) + a_sqr) - a_sqr * delta * SQR(sth) };
-      return As * SQR(sth) / (SQR(r) + a_sqr * SQR(cth));
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      if constexpr (D == Dim2) {
+        return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
+      } else {
+        return dphi_sqr * A(r, theta) / Sigma(r, theta);
+      }
     }
-
-    /**
-     * Compute metric component 13.
-     *
-     * @param x coordinate array in code units
-     * @returns h_13 (covariant, lower index) metric component.
-     */
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t theta { x[1] * dtheta };
-      real_t cth { math::cos(theta) };
-      real_t sth { math::sin(theta) };
-      return -dr * a * SQR(sth) * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      if constexpr (D == Dim2) {
+        return -dr * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
+      } else {
+        return -dr * dphi * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
+      }
     }
-
-    /**
-     * Compute lapse function.
-     *
-     * @param x coordinate array in code units
-     * @returns alpha.
-     */
+    Inline auto h11(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      const real_t Sigma_ { Sigma(r, theta) };
+      return SQR(dr_inv) * A(r, theta) / (Sigma_ * (Sigma_ + TWO * r));
+    }
+    Inline auto h22(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      return SQR(dtheta_inv) / Sigma(r, theta);
+    }
+    Inline auto h33(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      if constexpr (D == Dim2) {
+        return ONE / (Sigma(r, theta) * SQR(math::sin(theta)));
+      } else {
+        return SQR(dphi_inv) / (Sigma(r, theta) * SQR(math::sin(theta)));
+      }
+    }
+    Inline auto h13(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      if constexpr (D == Dim2) {
+        return dr_inv * a / Sigma(r, theta);
+      } else {
+        return dr_inv * dphi_inv * a / Sigma(r, theta);
+      }
+    }
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t theta { x[1] * dtheta };
-      real_t cth { math::cos(theta) };
-
-      real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
-      return ONE / math::sqrt(ONE + z);
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      return ONE / math::sqrt(ONE + z(r, theta));
     }
-
-    /**
-     * Compute radial component of shift vector.
-     *
-     * @param x coordinate array in code units
-     * @returns beta^1 (contravariant).
-     */
     Inline auto beta1(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t theta { x[1] * dtheta };
-      real_t cth { math::cos(theta) };
-
-      real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
-      return (z / (ONE + z)) * dr_inv;
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      const real_t z_ { z(r, theta) };
+      return dr_inv * z_ / (ONE + z_);
     }
-
-    /**
-     * Compute the square root of the determinant of h-matrix divided by sin(theta).
-     *
-     * @param x coordinate array in code units
-     * @returns sqrt(det(h))/sin(theta).
-     */
+    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      // !ASK! is this correct?
+      if constexpr (D == Dim2) {
+        return dr * dtheta * Sigma(r, theta) * math::sin(theta)
+               * math::sqrt(ONE + z(r, theta));
+      } else {
+        return dr * dtheta * dphi * Sigma(r, theta) * math::sin(theta)
+               * math::sqrt(ONE + z(r, theta));
+      }
+    }
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
-      return h_22(x) / alpha(x);
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      // !ASK! is this correct?
+      if constexpr (D == Dim2) {
+        return dr * dtheta * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
+      } else {
+        return dr * dtheta * dphi * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
+      }
     }
+
+    // /**
+    //  * Compute metric component 11.
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns h_11 (covariant, lower index) metric component.
+    //  */
+    // Inline auto h_11(const coord_t<D>& x) const -> real_t {
+    //   real_t r { x[0] * dr + this->x1_min };
+    //   real_t theta { x[1] * dtheta };
+    //   real_t cth { math::cos(theta) };
+    //   return dr_sqr * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
+    // }
+
+    // /**
+    //  * Compute metric component 22.
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns h_22 (covariant, lower index) metric component.
+    //  */
+    // Inline auto h_22(const coord_t<D>& x) const -> real_t {
+    //   real_t r { x[0] * dr + this->x1_min };
+    //   real_t theta { x[1] * dtheta };
+    //   real_t cth { math::cos(theta) };
+    //   return dtheta_sqr * (SQR(r) + a_sqr * SQR(cth));
+    // }
+
+    // /**
+    //  * Compute metric component 33.
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns h_33 (covariant, lower index) metric component.
+    //  */
+    // Inline auto h_33(const coord_t<D>& x) const -> real_t {
+    //   real_t r { x[0] * dr + this->x1_min };
+    //   real_t theta { x[1] * dtheta };
+    //   real_t cth { math::cos(theta) };
+    //   real_t sth { math::sin(theta) };
+
+    //   real_t delta { SQR(r) - TWO * r + a_sqr };
+    //   real_t As { (SQR(r) + a_sqr) * (SQR(r) + a_sqr) - a_sqr * delta * SQR(sth) };
+    //   return As * SQR(sth) / (SQR(r) + a_sqr * SQR(cth));
+    // }
+
+    // /**
+    //  * Compute metric component 13.
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns h_13 (covariant, lower index) metric component.
+    //  */
+    // Inline auto h_13(const coord_t<D>& x) const -> real_t {
+    //   real_t r { x[0] * dr + this->x1_min };
+    //   real_t theta { x[1] * dtheta };
+    //   real_t cth { math::cos(theta) };
+    //   real_t sth { math::sin(theta) };
+    //   return -dr * a * SQR(sth) * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
+    // }
+
+    // /**
+    //  * Compute lapse function.
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns alpha.
+    //  */
+    // Inline auto alpha(const coord_t<D>& x) const -> real_t {
+    //   real_t r { x[0] * dr + this->x1_min };
+    //   real_t theta { x[1] * dtheta };
+    //   real_t cth { math::cos(theta) };
+
+    //   real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
+    //   return ONE / math::sqrt(ONE + z);
+    // }
+
+    // /**
+    //  * Compute radial component of shift vector.
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns beta^1 (contravariant).
+    //  */
+    // Inline auto beta1(const coord_t<D>& x) const -> real_t {
+    //   real_t r { x[0] * dr + this->x1_min };
+    //   real_t theta { x[1] * dtheta };
+    //   real_t cth { math::cos(theta) };
+
+    //   real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
+    //   return (z / (ONE + z)) * dr_inv;
+    // }
+
+    // /**
+    //  * Compute the square root of the determinant of h-matrix divided by sin(theta).
+    //  *
+    //  * @param x coordinate array in code units
+    //  * @returns sqrt(det(h))/sin(theta).
+    //  */
+    // Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+    //   return h_22(x) / alpha(x);
+    // }
     /**
      * Compute the fiducial minimum cell volume.
      *
