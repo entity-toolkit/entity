@@ -84,7 +84,7 @@ namespace ntt {
         auto dz { (m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2]) };
         NTTHostErrorIf((dx != dz), "dx != dz in minkowski");
       }
-    } else if (m_coordinates == "spherical") {
+    } else if (m_coordinates == "spherical" || m_coordinates == "qspherical") {
       // spherical (quasi-spherical) grid
       NTTHostErrorIf((m_extent.size() < 2), "not enough values in `extent` input");
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
@@ -96,12 +96,16 @@ namespace ntt {
       m_metric_parameters[2] = get<real_t>("domain", "sph_rabsorb");
       m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));
 
+      // GR specific
       if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")
           || (m_metric == "schwarzschild")) {
         real_t spin { get<real_t>("domain", "a", ZERO) };
         real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;
         m_metric_parameters[5] = rh;
+
+        m_gr_pusher_epsilon = get<real_t>("algorithm", "gr_pusher_epsilon", (real_t)(1.0e-6));
+        m_gr_pusher_niter   = get<int>("algorithm", "gr_pusher_niter", 10);
       }
 
       m_extent.push_back(0.0);

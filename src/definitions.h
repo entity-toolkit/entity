@@ -124,7 +124,7 @@ namespace ntt {
     const std::vector<std::string> pushers = { "Boris", "Photon", "None" };
     const std::vector<std::string> boundaries
       = { "PERIODIC", "ABSORB", "CUSTOM", "OPEN", "AXIS" };
-    const std::vector<std::string> outputs = { "disabled", "HDF5" };
+    const std::vector<std::string> outputs = { "disabled", "HDF5", "BP5" };
   }    // namespace options
 
   namespace defaults {

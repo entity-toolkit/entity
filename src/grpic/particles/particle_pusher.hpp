@@ -24,7 +24,8 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
     Particles<D, GRPICEngine> m_particles;
     const real_t              m_coeff, m_dt;
-    const int                 m_ni2;
+    const real_t              m_epsilon;
+    const int                 m_niter;
 
   public:
     /**
@@ -37,12 +38,15 @@ namespace ntt {
     Pusher_kernel(const Meshblock<D, GRPICEngine>& mblock,
                   const Particles<D, GRPICEngine>& particles,
                   const real_t&                    coeff,
-                  const real_t&                    dt)
+                  const real_t&                    dt,
+                  const real_t&                    epsilon,
+                  const int&                       niter)
       : m_mblock(mblock),
         m_particles(particles),
         m_coeff(coeff),
         m_dt(dt),
-        m_ni2 { mblock.Ni2() } {}
+        m_epsilon(epsilon),
+        m_niter(niter) {}
 
     /**
      * @brief Loop over all active particles of the given species and call the appropriate
@@ -216,21 +220,21 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                               Geodesic pusher                              */
   /* -------------------------------------------------------------------------- */
-  namespace {
-    inline constexpr real_t EPSILON { 1e-2 };
-    inline constexpr real_t HALF_OVR_EPSILON { HALF / EPSILON };
-    inline constexpr int    N_ITER { 10 };
-  }    // namespace
+  // namespace {
+  //   inline constexpr real_t EPSILON { 1e-2 };
+  //   inline constexpr real_t HALF_OVR_EPSILON { HALF / EPSILON };
+  //   inline constexpr int    N_ITER { 10 };
+  // }    // namespace
 
 #define DERIVATIVE_IN_R(func, x)                                                              \
-  (HALF_OVR_EPSILON                                                                           \
-   * (m_mblock.metric.func({ x[0] + EPSILON, x[1] })                                          \
-      - m_mblock.metric.func({ x[0] - EPSILON, x[1] })))
+  ((m_mblock.metric.func({ x[0] + m_epsilon, x[1] })                                          \
+    - m_mblock.metric.func({ x[0] - m_epsilon, x[1] }))                                       \
+   / (TWO * m_epsilon))
 
 #define DERIVATIVE_IN_TH(func, x)                                                             \
-  (HALF_OVR_EPSILON                                                                           \
-   * (m_mblock.metric.func({ x[0], x[1] + EPSILON })                                          \
-      - m_mblock.metric.func({ x[0], x[1] - EPSILON })))
+  ((m_mblock.metric.func({ x[0], x[1] + m_epsilon })                                          \
+    - m_mblock.metric.func({ x[0], x[1] - m_epsilon }))                                       \
+   / (TWO * m_epsilon))
 
   template <>
   template <typename T>
@@ -241,9 +245,11 @@ namespace ntt {
     // initialize midpoint values & updated values
     vec_t<Dim3> vp_mid { ZERO };
     vec_t<Dim3> vp_mid_cntrv { ZERO };
+    vp_upd[0] = vp[0];
+    vp_upd[1] = vp[1];
+    vp_upd[2] = vp[2];
 
-#pragma unroll
-    for (int i = 0; i < N_ITER; i++) {
+    for (auto i { 0 }; i < m_niter; ++i) {
       // find midpoint values
       vp_mid[0] = HALF * (vp[0] + vp_upd[0]);
       vp_mid[1] = HALF * (vp[1] + vp_upd[1]);
@@ -285,9 +291,10 @@ namespace ntt {
                                                           coord_t<Dim2>&       xp_upd) const {
     vec_t<Dim3>   vp_cntrv { ZERO };
     coord_t<Dim2> xp_mid { ZERO };
+    xp_upd[0] = xp[0];
+    xp_upd[1] = xp[1];
 
-#pragma unroll
-    for (int i = 0; i < N_ITER; i++) {
+    for (auto i { 0 }; i < m_niter; ++i) {
       // find midpoint values
       xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
       xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
@@ -315,9 +322,13 @@ namespace ntt {
     // initialize midpoint values & updated values
     vec_t<Dim2> xp_mid { ZERO };
     vec_t<Dim3> vp_mid { ZERO }, vp_mid_cntrv { ZERO };
+    xp_upd[0] = xp[0];
+    xp_upd[1] = xp[1];
+    vp_upd[0] = vp[0];
+    vp_upd[1] = vp[1];
+    vp_upd[2] = vp[2];
 
-#pragma unroll
-    for (int i = 0; i < N_ITER; i++) {
+    for (auto i { 0 }; i < m_niter; ++i) {
       xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
       xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
 
@@ -455,13 +466,12 @@ namespace ntt {
       xp[0] = get_prtl_x1(m_particles, p);
       xp[1] = get_prtl_x2(m_particles, p);
 
-      coord_t<Dim2> xp_upd { xp[0], xp[1] };
-      vec_t<Dim3>   vp_upd { vp[0], vp[1], vp[2] };
-
       /* ----------------------------- Leapfrog pusher ---------------------------- */
       // u_i(n - 1/2) -> u_i(n + 1/2)
+      vec_t<Dim3> vp_upd { ZERO };
       GeodesicMomentumPush<Photon_t>(Photon_t {}, xp, vp, vp_upd);
       // x^i(n) -> x^i(n + 1)
+      coord_t<Dim2> xp_upd { ZERO };
       GeodesicCoordinatePush<Photon_t>(Photon_t {}, xp, vp_upd, xp_upd);
       // update phi
       UpdatePhi<Photon_t>(Photon_t {},
@@ -502,18 +512,16 @@ namespace ntt {
       xp[0] = get_prtl_x1(m_particles, p);
       xp[1] = get_prtl_x2(m_particles, p);
 
-      coord_t<Dim2> xp_upd { xp[0], xp[1] };
-
       // vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO }, Bp_hat { ZERO };
       // interpolateFields(p, Dp_cntrv, Bp_cntrv);
       // m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
       // m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
 
-      vec_t<Dim3>   vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
-      vec_t<Dim3>   vp_upd { vp[0], vp[1], vp[2] };
+      vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
 
       /* -------------------------------- Leapfrog -------------------------------- */
       /* u_i(n - 1/2) -> u*_i(n - 1/2) */
+      vec_t<Dim3> vp_upd { ZERO };
       // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       // vp[0] = vp_upd[0];
       // vp[1] = vp_upd[1];
@@ -526,6 +534,7 @@ namespace ntt {
       /* u*_i(n + 1/2) -> u_i(n + 1/2) */
       // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       /* x^i(n) -> x^i(n + 1) */
+      coord_t<Dim2> xp_upd { ZERO };
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
 
       // update phi

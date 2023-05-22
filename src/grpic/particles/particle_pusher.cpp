@@ -15,7 +15,8 @@ namespace ntt {
                                            ? species.charge() / species.mass()
                                            : ZERO };
       const real_t     coeff { charge_ovr_mass * HALF * dt / params.larmor0() };
-      Pusher_kernel<D> pusher(mblock, species, coeff, dt);
+      Pusher_kernel<D> pusher(
+        mblock, species, coeff, dt, params.grPusherEpsilon(), params.grPusherNiter());
       pusher.apply();
     }
     NTTLog();

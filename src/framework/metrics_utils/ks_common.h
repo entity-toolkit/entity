@@ -7,55 +7,55 @@
 #  pragma diag_suppress 20
 #endif
 
-/**
- * Compute the square root of the determinant of h-matrix.
- *
- * @param x coordinate array in code units
- * @returns sqrt(det(h)).
- */
-Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-  return math::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
-}
+// /**
+//  * Compute the square root of the determinant of h-matrix.
+//  *
+//  * @param x coordinate array in code units
+//  * @returns sqrt(det(h)).
+//  */
+// Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+//   return math::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
+// }
 
-/**
- * Compute inverse metric component 11 from h_ij.
- *
- * @param x coordinate array in code units
- * @returns h^11 (contravariant, upper index) metric component.
- */
-Inline auto h11(const coord_t<D>& x) const -> real_t {
-  return h_33(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
-}
+// /**
+//  * Compute inverse metric component 11 from h_ij.
+//  *
+//  * @param x coordinate array in code units
+//  * @returns h^11 (contravariant, upper index) metric component.
+//  */
+// Inline auto h11(const coord_t<D>& x) const -> real_t {
+//   return h_33(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+// }
 
-/**
- * Compute inverse metric component 22 from h_ij.
- *
- * @param x coordinate array in code units
- * @returns h^22 (contravariant, upper index) metric component.
- */
-Inline auto h22(const coord_t<D>& x) const -> real_t {
-  return ONE / h_22(x);
-}
+// /**
+//  * Compute inverse metric component 22 from h_ij.
+//  *
+//  * @param x coordinate array in code units
+//  * @returns h^22 (contravariant, upper index) metric component.
+//  */
+// Inline auto h22(const coord_t<D>& x) const -> real_t {
+//   return ONE / h_22(x);
+// }
 
-/**
- * Compute inverse metric component 33 from h_ij.
- *
- * @param x coordinate array in code units
- * @returns h^33 (contravariant, upper index) metric component.
- */
-Inline auto h33(const coord_t<D>& x) const -> real_t {
-  return h_11(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
-}
+// /**
+//  * Compute inverse metric component 33 from h_ij.
+//  *
+//  * @param x coordinate array in code units
+//  * @returns h^33 (contravariant, upper index) metric component.
+//  */
+// Inline auto h33(const coord_t<D>& x) const -> real_t {
+//   return h_11(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+// }
 
-/**
- * Compute inverse metric component 13 from h_ij.
- *
- * @param x coordinate array in code units
- * @returns h^13 (contravariant, upper index) metric component.
- */
-Inline auto h13(const coord_t<D>& x) const -> real_t {
-  return -h_13(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
-}
+// /**
+//  * Compute inverse metric component 13 from h_ij.
+//  *
+//  * @param x coordinate array in code units
+//  * @returns h^13 (contravariant, upper index) metric component.
+//  */
+// Inline auto h13(const coord_t<D>& x) const -> real_t {
+//   return -h_13(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+// }
 
 /**
  * Vector conversion from hatted to contravariant basis.

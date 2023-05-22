@@ -16,7 +16,7 @@ namespace ntt {
    * @brief Storage class for user-defined & implied parameter values.
    */
   class SimulationParams {
-    // User defined simualation title
+    // User defined simulation title
     std::string                                 m_title;
     // User defined CFL
     real_t                                      m_cfl;
@@ -32,6 +32,10 @@ namespace ntt {
     real_t                                      m_sigma0;
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies>                m_species;
+
+    // GR specific
+    real_t                                      m_gr_pusher_epsilon;
+    int                                         m_gr_pusher_niter;
 
     // Use particle weights
     bool                                        m_use_weights;
@@ -112,6 +116,18 @@ namespace ntt {
      */
     [[nodiscard]] auto correction() const -> const real_t& {
       return m_correction;
+    }
+    /**
+     * @brief Get the GR pusher epsilon.
+     */
+    [[nodiscard]] auto grPusherEpsilon() const -> const real_t& {
+      return m_gr_pusher_epsilon;
+    }
+    /**
+     * @brief Get the GR pusher niter.
+     */
+    [[nodiscard]] auto grPusherNiter() const -> const int& {
+      return m_gr_pusher_niter;
     }
     /**
      * @brief Get the total runtime in physical units.
