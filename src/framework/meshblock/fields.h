@@ -205,6 +205,10 @@ namespace ntt {
      * @note Address : em0(i, j, k, em::***).
      */
     ndfield_t<D, 6>      em0;
+    /**
+     * A_phi vector potential component (for GR).
+     */
+    array_t<real_t*>     A3;
 
     /**
      * @brief Constructor for the fields container. Also sets the active cell sizes and ranges.

@@ -12,6 +12,7 @@
 
 #include "fields.cpp"
 #include "meshblock.cpp"
+#include "meshblock_output.cpp"
 #include "output_flds.cpp"
 #include "output_prtls.cpp"
 #include "particles.cpp"

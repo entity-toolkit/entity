@@ -158,7 +158,7 @@ namespace ntt {
     } else if (prtl.find("W") == 0) {
       id = PrtlID::W;
     } else {
-      NTTHostError("Invalid particle quantity ");
+      NTTHostError("Invalid particle quantity");
     }
     return OutputParticles(StringizePrtlID(id), InterpretInput_getspecies(prtl), id);
   }

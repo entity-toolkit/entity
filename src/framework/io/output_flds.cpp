@@ -63,24 +63,35 @@ namespace ntt {
                         adios2::Engine&         writer,
                         const SimulationParams& params,
                         Meshblock<D, S>&        mblock) const {
+    int prepare_flag = PrepareOutput_Default;
     if constexpr (S == GRPICEngine) {
-      if (m_id == FieldID::E || m_id == FieldID::H) {
-        NTTHostError("Output of E and H (aux) fields is not supported yet");
+      // do not convert to hat fields for GRPIC
+      // just convert to spherical coordinates
+      prepare_flag = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToSphCntrv;
+      if (m_id == FieldID::E) {
+        NTTHostError("Output of E (aux) fields is not supported");
       }
     }
-    if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)
-        || (m_id == FieldID::H)) {
-      mblock.PrepareFieldsForOutput();
+    if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)) {
+      mblock.PrepareFieldsForOutput(prepare_flag);
       ImposeEmptyContent(mblock.bckp_content);
       std::vector<em>      comp_options;
       std::vector<Content> content_options
         = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
             Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
       if (m_id == FieldID::E || m_id == FieldID::D) {
-        comp_options = { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 };
-      } else if (m_id == FieldID::B || m_id == FieldID::H) {
+        comp_options = { em::ex1, em::ex2, em::ex3 };
+      } else if (m_id == FieldID::B) {
         comp_options = { em::bx1, em::bx2, em::bx3 };
       }
+      for (std::size_t i { 0 }; i < comp.size(); ++i) {
+        auto comp_id = comp_options[comp[i][0] - 1];
+        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
+      }
+    } else if (m_id == FieldID::H) {
+      // for GRPIC write H_phi-field as is
+      std::vector<em> comp_options = { em::hx1, em::hx2, em::hx3 };
+      Kokkos::deep_copy(mblock.bckp, mblock.aux);
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         auto comp_id = comp_options[comp[i][0] - 1];
         PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));

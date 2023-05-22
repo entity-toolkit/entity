@@ -16,6 +16,7 @@ namespace ntt {
     PrepareOutput_None               = 0,
     PrepareOutput_InterpToCellCenter = 1 << 0,
     PrepareOutput_ConvertToHat       = 1 << 1,
+    PrepareOutput_ConvertToSphCntrv  = 1 << 2,
     PrepareOutput_Default = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToHat,
   };
   typedef int PrepareOutputFlags;
@@ -105,7 +106,9 @@ namespace ntt {
      * @brief Used for outputting/visualizing the fields.
      * @note Specializations defined.
      */
-    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
+    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default) {
+      NTTHostError("not implemented");
+    }
 
     /**
      * @brief Currents to hatted basis.
