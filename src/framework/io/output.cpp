@@ -140,7 +140,8 @@ namespace ntt {
     if (is_moment) {
       species = InterpretInput_getspecies(fld);
     } else if (is_field) {
-      comps = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1) });
+      // always write all the field components
+      comps.push_back({ 1, 2, 3 });
     }
     if (id == FieldID::T) {
       comps

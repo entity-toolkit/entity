@@ -63,50 +63,62 @@ namespace ntt {
                         adios2::Engine&         writer,
                         const SimulationParams& params,
                         Meshblock<D, S>&        mblock) const {
-    int prepare_flag = PrepareOutput_Default;
+    int prepare_flag = PrepareOutput_None;
     if constexpr (S == GRPICEngine) {
-      // do not convert to hat fields for GRPIC
-      // just convert to spherical coordinates
-      prepare_flag = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToSphCntrv;
+      prepare_flag = PrepareOutput_ConvertToSphCntrv;
       if (m_id == FieldID::E) {
         NTTHostError("Output of E (aux) fields is not supported");
       }
+    } else if constexpr (S == PICEngine) {
+      prepare_flag = PrepareOutput_ConvertToHat;
     }
-    if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)) {
-      mblock.PrepareFieldsForOutput(prepare_flag);
-      ImposeEmptyContent(mblock.bckp_content);
-      std::vector<em>      comp_options;
-      std::vector<Content> content_options
-        = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
-            Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
-      if (m_id == FieldID::E || m_id == FieldID::D) {
-        comp_options = { em::ex1, em::ex2, em::ex3 };
-      } else if (m_id == FieldID::B) {
-        comp_options = { em::bx1, em::bx2, em::bx3 };
+
+    auto is_moment = (id() == FieldID::T || id() == FieldID::Rho || id() == FieldID::Nppc
+                      || id() == FieldID::N);
+    auto is_field
+      = (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D || id() == FieldID::H);
+    auto is_current = (id() == FieldID::J);
+    auto is_efield  = (id() == FieldID::E || id() == FieldID::D);
+
+    if (is_field) {
+      NTTHostErrorIf(comp.size() != 3, "Field is always 3 components for output");
+      std::vector<int> components;
+      int              interp_flag = PrepareOutput_None;
+      if (is_efield) {
+        components.push_back(em::ex1);
+        components.push_back(em::ex2);
+        components.push_back(em::ex3);
+        interp_flag = PrepareOutput_InterpToCellCenterFromEdges;
+      } else {
+        components.push_back(em::bx1);
+        components.push_back(em::bx2);
+        components.push_back(em::bx3);
+        interp_flag = PrepareOutput_InterpToCellCenterFromFaces;
       }
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
+      Kokkos::deep_copy(mblock.bckp, mblock.em);
+      mblock.PrepareFieldsForOutput(mblock.em,
+                                    mblock.bckp,
+                                    components[0],
+                                    components[1],
+                                    components[2],
+                                    interp_flag | prepare_flag);
+      for (auto i { 0 }; i < 3; ++i) {
+        PutField<D, 6>(io, writer, name(i), mblock.bckp, components[i]);
       }
-    } else if (m_id == FieldID::H) {
-      // for GRPIC write H_phi-field as is
-      std::vector<em> comp_options = { em::hx1, em::hx2, em::hx3 };
-      Kokkos::deep_copy(mblock.bckp, mblock.aux);
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
+    } else if (is_current) {
+      NTTHostErrorIf(comp.size() != 3, "Currents are always 3 components for output");
+      Kokkos::deep_copy(mblock.buff, mblock.cur);
+      mblock.PrepareCurrentsForOutput(mblock.cur,
+                                      mblock.buff,
+                                      cur::jx1,
+                                      cur::jx2,
+                                      cur::jx3,
+                                      PrepareOutput_InterpToCellCenterFromEdges | prepare_flag);
+      std::vector<int> components = { cur::jx1, cur::jx2, cur::jx3 };
+      for (auto i { 0 }; i < 3; ++i) {
+        PutField<D, 3>(io, writer, name(i), mblock.buff, components[i]);
       }
-    } else if (m_id == FieldID::J) {
-      mblock.PrepareCurrentsForOutput();
-      ImposeEmptyContent(mblock.cur_content);
-      std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
-      std::vector<Content> content_options
-        = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 3>(io, writer, name(i), mblock.cur, (int)(comp_id));
-      }
-    } else {
+    } else if (is_moment) {
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         // no smoothing for FieldID::Nppc
         mblock.ComputeMoments(params,
@@ -117,6 +129,8 @@ namespace ntt {
                               m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
         PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
       }
+    } else {
+      NTTHostError("Unrecognized field type for output");
     }
   }
 }    // namespace ntt

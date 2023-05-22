@@ -80,9 +80,6 @@ namespace ntt {
                                        const int&              buff_ind,
                                        const short&            smooth) {
     NTTLog();
-    // clear the buffer
-    std::vector<Content> A = { this->buff_content[buff_ind] };
-    AssertEmptyContent(A);
     std::size_t ni1 = this->Ni1(), ni2 = this->Ni2(), ni3 = this->Ni3();
     real_t      weight = ONE / math::pow(2.0 * smooth + 1.0, static_cast<int>(D));
     if (field != FieldID::Nppc) {

@@ -87,7 +87,7 @@ namespace ntt {
       if constexpr (D == Dim2) {
         return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
       } else {
-        return dphi_sqr * A(r, theta) / Sigma(r, theta);
+        return dphi_sqr * A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
       }
     }
     Inline auto h_13(const coord_t<D>& x) const -> real_t {

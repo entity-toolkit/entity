@@ -13,11 +13,11 @@
 
 namespace ntt {
   enum PrepareOutputFlags_ {
-    PrepareOutput_None               = 0,
-    PrepareOutput_InterpToCellCenter = 1 << 0,
-    PrepareOutput_ConvertToHat       = 1 << 1,
-    PrepareOutput_ConvertToSphCntrv  = 1 << 2,
-    PrepareOutput_Default = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToHat,
+    PrepareOutput_None                        = 0,
+    PrepareOutput_InterpToCellCenterFromEdges = 1 << 0,
+    PrepareOutput_InterpToCellCenterFromFaces = 1 << 1,
+    PrepareOutput_ConvertToHat                = 1 << 2,
+    PrepareOutput_ConvertToSphCntrv           = 1 << 3
   };
   typedef int PrepareOutputFlags;
 
@@ -102,20 +102,28 @@ namespace ntt {
     /* ----------------- Additional conversions and computations ---------------- */
 
     /**
-     * @brief Fields to hatted basis.
-     * @brief Used for outputting/visualizing the fields.
-     * @note Specializations defined.
+     * @brief Interpolate and convert fields to prepare for output.
+     * @brief Details provided using the `PrepareOutputFlags`.
+     * @brief The result is stored inside the buffer.
      */
-    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default) {
-      NTTHostError("not implemented");
-    }
+    void PrepareFieldsForOutput(const ndfield_t<D, 6>&    field,
+                                ndfield_t<D, 6>&          buffer,
+                                const int&                fx1,
+                                const int&                fx2,
+                                const int&                fx3,
+                                const PrepareOutputFlags& flags);
 
     /**
-     * @brief Currents to hatted basis.
-     * @brief Used for outputting/visualizing the currents.
-     * @note Specializations defined.
+     * @brief Interpolate and convert currents to prepare for output.
+     * @brief Details provided using the `PrepareOutputFlags`.
+     * @brief The result is stored inside the buffer.
      */
-    void PrepareCurrentsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
+    void PrepareCurrentsForOutput(const ndfield_t<D, 3>&    currents,
+                                  ndfield_t<D, 3>&          buffer,
+                                  const int&                fx1,
+                                  const int&                fx2,
+                                  const int&                fx3,
+                                  const PrepareOutputFlags& flags);
 
     /**
      * @brief Compute particle moment for output or other usage.
@@ -125,8 +133,6 @@ namespace ntt {
      * @param prtl_species Particle species to compute the moment for.
      * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
      * @param smooth Smoothing order (default: 2).
-     *
-     * @note Content of the meshblock::buff(*, buff_ind) has to be Content::empty.
      */
     void ComputeMoments(const SimulationParams& params,
                         const FieldID&          field,
@@ -135,7 +141,6 @@ namespace ntt {
                         const int&              buff_ind,
                         const short&            smooth = 2);
   };
-
 }    // namespace ntt
 
 #endif

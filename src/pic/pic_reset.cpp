@@ -60,7 +60,6 @@ namespace ntt {
   void PIC<D>::ResetFields() {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.em, ZERO);
-    ImposeEmptyContent(mblock.em_content);
   }
 
   /**
@@ -71,9 +70,7 @@ namespace ntt {
   void PIC<D>::ResetCurrents() {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.buff, ZERO);
-    ImposeEmptyContent(mblock.buff_content);
     Kokkos::deep_copy(mblock.cur, ZERO);
-    ImposeEmptyContent(mblock.cur_content);
   }
 }    // namespace ntt
 

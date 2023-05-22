@@ -191,13 +191,6 @@ namespace ntt {
      *          u_prtl   at 1/2
      */
     auto& mblock = this->meshblock;
-    ImposeContent(mblock.em_content,
-                  { Content::ex1_cntrv,
-                    Content::ex2_cntrv,
-                    Content::ex3_cntrv,
-                    Content::bx1_cntrv,
-                    Content::bx2_cntrv,
-                    Content::bx3_cntrv });
   }
 
   template <Dimension D>
@@ -429,10 +422,6 @@ namespace ntt {
 
     this->PrintDiagnostics(
       this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations);
-
-    ImposeEmptyContent(mblock.buff_content);
-    ImposeEmptyContent(mblock.cur_content);
-    ImposeEmptyContent(mblock.bckp_content);
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

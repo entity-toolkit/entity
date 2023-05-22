@@ -24,8 +24,6 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
 
-    AssertEmptyContent(mblock.cur_content);
-
     auto scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
       if (species.charge() != 0.0) {
@@ -37,9 +35,6 @@ namespace ntt {
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
-
-    ImposeContent(mblock.cur_content,
-                  { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly });
 
     NTTLog();
   }
