@@ -50,7 +50,7 @@ elseif(${engine} STREQUAL "pic")
   set(metrics "minkowski" "spherical" "qspherical")
 elseif(${engine} STREQUAL "grpic")
   set(default_metric "qkerr_schild")
-  set(metrics "kerr_schild" "qkerr_schild")
+  set(metrics "kerr_schild" "qkerr_schild" "schwarzschild")
 endif()
 
 set(metric ${default_metric} CACHE STRING "Metric")
