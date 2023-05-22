@@ -76,9 +76,6 @@ if(NOT ${engine} STREQUAL "sandbox")
     list(APPEND problem_generators ${new_pgen})
   endforeach()
 
-  # list(FIND problem_generators ${pgen} PGEN_FOUND)
-
-  # if(${PGEN_FOUND} EQUAL -1)
   if(NOT ${pgen} IN_LIST problem_generators)
     message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}.")
   else()
@@ -196,5 +193,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 # ------------------------------- Main source ------------------------------ #
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
+
+# ---------------------------------- Tests --------------------------------- #
+include(CTest)
+
+if(TESTS)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
+endif(TESTS)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
