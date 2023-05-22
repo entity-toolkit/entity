@@ -24,14 +24,6 @@
 
 #include <type_traits>
 
-// clang-format off
-#define AccelExeSpace @ACC_EXE_SPACE@
-#define AccelMemSpace @ACC_MEM_SPACE@
-
-#define HostExeSpace  @HOST_EXE_SPACE@
-#define HostMemSpace  @HOST_MEM_SPACE@
-// clang-format on
-
 #define Lambda      KOKKOS_LAMBDA
 #define ClassLambda KOKKOS_CLASS_LAMBDA
 #define Function    KOKKOS_FUNCTION

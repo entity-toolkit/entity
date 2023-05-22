@@ -60,6 +60,7 @@ namespace ntt {
     std::vector<std::vector<BoundaryCondition>> m_boundaries;
     // User-defined metric.
     std::string                                 m_metric;
+    std::string                                 m_coordinates;
     // User-defined real-valued parameters for the metric [10 max].
     real_t                                      m_metric_parameters[10];
 
@@ -183,10 +184,16 @@ namespace ntt {
       return m_boundaries;
     }
     /**
-     * @brief Get the metric.
+     * @brief Get the metric label.
      */
     [[nodiscard]] auto metric() const -> const std::string& {
       return m_metric;
+    }
+    /**
+     * @brief Get the coordinates label.
+     */
+    [[nodiscard]] auto coordinates() const -> const std::string& {
+      return m_coordinates;
     }
     /**
      * @brief Get the metric parameters.

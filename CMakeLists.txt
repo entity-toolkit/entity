@@ -8,6 +8,8 @@ project(${PROJECT_NAME}
 )
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 
+add_compile_definitions(ENTITY_VERSION=\"${PROJECT_VERSION}\")
+
 # ----------------------------- Defaults ---------------------------------- #
 set(default_engine "pic")
 set(default_precision "single")
@@ -131,7 +133,7 @@ endif()
 
 # set memory space
 if(${Kokkos_ENABLE_CUDA})
-  add_definitions(-DENABLE_GPU)
+  add_definitions("-D ENABLE_GPU")
   set(ACC_MEM_SPACE Kokkos::CudaSpace)
 else()
   set(ACC_MEM_SPACE Kokkos::HostSpace)
@@ -153,6 +155,11 @@ if(${Kokkos_ENABLE_OPENMP})
 else()
   set(HOST_EXE_SPACE Kokkos::Serial)
 endif()
+
+add_definitions("-D AccelMemSpace=${ACC_MEM_SPACE}")
+add_definitions("-D AccelExeSpace=${ACC_EXE_SPACE}")
+add_definitions("-D HostMemSpace=${HOST_MEM_SPACE}")
+add_definitions("-D HostExeSpace=${HOST_EXE_SPACE}")
 
 # ----------------------------- Adios2 settings ---------------------------- #
 set(output ${default_output} CACHE BOOL "Enable output")

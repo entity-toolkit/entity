@@ -50,6 +50,7 @@ namespace ntt {
     m_io.DefineVariable<real_t>("Time");
 
     m_io.DefineAttribute<std::string>("Metric", mblock.metric.label);
+    m_io.DefineAttribute<std::string>("Coordinates", params.coordinates());
     m_io.DefineAttribute<std::string>("Engine", stringizeSimulationEngine(S));
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
       m_io.DefineAttribute<real_t>("X1Min", mblock.metric.x1_min);

@@ -12,18 +12,11 @@ set(ENGINE_FLAG ${engine}_engine)
 string(TOUPPER ${ENGINE_FLAG} ENGINE_FLAG)
 set(METRIC_FLAG ${metric}_metric)
 string(TOUPPER ${METRIC_FLAG} METRIC_FLAG)
-set(METRIC_STRING ${metric})
+set(SIMULATION_METRIC ${metric})
 
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/config.h"
-)
-
-# wrapper file
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/wrapper/kokkos.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/wrapper.h"
-)
+add_definitions("-D ${ENGINE_FLAG} -D ${METRIC_FLAG}")
+add_compile_definitions(SIMULATION_METRIC=\"${metric}\")
+add_compile_definitions(METRIC_HEADER=\"metrics/${metric}.h\")
 
 # problem generator
 if(NOT ${PGEN_FOUND} EQUAL -1)
@@ -33,18 +26,13 @@ if(NOT ${PGEN_FOUND} EQUAL -1)
   )
 endif()
 
-# metric file
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/framework/metrics/${metric}.h"
-  "${CMAKE_CURRENT_BINARY_DIR}/metric.h"
-)
-
 add_library(${FRAMEWORK} STATIC)
 add_library(${SIMENGINE} STATIC)
 add_library(${WRAPPER} STATIC)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/wrapper)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/meshblock)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/io)

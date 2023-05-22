@@ -400,32 +400,19 @@ class Data:
             "Tty": "Py",
             "Ttz": "Pz",
         }
-        _polar = {
-            "r": "r",
-            "theta": "θ" if useGreek else "th",
-            "phi": "φ" if useGreek else "ph",
-            "1": "r",
-            "2": "θ" if useGreek else "th",
-            "3": "φ" if useGreek else "ph",
-        }
         CoordinateDict = {
-            "minkowski": {"x": "x", "y": "y", "z": "z", "1": "x", "2": "y", "3": "z"},
-            "spherical": _polar,
-            "qspherical": _polar,
-            "kerr_schild": _polar,
-            "qkerr_schild": _polar,
-            "schwarzschild": _polar,
-        }
-        _prtl_polar = {
-            "X1": "r",
-            "X2": "θ" if useGreek else "th",
-            "X3": "φ" if useGreek else "ph",
-            "U1": "ur",
-            "U2": "uΘ" if useGreek else "uth",
-            "U3": "uφ" if useGreek else "uph",
+            "cartesian": {"x": "x", "y": "y", "z": "z", "1": "x", "2": "y", "3": "z"},
+            "spherical": {
+                "r": "r",
+                "theta": "θ" if useGreek else "th",
+                "phi": "φ" if useGreek else "ph",
+                "1": "r",
+                "2": "θ" if useGreek else "th",
+                "3": "φ" if useGreek else "ph",
+            },
         }
         PrtlDict = {
-            "minkowski": {
+            "cartesian": {
                 "X1": "x",
                 "X2": "y",
                 "X3": "z",
@@ -433,11 +420,14 @@ class Data:
                 "U2": "uy",
                 "U3": "uz",
             },
-            "spherical": _prtl_polar,
-            "qspherical": _prtl_polar,
-            "kerr_schild": _prtl_polar,
-            "qkerr_schild": _prtl_polar,
-            "schwarzschild": _prtl_polar,
+            "spherical": {
+                "X1": "r",
+                "X2": "θ" if useGreek else "th",
+                "X3": "φ" if useGreek else "ph",
+                "U1": "ur",
+                "U2": "uΘ" if useGreek else "uth",
+                "U3": "uφ" if useGreek else "uph",
+            },
         }
         self.fname = fname
         try:
@@ -449,8 +439,8 @@ class Data:
         ngh = self.file.attrs["NGhosts"]
         layout = "right" if self.file.attrs["LayoutRight"] == 1 else "left"
         dimension = self.file.attrs["Dimension"]
-        metric = self.file.attrs["Metric"].decode("UTF-8")
-        coords = list(CoordinateDict[metric].values())[::-1][-dimension:]
+        coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
+        coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]
         times = np.array([self.file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
 
         if dimension == 1:
@@ -494,7 +484,7 @@ class Data:
                 lambda x, y: x.replace(*y)
                 if "_" not in x
                 else "_".join([x.split("_")[0].replace(*y)] + x.split("_")[1:]),
-                [k, *list(CoordinateDict[metric].items())],
+                [k, *list(CoordinateDict[coordinates].items())],
             )
             k_ = reduce(
                 lambda x, y: x.replace(*y),
@@ -534,7 +524,7 @@ class Data:
         for s in species:
             prtl_data = {}
             for q in [f"X1_{s}", f"X2_{s}", f"X3_{s}", f"U1_{s}", f"U2_{s}", f"U3_{s}"]:
-                q_ = PrtlDict[metric][q.split("_")[0]]
+                q_ = PrtlDict[coordinates][q.split("_")[0]]
                 if q not in prtls:
                     continue
                 if q not in prtl_data.keys():

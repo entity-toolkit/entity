@@ -2,6 +2,9 @@
   "env": {
     "myDefaultIncludePath": [
       "${workspaceFolder}/**",
+      "${workspaceFolder}/src/**",
+      "${workspaceFolder}/src/framework/**",
+      "${workspaceFolder}/extern/**",
       "${workspaceFolder}/../kokkos/install/include",
       "${workspaceFolder}/../ADIOS2/install/include"
     ],
@@ -11,9 +14,8 @@
       "SINGLE_PRECISION",
       "OMPENABLED",
       "OUTPUT_ENABLED",
-      // "MINKOWSKI_METRIC",
-      // "QSPHERICAL_METRIC",
-      "KERR_SCHILD_METRIC"
+      "SIMULATION_METRIC=\"kerr_schild\"",
+      "METRIC_HEADER=\"metrics/kerr_schild.h\""
     ]
   },
   "configurations": [

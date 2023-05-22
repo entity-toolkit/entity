@@ -169,7 +169,6 @@ PrintChoices("Debug mode"
 message(STATUS ADIOS2_VERSION: ${adios2_VERSION})
 
 if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
-  message(STATUS "HERE")
   get_directory_property(adios2_VERSION
     DIRECTORY ${adios2_BUILD_DIR}
     DEFINITION ADIOS2_VERSION)
@@ -277,8 +276,12 @@ message("${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}")
 
-string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" Kokkos_ROOT_rel "${Kokkos_ROOT}")
-message("  - Kokkos [${Magenta}Kokkos_ROOT${ColorReset}]:\t\t  ${Kokkos_ROOT_rel} v${Kokkos_VERSION}\n")
+if(NOT ${Kokkos_FETCHED})
+  string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" Kokkos_ROOT_rel "${Kokkos_SRC}")
+  message("  - Kokkos [${Magenta}Kokkos_ROOT${ColorReset}]:\t\t  ${Kokkos_ROOT_rel} v${Kokkos_VERSION}\n")
+else()
+  message("  - Kokkos:\t\t\t\t  v${Kokkos_VERSION}\n")
+endif()
 
 if(NOT "${adios2_ROOT}" STREQUAL "" AND ${output} STREQUAL "ON")
   string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_ROOT}")

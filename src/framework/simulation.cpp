@@ -3,7 +3,6 @@
 #include "wrapper.h"
 
 #include "fields.h"
-#include "metric.h"
 #include "progressbar.h"
 #include "timer.h"
 #include "utils.h"

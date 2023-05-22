@@ -3,7 +3,7 @@
 
 #include "wrapper.h"
 
-#include "metric.h"
+#include METRIC_HEADER
 
 #include <vector>
 

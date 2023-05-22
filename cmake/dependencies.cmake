@@ -12,6 +12,7 @@ function(check_internet_connection)
     execute_process(
       COMMAND ping 8.8.8.8 -c 2
       RESULT_VARIABLE NO_CONNECTION
+      OUTPUT_QUIET
     )
 
     if(NO_CONNECTION GREATER 0)
@@ -26,6 +27,7 @@ endfunction()
 
 function(find_or_fetch_dependency package_name header_only)
   if(NOT header_only)
+    message(STATUS ${${package_name}_ROOT})
     find_package(${package_name} QUIET)
   endif()
 
@@ -43,7 +45,6 @@ function(find_or_fetch_dependency package_name header_only)
       set(lower_pckg_name ${package_name})
       string(TOLOWER ${lower_pckg_name} lower_pckg_name)
 
-      set(${package_name}_ROOT ${CMAKE_CURRENT_BINARY_DIR}/_deps/${lower_pckg_name}-build CACHE PATH "Path to ${package_name} build")
       set(${package_name}_SRC ${CMAKE_CURRENT_BINARY_DIR}/_deps/${lower_pckg_name}-src CACHE PATH "Path to ${package_name} src")
       set(${package_name}_FETCHED TRUE CACHE BOOL "Whether ${package_name} was fetched")
       message(STATUS "${Green}${package_name} fetched.${ColorReset}")
