@@ -23,7 +23,6 @@ namespace ntt {
     adios2::ADIOS                m_adios;
     adios2::IO                   m_io;
     adios2::Engine               m_writer;
-    adios2::Mode                 m_mode { adios2::Mode::Write };
 
     std::vector<OutputField>     m_fields;
     std::vector<OutputParticles> m_particles;

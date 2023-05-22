@@ -440,6 +440,8 @@ class Data:
         layout = "right" if self.file.attrs["LayoutRight"] == 1 else "left"
         dimension = self.file.attrs["Dimension"]
         coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
+        if coordinates == "qspherical":
+            coordinates = "spherical"
         coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]
         times = np.array([self.file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
 
