@@ -10,11 +10,10 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
     for (auto& species : mblock.particles) {
-      const real_t     dt { factor * mblock.timestep() };
-      const real_t     charge_ovr_mass { species.charge() == ZERO
-                                           ? species.charge() / species.mass()
-                                           : ZERO };
-      const real_t     coeff { charge_ovr_mass * HALF * dt / params.larmor0() };
+      const real_t dt { factor * mblock.timestep() };
+      const real_t charge_ovr_mass { species.mass() > ZERO ? species.charge() / species.mass()
+                                                           : ZERO };
+      const real_t coeff { charge_ovr_mass * HALF * dt / params.larmor0() };
       Pusher_kernel<D> pusher(
         mblock, species, coeff, dt, params.grPusherEpsilon(), params.grPusherNiter());
       pusher.apply();

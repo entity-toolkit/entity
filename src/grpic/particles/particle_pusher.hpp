@@ -141,41 +141,40 @@ namespace ntt {
      */
     Inline void EMHalfPush(const coord_t<D>&  xp,
                            const vec_t<Dim3>& vp,
-                           vec_t<Dim3>&       Dp_hat,
-                           vec_t<Dim3>&       Bp_hat,
+                           const vec_t<Dim3>& Dp_hat,
+                           const vec_t<Dim3>& Bp_hat,
                            vec_t<Dim3>&       vp_upd) const {
+      vec_t<Dim3> D0 { Dp_hat[0], Dp_hat[1], Dp_hat[2] };
+      vec_t<Dim3> B0 { Bp_hat[0], Bp_hat[1], Bp_hat[2] };
       vec_t<Dim3> vp_hat { ZERO }, vp_upd_hat { ZERO };
       m_mblock.metric.v3_Cov2Hat(xp, vp, vp_upd_hat);
 
       // this is a half-push
       real_t COEFF { m_coeff * HALF * m_mblock.metric.alpha(xp) };
 
-      Dp_hat[0] *= COEFF;
-      Dp_hat[1] *= COEFF;
-      Dp_hat[2] *= COEFF;
+      D0[0] *= COEFF;
+      D0[1] *= COEFF;
+      D0[2] *= COEFF;
 
-      vp_upd_hat[0] += Dp_hat[0];
-      vp_upd_hat[1] += Dp_hat[1];
-      vp_upd_hat[2] += Dp_hat[2];
+      vp_upd_hat[0] += D0[0];
+      vp_upd_hat[1] += D0[1];
+      vp_upd_hat[2] += D0[2];
 
       COEFF
         *= ONE
            / math::sqrt(ONE + SQR(vp_upd_hat[0]) + SQR(vp_upd_hat[1]) + SQR(vp_upd_hat[2]));
-      Bp_hat[0] *= COEFF;
-      Bp_hat[1] *= COEFF;
-      Bp_hat[2] *= COEFF;
-      COEFF = TWO / (ONE + SQR(Bp_hat[0]) + SQR(Bp_hat[1]) + SQR(Bp_hat[2]));
+      B0[0] *= COEFF;
+      B0[1] *= COEFF;
+      B0[2] *= COEFF;
+      COEFF     = TWO / (ONE + SQR(B0[0]) + SQR(B0[1]) + SQR(B0[2]));
 
-      vp_hat[0]
-        = (vp_upd_hat[0] + vp_upd_hat[1] * Bp_hat[2] - vp_upd_hat[2] * Bp_hat[1]) * COEFF;
-      vp_hat[1]
-        = (vp_upd_hat[1] + vp_upd_hat[2] * Bp_hat[0] - vp_upd_hat[0] * Bp_hat[2]) * COEFF;
-      vp_hat[2]
-        = (vp_upd_hat[2] + vp_upd_hat[0] * Bp_hat[1] - vp_upd_hat[1] * Bp_hat[0]) * COEFF;
+      vp_hat[0] = (vp_upd_hat[0] + vp_upd_hat[1] * B0[2] - vp_upd_hat[2] * B0[1]) * COEFF;
+      vp_hat[1] = (vp_upd_hat[1] + vp_upd_hat[2] * B0[0] - vp_upd_hat[0] * B0[2]) * COEFF;
+      vp_hat[2] = (vp_upd_hat[2] + vp_upd_hat[0] * B0[1] - vp_upd_hat[1] * B0[0]) * COEFF;
 
-      vp_upd_hat[0] += vp_hat[1] * Bp_hat[2] - vp_hat[2] * Bp_hat[1] + Dp_hat[0];
-      vp_upd_hat[1] += vp_hat[2] * Bp_hat[0] - vp_hat[0] * Bp_hat[2] + Dp_hat[1];
-      vp_upd_hat[2] += vp_hat[0] * Bp_hat[1] - vp_hat[1] * Bp_hat[0] + Dp_hat[2];
+      vp_upd_hat[0] += vp_hat[1] * B0[2] - vp_hat[2] * B0[1] + D0[0];
+      vp_upd_hat[1] += vp_hat[2] * B0[0] - vp_hat[0] * B0[2] + D0[1];
+      vp_upd_hat[2] += vp_hat[0] * B0[1] - vp_hat[1] * B0[0] + D0[2];
 
       m_mblock.metric.v3_Hat2Cov(xp, vp_upd_hat, vp_upd);
     }
@@ -512,27 +511,27 @@ namespace ntt {
       xp[0] = get_prtl_x1(m_particles, p);
       xp[1] = get_prtl_x2(m_particles, p);
 
-      // vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO }, Bp_hat { ZERO };
-      // interpolateFields(p, Dp_cntrv, Bp_cntrv);
-      // m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
-      // m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
+      vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO }, Bp_hat { ZERO };
+      interpolateFields(p, Dp_cntrv, Bp_cntrv);
+      m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
+      m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
 
       vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
 
       /* -------------------------------- Leapfrog -------------------------------- */
-      /* u_i(n - 1/2) -> u*_i(n - 1/2) */
+      /* u_i(n - 1/2) -> u*_i(n) */
       vec_t<Dim3> vp_upd { ZERO };
-      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-      // vp[0] = vp_upd[0];
-      // vp[1] = vp_upd[1];
-      // vp[2] = vp_upd[2];
-      /* u*_i(n - 1/2) -> u*_i(n + 1/2) */
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      /* u*_i(n) -> u**_i(n) */
+      vp[0] = vp_upd[0];
+      vp[1] = vp_upd[1];
+      vp[2] = vp_upd[2];
       GeodesicMomentumPush<Massive_t>(Massive_t {}, xp, vp, vp_upd);
-      // vp[0] = vp_upd[0];
-      // vp[1] = vp_upd[1];
-      // vp[2] = vp_upd[2];
-      /* u*_i(n + 1/2) -> u_i(n + 1/2) */
-      // EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      /* u**_i(n) -> u_i(n + 1/2) */
+      vp[0] = vp_upd[0];
+      vp[1] = vp_upd[1];
+      vp[2] = vp_upd[2];
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       /* x^i(n) -> x^i(n + 1) */
       coord_t<Dim2> xp_upd { ZERO };
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);

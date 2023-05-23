@@ -189,21 +189,26 @@ namespace ntt {
   void Meshblock<Dim2, GRPICEngine>::ComputeVectorPotential(ndfield_t<Dim2, 6>& buffer,
                                                             const int&          buffer_comp) {
     const auto i2_min = this->i2_min();
+    // !TODO: this is quite slow
     Kokkos::parallel_for(
       "ComputeVectorPotential", this->rangeActiveCells(), ClassLambda(index_t i, index_t j) {
         const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-        const int    k_min        = static_cast<int>(i2_min - N_GHOSTS) + 1;
-        const int    k_max        = static_cast<int>(j - N_GHOSTS);
-        buffer(i, j, buffer_comp) = ZERO;
+        const int    k_min = static_cast<int>(i2_min - N_GHOSTS) + 1;
+        const int    k_max = static_cast<int>(j - N_GHOSTS);
+        real_t       A3    = ZERO;
         for (auto k { k_min }; k <= k_max; ++k) {
           real_t k_ = static_cast<real_t>(k);
           real_t sqrt_detH_ij1 { this->metric.sqrt_det_h({ i_, k_ - HALF }) };
           real_t sqrt_detH_ij2 { this->metric.sqrt_det_h({ i_, k_ + HALF }) };
           int    k1 { k + N_GHOSTS };
-          buffer(i, j, buffer_comp) += HALF
-                                       * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1)
-                                          + sqrt_detH_ij2 * this->em(i, k1, em::bx1));
+          A3 += HALF
+                * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1)
+                   + sqrt_detH_ij2 * this->em(i, k1, em::bx1));
         }
+        vec_t<Dim3> A_hat { ZERO };
+        this->metric.v3_Cov2Hat(
+          { i_ + HALF, static_cast<real_t>(j) + HALF }, { ZERO, ZERO, A3 }, A_hat);
+        buffer(i, j, buffer_comp) = A_hat[2];
       });
   }
 
