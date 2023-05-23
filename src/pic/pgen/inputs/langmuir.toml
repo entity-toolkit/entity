@@ -37,7 +37,7 @@ maxnpart = 1e7
 pusher   = "None"
 
 [visualization]
-fields        = ["Ex", "Rho_1"]
+fields        = ["E", "Rho_1"]
 fields_stride = 1
 
 # [output]

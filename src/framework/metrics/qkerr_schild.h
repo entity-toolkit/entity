@@ -44,14 +44,14 @@ namespace ntt {
         eta_min { ZERO },
         phi_min { ZERO },
         dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
-        deta { (real_t)constant::PI / this->nx2 },
-        dphi { (real_t)constant::TWO_PI / this->nx3 },
+        deta { constant::PI / this->nx2 },
+        dphi { constant::TWO_PI / this->nx3 },
         dchi_inv { ONE / dchi },
         deta_inv { ONE / deta },
         dphi_inv { ONE / dphi },
-        dchi_sqr { dchi * dchi },
-        deta_sqr { deta * deta },
-        dphi_sqr { dphi * dphi },
+        dchi_sqr { SQR(dchi) },
+        deta_sqr { SQR(deta) },
+        dphi_sqr { SQR(dphi) },
         dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
@@ -88,54 +88,6 @@ namespace ntt {
         NTTHostError("min cell finding not implemented for 3D");
         return ZERO;
       }
-    }
-
-    /**
-     * @brief Compute d(th) / d(eta) for a given eta.
-     *
-     */
-    Inline auto dtheta_deta(const real_t& eta) const -> real_t {
-      return (ONE + TWO * h
-              + static_cast<real_t>(12.0) * h * (eta * constant::INV_PI)
-                  * ((eta * constant::INV_PI) - ONE));
-    }
-
-    /**
-     * @brief Convert quasi-spherical eta to spherical theta.
-     *
-     */
-    Inline auto eta2theta(const real_t& eta) const -> real_t {
-      return eta
-             + TWO * h * eta * (constant::PI - TWO * eta) * (constant::PI - eta)
-                 * constant::INV_PI_SQR;
-    }
-    /**
-     * @brief Convert spherical theta to quasi-spherical eta.
-     *
-     */
-    Inline auto theta2eta(const real_t& theta) const -> real_t {
-      // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2 + 108 h Pi y -
-      // 108 h y^2))])^(1/3)
-      double           R { math::pow(
-        -9.0 * SQR(h) * (constant::PI - 2.0 * theta)
-          + constant::SQRT3
-              * math::sqrt(-(CUBE(h)
-                             * ((h - 4.0) * SQR(constant::PI + h * constant::TWO_PI)
-                                + 108.0 * h * constant::PI * theta - 108.0 * h * SQR(theta)))),
-        static_cast<real_t>(1.0 / 3.0)) };
-      // eta = Pi^(2/3)(6 Pi^(1/3) + 2 2^(1/3)(h-1)(3Pi)^(2/3)/R + 2^(2/3) 3^(1/3) R / h)/12
-      constexpr double PI_TO_TWO_THIRD { 2.14502939711102560008 };
-      constexpr double PI_TO_ONE_THIRD { 1.46459188756152326302 };
-      constexpr double TWO_TO_TWO_THIRD { 1.58740105196819947475 };
-      constexpr double THREE_TO_ONE_THIRD { 1.442249570307408382321 };
-      constexpr double TWO_TO_ONE_THIRD { 1.2599210498948731647672 };
-      constexpr double THREE_PI_TO_TWO_THIRD { 4.46184094890142313715794 };
-      return static_cast<real_t>(
-        PI_TO_TWO_THIRD
-        * (6.0 * PI_TO_ONE_THIRD
-           + 2.0 * TWO_TO_ONE_THIRD * (h - ONE) * THREE_PI_TO_TWO_THIRD / R
-           + TWO_TO_TWO_THIRD * THREE_TO_ONE_THIRD * R / h)
-        / 12.0);
     }
 
     /**
@@ -245,6 +197,57 @@ namespace ntt {
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
       return h_22(x) / alpha(x);
     }
+
+    /**
+     * Compute the square root of the determinant of h-matrix.
+     *
+     * @param x coordinate array in code units
+     * @returns sqrt(det(h)).
+     */
+    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+      return math::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
+    }
+
+    /**
+     * Compute inverse metric component 11 from h_ij.
+     *
+     * @param x coordinate array in code units
+     * @returns h^11 (contravariant, upper index) metric component.
+     */
+    Inline auto h11(const coord_t<D>& x) const -> real_t {
+      return h_33(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+    }
+
+    /**
+     * Compute inverse metric component 22 from h_ij.
+     *
+     * @param x coordinate array in code units
+     * @returns h^22 (contravariant, upper index) metric component.
+     */
+    Inline auto h22(const coord_t<D>& x) const -> real_t {
+      return ONE / h_22(x);
+    }
+
+    /**
+     * Compute inverse metric component 33 from h_ij.
+     *
+     * @param x coordinate array in code units
+     * @returns h^33 (contravariant, upper index) metric component.
+     */
+    Inline auto h33(const coord_t<D>& x) const -> real_t {
+      return h_11(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+    }
+
+    /**
+     * Compute inverse metric component 13 from h_ij.
+     *
+     * @param x coordinate array in code units
+     * @returns h^13 (contravariant, upper index) metric component.
+     */
+    Inline auto h13(const coord_t<D>& x) const -> real_t {
+      return -h_13(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+    }
+
     /**
      * Compute the fiducial minimum cell volume.
      *
@@ -273,173 +276,14 @@ namespace ntt {
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
- * TODO @ Hackathon -- fix this (make base class)
  */
-#include "metrics_utils/ks_common.h"
-#include "metrics_utils/sph_common.h"
+#include "metrics_utils/angle_stretch_forQSph.h"
+#include "metrics_utils/x_code_cart_forGSph.h"
+#include "metrics_utils/x_code_sph_forQSph.h"
 
-    /**
-     * Coordinate conversion from code units to Cartesian physical units.
-     *
-     * @param xi coordinate array in code units
-     * @param x coordinate array in Cartesian physical units
-     */
-    Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim2) {
-        coord_t<D> x_sph;
-        x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * math::sin(x_sph[1]);
-        x[1] = x_sph[0] * math::cos(x_sph[1]);
-      } else if constexpr (D == Dim3) {
-        coord_t<D> x_sph;
-        x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
-        x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
-        x[2] = x_sph[0] * math::cos(x_sph[1]);
-      }
-    }
-
-    /**
-     * Coordinate conversion from Cartesian physical units to code units.
-     *
-     * @param x coordinate array in Cartesian coordinates in
-     * physical units
-     * @param xi coordinate array in code units
-     */
-    Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim2) {
-        coord_t<D> x_sph;
-        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
-        x_sph[1] = math::atan2(x[1], x[0]);
-        x_Sph2Code(x_sph, xi);
-      } else if constexpr (D == Dim3) {
-        coord_t<D> x_sph;
-        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-        x_sph[1] = math::atan2(x[1], x[0]);
-        x_sph[2] = math::acos(x[2] / x_sph[0]);
-        x_Sph2Code(x_sph, xi);
-      }
-    }
-
-    /**
-     * Coordinate conversion from code units to Spherical physical units.
-     *
-     * @param xi coordinate array in code units
-     * @param x coordinate array in Spherical coordinates in physical units
-     */
-    Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim2) {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t eta { xi[1] * deta + eta_min };
-        x[0] = r0 + math::exp(chi);
-        x[1] = eta2theta(eta);
-      } else if constexpr (D == Dim3) {
-        real_t chi { xi[0] * dchi + chi_min };
-        real_t eta { xi[1] * deta + eta_min };
-        real_t phi { xi[2] * dphi + phi_min };
-        x[0] = r0 + math::exp(chi);
-        x[1] = eta2theta(eta);
-        x[2] = phi;
-      }
-    }
-
-    /**
-     * Coordinate conversion from Spherical physical units to code units.
-     *
-     * @param x coordinate array in Spherical coordinates in physical units
-     * @param xi coordinate array in code units
-     */
-    Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim2) {
-        real_t chi { math::log(x[0] - r0) };
-        real_t eta { theta2eta(x[1]) };
-        xi[0] = (chi - chi_min) * dchi_inv;
-        xi[1] = (eta - eta_min) * deta_inv;
-      } else if constexpr (D == Dim3) {
-        real_t chi { math::log(x[0] - r0) };
-        real_t eta { theta2eta(x[1]) };
-        real_t phi { x[2] };
-        xi[0] = (chi - chi_min) * dchi_inv;
-        xi[1] = (eta - eta_min) * deta_inv;
-        xi[2] = (phi - phi_min) * dphi_inv;
-      }
-    }
-
-    /**
-     * Vector conversion from contravariant to spherical contravariant.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cntrv vector in contravariant basis
-     * @param vsph_cntrv vector in spherical contravariant basis
-     */
-    Inline void v3_Cntrv2SphCntrv(const coord_t<D>&  xi,
-                                  const vec_t<Dim3>& vi_cntrv,
-                                  vec_t<Dim3>&       vsph_cntrv) const {
-      vsph_cntrv[0] = vi_cntrv[0] * math::exp(xi[0] * dchi + chi_min) * dchi;
-      vsph_cntrv[1] = vi_cntrv[1] * dtheta_deta(xi[1] * deta + eta_min) * deta;
-      if constexpr (D == Dim2) {
-        vsph_cntrv[2] = vi_cntrv[2];
-      } else {
-        vsph_cntrv[2] = vi_cntrv[2] * dphi;
-      }
-    }
-
-    /**
-     * Vector conversion from spherical contravariant to contravariant.
-     *
-     * @param xi coordinate array in code units
-     * @param vsph_cntrv vector in spherical contravariant basis
-     * @param vi_cntrv vector in contravariant basis
-     */
-    Inline void v3_SphCntrv2Cntrv(const coord_t<D>&  xi,
-                                  const vec_t<Dim3>& vsph_cntrv,
-                                  vec_t<Dim3>&       vi_cntrv) const {
-      vi_cntrv[0] = vsph_cntrv[0] * dchi_inv / (math::exp(xi[0] * dchi + chi_min));
-      vi_cntrv[1] = vsph_cntrv[1] * deta_inv / (dtheta_deta(xi[1] * deta + eta_min));
-      if constexpr (D == Dim2) {
-        vi_cntrv[2] = vsph_cntrv[2];
-      } else {
-        vi_cntrv[2] = vsph_cntrv[2] * dphi_inv;
-      }
-    }
-
-    /**
-     * Vector conversion from covariant to spherical covariant.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cov vector in covariant basis
-     * @param vsph_cov vector in spherical covariant basis
-     */
-    Inline void v3_Cov2SphCov(const coord_t<D>&  xi,
-                              const vec_t<Dim3>& vi_cov,
-                              vec_t<Dim3>&       vsph_cov) const {
-      vsph_cov[0] = vi_cov[0] * dchi_inv / (math::exp(xi[0] * dchi + chi_min));
-      vsph_cov[1] = vi_cov[1] * deta_inv / (dtheta_deta(xi[1] * deta + eta_min));
-      if constexpr (D == Dim2) {
-        vsph_cov[2] = vi_cov[2];
-      } else {
-        vsph_cov[2] = vi_cov[2] * dphi_inv;
-      }
-    }
-
-    /**
-     * Vector conversion from spherical covariant to covariant.
-     *
-     * @param xi coordinate array in code units
-     * @param vsph_cov vector in spherical covariant basis
-     * @param vi_cov vector in covariant basis
-     */
-    Inline void v3_SphCov2Cov(const coord_t<D>&  xi,
-                              const vec_t<Dim3>& vsph_cov,
-                              vec_t<Dim3>&       vi_cov) const {
-      vi_cov[0] = vsph_cov[0] * (math::exp(xi[0] * dchi + chi_min) * dchi);
-      vi_cov[1] = vsph_cov[1] * (dtheta_deta(xi[1] * deta + eta_min) * deta);
-      if constexpr (D == Dim2) {
-        vi_cov[2] = vsph_cov[2];
-      } else {
-        vi_cov[2] = vsph_cov[2] * dphi;
-      }
-    }
+#include "metrics_utils/v3_cart_hat_cntrv_cov_forGsph.h"
+#include "metrics_utils/v3_hat_cntrv_cov_forGR.h"
+#include "metrics_utils/v3_phys_cov_cntrv_forQSph.h"
   };
 
 }    // namespace ntt

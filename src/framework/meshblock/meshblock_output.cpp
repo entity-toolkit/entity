@@ -43,11 +43,11 @@ namespace ntt {
             } else {
               this->metric.v3_Cntrv2Hat({ i_ }, f_int, f_sph);
             }
-          } else if (flags & PrepareOutput_ConvertToSphCntrv) {
+          } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
             if (cell_center) {
-              this->metric.v3_Cntrv2SphCntrv({ i_ + HALF }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF }, f_int, f_sph);
             } else {
-              this->metric.v3_Cntrv2SphCntrv({ i_ }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_ }, f_int, f_sph);
             }
           }
           buffer(i, fx1) = f_sph[0];
@@ -86,11 +86,11 @@ namespace ntt {
             } else {
               this->metric.v3_Cntrv2Hat({ i_, j_ }, f_int, f_sph);
             }
-          } else if (flags & PrepareOutput_ConvertToSphCntrv) {
+          } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
             if (cell_center) {
-              this->metric.v3_Cntrv2SphCntrv({ i_ + HALF, j_ + HALF }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF, j_ + HALF }, f_int, f_sph);
             } else {
-              this->metric.v3_Cntrv2SphCntrv({ i_, j_ }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_, j_ }, f_int, f_sph);
             }
           }
           buffer(i, j, fx1) = f_sph[0];
@@ -131,11 +131,11 @@ namespace ntt {
             } else {
               this->metric.v3_Cntrv2Hat({ i_ }, f_int, f_sph);
             }
-          } else if (flags & PrepareOutput_ConvertToSphCntrv) {
+          } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
             if (cell_center) {
-              this->metric.v3_Cntrv2SphCntrv({ i_ + HALF }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF }, f_int, f_sph);
             } else {
-              this->metric.v3_Cntrv2SphCntrv({ i_ }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_ }, f_int, f_sph);
             }
           }
           buffer(i, fx1) = f_sph[0];
@@ -171,11 +171,11 @@ namespace ntt {
             } else {
               this->metric.v3_Cntrv2Hat({ i_, j_ }, f_int, f_sph);
             }
-          } else if (flags & PrepareOutput_ConvertToSphCntrv) {
+          } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
             if (cell_center) {
-              this->metric.v3_Cntrv2SphCntrv({ i_ + HALF, j_ + HALF }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF, j_ + HALF }, f_int, f_sph);
             } else {
-              this->metric.v3_Cntrv2SphCntrv({ i_, j_ }, f_int, f_sph);
+              this->metric.v3_Cntrv2PhysCntrv({ i_, j_ }, f_int, f_sph);
             }
           }
           buffer(i, j, fx1) = f_sph[0];

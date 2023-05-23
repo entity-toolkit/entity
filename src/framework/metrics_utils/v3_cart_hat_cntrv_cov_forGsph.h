@@ -1,20 +1,23 @@
-#ifndef FRAMEWORK_METRICS_SPH_COMMON_H
-#define FRAMEWORK_METRICS_SPH_COMMON_H
+#ifndef FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
+#define FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
 
 #ifdef __INTELLISENSE__
 #  pragma diag_suppress 1670
 #  pragma diag_suppress 864
 #  pragma diag_suppress 258
+#  pragma diag_suppress 77
 #  pragma diag_suppress 65
 #  pragma diag_suppress 20
 #endif
 
 /**
- * @brief Vector transformations from and to global Cartesian basis.
- *
- *
- * @note Functions `v3_Hat2Cart` and `v3_Cart2Hat` should be implemented per each metric.
- *
+ * @brief Vector transformations for generalized spherical.
+ * @implements v3: Cntrv -> Cart
+ * @implements v3: Cart -> Cntrv
+ * @implements v3: Cov -> Cart
+ * @implements v3: Cart -> Cov
+ * @implements v3: Hat -> Cart
+ * @implements v3: Cart -> Hat
  */
 
 /**
@@ -160,9 +163,10 @@ Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
 #ifdef __INTELLISENSE__
 #  pragma diag_default 20
 #  pragma diag_default 65
+#  pragma diag_default 77
 #  pragma diag_default 258
 #  pragma diag_default 864
 #  pragma diag_default 1670
 #endif
 
-#endif
+#endif    // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H

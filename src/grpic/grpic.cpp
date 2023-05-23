@@ -276,9 +276,11 @@ namespace ntt {
     }
 
     {
-      // Push particles
-      // x at n+1, u at n+1/2
-      // using em:e at n & em0:b at n
+      /**
+       * x_prtl, u_prtl <- em::D, em0::B
+       *
+       * Now: x_prtl at n + 1, u_prtl at n + 1/2
+       */
       timers.start("ParticlePusher");
       ParticlesPush();
       timers.stop("ParticlePusher");

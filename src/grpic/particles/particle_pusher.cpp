@@ -14,9 +14,28 @@ namespace ntt {
       const real_t charge_ovr_mass { species.mass() > ZERO ? species.charge() / species.mass()
                                                            : ZERO };
       const real_t coeff { charge_ovr_mass * HALF * dt / params.larmor0() };
-      Pusher_kernel<D> pusher(
-        mblock, species, coeff, dt, params.grPusherEpsilon(), params.grPusherNiter());
-      pusher.apply();
+
+      if (species.pusher() == ParticlePusher::PHOTON) {
+        // push photons
+        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, species.npart());
+        Kokkos::parallel_for(
+          "ParticlesPush",
+          range_policy,
+          Pusher_kernel<D>(
+            mblock, species, coeff, dt, params.grPusherEpsilon(), params.grPusherNiter()));
+      } else if (species.pusher() == ParticlePusher::BORIS) {
+        // push massive particles
+        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Massive_t>(0, species.npart());
+        Kokkos::parallel_for(
+          "ParticlesPush",
+          range_policy,
+          Pusher_kernel<D>(
+            mblock, species, coeff, dt, params.grPusherEpsilon(), params.grPusherNiter()));
+      } else if (species.pusher() == ParticlePusher::NONE) {
+        // do nothing
+      } else {
+        NTTHostError("not implemented");
+      }
     }
     NTTLog();
   }

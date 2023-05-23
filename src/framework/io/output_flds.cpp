@@ -65,7 +65,7 @@ namespace ntt {
                         Meshblock<D, S>&        mblock) const {
     int prepare_flag = PrepareOutput_None;
     if constexpr (S == GRPICEngine) {
-      prepare_flag = PrepareOutput_ConvertToSphCntrv;
+      prepare_flag = PrepareOutput_ConvertToPhysCntrv;
       if (m_id == FieldID::E) {
         NTTHostError("Output of E (aux) fields is not supported");
       }

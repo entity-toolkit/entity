@@ -200,7 +200,7 @@ namespace ntt {
     // x at (n - 1/2)
     xcode[0]      = HALF * (xcode[0] + xcode_prev[0]);
     xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
-    m_mblock.metric.v3_Cov2SphCov(xcode,
+    m_mblock.metric.v3_Cov2PhysCov(xcode,
                                   { m_particles.ux1(p * m_stride),
                                     m_particles.ux2(p * m_stride),
                                     m_particles.ux3(p * m_stride) },
@@ -224,7 +224,7 @@ namespace ntt {
     xcode[0]      = HALF * (xcode[0] + xcode_prev[0]);
     xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
     xcode[2]      = HALF * (xcode[2] + xcode_prev[2]);
-    m_mblock.metric.v3_Cov2SphCov(xcode,
+    m_mblock.metric.v3_Cov2PhysCov(xcode,
                                   { m_particles.ux1(p * m_stride),
                                     m_particles.ux2(p * m_stride),
                                     m_particles.ux3(p * m_stride) },
@@ -277,7 +277,7 @@ namespace ntt {
 //   vec_t<Dim3>   vcov_sph { ZERO };
 //   xcode[0] = get_prtl_x1(m_particles, p * m_stride);
 //   xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-//   m_mblock.metric.v3_Cov2SphCov(xcode,
+//   m_mblock.metric.v3_Cov2PhysCov(xcode,
 //                                 { m_particles.ux1(p * m_stride),
 //                                   m_particles.ux2(p * m_stride),
 //                                   m_particles.ux3(p * m_stride) },
@@ -293,7 +293,7 @@ namespace ntt {
 //   xcode[0] = get_prtl_x1(m_particles, p * m_stride);
 //   xcode[1] = get_prtl_x2(m_particles, p * m_stride);
 //   xcode[2] = get_prtl_x3(m_particles, p * m_stride);
-//   m_mblock.metric.v3_Cov2SphCov(xcode,
+//   m_mblock.metric.v3_Cov2PhysCov(xcode,
 //                                 { m_particles.ux1(p * m_stride),
 //                                   m_particles.ux2(p * m_stride),
 //                                   m_particles.ux3(p * m_stride) },

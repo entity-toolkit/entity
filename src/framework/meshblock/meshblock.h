@@ -17,7 +17,7 @@ namespace ntt {
     PrepareOutput_InterpToCellCenterFromEdges = 1 << 0,
     PrepareOutput_InterpToCellCenterFromFaces = 1 << 1,
     PrepareOutput_ConvertToHat                = 1 << 2,
-    PrepareOutput_ConvertToSphCntrv           = 1 << 3
+    PrepareOutput_ConvertToPhysCntrv           = 1 << 3
   };
   typedef int PrepareOutputFlags;
 

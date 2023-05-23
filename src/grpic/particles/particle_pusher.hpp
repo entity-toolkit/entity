@@ -49,28 +49,6 @@ namespace ntt {
         m_niter(niter) {}
 
     /**
-     * @brief Loop over all active particles of the given species and call the appropriate
-     * pusher.
-     */
-    void apply() {
-      if (m_particles.pusher() == ParticlePusher::PHOTON) {
-        // push photons
-        auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::BORIS) {
-        // push massive particles
-        auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Massive_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::NONE) {
-        // do nothing
-      } else {
-        NTTHostError("not implemented");
-      }
-    }
-
-    /**
      * @brief Main pusher subroutine for photon particles.
      */
     Inline void operator()(Photon_t, index_t p) const {}
@@ -180,13 +158,6 @@ namespace ntt {
     }
 
     // Helper functions
-
-    /**
-     * @brief Transform particle coordinate from code units i+di to `real_t` type.
-     * @param p index of the particle.
-     * @param coord coordinate of the particle as a vector (of size D).
-     */
-    Inline void getParticleCoordinate(index_t&, coord_t<D>&) const;
 
     /**
      * @brief First order Yee mesh field interpolation to particle position.
