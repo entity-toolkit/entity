@@ -8,8 +8,6 @@ project(${PROJECT_NAME}
 )
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 
-add_compile_definitions(ENTITY_VERSION=\"${PROJECT_VERSION}\")
-
 # ----------------------------- Defaults ---------------------------------- #
 set(default_engine "pic")
 set(default_precision "single")
@@ -52,7 +50,7 @@ elseif(${engine} STREQUAL "pic")
   set(metrics "minkowski" "spherical" "qspherical")
 elseif(${engine} STREQUAL "grpic")
   set(default_metric "qkerr_schild")
-  set(metrics "kerr_schild" "qkerr_schild" "schwarzschild")
+  set(metrics "kerr_schild" "qkerr_schild")
 endif()
 
 set(metric ${default_metric} CACHE STRING "Metric")
@@ -76,13 +74,10 @@ if(NOT ${engine} STREQUAL "sandbox")
     list(APPEND problem_generators ${new_pgen})
   endforeach()
 
-  # list(FIND problem_generators ${pgen} PGEN_FOUND)
+  list(FIND problem_generators ${pgen} PGEN_FOUND)
 
-  # if(${PGEN_FOUND} EQUAL -1)
-  if(NOT ${pgen} IN_LIST problem_generators)
+  if(${PGEN_FOUND} EQUAL -1)
     message(FATAL_ERROR "Problem generator ${pgen}.hpp not found\nAvailable problem generators: ${problem_generators}.")
-  else()
-    set(PGEN_FOUND 1 CACHE BOOL "Problem generator found")
   endif()
 endif()
 
@@ -133,7 +128,7 @@ endif()
 
 # set memory space
 if(${Kokkos_ENABLE_CUDA})
-  add_definitions("-D ENABLE_GPU")
+  add_definitions(-DENABLE_GPU)
   set(ACC_MEM_SPACE Kokkos::CudaSpace)
 else()
   set(ACC_MEM_SPACE Kokkos::HostSpace)
@@ -156,10 +151,10 @@ else()
   set(HOST_EXE_SPACE Kokkos::Serial)
 endif()
 
-add_definitions("-D AccelMemSpace=${ACC_MEM_SPACE}")
-add_definitions("-D AccelExeSpace=${ACC_EXE_SPACE}")
-add_definitions("-D HostMemSpace=${HOST_MEM_SPACE}")
-add_definitions("-D HostExeSpace=${HOST_EXE_SPACE}")
+add_compile_options("-D AccelExeSpace=${ACC_EXE_SPACE}")
+add_compile_options("-D AccelMemSpace=${ACC_MEM_SPACE}")
+add_compile_options("-D HostExeSpace=${HOST_EXE_SPACE}")
+add_compile_options("-D HostMemSpace=${HOST_MEM_SPACE}")
 
 # ----------------------------- Adios2 settings ---------------------------- #
 set(output ${default_output} CACHE BOOL "Enable output")

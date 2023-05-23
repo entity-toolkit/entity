@@ -97,8 +97,7 @@ namespace ntt {
       m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));
 
       // GR specific
-      if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")
-          || (m_metric == "schwarzschild")) {
+      if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
         real_t spin { get<real_t>("domain", "a", ZERO) };
         real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;

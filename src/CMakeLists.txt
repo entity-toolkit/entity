@@ -14,9 +14,11 @@ set(METRIC_FLAG ${metric}_metric)
 string(TOUPPER ${METRIC_FLAG} METRIC_FLAG)
 set(SIMULATION_METRIC ${metric})
 
-add_definitions("-D ${ENGINE_FLAG} -D ${METRIC_FLAG}")
-add_compile_definitions(SIMULATION_METRIC=\"${metric}\")
-add_compile_definitions(METRIC_HEADER=\"metrics/${metric}.h\")
+add_compile_options("-D ${ENGINE_FLAG}")
+add_compile_options("-D ${METRIC_FLAG}")
+add_compile_options("-D SIMULATION_METRIC=\"${SIMULATION_METRIC}\"")
+add_compile_options("-D METRIC_HEADER=\"metrics/${metric}.h\"")
+add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 
 # problem generator
 if(NOT ${PGEN_FOUND} EQUAL -1)
@@ -37,7 +39,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/meshblock)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/io)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/utils)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/vec_transforms)
 include_directories(${EXTERN_DIR})
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wrapper wrapper)
