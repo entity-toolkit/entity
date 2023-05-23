@@ -77,11 +77,12 @@ namespace ntt {
                       || id() == FieldID::N);
     auto is_field
       = (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D || id() == FieldID::H);
-    auto is_current = (id() == FieldID::J);
-    auto is_efield  = (id() == FieldID::E || id() == FieldID::D);
+    auto is_current    = (id() == FieldID::J);
+    auto is_efield     = (id() == FieldID::E || id() == FieldID::D);
+    auto is_vpotential = (id() == FieldID::A);
 
     if (is_field) {
-      NTTHostErrorIf(comp.size() != 3, "Field is always 3 components for output");
+      NTTHostErrorIf(comp.size() != 3, "Fields are always 3 components for output");
       std::vector<int> components;
       int              interp_flag = PrepareOutput_None;
       if (is_efield) {
@@ -120,6 +121,7 @@ namespace ntt {
       }
     } else if (is_moment) {
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
+        // TODO: can perhaps to this better
         // no smoothing for FieldID::Nppc
         mblock.ComputeMoments(params,
                               m_id,
@@ -129,6 +131,12 @@ namespace ntt {
                               m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
         PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
       }
+    } else if (is_vpotential) {
+      NTTHostErrorIf(comp.size() != 1,
+                     "Vector potential is always 1 components for output, but given "
+                       + std::to_string(comp.size()));
+      mblock.ComputeVectorPotential(mblock.bckp, 0);
+      PutField<D, 6>(io, writer, name(0), mblock.bckp, 0);
     } else {
       NTTHostError("Unrecognized field type for output");
     }

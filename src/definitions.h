@@ -165,6 +165,7 @@ namespace ntt {
     B,      // Magnetic fields
     H,      // Magnetic fields (GR)
     J,      // Current density
+    A,      // Vector potential
     T,      // Particle distribution moments
     Rho,    // Particle density
     N,      // Particle number density

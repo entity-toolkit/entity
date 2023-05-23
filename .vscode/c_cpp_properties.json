@@ -15,7 +15,11 @@
       "OMPENABLED",
       "OUTPUT_ENABLED",
       "SIMULATION_METRIC=\"kerr_schild\"",
-      "METRIC_HEADER=\"metrics/kerr_schild.h\""
+      "METRIC_HEADER=\"metrics/kerr_schild.h\"",
+      "AccelExeSpace=Kokkos::Cuda",
+      "AccelMemSpace=Kokkos::CudaSpace",
+      "HostExeSpace=Kokkos::OpenMP",
+      "HostMemSpace=Kokkos::HostSpace"
     ]
   },
   "configurations": [

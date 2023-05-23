@@ -35,7 +35,7 @@ namespace ntt {
     -> real_t {
     coord_t<Dim2> rth_;
     (this->m_mblock).metric.x_Code2Sph(x_cu, rth_);
-    return HALF * math::sin(rth_[1]) * math::sin(rth_[1]) * rth_[0] * rth_[0];
+    return HALF * SQR(math::sin(rth_[1])) * SQR(rth_[0]);
   }
 
   template <Dimension D, SimulationEngine S>

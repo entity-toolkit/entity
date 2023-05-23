@@ -130,6 +130,8 @@ namespace ntt {
       id = FieldID::H;
     } else if (fld.find("J") == 0) {
       id = FieldID::J;
+    } else if (fld.find("A") == 0) {
+      id = FieldID::A;
     } else {
       NTTHostError("Invalid field name");
     }
@@ -141,7 +143,10 @@ namespace ntt {
       species = InterpretInput_getspecies(fld);
     } else if (is_field) {
       // always write all the field components
-      comps.push_back({ 1, 2, 3 });
+      comps = { { 1 }, { 2 }, { 3 } };
+    } else if (id == FieldID::A) {
+      // only write A3
+      comps = { { 3 } };
     }
     if (id == FieldID::T) {
       comps
