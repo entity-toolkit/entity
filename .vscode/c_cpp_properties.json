@@ -4,6 +4,7 @@
       "${workspaceFolder}/**",
       "${workspaceFolder}/src/**",
       "${workspaceFolder}/src/framework/**",
+      "${workspaceFolder}/src/framework/",
       "${workspaceFolder}/extern/**",
       "${workspaceFolder}/../kokkos/install/include",
       "${workspaceFolder}/../ADIOS2/install/include"

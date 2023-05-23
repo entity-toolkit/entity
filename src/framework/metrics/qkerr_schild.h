@@ -36,7 +36,7 @@ namespace ntt {
            const real_t*             params)
       : MetricBase<D> { "qkerr_schild", resolution, extent },
         a(params[4]),
-        a_sqr { a_sqr },
+        a_sqr { SQR(a) },
         rh(params[5]),
         r0(params[0]),
         h(params[1]),
