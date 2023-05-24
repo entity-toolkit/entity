@@ -3,7 +3,8 @@
 #include "wrapper.h"
 
 #include "sim_params.h"
-#include "timer.h"
+
+#include "utils/timer.h"
 
 #include <plog/Log.h>
 

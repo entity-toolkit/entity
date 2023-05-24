@@ -6,8 +6,9 @@
 #include "fields.h"
 #include "meshblock.h"
 #include "sim_params.h"
-#include "timer.h"
-#include "writer.h"
+
+#include "io/writer.h"
+#include "utils/timer.h"
 
 #include <toml.hpp>
 

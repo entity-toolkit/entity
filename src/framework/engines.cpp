@@ -8,9 +8,11 @@
 #include "output.h"
 #include "particles.h"
 #include "simulation.h"
-#include "writer.h"
+
+#include "io/writer.h"
 
 #include "fields.cpp"
+#include "io/writer.cpp"
 #include "meshblock.cpp"
 #include "meshblock_output.cpp"
 #include "output_flds.cpp"
@@ -18,7 +20,6 @@
 #include "particles.cpp"
 #include "simulation.cpp"
 #include "species.cpp"
-#include "writer.cpp"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>

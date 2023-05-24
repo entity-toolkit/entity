@@ -12,13 +12,10 @@
     "myDefaultDefines": [
       // "PIC_ENGINE",
       "GRPIC_ENGINE",
-      "SINGLE_PRECISION",
       "OMPENABLED",
       "OUTPUT_ENABLED",
       "SIMULATION_METRIC=\"kerr_schild\"",
       "METRIC_HEADER=\"metrics/kerr_schild.h\"",
-      "AccelExeSpace=Kokkos::Cuda",
-      "AccelMemSpace=Kokkos::CudaSpace",
       "HostExeSpace=Kokkos::OpenMP",
       "HostMemSpace=Kokkos::HostSpace"
     ]
@@ -31,7 +28,9 @@
         "${myDefaultIncludePath}"
       ],
       "defines": [
-        "${myDefaultDefines}"
+        "${myDefaultDefines}",
+        "AccelExeSpace=Kokkos::Cuda",
+        "AccelMemSpace=Kokkos::CudaSpace",
       ],
       "cStandard": "c17",
       "cppStandard": "c++17",
@@ -44,7 +43,9 @@
         "/usr/local/cuda/include/"
       ],
       "defines": [
-        "${myDefaultDefines}"
+        "${myDefaultDefines}",
+        "AccelExeSpace=Kokkos::Cuda",
+        "AccelMemSpace=Kokkos::CudaSpace",
       ],
       "compilerPath": "/usr/bin/g++",
       "cStandard": "c17",
@@ -57,7 +58,9 @@
         "${myDefaultIncludePath}"
       ],
       "defines": [
-        "${myDefaultDefines}"
+        "${myDefaultDefines}",
+        "AccelExeSpace=Kokkos::OpenMP",
+        "AccelMemSpace=Kokkos::HostSpace"
       ],
       "compilerPath": "/usr/local/bin/g++-10",
       "cStandard": "c17",
