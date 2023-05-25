@@ -205,10 +205,11 @@ namespace ntt {
                 * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1)
                    + sqrt_detH_ij2 * this->em(i, k1, em::bx1));
         }
-        vec_t<Dim3> A_hat { ZERO };
-        this->metric.v3_Cov2Hat(
-          { i_ + HALF, static_cast<real_t>(j) + HALF }, { ZERO, ZERO, A3 }, A_hat);
-        buffer(i, j, buffer_comp) = A_hat[2];
+        // vec_t<Dim3> A_hat { ZERO };
+        // this->metric.v3_Cov2Hat(
+        //   { i_ + HALF, static_cast<real_t>(j) + HALF }, { ZERO, ZERO, A3 }, A_hat);
+        // buffer(i, j, buffer_comp) = A_hat[2];
+        buffer(i, j, buffer_comp) = A3;
       });
   }
 
