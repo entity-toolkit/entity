@@ -42,15 +42,18 @@ if(${precision} STREQUAL "single")
 endif()
 
 # --------------------------------- Metric --------------------------------- #
+set(sr_metrics "minkowski" "spherical" "qspherical")
+set(gr_metrics "kerr_schild" "qkerr_schild" "kerr_schild_0")
+
 if(${engine} STREQUAL "sandbox")
   set(default_metric "minkowski")
-  set(metrics "minkowski" "spherical" "qspherical" "kerr_schild" "qkerr_schild")
+  set(metrics ${sr_metrics} ${gr_metrics})
 elseif(${engine} STREQUAL "pic")
   set(default_metric "minkowski")
-  set(metrics "minkowski" "spherical" "qspherical")
+  set(metrics ${sr_metrics})
 elseif(${engine} STREQUAL "grpic")
   set(default_metric "qkerr_schild")
-  set(metrics "kerr_schild" "qkerr_schild")
+  set(metrics ${gr_metrics})
 endif()
 
 set(metric ${default_metric} CACHE STRING "Metric")

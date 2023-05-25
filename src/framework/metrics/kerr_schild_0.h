@@ -10,7 +10,7 @@
 
 namespace ntt {
   /**
-   * Kerr metric in Kerr-Schild coordinates
+   * Kerr metric with zero spin and zero mass in Kerr-Schild coordinates (for testing).
    * Units: c = rg = 1
    *
    * @tparam D dimension.
@@ -26,32 +26,16 @@ namespace ntt {
     // all physical extents are in units of rg
     const real_t rh, a, a_sqr;
 
-    Inline auto  Delta(const real_t& r) const -> real_t {
-      return SQR(r) - TWO * r + a_sqr;
-    }
-
-    Inline auto Sigma(const real_t& r, const real_t& theta) const -> real_t {
-      return SQR(r) + a_sqr * SQR(math::cos(theta));
-    }
-
-    Inline auto A(const real_t& r, const real_t& theta) const -> real_t {
-      return SQR(SQR(r) + a_sqr) - a_sqr * Delta(r) * SQR(math::sin(theta));
-    }
-
-    Inline auto z(const real_t& r, const real_t& theta) const -> real_t {
-      return TWO * r / Sigma(r, theta);
-    }
-
   public:
     const real_t dx_min;
 
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
-      : MetricBase<D> { "kerr_schild", resolution, extent },
+      : MetricBase<D> { "kerr_schild_0", resolution, extent },
         rh { params[5] },
-        a { params[4] },
-        a_sqr { SQR(a) },
+        a { ZERO },
+        a_sqr { ZERO },
         dr { (this->x1_max - this->x1_min) / this->nx1 },
         dtheta { (real_t)(constant::PI) / this->nx2 },
         dphi { (real_t)(constant::TWO_PI) / this->nx3 },
@@ -72,91 +56,64 @@ namespace ntt {
       return rh;
     }
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
-      const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      return dr_sqr * (ONE + z(r, theta));
+      return dr_sqr;
     }
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      return dtheta_sqr * Sigma(r, theta);
+      return dtheta_sqr * SQR(r);
     }
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + this->x1_min };
       const real_t theta { x[1] * dtheta };
       if constexpr (D == Dim2) {
-        return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
+        return SQR(r * math::sin(theta));
       } else {
-        return dphi_sqr * A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
+        return dphi_sqr * SQR(r * math::sin(theta));
       }
     }
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
-      const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      if constexpr (D == Dim2) {
-        return -dr * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
-      } else {
-        return -dr * dphi * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
-      }
+      return ZERO;
     }
     Inline auto h11(const coord_t<D>& x) const -> real_t {
-      const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      const real_t Sigma_ { Sigma(r, theta) };
-      return SQR(dr_inv) * A(r, theta) / (Sigma_ * (Sigma_ + TWO * r));
+      return SQR(dr_inv);
     }
     Inline auto h22(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      return SQR(dtheta_inv) / Sigma(r, theta);
+      return SQR(dtheta_inv / r);
     }
     Inline auto h33(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + this->x1_min };
       const real_t theta { x[1] * dtheta };
       if constexpr (D == Dim2) {
-        return ONE / (Sigma(r, theta) * SQR(math::sin(theta)));
+        return ONE / SQR(r * math::sin(theta));
       } else {
-        return SQR(dphi_inv) / (Sigma(r, theta) * SQR(math::sin(theta)));
+        return SQR(dphi_inv) / SQR(r * math::sin(theta));
       }
     }
     Inline auto h13(const coord_t<D>& x) const -> real_t {
-      const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      if constexpr (D == Dim2) {
-        return dr_inv * a / Sigma(r, theta);
-      } else {
-        return dr_inv * dphi_inv * a / Sigma(r, theta);
-      }
+      return ZERO;
     }
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
-      const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      return ONE / math::sqrt(ONE + z(r, theta));
+      return ONE;
     }
     Inline auto beta1(const coord_t<D>& x) const -> real_t {
-      const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
-      const real_t z_ { z(r, theta) };
-      return dr_inv * z_ / (ONE + z_);
+      return ZERO;
     }
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + this->x1_min };
       const real_t theta { x[1] * dtheta };
       if constexpr (D == Dim2) {
-        return dr * dtheta * Sigma(r, theta) * math::sin(theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * SQR(r) * math::sin(theta);
       } else {
-        return dr * dtheta * dphi * Sigma(r, theta) * math::sin(theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * dphi * SQR(r) * math::sin(theta);
       }
     }
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + this->x1_min };
-      const real_t theta { x[1] * dtheta };
       if constexpr (D == Dim2) {
-        return dr * dtheta * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * SQR(r);
       } else {
-        return dr * dtheta * dphi * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * dphi * SQR(r);
       }
     }
 
@@ -179,8 +136,7 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r { x[0] * dr + this->x1_min };
       real_t del_theta { x[1] * dtheta };
-      return dr * (SQR(r) + a_sqr) * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr))
-             * (ONE - math::cos(del_theta));
+      return dr * SQR(r) * (ONE - math::cos(del_theta));
     }
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
