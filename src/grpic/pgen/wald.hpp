@@ -80,9 +80,9 @@ namespace ntt {
   template <>
   Inline auto VerticalPotential<Dim2, GRPICEngine>::A_x3(const coord_t<Dim2>& x_cu) const
     -> real_t {
-    coord_t<Dim2> rth_;
-    (this->m_mblock).metric.x_Code2Sph(x_cu, rth_);
-    return HALF * math::sin(rth_[1]) * math::sin(rth_[1]) * rth_[0] * rth_[0];
+    coord_t<Dim2> x_ph;
+    (this->m_mblock).metric.x_Code2Sph(x_cu, x_ph);
+    return HALF * SQR(x_ph[0]) * SQR(math::sin(x_ph[1]));
   }
 
   template <Dimension D, SimulationEngine S>
