@@ -12,10 +12,22 @@ jobs:
         include:
           - pgen: "weibel"
             metric: "minkowski"
+            cuda: "ON"
+          - pgen: "weibel"
+            metric: "minkowski"
+            cuda: "OFF"
           - pgen: "magnetosphere"
             metric: "qspherical"
+            cuda: "ON"
+          - pgen: "magnetosphere"
+            metric: "qspherical"
+            cuda: "OFF"
           - pgen: "magnetosphere"
             metric: "spherical"
+            cuda: "ON"
+          - pgen: "magnetosphere"
+            metric: "spherical"
+            cuda: "OFF"
 
     runs-on:
       - self-hosted
@@ -24,7 +36,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Compile
         run: |
-          cmake -B build -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON -D output=ON
+          cmake -B build -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D output=ON
           cd build
           make -j
 
@@ -34,8 +46,16 @@ jobs:
         include:
           - pgen: "wald"
             metric: "kerr_schild"
+            cuda: "ON"
+          - pgen: "wald"
+            metric: "kerr_schild"
+            cuda: "OFF"
           - pgen: "wald"
             metric: "qkerr_schild"
+            cuda: "ON"
+          - pgen: "wald"
+            metric: "qkerr_schild"
+            cuda: "OFF"
 
     runs-on:
       - self-hosted
@@ -44,6 +64,6 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Compile
         run: |
-          cmake -B build -D engine=grpic -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=ON -D output=ON
+          cmake -B build -D engine=grpic -D pgen=${{ matrix.pgen }} -D metric=${{ matrix.metric }} -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D output=ON
           cd build
           make -j

@@ -29,10 +29,6 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
     auto&                mblock = this->meshblock;
-    std::vector<Content> J_curly
-      = { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly };
-
-    AssertContent(mblock.cur_content, J_curly);
 
     auto       params = *(this->params());
     const auto dt     = mblock.timestep();
@@ -42,9 +38,6 @@ namespace ntt {
     const auto coeff  = -dt * rho0 / (SQR(de0) * ppc0);
     Kokkos::parallel_for(
       "AmpereCurrents", mblock.rangeActiveCells(), CurrentsAmpere_kernel<D>(mblock, coeff));
-
-    ImposeContent(mblock.cur_content,
-                  { Content::jx1_cntrv, Content::jx2_cntrv, Content::jx3_cntrv });
 
     NTTLog();
   }
@@ -56,11 +49,6 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
     auto&                mblock = this->meshblock;
-    std::vector<Content> J_curly
-      = { Content::jx1_curly, Content::jx2_curly, Content::jx3_curly };
-
-    AssertContent(mblock.cur_content, J_curly);
-
     auto       params = *(this->params());
     const auto dt     = mblock.timestep();
     const auto rho0   = params.larmor0();
@@ -121,9 +109,6 @@ namespace ntt {
                            CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
                            CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
     }
-
-    ImposeContent(mblock.cur_content,
-                  { Content::jx1_cntrv, Content::jx2_cntrv, Content::jx3_cntrv });
 
     NTTLog();
   }

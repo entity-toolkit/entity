@@ -40,10 +40,10 @@ pusher   = "Boris"
 cs_width = 0.000125
 
 [visualization]
-fields        = ["By", "Rho"]
+fields        = ["B", "Rho"]
 fields_stride = 4
 
 [output]
-fields   = ["By", "Rho"]
+fields   = ["B", "Rho"]
 format   = "HDF5"
 interval = 10

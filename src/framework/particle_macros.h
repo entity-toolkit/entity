@@ -19,17 +19,15 @@
 #define get_prtl_x3(PARTICLES, P)                                                             \
   (static_cast<real_t>((PARTICLES).i3((P))) + static_cast<real_t>((PARTICLES).dx3((P))))
 
-#ifdef GRPIC_ENGINE
-#  define get_prtl_x1_prev(PARTICLES, P)                                                      \
-    (static_cast<real_t>((PARTICLES).i1_prev((P)))                                            \
-     + static_cast<real_t>((PARTICLES).dx1_prev((P))))
-#  define get_prtl_x2_prev(PARTICLES, P)                                                      \
-    (static_cast<real_t>((PARTICLES).i2_prev((P)))                                            \
-     + static_cast<real_t>((PARTICLES).dx2_prev((P))))
-#  define get_prtl_x3_prev(PARTICLES, P)                                                      \
-    (static_cast<real_t>((PARTICLES).i3_prev((P)))                                            \
-     + static_cast<real_t>((PARTICLES).dx3_prev((P))))
-#endif
+#define get_prtl_x1_prev(PARTICLES, P)                                                        \
+  (static_cast<real_t>((PARTICLES).i1_prev((P)))                                              \
+   + static_cast<real_t>((PARTICLES).dx1_prev((P))))
+#define get_prtl_x2_prev(PARTICLES, P)                                                        \
+  (static_cast<real_t>((PARTICLES).i2_prev((P)))                                              \
+   + static_cast<real_t>((PARTICLES).dx2_prev((P))))
+#define get_prtl_x3_prev(PARTICLES, P)                                                        \
+  (static_cast<real_t>((PARTICLES).i3_prev((P)))                                              \
+   + static_cast<real_t>((PARTICLES).dx3_prev((P))))
 
 #define get_prtl_Usqr_SR(PARTICLES, P)                                                        \
   (PARTICLES).ux1((P)) * (PARTICLES).ux1((P)) + (PARTICLES).ux2((P)) * (PARTICLES).ux2((P))   \
@@ -166,7 +164,7 @@
       int           I1, I2;                                                                   \
       prtldx_t      DX1, DX2;                                                                 \
       ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                     \
-      ((MBLOCK).metric).v3_SphCov2Cov({ X_CU[0], X_CU[1] }, { U1, U2, U3 }, U_C);             \
+      ((MBLOCK).metric).v3_PhysCov2Cov({ X_CU[0], X_CU[1] }, { U1, U2, U3 }, U_C);            \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                      \
       from_Xi_to_i_di(X_CU[1], I2, DX2);                                                      \
       init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U_C[0], U_C[1], U_C[2], WEIGHT);    \

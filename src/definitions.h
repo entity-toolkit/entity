@@ -124,7 +124,7 @@ namespace ntt {
     const std::vector<std::string> pushers = { "Boris", "Photon", "None" };
     const std::vector<std::string> boundaries
       = { "PERIODIC", "ABSORB", "CUSTOM", "OPEN", "AXIS" };
-    const std::vector<std::string> outputs = { "disabled", "HDF5" };
+    const std::vector<std::string> outputs = { "disabled", "HDF5", "BP5" };
   }    // namespace options
 
   namespace defaults {
@@ -165,6 +165,7 @@ namespace ntt {
     B,      // Magnetic fields
     H,      // Magnetic fields (GR)
     J,      // Current density
+    A,      // Vector potential
     T,      // Particle distribution moments
     Rho,    // Particle density
     N,      // Particle number density

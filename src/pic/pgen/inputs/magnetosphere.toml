@@ -47,12 +47,7 @@ inj_maxDens  = 5.0
 field_mode   = 1   # 1 = Monopole, 2 = Dipole
 u_kick       = 0.5
 
-[visualization]
-fields = ["Rho", "Br", "Btheta", "Bphi", "Er", "Etheta", "Ephi", "Jr", "Jphi"]
-#fields_stride = 8
-fields_stride = 4
-
 [output]
-fields   = ["Rho", "Bi", "Ei"]
+fields   = ["Rho", "B", "E"]
 format   = "HDF5"
 interval = 100

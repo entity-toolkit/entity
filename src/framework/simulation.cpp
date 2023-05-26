@@ -4,8 +4,9 @@
 
 #include "fields.h"
 #include "progressbar.h"
-#include "timer.h"
-#include "utils.h"
+
+#include "utils/timer.h"
+#include "utils/utils.h"
 
 #include <plog/Log.h>
 #include <toml.hpp>

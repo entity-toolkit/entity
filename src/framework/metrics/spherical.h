@@ -18,6 +18,7 @@ namespace ntt {
   class Metric : public MetricBase<D> {
   private:
     const real_t dr, dtheta, dphi;
+    const real_t dr_inv, dtheta_inv, dphi_inv;
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
@@ -28,27 +29,14 @@ namespace ntt {
         dr((this->x1_max - this->x1_min) / this->nx1),
         dtheta(constant::PI / this->nx2),
         dphi(constant::TWO_PI / this->nx3),
-        dr_sqr(dr * dr),
-        dtheta_sqr(dtheta * dtheta),
-        dphi_sqr(dphi * dphi),
+        dr_inv { ONE / dr },
+        dtheta_inv { ONE / dtheta },
+        dphi_inv { ONE / dphi },
+        dr_sqr { SQR(dr) },
+        dtheta_sqr { SQR(dtheta) },
+        dphi_sqr { SQR(dphi) },
         dx_min { findSmallestCell() } {}
     ~Metric() = default;
-
-    /**
-     * Compute minimum effective cell size for a given metric (in physical units).
-     *
-     * @returns Minimum cell size of the grid [physical units].
-     */
-    auto findSmallestCell() const -> real_t {
-      if constexpr (D == Dim2) {
-        auto dx1 { dr };
-        auto dx2 { this->x1_min * dtheta };
-        return ONE / math::sqrt(ONE / (dx1 * dx1) + ONE / (dx2 * dx2));
-      } else {
-        NTTHostError("min cell finding not implemented for 3D spherical");
-      }
-      return ZERO;
-    }
 
     /**
      * Compute metric component 11.
@@ -67,7 +55,7 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       real_t r { x[0] * dr + this->x1_min };
-      return dtheta_sqr * r * r;
+      return dtheta_sqr * SQR(r);
     }
     /**
      * Compute metric component 33.
@@ -79,7 +67,11 @@ namespace ntt {
       real_t r { x[0] * dr + this->x1_min };
       real_t theta { x[1] * dtheta };
       real_t sin_theta { math::sin(theta) };
-      return r * r * sin_theta * sin_theta;
+      if constexpr (D == Dim2) {
+        return SQR(r) * SQR(sin_theta);
+      } else {
+        return dphi_sqr * SQR(r) * SQR(sin_theta);
+      }
     }
     /**
      * Compute the square root of the determinant of h-matrix.
@@ -90,7 +82,11 @@ namespace ntt {
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       real_t r { x[0] * dr + this->x1_min };
       real_t theta { x[1] * dtheta };
-      return dr * dtheta * r * r * math::sin(theta);
+      if constexpr (D == Dim2) {
+        return dr * dtheta * SQR(r) * math::sin(theta);
+      } else {
+        return dr * dtheta * dphi * SQR(r) * math::sin(theta);
+      }
     }
     /**
      * Compute the fiducial minimum cell volume.
@@ -110,7 +106,7 @@ namespace ntt {
     Inline auto polar_area(const real_t& x1) const -> real_t {
       real_t r { x1 * dr + this->x1_min };
       real_t del_theta { HALF * dtheta };
-      return dr * r * r * (ONE - math::cos(del_theta));
+      return dr * SQR(r) * (ONE - math::cos(del_theta));
     }
 
 /**
@@ -118,89 +114,27 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "metrics_utils/sph_common.h"
-#include "metrics_utils/sr_common.h"
+#include "metrics_utils/x_code_cart_forGSph.h"
+#include "metrics_utils/x_code_sph_forSph.h"
+
+#include "metrics_utils/v3_cart_hat_cntrv_cov_forGsph.h"
+#include "metrics_utils/v3_hat_cntrv_cov_forSR.h"
+#include "metrics_utils/v3_phys_cov_cntrv_forSph.h"
 
     /**
-     * Coordinate conversion from code units to Cartesian physical units.
+     * Compute minimum effective cell size for a given metric (in physical units).
      *
-     * @param xi coordinate array in code units
-     * @param x coordinate array in Cartesian physical units
+     * @returns Minimum cell size of the grid [physical units].
      */
-    Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Cart not implemented for 1D");
-      } else if constexpr (D == Dim2) {
-        coord_t<D> x_sph;
-        x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * math::sin(x_sph[1]);
-        x[1] = x_sph[0] * math::cos(x_sph[1]);
-      } else if constexpr (D == Dim3) {
-        coord_t<D> x_sph;
-        x_Code2Sph(xi, x_sph);
-        x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
-        x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
-        x[2] = x_sph[0] * math::cos(x_sph[1]);
+    auto findSmallestCell() const -> real_t {
+      if constexpr (D == Dim2) {
+        auto dx1 { dr };
+        auto dx2 { this->x1_min * dtheta };
+        return ONE / math::sqrt(ONE / SQR(dx1) + ONE / SQR(dx2));
+      } else {
+        NTTHostError("min cell finding not implemented for 3D spherical");
       }
-    }
-    /**
-     * Coordinate conversion from Cartesian physical units to code units.
-     *
-     * @param x coordinate array in Cartesian coordinates in
-     * physical units
-     * @param xi coordinate array in code units
-     */
-    Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Cart2Code not implemented for 1D");
-      } else if constexpr (D == Dim2) {
-        coord_t<D> x_sph;
-        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
-        x_sph[1] = math::atan2(x[1], x[0]);
-        x_Sph2Code(x_sph, xi);
-      } else if constexpr (D == Dim3) {
-        coord_t<D> x_sph;
-        x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-        x_sph[1] = math::atan2(x[1], x[0]);
-        x_sph[2] = math::acos(x[2] / x_sph[0]);
-        x_Sph2Code(x_sph, xi);
-      }
-    }
-    /**
-     * Coordinate conversion from code units to Spherical physical units.
-     *
-     * @param xi coordinate array in code units
-     * @param x coordinate array in Spherical coordinates in physical units
-     */
-    Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dim2) {
-        x[0] = xi[0] * dr + this->x1_min;
-        x[1] = xi[1] * dtheta;
-      } else if constexpr (D == Dim3) {
-        x[0] = xi[0] * dr + this->x1_min;
-        x[1] = xi[1] * dtheta;
-        x[2] = xi[2] * dphi;
-      }
-    }
-    /**
-     * Coordinate conversion from Spherical physical units to code units.
-     *
-     * @param x coordinate array in Spherical coordinates in physical units
-     * @param xi coordinate array in code units
-     */
-    Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
-      if constexpr (D == Dim1) {
-        NTTError("x_Code2Sph not implemented for 1D");
-      } else if constexpr (D == Dim2) {
-        xi[0] = (x[0] - this->x1_min) / dr;
-        xi[1] = x[1] / dtheta;
-      } else if constexpr (D == Dim3) {
-        x[0] = (xi[0] - this->x1_min) / dr;
-        x[1] = xi[1] / dtheta;
-        x[2] = xi[2] / dphi;
-      }
+      return ZERO;
     }
   };
 

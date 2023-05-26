@@ -24,8 +24,8 @@
 
 #include <type_traits>
 
-#define Lambda      KOKKOS_LAMBDA
 #define ClassLambda KOKKOS_CLASS_LAMBDA
+#define Lambda      KOKKOS_LAMBDA
 #define Function    KOKKOS_FUNCTION
 #define Inline      KOKKOS_INLINE_FUNCTION
 

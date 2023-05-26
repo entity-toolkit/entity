@@ -57,10 +57,10 @@ temperature_p = 0.1
 temperature_b = 0.1
 
 [visualization]
-fields        = ["Bx", "By", "Rho"]
+fields        = ["B", "Rho"]
 fields_stride = 4
 
 [output]
-fields   = ["Bx", "By", "Rho"]
+fields   = ["B", "Rho"]
 format   = "HDF5"
 interval = 100

@@ -130,6 +130,8 @@ namespace ntt {
       id = FieldID::H;
     } else if (fld.find("J") == 0) {
       id = FieldID::J;
+    } else if (fld.find("A") == 0) {
+      id = FieldID::A;
     } else {
       NTTHostError("Invalid field name");
     }
@@ -140,7 +142,11 @@ namespace ntt {
     if (is_moment) {
       species = InterpretInput_getspecies(fld);
     } else if (is_field) {
-      comps = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1) });
+      // always write all the field components
+      comps = { { 1 }, { 2 }, { 3 } };
+    } else if (id == FieldID::A) {
+      // only write A3
+      comps = { { 3 } };
     }
     if (id == FieldID::T) {
       comps
@@ -158,7 +164,7 @@ namespace ntt {
     } else if (prtl.find("W") == 0) {
       id = PrtlID::W;
     } else {
-      NTTHostError("Invalid particle quantity ");
+      NTTHostError("Invalid particle quantity");
     }
     return OutputParticles(StringizePrtlID(id), InterpretInput_getspecies(prtl), id);
   }

@@ -130,19 +130,19 @@
 #define JX3_3D(I, J, K)  (m_mblock.cur((I), (J), (K), cur::jx3))
 
 #define J0X1(...)        GET_MACRO(__VA_ARGS__, J0X1_3D, J0X1_2D, J0X1_1D, )(__VA_ARGS__)
-#define J0X1_1D(I)       (m_mblock.buff((I), cur::jx1))
-#define J0X1_2D(I, J)    (m_mblock.buff((I), (J), cur::jx1))
-#define J0X1_3D(I, J, K) (m_mblock.buff((I), (J), (K), cur::jx1))
+#define J0X1_1D(I)       (m_mblock.cur0((I), cur::jx1))
+#define J0X1_2D(I, J)    (m_mblock.cur0((I), (J), cur::jx1))
+#define J0X1_3D(I, J, K) (m_mblock.cur0((I), (J), (K), cur::jx1))
 
 #define J0X2(...)        GET_MACRO(__VA_ARGS__, J0X2_3D, J0X2_2D, J0X2_1D, )(__VA_ARGS__)
-#define J0X2_1D(I)       (m_mblock.buff((I), cur::jx2))
-#define J0X2_2D(I, J)    (m_mblock.buff((I), (J), cur::jx2))
-#define J0X2_3D(I, J, K) (m_mblock.buff((I), (J), (K), cur::jx2))
+#define J0X2_1D(I)       (m_mblock.cur0((I), cur::jx2))
+#define J0X2_2D(I, J)    (m_mblock.cur0((I), (J), cur::jx2))
+#define J0X2_3D(I, J, K) (m_mblock.cur0((I), (J), (K), cur::jx2))
 
 #define J0X3(...)        GET_MACRO(__VA_ARGS__, JX3_3D, JX3_2D, JX3_1D, )(__VA_ARGS__)
-#define J0X3_1D(I)       (m_mblock.buff((I), cur::jx3))
-#define J0X3_2D(I, J)    (m_mblock.buff((I), (J), cur::jx3))
-#define J0X3_3D(I, J, K) (m_mblock.buff((I), (J), (K), cur::jx3))
+#define J0X3_1D(I)       (m_mblock.cur0((I), cur::jx3))
+#define J0X3_2D(I, J)    (m_mblock.cur0((I), (J), cur::jx3))
+#define J0X3_3D(I, J, K) (m_mblock.cur0((I), (J), (K), cur::jx3))
 
 #define ATOMIC_JX1(...)                                                                       \
   GET_MACRO(__VA_ARGS__, ATOMIC_JX1_3D, ATOMIC_JX1_2D, ATOMIC_JX1_1D, )(__VA_ARGS__)
@@ -174,7 +174,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                   \
       (MBLOCK).em((I), (J), COMP) = e_cntrv[COMPI];                                           \
     }
 
@@ -185,7 +185,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                   \
       (MBLOCK).em((I), (J), COMP) = b_cntrv[COMPI];                                           \
     }
 
@@ -198,7 +198,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                   \
       (MBLOCK).em((I), (J), COMP) = e_cntrv[COMPI];                                           \
     }
 
@@ -209,7 +209,7 @@
       coord_t<Dim2> x_ph { ZERO };                                                            \
       (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                    \
+      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                   \
       (MBLOCK).em((I), (J), COMP) = b_cntrv[COMPI];                                           \
     }
 

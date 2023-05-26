@@ -17,7 +17,7 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t dx, dx_sqr, inv_dx;
+    const real_t dx, dx_sqr, dx_inv;
 
   public:
     const real_t dx_min;
@@ -26,7 +26,7 @@ namespace ntt {
       : MetricBase<D> { "minkowski", resolution, extent },
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
-        inv_dx(ONE / dx),
+        dx_inv(ONE / dx),
         dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
@@ -91,7 +91,7 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
-#include "metrics_utils/sr_common.h"
+#include "metrics_utils/v3_hat_cntrv_cov_forSR.h"
 
     /**
      * Coordinate conversion from code units to Cartesian physical units.
@@ -131,8 +131,8 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis
      */
     Inline void v3_Cntrv2Cart(const coord_t<D>&  xi,
-                             const vec_t<Dim3>& vi_cntrv,
-                             vec_t<Dim3>&       vi_cart) const {
+                              const vec_t<Dim3>& vi_cntrv,
+                              vec_t<Dim3>&       vi_cart) const {
       this->v3_Cntrv2Hat(xi, vi_cntrv, vi_cart);
     }
 
@@ -144,8 +144,8 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis
      */
     Inline void v3_Cart2Cntrv(const coord_t<D>&  xi,
-                             const vec_t<Dim3>& vi_cart,
-                             vec_t<Dim3>&       vi_cntrv) const {
+                              const vec_t<Dim3>& vi_cart,
+                              vec_t<Dim3>&       vi_cntrv) const {
       this->v3_Hat2Cntrv(xi, vi_cart, vi_cntrv);
     }
 
@@ -157,8 +157,8 @@ namespace ntt {
      * @param vi_cart vector in global Cartesian basis
      */
     Inline void v3_Cov2Cart(const coord_t<D>&  xi,
-                           const vec_t<Dim3>& vi_cov,
-                           vec_t<Dim3>&       vi_cart) const {
+                            const vec_t<Dim3>& vi_cov,
+                            vec_t<Dim3>&       vi_cart) const {
       this->v3_Cov2Hat(xi, vi_cov, vi_cart);
     }
 
@@ -170,9 +170,109 @@ namespace ntt {
      * @param vi_cov vector in covariant basis
      */
     Inline void v3_Cart2Cov(const coord_t<D>&  xi,
-                           const vec_t<Dim3>& vi_cart,
-                           vec_t<Dim3>&       vi_cov) const {
+                            const vec_t<Dim3>& vi_cart,
+                            vec_t<Dim3>&       vi_cov) const {
       this->v3_Hat2Cov(xi, vi_cart, vi_cov);
+    }
+
+    /**
+     * Vector conversion from contravariant to physical contravariant.
+     *
+     * @param xi coordinate array in code units
+     * @param vi_cntrv vector in contravariant basis
+     * @param v_cntrv vector in physical contravariant basis
+     */
+    Inline void v3_Cntrv2PhysCntrv(const coord_t<D>&,
+                                   const vec_t<Dim3>& vi_cntrv,
+                                   vec_t<Dim3>&       v_cntrv) const {
+      if constexpr (D == Dim1) {
+        v_cntrv[0] = vi_cntrv[0] * dx;
+        v_cntrv[1] = vi_cntrv[1];
+        v_cntrv[2] = vi_cntrv[2];
+      } else if constexpr (D == Dim2) {
+        v_cntrv[0] = vi_cntrv[0] * dx;
+        v_cntrv[1] = vi_cntrv[1] * dx;
+        v_cntrv[2] = vi_cntrv[2];
+      } else {
+        v_cntrv[0] = vi_cntrv[0] * dx;
+        v_cntrv[1] = vi_cntrv[1] * dx;
+        v_cntrv[2] = vi_cntrv[2] * dx;
+      }
+    }
+
+    /**
+     * Vector conversion from physical contravariant to contravariant.
+     *
+     * @param xi coordinate array in code units
+     * @param v_cntrv vector in physical contravariant basis
+     * @param vi_cntrv vector in contravariant basis
+     */
+    Inline void v3_PhysCntrv2Cntrv(const coord_t<D>&,
+                                   const vec_t<Dim3>& v_cntrv,
+                                   vec_t<Dim3>&       vi_cntrv) const {
+      if constexpr (D == Dim1) {
+        vi_cntrv[0] = v_cntrv[0] * dx_inv;
+        vi_cntrv[1] = v_cntrv[1];
+        vi_cntrv[2] = v_cntrv[2];
+      } else if constexpr (D == Dim2) {
+        vi_cntrv[0] = v_cntrv[0] * dx_inv;
+        vi_cntrv[1] = v_cntrv[1] * dx_inv;
+        vi_cntrv[2] = v_cntrv[2];
+      } else {
+        vi_cntrv[0] = v_cntrv[0] * dx_inv;
+        vi_cntrv[1] = v_cntrv[1] * dx_inv;
+        vi_cntrv[2] = v_cntrv[2] * dx_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from covariant to physical covariant.
+     *
+     * @param xi coordinate array in code units
+     * @param vi_cov vector in covariant basis
+     * @param v_cov vector in physical covariant basis
+     */
+    Inline void v3_Cov2PhysCov(const coord_t<D>&,
+                               const vec_t<Dim3>& vi_cov,
+                               vec_t<Dim3>&       v_cov) const {
+      if constexpr (D == Dim1) {
+        v_cov[0] = vi_cov[0] * dx_inv;
+        v_cov[1] = vi_cov[1];
+        v_cov[2] = vi_cov[2];
+      } else if constexpr (D == Dim2) {
+        v_cov[0] = vi_cov[0] * dx_inv;
+        v_cov[1] = vi_cov[1] * dx_inv;
+        v_cov[2] = vi_cov[2];
+      } else {
+        v_cov[0] = vi_cov[0] * dx_inv;
+        v_cov[1] = vi_cov[1] * dx_inv;
+        v_cov[2] = vi_cov[2] * dx_inv;
+      }
+    }
+
+    /**
+     * Vector conversion from covariant to physical covariant.
+     *
+     * @param xi coordinate array in code units
+     * @param v_cov vector in physical covariant basis
+     * @param vi_cov vector in covariant basis
+     */
+    Inline void v3_PhysCov2Cov(const coord_t<D>&,
+                               const vec_t<Dim3>& v_cov,
+                               vec_t<Dim3>&       vi_cov) const {
+      if constexpr (D == Dim1) {
+        vi_cov[0] = v_cov[0] * dx;
+        vi_cov[1] = v_cov[1];
+        vi_cov[2] = v_cov[2];
+      } else if constexpr (D == Dim2) {
+        vi_cov[0] = v_cov[0] * dx;
+        vi_cov[1] = v_cov[1] * dx;
+        vi_cov[2] = v_cov[2];
+      } else {
+        vi_cov[0] = v_cov[0] * dx;
+        vi_cov[1] = v_cov[1] * dx;
+        vi_cov[2] = v_cov[2] * dx;
+      }
     }
   };
 
@@ -185,7 +285,7 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim1>::x_Cart2Code(const coord_t<Dim1>& x, coord_t<Dim1>& xi) const {
-    xi[0] = (x[0] - this->x1_min) * inv_dx;
+    xi[0] = (x[0] - this->x1_min) * dx_inv;
   }
   template <>
   Inline void Metric<Dim1>::x_Code2Sph(const coord_t<Dim1>&, coord_t<Dim1>&) const {}
@@ -202,8 +302,8 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim2>::x_Cart2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
-    xi[0] = (x[0] - this->x1_min) * inv_dx;
-    xi[1] = (x[1] - this->x2_min) * inv_dx;
+    xi[0] = (x[0] - this->x1_min) * dx_inv;
+    xi[1] = (x[1] - this->x2_min) * dx_inv;
   }
   template <>
   Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
@@ -229,9 +329,9 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim3>::x_Cart2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
-    xi[0] = (x[0] - this->x1_min) * inv_dx;
-    xi[1] = (x[1] - this->x2_min) * inv_dx;
-    xi[2] = (x[2] - this->x3_min) * inv_dx;
+    xi[0] = (x[0] - this->x1_min) * dx_inv;
+    xi[1] = (x[1] - this->x2_min) * dx_inv;
+    xi[2] = (x[2] - this->x3_min) * dx_inv;
   }
   template <>
   Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {

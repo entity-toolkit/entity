@@ -1,5 +1,5 @@
-#ifndef FRAMEWORK_METRICS_KERR_SCHILD_SCHW_H
-#define FRAMEWORK_METRICS_KERR_SCHILD_SCHW_H
+#ifndef FRAMEWORK_METRICS_KERR_SCHILD_H
+#define FRAMEWORK_METRICS_KERR_SCHILD_H
 
 #include "wrapper.h"
 
@@ -10,7 +10,7 @@
 
 namespace ntt {
   /**
-   * Schwarzschild metric in Kerr-Schild coordinates
+   * Kerr metric in Kerr-Schild coordinates
    * Units: c = rg = 1
    *
    * @tparam D dimension.
@@ -21,8 +21,10 @@ namespace ntt {
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
+    // Spin parameter, in [0,1[
+    // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t rh;
+    const real_t rh, a, a_sqr;
 
   public:
     const real_t dx_min;
@@ -30,105 +32,95 @@ namespace ntt {
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
-      : MetricBase<D> { "schwarzschild", resolution, extent },
+      : MetricBase<D> { "kerr_schild", resolution, extent },
         rh { params[5] },
+        a { params[4] },
+        a_sqr { SQR(a) },
         dr { (this->x1_max - this->x1_min) / this->nx1 },
         dtheta { (real_t)(constant::PI) / this->nx2 },
         dphi { (real_t)(constant::TWO_PI) / this->nx3 },
         dr_inv { ONE / dr },
         dtheta_inv { ONE / dtheta },
         dphi_inv { ONE / dphi },
-        dr_sqr { dr * dr },
-        dtheta_sqr { dtheta * dtheta },
-        dphi_sqr { dphi * dphi },
+        dr_sqr { SQR(dr) },
+        dtheta_sqr { SQR(dtheta) },
+        dphi_sqr { SQR(dphi) },
         dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
     [[nodiscard]] auto spin() const -> const real_t& {
-      return ZERO;
+      return a;
     }
 
     [[nodiscard]] auto rhorizon() const -> const real_t& {
       return rh;
     }
 
-    /**
-     * Compute metric component 11.
-     *
-     * @param x coordinate array in code units
-     * @returns h_11 (covariant, lower index) metric component.
-     */
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      return dr_sqr * (ONE + TWO / r);
+      return dr_sqr;
     }
-
-    /**
-     * Compute metric component 22.
-     *
-     * @param x coordinate array in code units
-     * @returns h_22 (covariant, lower index) metric component.
-     */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
+      const real_t r { x[0] * dr + this->x1_min };
       return dtheta_sqr * SQR(r);
     }
-
-    /**
-     * Compute metric component 33.
-     *
-     * @param x coordinate array in code units
-     * @returns h_33 (covariant, lower index) metric component.
-     */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t sth { math::sin(x[1] * dtheta) };
-      return SQR(r) * SQR(sth);
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      if constexpr (D == Dim2) {
+        return SQR(r * math::sin(theta));
+      } else {
+        return dphi_sqr * SQR(r * math::sin(theta));
+      }
     }
-
-    /**
-     * Compute metric component 13.
-     *
-     * @param x coordinate array in code units
-     * @returns h_13 (covariant, lower index) metric component.
-     */
     Inline auto h_13(const coord_t<D>& x) const -> real_t {
       return ZERO;
     }
-
-    /**
-     * Compute lapse function.
-     *
-     * @param x coordinate array in code units
-     * @returns alpha.
-     */
+    Inline auto h11(const coord_t<D>& x) const -> real_t {
+      return SQR(dr_inv);
+    }
+    Inline auto h22(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      return SQR(dtheta_inv / r);
+    }
+    Inline auto h33(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      if constexpr (D == Dim2) {
+        return ONE / (SQR(r * math::sin(theta)));
+      } else {
+        return SQR(dphi_inv / (r * math::sin(theta)));
+      }
+    }
+    Inline auto h13(const coord_t<D>& x) const -> real_t {
+      return ZERO;
+    }
     Inline auto alpha(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t z { TWO / r };
-      return ONE / math::sqrt(ONE + z);
+      return ONE;
     }
-
-    /**
-     * Compute radial component of shift vector.
-     *
-     * @param x coordinate array in code units
-     * @returns beta^1 (contravariant).
-     */
     Inline auto beta1(const coord_t<D>& x) const -> real_t {
-      real_t r { x[0] * dr + this->x1_min };
-      real_t z { TWO / r };
-      return (z / (ONE + z)) * dr_inv;
+      return ZERO;
+    }
+    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      // ?ASK is this correct?
+      if constexpr (D == Dim2) {
+        return dr * dtheta * SQR(r) * math::sin(theta);
+      } else {
+        return dr * dtheta * dphi * SQR(r) * math::sin(theta);
+      }
+    }
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      const real_t r { x[0] * dr + this->x1_min };
+      const real_t theta { x[1] * dtheta };
+      // ?ASK is this correct?
+      if constexpr (D == Dim2) {
+        return dr * dtheta * SQR(r);
+      } else {
+        return dr * dtheta * dphi * SQR(r);
+      }
     }
 
-    /**
-     * Compute the square root of the determinant of h-matrix divided by sin(theta).
-     *
-     * @param x coordinate array in code units
-     * @returns sqrt(det(h))/sin(theta).
-     */
-    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
-      return h_22(x) / alpha(x);
-    }
     /**
      * Compute the fiducial minimum cell volume.
      *
@@ -148,180 +140,15 @@ namespace ntt {
     Inline auto polar_area(const coord_t<D>& x) const -> real_t {
       real_t r { x[0] * dr + this->x1_min };
       real_t del_theta { x[1] * dtheta };
-      return dr * SQR(r) * math::sqrt(ONE + TWO / r) * (ONE - math::cos(del_theta));
+      return dr * SQR(r) * (ONE - math::cos(del_theta));
     }
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
+#include "metrics_utils/ks_common.h"
 #include "metrics_utils/sph_common.h"
-
-    /**
-     * Compute the square root of the determinant of h-matrix.
-     *
-     * @param x coordinate array in code units
-     * @returns sqrt(det(h)).
-     */
-    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      return math::sqrt(h_22(x) * h_11(x) * h_33(x));
-    }
-
-    /**
-     * Compute inverse metric component 11 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^11 (contravariant, upper index) metric component.
-     */
-    Inline auto h11(const coord_t<D>& x) const -> real_t {
-      return (ONE / (ONE + TWO / (x[0] * dr + this->x1_min))) / dr_sqr;
-    }
-
-    /**
-     * Compute inverse metric component 22 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^22 (contravariant, upper index) metric component.
-     */
-    Inline auto h22(const coord_t<D>& x) const -> real_t {
-      return (ONE / SQR(x[0] * dr + this->x1_min)) / dtheta_sqr;
-    }
-
-    /**
-     * Compute inverse metric component 33 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^33 (contravariant, upper index) metric component.
-     */
-    Inline auto h33(const coord_t<D>& x) const -> real_t {
-      return ONE / SQR((x[0] * dr + this->x1_min) * math::sin(x[1] * dtheta));
-    }
-
-    /**
-     * Compute inverse metric component 13 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^13 (contravariant, upper index) metric component.
-     */
-    Inline auto h13(const coord_t<D>& x) const -> real_t {
-      return ZERO;
-    }
-
-    /**
-     * Vector conversion from hatted to contravariant basis.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_hat vector in hatted basis
-     * @param vi_cntrv vector in contravariant basis
-     */
-    Inline void v3_Hat2Cntrv(const coord_t<D>&  xi,
-                             const vec_t<Dim3>& vi_hat,
-                             vec_t<Dim3>&       vi_cntrv) const {
-      vi_cntrv[0] = vi_hat[0] / math::sqrt(h_11(xi));
-      vi_cntrv[1] = vi_hat[1] / math::sqrt(h_22(xi));
-      vi_cntrv[2] = vi_hat[2] / math::sqrt(h_33(xi));
-    }
-
-    /**
-     * Vector conversion from contravariant to hatted basis.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cntrv vector in contravariant basis
-     * @param vi_hat vector in hatted basis
-     */
-    Inline void v3_Cntrv2Hat(const coord_t<D>&  xi,
-                             const vec_t<Dim3>& vi_cntrv,
-                             vec_t<Dim3>&       vi_hat) const {
-      vi_hat[0] = vi_cntrv[0] * math::sqrt(h_11(xi));
-      vi_hat[1] = vi_cntrv[1] * math::sqrt(h_22(xi));
-      vi_hat[2] = vi_cntrv[2] * math::sqrt(h_33(xi));
-    }
-
-    /**
-     * Vector conversion from hatted to covariant basis.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_hat vector in hatted basis
-     * @param vi_cov vector in covariant basis
-     */
-    Inline void v3_Hat2Cov(const coord_t<D>&  xi,
-                           const vec_t<Dim3>& vi_hat,
-                           vec_t<Dim3>&       vi_cov) const {
-      vi_cov[0] = vi_hat[0] * math::sqrt(h_11(xi));
-      vi_cov[1] = vi_hat[1] * math::sqrt(h_22(xi));
-      vi_cov[2] = vi_hat[2] * math::sqrt(h_33(xi));
-    }
-
-    /**
-     * Vector conversion from covariant to hatted basis.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cov vector in covariant basis
-     * @param vi_hat vector in hatted basis
-     */
-    Inline void v3_Cov2Hat(const coord_t<D>&  xi,
-                           const vec_t<Dim3>& vi_cov,
-                           vec_t<Dim3>&       v_hat) const {
-      v_hat[0] = vi_cov[0] / math::sqrt(h_11(xi));
-      v_hat[1] = vi_cov[1] / math::sqrt(h_22(xi));
-      v_hat[2] = vi_cov[2] / math::sqrt(h_33(xi));
-    }
-
-    /**
-     * Vector conversion from covariant to contravariant basis.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cov vector in covariant basis
-     * @param vi_cntrv vector in contravariant basis
-     */
-    Inline void v3_Cov2Cntrv(const coord_t<D>&  xi,
-                             const vec_t<Dim3>& vi_cov,
-                             vec_t<Dim3>&       vi_cntrv) const {
-      vi_cntrv[0] = vi_cov[0] * h11(xi);
-      vi_cntrv[1] = vi_cov[1] * h22(xi);
-      vi_cntrv[2] = vi_cov[2] * h33(xi);
-    }
-
-    /**
-     * Vector conversion from contravariant to covariant basis.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cntrv vector in contravariant basis
-     * @param vi_cov vector in covaraint basis
-     */
-    Inline void v3_Cntrv2Cov(const coord_t<D>&  xi,
-                             const vec_t<Dim3>& vi_cntrv,
-                             vec_t<Dim3>&       vi_cov) const {
-      vi_cov[0] = vi_cntrv[0] * h_11(xi);
-      vi_cov[1] = vi_cntrv[1] * h_22(xi);
-      vi_cov[2] = vi_cntrv[2] * h_33(xi);
-    }
-
-    /**
-     * Compute the squared norm of a covariant vector.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cov vector in covariant basis
-     * @return Norm of the covariant vector.
-     */
-    Inline auto v3_CovNorm(const coord_t<D>& xi, const vec_t<Dim3>& vi_cov) const -> real_t {
-      return vi_cov[0] * vi_cov[0] * h11(xi) + vi_cov[1] * vi_cov[1] * h22(xi)
-             + vi_cov[2] * vi_cov[2] * h33(xi);
-    }
-
-    /**
-     * Compute the squared norm of a contravariant vector.
-     *
-     * @param xi coordinate array in code units
-     * @param vi_cntrv vector in contravariant basis
-     * @return Norm of the contravariant vector.
-     */
-    Inline auto v3_CntrvNorm(const coord_t<D>& xi, const vec_t<Dim3>& vi_cntrv) const
-      -> real_t {
-      return vi_cntrv[0] * vi_cntrv[0] * h_11(xi) + vi_cntrv[1] * vi_cntrv[1] * h_22(xi)
-             + vi_cntrv[2] * vi_cntrv[2] * h_33(xi);
-    }
-    // ...........................................................................
 
     /**
      * Compute minimum effective cell size for a given metric (in physical units).
@@ -433,7 +260,7 @@ namespace ntt {
      * @param vi_cntrv vector in contravariant basis
      * @param vsph_cntrv vector in spherical contravariant basis
      */
-    Inline void v3_Cntrv2SphCntrv(const coord_t<D>&,
+    Inline void v3_Cntrv2PhysCntrv(const coord_t<D>&,
                                   const vec_t<Dim3>& vi_cntrv,
                                   vec_t<Dim3>&       vsph_cntrv) const {
       vsph_cntrv[0] = vi_cntrv[0] * dr;
@@ -452,7 +279,7 @@ namespace ntt {
      * @param vsph_cntrv vector in spherical contravariant basis
      * @param vi_cntrv vector in contravariant basis
      */
-    Inline void v3_SphCntrv2Cntrv(const coord_t<D>&,
+    Inline void v3_PhysCntrv2Cntrv(const coord_t<D>&,
                                   const vec_t<Dim3>& vsph_cntrv,
                                   vec_t<Dim3>&       vi_cntrv) const {
       vi_cntrv[0] = vsph_cntrv[0] * dr_inv;
@@ -471,7 +298,7 @@ namespace ntt {
      * @param vi_cov vector in covariant basis
      * @param vsph_cov vector in spherical covariant basis
      */
-    Inline void v3_Cov2SphCov(const coord_t<D>&,
+    Inline void v3_Cov2PhysCov(const coord_t<D>&,
                               const vec_t<Dim3>& vi_cov,
                               vec_t<Dim3>&       vsph_cov) const {
       vsph_cov[0] = vi_cov[0] * dr_inv;
@@ -490,7 +317,7 @@ namespace ntt {
      * @param vsph_cov vector in spherical covariant basis
      * @param vi_cov vector in covariant basis
      */
-    Inline void v3_SphCov2Cov(const coord_t<D>&,
+    Inline void v3_PhysCov2Cov(const coord_t<D>&,
                               const vec_t<Dim3>& vsph_cov,
                               vec_t<Dim3>&       vi_cov) const {
       vi_cov[0] = vsph_cov[0] * dr;

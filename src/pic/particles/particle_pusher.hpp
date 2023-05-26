@@ -43,27 +43,6 @@ namespace ntt {
         m_coeff(coeff),
         m_dt(dt),
         m_ni2 { mblock.Ni2() } {}
-    /**
-     * @brief Loop over all active particles of the given species and call the appropriate
-     * pusher.
-     */
-    void apply() {
-      if (m_particles.pusher() == ParticlePusher::PHOTON) {
-        // push photons
-        auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::BORIS) {
-        // push boris-particles
-        auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::NONE) {
-        // do nothing
-      } else {
-        NTTHostError("not implemented");
-      }
-    }
 
     /**
      * @brief Pusher for the forward Boris algorithm.

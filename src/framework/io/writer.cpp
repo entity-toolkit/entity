@@ -27,8 +27,8 @@ namespace ntt {
 #ifdef OUTPUT_ENABLED
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::Initialize(const SimulationParams& params, const Meshblock<D, S>& mblock) {
-    m_io = m_adios.DeclareIO("WriteKokkos");
-    m_io.SetEngine("HDF5");
+    m_io = m_adios.DeclareIO("EntityOutput");
+    m_io.SetEngine(params.outputFormat() != "disabled" ? params.outputFormat() : "HDF5");
     adios2::Dims shape, start, count;
     for (short d = 0; d < (short)D; ++d) {
       shape.push_back(mblock.Ni(d) + 2 * N_GHOSTS);
@@ -183,10 +183,15 @@ namespace ntt {
         }
       }
     }
+    m_writer = m_io.Open(params.title() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
+                         adios2::Mode::Write);
+    m_adios.EnterComputationBlock();
   }
 
   template <Dimension D, SimulationEngine S>
-  Writer<D, S>::~Writer() {}
+  Writer<D, S>::~Writer() {
+    m_writer.Close();
+  }
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteAll(const SimulationParams& params,
@@ -209,10 +214,9 @@ namespace ntt {
          && ((output_by_step && is_output_step) || (output_by_time && is_output_time)));
 
     if (do_output) {
+      m_adios.ExitComputationBlock();
       WaitAndSynchronize();
       NTTLog();
-      m_writer = m_io.Open(params.title() + ".h5", m_mode);
-      m_mode   = adios2::Mode::Append;
       m_writer.BeginStep();
       int step = (int)tstep;
 
@@ -223,8 +227,8 @@ namespace ntt {
       WriteParticles(params, mblock, time, tstep);
 
       m_writer.EndStep();
-      m_writer.Close();
       m_last_output_time = time;
+      m_adios.EnterComputationBlock();
     }
   }
 
