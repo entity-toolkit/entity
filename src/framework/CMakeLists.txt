@@ -1,3 +1,0 @@
-file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-target_sources(${FRAMEWORK} PRIVATE ${SRC_FILES})
-target_link_libraries(${FRAMEWORK} PRIVATE ${WRAPPER})

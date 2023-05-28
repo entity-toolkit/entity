@@ -2,8 +2,8 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "progressbar.h"
+#include "io/output.h"
+#include "utils/progressbar.h"
 
 #include "utils/timer.h"
 #include "utils/utils.h"

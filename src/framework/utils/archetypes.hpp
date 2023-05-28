@@ -3,9 +3,9 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "meshblock.h"
-#include "qmath.h"
+#include "io/output.h"
+#include "meshblock/meshblock.h"
+#include "utils/qmath.h"
 #include "sim_params.h"
 
 #ifdef NTTINY_ENABLED

@@ -4,10 +4,10 @@
 
 #  include "wrapper.h"
 
-#  include "meshblock.h"
-#  include "output.h"
+#  include "meshblock/meshblock.h"
+#  include "io/output.h"
 #  include "particle_macros.h"
-#  include "particles.h"
+#  include "meshblock/particles.h"
 #  include "sim_params.h"
 
 #  include <adios2.h>

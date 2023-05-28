@@ -2,11 +2,11 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "meshblock.h"
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 #include "sim_params.h"
 #include "simulation.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>

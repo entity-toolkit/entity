@@ -3,9 +3,9 @@
 
 #include "wrapper.h"
 
-#include "input.h"
-#include "particles.h"
-#include "utils.h"
+#include "io/input.h"
+#include "meshblock/particles.h"
+#include "utils/utils.h"
 
 #include <toml.hpp>
 

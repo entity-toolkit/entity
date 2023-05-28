@@ -16,7 +16,7 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
+#include "io/output.h"
 #include "pic.h"
 
 namespace ntt {

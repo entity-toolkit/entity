@@ -1,7 +1,7 @@
 #ifndef TEST_QMATH_H
 #define TEST_QMATH_H
 
-#include "qmath.h"
+#include "utils/qmath.h"
 
 #include <doctest.h>
 

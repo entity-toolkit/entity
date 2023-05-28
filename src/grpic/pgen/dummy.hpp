@@ -3,10 +3,10 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
+#include "utils/archetypes.hpp"
 
 namespace ntt {
 

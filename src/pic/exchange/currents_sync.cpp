@@ -1,7 +1,7 @@
 #include "wrapper.h"
 
-#include "fields.h"
-#include "meshblock.h"
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 #include "pic.h"
 
 namespace ntt {

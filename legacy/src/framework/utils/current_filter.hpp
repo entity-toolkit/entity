@@ -2,7 +2,7 @@
 #define UTILS_CURRENT_FILTER_H
 
 #include "wrapper.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 
 namespace ntt {
 //   /**

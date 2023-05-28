@@ -3,12 +3,12 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "particle_macros.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
-#include "injector.hpp"
+#include "utils/archetypes.hpp"
+#include "utils/injector.hpp"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"

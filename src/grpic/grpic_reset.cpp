@@ -1,6 +1,6 @@
 #include "wrapper.h"
 
-#include "fields.h"
+#include "io/output.h"
 #include "grpic.h"
 #include "simulation.h"
 

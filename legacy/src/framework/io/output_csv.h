@@ -2,8 +2,8 @@
 #define IO_OUTPUT_CSV_H
 
 #include "wrapper.h"
-#include "fields.h"
-#include "meshblock.h"
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 
 namespace ntt {
   // enum class OutputMode { UNDEFINED, WRITE, APPEND };

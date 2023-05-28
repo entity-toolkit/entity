@@ -1,8 +1,8 @@
 #include "wrapper.h"
-#include "input.h"
+#include "io/input.h"
 #include "field_macros.h"
 #include "sim_params.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 
 #include "problem_generator.hpp"
 

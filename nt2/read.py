@@ -439,7 +439,7 @@ class Data:
         ngh = self.file.attrs["NGhosts"]
         layout = "right" if self.file.attrs["LayoutRight"] == 1 else "left"
         dimension = self.file.attrs["Dimension"]
-        coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
+        coordinates = "spherical"#self.file.attrs["Coordinates"].decode("UTF-8")
         if coordinates == "qspherical":
             coordinates = "spherical"
         coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]

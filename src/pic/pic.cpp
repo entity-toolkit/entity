@@ -2,7 +2,7 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
+#include "io/output.h"
 #include "sim_params.h"
 
 #include "utils/timer.h"

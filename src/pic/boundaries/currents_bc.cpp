@@ -11,7 +11,7 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "pic.h"
 
 #ifndef MINKOWSKI_METRIC

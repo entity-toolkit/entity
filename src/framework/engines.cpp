@@ -3,23 +3,23 @@
  */
 #include "wrapper.h"
 
-#include "fields.h"
-#include "meshblock.h"
-#include "output.h"
-#include "particles.h"
 #include "simulation.h"
 
+#include "io/output.h"
 #include "io/writer.h"
+#include "meshblock/fields.h"
+#include "meshblock/meshblock.h"
+#include "meshblock/particles.h"
 
-#include "fields.cpp"
+#include "io/output_flds.cpp"
+#include "io/output_prtls.cpp"
 #include "io/writer.cpp"
-#include "meshblock.cpp"
-#include "meshblock_output.cpp"
-#include "output_flds.cpp"
-#include "output_prtls.cpp"
-#include "particles.cpp"
+#include "meshblock/fields.cpp"
+#include "meshblock/meshblock.cpp"
+#include "meshblock/meshblock_output.cpp"
+#include "meshblock/particles.cpp"
+#include "meshblock/species.cpp"
 #include "simulation.cpp"
-#include "species.cpp"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>

@@ -3,7 +3,7 @@
 
 #include "wrapper.h"
 #include "sim_params.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 
 namespace ntt {
 

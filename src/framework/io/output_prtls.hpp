@@ -3,9 +3,9 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "particles.h"
+#include "meshblock/particles.h"
 
 namespace ntt {
   struct OutputPositions_t {};
