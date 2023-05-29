@@ -141,6 +141,13 @@ namespace ntt {
       CreateRangePolicy<Dim2>({ mblock.i1_min() - 1, mblock.i2_min() },
                               { mblock.i1_max(), mblock.i2_max() + 1 }),
       Generate2DGRFromVectorPotential_kernel<VerticalPotential>(params, mblock, ONE));
+
+    Kokkos::parallel_for(
+      "UserInitFields", mblock.rangeAllCells(), Lambda(index_t i1, index_t i2) {
+        mblock.em(i1, i2, em::dx1) = ZERO;
+        mblock.em(i1, i2, em::dx2) = ZERO;
+        mblock.em(i1, i2, em::dx3) = ZERO;
+      });
   }
 }    // namespace ntt
 
