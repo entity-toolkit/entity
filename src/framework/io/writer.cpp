@@ -120,8 +120,8 @@ namespace ntt {
     m_io.DefineAttribute<int>("Dimension", (int)D);
 
 #  ifdef GRPIC_ENGINE
-    m_io.DefineAttribute<real_t>("a", mblock.metric.spin());
-    m_io.DefineAttribute<real_t>("rh", mblock.metric.rhorizon());
+    m_io.DefineAttribute<real_t>("Spin", mblock.metric.spin());
+    m_io.DefineAttribute<real_t>("Rhorizon", mblock.metric.rhorizon());
 #  endif
 
     for (auto sp { 0 }; sp < mblock.particles.size(); ++sp) {

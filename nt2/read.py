@@ -273,8 +273,8 @@ class PolarPlotAccessor:
 
         Returns
         -------
-        QuadMesh
-            A `QuadMesh` object representing the pseudocolor plot.
+        matplotlib.collections.Collection
+            The pseudocolor plot.
 
         Raises
         ------
@@ -352,6 +352,67 @@ class PolarPlotAccessor:
         ax.set_title(
             f"t={self._obj.coords['t'].values[()]:.2f}" if title is None else title
         )
+        return im
+
+    def contour(self, **kwargs):
+        """
+        Plots a pseudocolor plot of 2D polar data on a rectilinear projection.
+
+        Parameters
+        ----------
+        ax : Axes object, optional
+            The axes on which to plot. Default is the current axes.
+        invert_x : bool, optional
+            Whether to invert the x-axis. Default is False.
+        invert_y : bool, optional
+            Whether to invert the y-axis. Default is False.
+
+        Returns
+        -------
+        matplotlib.contour.QuadContourSet
+            The contour plot.
+
+        Raises
+        ------
+        AssertionError
+            If `ax` is a polar projection or if time is not specified or if data is not 2D polar.
+
+        Notes
+        -----
+        Additional keyword arguments are passed to `contour`.
+        """
+
+        import warnings
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+        ax = kwargs.pop("ax", plt.gca())
+        title = kwargs.pop("title", None)
+        invert_x = kwargs.pop("invert_x", False)
+        invert_y = kwargs.pop("invert_y", False)
+
+        assert ax.name != "polar", "`ax` must be a rectilinear projection"
+        assert "t" not in self._obj.dims, "Time must be specified"
+        assert DataIs2DPolar(self._obj), "Data must be 2D polar"
+        ax.grid(False)
+        r, th = np.meshgrid(
+            self._obj.coords["r"], self._obj.coords["θ" if useGreek else "th"]
+        )
+        x, y = r * np.sin(th), r * np.cos(th)
+        if invert_x:
+            x = -x
+        if invert_y:
+            y = -y
+        ax.set(
+            aspect="equal",
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            im = ax.contour(x, y, self._obj.values, **kwargs)
+
+        return im
 
 
 class Data:
@@ -362,6 +423,8 @@ class Data:
     ----------
     fname : str
         The name of the HDF5 file to read.
+    inputfname : str, optional
+        The name of the input toml file. Default is None.
 
     Attributes
     ----------
@@ -371,6 +434,10 @@ class Data:
         The HDF5 file object.
     dataset : xr.Dataset
         The xarray Dataset containing the loaded data.
+    input: dict
+        The input file as a dictionary.
+    particles: list
+        The list of particle species in the simulation. Each element is an Xarray Dataset.
 
     Methods
     -------
@@ -380,9 +447,15 @@ class Data:
         Gets an attribute from the xarray Dataset.
     __getitem__(name)
         Gets an item from the xarray Dataset.
+
+    Examples
+    --------
+    >>> import nt2.read as nt2r
+    >>> data = nt2r.Data("Sim.h5")
+    >>> data.Bx.sel(t=10.0, method="nearest").plot()
     """
 
-    def __init__(self, fname):
+    def __init__(self, fname, inputfname=None):
         if usePickle:
             import h5pickle as h5py
         else:
@@ -444,6 +517,22 @@ class Data:
             coordinates = "spherical"
         coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]
         times = np.array([self.file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
+
+        self._input = {}
+        if inputfname is not None:
+            try:
+                import tomllib
+
+                with open(inputfname, "rb") as f:
+                    tomldata = tomllib.load(f)
+                flattened_data = {}
+                for td_k, td_v in tomldata.items():
+                    for k, v in td_v.items():
+                        flattened_data[f"{td_k}.{k}"] = v
+                self._input.update(flattened_data)
+            except Exception as e:
+                print(f"Could not load input file {inputfname}: {e}")
+                pass
 
         if dimension == 1:
             noghosts = slice(ngh, -ngh)
@@ -562,6 +651,10 @@ class Data:
         for _, v in self._particles.items():
             del v
         del self
+
+    @property
+    def input(self):
+        return self._input
 
     @property
     def particles(self):
