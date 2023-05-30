@@ -2,10 +2,11 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
-#include "meshblock/meshblock.h"
 #include "sim_params.h"
 #include "simulation.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 #include "utils/utils.h"
 
 #ifdef OUTPUT_ENABLED
@@ -119,10 +120,10 @@ namespace ntt {
     m_io.DefineAttribute<int>("NGhosts", N_GHOSTS);
     m_io.DefineAttribute<int>("Dimension", (int)D);
 
-    if constexpr (S == GRPICEngine) {
-      m_io.DefineAttribute<real_t>("a", mblock.metric.spin());
-      m_io.DefineAttribute<real_t>("rh", mblock.metric.rhorizon());
-    }
+#  ifdef GRPIC_ENGINE
+    m_io.DefineAttribute<real_t>("Spin", mblock.metric.spin());
+    m_io.DefineAttribute<real_t>("Rhorizon", mblock.metric.rhorizon());
+#  endif
 
     for (auto sp { 0 }; sp < mblock.particles.size(); ++sp) {
       m_io.DefineAttribute<std::string>("species-" + std::to_string(sp + 1),

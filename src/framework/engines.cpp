@@ -26,6 +26,7 @@
 #  include <adios2/cxx11/KokkosView.h>
 #endif
 
+#ifdef SANDBOX_ENGINE
 /**
  * SANDBOX Engine
  */
@@ -49,6 +50,7 @@ template class ntt::Writer<ntt::Dim1, ntt::SANDBOXEngine>;
 template class ntt::Writer<ntt::Dim2, ntt::SANDBOXEngine>;
 template class ntt::Writer<ntt::Dim3, ntt::SANDBOXEngine>;
 
+#elif defined(PIC_ENGINE)
 /**
  * PIC Engine
  */
@@ -71,7 +73,7 @@ template struct ntt::Particles<ntt::Dim3, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim1, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim2, ntt::PICEngine>;
 template class ntt::Writer<ntt::Dim3, ntt::PICEngine>;
-
+#elif defined(GRPIC_ENGINE)
 /**
  * GRPIC Engine
  */
@@ -89,9 +91,11 @@ template struct ntt::Particles<ntt::Dim3, ntt::GRPICEngine>;
 
 template class ntt::Writer<ntt::Dim2, ntt::GRPICEngine>;
 template class ntt::Writer<ntt::Dim3, ntt::GRPICEngine>;
+#endif
 
 #ifdef OUTPUT_ENABLED
 
+#  ifdef SANDBOX_ENGINE
 template void ntt::OutputField::put<ntt::Dim1, ntt::SANDBOXEngine>(
   adios2::IO&,
   adios2::Engine&,
@@ -107,33 +111,6 @@ template void ntt::OutputField::put<ntt::Dim3, ntt::SANDBOXEngine>(
   adios2::Engine&,
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim3, ntt::SANDBOXEngine>&) const;
-
-template void ntt::OutputField::put<ntt::Dim1, ntt::PICEngine>(
-  adios2::IO&,
-  adios2::Engine&,
-  const ntt::SimulationParams&,
-  ntt::Meshblock<ntt::Dim1, ntt::PICEngine>&) const;
-template void ntt::OutputField::put<ntt::Dim2, ntt::PICEngine>(
-  adios2::IO&,
-  adios2::Engine&,
-  const ntt::SimulationParams&,
-  ntt::Meshblock<ntt::Dim2, ntt::PICEngine>&) const;
-template void ntt::OutputField::put<ntt::Dim3, ntt::PICEngine>(
-  adios2::IO&,
-  adios2::Engine&,
-  const ntt::SimulationParams&,
-  ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
-
-template void ntt::OutputField::put<ntt::Dim2, ntt::GRPICEngine>(
-  adios2::IO&,
-  adios2::Engine&,
-  const ntt::SimulationParams&,
-  ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&) const;
-template void ntt::OutputField::put<ntt::Dim3, ntt::GRPICEngine>(
-  adios2::IO&,
-  adios2::Engine&,
-  const ntt::SimulationParams&,
-  ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
 
 template void ntt::OutputParticles::put<ntt::Dim1, ntt::SANDBOXEngine>(
   adios2::IO&,
@@ -151,6 +128,23 @@ template void ntt::OutputParticles::put<ntt::Dim3, ntt::SANDBOXEngine>(
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim3, ntt::SANDBOXEngine>&) const;
 
+#  elif defined(PIC_ENGINE)
+template void ntt::OutputField::put<ntt::Dim1, ntt::PICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim1, ntt::PICEngine>&) const;
+template void ntt::OutputField::put<ntt::Dim2, ntt::PICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::PICEngine>&) const;
+template void ntt::OutputField::put<ntt::Dim3, ntt::PICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
+
 template void ntt::OutputParticles::put<ntt::Dim1, ntt::PICEngine>(
   adios2::IO&,
   adios2::Engine&,
@@ -167,6 +161,18 @@ template void ntt::OutputParticles::put<ntt::Dim3, ntt::PICEngine>(
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
 
+#  elif defined(GRPIC_ENGINE)
+template void ntt::OutputField::put<ntt::Dim2, ntt::GRPICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&) const;
+template void ntt::OutputField::put<ntt::Dim3, ntt::GRPICEngine>(
+  adios2::IO&,
+  adios2::Engine&,
+  const ntt::SimulationParams&,
+  ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
+
 template void ntt::OutputParticles::put<ntt::Dim2, ntt::GRPICEngine>(
   adios2::IO&,
   adios2::Engine&,
@@ -177,5 +183,5 @@ template void ntt::OutputParticles::put<ntt::Dim3, ntt::GRPICEngine>(
   adios2::Engine&,
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
-
+#  endif
 #endif
