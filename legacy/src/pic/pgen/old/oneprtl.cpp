@@ -1,7 +1,7 @@
 #include "wrapper.h"
-#include "input.h"
+#include "io/input.h"
 #include "sim_params.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "particle_macros.h"
 
 #include "problem_generator.hpp"

@@ -1,9 +1,9 @@
-#include "particles.h"
+#include "meshblock/particles.h"
 
 #include "wrapper.h"
 
 #include "species.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 #include <cstddef>
 #include <string>

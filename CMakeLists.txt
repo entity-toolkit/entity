@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+cmake_policy(SET CMP0110 NEW)
 
 set(PROJECT_NAME entity)
 
@@ -192,7 +193,14 @@ endif()
 # ------------------------------ Dependencies ------------------------------ #
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
-# ------------------------------- Main source ------------------------------ #
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
+add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
+if(TESTS)
+  # ---------------------------------- Tests --------------------------------- #
+  include(CTest)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
+else()
+  # ------------------------------- Main source ------------------------------ #
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
+endif(TESTS)

@@ -4,8 +4,8 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "fields.h"
-#include "meshblock.h"
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 #include "pic.h"
 
 #include <stdexcept>

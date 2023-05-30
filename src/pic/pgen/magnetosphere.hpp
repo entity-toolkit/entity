@@ -5,11 +5,11 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
-#include "injector.hpp"
+#include "utils/archetypes.hpp"
+#include "utils/injector.hpp"
 
 namespace ntt {
   enum FieldMode { MonopoleField = 1, DipoleField = 2 };

@@ -7,7 +7,7 @@
 #include "pic.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
+#include "utils/archetypes.hpp"
 #include "problem_generator.hpp"
 
 namespace ntt {

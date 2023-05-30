@@ -4,12 +4,12 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "fields.h"
+#include "io/output.h"
 #include "grpic.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "particles.h"
-#include "qmath.h"
+#include "meshblock/particles.h"
+#include "utils/qmath.h"
 
 namespace ntt {
   struct Massive_t {};

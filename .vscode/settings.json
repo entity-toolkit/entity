@@ -94,4 +94,5 @@
     "stack": "cpp"
   },
   "python.analysis.typeCheckingMode": "off",
+  "C_Cpp.errorSquiggles": "disabled",
 }

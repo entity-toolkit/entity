@@ -3,12 +3,12 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "particles.h"
+#include "meshblock/particles.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
+#include "utils/archetypes.hpp"
 
 #include <vector>
 

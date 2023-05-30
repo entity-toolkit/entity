@@ -2,10 +2,10 @@
 #define TEST_PIC_MINKOWSKI_H
 
 #include "wrapper.h"
-#include "qmath.h"
+#include "utils/qmath.h"
 
 #include "pic.h"
-#include "fields.h"
+#include "io/output.h"
 #include "particle_macros.h"
 
 #include <doctest.h>

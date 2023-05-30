@@ -1,7 +1,6 @@
 #include "wrapper.h"
 
-#include "cargs.h"
-
+#include "io/cargs.h"
 #include "nttiny/api.h"
 #include "nttiny/tools.h"
 #include "nttiny/vis.h"

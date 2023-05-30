@@ -3,8 +3,8 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
-#include "output.h"
+#include "meshblock/meshblock.h"
+#include "io/output.h"
 #include "sim_params.h"
 
 #ifdef OUTPUT_ENABLED

@@ -4,10 +4,10 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
+#include "utils/archetypes.hpp"
 
 namespace ntt {
   template <template <Dimension, SimulationEngine> class VectorPotential>

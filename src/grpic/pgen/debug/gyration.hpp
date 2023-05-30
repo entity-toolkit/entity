@@ -3,13 +3,13 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
+#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "qmath.h"
+#include "utils/qmath.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
-#include "generate_fields.hpp"
+#include "utils/archetypes.hpp"
+#include "utils/generate_fields.hpp"
 
 namespace ntt {
 

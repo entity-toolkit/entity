@@ -3,11 +3,12 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "mesh.h"
-#include "particles.h"
 #include "sim_params.h"
-#include "species.h"
+
+#include "meshblock/fields.h"
+#include "meshblock/mesh.h"
+#include "meshblock/particles.h"
+#include "meshblock/species.h"
 
 #include <vector>
 
@@ -17,7 +18,7 @@ namespace ntt {
     PrepareOutput_InterpToCellCenterFromEdges = 1 << 0,
     PrepareOutput_InterpToCellCenterFromFaces = 1 << 1,
     PrepareOutput_ConvertToHat                = 1 << 2,
-    PrepareOutput_ConvertToPhysCntrv           = 1 << 3
+    PrepareOutput_ConvertToPhysCntrv          = 1 << 3
   };
   typedef int PrepareOutputFlags;
 

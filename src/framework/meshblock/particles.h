@@ -3,7 +3,7 @@
 
 #include "wrapper.h"
 
-#include "species.h"
+#include "meshblock/species.h"
 
 #include <cstddef>
 #include <string>

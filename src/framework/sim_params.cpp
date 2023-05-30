@@ -2,11 +2,11 @@
 
 #include "wrapper.h"
 
-#include "input.h"
-#include "output.h"
-#include "particles.h"
-#include "qmath.h"
-#include "utils.h"
+#include "io/input.h"
+#include "io/output.h"
+#include "meshblock/particles.h"
+#include "utils/qmath.h"
+#include "utils/utils.h"
 
 #include <toml.hpp>
 

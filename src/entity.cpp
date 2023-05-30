@@ -1,7 +1,7 @@
 #include "wrapper.h"
 
-#include "cargs.h"
-#include "input.h"
+#include "io/cargs.h"
+#include "io/input.h"
 
 /**
  * Engine specific instantiations
