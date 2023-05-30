@@ -80,24 +80,3 @@ function(find_or_fetch_dependency package_name header_only)
 endfunction()
 
 check_internet_connection()
-
-if(${nttiny} STREQUAL "ON")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
-endif()
-
-find_or_fetch_dependency(Kokkos FALSE)
-find_or_fetch_dependency(fmt TRUE)
-find_or_fetch_dependency(plog TRUE)
-find_or_fetch_dependency(toml11 TRUE)
-
-list(APPEND DEPENDENCIES Kokkos::kokkos fmt::fmt-header-only)
-
-if(${output} STREQUAL "ON")
-  find_or_fetch_dependency(adios2 FALSE)
-  list(APPEND DEPENDENCIES adios2::cxx11)
-endif()
-
-include_directories(${plog_SRC}/include)
-include_directories(${toml11_SRC})
-
-link_libraries(${DEPENDENCIES})

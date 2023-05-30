@@ -144,7 +144,7 @@ PrintChoices("Debug mode"
   "DEBUG"
   "${ON_OFF_VALUES}"
   ${DEBUG}
-  ${default_DEBUG}
+  OFF
   "${Green}"
   DEBUG_REPORT
   0
@@ -166,12 +166,12 @@ PrintChoices("Debug mode"
 # 0
 # 39
 # )
-message(STATUS ADIOS2_VERSION: ${adios2_VERSION})
-
-if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
-  get_directory_property(adios2_VERSION
-    DIRECTORY ${adios2_BUILD_DIR}
-    DEFINITION ADIOS2_VERSION)
+if(${output})
+  if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
+    get_directory_property(adios2_VERSION
+      DIRECTORY ${adios2_BUILD_DIR}
+      DEFINITION ADIOS2_VERSION)
+  endif()
 endif()
 
 PrintChoices("CUDA"

@@ -1,13 +1,19 @@
+include(CTest)
+
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/)
 include_directories(${SOURCE_DIR})
 
-add_library(wrapper STATIC ${SOURCE_DIR}/wrapper/kokkos.cpp)
-link_libraries(wrapper)
+# --------------------------------- Wrapper -------------------------------- #
+set(WRAPPER ${PROJECT_NAME}-wrapper)
+add_library(${WRAPPER} STATIC ${SOURCE_DIR}/wrapper/kokkos.cpp)
+link_libraries(${WRAPPER})
 include_directories(${SOURCE_DIR}/wrapper)
 
+# -------------------------------- Framework ------------------------------- #
 file(GLOB_RECURSE FRAMEWORK_FILES ${SOURCE_DIR}/framework/*.cpp)
 include_directories(${SOURCE_DIR}/framework)
 
+# ---------------------------------- Tests --------------------------------- #
 function(configure_test target metric engine)
   string(TOUPPER ${metric} metric_upper)
   string(TOUPPER ${engine} engine_upper)
