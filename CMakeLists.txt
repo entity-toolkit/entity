@@ -56,8 +56,7 @@ find_or_fetch_dependency(Kokkos FALSE)
 find_or_fetch_dependency(fmt TRUE)
 find_or_fetch_dependency(plog TRUE)
 find_or_fetch_dependency(toml11 TRUE)
-link_libraries(Kokkos::kokkos)
-link_libraries(fmt::fmt-header-only)
+set(DEPENDENCIES Kokkos::kokkos fmt::fmt-header-only)
 include_directories(${plog_SRC}/include)
 include_directories(${toml11_SRC})
 
@@ -66,6 +65,7 @@ set_precision(${precision})
 
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
+  link_libraries(${DEPENDENCIES})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
 else()
   # ----------------------------------- GUI ---------------------------------- #
@@ -75,12 +75,14 @@ else()
 
   # --------------------------------- Output --------------------------------- #
   if(${output})
+    message("Kokkos_ROOT: ${Kokkos_ROOT}")
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
     find_or_fetch_dependency(adios2 FALSE)
-    link_libraries(adios2::cxx11)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
   endif()
 
   # ------------------------------- Main source ------------------------------ #
+  link_libraries(${DEPENDENCIES})
   set_engine(${engine})
   set(metric ${default_metric} CACHE STRING "Metric")
   set_metric(${metric} ${engine})
