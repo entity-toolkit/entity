@@ -8,7 +8,7 @@
 #include "sim_params.h"
 
 #include "utils/archetypes.hpp"
-#include "problem_generator.hpp"
+#include PGEN_HEADER
 
 namespace ntt {
   /**

@@ -6,7 +6,7 @@
 #include "field_macros.h"
 #include "pic.h"
 
-#include "problem_generator.hpp"
+#include PGEN_HEADER
 
 namespace ntt {
   /**

@@ -5,7 +5,7 @@
 
 #include "simulation.h"
 
-#include "problem_generator.hpp"
+#include PGEN_HEADER
 
 #include <toml.hpp>
 
