@@ -26,12 +26,12 @@ Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
   if constexpr (D == Dim1) {
     NTTError("x_Code2Cart not implemented for 1D");
   } else if constexpr (D == Dim2) {
-    coord_t<D> x_sph;
+    coord_t<D> x_sph { ZERO };
     x_Code2Sph(xi, x_sph);
     x[0] = x_sph[0] * math::sin(x_sph[1]);
     x[1] = x_sph[0] * math::cos(x_sph[1]);
   } else if constexpr (D == Dim3) {
-    coord_t<D> x_sph;
+    coord_t<D> x_sph { ZERO };
     x_Code2Sph(xi, x_sph);
     x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
     x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
@@ -49,12 +49,12 @@ Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
   if constexpr (D == Dim1) {
     NTTError("x_Cart2Code not implemented for 1D");
   } else if constexpr (D == Dim2) {
-    coord_t<D> x_sph;
+    coord_t<D> x_sph { ZERO };
     x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
     x_sph[1] = math::atan2(x[1], x[0]);
     x_Sph2Code(x_sph, xi);
   } else if constexpr (D == Dim3) {
-    coord_t<D> x_sph;
+    coord_t<D> x_sph { ZERO };
     x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
     x_sph[1] = math::atan2(x[1], x[0]);
     x_sph[2] = math::acos(x[2] / x_sph[0]);

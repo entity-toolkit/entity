@@ -30,7 +30,7 @@
 #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize();
+  Kokkos::initialize(argc, argv);
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
