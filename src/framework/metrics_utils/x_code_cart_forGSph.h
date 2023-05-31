@@ -51,12 +51,12 @@ Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
   } else if constexpr (D == Dim2) {
     coord_t<D> x_sph { ZERO };
     x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
-    x_sph[1] = math::atan2(x[1], x[0]);
+    x_sph[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x[1], x[0]);
     x_Sph2Code(x_sph, xi);
   } else if constexpr (D == Dim3) {
     coord_t<D> x_sph { ZERO };
     x_sph[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-    x_sph[1] = math::atan2(x[1], x[0]);
+    x_sph[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x[1], x[0]);
     x_sph[2] = math::acos(x[2] / x_sph[0]);
     x_Sph2Code(x_sph, xi);
   }

@@ -276,9 +276,9 @@ namespace ntt {
     }
   };
 
-  // * * * * * * * * * * * * * * *
-  // 1D:
-  // * * * * * * * * * * * * * * *
+  /* -------------------------------------------------------------------------- */
+  /*                                     1D                                     */
+  /* -------------------------------------------------------------------------- */
   template <>
   Inline void Metric<Dim1>::x_Code2Cart(const coord_t<Dim1>& xi, coord_t<Dim1>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
@@ -292,9 +292,9 @@ namespace ntt {
   template <>
   Inline void Metric<Dim1>::x_Sph2Code(const coord_t<Dim1>&, coord_t<Dim1>&) const {}
 
-  // * * * * * * * * * * * * * * *
-  // 2D:
-  // * * * * * * * * * * * * * * *
+  /* -------------------------------------------------------------------------- */
+  /*                                     2D                                     */
+  /* -------------------------------------------------------------------------- */
   template <>
   Inline void Metric<Dim2>::x_Code2Cart(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
@@ -307,20 +307,20 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
-    x_Code2Cart(xi, x);                              // convert to Cartesian coordinates
-    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);    // r = sqrt(x^2 + y^2)
-    x[1] = math::atan2(x[1], x[0]);                  // theta = atan(y/x)
+    x_Code2Cart(xi, x);
+    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
+    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x[1], x[0]);
   }
   template <>
   Inline void Metric<Dim2>::x_Sph2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
-    xi[0] = x[0] * math::cos(x[1]);    // x = r * cos(theta)
-    xi[1] = x[0] * math::sin(x[1]);    // y = r * sin(theta)
-    x_Cart2Code(xi, xi);               // convert to code units
+    xi[0] = x[0] * math::cos(x[1]);
+    xi[1] = x[0] * math::sin(x[1]);
+    x_Cart2Code(xi, xi);
   }
 
-  // * * * * * * * * * * * * * * *
-  // 3D:
-  // * * * * * * * * * * * * * * *
+  /* -------------------------------------------------------------------------- */
+  /*                                     3D                                     */
+  /* -------------------------------------------------------------------------- */
   template <>
   Inline void Metric<Dim3>::x_Code2Cart(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
     x[0] = xi[0] * dx + this->x1_min;
@@ -335,10 +335,10 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
-    x_Code2Cart(xi, x);    // convert to Cartesian coordinates
-    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);    // r = sqrt(x^2 + y^2 + z^2)
-    x[1] = math::atan2(x[1], x[0]);                                // theta = atan(y/x)
-    x[2] = math::acos(x[2] / x[0]);                                // phi = acos(z/r)
+    x_Code2Cart(xi, x);
+    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x[1], x[0]);
+    x[2] = math::acos(x[2] / x[0]);
   }
   template <>
   Inline void Metric<Dim3>::x_Sph2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
