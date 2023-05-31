@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
-auto main() -> int {
-  Kokkos::initialize();
+auto main(int argc, char* argv[]) -> int {
+  Kokkos::initialize(argc, argv);
   try {
     using namespace toml::literals::toml_literals;
     const auto inputdata      = R"(
