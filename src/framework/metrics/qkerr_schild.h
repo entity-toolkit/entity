@@ -26,7 +26,7 @@ namespace ntt {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t rh, a, a_sqr;
+    const real_t rh_, rg_, a, a_sqr;
 
   public:
     const real_t dx_min;
@@ -35,9 +35,10 @@ namespace ntt {
            std::vector<real_t>       extent,
            const real_t*             params)
       : MetricBase<D> { "qkerr_schild", resolution, extent },
+        rh_ { params[5] },
+        rg_ { ONE },
         a(params[4]),
         a_sqr { SQR(a) },
-        rh(params[5]),
         r0(params[0]),
         h(params[1]),
         chi_min { math::log(this->x1_min - r0) },
@@ -58,9 +59,11 @@ namespace ntt {
     [[nodiscard]] Inline auto spin() const -> const real_t& {
       return a;
     }
-
     [[nodiscard]] auto rhorizon() const -> const real_t& {
-      return rh;
+      return rh_;
+    }
+    [[nodiscard]] auto rg() const -> const real_t& {
+      return rg_;
     }
 
     /**
