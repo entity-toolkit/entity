@@ -117,7 +117,7 @@ namespace ntt {
 #include "metrics_utils/x_code_cart_forGSph.h"
 #include "metrics_utils/x_code_sph_forSph.h"
 
-#include "metrics_utils/v3_cart_hat_cntrv_cov_forGsph.h"
+#include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
 #include "metrics_utils/v3_hat_cntrv_cov_forSR.h"
 #include "metrics_utils/v3_phys_cov_cntrv_forSph.h"
 
