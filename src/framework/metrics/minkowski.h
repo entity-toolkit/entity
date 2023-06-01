@@ -307,15 +307,17 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
-    x_Code2Cart(xi, x);
-    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1]);
-    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x[1], x[0]);
+    coord_t<Dim2> x_cart { ZERO };
+    x_Code2Cart(xi, x_cart);
+    x[0] = math::sqrt(SQR(x_cart[0]) + SQR(x_cart[1]));
+    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x_cart[1], x_cart[0]);
   }
   template <>
   Inline void Metric<Dim2>::x_Sph2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
-    xi[0] = x[0] * math::cos(x[1]);
-    xi[1] = x[0] * math::sin(x[1]);
-    x_Cart2Code(xi, xi);
+    coord_t<Dim2> x_cart { ZERO };
+    x_cart[0] = x[0] * math::sin(x[1]);
+    x_cart[1] = x[0] * math::cos(x[1]);
+    x_Cart2Code(x_cart, xi);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -335,17 +337,19 @@ namespace ntt {
   }
   template <>
   Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
-    x_Code2Cart(xi, x);
-    x[0] = math::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x[1], x[0]);
-    x[2] = math::acos(x[2] / x[0]);
+    coord_t<Dim3> x_cart { ZERO };
+    x_Code2Cart(xi, x_cart);
+    x[0] = math::sqrt(SQR(x_cart[0]) + SQR(x_cart[1]) + SQR(x_cart[2]));
+    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x_cart[1], x_cart[0]);
+    x[2] = math::acos(x_cart[2] / x_cart[0]);
   }
   template <>
   Inline void Metric<Dim3>::x_Sph2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
-    xi[0] = x[0] * math::sin(x[1]) * math::cos(x[2]);    // x = r * sin(theta) * cos(phi)
-    xi[1] = x[0] * math::sin(x[1]) * math::sin(x[2]);    // y = r * sin(theta) * sin(phi)
-    xi[2] = x[0] * math::cos(x[1]);                      // z = r * cos(theta)
-    x_Cart2Code(xi, xi);                                 // convert to code units
+    coord_t<Dim3> x_cart { ZERO };
+    x_cart[0] = x[0] * math::sin(x[1]) * math::cos(x[2]);
+    x_cart[1] = x[0] * math::sin(x[1]) * math::sin(x[2]);
+    x_cart[2] = x[0] * math::cos(x[1]);
+    x_Cart2Code(x_cart, xi);
   }
 
 }    // namespace ntt
