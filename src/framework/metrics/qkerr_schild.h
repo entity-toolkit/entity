@@ -28,6 +28,22 @@ namespace ntt {
     // all physical extents are in units of rg
     const real_t rh_, rg_, a, a_sqr;
 
+    Inline auto  Delta(const real_t& r) const -> real_t {
+      return SQR(r) - TWO * r + a_sqr;
+    }
+
+    Inline auto Sigma(const real_t& r, const real_t& theta) const -> real_t {
+      return SQR(r) + a_sqr * SQR(math::cos(theta));
+    }
+
+    Inline auto A(const real_t& r, const real_t& theta) const -> real_t {
+      return SQR(SQR(r) + a_sqr) - a_sqr * Delta(r) * SQR(math::sin(theta));
+    }
+
+    Inline auto z(const real_t& r, const real_t& theta) const -> real_t {
+      return TWO * r / Sigma(r, theta);
+    }
+
   public:
     const real_t dx_min;
 
@@ -67,7 +83,7 @@ namespace ntt {
     }
 
     /**
-     * Compute minimum effective cell size for a given metric (in physical units).
+     * Minimum effective cell size for a given metric (in physical units).
      * @returns Minimum cell size of the grid [physical units].
      */
     auto findSmallestCell() const -> real_t {
@@ -94,165 +110,192 @@ namespace ntt {
     }
 
     /**
-     * Compute metric component 11.
+     * Metric component 11.
      *
      * @param xi coordinate array in code units
      * @returns h_11 (covariant, lower index) metric component.
      */
     Inline auto h_11(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t r { r0 + math::exp(chi) };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t theta { eta2theta(eta) };
-      real_t cth { math::cos(theta) };
-      return dchi_sqr * math::exp(2.0 * chi) * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      return dchi_sqr * math::exp(TWO * chi) * (ONE + z(r, theta));
     }
 
     /**
-     * Compute metric component 22.
+     * Metric component 22.
      *
      * @param xi coordinate array in code units
      * @returns h_22 (covariant, lower index) metric component.
      */
     Inline auto h_22(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t r { r0 + math::exp(chi) };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t theta { eta2theta(eta) };
-      real_t dtheta_deta_ { dtheta_deta(eta) };
-      real_t cth { math::cos(theta) };
-      return deta_sqr * SQR(dtheta_deta_) * (SQR(r) + a_sqr * SQR(cth));
+      const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
+      const real_t eta { xi[1] * deta + eta_min };
+      const real_t theta { eta2theta(eta) };
+      return deta_sqr * SQR(dtheta_deta(eta)) * Sigma(r, theta);
     }
 
     /**
-     * Compute metric component 33.
+     * Metric component 33.
      *
      * @param xi coordinate array in code units
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t r { r0 + math::exp(chi) };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t theta { eta2theta(eta) };
-      real_t cth { math::cos(theta) };
-      real_t sth { math::sin(theta) };
-      real_t delta { SQR(r) - TWO * r + a_sqr };
-      real_t As { (SQR(r) + a_sqr) * (SQR(r) + a_sqr) - a_sqr * delta * SQR(sth) };
-      return As * SQR(sth) / (SQR(r) + a_sqr * SQR(cth));
+      const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      if constexpr (D == Dim2) {
+        return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
+      } else {
+        return dphi_sqr * A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
+      }
     }
 
     /**
-     * Compute metric component 13.
+     * Metric component 13.
      *
      * @param xi coordinate array in code units
      * @returns h_13 (covariant, lower index) metric component.
      */
     Inline auto h_13(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t r { r0 + math::exp(chi) };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t theta { eta2theta(eta) };
-      real_t cth { math::cos(theta) };
-      real_t sth { math::sin(theta) };
-      return -dchi * math::exp(chi) * a * SQR(sth)
-             * (ONE + TWO * r / (SQR(r) + a_sqr * SQR(cth)));
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      if constexpr (D == Dim2) {
+        return -dchi * math::exp(chi) * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
+      } else {
+        return -dchi * math::exp(chi) * dphi * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
+      }
     }
 
     /**
-     * Compute lapse function.
+     * Inverse metric component 11 from h_ij.
+     *
+     * @param xi coordinate array in code units
+     * @returns h^11 (contravariant, upper index) metric component.
+     */
+    Inline auto h11(const coord_t<D>& xi) const -> real_t {
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      const real_t Sigma_ { Sigma(r, theta) };
+      return (math::exp(-TWO * chi) / dchi_sqr) * A(r, theta) / (Sigma_ * (Sigma_ + TWO * r));
+    }
+
+    /**
+     * Inverse metric component 22 from h_ij.
+     *
+     * @param xi coordinate array in code units
+     * @returns h^22 (contravariant, upper index) metric component.
+     */
+    Inline auto h22(const coord_t<D>& xi) const -> real_t {
+      const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
+      const real_t eta { xi[1] * deta + eta_min };
+      const real_t theta { eta2theta(eta) };
+      return ONE / (Sigma(r, theta) * SQR(dtheta_deta(eta)) * deta_sqr);
+    }
+
+    /**
+     * Inverse metric component 33 from h_ij.
+     *
+     * @param xi coordinate array in code units
+     * @returns h^33 (contravariant, upper index) metric component.
+     */
+    Inline auto h33(const coord_t<D>& xi) const -> real_t {
+      const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      if constexpr (D == Dim2) {
+        return ONE / (Sigma(r, theta) * SQR(math::sin(theta)));
+      } else {
+        return SQR(dphi_inv) / (Sigma(r, theta) * SQR(math::sin(theta)));
+      }
+    }
+
+    /**
+     * Inverse metric component 13 from h_ij.
+     *
+     * @param xi coordinate array in code units
+     * @returns h^13 (contravariant, upper index) metric component.
+     */
+    Inline auto h13(const coord_t<D>& xi) const -> real_t {
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      if constexpr (D == Dim2) {
+        return (math::exp(-chi) * dchi_inv) * a / Sigma(r, theta);
+      } else {
+        return (math::exp(-chi) * dchi_inv) * dphi_inv * a / Sigma(r, theta);
+      }
+    }
+
+    /**
+     * Lapse function.
      *
      * @param xi coordinate array in code units
      * @returns alpha.
      */
     Inline auto alpha(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t r { r0 + math::exp(chi) };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t theta { eta2theta(eta) };
-      real_t cth { math::cos(theta) };
-      real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
-      return ONE / math::sqrt(ONE + z);
+      const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      return ONE / math::sqrt(ONE + z(r, theta));
     }
 
     /**
-     * Compute radial component of shift vector.
+     * Radial component of shift vector.
      *
      * @param xi coordinate array in code units
      * @returns beta^1 (contravariant).
      */
     Inline auto beta1(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
-      real_t r { r0 + math::exp(chi) };
-      real_t eta { xi[1] * deta + eta_min };
-      real_t theta { eta2theta(eta) };
-      real_t cth { math::cos(theta) };
-      real_t z { TWO * r / (SQR(r) + a_sqr * SQR(cth)) };
-      return math::exp(-chi) * dchi_inv * (z / (ONE + z));
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t theta { eta2theta(xi[1] * deta + eta_min) };
+      const real_t z_ { z(r, theta) };
+      return math::exp(-chi) * dchi_inv * z_ / (ONE + z_);
     }
 
     /**
-     * Compute the square root of the determinant of h-matrix divided by sin(theta).
+     * Square root of the determinant of h-matrix.
      *
-     * @param x coordinate array in code units
-     * @returns sqrt(det(h))/sin(theta).
-     */
-    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
-      return h_22(x) / alpha(x);
-    }
-
-    /**
-     * Compute the square root of the determinant of h-matrix.
-     *
-     * @param x coordinate array in code units
+     * @param xi coordinate array in code units
      * @returns sqrt(det(h)).
      */
-    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      return math::sqrt(h_22(x) * (h_11(x) * h_33(x) - h_13(x) * h_13(x)));
+    Inline auto sqrt_det_h(const coord_t<D>& xi) const -> real_t {
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t eta { xi[1] * deta + eta_min };
+      const real_t theta { eta2theta(eta) };
+      if constexpr (D == Dim2) {
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * Sigma(r, theta)
+               * math::sin(theta) * math::sqrt(ONE + z(r, theta));
+      } else {
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * dphi * Sigma(r, theta)
+               * math::sin(theta) * math::sqrt(ONE + z(r, theta));
+      }
     }
 
     /**
-     * Compute inverse metric component 11 from h_ij.
+     * Square root of the determinant of h-matrix divided by sin(theta).
      *
-     * @param x coordinate array in code units
-     * @returns h^11 (contravariant, upper index) metric component.
+     * @param xi coordinate array in code units
+     * @returns sqrt(det(h))/sin(theta).
      */
-    Inline auto h11(const coord_t<D>& x) const -> real_t {
-      return h_33(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& xi) const -> real_t {
+      const real_t chi { xi[0] * dchi + chi_min };
+      const real_t r { r0 + math::exp(chi) };
+      const real_t eta { xi[1] * deta + eta_min };
+      const real_t theta { eta2theta(eta) };
+      if constexpr (D == Dim2) {
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * Sigma(r, theta)
+               * math::sqrt(ONE + z(r, theta));
+      } else {
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * dphi * Sigma(r, theta)
+               * math::sqrt(ONE + z(r, theta));
+      }
     }
 
     /**
-     * Compute inverse metric component 22 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^22 (contravariant, upper index) metric component.
-     */
-    Inline auto h22(const coord_t<D>& x) const -> real_t {
-      return ONE / h_22(x);
-    }
-
-    /**
-     * Compute inverse metric component 33 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^33 (contravariant, upper index) metric component.
-     */
-    Inline auto h33(const coord_t<D>& x) const -> real_t {
-      return h_11(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
-    }
-
-    /**
-     * Compute inverse metric component 13 from h_ij.
-     *
-     * @param x coordinate array in code units
-     * @returns h^13 (contravariant, upper index) metric component.
-     */
-    Inline auto h13(const coord_t<D>& x) const -> real_t {
-      return -h_13(x) / (h_11(x) * h_33(x) - SQR(h_13(x)));
-    }
-
-    /**
-     * Compute the fiducial minimum cell volume.
+     * Fiducial minimum cell volume.
      *
      * @returns Minimum cell volume of the grid [code units].
      */
@@ -261,17 +304,16 @@ namespace ntt {
     }
 
     /**
-     * Compute the area at the pole (used in axisymmetric solvers).
+     * Area at the pole (used in axisymmetric solvers).
      * Approximate solution for the polar area.
      *
-     * @param x coordinate array in code units
+     * @param xi coordinate array in code units
      * @returns Area at the pole.
      */
-    Inline auto polar_area(const coord_t<D>& x) const -> real_t {
-      real_t chi { x[0] * dchi + chi_min };
+    Inline auto polar_area(const coord_t<D>& xi) const -> real_t {
+      real_t chi { xi[0] * dchi + chi_min };
       real_t r { r0 + math::exp(chi) };
-      real_t del_eta { x[1] * deta + eta_min };
-      real_t del_theta { eta2theta(del_eta) };
+      real_t del_theta { eta2theta(xi[1] * deta + eta_min) };
       return dchi * math::exp(chi) * (SQR(r) + a_sqr)
              * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) * (ONE - math::cos(del_theta));
     }

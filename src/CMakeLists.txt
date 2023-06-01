@@ -43,30 +43,3 @@ target_include_directories(${ENTITY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${engine
 # if(${nttiny} STREQUAL "ON")
 # target_link_libraries(${SIMENGINE} PUBLIC nttiny)
 # endif()
-
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/meshblock)
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/io)
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/framework/utils)
-# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${engine} ${engine})
-
-# set(VIS nttiny.xc)
-
-# configuration file
-# set(ENGINE_FLAG ${engine}_engine)
-# string(TOUPPER ${ENGINE_FLAG} ENGINE_FLAG)
-# set(METRIC_FLAG ${metric}_metric)
-# string(TOUPPER ${METRIC_FLAG} METRIC_FLAG)
-# set(SIMULATION_METRIC ${metric})
-
-# add_compile_options("-D ${ENGINE_FLAG}")
-# add_compile_options("-D ${METRIC_FLAG}")
-# add_compile_options("-D SIMULATION_METRIC=\"${SIMULATION_METRIC}\"")
-# add_compile_options("-D METRIC_HEADER=\"metrics/${metric}.h\"")
-
-# problem generator
-# if(NOT ${PGEN_FOUND} EQUAL -1)
-# configure_file(
-# "${PGEN_DIRECTORY}/${pgen}.hpp"
-# "${CMAKE_CURRENT_BINARY_DIR}/problem_generator.hpp"
-# )
-# endif()
