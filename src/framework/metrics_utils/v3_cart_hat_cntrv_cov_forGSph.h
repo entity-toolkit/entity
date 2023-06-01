@@ -73,7 +73,11 @@ Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cov,
                         vec_t<Dim3>&         vi_cart) const {
   vec_t<Dim3> vi_hat { ZERO };
-  this->v3_Cov2Hat(xi, vi_cov, vi_hat);
+  if constexpr (D == Dim2) {
+    this->v3_Cov2Hat({ xi[0], xi[1] }, vi_cov, vi_hat);
+  } else {
+    this->v3_Cov2Hat(xi, vi_cov, vi_hat);
+  }
   this->v3_Hat2Cart(xi, vi_hat, vi_cart);
 }
 
@@ -89,7 +93,11 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
                         vec_t<Dim3>&         vi_cov) const {
   vec_t<Dim3> vi_hat { ZERO };
   this->v3_Cart2Hat(xi, vi_cart, vi_hat);
-  this->v3_Hat2Cov(xi, vi_hat, vi_cov);
+  if constexpr (D == Dim2) {
+    this->v3_Hat2Cov({ xi[0], xi[1] }, vi_hat, vi_cov);
+  } else {
+    this->v3_Hat2Cov(xi, vi_hat, vi_cov);
+  }
 }
 
 /**
