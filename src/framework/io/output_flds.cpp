@@ -64,28 +64,27 @@ namespace ntt {
                         adios2::Engine&         writer,
                         const SimulationParams& params,
                         Meshblock<D, S>&        mblock) const {
-    int prepare_flag = PrepareOutput_None;
+    const auto is_moment = (id() == FieldID::T || id() == FieldID::Rho || id() == FieldID::Nppc
+                            || id() == FieldID::N);
+    const auto is_field
+      = (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D || id() == FieldID::H);
+    const auto is_current      = (id() == FieldID::J);
+    const auto is_efield       = (id() == FieldID::E || id() == FieldID::D);
+    const auto is_gr_aux_field = (id() == FieldID::E || id() == FieldID::H);
+    const auto is_vpotential   = (id() == FieldID::A);
+
+    auto       prepare_flag    = PrepareOutput_None;
     if constexpr (S == GRPICEngine) {
-      prepare_flag = PrepareOutput_ConvertToPhysCntrv;
-      if (m_id == FieldID::E) {
-        NTTHostError("Output of E (aux) fields is not supported");
-      }
+      prepare_flag
+        = is_gr_aux_field ? PrepareOutput_ConvertToPhysCov : PrepareOutput_ConvertToPhysCntrv;
     } else if constexpr (S == PICEngine) {
       prepare_flag = PrepareOutput_ConvertToHat;
     }
 
-    auto is_moment = (id() == FieldID::T || id() == FieldID::Rho || id() == FieldID::Nppc
-                      || id() == FieldID::N);
-    auto is_field
-      = (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D || id() == FieldID::H);
-    auto is_current    = (id() == FieldID::J);
-    auto is_efield     = (id() == FieldID::E || id() == FieldID::D);
-    auto is_vpotential = (id() == FieldID::A);
-
     if (is_field) {
       NTTHostErrorIf(comp.size() != 3, "Fields are always 3 components for output");
       std::vector<int> components;
-      int              interp_flag = PrepareOutput_None;
+      auto             interp_flag = PrepareOutput_None;
       if (is_efield) {
         components.push_back(em::ex1);
         components.push_back(em::ex2);
@@ -98,24 +97,54 @@ namespace ntt {
         interp_flag = PrepareOutput_InterpToCellCenterFromFaces;
       }
       Kokkos::deep_copy(mblock.bckp, mblock.em);
-      mblock.PrepareFieldsForOutput(mblock.em,
-                                    mblock.bckp,
-                                    components[0],
-                                    components[1],
-                                    components[2],
-                                    interp_flag | prepare_flag);
+      mblock.template PrepareFieldsForOutput<6, 6>(mblock.em,
+                                                   mblock.bckp,
+                                                   components[0],
+                                                   components[1],
+                                                   components[2],
+                                                   interp_flag | prepare_flag);
       for (auto i { 0 }; i < 3; ++i) {
         PutField<D, 6>(io, writer, name(i), mblock.bckp, components[i]);
+      }
+    } else if (is_gr_aux_field) {
+      if constexpr (S == GRPICEngine) {
+        NTTHostErrorIf(comp.size() != 3, "Aux fields are always 3 components for output");
+        std::vector<int> components;
+        auto             interp_flag = PrepareOutput_None;
+        if (is_efield) {
+          components.push_back(em::ex1);
+          components.push_back(em::ex2);
+          components.push_back(em::ex3);
+          interp_flag = PrepareOutput_InterpToCellCenterFromEdges;
+        } else {
+          components.push_back(em::hx1);
+          components.push_back(em::hx2);
+          components.push_back(em::hx3);
+          interp_flag = PrepareOutput_InterpToCellCenterFromFaces;
+        }
+        Kokkos::deep_copy(mblock.bckp, mblock.em);
+        mblock.template PrepareFieldsForOutput<6, 6>(mblock.aux,
+                                                     mblock.bckp,
+                                                     components[0],
+                                                     components[1],
+                                                     components[2],
+                                                     interp_flag | prepare_flag);
+        for (auto i { 0 }; i < 3; ++i) {
+          PutField<D, 6>(io, writer, name(i), mblock.bckp, components[i]);
+        }
+      } else {
+        NTTHostError("GRPICEngine is required for GR aux fields");
       }
     } else if (is_current) {
       NTTHostErrorIf(comp.size() != 3, "Currents are always 3 components for output");
       Kokkos::deep_copy(mblock.buff, mblock.cur);
-      mblock.PrepareCurrentsForOutput(mblock.cur,
-                                      mblock.buff,
-                                      cur::jx1,
-                                      cur::jx2,
-                                      cur::jx3,
-                                      PrepareOutput_InterpToCellCenterFromEdges | prepare_flag);
+      mblock.template PrepareFieldsForOutput<3, 3>(mblock.cur,
+                                                   mblock.buff,
+                                                   cur::jx1,
+                                                   cur::jx2,
+                                                   cur::jx3,
+                                                   PrepareOutput_InterpToCellCenterFromEdges
+                                                     | prepare_flag);
       std::vector<int> components = { cur::jx1, cur::jx2, cur::jx3 };
       for (auto i { 0 }; i < 3; ++i) {
         PutField<D, 3>(io, writer, name(i), mblock.buff, components[i]);
