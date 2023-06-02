@@ -31,7 +31,6 @@ auto main(int argc, char* argv[]) -> int {
           const auto              i2_ = static_cast<real_t>(i2);
           const auto              i3_ = static_cast<real_t>(i3);
           ntt::coord_t<ntt::Dim3> xi { i1_ + HALF, i2_ + HALF, i3_ + HALF };
-          ntt::coord_t<ntt::Dim3> xph { ZERO };
 
           const auto              h_11        = metric.h_11(xi);
           const auto              h_22        = metric.h_22(xi);
