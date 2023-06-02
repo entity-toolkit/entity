@@ -5,6 +5,8 @@
 
 #include "metric_base.h"
 
+#include "utils/qmath.h"
+
 #include <cassert>
 #include <cmath>
 

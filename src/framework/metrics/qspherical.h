@@ -5,6 +5,8 @@
 
 #include "metric_base.h"
 
+#include "utils/qmath.h"
+
 namespace ntt {
   /**
    * Flat metric in quasi-spherical system.
