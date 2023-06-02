@@ -1,20 +1,25 @@
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "meshblock/particles.h"
 #include "sim_params.h"
 #include "species.h"
 
+#include "meshblock/meshblock.h"
+#include "meshblock/particles.h"
+
 namespace ntt {
+
   template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::PrepareFieldsForOutput(const ndfield_t<D, 6>&    field,
-                                               ndfield_t<D, 6>&          buffer,
+  template <int N, int M>
+  void Meshblock<D, S>::PrepareFieldsForOutput(const ndfield_t<D, N>&    field,
+                                               ndfield_t<D, M>&          buffer,
                                                const int&                fx1,
                                                const int&                fx2,
                                                const int&                fx3,
                                                const PrepareOutputFlags& flags) {
     NTTLog();
+    NTTHostErrorIf(fx1 >= N || fx2 >= N || fx3 >= N || fx1 >= M || fx2 >= M || fx3 >= M,
+                   "Invalid field index");
     if constexpr (D == Dim1) {
       Kokkos::parallel_for(
         "PrepareFieldsForOutput", this->rangeActiveCells(), ClassLambda(index_t i) {
@@ -37,18 +42,19 @@ namespace ntt {
             f_int[2] = field(i, fx3);
           }
 
+          coord_t<Dim1> xi_field { ZERO };
+          if (cell_center) {
+            xi_field[0] = i_ + HALF;
+          } else {
+            xi_field[0] = i_;
+          }
+
           if (flags & PrepareOutput_ConvertToHat) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2Hat({ i_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2Hat({ i_ }, f_int, f_sph);
-            }
+            this->metric.v3_Cntrv2Hat(xi_field, f_int, f_sph);
           } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2PhysCntrv({ i_ }, f_int, f_sph);
-            }
+            this->metric.v3_Cntrv2PhysCntrv(xi_field, f_int, f_sph);
+          } else if (flags & PrepareOutput_ConvertToPhysCov) {
+            this->metric.v3_Cov2PhysCov(xi_field, f_int, f_sph);
           }
           buffer(i, fx1) = f_sph[0];
           buffer(i, fx2) = f_sph[1];
@@ -80,107 +86,80 @@ namespace ntt {
             f_int[2] = field(i, j, fx3);
           }
 
+          coord_t<Dim2> xi_field { ZERO };
+          if (cell_center) {
+            xi_field[0] = i_ + HALF;
+            xi_field[1] = j_ + HALF;
+          } else {
+            xi_field[0] = i_;
+            xi_field[1] = j_;
+          }
+
           if (flags & PrepareOutput_ConvertToHat) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2Hat({ i_ + HALF, j_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2Hat({ i_, j_ }, f_int, f_sph);
-            }
+            this->metric.v3_Cntrv2Hat(xi_field, f_int, f_sph);
           } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF, j_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2PhysCntrv({ i_, j_ }, f_int, f_sph);
-            }
+            this->metric.v3_Cntrv2PhysCntrv(xi_field, f_int, f_sph);
+          } else if (flags & PrepareOutput_ConvertToPhysCov) {
+            this->metric.v3_Cov2PhysCov(xi_field, f_int, f_sph);
           }
           buffer(i, j, fx1) = f_sph[0];
           buffer(i, j, fx2) = f_sph[1];
           buffer(i, j, fx3) = f_sph[2];
         });
-    }
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::PrepareCurrentsForOutput(const ndfield_t<D, 3>&    currents,
-                                                 ndfield_t<D, 3>&          buffer,
-                                                 const int&                fx1,
-                                                 const int&                fx2,
-                                                 const int&                fx3,
-                                                 const PrepareOutputFlags& flags) {
-    NTTLog();
-    if constexpr (D == Dim1) {
+    } else if constexpr (D == Dim3) {
       Kokkos::parallel_for(
-        "PrepareCurrentsForOutput", this->rangeActiveCells(), ClassLambda(index_t i) {
-          real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          vec_t<Dim3> f_int { ZERO }, f_sph { ZERO };
-          auto        cell_center = false;
-          if (flags & PrepareOutput_InterpToCellCenterFromEdges) {
-            f_int[0]    = currents(i, fx1);
-            f_int[1]    = INV_2 * (currents(i, fx2) + currents(i + 1, fx2));
-            f_int[2]    = INV_2 * (currents(i, fx3) + currents(i + 1, fx3));
-            cell_center = true;
-          } else {
-            f_int[0] = currents(i, fx1);
-            f_int[1] = currents(i, fx2);
-            f_int[2] = currents(i, fx3);
-          }
-
-          if (flags & PrepareOutput_ConvertToHat) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2Hat({ i_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2Hat({ i_ }, f_int, f_sph);
-            }
-          } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2PhysCntrv({ i_ }, f_int, f_sph);
-            }
-          }
-          buffer(i, fx1) = f_sph[0];
-          buffer(i, fx2) = f_sph[1];
-          buffer(i, fx3) = f_sph[2];
-        });
-    } else if constexpr (D == Dim2) {
-      Kokkos::parallel_for(
-        "PrepareCurrentsForOutput",
+        "PrepareFieldsForOutput",
         this->rangeActiveCells(),
-        ClassLambda(index_t i, index_t j) {
+        ClassLambda(index_t i, index_t j, index_t k) {
           real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
           real_t      j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+          real_t      k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
 
           vec_t<Dim3> f_int { ZERO }, f_sph { ZERO };
           auto        cell_center = false;
           if (flags & PrepareOutput_InterpToCellCenterFromEdges) {
-            f_int[0] = INV_2 * (currents(i, j, fx1) + currents(i, j + 1, fx1));
-            f_int[1] = INV_2 * (currents(i, j, fx2) + currents(i + 1, j, fx2));
+            f_int[0] = INV_4
+                       * (field(i, j, k, fx1) + field(i, j + 1, k, fx1)
+                          + field(i, j, k + 1, fx1) + field(i, j + 1, k + 1, fx1));
+            f_int[1] = INV_4
+                       * (field(i, j, k, fx2) + field(i + 1, j, k, fx2)
+                          + field(i, j, k + 1, fx2) + field(i + 1, j, k + 1, fx2));
             f_int[2] = INV_4
-                       * (currents(i, j, fx3) + currents(i + 1, j, fx3)
-                          + currents(i, j + 1, fx3) + currents(i + 1, j + 1, fx3));
+                       * (field(i, j, k, fx3) + field(i + 1, j, k, fx3)
+                          + field(i, j + 1, k, fx3) + field(i + 1, j + 1, k, fx3));
+            cell_center = true;
+          } else if (flags & PrepareOutput_InterpToCellCenterFromFaces) {
+            f_int[0]    = INV_2 * (field(i, j, k, fx1) + field(i + 1, j, k, fx1));
+            f_int[1]    = INV_2 * (field(i, j, k, fx2) + field(i, j + 1, k, fx2));
+            f_int[2]    = INV_2 * (field(i, j, k, fx3) + field(i, j, k + 1, fx3));
             cell_center = true;
           } else {
-            f_int[0] = currents(i, j, fx1);
-            f_int[1] = currents(i, j, fx2);
-            f_int[2] = currents(i, j, fx3);
+            f_int[0] = field(i, j, k, fx1);
+            f_int[1] = field(i, j, k, fx2);
+            f_int[2] = field(i, j, k, fx3);
+          }
+
+          coord_t<Dim3> xi_field { ZERO };
+          if (cell_center) {
+            xi_field[0] = i_ + HALF;
+            xi_field[1] = j_ + HALF;
+            xi_field[2] = k_ + HALF;
+          } else {
+            xi_field[0] = i_;
+            xi_field[1] = j_;
+            xi_field[2] = k_;
           }
 
           if (flags & PrepareOutput_ConvertToHat) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2Hat({ i_ + HALF, j_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2Hat({ i_, j_ }, f_int, f_sph);
-            }
+            this->metric.v3_Cntrv2Hat(xi_field, f_int, f_sph);
           } else if (flags & PrepareOutput_ConvertToPhysCntrv) {
-            if (cell_center) {
-              this->metric.v3_Cntrv2PhysCntrv({ i_ + HALF, j_ + HALF }, f_int, f_sph);
-            } else {
-              this->metric.v3_Cntrv2PhysCntrv({ i_, j_ }, f_int, f_sph);
-            }
+            this->metric.v3_Cntrv2PhysCntrv(xi_field, f_int, f_sph);
+          } else if (flags & PrepareOutput_ConvertToPhysCov) {
+            this->metric.v3_Cov2PhysCov(xi_field, f_int, f_sph);
           }
-          buffer(i, j, fx1) = f_sph[0];
-          buffer(i, j, fx2) = f_sph[1];
-          buffer(i, j, fx3) = f_sph[2];
+          buffer(i, j, k, fx1) = f_sph[0];
+          buffer(i, j, k, fx2) = f_sph[1];
+          buffer(i, j, k, fx3) = f_sph[2];
         });
     }
   }
@@ -205,10 +184,6 @@ namespace ntt {
                 * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1)
                    + sqrt_detH_ij2 * this->em(i, k1, em::bx1));
         }
-        // vec_t<Dim3> A_hat { ZERO };
-        // this->metric.v3_Cov2Hat(
-        //   { i_ + HALF, static_cast<real_t>(j) + HALF }, { ZERO, ZERO, A3 }, A_hat);
-        // buffer(i, j, buffer_comp) = A_hat[2];
         buffer(i, j, buffer_comp) = A3;
       });
   }

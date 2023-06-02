@@ -13,13 +13,16 @@
 #include <vector>
 
 namespace ntt {
-  enum PrepareOutputFlags_ {
-    PrepareOutput_None                        = 0,
-    PrepareOutput_InterpToCellCenterFromEdges = 1 << 0,
-    PrepareOutput_InterpToCellCenterFromFaces = 1 << 1,
-    PrepareOutput_ConvertToHat                = 1 << 2,
-    PrepareOutput_ConvertToPhysCntrv          = 1 << 3
-  };
+  namespace {
+    enum PrepareOutputFlags_ {
+      PrepareOutput_None                        = 0,
+      PrepareOutput_InterpToCellCenterFromEdges = 1 << 0,
+      PrepareOutput_InterpToCellCenterFromFaces = 1 << 1,
+      PrepareOutput_ConvertToHat                = 1 << 2,
+      PrepareOutput_ConvertToPhysCntrv          = 1 << 3,
+      PrepareOutput_ConvertToPhysCov            = 1 << 4,
+    };
+  }    // namespace
   typedef int PrepareOutputFlags;
 
   enum class GhostCells {
@@ -107,24 +110,14 @@ namespace ntt {
      * @brief Details provided using the `PrepareOutputFlags`.
      * @brief The result is stored inside the buffer.
      */
-    void PrepareFieldsForOutput(const ndfield_t<D, 6>&    field,
-                                ndfield_t<D, 6>&          buffer,
+    template <int N, int M>
+    void PrepareFieldsForOutput(const ndfield_t<D, N>&    field,
+                                ndfield_t<D, M>&          buffer,
                                 const int&                fx1,
                                 const int&                fx2,
                                 const int&                fx3,
                                 const PrepareOutputFlags& flags);
 
-    /**
-     * @brief Interpolate and convert currents to prepare for output.
-     * @brief Details provided using the `PrepareOutputFlags`.
-     * @brief The result is stored inside the buffer.
-     */
-    void PrepareCurrentsForOutput(const ndfield_t<D, 3>&    currents,
-                                  ndfield_t<D, 3>&          buffer,
-                                  const int&                fx1,
-                                  const int&                fx2,
-                                  const int&                fx3,
-                                  const PrepareOutputFlags& flags);
     /**
      * @brief Compute A3 vector potential (for GRPIC 2D).
      * @brief The result is stored inside the buffer(i1, i2, buffer_comp).
