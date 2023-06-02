@@ -46,7 +46,10 @@ namespace ntt {
     const auto remain_nsteps = static_cast<int>((runtime - time) * durations.size() / time);
     auto       remain_time   = static_cast<long double>(remain_nsteps * avg_duration);
     auto       remain_units  = "us";
-    if ((1e3 <= remain_time) && (remain_time < 1e6)) {
+    if (remain_time <= 0.0) {
+      remain_time = 0.0;
+    }
+    if ((remain_time > 0.0) && (1e3 <= remain_time) && (remain_time < 1e6)) {
       remain_time /= 1e3;
       remain_units = "ms";
     } else if ((1e6 <= remain_time) && (remain_time < 6e7)) {
