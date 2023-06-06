@@ -151,7 +151,7 @@ namespace ntt {
       }
     } else if (is_moment) {
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        // TODO: can perhaps do this better
+        // !TODO: can perhaps do this better
         // no smoothing for FieldID::Nppc
         mblock.ComputeMoments(params,
                               m_id,

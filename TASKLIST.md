@@ -17,3 +17,27 @@
 - [x] add different moments (momX, momY, momZ, meanGamma)
 - [x] add charge
 - [x] add per species densities
+
+# v0.9
+
+- [ ] add current deposit/filtering for GR
+- [ ] add moments for GR
+- [ ] add Maxwellian for GR
+
+### Short term things to do/fix
+
+  - [x] routine for easy side/corner range selection
+  - [x] aliases for fields/particles/currents
+  - [ ] check allocation of proper fields
+  - [x] add a simple current filtering
+  - [x] field mirrors
+  - [ ] unit tests + implement with github actions
+
+### Intermediate term things to do/fix
+
+  - [x] test curvilinear particle pusher
+  - [x] particle motion near the axes
+  - [x] test curvilinear current deposit
+  - [x] deposition near the axes
+  - [x] filtering near the axes
+

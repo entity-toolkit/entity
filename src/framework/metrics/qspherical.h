@@ -12,7 +12,7 @@ namespace ntt {
    * Flat metric in quasi-spherical system.
    * chi, eta, phi = log(r-r0), f(h, theta), phi
    *
-   * TODO: change `phi_min`.
+   * !TODO: change `phi_min`.
    * @tparam D dimension.
    */
   template <Dimension D>
