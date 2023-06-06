@@ -75,6 +75,3 @@ namespace ntt {
   }
 
 }    // namespace ntt
-
-template void ntt::GRPIC<ntt::Dim2>::ParticlesBoundaryConditions();
-template void ntt::GRPIC<ntt::Dim3>::ParticlesBoundaryConditions();

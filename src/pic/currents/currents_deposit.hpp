@@ -4,11 +4,12 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
+#include "particle_macros.h"
+#include "pic.h"
+
 #include "io/output.h"
 #include "meshblock/meshblock.h"
-#include "particle_macros.h"
 #include "meshblock/particles.h"
-#include "pic.h"
 #include "utils/qmath.h"
 
 #include <stdexcept>
@@ -136,18 +137,21 @@ namespace ntt {
       m_mblock.metric.v3_Cart2Cntrv(
         xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
 #else
-      coord_t<Dim3> xp;
-      xp[0] = xp_f[0];
-      xp[1] = xp_f[1];
-      xp[2] = m_particles.phi(p);
-      m_mblock.metric.v3_Cart2Cntrv(
-        xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
-      if constexpr (D == Dim2) {
-        if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {
-          vp[2] = ZERO;
-        } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
-                   && AlmostEqual(dIp_f[1], static_cast<prtldx_t>(1.0))) {
-          vp[2] = ZERO;
+      if constexpr (D != Dim1) {
+        coord_t<Dim3> xp;
+        xp[0] = xp_f[0];
+        xp[1] = xp_f[1];
+        xp[2] = m_particles.phi(p);
+
+        m_mblock.metric.v3_Cart2Cntrv(
+          xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
+        if constexpr (D == Dim2) {
+          if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {
+            vp[2] = ZERO;
+          } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
+                     && AlmostEqual(dIp_f[1], static_cast<prtldx_t>(1.0))) {
+            vp[2] = ZERO;
+          }
         }
       }
 #endif

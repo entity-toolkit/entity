@@ -74,6 +74,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::CurrentsBoundaryConditions();
 template void ntt::PIC<ntt::Dim2>::CurrentsBoundaryConditions();
 template void ntt::PIC<ntt::Dim3>::CurrentsBoundaryConditions();
+#endif

@@ -144,6 +144,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::FieldsBoundaryConditions();
 template void ntt::PIC<ntt::Dim2>::FieldsBoundaryConditions();
 template void ntt::PIC<ntt::Dim3>::FieldsBoundaryConditions();
+#endif

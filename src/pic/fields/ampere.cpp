@@ -66,6 +66,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::Ampere(const real_t&);
 template void ntt::PIC<ntt::Dim2>::Ampere(const real_t&);
 template void ntt::PIC<ntt::Dim3>::Ampere(const real_t&);
+#endif

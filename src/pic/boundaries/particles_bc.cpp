@@ -82,6 +82,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::ParticlesBoundaryConditions();
 template void ntt::PIC<ntt::Dim2>::ParticlesBoundaryConditions();
 template void ntt::PIC<ntt::Dim3>::ParticlesBoundaryConditions();
+#endif
