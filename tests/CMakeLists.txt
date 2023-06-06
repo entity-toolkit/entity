@@ -44,10 +44,9 @@ foreach(metric ${all_metrics})
 
   add_library(engine-${engine}-${metric} STATIC ${${engine_upper}_FILES})
 
-  target_compile_options(engine-${engine}-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\" -D PGEN_HEADER=\"${SOURCE_DIR}/${engine}/pgen/dummy.hpp\")
+  target_compile_options(engine-${engine}-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
+  target_compile_options(engine-${engine}-${metric} PUBLIC "-DPGEN_HEADER=\"pgen/dummy.hpp\"")
   target_include_directories(engine-${engine}-${metric} PRIVATE ${SOURCE_DIR}/${engine})
-
-  add_compile_options("")
 endforeach()
 
 # ---------------------------------- Tests --------------------------------- #
