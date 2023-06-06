@@ -25,15 +25,15 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       /* ------------------------- Test components of h_ij ------------------------ */
-      auto range = ntt::CreateRangePolicy<ntt::Dim2>(
-        { 0, 0 }, { (int)resolution[0], (int)resolution[1] });
-      int correct;
+      const auto nx1 = (int)resolution[0];
+      const auto nx2 = (int)resolution[1];
+      bool       correct;
       Kokkos::parallel_reduce(
         "Metric components",
-        range,
-        Lambda(ntt::index_t i1, ntt::index_t i2, int& correct_l) {
-          const auto              i1_ = static_cast<real_t>(i1);
-          const auto              i2_ = static_cast<real_t>(i2);
+        nx1 * nx2,
+        Lambda(ntt::index_t i, bool& correct_l) {
+          const auto              i1_ = static_cast<real_t>(i % nx1);
+          const auto              i2_ = static_cast<real_t>(i / nx1);
           ntt::coord_t<ntt::Dim2> xi { i1_ + HALF, i2_ + HALF };
           ntt::coord_t<ntt::Dim2> xph { ZERO };
 
@@ -61,14 +61,13 @@ auto main(int argc, char* argv[]) -> int {
 
           correct_l                = correct_l && all_correct;
           if (!all_correct) {
-            printf("i1, i2 = %lu, %lu\n", i1, i2);
             printf("r, th = %f, %f\n", r, th);
             printf("h_11 = %f [%f]\n", h_ij_predict[0], h_11_expect);
             printf("h_22 = %f [%f]\n", h_ij_predict[1], h_22_expect);
             printf("h_33 = %f [%f]\n", h_ij_predict[2], h_33_expect);
           }
         },
-        Kokkos::LAnd<int>(correct));
+        Kokkos::LAnd<bool>(correct));
       (!correct) ? throw std::logic_error("Metric is incorrect") : (void)0;
     }
   } catch (std::exception& err) {
