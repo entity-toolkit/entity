@@ -75,38 +75,37 @@ auto main(int argc, char* argv[]) -> int {
     const auto ux2    = u_part * perp_x2;
     const auto ux3    = u_part * perp_x3;
 
-    auto       mblock = &(sim.meshblock);
+    auto&      mblock = sim.meshblock;
     {
       Kokkos::parallel_for(
         "InitFields",
-        mblock->rangeActiveCells(),
+        mblock.rangeActiveCells(),
         Lambda(ntt::index_t i1, ntt::index_t i2, ntt::index_t i3) {
           ntt::coord_t<ntt::Dim3> xi { ZERO };
           ntt::vec_t<ntt::Dim3>   b_cntrv { ZERO };
-          mblock->metric.v3_PhysCntrv2Cntrv(
-            xi, { bmag * bx1, bmag * bx2, bmag * bx3 }, b_cntrv);
-          mblock->em(i1, i2, i3, ntt::em::bx1) = b_cntrv[0];
-          mblock->em(i1, i2, i3, ntt::em::bx2) = b_cntrv[1];
-          mblock->em(i1, i2, i3, ntt::em::bx3) = b_cntrv[2];
+          mblock.metric.v3_PhysCntrv2Cntrv(xi, { bmag * bx1, bmag * bx2, bmag * bx3 }, b_cntrv);
+          mblock.em(i1, i2, i3, ntt::em::bx1) = b_cntrv[0];
+          mblock.em(i1, i2, i3, ntt::em::bx2) = b_cntrv[1];
+          mblock.em(i1, i2, i3, ntt::em::bx3) = b_cntrv[2];
         });
       sim.Exchange(ntt::GhostCells::fields);
     }
 
     {
       using namespace ntt;
-      mblock->particles[0].setNpart(1);
-      auto positrons = mblock->particles[0];
+      mblock.particles[0].setNpart(1);
+      auto positrons = mblock.particles[0];
       Kokkos::parallel_for(
         "InitParticles", positrons.rangeActiveParticles(), Lambda(ntt::index_t p) {
-          init_prtl_3d(*mblock, positrons, p, 0.0, 0.0, 0.0, ux1, ux2, ux3, 1.0);
+          init_prtl_3d(mblock, positrons, p, 0.0, 0.0, 0.0, ux1, ux2, ux3, 1.0);
         });
     }
 
     {
-      const auto dt        = mblock->timestep();
+      const auto dt        = mblock.timestep();
       const auto larmor    = sim.params()->larmor0() * u_part / bmag;
       const auto period    = ntt::constant::TWO_PI * larmor / beta_part;
-      auto       positrons = mblock->particles[0];
+      auto       positrons = mblock.particles[0];
       auto       maxdist = ZERO, maxupar = ZERO;
       const auto nmax = static_cast<int>(nperiods * period / dt);
       for (auto n { 0 }; n < nmax + 1; ++n) {
@@ -142,7 +141,7 @@ auto main(int argc, char* argv[]) -> int {
             static_cast<real_t>(positrons_i2_h(0)) + static_cast<real_t>(positrons_dx2_h(0)),
             static_cast<real_t>(positrons_i3_h(0)) + static_cast<real_t>(positrons_dx3_h(0))
           };
-          mblock->metric.x_Code2Cart(xi, xprtl);
+          mblock.metric.x_Code2Cart(xi, xprtl);
           const auto dist = math::sqrt(SQR(xprtl[0]) + SQR(xprtl[1]) + SQR(xprtl[2]));
           if (dist > maxdist) {
             maxdist = dist;
