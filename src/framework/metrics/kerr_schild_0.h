@@ -49,13 +49,13 @@ namespace ntt {
         dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
-    [[nodiscard]] auto spin() const -> const real_t& {
+    [[nodiscard]] Inline auto spin() const -> const real_t& {
       return a;
     }
-    [[nodiscard]] auto rhorizon() const -> const real_t& {
+    [[nodiscard]] Inline auto rhorizon() const -> const real_t& {
       return rh_;
     }
-    [[nodiscard]] auto rg() const -> const real_t& {
+    [[nodiscard]] Inline auto rg() const -> const real_t& {
       return rg_;
     }
 
