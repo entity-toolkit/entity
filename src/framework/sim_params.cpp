@@ -69,7 +69,7 @@ namespace ntt {
     // domain size / resolution
     m_resolution = get<std::vector<unsigned int>>("domain", "resolution");
     m_extent     = get<std::vector<real_t>>("domain", "extent");
-    if (m_coordinates == "minkowski") {
+    if (m_coordinates == "cartesian") {
       // minkowski
       NTTHostErrorIf((((short)(m_resolution.size()) < (short)(dim))
                       || ((short)(m_extent.size()) < 2 * (short)(dim))),
@@ -112,7 +112,7 @@ namespace ntt {
       m_extent.push_back(0.0);
       m_extent.push_back(constant::TWO_PI);
     } else {
-      NTTHostError("unrecognized coordinates");
+      NTTHostError("unrecognized coordinates: " + m_coordinates);
     }
     // leave only necessary extent/resolution (<= DIM)
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
@@ -165,9 +165,11 @@ namespace ntt {
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
     m_output_interval      = get<int>("output", "interval", defaults::output_interval);
     m_output_interval_time = get<real_t>("output", "interval_time", -1.0);
-    m_output_fields        = get<std::vector<std::string>>("output", "fields");
-    m_output_particles     = get<std::vector<std::string>>("output", "particles");
-    m_output_mom_smooth    = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
+    m_output_fields
+      = get<std::vector<std::string>>("output", "fields", std::vector<std::string>());
+    m_output_particles
+      = get<std::vector<std::string>>("output", "particles", std::vector<std::string>());
+    m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
     m_output_prtl_stride
       = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
 

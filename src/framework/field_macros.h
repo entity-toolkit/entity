@@ -167,15 +167,39 @@
 
 #ifdef MINKOWSKI_METRIC
 
+// 1D
+#  define set_em_E_1d(MBLOCK, I, XCODE, COMP, COMPI, FUNC, ...)                               \
+    {                                                                                         \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   e_cntrv { ZERO };                                                         \
+      coord_t<Dim1> x_ph { ZERO };                                                            \
+      (MBLOCK).metric.x_Code2Cart((XCODE), x_ph);                                             \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), e_hat, e_cntrv);                                  \
+      (MBLOCK).em((I), (COMP)) = e_cntrv[(COMPI)];                                            \
+    }
+
+#  define set_em_B_1d(MBLOCK, I, XCODE, COMP, COMPI, FUNC, ...)                               \
+    {                                                                                         \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   b_cntrv { ZERO };                                                         \
+      coord_t<Dim1> x_ph { ZERO };                                                            \
+      (MBLOCK).metric.x_Code2Cart((XCODE), x_ph);                                             \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), b_hat, b_cntrv);                                  \
+      (MBLOCK).em((I), (COMP)) = b_cntrv[(COMPI)];                                            \
+    }
+
+// 2D
 #  define set_em_E_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
     {                                                                                         \
       vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
       vec_t<Dim3>   e_cntrv { ZERO };                                                         \
       coord_t<Dim2> x_ph { ZERO };                                                            \
-      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      (MBLOCK).metric.x_Code2Cart((XCODE), x_ph);                                             \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                   \
-      (MBLOCK).em((I), (J), COMP) = e_cntrv[COMPI];                                           \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), e_hat, e_cntrv);                                  \
+      (MBLOCK).em((I), (J), (COMP)) = e_cntrv[(COMPI)];                                       \
     }
 
 #  define set_em_B_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
@@ -183,23 +207,52 @@
       vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
       vec_t<Dim3>   b_cntrv { ZERO };                                                         \
       coord_t<Dim2> x_ph { ZERO };                                                            \
-      (MBLOCK).metric.x_Code2Cart(x_code, x_ph);                                              \
+      (MBLOCK).metric.x_Code2Cart((XCODE), x_ph);                                             \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                   \
-      (MBLOCK).em((I), (J), COMP) = b_cntrv[COMPI];                                           \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), b_hat, b_cntrv);                                  \
+      (MBLOCK).em((I), (J), (COMP)) = b_cntrv[(COMPI)];                                       \
+    }
+
+// 3D
+#  define set_em_E_3d(MBLOCK, I, J, K, XCODE, COMP, COMPI, FUNC, ...)                         \
+    {                                                                                         \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   e_cntrv { ZERO };                                                         \
+      coord_t<Dim3> x_ph { ZERO };                                                            \
+      (MBLOCK).metric.x_Code2Cart((XCODE), x_ph);                                             \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), e_hat, e_cntrv);                                  \
+      (MBLOCK).em((I), (J), (K), (COMP)) = e_cntrv[(COMPI)];                                  \
+    }
+
+#  define set_em_B_3d(MBLOCK, I, J, K, XCODE, COMP, COMPI, FUNC, ...)                         \
+    {                                                                                         \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   b_cntrv { ZERO };                                                         \
+      coord_t<Dim3> x_ph { ZERO };                                                            \
+      (MBLOCK).metric.x_Code2Cart((XCODE), x_ph);                                             \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), b_hat, b_cntrv);                                  \
+      (MBLOCK).em((I), (J), (K), (COMP)) = b_cntrv[(COMPI)];                                  \
     }
 
 #else
 
+#  define set_em_E_1d(MBLOCK, I, XCODE, COMP, COMPI, FUNC, ...)                               \
+    { NTTError("not applicable"); }
+
+#  define set_em_B_1d(MBLOCK, I, XCODE, COMP, COMPI, FUNC, ...)                               \
+    { NTTError("not applicable"); }
+
 #  define set_em_E_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
     {                                                                                         \
       vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
       vec_t<Dim3>   e_cntrv { ZERO };                                                         \
       coord_t<Dim2> x_ph { ZERO };                                                            \
-      (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
+      (MBLOCK).metric.x_Code2Sph((XCODE), x_ph);                                              \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
-      (MBLOCK).metric.v3_Hat2Cntrv(x_code, e_hat, e_cntrv);                                   \
-      (MBLOCK).em((I), (J), COMP) = e_cntrv[COMPI];                                           \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), e_hat, e_cntrv);                                  \
+      (MBLOCK).em((I), (J), (COMP)) = e_cntrv[(COMPI)];                                       \
     }
 
 #  define set_em_B_2d(MBLOCK, I, J, XCODE, COMP, COMPI, FUNC, ...)                            \
@@ -207,14 +260,98 @@
       vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
       vec_t<Dim3>   b_cntrv { ZERO };                                                         \
       coord_t<Dim2> x_ph { ZERO };                                                            \
-      (MBLOCK).metric.x_Code2Sph(x_code, x_ph);                                               \
+      (MBLOCK).metric.x_Code2Sph(XCODE, x_ph);                                                \
       FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
       (MBLOCK).metric.v3_Hat2Cntrv(x_code, b_hat, b_cntrv);                                   \
-      (MBLOCK).em((I), (J), COMP) = b_cntrv[COMPI];                                           \
+      (MBLOCK).em((I), (J), (COMP)) = b_cntrv[(COMPI)];                                       \
+    }
+
+#  define set_em_E_3d(MBLOCK, I, J, K, XCODE, COMP, COMPI, FUNC, ...)                         \
+    {                                                                                         \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   e_cntrv { ZERO };                                                         \
+      coord_t<Dim3> x_ph { ZERO };                                                            \
+      (MBLOCK).metric.x_Code2Sph((XCODE), x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), e_hat, e_cntrv);                                  \
+      (MBLOCK).em((I), (J), (K), (COMP)) = e_cntrv[(COMPI)];                                  \
+    }
+
+#  define set_em_B_3d(MBLOCK, I, J, K, XCODE, COMP, COMPI, FUNC, ...)                         \
+    {                                                                                         \
+      vec_t<Dim3>   e_hat { ZERO }, b_hat { ZERO };                                           \
+      vec_t<Dim3>   b_cntrv { ZERO };                                                         \
+      coord_t<Dim3> x_ph { ZERO };                                                            \
+      (MBLOCK).metric.x_Code2Sph((XCODE), x_ph);                                              \
+      FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                                  \
+      (MBLOCK).metric.v3_Hat2Cntrv((XCODE), b_hat, b_cntrv);                                  \
+      (MBLOCK).em((I), (J), (K), (COMP)) = b_cntrv[(COMPI)];                                  \
     }
 
 #endif
 
+// 1D
+#define set_ex1_1d(MBLOCK, I, FUNC, ...)                                                      \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim1> x_code;                                                                   \
+      x_code[0] = i_ + HALF;                                                                  \
+      set_em_E_1d((MBLOCK), (I), (x_code), (em::ex1), (0), (FUNC), __VA_ARGS__);              \
+    }                                                                                         \
+  }
+
+#define set_ex2_1d(MBLOCK, I, FUNC, ...)                                                      \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim1> x_code;                                                                   \
+      x_code[0] = i_;                                                                         \
+      set_em_E_1d((MBLOCK), (I), (x_code), (em::ex2), (1), (FUNC), __VA_ARGS__);              \
+    }                                                                                         \
+  }
+
+#define set_ex3_1d(MBLOCK, I, FUNC, ...)                                                      \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim1> x_code;                                                                   \
+      x_code[0] = i_;                                                                         \
+      set_em_E_1d((MBLOCK), (I), (x_code), (em::ex3), (2), (FUNC), __VA_ARGS__);              \
+    }                                                                                         \
+  }
+
+#define set_bx1_1d(MBLOCK, I, FUNC, ...)                                                      \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim1> x_code;                                                                   \
+      x_code[0] = i_;                                                                         \
+      set_em_B_1d((MBLOCK), (I), (x_code), (em::bx1), (0), (FUNC), __VA_ARGS__);              \
+    }                                                                                         \
+  }
+
+#define set_bx2_1d(MBLOCK, I, FUNC, ...)                                                      \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim1> x_code;                                                                   \
+      x_code[0] = i_ + HALF;                                                                  \
+      set_em_B_1d((MBLOCK), (I), (x_code), (em::bx2), (1), (FUNC), __VA_ARGS__);              \
+    }                                                                                         \
+  }
+
+#define set_bx3_1d(MBLOCK, I, FUNC, ...)                                                      \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim1> x_code;                                                                   \
+      x_code[0] = i_ + HALF;                                                                  \
+      set_em_B_1d((MBLOCK), (I), (x_code), (em::bx3), (2), (FUNC), __VA_ARGS__);              \
+    }                                                                                         \
+  }
+
+// 2D
 #define set_ex1_2d(MBLOCK, I, J, FUNC, ...)                                                   \
   {                                                                                           \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
@@ -287,6 +424,101 @@
     }                                                                                         \
   }
 
+// 3D
+#define set_ex1_3d(MBLOCK, I, J, K, FUNC, ...)                                                \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
+    const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim3> x_code;                                                                   \
+      x_code[0] = i_ + HALF;                                                                  \
+      x_code[1] = j_;                                                                         \
+      x_code[2] = k_;                                                                         \
+      set_em_E_3d((MBLOCK), (I), (J), (K), (x_code), (em::ex1), (0), (FUNC), __VA_ARGS__);    \
+    }                                                                                         \
+  }
+
+#define set_ex2_3d(MBLOCK, I, J, K, FUNC, ...)                                                \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
+    const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim3> x_code;                                                                   \
+      x_code[0] = i_;                                                                         \
+      x_code[1] = j_ + HALF;                                                                  \
+      x_code[2] = k_;                                                                         \
+      set_em_E_3d((MBLOCK), (I), (J), (K), (x_code), (em::ex2), (1), (FUNC), __VA_ARGS__);    \
+    }                                                                                         \
+  }
+
+#define set_ex3_3d(MBLOCK, I, J, K, FUNC, ...)                                                \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
+    const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim3> x_code;                                                                   \
+      x_code[0] = i_;                                                                         \
+      x_code[1] = j_;                                                                         \
+      x_code[2] = k_ + HALF;                                                                  \
+      set_em_E_3d((MBLOCK), (I), (J), (K), (x_code), (em::ex3), (2), (FUNC), __VA_ARGS__);    \
+    }                                                                                         \
+  }
+
+#define set_bx1_3d(MBLOCK, I, J, K, FUNC, ...)                                                \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
+    const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim3> x_code;                                                                   \
+      x_code[0] = i_;                                                                         \
+      x_code[1] = j_ + HALF;                                                                  \
+      x_code[2] = k_ + HALF;                                                                  \
+      set_em_B_3d((MBLOCK), (I), (J), (K), (x_code), (em::bx1), (0), (FUNC), __VA_ARGS__);    \
+    }                                                                                         \
+  }
+
+#define set_bx2_3d(MBLOCK, I, J, K, FUNC, ...)                                                \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
+    const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim3> x_code;                                                                   \
+      x_code[0] = i_ + HALF;                                                                  \
+      x_code[1] = j_;                                                                         \
+      x_code[2] = k_ + HALF;                                                                  \
+      set_em_B_3d((MBLOCK), (I), (J), (K), (x_code), (em::bx2), (1), (FUNC), __VA_ARGS__);    \
+    }                                                                                         \
+  }
+
+#define set_bx3_3d(MBLOCK, I, J, K, FUNC, ...)                                                \
+  {                                                                                           \
+    const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };                \
+    const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };                \
+    const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };                \
+    {                                                                                         \
+      coord_t<Dim3> x_code;                                                                   \
+      x_code[0] = i_ + HALF;                                                                  \
+      x_code[1] = j_ + HALF;                                                                  \
+      x_code[2] = k_;                                                                         \
+      set_em_B_3d((MBLOCK), (I), (J), (K), (x_code), (em::bx3), (2), (FUNC), __VA_ARGS__);    \
+    }                                                                                         \
+  }
+
+#define set_em_fields_1d(MBLOCK, I, FUNC, ...)                                                \
+  {                                                                                           \
+    set_ex1_1d((MBLOCK), (I), (FUNC), __VA_ARGS__);                                           \
+    set_ex2_1d((MBLOCK), (I), (FUNC), __VA_ARGS__);                                           \
+    set_ex3_1d((MBLOCK), (I), (FUNC), __VA_ARGS__);                                           \
+    set_bx1_1d((MBLOCK), (I), (FUNC), __VA_ARGS__);                                           \
+    set_bx2_1d((MBLOCK), (I), (FUNC), __VA_ARGS__);                                           \
+    set_bx3_1d((MBLOCK), (I), (FUNC), __VA_ARGS__);                                           \
+  }
+
 #define set_em_fields_2d(MBLOCK, I, J, FUNC, ...)                                             \
   {                                                                                           \
     set_ex1_2d((MBLOCK), (I), (J), (FUNC), __VA_ARGS__);                                      \
@@ -295,6 +527,16 @@
     set_bx1_2d((MBLOCK), (I), (J), (FUNC), __VA_ARGS__);                                      \
     set_bx2_2d((MBLOCK), (I), (J), (FUNC), __VA_ARGS__);                                      \
     set_bx3_2d((MBLOCK), (I), (J), (FUNC), __VA_ARGS__);                                      \
+  }
+
+#define set_em_fields_3d(MBLOCK, I, J, K, FUNC, ...)                                          \
+  {                                                                                           \
+    set_ex1_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                                 \
+    set_ex2_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                                 \
+    set_ex3_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                                 \
+    set_bx1_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                                 \
+    set_bx2_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                                 \
+    set_bx3_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                                 \
   }
 
 // regex

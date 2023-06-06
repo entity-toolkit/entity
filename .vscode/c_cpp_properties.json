@@ -14,8 +14,10 @@
       "GRPIC_ENGINE",
       "OMPENABLED",
       "OUTPUT_ENABLED",
-      "SIMULATION_METRIC=\"kerr_schild\"",
-      "METRIC_HEADER=\"metrics/kerr_schild.h\"",
+      // "SIMULATION_METRIC=\"kerr_schild\"",
+      // "METRIC_HEADER=\"metrics/kerr_schild.h\"",
+      "SIMULATION_METRIC=\"minkowski\"",
+      "METRIC_HEADER=\"metrics/minkowski.h\"",
       "HostExeSpace=Kokkos::OpenMP",
       "HostMemSpace=Kokkos::HostSpace"
     ]

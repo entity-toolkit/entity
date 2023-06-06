@@ -36,6 +36,9 @@ auto main(int argc, char* argv[]) -> int {
     ntt::Metric<ntt::Dim2> metric(resolution, extent, params);
     delete[] params;
 
+    // acceptable error for cartesian/spherical transformations
+    const real_t        tinyCart = 1e-3;
+
     std::vector<real_t> x1 { HALF, resolution[0] - HALF }, x2 { HALF, resolution[1] - HALF };
 
     {
@@ -86,8 +89,7 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       /* ------------ Test conversion code <-> spherical <-> cartesian ------------ */
-      auto       correct = true;
-      const auto tiny    = static_cast<real_t>(1e-3);
+      auto correct = true;
       for (auto i { 0 }; i < 2; ++i) {
         for (auto j { 0 }; j < 2; ++j) {
           ntt::coord_t<ntt::Dim2> xi { x1[i], x2[j] };
@@ -99,8 +101,8 @@ auto main(int argc, char* argv[]) -> int {
           metric.x_Sph2Code(xsph_from_code, xi_from_sph);
           metric.x_Cart2Code(xcart_from_code, xi_from_cart);
 
-          const auto correct1    = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_sph, tiny);
-          const auto correct2    = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_cart, tiny);
+          const auto correct1    = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_sph, tinyCart);
+          const auto correct2    = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_cart, tinyCart);
           const auto all_correct = correct1 && correct2;
 
           if (!all_correct) {
@@ -168,7 +170,6 @@ auto main(int argc, char* argv[]) -> int {
       std::vector<real_t>   x3 = { 0.0, 1.25, 4.5 };
       ntt::vec_t<ntt::Dim3> v_cov { -1.0, 2.0, -3.0 };
       auto                  correct = true;
-      const auto            tiny    = static_cast<real_t>(1e-4);
       for (auto i { 0 }; i < 2; ++i) {
         for (auto j { 0 }; j < 2; ++j) {
           for (auto k { 0 }; k < 3; ++k) {
@@ -191,10 +192,11 @@ auto main(int argc, char* argv[]) -> int {
             metric.v3_Cart2Cntrv(xi3D, v_cart_fromCov, v_cntrv_fromCart);
             metric.v3_Cart2Cov(xi3D, v_cart_fromCntrv, v_cov_fromCart);
 
-            const auto correct1 = ntt::AlmostEqual<ntt::Dim3>(v_cntrv, v_cntrv_fromCart, tiny);
-            const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_fromCart, tiny);
+            const auto correct1
+              = ntt::AlmostEqual<ntt::Dim3>(v_cntrv, v_cntrv_fromCart, tinyCart);
+            const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_fromCart, tinyCart);
             const auto correct3
-              = ntt::AlmostEqual<ntt::Dim3>(v_cart_fromCntrv, v_cart_fromCov, tiny);
+              = ntt::AlmostEqual<ntt::Dim3>(v_cart_fromCntrv, v_cart_fromCov, tinyCart);
             const auto all_correct = correct1 && correct2 && correct3;
 
             if (!all_correct) {

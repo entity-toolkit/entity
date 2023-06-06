@@ -1,37 +1,59 @@
 include(CTest)
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/)
+
+# include main source directory for all targets
 include_directories(${SOURCE_DIR})
 
 # --------------------------------- Wrapper -------------------------------- #
 set(WRAPPER ${PROJECT_NAME}-wrapper)
 add_library(${WRAPPER} STATIC ${SOURCE_DIR}/wrapper/kokkos.cpp)
+
+# link wrapper with all targets
 link_libraries(${WRAPPER})
+
+# include wrapper header for all targets
 include_directories(${SOURCE_DIR}/wrapper)
 
 # -------------------------------- Framework ------------------------------- #
 file(GLOB_RECURSE FRAMEWORK_FILES ${SOURCE_DIR}/framework/*.cpp)
+file(GLOB_RECURSE PIC_FILES ${SOURCE_DIR}/pic/*.cpp)
+file(GLOB_RECURSE GRPIC_FILES ${SOURCE_DIR}/grpic/*.cpp)
+
+# include framework headers for all targets
 include_directories(${SOURCE_DIR}/framework)
 
-# !TODO: maybe use shared LIBS?
+set(all_metrics ${sr_metrics} ${gr_metrics})
+
+# Libraries for all metrics and engines
+# compile framework for all metrics and engines + all engines with corresponding metrics
+foreach(metric ${all_metrics})
+  list(FIND sr_metrics ${metric} sr_metric_index)
+
+  if(NOT ${sr_metric_index} EQUAL -1)
+    set(engine pic)
+  else()
+    set(engine grpic)
+  endif()
+
+  string(TOUPPER ${metric} metric_upper)
+  string(TOUPPER ${engine} engine_upper)
+
+  add_library(framework-${metric} STATIC ${FRAMEWORK_FILES})
+  target_compile_options(framework-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
+
+  add_library(engine-${engine}-${metric} STATIC ${${engine_upper}_FILES})
+
+  target_compile_options(engine-${engine}-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\" -D PGEN_HEADER=\"${SOURCE_DIR}/${engine}/pgen/dummy.hpp\")
+  target_include_directories(engine-${engine}-${metric} PRIVATE ${SOURCE_DIR}/${engine})
+
+  add_compile_options("")
+endforeach()
 
 # ---------------------------------- Tests --------------------------------- #
 enable_testing()
 
-function(configure_test test_target framework_target metric engine)
-  string(TOUPPER ${metric} metric_upper)
-  string(TOUPPER ${engine} engine_upper)
-  add_library(${framework_target} STATIC ${FRAMEWORK_FILES})
-  target_compile_options(${framework_target} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
-  target_link_libraries(${test_target} PUBLIC ${framework_target})
-endfunction()
-
 # --------------------------------- Metrics -------------------------------- #
-set(all_metrics ${sr_metrics} ${gr_metrics})
-
-set(sr_sph_metrics ${sr_metrics})
-list(REMOVE_ITEM sr_sph_metrics minkowski)
-
 foreach(metric ${all_metrics})
   list(FIND sr_metrics ${metric} sr_metric_index)
 
@@ -51,11 +73,24 @@ foreach(metric ${all_metrics})
 
   set(title "metric-trans-${metric}")
   add_executable(test-${title}.xc "metric-trans.cpp")
-  configure_test(test-${title}.xc framework-${title} ${metric} ${engine})
+  target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
+
+  # configure_framework_test(test-${title}.xc framework-${title} ${metric} ${engine})
   add_test(NAME "Vector/Coordinate Transformations: ${metric}" COMMAND "test-${title}.xc")
 
   set(title "metric-comp-${metric}")
   add_executable(test-${title}.xc ${filename_comp})
-  configure_test(test-${title}.xc framework-${title} ${metric} ${engine})
+  target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
+
+  # configure_framework_test(test-${title}.xc framework-${title} ${metric} ${engine})
   add_test(NAME "Metric Components: ${metric}" COMMAND "test-${title}.xc")
 endforeach()
+
+# ----------------------------------- SR ----------------------------------- #
+set(metric "minkowski")
+set(engine "pic")
+set(title "pusher-sr-minkowski")
+add_executable(test-${title}.xc "pusher-sr-mink.cpp")
+target_link_libraries(test-${title}.xc PUBLIC framework-${metric} engine-${engine}-${metric})
+target_include_directories(test-${title}.xc PRIVATE ${SOURCE_DIR}/${engine})
+add_test(NAME "Pusher: ${engine} ${metric}" COMMAND "test-${title}.xc")

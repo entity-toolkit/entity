@@ -10,6 +10,7 @@ jobs:
     strategy:
       matrix:
         cuda: ["ON", "OFF"]
+        precision: ["double", "single"]
     runs-on:
       - self-hosted
     steps:
@@ -17,7 +18,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Compile
         run: |
-          cmake -B build -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D TESTS=ON
+          cmake -B build -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D TESTS=ON -D precision=${{ matrix.precision }}
           cd build
           make -j
       - name: Run tests
