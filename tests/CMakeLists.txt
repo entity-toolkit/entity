@@ -1,6 +1,6 @@
 include(CTest)
 
-set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/)
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 # include main source directory for all targets
 include_directories(${SOURCE_DIR})
