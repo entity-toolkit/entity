@@ -15,16 +15,15 @@ namespace ntt {
    * @returns true/false.
    */
   Inline bool AlmostEqual(float a, float b, float epsilon = 0.00001f) {
-    float absA = math::abs(a);
-    float absB = math::abs(b);
-    float diff = math::abs(a - b);
-
     if (a == b) {
       return true;
-    } else if (a == 0.0 || b == 0.0 || (absA + absB < FLT_MIN)) {
-      return diff < (epsilon * FLT_MIN);
     } else {
-      return diff / math::min((absA + absB), FLT_MAX) < epsilon;
+      float diff { math::abs(a - b) };
+      if (diff <= 1e-6) {
+        return true;
+      } else {
+        return diff <= math::min(math::abs(a), math::abs(b)) * epsilon;
+      }
     }
   }
 
@@ -36,20 +35,15 @@ namespace ntt {
    * @returns true/false.
    */
   Inline bool AlmostEqual(double a, double b, double epsilon = 1e-8) {
-    double diff { math::abs(a - b) };
-    if (diff <= 1e-12)
-      return true;
-    a = math::abs(a);
-    b = math::abs(b);
     if (a == b) {
       return true;
-    } else if (a == 0.0 || b == 0.0 || (a + b < 1e-12)) {
-      return diff < (1e-12);
     } else {
-      double min = math::min(a, b);
-      a -= min;
-      b -= min;
-      return (diff <= (math::max(a, b) * epsilon));
+      double diff { math::abs(a - b) };
+      if (diff <= 1e-12) {
+        return true;
+      } else {
+        return diff <= math::min(math::abs(a), math::abs(b)) * epsilon;
+      }
     }
   }
 
@@ -72,6 +66,18 @@ namespace ntt {
     }
     return true;
   }
+
+  /**
+   * @brief Function to compare a number with zero.
+   * @tparam T Type of the number.
+   * @param a Number
+   * @param epsilon Accuracy [optional].
+   * @returns true/false.
+   */
+  template <typename T>
+  Inline bool CloseToZero(T a, T epsilon = std::is_same<T, float>::value ? 0.00001f : 1e-8) {
+    return math::abs(a) < epsilon;
+  }
 }    // namespace ntt
 
 template bool ntt::AlmostEqual<ntt::Dim1>(const ntt::vec_t<ntt::Dim1>&,
@@ -83,4 +89,7 @@ template bool ntt::AlmostEqual<ntt::Dim2>(const ntt::vec_t<ntt::Dim2>&,
 template bool ntt::AlmostEqual<ntt::Dim3>(const ntt::vec_t<ntt::Dim3>&,
                                           const ntt::vec_t<ntt::Dim3>&,
                                           real_t);
+
+template bool ntt::CloseToZero<float>(float, float);
+template bool ntt::CloseToZero<double>(double, double);
 #endif
