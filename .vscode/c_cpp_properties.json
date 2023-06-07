@@ -58,7 +58,8 @@
       "name": "mac",
       "intelliSenseMode": "macos-gcc-x64",
       "includePath": [
-        "${myDefaultIncludePath}"
+        "${myDefaultIncludePath}",
+        "/usr/local/Cellar/gcc@10/10.4.0/lib/gcc/10/gcc/x86_64-apple-darwin22/10.4.0/include/"
       ],
       "defines": [
         "${myDefaultDefines}",
