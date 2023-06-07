@@ -10,8 +10,9 @@
       "${workspaceFolder}/../ADIOS2/install/include"
     ],
     "myDefaultDefines": [
-      // "PIC_ENGINE",
-      "GRPIC_ENGINE",
+      "PIC_ENGINE",
+      "MINKOWSKI_METRIC",
+      // "GRPIC_ENGINE",
       "OMPENABLED",
       "OUTPUT_ENABLED",
       // "SIMULATION_METRIC=\"kerr_schild\"",
