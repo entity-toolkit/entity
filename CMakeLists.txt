@@ -75,7 +75,6 @@ else()
 
   # --------------------------------- Output --------------------------------- #
   if(${output})
-    message("Kokkos_ROOT: ${Kokkos_ROOT}")
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
     find_or_fetch_dependency(adios2 FALSE)
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
