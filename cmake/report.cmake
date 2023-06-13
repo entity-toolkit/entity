@@ -206,6 +206,17 @@ PrintChoices("C++ compiler"
   42
 )
 
+PrintChoices("C compiler"
+  "CMAKE_C_COMPILER"
+  "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
+  "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
+  "N/A"
+  "${White}"
+  C_COMPILER_REPORT
+  0
+  42
+)
+
 if(${Kokkos_ENABLE_CUDA})
   # check if empty
   if("${CMAKE_CUDA_COMPILER}" STREQUAL "")
@@ -286,7 +297,9 @@ message("  - Kokkos:\t\t\t\t  v${Kokkos_VERSION}\n")
 #if(NOT "${adios2_DIR}" STREQUAL "" AND ${output} STREQUAL "ON")
   #string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_DIR}")
 #message("  - ADIOS2 [${Magenta}adios2_DIR${ColorReset}]:\t\t  ${adios2_DIR} v${adios2_VERSION}\n")
-message("  - ADIOS2:\t\t\t\t  v${adios2_VERSION}\n")
+if(${output})
+  message("  - ADIOS2:\t\t\t\t  v${adios2_VERSION}\n")
+endif()
 #endif()
 
 # if(ENABLED_ARCHS)
@@ -294,6 +307,8 @@ message("  - ADIOS2:\t\t\t\t  v${adios2_VERSION}\n")
 # endif()
 message("  ${CUDA_REPORT}\n")
 message("  ${OPENMP_REPORT}\n")
+
+message("  ${C_COMPILER_REPORT}\n")
 
 message("  ${CXX_COMPILER_REPORT}\n")
 
