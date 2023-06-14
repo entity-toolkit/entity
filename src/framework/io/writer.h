@@ -32,8 +32,8 @@ namespace ntt {
 #endif
 
   public:
-    Writer() = default;
-    ~Writer();
+    Writer()  = default;
+    ~Writer() = default;
 
     void Initialize(const SimulationParams&, const Meshblock<D, S>&);
     void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);

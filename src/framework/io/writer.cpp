@@ -190,11 +190,6 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  Writer<D, S>::~Writer() {
-    m_writer.Close();
-  }
-
-  template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteAll(const SimulationParams& params,
                               Meshblock<D, S>&        mblock,
                               const real_t&           time,
@@ -260,9 +255,6 @@ namespace ntt {
 #else
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::Initialize(const SimulationParams&, const Meshblock<D, S>&) {}
-
-  template <Dimension D, SimulationEngine S>
-  Writer<D, S>::~Writer() {}
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteAll(const SimulationParams&,
