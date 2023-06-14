@@ -22,6 +22,10 @@ namespace ntt {
     // Number of currently active (used) particles.
     std::size_t m_npart { 0 };
 
+    void        SyncHostDeviceImpl(DimensionTag<Dim1>);
+    void        SyncHostDeviceImpl(DimensionTag<Dim2>);
+    void        SyncHostDeviceImpl(DimensionTag<Dim3>);
+
   public:
     /**
      * Arrays containing particle data.
@@ -117,6 +121,13 @@ namespace ntt {
      * @brief Reshuffle particles by their tags.
      */
     void ReshuffleByTags();
+
+    /**
+     * @brief Copy particle data from device to host.
+     */
+    void SyncHostDevice() {
+      SyncHostDeviceImpl(DimensionTag<D> {});
+    }
   };
 
 }    // namespace ntt
