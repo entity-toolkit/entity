@@ -4,11 +4,12 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
+#include "particle_macros.h"
+#include "pic.h"
+
 #include "io/output.h"
 #include "meshblock/meshblock.h"
-#include "particle_macros.h"
 #include "meshblock/particles.h"
-#include "pic.h"
 #include "utils/qmath.h"
 
 namespace ntt {

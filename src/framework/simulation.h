@@ -3,11 +3,11 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
-#include "meshblock/meshblock.h"
 #include "sim_params.h"
 
+#include "io/output.h"
 #include "io/writer.h"
+#include "meshblock/meshblock.h"
 #include "utils/timer.h"
 
 #include <toml.hpp>

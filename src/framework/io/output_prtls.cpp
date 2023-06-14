@@ -4,11 +4,12 @@
 
 #  include "wrapper.h"
 
-#  include "meshblock/meshblock.h"
-#  include "io/output.h"
 #  include "particle_macros.h"
-#  include "meshblock/particles.h"
 #  include "sim_params.h"
+
+#  include "io/output.h"
+#  include "meshblock/meshblock.h"
+#  include "meshblock/particles.h"
 
 #  include <adios2.h>
 #  include <adios2/cxx11/KokkosView.h>

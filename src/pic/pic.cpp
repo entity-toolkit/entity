@@ -2,9 +2,9 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "sim_params.h"
 
+#include "io/output.h"
 #include "utils/timer.h"
 
 #include <plog/Log.h>

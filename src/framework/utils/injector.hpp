@@ -3,10 +3,11 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "meshblock/particles.h"
 #include "sim_params.h"
+
+#include "meshblock/meshblock.h"
+#include "meshblock/particles.h"
 
 #include "utils/archetypes.hpp"
 

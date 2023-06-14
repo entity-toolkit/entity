@@ -4,7 +4,6 @@
 
 #include "io/output.h"
 #include "utils/progressbar.h"
-
 #include "utils/timer.h"
 #include "utils/utils.h"
 

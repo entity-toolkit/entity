@@ -1,8 +1,9 @@
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "pic.h"
 #include "simulation.h"
+
+#include "io/output.h"
 
 namespace ntt {
   /**

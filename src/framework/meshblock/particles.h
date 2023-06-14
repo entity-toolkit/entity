@@ -27,21 +27,29 @@ namespace ntt {
      * Arrays containing particle data.
      */
     // Cell indices of the current particle.
-    array_t<int*>    i1, i2, i3;
+    array_t<int*>             i1, i2, i3;
     // Displacement of a particle within the cell.
-    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<prtldx_t*>        dx1, dx2, dx3;
     // Three spatial components of the covariant 4-velocity (physical units).
-    array_t<real_t*> ux1, ux2, ux3;
+    array_t<real_t*>          ux1, ux2, ux3;
     // Particle weights.
-    array_t<real_t*> weight;
+    array_t<real_t*>          weight;
     // Additional variables (specific to different cases).
     // previous coordinates (GR specific)
-    array_t<real_t*> i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>          i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*>        dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
-    array_t<real_t*> phi;
+    array_t<real_t*>          phi;
     // Array to tag the particles.
-    array_t<short*>  tag;
+    array_t<short*>           tag;
+
+    // host mirrors
+    array_mirror_t<int*>      i1_h, i2_h, i3_h;
+    array_mirror_t<prtldx_t*> dx1_h, dx2_h, dx3_h;
+    array_mirror_t<real_t*>   ux1_h, ux2_h, ux3_h;
+    array_mirror_t<real_t*>   weight_h;
+    array_mirror_t<real_t*>   phi_h;
+    array_mirror_t<short*>    tag_h;
 
     /**
      * @brief Constructor for the particle container.

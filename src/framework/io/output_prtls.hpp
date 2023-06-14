@@ -3,8 +3,9 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
 #include "particle_macros.h"
+
+#include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
 
 namespace ntt {
@@ -201,10 +202,10 @@ namespace ntt {
     xcode[0]      = HALF * (xcode[0] + xcode_prev[0]);
     xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
     m_mblock.metric.v3_Cov2PhysCov(xcode,
-                                  { m_particles.ux1(p * m_stride),
-                                    m_particles.ux2(p * m_stride),
-                                    m_particles.ux3(p * m_stride) },
-                                  vcov_sph);
+                                   { m_particles.ux1(p * m_stride),
+                                     m_particles.ux2(p * m_stride),
+                                     m_particles.ux3(p * m_stride) },
+                                   vcov_sph);
     m_buffer(p) = vcov_sph[m_component];
   }
 
@@ -225,10 +226,10 @@ namespace ntt {
     xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
     xcode[2]      = HALF * (xcode[2] + xcode_prev[2]);
     m_mblock.metric.v3_Cov2PhysCov(xcode,
-                                  { m_particles.ux1(p * m_stride),
-                                    m_particles.ux2(p * m_stride),
-                                    m_particles.ux3(p * m_stride) },
-                                  vcov_sph);
+                                   { m_particles.ux1(p * m_stride),
+                                     m_particles.ux2(p * m_stride),
+                                     m_particles.ux3(p * m_stride) },
+                                   vcov_sph);
     m_buffer(p) = vcov_sph[m_component];
   }
 

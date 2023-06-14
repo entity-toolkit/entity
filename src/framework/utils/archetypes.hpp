@@ -3,10 +3,11 @@
 
 #include "wrapper.h"
 
+#include "sim_params.h"
+
 #include "io/output.h"
 #include "meshblock/meshblock.h"
 #include "utils/qmath.h"
-#include "sim_params.h"
 
 #ifdef NTTINY_ENABLED
 #  include "nttiny/api.h"

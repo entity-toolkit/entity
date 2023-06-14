@@ -1,8 +1,9 @@
 #include "wrapper.h"
 
+#include "pic.h"
+
 #include "io/output.h"
 #include "meshblock/meshblock.h"
-#include "pic.h"
 
 namespace ntt {
 #ifdef MINKOWSKI_METRIC

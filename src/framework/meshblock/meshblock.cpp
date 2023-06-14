@@ -3,9 +3,10 @@
 #include "wrapper.h"
 
 #include "particle_macros.h"
-#include "meshblock/particles.h"
 #include "sim_params.h"
 #include "species.h"
+
+#include "meshblock/particles.h"
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>

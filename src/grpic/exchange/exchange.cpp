@@ -1,7 +1,8 @@
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "grpic.h"
+
+#include "io/output.h"
 #include "meshblock/meshblock.h"
 
 namespace ntt {

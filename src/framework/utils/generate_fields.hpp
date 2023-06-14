@@ -4,8 +4,9 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "meshblock/meshblock.h"
 #include "sim_params.h"
+
+#include "meshblock/meshblock.h"
 
 #include "utils/archetypes.hpp"
 

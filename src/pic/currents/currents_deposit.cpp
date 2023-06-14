@@ -15,16 +15,17 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "pic.h"
+
+#include "io/output.h"
 
 namespace ntt {
   template <Dimension D>
   void PIC<D>::CurrentsDeposit() {
-    auto& mblock = this->meshblock;
-    auto  params = *(this->params());
+    auto& mblock      = this->meshblock;
+    auto  params      = *(this->params());
 
-    auto scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
+    auto  scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
       if (species.charge() != 0.0) {
         const real_t              dt { mblock.timestep() };

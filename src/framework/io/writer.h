@@ -3,9 +3,10 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
-#include "io/output.h"
 #include "sim_params.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>
