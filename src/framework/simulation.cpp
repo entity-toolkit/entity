@@ -202,6 +202,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
+    writer.Finalize();
     WaitAndSynchronize();
     NTTLog();
   }

@@ -38,6 +38,12 @@ namespace ntt {
     void Initialize(const SimulationParams&, const Meshblock<D, S>&);
     void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);
 
+    void Finalize() {
+#ifdef OUTPUT_ENABLED
+      m_writer.Close();
+#endif
+    }
+
     void WriteFields(const SimulationParams&,
                      Meshblock<D, S>&,
                      const real_t&,
