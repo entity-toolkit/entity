@@ -362,6 +362,17 @@ namespace ntt {
       Ampere(ONE, gr_ampere::aux);
       timers.stop("FieldSolver");
 
+      if (params.depositEnabled()) {
+        timers.start("CurrentDeposit");
+        /**
+         * em0::D <- (em0::D) <- cur::J
+         *
+         * Now: em0::D at n+1/2
+         */
+        AmpereCurrents(gr_ampere::aux);
+        timers.stop("CurrentDeposit");
+      }
+
       timers.start("FieldBoundaries");
       /**
        * em0::D, em::D <- boundary conditions
@@ -388,10 +399,21 @@ namespace ntt {
        */
       Ampere(ONE, gr_ampere::main);
 
+      if (params.depositEnabled()) {
+        timers.start("CurrentDeposit");
+        /**
+         * em0::D <- (em0::D) <- cur0::J
+         *
+         * Now: em0::D at n+1
+         */
+        AmpereCurrents(gr_ampere::main);
+        timers.stop("CurrentDeposit");
+      }
+
       /**
        * em::D <-> em0::D
        * em::B <-> em0::B
-       * em::J <-> em0::J
+       * cur::J <-> cur0::J
        */
       SwapFields();
       timers.stop("FieldSolver");

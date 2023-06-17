@@ -96,9 +96,10 @@ namespace ntt {
     void Ampere(const real_t& f, const gr_ampere&);
     /**
      * @brief Add computed and filtered currents to the E-field.
-     * !ADD: #GR
+     * @param g select which version of the Ampere is called:
+     * [`gr_ampere::aux`, `gr_ampere::main`].
      */
-    void AmpereCurrents() {}
+    void AmpereCurrents(const gr_ampere&);
     /**
      * @brief Apply special boundary conditions for fields.
      * @param g select field to apply boundary conditions to:
@@ -156,7 +157,7 @@ namespace ntt {
     /**
      * @brief Time average J currents.
      */
-    void TimeAverageJ() {}
+    void TimeAverageJ();
 
     /* -------------------------------- Particles ------------------------------- */
     /**
@@ -184,30 +185,7 @@ namespace ntt {
       auto& mblock = this->meshblock;
       Kokkos::deep_copy(mblock.em0, mblock.em);
     }
-    // /**
-    //  * @brief Computes Aphi
-    //  */
-    // void ComputeVectorPotential();
   };
-
-  /**
-   * Computes Aphi from integration of local Br
-   *
-   * @tparam D Dimension.
-   */
-
-  // template <Dimension D>
-  // class Compute_Aphi {
-  //   Meshblock<D, SimulationType::GRPIC> m_mblock;
-  //   real_t                              m_eps;
-  //   int                                 i2_min;
-
-  // public:
-  //   Compute_Aphi(const Meshblock<D, SimulationType::GRPIC>& mblock, real_t eps)
-  //     : m_mblock(mblock), m_eps(eps), i2_min(mblock.i2_min()) {}
-
-  //   Inline void operator()(index_t, index_t) const;
-  // };
 
 }    // namespace ntt
 
