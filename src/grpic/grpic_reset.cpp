@@ -6,10 +6,6 @@
 #include "io/output.h"
 
 namespace ntt {
-  /**
-   * @brief reset simulation.
-   *
-   */
   template <Dimension D>
   void GRPIC<D>::ResetSimulation() {
     this->m_tstep = 0;
@@ -22,10 +18,6 @@ namespace ntt {
     NTTLog();
   }
 
-  /**
-   * @brief reset fields.
-   *
-   */
   template <Dimension D>
   void GRPIC<D>::ResetParticles() {
     auto& mblock = this->meshblock;
@@ -52,10 +44,6 @@ namespace ntt {
     }
   }
 
-  /**
-   * @brief reset fields.
-   *
-   */
   template <Dimension D>
   void GRPIC<D>::ResetFields() {
     auto& mblock = this->meshblock;
@@ -64,17 +52,16 @@ namespace ntt {
     Kokkos::deep_copy(mblock.aux, ZERO);
   }
 
-  /**
-   * @brief reset currents.
-   *
-   */
   template <Dimension D>
   void GRPIC<D>::ResetCurrents() {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.buff, ZERO);
-    Kokkos::deep_copy(mblock.cur, ZERO);
+    Kokkos::deep_copy(mblock.cur0, ZERO);
   }
 }    // namespace ntt
+
+template void ntt::GRPIC<ntt::Dim2>::ResetSimulation();
+template void ntt::GRPIC<ntt::Dim3>::ResetSimulation();
 
 template void ntt::GRPIC<ntt::Dim2>::ResetParticles();
 template void ntt::GRPIC<ntt::Dim3>::ResetParticles();
@@ -84,6 +71,3 @@ template void ntt::GRPIC<ntt::Dim3>::ResetFields();
 
 template void ntt::GRPIC<ntt::Dim2>::ResetCurrents();
 template void ntt::GRPIC<ntt::Dim3>::ResetCurrents();
-
-template void ntt::GRPIC<ntt::Dim2>::ResetSimulation();
-template void ntt::GRPIC<ntt::Dim3>::ResetSimulation();

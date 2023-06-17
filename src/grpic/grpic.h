@@ -63,11 +63,11 @@ namespace ntt {
 
     /* ---------------------------------- Reset --------------------------------- */
     /**
-     * @brief Reset field arrays.
+     * @brief Reset field arrays: em::, em0:: & aux::.
      */
     void ResetFields();
     /**
-     * @brief Reset current arrays.
+     * @brief Reset currents: cur0::J & buff.
      */
     void ResetCurrents();
     /**
@@ -136,16 +136,13 @@ namespace ntt {
 
     /* -------------------------------- Currents -------------------------------- */
     /**
-     * !ADD: #GR
-     */
-    /**
      * @brief Spatially filter all the deposited currents.
      */
     void CurrentsFilter() {}
     /**
      * @brief Deposit currents from particles.
      */
-    void CurrentsDeposit() {}
+    void CurrentsDeposit();
     /**
      * @brief Apply boundary conditions for currents.
      */

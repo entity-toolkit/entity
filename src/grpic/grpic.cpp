@@ -301,13 +301,15 @@ namespace ntt {
        */
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        // !ADD: GR -- reset + deposit
+        // clear cur0::J & buff
+        ResetCurrents();
+        CurrentsDeposit();
 
         timers.start("FieldBoundaries");
         // !ADD: GR -- synchronize + exchange + bc
         timers.stop("FieldBoundaries");
 
-        // !ADD: GR -- filter
+        CurrentsFilter();
         timers.stop("CurrentDeposit");
       }
 
