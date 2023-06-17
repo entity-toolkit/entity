@@ -306,7 +306,9 @@ namespace ntt {
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
-        // !ADD: GR -- synchronize + exchange + bc
+        CurrentsSynchronize();
+        Exchange(GhostCells::currents);
+        CurrentsBoundaryConditions();
         timers.stop("FieldBoundaries");
 
         CurrentsFilter();
@@ -314,7 +316,7 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
-      // !ADD: GR -- particle exchange ?
+      Exchange(GhostCells::particles);
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }

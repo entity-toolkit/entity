@@ -138,7 +138,7 @@ namespace ntt {
     /**
      * @brief Spatially filter all the deposited currents.
      */
-    void CurrentsFilter() {}
+    void CurrentsFilter();
     /**
      * @brief Deposit currents from particles.
      */
