@@ -1,6 +1,6 @@
 /**
  * @file currents_filter.cpp
- * @brief Guassian filtering of the deposited currents `Meshblock::currentFilters` times.
+ * @brief Gaussian filtering of the deposited currents `Meshblock::currentFilters` times.
  * @implements: `CurrentsFilter` method of the `PIC` class
  * @includes: `currents_filter.hpp
  * @depends: `pic.h`
