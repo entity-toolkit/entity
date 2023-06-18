@@ -27,10 +27,10 @@ namespace ntt {
 
     range_t<D> range;
     if constexpr (D == Dim2) {
-      auto range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
-                                           { mblock.i1_max(), mblock.i2_max() });
+      range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
+                                      { mblock.i1_max(), mblock.i2_max() });
     } else if constexpr (D == Dim3) {
-      auto range
+      range
         = CreateRangePolicy<Dim3>({ mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
                                   { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
     }
