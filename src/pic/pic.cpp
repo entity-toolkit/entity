@@ -135,9 +135,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
-        timers.start("CurrentDeposit");
         AmpereCurrents();
-        timers.stop("CurrentDeposit");
       }
 
       timers.start("FieldBoundaries");
