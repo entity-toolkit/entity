@@ -173,7 +173,7 @@ namespace ntt {
     void SwapFields() {
       auto& mblock = this->meshblock;
       std::swap(mblock.em, mblock.em0);
-      std::swap(mblock.cur, mblock.buff);
+      std::swap(mblock.cur, mblock.cur0);
     }
     /**
      * @brief Copies em fields into em0
