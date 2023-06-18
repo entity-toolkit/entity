@@ -48,7 +48,7 @@ namespace ntt {
     auto th0_h = Kokkos::create_mirror_view(th0_d);
     auto ph0_h = Kokkos::create_mirror_view(ph0_d);
     auto ur0_h = Kokkos::create_mirror_view(ur0_d);
-    for (auto i { 0 }; i < npart; ++i) {
+    for (std::size_t i { 0 }; i < npart; ++i) {
       r0_h(i)  = r0[i];
       th0_h(i) = th0[i];
       ph0_h(i) = ph0[i];
