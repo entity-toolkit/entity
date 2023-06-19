@@ -26,6 +26,8 @@ else()
   message(STATUS "Debug mode")
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
+
 # ----------------------------- Configurations ----------------------------- #
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults.cmake)
 
