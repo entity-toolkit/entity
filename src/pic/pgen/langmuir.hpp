@@ -11,7 +11,7 @@
 #include "utils/archetypes.hpp"
 #include "utils/injector.hpp"
 
-#ifdef NTTINY_ENABLED
+#ifdef GUI_ENABLED
 #  include "nttiny/api.h"
 #endif
 
@@ -54,7 +54,7 @@ namespace ntt {
       InjectUniform<D, PICEngine, LangmuirInit>(params, mblock, { 1, 2 }, params.ppc0() * 0.5);
     }
 
-#ifdef NTTINY_ENABLED
+#ifdef GUI_ENABLED
     inline void UserInitBuffers_nttiny(const SimulationParams&,
                                        const Meshblock<D, S>&,
                                        std::map<std::string, nttiny::ScrollingBuffer>& buffers) {
