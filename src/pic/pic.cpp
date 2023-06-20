@@ -152,6 +152,7 @@ namespace ntt {
       this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations);
 
     this->m_time += mblock.timestep();
+    pgen.setTime(this->m_time);
     this->m_tstep++;
   }
 

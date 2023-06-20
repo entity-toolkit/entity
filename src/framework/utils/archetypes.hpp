@@ -43,6 +43,17 @@ namespace ntt {
                                               std::map<std::string, nttiny::ScrollingBuffer>&) {
     }
 #endif
+
+    void setTime(const real_t& t) {
+      m_time = t;
+    }
+
+    [[nodiscard]] auto time() const -> real_t {
+      return m_time;
+    }
+
+  protected:
+    real_t m_time { ZERO };
   };
 
   /* -------------------------------------------------------------------------- */
@@ -53,7 +64,30 @@ namespace ntt {
     TargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual real_t operator()(const em&, const coord_t<D>&) const {
+    Inline virtual auto operator()(const em&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+  protected:
+    SimulationParams m_params;
+    Meshblock<D, S>  m_mblock;
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /*                             Force field class                              */
+  /* -------------------------------------------------------------------------- */
+  template <Dimension D, SimulationEngine S>
+  struct ForceField {
+    ForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : m_params { params }, m_mblock { mblock } {}
+
+    Inline virtual auto x1(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto x2(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto x3(const real_t&, const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
