@@ -97,13 +97,41 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void OutputField::compute(const SimulationParams& params, Meshblock<D, S>& mblock) {
+  void OutputField::compute(const SimulationParams& params, Meshblock<D, S>& mblock) const {
+    auto slice_i1 = Kokkos::ALL;
+    auto slice_i2 = Kokkos::ALL;
+    auto slice_i3 = Kokkos::ALL;
+
     if (is_field()) {
-      Kokkos::deep_copy(mblock.bckp, mblock.em);
+      auto slice_comp = std::make_pair(address[0], address[2]);
+      if constexpr (D == Dim1) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_comp),
+                          Kokkos::subview(mblock.em, slice_i1, slice_comp));
+      } else if constexpr (D == Dim2) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
+                          Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_comp));
+      } else if constexpr (D == Dim3) {
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_i3, slice_comp),
+          Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_i3, slice_comp));
+      }
+      // Kokkos::deep_copy(mblock.bckp, mblock.em);
       mblock.template PrepareFieldsForOutput<6, 6>(
         mblock.em, mblock.bckp, address[0], address[1], address[2], interp_flag | prepare_flag);
     } else if (is_gr_aux_field()) {
-      Kokkos::deep_copy(mblock.bckp, mblock.em);
+      auto slice_comp = std::make_pair(address[0], address[2]);
+      if constexpr (D == Dim1) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_comp),
+                          Kokkos::subview(mblock.aux, slice_i1, slice_comp));
+      } else if constexpr (D == Dim2) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
+                          Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_comp));
+      } else if constexpr (D == Dim3) {
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_i3, slice_comp),
+          Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_i3, slice_comp));
+      }
+      // Kokkos::deep_copy(mblock.bckp, mblock.aux);
       mblock.template PrepareFieldsForOutput<6, 6>(
         mblock.aux, mblock.bckp, address[0], address[1], address[2], interp_flag | prepare_flag);
     } else if (is_current()) {
@@ -167,9 +195,7 @@ namespace ntt {
   }    // namespace
 
   template <Dimension D, SimulationEngine S>
-  void OutputField::put(adios2::IO&             io,
-                        adios2::Engine&         writer,
-                        Meshblock<D, S>&        mblock) const {
+  void OutputField::put(adios2::IO& io, adios2::Engine& writer, Meshblock<D, S>& mblock) const {
     if (is_field() || is_gr_aux_field() || is_vpotential()) {
       for (std::size_t i { 0 }; i < address.size(); ++i) {
         PutField<D, 6>(io, writer, name(i), mblock.bckp, address[i]);

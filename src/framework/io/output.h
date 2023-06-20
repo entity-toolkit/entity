@@ -104,7 +104,7 @@ namespace ntt {
     void initialize(const SimulationEngine& S);
 
     template <Dimension D, SimulationEngine S>
-    void compute(const SimulationParams& params, Meshblock<D, S>& mblock);
+    void compute(const SimulationParams& params, Meshblock<D, S>& mblock) const;
 
 #ifdef OUTPUT_ENABLED
     template <Dimension D, SimulationEngine S>
