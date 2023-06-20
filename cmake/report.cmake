@@ -120,6 +120,17 @@ PrintChoices("Precision"
   1
   36
 )
+PrintChoices("External force"
+  "ext_force"
+  "${ON_OFF_VALUES}"
+  ${ext_force}
+  ${default_ext_force}
+  "${Green}"
+  EXT_FORCE_REPORT
+  0
+  36
+)
+
 PrintChoices("Output"
   "output"
   "${ON_OFF_VALUES}"
@@ -166,14 +177,13 @@ PrintChoices("Debug mode"
 # 0
 # 39
 # )
-#if(${output})
-  #if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
-    #get_directory_property(adios2_VERSION
-      #DIRECTORY ${adios2_BUILD_DIR}
-      #DEFINITION ADIOS2_VERSION)
-  #endif()
-#endif()
-
+# if(${output})
+# if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
+# get_directory_property(adios2_VERSION
+# DIRECTORY ${adios2_BUILD_DIR}
+# DEFINITION ADIOS2_VERSION)
+# endif()
+# endif()
 PrintChoices("CUDA"
   "Kokkos_ENABLE_CUDA"
   "${ON_OFF_VALUES}"
@@ -280,6 +290,8 @@ if(${PGEN_FOUND})
   message("  ${PGEN_REPORT}\n")
 endif()
 
+message("  ${EXT_FORCE_REPORT}\n")
+
 message("  ${PRECISION_REPORT}\n")
 message("  ${OUTPUT_REPORT}\n")
 message("  ${NTTINY_REPORT}\n")
@@ -287,20 +299,22 @@ message("${DASHED_LINE_SYMBOL}
 Framework configurations
 ${DASHED_LINE_SYMBOL}")
 
-#if(NOT ${Kokkos_FETCHED})
-  #string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" Kokkos_ROOT_rel "${Kokkos_DIR}")
-  #message("  - Kokkos [${Magenta}Kokkos_DIR${ColorReset}]:\t\t  ${Kokkos_ROOT_rel} v${Kokkos_VERSION}\n")
-#else()
+# if(NOT ${Kokkos_FETCHED})
+# string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" Kokkos_ROOT_rel "${Kokkos_DIR}")
+# message("  - Kokkos [${Magenta}Kokkos_DIR${ColorReset}]:\t\t  ${Kokkos_ROOT_rel} v${Kokkos_VERSION}\n")
+# else()
 message("  - Kokkos:\t\t\t\t  v${Kokkos_VERSION}\n")
-#endif()
 
-#if(NOT "${adios2_DIR}" STREQUAL "" AND ${output} STREQUAL "ON")
-  #string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_DIR}")
-#message("  - ADIOS2 [${Magenta}adios2_DIR${ColorReset}]:\t\t  ${adios2_DIR} v${adios2_VERSION}\n")
+# endif()
+
+# if(NOT "${adios2_DIR}" STREQUAL "" AND ${output} STREQUAL "ON")
+# string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_DIR}")
+# message("  - ADIOS2 [${Magenta}adios2_DIR${ColorReset}]:\t\t  ${adios2_DIR} v${adios2_VERSION}\n")
 if(${output})
   message("  - ADIOS2:\t\t\t\t  v${adios2_VERSION}\n")
 endif()
-#endif()
+
+# endif()
 
 # if(ENABLED_ARCHS)
 # message("  ${ARCH_REPORT}\n")

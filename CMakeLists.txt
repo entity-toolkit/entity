@@ -35,6 +35,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults.cmake)
 set(engine ${default_engine} CACHE STRING "Simulation engine")
 set(precision ${default_precision} CACHE STRING "Precision")
 set(pgen ${default_pgen} CACHE STRING "Problem generator")
+set(ext_force ${default_ext_force} CACHE BOOL "External force field")
 
 set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
 set(output ${default_output} CACHE BOOL "Enable output")
@@ -64,6 +65,7 @@ include_directories(${toml11_SRC})
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
+set_ext_force(${ext_force})
 
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
