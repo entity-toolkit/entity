@@ -47,6 +47,6 @@ using real_t = float;
 using real_t = double;
 #endif
 
-inline constexpr int N_GHOSTS = 2;
+inline constexpr unsigned int N_GHOSTS = 2;
 
 #endif    // CONFIG_H

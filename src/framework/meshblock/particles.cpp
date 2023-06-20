@@ -250,12 +250,12 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeActiveParticles() -> range_t<Dim1> {
-    return CreateRangePolicy<Dim1>({ 0 }, { (int)(npart()) });
+    return CreateRangePolicy<Dim1>({ 0 }, { npart() });
   }
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeAllParticles() -> range_t<Dim1> {
-    return CreateRangePolicy<Dim1>({ 0 }, { (int)(maxnpart()) });
+    return CreateRangePolicy<Dim1>({ 0 }, { maxnpart() });
   }
 
   template <Dimension D, SimulationEngine S>

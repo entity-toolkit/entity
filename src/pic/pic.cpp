@@ -43,9 +43,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::InitialStep() {
-    auto& mblock = this->meshblock;
-  }
+  void PIC<D>::InitialStep() {}
 
   template <Dimension D>
   void PIC<D>::Benchmark() {

@@ -43,7 +43,7 @@ namespace ntt {
         m_particles(particles),
         m_coeff(coeff),
         m_dt(dt),
-        m_ni2 { mblock.Ni2() } {}
+        m_ni2 { (int)mblock.Ni2() } {}
 
     /**
      * @brief Pusher for the forward Boris algorithm.
