@@ -44,7 +44,9 @@
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
         "${myDefaultIncludePath}",
-        "/usr/local/cuda/include/"
+        "/usr/local/cuda/include/",
+        "~/Codes/kokkos/kokkos-cuda/include",
+        "~/Codes/ADIOS2/adios2/include"
       ],
       "defines": [
         "${myDefaultDefines}",

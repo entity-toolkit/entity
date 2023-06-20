@@ -27,7 +27,6 @@ class NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
 protected:
   ntt::SIMULATION_CONTAINER<ntt::Dim2>& m_sim;
   int                                   sx1, sx2;
-  // const std::vector<std::string>        m_fields_to_plot;
   const std::vector<ntt::OutputField>   m_fields_to_plot;
   const int                             m_fields_stride;
 
@@ -47,14 +46,16 @@ public:
       sx2 {(int)sim.meshblock.Ni2() / fields_stride},
       m_fields_to_plot{fields_to_plot},
       m_fields_stride{fields_stride} {
-    m_time     = 0.0;
-    m_timestep = 0;
+    m_time       = 0.0;
+    m_timestep   = 0;
+    auto& mblock = m_sim.meshblock;
+    auto  params = *(m_sim.params());
+
     generateFields();
     generateGrid();
-    // generateParticles();
+    generateParticles();
 
-    // m_sim.problem_generator.UserInitBuffers_nttiny(
-    //   *(m_sim.params()), m_sim.meshblock, this->buffers);
+    m_sim.problem_generator.UserInitBuffers_nttiny(params, mblock, this->buffers);
     setData();
   }
 
@@ -83,7 +84,7 @@ public:
     Kokkos::deep_copy(backup_h, mblock.bckp);
 
     Kokkos::parallel_for(
-      "setData",
+      "setData-Fields",
       ntt::CreateRangePolicyOnHost<ntt::Dim2>({ (std::size_t)0, (std::size_t)0 },
                                               { (std::size_t)nx1, (std::size_t)nx2 }),
       [=](std::size_t i1, std::size_t j1) {
@@ -120,29 +121,40 @@ public:
         }
       });
 
-    //     // auto  s         = 0;
-    //     // auto& Particles = this->particles;
-    //     // for (const auto& [lbl, species] : Particles) {
-    //     //   auto sim_species = m_sim.meshblock.particles[s];
-    //     //   for (int p {0}; p < species.first; ++p) {
-    //     //     real_t                  x1 {(real_t)(sim_species.i1_h(p)) +
-    //     //     sim_species.dx1_h(p)}; real_t                  x2
-    //     {(real_t)(sim_species.i2_h(p))
-    //     //     + sim_species.dx2_h(p)}; ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
-    //     //     m_sim.meshblock.metric.x_Code2Cart({x1, x2}, xy);
-    //     //     species.second[0][p] = xy[0];
-    //     //     species.second[1][p] = xy[1];
-    //     //   }
-    //     //   ++s;
-    //     // }
-    //     m_sim.problem_generator.UserSetBuffers_nttiny(
-    //       m_time, *(m_sim.params()), m_sim.meshblock, this->buffers);
+    auto  s         = 0;
+    auto& Particles = this->particles;
+    for (const auto& [lbl, species] : Particles) {
+      auto sim_species = m_sim.meshblock.particles[s];
+      auto nprtl       = species.first;
+      auto slice       = std::make_pair(0, nprtl);
+      auto i1_h        = Kokkos::create_mirror_view(Kokkos::subview(sim_species.i1, slice));
+      Kokkos::deep_copy(i1_h, Kokkos::subview(sim_species.i1, slice));
+      auto i2_h = Kokkos::create_mirror_view(Kokkos::subview(sim_species.i2, slice));
+      Kokkos::deep_copy(i2_h, Kokkos::subview(sim_species.i2, slice));
+      auto dx1_h = Kokkos::create_mirror_view(Kokkos::subview(sim_species.dx1, slice));
+      Kokkos::deep_copy(dx1_h, Kokkos::subview(sim_species.dx1, slice));
+      auto dx2_h = Kokkos::create_mirror_view(Kokkos::subview(sim_species.dx2, slice));
+      Kokkos::deep_copy(dx2_h, Kokkos::subview(sim_species.dx2, slice));
+
+      for (auto p { 0 }; p < nprtl; ++p) {
+        real_t                  x1 { (real_t)(i1_h(p)) + dx1_h(p) };
+        real_t                  x2 { (real_t)(i2_h(p)) + dx2_h(p) };
+        ntt::coord_t<ntt::Dim2> xy { ZERO, ZERO };
+        m_sim.meshblock.metric.x_Code2Cart({ x1, x2 }, xy);
+        species.second[0][p] = xy[0];
+        species.second[1][p] = xy[1];
+      }
+      ++s;
+    }
+    m_sim.problem_generator.UserSetBuffers_nttiny(m_time, params, mblock, this->buffers);
   }
+
   void stepFwd() override {
     m_sim.StepForward();
     m_timestep = m_sim.tstep();
     m_time     = m_sim.time();
   }
+
   void restart() override {
     m_time     = 0.0;
     m_timestep = 0;
@@ -150,6 +162,7 @@ public:
     m_sim.InitialStep();
     setData();
   }
+
   void stepBwd() override {}
 
   void generateFields() {
@@ -165,15 +178,17 @@ public:
   }
 
   void generateParticles() {
-    // auto& Particles = this->particles;
-    // int   s         = 0;
-    // for (auto& species : m_sim.meshblock.particles) {
-    //   auto nprtl { m_sim.meshblock.particles[s].npart() };
-    //   Particles.insert({
-    //     species.label(), {nprtl, { new real_t[nprtl], new real_t[nprtl] }}
-    //   });
-    //   ++s;
-    // }
+    auto  params    = *(m_sim.params());
+    auto& Particles = this->particles;
+    int   s         = 0;
+    for (auto& species : m_sim.meshblock.particles) {
+      auto nprtl { m_sim.meshblock.particles[s].npart() / params.outputPrtlStride() };
+      nprtl = nprtl > 0 ? nprtl : 1;
+      Particles.insert({
+        species.label(), {nprtl, { new real_t[nprtl], new real_t[nprtl] }}
+      });
+      ++s;
+    }
   }
 
   void generateGrid() {
@@ -211,24 +226,24 @@ public:
   }
 
   void customAnnotatePcolor2d(const nttiny::UISettings& ui_settings) override {
-    if constexpr (S == ntt::GRPICEngine) {
-      auto&  mblock   = m_sim.meshblock;
+#ifdef GRPIC_ENGINE
+    auto&  mblock   = m_sim.meshblock;
+    auto   params   = *(m_sim.params());
+    real_t r_absorb = params.metricParameters()[2];
+    real_t rh       = mblock.metric.rhorizon();
+    nttiny::tools::drawCircle(
+      { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
+    nttiny::tools::drawCircle(
+      { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
+#else
+    auto& Grid = this->m_global_grid;
+    if (Grid.m_coord == nttiny::Coord::Spherical) {
       auto   params   = *(m_sim.params());
       real_t r_absorb = params.metricParameters()[2];
-      real_t rh       = mblock.metric.rhorizon();
-      nttiny::tools::drawCircle(
-        { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
       nttiny::tools::drawCircle(
         { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
-    } else {
-      auto& Grid = this->m_global_grid;
-      if (Grid.m_coord == nttiny::Coord::Spherical) {
-        auto   params   = *(m_sim.params());
-        real_t r_absorb = params.metricParameters()[2];
-        nttiny::tools::drawCircle(
-          { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
-      }
     }
+#endif
   }
 };
 

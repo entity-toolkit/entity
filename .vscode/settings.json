@@ -91,7 +91,12 @@
     "__hash_table": "cpp",
     "__tree": "cpp",
     "queue": "cpp",
-    "stack": "cpp"
+    "stack": "cpp",
+    "__config": "cpp",
+    "filesystem": "cpp",
+    "locale": "cpp",
+    "__std_stream": "cpp",
+    "ios": "cpp"
   },
   "python.analysis.typeCheckingMode": "off",
   "C_Cpp.errorSquiggles": "enabled",
