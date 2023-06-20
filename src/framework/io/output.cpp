@@ -21,8 +21,7 @@ namespace ntt {
     auto InterpretInputForFieldOutput_helper(const FieldID&                       fid,
                                              const std::vector<std::vector<int>>& comps,
                                              const std::vector<int>& species) -> OutputField {
-      OutputField of;
-      of.setId(fid);
+      OutputField of(StringizeFieldID(fid), fid);
       for (auto ci : comps) {
         std::vector<int> component;
         for (auto c : ci) {
@@ -33,7 +32,6 @@ namespace ntt {
       for (auto s : species) {
         of.species.push_back(s);
       }
-      of.setName(StringizeFieldID(fid));
       return of;
     }
 
