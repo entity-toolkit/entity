@@ -12,6 +12,10 @@
 #include "meshblock/particles.h"
 #include "utils/qmath.h"
 
+#ifdef EXTERNAL_FORCE
+#  include PGEN_HEADER
+#endif
+
 namespace ntt {
   struct Boris_t {};
   struct Photon_t {};
@@ -24,8 +28,11 @@ namespace ntt {
   class Pusher_kernel {
     Meshblock<D, PICEngine> m_mblock;
     Particles<D, PICEngine> m_particles;
-    const real_t            m_coeff, m_dt;
-    const int               m_ni2;
+#ifdef EXTERNAL_FORCE
+    PgenForceField<D, PICEngine> m_force_field;
+#endif
+    const real_t m_coeff, m_dt, m_time;
+    const int    m_ni2;
 
   public:
     /**
@@ -35,15 +42,22 @@ namespace ntt {
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      * @param dt Time step.
      */
-    Pusher_kernel(const Meshblock<D, PICEngine>& mblock,
+    Pusher_kernel(const SimulationParams&        params,
+                  const Meshblock<D, PICEngine>& mblock,
                   const Particles<D, PICEngine>& particles,
+                  const real_t&                  time,
                   const real_t&                  coeff,
                   const real_t&                  dt)
       : m_mblock(mblock),
         m_particles(particles),
+#ifdef EXTERNAL_FORCE
+        m_force_field(params, mblock),
+#endif
+        m_time(time),
         m_coeff(coeff),
         m_dt(dt),
-        m_ni2 { mblock.Ni2() } {}
+        m_ni2 { mblock.Ni2() } {
+    }
 
     /**
      * @brief Pusher for the forward Boris algorithm.
@@ -55,15 +69,44 @@ namespace ntt {
         interpolateFields(p, e_int, b_int);
 
 #ifdef MINKOWSKI_METRIC
-        coord_t<D> xp;
+        coord_t<D> xp { ZERO };
 #else
-        coord_t<Dim3> xp;
+        coord_t<Dim3> xp { ZERO };
 #endif
         getParticleCoordinate(p, xp);
         m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
         m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
 
+#ifdef EXTERNAL_FORCE
+        coord_t<D> xp_ph { ZERO };
+#  ifdef MINKOWSKI_METRIC
+        m_mblock.metric.x_Code2Cart(xp, xp_ph);
+#  else
+        coord_t<D> xp_ND { ZERO };
+#    pragma unroll
+        for (short d { 0 }; d < static_cast<short>(D); ++d) {
+          xp_ND[d] = xp[d];
+        }
+        m_mblock.metric.x_Code2Sph(xp_ND, xp_ph);
+#  endif
+
+        const vec_t<Dim3> force_Hat { m_force_field.x1(m_time, xp_ph),
+                                      m_force_field.x2(m_time, xp_ph),
+                                      m_force_field.x3(m_time, xp_ph) };
+        vec_t<Dim3>       force_Cart { ZERO };
+        m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+#endif
+
         BorisUpdate(p, e_int_Cart, b_int_Cart);
+
+#ifdef EXTERNAL_FORCE
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+#endif
 
         real_t inv_energy;
         inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);

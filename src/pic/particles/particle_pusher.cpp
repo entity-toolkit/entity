@@ -9,6 +9,7 @@ namespace ntt {
   void PIC<D>::ParticlesPush(const real_t& factor) {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
+    auto  time   = this->m_time;
     for (auto& species : mblock.particles) {
       const real_t dt { factor * mblock.timestep() };
       const real_t charge_ovr_mass { species.mass() > ZERO ? species.charge() / species.mass()
@@ -18,13 +19,15 @@ namespace ntt {
       if (species.pusher() == ParticlePusher::PHOTON) {
         // push photons
         auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, species.npart());
-        Kokkos::parallel_for(
-          "ParticlesPush", range_policy, Pusher_kernel<D>(mblock, species, coeff, dt));
+        Kokkos::parallel_for("ParticlesPush",
+                             range_policy,
+                             Pusher_kernel<D>(params, mblock, species, time, coeff, dt));
       } else if (species.pusher() == ParticlePusher::BORIS) {
         // push boris-particles
         auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, species.npart());
-        Kokkos::parallel_for(
-          "ParticlesPush", range_policy, Pusher_kernel<D>(mblock, species, coeff, dt));
+        Kokkos::parallel_for("ParticlesPush",
+                             range_policy,
+                             Pusher_kernel<D>(params, mblock, species, time, coeff, dt));
       } else if (species.pusher() == ParticlePusher::NONE) {
         // do nothing
       } else {
