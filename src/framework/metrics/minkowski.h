@@ -274,6 +274,36 @@ namespace ntt {
         vi_cov[2] = v_cov[2] * dx;
       }
     }
+
+    /**
+     * Vector conversion from hatted to Cartesian basis.
+     *
+     * @param xi coordinate array in code units
+     * @param v_hat vector in hatted basis
+     * @param v_cart vector in Cartesian basis
+     */
+    Inline void v3_Hat2Cart(const coord_t<D>&,
+                            const vec_t<Dim3>& v_hat,
+                            vec_t<Dim3>&       v_cart) const {
+      v_cart[0] = v_hat[0];
+      v_cart[1] = v_hat[1];
+      v_cart[2] = v_hat[2];
+    }
+
+    /**
+     * Vector conversion from Cartesian to hatted basis.
+     *
+     * @param xi coordinate array in code units
+     * @param v_cart vector in Cartesian basis
+     * @param v_hat vector in hatted basis
+     */
+    Inline void v3_Cart2Hat(const coord_t<D>&,
+                            const vec_t<Dim3>& v_cart,
+                            vec_t<Dim3>&       v_hat) const {
+      v_hat[0] = v_cart[0];
+      v_hat[1] = v_cart[1];
+      v_hat[2] = v_cart[2];
+    }
   };
 
   /* -------------------------------------------------------------------------- */
