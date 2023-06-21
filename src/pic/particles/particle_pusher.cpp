@@ -33,7 +33,7 @@ namespace ntt {
         real_t global_sum = 0.0;
         Kokkos::parallel_reduce(
           "ParticlesPush", species.npart(), Lambda(index_t p, real_t& sum) { sum += work(p); }, global_sum);
-          printf("Work added: %f\n", global_sum);
+          printf("Work added: %e\n", global_sum);
       } else if (species.pusher() == ParticlePusher::NONE) {
         // do nothing
       } else {

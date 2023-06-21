@@ -164,8 +164,8 @@ namespace ntt {
     //    - x_ph -- 1D/2D/3D coordinate in physical units
     Inline auto x1(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       // just as an example, implementing a weird sinusoidal force field in x1
-      // return math::sin(constant::TWO_PI * x_ph[1] / sx2);
-      return ZERO;
+      return 100*math::sin(constant::TWO_PI * x_ph[1] / sx2);
+      // return ZERO;
     }
     Inline auto x2(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       return ZERO;
@@ -233,7 +233,8 @@ namespace ntt {
       global_sum);
 
     global_sum /= SQR(params.larmor0());
-    printf("EM energy: %f\n", global_sum);
+    global_sum *= mblock.metric.min_cell_volume();
+    printf("EM energy: %e\n", global_sum);
     global_sum = ZERO;
 
     for (auto& species : mblock.particles) {
@@ -249,7 +250,7 @@ namespace ntt {
         global_a);
       global_sum += global_a;
     }
-    printf("Particle energy: %f\n", global_sum);
+    printf("Particle energy: %e\n", global_sum);
   }
 }    // namespace ntt
 

@@ -97,25 +97,30 @@ namespace ntt {
                                       m_force_field.x3(m_time, xp_ph) };
         vec_t<Dim3>       force_Cart { ZERO };
         m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
-        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
 
         real_t t_gamma = sqrt(1+m_particles.ux1(p)*m_particles.ux1(p)+m_particles.ux2(p)*m_particles.ux2(p)+m_particles.ux3(p)*m_particles.ux3(p));
         real_t t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p) + force_Cart[2] * m_particles.ux3(p);
         m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+
+
 #endif
 
         BorisUpdate(p, e_int_Cart, b_int_Cart);
 
 #ifdef EXTERNAL_FORCE
-        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
 
         t_gamma = sqrt(1+m_particles.ux1(p)*m_particles.ux1(p)+m_particles.ux2(p)*m_particles.ux2(p)+m_particles.ux3(p)*m_particles.ux3(p));
         t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p) + force_Cart[2] * m_particles.ux3(p);
         m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+
 #endif
 
         real_t inv_energy;
