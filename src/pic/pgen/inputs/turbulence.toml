@@ -3,7 +3,7 @@ title   = "Turbulence"
 runtime = 10.0
 
 [domain]
-resolution = [512, 512]
+resolution = [128, 128]
 extent     = [-1.0, 1.0, -1.0, 1.0]       # extent of the domain in physical units
 boundaries = [["PERIODIC"], ["PERIODIC"]]
 
@@ -38,7 +38,7 @@ temperature      = 0.1
 correlation_time = 0.5
 
 [output]
-fields        = ["E", "B", "Rho", "T0i"]
+fields        = ["E", "B", "Rho", "T0i", "T00"]
 particles       = ["X", "U"]
 format        = "HDF5"
 interval_time = 0.1               # output interval in time units

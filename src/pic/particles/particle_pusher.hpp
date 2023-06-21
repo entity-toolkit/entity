@@ -30,6 +30,7 @@ namespace ntt {
     Particles<D, PICEngine> m_particles;
 #ifdef EXTERNAL_FORCE
     PgenForceField<D, PICEngine> m_force_field;
+    array_t<real_t*> m_work;
 #endif
     const real_t m_coeff, m_dt, m_time;
     const int    m_ni2;
@@ -45,6 +46,7 @@ namespace ntt {
     Pusher_kernel(const SimulationParams&        params,
                   const Meshblock<D, PICEngine>& mblock,
                   const Particles<D, PICEngine>& particles,
+                  array_t<real_t*>&              work,
                   const real_t&                  time,
                   const real_t&                  coeff,
                   const real_t&                  dt)
@@ -52,6 +54,7 @@ namespace ntt {
         m_particles(particles),
 #ifdef EXTERNAL_FORCE
         m_force_field(params, mblock),
+        m_work{work},
 #endif
         m_time(time),
         m_coeff(coeff),
@@ -97,6 +100,10 @@ namespace ntt {
         m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
         m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
         m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+
+        real_t t_gamma = sqrt(1+m_particles.ux1(p)*m_particles.ux1(p)+m_particles.ux2(p)*m_particles.ux2(p)+m_particles.ux3(p)*m_particles.ux3(p));
+        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p) + force_Cart[2] * m_particles.ux3(p);
+        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 #endif
 
         BorisUpdate(p, e_int_Cart, b_int_Cart);
@@ -105,6 +112,10 @@ namespace ntt {
         m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
         m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
         m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+
+        t_gamma = sqrt(1+m_particles.ux1(p)*m_particles.ux1(p)+m_particles.ux2(p)*m_particles.ux2(p)+m_particles.ux3(p)*m_particles.ux3(p));
+        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p) + force_Cart[2] * m_particles.ux3(p);
+        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 #endif
 
         real_t inv_energy;

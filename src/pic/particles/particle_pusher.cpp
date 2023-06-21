@@ -19,15 +19,21 @@ namespace ntt {
       if (species.pusher() == ParticlePusher::PHOTON) {
         // push photons
         auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, species.npart());
+        array_t<real_t*> work {"work", species.npart()};
         Kokkos::parallel_for("ParticlesPush",
                              range_policy,
-                             Pusher_kernel<D>(params, mblock, species, time, coeff, dt));
+                             Pusher_kernel<D>(params, mblock, species, work, time, coeff, dt));
       } else if (species.pusher() == ParticlePusher::BORIS) {
         // push boris-particles
         auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, species.npart());
+        array_t<real_t*> work {"work", species.npart()};
         Kokkos::parallel_for("ParticlesPush",
                              range_policy,
-                             Pusher_kernel<D>(params, mblock, species, time, coeff, dt));
+                             Pusher_kernel<D>(params, mblock, species, work, time, coeff, dt));
+        real_t global_sum = 0.0;
+        Kokkos::parallel_reduce(
+          "ParticlesPush", species.npart(), Lambda(index_t p, real_t& sum) { sum += work(p); }, global_sum);
+          printf("Work added: %f\n", global_sum);
       } else if (species.pusher() == ParticlePusher::NONE) {
         // do nothing
       } else {

@@ -67,6 +67,9 @@ namespace ntt {
       : nx1 { params.get<int>("problem", "nx1", 1) },
         nx2 { params.get<int>("problem", "nx2", 1) },
         nx3 { params.get<int>("problem", "nx3", 1) } {}
+    inline void UserDriveParticles(const real_t&,
+                                   const SimulationParams&,
+                                   Meshblock<D, S>&) override {}
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override {
       /**
        * this function we can define per each Dimension (Dim1, Dim2, Dim3) separately
@@ -161,7 +164,8 @@ namespace ntt {
     //    - x_ph -- 1D/2D/3D coordinate in physical units
     Inline auto x1(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       // just as an example, implementing a weird sinusoidal force field in x1
-      return math::sin(constant::TWO_PI * x_ph[1] / sx2);
+      // return math::sin(constant::TWO_PI * x_ph[1] / sx2);
+      return ZERO;
     }
     Inline auto x2(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       return ZERO;
@@ -208,6 +212,44 @@ namespace ntt {
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j, index_t k) {
         set_em_fields_3d(mblock, i, j, k, turbulent_fields_3d, _time, _nx1, _nx2, _nx3);
       });
+  }
+
+  /**
+   *
+   */
+  template <>
+  inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
+    const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    real_t global_sum = ZERO;
+    Kokkos::parallel_reduce(
+      "EMEnergy",
+      mblock.rangeActiveCells(),
+      ClassLambda(index_t i, index_t j, real_t & sum) {
+        sum += (SQR(mblock.em(i, j, em::ex1)) + SQR(mblock.em(i, j, em::ex2))
+                + SQR(mblock.em(i, j, em::ex3)) + SQR(mblock.em(i, j, em::bx1))
+                + SQR(mblock.em(i, j, em::bx2)) + SQR(mblock.em(i, j, em::bx3)))
+               * HALF;
+      },
+      global_sum);
+
+    global_sum /= SQR(params.larmor0());
+    printf("EM energy: %f\n", global_sum);
+    global_sum = ZERO;
+
+    for (auto& species : mblock.particles) {
+      real_t global_a = ZERO;
+      Kokkos::parallel_reduce(
+        "ParticleEnergy",
+        species.npart(),
+        Lambda(index_t p, real_t & sum) {
+          sum += (sqrt(1 + species.ux1(p) * species.ux1(p) + species.ux2(p) * species.ux2(p)
+                       + species.ux3(p) * species.ux3(p))
+                  - 1);
+        },
+        global_a);
+      global_sum += global_a;
+    }
+    printf("Particle energy: %f\n", global_sum);
   }
 }    // namespace ntt
 
