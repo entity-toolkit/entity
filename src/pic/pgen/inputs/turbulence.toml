@@ -1,6 +1,6 @@
 [simulation]
 title   = "Turbulence"
-runtime = 10.0
+runtime = 0.1
 
 [domain]
 resolution = [128, 128]

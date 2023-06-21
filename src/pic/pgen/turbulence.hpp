@@ -66,7 +66,8 @@ namespace ntt {
     inline ProblemGenerator(const SimulationParams& params)
       : nx1 { params.get<int>("problem", "nx1", 1) },
         nx2 { params.get<int>("problem", "nx2", 1) },
-        nx3 { params.get<int>("problem", "nx3", 1) } {}
+        nx3 { params.get<int>("problem", "nx3", 1) },
+        amplitudes { "DrivingModes", 6 } {}
     inline void UserDriveParticles(const real_t&,
                                    const SimulationParams&,
                                    Meshblock<D, S>&) override {}
@@ -97,7 +98,8 @@ namespace ntt {
 
   private:
     // additional problem-specific parameters (i.e., wave numbers in x1, x2, x3 directions)
-    const int nx1, nx2, nx3;
+    const int            nx1, nx2, nx3;
+    array_t<double* [2]> amplitudes;
   };
 
   Inline void turbulent_fields_2d(const coord_t<Dim2>& x_ph,     // physical coordinate
@@ -164,7 +166,7 @@ namespace ntt {
     //    - x_ph -- 1D/2D/3D coordinate in physical units
     Inline auto x1(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       // just as an example, implementing a weird sinusoidal force field in x1
-      return 100*math::sin(constant::TWO_PI * x_ph[1] / sx2);
+      return math::sin(constant::TWO_PI * x_ph[1] / sx2);
       // return ZERO;
     }
     Inline auto x2(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
@@ -191,6 +193,29 @@ namespace ntt {
     const auto _nx2  = nx2;
     const auto _sx1  = mblock.metric.x1_max - mblock.metric.x1_min;
     const auto _sx2  = mblock.metric.x2_max - mblock.metric.x2_min;
+
+    // Initialize the mode driving with random values
+    // todo: change number of modes to be driven
+    auto       pool  = *(mblock.random_pool_ptr);
+    // Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
+
+    printf("%d, %d", amplitudes.extent(0), amplitudes.extent(1));
+
+    Kokkos::parallel_for(
+      "RandomAmplitudes",
+      Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>({ 0 }, { 6 }),
+      Lambda(index_t i) {
+        auto rand_gen    = pool.get_state();
+        amplitudes(i, 0) = rand_gen.frand();
+        amplitudes(i, 1) = rand_gen.frand();
+        pool.free_state(rand_gen);
+      });
+
+    // auto testout = Kokkos::create_mirror_view(amplitudes);
+    // Kokkos::deep_copy(testout, amplitudes);
+    // printf("amplitudes: %f %f %f %f %f %f\n", testout(0,0), testout(0,1), testout(0,2),
+    // testout(0,3), testout(0,4), testout(0,5));
+
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
         set_em_fields_2d(mblock, i, j, turbulent_fields_2d, _time, _sx1, _sx2, _nx1, _nx2);
