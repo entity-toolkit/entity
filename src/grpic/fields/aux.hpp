@@ -4,8 +4,9 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "io/output.h"
 #include "grpic.h"
+
+#include "io/output.h"
 #include "meshblock/meshblock.h"
 
 namespace ntt {
@@ -298,6 +299,7 @@ namespace ntt {
   public:
     TimeAverageDB_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
     Inline void operator()(index_t, index_t) const;
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   template <>
@@ -308,6 +310,16 @@ namespace ntt {
     D0X1(i, j) = HALF * (D0X1(i, j) + DX1(i, j));
     D0X2(i, j) = HALF * (D0X2(i, j) + DX2(i, j));
     D0X3(i, j) = HALF * (D0X3(i, j) + DX3(i, j));
+  }
+
+  template <>
+  Inline void TimeAverageDB_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+    B0X1(i, j, k) = HALF * (B0X1(i, j, k) + BX1(i, j, k));
+    B0X2(i, j, k) = HALF * (B0X2(i, j, k) + BX2(i, j, k));
+    B0X3(i, j, k) = HALF * (B0X3(i, j, k) + BX3(i, j, k));
+    D0X1(i, j, k) = HALF * (D0X1(i, j, k) + DX1(i, j, k));
+    D0X2(i, j, k) = HALF * (D0X2(i, j, k) + DX2(i, j, k));
+    D0X3(i, j, k) = HALF * (D0X3(i, j, k) + DX3(i, j, k));
   }
 
   /**
@@ -321,6 +333,7 @@ namespace ntt {
   public:
     TimeAverageJ_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
     Inline void operator()(index_t, index_t) const;
+    Inline void operator()(index_t, index_t, index_t) const;
   };
 
   template <>
@@ -328,6 +341,13 @@ namespace ntt {
     JX1(i, j) = HALF * (J0X1(i, j) + JX1(i, j));
     JX2(i, j) = HALF * (J0X2(i, j) + JX2(i, j));
     JX3(i, j) = HALF * (J0X3(i, j) + JX3(i, j));
+  }
+
+  template <>
+  Inline void TimeAverageJ_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+    JX1(i, j, k) = HALF * (J0X1(i, j, k) + JX1(i, j, k));
+    JX2(i, j, k) = HALF * (J0X2(i, j, k) + JX2(i, j, k));
+    JX3(i, j, k) = HALF * (J0X3(i, j, k) + JX3(i, j, k));
   }
 
 }    // namespace ntt

@@ -3,10 +3,11 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
 #include "particle_macros.h"
-#include "meshblock/particles.h"
 #include "sim_params.h"
+
+#include "meshblock/meshblock.h"
+#include "meshblock/particles.h"
 
 #include "utils/archetypes.hpp"
 
@@ -28,7 +29,7 @@ namespace ntt {
                              const Particles<Dim1, S>& sp1,
                              const Particles<Dim1, S>& sp2,
                              const list_t<real_t, 2>&  box,
-                             const real_t&             time)
+                             const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -74,7 +75,7 @@ namespace ntt {
                              const Particles<Dim2, S>& sp1,
                              const Particles<Dim2, S>& sp2,
                              const list_t<real_t, 4>&  box,
-                             const real_t&             time)
+                             const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -121,7 +122,7 @@ namespace ntt {
                              const Particles<Dim3, S>& sp1,
                              const Particles<Dim3, S>& sp2,
                              const list_t<real_t, 6>&  box,
-                             const real_t&             time)
+                             const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -262,7 +263,7 @@ namespace ntt {
                             const Particles<Dim1, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&               time)
+                            const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -360,7 +361,7 @@ namespace ntt {
                             const Particles<Dim2, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&               time)
+                            const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -477,7 +478,7 @@ namespace ntt {
                             const Particles<Dim3, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&               time)
+                            const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },

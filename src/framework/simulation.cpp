@@ -4,7 +4,6 @@
 
 #include "io/output.h"
 #include "utils/progressbar.h"
-
 #include "utils/timer.h"
 #include "utils/utils.h"
 
@@ -203,6 +202,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
+    writer.Finalize();
     WaitAndSynchronize();
     NTTLog();
   }

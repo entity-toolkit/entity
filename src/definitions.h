@@ -82,6 +82,8 @@ namespace ntt {
 
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
+  template <Dimension D>
+  struct DimensionTag {};
 
   enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, CUSTOM, OPEN, COMM, AXIS };

@@ -80,13 +80,13 @@ namespace ntt {
      */
 
     // active cell range in x1
-    const int m_i1min, m_i1max;
+    const unsigned int m_i1min, m_i1max;
     // active cell range in x2
-    const int m_i2min, m_i2max;
+    const unsigned int m_i2min, m_i2max;
     // active cell range in x3
-    const int m_i3min, m_i3max;
+    const unsigned int m_i3min, m_i3max;
     // number of active cells in each direction
-    const int m_Ni1, m_Ni2, m_Ni3;
+    const unsigned int m_Ni1, m_Ni2, m_Ni3;
 
   public:
     // Metric of the grid.
@@ -189,61 +189,61 @@ namespace ntt {
     /**
      * @brief Get the first index of active zone along 1st dimension.
      */
-    [[nodiscard]] auto i1_min() const -> const int& {
+    [[nodiscard]] auto i1_min() const -> const unsigned int& {
       return m_i1min;
     }
     /**
      * @brief Get the last index of active zone along 1st dimension.
      */
-    [[nodiscard]] auto i1_max() const -> const int& {
+    [[nodiscard]] auto i1_max() const -> const unsigned int& {
       return m_i1max;
     }
     /**
      * @brief Get the number of active cells along 1st dimension.
      */
-    [[nodiscard]] auto Ni1() const -> const int& {
+    [[nodiscard]] auto Ni1() const -> const unsigned int& {
       return m_Ni1;
     }
     /**
      * @brief Get the first index of active zone along 2nd dimension.
      */
-    [[nodiscard]] auto i2_min() const -> const int& {
+    [[nodiscard]] auto i2_min() const -> const unsigned int& {
       return m_i2min;
     }
     /**
      * @brief Get the last index of active zone along 2nd dimension.
      */
-    [[nodiscard]] auto i2_max() const -> const int& {
+    [[nodiscard]] auto i2_max() const -> const unsigned int& {
       return m_i2max;
     }
     /**
      * @brief Get the number of active cells along 2nd dimension.
      */
-    [[nodiscard]] auto Ni2() const -> const int& {
+    [[nodiscard]] auto Ni2() const -> const unsigned int& {
       return m_Ni2;
     }
     /**
      * @brief Get the number of active cells along 3rd dimension.
      */
-    [[nodiscard]] auto i3_min() const -> const int& {
+    [[nodiscard]] auto i3_min() const -> const unsigned int& {
       return m_i3min;
     }
     /**
      * @brief Get the last index of active zone along 3rd dimension.
      */
-    [[nodiscard]] auto i3_max() const -> const int& {
+    [[nodiscard]] auto i3_max() const -> const unsigned int& {
       return m_i3max;
     }
     /**
      * @brief Get the number of active cells along 3rd dimension.
      */
-    [[nodiscard]] auto Ni3() const -> const int& {
+    [[nodiscard]] auto Ni3() const -> const unsigned int& {
       return m_Ni3;
     }
     /**
      * @brief Get the first index of active zone along i-th dimension.
      */
-    [[nodiscard]] auto i_min(short i) const -> const int& {
+    [[nodiscard]] auto i_min(short i) const -> const unsigned int& {
       switch (i) {
       case 0:
         return m_i1min;
@@ -258,7 +258,7 @@ namespace ntt {
     /**
      * @brief Get the last index of active zone along i-th dimension.
      */
-    [[nodiscard]] auto i_max(short i) const -> const int& {
+    [[nodiscard]] auto i_max(short i) const -> const unsigned int& {
       switch (i) {
       case 0:
         return m_i1max;
@@ -273,7 +273,7 @@ namespace ntt {
     /**
      * @brief Get the number of active cells along i-th dimension.
      */
-    [[nodiscard]] auto Ni(short i) const -> const int& {
+    [[nodiscard]] auto Ni(short i) const -> const unsigned int& {
       switch (i) {
       case 0:
         return m_Ni1;

@@ -21,7 +21,7 @@ namespace ntt {
     Meshblock<D, PICEngine>        m_mblock;
     real_t                         m_rabsorb;
     real_t                         m_rmax;
-    const int                      m_i2_min;
+    const std::size_t              m_i2_min;
     PgenTargetFields<D, PICEngine> m_target_fields;
 
   public:

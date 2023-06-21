@@ -3,9 +3,10 @@
 #include "wrapper.h"
 
 #include "particle_macros.h"
-#include "meshblock/particles.h"
 #include "sim_params.h"
 #include "species.h"
+
+#include "meshblock/particles.h"
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>
@@ -158,7 +159,7 @@ namespace ntt {
                   contrib *= species.weight(p);
                 }
               }
-              for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
+              for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
                 buff_access(i1_, buff_ind) += contrib * weight;
               }
             }
@@ -218,8 +219,8 @@ namespace ntt {
                   contrib *= species.weight(p);
                 }
               }
-              for (int i2_ = i2_min; i2_ <= i2_max; ++i2_) {
-                for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
+              for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
+                for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
                   buff_access(i1_, i2_, buff_ind) += contrib * weight;
                 }
               }
@@ -283,9 +284,9 @@ namespace ntt {
                   contrib *= species.weight(p);
                 }
               }
-              for (int i3_ = i3_min; i3_ <= i3_max; ++i3_) {
-                for (int i2_ = i2_min; i2_ <= i2_max; ++i2_) {
-                  for (int i1_ = i1_min; i1_ <= i1_max; ++i1_) {
+              for (auto i3_ { i3_min }; i3_ <= i3_max; ++i3_) {
+                for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
+                  for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
                     buff_access(i1_, i2_, i3_, buff_ind) += contrib * weight;
                   }
                 }

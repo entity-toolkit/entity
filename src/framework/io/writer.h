@@ -3,9 +3,10 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
-#include "io/output.h"
 #include "sim_params.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>
@@ -31,11 +32,17 @@ namespace ntt {
 #endif
 
   public:
-    Writer() = default;
-    ~Writer();
+    Writer()  = default;
+    ~Writer() = default;
 
     void Initialize(const SimulationParams&, const Meshblock<D, S>&);
     void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);
+
+    void Finalize() {
+#ifdef OUTPUT_ENABLED
+      m_writer.Close();
+#endif
+    }
 
     void WriteFields(const SimulationParams&,
                      Meshblock<D, S>&,

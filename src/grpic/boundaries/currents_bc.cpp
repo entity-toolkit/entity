@@ -1,36 +1,27 @@
 /**
  * @file fields_bc.cpp
  * @brief Absorbing boundary conditions for the currents at rmax (for 2D axisymmetric).
- * @implements: `CurrentsBoundaryConditions` method of the `PIC` class
+ * @implements: `CurrentsBoundaryConditions` method of the `GRPIC` class
  * @includes: `currents_bc.hpp
- * @depends: `pic.h`
- *
- * @notes: - Periodic boundary conditions are implemented in `currents_exch.cpp`
+ * @depends: `grpic.h`
  *
  */
 
+#include "currents_bc.hpp"
+
 #include "wrapper.h"
 
-#include "pic.h"
+#include "grpic.h"
 
 #include "meshblock/meshblock.h"
-
-#ifndef MINKOWSKI_METRIC
-#  include "currents_bc.hpp"
-#endif
 
 namespace ntt {
   /**
    * @brief Special boundary conditions on currents
    */
-#ifdef MINKOWSKI_METRIC
-  template <Dimension D>
-  void PIC<D>::CurrentsBoundaryConditions() {}
-
-#else
 
   template <>
-  void PIC<Dim2>::CurrentsBoundaryConditions() {
+  void GRPIC<Dim2>::CurrentsBoundaryConditions() {
     auto&         mblock   = this->meshblock;
     auto&         pgen     = this->problem_generator;
     auto          params   = *(this->params());
@@ -64,19 +55,8 @@ namespace ntt {
   }
 
   template <>
-  void PIC<Dim1>::CurrentsBoundaryConditions() {
-    NTTHostError("not applicable");
-  }
-  template <>
-  void PIC<Dim3>::CurrentsBoundaryConditions() {
+  void GRPIC<Dim3>::CurrentsBoundaryConditions() {
     NTTHostError("not implemented");
   }
-#endif
 
 }    // namespace ntt
-
-#ifdef MINKOWSKI_METRIC
-template void ntt::PIC<ntt::Dim1>::CurrentsBoundaryConditions();
-template void ntt::PIC<ntt::Dim2>::CurrentsBoundaryConditions();
-template void ntt::PIC<ntt::Dim3>::CurrentsBoundaryConditions();
-#endif

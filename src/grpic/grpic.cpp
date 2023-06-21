@@ -301,18 +301,20 @@ namespace ntt {
        */
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        // !ADD: GR -- reset + deposit
+        CurrentsDeposit();
 
         timers.start("FieldBoundaries");
-        // !ADD: GR -- synchronize + exchange + bc
+        CurrentsSynchronize();
+        Exchange(GhostCells::currents);
+        CurrentsBoundaryConditions();
         timers.stop("FieldBoundaries");
 
-        // !ADD: GR -- filter
+        CurrentsFilter();
         timers.stop("CurrentDeposit");
       }
 
       timers.start("ParticleBoundaries");
-      // !ADD: GR -- particle exchange ?
+      Exchange(GhostCells::particles);
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }
@@ -362,6 +364,15 @@ namespace ntt {
       Ampere(ONE, gr_ampere::aux);
       timers.stop("FieldSolver");
 
+      if (params.depositEnabled()) {
+        /**
+         * em0::D <- (em0::D) <- cur::J
+         *
+         * Now: em0::D at n+1/2
+         */
+        AmpereCurrents(gr_ampere::aux);
+      }
+
       timers.start("FieldBoundaries");
       /**
        * em0::D, em::D <- boundary conditions
@@ -388,10 +399,19 @@ namespace ntt {
        */
       Ampere(ONE, gr_ampere::main);
 
+      if (params.depositEnabled()) {
+        /**
+         * em0::D <- (em0::D) <- cur0::J
+         *
+         * Now: em0::D at n+1
+         */
+        // AmpereCurrents(gr_ampere::main);
+      }
+
       /**
        * em::D <-> em0::D
        * em::B <-> em0::B
-       * em::J <-> em0::J
+       * cur::J <-> cur0::J
        */
       SwapFields();
       timers.stop("FieldSolver");

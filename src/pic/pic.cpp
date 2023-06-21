@@ -2,9 +2,9 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "sim_params.h"
 
+#include "io/output.h"
 #include "utils/timer.h"
 
 #include <plog/Log.h>
@@ -43,9 +43,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::InitialStep() {
-    auto& mblock = this->meshblock;
-  }
+  void PIC<D>::InitialStep() {}
 
   template <Dimension D>
   void PIC<D>::Benchmark() {
@@ -99,7 +97,6 @@ namespace ntt {
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        ResetCurrents();
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
@@ -135,9 +132,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
-        timers.start("CurrentDeposit");
         AmpereCurrents();
-        timers.stop("CurrentDeposit");
       }
 
       timers.start("FieldBoundaries");

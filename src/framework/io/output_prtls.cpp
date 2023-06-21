@@ -4,11 +4,12 @@
 
 #  include "wrapper.h"
 
-#  include "meshblock/meshblock.h"
-#  include "io/output.h"
 #  include "particle_macros.h"
-#  include "meshblock/particles.h"
 #  include "sim_params.h"
+
+#  include "io/output.h"
+#  include "meshblock/meshblock.h"
+#  include "meshblock/particles.h"
 
 #  include <adios2.h>
 #  include <adios2/cxx11/KokkosView.h>
@@ -26,8 +27,6 @@ namespace ntt {
 
       // remove all the dead particles before output
       auto npart_tag = prtls.CountTaggedParticles();
-      auto dead_fraction
-        = (double)(npart_tag[(short)(ParticleTag::dead)]) / (double)(prtls.npart());
       if (prtls.npart() > 0) {
         prtls.ReshuffleByTags();
         prtls.setNpart(npart_tag[(short)(ParticleTag::alive)]);

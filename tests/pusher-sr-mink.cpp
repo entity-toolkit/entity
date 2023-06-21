@@ -115,31 +115,14 @@ auto main(int argc, char* argv[]) -> int {
           const auto fraction = (nperiods * period / dt - nmax);
           sim.ParticlesPush(fraction);
         }
-        auto positrons_i1_h  = Kokkos::create_mirror_view(positrons.i1);
-        auto positrons_i2_h  = Kokkos::create_mirror_view(positrons.i2);
-        auto positrons_i3_h  = Kokkos::create_mirror_view(positrons.i3);
-        auto positrons_dx1_h = Kokkos::create_mirror_view(positrons.dx1);
-        auto positrons_dx2_h = Kokkos::create_mirror_view(positrons.dx2);
-        auto positrons_dx3_h = Kokkos::create_mirror_view(positrons.dx3);
-        auto positrons_ux1_h = Kokkos::create_mirror_view(positrons.ux1);
-        auto positrons_ux2_h = Kokkos::create_mirror_view(positrons.ux2);
-        auto positrons_ux3_h = Kokkos::create_mirror_view(positrons.ux3);
-        Kokkos::deep_copy(positrons_i1_h, positrons.i1);
-        Kokkos::deep_copy(positrons_i2_h, positrons.i2);
-        Kokkos::deep_copy(positrons_i3_h, positrons.i3);
-        Kokkos::deep_copy(positrons_dx1_h, positrons.dx1);
-        Kokkos::deep_copy(positrons_dx2_h, positrons.dx2);
-        Kokkos::deep_copy(positrons_dx3_h, positrons.dx3);
-        Kokkos::deep_copy(positrons_ux1_h, positrons.ux1);
-        Kokkos::deep_copy(positrons_ux2_h, positrons.ux2);
-        Kokkos::deep_copy(positrons_ux3_h, positrons.ux3);
+        positrons.SyncHostDevice();
 
         {
           ntt::coord_t<ntt::Dim3> xprtl { ZERO };
           ntt::coord_t<ntt::Dim3> xi {
-            static_cast<real_t>(positrons_i1_h(0)) + static_cast<real_t>(positrons_dx1_h(0)),
-            static_cast<real_t>(positrons_i2_h(0)) + static_cast<real_t>(positrons_dx2_h(0)),
-            static_cast<real_t>(positrons_i3_h(0)) + static_cast<real_t>(positrons_dx3_h(0))
+            static_cast<real_t>(positrons.i1_h(0)) + static_cast<real_t>(positrons.dx1_h(0)),
+            static_cast<real_t>(positrons.i2_h(0)) + static_cast<real_t>(positrons.dx2_h(0)),
+            static_cast<real_t>(positrons.i3_h(0)) + static_cast<real_t>(positrons.dx3_h(0))
           };
           mblock.metric.x_Code2Cart(xi, xprtl);
           const auto dist = math::sqrt(SQR(xprtl[0]) + SQR(xprtl[1]) + SQR(xprtl[2]));
@@ -156,8 +139,8 @@ auto main(int argc, char* argv[]) -> int {
             !(ntt::CloseToZero(maxupar))
               ? throw std::logic_error(fmt::format("maxupar is nonzero: {}", maxupar))
               : (void)0;
-            const auto L2_u = SQR(positrons_ux1_h(0) - ux1) + SQR(positrons_ux2_h(0) - ux2)
-                              + SQR(positrons_ux3_h(0) - ux3);
+            const auto L2_u = SQR(positrons.ux1_h(0) - ux1) + SQR(positrons.ux2_h(0) - ux2)
+                              + SQR(positrons.ux3_h(0) - ux3);
             !(ntt::CloseToZero(L2_u, (real_t)1e-4))
               ? throw std::logic_error(fmt::format("u_init != u_final: L2 = {:.2e}", L2_u))
               : (void)0;
@@ -165,13 +148,13 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         {
-          const auto u_mag = math::sqrt(SQR(positrons_ux1_h(0)) + SQR(positrons_ux2_h(0))
-                                        + SQR(positrons_ux3_h(0)));
+          const auto u_mag = math::sqrt(SQR(positrons.ux1_h(0)) + SQR(positrons.ux2_h(0))
+                                        + SQR(positrons.ux3_h(0)));
           !(ntt::AlmostEqual(u_mag, u_part)) ? throw std::logic_error(fmt::format(
             "u_mag is incorrect after {} pushes: {:.6f} != {:.6f}", n, u_mag, u_part))
                                              : (void)0;
           const auto upar
-            = (positrons_ux1_h(0) * bx1 + positrons_ux2_h(0) * bx2 + positrons_ux3_h(0) * bx3)
+            = (positrons.ux1_h(0) * bx1 + positrons.ux2_h(0) * bx2 + positrons.ux3_h(0) * bx3)
               / (u_part * bmag);
           if (math::abs(upar) > maxupar) {
             maxupar = math::abs(upar);
