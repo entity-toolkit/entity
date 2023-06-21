@@ -123,9 +123,9 @@ namespace ntt {
     e_out[1]             = 0.0;
     e_out[2]             = 0.0;
     // some turbulent magnetic field goes here [TO BE MODIFIED]
-    b_out[0]             = ampl_x1 * math::sin(kx1 * x_ph[0]) * math::cos(kx2 * x_ph[1]);
-    b_out[1]             = ampl_x2 * math::cos(kx1 * x_ph[0]) * math::sin(kx2 * x_ph[1]);
-    b_out[2]             = 1.0;
+    b_out[0]             = 0.0;
+    b_out[1]             = 0.0;
+    b_out[2]             = 0.0;
   }
 
   Inline void turbulent_fields_3d(const coord_t<Dim3>& x_ph,     // physical coordinate
@@ -142,7 +142,7 @@ namespace ntt {
     // some turbulent magnetic field goes here [TO BE MODIFIED]
     b_out[0] = 0.0;
     b_out[1] = 0.0;
-    b_out[2] = 1.0;
+    b_out[2] = 0.0;
   }
 
   /**
@@ -153,7 +153,7 @@ namespace ntt {
     PgenForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : ForceField<D, S>(params, mblock),
         corr_time { params.get<real_t>("problem", "correlation_time") },
-        sx1 { mblock.metric.x1_max - mblock.metric.x1_min } {}
+        sx2 { mblock.metric.x2_max - mblock.metric.x2_min } {}
 
     // force field components in physical units
     // arguments are:
@@ -161,7 +161,7 @@ namespace ntt {
     //    - x_ph -- 1D/2D/3D coordinate in physical units
     Inline auto x1(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       // just as an example, implementing a weird sinusoidal force field in x1
-      return math::sin(5.0 * constant::TWO_PI * x_ph[0] / sx1);
+      return math::sin(constant::TWO_PI * x_ph[1] / sx2);
     }
     Inline auto x2(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
       return ZERO;
@@ -173,7 +173,7 @@ namespace ntt {
   private:
     // additional parameters (i.e., correlation time)
     const real_t corr_time;
-    const real_t sx1;
+    const real_t sx2;
   };
 
   /**

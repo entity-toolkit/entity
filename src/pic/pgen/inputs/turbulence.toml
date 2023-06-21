@@ -1,6 +1,6 @@
 [simulation]
 title   = "Turbulence"
-runtime = 1.0
+runtime = 10.0
 
 [domain]
 resolution = [512, 512]
@@ -12,7 +12,7 @@ CFL             = 0.5
 current_filters = 8
 
 [units]
-ppc0       = 16.0
+ppc0       = 64.0
 larmor0    = 0.02 # fiducial larmor radius in physical units
 skindepth0 = 0.02 # fiducial skin depth in physical units
 
@@ -26,8 +26,8 @@ charge   = -1.0
 maxnpart = 1e8
 
 [species_2]
-label    = "i"
-mass     = 25.0
+label    = "e+"
+mass     = 1.0
 charge   = 1.0
 maxnpart = 1e8
 
@@ -38,6 +38,7 @@ temperature      = 0.1
 correlation_time = 0.5
 
 [output]
-fields        = ["E", "B", "Rho"]
+fields        = ["E", "B", "Rho", "T0i"]
+particles       = ["X", "U"]
 format        = "HDF5"
 interval_time = 0.1               # output interval in time units
