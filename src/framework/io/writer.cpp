@@ -59,9 +59,7 @@ namespace ntt {
 
       auto x1 = new real_t[mblock.Ni1() + 1];
       for (std::size_t i { 0 }; i <= mblock.Ni1(); ++i) {
-        auto x_ = mblock.metric.x1_min
-                  + (mblock.metric.x1_max - mblock.metric.x1_min) * i / mblock.Ni1();
-        coord_t<D> xph { ZERO }, xi;
+        coord_t<D> xph { ZERO }, xi { ZERO };
         for (short d { 0 }; d < (short)D; ++d) {
           xi[d] = ONE;
         }
@@ -81,9 +79,7 @@ namespace ntt {
 
       auto x2 = new real_t[mblock.Ni2() + 1];
       for (std::size_t i { 0 }; i <= mblock.Ni2(); ++i) {
-        auto x_ = mblock.metric.x2_min
-                  + (mblock.metric.x2_max - mblock.metric.x2_min) * i / mblock.Ni2();
-        coord_t<D> xph { ZERO }, xi;
+        coord_t<D> xph { ZERO }, xi { ZERO };
         for (short d { 0 }; d < (short)D; ++d) {
           xi[d] = ONE;
         }
@@ -103,7 +99,7 @@ namespace ntt {
 
       auto x3 = new real_t[mblock.Ni3() + 1];
       for (std::size_t i { 0 }; i <= mblock.Ni3(); ++i) {
-        coord_t<D> xph { ZERO }, xi;
+        coord_t<D> xph { ZERO }, xi { ZERO };
         for (short d { 0 }; d < (short)D; ++d) {
           xi[d] = ONE;
         }
@@ -125,7 +121,7 @@ namespace ntt {
     m_io.DefineAttribute<real_t>("Rhorizon", mblock.metric.rhorizon());
 #  endif
 
-    for (auto sp { 0 }; sp < mblock.particles.size(); ++sp) {
+    for (std::size_t sp { 0 }; sp < mblock.particles.size(); ++sp) {
       m_io.DefineAttribute<std::string>("species-" + std::to_string(sp + 1),
                                         mblock.particles[sp].label());
     }
@@ -134,13 +130,14 @@ namespace ntt {
     // interpret input for output variables
     for (auto& var : params.outputFields()) {
       m_fields.push_back(InterpretInputForFieldOutput(var));
+      m_fields.back().initialize(S);
     }
     for (auto& var : params.outputParticles()) {
       auto prtl_to_output = InterpretInputForParticleOutput(var);
       if (prtl_to_output.speciesID().size() == 0) {
         // if no species specified, pick all
         std::vector<int> species;
-        for (auto s { 0 }; s < params.species().size(); ++s) {
+        for (std::size_t s { 0 }; s < params.species().size(); ++s) {
           species.push_back(s + 1);
         }
         prtl_to_output.setSpeciesID(species);
@@ -149,13 +146,12 @@ namespace ntt {
     }
     // Define variables
     for (auto& fld : m_fields) {
-      for (auto i { 0 }; i < fld.comp.size(); ++i) {
+      for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
         m_io.DefineVariable<real_t>(fld.name(i), shape, start, count, adios2::ConstantDims);
       }
     }
     for (auto& prtl : m_particles) {
-      for (auto s { 0 }; s < prtl.speciesID().size(); ++s) {
-        auto sp_index = prtl.speciesID()[s];
+      for (auto& sp_index : prtl.speciesID()) {
         if (prtl.id() == PrtlID::X) {
           // !TODO: change this to a pre-defined argument (number of coords or smth)
 #  ifndef MINKOWSKI_METRIC
@@ -231,21 +227,22 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteFields(const SimulationParams& params,
                                  Meshblock<D, S>&        mblock,
-                                 const real_t&           time,
-                                 const std::size_t&      tstep) {
+                                 const real_t&,
+                                 const std::size_t&) {
     // traverse all the fields and put them. ...
     // ... also make sure that the fields are ready for output, ...
     // ... i.e. they have been written into proper arrays
     for (auto& fld : m_fields) {
-      fld.put<D, S>(m_io, m_writer, params, mblock);
+      fld.compute<D, S>(params, mblock);
+      fld.put<D, S>(m_io, m_writer, mblock);
     }
   }
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteParticles(const SimulationParams& params,
                                     Meshblock<D, S>&        mblock,
-                                    const real_t&           time,
-                                    const std::size_t&      tstep) {
+                                    const real_t&,
+                                    const std::size_t&) {
     // traverse all the particle quantities and put them.
     for (auto& prtl : m_particles) {
       prtl.put<D, S>(m_io, m_writer, params, mblock);

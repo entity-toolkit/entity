@@ -44,7 +44,7 @@ namespace ntt {
           "Exchange_particles", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.i1(p) < 0) {
               species.i1(p) += ni1;
-            } else if (species.i1(p) >= ni1) {
+            } else if (species.i1(p) >= (int)ni1) {
               species.i1(p) -= ni1;
             }
           });
@@ -109,12 +109,12 @@ namespace ntt {
           "Exchange_particles", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.i1(p) < 0) {
               species.i1(p) += ni1;
-            } else if (species.i1(p) >= ni1) {
+            } else if (species.i1(p) >= (int)ni1) {
               species.i1(p) -= ni1;
             }
             if (species.i2(p) < 0) {
               species.i2(p) += ni2;
-            } else if (species.i2(p) >= ni2) {
+            } else if (species.i2(p) >= (int)ni2) {
               species.i2(p) -= ni2;
             }
           });
@@ -198,17 +198,17 @@ namespace ntt {
           "Exchange_particles", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.i1(p) < 0) {
               species.i1(p) += ni1;
-            } else if (species.i1(p) >= ni1) {
+            } else if (species.i1(p) >= (int)ni1) {
               species.i1(p) -= ni1;
             }
             if (species.i2(p) < 0) {
               species.i2(p) += ni2;
-            } else if (species.i2(p) >= ni2) {
+            } else if (species.i2(p) >= (int)ni2) {
               species.i2(p) -= ni2;
             }
             if (species.i3(p) < 0) {
               species.i3(p) += ni2;
-            } else if (species.i3(p) >= ni3) {
+            } else if (species.i3(p) >= (int)ni3) {
               species.i3(p) -= ni3;
             }
           });

@@ -1,0 +1,43 @@
+[simulation]
+title   = "DepositGR"
+runtime = 5.0
+
+[domain]
+qsph_r0     = 0.0
+qsph_h      = 0.0
+a           = 0.95
+sph_rabsorb = 19.0
+resolution  = [512, 512]
+extent      = [0.8, 20.0]
+boundaries  = [["OPEN", "ABSORB"], ["AXIS"]]
+
+[algorithm]
+CFL             = 0.5
+current_filters = 4
+
+[units]
+ppc0       = 4.0
+larmor0    = 2e-3
+skindepth0 = 0.1
+
+[particles]
+n_species    = 2
+shuffle_step = 10
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e2
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e2
+
+[problem]
+r0  = [18.000]
+th0 = [1.5707963268]
+ph0 = [0.0]
+ur0 = [10.011]

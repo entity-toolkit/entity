@@ -9,8 +9,8 @@ set_property(CACHE default_ext_force PROPERTY TYPE BOOL)
 
 set(default_output OFF CACHE INTERNAL "Default flag for output")
 set_property(CACHE default_output PROPERTY TYPE BOOL)
-set(default_nttiny OFF CACHE INTERNAL "Default flag for GUI")
-set_property(CACHE default_nttiny PROPERTY TYPE BOOL)
+set(default_gui OFF CACHE INTERNAL "Default flag for GUI")
+set_property(CACHE default_gui PROPERTY TYPE BOOL)
 
 if(DEFINED ENV{Kokkos_ENABLE_CUDA})
   set(default_KOKKOS_ENABLE_CUDA $ENV{Kokkos_ENABLE_CUDA} CACHE INTERNAL "Default flag for CUDA")

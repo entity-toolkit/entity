@@ -22,17 +22,19 @@
 namespace ntt {
   template <Dimension D>
   void PIC<D>::CurrentsDeposit() {
-    auto& mblock      = this->meshblock;
-    auto  params      = *(this->params());
+    auto& mblock = this->meshblock;
+    auto  params = *(this->params());
 
-    auto  scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
+    Kokkos::deep_copy(mblock.cur, ZERO);
+    auto scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
       if (species.charge() != 0.0) {
-        const real_t              dt { mblock.timestep() };
-        const real_t              charge { species.charge() };
-        DepositCurrents_kernel<D> deposit(
-          mblock, species, scatter_cur, charge, params.useWeights(), dt);
-        Kokkos::parallel_for("CurrentsDeposit", species.rangeActiveParticles(), deposit);
+        const real_t dt { mblock.timestep() };
+        const real_t charge { species.charge() };
+        Kokkos::parallel_for("CurrentsDeposit",
+                             species.rangeActiveParticles(),
+                             DepositCurrents_kernel<D>(
+                               mblock, species, scatter_cur, charge, params.useWeights(), dt));
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);

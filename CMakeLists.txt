@@ -37,7 +37,7 @@ set(precision ${default_precision} CACHE STRING "Precision")
 set(pgen ${default_pgen} CACHE STRING "Problem generator")
 set(ext_force ${default_ext_force} CACHE BOOL "External force field")
 
-set(nttiny ${default_nttiny} CACHE BOOL "Use nttiny GUI")
+set(gui ${default_gui} CACHE BOOL "Use GUI [nttiny]")
 set(output ${default_output} CACHE BOOL "Enable output")
 
 # options
@@ -73,8 +73,8 @@ if(TESTS)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
 else()
   # ----------------------------------- GUI ---------------------------------- #
-  if(${nttiny})
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nttiny extern/nttiny)
+  if(${gui})
+    find_or_fetch_dependency(nttiny FALSE)
   endif()
 
   # --------------------------------- Output --------------------------------- #

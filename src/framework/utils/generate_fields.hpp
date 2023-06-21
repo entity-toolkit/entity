@@ -1,5 +1,5 @@
-#ifndef GENERATE_FIELDS_H
-#define GENERATE_FIELDS_H
+#ifndef FRAMEWORK_GENERATE_FIELDS_H
+#define FRAMEWORK_GENERATE_FIELDS_H
 
 #include "wrapper.h"
 
@@ -117,4 +117,4 @@ namespace ntt {
   };
 }    // namespace ntt
 
-#endif    // GRPIC_GENERATE_HPP
+#endif    // FRAMEWORK_GRPIC_GENERATE_HPP

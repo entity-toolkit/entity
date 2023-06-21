@@ -44,13 +44,13 @@ namespace ntt {
                            const real_t&                    charge,
                            const bool&                      use_weights,
                            const real_t&                    dt)
-      : m_mblock(mblock),
-        m_particles(particles),
-        m_scatter_cur0(scatter_cur0),
-        m_charge(charge),
+      : m_mblock { mblock },
+        m_particles { particles },
+        m_scatter_cur0 { scatter_cur0 },
+        m_charge { charge },
         m_use_weights { use_weights },
-        m_dt(dt),
-        m_xi2max((real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS)) {}
+        m_dt { dt },
+        m_xi2max { (real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS) } {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -148,16 +148,10 @@ namespace ntt {
       xp_i[1] = static_cast<real_t>(m_particles.i2_prev(p))
                 + static_cast<real_t>(m_particles.dx2_prev(p));
 
-      const auto northern_pole  = (Ip_i[1] < 0);
-      const auto sourthern_pole = (Ip_i[1] >= static_cast<int>(m_xi2max));
-      if (northern_pole || sourthern_pole) {
-        Ip_i[1] = northern_pole ? 0 : static_cast<int>(m_xi2max) - 1;
-        xp_i[1] = northern_pole ? -xp_i[1] : (TWO * m_xi2max - xp_i[1]);
-      }
-
       if constexpr (D == Dim3) {
         Ip_i[2] = m_particles.i3_prev(p);
-        xp_i[2] = static_cast<real_t>(Ip_f[2]) + static_cast<real_t>(m_particles.dx3_prev(p));
+        xp_i[2] = static_cast<real_t>(m_particles.i3_prev(p))
+                  + static_cast<real_t>(m_particles.dx3_prev(p));
       }
 
       for (auto i { 0 }; i < static_cast<short>(D); ++i) {
@@ -166,6 +160,8 @@ namespace ntt {
           = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
                        math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
       }
+
+      printf("x-1: %d %d\nx-2: %d %d\n", Ip_f[0], Ip_i[0], Ip_f[1], Ip_i[1]);
     }
   };
 

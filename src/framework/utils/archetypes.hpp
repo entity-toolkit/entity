@@ -9,7 +9,7 @@
 #include "meshblock/meshblock.h"
 #include "utils/qmath.h"
 
-#ifdef NTTINY_ENABLED
+#ifdef GUI_ENABLED
 #  include "nttiny/api.h"
 #endif
 
@@ -32,7 +32,7 @@ namespace ntt {
                                            const SimulationParams&,
                                            Meshblock<D, S>&) {}
 
-#ifdef NTTINY_ENABLED
+#ifdef GUI_ENABLED
     virtual inline void UserInitBuffers_nttiny(const SimulationParams&,
                                                const Meshblock<D, S>&,
                                                std::map<std::string, nttiny::ScrollingBuffer>&) {
@@ -104,9 +104,7 @@ namespace ntt {
     EnergyDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual void operator()(const coord_t<D>&,
-                                   vec_t<Dim3>& v,
-                                   const int&   species = 0) const {
+    Inline virtual void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int& = 0) const {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -121,9 +119,7 @@ namespace ntt {
   struct ColdDist : public EnergyDistribution<D, S> {
     ColdDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
-    Inline void operator()(const coord_t<D>&,
-                           vec_t<Dim3>& v,
-                           const int&   species = 0) const override {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int& = 0) const override {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;

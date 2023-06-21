@@ -1,6 +1,7 @@
 #include "wrapper.h"
 
 #include "io/cargs.h"
+#include "io/output.h"
 #include "nttiny/api.h"
 #include "nttiny/tools.h"
 #include "nttiny/vis.h"
@@ -11,13 +12,9 @@
 #elif defined(GRPIC_ENGINE)
 #  include "grpic.h"
 
-#  include "init_fields.hpp"
 #  define SIMULATION_CONTAINER GRPIC
 #endif
 
-#include <plog/Appenders/ColorConsoleAppender.h>
-#include <plog/Init.h>
-#include <plog/Log.h>
 #include <toml.hpp>
 
 #include <iostream>
@@ -25,155 +22,139 @@
 #include <string>
 #include <vector>
 
-using plog_t = plog::ColorConsoleAppender<plog::Nt2ConsoleFormatter>;
-void initLogger(plog_t* console_appender);
-
+template <ntt::SimulationEngine S>
 class NTTSimulationVis : public nttiny::SimulationAPI<real_t, 2> {
 protected:
   ntt::SIMULATION_CONTAINER<ntt::Dim2>& m_sim;
   int                                   sx1, sx2;
-  const std::vector<std::string>        m_fields_to_plot;
+  const std::vector<ntt::OutputField>   m_fields_to_plot;
   const int                             m_fields_stride;
 
 public:
   NTTSimulationVis(ntt::SIMULATION_CONTAINER<ntt::Dim2>& sim,
-                   const std::vector<std::string>&       fields_to_plot,
+                   const std::vector<ntt::OutputField>&       fields_to_plot,
                    const int&                            fields_stride)
-#ifdef PIC_ENGINE
-    : nttiny::SimulationAPI<real_t, 2> {sim.params()->title(), 
+    : nttiny::SimulationAPI<real_t, 2> {sim.params()->title(),
                                         sim.meshblock.metric.label == "minkowski"
                                           ? nttiny::Coord::Cartesian
                                           : nttiny::Coord::Spherical,
-                                        {sim.meshblock.Ni1() / fields_stride,
-                                         sim.meshblock.Ni2() / fields_stride},
+                                        {(int)sim.meshblock.Ni1() / fields_stride,
+                                         (int)sim.meshblock.Ni2() / fields_stride},
                                         N_GHOSTS},
-// #elif defined(GRPIC_ENGINE)
-//: nttiny::SimulationAPI<real_t, 2> {nttiny::Coord::Spherical,
-//{sim.mblock()->Ni1(), sim.mblock()->Ni2()},
-// N_GHOSTS},
-#endif
       m_sim(sim),
-      sx1 {sim.meshblock.Ni1() / fields_stride},
-      sx2 {sim.meshblock.Ni2() / fields_stride},
-      m_fields_to_plot(fields_to_plot),
-      m_fields_stride(fields_stride) {
+      sx1 {(int)sim.meshblock.Ni1() / fields_stride},
+      sx2 {(int)sim.meshblock.Ni2() / fields_stride},
+      m_fields_to_plot{fields_to_plot},
+      m_fields_stride{fields_stride} {
+    m_time       = 0.0;
+    m_timestep   = 0;
+    auto& mblock = m_sim.meshblock;
+    auto  params = *(m_sim.params());
 
-    m_time     = 0.0;
-    m_timestep = 0;
     generateFields();
     generateGrid();
-    // generateParticles();
+    generateParticles();
 
-    m_sim.problem_generator.UserInitBuffers_nttiny(
-      *(m_sim.params()), m_sim.meshblock, this->buffers);
+    m_sim.problem_generator.UserInitBuffers_nttiny(params, mblock, this->buffers);
     setData();
   }
 
   void setData() override {
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
-    auto*      Sim            = &m_sim;
     const auto nx1            = Grid.m_size[0] + Grid.m_ngh * 2;
     const auto nx2            = Grid.m_size[1] + Grid.m_ngh * 2;
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
     const auto fields_stride  = m_fields_stride;
-    // precompute necessary fields
-    for (auto& f : fields_to_plot) {
-      if (f == "Rho") {
-        m_sim.ComputeDensity();
-      }
-    }
-    m_sim.InterpolateAndConvertFieldsToHat();
-    m_sim.SynchronizeHostDevice();
-#ifdef GRPIC_ENGINE
-    Kokkos::deep_copy(m_sim.meshblock.aphi_h, m_sim.meshblock.aphi);
-    // compute the vector potential
-    m_sim.computeVectorPotential();
-#endif
-    // @HACK: this is so ugly i almost feel ashamed
-    // ... need to clear this up
-    Kokkos::parallel_for("setData",
-                         ntt::CreateRangePolicyOnHost<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
-                         [=](std::size_t i1, std::size_t j1) {
-                           int i, j;
-                           if (i1 < ngh) {
-                             i = i1;
-                           } else if (i1 >= nx1 - ngh) {
-                             i = (nx1 - 2 * ngh) * fields_stride + 2 * ngh + (int)i1 - nx1;
-                           } else {
-                             i = ((int)i1 - ngh) * fields_stride + ngh;
-                           }
-                           if (j1 < ngh) {
-                             j = j1;
-                           } else if (j1 >= nx2 - ngh) {
-                             j = (nx2 - 2 * ngh) * fields_stride + 2 * ngh + (int)j1 - nx2;
-                           } else {
-                             j = ((int)j1 - ngh) * fields_stride + ngh;
-                           }
-                           for (std::size_t fi = 0; fi < nfields; ++fi) {
-                             auto f = fields_to_plot.at(fi);
-                             int  comp;
-                             if (f == "Ex" || f == "Er") {
-                               comp = ntt::em::ex1;
-                             } else if (f == "Ey" || f == "Etheta") {
-                               comp = ntt::em::ex2;
-                             } else if (f == "Ez" || f == "Ephi") {
-                               comp = ntt::em::ex3;
-                             } else if (f == "Bx" || f == "Br") {
-                               comp = ntt::em::bx1;
-                             } else if (f == "By" || f == "Btheta") {
-                               comp = ntt::em::bx2;
-                             } else if (f == "Bz" || f == "Bphi") {
-                               comp = ntt::em::bx3;
-                             } else if (f == "Jx" || f == "Jr") {
-                               comp = ntt::cur::jx1;
-                             } else if (f == "Jy" || f == "Jtheta") {
-                               comp = ntt::cur::jx2;
-                             } else if (f == "Jz" || f == "Jphi") {
-                               comp = ntt::cur::jx3;
-                             } else if (f == "Rho") {
-                               comp = ntt::fld::dens;
-                             }
-                             real_t val;
-                             if (f.at(0) == 'E' || f.at(0) == 'B') {
-                               val = Sim->meshblock.bckp_h(i, j, comp);
-                             } else if (f.at(0) == 'J') {
-                               val = Sim->meshblock.cur_h(i, j, comp);
-                             } else {
-                               val = Sim->meshblock.buff_h(i, j, comp);
-                             }
-                             if (!math::isfinite(val)) {
-                               val = -100000.0;
-                             }
-                             auto idx          = Index((int)i1 - ngh, (int)j1 - ngh);
-                             Fields.at(f)[idx] = val;
-                           }
-                         });
 
-    // auto  s         = 0;
-    // auto& Particles = this->particles;
-    // for (const auto& [lbl, species] : Particles) {
-    //   auto sim_species = m_sim.meshblock.particles[s];
-    //   for (int p {0}; p < species.first; ++p) {
-    //     real_t                  x1 {(real_t)(sim_species.i1_h(p)) +
-    //     sim_species.dx1_h(p)}; real_t                  x2 {(real_t)(sim_species.i2_h(p))
-    //     + sim_species.dx2_h(p)}; ntt::coord_t<ntt::Dim2> xy {ZERO, ZERO};
-    //     m_sim.meshblock.metric.x_Code2Cart({x1, x2}, xy);
-    //     species.second[0][p] = xy[0];
-    //     species.second[1][p] = xy[1];
-    //   }
-    //   ++s;
-    // }
-    m_sim.problem_generator.UserSetBuffers_nttiny(
-      m_time, *(m_sim.params()), m_sim.meshblock, this->buffers);
+    auto&      mblock         = m_sim.meshblock;
+    auto       params         = *(m_sim.params());
+
+    // precompute necessary fields
+    // !FIX: this has a potential of overwriting the buffer and backup fields
+    for (auto& f : m_fields_to_plot) {
+      f.compute<ntt::Dim2, S>(params, mblock);
+    }
+
+    auto buffer_h = Kokkos::create_mirror_view(mblock.buff);
+    Kokkos::deep_copy(buffer_h, mblock.buff);
+    auto backup_h = Kokkos::create_mirror_view(mblock.bckp);
+    Kokkos::deep_copy(backup_h, mblock.bckp);
+
+    Kokkos::parallel_for(
+      "setData-Fields",
+      ntt::CreateRangePolicyOnHost<ntt::Dim2>({ (std::size_t)0, (std::size_t)0 },
+                                              { (std::size_t)nx1, (std::size_t)nx2 }),
+      [=](std::size_t i1, std::size_t j1) {
+        int i, j;
+        if (i1 < ngh) {
+          i = i1;
+        } else if (i1 >= nx1 - ngh) {
+          i = (nx1 - 2 * ngh) * fields_stride + 2 * ngh + (int)i1 - nx1;
+        } else {
+          i = ((int)i1 - ngh) * fields_stride + ngh;
+        }
+        if (j1 < ngh) {
+          j = j1;
+        } else if (j1 >= nx2 - ngh) {
+          j = (nx2 - 2 * ngh) * fields_stride + 2 * ngh + (int)j1 - nx2;
+        } else {
+          j = ((int)j1 - ngh) * fields_stride + ngh;
+        }
+        auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
+
+        for (auto fi { 0 }; fi < nfields; ++fi) {
+          auto f = fields_to_plot[fi];
+          for (auto c { 0 }; c < f.comp.size(); ++c) {
+            auto   fld = f.name(c);
+
+            real_t val { ZERO };
+            if (f.is_field() || f.is_gr_aux_field() || f.is_vpotential()) {
+              val = backup_h(i, j, f.address[c]);
+            } else if (f.is_current() || f.is_moment()) {
+              val = buffer_h(i, j, f.address[c]);
+            }
+            Fields.at(fld)[idx] = math::isfinite(val) ? val : -100000.0;
+          }
+        }
+      });
+
+    auto  s         = 0;
+    auto& Particles = this->particles;
+    for (const auto& [lbl, species] : Particles) {
+      auto sim_species = m_sim.meshblock.particles[s];
+      auto nprtl       = species.first;
+      auto slice       = std::make_pair(0, nprtl);
+      auto i1_h        = Kokkos::create_mirror_view(Kokkos::subview(sim_species.i1, slice));
+      Kokkos::deep_copy(i1_h, Kokkos::subview(sim_species.i1, slice));
+      auto i2_h = Kokkos::create_mirror_view(Kokkos::subview(sim_species.i2, slice));
+      Kokkos::deep_copy(i2_h, Kokkos::subview(sim_species.i2, slice));
+      auto dx1_h = Kokkos::create_mirror_view(Kokkos::subview(sim_species.dx1, slice));
+      Kokkos::deep_copy(dx1_h, Kokkos::subview(sim_species.dx1, slice));
+      auto dx2_h = Kokkos::create_mirror_view(Kokkos::subview(sim_species.dx2, slice));
+      Kokkos::deep_copy(dx2_h, Kokkos::subview(sim_species.dx2, slice));
+
+      for (auto p { 0 }; p < nprtl; ++p) {
+        real_t                  x1 { (real_t)(i1_h(p)) + dx1_h(p) };
+        real_t                  x2 { (real_t)(i2_h(p)) + dx2_h(p) };
+        ntt::coord_t<ntt::Dim2> xy { ZERO, ZERO };
+        m_sim.meshblock.metric.x_Code2Cart({ x1, x2 }, xy);
+        species.second[0][p] = xy[0];
+        species.second[1][p] = xy[1];
+      }
+      ++s;
+    }
+    m_sim.problem_generator.UserSetBuffers_nttiny(m_time, params, mblock, this->buffers);
   }
+
   void stepFwd() override {
     m_sim.StepForward();
-    ++m_timestep;
-    m_time += m_sim.meshblock.timestep();
+    m_timestep = m_sim.tstep();
+    m_time     = m_sim.time();
   }
+
   void restart() override {
     m_time     = 0.0;
     m_timestep = 0;
@@ -181,6 +162,7 @@ public:
     m_sim.InitialStep();
     setData();
   }
+
   void stepBwd() override {}
 
   void generateFields() {
@@ -188,16 +170,20 @@ public:
     auto&      Grid   = this->m_global_grid;
     const auto nx1 { Grid.m_size[0] + Grid.m_ngh * 2 };
     const auto nx2 { Grid.m_size[1] + Grid.m_ngh * 2 };
-    for (std::size_t i { 0 }; i < m_fields_to_plot.size(); ++i) {
-      Fields.insert({ m_fields_to_plot[i], new real_t[nx1 * nx2] });
+    for (auto i { 0 }; i < m_fields_to_plot.size(); ++i) {
+      for (auto c { 0 }; c < m_fields_to_plot[i].comp.size(); ++c) {
+        Fields.insert({ m_fields_to_plot[i].name(c), new real_t[nx1 * nx2] });
+      }
     }
   }
 
   void generateParticles() {
+    auto  params    = *(m_sim.params());
     auto& Particles = this->particles;
     int   s         = 0;
     for (auto& species : m_sim.meshblock.particles) {
-      auto nprtl { m_sim.meshblock.particles[s].npart() };
+      auto nprtl { m_sim.meshblock.particles[s].npart() / params.outputPrtlStride() };
+      nprtl = nprtl > 0 ? nprtl : 1;
       Particles.insert({
         species.label(), {nprtl, { new real_t[nprtl], new real_t[nprtl] }}
       });
@@ -240,54 +226,71 @@ public:
   }
 
   void customAnnotatePcolor2d(const nttiny::UISettings& ui_settings) override {
-#if GRPIC_ENGINE
-    real_t a        = m_sim.sim_params()->metricParameters()[4];
-    real_t r_absorb = m_sim.sim_params()->metricParameters()[2];
-    real_t rh       = 1.0f + math::sqrt(1.0f - a * a);
+#ifdef GRPIC_ENGINE
+    auto&  mblock   = m_sim.meshblock;
+    auto   params   = *(m_sim.params());
+    real_t r_absorb = params.metricParameters()[2];
+    real_t rh       = mblock.metric.rhorizon();
     nttiny::tools::drawCircle(
       { 0.0f, 0.0f }, rh, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
     nttiny::tools::drawCircle(
       { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
-#elif defined(PIC_ENGINE)
-#  ifndef MINKOWSKI_METRIC
-    real_t r_absorb = m_sim.params()->metricParameters()[2];
-    nttiny::tools::drawCircle(
-      { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
-#  endif
+#else
+    auto& Grid = this->m_global_grid;
+    if (Grid.m_coord == nttiny::Coord::Spherical) {
+      auto   params   = *(m_sim.params());
+      real_t r_absorb = params.metricParameters()[2];
+      nttiny::tools::drawCircle(
+        { 0.0f, 0.0f }, r_absorb, { 0.0f, ntt::constant::PI }, 128, ui_settings.OutlineColor);
+    }
 #endif
   }
 };
 
 auto main(int argc, char* argv[]) -> int {
-  plog_t console_appender;
-  initLogger(&console_appender);
-
-  Kokkos::initialize();
+  Kokkos::initialize(argc, argv);
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto  scale_str      = cl_args.getArgument("-scale", "1.0");
-    auto  scale          = std::stof(std::string(scale_str));
-    auto  inputfilename  = cl_args.getArgument("-input", ntt::defaults::input_filename);
-    auto  inputdata      = toml::parse(static_cast<std::string>(inputfilename));
-    auto& vis_data       = toml::find(inputdata, "visualization");
+    auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
+    auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
+    auto sim_title     = ntt::readFromInput<std::string>(
+      inputdata, "simulation", "title", ntt::defaults::title);
 
-    auto  fields_to_plot = toml::find<std::vector<std::string>>(vis_data, "fields");
-    auto  fields_stride  = toml::find_or<int>(vis_data, "fields_stride", 1);
+    auto scale_str          = cl_args.getArgument("-scale", "1.0");
+    auto scale              = std::stof(std::string(scale_str));
+
+    auto fields_to_plot_str = ntt::readFromInput<std::vector<std::string>>(
+      inputdata, "output", "fields", std::vector<std::string>());
+    auto fields_stride = ntt::readFromInput<int>(inputdata, "output", "fields_stride", 1);
+
+#ifdef PIC_ENGINE
+    constexpr auto simulation_engine { ntt::PICEngine };
+#else
+    constexpr auto simulation_engine { ntt::GRPICEngine };
+#endif
+
+    std::vector<ntt::OutputField> fields_to_plot;
+    for (auto& fld : fields_to_plot_str) {
+      fields_to_plot.push_back(ntt::InterpretInputForFieldOutput(fld));
+      fields_to_plot.back().initialize(simulation_engine);
+    }
 
     ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
+
     sim.Initialize();
     sim.Verify();
     sim.ResetSimulation();
     sim.InitialStep();
     sim.PrintDetails();
-    NTTSimulationVis                 visApi(sim, fields_to_plot, fields_stride);
+    NTTSimulationVis<simulation_engine> visApi(sim, fields_to_plot, fields_stride);
 
-    nttiny::Visualization<real_t, 2> vis { scale };
+    nttiny::Visualization<real_t, 2>    vis { scale };
     vis.bindSimulation(&visApi);
     vis.loop();
 
     sim.Finalize();
+
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();
@@ -299,12 +302,8 @@ auto main(int argc, char* argv[]) -> int {
   return 0;
 }
 
-void initLogger(plog_t* console_appender) {
-  plog::Severity max_severity;
-#ifdef DEBUG
-  max_severity = plog::verbose;
+#ifdef PIC_ENGINE
+template class NTTSimulationVis<ntt::PICEngine>;
 #else
-  max_severity = plog::info;
+template class NTTSimulationVis<ntt::GRPICEngine>;
 #endif
-  plog::init(max_severity, console_appender);
-}

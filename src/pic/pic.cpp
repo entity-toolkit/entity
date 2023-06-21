@@ -43,9 +43,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::InitialStep() {
-    auto& mblock = this->meshblock;
-  }
+  void PIC<D>::InitialStep() {}
 
   template <Dimension D>
   void PIC<D>::Benchmark() {
@@ -99,7 +97,6 @@ namespace ntt {
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        ResetCurrents();
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
