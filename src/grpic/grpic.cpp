@@ -405,7 +405,7 @@ namespace ntt {
          *
          * Now: em0::D at n+1
          */
-        // AmpereCurrents(gr_ampere::main);
+        AmpereCurrents(gr_ampere::main);
       }
 
       /**

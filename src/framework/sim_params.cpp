@@ -91,7 +91,6 @@ namespace ntt {
       if (m_coordinates == "qspherical") {
         m_metric_parameters[0] = get<real_t>("domain", "qsph_r0");
         m_metric_parameters[1] = get<real_t>("domain", "qsph_h");
-        NTTHostErrorIf((AlmostEqual(m_metric_parameters[1], ZERO)), "qsph_h must be non-zero");
       }
       m_metric_parameters[2] = get<real_t>("domain", "sph_rabsorb");
       m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));

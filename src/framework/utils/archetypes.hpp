@@ -39,7 +39,7 @@ namespace ntt {
     }
     virtual inline void UserSetBuffers_nttiny(const real_t&,
                                               const SimulationParams&,
-                                              const Meshblock<D, S>&,
+                                              Meshblock<D, S>&,
                                               std::map<std::string, nttiny::ScrollingBuffer>&) {
     }
 #endif
