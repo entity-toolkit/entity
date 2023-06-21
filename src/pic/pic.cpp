@@ -97,7 +97,6 @@ namespace ntt {
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        ResetCurrents();
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");

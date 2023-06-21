@@ -301,8 +301,6 @@ namespace ntt {
        */
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        // clear cur0::J & buff
-        ResetCurrents();
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
@@ -407,7 +405,7 @@ namespace ntt {
          *
          * Now: em0::D at n+1
          */
-        AmpereCurrents(gr_ampere::main);
+        // AmpereCurrents(gr_ampere::main);
       }
 
       /**

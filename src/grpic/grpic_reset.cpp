@@ -22,24 +22,34 @@ namespace ntt {
   void GRPIC<D>::ResetParticles() {
     auto& mblock = this->meshblock;
     for (auto& species : mblock.particles) {
-      if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
-        Kokkos::deep_copy(species.i1, 0);
-        Kokkos::deep_copy(species.dx1, ZERO);
-      }
-      if constexpr ((D == Dim2) || (D == Dim3)) {
-        Kokkos::deep_copy(species.i2, 0);
-        Kokkos::deep_copy(species.dx2, ZERO);
-#ifndef MINKOWSKI_METRIC
+      Kokkos::deep_copy(species.i1, 0);
+      Kokkos::deep_copy(species.dx1, ZERO);
+
+      Kokkos::deep_copy(species.i1_prev, 0);
+      Kokkos::deep_copy(species.dx1_prev, ZERO);
+
+      Kokkos::deep_copy(species.i2, 0);
+      Kokkos::deep_copy(species.dx2, ZERO);
+
+      Kokkos::deep_copy(species.i2_prev, 0);
+      Kokkos::deep_copy(species.dx2_prev, ZERO);
+
+      if constexpr (D == Dim2) {
         Kokkos::deep_copy(species.phi, ZERO);
-#endif
       }
       if constexpr (D == Dim3) {
         Kokkos::deep_copy(species.i3, 0);
         Kokkos::deep_copy(species.dx3, ZERO);
+
+        Kokkos::deep_copy(species.i3_prev, 0);
+        Kokkos::deep_copy(species.dx3_prev, ZERO);
       }
       Kokkos::deep_copy(species.ux1, ZERO);
       Kokkos::deep_copy(species.ux2, ZERO);
       Kokkos::deep_copy(species.ux3, ZERO);
+
+      Kokkos::deep_copy(species.tag, 0);
+      Kokkos::deep_copy(species.weight, ZERO);
       species.setNpart(0);
     }
   }
@@ -50,13 +60,15 @@ namespace ntt {
     Kokkos::deep_copy(mblock.em, ZERO);
     Kokkos::deep_copy(mblock.em0, ZERO);
     Kokkos::deep_copy(mblock.aux, ZERO);
+    Kokkos::deep_copy(mblock.bckp, ZERO);
   }
 
   template <Dimension D>
   void GRPIC<D>::ResetCurrents() {
     auto& mblock = this->meshblock;
-    Kokkos::deep_copy(mblock.buff, ZERO);
+    Kokkos::deep_copy(mblock.cur, ZERO);
     Kokkos::deep_copy(mblock.cur0, ZERO);
+    Kokkos::deep_copy(mblock.buff, ZERO);
   }
 }    // namespace ntt
 
