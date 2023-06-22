@@ -20,7 +20,8 @@
       "METRIC_HEADER=\"metrics/minkowski.h\"",
       "HostExeSpace=Kokkos::OpenMP",
       "HostMemSpace=Kokkos::HostSpace"
-    ]
+    ],
+    "WarningSuppressHeader": "${workspaceFolder}/.vscode/suppress_warnings.h"
   },
   "configurations": [
     {
@@ -37,7 +38,10 @@
         "AccelMemSpace=Kokkos::CudaSpace"
       ],
       "cStandard": "c17",
-      "cppStandard": "c++17"
+      "cppStandard": "c++17",
+      "forcedInclude": [
+        "${WarningSuppressHeader}"
+      ]
     },
     {
       "name": "wsl",

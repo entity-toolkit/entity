@@ -96,7 +96,10 @@
     "filesystem": "cpp",
     "locale": "cpp",
     "__std_stream": "cpp",
-    "ios": "cpp"
+    "ios": "cpp",
+    "*.ipp": "cpp",
+    "strstream": "cpp",
+    "cfenv": "cpp"
   },
   "python.analysis.typeCheckingMode": "off",
   "C_Cpp.errorSquiggles": "enabled",
