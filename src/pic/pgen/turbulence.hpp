@@ -74,9 +74,9 @@ namespace ntt {
         nx2 { params.get<int>("problem", "nx2", 1) },
         nx3 { params.get<int>("problem", "nx3", 1) },
         amplitudes { "DrivingModes", 6 } {}
-    // inline void UserDriveParticles(const real_t&,
-    //                                const SimulationParams&,
-    //                                Meshblock<D, S>&) override {}
+    inline void UserDriveParticles(const real_t&,
+                                   const SimulationParams&,
+                                   Meshblock<D, S>&) override {}
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override {
       /**
        * this function we can define per each Dimension (Dim1, Dim2, Dim3) separately
@@ -168,7 +168,7 @@ namespace ntt {
   private:
     // additional problem-specific parameters (i.e., wave numbers in x1, x2, x3 directions)
     const int            nx1, nx2, nx3;
-    array_t<double* [2]> amplitudes;
+    array_t<real_t* [2]> amplitudes;
   };
 
   Inline void turbulent_fields_2d(const coord_t<Dim2>& x_ph,     // physical coordinate
@@ -262,28 +262,24 @@ namespace ntt {
     const auto _nx2  = nx2;
     const auto _sx1  = mblock.metric.x1_max - mblock.metric.x1_min;
     const auto _sx2  = mblock.metric.x2_max - mblock.metric.x2_min;
+    auto amplitudes_          = this->amplitudes;
 
     // Initialize the mode driving with random values
     // todo: change number of modes to be driven
     auto       pool  = *(mblock.random_pool_ptr);
-    // Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
-
-    printf("%d, %d", amplitudes.extent(0), amplitudes.extent(1));
 
     Kokkos::parallel_for(
-      "RandomAmplitudes",
-      Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>({ 0 }, { 6 }),
-      Lambda(index_t i) {
+      "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
         auto rand_gen    = pool.get_state();
-        amplitudes(i, 0) = rand_gen.frand();
-        amplitudes(i, 1) = rand_gen.frand();
+        amplitudes_(i, 0) = rand_gen.frand();
+        amplitudes_(i, 1) = rand_gen.frand();
         pool.free_state(rand_gen);
       });
 
-    // auto testout = Kokkos::create_mirror_view(amplitudes);
-    // Kokkos::deep_copy(testout, amplitudes);
-    // printf("amplitudes: %f %f %f %f %f %f\n", testout(0,0), testout(0,1), testout(0,2),
-    // testout(0,3), testout(0,4), testout(0,5));
+    auto testout = Kokkos::create_mirror_view(amplitudes);
+    Kokkos::deep_copy(testout, amplitudes);
+    printf("amplitudes: %f %f %f %f %f %f\n", testout(0,0), testout(1,0), testout(2,0),
+    testout(3,0), testout(4,0), testout(5,0));
 
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -308,43 +304,64 @@ namespace ntt {
       });
   }
 
-  // /**
-  //  *
-  //  */
-  // template <>
-  // inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
-  //   const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-  //   real_t global_sum = ZERO;
-  //   Kokkos::parallel_reduce(
-  //     "EMEnergy",
-  //     mblock.rangeActiveCells(),
-  //     ClassLambda(index_t i, index_t j, real_t & sum) {
-  //       sum += (SQR(mblock.em(i, j, em::ex1)) + SQR(mblock.em(i, j, em::ex2))
-  //               + SQR(mblock.em(i, j, em::ex3)) + SQR(mblock.em(i, j, em::bx1))
-  //               + SQR(mblock.em(i, j, em::bx2)) + SQR(mblock.em(i, j, em::bx3)))
-  //              * HALF;
-  //     },
-  //     global_sum);
 
-  //   global_sum /= SQR(params.larmor0());
-  //   global_sum *= mblock.metric.min_cell_volume();
-  //   printf("EM energy: %e\n", global_sum);
-  //   global_sum = ZERO;
+  /**
+   *
+   */
+  template <>
+  inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
+    const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
 
-  //   for (auto& species : mblock.particles) {
-  //     real_t global_a = ZERO;
-  //     Kokkos::parallel_reduce(
-  //       "ParticleEnergy",
-  //       species.npart(),
-  //       ClassLambda(index_t p, real_t & sum) {
-  //         sum += math::sqrt(ONE + SQR(species.ux1(p)) + SQR(species.ux2(p))
-  //                           + SQR(species.ux3(p)));
-  //       },
-  //       global_a);
-  //     global_sum += global_a;
-  //   }
-  //   printf("Particle energy: %e\n", global_sum);
-  // }
+    const auto _time = this->time();
+    auto amplitudes_          = this->amplitudes;
+
+    // todo: change number of modes to be driven
+    auto       pool  = *(mblock.random_pool_ptr);
+
+    Kokkos::parallel_for(
+      "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
+        auto rand_gen    = pool.get_state();
+        amplitudes_(i, 0) += rand_gen.frand();
+        amplitudes_(i, 1) += rand_gen.frand();
+        pool.free_state(rand_gen);
+      });
+
+    auto testout = Kokkos::create_mirror_view(amplitudes);
+    Kokkos::deep_copy(testout, amplitudes);
+    printf("amplitudes: %f %f %f %f %f %f\n", testout(0,0), testout(1,0), testout(2,0),
+    testout(3,0), testout(4,0), testout(5,0));
+
+    // real_t global_sum = ZERO;
+    // Kokkos::parallel_reduce(
+    //   "EMEnergy",
+    //   mblock.rangeActiveCells(),
+    //   ClassLambda(index_t i, index_t j, real_t & sum) {
+    //     sum += (SQR(mblock.em(i, j, em::ex1)) + SQR(mblock.em(i, j, em::ex2))
+    //             + SQR(mblock.em(i, j, em::ex3)) + SQR(mblock.em(i, j, em::bx1))
+    //             + SQR(mblock.em(i, j, em::bx2)) + SQR(mblock.em(i, j, em::bx3)))
+    //            * HALF;
+    //   },
+    //   global_sum);
+
+    // global_sum /= SQR(params.larmor0());
+    // global_sum *= mblock.metric.min_cell_volume();
+    // printf("EM energy: %e\n", global_sum);
+    // global_sum = ZERO;
+
+    // for (auto& species : mblock.particles) {
+    //   real_t global_a = ZERO;
+    //   Kokkos::parallel_reduce(
+    //     "ParticleEnergy",
+    //     species.npart(),
+    //     ClassLambda(index_t p, real_t & sum) {
+    //       sum += math::sqrt(ONE + SQR(species.ux1(p)) + SQR(species.ux2(p))
+    //                         + SQR(species.ux3(p)));
+    //     },
+    //     global_a);
+    //   global_sum += global_a;
+    // }
+    // printf("Particle energy: %e\n", global_sum);
+  }
 
 }    // namespace ntt
 
