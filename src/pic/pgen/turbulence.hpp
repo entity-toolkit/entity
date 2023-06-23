@@ -78,12 +78,11 @@ namespace ntt {
       : nx1 { params.get<int>("problem", "nx1", 1) },
         nx2 { params.get<int>("problem", "nx2", 1) },
         nx3 { params.get<int>("problem", "nx3", 1) },
-        nmodes { params.get<int>("problem", "nmodes", 1) },
         sx1 { params.extent()[1] - params.extent()[0] },
         sx2 { params.extent()[3] - params.extent()[2] },
         sx3 { 1.0 },
         temperature { params.get<real_t>("problem", "temperature", 0.1) },
-        machno {0.1},
+        machno { 0.1 },
         amplitudes { "DrivingModes", 6 } {}
     inline void UserDriveParticles(const real_t&,
                                    const SimulationParams&,
@@ -160,7 +159,7 @@ namespace ntt {
       real_t k23         = 1.0 * constant::TWO_PI / sx3;
       real_t k24         = 1.0;
 
-      auto  f_m3
+      auto   f_m3
         = k04 * amplitudes_(2, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0)
           + k04 * amplitudes_(2, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0);
       auto f_m4
@@ -264,7 +263,7 @@ namespace ntt {
 #endif    // GUI_ENABLED
   private:
     // additional problem-specific parameters (i.e., wave numbers in x1, x2, x3 directions)
-    const int            nx1, nx2, nx3, nmodes;
+    const int            nx1, nx2, nx3;
     const real_t         sx1, sx2, sx3, temperature, machno;
     array_t<real_t* [2]> amplitudes;
   };
@@ -355,23 +354,23 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserInitFields(
     const SimulationParams&, Meshblock<Dim2, PICEngine>& mblock) {
-    const auto _time       = this->time();
-    const auto _nx1        = nx1;
-    const auto _nx2        = nx2;
-    const auto _sx1        = mblock.metric.x1_max - mblock.metric.x1_min;
-    const auto _sx2        = mblock.metric.x2_max - mblock.metric.x2_min;
-    auto       amplitudes_ = this->amplitudes;
-    const auto _temperature       = temperature;
-    const auto _machno           = machno;
+    const auto _time        = this->time();
+    const auto _nx1         = nx1;
+    const auto _nx2         = nx2;
+    const auto _sx1         = mblock.metric.x1_max - mblock.metric.x1_min;
+    const auto _sx2         = mblock.metric.x2_max - mblock.metric.x2_min;
+    auto       amplitudes_  = this->amplitudes;
+    const auto _temperature = temperature;
+    const auto _machno      = machno;
 
-    auto amp0  = _machno * _temperature * mblock.particles[1].mass() / 6.0;
+    auto       amp0         = _machno * _temperature * mblock.particles[1].mass() / 6.0;
 
     // Initialize the mode driving with random values
     // todo: change number of modes to be driven
     // auto       pool        = *(mblock.random_pool_ptr);
     // auto rand_gen     = pool.get_state();
-    auto       phi0 = ((real_t) rand() / RAND_MAX) * constant::TWO_PI;    // rand_gen.frand() *
-                                                                 // constant::TWO_PI;
+    auto       phi0 = ((real_t)rand() / RAND_MAX) * constant::TWO_PI;    // rand_gen.frand() *
+                                                                         // constant::TWO_PI;
     // pool.free_state(rand_gen);
 
     Kokkos::parallel_for(
@@ -409,27 +408,26 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    const auto _time       = this->time();
-    auto       amplitudes_ = this->amplitudes;
-    auto       dt_         = mblock.timestep();
-    const auto _sx1        = mblock.metric.x1_max - mblock.metric.x1_min;
-    const auto _temperature       = temperature;
-    const auto _machno           = machno;
+    const auto _time        = this->time();
+    auto       amplitudes_  = this->amplitudes;
+    auto       dt_          = mblock.timestep();
+    const auto _sx1         = mblock.metric.x1_max - mblock.metric.x1_min;
+    const auto _temperature = temperature;
+    const auto _machno      = machno;
 
-    auto amp0 = machno * temperature * mblock.particles[1].mass() / 6.0;
-     auto omega0 = 0.6 * sqrt(temperature * machno * constant::TWO_PI / sx1);
-      auto  gamma0 = 0.5 * sqrt(temperature * machno * constant::TWO_PI / sx1);
-       auto sigma0 = amp0 * sqrt(6.0 * gamma0);
+    auto       amp0         = machno * temperature * mblock.particles[1].mass() / 6.0;
+    auto       omega0       = 0.6 * sqrt(temperature * machno * constant::TWO_PI / sx1);
+    auto       gamma0       = 0.5 * sqrt(temperature * machno * constant::TWO_PI / sx1);
+    auto       sigma0       = amp0 * sqrt(6.0 * gamma0);
 
     // todo: change number of modes to be driven
-    auto       pool        = *(mblock.random_pool_ptr);
+    auto       pool         = *(mblock.random_pool_ptr);
 
     Kokkos::parallel_for(
       "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
-
-        auto   rand_gen = pool.get_state();
-        auto   unr      = rand_gen.frand() - 0.5;
-        auto   uni      = rand_gen.frand() - 0.5;
+        auto rand_gen = pool.get_state();
+        auto unr      = rand_gen.frand() - 0.5;
+        auto uni      = rand_gen.frand() - 0.5;
         pool.free_state(rand_gen);
 
         auto ampr_prev       = amplitudes_(i, REAL);
