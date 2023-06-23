@@ -11,9 +11,14 @@
 #include "utils/archetypes.hpp"
 #include "utils/injector.hpp"
 
+#include <time.h>
+
 #ifdef GUI_ENABLED
 #  include "nttiny/api.h"
 #endif
+
+#define REAL (0)
+#define IMAG (1)
 
 namespace ntt {
 
@@ -73,7 +78,12 @@ namespace ntt {
       : nx1 { params.get<int>("problem", "nx1", 1) },
         nx2 { params.get<int>("problem", "nx2", 1) },
         nx3 { params.get<int>("problem", "nx3", 1) },
+        nmodes { params.get<int>("problem", "nmodes", 1) },
+        sx1 { params.extent()[1] - params.extent()[0] },
         sx2 { params.extent()[3] - params.extent()[2] },
+        sx3 { 1.0 },
+        temperature { params.get<real_t>("problem", "temperature", 0.1) },
+        machno {0.1},
         amplitudes { "DrivingModes", 6 } {}
     inline void UserDriveParticles(const real_t&,
                                    const SimulationParams&,
@@ -106,16 +116,85 @@ namespace ntt {
     Inline auto ext_force_x1(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
       // just as an example, implementing a weird sinusoidal force field in x1
-      return math::sin(constant::TWO_PI * x_ph[1] / sx2);
+      // return 0.1*math::sin(constant::TWO_PI * x_ph[1] / sx2);
       // return ZERO;
+
+      auto   amplitudes_ = this->amplitudes;
+      real_t k01         = 1.0 * constant::TWO_PI / sx1;
+      real_t k02         = 0.0 * constant::TWO_PI / sx2;
+      real_t k03         = 0.0 * constant::TWO_PI / sx3;
+      real_t k04         = 1.0;
+      real_t k11         = 0.0 * constant::TWO_PI / sx1;
+      real_t k12         = 1.0 * constant::TWO_PI / sx2;
+      real_t k13         = 0.0 * constant::TWO_PI / sx3;
+      real_t k14         = 1.0;
+      real_t k21         = 0.0 * constant::TWO_PI / sx1;
+      real_t k22         = 0.0 * constant::TWO_PI / sx2;
+      real_t k23         = 1.0 * constant::TWO_PI / sx3;
+      real_t k24         = 1.0;
+
+      auto   f_m1
+        = k14 * amplitudes_(0, REAL) * cos(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0)
+          + k14 * amplitudes_(0, IMAG) * sin(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0);
+      auto f_m2
+        = k24 * amplitudes_(1, REAL) * cos(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0)
+          + k24 * amplitudes_(1, IMAG) * sin(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0);
+
+      return f_m1 + f_m2;
     }
     Inline auto ext_force_x2(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
-      return ZERO;
+      // return ZERO;
+
+      auto   amplitudes_ = this->amplitudes;
+      real_t k01         = 1.0 * constant::TWO_PI / sx1;
+      real_t k02         = 0.0 * constant::TWO_PI / sx2;
+      real_t k03         = 0.0 * constant::TWO_PI / sx3;
+      real_t k04         = 1.0;
+      real_t k11         = 0.0 * constant::TWO_PI / sx1;
+      real_t k12         = 1.0 * constant::TWO_PI / sx2;
+      real_t k13         = 0.0 * constant::TWO_PI / sx3;
+      real_t k14         = 1.0;
+      real_t k21         = 0.0 * constant::TWO_PI / sx1;
+      real_t k22         = 0.0 * constant::TWO_PI / sx2;
+      real_t k23         = 1.0 * constant::TWO_PI / sx3;
+      real_t k24         = 1.0;
+
+      auto  f_m3
+        = k04 * amplitudes_(2, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0)
+          + k04 * amplitudes_(2, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0);
+      auto f_m4
+        = k24 * amplitudes_(3, REAL) * cos(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0)
+          + k24 * amplitudes_(3, IMAG) * sin(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0);
+
+      return f_m3 + f_m4;
     }
     Inline auto ext_force_x3(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
-      return ZERO;
+      // return ZERO;
+
+      auto   amplitudes_ = this->amplitudes;
+      real_t k01         = 1.0 * constant::TWO_PI / sx1;
+      real_t k02         = 0.0 * constant::TWO_PI / sx2;
+      real_t k03         = 0.0 * constant::TWO_PI / sx3;
+      real_t k04         = 1.0;
+      real_t k11         = 0.0 * constant::TWO_PI / sx1;
+      real_t k12         = 1.0 * constant::TWO_PI / sx2;
+      real_t k13         = 0.0 * constant::TWO_PI / sx3;
+      real_t k14         = 1.0;
+      real_t k21         = 0.0 * constant::TWO_PI / sx1;
+      real_t k22         = 0.0 * constant::TWO_PI / sx2;
+      real_t k23         = 1.0 * constant::TWO_PI / sx3;
+      real_t k24         = 1.0;
+
+      auto   f_m5
+        = k04 * amplitudes_(4, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0)
+          + k04 * amplitudes_(4, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0);
+      auto f_m6
+        = k14 * amplitudes_(5, REAL) * cos(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0)
+          + k14 * amplitudes_(5, IMAG) * sin(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0);
+
+      return f_m5 + f_m6;
     }
 #endif
 
@@ -185,8 +264,8 @@ namespace ntt {
 #endif    // GUI_ENABLED
   private:
     // additional problem-specific parameters (i.e., wave numbers in x1, x2, x3 directions)
-    const int            nx1, nx2, nx3;
-    const real_t         sx2;
+    const int            nx1, nx2, nx3, nmodes;
+    const real_t         sx1, sx2, sx3, temperature, machno;
     array_t<real_t* [2]> amplitudes;
   };
 
@@ -282,28 +361,24 @@ namespace ntt {
     const auto _sx1        = mblock.metric.x1_max - mblock.metric.x1_min;
     const auto _sx2        = mblock.metric.x2_max - mblock.metric.x2_min;
     auto       amplitudes_ = this->amplitudes;
+    const auto _temperature       = temperature;
+    const auto _machno           = machno;
+
+    auto amp0  = _machno * _temperature * mblock.particles[1].mass() / 6.0;
 
     // Initialize the mode driving with random values
     // todo: change number of modes to be driven
-    auto       pool        = *(mblock.random_pool_ptr);
+    // auto       pool        = *(mblock.random_pool_ptr);
+    // auto rand_gen     = pool.get_state();
+    auto       phi0 = ((real_t) rand() / RAND_MAX) * constant::TWO_PI;    // rand_gen.frand() *
+                                                                 // constant::TWO_PI;
+    // pool.free_state(rand_gen);
 
     Kokkos::parallel_for(
       "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
-        auto rand_gen     = pool.get_state();
-        amplitudes_(i, 0) = rand_gen.frand();
-        amplitudes_(i, 1) = rand_gen.frand();
-        pool.free_state(rand_gen);
+        amplitudes_(i, REAL) = amp0 * cos(phi0);
+        amplitudes_(i, IMAG) = amp0 * sin(phi0);
       });
-
-    auto testout = Kokkos::create_mirror_view(amplitudes);
-    Kokkos::deep_copy(testout, amplitudes);
-    printf("amplitudes: %f %f %f %f %f %f\n",
-           testout(0, 0),
-           testout(1, 0),
-           testout(2, 0),
-           testout(3, 0),
-           testout(4, 0),
-           testout(5, 0));
 
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -336,27 +411,54 @@ namespace ntt {
     const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     const auto _time       = this->time();
     auto       amplitudes_ = this->amplitudes;
+    auto       dt_         = mblock.timestep();
+    const auto _sx1        = mblock.metric.x1_max - mblock.metric.x1_min;
+    const auto _temperature       = temperature;
+    const auto _machno           = machno;
+
+    auto amp0 = machno * temperature * mblock.particles[1].mass() / 6.0;
+     auto omega0 = 0.6 * sqrt(temperature * machno * constant::TWO_PI / sx1);
+      auto  gamma0 = 0.5 * sqrt(temperature * machno * constant::TWO_PI / sx1);
+       auto sigma0 = amp0 * sqrt(6.0 * gamma0);
 
     // todo: change number of modes to be driven
     auto       pool        = *(mblock.random_pool_ptr);
 
     Kokkos::parallel_for(
       "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
-        auto rand_gen = pool.get_state();
-        amplitudes_(i, 0) += rand_gen.frand();
-        amplitudes_(i, 1) += rand_gen.frand();
+
+        auto   rand_gen = pool.get_state();
+        auto   unr      = rand_gen.frand() - 0.5;
+        auto   uni      = rand_gen.frand() - 0.5;
         pool.free_state(rand_gen);
+
+        auto ampr_prev       = amplitudes_(i, REAL);
+        auto ampi_prev       = amplitudes_(i, IMAG);
+
+        amplitudes_(i, REAL) = (ampr_prev * cos(omega0 * dt_) + ampi_prev * sin(omega0 * dt_))
+                                 * exp(-gamma0 * dt_)
+                               + unr * sigma0;
+        amplitudes_(i, IMAG) = (-ampr_prev * sin(omega0 * dt_) + ampi_prev * cos(omega0 * dt_))
+                                 * exp(-gamma0 * dt_)
+                               + uni * sigma0;
       });
 
-    auto testout = Kokkos::create_mirror_view(amplitudes);
-    Kokkos::deep_copy(testout, amplitudes);
-    printf("amplitudes: %f %f %f %f %f %f\n",
+    auto testout = Kokkos::create_mirror_view(amplitudes_);
+    Kokkos::deep_copy(testout, amplitudes_);
+    printf("amplitudes_real: %f %f %f %f %f %f\n",
            testout(0, 0),
            testout(1, 0),
            testout(2, 0),
            testout(3, 0),
            testout(4, 0),
            testout(5, 0));
+    printf("amplitudes_imag: %f %f %f %f %f %f\n",
+           testout(0, 1),
+           testout(1, 1),
+           testout(2, 1),
+           testout(3, 1),
+           testout(4, 1),
+           testout(5, 1));
 
     // real_t global_sum = ZERO;
     // Kokkos::parallel_reduce(
