@@ -8,6 +8,7 @@ project(${PROJECT_NAME}
   LANGUAGES CXX C
 )
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
+set(CMAKE_CXX_EXTENSIONS OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 
 # -------------------------- Compilation settings -------------------------- #
@@ -69,6 +70,10 @@ if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
   link_libraries(${DEPENDENCIES})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
+elseif(BENCHMARKS)
+  # ------------------------------- Benchmarks ------------------------------- #
+  link_libraries(${DEPENDENCIES})
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks benchmarks)
 else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})
