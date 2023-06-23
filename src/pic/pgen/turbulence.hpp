@@ -73,6 +73,7 @@ namespace ntt {
       : nx1 { params.get<int>("problem", "nx1", 1) },
         nx2 { params.get<int>("problem", "nx2", 1) },
         nx3 { params.get<int>("problem", "nx3", 1) },
+        sx2 { params.extent()[3] - params.extent()[2] },
         amplitudes { "DrivingModes", 6 } {}
     inline void UserDriveParticles(const real_t&,
                                    const SimulationParams&,
@@ -101,6 +102,23 @@ namespace ntt {
       //     - particles have to be initialized on top of each other, so we specify two species
       //       with opposing charges
     }
+#ifdef EXTERNAL_FORCE
+    Inline auto ext_force_x1(const real_t& time, const coord_t<D>& x_ph) const
+      -> real_t override {
+      // just as an example, implementing a weird sinusoidal force field in x1
+      return math::sin(constant::TWO_PI * x_ph[1] / sx2);
+      // return ZERO;
+    }
+    Inline auto ext_force_x2(const real_t& time, const coord_t<D>& x_ph) const
+      -> real_t override {
+      return ZERO;
+    }
+    Inline auto ext_force_x3(const real_t& time, const coord_t<D>& x_ph) const
+      -> real_t override {
+      return ZERO;
+    }
+#endif
+
 #ifdef GUI_ENABLED
     inline void UserInitBuffers_nttiny(
       const SimulationParams&,
@@ -168,6 +186,7 @@ namespace ntt {
   private:
     // additional problem-specific parameters (i.e., wave numbers in x1, x2, x3 directions)
     const int            nx1, nx2, nx3;
+    const real_t         sx2;
     array_t<real_t* [2]> amplitudes;
   };
 
@@ -219,37 +238,37 @@ namespace ntt {
     b_out[2] = 0.0;
   }
 
-  /**
-   * Class that defines the force field applied to particles each time pusher is called.
-   */
-  template <Dimension D, SimulationEngine S>
-  struct PgenForceField : public ForceField<D, S> {
-    PgenForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : ForceField<D, S>(params, mblock),
-        corr_time { params.get<real_t>("problem", "correlation_time") },
-        sx2 { mblock.metric.x2_max - mblock.metric.x2_min } {}
+  // /**
+  //  * Class that defines the force field applied to particles each time pusher is called.
+  //  */
+  // template <Dimension D, SimulationEngine S>
+  // struct PgenForceField : public ForceField<D, S> {
+  //   PgenForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
+  //     : ForceField<D, S>(params, mblock),
+  //       corr_time { params.get<real_t>("problem", "correlation_time") },
+  //       sx2 { mblock.metric.x2_max - mblock.metric.x2_min } {}
 
-    // force field components in physical units
-    // arguments are:
-    //    - time -- physical coordinate
-    //    - x_ph -- 1D/2D/3D coordinate in physical units
-    Inline auto x1(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
-      // just as an example, implementing a weird sinusoidal force field in x1
-      return math::sin(constant::TWO_PI * x_ph[1] / sx2);
-      // return ZERO;
-    }
-    Inline auto x2(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
-      return ZERO;
-    }
-    Inline auto x3(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
-      return ZERO;
-    }
+  //   // force field components in physical units
+  //   // arguments are:
+  //   //    - time -- physical coordinate
+  //   //    - x_ph -- 1D/2D/3D coordinate in physical units
+  //   Inline auto x1(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
+  //     // just as an example, implementing a weird sinusoidal force field in x1
+  //     return math::sin(constant::TWO_PI * x_ph[1] / sx2);
+  //     // return ZERO;
+  //   }
+  //   Inline auto x2(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
+  //     return ZERO;
+  //   }
+  //   Inline auto x3(const real_t& time, const coord_t<D>& x_ph) const -> real_t override {
+  //     return ZERO;
+  //   }
 
-  private:
-    // additional parameters (i.e., correlation time)
-    const real_t corr_time;
-    const real_t sx2;
-  };
+  // private:
+  //   // additional parameters (i.e., correlation time)
+  //   const real_t corr_time;
+  //   const real_t sx2;
+  // };
 
   /**
    * Field initialization for 2D:
@@ -257,20 +276,20 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserInitFields(
     const SimulationParams&, Meshblock<Dim2, PICEngine>& mblock) {
-    const auto _time = this->time();
-    const auto _nx1  = nx1;
-    const auto _nx2  = nx2;
-    const auto _sx1  = mblock.metric.x1_max - mblock.metric.x1_min;
-    const auto _sx2  = mblock.metric.x2_max - mblock.metric.x2_min;
-    auto amplitudes_          = this->amplitudes;
+    const auto _time       = this->time();
+    const auto _nx1        = nx1;
+    const auto _nx2        = nx2;
+    const auto _sx1        = mblock.metric.x1_max - mblock.metric.x1_min;
+    const auto _sx2        = mblock.metric.x2_max - mblock.metric.x2_min;
+    auto       amplitudes_ = this->amplitudes;
 
     // Initialize the mode driving with random values
     // todo: change number of modes to be driven
-    auto       pool  = *(mblock.random_pool_ptr);
+    auto       pool        = *(mblock.random_pool_ptr);
 
     Kokkos::parallel_for(
       "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
-        auto rand_gen    = pool.get_state();
+        auto rand_gen     = pool.get_state();
         amplitudes_(i, 0) = rand_gen.frand();
         amplitudes_(i, 1) = rand_gen.frand();
         pool.free_state(rand_gen);
@@ -278,8 +297,13 @@ namespace ntt {
 
     auto testout = Kokkos::create_mirror_view(amplitudes);
     Kokkos::deep_copy(testout, amplitudes);
-    printf("amplitudes: %f %f %f %f %f %f\n", testout(0,0), testout(1,0), testout(2,0),
-    testout(3,0), testout(4,0), testout(5,0));
+    printf("amplitudes: %f %f %f %f %f %f\n",
+           testout(0, 0),
+           testout(1, 0),
+           testout(2, 0),
+           testout(3, 0),
+           testout(4, 0),
+           testout(5, 0));
 
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -304,23 +328,21 @@ namespace ntt {
       });
   }
 
-
   /**
    *
    */
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-
-    const auto _time = this->time();
-    auto amplitudes_          = this->amplitudes;
+    const auto _time       = this->time();
+    auto       amplitudes_ = this->amplitudes;
 
     // todo: change number of modes to be driven
-    auto       pool  = *(mblock.random_pool_ptr);
+    auto       pool        = *(mblock.random_pool_ptr);
 
     Kokkos::parallel_for(
       "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
-        auto rand_gen    = pool.get_state();
+        auto rand_gen = pool.get_state();
         amplitudes_(i, 0) += rand_gen.frand();
         amplitudes_(i, 1) += rand_gen.frand();
         pool.free_state(rand_gen);
@@ -328,8 +350,13 @@ namespace ntt {
 
     auto testout = Kokkos::create_mirror_view(amplitudes);
     Kokkos::deep_copy(testout, amplitudes);
-    printf("amplitudes: %f %f %f %f %f %f\n", testout(0,0), testout(1,0), testout(2,0),
-    testout(3,0), testout(4,0), testout(5,0));
+    printf("amplitudes: %f %f %f %f %f %f\n",
+           testout(0, 0),
+           testout(1, 0),
+           testout(2, 0),
+           testout(3, 0),
+           testout(4, 0),
+           testout(5, 0));
 
     // real_t global_sum = ZERO;
     // Kokkos::parallel_reduce(

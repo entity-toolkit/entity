@@ -32,6 +32,18 @@ namespace ntt {
                                            const SimulationParams&,
                                            Meshblock<D, S>&) {}
 
+#ifdef EXTERNAL_FORCE
+    Inline virtual auto ext_force_x1(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto ext_force_x2(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto ext_force_x3(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+#endif
+
 #ifdef GUI_ENABLED
     virtual inline void UserInitBuffers_nttiny(const SimulationParams&,
                                                const Meshblock<D, S>&,
@@ -76,25 +88,25 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                             Force field class                              */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, SimulationEngine S>
-  struct ForceField {
-    ForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params { params }, m_mblock { mblock } {}
+  // template <Dimension D, SimulationEngine S>
+  // struct ForceField {
+  //   ForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
+  //     : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual auto x1(const real_t&, const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-    Inline virtual auto x2(const real_t&, const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-    Inline virtual auto x3(const real_t&, const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
+  //   Inline virtual auto x1(const real_t&, const coord_t<D>&) const -> real_t {
+  //     return ZERO;
+  //   }
+  //   Inline virtual auto x2(const real_t&, const coord_t<D>&) const -> real_t {
+  //     return ZERO;
+  //   }
+  //   Inline virtual auto x3(const real_t&, const coord_t<D>&) const -> real_t {
+  //     return ZERO;
+  //   }
 
-  protected:
-    SimulationParams m_params;
-    Meshblock<D, S>  m_mblock;
-  };
+  // protected:
+  //   SimulationParams m_params;
+  //   Meshblock<D, S>  m_mblock;
+  // };
 
   /* -------------------------------------------------------------------------- */
   /*                             Energy distribution                            */

@@ -29,8 +29,9 @@ namespace ntt {
     Meshblock<D, PICEngine> m_mblock;
     Particles<D, PICEngine> m_particles;
 #ifdef EXTERNAL_FORCE
-    PgenForceField<D, PICEngine> m_force_field;
-    array_t<real_t*> m_work;
+    // PgenForceField<D, PICEngine> m_force_field;
+    ProblemGenerator<D, PICEngine> m_pgen;
+    array_t<real_t*>               m_work;
 #endif
     const real_t m_coeff, m_dt, m_time;
     const int    m_ni2;
@@ -43,23 +44,25 @@ namespace ntt {
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      * @param dt Time step.
      */
-    Pusher_kernel(const SimulationParams&        params,
-                  const Meshblock<D, PICEngine>& mblock,
-                  const Particles<D, PICEngine>& particles,
-                  array_t<real_t*>&              work,
-                  const real_t&                  time,
-                  const real_t&                  coeff,
-                  const real_t&                  dt)
-      : m_mblock(mblock),
-        m_particles(particles),
+    Pusher_kernel(const SimulationParams&               params,
+                  const Meshblock<D, PICEngine>&        mblock,
+                  const Particles<D, PICEngine>&        particles,
+                  const ProblemGenerator<D, PICEngine>& pgen,
+                  array_t<real_t*>&                     work,
+                  const real_t&                         time,
+                  const real_t&                         coeff,
+                  const real_t&                         dt)
+      : m_mblock { mblock },
+        m_particles { particles },
 #ifdef EXTERNAL_FORCE
-        m_force_field(params, mblock),
-        m_work{work},
+        m_pgen { pgen },
+        m_work { work },
 #endif
-        m_time(time),
-        m_coeff(coeff),
-        m_dt(dt),
-        m_ni2 { (int)mblock.Ni2() } {}
+        m_time { time },
+        m_coeff { coeff },
+        m_dt { dt },
+        m_ni2 { (int)mblock.Ni2() } {
+    }
 
     /**
      * @brief Pusher for the forward Boris algorithm.
@@ -92,20 +95,22 @@ namespace ntt {
         m_mblock.metric.x_Code2Sph(xp_ND, xp_ph);
 #  endif
 
-        const vec_t<Dim3> force_Hat { m_force_field.x1(m_time, xp_ph),
-                                      m_force_field.x2(m_time, xp_ph),
-                                      m_force_field.x3(m_time, xp_ph) };
+        const vec_t<Dim3> force_Hat { m_pgen.ext_force_x1(m_time, xp_ph),
+                                      m_pgen.ext_force_x2(m_time, xp_ph),
+                                      m_pgen.ext_force_x3(m_time, xp_ph) };
         vec_t<Dim3>       force_Cart { ZERO };
         m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
 
-        real_t t_gamma = sqrt(1+m_particles.ux1(p)*m_particles.ux1(p)+m_particles.ux2(p)*m_particles.ux2(p)+m_particles.ux3(p)*m_particles.ux3(p));
-        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p) + force_Cart[2] * m_particles.ux3(p);
+        real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                                    + SQR(m_particles.ux3(p)));
+        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p)
+                         + force_Cart[1] * m_particles.ux2(p)
+                         + force_Cart[2] * m_particles.ux3(p);
         m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 
         m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
         m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
         m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
-
 
 #endif
 
@@ -113,8 +118,10 @@ namespace ntt {
 
 #ifdef EXTERNAL_FORCE
 
-        t_gamma = sqrt(1+m_particles.ux1(p)*m_particles.ux1(p)+m_particles.ux2(p)*m_particles.ux2(p)+m_particles.ux3(p)*m_particles.ux3(p));
-        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p) + force_Cart[2] * m_particles.ux3(p);
+        t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                             + SQR(m_particles.ux3(p)));
+        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
+                  + force_Cart[2] * m_particles.ux3(p);
         m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 
         m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
