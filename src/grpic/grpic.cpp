@@ -195,7 +195,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void GRPIC<D>::StepForward() {
+  void GRPIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
     auto                            params = *(this->params());
     auto&                           mblock = this->meshblock;
@@ -444,7 +444,7 @@ namespace ntt {
     timers.stop("Output");
 
     this->PrintDiagnostics(
-      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations);
+      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations, diag_flags);
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

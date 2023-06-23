@@ -39,7 +39,7 @@ namespace ntt {
     /**
      * @brief Advance the simulation forward for one timestep.
      */
-    void StepForward();
+    void StepForward(const DiagFlags = DiagFlags_Default);
 
     /**
      * @brief Advance the simulation forward for one timestep.

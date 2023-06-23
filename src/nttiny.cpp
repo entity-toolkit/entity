@@ -150,7 +150,7 @@ public:
   }
 
   void stepFwd() override {
-    m_sim.StepForward();
+    m_sim.StepForward(ntt::_Timers | ntt::_Species);
     m_timestep = m_sim.tstep();
     m_time     = m_sim.time();
   }
