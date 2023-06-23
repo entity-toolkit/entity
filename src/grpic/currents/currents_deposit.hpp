@@ -160,8 +160,6 @@ namespace ntt {
           = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
                        math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
       }
-
-      printf("x-1: %d %d\nx-2: %d %d\n", Ip_f[0], Ip_i[0], Ip_f[1], Ip_i[1]);
     }
   };
 
