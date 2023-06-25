@@ -6,8 +6,7 @@
       "${workspaceFolder}/src/framework/**",
       "${workspaceFolder}/src/framework/",
       "${workspaceFolder}/extern/**",
-      "${workspaceFolder}/../kokkos/install/include",
-      "${workspaceFolder}/../ADIOS2/install/include"
+      "/usr/local/cuda/include/"
     ],
     "myDefaultDefines": [
       "PIC_ENGINE",
@@ -28,31 +27,35 @@
       "name": "stellar",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
-        "${myDefaultIncludePath}"
+        "${myDefaultIncludePath}",
+        "/home/hakobyan/Codes/kokkos/kokkos-cuda-v100/include",
+        "/home/hakobyan/Codes/ADIOS2/adios2-gcc-10/include"
       ],
       "defines": [
         "${myDefaultDefines}",
         "AccelExeSpace=Kokkos::Cuda",
-        "AccelMemSpace=Kokkos::CudaSpace",
+        "AccelMemSpace=Kokkos::CudaSpace"
       ],
       "cStandard": "c17",
-      "cppStandard": "c++17",
+      "cppStandard": "c++17"
     },
     {
       "name": "wsl",
       "intelliSenseMode": "linux-gcc-x64",
       "includePath": [
         "${myDefaultIncludePath}",
-        "/usr/local/cuda/include/"
+        "/usr/local/cuda/include/",
+        "~/Codes/kokkos/kokkos-cuda/include",
+        "~/Codes/ADIOS2/adios2/include"
       ],
       "defines": [
         "${myDefaultDefines}",
         "AccelExeSpace=Kokkos::Cuda",
-        "AccelMemSpace=Kokkos::CudaSpace",
+        "AccelMemSpace=Kokkos::CudaSpace"
       ],
       "compilerPath": "/usr/bin/g++",
       "cStandard": "c17",
-      "cppStandard": "c++17",
+      "cppStandard": "c++17"
     },
     {
       "name": "mac",
@@ -68,7 +71,7 @@
       ],
       "compilerPath": "/usr/local/bin/g++-10",
       "cStandard": "c17",
-      "cppStandard": "c++17",
+      "cppStandard": "c++17"
     }
   ],
   "version": 4

@@ -16,8 +16,9 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "pic.h"
+
+#include "io/output.h"
 
 namespace ntt {
 
@@ -28,7 +29,7 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
-    auto&                mblock = this->meshblock;
+    auto&      mblock = this->meshblock;
 
     auto       params = *(this->params());
     const auto dt     = mblock.timestep();
@@ -48,7 +49,7 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
-    auto&                mblock = this->meshblock;
+    auto&      mblock = this->meshblock;
     auto       params = *(this->params());
     const auto dt     = mblock.timestep();
     const auto rho0   = params.larmor0();

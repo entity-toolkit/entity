@@ -10,14 +10,14 @@ namespace ntt {
                 const std::vector<real_t>&       ext,
                 const real_t*                    params)
     : m_i1min { res.size() > 0 ? N_GHOSTS : 0 },
-      m_i1max { res.size() > 0 ? N_GHOSTS + (int)(res[0]) : 1 },
+      m_i1max { res.size() > 0 ? N_GHOSTS + res[0] : 1 },
       m_i2min { res.size() > 1 ? N_GHOSTS : 0 },
-      m_i2max { res.size() > 1 ? N_GHOSTS + (int)(res[1]) : 1 },
+      m_i2max { res.size() > 1 ? N_GHOSTS + res[1] : 1 },
       m_i3min { res.size() > 2 ? N_GHOSTS : 0 },
-      m_i3max { res.size() > 2 ? N_GHOSTS + (int)(res[2]) : 1 },
-      m_Ni1 { res.size() > 0 ? (int)(res[0]) : 1 },
-      m_Ni2 { res.size() > 1 ? (int)(res[1]) : 1 },
-      m_Ni3 { res.size() > 2 ? (int)(res[2]) : 1 },
+      m_i3max { res.size() > 2 ? N_GHOSTS + res[2] : 1 },
+      m_Ni1 { res.size() > 0 ? res[0] : 1 },
+      m_Ni2 { res.size() > 1 ? res[1] : 1 },
+      m_Ni3 { res.size() > 2 ? res[2] : 1 },
       metric { res, ext, params } {}
 
   template <>
@@ -55,7 +55,7 @@ namespace ntt {
 
   template <Dimension D>
   auto Mesh<D>::rangeCells(const boxRegion<D>& region) -> range_t<D> {
-    tuple_t<int, D> imin, imax;
+    tuple_t<std::size_t, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
       switch (region[i]) {
       case CellLayer::allLayer:
@@ -92,7 +92,7 @@ namespace ntt {
   // !TODO: too ugly, implement a better solution (combine with device)
   template <Dimension D>
   auto Mesh<D>::rangeCellsOnHost(const boxRegion<D>& region) -> range_h_t<D> {
-    tuple_t<int, D> imin, imax;
+    tuple_t<std::size_t, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
       switch (region[i]) {
       case CellLayer::allLayer:
@@ -161,9 +161,9 @@ namespace ntt {
 
   template <Dimension D>
   auto Mesh<D>::rangeCells(const tuple_t<tuple_t<int, Dim2>, D>& ranges) -> range_t<D> {
-    tuple_t<int, D> imin, imax;
+    tuple_t<std::size_t, D> imin, imax;
     for (short i = 0; i < (short)D; i++) {
-      if ((ranges[i][0] < -N_GHOSTS) || (ranges[i][1] > N_GHOSTS)) {
+      if ((ranges[i][0] < -(int)N_GHOSTS) || (ranges[i][1] > (int)N_GHOSTS)) {
         NTTHostError("Invalid cell layer picked");
       }
       imin[i] = i_min(i) + ranges[i][0];

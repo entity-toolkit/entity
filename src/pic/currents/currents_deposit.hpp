@@ -141,7 +141,11 @@ namespace ntt {
         coord_t<Dim3> xp;
         xp[0] = xp_f[0];
         xp[1] = xp_f[1];
-        xp[2] = m_particles.phi(p);
+        if constexpr (D == Dim2) {
+          xp[2] = m_particles.phi(p);
+        } else {
+          xp[2] = xp_f[2];
+        }
 
         m_mblock.metric.v3_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);

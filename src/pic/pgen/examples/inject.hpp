@@ -3,16 +3,13 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
 #include "particle_macros.h"
 #include "sim_params.h"
 
+#include "meshblock/meshblock.h"
+
 #include "utils/archetypes.hpp"
 #include "utils/injector.hpp"
-
-#ifdef NTTINY_ENABLED
-#  include "nttiny/api.h"
-#endif
 
 #include <map>
 
@@ -97,23 +94,6 @@ namespace ntt {
       InjectInVolume<D, S, MyDist, ExpDist>(params, mblock, { 1, 2 }, nppc_per_spec, {}, time);
     }
   };    // struct ProblemGenerator
-
-  // template <>
-  // inline void
-  // ProblemGenerator<Dim2, PICEngine>::UserInitParticles(const SimulationParams&   params,
-  //                                                    Meshblock<Dim2, PICEngine>& mblock) {
-  //   auto nppc_per_spec = (real_t)(params.ppc0()) * HALF;
-  //   InjectUniform<Dim2, PICEngine, MyDist>(params, mblock, {1, 2}, nppc_per_spec);
-
-  //   InjectUniform<Dim2, PICEngine, MyDist2>(
-  //     params, mblock, {1, 2}, nppc_per_spec, {-0.5, 0.5, -0.1, 0.2});
-
-  //   InjectInVolume<Dim2, PICEngine, ColdDist, CoshDist>(params, mblock, {1, 2},
-  //   nppc_per_spec);
-
-  //   // InjectInVolume<Dim2, PICEngine, HotDist, UniformDist, EgtrBCrit>(
-  //   //   params, mblock, {1, 2}, nppc_per_spec);
-  // }
 
 }    // namespace ntt
 

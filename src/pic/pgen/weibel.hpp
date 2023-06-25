@@ -3,8 +3,9 @@
 
 #include "wrapper.h"
 
-#include "meshblock/meshblock.h"
 #include "sim_params.h"
+
+#include "meshblock/meshblock.h"
 
 #include "utils/archetypes.hpp"
 #include "utils/injector.hpp"

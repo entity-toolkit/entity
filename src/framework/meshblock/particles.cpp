@@ -3,6 +3,7 @@
 #include "wrapper.h"
 
 #include "species.h"
+
 #include "utils/utils.h"
 
 #include <cstddef>
@@ -26,7 +27,14 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ } {
+      tag { label_ + "_tag", maxnpart_ },
+      i1_h { Kokkos::create_mirror_view(i1) },
+      dx1_h { Kokkos::create_mirror_view(dx1) },
+      ux1_h { Kokkos::create_mirror_view(ux1) },
+      ux2_h { Kokkos::create_mirror_view(ux2) },
+      ux3_h { Kokkos::create_mirror_view(ux3) },
+      weight_h { Kokkos::create_mirror_view(weight) },
+      tag_h { Kokkos::create_mirror_view(tag) } {
     NTTLog();
   }
 
@@ -47,7 +55,16 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ } {
+      tag { label_ + "_tag", maxnpart_ },
+      i1_h { Kokkos::create_mirror_view(i1) },
+      i2_h { Kokkos::create_mirror_view(i2) },
+      dx1_h { Kokkos::create_mirror_view(dx1) },
+      dx2_h { Kokkos::create_mirror_view(dx2) },
+      ux1_h { Kokkos::create_mirror_view(ux1) },
+      ux2_h { Kokkos::create_mirror_view(ux2) },
+      ux3_h { Kokkos::create_mirror_view(ux3) },
+      weight_h { Kokkos::create_mirror_view(weight) },
+      tag_h { Kokkos::create_mirror_view(tag) } {
     NTTLog();
   }
 #else    // axisymmetry
@@ -68,7 +85,17 @@ namespace ntt {
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
       phi { label_ + "_phi", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ } {
+      tag { label_ + "_tag", maxnpart_ },
+      i1_h { Kokkos::create_mirror_view(i1) },
+      i2_h { Kokkos::create_mirror_view(i2) },
+      dx1_h { Kokkos::create_mirror_view(dx1) },
+      dx2_h { Kokkos::create_mirror_view(dx2) },
+      ux1_h { Kokkos::create_mirror_view(ux1) },
+      ux2_h { Kokkos::create_mirror_view(ux2) },
+      ux3_h { Kokkos::create_mirror_view(ux3) },
+      weight_h { Kokkos::create_mirror_view(weight) },
+      phi_h { Kokkos::create_mirror_view(phi) },
+      tag_h { Kokkos::create_mirror_view(tag) } {
     NTTLog();
   }
 #endif
@@ -90,7 +117,18 @@ namespace ntt {
       ux2 { label_ + "_ux2", maxnpart_ },
       ux3 { label_ + "_ux3", maxnpart_ },
       weight { label_ + "_w", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ } {
+      tag { label_ + "_tag", maxnpart_ },
+      i1_h { Kokkos::create_mirror_view(i1) },
+      i2_h { Kokkos::create_mirror_view(i2) },
+      i3_h { Kokkos::create_mirror_view(i3) },
+      dx1_h { Kokkos::create_mirror_view(dx1) },
+      dx2_h { Kokkos::create_mirror_view(dx2) },
+      dx3_h { Kokkos::create_mirror_view(dx3) },
+      ux1_h { Kokkos::create_mirror_view(ux1) },
+      ux2_h { Kokkos::create_mirror_view(ux2) },
+      ux3_h { Kokkos::create_mirror_view(ux3) },
+      weight_h { Kokkos::create_mirror_view(weight) },
+      tag_h { Kokkos::create_mirror_view(tag) } {
     NTTLog();
   }
 
@@ -118,7 +156,17 @@ namespace ntt {
       dx1_prev { label_ + "_dx1_prev", maxnpart_ },
       dx2_prev { label_ + "_dx2_prev", maxnpart_ },
       phi { label_ + "_phi", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ } {
+      tag { label_ + "_tag", maxnpart_ },
+      i1_h { Kokkos::create_mirror_view(i1) },
+      i2_h { Kokkos::create_mirror_view(i2) },
+      dx1_h { Kokkos::create_mirror_view(dx1) },
+      dx2_h { Kokkos::create_mirror_view(dx2) },
+      ux1_h { Kokkos::create_mirror_view(ux1) },
+      ux2_h { Kokkos::create_mirror_view(ux2) },
+      ux3_h { Kokkos::create_mirror_view(ux3) },
+      weight_h { Kokkos::create_mirror_view(weight) },
+      phi_h { Kokkos::create_mirror_view(phi) },
+      tag_h { Kokkos::create_mirror_view(tag) } {
     NTTLog();
   }
 
@@ -146,7 +194,18 @@ namespace ntt {
       dx1_prev { label_ + "_dx1_prev", maxnpart_ },
       dx2_prev { label_ + "_dx2_prev", maxnpart_ },
       dx3_prev { label_ + "_dx3_prev", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ } {
+      tag { label_ + "_tag", maxnpart_ },
+      i1_h { Kokkos::create_mirror_view(i1) },
+      i2_h { Kokkos::create_mirror_view(i2) },
+      i3_h { Kokkos::create_mirror_view(i3) },
+      dx1_h { Kokkos::create_mirror_view(dx1) },
+      dx2_h { Kokkos::create_mirror_view(dx2) },
+      dx3_h { Kokkos::create_mirror_view(dx3) },
+      ux1_h { Kokkos::create_mirror_view(ux1) },
+      ux2_h { Kokkos::create_mirror_view(ux2) },
+      ux3_h { Kokkos::create_mirror_view(ux3) },
+      weight_h { Kokkos::create_mirror_view(weight) },
+      tag_h { Kokkos::create_mirror_view(tag) } {
     NTTLog();
   }
 
@@ -191,12 +250,12 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeActiveParticles() -> range_t<Dim1> {
-    return CreateRangePolicy<Dim1>({ 0 }, { (int)(npart()) });
+    return CreateRangePolicy<Dim1>({ 0 }, { npart() });
   }
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeAllParticles() -> range_t<Dim1> {
-    return CreateRangePolicy<Dim1>({ 0 }, { (int)(maxnpart()) });
+    return CreateRangePolicy<Dim1>({ 0 }, { maxnpart() });
   }
 
   template <Dimension D, SimulationEngine S>
@@ -260,6 +319,48 @@ namespace ntt {
       }
     }
     Sorter.sort(Kokkos::subview(weight, slice));
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Particles<D, S>::SyncHostDeviceImpl(DimensionTag<Dim1>) {
+    Kokkos::deep_copy(i1_h, i1);
+    Kokkos::deep_copy(dx1_h, dx1);
+    Kokkos::deep_copy(ux1_h, ux1);
+    Kokkos::deep_copy(ux2_h, ux2);
+    Kokkos::deep_copy(ux3_h, ux3);
+    Kokkos::deep_copy(weight_h, weight);
+    Kokkos::deep_copy(tag_h, tag);
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Particles<D, S>::SyncHostDeviceImpl(DimensionTag<Dim2>) {
+    Kokkos::deep_copy(i1_h, i1);
+    Kokkos::deep_copy(i2_h, i2);
+    Kokkos::deep_copy(dx1_h, dx1);
+    Kokkos::deep_copy(dx2_h, dx2);
+    Kokkos::deep_copy(ux1_h, ux1);
+    Kokkos::deep_copy(ux2_h, ux2);
+    Kokkos::deep_copy(ux3_h, ux3);
+    Kokkos::deep_copy(weight_h, weight);
+#ifndef MINKOWSKI_METRIC
+    Kokkos::deep_copy(phi_h, phi);
+#endif
+    Kokkos::deep_copy(tag_h, tag);
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Particles<D, S>::SyncHostDeviceImpl(DimensionTag<Dim3>) {
+    Kokkos::deep_copy(i1_h, i1);
+    Kokkos::deep_copy(i2_h, i2);
+    Kokkos::deep_copy(i3_h, i3);
+    Kokkos::deep_copy(dx1_h, dx1);
+    Kokkos::deep_copy(dx2_h, dx2);
+    Kokkos::deep_copy(dx3_h, dx3);
+    Kokkos::deep_copy(ux1_h, ux1);
+    Kokkos::deep_copy(ux2_h, ux2);
+    Kokkos::deep_copy(ux3_h, ux3);
+    Kokkos::deep_copy(weight_h, weight);
+    Kokkos::deep_copy(tag_h, tag);
   }
 
 }    // namespace ntt

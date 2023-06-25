@@ -48,7 +48,7 @@ namespace ntt {
      * @note Ex2 is stored at (    i, j+1/2,     k,     n)
      * @note Ex3 is stored at (    i,     j, k+1/2,     n)
      */
-    ndfield_t<D, 6>  em;
+    ndfield_t<D, 6> em;
     /**
      * Backup fields used for intermediate operations.
      *
@@ -56,7 +56,7 @@ namespace ntt {
      * component.
      * @note Address : bckp(i, j, k, ***).
      */
-    ndfield_t<D, 6>  bckp;
+    ndfield_t<D, 6> bckp;
     /**
      * Current fields at current time step stored as Kokkos Views of dimension D * 3.
      *
@@ -68,7 +68,7 @@ namespace ntt {
      * @note Jx2 is deposited at (    i, j+1/2,     k, n+1/2)
      * @note Jx3 is deposited at (    i,     j, k+1/2, n+1/2)
      */
-    ndfield_t<D, 3>  cur;
+    ndfield_t<D, 3> cur;
     /**
      * Buffers for fields/currents/moments.
      *
@@ -76,7 +76,7 @@ namespace ntt {
      * component.
      * @note Address : buff(i, j, k, ***).
      */
-    ndfield_t<D, 3>  buff;
+    ndfield_t<D, 3> buff;
 
     // * * * * * * * * * * * * * * * * * * * *
     // GRPIC-specific
@@ -89,7 +89,7 @@ namespace ntt {
      * component.
      * @note Address : aux(i, j, k, em::***).
      */
-    ndfield_t<D, 6>  aux;
+    ndfield_t<D, 6> aux;
     /**
      * EM fields at previous time step stored as Kokkos Views of dimension D * 6.
      *
@@ -97,7 +97,7 @@ namespace ntt {
      * component.
      * @note Address : em0(i, j, k, em::***).
      */
-    ndfield_t<D, 6>  em0;
+    ndfield_t<D, 6> em0;
     /**
      * Current fields for previous timestep (GR).
      *
@@ -105,8 +105,7 @@ namespace ntt {
      * for each field  component.
      * @note Address : cur0(i, j, k, ***).
      */
-    ndfield_t<D, 3>  cur0;
-
+    ndfield_t<D, 3> cur0;
     /**
      * @brief Constructor for the fields container. Also sets the active cell sizes and ranges.
      * @param res resolution vector of size D (dimension).

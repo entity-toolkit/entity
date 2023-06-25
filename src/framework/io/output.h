@@ -60,51 +60,55 @@ namespace ntt {
   }
 
   class OutputField {
-    std::string m_name;
-    FieldID     m_id;
+    const std::string  m_name;
+    const FieldID      m_id;
+
+    PrepareOutputFlags prepare_flag { PrepareOutput_None };
+    PrepareOutputFlags interp_flag { PrepareOutput_None };
 
   public:
     std::vector<std::vector<int>> comp {};
     std::vector<int>              species {};
+    std::vector<int>              address {};
 
-    OutputField() = default;
     OutputField(const std::string& name, const FieldID& id) : m_name(name), m_id(id) {}
     ~OutputField() = default;
 
-    void setName(const std::string& name) {
-      m_name = name;
+    [[nodiscard]] auto is_moment() const -> bool {
+      return (id() == FieldID::T || id() == FieldID::Rho || id() == FieldID::Nppc
+              || id() == FieldID::N);
     }
-    void setId(const FieldID& id) {
-      m_id = id;
+    [[nodiscard]] auto is_field() const -> bool {
+      return (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D
+              || id() == FieldID::H);
+    }
+    [[nodiscard]] auto is_current() const -> bool {
+      return (id() == FieldID::J);
+    }
+    [[nodiscard]] auto is_efield() const -> bool {
+      return (id() == FieldID::E || id() == FieldID::D);
+    }
+    [[nodiscard]] auto is_gr_aux_field() const -> bool {
+      return (id() == FieldID::E || id() == FieldID::H);
+    }
+    [[nodiscard]] auto is_vpotential() const -> bool {
+      return (id() == FieldID::A);
     }
 
-    [[nodiscard]] auto name(const int& i) const -> std::string {
-      std::string myname { m_name };
-      for (auto& cc : comp[i]) {
-#ifdef MINKOWSKI_METRIC
-        myname += (cc == 0 ? "t" : (cc == 1 ? "x" : (cc == 2 ? "y" : "z")));
-#else
-        myname += std::to_string(cc);
-#endif
-      }
-      if (species.size() > 0) {
-        myname += "_";
-        for (auto& s : species) {
-          myname += std::to_string(s);
-          myname += "_";
-        }
-        myname.pop_back();
-      }
-      return myname;
-    }
+    [[nodiscard]] auto name(const int& i) const -> std::string;
 
     [[nodiscard]] auto id() const -> FieldID {
       return m_id;
     }
 
+    void initialize(const SimulationEngine& S);
+
+    template <Dimension D, SimulationEngine S>
+    void compute(const SimulationParams& params, Meshblock<D, S>& mblock) const;
+
 #ifdef OUTPUT_ENABLED
     template <Dimension D, SimulationEngine S>
-    void put(adios2::IO&, adios2::Engine&, const SimulationParams&, Meshblock<D, S>&) const;
+    void put(adios2::IO&, adios2::Engine&, Meshblock<D, S>&) const;
 #endif
   };
 

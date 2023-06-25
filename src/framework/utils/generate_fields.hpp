@@ -1,11 +1,12 @@
-#ifndef GENERATE_FIELDS_H
-#define GENERATE_FIELDS_H
+#ifndef FRAMEWORK_GENERATE_FIELDS_H
+#define FRAMEWORK_GENERATE_FIELDS_H
 
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "meshblock/meshblock.h"
 #include "sim_params.h"
+
+#include "meshblock/meshblock.h"
 
 #include "utils/archetypes.hpp"
 
@@ -116,4 +117,4 @@ namespace ntt {
   };
 }    // namespace ntt
 
-#endif    // GRPIC_GENERATE_HPP
+#endif    // FRAMEWORK_GRPIC_GENERATE_HPP

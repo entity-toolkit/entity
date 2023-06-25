@@ -4,7 +4,6 @@
 
 #include "io/output.h"
 #include "utils/progressbar.h"
-
 #include "utils/timer.h"
 #include "utils/utils.h"
 
@@ -203,6 +202,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
+    writer.Finalize();
     WaitAndSynchronize();
     NTTLog();
   }
@@ -213,23 +213,34 @@ namespace ntt {
                                           const std::vector<double>& fractions,
                                           const timer::Timers&       timers,
                                           std::vector<long double>&  tstep_durations,
+                                          const DiagFlags            diag_flags,
                                           std::ostream&              os) {
     tstep_durations.push_back(timers.get("Total"));
     if (step % m_params.diagInterval() == 0) {
-      timers.printAll("time = " + std::to_string(time) + " : step = " + std::to_string(step));
-      for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
-        auto& species { meshblock.particles[i] };
-        os << "species #" << i << ": " << species.npart() << " ("
-           << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%";
-        if (fractions.size() == meshblock.particles.size()) {
-          auto fraction = fractions[i];
-          os << ", " << fraction * 100 << "% dead)\n";
-        } else {
-          os << ")\n";
+      const auto title { "time = " + std::to_string(time)
+                         + " : step = " + std::to_string(step) };
+      if (diag_flags & DiagFlags_Timers) {
+        timers.printAll(title);
+      } else {
+        os << title << std::endl;
+      }
+      if (diag_flags & DiagFlags_Species) {
+        for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
+          auto& species { meshblock.particles[i] };
+          os << "species #" << i << ": " << species.npart() << " ("
+             << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%";
+          if (fractions.size() == meshblock.particles.size()) {
+            auto fraction = fractions[i];
+            os << ", " << fraction * 100 << "% dead)\n";
+          } else {
+            os << ")\n";
+          }
         }
       }
-      os << std::setw(46) << std::setfill('-') << "" << std::endl;
-      ProgressBar(tstep_durations, time, m_params.totalRuntime(), os);
+      if (diag_flags & DiagFlags_Progress) {
+        os << std::setw(46) << std::setfill('-') << "" << std::endl;
+        ProgressBar(tstep_durations, time, m_params.totalRuntime(), os);
+      }
       os << std::setw(46) << std::setfill('=') << "" << std::endl;
     }
   }

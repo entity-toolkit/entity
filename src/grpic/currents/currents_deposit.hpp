@@ -4,8 +4,13 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
+<<<<<<< HEAD
 #include "particle_macros.h"
 #include "pic.h"
+=======
+#include "grpic.h"
+#include "particle_macros.h"
+>>>>>>> refs/remotes/origin/dev/gr
 
 #include "io/output.h"
 #include "meshblock/meshblock.h"
@@ -24,7 +29,11 @@ namespace ntt {
   class DepositCurrents_kernel {
     Meshblock<D, GRPICEngine> m_mblock;
     Particles<D, GRPICEngine> m_particles;
+<<<<<<< HEAD
     scatter_ndfield_t<D, 3>   m_scatter_cur;
+=======
+    scatter_ndfield_t<D, 3>   m_scatter_cur0;
+>>>>>>> refs/remotes/origin/dev/gr
     const real_t              m_charge, m_dt;
     const real_t              m_xi2max;
     const bool                m_use_weights;
@@ -38,6 +47,7 @@ namespace ntt {
      * @param charge charge of the species (code units).
      * @param dt Time step.
      */
+<<<<<<< HEAD
     DepositCurrents_kernel(const Meshblock<D, PICEngine>& mblock,
                            const Particles<D, PICEngine>& particles,
                            const scatter_ndfield_t<D, 3>& scatter_cur,
@@ -51,6 +61,21 @@ namespace ntt {
         m_use_weights { use_weights },
         m_dt(dt),
         m_xi2max((real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS)) {}
+=======
+    DepositCurrents_kernel(const Meshblock<D, GRPICEngine>& mblock,
+                           const Particles<D, GRPICEngine>& particles,
+                           const scatter_ndfield_t<D, 3>&   scatter_cur0,
+                           const real_t&                    charge,
+                           const bool&                      use_weights,
+                           const real_t&                    dt)
+      : m_mblock { mblock },
+        m_particles { particles },
+        m_scatter_cur0 { scatter_cur0 },
+        m_charge { charge },
+        m_use_weights { use_weights },
+        m_dt { dt },
+        m_xi2max { (real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS) } {}
+>>>>>>> refs/remotes/origin/dev/gr
 
     /**
      * @brief Iteration of the loop over particles.
@@ -111,7 +136,10 @@ namespace ntt {
                                    coord_t<D>&      xp_f,
                                    coord_t<D>&      xp_i,
                                    coord_t<D>&      xp_r) const {
+<<<<<<< HEAD
       real_t               inv_energy;
+=======
+>>>>>>> refs/remotes/origin/dev/gr
       tuple_t<prtldx_t, D> dIp_f;
 
       Ip_f[0]  = m_particles.i1(p);
@@ -129,6 +157,7 @@ namespace ntt {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
       }
 
+<<<<<<< HEAD
       coord_t<Dim3> xp;
       xp[0] = xp_f[0];
       xp[1] = xp_f[1];
@@ -171,6 +200,35 @@ namespace ntt {
         //     }
         //   }
         Ip_i[i]             = I_i;
+=======
+      // find 3-velocity
+      vec_t<Dim3> u_cntrv { ZERO };
+      m_mblock.metric.v3_Cov2Cntrv(
+        xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, u_cntrv);
+      const auto gamma
+        = math::sqrt(ONE + m_particles.ux1(p) * u_cntrv[0] + m_particles.ux2(p) * u_cntrv[1]
+                     + m_particles.ux3(p) * u_cntrv[2]);
+
+      vp[0]   = m_particles.ux1(p) / gamma;
+      vp[1]   = m_particles.ux2(p) / gamma;
+      vp[2]   = m_particles.ux3(p) / gamma;
+
+      // !Q: no alpha here, right?
+      Ip_i[0] = m_particles.i1_prev(p);
+      xp_i[0] = static_cast<real_t>(m_particles.i1_prev(p))
+                + static_cast<real_t>(m_particles.dx1_prev(p));
+      Ip_i[1] = m_particles.i2_prev(p);
+      xp_i[1] = static_cast<real_t>(m_particles.i2_prev(p))
+                + static_cast<real_t>(m_particles.dx2_prev(p));
+
+      if constexpr (D == Dim3) {
+        Ip_i[2] = m_particles.i3_prev(p);
+        xp_i[2] = static_cast<real_t>(m_particles.i3_prev(p))
+                  + static_cast<real_t>(m_particles.dx3_prev(p));
+      }
+
+      for (auto i { 0 }; i < static_cast<short>(D); ++i) {
+>>>>>>> refs/remotes/origin/dev/gr
         const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
         xp_r[i]
           = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
@@ -201,7 +259,11 @@ namespace ntt {
     real_t Fx3_1 { HALF * vp[2] * weight * m_charge };
     real_t Fx3_2 { HALF * vp[2] * weight * m_charge };
 
+<<<<<<< HEAD
     auto   cur_access = m_scatter_cur.access();
+=======
+    auto   cur_access = m_scatter_cur0.access();
+>>>>>>> refs/remotes/origin/dev/gr
     ATOMIC_JX1(Ip_i[0], Ip_i[1]) += Fx1_1 * (ONE - Wx2_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1) += Fx1_1 * Wx2_1;
     ATOMIC_JX1(Ip_f[0], Ip_f[1]) += Fx1_2 * (ONE - Wx2_2);
@@ -247,7 +309,11 @@ namespace ntt {
     real_t Fx3_1 { (xp_r[2] - xp_i[2]) * weight * m_charge / m_dt };
     real_t Fx3_2 { (xp_f[2] - xp_r[2]) * weight * m_charge / m_dt };
 
+<<<<<<< HEAD
     auto   cur_access = m_scatter_cur.access();
+=======
+    auto   cur_access = m_scatter_cur0.access();
+>>>>>>> refs/remotes/origin/dev/gr
     ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2]) += Fx1_1 * (ONE - Wx2_1) * (ONE - Wx3_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1, Ip_i[2]) += Fx1_1 * Wx2_1 * (ONE - Wx3_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2] + 1) += Fx1_1 * (ONE - Wx2_1) * Wx3_1;
@@ -281,4 +347,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+<<<<<<< HEAD
 #endif    // GRPIC_CURRENTS_DEPOSIT_H
+=======
+#endif
+>>>>>>> refs/remotes/origin/dev/gr

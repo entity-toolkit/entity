@@ -2,9 +2,9 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "sim_params.h"
 
+#include "io/output.h"
 #include "utils/timer.h"
 
 #include <plog/Log.h>
@@ -43,9 +43,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::InitialStep() {
-    auto& mblock = this->meshblock;
-  }
+  void PIC<D>::InitialStep() {}
 
   template <Dimension D>
   void PIC<D>::Benchmark() {
@@ -55,7 +53,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::StepForward() {
+  void PIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
     auto                            params = *(this->params());
     auto&                           mblock = this->meshblock;
@@ -99,7 +97,6 @@ namespace ntt {
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        ResetCurrents();
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
@@ -135,9 +132,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
-        timers.start("CurrentDeposit");
         AmpereCurrents();
-        timers.stop("CurrentDeposit");
       }
 
       timers.start("FieldBoundaries");
@@ -151,7 +146,7 @@ namespace ntt {
     timers.stop("Output");
 
     this->PrintDiagnostics(
-      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations);
+      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations, diag_flags);
 
     this->m_time += mblock.timestep();
     this->m_tstep++;

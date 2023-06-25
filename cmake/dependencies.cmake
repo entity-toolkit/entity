@@ -27,7 +27,6 @@ endfunction()
 
 function(find_or_fetch_dependency package_name header_only)
   if(NOT header_only)
-    message(STATUS ${${package_name}_ROOT})
     find_package(${package_name} QUIET)
   endif()
 
@@ -53,6 +52,8 @@ function(find_or_fetch_dependency package_name header_only)
       # get as submodule
       message(STATUS "${Yellow}${package_name} not found. Using as submodule.${ColorReset}")
 
+      set(${package_name}_FETCHED FALSE CACHE BOOL "Whether ${package_name} was fetched")
+
       if(NOT FETCHCONTENT_FULLY_DISCONNECTED)
         message(STATUS "${GREEN}Updating ${package_name} submodule.${ColorReset}")
         execute_process(
@@ -62,20 +63,27 @@ function(find_or_fetch_dependency package_name header_only)
       endif()
 
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} extern/${package_name})
-      set(${package_name}_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} root")
       set(${package_name}_SRC ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name} CACHE PATH "Path to ${package_name} src")
       set(${package_name}_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/build/extern/${package_name} CACHE PATH "Path to ${package_name} build")
     endif()
-
-    if(${package_name} STREQUAL "Kokkos")
-      get_directory_property(Kokkos_VERSION
-        DIRECTORY ${${package_name}_SRC}/
-        DEFINITION Kokkos_VERSION)
-      set(${package_name}_VERSION ${Kokkos_VERSION} CACHE INTERNAL "${package_name} version")
-    endif()
   else()
     message(STATUS "${Green}${package_name} found.${ColorReset}")
+    set(${package_name}_FETCHED FALSE CACHE BOOL "Whether ${package_name} was fetched")
     set(${package_name}_VERSION ${${package_name}_VERSION} CACHE INTERNAL "${package_name} version")
+  endif()
+
+  if(${package_name} STREQUAL "adios2")
+    if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
+      get_directory_property(adios2_VERSION DIRECTORY ${adios2_BUILD_DIR} DEFINITION ADIOS2_VERSION)
+      set(adios2_VERSION ${adios2_VERSION} CACHE INTERNAL "ADIOS2 version")
+    endif()
+  endif()
+
+  if(${package_name} STREQUAL "Kokkos")
+    if(NOT DEFINED Kokkos_VERSION OR Kokkos_VERSION STREQUAL "")
+      get_directory_property(Kokkos_VERSION DIRECTORY ${Kokkos_SRC} DEFINITION Kokkos_VERSION)
+      set(Kokkos_VERSION ${Kokkos_VERSION} CACHE INTERNAL "Kokkos version")
+    endif()
   endif()
 endfunction()
 

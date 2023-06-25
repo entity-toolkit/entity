@@ -122,7 +122,7 @@ namespace ntt {
      * @brief Compute A3 vector potential (for GRPIC 2D).
      * @brief The result is stored inside the buffer(i1, i2, buffer_comp).
      */
-    void ComputeVectorPotential(ndfield_t<D, 6>& buffer, const int& buffer_comp) {}
+    void ComputeVectorPotential(ndfield_t<D, 6>&, const int&) {}
 
     /**
      * @brief Compute particle moment for output or other usage.

@@ -30,16 +30,14 @@ target_include_directories(${SIMENGINE} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${en
 # Main app
 add_executable(${ENTITY} entity.cpp)
 
-target_link_libraries(${ENTITY} PUBLIC ${SIMENGINE} ${FRAMEWORK} ${WRAPPER})
+target_link_libraries(${ENTITY} PUBLIC ${SIMENGINE})
 target_include_directories(${ENTITY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${engine})
 
-# if(${nttiny} STREQUAL "ON")
-# add_compile_options("-D NTTINY_ENABLED")
-# add_executable(${VIS} nttiny.cpp)
-# target_link_libraries(${VIS} PRIVATE nttiny ${WRAPPER} ${FRAMEWORK} ${SIMENGINE})
-# target_include_directories(${VIS} PRIVATE ${EXTERN_DIR}/nttiny/ ${CMAKE_CURRENT_SOURCE_DIR}/${engine}/)
-# endif()
-
-# if(${nttiny} STREQUAL "ON")
-# target_link_libraries(${SIMENGINE} PUBLIC nttiny)
-# endif()
+if(${gui})
+  set(VIS ${PROJECT_NAME}-GUI.xc)
+  add_compile_options("-D GUI_ENABLED")
+  add_executable(${VIS} nttiny.cpp)
+  target_link_libraries(${VIS} PRIVATE nttiny ${SIMENGINE})
+  target_include_directories(${VIS} PRIVATE ${EXTERN_DIR}/nttiny/ ${CMAKE_CURRENT_SOURCE_DIR}/${engine}/)
+  target_link_libraries(${SIMENGINE} PUBLIC nttiny)
+endif()

@@ -15,8 +15,9 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
 #include "pic.h"
+
+#include "io/output.h"
 
 namespace ntt {
   template <Dimension D>
@@ -24,14 +25,16 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
 
+    Kokkos::deep_copy(mblock.cur, ZERO);
     auto scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
       if (species.charge() != 0.0) {
-        const real_t              dt { mblock.timestep() };
-        const real_t              charge { species.charge() };
-        DepositCurrents_kernel<D> deposit(
-          mblock, species, scatter_cur, charge, params.useWeights(), dt);
-        Kokkos::parallel_for("CurrentsDeposit", species.rangeActiveParticles(), deposit);
+        const real_t dt { mblock.timestep() };
+        const real_t charge { species.charge() };
+        Kokkos::parallel_for("CurrentsDeposit",
+                             species.rangeActiveParticles(),
+                             DepositCurrents_kernel<D>(
+                               mblock, species, scatter_cur, charge, params.useWeights(), dt));
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);

@@ -1,6 +1,6 @@
-#include "io/output.h"
-
 #include "wrapper.h"
+
+#include "io/output.h"
 
 #include <plog/Log.h>
 

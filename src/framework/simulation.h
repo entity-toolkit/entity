@@ -3,11 +3,11 @@
 
 #include "wrapper.h"
 
-#include "io/output.h"
-#include "meshblock/meshblock.h"
 #include "sim_params.h"
 
+#include "io/output.h"
 #include "io/writer.h"
+#include "meshblock/meshblock.h"
 #include "utils/timer.h"
 
 #include <toml.hpp>
@@ -18,6 +18,17 @@ namespace ntt {
   auto stringizeSimulationEngine(const SimulationEngine&) -> std::string;
   auto stringizeBoundaryCondition(const BoundaryCondition&) -> std::string;
   auto stringizeParticlePusher(const ParticlePusher&) -> std::string;
+
+  namespace {
+    enum DiagFlags_ {
+      DiagFlags_None     = 0,
+      DiagFlags_Progress = 1 << 0,
+      DiagFlags_Timers   = 1 << 1,
+      DiagFlags_Species  = 2 << 2,
+      DiagFlags_Default  = DiagFlags_Progress | DiagFlags_Timers | DiagFlags_Species,
+    };
+  }
+  typedef int DiagFlags;
 
   /**
    * @brief Main class of the simulation containing all the necessary methods and
@@ -83,6 +94,7 @@ namespace ntt {
                                         const std::vector<double>& fractions,
                                         const timer::Timers&       timer,
                                         std::vector<long double>&  tstep_durations,
+                                        const DiagFlags           diag_flags,
                                         std::ostream&              os = std::cout);
 
     /* -------------------------------------------------------------------------- */
