@@ -75,7 +75,7 @@ public:
     // precompute necessary fields
     // !FIX: this has a potential of overwriting the buffer and backup fields
     for (auto& f : m_fields_to_plot) {
-      f.compute<ntt::Dim2, S>(params, mblock);
+      f.template compute<ntt::Dim2, S>(params, mblock);
     }
 
     auto buffer_h = Kokkos::create_mirror_view(mblock.buff);
@@ -150,7 +150,7 @@ public:
   }
 
   void stepFwd() override {
-    m_sim.StepForward(ntt::_Timers | ntt::_Species);
+    m_sim.StepForward(ntt::DiagFlags_Timers | ntt::DiagFlags_Species);
     m_timestep = m_sim.tstep();
     m_time     = m_sim.time();
   }
