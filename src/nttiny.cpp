@@ -2,9 +2,9 @@
 
 #include "io/cargs.h"
 #include "io/output.h"
-#include "nttiny/api.h"
-#include "nttiny/tools.h"
-#include "nttiny/vis.h"
+#include <nttiny/api.h>
+#include <nttiny/tools.h>
+#include <nttiny/vis.h>
 
 #ifdef PIC_ENGINE
 #  include "pic.h"

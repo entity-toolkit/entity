@@ -169,7 +169,7 @@ namespace ntt {
   class CurrentsAmperePoles_kernel {
     Meshblock<D, PICEngine> m_mblock;
     real_t                  m_coeff;
-    const std::size_t       m_nj;
+    const std::size_t       m_ni2;
 
   public:
     /**
@@ -177,7 +177,7 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmperePoles_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
-      : m_mblock { mblock }, m_coeff { coeff }, m_nj(m_mblock.Ni2()) {}
+      : m_mblock { mblock }, m_coeff { coeff }, m_ni2 { m_mblock.Ni2() } {}
     /**
      * @param i index.
      */
@@ -187,12 +187,12 @@ namespace ntt {
   template <>
   Inline void CurrentsAmperePoles_kernel<Dim2>::operator()(index_t i) const {
     index_t j_min { N_GHOSTS };
-    index_t j_max { m_nj + N_GHOSTS };
+    index_t j_max { m_ni2 + N_GHOSTS };
 
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
     real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF }) };
+    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
     // theta = 0
     JX1(i, j_min) *= HALF * m_coeff * inv_polar_area_iPj;
     EX1(i, j_min) += JX1(i, j_min);

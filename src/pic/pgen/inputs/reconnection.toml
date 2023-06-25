@@ -39,10 +39,6 @@ pusher   = "Boris"
 [problem]
 cs_width = 0.000125
 
-[visualization]
-fields        = ["B", "Rho"]
-fields_stride = 4
-
 [output]
 fields   = ["B", "Rho"]
 format   = "HDF5"

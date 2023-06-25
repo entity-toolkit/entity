@@ -309,13 +309,13 @@ namespace ntt {
      * Area at the pole (used in axisymmetric solvers).
      * Approximate solution for the polar area.
      *
-     * @param xi coordinate array in code units
+     * @param x1 coordinate in code units
      * @returns Area at the pole.
      */
-    Inline auto polar_area(const coord_t<D>& xi) const -> real_t {
-      real_t chi { xi[0] * dchi + chi_min };
+    Inline auto polar_area(const real_t& x1) const -> real_t {
+      real_t chi { x1 * dchi + chi_min };
       real_t r { r0 + math::exp(chi) };
-      real_t del_theta { eta2theta(xi[1] * deta + eta_min) };
+      real_t del_theta { eta2theta(HALF * deta + eta_min) };
       return dchi * math::exp(chi) * (SQR(r) + a_sqr)
              * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) * (ONE - math::cos(del_theta));
     }
