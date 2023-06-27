@@ -19,11 +19,11 @@
 #include <string>
 #include <vector>
 
-Inline void EMfield(const ntt::coord_t<ntt::Dim2>& x_ph,
-                    ntt::vec_t<ntt::Dim3>&         e_out,
-                    ntt::vec_t<ntt::Dim3>&         b_out,
-                    const real_t                   sx1,
-                    const real_t                   sx2) {
+Inline void EMfield_2d(const ntt::coord_t<ntt::Dim2>& x_ph,
+                       ntt::vec_t<ntt::Dim3>&         e_out,
+                       ntt::vec_t<ntt::Dim3>&         b_out,
+                       const real_t                   sx1,
+                       const real_t                   sx2) {
   const real_t kx1_x1 = ntt::constant::TWO_PI * x_ph[0] / sx1;
   const real_t kx2_x2 = ntt::constant::TWO_PI * x_ph[1] / sx2;
   e_out[0]            = math::cos(kx1_x1) * math::sin(kx2_x2);
@@ -33,6 +33,58 @@ Inline void EMfield(const ntt::coord_t<ntt::Dim2>& x_ph,
   b_out[1]            = -math::cos(kx1_x1) * math::sin(kx2_x2);
   b_out[2]            = math::sin(kx1_x1) * math::sin(kx2_x2);
 }
+
+Inline void EMfield_3d(const ntt::coord_t<ntt::Dim3>& x_ph,
+                       ntt::vec_t<ntt::Dim3>&         e_out,
+                       ntt::vec_t<ntt::Dim3>&         b_out,
+                       const real_t                   sx1,
+                       const real_t                   sx2,
+                       const real_t) {
+  const real_t kx1_x1 = ntt::constant::TWO_PI * x_ph[0] / sx1;
+  const real_t kx2_x2 = ntt::constant::TWO_PI * x_ph[1] / sx2;
+  e_out[0]            = math::cos(kx1_x1) * math::sin(kx2_x2);
+  e_out[1]            = -math::sin(kx1_x1) * math::cos(kx2_x2);
+  e_out[2]            = math::cos(kx1_x1) * math::cos(kx2_x2);
+  b_out[0]            = math::sin(kx1_x1) * math::cos(kx2_x2);
+  b_out[1]            = -math::cos(kx1_x1) * math::sin(kx2_x2);
+  b_out[2]            = math::sin(kx1_x1) * math::sin(kx2_x2);
+}
+
+using namespace toml::literals::toml_literals;
+const auto default_input {
+  R"(
+      [domain]
+      resolution  = [8192, 8192]
+      extent      = [-5.0, 5.0, -5.0, 5.0]
+      boundaries  = [["PERIODIC"], ["PERIODIC"]]
+
+      [algorithm]
+      cfl = 0.0001
+
+      [units]
+      ppc0       = 2.0
+      larmor0    = 2.0
+      skindepth0 = 1.0
+
+      [particles]
+      n_species = 2
+
+      [species_1]
+      label    = "e-"
+      mass     = 1.0
+      charge   = -1.0
+      maxnpart = 1e8
+
+      [species_2]
+      label    = "e+"
+      mass     = 25.0
+      charge   = 1.0
+      maxnpart = 1e8
+
+      [diagnostics]
+      blocking_timers = true
+    )"_toml
+};
 
 template <ntt::Dimension D, ntt::SimulationEngine S>
 struct MaxwellianDist : public ntt::EnergyDistribution<D, S> {
@@ -51,6 +103,46 @@ private:
   const real_t                temperature;
 };
 
+template <ntt::Dimension D>
+auto Run(const toml::value input, const int n_iter) -> void {
+  using namespace ntt;
+  auto  sim    = PIC<D>(input);
+
+  auto  params = *(sim.params());
+  auto& mblock = sim.meshblock;
+
+  {
+    auto extent = params.extent();
+    sim.Initialize();
+    sim.ResetSimulation();
+    const real_t sx1 = extent[1] - extent[0];
+    const real_t sx2 = extent[3] - extent[2];
+    if constexpr (D == Dim2) {
+      Kokkos::parallel_for(
+        "InitFields", mblock.rangeActiveCells(), Lambda(index_t i1, index_t i2) {
+          set_em_fields_2d(mblock, i1, i2, EMfield_2d, sx1, sx2);
+        });
+    } else if constexpr (D == Dim3) {
+      const real_t sx3 = extent[5] - extent[4];
+      Kokkos::parallel_for(
+        "InitFields", mblock.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3) {
+          set_em_fields_3d(mblock, i1, i2, i3, EMfield_3d, sx1, sx2, sx3);
+        });
+    }
+    sim.Exchange(ntt::GhostCells::fields);
+
+    ntt::InjectUniform<D, ntt::PICEngine, MaxwellianDist>(
+      params, sim.meshblock, { 1, 2 }, params.ppc0() * 0.5);
+  }
+  {
+    ntt::WaitAndSynchronize();
+
+    for (auto i { 0 }; i < n_iter; ++i) {
+      sim.StepForward(ntt::DiagFlags_Timers | ntt::DiagFlags_Species);
+    }
+  }
+}
+
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
@@ -65,64 +157,14 @@ auto main(int argc, char* argv[]) -> int {
       auto inputfilename = cl_args.getArgument("-input");
       inputdata          = toml::parse(static_cast<std::string>(inputfilename));
     } else {
-      using namespace toml::literals::toml_literals;
-      inputdata = R"(
-        [domain]
-        resolution  = [8192, 8192]
-        extent      = [-5.0, 5.0, -5.0, 5.0]
-        boundaries  = [["PERIODIC"], ["PERIODIC"]]
-
-        [units]
-        ppc0       = 2.0
-        larmor0    = 2.0
-        skindepth0 = 1.0
-
-        [particles]
-        n_species = 2
-
-        [species_1]
-        label    = "e-"
-        mass     = 1.0
-        charge   = -1.0
-        maxnpart = 1e8
-
-        [species_2]
-        label    = "e+"
-        mass     = 25.0
-        charge   = 1.0
-        maxnpart = 1e8
-
-        [diagnostics]
-        blocking_timers = true
-      )"_toml;
+      inputdata = default_input;
     }
-    auto  sim    = ntt::PIC<ntt::Dim2>(inputdata);
-
-    auto  params = *(sim.params());
-    auto& mblock = sim.meshblock;
-
-    {
-      const auto extent = params.get<std::vector<real_t>>("domain", "extent");
-
-      sim.ResetSimulation();
-      using namespace ntt;
-      const real_t sx1 = extent[1] - extent[0];
-      const real_t sx2 = extent[3] - extent[2];
-      Kokkos::parallel_for(
-        "InitFields", mblock.rangeActiveCells(), Lambda(ntt::index_t i1, ntt::index_t i2) {
-          set_em_fields_2d(mblock, i1, i2, EMfield, sx1, sx2);
-        });
-      sim.Exchange(ntt::GhostCells::fields);
-
-      ntt::InjectUniform<ntt::Dim2, ntt::PICEngine, MaxwellianDist>(
-        params, sim.meshblock, { 1, 2 }, params.ppc0() * 0.5);
-    }
-    {
-      ntt::WaitAndSynchronize();
-
-      for (auto i { 0 }; i < n_iter; ++i) {
-        sim.StepForward(ntt::DiagFlags_Timers | ntt::DiagFlags_Species);
-      }
+    auto resolution
+      = ntt::readFromInput<std::vector<unsigned int>>(inputdata, "domain", "resolution");
+    if (resolution.size() == 2) {
+      Run<ntt::Dim2>(inputdata, n_iter);
+    } else {
+      Run<ntt::Dim3>(inputdata, n_iter);
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;

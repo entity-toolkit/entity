@@ -51,22 +51,9 @@ private:
   const real_t                temperature;
 };
 
-auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
-  try {
-    ntt::CommandLineArguments cl_args;
-    cl_args.readCommandLineArguments(argc, argv);
-    toml::value inputdata;
-
-    auto        n_iter_str = cl_args.getArgument("-niter", "10");
-    auto        n_iter     = std::stoi(std::string(n_iter_str));
-
-    if (cl_args.isSpecified("-input")) {
-      auto inputfilename = cl_args.getArgument("-input");
-      inputdata          = toml::parse(static_cast<std::string>(inputfilename));
-    } else {
-      using namespace toml::literals::toml_literals;
-      inputdata = R"(
+using namespace toml::literals::toml_literals;
+const auto default_input {
+  R"(
         [domain]
         resolution  = [8192, 8192]
         extent      = [1.0, 50.0]
@@ -98,7 +85,24 @@ auto main(int argc, char* argv[]) -> int {
 
         [diagnostics]
         blocking_timers = true
-      )"_toml;
+      )"_toml
+};
+
+auto main(int argc, char* argv[]) -> int {
+  Kokkos::initialize(argc, argv);
+  try {
+    ntt::CommandLineArguments cl_args;
+    cl_args.readCommandLineArguments(argc, argv);
+    toml::value inputdata;
+
+    auto        n_iter_str = cl_args.getArgument("-niter", "10");
+    auto        n_iter     = std::stoi(std::string(n_iter_str));
+
+    if (cl_args.isSpecified("-input")) {
+      auto inputfilename = cl_args.getArgument("-input");
+      inputdata          = toml::parse(static_cast<std::string>(inputfilename));
+    } else {
+      inputdata = default_input;
     }
     auto  sim    = ntt::GRPIC<ntt::Dim2>(inputdata);
 
@@ -106,8 +110,9 @@ auto main(int argc, char* argv[]) -> int {
     auto& mblock = sim.meshblock;
 
     {
-      const auto extent = params.get<std::vector<real_t>>("domain", "extent");
+      const auto extent = params.extent();
 
+      sim.Initialize();
       sim.ResetSimulation();
       using namespace ntt;
       const real_t sx1 = extent[1] - extent[0];
