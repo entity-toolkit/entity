@@ -15,7 +15,9 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph): all-around}
 
-🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): PIC}
+🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): framework, PIC}
+
+😺 __Muni Zhou__ {[@munizhou](https://github.com/munizhou): PIC}
 
 ## State of things
 
@@ -57,8 +59,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 * GR (spherical)
   - [x]  fieldsolver (2D)
   - [x]  pusher (2D)
-  - [ ]  deposit (2D)
-  - [ ]  filtering (2D)
+  - [x]  deposit (2D)
+  - [x]  filtering (2D)
 
 ### Known bugs / minor issues to fix
 
@@ -68,14 +70,21 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 ### Unit testing
 
-_[under construction]_
+A limited number of unit tests are now available. To compile/run them:
+```shell
+cmake -B build -D TESTS=ON
+cd build
+make -j
+cd tests && ctest -j
+```
+
+Tests are automatically run when on pull requests to the `master` branch.
 
 ## Third-party libraries
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
 2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
-3. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging
-4. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
+3. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
 
 ## Dependencies
 
