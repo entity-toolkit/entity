@@ -115,6 +115,8 @@ namespace ntt {
       id = FieldID::T;
     } else if (fld.find("Rho") == 0) {
       id = FieldID::Rho;
+    } else if (fld.find("Charge") == 0) {
+      id = FieldID::Charge;
     } else if (fld.find("Nppc") == 0) {
       id = FieldID::Nppc;
     } else if (fld.find("N") == 0) {
@@ -135,7 +137,7 @@ namespace ntt {
       NTTHostError("Invalid field name");
     }
     auto is_moment
-      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N);
+      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N || id == FieldID::Charge);
     auto is_field = (id == FieldID::E || id == FieldID::B || id == FieldID::D
                      || id == FieldID::H || id == FieldID::J);
     if (is_moment) {

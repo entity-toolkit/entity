@@ -7,6 +7,7 @@
 #include "species.h"
 
 #include "meshblock/particles.h"
+#include "utils/qmath.h"
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>
@@ -123,6 +124,10 @@ namespace ntt {
     for (auto& sp : out_species) {
       auto species = particles[sp - 1];
       auto mass    = species.mass();
+      auto charge  = species.charge();
+      if ((field == FieldID::Charge) && AlmostEqual(charge, ZERO)) {
+        continue;
+      }
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
@@ -135,6 +140,8 @@ namespace ntt {
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
+              } else if (field == FieldID::Charge) {
+                contrib = charge;
               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
@@ -180,6 +187,8 @@ namespace ntt {
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
+              } else if (field == FieldID::Charge) {
+                contrib = charge;
               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
@@ -246,6 +255,8 @@ namespace ntt {
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
+              } else if (field == FieldID::Charge) {
+                contrib = charge;
               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {

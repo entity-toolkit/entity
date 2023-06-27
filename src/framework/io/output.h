@@ -35,6 +35,8 @@ namespace ntt {
       return "A";
     case FieldID::Rho:
       return "Rho";
+    case FieldID::Charge:
+      return "Charge";
     case FieldID::N:
       return "N";
     case FieldID::Nppc:
@@ -76,7 +78,7 @@ namespace ntt {
 
     [[nodiscard]] auto is_moment() const -> bool {
       return (id() == FieldID::T || id() == FieldID::Rho || id() == FieldID::Nppc
-              || id() == FieldID::N);
+              || id() == FieldID::N || id() == FieldID::Charge);
     }
     [[nodiscard]] auto is_field() const -> bool {
       return (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D
