@@ -97,8 +97,8 @@ namespace ntt {
       coord_t<Dim2> x_ph { r_surf, ZERO };
       coord_t<Dim2> xi { ZERO };
       mblock.metric.x_Sph2Code(x_ph, xi);
-      const int  i1_surf = xi[0] + N_GHOSTS;
-      const int  _mode   = field_mode;
+      const auto i1_surf = (unsigned int)(xi[0] + N_GHOSTS);
+      const auto _mode   = field_mode;
       const auto _rsurf  = r_surf;
       const auto _bsurf  = b_surf;
       const auto i1_min  = mblock.i1_min();

@@ -150,7 +150,7 @@ namespace ntt {
     m_skindepth0 = get<real_t>("units", "skindepth0");
     m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
 
-    // if dt not specified (== -1), will used CFL to calculate it
+    // if dt not specified (== -1), will use CFL to calculate it
     m_dt         = get<real_t>("algorithm", "dt", -ONE);
     m_cfl        = get<real_t>("algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
