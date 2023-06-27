@@ -47,3 +47,6 @@ temp/
 logs/
 
 *ipynb_checkpoints
+
+.vscode/c_cpp_properties.json
+.vscode/settings.json
