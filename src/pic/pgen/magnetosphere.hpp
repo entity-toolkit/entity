@@ -191,25 +191,28 @@ namespace ntt {
   Inline bool MaxDensCrit<Dim2, PICEngine>::operator()(const coord_t<Dim2>& xph) const {
     coord_t<Dim2> xi { ZERO };
     (this->m_mblock).metric.x_Sph2Code(xph, xi);
-    std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
-    std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
-    return (this->m_mblock).buff(i1, i2, 0) < _inj_maxdens;
+    auto i1 = (std::size_t)(xi[0]) + N_GHOSTS;
+    auto i2 = (std::size_t)(xi[1]) + N_GHOSTS;
+    if (i1 < (this->m_mblock).buff.extent(0) && i2 < (this->m_mblock).buff.extent(1)) {
+      // return true;
+      return (this->m_mblock).buff(i1, i2, 2) < _inj_maxdens;
+    } else {
+      return false;
+    }
   }
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 0, 0);
+    mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 2, 0);
+    WaitAndSynchronize();
     auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction * HALF;
     InjectInVolume<Dim2, PICEngine, RadialKick, InjectionShell, MaxDensCrit>(
       params,
       mblock,
       { 1, 2 },
       nppc_per_spec,
-      { mblock.metric.x1_min,
-        (real_t)1.5 * inj_rmax,
-        mblock.metric.x2_min,
-        mblock.metric.x2_max });
+      { mblock.metric.x1_min, inj_rmax, mblock.metric.x2_min, mblock.metric.x2_max });
   }
 
 }    // namespace ntt

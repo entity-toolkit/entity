@@ -614,9 +614,6 @@ namespace ntt {
                              const real_t&           ppc_per_spec,
                              std::vector<real_t>     region = {},
                              const real_t&           time   = ZERO) {
-    EnDist<D, S>  energy_dist(params, mblock);
-    SpDist<D, S>  spatial_dist(params, mblock);
-    InjCrit<D, S> inj_criterion(params, mblock);
     range_t<D>    range_policy;
     if (region.size() == 0) {
       range_policy = mblock.rangeActiveCells();
