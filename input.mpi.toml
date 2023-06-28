@@ -1,0 +1,22 @@
+[simulation]
+title   = "Example"
+runtime = 0.1
+
+[domain]
+resolution = [32, 32]
+extent     = [-1.0, 1.0, -1.0, 1.0]
+boundaries = [["PERIODIC"], ["PERIODIC"]]
+meshblocks = [-1, -1]
+
+[algorithm]
+CFL        = 0.5
+
+[units]
+ppc0       = 0.1
+larmor0    = 1.0
+skindepth0 = 1.0
+
+[output]
+
+fields   = ["B"]
+format   = "HDF5"

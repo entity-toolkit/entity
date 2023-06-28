@@ -119,7 +119,7 @@ namespace ntt {
         for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
           mblock.cur(i, j, i3min + k, comp) += mblock.cur(i, j, i3min + k + ni3, comp);
           mblock.cur(i, j, i3max - N_GHOSTS + k, comp)
-            += mblock.cur(i, j, i2max - N_GHOSTS + k - ni3, comp);
+            += mblock.cur(i, j, i3max - N_GHOSTS + k - ni3, comp);
         }
       });
 
