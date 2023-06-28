@@ -166,7 +166,7 @@ namespace ntt {
             if (dir3 == -1) {
               i3_range_to   = range_tuple_t(i3min - N_GHOSTS, i3min);
               i3_range_from = range_tuple_t(i3max - N_GHOSTS, i3max);
-            } else if (dir2 == 0) {
+            } else if (dir3 == 0) {
               i3_range_to   = range_tuple_t(i3min, i3max);
               i3_range_from = range_tuple_t(i3min, i3max);
             } else {
@@ -207,7 +207,7 @@ namespace ntt {
               species.i2(p) -= ni2;
             }
             if (species.i3(p) < 0) {
-              species.i3(p) += ni2;
+              species.i3(p) += ni3;
             } else if (species.i3(p) >= (int)ni3) {
               species.i3(p) -= ni3;
             }

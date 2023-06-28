@@ -1,18 +1,18 @@
 [simulation]
 title   = "Turbulence"
-runtime = 0.1
+runtime = 10.0
 
 [domain]
-resolution = [256, 256]
-extent     = [-1.0, 1.0, -1.0, 1.0]       # extent of the domain in physical units
-boundaries = [["PERIODIC"], ["PERIODIC"]]
+resolution = [128, 128, 128]
+extent     = [-1.0, 1.0, -1.0, 1.0, -1.0, 1.0]       # extent of the domain in physical units
+boundaries = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
 CFL             = 0.5
 current_filters = 8
 
 [units]
-ppc0       = 64.0
+ppc0       = 32.0
 larmor0    = 0.02 # fiducial larmor radius in physical units
 skindepth0 = 0.02 # fiducial skin depth in physical units
 

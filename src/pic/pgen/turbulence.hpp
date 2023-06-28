@@ -78,9 +78,9 @@ namespace ntt {
       : nx1 { params.get<int>("problem", "nx1", 1) },
         nx2 { params.get<int>("problem", "nx2", 1) },
         nx3 { params.get<int>("problem", "nx3", 1) },
-        sx1 { params.extent()[1] - params.extent()[0] },
-        sx2 { params.extent()[3] - params.extent()[2] },
-        sx3 { 1.0 },
+        sx1 { 2.0 },
+        sx2 { 2.0 },
+        sx3 { 2.0 },
         temperature { params.get<real_t>("problem", "temperature", 0.1) },
         machno { 0.1 },
         amplitudes { "DrivingModes", 6 } {}
@@ -115,8 +115,6 @@ namespace ntt {
     Inline auto ext_force_x1(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
       // just as an example, implementing a weird sinusoidal force field in x1
-      // return 0.1*math::sin(constant::TWO_PI * x_ph[1] / sx2);
-      // return ZERO;
 
       auto   amplitudes_ = this->amplitudes;
       real_t k01         = 1.0 * constant::TWO_PI / sx1;
@@ -133,17 +131,22 @@ namespace ntt {
       real_t k24         = 1.0;
 
       auto   f_m1
-        = k14 * amplitudes_(0, REAL) * cos(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0)
-          + k14 * amplitudes_(0, IMAG) * sin(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0);
+        = k14 * amplitudes_(0, REAL) * cos(k11 * x_ph[0] + k12 * x_ph[1] + k13 * x_ph[2])
+          + k14 * amplitudes_(0, IMAG) * sin(k11 * x_ph[0] + k12 * x_ph[1] + k13 * x_ph[2]);
       auto f_m2
-        = k24 * amplitudes_(1, REAL) * cos(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0)
-          + k24 * amplitudes_(1, IMAG) * sin(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0);
+        = k24 * amplitudes_(1, REAL) * cos(k21 * x_ph[0] + k22 * x_ph[1] + k23 * x_ph[2])
+          + k24 * amplitudes_(1, IMAG) * sin(k21 * x_ph[0] + k22 * x_ph[1] + k23 * x_ph[2]);
 
       return f_m1 + f_m2;
+
+      // return 0.1*math::sin(constant::TWO_PI * x_ph[1] / sx2);
+
+      // return ZERO;
+
     }
     Inline auto ext_force_x2(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
-      // return ZERO;
+
 
       auto   amplitudes_ = this->amplitudes;
       real_t k01         = 1.0 * constant::TWO_PI / sx1;
@@ -160,17 +163,19 @@ namespace ntt {
       real_t k24         = 1.0;
 
       auto   f_m3
-        = k04 * amplitudes_(2, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0)
-          + k04 * amplitudes_(2, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0);
+        = k04 * amplitudes_(2, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * x_ph[2])
+          + k04 * amplitudes_(2, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * x_ph[2]);
       auto f_m4
-        = k24 * amplitudes_(3, REAL) * cos(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0)
-          + k24 * amplitudes_(3, IMAG) * sin(k21 * x_ph[0] + k22 * x_ph[1] + k23 * 0.0);
+        = k24 * amplitudes_(3, REAL) * cos(k21 * x_ph[0] + k22 * x_ph[1] + k23 * x_ph[2])
+          + k24 * amplitudes_(3, IMAG) * sin(k21 * x_ph[0] + k22 * x_ph[1] + k23 * x_ph[2]);
 
       return f_m3 + f_m4;
+
+      // return ZERO;
+
     }
     Inline auto ext_force_x3(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
-      // return ZERO;
 
       auto   amplitudes_ = this->amplitudes;
       real_t k01         = 1.0 * constant::TWO_PI / sx1;
@@ -187,13 +192,16 @@ namespace ntt {
       real_t k24         = 1.0;
 
       auto   f_m5
-        = k04 * amplitudes_(4, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0)
-          + k04 * amplitudes_(4, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * 0.0);
+        = k04 * amplitudes_(4, REAL) * cos(k01 * x_ph[0] + k02 * x_ph[1] + k03 * x_ph[2])
+          + k04 * amplitudes_(4, IMAG) * sin(k01 * x_ph[0] + k02 * x_ph[1] + k03 * x_ph[2]);
       auto f_m6
-        = k14 * amplitudes_(5, REAL) * cos(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0)
-          + k14 * amplitudes_(5, IMAG) * sin(k11 * x_ph[0] + k12 * x_ph[1] + k13 * 0.0);
+        = k14 * amplitudes_(5, REAL) * cos(k11 * x_ph[0] + k12 * x_ph[1] + k13 * x_ph[2])
+          + k14 * amplitudes_(5, IMAG) * sin(k11 * x_ph[0] + k12 * x_ph[1] + k13 * x_ph[2]);
 
       return f_m5 + f_m6;
+
+      // return ZERO;
+
     }
 #endif
 
@@ -359,25 +367,6 @@ namespace ntt {
     const auto _nx2         = nx2;
     const auto _sx1         = mblock.metric.x1_max - mblock.metric.x1_min;
     const auto _sx2         = mblock.metric.x2_max - mblock.metric.x2_min;
-    auto       amplitudes_  = this->amplitudes;
-    const auto _temperature = temperature;
-    const auto _machno      = machno;
-
-    auto       amp0         = _machno * _temperature * mblock.particles[1].mass() / 6.0;
-
-    // Initialize the mode driving with random values
-    // todo: change number of modes to be driven
-    // auto       pool        = *(mblock.random_pool_ptr);
-    // auto rand_gen     = pool.get_state();
-    auto       phi0 = ((real_t)rand() / RAND_MAX) * constant::TWO_PI;    // rand_gen.frand() *
-                                                                         // constant::TWO_PI;
-    // pool.free_state(rand_gen);
-
-    Kokkos::parallel_for(
-      "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
-        amplitudes_(i, REAL) = amp0 * cos(phi0);
-        amplitudes_(i, IMAG) = amp0 * sin(phi0);
-      });
 
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
@@ -396,6 +385,22 @@ namespace ntt {
     const auto _nx1  = nx1;
     const auto _nx2  = nx2;
     const auto _nx3  = nx3;
+    const auto _sx1         = mblock.metric.x1_max - mblock.metric.x1_min;
+    const auto _sx2         = mblock.metric.x2_max - mblock.metric.x2_min;
+    const auto _sx3         = mblock.metric.x3_max - mblock.metric.x3_min;
+    auto       amplitudes_  = this->amplitudes;
+    const auto _temperature = temperature;
+    const auto _machno      = machno;
+
+    auto       amp0         = _machno * _temperature * mblock.particles[1].mass() / 6.0;
+    auto       phi0 = ((real_t)rand() / RAND_MAX) * constant::TWO_PI;    
+
+    Kokkos::parallel_for(
+      "RandomAmplitudes", amplitudes_.extent(0), Lambda(index_t i) {
+        amplitudes_(i, REAL) = amp0 * cos(phi0);
+        amplitudes_(i, IMAG) = amp0 * sin(phi0);
+      });
+
     Kokkos::parallel_for(
       "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j, index_t k) {
         set_em_fields_3d(mblock, i, j, k, turbulent_fields_3d, _time, _nx1, _nx2, _nx3);
@@ -409,6 +414,46 @@ namespace ntt {
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     const auto _time        = this->time();
+
+    // real_t global_sum = ZERO;
+    // Kokkos::parallel_reduce(
+    //   "EMEnergy",
+    //   mblock.rangeActiveCells(),
+    //   ClassLambda(index_t i, index_t j, real_t & sum) {
+    //     sum += (SQR(mblock.em(i, j, em::ex1)) + SQR(mblock.em(i, j, em::ex2))
+    //             + SQR(mblock.em(i, j, em::ex3)) + SQR(mblock.em(i, j, em::bx1))
+    //             + SQR(mblock.em(i, j, em::bx2)) + SQR(mblock.em(i, j, em::bx3)))
+    //            * HALF;
+    //   },
+    //   global_sum);
+
+    // global_sum /= SQR(params.larmor0());
+    // global_sum *= mblock.metric.min_cell_volume();
+    // printf("EM energy: %e\n", global_sum);
+    // global_sum = ZERO;
+
+    // for (auto& species : mblock.particles) {
+    //   real_t global_a = ZERO;
+    //   Kokkos::parallel_reduce(
+    //     "ParticleEnergy",
+    //     species.npart(),
+    //     ClassLambda(index_t p, real_t & sum) {
+    //       sum += math::sqrt(ONE + SQR(species.ux1(p)) + SQR(species.ux2(p))
+    //                         + SQR(species.ux3(p)));
+    //     },
+    //     global_a);
+    //   global_sum += global_a;
+    // }
+    // printf("Particle energy: %e\n", global_sum);
+  }
+
+ /**
+   *
+   */
+  template <>
+  inline void ProblemGenerator<Dim3, PICEngine>::UserDriveParticles(
+    const real_t&, const SimulationParams& params, Meshblock<Dim3, PICEngine>& mblock) {
+    const auto _time        = this->time();
     auto       amplitudes_  = this->amplitudes;
     auto       dt_          = mblock.timestep();
     const auto _sx1         = mblock.metric.x1_max - mblock.metric.x1_min;
@@ -420,7 +465,6 @@ namespace ntt {
     auto       gamma0       = 0.5 * sqrt(temperature * machno * constant::TWO_PI / sx1);
     auto       sigma0       = amp0 * sqrt(6.0 * gamma0);
 
-    // todo: change number of modes to be driven
     auto       pool         = *(mblock.random_pool_ptr);
 
     Kokkos::parallel_for(
@@ -457,37 +501,6 @@ namespace ntt {
            testout(3, 1),
            testout(4, 1),
            testout(5, 1));
-
-    // real_t global_sum = ZERO;
-    // Kokkos::parallel_reduce(
-    //   "EMEnergy",
-    //   mblock.rangeActiveCells(),
-    //   ClassLambda(index_t i, index_t j, real_t & sum) {
-    //     sum += (SQR(mblock.em(i, j, em::ex1)) + SQR(mblock.em(i, j, em::ex2))
-    //             + SQR(mblock.em(i, j, em::ex3)) + SQR(mblock.em(i, j, em::bx1))
-    //             + SQR(mblock.em(i, j, em::bx2)) + SQR(mblock.em(i, j, em::bx3)))
-    //            * HALF;
-    //   },
-    //   global_sum);
-
-    // global_sum /= SQR(params.larmor0());
-    // global_sum *= mblock.metric.min_cell_volume();
-    // printf("EM energy: %e\n", global_sum);
-    // global_sum = ZERO;
-
-    // for (auto& species : mblock.particles) {
-    //   real_t global_a = ZERO;
-    //   Kokkos::parallel_reduce(
-    //     "ParticleEnergy",
-    //     species.npart(),
-    //     ClassLambda(index_t p, real_t & sum) {
-    //       sum += math::sqrt(ONE + SQR(species.ux1(p)) + SQR(species.ux2(p))
-    //                         + SQR(species.ux3(p)));
-    //     },
-    //     global_a);
-    //   global_sum += global_a;
-    // }
-    // printf("Particle energy: %e\n", global_sum);
   }
 
 }    // namespace ntt
