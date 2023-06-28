@@ -4,10 +4,8 @@
 # Compilation junk
 *.o
 *.tmp
-build/
-build_tests/
+build*/
 bin/
-Makefile
 
 # Accidental python files
 *.ipynb
@@ -20,22 +18,13 @@ __pycache__
 *.swp
 *.ini
 
-# Temporary Kokkos files
-/Kokkos*
-/*.a
-
 # Trash files
 .trash/
 
-# Problem generator template
-src/.temp/
-
 .vscode/*.log
 
-script_ntt
-script_vis
-
-.venv
+.venv/
+venv/
 
 # Temporary media files
 *.png
@@ -43,7 +32,6 @@ script_vis
 *.mp4
 
 temp*/
-temp/
 logs/
 
 *ipynb_checkpoints
