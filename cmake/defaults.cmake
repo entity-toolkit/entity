@@ -4,6 +4,8 @@ set(default_precision "single" CACHE INTERNAL "Default precision")
 set(default_pgen "dummy" CACHE INTERNAL "Default problem generator")
 set(default_sr_metric "minkowski" CACHE INTERNAL "Default SR metric")
 set(default_gr_metric "kerr_schild" CACHE INTERNAL "Default GR metric")
+set(default_ext_force OFF CACHE INTERNAL "Default external force fields")
+set_property(CACHE default_ext_force PROPERTY TYPE BOOL)
 
 if(DEFINED ENV{Entity_ENABLE_OUTPUT})
   set(default_output $ENV{Entity_ENABLE_OUTPUT} CACHE INTERNAL "Default flag for output")
