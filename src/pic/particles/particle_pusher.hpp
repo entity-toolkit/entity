@@ -44,14 +44,15 @@ namespace ntt {
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      * @param dt Time step.
      */
-    Pusher_kernel(const SimulationParams&               params,
-                  const Meshblock<D, PICEngine>&        mblock,
-                  const Particles<D, PICEngine>&        particles,
+    Pusher_kernel(const Meshblock<D, PICEngine>& mblock,
+                  const Particles<D, PICEngine>& particles,
+#ifdef EXTERNAL_FORCE
                   const ProblemGenerator<D, PICEngine>& pgen,
                   array_t<real_t*>&                     work,
-                  const real_t&                         time,
-                  const real_t&                         coeff,
-                  const real_t&                         dt)
+#endif
+                  const real_t& time,
+                  const real_t& coeff,
+                  const real_t& dt)
       : m_mblock { mblock },
         m_particles { particles },
 #ifdef EXTERNAL_FORCE
