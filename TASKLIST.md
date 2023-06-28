@@ -20,7 +20,7 @@
 
 # v0.9
 
-- [ ] add current deposit/filtering for GR
+- [x] add current deposit/filtering for GR
 - [ ] add moments for GR
 - [ ] add Maxwellian for GR
 
@@ -31,7 +31,7 @@
   - [ ] check allocation of proper fields
   - [x] add a simple current filtering
   - [x] field mirrors
-  - [ ] unit tests + implement with github actions
+  - [x] unit tests + implement with github actions
 
 ### Intermediate term things to do/fix
 

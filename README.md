@@ -3,7 +3,7 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-## Core developers + contributors (alphabetical)
+## Dev team (alphabetical)
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
 
@@ -26,7 +26,7 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
     - [x]  Minkowski (SR)
     - [x]  Spherical/Qspherical (SR)
     - [x]  Kerr-Schild/QKerr-Schild, zero-mass Kerr-Schild (GR)
-    - [ ]  virtual inheritance
+    - [ ]  virtual inheritance of metric classes
   - [ ]  Output
     - [x]  Fields/currents (SR/GR)
     - [x]  Moments (SR)
