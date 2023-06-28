@@ -3,20 +3,7 @@ on:
   push:
     branches:
       - wiki
-
-# jobs:
-#   deploy:
-#     permissions:
-#       id-token: write
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v3
-#       - uses: actions/setup-python@v2
-#         with:
-#           python-version: 3.x
-#       - run: pip install -r requirements.txt
-#       - run: mkdocs gh-deploy --force
-
+      
 jobs:
   build:
     name: Deploy docs
