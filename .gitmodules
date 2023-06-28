@@ -9,11 +9,11 @@
 	url = https://github.com/fmtlib/fmt.git
 [submodule "extern/nttiny"]
 	path = extern/nttiny
-	url = https://github.com:haykh/nttiny.git
+	url = https://github.com/haykh/nttiny.git
 	branch = master
 [submodule "extern/adios2"]
 	path = extern/adios2
-	url = https://github.com:ornladios/ADIOS2.git
+	url = https://github.com/ornladios/ADIOS2.git
 	branch = master
 [submodule "extern/Kokkos"]
 	path = extern/Kokkos
