@@ -13,7 +13,7 @@
 	branch = master
 [submodule "extern/adios2"]
 	path = extern/adios2
-	url = git@github.com:ornladios/ADIOS2.git
+	url = https://github.com/ornladios/ADIOS2.git
 	branch = master
 [submodule "extern/Kokkos"]
 	path = extern/Kokkos
