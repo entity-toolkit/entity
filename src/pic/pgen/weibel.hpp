@@ -3,11 +3,12 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
-#include "injector.hpp"
+#include "meshblock/meshblock.h"
+
+#include "utils/archetypes.hpp"
+#include "utils/injector.hpp"
 
 namespace ntt {
 

@@ -4,28 +4,29 @@
 #include "wrapper.h"
 
 #include <chrono>
-#include <iostream>
 #include <string>
 
 namespace ntt {
   namespace timer {
     using timestamp = std::chrono::time_point<std::chrono::system_clock>;
-    enum TimerFlags_ {
-      TimerFlags_None          = 0,
-      TimerFlags_PrintRelative = 1 << 0,
-      TimerFlags_PrintUnits    = 1 << 1,
-      TimerFlags_PrintIndents  = 1 << 2,
-      TimerFlags_PrintTotal    = 1 << 3,
-      TimerFlags_PrintTitle    = 1 << 4,
-      TimerFlags_AutoConvert   = 1 << 5,
-      TimerFlags_All           = TimerFlags_PrintRelative | TimerFlags_PrintUnits
-                       | TimerFlags_PrintIndents | TimerFlags_PrintTotal
-                       | TimerFlags_PrintTitle | TimerFlags_AutoConvert,
-      TimerFlags_Default = TimerFlags_All,
-      // TimerFlags_... = 1 << 5,
-      // TimerFlags_... = 1 << 6,
-      // TimerFlags_... = 1 << 7,
-    };
+    namespace {
+      enum TimerFlags_ {
+        TimerFlags_None          = 0,
+        TimerFlags_PrintRelative = 1 << 0,
+        TimerFlags_PrintUnits    = 1 << 1,
+        TimerFlags_PrintIndents  = 1 << 2,
+        TimerFlags_PrintTotal    = 1 << 3,
+        TimerFlags_PrintTitle    = 1 << 4,
+        TimerFlags_AutoConvert   = 1 << 5,
+        TimerFlags_All           = TimerFlags_PrintRelative | TimerFlags_PrintUnits
+                         | TimerFlags_PrintIndents | TimerFlags_PrintTotal
+                         | TimerFlags_PrintTitle | TimerFlags_AutoConvert,
+        TimerFlags_Default = TimerFlags_All,
+        // TimerFlags_... = 1 << 5,
+        // TimerFlags_... = 1 << 6,
+        // TimerFlags_... = 1 << 7,
+      };
+    }    // namespace
     typedef int TimerFlags;
 
     class Timers {

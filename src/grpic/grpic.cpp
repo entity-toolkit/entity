@@ -2,9 +2,9 @@
 
 #include "wrapper.h"
 
-#include "progressbar.h"
 #include "sim_params.h"
-#include "timer.h"
+
+#include "utils/timer.h"
 
 #include <plog/Log.h>
 
@@ -24,7 +24,8 @@ namespace ntt {
       Simulation<D, GRPICEngine>::PrintDetails();
       InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
+        PLOGV_(LogFile) << "step = " << this->m_tstep;
+        PLOGV_(LogFile) << std::endl;
         StepForward();
       }
       WaitAndSynchronize();
@@ -91,7 +92,7 @@ namespace ntt {
      *
      * Now: em0::B at 0
      */
-    Faraday(0.5, gr_faraday::aux);
+    Faraday(HALF, gr_faraday::aux);
     /**
      * em0::B, em::B <- boundary conditions
      */
@@ -102,7 +103,7 @@ namespace ntt {
      *
      * Now: em::D at 0
      */
-    Ampere(0.5, gr_ampere::init);
+    Ampere(HALF, gr_ampere::init);
     /**
      * em0::D, em::D <- boundary conditions
      */
@@ -122,12 +123,14 @@ namespace ntt {
     AuxFieldsBoundaryConditions(gr_bc::Efield);
     AuxFieldsBoundaryConditions(gr_bc::Hfield);
 
+    // !ADD: GR -- particles?
+
     /**
      * em0::B <- (em::B) <- -curl aux::E
      *
      * Now: em0::B at 1/2
      */
-    Faraday(1.0, gr_faraday::main);
+    Faraday(ONE, gr_faraday::main);
     /**
      * em0::B, em::B <- boundary conditions
      */
@@ -138,7 +141,7 @@ namespace ntt {
      *
      * Now: em0::D at 1/2
      */
-    Ampere(1.0, gr_ampere::aux);
+    Ampere(ONE, gr_ampere::aux);
     /**
      * em0::D, em::D <- boundary conditions
      */
@@ -161,7 +164,7 @@ namespace ntt {
      * Now: em0::D at 1
      *      em::D at 0
      */
-    Ampere(1.0, gr_ampere::main);
+    Ampere(ONE, gr_ampere::main);
     /**
      * em0::D, em::D <- boundary conditions
      */
@@ -189,25 +192,24 @@ namespace ntt {
      *          u_prtl   at 1/2
      */
     auto& mblock = this->meshblock;
-    ImposeContent(mblock.em_content,
-                  { Content::ex1_cntrv,
-                    Content::ex2_cntrv,
-                    Content::ex3_cntrv,
-                    Content::bx1_cntrv,
-                    Content::bx2_cntrv,
-                    Content::bx3_cntrv });
   }
 
   template <Dimension D>
-  void GRPIC<D>::StepForward() {
+  void GRPIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
-    auto          params = *(this->params());
-    auto&         mblock = this->meshblock;
-    auto&         wrtr   = this->writer;
-    auto&         pgen   = this->problem_generator;
+    auto                            params = *(this->params());
+    auto&                           mblock = this->meshblock;
+    auto&                           wrtr   = this->writer;
+    auto&                           pgen   = this->problem_generator;
 
-    timer::Timers timers(
-      { "FieldSolver", "FieldBoundaries", "CurrentDeposit", "ParticlePusher" });
+    timer::Timers                   timers({ "FieldSolver",
+                                             "FieldBoundaries",
+                                             "CurrentDeposit",
+                                             "ParticlePusher",
+                                             "ParticleBoundaries",
+                                             "UserSpecific" },
+                         params.blockingTimers());
+    static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
     /**
      * Initially: em0::B   at n-3/2
@@ -250,7 +252,7 @@ namespace ntt {
        *
        * Now: em0::B at n
        */
-      Faraday(1.0, gr_faraday::aux);
+      Faraday(ONE, gr_faraday::aux);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
@@ -274,17 +276,50 @@ namespace ntt {
       timers.stop("FieldSolver");
     }
 
-    // Push particles
-    // x at n+1, u at n+1/2
-    // using em:e at n & em0:b at n
-    timers.start("ParticlePusher");
-    timers.stop("ParticlePusher");
+    {
+      /**
+       * x_prtl, u_prtl <- em::D, em0::B
+       *
+       * Now: x_prtl at n + 1, u_prtl at n + 1/2
+       */
+      timers.start("ParticlePusher");
+      ParticlesPush();
+      timers.stop("ParticlePusher");
 
-    /**
-     * cur0::J <- current deposition
-     *
-     * Now: cur0::J at n+1/2
-     */
+      timers.start("UserSpecific");
+      pgen.UserDriveParticles(this->m_time, params, mblock);
+      timers.stop("UserSpecific");
+
+      timers.start("ParticleBoundaries");
+      ParticlesBoundaryConditions();
+      timers.stop("ParticleBoundaries");
+
+      /**
+       * cur0::J <- current deposition
+       *
+       * Now: cur0::J at n+1/2
+       */
+      if (params.depositEnabled()) {
+        timers.start("CurrentDeposit");
+        CurrentsDeposit();
+
+        timers.start("FieldBoundaries");
+        CurrentsSynchronize();
+        Exchange(GhostCells::currents);
+        CurrentsBoundaryConditions();
+        timers.stop("FieldBoundaries");
+
+        CurrentsFilter();
+        timers.stop("CurrentDeposit");
+      }
+
+      timers.start("ParticleBoundaries");
+      Exchange(GhostCells::particles);
+      if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
+        dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
+      }
+      timers.stop("ParticleBoundaries");
+    }
 
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
@@ -310,7 +345,7 @@ namespace ntt {
        * Now: em0::B at n+1/2
        *      em::B at n-1/2
        */
-      Faraday(1.0, gr_faraday::main);
+      Faraday(ONE, gr_faraday::main);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
@@ -326,8 +361,17 @@ namespace ntt {
        *
        * Now: em0::D at n+1/2
        */
-      Ampere(1.0, gr_ampere::aux);
+      Ampere(ONE, gr_ampere::aux);
       timers.stop("FieldSolver");
+
+      if (params.depositEnabled()) {
+        /**
+         * em0::D <- (em0::D) <- cur::J
+         *
+         * Now: em0::D at n+1/2
+         */
+        AmpereCurrents(gr_ampere::aux);
+      }
 
       timers.start("FieldBoundaries");
       /**
@@ -353,12 +397,21 @@ namespace ntt {
        * Now: em0::D at n+1
        *      em::D at n
        */
-      Ampere(1.0, gr_ampere::main);
+      Ampere(ONE, gr_ampere::main);
+
+      if (params.depositEnabled()) {
+        /**
+         * em0::D <- (em0::D) <- cur0::J
+         *
+         * Now: em0::D at n+1
+         */
+        AmpereCurrents(gr_ampere::main);
+      }
 
       /**
        * em::D <-> em0::D
        * em::B <-> em0::B
-       * em::J <-> em0::J
+       * cur::J <-> cur0::J
        */
       SwapFields();
       timers.stop("FieldSolver");
@@ -387,137 +440,21 @@ namespace ntt {
      *          u_prtl   at n+1/2
      */
     timers.start("Output");
-    if ((params.outputFormat() != "disabled")
-        && (this->m_tstep % params.outputInterval() == 0)) {
-      WaitAndSynchronize();
-      wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
-    }
+    wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
-    timers.printAll("time = " + std::to_string(this->m_time)
-                    + " : timestep = " + std::to_string(this->m_tstep));
-    tstep_durations.push_back(timers.get("Total"));
-    std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
-    ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
-    std::cout << std::setw(46) << std::setfill('=') << "" << std::endl;
-
-    ImposeEmptyContent(mblock.buff_content);
-    ImposeEmptyContent(mblock.cur_content);
-    ImposeEmptyContent(mblock.bckp_content);
+    this->PrintDiagnostics(
+      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations, diag_flags);
 
     this->m_time += mblock.timestep();
+    pgen.setTime(this->m_time);
     this->m_tstep++;
   }
 
   template <Dimension D>
   void GRPIC<D>::StepBackward() {}
 
-  // template <>
-  // void GRPIC<Dim2>::computeVectorPotential() {
-  //   Kokkos::parallel_for("computeVectorPotential",
-  //                        (this->m_mblock).rangeActiveCells(),
-  //                        Compute_Aphi<Dim2>(this->m_mblock, (real_t)(1.0)));
-  // }
-
-  // template <>
-  // void GRPIC<Dim3>::computeVectorPotential() {}
-
-  // template <>
-  // Inline void Compute_Aphi<Dim2>::operator()(index_t i, index_t j) const {
-  //   real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-  //   for (int k = (int)(i2_min - N_GHOSTS) + 1; k <= (int)(j - N_GHOSTS); ++k) {
-  //     real_t sqrt_detH_ij1 { m_mblock.metric.sqrt_det_h({ i_, (real_t)k - HALF }) };
-  //     real_t sqrt_detH_ij2 { m_mblock.metric.sqrt_det_h({ i_, (real_t)k + HALF }) };
-  //     int    k1 { k + N_GHOSTS };
-  //     m_mblock.aphi(i, j, 0) += HALF
-  //                               * (sqrt_detH_ij1 * m_mblock.em(i, k1 - 1, em::bx1)
-  //                                  + sqrt_detH_ij2 * m_mblock.em(i, k1, em::bx1));
-  //   }
-  // }
-
-  // template <>
-  // Inline void Compute_Aphi<Dim3>::operator()(index_t, index_t) const {
-  //   // 3D GRPIC not implemented
-  // }
-
 }    // namespace ntt
 
 template class ntt::GRPIC<ntt::Dim2>;
 template class ntt::GRPIC<ntt::Dim3>;
-
-// template <Dimension D>
-// void GRPIC<D>::step_backward(const real_t& time) {
-//   TimerCollection timers({"Field_solver", "Field_BC", "Curr_Deposit", "Prtl_Pusher"});
-
-//   // Initially: B0 at n-3/2, B at n-1/2, D0 at n-1, D at n, x at n, u at n-1/2, J0 at n-1, J
-//   at n-1/2
-
-//   timers.start(1);
-//   // B0 at n-1, B at n-1/2, D0 at n-1/2, D at n
-//   timeAverageDBSubstep(time);
-//   // E at n-1/2 with B and D0
-//   computeAuxE_D_B0Substep(time, 0);
-//   auxFieldBoundaryConditions(time, 0);
-//   // B0 at n, B at n-1/2
-//   faradaySubstep(time, -1.0, 0);
-//   timers.stop(1);
-
-//   timers.start(2);
-//   fieldBoundaryConditions(time, 1);
-//   timers.stop(2);
-
-//   timers.start(1);
-//   // H at n with B0 and D
-//   computeAuxHSubstep(time, 0);
-//   auxFieldBoundaryConditions(time, 1);
-//   timers.stop(1);
-
-//   // Push particles
-//   // x at n+1, u at n+1/2
-//   timers.start(4);
-//   timers.stop(4);
-
-//   // Current deposition
-//   // J0 at n+1/2, J at n-1/2
-//   timers.start(3);
-//   timers.stop(3);
-
-//   timers.start(1);
-//   // J0 at n+1/2, J at n
-//   timeAverageJSubstep(time);
-//   // E at n with B0 and D
-//   computeAuxE_D_B0Substep(time, 1);
-//   auxFieldBoundaryConditions(time, 0);
-//   // B0 at n+1/2, B at n-1/2
-//   faradaySubstep(time, -1.0, 1);
-//   timers.stop(1);
-
-//   timers.start(2);
-//   fieldBoundaryConditions(time, 1);
-//   timers.stop(2);
-
-//   timers.start(1);
-//   // D0 at n+1/2, D at n
-//   ampereSubstep(time, -1.0, 0);
-//   timers.stop(1);
-
-//   timers.start(2);
-//   fieldBoundaryConditions(time, 0);
-//   timers.stop(2);
-
-//   timers.start(1);
-//   // H at n+1/2 with B0 and D0
-//   computeAuxHSubstep(time, 1);
-//   auxFieldBoundaryConditions(time, 1);
-//   // D0 at n+1, D at n
-//   ampereSubstep(time, -1.0, 1);
-
-//   // Final: B0 at n-1/2, B at n+1/2, D0 at n, D at n+1, x at n+1, u at n+1/2, J0 at n, J at
-//   n+1/2 swap_em_cur(this->m_mblock); timers.stop(1);
-
-//   timers.start(2);
-//   fieldBoundaryConditions(time, 0);
-//   timers.stop(2);
-
-//   timers.printAll(millisecond);
-// }

@@ -2,10 +2,10 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "progressbar.h"
 #include "sim_params.h"
-#include "timer.h"
+
+#include "io/output.h"
+#include "utils/timer.h"
 
 #include <plog/Log.h>
 
@@ -25,7 +25,8 @@ namespace ntt {
       Simulation<D, PICEngine>::PrintDetails();
       InitialStep();
       for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGI_(LogFile) << "ti " << this->m_tstep << "...";
+        PLOGV_(LogFile) << "step = " << this->m_tstep;
+        PLOGV_(LogFile) << std::endl;
         StepForward();
       }
       WaitAndSynchronize();
@@ -42,16 +43,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::InitialStep() {
-    auto& mblock = this->meshblock;
-    ImposeContent(mblock.em_content,
-                  { Content::ex1_cntrv,
-                    Content::ex2_cntrv,
-                    Content::ex3_cntrv,
-                    Content::bx1_cntrv,
-                    Content::bx2_cntrv,
-                    Content::bx3_cntrv });
-  }
+  void PIC<D>::InitialStep() {}
 
   template <Dimension D>
   void PIC<D>::Benchmark() {
@@ -61,7 +53,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  void PIC<D>::StepForward() {
+  void PIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
     auto                            params = *(this->params());
     auto&                           mblock = this->meshblock;
@@ -74,7 +66,8 @@ namespace ntt {
                                              "ParticlePusher",
                                              "ParticleBoundaries",
                                              "UserSpecific",
-                                             "Output" });
+                                             "Output" },
+                         params.blockingTimers());
     static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
 
@@ -104,7 +97,6 @@ namespace ntt {
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
-        ResetCurrents();
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
@@ -140,9 +132,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
-        timers.start("CurrentDeposit");
         AmpereCurrents();
-        timers.stop("CurrentDeposit");
       }
 
       timers.start("FieldBoundaries");
@@ -152,26 +142,14 @@ namespace ntt {
     }
 
     timers.start("Output");
-    if ((params.outputFormat() != "disabled")
-        && (this->m_tstep % params.outputInterval() == 0)) {
-      WaitAndSynchronize();
-      wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
-    }
+    wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
-    timers.printAll("time = " + std::to_string(this->m_time)
-                    + " : timestep = " + std::to_string(this->m_tstep));
-    this->PrintDiagnostics(std::cout, dead_fractions);
-    tstep_durations.push_back(timers.get("Total"));
-    std::cout << std::setw(46) << std::setfill('-') << "" << std::endl;
-    ProgressBar(tstep_durations, this->m_time, params.totalRuntime());
-    std::cout << std::setw(46) << std::setfill('=') << "" << std::endl;
-
-    ImposeEmptyContent(mblock.buff_content);
-    ImposeEmptyContent(mblock.cur_content);
-    ImposeEmptyContent(mblock.bckp_content);
+    this->PrintDiagnostics(
+      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations, diag_flags);
 
     this->m_time += mblock.timestep();
+    pgen.setTime(this->m_time);
     this->m_tstep++;
   }
 

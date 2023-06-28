@@ -5,7 +5,7 @@
 
 #include "simulation.h"
 
-#include "problem_generator.hpp"
+#include PGEN_HEADER
 
 #include <toml.hpp>
 
@@ -31,7 +31,7 @@ namespace ntt {
     /**
      * @brief Advance the simulation forward for one timestep.
      */
-    void StepForward();
+    void StepForward(const DiagFlags = DiagFlags_Default);
 
     /**
      * @brief Advance the simulation forward for one timestep.
@@ -119,7 +119,7 @@ namespace ntt {
      * @brief Advance particle positions and velocities.
      * @param f coefficient that gets multiplied by the timestep (def. 1.0).
      */
-    void ParticlesPush(const real_t& f = 1.0);
+    void ParticlesPush(const real_t& f = ONE);
     /**
      * @brief Apply boundary conditions for particles.
      */

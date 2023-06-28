@@ -4,11 +4,12 @@
 
 #  include "wrapper.h"
 
-#  include "meshblock.h"
-#  include "output.h"
 #  include "particle_macros.h"
-#  include "particles.h"
 #  include "sim_params.h"
+
+#  include "io/output.h"
+#  include "meshblock/meshblock.h"
+#  include "meshblock/particles.h"
 
 #  include <adios2.h>
 #  include <adios2/cxx11/KokkosView.h>
@@ -26,17 +27,25 @@ namespace ntt {
 
       // remove all the dead particles before output
       auto npart_tag = prtls.CountTaggedParticles();
-      auto dead_fraction
-        = (double)(npart_tag[(short)(ParticleTag::dead)]) / (double)(prtls.npart());
       if (prtls.npart() > 0) {
         prtls.ReshuffleByTags();
         prtls.setNpart(npart_tag[(short)(ParticleTag::alive)]);
       }
       auto prtl_stride = params.outputPrtlStride();
       auto size        = static_cast<std::size_t>(prtls.npart() / prtl_stride);
+      if (size == 0 and prtls.npart() > 0) {
+        size        = prtls.npart();
+        prtl_stride = 1;
+      }
 
       if (m_id == PrtlID::X) {
-        for (auto d { 0 }; d < (short)D; ++d) {
+        // phi is treated separately for 2D non-Minkowski metric
+#  ifndef MINKOWSKI_METRIC
+        const auto dmax = (D == Dim2) ? 3 : (short)D;
+#  else
+        const auto dmax = (short)D;
+#  endif
+        for (auto d { 0 }; d < dmax; ++d) {
           array_t<real_t*> xi("xi", size);
 
           Kokkos::parallel_for(

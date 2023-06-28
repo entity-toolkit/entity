@@ -1,22 +1,158 @@
+#include "wrapper.h"
+
+#include "sim_params.h"
+
+#include "io/output.h"
+#include "meshblock/fields.h"
+#include "meshblock/meshblock.h"
+#include "utils/utils.h"
+
 #ifdef OUTPUT_ENABLED
+#  include <adios2.h>
+#  include <adios2/cxx11/KokkosView.h>
+#endif
 
-#  include "wrapper.h"
-
-#  include "fields.h"
-#  include "meshblock.h"
-#  include "output.h"
-#  include "sim_params.h"
-#  include "utils.h"
-
-#  ifdef OUTPUT_ENABLED
-#    include <adios2.h>
-#    include <adios2/cxx11/KokkosView.h>
-#  endif
-
-#  include <string>
-#  include <vector>
+#include <string>
+#include <vector>
 
 namespace ntt {
+
+  void OutputField::initialize(const SimulationEngine& S) {
+    if (S == GRPICEngine) {
+      prepare_flag = is_gr_aux_field() ? PrepareOutput_ConvertToPhysCov
+                                       : PrepareOutput_ConvertToPhysCntrv;
+    } else if (S == PICEngine) {
+      prepare_flag = PrepareOutput_ConvertToHat;
+    }
+
+    if (is_field()) {
+      NTTHostErrorIf(comp.size() != 3, "Fields are always 3 components for output");
+      if (is_efield()) {
+        address.push_back(em::ex1);
+        address.push_back(em::ex2);
+        address.push_back(em::ex3);
+        interp_flag = PrepareOutput_InterpToCellCenterFromEdges;
+      } else {
+        address.push_back(em::bx1);
+        address.push_back(em::bx2);
+        address.push_back(em::bx3);
+        interp_flag = PrepareOutput_InterpToCellCenterFromFaces;
+      }
+    } else if (is_gr_aux_field()) {
+      if (S == GRPICEngine) {
+        NTTHostErrorIf(comp.size() != 3, "Aux fields are always 3 components for output");
+        if (is_efield()) {
+          address.push_back(em::ex1);
+          address.push_back(em::ex2);
+          address.push_back(em::ex3);
+          interp_flag = PrepareOutput_InterpToCellCenterFromEdges;
+        } else {
+          address.push_back(em::hx1);
+          address.push_back(em::hx2);
+          address.push_back(em::hx3);
+          interp_flag = PrepareOutput_InterpToCellCenterFromFaces;
+        }
+      } else {
+        NTTHostError("GRPICEngine is required for GR aux fields");
+      }
+    } else if (is_current()) {
+      NTTHostErrorIf(comp.size() != 3, "Currents are always 3 components for output");
+      interp_flag = PrepareOutput_InterpToCellCenterFromEdges;
+      address.push_back(cur::jx1);
+      address.push_back(cur::jx2);
+      address.push_back(cur::jx3);
+    } else if (is_moment()) {
+      NTTHostErrorIf(comp.size() > 3, "Cannot output more than 3 components for moments");
+      for (std::size_t i { 0 }; i < comp.size(); ++i) {
+        address.push_back(i);
+      }
+    } else if (is_vpotential()) {
+      address.push_back(0);
+      NTTHostErrorIf(comp.size() != 1,
+                     "Vector potential is always 1 components for output, but given "
+                       + std::to_string(comp.size()));
+    } else {
+      NTTHostError("Unrecognized field type for output");
+    }
+  }
+
+  [[nodiscard]] auto OutputField::name(const int& i) const -> std::string {
+    std::string myname { m_name };
+    for (auto& cc : comp[i]) {
+#ifdef MINKOWSKI_METRIC
+      myname += (cc == 0 ? "t" : (cc == 1 ? "x" : (cc == 2 ? "y" : "z")));
+#else
+      myname += std::to_string(cc);
+#endif
+    }
+    if (species.size() > 0) {
+      myname += "_";
+      for (auto& s : species) {
+        myname += std::to_string(s);
+        myname += "_";
+      }
+      myname.pop_back();
+    }
+    return myname;
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void OutputField::compute(const SimulationParams& params, Meshblock<D, S>& mblock) const {
+    auto slice_i1 = Kokkos::ALL;
+    auto slice_i2 = Kokkos::ALL;
+    auto slice_i3 = Kokkos::ALL;
+
+    if (is_field()) {
+      auto slice_comp = std::make_pair(address[0], address[2]);
+      if constexpr (D == Dim1) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_comp),
+                          Kokkos::subview(mblock.em, slice_i1, slice_comp));
+      } else if constexpr (D == Dim2) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
+                          Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_comp));
+      } else if constexpr (D == Dim3) {
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_i3, slice_comp),
+          Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_i3, slice_comp));
+      }
+      // Kokkos::deep_copy(mblock.bckp, mblock.em);
+      mblock.template PrepareFieldsForOutput<6, 6>(
+        mblock.em, mblock.bckp, address[0], address[1], address[2], interp_flag | prepare_flag);
+    } else if (is_gr_aux_field()) {
+      auto slice_comp = std::make_pair(address[0], address[2]);
+      if constexpr (D == Dim1) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_comp),
+                          Kokkos::subview(mblock.aux, slice_i1, slice_comp));
+      } else if constexpr (D == Dim2) {
+        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
+                          Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_comp));
+      } else if constexpr (D == Dim3) {
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_i3, slice_comp),
+          Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_i3, slice_comp));
+      }
+      // Kokkos::deep_copy(mblock.bckp, mblock.aux);
+      mblock.template PrepareFieldsForOutput<6, 6>(
+        mblock.aux, mblock.bckp, address[0], address[1], address[2], interp_flag | prepare_flag);
+    } else if (is_current()) {
+      Kokkos::deep_copy(mblock.buff, mblock.cur);
+      mblock.template PrepareFieldsForOutput<3, 3>(
+        mblock.cur, mblock.buff, address[0], address[1], address[2], interp_flag | prepare_flag);
+    } else if (is_moment()) {
+      for (std::size_t i { 0 }; i < comp.size(); ++i) {
+        mblock.ComputeMoments(params,
+                              m_id,
+                              comp[i],
+                              species,
+                              address[i],
+                              id() == FieldID::Nppc ? 0 : params.outputMomSmooth());
+      }
+    } else if (is_vpotential()) {
+      mblock.ComputeVectorPotential(mblock.bckp, address[0]);
+    }
+  }
+
+#ifdef OUTPUT_ENABLED
 
   namespace {
     template <Dimension D, int N>
@@ -59,55 +195,17 @@ namespace ntt {
   }    // namespace
 
   template <Dimension D, SimulationEngine S>
-  void OutputField::put(adios2::IO&             io,
-                        adios2::Engine&         writer,
-                        const SimulationParams& params,
-                        Meshblock<D, S>&        mblock) const {
-    if constexpr (S == GRPICEngine) {
-      if (m_id == FieldID::E || m_id == FieldID::H) {
-        NTTHostError("Output of E and H (aux) fields is not supported yet");
+  void OutputField::put(adios2::IO& io, adios2::Engine& writer, Meshblock<D, S>& mblock) const {
+    if (is_field() || is_gr_aux_field() || is_vpotential()) {
+      for (std::size_t i { 0 }; i < address.size(); ++i) {
+        PutField<D, 6>(io, writer, name(i), mblock.bckp, address[i]);
       }
-    }
-    if ((m_id == FieldID::E) || (m_id == FieldID::B) || (m_id == FieldID::D)
-        || (m_id == FieldID::H)) {
-      mblock.PrepareFieldsForOutput();
-      ImposeEmptyContent(mblock.bckp_content);
-      std::vector<em>      comp_options;
-      std::vector<Content> content_options
-        = { Content::ex1_hat_int, Content::ex2_hat_int, Content::ex3_hat_int,
-            Content::bx1_hat_int, Content::bx2_hat_int, Content::bx3_hat_int };
-      if (m_id == FieldID::E || m_id == FieldID::D) {
-        comp_options = { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 };
-      } else if (m_id == FieldID::B || m_id == FieldID::H) {
-        comp_options = { em::bx1, em::bx2, em::bx3 };
-      }
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 6>(io, writer, name(i), mblock.bckp, (int)(comp_id));
-      }
-    } else if (m_id == FieldID::J) {
-      mblock.PrepareCurrentsForOutput();
-      ImposeEmptyContent(mblock.cur_content);
-      std::vector<cur>     comp_options = { cur::jx1, cur::jx2, cur::jx3 };
-      std::vector<Content> content_options
-        = { Content::jx1_hat_int, Content::jx2_hat_int, Content::jx3_hat_int };
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        auto comp_id = comp_options[comp[i][0] - 1];
-        PutField<D, 3>(io, writer, name(i), mblock.cur, (int)(comp_id));
-      }
-    } else {
-      for (std::size_t i { 0 }; i < comp.size(); ++i) {
-        // no smoothing for FieldID::Nppc
-        mblock.ComputeMoments(params,
-                              m_id,
-                              comp[i],
-                              species,
-                              i % 3,
-                              m_id == FieldID::Nppc ? 0 : params.outputMomSmooth());
-        PutField<D, 3>(io, writer, name(i), mblock.buff, i % 3);
+    } else if (is_current() || is_moment()) {
+      for (std::size_t i { 0 }; i < address.size(); ++i) {
+        PutField<D, 3>(io, writer, name(i), mblock.buff, address[i]);
       }
     }
   }
-}    // namespace ntt
-
 #endif
+
+}    // namespace ntt

@@ -52,6 +52,6 @@ pusher   = "Photon"
 
 [problem]
 
-[visualization]
-fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz", "Rho"]
+[output]
+fields        = ["B", "E", "J", "Rho"]
 fields_stride = 4

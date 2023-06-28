@@ -3,12 +3,13 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
 #include "particle_macros.h"
-#include "particles.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
+#include "meshblock/meshblock.h"
+#include "meshblock/particles.h"
+
+#include "utils/archetypes.hpp"
 
 #include <vector>
 
@@ -28,7 +29,7 @@ namespace ntt {
                              const Particles<Dim1, S>& sp1,
                              const Particles<Dim1, S>& sp2,
                              const list_t<real_t, 2>&  box,
-                             const real_t&             time)
+                             const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -74,7 +75,7 @@ namespace ntt {
                              const Particles<Dim2, S>& sp1,
                              const Particles<Dim2, S>& sp2,
                              const list_t<real_t, 4>&  box,
-                             const real_t&             time)
+                             const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -121,7 +122,7 @@ namespace ntt {
                              const Particles<Dim3, S>& sp1,
                              const Particles<Dim3, S>& sp2,
                              const list_t<real_t, 6>&  box,
-                             const real_t&             time)
+                             const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -262,7 +263,7 @@ namespace ntt {
                             const Particles<Dim1, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&               time)
+                            const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -285,12 +286,12 @@ namespace ntt {
       real_t            n_inject { nppc };
       coord_t<Dim1>     xc { ZERO };
       coord_t<Dim1>     xph { ZERO };
-      float             dx1, dx2;
+      prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
       real_t            cell_vol;
 
       while (n_inject > ZERO) {
-        dx1   = Random<float>(rand_gen);
+        dx1   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         mblock.metric.x_Code2Cart(xc, xph);
         if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
@@ -360,7 +361,7 @@ namespace ntt {
                             const Particles<Dim2, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&               time)
+                            const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -384,13 +385,13 @@ namespace ntt {
       real_t            n_inject { nppc };
       coord_t<Dim2>     xc { ZERO };
       coord_t<Dim2>     xph { ZERO };
-      float             dx1, dx2;
+      prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
       real_t            cell_vol;
 
       while (n_inject > ZERO) {
-        dx1   = Random<float>(rand_gen);
-        dx2   = Random<float>(rand_gen);
+        dx1   = Random<prtldx_t>(rand_gen);
+        dx2   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         xc[1] = xi[1] + dx2;
 #ifdef MINKOWSKI_METRIC
@@ -411,7 +412,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
           init_prtl_2d_i_di(species1,
                             offset1 + p,
@@ -430,7 +431,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
           init_prtl_2d_i_di(species2,
                             offset2 + p,
@@ -477,7 +478,7 @@ namespace ntt {
                             const Particles<Dim3, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&               time)
+                            const real_t&)
       : params { pr },
         mblock { mb },
         species1 { sp1 },
@@ -502,14 +503,14 @@ namespace ntt {
       real_t            n_inject { nppc };
       coord_t<Dim3>     xc { ZERO };
       coord_t<Dim3>     xph { ZERO };
-      float             dx1, dx2, dx3;
+      prtldx_t          dx1, dx2, dx3;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
       real_t            cell_vol;
 
       while (n_inject > ZERO) {
-        dx1   = Random<float>(rand_gen);
-        dx2   = Random<float>(rand_gen);
-        dx3   = Random<float>(rand_gen);
+        dx1   = Random<prtldx_t>(rand_gen);
+        dx2   = Random<prtldx_t>(rand_gen);
+        dx3   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         xc[1] = xi[1] + dx2;
         xc[2] = xi[2] + dx3;
@@ -531,7 +532,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
 #endif
           init_prtl_3d_i_di(species1,
                             offset1 + p,
@@ -552,7 +553,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
 #endif
           init_prtl_3d_i_di(species2,
                             offset2 + p,
@@ -613,9 +614,6 @@ namespace ntt {
                              const real_t&           ppc_per_spec,
                              std::vector<real_t>     region = {},
                              const real_t&           time   = ZERO) {
-    EnDist<D, S>  energy_dist(params, mblock);
-    SpDist<D, S>  spatial_dist(params, mblock);
-    InjCrit<D, S> inj_criterion(params, mblock);
     range_t<D>    range_policy;
     if (region.size() == 0) {
       range_policy = mblock.rangeActiveCells();

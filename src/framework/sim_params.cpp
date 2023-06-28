@@ -2,11 +2,11 @@
 
 #include "wrapper.h"
 
-#include "input.h"
-#include "output.h"
-#include "particles.h"
-#include "qmath.h"
-#include "utils.h"
+#include "io/input.h"
+#include "io/output.h"
+#include "meshblock/particles.h"
+#include "utils/qmath.h"
+#include "utils/utils.h"
 
 #include <toml.hpp>
 
@@ -40,7 +40,7 @@ namespace ntt {
         (mass == 0.0) && (charge == 0.0) ? defaults::ph_pusher : defaults::em_pusher,
         options::pushers);
       ParticlePusher pusher { ParticlePusher::UNDEFINED };
-      if (pusher_str == "photon") {
+      if (pusher_str == "Photon") {
         pusher = ParticlePusher::PHOTON;
       } else if (pusher_str == "Vay") {
         pusher = ParticlePusher::VAY;
@@ -57,24 +57,19 @@ namespace ntt {
     m_max_dead_frac    = get<double>("particles", "max_dead_frac", defaults::max_dead_frac);
     m_use_weights      = get<bool>("particles", "use_weights", defaults::use_weights);
 
-#ifdef MINKOWSKI_METRIC
-    m_metric = "minkowski";
-#elif defined(SPHERICAL_METRIC)
-    m_metric = "spherical";
-#elif defined(QSPHERICAL_METRIC)
-    m_metric = "qspherical";
-#elif defined(KERR_SCHILD_METRIC)
-    m_metric = "kerr_schild";
-#elif defined(QKERR_SCHILD_METRIC)
-    m_metric = "qkerr_schild";
-#else
-    NTTHostError("unrecognized metric");
-#endif
+    m_metric           = SIMULATION_METRIC;
+    if (m_metric == "minkowski") {
+      m_coordinates = "cartesian";
+    } else if (m_metric[0] == 'q') {
+      m_coordinates = "qspherical";
+    } else {
+      m_coordinates = "spherical";
+    }
 
     // domain size / resolution
     m_resolution = get<std::vector<unsigned int>>("domain", "resolution");
     m_extent     = get<std::vector<real_t>>("domain", "extent");
-    if (m_metric == "minkowski") {
+    if (m_coordinates == "cartesian") {
       // minkowski
       NTTHostErrorIf((((short)(m_resolution.size()) < (short)(dim))
                       || ((short)(m_extent.size()) < 2 * (short)(dim))),
@@ -89,32 +84,34 @@ namespace ntt {
         auto dz { (m_extent[5] - m_extent[4]) / (real_t)(m_resolution[2]) };
         NTTHostErrorIf((dx != dz), "dx != dz in minkowski");
       }
-    } else if ((m_metric == "spherical") || (m_metric == "qspherical")
-               || (m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
+    } else if (m_coordinates.find("spherical") != std::string::npos) {
       // spherical (quasi-spherical) grid
       NTTHostErrorIf((m_extent.size() < 2), "not enough values in `extent` input");
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
-      if ((m_metric == "qspherical") || (m_metric == "qkerr_schild")) {
+      if (m_coordinates == "qspherical") {
         m_metric_parameters[0] = get<real_t>("domain", "qsph_r0");
         m_metric_parameters[1] = get<real_t>("domain", "qsph_h");
-        NTTHostErrorIf((AlmostEqual(m_metric_parameters[1], ZERO)), "qsph_h must be non-zero");
       }
       m_metric_parameters[2] = get<real_t>("domain", "sph_rabsorb");
       m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));
 
-      if ((m_metric == "kerr_schild") || (m_metric == "qkerr_schild")) {
-        real_t spin { get<real_t>("domain", "a") };
+      // GR specific
+      if (m_metric.find("kerr_schild") != std::string::npos) {
+        real_t spin { get<real_t>("domain", "a", ZERO) };
         real_t rh { ONE + math::sqrt(ONE - spin * spin) };
         m_metric_parameters[4] = spin;
-        m_extent[0] *= rh;
-        m_extent[1] *= rh;
-        m_metric_parameters[2] *= rh;
+        m_metric_parameters[5] = rh;
+
+        m_gr_pusher_epsilon = get<real_t>("algorithm", "gr_pusher_epsilon", (real_t)(1.0e-6));
+        m_gr_pusher_niter   = get<int>("algorithm", "gr_pusher_niter", 10);
       }
 
       m_extent.push_back(0.0);
       m_extent.push_back(constant::PI);
       m_extent.push_back(0.0);
       m_extent.push_back(constant::TWO_PI);
+    } else {
+      NTTHostError("unrecognized coordinates: " + m_coordinates);
     }
     // leave only necessary extent/resolution (<= DIM)
     m_extent.erase(m_extent.begin() + 2 * (short)(dim), m_extent.end());
@@ -153,6 +150,8 @@ namespace ntt {
     m_skindepth0 = get<real_t>("units", "skindepth0");
     m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
 
+    // if dt not specified (== -1), will use CFL to calculate it
+    m_dt         = get<real_t>("algorithm", "dt", -ONE);
     m_cfl        = get<real_t>("algorithm", "CFL", defaults::cfl);
     assert(m_cfl > 0);
 
@@ -163,10 +162,18 @@ namespace ntt {
     // output params
     m_output_format
       = get<std::string>("output", "format", defaults::output_format, options::outputs);
-    m_output_interval   = get<int>("output", "interval", defaults::output_interval);
-    m_output_fields     = get<std::vector<std::string>>("output", "fields");
-    m_output_particles  = get<std::vector<std::string>>("output", "particles");
+    m_output_interval      = get<int>("output", "interval", defaults::output_interval);
+    m_output_interval_time = get<real_t>("output", "interval_time", -1.0);
+    m_output_fields
+      = get<std::vector<std::string>>("output", "fields", std::vector<std::string>());
+    m_output_particles
+      = get<std::vector<std::string>>("output", "particles", std::vector<std::string>());
     m_output_mom_smooth = get<int>("output", "mom_smooth", defaults::output_mom_smooth);
-    m_output_prtl_stride = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
+    m_output_prtl_stride
+      = get<std::size_t>("output", "prtl_stride", defaults::output_prtl_stride);
+
+    // diagnostic params
+    m_diag_interval   = get<int>("diagnostics", "interval", defaults::diag_interval);
+    m_blocking_timers = get<bool>("diagnostics", "blocking_timers", defaults::blocking_timers);
   }
 }    // namespace ntt

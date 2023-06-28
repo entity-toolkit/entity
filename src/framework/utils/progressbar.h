@@ -25,9 +25,8 @@ namespace ntt {
                    const real_t&                   runtime,
                    std::ostream&                   os = std::cout) {
     // durations are in us (microseconds)
-    const auto window
-      = IMIN(IMAX(static_cast<int>(durations.size() * pbar::average_last_pct / 100), 10),
-             durations.size());
+    const auto window = IMIN(IMAX((int)(durations.size() * pbar::average_last_pct / 100), 10),
+                             (int)durations.size());
     const auto avg_duration = std::accumulate(durations.end() - window, durations.end(), 0.0)
                               / static_cast<long double>(window);
     auto avg_reduced = avg_duration;
@@ -46,7 +45,10 @@ namespace ntt {
     const auto remain_nsteps = static_cast<int>((runtime - time) * durations.size() / time);
     auto       remain_time   = static_cast<long double>(remain_nsteps * avg_duration);
     auto       remain_units  = "us";
-    if ((1e3 <= remain_time) && (remain_time < 1e6)) {
+    if (remain_time <= 0.0) {
+      remain_time = 0.0;
+    }
+    if ((remain_time > 0.0) && (1e3 <= remain_time) && (remain_time < 1e6)) {
       remain_time /= 1e3;
       remain_units = "ms";
     } else if ((1e6 <= remain_time) && (remain_time < 6e7)) {
@@ -69,10 +71,10 @@ namespace ntt {
       os << "Remaining time: " << remain_time << " " << remain_units << std::endl;
     }
     os << pbar::start;
-    for (std::size_t i { 0 }; i < nfilled; ++i) {
+    for (auto i { 0 }; i < nfilled; ++i) {
       os << pbar::fill;
     }
-    for (std::size_t i { 0 }; i < nempty; ++i) {
+    for (auto i { 0 }; i < nempty; ++i) {
       os << pbar::empty;
     }
     os << pbar::end << " " << std::fixed << std::setprecision(2) << pct << "%\n";

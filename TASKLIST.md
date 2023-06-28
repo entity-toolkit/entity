@@ -6,7 +6,7 @@
 - [ ] add gravitationally bound atmosphere
 - [x] rewrite UniformInjector with global random pool
 - [x] add particle deletion routine
-- [ ] make more user-friendly and understandable boundary conditions
+- [x] make more user-friendly and understandable boundary conditions
 - [x] refine output
 - [ ] fix bugs in `nttiny`
   - [x] delete plot removes all labels
@@ -15,5 +15,29 @@
   - [ ] (?) add autosave state
   - [x] why last cell does not work?
 - [x] add different moments (momX, momY, momZ, meanGamma)
-- [ ] add charge
+- [x] add charge
 - [x] add per species densities
+
+# v0.9
+
+- [x] add current deposit/filtering for GR
+- [ ] add moments for GR
+- [ ] add Maxwellian for GR
+
+### Short term things to do/fix
+
+  - [x] routine for easy side/corner range selection
+  - [x] aliases for fields/particles/currents
+  - [ ] check allocation of proper fields
+  - [x] add a simple current filtering
+  - [x] field mirrors
+  - [x] unit tests + implement with github actions
+
+### Intermediate term things to do/fix
+
+  - [x] test curvilinear particle pusher
+  - [x] particle motion near the axes
+  - [x] test curvilinear current deposit
+  - [x] deposition near the axes
+  - [x] filtering near the axes
+

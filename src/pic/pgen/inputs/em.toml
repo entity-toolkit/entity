@@ -21,6 +21,6 @@ amplitude = 2.5
 nx1       = 5
 nx2       = 5
 
-[visualization]
-fields        = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Rho"]
+[output]
+fields        = ["B", "E", "Rho"]
 fields_stride = 1

@@ -7,7 +7,7 @@
 #include "grpic.h"
 #include "sim_params.h"
 
-#include "problem_generator.hpp"
+#include PGEN_HEADER
 
 #include <stdio.h>
 

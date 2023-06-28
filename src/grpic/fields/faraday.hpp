@@ -4,9 +4,10 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "fields.h"
 #include "grpic.h"
-#include "meshblock.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 
 namespace ntt {
 

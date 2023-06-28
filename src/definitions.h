@@ -60,6 +60,7 @@ inline constexpr double INV_64 = 0.015625;
 namespace ntt {
   namespace constant {
     inline constexpr std::uint64_t RandomSeed = 0x123456789abcdef0;
+    inline constexpr double        HALF_PI    = 1.57079632679489661923;
     inline constexpr double        PI         = 3.14159265358979323846;
     inline constexpr double        INV_PI     = 0.31830988618379067154;
     inline constexpr double        PI_SQR     = 9.86960440108935861882;
@@ -81,6 +82,8 @@ namespace ntt {
 
   // Defining specific code configurations as enum classes
   enum class Dimension { ONE_D = 1, TWO_D = 2, THREE_D = 3 };
+  template <Dimension D>
+  struct DimensionTag {};
 
   enum class SimulationEngine { UNDEFINED, SANDBOX, PIC, GRPIC };
   enum class BoundaryCondition { UNDEFINED, PERIODIC, ABSORB, CUSTOM, OPEN, COMM, AXIS };
@@ -123,7 +126,7 @@ namespace ntt {
     const std::vector<std::string> pushers = { "Boris", "Photon", "None" };
     const std::vector<std::string> boundaries
       = { "PERIODIC", "ABSORB", "CUSTOM", "OPEN", "AXIS" };
-    const std::vector<std::string> outputs = { "disabled", "HDF5" };
+    const std::vector<std::string> outputs = { "disabled", "HDF5", "BP5" };
   }    // namespace options
 
   namespace defaults {
@@ -133,7 +136,7 @@ namespace ntt {
     const std::string          title              = "EntitySimulation";
     const int                  n_species          = 0;
     const std::string          em_pusher          = "Boris";
-    const std::string          ph_pusher          = "photon";
+    const std::string          ph_pusher          = "Photon";
     const std::string          metric             = "minkowski";
 
     const real_t               runtime            = 1e10;
@@ -151,19 +154,25 @@ namespace ntt {
     const int                  output_interval    = 1;
     const int                  output_mom_smooth  = 1;
     const std::size_t          output_prtl_stride = 100;
+
+    const std::string          log_level          = "info";
+    const int                  diag_interval      = 1;
+    const bool                 blocking_timers    = false;
   }    // namespace defaults
 
   // Field IDs used for io
   enum class FieldID {
-    E,      // Electric fields
-    D,      // Electric fields (GR)
-    B,      // Magnetic fields
-    H,      // Magnetic fields (GR)
-    J,      // Current density
-    T,      // Particle distribution moments
-    Rho,    // Particle density
-    N,      // Particle number density
-    Nppc    // Raw number of particles per each cell
+    E,         // Electric fields
+    D,         // Electric fields (GR)
+    B,         // Magnetic fields
+    H,         // Magnetic fields (GR)
+    J,         // Current density
+    A,         // Vector potential
+    T,         // Particle distribution moments
+    Rho,       // Particle mass density
+    Charge,    // Charge density
+    N,         // Particle number density
+    Nppc       // Raw number of particles per each cell
   };
 
   enum class PrtlID {

@@ -2,15 +2,14 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "metric.h"
-#include "utils.h"
+#include "io/output.h"
+#include "utils/progressbar.h"
+#include "utils/timer.h"
+#include "utils/utils.h"
 
 #include <plog/Log.h>
 #include <toml.hpp>
 
-#include <iostream>
-#include <stdexcept>
 #include <string>
 
 namespace ntt {
@@ -77,7 +76,11 @@ namespace ntt {
     NTTLog();
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.dx_min);
-    meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
+    if (m_params.dt() <= ZERO) {
+      meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
+    } else {
+      meshblock.setTimestep(m_params.dt());
+    }
 
     // initialize writer
     writer.Initialize(m_params, meshblock);
@@ -132,6 +135,8 @@ namespace ntt {
       << "  engine:" << stringizeSimulationEngine(S) << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  timestep:" << meshblock.timestep() << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  CFL:" << meshblock.timestep() / meshblock.minCellSize() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  total runtime:" << m_params.totalRuntime() << " ["
       << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]\n"
@@ -197,23 +202,46 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Finalize() {
+    writer.Finalize();
     WaitAndSynchronize();
     NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::PrintDiagnostics(std::ostream&              os,
-                                          const std::vector<double>& fractions) {
-    for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
-      auto& species { meshblock.particles[i] };
-      os << "species #" << i << ": " << species.npart() << " ("
-         << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%";
-      if (fractions.size() == meshblock.particles.size()) {
-        auto fraction = fractions[i];
-        os << ", " << fraction * 100 << "% dead)\n";
+  void Simulation<D, S>::PrintDiagnostics(const std::size_t&         step,
+                                          const real_t&              time,
+                                          const std::vector<double>& fractions,
+                                          const timer::Timers&       timers,
+                                          std::vector<long double>&  tstep_durations,
+                                          const DiagFlags            diag_flags,
+                                          std::ostream&              os) {
+    tstep_durations.push_back(timers.get("Total"));
+    if (step % m_params.diagInterval() == 0) {
+      const auto title { "time = " + std::to_string(time)
+                         + " : step = " + std::to_string(step) };
+      if (diag_flags & DiagFlags_Timers) {
+        timers.printAll(title);
       } else {
-        os << ")\n";
+        os << title << std::endl;
       }
+      if (diag_flags & DiagFlags_Species) {
+        for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
+          auto& species { meshblock.particles[i] };
+          os << "species #" << i << ": " << species.npart() << " ("
+             << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%";
+          if (fractions.size() == meshblock.particles.size()) {
+            auto fraction = fractions[i];
+            os << ", " << fraction * 100 << "% dead)\n";
+          } else {
+            os << ")\n";
+          }
+        }
+      }
+      if (diag_flags & DiagFlags_Progress) {
+        os << std::setw(46) << std::setfill('-') << "" << std::endl;
+        ProgressBar(tstep_durations, time, m_params.totalRuntime(), os);
+      }
+      os << std::setw(46) << std::setfill('=') << "" << std::endl;
     }
   }
 

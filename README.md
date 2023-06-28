@@ -3,58 +3,64 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-## Core developers
-
-☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
-
-🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI, cubed-sphere}
-
-## Contributors
+## Dev team (alphabetical)
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
 
 🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
 
+☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
+
+🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI, cubed-sphere}
+
 🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph): all-around}
 
-🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): PIC}
+🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): framework, PIC}
 
-## Development status
+😺 __Muni Zhou__ {[@munizhou](https://github.com/munizhou): PIC}
 
-### Short term things to do/fix
+## State of things
 
-  - [x] routine for easy side/corner range selection
-  - [x] aliases for fields/particles/currents
-  - [ ] check allocation of proper fields
-  - [x] add a simple current filtering
-  - [x] field mirrors
-  - [ ] unit tests + implement with github actions
+* Framework 
+  - [ ]  Metrics
+    - [x]  Minkowski (SR)
+    - [x]  Spherical/Qspherical (SR)
+    - [x]  Kerr-Schild/QKerr-Schild, zero-mass Kerr-Schild (GR)
+    - [ ]  virtual inheritance of metric classes
+  - [ ]  Output
+    - [x]  Fields/currents (SR/GR)
+    - [x]  Moments (SR)
+    - [ ]  Moments (GR)
+    - [x]  Particles (SR/GR)
+    - [ ]  Energy distributions (SR/GR)
+    - [ ]  Particle tracking (SR/GR)
+  - [ ]  Extra physics
+    - [ ]  Radiation (synchrotron/IC)
+    - [ ]  QED
+  - [ ]  MPI
+    - [ ]  restructure meshblocks
+    - [ ]  rewrite fieldsolvers (addressing + ranges)
 
-### Intermediate term things to do/fix
 
-  - [x] test curvilinear particle pusher
-  - [x] particle motion near the axes
-  - [x] test curvilinear current deposit
-  - [x] deposition near the axes
-  - [x] filtering near the axes
+* SR (minkowski)
+  - [x]  fieldsolver (1D/2D/3D)
+  - [x]  pusher (1D/2D/3D)
+  - [x]  deposit (1D/2D/3D)
+  - [x]  filtering (1D/2D/3D)
 
-### State of things
 
-* PIC
-  - [x] spherical/qspherical metrics (2D)
-  - [x] minkowski field solver (1D/2D/3D)
-  - [x] curvilinear field solver (2D)
-  - [x] minkowski particle pusher (Boris; 1D/2D/3D)
-  - [x] curvilinear particle pusher (Boris; 2D)
-  - [x] minkowski current deposition (1D/2D/3D)
-  - [x] curvilinear current deposition (2D)
-  - [ ] cubed sphere metric (3D)
-* GRPIC
-  - [x] spherical/qspherical Kerr-Schild metrics (2D)
-  - [x] field solver (2D)
-  - [ ] particle pusher (1D/2D/3D)
-  - [ ] current deposition (2D)
-  - [ ] cartesian Kerr-Schild metrics (1D/2D/3D)
+* SR (spherical)
+  - [x]  fieldsolver (2D)
+  - [x]  pusher (2D)
+  - [x]  deposit (2D)
+  - [x]  filtering (2D)
+
+
+* GR (spherical)
+  - [x]  fieldsolver (2D)
+  - [x]  pusher (2D)
+  - [x]  deposit (2D)
+  - [x]  filtering (2D)
 
 ### Known bugs / minor issues to fix
 
@@ -64,14 +70,21 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 ### Unit testing
 
-_[under construction]_
+A limited number of unit tests are now available. To compile/run them:
+```shell
+cmake -B build -D TESTS=ON
+cd build
+make -j
+cd tests && ctest -j
+```
+
+Tests are automatically run when on pull requests to the `master` branch.
 
 ## Third-party libraries
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
 2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
-3. [`plog`](https://github.com/SergiusTheBest/plog): for runtime logging
-4. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
+3. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
 
 ## Dependencies
 

@@ -4,9 +4,10 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "fields.h"
-#include "meshblock.h"
 #include "pic.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 
 namespace ntt {
   /**
@@ -78,7 +79,7 @@ namespace ntt {
   class AmperePoles_kernel {
     Meshblock<D, PICEngine> m_mblock;
     real_t                  m_coeff;
-    const std::size_t       m_nj;
+    const std::size_t       m_ni2;
 
   public:
     /**
@@ -87,7 +88,7 @@ namespace ntt {
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
     AmperePoles_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_nj(m_mblock.Ni2()) {}
+      : m_mblock(mblock), m_coeff(coeff), m_ni2(m_mblock.Ni2()) {}
     /**
      * @brief Implementation of the algorithm.
      * @param i radial index.
@@ -98,12 +99,12 @@ namespace ntt {
   template <>
   Inline void AmperePoles_kernel<Dim2>::operator()(index_t i) const {
     index_t j_min { N_GHOSTS };
-    index_t j_max { m_nj + N_GHOSTS };
+    index_t j_max { m_ni2 + N_GHOSTS };
 
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
     real_t  j_max_ { static_cast<real_t>(static_cast<int>(j_max) - N_GHOSTS) };
 
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area({ i_ + HALF }) };
+    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
     real_t  h3_min_iPjP { m_mblock.metric.h_33({ i_ + HALF, HALF }) };
     real_t  h3_max_iPjM { m_mblock.metric.h_33({ i_ + HALF, j_max_ - HALF }) };
 

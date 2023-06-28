@@ -4,15 +4,17 @@
 #include "wrapper.h"
 
 #include "field_macros.h"
-#include "fields.h"
-#include "meshblock.h"
 #include "particle_macros.h"
-#include "particles.h"
 #include "pic.h"
-#include "qmath.h"
 
-#include <iostream>
-#include <stdexcept>
+#include "io/output.h"
+#include "meshblock/meshblock.h"
+#include "meshblock/particles.h"
+#include "utils/qmath.h"
+
+#ifdef EXTERNAL_FORCE
+#  include PGEN_HEADER
+#endif
 
 namespace ntt {
   struct Boris_t {};
@@ -26,8 +28,13 @@ namespace ntt {
   class Pusher_kernel {
     Meshblock<D, PICEngine> m_mblock;
     Particles<D, PICEngine> m_particles;
-    const real_t            m_coeff, m_dt;
-    const int               m_ni2;
+#ifdef EXTERNAL_FORCE
+    // PgenForceField<D, PICEngine> m_force_field;
+    ProblemGenerator<D, PICEngine> m_pgen;
+    array_t<real_t*>               m_work;
+#endif
+    const real_t m_coeff, m_dt, m_time;
+    const int    m_ni2;
 
   public:
     /**
@@ -39,33 +46,23 @@ namespace ntt {
      */
     Pusher_kernel(const Meshblock<D, PICEngine>& mblock,
                   const Particles<D, PICEngine>& particles,
-                  const real_t&                  coeff,
-                  const real_t&                  dt)
-      : m_mblock(mblock),
-        m_particles(particles),
-        m_coeff(coeff),
-        m_dt(dt),
-        m_ni2 { mblock.Ni2() } {}
-    /**
-     * @brief Loop over all active particles of the given species and call the appropriate
-     * pusher.
-     */
-    void apply() {
-      if (m_particles.pusher() == ParticlePusher::PHOTON) {
-        // push photons
-        auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::BORIS) {
-        // push boris-particles
-        auto range_policy
-          = Kokkos::RangePolicy<AccelExeSpace, Boris_t>(0, m_particles.npart());
-        Kokkos::parallel_for("pusher", range_policy, *this);
-      } else if (m_particles.pusher() == ParticlePusher::NONE) {
-        // do nothing
-      } else {
-        NTTHostError("pusher not implemented");
-      }
+#ifdef EXTERNAL_FORCE
+                  const ProblemGenerator<D, PICEngine>& pgen,
+                  array_t<real_t*>&                     work,
+#endif
+                  const real_t& time,
+                  const real_t& coeff,
+                  const real_t& dt)
+      : m_mblock { mblock },
+        m_particles { particles },
+#ifdef EXTERNAL_FORCE
+        m_pgen { pgen },
+        m_work { work },
+#endif
+        m_time { time },
+        m_coeff { coeff },
+        m_dt { dt },
+        m_ni2 { (int)mblock.Ni2() } {
     }
 
     /**
@@ -78,27 +75,74 @@ namespace ntt {
         interpolateFields(p, e_int, b_int);
 
 #ifdef MINKOWSKI_METRIC
-        coord_t<D> xp;
+        coord_t<D> xp { ZERO };
 #else
-        coord_t<Dim3> xp;
+        coord_t<Dim3> xp { ZERO };
 #endif
         getParticleCoordinate(p, xp);
-        m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-        m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+        m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
+        m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
+
+#ifdef EXTERNAL_FORCE
+        coord_t<D> xp_ph { ZERO };
+#  ifdef MINKOWSKI_METRIC
+        m_mblock.metric.x_Code2Cart(xp, xp_ph);
+#  else
+        coord_t<D> xp_ND { ZERO };
+#    pragma unroll
+        for (short d { 0 }; d < static_cast<short>(D); ++d) {
+          xp_ND[d] = xp[d];
+        }
+        m_mblock.metric.x_Code2Sph(xp_ND, xp_ph);
+#  endif
+
+        const vec_t<Dim3> force_Hat { m_pgen.ext_force_x1(m_time, xp_ph),
+                                      m_pgen.ext_force_x2(m_time, xp_ph),
+                                      m_pgen.ext_force_x3(m_time, xp_ph) };
+        vec_t<Dim3>       force_Cart { ZERO };
+        m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+
+        real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                                    + SQR(m_particles.ux3(p)));
+        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p)
+                         + force_Cart[1] * m_particles.ux2(p)
+                         + force_Cart[2] * m_particles.ux3(p);
+        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+
+#endif
 
         BorisUpdate(p, e_int_Cart, b_int_Cart);
+
+#ifdef EXTERNAL_FORCE
+
+        t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                             + SQR(m_particles.ux3(p)));
+        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
+                  + force_Cart[2] * m_particles.ux3(p);
+        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+
+#endif
 
         real_t inv_energy;
         inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
 
         // contravariant 3-velocity: u^i / gamma
         vec_t<Dim3> v;
-        m_mblock.metric.v_Cart2Cntrv(
+        m_mblock.metric.v3_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
         // avoid problem for a particle right at the axes
         if ((m_particles.i2(p) == 0) && AlmostEqual(m_particles.dx2(p), 0.0f)) {
           v[2] = ZERO;
-        } else if ((m_particles.i2(p) == m_ni2 - 1) && AlmostEqual(m_particles.dx2(p), 1.0f)) {
+        } else if ((m_particles.i2(p) == m_ni2 - 1)
+                   && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
           v[2] = ZERO;
         }
         v[0] *= inv_energy;
@@ -121,7 +165,7 @@ namespace ntt {
 #endif
         getParticleCoordinate(p, xp);
         vec_t<Dim3> v;
-        m_mblock.metric.v_Cart2Cntrv(
+        m_mblock.metric.v3_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
 
         real_t inv_energy;
@@ -238,30 +282,33 @@ namespace ntt {
 
   template <Dimension D>
   Inline void Pusher_kernel<D>::positionUpdate_x1(index_t& p, const real_t& vx1) const {
-    m_particles.dx1(p) = m_particles.dx1(p) + static_cast<float>(m_dt * vx1);
-    int   temp_i { static_cast<int>(m_particles.dx1(p)) };
-    float temp_r { math::fmax(SIGNf(m_particles.dx1(p)) + temp_i, static_cast<float>(temp_i))
-                   - 1.0f };
+    m_particles.dx1(p) = m_particles.dx1(p) + static_cast<prtldx_t>(m_dt * vx1);
+    int      temp_i { static_cast<int>(m_particles.dx1(p)) };
+    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx1(p)) + temp_i,
+                                 static_cast<prtldx_t>(temp_i))
+                      - static_cast<prtldx_t>(1.0) };
     temp_i             = static_cast<int>(temp_r);
     m_particles.i1(p)  = m_particles.i1(p) + temp_i;
     m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
   }
   template <Dimension D>
   Inline void Pusher_kernel<D>::positionUpdate_x2(index_t& p, const real_t& vx2) const {
-    m_particles.dx2(p) = m_particles.dx2(p) + static_cast<float>(m_dt * vx2);
-    int   temp_i { static_cast<int>(m_particles.dx2(p)) };
-    float temp_r { math::fmax(SIGNf(m_particles.dx2(p)) + temp_i, static_cast<float>(temp_i))
-                   - 1.0f };
+    m_particles.dx2(p) = m_particles.dx2(p) + static_cast<prtldx_t>(m_dt * vx2);
+    int      temp_i { static_cast<int>(m_particles.dx2(p)) };
+    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx2(p)) + temp_i,
+                                 static_cast<prtldx_t>(temp_i))
+                      - static_cast<prtldx_t>(1.0) };
     temp_i             = static_cast<int>(temp_r);
     m_particles.i2(p)  = m_particles.i2(p) + temp_i;
     m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
   }
   template <Dimension D>
   Inline void Pusher_kernel<D>::positionUpdate_x3(index_t& p, const real_t& vx3) const {
-    m_particles.dx3(p) = m_particles.dx3(p) + static_cast<float>(m_dt * vx3);
-    int   temp_i { static_cast<int>(m_particles.dx3(p)) };
-    float temp_r { math::fmax(SIGNf(m_particles.dx3(p)) + temp_i, static_cast<float>(temp_i))
-                   - 1.0f };
+    m_particles.dx3(p) = m_particles.dx3(p) + static_cast<prtldx_t>(m_dt * vx3);
+    int      temp_i { static_cast<int>(m_particles.dx3(p)) };
+    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx3(p)) + temp_i,
+                                 static_cast<prtldx_t>(temp_i))
+                      - static_cast<prtldx_t>(1.0) };
     temp_i             = static_cast<int>(temp_r);
     m_particles.i3(p)  = m_particles.i3(p) + temp_i;
     m_particles.dx3(p) = m_particles.dx3(p) - temp_r;
@@ -287,7 +334,7 @@ namespace ntt {
     b0[0] *= COEFF;
     b0[1] *= COEFF;
     b0[2] *= COEFF;
-    COEFF = 2.0 / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
+    COEFF = TWO / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
 
     vec_t<Dim3> u1 { (u0[0] + u0[1] * b0[2] - u0[2] * b0[1]) * COEFF,
                      (u0[1] + u0[2] * b0[0] - u0[0] * b0[2]) * COEFF,
@@ -305,6 +352,7 @@ namespace ntt {
   // * * * * * * * * * * * * * * *
   // Field interpolations
   // * * * * * * * * * * * * * * *
+
   template <>
   Inline void Pusher_kernel<Dim1>::interpolateFields(index_t&     p,
                                                      vec_t<Dim3>& e0,
@@ -565,7 +613,7 @@ namespace ntt {
 //   getParticleCoordinate(p, xp);
 
 //   vec_t<Dim3> v;
-//   m_mblock.metric.v_Cart2Cntrv(
+//   m_mblock.metric.v3_Cart2Cntrv(
 //     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
 //   v[0] *= inv_energy;
 //   v[1] *= inv_energy;
@@ -576,8 +624,8 @@ namespace ntt {
 //   vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
 //   interpolateFields(p, e_int, b_int);
 
-//   m_mblock.metric.v_Cntrv2Cart(xp, e_int, e_int_Cart);
-//   m_mblock.metric.v_Cntrv2Cart(xp, b_int, b_int_Cart);
+//   m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
+//   m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
 
 //   BorisUpdate(p, e_int_Cart, b_int_Cart);
 // }
@@ -644,5 +692,429 @@ namespace ntt {
 //   u0[2] = beta0_x3 * Gamma + uprime_x3;
 // }
 // }
+
+// // Interpolation ifdefs
+
+// #define C0_EX1     HALF*(EX1(i) + EX1(i - 1))
+// #define C1_EX1     HALF*(EX1(i) + EX1(i + 1))
+// #define EX1_INTERP C0_EX1*(ONE - dx1) + C1_EX1* dx1
+
+// #define C0_EX2     EX2(i)
+// #define C1_EX2     EX2(i + 1)
+// #define EX2_INTERP C0_EX2*(ONE - dx1) + C1_EX2* dx1
+
+// #define C0_EX3     EX3(i)
+// #define C1_EX3     EX3(i + 1)
+// #define EX3_INTERP C0_EX3*(ONE - dx1) + C1_EX3* dx1
+
+// #define C0_BX1     BX1(i)
+// #define C1_BX1     BX1(i + 1)
+// #define BX1_INTERP C0_BX1*(ONE - dx1) + C1_BX1* dx1
+
+// #define C0_BX2     HALF*(BX2(i - 1) + BX2(i))
+// #define C1_BX2     HALF*(BX2(i) + BX2(i + 1))
+// #define BX2_INTERP C0_BX2*(ONE - dx1) + C1_BX2* dx1
+
+// #define C0_BX3     HALF*(BX3(i - 1) + BX3(i))
+// #define C1_BX3     HALF*(BX3(i) + BX3(i + 1))
+// #define BX3_INTERP C0_BX3*(ONE - dx1) + C1_BX3* dx1
+
+//   template <>
+//   Inline void Pusher_kernel<Dim1>::interpolateFields(index_t&     p,
+//                                                      vec_t<Dim3>& e0,
+//                                                      vec_t<Dim3>& b0) const {
+//     const auto i { m_particles.i1(p) + N_GHOSTS };
+//     const auto dx1 { static_cast<real_t>(m_particles.dx1(p)) };
+
+//     e0[0] = EX1_INTERP;
+//     e0[1] = EX2_INTERP;
+//     e0[2] = EX3_INTERP;
+//     b0[0] = BX1_INTERP;
+//     b0[1] = BX2_INTERP;
+//     b0[2] = BX3_INTERP;
+//   }
+
+// #undef C0_EX1
+// #undef C1_EX1
+// #undef EX1_INTERP
+
+// #undef C0_EX2
+// #undef C1_EX2
+// #undef EX2_INTERP
+
+// #undef C0_EX3
+// #undef C1_EX3
+// #undef EX3_INTERP
+
+// #undef C0_BX1
+// #undef C1_BX1
+// #undef BX1_INTERP
+
+// #undef C0_BX2
+// #undef C1_BX2
+// #undef BX2_INTERP
+
+// #undef C0_BX3
+// #undef C1_BX3
+// #undef BX3_INTERP
+
+// #define C000_EX1   HALF*(EX1(i, j) + EX1(i - 1, j))
+// #define C100_EX1   HALF*(EX1(i, j) + EX1(i + 1, j))
+// #define C010_EX1   HALF*(EX1(i, j + 1) + EX1(i - 1, j + 1))
+// #define C110_EX1   HALF*(EX1(i, j + 1) + EX1(i + 1, j + 1))
+// #define C00_EX1    C000_EX1*(ONE - dx1) + C100_EX1* dx1
+// #define C10_EX1    C010_EX1*(ONE - dx1) + C110_EX1* dx1
+// #define EX1_INTERP C00_EX1*(ONE - dx2) + C10_EX1* dx2
+
+// #define C000_EX2   HALF*(EX2(i, j) + EX2(i, j - 1))
+// #define C100_EX2   HALF*(EX2(i + 1, j) + EX2(i + 1, j - 1))
+// #define C010_EX2   HALF*(EX2(i, j) + EX2(i, j + 1))
+// #define C110_EX2   HALF*(EX2(i + 1, j) + EX2(i + 1, j + 1))
+// #define C00_EX2    C000_EX2*(ONE - dx1) + C100_EX2* dx1
+// #define C10_EX2    C010_EX2*(ONE - dx1) + C110_EX2* dx1
+// #define EX2_INTERP C00_EX2*(ONE - dx2) + C10_EX2* dx2
+
+// #define C000_EX3   EX3(i, j)
+// #define C100_EX3   EX3(i + 1, j)
+// #define C010_EX3   EX3(i, j + 1)
+// #define C110_EX3   EX3(i + 1, j + 1)
+// #define C00_EX3    C000_EX3*(ONE - dx1) + C100_EX3* dx1
+// #define C10_EX3    C010_EX3*(ONE - dx1) + C110_EX3* dx1
+// #define EX3_INTERP C00_EX3*(ONE - dx2) + C10_EX3* dx2
+
+// #define C000_BX1   HALF*(BX1(i, j) + BX1(i, j - 1))
+// #define C100_BX1   HALF*(BX1(i + 1, j) + BX1(i + 1, j - 1))
+// #define C010_BX1   HALF*(BX1(i, j) + BX1(i, j + 1))
+// #define C110_BX1   HALF*(BX1(i + 1, j) + BX1(i + 1, j + 1))
+// #define C00_BX1    C000_BX1*(ONE - dx1) + C100_BX1* dx1
+// #define C10_BX1    C010_BX1*(ONE - dx1) + C110_BX1* dx1
+// #define BX1_INTERP C00_BX1*(ONE - dx2) + C10_BX1* dx2
+
+// #define C000_BX2   HALF*(BX2(i - 1, j) + BX2(i, j))
+// #define C100_BX2   HALF*(BX2(i, j) + BX2(i + 1, j))
+// #define C010_BX2   HALF*(BX2(i - 1, j + 1) + BX2(i, j + 1))
+// #define C110_BX2   HALF*(BX2(i, j + 1) + BX2(i + 1, j + 1))
+// #define C00_BX2    C000_BX2*(ONE - dx1) + C100_BX2* dx1
+// #define C10_BX2    C010_BX2*(ONE - dx1) + C110_BX2* dx1
+// #define BX2_INTERP C00_BX2*(ONE - dx2) + C10_BX2* dx2
+
+// #define C000_BX3   INV_4*(BX3(i - 1, j - 1) + BX3(i - 1, j) + BX3(i, j - 1) + BX3(i, j))
+// #define C100_BX3   INV_4*(BX3(i, j - 1) + BX3(i, j) + BX3(i + 1, j - 1) + BX3(i + 1, j))
+// #define C010_BX3   INV_4*(BX3(i - 1, j) + BX3(i - 1, j + 1) + BX3(i, j) + BX3(i, j + 1))
+// #define C110_BX3   INV_4*(BX3(i, j) + BX3(i, j + 1) + BX3(i + 1, j) + BX3(i + 1, j + 1))
+// #define C00_BX3    C000_BX3*(ONE - dx1) + C100_BX3* dx1
+// #define C10_BX3    C010_BX3*(ONE - dx1) + C110_BX3* dx1
+// #define BX3_INTERP C00_BX3*(ONE - dx2) + C10_BX3* dx2
+
+//   template <>
+//   Inline void Pusher_kernel<Dim2>::interpolateFields(index_t&     p,
+//                                                      vec_t<Dim3>& e0,
+//                                                      vec_t<Dim3>& b0) const {
+//     const auto i { m_particles.i1(p) + N_GHOSTS };
+//     const auto dx1 { static_cast<real_t>(m_particles.dx1(p)) };
+//     const auto j { m_particles.i2(p) + N_GHOSTS };
+//     const auto dx2 { static_cast<real_t>(m_particles.dx2(p)) };
+
+//     e0[0] = EX1_INTERP;
+//     e0[1] = EX2_INTERP;
+//     e0[2] = EX3_INTERP;
+//     b0[0] = BX1_INTERP;
+//     b0[1] = BX2_INTERP;
+//     b0[2] = BX3_INTERP;
+//   }
+
+// #undef C000_EX1
+// #undef C100_EX1
+// #undef C010_EX1
+// #undef C110_EX1
+// #undef C00_EX1
+// #undef C10_EX1
+// #undef EX1_INTERP
+
+// #undef C000_EX2
+// #undef C100_EX2
+// #undef C010_EX2
+// #undef C110_EX2
+// #undef C00_EX2
+// #undef C10_EX2
+// #undef EX2_INTERP
+
+// #undef C000_EX3
+// #undef C100_EX3
+// #undef C010_EX3
+// #undef C110_EX3
+// #undef C00_EX3
+// #undef C10_EX3
+// #undef EX3_INTERP
+
+// #undef C000_BX1
+// #undef C100_BX1
+// #undef C010_BX1
+// #undef C110_BX1
+// #undef C00_BX1
+// #undef C10_BX1
+// #undef BX1_INTERP
+
+// #undef C000_BX2
+// #undef C100_BX2
+// #undef C010_BX2
+// #undef C110_BX2
+// #undef C00_BX2
+// #undef C10_BX2
+// #undef BX2_INTERP
+
+// #undef C000_BX3
+// #undef C100_BX3
+// #undef C010_BX3
+// #undef C110_BX3
+// #undef C00_BX3
+// #undef C10_BX3
+// #undef BX3_INTERP
+
+// #define C000_EX1   (HALF * (EX1(i, j, k) + EX1(i - 1, j, k)))
+// #define C100_EX1   (HALF * (EX1(i, j, k) + EX1(i + 1, j, k)))
+// #define C010_EX1   (HALF * (EX1(i, j + 1, k) + EX1(i - 1, j + 1, k)))
+// #define C110_EX1   (HALF * (EX1(i, j + 1, k) + EX1(i + 1, j + 1, k)))
+// #define C001_EX1   (HALF * (EX1(i, j, k + 1) + EX1(i - 1, j, k + 1)))
+// #define C101_EX1   (HALF * (EX1(i, j, k + 1) + EX1(i + 1, j, k + 1)))
+// #define C011_EX1   (HALF * (EX1(i, j + 1, k + 1) + EX1(i - 1, j + 1, k + 1)))
+// #define C111_EX1   (HALF * (EX1(i, j + 1, k + 1) + EX1(i + 1, j + 1, k + 1)))
+// #define C00_EX1    (C000_EX1 * (ONE - dx1) + C100_EX1 * dx1)
+// #define C10_EX1    (C010_EX1 * (ONE - dx1) + C110_EX1 * dx1)
+// #define C01_EX1    (C001_EX1 * (ONE - dx1) + C101_EX1 * dx1)
+// #define C11_EX1    (C011_EX1 * (ONE - dx1) + C111_EX1 * dx1)
+// #define C0_EX1     (C00_EX1 * (ONE - dx2) + C10_EX1 * dx2)
+// #define C1_EX1     (C01_EX1 * (ONE - dx2) + C11_EX1 * dx2)
+// #define EX1_INTERP (C0_EX1 * (ONE - dx3) + C1_EX1 * dx3)
+
+// #define C000_EX2   HALF*(EX2(i, j, k) + EX2(i, j - 1, k))
+// #define C100_EX2   HALF*(EX2(i + 1, j, k) + EX2(i + 1, j - 1, k))
+// #define C010_EX2   HALF*(EX2(i, j, k) + EX2(i, j + 1, k))
+// #define C110_EX2   HALF*(EX2(i + 1, j, k) + EX2(i + 1, j + 1, k))
+// #define C00_EX2    C000_EX2*(ONE - dx1) + C100_EX2* dx1
+// #define C10_EX2    C010_EX2*(ONE - dx1) + C110_EX2* dx1
+// #define C0_EX2     C00_EX2*(ONE - dx2) + C10_EX2* dx2
+// #define C001_EX2   HALF*(EX2(i, j, k + 1) + EX2(i, j - 1, k + 1))
+// #define C101_EX2   HALF*(EX2(i + 1, j, k + 1) + EX2(i + 1, j - 1, k + 1))
+// #define C011_EX2   HALF*(EX2(i, j, k + 1) + EX2(i, j + 1, k + 1))
+// #define C111_EX2   HALF*(EX2(i + 1, j, k + 1) + EX2(i + 1, j + 1, k + 1))
+// #define C01_EX2    C001_EX2*(ONE - dx1) + C101_EX2* dx1
+// #define C11_EX2    C011_EX2*(ONE - dx1) + C111_EX2* dx1
+// #define C1_EX2     C01_EX2*(ONE - dx2) + C11_EX2* dx2
+// #define EX2_INTERP C0_EX2*(ONE - dx3) + C1_EX2* dx3
+
+// #define C000_EX3   HALF*(EX3(i, j, k) + EX3(i, j, k - 1))
+// #define C100_EX3   HALF*(EX3(i + 1, j, k) + EX3(i + 1, j, k - 1))
+// #define C010_EX3   HALF*(EX3(i, j + 1, k) + EX3(i, j + 1, k - 1))
+// #define C110_EX3   HALF*(EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k - 1))
+// #define C001_EX3   HALF*(EX3(i, j, k) + EX3(i, j, k + 1))
+// #define C101_EX3   HALF*(EX3(i + 1, j, k) + EX3(i + 1, j, k + 1))
+// #define C011_EX3   HALF*(EX3(i, j + 1, k) + EX3(i, j + 1, k + 1))
+// #define C111_EX3   HALF*(EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k + 1))
+// #define C00_EX3    C000_EX3*(ONE - dx1) + C100_EX3* dx1
+// #define C01_EX3    C001_EX3*(ONE - dx1) + C101_EX3* dx1
+// #define C10_EX3    C010_EX3*(ONE - dx1) + C110_EX3* dx1
+// #define C11_EX3    C011_EX3*(ONE - dx1) + C111_EX3* dx1
+// #define C0_EX3     C00_EX3*(ONE - dx2) + C10_EX3* dx2
+// #define C1_EX3     C01_EX3*(ONE - dx2) + C11_EX3* dx2
+// #define EX3_INTERP C0_EX2*(ONE - dx3) + C1_EX2* dx3
+
+// #define C000_BX1                                                                              \
+//   INV_4*(BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1))
+// #define C100_BX1                                                                              \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1)                       \
+//          + BX1(i + 1, j - 1, k - 1))
+// #define C001_BX1                                                                              \
+//   INV_4*(BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1))
+// #define C101_BX1                                                                              \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k)                       \
+//          + BX1(i + 1, j - 1, k + 1))
+// #define C010_BX1                                                                              \
+//   INV_4*(BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1))
+// #define C110_BX1                                                                              \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1)                   \
+//          + BX1(i + 1, j + 1, k))
+// #define C011_BX1                                                                              \
+//   INV_4*(BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1))
+// #define C111_BX1                                                                              \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1)                   \
+//          + BX1(i + 1, j, k + 1))
+// #define C00_BX1    C000_BX1*(ONE - dx1) + C100_BX1* dx1
+// #define C01_BX1    C001_BX1*(ONE - dx1) + C101_BX1* dx1
+// #define C10_BX1    C010_BX1*(ONE - dx1) + C110_BX1* dx1
+// #define C11_BX1    C011_BX1*(ONE - dx1) + C111_BX1* dx1
+// #define C0_BX1     C00_BX1*(ONE - dx2) + C10_BX1* dx2
+// #define C1_BX1     C01_BX1*(ONE - dx2) + C11_BX1* dx2
+// #define BX1_INTERP C0_BX1*(ONE - dx3) + C1_BX1* dx3
+
+// #define C000_BX2                                                                              \
+//   INV_4*(BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k))
+// #define C100_BX2                                                                              \
+//   INV_4*(BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k))
+// #define C001_BX2                                                                              \
+//   INV_4*(BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1))
+// #define C101_BX2                                                                              \
+//   INV_4*(BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1))
+// #define C010_BX2                                                                              \
+//   INV_4*(BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1)               \
+//          + BX2(i, j + 1, k))
+// #define C110_BX2                                                                              \
+//   INV_4*(BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1)                   \
+//          + BX2(i + 1, j + 1, k))
+// #define C011_BX2                                                                              \
+//   INV_4*(BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k)                   \
+//          + BX2(i, j + 1, k + 1))
+// #define C111_BX2                                                                              \
+//   INV_4*(BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k)                       \
+//          + BX2(i + 1, j + 1, k + 1))
+// #define C00_BX2    C000_BX2*(ONE - dx1) + C100_BX2* dx1
+// #define C01_BX2    C001_BX2*(ONE - dx1) + C101_BX2* dx1
+// #define C10_BX2    C010_BX2*(ONE - dx1) + C110_BX2* dx1
+// #define C11_BX2    C011_BX2*(ONE - dx1) + C111_BX2* dx1
+// #define C0_BX2     C00_BX2*(ONE - dx2) + C10_BX2* dx2
+// #define C1_BX2     C01_BX2*(ONE - dx2) + C11_BX2* dx2
+// #define BX2_INTERP C0_BX2*(ONE - dx3) + C1_BX2* dx3
+
+// #define C000_BX3                                                                              \
+//   INV_4*(BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k))
+// #define C100_BX3                                                                              \
+//   INV_4*(BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k))
+// #define C001_BX3                                                                              \
+//   INV_4*(BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1)               \
+//          + BX3(i, j, k + 1))
+// #define C101_BX3                                                                              \
+//   INV_4*(BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1)                   \
+//          + BX3(i + 1, j, k + 1))
+// #define C010_BX3                                                                              \
+//   INV_4*(BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k))
+// #define C110_BX3                                                                              \
+//   INV_4*(BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k))
+// #define C011_BX3                                                                              \
+//   INV_4*(BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1)                   \
+//          + BX3(i, j + 1, k + 1))
+// #define C111_BX3                                                                              \
+//   INV_4*(BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1)                       \
+//          + BX3(i + 1, j + 1, k + 1))
+// #define C00_BX3    C000_BX3*(ONE - dx1) + C100_BX3* dx1
+// #define C01_BX3    C001_BX3*(ONE - dx1) + C101_BX3* dx1
+// #define C10_BX3    C010_BX3*(ONE - dx1) + C110_BX3* dx1
+// #define C11_BX3    C011_BX3*(ONE - dx1) + C111_BX3* dx1
+// #define C0_BX3     C00_BX3*(ONE - dx2) + C10_BX3* dx2
+// #define C1_BX3     C01_BX3*(ONE - dx2) + C11_BX3* dx2
+// #define BX3_INTERP C0_BX3*(ONE - dx3) + C1_BX3* dx3
+
+//   template <>
+//   Inline void Pusher_kernel<Dim3>::interpolateFields(index_t&     p,
+//                                                      vec_t<Dim3>& e0,
+//                                                      vec_t<Dim3>& b0) const {
+//     const auto i { m_particles.i1(p) + N_GHOSTS };
+//     const auto dx1 { static_cast<real_t>(m_particles.dx1(p)) };
+//     const auto j { m_particles.i2(p) + N_GHOSTS };
+//     const auto dx2 { static_cast<real_t>(m_particles.dx2(p)) };
+//     const auto k { m_particles.i3(p) + N_GHOSTS };
+//     const auto dx3 { static_cast<real_t>(m_particles.dx3(p)) };
+//     e0[0] = EX1_INTERP;
+//     e0[1] = EX2_INTERP;
+//     e0[2] = EX3_INTERP;
+//     b0[0] = BX1_INTERP;
+//     b0[1] = BX2_INTERP;
+//     b0[2] = BX3_INTERP;
+//   }
+
+// #undef C000_EX1
+// #undef C100_EX1
+// #undef C010_EX1
+// #undef C110_EX1
+// #undef C001_EX1
+// #undef C101_EX1
+// #undef C011_EX1
+// #undef C111_EX1
+// #undef C00_EX1
+// #undef C10_EX1
+// #undef C01_EX1
+// #undef C11_EX1
+// #undef C0_EX1
+// #undef C1_EX1
+// #undef EX1_INTERP
+
+// #undef C000_EX2
+// #undef C100_EX2
+// #undef C010_EX2
+// #undef C110_EX2
+// #undef C00_EX2
+// #undef C10_EX2
+// #undef C0_EX2
+// #undef C001_EX2
+// #undef C101_EX2
+// #undef C011_EX2
+// #undef C111_EX2
+// #undef C01_EX2
+// #undef C11_EX2
+// #undef C1_EX2
+// #undef EX2_INTERP
+
+// #undef C000_EX3
+// #undef C100_EX3
+// #undef C010_EX3
+// #undef C110_EX3
+// #undef C001_EX3
+// #undef C101_EX3
+// #undef C011_EX3
+// #undef C111_EX3
+// #undef C00_EX3
+// #undef C01_EX3
+// #undef C10_EX3
+// #undef C11_EX3
+// #undef C0_EX3
+// #undef C1_EX3
+// #undef EX3_INTERP
+
+// #undef C000_BX1
+// #undef C100_BX1
+// #undef C001_BX1
+// #undef C101_BX1
+// #undef C010_BX1
+// #undef C110_BX1
+// #undef C011_BX1
+// #undef C111_BX1
+// #undef C00_BX1
+// #undef C01_BX1
+// #undef C10_BX1
+// #undef C11_BX1
+// #undef C0_BX1
+// #undef C1_BX1
+// #undef BX1_INTERP
+
+// #undef C000_BX2
+// #undef C100_BX2
+// #undef C001_BX2
+// #undef C101_BX2
+// #undef C010_BX2
+// #undef C110_BX2
+// #undef C011_BX2
+// #undef C111_BX2
+// #undef C00_BX2
+// #undef C01_BX2
+// #undef C10_BX2
+// #undef C11_BX2
+// #undef C0_BX2
+// #undef C1_BX2
+// #undef BX2_INTERP
+
+// #undef C000_BX3
+// #undef C100_BX3
+// #undef C001_BX3
+// #undef C101_BX3
+// #undef C010_BX3
+// #undef C110_BX3
+// #undef C011_BX3
+// #undef C111_BX3
+// #undef C00_BX3
+// #undef C01_BX3
+// #undef C10_BX3
+// #undef C11_BX3
+// #undef C0_BX3
+// #undef C1_BX3
+// #undef BX3_INTERP
 
 #endif

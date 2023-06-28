@@ -3,12 +3,14 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
-#include "qmath.h"
 #include "sim_params.h"
 
-#include "archetypes.hpp"
-#include "generate_fields.hpp"
+#include "meshblock/meshblock.h"
+#include "utils/qmath.h"
+
+#include "utils/archetypes.hpp"
+#include "utils/generate_fields.hpp"
+#include "utils/injector.hpp"
 
 namespace ntt {
 
@@ -52,10 +54,10 @@ namespace ntt {
   Inline auto WaldPotential<Dim2, GRPICEngine>::A_x0(const coord_t<Dim2>& x_cu) const
     -> real_t {
     real_t g00 { -(this->m_mblock).metric.alpha(x_cu) * (this->m_mblock).metric.alpha(x_cu)
-                 + (this->m_mblock).metric.h_11(x_cu) * (this->m_mblock).metric.beta1u(x_cu)
-                     * (this->m_mblock).metric.beta1u(x_cu) };
+                 + (this->m_mblock).metric.h_11(x_cu) * (this->m_mblock).metric.beta1(x_cu)
+                     * (this->m_mblock).metric.beta1(x_cu) };
     return HALF
-           * ((this->m_mblock).metric.h_13(x_cu) * (this->m_mblock).metric.beta1u(x_cu)
+           * ((this->m_mblock).metric.h_13(x_cu) * (this->m_mblock).metric.beta1(x_cu)
               + TWO * (this->m_mblock).metric.spin() * g00);
   }
 
@@ -65,7 +67,7 @@ namespace ntt {
     return HALF
            * ((this->m_mblock).metric.h_13(x_cu)
               + TWO * (this->m_mblock).metric.spin() * (this->m_mblock).metric.h_11(x_cu)
-                  * (this->m_mblock).metric.beta1u(x_cu));
+                  * (this->m_mblock).metric.beta1(x_cu));
   }
 
   template <>
@@ -74,15 +76,15 @@ namespace ntt {
     return HALF
            * ((this->m_mblock).metric.h_33(x_cu)
               + TWO * (this->m_mblock).metric.spin() * (this->m_mblock).metric.h_13(x_cu)
-                  * (this->m_mblock).metric.beta1u(x_cu));
+                  * (this->m_mblock).metric.beta1(x_cu));
   }
 
   template <>
   Inline auto VerticalPotential<Dim2, GRPICEngine>::A_x3(const coord_t<Dim2>& x_cu) const
     -> real_t {
-    coord_t<Dim2> rth_;
-    (this->m_mblock).metric.x_Code2Sph(x_cu, rth_);
-    return HALF * math::sin(rth_[1]) * math::sin(rth_[1]) * rth_[0] * rth_[0];
+    coord_t<Dim2> x_ph;
+    (this->m_mblock).metric.x_Code2Sph(x_cu, x_ph);
+    return HALF * SQR(x_ph[0]) * SQR(math::sin(x_ph[1]));
   }
 
   template <Dimension D, SimulationEngine S>
@@ -94,8 +96,8 @@ namespace ntt {
     }
 
   private:
-    const real_t            _epsilon;
-    VerticalPotential<D, S> v_pot;
+    const real_t        _epsilon;
+    WaldPotential<D, S> v_pot;
   };
 
   template <>
@@ -129,8 +131,16 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
-    inline ProblemGenerator(const SimulationParams&) {}
+    inline ProblemGenerator(const SimulationParams& params)
+      : inj_fraction { params.get<real_t>("problem", "inj_fraction", (real_t)(0.1)) },
+        inj_rmax { params.get<real_t>("problem", "inj_rmax", (real_t)(2.0)) } {}
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override {}
+    inline void UserDriveParticles(const real_t&,
+                                   const SimulationParams&,
+                                   Meshblock<D, S>&) override {}
+
+  private:
+    const real_t inj_fraction, inj_rmax;
   };
 
   template <>
@@ -140,7 +150,80 @@ namespace ntt {
       "UserInitFields",
       CreateRangePolicy<Dim2>({ mblock.i1_min() - 1, mblock.i2_min() },
                               { mblock.i1_max(), mblock.i2_max() + 1 }),
-      Generate2DGRFromVectorPotential_kernel<VerticalPotential>(params, mblock, ONE));
+      Generate2DGRFromVectorPotential_kernel<WaldPotential>(params, mblock, ONE));
+
+    Kokkos::parallel_for(
+      "UserInitFields", mblock.rangeAllCells(), Lambda(index_t i1, index_t i2) {
+        mblock.em(i1, i2, em::dx1) = ZERO;
+        mblock.em(i1, i2, em::dx2) = ZERO;
+        mblock.em(i1, i2, em::dx3) = ZERO;
+      });
+  }
+
+  template <Dimension D, SimulationEngine S>
+  struct RadialKick : public EnergyDistribution<D, S> {
+    RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock)
+      : EnergyDistribution<D, S>(params, mblock),
+        u_kick { params.get<real_t>("problem", "u_kick", ZERO) } {}
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
+      v[0] = u_kick;
+    }
+
+  private:
+    const real_t u_kick;
+  };
+
+  template <Dimension D, SimulationEngine S>
+  struct InjectionShell : public SpatialDistribution<D, S> {
+    explicit InjectionShell(const SimulationParams& params, Meshblock<D, S>& mblock)
+      : SpatialDistribution<D, S>(params, mblock),
+        _inj_rmin { params.get<real_t>("problem", "r_surf", (real_t)(1.0)) },
+        _inj_rmax { params.get<real_t>("problem", "inj_rmax", (real_t)(1.5)) } {
+      NTTHostErrorIf(_inj_rmin >= _inj_rmax, "inj_rmin >= inj_rmax");
+    }
+    Inline real_t operator()(const coord_t<D>& x_ph) const {
+      return ((x_ph[0] <= _inj_rmax) && (x_ph[0] > _inj_rmin)) ? ONE : ZERO;
+    }
+
+  private:
+    const real_t _inj_rmin, _inj_rmax;
+  };
+
+  template <Dimension D, SimulationEngine S>
+  struct MaxDensCrit : public InjectionCriterion<D, S> {
+    explicit MaxDensCrit(const SimulationParams& params, Meshblock<D, S>& mblock)
+      : InjectionCriterion<D, S>(params, mblock),
+        _inj_maxdens { params.get<real_t>("problem", "inj_maxdens", (real_t)(5.0)) } {}
+    Inline bool operator()(const coord_t<D>&) const {
+      return true;
+    }
+
+  private:
+    const real_t _inj_maxdens;
+  };
+
+  template <>
+  Inline bool MaxDensCrit<Dim2, GRPICEngine>::operator()(const coord_t<Dim2>& xph) const {
+    coord_t<Dim2> xi { ZERO };
+    (this->m_mblock).metric.x_Sph2Code(xph, xi);
+    std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
+    std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
+    return (this->m_mblock).buff(i1, i2, 0) < _inj_maxdens;
+  }
+
+  template <>
+  inline void ProblemGenerator<Dim2, GRPICEngine>::UserDriveParticles(
+    const real_t& time, const SimulationParams& params, Meshblock<Dim2, GRPICEngine>& mblock) {
+    auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction * HALF;
+    InjectInVolume<Dim2, GRPICEngine, RadialKick, InjectionShell, MaxDensCrit>(
+      params,
+      mblock,
+      { 1, 2 },
+      nppc_per_spec,
+      { mblock.metric.x1_min,
+        (real_t)1.5 * inj_rmax,
+        mblock.metric.x2_min,
+        mblock.metric.x2_max });
   }
 }    // namespace ntt
 

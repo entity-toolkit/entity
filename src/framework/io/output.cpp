@@ -1,11 +1,12 @@
-#include "output.h"
+#include "io/output.h"
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "meshblock.h"
 #include "sim_params.h"
-#include "utils.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
+#include "utils/utils.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>
@@ -20,8 +21,7 @@ namespace ntt {
     auto InterpretInputForFieldOutput_helper(const FieldID&                       fid,
                                              const std::vector<std::vector<int>>& comps,
                                              const std::vector<int>& species) -> OutputField {
-      OutputField of;
-      of.setId(fid);
+      OutputField of(StringizeFieldID(fid), fid);
       for (auto ci : comps) {
         std::vector<int> component;
         for (auto c : ci) {
@@ -32,7 +32,6 @@ namespace ntt {
       for (auto s : species) {
         of.species.push_back(s);
       }
-      of.setName(StringizeFieldID(fid));
       return of;
     }
 
@@ -116,6 +115,8 @@ namespace ntt {
       id = FieldID::T;
     } else if (fld.find("Rho") == 0) {
       id = FieldID::Rho;
+    } else if (fld.find("Charge") == 0) {
+      id = FieldID::Charge;
     } else if (fld.find("Nppc") == 0) {
       id = FieldID::Nppc;
     } else if (fld.find("N") == 0) {
@@ -130,17 +131,23 @@ namespace ntt {
       id = FieldID::H;
     } else if (fld.find("J") == 0) {
       id = FieldID::J;
+    } else if (fld.find("A") == 0) {
+      id = FieldID::A;
     } else {
       NTTHostError("Invalid field name");
     }
     auto is_moment
-      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N);
+      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N || id == FieldID::Charge);
     auto is_field = (id == FieldID::E || id == FieldID::B || id == FieldID::D
                      || id == FieldID::H || id == FieldID::J);
     if (is_moment) {
       species = InterpretInput_getspecies(fld);
     } else if (is_field) {
-      comps = InterpretInputForFieldOutput_getcomponents({ fld.substr(1, 1) });
+      // always write all the field components
+      comps = { { 1 }, { 2 }, { 3 } };
+    } else if (id == FieldID::A) {
+      // only write A3
+      comps = { { 3 } };
     }
     if (id == FieldID::T) {
       comps
@@ -158,7 +165,7 @@ namespace ntt {
     } else if (prtl.find("W") == 0) {
       id = PrtlID::W;
     } else {
-      NTTHostError("Invalid particle quantity ");
+      NTTHostError("Invalid particle quantity");
     }
     return OutputParticles(StringizePrtlID(id), InterpretInput_getspecies(prtl), id);
   }

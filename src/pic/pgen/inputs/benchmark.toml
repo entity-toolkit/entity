@@ -51,5 +51,5 @@ pusher   = "Photon"
 
 [problem]
 
-[visualization]
-fields = ["Bx", "By", "Bz", "Ex", "Ey", "Ez", "Jx", "Jy", "Jz"]
+[output]
+fields = ["B", "E", "J"]

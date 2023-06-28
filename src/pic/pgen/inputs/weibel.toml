@@ -56,11 +56,8 @@ drift_b       = 10.0
 temperature_p = 0.1
 temperature_b = 0.1
 
-[visualization]
-fields        = ["Bx", "By", "Rho"]
-fields_stride = 4
-
 [output]
-fields   = ["Bx", "By", "Rho"]
-format   = "HDF5"
-interval = 100
+fields        = ["B", "Rho"]
+fields_stride = 4
+format        = "HDF5"
+interval      = 100

@@ -3,12 +3,13 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "meshblock.h"
-#include "qmath.h"
 #include "sim_params.h"
 
-#ifdef NTTINY_ENABLED
+#include "io/output.h"
+#include "meshblock/meshblock.h"
+#include "utils/qmath.h"
+
+#ifdef GUI_ENABLED
 #  include "nttiny/api.h"
 #endif
 
@@ -31,17 +32,40 @@ namespace ntt {
                                            const SimulationParams&,
                                            Meshblock<D, S>&) {}
 
-#ifdef NTTINY_ENABLED
+#ifdef EXTERNAL_FORCE
+    Inline virtual auto ext_force_x1(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto ext_force_x2(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+    Inline virtual auto ext_force_x3(const real_t&, const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+#endif
+
+#ifdef GUI_ENABLED
     virtual inline void UserInitBuffers_nttiny(const SimulationParams&,
                                                const Meshblock<D, S>&,
                                                std::map<std::string, nttiny::ScrollingBuffer>&) {
     }
     virtual inline void UserSetBuffers_nttiny(const real_t&,
                                               const SimulationParams&,
-                                              const Meshblock<D, S>&,
+                                              Meshblock<D, S>&,
                                               std::map<std::string, nttiny::ScrollingBuffer>&) {
     }
 #endif
+
+    void setTime(const real_t& t) {
+      m_time = t;
+    }
+
+    [[nodiscard]] auto time() const -> real_t {
+      return m_time;
+    }
+
+  protected:
+    real_t m_time { ZERO };
   };
 
   /* -------------------------------------------------------------------------- */
@@ -52,7 +76,7 @@ namespace ntt {
     TargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual real_t operator()(const em&, const coord_t<D>&) const {
+    Inline virtual auto operator()(const em&, const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -62,6 +86,29 @@ namespace ntt {
   };
 
   /* -------------------------------------------------------------------------- */
+  /*                             Force field class                              */
+  /* -------------------------------------------------------------------------- */
+  // template <Dimension D, SimulationEngine S>
+  // struct ForceField {
+  //   ForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
+  //     : m_params { params }, m_mblock { mblock } {}
+
+  //   Inline virtual auto x1(const real_t&, const coord_t<D>&) const -> real_t {
+  //     return ZERO;
+  //   }
+  //   Inline virtual auto x2(const real_t&, const coord_t<D>&) const -> real_t {
+  //     return ZERO;
+  //   }
+  //   Inline virtual auto x3(const real_t&, const coord_t<D>&) const -> real_t {
+  //     return ZERO;
+  //   }
+
+  // protected:
+  //   SimulationParams m_params;
+  //   Meshblock<D, S>  m_mblock;
+  // };
+
+  /* -------------------------------------------------------------------------- */
   /*                             Energy distribution                            */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
@@ -69,9 +116,7 @@ namespace ntt {
     EnergyDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : m_params { params }, m_mblock { mblock } {}
 
-    Inline virtual void operator()(const coord_t<D>&,
-                                   vec_t<Dim3>& v,
-                                   const int&   species = 0) const {
+    Inline virtual void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int& = 0) const {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -86,9 +131,7 @@ namespace ntt {
   struct ColdDist : public EnergyDistribution<D, S> {
     ColdDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
       : EnergyDistribution<D, S>(params, mblock) {}
-    Inline void operator()(const coord_t<D>&,
-                           vec_t<Dim3>& v,
-                           const int&   species = 0) const override {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int& = 0) const override {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;

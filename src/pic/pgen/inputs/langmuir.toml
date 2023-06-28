@@ -36,13 +36,9 @@ charge   = 1.0
 maxnpart = 1e7
 pusher   = "None"
 
-[visualization]
-fields        = ["Ex", "Rho_1"]
+[output]
+fields        = ["E", "Rho_1"]
 fields_stride = 1
-
-# [output]
-# format          = <string: { disabled, csv }>
-# interval        = <int>
 
 [problem]
 amplitude   = 1e-2

@@ -40,14 +40,17 @@ pusher          = <string: { "Boris" | "Photon" | "None" }>
 [problem]
 ...
 
-[visualization]
-fields          = <array of strings, ex. ["Ei", "Bi", "Rho", "T0i", ...], see wiki>
-fields_stride   = <int>
-
 [output]
-fields          = <array of strings, ex. ["Ei", "Bi", "Rho", "T0i", ...], see wiki>
+fields          = <array of strings, ex. ["E", "B", "Rho", "T0i", ...], see wiki>
 particles       = <array of strings, ex. ["X_1_2", "U_3_4", "W"], see wiki>
 format          = <string: { "disabled", "hdf5" }>
 mom_smooth      = <int>
+fields_stride   = <int>
 prtl_stride     = <int>
 interval        = <int>
+interval_time   = <float>
+
+[diagnostics]
+interval        = <int>
+log_level       = <string: {"DEBUG" | "INFO" | "WARNING" | "ERROR"}>
+blocking_timers = <bool>

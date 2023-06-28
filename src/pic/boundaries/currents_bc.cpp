@@ -11,8 +11,9 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
 #include "pic.h"
+
+#include "meshblock/meshblock.h"
 
 #ifndef MINKOWSKI_METRIC
 #  include "currents_bc.hpp"
@@ -37,7 +38,7 @@ namespace ntt {
     auto          r_max    = mblock.metric.x1_max;
     coord_t<Dim2> xcu;
     mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
-    const auto i1_absorb = (int)(xcu[0]);
+    const auto i1_absorb = (std::size_t)(xcu[0]);
     NTTHostErrorIf(i1_absorb >= mblock.i1_max(),
                    "Absorbing layer is too small, consider "
                    "increasing r_absorb");
@@ -74,6 +75,8 @@ namespace ntt {
 
 }    // namespace ntt
 
+#ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::CurrentsBoundaryConditions();
 template void ntt::PIC<ntt::Dim2>::CurrentsBoundaryConditions();
 template void ntt::PIC<ntt::Dim3>::CurrentsBoundaryConditions();
+#endif

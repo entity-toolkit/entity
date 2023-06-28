@@ -1,8 +1,9 @@
 #include "wrapper.h"
 
-#include "fields.h"
 #include "pic.h"
 #include "simulation.h"
+
+#include "io/output.h"
 
 namespace ntt {
   /**
@@ -30,11 +31,9 @@ namespace ntt {
   void PIC<D>::ResetParticles() {
     auto& mblock = this->meshblock;
     for (auto& species : mblock.particles) {
-      if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
-        Kokkos::deep_copy(species.i1, 0);
-        Kokkos::deep_copy(species.dx1, ZERO);
-      }
-      if constexpr ((D == Dim2) || (D == Dim3)) {
+      Kokkos::deep_copy(species.i1, 0);
+      Kokkos::deep_copy(species.dx1, ZERO);
+      if constexpr (D != Dim1) {
         Kokkos::deep_copy(species.i2, 0);
         Kokkos::deep_copy(species.dx2, ZERO);
 #ifndef MINKOWSKI_METRIC
@@ -48,6 +47,10 @@ namespace ntt {
       Kokkos::deep_copy(species.ux1, ZERO);
       Kokkos::deep_copy(species.ux2, ZERO);
       Kokkos::deep_copy(species.ux3, ZERO);
+
+      Kokkos::deep_copy(species.tag, 0);
+      Kokkos::deep_copy(species.weight, ZERO);
+
       species.setNpart(0);
     }
   }
@@ -60,7 +63,7 @@ namespace ntt {
   void PIC<D>::ResetFields() {
     auto& mblock = this->meshblock;
     Kokkos::deep_copy(mblock.em, ZERO);
-    ImposeEmptyContent(mblock.em_content);
+    Kokkos::deep_copy(mblock.bckp, ZERO);
   }
 
   /**
@@ -70,10 +73,8 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::ResetCurrents() {
     auto& mblock = this->meshblock;
-    Kokkos::deep_copy(mblock.buff, ZERO);
-    ImposeEmptyContent(mblock.buff_content);
     Kokkos::deep_copy(mblock.cur, ZERO);
-    ImposeEmptyContent(mblock.cur_content);
+    Kokkos::deep_copy(mblock.buff, ZERO);
   }
 }    // namespace ntt
 

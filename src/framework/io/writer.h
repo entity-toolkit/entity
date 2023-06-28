@@ -3,9 +3,10 @@
 
 #include "wrapper.h"
 
-#include "meshblock.h"
-#include "output.h"
 #include "sim_params.h"
+
+#include "io/output.h"
+#include "meshblock/meshblock.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>
@@ -23,18 +24,25 @@ namespace ntt {
     adios2::ADIOS                m_adios;
     adios2::IO                   m_io;
     adios2::Engine               m_writer;
-    adios2::Mode                 m_mode { adios2::Mode::Write };
 
     std::vector<OutputField>     m_fields;
     std::vector<OutputParticles> m_particles;
+
+    real_t                       m_last_output_time { -1.0 };
 #endif
 
   public:
-    Writer() = default;
-    ~Writer();
+    Writer()  = default;
+    ~Writer() = default;
 
     void Initialize(const SimulationParams&, const Meshblock<D, S>&);
     void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);
+
+    void Finalize() {
+#ifdef OUTPUT_ENABLED
+      m_writer.Close();
+#endif
+    }
 
     void WriteFields(const SimulationParams&,
                      Meshblock<D, S>&,

@@ -3,9 +3,9 @@
 
 #include "wrapper.h"
 
-#include "input.h"
-#include "particles.h"
-#include "utils.h"
+#include "io/input.h"
+#include "meshblock/particles.h"
+#include "utils/utils.h"
 
 #include <toml.hpp>
 
@@ -16,10 +16,12 @@ namespace ntt {
    * @brief Storage class for user-defined & implied parameter values.
    */
   class SimulationParams {
-    // User defined simualation title
+    // User defined simulation title
     std::string                                 m_title;
     // User defined CFL
     real_t                                      m_cfl;
+    // User enforced timestep
+    real_t                                      m_dt;
     // User defined correction to the speed of light
     real_t                                      m_correction;
     // User defined total runtime in physical units
@@ -30,6 +32,10 @@ namespace ntt {
     real_t                                      m_sigma0;
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies>                m_species;
+
+    // GR specific
+    real_t                                      m_gr_pusher_epsilon;
+    int                                         m_gr_pusher_niter;
 
     // Use particle weights
     bool                                        m_use_weights;
@@ -58,16 +64,22 @@ namespace ntt {
     std::vector<std::vector<BoundaryCondition>> m_boundaries;
     // User-defined metric.
     std::string                                 m_metric;
+    std::string                                 m_coordinates;
     // User-defined real-valued parameters for the metric [10 max].
     real_t                                      m_metric_parameters[10];
 
     // Output parameters
     std::string                                 m_output_format;
     int                                         m_output_interval;
+    real_t                                      m_output_interval_time;
     std::vector<std::string>                    m_output_fields;
     std::vector<std::string>                    m_output_particles;
     int                                         m_output_mom_smooth;
     std::size_t                                 m_output_prtl_stride;
+
+    // Diagnostic parameters
+    int                                         m_diag_interval;
+    bool                                        m_blocking_timers;
 
     // Container with data from the parsed input file.
     toml::value                                 m_inputdata;
@@ -94,10 +106,28 @@ namespace ntt {
       return m_cfl;
     }
     /**
+     * @brief Get the dt.
+     */
+    [[nodiscard]] auto dt() const -> const real_t& {
+      return m_dt;
+    }
+    /**
      * @brief Get the correction to the speed of light.
      */
     [[nodiscard]] auto correction() const -> const real_t& {
       return m_correction;
+    }
+    /**
+     * @brief Get the GR pusher epsilon.
+     */
+    [[nodiscard]] auto grPusherEpsilon() const -> const real_t& {
+      return m_gr_pusher_epsilon;
+    }
+    /**
+     * @brief Get the GR pusher niter.
+     */
+    [[nodiscard]] auto grPusherNiter() const -> const int& {
+      return m_gr_pusher_niter;
     }
     /**
      * @brief Get the total runtime in physical units.
@@ -170,10 +200,16 @@ namespace ntt {
       return m_boundaries;
     }
     /**
-     * @brief Get the metric.
+     * @brief Get the metric label.
      */
     [[nodiscard]] auto metric() const -> const std::string& {
       return m_metric;
+    }
+    /**
+     * @brief Get the coordinates label.
+     */
+    [[nodiscard]] auto coordinates() const -> const std::string& {
+      return m_coordinates;
     }
     /**
      * @brief Get the metric parameters.
@@ -218,6 +254,12 @@ namespace ntt {
       return m_output_interval;
     }
     /**
+     * @brief Get the output interval in physical time units.
+     */
+    [[nodiscard]] auto outputIntervalTime() const -> const real_t& {
+      return m_output_interval_time;
+    }
+    /**
      * @brief Get output field labels.
      */
     [[nodiscard]] auto outputFields() const -> const std::vector<std::string>& {
@@ -237,9 +279,21 @@ namespace ntt {
     }
     /**
      * @brief Get the particle stride for the output.
-    */
-   [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
+     */
+    [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
       return m_output_prtl_stride;
+    }
+    /**
+     * @brief Get the diagnostic printout interval.
+     */
+    [[nodiscard]] auto diagInterval() const -> const int& {
+      return m_diag_interval;
+    }
+    /**
+     * @brief Get the blocking timers flag.
+     */
+    [[nodiscard]] auto blockingTimers() const -> const bool& {
+      return m_blocking_timers;
     }
 
     /**

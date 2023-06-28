@@ -3,21 +3,26 @@
 
 #include "wrapper.h"
 
-#include "fields.h"
-#include "mesh.h"
-#include "particles.h"
 #include "sim_params.h"
-#include "species.h"
+
+#include "meshblock/fields.h"
+#include "meshblock/mesh.h"
+#include "meshblock/particles.h"
+#include "meshblock/species.h"
 
 #include <vector>
 
 namespace ntt {
-  enum PrepareOutputFlags_ {
-    PrepareOutput_None               = 0,
-    PrepareOutput_InterpToCellCenter = 1 << 0,
-    PrepareOutput_ConvertToHat       = 1 << 1,
-    PrepareOutput_Default = PrepareOutput_InterpToCellCenter | PrepareOutput_ConvertToHat,
-  };
+  namespace {
+    enum PrepareOutputFlags_ {
+      PrepareOutput_None                        = 0,
+      PrepareOutput_InterpToCellCenterFromEdges = 1 << 0,
+      PrepareOutput_InterpToCellCenterFromFaces = 1 << 1,
+      PrepareOutput_ConvertToHat                = 1 << 2,
+      PrepareOutput_ConvertToPhysCntrv          = 1 << 3,
+      PrepareOutput_ConvertToPhysCov            = 1 << 4,
+    };
+  }    // namespace
   typedef int PrepareOutputFlags;
 
   enum class GhostCells {
@@ -101,18 +106,23 @@ namespace ntt {
     /* ----------------- Additional conversions and computations ---------------- */
 
     /**
-     * @brief Fields to hatted basis.
-     * @brief Used for outputting/visualizing the fields.
-     * @note Specializations defined.
+     * @brief Interpolate and convert fields to prepare for output.
+     * @brief Details provided using the `PrepareOutputFlags`.
+     * @brief The result is stored inside the buffer.
      */
-    void PrepareFieldsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
+    template <int N, int M>
+    void PrepareFieldsForOutput(const ndfield_t<D, N>&    field,
+                                ndfield_t<D, M>&          buffer,
+                                const int&                fx1,
+                                const int&                fx2,
+                                const int&                fx3,
+                                const PrepareOutputFlags& flags);
 
     /**
-     * @brief Currents to hatted basis.
-     * @brief Used for outputting/visualizing the currents.
-     * @note Specializations defined.
+     * @brief Compute A3 vector potential (for GRPIC 2D).
+     * @brief The result is stored inside the buffer(i1, i2, buffer_comp).
      */
-    void PrepareCurrentsForOutput(const PrepareOutputFlags& flags = PrepareOutput_Default);
+    void ComputeVectorPotential(ndfield_t<D, 6>&, const int&) {}
 
     /**
      * @brief Compute particle moment for output or other usage.
@@ -122,8 +132,6 @@ namespace ntt {
      * @param prtl_species Particle species to compute the moment for.
      * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
      * @param smooth Smoothing order (default: 2).
-     *
-     * @note Content of the meshblock::buff(*, buff_ind) has to be Content::empty.
      */
     void ComputeMoments(const SimulationParams& params,
                         const FieldID&          field,
@@ -132,7 +140,6 @@ namespace ntt {
                         const int&              buff_ind,
                         const short&            smooth = 2);
   };
-
 }    // namespace ntt
 
 #endif

@@ -38,10 +38,6 @@ pusher   = "Boris"
 
 [problem]
 
-[visualization]
+[output]
 fields        = ["Rho"]
 fields_stride = 1
-
-# [output]
-# format          = <string: { disabled, csv }>
-# interval        = <int>

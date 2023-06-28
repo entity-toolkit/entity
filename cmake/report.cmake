@@ -120,6 +120,17 @@ PrintChoices("Precision"
   1
   36
 )
+PrintChoices("External force"
+  "ext_force"
+  "${ON_OFF_VALUES}"
+  ${ext_force}
+  ${default_ext_force}
+  "${Green}"
+  EXT_FORCE_REPORT
+  0
+  36
+)
+
 PrintChoices("Output"
   "output"
   "${ON_OFF_VALUES}"
@@ -130,13 +141,13 @@ PrintChoices("Output"
   0
   36
 )
-PrintChoices("nttiny GUI"
-  "nttiny"
+PrintChoices("GUI"
+  "gui"
   "${ON_OFF_VALUES}"
-  ${nttiny}
-  ${default_nttiny}
+  ${gui}
+  ${default_gui}
   "${Green}"
-  NTTINY_REPORT
+  GUI_REPORT
   0
   36
 )
@@ -144,36 +155,12 @@ PrintChoices("Debug mode"
   "DEBUG"
   "${ON_OFF_VALUES}"
   ${DEBUG}
-  ${default_DEBUG}
+  OFF
   "${Green}"
   DEBUG_REPORT
   0
   42
 )
-
-# get_directory_property(ENABLED_ARCHS
-# DIRECTORY ${kokkos_ROOT}/lib/cmake/Kokkos/
-# DEFINITION Kokkos_ARCH)
-# string(REPLACE ";" " + " ARCHS "${ENABLED_ARCHS}")
-# message(STATUS "ARCHS: ${ARCHS}")
-# PrintChoices("CPU/GPU architecture"
-# ""
-# "${ARCHS}"
-# "${ARCHS}"
-# "N/A"
-# "${White}"
-# ARCH_REPORT
-# 0
-# 39
-# )
-message(STATUS ADIOS2_VERSION: ${adios2_VERSION})
-
-if(NOT DEFINED adios2_VERSION OR adios2_VERSION STREQUAL "")
-  message(STATUS "HERE")
-  get_directory_property(adios2_VERSION
-    DIRECTORY ${adios2_BUILD_DIR}
-    DEFINITION ADIOS2_VERSION)
-endif()
 
 PrintChoices("CUDA"
   "Kokkos_ENABLE_CUDA"
@@ -203,6 +190,17 @@ PrintChoices("C++ compiler"
   "N/A"
   "${White}"
   CXX_COMPILER_REPORT
+  0
+  42
+)
+
+PrintChoices("C compiler"
+  "CMAKE_C_COMPILER"
+  "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
+  "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
+  "N/A"
+  "${White}"
+  C_COMPILER_REPORT
   0
   42
 )
@@ -270,26 +268,19 @@ if(${PGEN_FOUND})
   message("  ${PGEN_REPORT}\n")
 endif()
 
+message("  ${EXT_FORCE_REPORT}\n")
+
 message("  ${PRECISION_REPORT}\n")
 message("  ${OUTPUT_REPORT}\n")
-message("  ${NTTINY_REPORT}\n")
+message("  ${GUI_REPORT}\n")
 message("${DASHED_LINE_SYMBOL}
-Framework configurations
+Compile configurations
 ${DASHED_LINE_SYMBOL}")
 
-string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" Kokkos_ROOT_rel "${Kokkos_ROOT}")
-message("  - Kokkos [${Magenta}Kokkos_ROOT${ColorReset}]:\t\t  ${Kokkos_ROOT_rel} v${Kokkos_VERSION}\n")
-
-if(NOT "${adios2_ROOT}" STREQUAL "" AND ${output} STREQUAL "ON")
-  string(REPLACE ${CMAKE_SOURCE_DIR}/ "./" adios2_ROOT_rel "${adios2_ROOT}")
-  message("  - ADIOS2 [${Magenta}adios2_ROOT${ColorReset}]:\t\t  ${adios2_ROOT} v${adios2_VERSION}\n")
-endif()
-
-# if(ENABLED_ARCHS)
-# message("  ${ARCH_REPORT}\n")
-# endif()
 message("  ${CUDA_REPORT}\n")
 message("  ${OPENMP_REPORT}\n")
+
+message("  ${C_COMPILER_REPORT}\n")
 
 message("  ${CXX_COMPILER_REPORT}\n")
 
@@ -299,7 +290,16 @@ endif()
 
 message("  ${DEBUG_REPORT}\n")
 
-# message("  ${FRAMEWORK_REPORT}\n")
+message("${DASHED_LINE_SYMBOL}
+Dependencies
+${DASHED_LINE_SYMBOL}")
+
+message("  - Kokkos:\t\t\t\t  v${Kokkos_VERSION}\n")
+
+if(${output})
+  message("  - ADIOS2:\t\t\t\t  v${adios2_VERSION}\n")
+endif()
+
 message("${DASHED_LINE_SYMBOL}
 Notes
 ${DASHED_LINE_SYMBOL}
