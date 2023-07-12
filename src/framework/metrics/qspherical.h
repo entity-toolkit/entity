@@ -103,7 +103,7 @@ namespace ntt {
       if constexpr (D != Dim1) {
         real_t chi { x[0] * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta };
+        real_t eta { x[1] * deta + eta_min };
         real_t dtheta_deta_ { dtheta_deta(eta) };
         return deta_sqr * SQR(dtheta_deta_) * r * r;
       } else {
@@ -121,7 +121,7 @@ namespace ntt {
       if constexpr (D != Dim1) {
         real_t chi { x[0] * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta };
+        real_t eta { x[1] * deta + eta_min };
         real_t theta { eta2theta(eta) };
         real_t sin_theta { math::sin(theta) };
         return r * r * sin_theta * sin_theta;
@@ -140,7 +140,7 @@ namespace ntt {
       if constexpr (D != Dim1) {
         real_t chi { x[0] * dchi + chi_min };
         real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta };
+        real_t eta { x[1] * deta + eta_min };
         real_t theta { eta2theta(eta) };
         real_t sin_theta { math::sin(theta) };
         real_t dtheta_deta_ { dtheta_deta(eta) };

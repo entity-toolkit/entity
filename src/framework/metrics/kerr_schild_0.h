@@ -88,7 +88,7 @@ namespace ntt {
      */
     Inline auto h_33(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return SQR(r * math::sin(theta));
       } else {
@@ -135,7 +135,7 @@ namespace ntt {
      */
     Inline auto h33(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return ONE / SQR(r * math::sin(theta));
       } else {
@@ -181,7 +181,7 @@ namespace ntt {
      */
     Inline auto sqrt_det_h(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return dr * dtheta * SQR(r) * math::sin(theta);
       } else {
@@ -231,8 +231,8 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metrics_utils/x_code_cart_forGSph.h"
-#include "metrics_utils/x_code_sph_forSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
+#include "metrics_utils/x_code_sph_forSph.h"
 
 #include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
 #include "metrics_utils/v3_hat_cntrv_cov_forGR.h"

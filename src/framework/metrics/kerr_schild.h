@@ -83,7 +83,7 @@ namespace ntt {
      */
     Inline auto h_11(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return dr_sqr * (ONE + z(r, theta));
     }
 
@@ -95,7 +95,7 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return dtheta_sqr * Sigma(r, theta);
     }
 
@@ -107,7 +107,7 @@ namespace ntt {
      */
     Inline auto h_33(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
       } else {
@@ -123,7 +123,7 @@ namespace ntt {
      */
     Inline auto h_13(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return -dr * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
       } else {
@@ -139,7 +139,7 @@ namespace ntt {
      */
     Inline auto h11(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       const real_t Sigma_ { Sigma(r, theta) };
       return SQR(dr_inv) * A(r, theta) / (Sigma_ * (Sigma_ + TWO * r));
     }
@@ -152,7 +152,7 @@ namespace ntt {
      */
     Inline auto h22(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return SQR(dtheta_inv) / Sigma(r, theta);
     }
 
@@ -164,7 +164,7 @@ namespace ntt {
      */
     Inline auto h33(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return ONE / (Sigma(r, theta) * SQR(math::sin(theta)));
       } else {
@@ -180,7 +180,7 @@ namespace ntt {
      */
     Inline auto h13(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return dr_inv * a / Sigma(r, theta);
       } else {
@@ -196,7 +196,7 @@ namespace ntt {
      */
     Inline auto alpha(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return ONE / math::sqrt(ONE + z(r, theta));
     }
 
@@ -208,7 +208,7 @@ namespace ntt {
      */
     Inline auto beta1(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       const real_t z_ { z(r, theta) };
       return dr_inv * z_ / (ONE + z_);
     }
@@ -221,7 +221,7 @@ namespace ntt {
      */
     Inline auto sqrt_det_h(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return dr * dtheta * Sigma(r, theta) * math::sin(theta)
                * math::sqrt(ONE + z(r, theta));
@@ -239,7 +239,7 @@ namespace ntt {
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return dr * dtheta * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
       } else {

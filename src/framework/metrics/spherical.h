@@ -76,7 +76,7 @@ namespace ntt {
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
         real_t r { x[0] * dr + this->x1_min };
-        real_t theta { x[1] * dtheta };
+        real_t theta { x[1] * dtheta + this->x2_min };
         real_t sin_theta { math::sin(theta) };
         if constexpr (D == Dim2) {
           return SQR(r) * SQR(sin_theta);
@@ -97,7 +97,7 @@ namespace ntt {
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
         real_t r { x[0] * dr + this->x1_min };
-        real_t theta { x[1] * dtheta };
+        real_t theta { x[1] * dtheta + this->x2_min};
         if constexpr (D == Dim2) {
           return dr * dtheta * SQR(r) * math::sin(theta);
         } else {
