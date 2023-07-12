@@ -4,6 +4,7 @@
 #include "wrapper.h"
 
 #include "sim_params.h"
+#include "metadomain.h"
 
 #include "io/output.h"
 #include "io/writer.h"
@@ -45,6 +46,8 @@ namespace ntt {
     real_t           m_time { 0.0 };
     // time in iteration timesteps
     std::size_t      m_tstep { 0 };
+
+    Metadomain<D>    m_metadomain;
 
   public:
     // meshblock with all the fields / metric / and particles
@@ -94,7 +97,7 @@ namespace ntt {
                                         const std::vector<double>& fractions,
                                         const timer::Timers&       timer,
                                         std::vector<long double>&  tstep_durations,
-                                        const DiagFlags           diag_flags,
+                                        const DiagFlags            diag_flags,
                                         std::ostream&              os = std::cout);
 
     /* -------------------------------------------------------------------------- */

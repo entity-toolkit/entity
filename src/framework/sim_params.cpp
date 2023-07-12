@@ -66,6 +66,10 @@ namespace ntt {
       m_coordinates = "spherical";
     }
 
+    // domain decomposition
+    m_domaindecomposition
+      = get<std::vector<unsigned int>>("domain", "decomposition", std::vector<unsigned int>());
+
     // domain size / resolution
     m_resolution = get<std::vector<unsigned int>>("domain", "resolution");
     m_extent     = get<std::vector<real_t>>("domain", "extent");

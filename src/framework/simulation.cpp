@@ -61,8 +61,9 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_params { inputdata, D },
-      meshblock { m_params.resolution(),
-                  m_params.extent(),
+      m_metadomain { m_params.resolution(), m_params.extent(), m_params.domaindecomposition() },
+      meshblock { m_metadomain.localDomain().ncells(),
+                  m_metadomain.localDomain().extent(),
                   m_params.metricParameters(),
                   m_params.species() },
       writer {},

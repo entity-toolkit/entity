@@ -68,6 +68,9 @@ namespace ntt {
     // User-defined real-valued parameters for the metric [10 max].
     real_t                                      m_metric_parameters[10];
 
+    // Domain decomposition
+    std::vector<unsigned int>                   m_domaindecomposition;
+
     // Output parameters
     std::string                                 m_output_format;
     int                                         m_output_interval;
@@ -191,6 +194,12 @@ namespace ntt {
      */
     [[nodiscard]] auto resolution() const -> const std::vector<unsigned int>& {
       return m_resolution;
+    }
+    /**
+     * @brief Get the domain decomposition.
+     */
+    [[nodiscard]] auto domaindecomposition() const -> const std::vector<unsigned int>& {
+      return m_domaindecomposition;
     }
     /**
      * @brief Get the boundary conditions of the simulation box.
