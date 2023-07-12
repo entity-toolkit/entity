@@ -1,15 +1,6 @@
 #ifndef FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
 #define FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
 
-#ifdef __INTELLISENSE__
-#  pragma diag_suppress 1670
-#  pragma diag_suppress 864
-#  pragma diag_suppress 258
-#  pragma diag_suppress 77
-#  pragma diag_suppress 65
-#  pragma diag_suppress 20
-#endif
-
 /**
  * @brief Vector transformations for generalized spherical.
  * @implements v3: Cntrv -> Cart
@@ -167,14 +158,5 @@ Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
     vi_hat[2] = -vi_cart[0] * math::sin(x_sph[2]) + vi_cart[1] * math::cos(x_sph[2]);
   }
 }
-
-#ifdef __INTELLISENSE__
-#  pragma diag_default 20
-#  pragma diag_default 65
-#  pragma diag_default 77
-#  pragma diag_default 258
-#  pragma diag_default 864
-#  pragma diag_default 1670
-#endif
 
 #endif    // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H

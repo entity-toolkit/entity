@@ -64,11 +64,7 @@ namespace ntt {
           xi[d] = ONE;
         }
         xi[0] = (real_t)(i);
-#  ifdef MINKOWSKI_METRIC
-        mblock.metric.x_Code2Cart(xi, xph);
-#  else
-        mblock.metric.x_Code2Sph(xi, xph);
-#  endif
+        mblock.metric.x_Code2Phys(xi, xph);
         x1[i] = xph[0];
       }
       m_io.DefineAttribute<real_t>("X1", x1, mblock.Ni1() + 1);
@@ -84,11 +80,7 @@ namespace ntt {
           xi[d] = ONE;
         }
         xi[1] = (real_t)(i);
-#  ifdef MINKOWSKI_METRIC
-        mblock.metric.x_Code2Cart(xi, xph);
-#  else
-        mblock.metric.x_Code2Sph(xi, xph);
-#  endif
+        mblock.metric.x_Code2Phys(xi, xph);
         x2[i] = xph[1];
       }
       m_io.DefineAttribute<real_t>("X2", x2, mblock.Ni2() + 1);
@@ -104,11 +96,7 @@ namespace ntt {
           xi[d] = ONE;
         }
         xi[2] = (real_t)(i);
-#  ifdef MINKOWSKI_METRIC
-        mblock.metric.x_Code2Cart(xi, xph);
-#  else
-        mblock.metric.x_Code2Sph(xi, xph);
-#  endif
+        mblock.metric.x_Code2Phys(xi, xph);
         x3[i] = xph[2];
       }
       m_io.DefineAttribute<real_t>("X3", x3, mblock.Ni3() + 1);

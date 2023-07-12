@@ -108,6 +108,27 @@ namespace ntt {
      * @param xi coordinate array in code units
      */
     Inline void x_Cart2Code(const coord_t<D>&, coord_t<D>&) const;
+    
+    /**
+     * Coordinate conversion from code units to Cartesian physical units.
+     * 
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Cartesian physical units
+    */
+    Inline void x_Code2Phys(const coord_t<D>& xi, coord_t<D>& x) const {
+      this->x_Code2Cart(xi, x);
+    }
+
+    /**
+     * Coordinate conversion from Cartesian physical units to code units.
+     * 
+     * @param x coordinate array in Cartesian coordinates in physical units
+     * @param xi coordinate array in code units
+    */
+    Inline void x_Phys2Code(const coord_t<D>& x, coord_t<D>& xi) const {
+      this->x_Cart2Code(x, xi);
+    }
+
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *

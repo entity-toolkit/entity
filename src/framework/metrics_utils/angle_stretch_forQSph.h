@@ -1,16 +1,6 @@
 #ifndef FRAMEWORK_METRICS_UTILS_ANGLE_STRETCH_FORQSPH_H
 #define FRAMEWORK_METRICS_UTILS_ANGLE_STRETCH_FORQSPH_H
 
-#ifdef __INTELLISENSE__
-#  pragma diag_suppress 1670
-#  pragma diag_suppress 864
-#  pragma diag_suppress 258
-#  pragma diag_suppress 169
-#  pragma diag_suppress 77
-#  pragma diag_suppress 65
-#  pragma diag_suppress 20
-#endif
-
 /**
  * @brief Angle stretching for stretched spherical.
  * @implements dtheta_deta
@@ -77,15 +67,5 @@ Inline auto theta2eta(const real_t& theta) const -> real_t {
       / 12.0);
   }
 }
-
-#ifdef __INTELLISENSE__
-#  pragma diag_default 20
-#  pragma diag_default 65
-#  pragma diag_default 77
-#  pragma diag_default 169
-#  pragma diag_default 258
-#  pragma diag_default 864
-#  pragma diag_default 1670
-#endif
 
 #endif    // FRAMEWORK_METRICS_UTILS_ANGLE_STRETCH_FORQSPH_H

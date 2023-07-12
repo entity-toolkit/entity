@@ -1,15 +1,6 @@
 #ifndef FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORSPH_H
 #define FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORSPH_H
 
-#ifdef __INTELLISENSE__
-#  pragma diag_suppress 1670
-#  pragma diag_suppress 864
-#  pragma diag_suppress 258
-#  pragma diag_suppress 77
-#  pragma diag_suppress 65
-#  pragma diag_suppress 20
-#endif
-
 /**
  * @brief Coordinate transformations for normal spherical.
  * @implements x: Code -> Sph
@@ -52,14 +43,5 @@ Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
     x[2] = xi[2] / dphi;
   }
 }
-
-#ifdef __INTELLISENSE__
-#  pragma diag_default 20
-#  pragma diag_default 65
-#  pragma diag_default 77
-#  pragma diag_default 258
-#  pragma diag_default 864
-#  pragma diag_default 1670
-#endif
 
 #endif    // FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORSPH_H
