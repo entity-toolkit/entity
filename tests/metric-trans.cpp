@@ -62,22 +62,31 @@ auto main(int argc, char* argv[]) -> int {
           metric.v3_Cntrv2Hat(xi, v_cntrv_from_hat, v_hat_from_cntrv);
           metric.v3_Cov2Cntrv(xi, v_cov, v_cntrv_from_cov);
 
-          const auto correct_1 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_from_cntrv);
-          const auto correct_2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_from_hat);
-          const auto correct_3
+          const auto correct1 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_from_cntrv);
+          const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_from_hat);
+          const auto correct3
             = ntt::AlmostEqual<ntt::Dim3>(v_cntrv_from_hat, v_cntrv_from_cov);
-          const auto correct_4 = ntt::AlmostEqual<ntt::Dim3>(v_hat_from_cov, v_hat_from_cntrv);
-          const auto all_correct = correct_1 && correct_2 && correct_3 && correct_4;
+          const auto correct4 = ntt::AlmostEqual<ntt::Dim3>(v_hat_from_cov, v_hat_from_cntrv);
+          const auto all_correct = correct1 && correct2 && correct3 && correct4;
 
           if (!all_correct) {
             printCoordinate("xi", xi);
-            printVector("v_cov", v_cov);
-            printVector("v_hat_from_cov", v_hat_from_cov);
-            printVector("v_cntrv_from_hat", v_cntrv_from_hat);
-            printVector("v_cov_from_hat", v_cov_from_hat);
-            printVector("v_hat_from_cntrv", v_hat_from_cntrv);
-            printVector("v_cntrv_from_cov", v_cntrv_from_cov);
-            printVector("v_cov_from_cntrv", v_cov_from_cntrv);
+            if (!correct1) {
+              printVector("v_cov", v_cov);
+              printVector("v_cov_from_cntrv", v_cov_from_cntrv);
+            }
+            if (!correct2) {
+              printVector("v_cov", v_cov);
+              printVector("v_cov_from_hat", v_cov_from_hat);
+            }
+            if (!correct3) {
+              printVector("v_cntrv_from_hat", v_cntrv_from_hat);
+              printVector("v_cntrv_from_cov", v_cntrv_from_cov);
+            }
+            if (!correct4) {
+              printVector("v_hat_from_cov", v_hat_from_cov);
+              printVector("v_hat_from_cntrv", v_hat_from_cntrv);
+            }
           }
 
           correct = correct && all_correct;
@@ -107,8 +116,12 @@ auto main(int argc, char* argv[]) -> int {
 
           if (!all_correct) {
             printCoordinate("xi", xi);
-            printCoordinate("xi_from_sph", xi_from_sph);
-            printCoordinate("xi_from_cart", xi_from_cart);
+            if (!correct1) {
+              printCoordinate("xi_from_sph", xi_from_sph);
+            }
+            if (!correct2) {
+              printCoordinate("xi_from_cart", xi_from_cart);
+            }
             printCoordinate("xsph_from_code", xsph_from_code);
             printCoordinate("xcart_from_code", xcart_from_code);
           }
@@ -150,13 +163,19 @@ auto main(int argc, char* argv[]) -> int {
 
           if (!all_correct) {
             printCoordinate("xi", xi);
-            printVector("v_cntrv", v_cntrv);
-            printVector("v_physCntrv", v_physCntrv);
-            printVector("v_cntrv_fromPhys", v_cntrv_fromPhys);
-            printVector("v_cov", v_cov);
-            printVector("v_physCov", v_physCov);
-            printVector("v_cov_fromPhys", v_cov_fromPhys);
-            printf("v_norm = %f, v_normPhys = %f\n", v_norm, v_normPhys);
+            if (!correct1) {
+              printVector("v_cntrv", v_cntrv);
+              printVector("v_cntrv_fromPhys", v_cntrv_fromPhys);
+            }
+            if (!correct2) {
+              printVector("v_cov", v_cov);
+              printVector("v_cov_fromPhys", v_cov_fromPhys);
+            }
+            if (!correct3) {
+              printVector("v_physCntrv", v_physCntrv);
+              printVector("v_physCov", v_physCov);
+              printf("v_norm: %f, v_normPhys: %f\n", v_norm, v_normPhys);
+            }
           }
           correct = correct && all_correct;
         }
@@ -201,12 +220,18 @@ auto main(int argc, char* argv[]) -> int {
 
             if (!all_correct) {
               printCoordinate("xi", xi);
-              printVector("v_cov", v_cov);
-              printVector("v_cntrv", v_cntrv);
-              printVector("v_cntrv_fromCart", v_cntrv_fromCart);
-              printVector("v_cov_fromCart", v_cov_fromCart);
-              printVector("v_cart_fromCov", v_cart_fromCov);
-              printVector("v_cart_fromCntrv", v_cart_fromCntrv);
+              if (!correct1) {
+                printVector("v_cntrv", v_cntrv);
+                printVector("v_cntrv_fromCart", v_cntrv_fromCart);
+              }
+              if (!correct2) {
+                printVector("v_cov", v_cov);
+                printVector("v_cov_fromCart", v_cov_fromCart);
+              }
+              if (!correct3) {
+                printVector("v_cart_fromCov", v_cart_fromCov);
+                printVector("v_cart_fromCntrv", v_cart_fromCntrv);
+              }
             }
             correct = correct && all_correct;
           }
