@@ -18,7 +18,7 @@ namespace ntt {
       typename std::conditional<D == Dim3, std::tuple<T, T, T>, std::nullptr_t>::type>::type>::type;
 
   template <Dimension D>
-  using domaincoordinate_t = nd_tuple_t<D, unsigned int>;
+  using domainoffset_t = nd_tuple_t<D, unsigned int>;
 
   template <Dimension D>
   using direction_t                                  = nd_tuple_t<D, short>;
@@ -67,12 +67,12 @@ namespace ntt {
   class Domain {
     // index of the domain in the metadomain
     int                       m_index;
-    // coordinate of the domain in the metadomain (# of domains in each dimension)
-    std::vector<unsigned int> m_coordinate;
+    // offset of the domain in the metadomain (# of domains in each dimension)
+    std::vector<unsigned int> m_offset_ndomains;
     // size of the domain (# of cells in each dimension)
     std::vector<unsigned int> m_ncells;
     // offset of the domain (# of cells in each dimension)
-    std::vector<unsigned int> m_offset_cells;
+    std::vector<unsigned int> m_offset_ncells;
     // extent of the domain (physical size in each dimension)
     std::vector<real_t>       m_extent;
 
@@ -85,15 +85,15 @@ namespace ntt {
     std::map<direction_t<D>, std::shared_ptr<Domain<D>>> neighbors;
 
     Domain(const int&                       index,
-           const std::vector<unsigned int>& coordinate,
+           const std::vector<unsigned int>& offset_ndomains,
            const std::vector<unsigned int>& ncells,
-           const std::vector<unsigned int>& offset_cells,
+           const std::vector<unsigned int>& offset_ncells,
            const std::vector<real_t>&       extent,
            const int&                       mpi_rank = 0)
       : m_index { index },
-        m_coordinate { coordinate },
+        m_offset_ndomains { offset_ndomains },
         m_ncells { ncells },
-        m_offset_cells { offset_cells },
+        m_offset_ncells { offset_ncells },
         m_extent { extent } {
 #if defined(MPI_ENABLED)
       m_mpi_rank = mpi_rank;
@@ -106,24 +106,24 @@ namespace ntt {
     }
 #endif    // MPI_ENABLED
 
-    [[nodiscard]] auto coordinate() const -> std::vector<unsigned int> {
-      return m_coordinate;
+    [[nodiscard]] auto index() const -> int {
+      return m_index;
+    }
+
+    [[nodiscard]] auto offsetNdomains() const -> std::vector<unsigned int> {
+      return m_offset_ndomains;
     }
 
     [[nodiscard]] auto ncells() const -> std::vector<unsigned int> {
       return m_ncells;
     }
 
-    [[nodiscard]] auto offsetCells() const -> std::vector<unsigned int> {
-      return m_offset_cells;
+    [[nodiscard]] auto offsetNcells() const -> std::vector<unsigned int> {
+      return m_offset_ncells;
     }
 
     [[nodiscard]] auto extent() const -> std::vector<real_t> {
       return m_extent;
-    }
-
-    [[nodiscard]] auto index() const -> int {
-      return m_index;
     }
   };
 
@@ -154,35 +154,33 @@ namespace ntt {
 
       for (auto rnk { 0 }; rnk < m_mpisize; ++rnk) {
         // !TODO: distribute domains among ranks
-        std::vector<unsigned int> l_coordinate;
+        std::vector<unsigned int> l_offset_ndomains;
         std::vector<unsigned int> l_ncells;
-        std::vector<unsigned int> l_offset;
+        std::vector<unsigned int> l_offset_ncells;
         std::vector<real_t>       l_extent;
         // index is the same as rank
         int                       l_index = rnk;
 
         // !TODO: define m_global_ndomains(i, j, k)
 
-        domains.emplace_back(l_index, l_coordinate, l_ncells, l_offset, l_extent, rnk);
+        domains.emplace_back(
+          l_index, l_offset_ndomains, l_ncells, l_offset_ncells, l_extent, rnk);
       }
 #else     // MPI_ENABLED
-      std::vector<unsigned int> no_coordinate;
       std::vector<unsigned int> no_offset;
       int                       no_index = 0;
       for (auto i { 0 }; i < (short)D; ++i) {
-        no_coordinate.emplace_back(0);
         m_global_ndomains.emplace_back(1);
         no_offset.emplace_back(0);
       }
-      domains.emplace_back(
-        no_index, no_coordinate, m_global_ncells, no_offset, m_global_extent);
+      domains.emplace_back(no_index, no_offset, m_global_ncells, no_offset, m_global_extent);
 #endif    // MPI_ENABLED
 
       // assign neighbors
       // for (auto& domain : domains) {
       //   for (auto& direction : directions<D>) {
       //     // auto neighbor_coordinate { domain.m_coordinate };
-      //     // auto neighbor_offset { domain.m_offset_cells };
+      //     // auto neighbor_offset { domain.m_offset_ncells };
       //     // auto neighbor_ncells { domain.m_ncells };
       //     // auto neighbor_extent { domain.m_extent };
 
@@ -214,14 +212,14 @@ namespace ntt {
       return domains[index];
     }
 
-    auto coord2index(const domaincoordinate_t<D>& d) const -> int {
+    auto offset2index(const domainoffset_t<D>& d) const -> int {
       // !TODO: implement
       return 0;
     }
 
-    auto index2coord(const int& index) const -> domaincoordinate_t<D> {
+    auto index2offset(const int& index) const -> domainoffset_t<D> {
       // !TODO: implement
-      domaincoordinate_t<D> d;
+      domainoffset_t<D> d;
       for (auto i { 0 }; i < (short)D; ++i) {
         d[i] = 0;
       }
