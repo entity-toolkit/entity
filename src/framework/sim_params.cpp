@@ -110,9 +110,9 @@ namespace ntt {
         m_gr_pusher_niter   = get<int>("algorithm", "gr_pusher_niter", 10);
       }
 
-      m_extent.push_back(0.0);
+      m_extent.push_back(ZERO);
       m_extent.push_back(constant::PI);
-      m_extent.push_back(0.0);
+      m_extent.push_back(ZERO);
       m_extent.push_back(constant::TWO_PI);
     } else {
       NTTHostError("unrecognized coordinates: " + m_coordinates);

@@ -20,19 +20,23 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
     const auto resolution = std::vector<unsigned int>({ 2560, 1920 });
-    const auto extent     = std::vector<real_t>({ 1.0, 100.0, 1.0, 100.0 });
+#ifdef MINKOWSKI_METRIC
+    const auto extent = std::vector<real_t>({ 1.0, 100.0, 1.0, 100.0 });
+#else
+    const auto extent = std::vector<real_t>({ 1.0, 100.0, ZERO, ntt::constant::PI });
+#endif
     // optional for GR
-    const auto spin       = (real_t)(0.9);
-    const auto rh         = ONE + std::sqrt(ONE - SQR(spin));
+    const auto spin    = (real_t)(0.9);
+    const auto rh      = ONE + std::sqrt(ONE - SQR(spin));
     // optional for Qspherical
-    const auto qsph_r0    = (real_t)(0.0);
-    const auto qsph_h     = (real_t)(0.25);
+    const auto qsph_r0 = (real_t)(0.0);
+    const auto qsph_h  = (real_t)(0.25);
 
-    auto       params     = new real_t[6];
-    params[0]             = qsph_r0;
-    params[1]             = qsph_h;
-    params[4]             = spin;
-    params[5]             = rh;
+    auto       params  = new real_t[6];
+    params[0]          = qsph_r0;
+    params[1]          = qsph_h;
+    params[4]          = spin;
+    params[5]          = rh;
     ntt::Metric<ntt::Dim2> metric(resolution, extent, params);
     delete[] params;
 
