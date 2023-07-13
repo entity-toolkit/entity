@@ -71,6 +71,27 @@ namespace ntt {
     return { std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
              std::sregex_token_iterator() };
   }
+
+  /**
+   * @brief Compute a tensor product of a list of vectors
+   * @param list List of vectors
+   * @return Tensor product of list
+   */
+  template <typename T>
+  inline auto TensorProduct(const std::vector<std::vector<T>> list) -> std::vector<std::vector<T>> {
+    std::vector<std::vector<unsigned int>> result = {{}};
+    for (const auto& sublist : list) {
+      std::vector<std::vector<unsigned int>> temp;
+      for (const auto& element : sublist) {
+        for (const auto& r : result) {
+          temp.push_back(r);
+          temp.back().push_back(element);
+        }
+      }
+      result = temp;
+    }
+    return result;
+  }
 }    // namespace ntt
 
 #endif
