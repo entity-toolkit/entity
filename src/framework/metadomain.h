@@ -94,39 +94,6 @@ namespace ntt {
     }
 #endif    // MPI_ENABLED
 
-    [[nodiscard]] auto index() const -> int {
-      return m_index;
-    }
-
-    [[nodiscard]] auto offsetNdomains() const -> std::vector<unsigned int> {
-      return m_offset_ndomains;
-    }
-
-    [[nodiscard]] auto ncells() const -> std::vector<unsigned int> {
-      return m_ncells;
-    }
-
-    [[nodiscard]] auto offsetNcells() const -> std::vector<unsigned int> {
-      return m_offset_ncells;
-    }
-
-    [[nodiscard]] auto extent() const -> std::vector<real_t> {
-      return m_extent;
-    }
-
-    [[nodiscard]] auto boundaries() const -> std::vector<std::vector<BoundaryCondition>> {
-      return m_boundaries;
-    }
-
-    [[nodiscard]] auto neighbors(const std::vector<short>& dir) const -> const Domain<D>* {
-      auto it = m_neighbors.find(dir);
-      if (it != m_neighbors.end()) {
-        return it->second;
-      } else {
-        NTTHostError("Neighbor not found");
-      }
-    }
-
     auto assignNeighbor(const std::vector<short>& dir, Domain<D>* neighbor) -> void {
       m_neighbors[dir] = neighbor;
     }
@@ -165,6 +132,43 @@ namespace ntt {
         std::cout << " -> " << neighbor->index() << "\n";
       }
       std::cout << "\n";
+    }
+
+    /**
+     * Getters
+     */
+
+    [[nodiscard]] auto index() const -> int {
+      return m_index;
+    }
+
+    [[nodiscard]] auto offsetNdomains() const -> std::vector<unsigned int> {
+      return m_offset_ndomains;
+    }
+
+    [[nodiscard]] auto ncells() const -> std::vector<unsigned int> {
+      return m_ncells;
+    }
+
+    [[nodiscard]] auto offsetNcells() const -> std::vector<unsigned int> {
+      return m_offset_ncells;
+    }
+
+    [[nodiscard]] auto extent() const -> std::vector<real_t> {
+      return m_extent;
+    }
+
+    [[nodiscard]] auto boundaries() const -> std::vector<std::vector<BoundaryCondition>> {
+      return m_boundaries;
+    }
+
+    [[nodiscard]] auto neighbors(const std::vector<short>& dir) const -> const Domain<D>* {
+      auto it = m_neighbors.find(dir);
+      if (it != m_neighbors.end()) {
+        return it->second;
+      } else {
+        NTTHostError("Neighbor not found");
+      }
     }
   };
 
@@ -309,6 +313,35 @@ namespace ntt {
       }
     }
 
+    auto domainByIndex(const int& index) const -> const Domain<D>* {
+      return &(domains[index]);
+    }
+
+    auto domainByOffset(const std::vector<unsigned int>& d) const -> const Domain<D>* {
+      return domainByIndex(offset2index(d));
+    }
+
+    auto offset2index(const std::vector<unsigned int>& d) const -> int {
+      return m_domain_indices.at(d);
+    }
+
+    auto index2offset(const int& index) const -> std::vector<unsigned int> {
+      return m_domain_offsets[index];
+    }
+
+    auto localDomain() const -> const Domain<D>* {
+      // !TODO: this has to be more general
+#if defined(MPI_ENABLED)
+      return domainByIndex(m_mpirank);
+#else     // not MPI_ENABLED
+      return domainByIndex(0);
+#endif    // MPI_ENABLED
+    }
+
+    /**
+     * Getters
+     */
+
     [[nodiscard]] auto globalNcells() const -> std::vector<unsigned int> {
       return m_global_ncells;
     }
@@ -337,31 +370,6 @@ namespace ntt {
     [[nodiscard]] auto globalBoundaries() const
       -> std::vector<std::vector<BoundaryCondition>> {
       return m_global_boundaries;
-    }
-
-    auto domainByIndex(const int& index) const -> const Domain<D>* {
-      return &(domains[index]);
-    }
-
-    auto domainByOffset(const std::vector<unsigned int>& d) const -> const Domain<D>* {
-      return domainByIndex(offset2index(d));
-    }
-
-    auto offset2index(const std::vector<unsigned int>& d) const -> int {
-      return m_domain_indices.at(d);
-    }
-
-    auto index2offset(const int& index) const -> std::vector<unsigned int> {
-      return m_domain_offsets[index];
-    }
-
-    auto localDomain() const -> const Domain<D>* {
-      // !TODO: this has to be more general
-#if defined(MPI_ENABLED)
-      return domainByIndex(m_mpirank);
-#else     // not MPI_ENABLED
-      return domainByIndex(0);
-#endif    // MPI_ENABLED
     }
 
 #if defined(MPI_ENABLED)
