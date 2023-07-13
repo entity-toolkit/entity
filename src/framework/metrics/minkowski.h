@@ -5,6 +5,8 @@
 
 #include "metric_base.h"
 
+#include "utils/qmath.h"
+
 #include <cmath>
 
 namespace ntt {
@@ -27,7 +29,17 @@ namespace ntt {
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
         dx_inv(ONE / dx),
-        dx_min { findSmallestCell() } {}
+        dx_min { findSmallestCell() } {
+      if constexpr (D == Dim2) {
+        NTTHostErrorIf(!AlmostEqual((this->x2_max - this->x2_min) / (real_t)(this->nx2), dx),
+                       "dx2 must be equal to dx1 in 2D");
+      } else if constexpr (D == Dim3) {
+        NTTHostErrorIf(!AlmostEqual((this->x2_max - this->x2_min) / (real_t)(this->nx2), dx),
+                       "dx2 must be equal to dx1 in 3D");
+        NTTHostErrorIf(!AlmostEqual((this->x3_max - this->x3_min) / (real_t)(this->nx3), dx),
+                       "dx3 must be equal to dx1 in 3D");
+      }
+    }
     ~Metric() = default;
 
     /**
@@ -108,23 +120,23 @@ namespace ntt {
      * @param xi coordinate array in code units
      */
     Inline void x_Cart2Code(const coord_t<D>&, coord_t<D>&) const;
-    
+
     /**
      * Coordinate conversion from code units to Cartesian physical units.
-     * 
+     *
      * @param xi coordinate array in code units
      * @param x coordinate array in Cartesian physical units
-    */
+     */
     Inline void x_Code2Phys(const coord_t<D>& xi, coord_t<D>& x) const {
       this->x_Code2Cart(xi, x);
     }
 
     /**
      * Coordinate conversion from Cartesian physical units to code units.
-     * 
+     *
      * @param x coordinate array in Cartesian coordinates in physical units
      * @param xi coordinate array in code units
-    */
+     */
     Inline void x_Phys2Code(const coord_t<D>& x, coord_t<D>& xi) const {
       this->x_Cart2Code(x, xi);
     }
