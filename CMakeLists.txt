@@ -4,7 +4,7 @@ cmake_policy(SET CMP0110 NEW)
 set(PROJECT_NAME entity)
 
 project(${PROJECT_NAME}
-  VERSION 0.9.0
+  VERSION 1.0.0.1
   LANGUAGES CXX C
 )
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")

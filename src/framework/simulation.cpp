@@ -61,7 +61,11 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_params { inputdata, D },
-      m_metadomain { m_params.resolution(), m_params.extent(), m_params.domaindecomposition() },
+      m_metadomain { m_params.resolution(),
+                     m_params.extent(),
+                     m_params.domaindecomposition(),
+                     m_params.metricParameters(),
+                     m_params.boundaries() },
       meshblock { m_metadomain.localDomain().ncells(),
                   m_metadomain.localDomain().extent(),
                   m_params.metricParameters(),
@@ -69,7 +73,7 @@ namespace ntt {
       writer {},
       random_pool { constant::RandomSeed } {
     meshblock.random_pool_ptr = &random_pool;
-    meshblock.boundaries      = m_params.boundaries();
+    meshblock.boundaries      = m_metadomain.localDomain().boundaries();
   }
 
   template <Dimension D, SimulationEngine S>

@@ -52,13 +52,19 @@ endforeach()
 # ---------------------------------- Tests --------------------------------- #
 enable_testing()
 
+# --------------------------------- Utils ---------------------------------- #
+foreach(metric ${all_metrics})
+  set(title "utils-metadomain-${metric}")
+  add_executable(test-${title}.xc "utils-metadomain.cpp")
+  target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
+  add_test(NAME "Metadomain: ${metric}" COMMAND "test-${title}.xc")
+endforeach()
+
 # --------------------------------- Metrics -------------------------------- #
 foreach(metric ${all_metrics})
   list(FIND sr_metrics ${metric} sr_metric_index)
 
   if(NOT ${sr_metric_index} EQUAL -1)
-    set(engine pic)
-
     if(${metric} STREQUAL "minkowski")
       set(filename_comp "metric-comp-sr-mink.cpp")
     else()
@@ -66,7 +72,6 @@ foreach(metric ${all_metrics})
     endif()
 
   else()
-    set(engine grpic)
     set(filename_comp "metric-comp-gr.cpp")
   endif()
 
@@ -74,14 +79,12 @@ foreach(metric ${all_metrics})
   add_executable(test-${title}.xc "metric-trans.cpp")
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
 
-  # configure_framework_test(test-${title}.xc framework-${title} ${metric} ${engine})
   add_test(NAME "Vector/Coordinate Transformations: ${metric}" COMMAND "test-${title}.xc")
 
   set(title "metric-comp-${metric}")
   add_executable(test-${title}.xc ${filename_comp})
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
 
-  # configure_framework_test(test-${title}.xc framework-${title} ${metric} ${engine})
   add_test(NAME "Metric Components: ${metric}" COMMAND "test-${title}.xc")
 endforeach()
 

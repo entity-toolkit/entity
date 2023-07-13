@@ -21,7 +21,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     const auto resolution = std::vector<unsigned int>({ 2560, 1920 });
 #ifdef MINKOWSKI_METRIC
-    const auto extent = std::vector<real_t>({ 1.0, 100.0, 1.0, 100.0 });
+    const auto extent = std::vector<real_t>({ 1.0, 100.0, -30.0, 44.25 });
 #else
     const auto extent = std::vector<real_t>({ 1.0, 100.0, ZERO, ntt::constant::PI });
 #endif
