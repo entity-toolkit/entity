@@ -3,8 +3,8 @@
 
 #include "wrapper.h"
 
-#include "sim_params.h"
 #include "metadomain.h"
+#include "sim_params.h"
 
 #include "io/output.h"
 #include "io/writer.h"
@@ -16,10 +16,6 @@
 #include <string>
 
 namespace ntt {
-  auto stringizeSimulationEngine(const SimulationEngine&) -> std::string;
-  auto stringizeBoundaryCondition(const BoundaryCondition&) -> std::string;
-  auto stringizeParticlePusher(const ParticlePusher&) -> std::string;
-
   namespace {
     enum DiagFlags_ {
       DiagFlags_None     = 0,

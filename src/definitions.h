@@ -96,6 +96,53 @@ namespace ntt {
   inline constexpr auto PICEngine     = SimulationEngine::PIC;
   inline constexpr auto GRPICEngine   = SimulationEngine::GRPIC;
 
+  inline auto           stringizeSimulationEngine(const SimulationEngine& sim) -> std::string {
+    switch (sim) {
+    case SANDBOXEngine:
+      return "Sandbox";
+    case PICEngine:
+      return "PIC";
+    case GRPICEngine:
+      return "GRPIC";
+    default:
+      return "N/A";
+    }
+  }
+  
+  inline auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
+    switch (bc) {
+    case BoundaryCondition::PERIODIC:
+      return "Periodic";
+    case BoundaryCondition::ABSORB:
+      return "Absorb";
+    case BoundaryCondition::OPEN:
+      return "Open";
+    case BoundaryCondition::CUSTOM:
+      return "Custom";
+    case BoundaryCondition::AXIS:
+      return "Axis";
+    case BoundaryCondition::COMM:
+      return "Comm";
+    default:
+      return "N/A";
+    }
+  }
+
+  inline auto stringizeParticlePusher(const ParticlePusher& pusher) -> std::string {
+    switch (pusher) {
+    case ParticlePusher::BORIS:
+      return "Boris";
+    case ParticlePusher::VAY:
+      return "Vay";
+    case ParticlePusher::PHOTON:
+      return "Photon";
+    case ParticlePusher::NONE:
+      return "None";
+    default:
+      return "N/A";
+    }
+  }
+
   // ND list alias
   template <typename T, Dimension D>
   using tuple_t = T[static_cast<short>(D)];
@@ -159,6 +206,60 @@ namespace ntt {
     const int                  diag_interval      = 1;
     const bool                 blocking_timers    = false;
   }    // namespace defaults
+
+  template <Dimension D>
+  struct Directions {};
+
+  template <>
+  struct Directions<Dim1> {
+    inline static const std::vector<std::vector<short>> all = { { -1 }, { 1 } };
+  };
+
+  template <>
+  struct Directions<Dim2> {
+    inline static const std::vector<std::vector<short>> all = {
+      {-1, -1},
+      {-1,  0},
+      {-1,  1},
+      { 0, -1},
+      { 0,  1},
+      { 1, -1},
+      { 1,  0},
+      { 1,  1}
+    };
+  };
+
+  template <>
+  struct Directions<Dim3> {
+    inline static const std::vector<std::vector<short>> all = {
+      {-1, -1, -1},
+      {-1, -1,  0},
+      {-1, -1,  1},
+      {-1,  0, -1},
+      {-1,  0,  0},
+      {-1,  0,  1},
+      {-1,  1, -1},
+      {-1,  1,  0},
+      {-1,  1,  1},
+      { 0, -1, -1},
+      { 0, -1,  0},
+      { 0, -1,  1},
+      { 0,  0, -1},
+      { 0,  0,  1},
+      { 0,  1, -1},
+      { 0,  1,  0},
+      { 0,  1,  1},
+      { 1, -1, -1},
+      { 1, -1,  0},
+      { 1, -1,  1},
+      { 1,  0, -1},
+      { 1,  0,  0},
+      { 1,  0,  1},
+      { 1,  1, -1},
+      { 1,  1,  0},
+      { 1,  1,  1}
+    };
+  };
 
   // Field IDs used for io
   enum class FieldID {

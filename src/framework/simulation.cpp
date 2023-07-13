@@ -13,51 +13,6 @@
 #include <string>
 
 namespace ntt {
-  auto stringizeSimulationEngine(const SimulationEngine& sim) -> std::string {
-    switch (sim) {
-    case SANDBOXEngine:
-      return "Sandbox";
-    case PICEngine:
-      return "PIC";
-    case GRPICEngine:
-      return "GRPIC";
-    default:
-      return "N/A";
-    }
-  }
-  auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
-    switch (bc) {
-    case BoundaryCondition::PERIODIC:
-      return "Periodic";
-    case BoundaryCondition::ABSORB:
-      return "Absorbing";
-    case BoundaryCondition::OPEN:
-      return "Open";
-    case BoundaryCondition::CUSTOM:
-      return "Custom";
-    case BoundaryCondition::AXIS:
-      return "Axis";
-    case BoundaryCondition::COMM:
-      return "Communicate";
-    default:
-      return "N/A";
-    }
-  }
-  auto stringizeParticlePusher(const ParticlePusher& pusher) -> std::string {
-    switch (pusher) {
-    case ParticlePusher::BORIS:
-      return "Boris";
-    case ParticlePusher::VAY:
-      return "Vay";
-    case ParticlePusher::PHOTON:
-      return "Photon";
-    case ParticlePusher::NONE:
-      return "None";
-    default:
-      return "N/A";
-    }
-  }
-
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::Simulation(const toml::value& inputdata)
     : m_params { inputdata, D },
@@ -66,14 +21,14 @@ namespace ntt {
                      m_params.domaindecomposition(),
                      m_params.metricParameters(),
                      m_params.boundaries() },
-      meshblock { m_metadomain.localDomain().ncells(),
-                  m_metadomain.localDomain().extent(),
+      meshblock { m_metadomain.localDomain()->ncells(),
+                  m_metadomain.localDomain()->extent(),
                   m_params.metricParameters(),
                   m_params.species() },
       writer {},
       random_pool { constant::RandomSeed } {
     meshblock.random_pool_ptr = &random_pool;
-    meshblock.boundaries      = m_metadomain.localDomain().boundaries();
+    meshblock.boundaries      = m_metadomain.localDomain()->boundaries();
   }
 
   template <Dimension D, SimulationEngine S>
