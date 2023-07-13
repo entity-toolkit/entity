@@ -125,7 +125,7 @@ namespace ntt {
       auto species = particles[sp - 1];
       auto mass    = species.mass();
       auto charge  = species.charge();
-      if ((field == FieldID::Charge) && AlmostEqual(charge, ZERO)) {
+      if ((field == FieldID::Charge) && AlmostEqual(charge, 0.0f)) {
         continue;
       }
       if constexpr (D == Dim1) {
