@@ -6,11 +6,13 @@
 #include "utils/decomposition.h"
 #include "utils/utils.h"
 
+#include METRIC_HEADER
+
+#include <iomanip>
+
 #if defined(MPI_ENABLED)
 #  include <mpi.h>
 #endif    // MPI_ENABLED
-
-#include METRIC_HEADER
 
 /**
  *
@@ -35,63 +37,11 @@
  * |         |        |                  |                  |
  * |---------|--------|------------------|------------------|
  * ^                  ^
- * |------------------|
- *    offsetNdomains
+ * |--offsetNdomains--|
  *
  */
 
 namespace ntt {
-  template <Dimension D, typename T>
-  using nd_tuple_t = typename std::conditional<
-    D == Dim1,
-    std::tuple<T>,
-    typename std::conditional<
-      D == Dim2,
-      std::tuple<T, T>,
-      typename std::conditional<D == Dim3, std::tuple<T, T, T>, std::nullptr_t>::type>::type>::type;
-
-  template <Dimension D>
-  using direction_t                                  = nd_tuple_t<D, short>;
-
-  const std::vector<direction_t<Dim1>> directions_1d = { { -1 }, { 1 } };
-  const std::vector<direction_t<Dim2>> directions_2d = {
-    {-1,  0},
-    { 1,  0},
-    { 0, -1},
-    { 0,  1},
-    {-1, -1},
-    {-1,  1},
-    { 1, -1},
-    { 1,  1}
-  };
-  const std::vector<direction_t<Dim3>> directions_3d = {
-    {-1,  0,  0},
-    { 1,  0,  0},
-    { 0, -1,  0},
-    { 0,  1,  0},
-    { 0,  0, -1},
-    { 0,  0,  1},
-    {-1, -1,  0},
-    {-1,  1,  0},
-    { 1, -1,  0},
-    { 1,  1,  0},
-    {-1,  0, -1},
-    {-1,  0,  1},
-    { 1,  0, -1},
-    { 1,  0,  1},
-    { 0, -1, -1},
-    { 0, -1,  1},
-    { 0,  1, -1},
-    { 0,  1,  1},
-    {-1, -1, -1},
-    {-1, -1,  1},
-    {-1,  1, -1},
-    {-1,  1,  1},
-    { 1, -1, -1},
-    { 1, -1,  1},
-    { 1,  1, -1},
-    { 1,  1,  1}
-  };
 
   template <Dimension D>
   class Domain {
@@ -115,9 +65,9 @@ namespace ntt {
     int m_mpi_rank;
 #endif    // MPI_ENABLED
 
-  public:
-    std::map<direction_t<D>, std::shared_ptr<Domain<D>>> neighbors;
+    std::map<std::vector<short>, Domain<D>*> m_neighbors;
 
+  public:
     Domain(const int&                                        index,
            const std::vector<unsigned int>&                  offset_ndomains,
            const std::vector<unsigned int>&                  ncells,
@@ -166,6 +116,55 @@ namespace ntt {
 
     [[nodiscard]] auto boundaries() const -> std::vector<std::vector<BoundaryCondition>> {
       return m_boundaries;
+    }
+
+    [[nodiscard]] auto neighbors(const std::vector<short>& dir) const -> const Domain<D>* {
+      auto it = m_neighbors.find(dir);
+      if (it != m_neighbors.end()) {
+        return it->second;
+      } else {
+        NTTHostError("Neighbor not found");
+      }
+    }
+
+    auto assignNeighbor(const std::vector<short>& dir, Domain<D>* neighbor) -> void {
+      m_neighbors[dir] = neighbor;
+    }
+
+    auto display() const -> void {
+      std::cout << "Domain " << m_index << ":";
+      std::cout << std::setw(20) << std::left << "\n  offset_ndomains: ";
+      for (auto& off_nd : m_offset_ndomains) {
+        std::cout << std::setw(8) << std::right << off_nd;
+      }
+      std::cout << std::setw(20) << std::left << "\n  ncells: ";
+      for (auto& ncell : m_ncells) {
+        std::cout << std::setw(8) << std::right << ncell;
+      }
+      std::cout << std::setw(20) << std::left << "\n  offset_ncells: ";
+      for (auto& off_nc : m_offset_ncells) {
+        std::cout << std::setw(8) << std::right << off_nc;
+      }
+      std::cout << std::setw(20) << std::left << "\n  extent: ";
+      for (auto& ext : m_extent) {
+        std::cout << std::setw(8) << std::right << ext;
+      }
+      std::cout << std::setw(20) << std::left << "\n  boundaries: ";
+      for (auto& bound : m_boundaries) {
+        for (auto& bc : bound) {
+          std::cout << std::setw(8) << std::right << stringizeBoundaryCondition(bc);
+        }
+      }
+      std::cout << std::setw(20) << std::left << "\n  neighbors:";
+      std::cout << "\n";
+      for (auto& [dir, neighbor] : m_neighbors) {
+        std::cout << "    ";
+        for (auto& d : dir) {
+          std::cout << std::setw(4) << std::right << d;
+        }
+        std::cout << " -> " << neighbor->index() << "\n";
+      }
+      std::cout << "\n";
     }
   };
 
@@ -246,6 +245,7 @@ namespace ntt {
 
       m_domain_offsets          = domain_offset_ndoms;
 
+      // create domains
       for (auto index { 0 }; index < m_global_ndomains; ++index) {
         auto       l_offset_ndomains = domain_offset_ndoms[index];
         auto       l_ncells          = domain_ncells[index];
@@ -288,6 +288,25 @@ namespace ntt {
                              l_boundaries,
                              index);
       }
+      // populate the neighbors
+      for (auto index { 0 }; index < m_global_ndomains; ++index) {
+        auto current_offset = domains[index].offsetNdomains();
+        for (auto& direction : Directions<D>::all) {
+          // !TODO account for the boundaries
+          auto neighbor_offset = current_offset;
+          for (auto d { 0 }; d < (short)D; ++d) {
+            auto dir = direction[d];
+            if ((dir == -1) && (current_offset[d] == 0)) {
+              neighbor_offset[d] = m_global_ndomains_per_dim[d] - 1;
+            } else if ((dir == 1) && (current_offset[d] == m_global_ndomains_per_dim[d] - 1)) {
+              neighbor_offset[d] = 0;
+            } else {
+              neighbor_offset[d] += dir;
+            }
+          }
+          domains[index].assignNeighbor(direction, &domains[offset2index(neighbor_offset)]);
+        }
+      }
     }
 
     [[nodiscard]] auto globalNcells() const -> std::vector<unsigned int> {
@@ -320,12 +339,12 @@ namespace ntt {
       return m_global_boundaries;
     }
 
-    auto domainByIndex(const int& index) const -> Domain<D> {
-      return domains[index];
+    auto domainByIndex(const int& index) const -> const Domain<D>* {
+      return &(domains[index]);
     }
 
-    auto domainByOffset(const std::vector<unsigned int>& d) const -> Domain<D> {
-      return domains[offset2index(d)];
+    auto domainByOffset(const std::vector<unsigned int>& d) const -> const Domain<D>* {
+      return domainByIndex(offset2index(d));
     }
 
     auto offset2index(const std::vector<unsigned int>& d) const -> int {
@@ -336,7 +355,7 @@ namespace ntt {
       return m_domain_offsets[index];
     }
 
-    auto localDomain() const -> Domain<D> {
+    auto localDomain() const -> const Domain<D>* {
       // !TODO: this has to be more general
 #if defined(MPI_ENABLED)
       return domainByIndex(m_mpirank);

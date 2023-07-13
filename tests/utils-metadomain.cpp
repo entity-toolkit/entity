@@ -1,7 +1,6 @@
 #include "wrapper.h"
 
 #include "metadomain.h"
-#include "simulation.h"
 
 #include "utils/decomposition.h"
 #include "utils/qmath.h"
@@ -48,9 +47,9 @@ auto main(int argc, char* argv[]) -> int {
     auto metadomain = ntt::Metadomain<ntt::Dim2>(
       resolution, extent, decomposition, params, boundaries, true);
 
-    auto first_domain = metadomain.domainByOffset({ 0, 0 });
+    auto first_domain = *metadomain.domainByOffset({ 0, 0 });
     auto last_domain
-      = metadomain.domainByOffset({ decomposition[0] - 1, decomposition[1] - 1 });
+      = *metadomain.domainByOffset({ decomposition[0] - 1, decomposition[1] - 1 });
     for (auto d { 0 }; d < 2; ++d) {
       if (first_domain.offsetNdomains()[d] != 0) {
         throw std::logic_error("first_domain.offsetNdomains()[d] != 0");
@@ -64,19 +63,6 @@ auto main(int argc, char* argv[]) -> int {
       if (last_domain.offsetNcells()[d] + last_domain.ncells()[d] != resolution[d]) {
         throw std::logic_error(
           "last_domain.offsetNcells()[d] + last_domain.ncells()[d] != resolution[d]");
-      }
-    }
-
-    for (unsigned int i { 0 }; i < decomposition[0]; ++i) {
-      for (unsigned int j { 0 }; j < decomposition[1]; ++j) {
-        const auto domain = metadomain.domainByOffset({ i, j });
-        for (auto& bcs : domain.boundaries()) {
-          for (auto& bc : bcs) {
-            std::cout << stringizeBoundaryCondition(bc) << " ";
-          }
-          std::cout << " x ";
-        }
-        std::cout << std::endl;
       }
     }
 
@@ -120,6 +106,23 @@ auto main(int argc, char* argv[]) -> int {
       throw std::logic_error("wrong last_domain.boundaries()[1][1]");
     }
 
+    auto first_domain1
+      = first_domain.neighbors({ 0, +1 })->neighbors({ 0, +1 })->neighbors({ 0, -1 })->neighbors(
+        { 0, -1 });
+
+    auto first_domain2 = last_domain.neighbors({ -1, -1 })
+                           ->neighbors({ -1, -1 })
+                           ->neighbors({ -1, 0 })
+                           ->neighbors({ -1, 0 })
+                           ->neighbors({ -1, 0 })
+                           ->neighbors({ -1, 0 });
+
+    if (first_domain1 != metadomain.domainByOffset({ 0, 0 })) {
+      throw std::logic_error("Wrong neighbor assignment");
+    }
+    if (first_domain2 != first_domain1) {
+      throw std::logic_error("Wrong neighbor assignment");
+    }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();
