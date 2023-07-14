@@ -38,3 +38,11 @@ else()
 endif()
 
 set_property(CACHE default_KOKKOS_ENABLE_OPENMP PROPERTY TYPE BOOL)
+
+if(DEFINED ENV{Entity_ENABLE_MPI})
+  set(default_mpi $ENV{Entity_ENABLE_MPI} CACHE INTERNAL "Default flag for MPI")
+else()
+  set(default_mpi OFF CACHE INTERNAL "Default flag for MPI")
+endif()
+
+set_property(CACHE default_mpi PROPERTY TYPE BOOL)

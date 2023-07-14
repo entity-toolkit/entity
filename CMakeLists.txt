@@ -41,6 +41,8 @@ set(ext_force ${default_ext_force} CACHE BOOL "External force field")
 set(gui ${default_gui} CACHE BOOL "Use GUI [nttiny]")
 set(output ${default_output} CACHE BOOL "Enable output")
 
+set(mpi ${default_mpi} CACHE BOOL "Use MPI")
+
 # options
 set(simulation_engines "sandbox" "pic" "grpic" CACHE STRING "Simulation engines")
 set(precisions "single" "double" CACHE STRING "Precisions")
@@ -67,6 +69,11 @@ include_directories(${toml11_SRC})
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
 set_ext_force(${ext_force})
+
+if(${mpi})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/MPIConfig.cmake)
+  set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
+endif()
 
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
