@@ -3,7 +3,7 @@
 
 #include "wrapper.h"
 
-#include "metadomain.h"
+#include "communications/metadomain.h"
 #include "sim_params.h"
 
 #include "io/output.h"

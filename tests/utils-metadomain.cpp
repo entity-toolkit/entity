@@ -1,7 +1,6 @@
 #include "wrapper.h"
 
-#include "metadomain.h"
-
+#include "communications/metadomain.h"
 #include "utils/decomposition.h"
 #include "utils/qmath.h"
 
