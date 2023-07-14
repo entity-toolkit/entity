@@ -144,7 +144,7 @@ auto Run(const toml::value input, const int n_iter) -> void {
 }
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
@@ -168,10 +168,10 @@ auto main(int argc, char* argv[]) -> int {
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }

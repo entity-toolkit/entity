@@ -13,6 +13,10 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_Sort.hpp>
 
+#if defined(MPI_ENABLED)
+#  include <mpi.h>
+#endif    // MPI_ENABLED
+
 #include <cstddef>
 #include <iomanip>
 #include <string>
@@ -136,7 +140,21 @@ namespace ntt {
   /**
    * @brief Synchronize CPU/GPU before advancing.
    */
-  void WaitAndSynchronize();
+  void        WaitAndSynchronize();
+
+  inline void GlobalInitialize(int argc, char* argv[]) {
+#if defined(MPI_ENABLED)
+    MPI_Init(&argc, &argv);
+#endif    // MPI_ENABLED
+    Kokkos::initialize(argc, argv);
+  }
+
+  inline void GlobalFinalize() {
+    Kokkos::finalize();
+#if defined(MPI_ENABLED)
+    MPI_Finalize();
+#endif    // MPI_ENABLED
+  }
 
 }    // namespace ntt
 

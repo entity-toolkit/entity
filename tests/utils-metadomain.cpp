@@ -11,7 +11,7 @@
 #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     const auto resolution = std::vector<unsigned int>({ 5000, 1800 });
 #ifdef MINKOWSKI_METRIC
@@ -131,10 +131,10 @@ auto main(int argc, char* argv[]) -> int {
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }

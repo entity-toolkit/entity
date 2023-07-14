@@ -22,7 +22,7 @@
 #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     using namespace toml::literals::toml_literals;
     const auto inputdata = R"(
@@ -167,10 +167,10 @@ auto main(int argc, char* argv[]) -> int {
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }

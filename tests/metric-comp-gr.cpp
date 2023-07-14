@@ -9,7 +9,7 @@
 #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     const auto resolution = std::vector<unsigned int>({ 1080, 512 });
     const auto extent     = std::vector<real_t>({ 1.0, 2000.0 });
@@ -119,10 +119,10 @@ auto main(int argc, char* argv[]) -> int {
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }

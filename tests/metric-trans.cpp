@@ -17,7 +17,7 @@ void printVector(const std::string& label, const ntt::vec_t<ntt::Dim3>& v) {
 }
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     const auto resolution = std::vector<unsigned int>({ 2560, 1920 });
 #ifdef MINKOWSKI_METRIC
@@ -245,10 +245,10 @@ auto main(int argc, char* argv[]) -> int {
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }
