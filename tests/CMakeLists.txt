@@ -27,6 +27,21 @@ set(all_metrics ${sr_metrics} ${gr_metrics})
 
 # Libraries for all metrics and engines
 # compile framework for all metrics and engines + all engines with corresponding metrics
+function(add_framework_library metric)
+  string(TOUPPER ${metric} metric_upper)
+  add_library(framework-${metric} STATIC EXCLUDE_FROM_ALL ${FRAMEWORK_FILES})
+  target_compile_options(framework-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
+endfunction()
+
+function(add_engine_library metric engine)
+  string(TOUPPER ${metric} metric_upper)
+  string(TOUPPER ${engine} engine_upper)
+  add_library(engine-${engine}-${metric} STATIC EXCLUDE_FROM_ALL ${${engine_upper}_FILES})
+  target_compile_options(engine-${engine}-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
+  target_compile_options(engine-${engine}-${metric} PUBLIC "-DPGEN_HEADER=\"pgen/dummy.hpp\"")
+  target_include_directories(engine-${engine}-${metric} PRIVATE ${SOURCE_DIR}/${engine})
+endfunction()
+
 foreach(metric ${all_metrics})
   list(FIND sr_metrics ${metric} sr_metric_index)
 
@@ -39,14 +54,8 @@ foreach(metric ${all_metrics})
   string(TOUPPER ${metric} metric_upper)
   string(TOUPPER ${engine} engine_upper)
 
-  add_library(framework-${metric} STATIC ${FRAMEWORK_FILES})
-  target_compile_options(framework-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
-
-  add_library(engine-${engine}-${metric} STATIC ${${engine_upper}_FILES})
-
-  target_compile_options(engine-${engine}-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
-  target_compile_options(engine-${engine}-${metric} PUBLIC "-DPGEN_HEADER=\"pgen/dummy.hpp\"")
-  target_include_directories(engine-${engine}-${metric} PRIVATE ${SOURCE_DIR}/${engine})
+  add_framework_library(${metric})
+  add_engine_library(${metric} ${engine})
 endforeach()
 
 # ---------------------------------- Tests --------------------------------- #
@@ -54,8 +63,8 @@ enable_testing()
 
 # --------------------------------- Utils ---------------------------------- #
 foreach(metric ${all_metrics})
-  set(title "utils-metadomain-${metric}")
-  add_executable(test-${title}.xc "utils-metadomain.cpp")
+  set(title utils-metadomain-${metric})
+  add_executable(test-${title}.xc utils-metadomain.cpp)
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
   add_test(NAME "Metadomain: ${metric}" COMMAND "test-${title}.xc")
 endforeach()
@@ -66,22 +75,22 @@ foreach(metric ${all_metrics})
 
   if(NOT ${sr_metric_index} EQUAL -1)
     if(${metric} STREQUAL "minkowski")
-      set(filename_comp "metric-comp-sr-mink.cpp")
+      set(filename_comp metric-comp-sr-mink.cpp)
     else()
-      set(filename_comp "metric-comp-sr-sph.cpp")
+      set(filename_comp metric-comp-sr-sph.cpp)
     endif()
 
   else()
-    set(filename_comp "metric-comp-gr.cpp")
+    set(filename_comp metric-comp-gr.cpp)
   endif()
 
-  set(title "metric-trans-${metric}")
-  add_executable(test-${title}.xc "metric-trans.cpp")
+  set(title metric-trans-${metric})
+  add_executable(test-${title}.xc metric-trans.cpp)
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
 
   add_test(NAME "Vector/Coordinate Transformations: ${metric}" COMMAND "test-${title}.xc")
 
-  set(title "metric-comp-${metric}")
+  set(title metric-comp-${metric})
   add_executable(test-${title}.xc ${filename_comp})
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
 
@@ -89,10 +98,10 @@ foreach(metric ${all_metrics})
 endforeach()
 
 # ----------------------------------- SR ----------------------------------- #
-set(metric "minkowski")
-set(engine "pic")
-set(title "pusher-sr-minkowski")
-add_executable(test-${title}.xc "pusher-sr-mink.cpp")
+set(metric minkowski)
+set(engine pic)
+set(title pusher-sr-minkowski)
+add_executable(test-${title}.xc pusher-sr-mink.cpp)
 target_link_libraries(test-${title}.xc PUBLIC framework-${metric} engine-${engine}-${metric})
 target_include_directories(test-${title}.xc PRIVATE ${SOURCE_DIR}/${engine})
 add_test(NAME "Pusher: ${engine} ${metric}" COMMAND "test-${title}.xc")
