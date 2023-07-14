@@ -1,5 +1,5 @@
-#ifndef FRAMEWORK_UTILS_DECOMPOSITION_H
-#define FRAMEWORK_UTILS_DECOMPOSITION_H
+#ifndef FRAMEWORK_COMM_DECOMPOSITION_H
+#define FRAMEWORK_COMM_DECOMPOSITION_H
 
 #include "wrapper.h"
 
@@ -141,4 +141,4 @@ namespace ntt {
   }
 }    // namespace ntt
 
-#endif    // FRAMEWORK_UTILS_DECOMPOSITION_H
+#endif    // FRAMEWORK_COMM_DECOMPOSITION_H

@@ -1,9 +1,9 @@
-#ifndef FRAMEWORK_METADOMAIN_H
-#define FRAMEWORK_METADOMAIN_H
+#ifndef FRAMEWORK_COMM_METADOMAIN_H
+#define FRAMEWORK_COMM_METADOMAIN_H
 
 #include "wrapper.h"
 
-#include "utils/decomposition.h"
+#include "communications/decomposition.h"
 #include "utils/utils.h"
 
 #include METRIC_HEADER
@@ -401,4 +401,4 @@ namespace ntt {
 
 }    // namespace ntt
 
-#endif    // FRAMEWORK_METADOMAIN_H
+#endif    // FRAMEWORK_COMM_METADOMAIN_H
