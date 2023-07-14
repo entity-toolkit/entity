@@ -1,7 +1,7 @@
 #include "wrapper.h"
 
 #include "communications/metadomain.h"
-#include "utils/decomposition.h"
+#include "communications/decomposition.h"
 #include "utils/qmath.h"
 
 #include <cstdio>
