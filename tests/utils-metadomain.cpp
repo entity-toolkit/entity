@@ -123,6 +123,13 @@ auto main(int argc, char* argv[]) -> int {
     if (first_domain2 != first_domain1) {
       throw std::logic_error("Wrong neighbor assignment");
     }
+
+    if (first_domain.neighbors({ 0, -1 }) != nullptr) {
+      throw std::logic_error("Wrong neighbor assignment: boundaries");
+    }
+    if (last_domain.neighbors({ 0, 1 }) != nullptr) {
+      throw std::logic_error("Wrong neighbor assignment: boundaries");
+    }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     Kokkos::finalize();

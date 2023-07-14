@@ -129,7 +129,13 @@ namespace ntt {
         for (auto& d : dir) {
           std::cout << std::setw(4) << std::right << d;
         }
-        std::cout << " -> " << neighbor->index() << "\n";
+        if (neighbor != nullptr) {
+          std::cout << " -> " << neighbor->index() << "\n";
+        } else {
+          std::cout << " -> "
+                    << "N/A"
+                    << "\n";
+        }
       }
       std::cout << "\n";
     }
@@ -298,6 +304,7 @@ namespace ntt {
         for (auto& direction : Directions<D>::all) {
           // !TODO account for the boundaries
           auto neighbor_offset = current_offset;
+          auto no_neighbor     = false;
           for (auto d { 0 }; d < (short)D; ++d) {
             auto dir = direction[d];
             if ((dir == -1) && (current_offset[d] == 0)) {
@@ -307,8 +314,17 @@ namespace ntt {
             } else {
               neighbor_offset[d] += dir;
             }
+            if ((dir == -1) && (domains[index].boundaries()[d][0] != BoundaryCondition::COMM)
+                && (domains[index].boundaries()[d][0] != BoundaryCondition::PERIODIC)) {
+              no_neighbor = true;
+            }
+            if ((dir == 1) && (domains[index].boundaries()[d][1] != BoundaryCondition::COMM)
+                && (domains[index].boundaries()[d][1] != BoundaryCondition::PERIODIC)) {
+              no_neighbor = true;
+            }
           }
-          domains[index].assignNeighbor(direction, &domains[offset2index(neighbor_offset)]);
+          domains[index].assignNeighbor(
+            direction, no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
         }
       }
     }
