@@ -102,24 +102,24 @@ namespace ntt {
       std::cout << "Domain " << m_index << ":";
       std::cout << std::setw(20) << std::left << "\n  offset_ndomains: ";
       for (auto& off_nd : m_offset_ndomains) {
-        std::cout << std::setw(8) << std::right << off_nd;
+        std::cout << std::setw(10) << std::right << off_nd;
       }
       std::cout << std::setw(20) << std::left << "\n  ncells: ";
       for (auto& ncell : m_ncells) {
-        std::cout << std::setw(8) << std::right << ncell;
+        std::cout << std::setw(10) << std::right << ncell;
       }
       std::cout << std::setw(20) << std::left << "\n  offset_ncells: ";
       for (auto& off_nc : m_offset_ncells) {
-        std::cout << std::setw(8) << std::right << off_nc;
+        std::cout << std::setw(10) << std::right << off_nc;
       }
       std::cout << std::setw(20) << std::left << "\n  extent: ";
       for (auto& ext : m_extent) {
-        std::cout << std::setw(8) << std::right << ext;
+        std::cout << std::setw(10) << std::right << ext;
       }
       std::cout << std::setw(20) << std::left << "\n  boundaries: ";
       for (auto& bound : m_boundaries) {
         for (auto& bc : bound) {
-          std::cout << std::setw(8) << std::right << stringizeBoundaryCondition(bc);
+          std::cout << std::setw(10) << std::right << stringizeBoundaryCondition(bc);
         }
       }
       std::cout << std::setw(20) << std::left << "\n  neighbors:";
