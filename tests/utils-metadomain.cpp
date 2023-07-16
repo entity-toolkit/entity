@@ -1,7 +1,7 @@
 #include "wrapper.h"
 
-#include "communications/metadomain.h"
 #include "communications/decomposition.h"
+#include "communications/metadomain.h"
 #include "utils/qmath.h"
 
 #include <cstdio>
@@ -40,14 +40,14 @@ auto main(int argc, char* argv[]) -> int {
     params[5]                = rh;
 
     const auto decomposition = std::vector<unsigned int> { 7, 3 };
-    const auto ndomains
-      = std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<>());
 
-    auto metadomain = ntt::Metadomain<ntt::Dim2>(
+    auto       metadomain    = ntt::Metadomain<ntt::Dim2>(
       resolution, extent, decomposition, params, boundaries, true);
 
-    auto first_domain = *metadomain.domainByOffset({ 0, 0 });
-    auto last_domain
+    const auto ndomains     = metadomain.globalNdomains();
+
+    auto       first_domain = *metadomain.domainByOffset({ 0, 0 });
+    auto       last_domain
       = *metadomain.domainByOffset({ decomposition[0] - 1, decomposition[1] - 1 });
     for (auto d { 0 }; d < 2; ++d) {
       if (first_domain.offsetNdomains()[d] != 0) {
