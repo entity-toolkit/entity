@@ -15,10 +15,7 @@ link_libraries(${WRAPPER})
 # include wrapper header for all targets
 include_directories(${SOURCE_DIR}/wrapper)
 
-# -------------------------------- Framework ------------------------------- #
-file(GLOB_RECURSE FRAMEWORK_FILES ${SOURCE_DIR}/framework/*.cpp)
-file(GLOB_RECURSE PIC_FILES ${SOURCE_DIR}/pic/*.cpp)
-file(GLOB_RECURSE GRPIC_FILES ${SOURCE_DIR}/grpic/*.cpp)
+# -------------------------- Framework & Engines --------------------------- #
 
 # include framework headers for all targets
 include_directories(${SOURCE_DIR}/framework)
@@ -29,6 +26,7 @@ set(all_metrics ${sr_metrics} ${gr_metrics})
 # compile framework for all metrics and engines + all engines with corresponding metrics
 function(add_framework_library metric)
   string(TOUPPER ${metric} metric_upper)
+  file(GLOB_RECURSE FRAMEWORK_FILES ${SOURCE_DIR}/framework/*.cpp)
   add_library(framework-${metric} STATIC EXCLUDE_FROM_ALL ${FRAMEWORK_FILES})
   target_compile_options(framework-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
 endfunction()
@@ -36,6 +34,7 @@ endfunction()
 function(add_engine_library metric engine)
   string(TOUPPER ${metric} metric_upper)
   string(TOUPPER ${engine} engine_upper)
+  file(GLOB_RECURSE ${engine_upper}_FILES ${SOURCE_DIR}/${engine}/*.cpp)
   add_library(engine-${engine}-${metric} STATIC EXCLUDE_FROM_ALL ${${engine_upper}_FILES})
   target_compile_options(engine-${engine}-${metric} PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE -DSIMULATION_METRIC=\"${metric}\" -DMETRIC_HEADER=\"metrics/${metric}.h\")
   target_compile_options(engine-${engine}-${metric} PUBLIC "-DPGEN_HEADER=\"pgen/dummy.hpp\"")
@@ -56,6 +55,7 @@ foreach(metric ${all_metrics})
 
   add_framework_library(${metric})
   add_engine_library(${metric} ${engine})
+  add_engine_library(${metric} sandbox)
 endforeach()
 
 # ---------------------------------- Tests --------------------------------- #
@@ -67,6 +67,15 @@ foreach(metric ${all_metrics})
   add_executable(test-${title}.xc utils-metadomain.cpp)
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric})
   add_test(NAME "Metadomain: ${metric}" COMMAND "test-${title}.xc")
+
+  if(${output})
+    set(title utils-writer-${metric})
+    set(engine sandbox)
+    add_executable(test-${title}.xc utils-writer.cpp)
+    target_link_libraries(test-${title}.xc PUBLIC framework-${metric} engine-${engine}-${metric})
+    target_include_directories(test-${title}.xc PRIVATE ${SOURCE_DIR}/${engine})
+    add_test(NAME "Writer: ${metric}" COMMAND "test-${title}.xc")
+  endif()
 endforeach()
 
 # --------------------------------- Metrics -------------------------------- #

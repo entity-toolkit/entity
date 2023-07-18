@@ -44,10 +44,8 @@ auto main(int argc, char* argv[]) -> int {
     auto       metadomain    = ntt::Metadomain<ntt::Dim2>(
       resolution, extent, decomposition, params, boundaries, true);
 
-    const auto ndomains     = metadomain.globalNdomains();
-
-    auto       first_domain = *metadomain.domainByOffset({ 0, 0 });
-    auto       last_domain
+    auto first_domain = *metadomain.domainByOffset({ 0, 0 });
+    auto last_domain
       = *metadomain.domainByOffset({ decomposition[0] - 1, decomposition[1] - 1 });
     for (auto d { 0 }; d < 2; ++d) {
       if (first_domain.offsetNdomains()[d] != 0) {

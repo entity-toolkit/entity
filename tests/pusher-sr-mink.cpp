@@ -46,12 +46,7 @@ auto main(int argc, char* argv[]) -> int {
       maxnpart = 10.0
     )"_toml;
 
-    const auto resolution
-      = ntt::readFromInput<std::vector<unsigned int>>(inputdata, "domain", "resolution");
-    const auto extent = ntt::readFromInput<std::vector<real_t>>(inputdata, "domain", "extent");
-
     auto       sim    = ntt::PIC<ntt::Dim3>(inputdata);
-    sim.Initialize();
 
     real_t       bx1 = 0.256, bx2 = 0.953, bx3 = -0.234;
     const real_t bmag     = 2.0;
