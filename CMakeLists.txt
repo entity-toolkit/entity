@@ -23,7 +23,7 @@ if(${DEBUG} STREQUAL "OFF")
   message(STATUS "Release mode")
 else()
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
   message(STATUS "Debug mode")
 endif()
 
@@ -70,9 +70,22 @@ include_directories(${toml11_SRC})
 set_precision(${precision})
 set_ext_force(${ext_force})
 
+# MPI
 if(${mpi})
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/MPIConfig.cmake)
   set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
+endif()
+
+# Output
+if(${output})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
+  find_or_fetch_dependency(adios2 FALSE)
+
+  if(${mpi})
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
+  else()
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
+  endif()
 endif()
 
 if(TESTS)
@@ -87,13 +100,6 @@ else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})
     find_or_fetch_dependency(nttiny FALSE)
-  endif()
-
-  # --------------------------------- Output --------------------------------- #
-  if(${output})
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
-    find_or_fetch_dependency(adios2 FALSE)
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
   endif()
 
   # ------------------------------- Main source ------------------------------ #
