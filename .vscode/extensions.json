@@ -2,7 +2,6 @@
   "recommendations": [
     "ms-vscode.cpptools",
     "ms-python.python",
-    "kevinrose.vsc-python-indent",
-    "aaron-bond.better-comments"
+    "kevinrose.vsc-python-indent"
   ]
 }
