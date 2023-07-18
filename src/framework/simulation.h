@@ -63,10 +63,6 @@ namespace ntt {
     /* -------------------------------------------------------------------------- */
     /*                                Main routines                               */
     /* -------------------------------------------------------------------------- */
-    /**
-     * @brief Initialize / allocate all the simulation objects based on the `m_params`.
-     */
-    void               Initialize();
 
     /**
      * @brief Verify that all the specified parameters are compatible before beginning the

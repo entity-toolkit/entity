@@ -14,7 +14,6 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::Run() {
     // register the content of em fields
-    Simulation<D, PICEngine>::Initialize();
     Simulation<D, PICEngine>::Verify();
     {
       auto  params = *(this->params());

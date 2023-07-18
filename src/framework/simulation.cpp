@@ -29,11 +29,7 @@ namespace ntt {
       random_pool { constant::RandomSeed } {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_metadomain.localDomain()->boundaries();
-  }
 
-  template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::Initialize() {
-    NTTLog();
     // find timestep and effective cell size
     meshblock.setMinCellSize(meshblock.metric.dx_min);
     if (m_params.dt() <= ZERO) {
@@ -43,7 +39,7 @@ namespace ntt {
     }
 
     // initialize writer
-    writer.Initialize(m_params, meshblock);
+    writer.Initialize(m_params, m_metadomain, meshblock);
 
     WaitAndSynchronize();
   }

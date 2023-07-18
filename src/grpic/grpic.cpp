@@ -13,7 +13,6 @@ namespace ntt {
   template <Dimension D>
   void GRPIC<D>::Run() {
     // register the content of em fields
-    Simulation<D, GRPICEngine>::Initialize();
     Simulation<D, GRPICEngine>::Verify();
     {
       auto  params = *(this->params());

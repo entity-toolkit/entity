@@ -278,7 +278,6 @@ auto main(int argc, char* argv[]) -> int {
 
     ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
 
-    sim.Initialize();
     sim.Verify();
     sim.ResetSimulation();
     sim.InitialStep();

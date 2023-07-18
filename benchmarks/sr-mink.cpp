@@ -113,7 +113,6 @@ auto Run(const toml::value input, const int n_iter) -> void {
 
   {
     auto extent = params.extent();
-    sim.Initialize();
     sim.ResetSimulation();
     const real_t sx1 = extent[1] - extent[0];
     const real_t sx2 = extent[3] - extent[2];

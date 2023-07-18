@@ -110,7 +110,6 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       auto extent = params.extent();
-      sim.Initialize();
       sim.ResetSimulation();
       using namespace ntt;
       const real_t sx1 = extent[1] - extent[0];
