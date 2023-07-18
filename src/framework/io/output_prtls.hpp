@@ -57,8 +57,8 @@ namespace ntt {
     }
 #else
     // defined below
-    Inline void operator()(const OutputVelocities_t&, index_t p) const {}
-    Inline void operator()(const OutputPositions_t&, index_t p) const {}
+    Inline void operator()(const OutputVelocities_t&, index_t) const {}
+    Inline void operator()(const OutputPositions_t&, index_t) const {}
 #endif
   };
 

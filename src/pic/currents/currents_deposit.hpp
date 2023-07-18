@@ -25,9 +25,10 @@ namespace ntt {
     Meshblock<D, PICEngine> m_mblock;
     Particles<D, PICEngine> m_particles;
     scatter_ndfield_t<D, 3> m_scatter_cur;
-    const real_t            m_charge, m_dt;
-    const real_t            m_xi2max;
+    const real_t            m_charge;
     const bool              m_use_weights;
+    const real_t            m_dt;
+    const real_t            m_xi2max;
 
   public:
     /**

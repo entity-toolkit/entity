@@ -35,7 +35,7 @@ namespace ntt {
       return m_max_bins;
     }
     template <class ViewType, typename iT1, typename iT2>
-    Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
+    Inline auto operator()(ViewType&, iT1&, iT2&) const -> bool {
       return false;
     }
 
@@ -78,8 +78,9 @@ namespace ntt {
    * @return Tensor product of list
    */
   template <typename T>
-  inline auto TensorProduct(const std::vector<std::vector<T>> list) -> std::vector<std::vector<T>> {
-    std::vector<std::vector<unsigned int>> result = {{}};
+  inline auto TensorProduct(const std::vector<std::vector<T>> list)
+    -> std::vector<std::vector<T>> {
+    std::vector<std::vector<unsigned int>> result = { {} };
     for (const auto& sublist : list) {
       std::vector<std::vector<unsigned int>> temp;
       for (const auto& element : sublist) {

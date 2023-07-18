@@ -18,14 +18,14 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t dr, dtheta, dphi;
-    const real_t dr_inv, dtheta_inv, dphi_inv;
-    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
     const real_t rh_, rg_, a, a_sqr;
 
+    const real_t dr, dtheta, dphi;
+    const real_t dr_inv, dtheta_inv, dphi_inv;
+    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
     Inline auto  Delta(const real_t& r) const -> real_t {
       return SQR(r) - TWO * r + a_sqr;
     }

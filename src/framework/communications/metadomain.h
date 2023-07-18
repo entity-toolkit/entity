@@ -180,15 +180,16 @@ namespace ntt {
 
   template <Dimension D>
   class Metadomain {
-    unsigned int                                      m_global_ndomains;
-    std::vector<unsigned int>                         m_global_ndomains_per_dim;
     std::vector<unsigned int>                         m_global_ncells;
     std::vector<real_t>                               m_global_extent;
+    Metric<D>                                         m_global_metric;
     std::vector<std::vector<BoundaryCondition>>       m_global_boundaries;
 
+    unsigned int                                      m_global_ndomains;
+    std::vector<unsigned int>                         m_global_ndomains_per_dim;
     std::vector<std::vector<unsigned int>>            m_domain_offsets;
     std::map<std::vector<unsigned int>, unsigned int> m_domain_indices;
-    Metric<D>                                         m_global_metric;
+    real_t                                            m_smallest_cell_size;
 
 #if defined(MPI_ENABLED)
     int m_mpisize;
@@ -217,9 +218,9 @@ namespace ntt {
                                               global_decomposition.end(),
                                               1,
                                               std::multiplies<unsigned int>());
-      NTTHostErrorIf(!allow_multidomain && (m_global_ndomains != m_mpisize),
+      NTTHostErrorIf(!allow_multidomain && ((int)m_global_ndomains != m_mpisize),
                      "ndomains != mpisize is not allowed");
-      NTTHostErrorIf(m_global_ndomains < m_mpisize, "ndomains < mpisize is not possible");
+      NTTHostErrorIf((int)m_global_ndomains < m_mpisize, "ndomains < mpisize is not possible");
 #else     // not MPI_ENABLED
       m_global_ndomains = global_decomposition.empty()
                             ? 1
@@ -239,7 +240,7 @@ namespace ntt {
         m_global_ndomains_per_dim.push_back(d.size());
         auto offset_ncell = std::vector<unsigned int> { 0 };
         auto offset_ndom  = std::vector<unsigned int> { 0 };
-        for (auto i { 1 }; i < d.size(); ++i) {
+        for (std::size_t i { 1 }; i < d.size(); ++i) {
           auto di = d[i - 1];
           offset_ncell.push_back(offset_ncell.back() + di);
           offset_ndom.push_back(offset_ndom.back() + 1);
@@ -256,7 +257,7 @@ namespace ntt {
       m_domain_offsets          = domain_offset_ndoms;
 
       // create domains
-      for (auto index { 0 }; index < m_global_ndomains; ++index) {
+      for (std::size_t index { 0 }; index < m_global_ndomains; ++index) {
         auto       l_offset_ndomains = domain_offset_ndoms[index];
         auto       l_ncells          = domain_ncells[index];
         auto       l_offset_ncells   = domain_offset_ncells[index];
@@ -299,10 +300,9 @@ namespace ntt {
                              index);
       }
       // populate the neighbors
-      for (auto index { 0 }; index < m_global_ndomains; ++index) {
+      for (std::size_t index { 0 }; index < m_global_ndomains; ++index) {
         auto current_offset = domains[index].offsetNdomains();
         for (auto& direction : Directions<D>::all) {
-          // !TODO account for the boundaries
           auto neighbor_offset = current_offset;
           auto no_neighbor     = false;
           for (auto d { 0 }; d < (short)D; ++d) {
@@ -327,6 +327,8 @@ namespace ntt {
             direction, no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
         }
       }
+      // !TODO: estimate the smallest cell size
+      m_smallest_cell_size = 1.0;
     }
 
     auto domainByIndex(const int& index) const -> const Domain<D>* {
@@ -386,6 +388,14 @@ namespace ntt {
     [[nodiscard]] auto globalBoundaries() const
       -> std::vector<std::vector<BoundaryCondition>> {
       return m_global_boundaries;
+    }
+
+    [[nodiscard]] auto globalMetric() const -> const Metric<D>& {
+      return m_global_metric;
+    }
+
+    [[nodiscard]] auto smallestCellSize() const -> real_t {
+      return m_smallest_cell_size;
     }
 
 #if defined(MPI_ENABLED)

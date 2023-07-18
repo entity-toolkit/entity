@@ -20,11 +20,11 @@ namespace ntt {
       -> std::vector<unsigned int> {
       auto size          = (unsigned int)((double)ncells / (double)ndomains);
       auto ncells_domain = std::vector<unsigned int>(ndomains, size);
-      for (auto i { 0 }; i < ncells - size * ndomains; ++i) {
+      for (std::size_t i { 0 }; i < ncells - size * ndomains; ++i) {
         ncells_domain[i] += 1;
       }
       auto sum = std::accumulate(ncells_domain.begin(), ncells_domain.end(), 0);
-      NTTHostErrorIf(sum != ncells, "Decomposition error: sum != ncells");
+      NTTHostErrorIf(sum != (int)ncells, "Decomposition error: sum != ncells");
       NTTHostErrorIf(ncells_domain.size() != ndomains, "Decomposition error: size != ndomains");
       return ncells_domain;
     }
@@ -111,11 +111,11 @@ namespace ntt {
     NTTHostErrorIf(
       !auto_decompose
         && std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<>())
-             != ndomains,
+             != (int)ndomains,
       fmt::format(
         "Decomposition error: sum(decomposition) != ndomains {} {}",
         std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<>()),
-        ndomains));
+        (int)ndomains));
     if (dimension == 1) {
       return { decompose1D(ndomains, ncells[0]) };
     } else if (dimension == 2) {

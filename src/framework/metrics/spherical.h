@@ -114,6 +114,7 @@ namespace ntt {
      * @returns Minimum cell volume of the grid [code units].
      */
     Inline auto min_cell_volume() const -> real_t {
+      // !TODO: this will no longer work when many meshblocks
       return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
     }
 

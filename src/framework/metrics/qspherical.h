@@ -18,7 +18,7 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t r0, h, chi_min, phi_min, eta_min;
+    const real_t r0, h, chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_inv, deta_inv, dphi_inv;
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
@@ -185,8 +185,8 @@ namespace ntt {
  */
 #include "metrics_utils/angle_stretch_forQSph.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
-#include "metrics_utils/x_code_sph_forQSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
+#include "metrics_utils/x_code_sph_forQSph.h"
 
 #include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
 #include "metrics_utils/v3_hat_cntrv_cov_forSR.h"

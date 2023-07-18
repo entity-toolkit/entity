@@ -1,9 +1,6 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-// !TODO: this is a bad practice... wait until CUDA issue is fixed
-#pragma nv_diag_suppress 20011
-
 #include "config.h"
 
 #include "definitions.h"

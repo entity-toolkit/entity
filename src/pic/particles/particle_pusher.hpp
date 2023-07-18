@@ -33,7 +33,7 @@ namespace ntt {
     ProblemGenerator<D, PICEngine> m_pgen;
     array_t<real_t*>               m_work;
 #endif
-    const real_t m_coeff, m_dt, m_time;
+    const real_t m_time, m_coeff, m_dt;
     const int    m_ni2;
 
   public:
@@ -604,6 +604,7 @@ namespace ntt {
 
 }    // namespace ntt
 
+/*
 // Inline void operator()(const BorisBwd_t&, index_t p) const {
 //   real_t inv_energy;
 //   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) +
@@ -919,25 +920,25 @@ namespace ntt {
 // #define C1_EX3     C01_EX3*(ONE - dx2) + C11_EX3* dx2
 // #define EX3_INTERP C0_EX2*(ONE - dx3) + C1_EX2* dx3
 
-// #define C000_BX1                                                                              \
+// #define C000_BX1 \
 //   INV_4*(BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1))
-// #define C100_BX1                                                                              \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1)                       \
+// #define C100_BX1 \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1) \
 //          + BX1(i + 1, j - 1, k - 1))
-// #define C001_BX1                                                                              \
+// #define C001_BX1 \
 //   INV_4*(BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1))
-// #define C101_BX1                                                                              \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k)                       \
+// #define C101_BX1 \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k) \
 //          + BX1(i + 1, j - 1, k + 1))
-// #define C010_BX1                                                                              \
+// #define C010_BX1 \
 //   INV_4*(BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1))
-// #define C110_BX1                                                                              \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1)                   \
+// #define C110_BX1 \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1) \
 //          + BX1(i + 1, j + 1, k))
-// #define C011_BX1                                                                              \
+// #define C011_BX1 \
 //   INV_4*(BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1))
-// #define C111_BX1                                                                              \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1)                   \
+// #define C111_BX1 \
+//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1) \
 //          + BX1(i + 1, j, k + 1))
 // #define C00_BX1    C000_BX1*(ONE - dx1) + C100_BX1* dx1
 // #define C01_BX1    C001_BX1*(ONE - dx1) + C101_BX1* dx1
@@ -947,25 +948,25 @@ namespace ntt {
 // #define C1_BX1     C01_BX1*(ONE - dx2) + C11_BX1* dx2
 // #define BX1_INTERP C0_BX1*(ONE - dx3) + C1_BX1* dx3
 
-// #define C000_BX2                                                                              \
+// #define C000_BX2 \
 //   INV_4*(BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k))
-// #define C100_BX2                                                                              \
+// #define C100_BX2 \
 //   INV_4*(BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k))
-// #define C001_BX2                                                                              \
+// #define C001_BX2 \
 //   INV_4*(BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1))
-// #define C101_BX2                                                                              \
+// #define C101_BX2 \
 //   INV_4*(BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1))
-// #define C010_BX2                                                                              \
-//   INV_4*(BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1)               \
+// #define C010_BX2 \
+//   INV_4*(BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1) \
 //          + BX2(i, j + 1, k))
-// #define C110_BX2                                                                              \
-//   INV_4*(BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1)                   \
+// #define C110_BX2 \
+//   INV_4*(BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1) \
 //          + BX2(i + 1, j + 1, k))
-// #define C011_BX2                                                                              \
-//   INV_4*(BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k)                   \
+// #define C011_BX2 \
+//   INV_4*(BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k) \
 //          + BX2(i, j + 1, k + 1))
-// #define C111_BX2                                                                              \
-//   INV_4*(BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k)                       \
+// #define C111_BX2 \
+//   INV_4*(BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k) \
 //          + BX2(i + 1, j + 1, k + 1))
 // #define C00_BX2    C000_BX2*(ONE - dx1) + C100_BX2* dx1
 // #define C01_BX2    C001_BX2*(ONE - dx1) + C101_BX2* dx1
@@ -975,25 +976,25 @@ namespace ntt {
 // #define C1_BX2     C01_BX2*(ONE - dx2) + C11_BX2* dx2
 // #define BX2_INTERP C0_BX2*(ONE - dx3) + C1_BX2* dx3
 
-// #define C000_BX3                                                                              \
+// #define C000_BX3 \
 //   INV_4*(BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k))
-// #define C100_BX3                                                                              \
+// #define C100_BX3 \
 //   INV_4*(BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k))
-// #define C001_BX3                                                                              \
-//   INV_4*(BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1)               \
+// #define C001_BX3 \
+//   INV_4*(BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1) \
 //          + BX3(i, j, k + 1))
-// #define C101_BX3                                                                              \
-//   INV_4*(BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1)                   \
+// #define C101_BX3 \
+//   INV_4*(BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1) \
 //          + BX3(i + 1, j, k + 1))
-// #define C010_BX3                                                                              \
+// #define C010_BX3 \
 //   INV_4*(BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k))
-// #define C110_BX3                                                                              \
+// #define C110_BX3 \
 //   INV_4*(BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k))
-// #define C011_BX3                                                                              \
-//   INV_4*(BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1)                   \
+// #define C011_BX3 \
+//   INV_4*(BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1) \
 //          + BX3(i, j + 1, k + 1))
-// #define C111_BX3                                                                              \
-//   INV_4*(BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1)                       \
+// #define C111_BX3 \
+//   INV_4*(BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1) \
 //          + BX3(i + 1, j + 1, k + 1))
 // #define C00_BX3    C000_BX3*(ONE - dx1) + C100_BX3* dx1
 // #define C01_BX3    C001_BX3*(ONE - dx1) + C101_BX3* dx1
@@ -1116,5 +1117,5 @@ namespace ntt {
 // #undef C0_BX3
 // #undef C1_BX3
 // #undef BX3_INTERP
-
+*/
 #endif

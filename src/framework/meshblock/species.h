@@ -11,6 +11,8 @@ namespace ntt {
    */
   class ParticleSpecies {
   protected:
+    // Species index.
+    const int      m_index;
     // Species label.
     std::string    m_label;
     // Species mass in units of m0.
@@ -23,8 +25,6 @@ namespace ntt {
     ParticlePusher m_pusher;
 
   public:
-    const int m_index;
-
     /**
      * @brief Constructor for the particle species container.
      *
