@@ -53,8 +53,8 @@ auto main(int argc, char* argv[]) -> int {
           metric.x_Code2Sph(xi, xph);
           const auto            r     = xph[0];
           const auto            th    = xph[1];
-          const auto            rg    = metric.rg();
-          const auto            a     = metric.spin() * rg;
+          const auto            rg    = metric.getParameter("rg");
+          const auto            a     = metric.getParameter("spin") * rg;
 
           const auto            Sigma = SQR(r) + SQR(a * math::cos(th));
           const auto            z     = TWO * r * rg / Sigma;

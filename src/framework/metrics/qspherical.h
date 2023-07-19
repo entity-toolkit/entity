@@ -184,6 +184,7 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metrics_utils/angle_stretch_forQSph.h"
+#include "metrics_utils/param_forSR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forQSph.h"

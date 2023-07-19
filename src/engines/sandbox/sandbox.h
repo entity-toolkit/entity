@@ -19,7 +19,7 @@ namespace ntt {
      * @param inputdata toml-object with parsed toml parameters.
      */
     SANDBOX(const toml::value& inputdata) : Simulation<D, SANDBOXEngine>(inputdata) {}
-    SANDBOX(const SANDBOX<D>&) = delete;
+    // SANDBOX(const SANDBOX<D>&) = delete;
     ~SANDBOX()                 = default;
 
     /**

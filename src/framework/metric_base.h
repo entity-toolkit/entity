@@ -79,6 +79,10 @@ namespace ntt {
         x3_min { resolution.size() > 2 ? extent[4] : ZERO },
         x3_max { resolution.size() > 2 ? extent[5] : ZERO } {}
     ~MetricBase() = default;
+
+    [[nodiscard]] virtual auto getParameter(const std::string&) const -> real_t {
+      return ZERO;
+    };
   };
 
 }    // namespace ntt

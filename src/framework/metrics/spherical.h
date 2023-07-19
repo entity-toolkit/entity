@@ -97,7 +97,7 @@ namespace ntt {
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
         real_t r { x[0] * dr + this->x1_min };
-        real_t theta { x[1] * dtheta + this->x2_min};
+        real_t theta { x[1] * dtheta + this->x2_min };
         if constexpr (D == Dim2) {
           return dr * dtheta * SQR(r) * math::sin(theta);
         } else {
@@ -135,9 +135,10 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
+#include "metrics_utils/param_forSR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
-#include "metrics_utils/x_code_sph_forSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
+#include "metrics_utils/x_code_sph_forSph.h"
 
 #include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
 #include "metrics_utils/v3_hat_cntrv_cov_forSR.h"

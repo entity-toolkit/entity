@@ -48,16 +48,6 @@ namespace ntt {
         dx_min { findSmallestCell() } {}
     ~Metric() = default;
 
-    [[nodiscard]] Inline auto spin() const -> const real_t& {
-      return a;
-    }
-    [[nodiscard]] Inline auto rhorizon() const -> const real_t& {
-      return rh_;
-    }
-    [[nodiscard]] Inline auto rg() const -> const real_t& {
-      return rg_;
-    }
-
     /**
      * Metric component 11.
      *
@@ -229,6 +219,7 @@ namespace ntt {
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
+#include "metrics_utils/param_forGR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forSph.h"

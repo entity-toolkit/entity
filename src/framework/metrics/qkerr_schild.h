@@ -24,7 +24,7 @@ namespace ntt {
     // and horizon size in units of rg
     // all physical extents are in units of rg
     const real_t rh_, rg_, a, a_sqr;
-    
+
     const real_t r0, h;
     const real_t chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
@@ -326,6 +326,7 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metrics_utils/angle_stretch_forQSph.h"
+#include "metrics_utils/param_forGR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forQSph.h"

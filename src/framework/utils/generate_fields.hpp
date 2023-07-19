@@ -3,7 +3,6 @@
 
 #include "wrapper.h"
 
-#include "field_macros.h"
 #include "sim_params.h"
 
 #include "meshblock/meshblock.h"
@@ -107,12 +106,12 @@ namespace ntt {
       } else {
         D3u = h33_ij * D3d + h13_ij * D1d;
       }
-      BX1(i, j) = B1u;
-      BX2(i, j) = B2u;
-      BX3(i, j) = B3u;
-      DX1(i, j) = D1u;
-      DX2(i, j) = D2u;
-      DX3(i, j) = D3u;
+      m_mblock.em(i, j, em::bx1) = B1u;
+      m_mblock.em(i, j, em::bx2) = B2u;
+      m_mblock.em(i, j, em::bx3) = B3u;
+      m_mblock.em(i, j, em::dx1) = D1u;
+      m_mblock.em(i, j, em::dx2) = D2u;
+      m_mblock.em(i, j, em::dx3) = D3u;
     }
   };
 }    // namespace ntt

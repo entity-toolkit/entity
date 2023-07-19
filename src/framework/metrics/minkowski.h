@@ -103,6 +103,8 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
+#include "metrics_utils/param_forSR.h"
+
 #include "metrics_utils/v3_hat_cntrv_cov_forSR.h"
 
     /**
