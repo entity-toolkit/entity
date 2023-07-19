@@ -60,12 +60,10 @@ namespace ntt {
 
     Metric<D>                                   m_metric;
 
-#if defined(MPI_ENABLED)
-    // MPI rank of the domain
-    int m_mpi_rank;
-#endif    // MPI_ENABLED
+    // MPI rank of the domain (used only when MPI enabled)
+    int                                         m_mpi_rank;
 
-    std::map<std::vector<short>, Domain<D>*> m_neighbors;
+    std::map<std::vector<short>, Domain<D>*>    m_neighbors;
 
   public:
     Domain(const int&                                        index,
@@ -75,18 +73,15 @@ namespace ntt {
            const std::vector<real_t>&                        extent,
            const real_t*                                     metric_params,
            const std::vector<std::vector<BoundaryCondition>> boundaries,
-           const int&                                        mpi_rank = 0)
+           const int&                                        mpi_rank = -1)
       : m_index { index },
         m_offset_ndomains { offset_ndomains },
         m_ncells { ncells },
         m_offset_ncells { offset_ncells },
         m_extent { extent },
         m_boundaries { boundaries },
-        m_metric { ncells, extent, metric_params } {
-#if defined(MPI_ENABLED)
-      m_mpi_rank = mpi_rank;
-#endif    // MPI_ENABLED
-    }
+        m_metric { ncells, extent, metric_params },
+        m_mpi_rank { mpi_rank } {}
 
 #if defined(MPI_ENABLED)
     [[nodiscard]] auto mpiRank() const -> int {

@@ -43,6 +43,10 @@ namespace ntt {
 
     WaitAndSynchronize();
   }
+  template <Dimension D, SimulationEngine S>
+  Simulation<D, S>::~Simulation() {
+    writer.Finalize();
+  }
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Verify() {

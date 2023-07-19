@@ -74,7 +74,9 @@ namespace ntt {
     m_resolution = get<std::vector<unsigned int>>("domain", "resolution");
     m_extent     = get<std::vector<real_t>>("domain", "extent");
     if (m_coordinates == "cartesian") {
-      // minkowski
+      /**
+       *  cartesian grid
+       */
       NTTHostErrorIf((((short)(m_resolution.size()) < (short)(dim))
                       || ((short)(m_extent.size()) < 2 * (short)(dim))),
                      "not enough values in `extent` or `resolution` input");
@@ -89,14 +91,17 @@ namespace ntt {
         NTTHostErrorIf((dx != dz), "dx != dz in minkowski");
       }
     } else if (m_coordinates.find("spherical") != std::string::npos) {
-      // spherical (quasi-spherical) grid
+      /**
+       * spherical (quasi-spherical) grid
+       */
       NTTHostErrorIf((m_extent.size() < 2), "not enough values in `extent` input");
       m_extent.erase(m_extent.begin() + 2, m_extent.end());
       if (m_coordinates == "qspherical") {
         m_metric_parameters[0] = get<real_t>("domain", "qsph_r0");
         m_metric_parameters[1] = get<real_t>("domain", "qsph_h");
       }
-      m_metric_parameters[2] = get<real_t>("domain", "sph_rabsorb");
+      m_metric_parameters[2]
+        = get<real_t>("domain", "sph_rabsorb", (real_t)(m_extent[1] * 0.9));
       m_metric_parameters[3] = get<real_t>("domain", "absorb_coeff", (real_t)(1.0));
 
       // GR specific

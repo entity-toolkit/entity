@@ -58,7 +58,7 @@ namespace ntt {
      * @param inputdata toml-object with parsed toml parameters.
      */
     Simulation(const toml::value& inputdata);
-    ~Simulation() = default;
+    ~Simulation();
 
     /* -------------------------------------------------------------------------- */
     /*                                Main routines                               */
