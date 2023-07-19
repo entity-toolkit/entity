@@ -14,10 +14,6 @@ endif()
 set(Kokkos_ENABLE_CUDA ${default_KOKKOS_ENABLE_CUDA} CACHE BOOL "Enable CUDA")
 set(Kokkos_ENABLE_OPENMP ${default_KOKKOS_ENABLE_OPENMP} CACHE BOOL "Enable OpenMP")
 
-if(${Kokkos_ENABLE_CUDA})
-  set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable CUDA lambda")
-endif()
-
 # set memory space
 if(${Kokkos_ENABLE_CUDA})
   add_definitions(-DENABLE_GPU)
