@@ -17,39 +17,37 @@
 auto main(int argc, char* argv[]) -> int {
   ntt::GlobalInitialize(argc, argv);
   try {
-    const auto resolution = std::vector<unsigned int>({ 2500, 4000 });
+    toml::table simulation, domain, units, output;
+    simulation["title"]  = "WriterTest";
+    domain["resolution"] = toml::array { 2500, 4000 };
 
-    using namespace toml::literals::toml_literals;
 #ifdef MINKOWSKI_METRIC
-    const auto inputdata = R"(
-      [domain]
-      resolution  = [2500, 4000]
-      extent      = [-50.0, 50.0, -20.0, 140.0]
-      boundaries  = [["PERIODIC"], ["PERIODIC"]]
-
-      [units]
-      ppc0       = 1.0
-      larmor0    = 1.0
-      skindepth0 = 1.0
-    )"_toml;
+    domain["extent"] = toml::array { -50.0, 50.0, -20.0, 140.0 };
+    domain["boundaries"]
+      = toml::array { toml::array { "PERIODIC" }, toml::array { "PERIODIC" } };
 #else
-    const auto inputdata = R"(
-      [domain]
-      resolution  = [2500, 4000]
-      extent      = [1.0, 150.0]
-      boundaries  = [["OPEN", "ABSORB"], ["AXIS"]]
-      qsph_r0     = 0.0
-      qsph_h      = 0.1
-      a           = 0.95
-
-      [units]
-      ppc0       = 1.0
-      larmor0    = 1.0
-      skindepth0 = 1.0
-    )"_toml;
+    domain["extent"]     = toml::array { 1.0, 150.0 };
+    domain["boundaries"] = toml::array {
+      toml::array { "OPEN", "ABSORB" },
+       toml::array { "AXIS" }
+    };
 #endif
 
-    // ntt::SANDBOX<ntt::Dim2> sim(inputdata);
+    units["ppc0"]       = 1.0;
+    units["larmor0"]    = 1.0;
+    units["skindepth0"] = 1.0;
+
+    output["fields"]    = toml::array { "E", "B" };
+    output["format"]    = "HDF5";
+
+    auto inputdata      = toml::table {
+           {"simulation", simulation},
+           {    "domain",     domain},
+           {     "units",      units},
+           {    "output",     output}
+    };
+
+    ntt::SANDBOX<ntt::Dim2> sim(inputdata);
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     ntt::GlobalFinalize();
