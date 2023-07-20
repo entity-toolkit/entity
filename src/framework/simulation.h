@@ -101,6 +101,9 @@ namespace ntt {
     [[nodiscard]] auto params() -> SimulationParams* {
       return &m_params;
     }
+    [[nodiscard]] auto metadomain() -> Metadomain<D>* {
+      return &m_metadomain;
+    }
     /**
      * @brief Get the physical time
      */

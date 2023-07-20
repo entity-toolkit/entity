@@ -88,13 +88,13 @@ if(${output})
   endif()
 endif()
 
+link_libraries(${DEPENDENCIES})
+
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
-  link_libraries(${DEPENDENCIES})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
 elseif(BENCHMARKS)
   # ------------------------------- Benchmarks ------------------------------- #
-  link_libraries(${DEPENDENCIES})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks benchmarks)
 else()
   # ----------------------------------- GUI ---------------------------------- #
@@ -103,7 +103,6 @@ else()
   endif()
 
   # ------------------------------- Main source ------------------------------ #
-  link_libraries(${DEPENDENCIES})
   set_engine(${engine})
   set(metric ${default_metric} CACHE STRING "Metric")
   set_metric(${metric} ${engine})

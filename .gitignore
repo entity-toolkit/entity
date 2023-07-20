@@ -33,6 +33,8 @@ venv/
 
 temp*/
 logs/
+*.log
+*.bak
 
 *ipynb_checkpoints
 
