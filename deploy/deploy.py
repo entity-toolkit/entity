@@ -117,28 +117,28 @@ def get_suffix(debug=False, mpi=False, cuda=False, archs=[]):
 
 if __name__ == "__main__":
     args = arg_parser.parse_args()
-    if args.depends:
-        raise NotImplementedError(dependency_error)
     configfname = args.config
+    dependency_build_scripts = []
     with open(configfname, "rb") as f:
         config = tomllib.load(f)
         modulepath = pathlib.Path(os.path.expandvars(config["entity"]["modulepath"]))
         instances = config["entity"]["instances"]
         dependencies = config["dependencies"]
-        if (cc_module := dependencies["cc"]).startswith("module:"):
-            cc_module = cc_module.split(":")[1]
+        cc_module = None
+        if (cc_path := dependencies["cc"]).startswith("module:"):
+            cc_module = cc_path.split(":")[1]
         for debug in instances["debug"]:
             for mpi in instances["with_mpi"]:
                 for cuda in instances["with_cuda"]:
-                    for arch in instances["archs"]:
-                        archs = arch.split(",")
+                    for architectures in instances["archs"]:
+                        archs = architectures.split(",")
                         isgpu = any([any(ar in a for ar in gpu_archs) for a in archs])
                         if cuda != isgpu:
                             continue
 
                         entity_setenvs = []
                         kokkos_setenvs = []
-                        modules = [cc_module]
+                        modules = [cc_module] if cc_module else []
                         omp_threads = "1" if mpi else "[exec nproc]"
                         entity_setenvs += [["Entity_DEBUG", "ON" if debug else "OFF"]]
                         entity_setenvs += [
@@ -157,10 +157,20 @@ if __name__ == "__main__":
                             modules += [(mpi_module := mpi_path.split(":")[1])]
                         if (hdf5_path := dependencies["hdf5"]).startswith("module:"):
                             modules += (
-                                [(hdf5_module := hdf5_path.split(":")[1] + "/mpi")]
+                                [
+                                    (
+                                        hdf5_module := (
+                                            hdf5_path := hdf5_path + "/mpi"
+                                        ).split(":")[1]
+                                    )
+                                ]
                                 if mpi
                                 else [
-                                    (hdf5_module := hdf5_path.split(":")[1] + "/serial")
+                                    (
+                                        hdf5_module := (
+                                            hdf5_path := hdf5_path + "/serial"
+                                        ).split(":")[1]
+                                    )
                                 ]
                             )
                         kokkos_setenvs += [
@@ -172,13 +182,21 @@ if __name__ == "__main__":
                             "module:"
                         ):
                             modules += [
-                                (kokkos_module := kokkos_path.split(":")[1] + suffix)
+                                (
+                                    kokkos_module := (
+                                        kokkos_path := kokkos_path + suffix
+                                    ).split(":")[1]
+                                )
                             ]
                         if (adios2_path := dependencies["adios2"]).startswith(
                             "module:"
                         ):
                             modules += [
-                                (adios2_module := adios2_path.split(":")[1] + suffix)
+                                (
+                                    adios2_module := (
+                                        adios2_path := adios2_path + suffix
+                                    ).split(":")[1]
+                                )
                             ]
                         configuration = suffix.upper().replace("/", " @ ")[1:]
                         entity_setenvs = "\n".join(
@@ -209,3 +227,56 @@ if __name__ == "__main__":
                                 ColoredText(modulefile_content, "gray"),
                                 sep="\n",
                             )
+
+                        if args.depends:
+                            use_default_modules = True
+                            dlm = " \\\n  "
+                            arch_flag = f"--arch {architectures}"
+                            with_debug = f"--debug ON{dlm}" if debug else ""
+                            with_cc = f"--with-cc {cc_path}{dlm}"
+                            with_cuda = (
+                                f"--with-cuda {cuda_path}{dlm}"
+                                if cuda
+                                else f"--with-cuda OFF{dlm}"
+                            )
+                            with_mpi = (
+                                f"--with-mpi {mpi_path}{dlm}"
+                                if mpi
+                                else f"--with-mpi OFF{dlm}"
+                            )
+                            with_hdf5 = f"--with-hdf5 {hdf5_path}{dlm}"
+                            with_kokkos = f"--with-kokkos {kokkos_path}{dlm}"
+                            if use_default_modules:
+                                with_cc = ""
+                                with_kokkos = ""
+                                with_hdf5 = ""
+                                if cuda:
+                                    with_cuda = ""
+                                if mpi:
+                                    with_mpi = ""
+                                if not debug:
+                                    with_debug = ""
+                            flags_kokkos = "{with_debug}{with_cc}{with_cuda}{with_mpi}{with_hdf5}{arch_flag}".format(
+                                **locals()
+                            )
+                            flags_adios2 = "{with_debug}{with_cc}{with_cuda}{with_mpi}{with_hdf5}{with_kokkos}{arch_flag}".format(
+                                **locals()
+                            )
+                            dependency_build_scripts += [
+                                f"bash compile_kokkos.sh{dlm}{flags_kokkos} -d"
+                            ]
+                            dependency_build_scripts += [
+                                f"bash compile_adios2.sh{dlm}{flags_adios2} -d"
+                            ]
+    if args.depends:
+        print(
+            ColoredText("Use the following commands to build the dependencies:", "blue")
+        )
+        print()
+        for group in ["kokkos", "adios2"]:
+            print(ColoredText(f"{group}", "green"))
+            print("---")
+            for script in dependency_build_scripts:
+                if f"compile_{group}" in script:
+                    print(script)
+                    print()

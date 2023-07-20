@@ -243,7 +243,7 @@ module-whatis   \"$description\"
 conflict        adios2
 $prereqs
 
-set             basedir         $dir
+set             basedir         $install_path
 append-path     PATH            \$basedir/bin
 setenv          adios2_DIR      \$basedir
 $setflags
