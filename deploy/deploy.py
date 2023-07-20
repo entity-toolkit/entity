@@ -263,10 +263,10 @@ if __name__ == "__main__":
                                 **locals()
                             )
                             dependency_build_scripts += [
-                                f"bash compile_kokkos.sh{dlm}{flags_kokkos} -d"
+                                f"bash compile_kokkos.sh{dlm}{flags_kokkos}"
                             ]
                             dependency_build_scripts += [
-                                f"bash compile_adios2.sh{dlm}{flags_adios2} -d"
+                                f"bash compile_adios2.sh{dlm}{flags_adios2}"
                             ]
     if args.depends:
         print(
