@@ -3,9 +3,9 @@
 
 #include "wrapper.h"
 
-#include "communications/metadomain.h"
 #include "sim_params.h"
 
+#include "communications/metadomain.h"
 #include "io/output.h"
 #include "io/writer.h"
 #include "meshblock/meshblock.h"
@@ -26,6 +26,21 @@ namespace ntt {
     };
   }
   typedef int DiagFlags;
+
+  namespace {
+    enum CommTags_ {
+      Comm_None = 0,
+      Comm_E    = 1 << 0,
+      Comm_B    = 1 << 1,
+      Comm_J    = 1 << 2,
+      Comm_Prtl = 1 << 3,
+      Comm_D    = 1 << 4,
+      Comm_D0   = 1 << 5,
+      Comm_B0   = 1 << 6,
+      Comm_H    = 1 << 7,
+    };
+  }
+  typedef int CommTags;
 
   /**
    * @brief Main class of the simulation containing all the necessary methods and
@@ -91,6 +106,20 @@ namespace ntt {
                                         std::vector<long double>&  tstep_durations,
                                         const DiagFlags            diag_flags,
                                         std::ostream&              os = std::cout);
+
+    /* -------------------------------------------------------------------------- */
+    /*                       Inter-meshblock communications                       */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * @brief Synchronize ghost zones between the meshblocks.
+     * @param f tags identifying what quantities are synchronized.
+     */
+    void               Communicate(CommTags comm);
+    /**
+     * @brief Synchronize currents between the blocks by accumulating.
+     */
+    void               CurrentsSynchronize();
 
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */

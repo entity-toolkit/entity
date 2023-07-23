@@ -108,7 +108,7 @@ namespace ntt {
       return "N/A";
     }
   }
-  
+
   inline auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
     switch (bc) {
     case BoundaryCondition::PERIODIC:
@@ -212,7 +212,8 @@ namespace ntt {
 
   template <>
   struct Directions<Dim1> {
-    inline static const std::vector<std::vector<short>> all = { { -1 }, { 1 } };
+    inline static const std::vector<std::vector<short>> all    = { { -1 }, { 1 } };
+    inline static const std::vector<std::vector<short>> unique = { { 1 } };
   };
 
   template <>
@@ -226,6 +227,12 @@ namespace ntt {
       { 1, -1},
       { 1,  0},
       { 1,  1}
+    };
+    inline static const std::vector<std::vector<short>> unique = {
+      { 0, 1},
+      { 1, 1},
+      { 1, 0},
+      {-1, 1}
     };
   };
 
@@ -258,6 +265,21 @@ namespace ntt {
       { 1,  1, -1},
       { 1,  1,  0},
       { 1,  1,  1}
+    };
+    inline static const std::vector<std::vector<short>> unique = {
+      { 0,  0,  1},
+      { 0,  1,  0},
+      { 1,  0,  0},
+      { 1,  1,  0},
+      {-1,  1,  0},
+      { 0,  1,  1},
+      { 0, -1,  1},
+      { 1,  0,  1},
+      {-1,  0,  1},
+      { 1,  1,  1},
+      {-1,  1,  1},
+      { 1, -1,  1},
+      { 1,  1, -1}
     };
   };
 

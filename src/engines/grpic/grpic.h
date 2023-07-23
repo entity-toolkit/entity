@@ -106,11 +106,6 @@ namespace ntt {
      * [`gr_bc::Dfield`, `gr_bc::Bfield`].
      */
     void FieldsBoundaryConditions(const gr_bc&);
-    /**
-     * @brief Synchronize ghost zones between the meshblocks.
-     * @param f flag to synchronize fields, currents or particles.
-     */
-    void Exchange(const GhostCells&);
 
     /* ----------------------------- Aux fields --------------------------------- */
     /**
@@ -147,10 +142,6 @@ namespace ntt {
      * @brief Apply boundary conditions for currents.
      */
     void CurrentsBoundaryConditions() {}
-    /**
-     * @brief Synchronize currents deposited in different meshblocks.
-     */
-    void CurrentsSynchronize() {}
     /**
      * @brief Time average J currents.
      */

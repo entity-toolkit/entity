@@ -61,6 +61,7 @@ namespace ntt {
     /**
      * em0::D, em::D, em0::B, em::B <- boundary conditions
      */
+    this->Communicate(Comm_D | Comm_D0 | Comm_B | Comm_B0);
     FieldsBoundaryConditions(gr_bc::Dfield);
     FieldsBoundaryConditions(gr_bc::Bfield);
 
@@ -95,6 +96,7 @@ namespace ntt {
     /**
      * em0::B, em::B <- boundary conditions
      */
+    this->Communicate(Comm_B | Comm_B0);
     FieldsBoundaryConditions(gr_bc::Bfield);
 
     /**
@@ -106,6 +108,7 @@ namespace ntt {
     /**
      * em0::D, em::D <- boundary conditions
      */
+    this->Communicate(Comm_D | Comm_D0);
     FieldsBoundaryConditions(gr_bc::Dfield);
 
     /**
@@ -133,6 +136,7 @@ namespace ntt {
     /**
      * em0::B, em::B <- boundary conditions
      */
+    this->Communicate(Comm_B | Comm_B0);
     FieldsBoundaryConditions(gr_bc::Bfield);
 
     /**
@@ -144,6 +148,7 @@ namespace ntt {
     /**
      * em0::D, em::D <- boundary conditions
      */
+    this->Communicate(Comm_D | Comm_D0);
     FieldsBoundaryConditions(gr_bc::Dfield);
 
     /**
@@ -167,6 +172,7 @@ namespace ntt {
     /**
      * em0::D, em::D <- boundary conditions
      */
+    this->Communicate(Comm_D | Comm_D0);
     FieldsBoundaryConditions(gr_bc::Dfield);
 
     /**
@@ -259,6 +265,7 @@ namespace ntt {
        * em0::B, em::B <- boundary conditions
        */
       FieldsBoundaryConditions(gr_bc::Bfield);
+      this->Communicate(Comm_B | Comm_B0);
       timers.stop("FieldBoundaries");
 
       timers.start("FieldSolver");
@@ -303,8 +310,8 @@ namespace ntt {
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
-        CurrentsSynchronize();
-        Exchange(GhostCells::currents);
+        this->CurrentsSynchronize();
+        this->Communicate(Comm_J);
         CurrentsBoundaryConditions();
         timers.stop("FieldBoundaries");
 
@@ -313,10 +320,10 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
-      Exchange(GhostCells::particles);
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }
+      this->Communicate(Comm_Prtl);
       timers.stop("ParticleBoundaries");
     }
 
@@ -351,6 +358,7 @@ namespace ntt {
       /**
        * em0::B, em::B <- boundary conditions
        */
+      this->Communicate(Comm_B | Comm_B0);
       FieldsBoundaryConditions(gr_bc::Bfield);
       timers.stop("FieldBoundaries");
 
@@ -376,6 +384,7 @@ namespace ntt {
       /**
        * em0::D, em::D <- boundary conditions
        */
+      this->Communicate(Comm_D | Comm_D0);
       FieldsBoundaryConditions(gr_bc::Dfield);
       timers.stop("FieldBoundaries");
 
@@ -419,6 +428,7 @@ namespace ntt {
       /**
        * em0::D, em::D <- boundary conditions
        */
+      this->Communicate(Comm_D | Comm_D0);
       FieldsBoundaryConditions(gr_bc::Dfield);
       timers.stop("FieldBoundaries");
     }

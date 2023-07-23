@@ -83,7 +83,7 @@ auto main(int argc, char* argv[]) -> int {
           mblock.em(i1, i2, i3, ntt::em::bx2) = b_cntrv[1];
           mblock.em(i1, i2, i3, ntt::em::bx3) = b_cntrv[2];
         });
-      sim.Exchange(ntt::GhostCells::fields);
+      sim.Communicate(ntt::Comm_B);
     }
 
     {

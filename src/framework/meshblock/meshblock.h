@@ -25,12 +25,6 @@ namespace ntt {
   }    // namespace
   typedef int PrepareOutputFlags;
 
-  enum class GhostCells {
-    currents  = 0,
-    fields    = 1,
-    particles = 2,
-  };
-
   /**
    * @brief Container for the fields, particles and coordinate system.
    * @tparam D Dimension.

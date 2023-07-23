@@ -3,6 +3,7 @@
 #include "wrapper.h"
 
 #include "sim_params.h"
+#include "simulation.h"
 
 #include "io/output.h"
 #include "utils/timer.h"
@@ -76,7 +77,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
-      Exchange(GhostCells::fields);
+      this->Communicate(Comm_E);
       FieldsBoundaryConditions();
       timers.stop("FieldBoundaries");
     }
@@ -99,8 +100,8 @@ namespace ntt {
         CurrentsDeposit();
 
         timers.start("FieldBoundaries");
-        CurrentsSynchronize();
-        Exchange(GhostCells::currents);
+        this->CurrentsSynchronize();
+        this->Communicate(Comm_J);
         CurrentsBoundaryConditions();
         timers.stop("FieldBoundaries");
 
@@ -109,10 +110,10 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
-      Exchange(GhostCells::particles);
       if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
         dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
       }
+      this->Communicate(Comm_Prtl);
       timers.stop("ParticleBoundaries");
     }
 
@@ -122,7 +123,7 @@ namespace ntt {
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
-      Exchange(GhostCells::fields);
+      this->Communicate(Comm_B);
       FieldsBoundaryConditions();
       timers.stop("FieldBoundaries");
 
@@ -135,7 +136,7 @@ namespace ntt {
       }
 
       timers.start("FieldBoundaries");
-      Exchange(GhostCells::fields);
+      this->Communicate(Comm_E);
       FieldsBoundaryConditions();
       timers.stop("FieldBoundaries");
     }

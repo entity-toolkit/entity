@@ -11,6 +11,8 @@
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
 
+#include "communications/communicate.cpp"
+#include "communications/currents_sync.cpp"
 #include "io/output_flds.cpp"
 #include "io/output_prtls.cpp"
 #include "io/writer.cpp"
@@ -25,6 +27,8 @@
 #  include <adios2.h>
 #  include <adios2/cxx11/KokkosView.h>
 #endif
+
+#include <vector>
 
 /**
  * SANDBOX Engine
@@ -109,6 +113,7 @@ template void ntt::OutputField::compute<ntt::Dim2, ntt::GRPICEngine>(
 template void ntt::OutputField::compute<ntt::Dim3, ntt::GRPICEngine>(
   const ntt::SimulationParams&, ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
 
+#ifdef OUTPUT_ENABLED
 template void ntt::OutputField::put<ntt::Dim1, ntt::SANDBOXEngine>(
   adios2::IO&, adios2::Engine&, ntt::Meshblock<ntt::Dim1, ntt::SANDBOXEngine>&) const;
 template void ntt::OutputField::put<ntt::Dim2, ntt::SANDBOXEngine>(
@@ -170,3 +175,4 @@ template void ntt::OutputParticles::put<ntt::Dim3, ntt::GRPICEngine>(
   adios2::Engine&,
   const ntt::SimulationParams&,
   ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
+#endif    // OUTPUT_ENABLED

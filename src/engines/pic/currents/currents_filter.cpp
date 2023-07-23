@@ -60,7 +60,7 @@ namespace ntt {
       Kokkos::deep_copy(mblock.buff, mblock.cur);
       Kokkos::parallel_for(
         "CurrentsFilter", range, DigitalFilter_kernel<D>(mblock.cur, mblock.buff, size));
-      Exchange(GhostCells::currents);
+      this->Communicate(Comm_J);
     }
   }
 }    // namespace ntt
