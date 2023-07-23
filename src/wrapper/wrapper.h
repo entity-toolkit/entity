@@ -36,6 +36,19 @@ namespace ntt {
   template <typename T>
   using array_t = Kokkos::View<T, AccelMemSpace>;
 
+  template <short D>
+  using ndarray_t = typename std::conditional<
+    D == 1,
+    array_t<real_t*>,
+    typename std::conditional<
+      D == 2,
+      array_t<real_t**>,
+      typename std::conditional<
+        D == 3,
+        array_t<real_t***>,
+        typename std::conditional<D == 4, array_t<real_t****>, std::nullptr_t>::type>::type>::
+      type>::type;
+
   // Array mirror alias of arbitrary type
   template <typename T>
   using array_mirror_t = typename array_t<T>::HostMirror;

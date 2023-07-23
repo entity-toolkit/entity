@@ -210,15 +210,39 @@ namespace ntt {
   template <Dimension D>
   struct Directions {};
 
+  template <Dimension D>
+  struct direction_t : public std::vector<short> {
+    direction_t() : std::vector<short>(static_cast<short>(D), 0) {}
+    direction_t(std::initializer_list<short> list) : std::vector<short>(list) {
+      NTTHostErrorIf(list.size() != static_cast<short>(D),
+                     "Wrong number of elements in direction_t initializer list");
+    }
+
+    auto operator-() const -> direction_t<D> {
+      auto result = direction_t<D> {};
+      for (std::size_t i = 0; i < (short)D; ++i) {
+        result[i] = -(*this)[i];
+      }
+      return result;
+    }
+  };
+  template <Dimension D>
+  inline auto operator<<(std::ostream& os, const direction_t<D>& dir) -> std::ostream& {
+    for (auto& d : dir) {
+      os << d << " ";
+    }
+    return os;
+  }
+
   template <>
   struct Directions<Dim1> {
-    inline static const std::vector<std::vector<short>> all    = { { -1 }, { 1 } };
-    inline static const std::vector<std::vector<short>> unique = { { 1 } };
+    inline static const std::vector<direction_t<Dim1>> all    = { { -1 }, { 1 } };
+    inline static const std::vector<direction_t<Dim1>> unique = { { 1 } };
   };
 
   template <>
   struct Directions<Dim2> {
-    inline static const std::vector<std::vector<short>> all = {
+    inline static const std::vector<direction_t<Dim2>> all = {
       {-1, -1},
       {-1,  0},
       {-1,  1},
@@ -228,7 +252,7 @@ namespace ntt {
       { 1,  0},
       { 1,  1}
     };
-    inline static const std::vector<std::vector<short>> unique = {
+    inline static const std::vector<direction_t<Dim2>> unique = {
       { 0, 1},
       { 1, 1},
       { 1, 0},
@@ -238,7 +262,7 @@ namespace ntt {
 
   template <>
   struct Directions<Dim3> {
-    inline static const std::vector<std::vector<short>> all = {
+    inline static const std::vector<direction_t<Dim3>> all = {
       {-1, -1, -1},
       {-1, -1,  0},
       {-1, -1,  1},
@@ -266,7 +290,7 @@ namespace ntt {
       { 1,  1,  0},
       { 1,  1,  1}
     };
-    inline static const std::vector<std::vector<short>> unique = {
+    inline static const std::vector<direction_t<Dim3>> unique = {
       { 0,  0,  1},
       { 0,  1,  0},
       { 1,  0,  0},

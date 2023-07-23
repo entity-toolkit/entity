@@ -57,13 +57,14 @@ namespace ntt {
     std::vector<real_t>                         m_extent;
     // boundary conditions of the domain
     std::vector<std::vector<BoundaryCondition>> m_boundaries;
+    std::map<direction_t<D>, BoundaryCondition> m_boundaries_map;
 
     Metric<D>                                   m_metric;
 
     // MPI rank of the domain (used only when MPI enabled)
     int                                         m_mpi_rank;
 
-    std::map<std::vector<short>, Domain<D>*>    m_neighbors;
+    std::map<direction_t<D>, Domain<D>*>        m_neighbors;
 
   public:
     Domain(const int&                                        index,
@@ -89,7 +90,7 @@ namespace ntt {
     }
 #endif    // MPI_ENABLED
 
-    auto assignNeighbor(const std::vector<short>& dir, Domain<D>* neighbor) -> void {
+    auto assignNeighbor(const direction_t<D>& dir, Domain<D>* neighbor) -> void {
       m_neighbors[dir] = neighbor;
     }
 
@@ -163,12 +164,25 @@ namespace ntt {
       return m_boundaries;
     }
 
-    [[nodiscard]] auto neighbors(const std::vector<short>& dir) const -> const Domain<D>* {
+    auto setBoundary(const direction_t<D>& dir, BoundaryCondition bc) -> void {
+      m_boundaries_map[dir] = bc;
+    }
+
+    [[nodiscard]] auto neighbors(const direction_t<D>& dir) const -> const Domain<D>* {
       auto it = m_neighbors.find(dir);
       if (it != m_neighbors.end()) {
         return it->second;
       } else {
         NTTHostError("Neighbor not found");
+      }
+    }
+
+    [[nodiscard]] auto boundaryIn(const direction_t<D>& dir) const -> BoundaryCondition {
+      auto it = m_boundaries_map.find(dir);
+      if (it != m_boundaries_map.end()) {
+        return it->second;
+      } else {
+        NTTHostError("Boundary not found");
       }
     }
   };
@@ -318,6 +332,8 @@ namespace ntt {
               no_neighbor = true;
             }
           }
+          domains[index].setBoundary(
+            direction, no_neighbor ? BoundaryCondition::UNDEFINED : BoundaryCondition::COMM);
           domains[index].assignNeighbor(
             direction, no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
         }

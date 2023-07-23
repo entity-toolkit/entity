@@ -19,7 +19,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     toml::table simulation, domain, units, output;
     simulation["title"]  = "WriterTest";
-    domain["resolution"] = toml::array { 2500, 4000 };
+    domain["resolution"] = toml::array { 250, 400 };
 
 #ifdef MINKOWSKI_METRIC
     domain["extent"] = toml::array { -50.0, 50.0, -20.0, 140.0 };
@@ -67,7 +67,7 @@ auto main(int argc, char* argv[]) -> int {
 #else
       auto tag = ZERO;
 #endif
-      Kokkos::deep_copy(mblock.em, -tag);
+      Kokkos::deep_copy(mblock.em, (real_t)(-100.0));
       Kokkos::parallel_for(
         "FillWithDummies", mblock.rangeActiveCells(), Lambda(ntt::index_t i1, ntt::index_t i2) {
           mblock.em(i1, i2, ntt::em::ex1) = tag;
@@ -78,6 +78,7 @@ auto main(int argc, char* argv[]) -> int {
           mblock.em(i1, i2, ntt::em::bx3) = tag + 0.5;
         });
     }
+    sim.Communicate(ntt::Comm_E | ntt::Comm_B);
     sim.writer.WriteAll(*sim.params(), mblock, ZERO, 0);
 
   } catch (std::exception& err) {
