@@ -55,7 +55,7 @@ endfunction()
 # ---------------------------- Problem generator --------------------------- #
 function(set_problem_generator pgen_name engine_name)
   if(NOT ${engine_name} STREQUAL "sandbox")
-    set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/${engine_name}/pgen/)
+    set(PGEN_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/engines/${engine_name}/pgen/)
     file(GLOB_RECURSE PGENS ${PGEN_DIRECTORY}*.hpp)
     set(problem_generators "")
 

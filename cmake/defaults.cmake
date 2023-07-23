@@ -1,4 +1,12 @@
 # ----------------------------- Defaults ---------------------------------- #
+if(DEFINED ENV{Entity_ENABLE_DEBUG})
+  set(default_debug $ENV{Entity_ENABLE_DEBUG} CACHE INTERNAL "Default flag for debug mode")
+else()
+  set(default_debug OFF CACHE INTERNAL "Default flag for debug mode")
+endif()
+
+set_property(CACHE default_debug PROPERTY TYPE BOOL)
+
 set(default_engine "pic" CACHE INTERNAL "Default engine")
 set(default_precision "single" CACHE INTERNAL "Default precision")
 set(default_pgen "dummy" CACHE INTERNAL "Default problem generator")

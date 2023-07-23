@@ -43,6 +43,7 @@
   - [x] add a simple current filtering
   - [x] field mirrors
   - [x] unit tests + implement with github actions
+  - [x] deployment scripts
 
 ### Intermediate term things to do/fix
 

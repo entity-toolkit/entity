@@ -535,11 +535,11 @@ class Data:
                 pass
 
         if dimension == 1:
-            noghosts = slice(ngh, -ngh)
+            noghosts = slice(ngh, -ngh) if ngh > 0 else slice(None)
         elif dimension == 2:
-            noghosts = (slice(ngh, -ngh), slice(ngh, -ngh))
+            noghosts = (slice(ngh, -ngh), slice(ngh, -ngh)) if ngh > 0 else slice(None)
         elif dimension == 3:
-            noghosts = (slice(ngh, -ngh), slice(ngh, -ngh), slice(ngh, -ngh))
+            noghosts = (slice(ngh, -ngh), slice(ngh, -ngh), slice(ngh, -ngh)) if ngh > 0 else slice(None)
 
         self.dataset = xr.Dataset()
 

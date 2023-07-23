@@ -33,6 +33,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults.cmake)
 
 # defaults
+set(DEBUG ${default_debug} CACHE BOOL "Debug mode")
 set(engine ${default_engine} CACHE STRING "Simulation engine")
 set(precision ${default_precision} CACHE STRING "Precision")
 set(pgen ${default_pgen} CACHE STRING "Problem generator")
