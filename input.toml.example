@@ -49,6 +49,8 @@ fields_stride   = <int>
 prtl_stride     = <int>
 interval        = <int>
 interval_time   = <float>
+as_is           = <bool>
+ghosts          = <bool>
 
 [diagnostics]
 interval        = <int>

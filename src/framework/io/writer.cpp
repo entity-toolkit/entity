@@ -47,7 +47,6 @@ namespace ntt {
     m_io.DefineAttribute("Coordinates", params.coordinates());
     m_io.DefineAttribute("Engine", stringizeSimulationEngine(S));
 
-    m_io.DefineAttribute("NGhosts", N_GHOSTS);
     m_io.DefineAttribute("Dimension", (int)D);
     for (auto& block : params.inputdata().as_table()) {
       for (auto& attr : block.second.as_table()) {
@@ -57,57 +56,7 @@ namespace ntt {
 
     /* ----------------------- Output grid as an attribute ---------------------- */
     // !TODO: this needs to change to output at every timestep
-    if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
-      m_io.DefineAttribute("X1Min", global_metric.x1_min);
-      m_io.DefineAttribute("X1Max", global_metric.x1_max);
-
-      const auto Ni1 { metadomain.globalNcells()[0] };
-      auto       x1 = new real_t[Ni1 + 1];
-      for (std::size_t i { 0 }; i <= Ni1; ++i) {
-        coord_t<D> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)D; ++d) {
-          xi[d] = ONE;
-        }
-        xi[0] = (real_t)(i);
-        global_metric.x_Code2Phys(xi, xph);
-        x1[i] = xph[0];
-      }
-      m_io.DefineAttribute("X1", x1, Ni1 + 1);
-    }
-    if constexpr (D == Dim2 || D == Dim3) {
-      m_io.DefineAttribute("X2Min", global_metric.x2_min);
-      m_io.DefineAttribute("X2Max", global_metric.x2_max);
-
-      const auto Ni2 { metadomain.globalNcells()[1] };
-      auto       x2 = new real_t[Ni2 + 1];
-      for (std::size_t i { 0 }; i <= Ni2; ++i) {
-        coord_t<D> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)D; ++d) {
-          xi[d] = ONE;
-        }
-        xi[1] = (real_t)(i);
-        global_metric.x_Code2Phys(xi, xph);
-        x2[i] = xph[1];
-      }
-      m_io.DefineAttribute("X2", x2, Ni2 + 1);
-    }
-    if constexpr (D == Dim3) {
-      m_io.DefineAttribute("X3Min", global_metric.x3_min);
-      m_io.DefineAttribute("X3Max", global_metric.x3_max);
-
-      const auto Ni3 { metadomain.globalNcells()[2] };
-      auto       x3 = new real_t[Ni3];
-      for (std::size_t i { 0 }; i <= Ni3; ++i) {
-        coord_t<D> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)D; ++d) {
-          xi[d] = ONE;
-        }
-        xi[2] = (real_t)(i);
-        global_metric.x_Code2Phys(xi, xph);
-        x3[i] = xph[2];
-      }
-      m_io.DefineAttribute("X3", x3, Ni3 + 1);
-    }
+    WriteMeshGrid(metadomain);
 
     if constexpr (S == GRPICEngine) {
       m_io.DefineAttribute("Spin", global_metric.getParameter("spin"));
@@ -117,14 +66,17 @@ namespace ntt {
 
     /* -------------------- Determine field shapes & offsets -------------------- */
     auto local_domain = metadomain.localDomain();
-
-    for (short d = 0; d < (short)D; ++d) {
-      shape.push_back(metadomain.globalNcells()[d]
-                      + 2 * metadomain.globalNdomainsPerDim()[d] * N_GHOSTS);
-      start.push_back(local_domain->offsetNcells()[d]);
-      count.push_back(local_domain->ncells()[d] + 2 * N_GHOSTS);
+    {
+      const auto gh_zones = params.outputGhosts() ? N_GHOSTS : 0;
+      m_io.DefineAttribute("NGhosts", gh_zones);
+      for (short d = 0; d < (short)D; ++d) {
+        shape.push_back(metadomain.globalNcells()[d]
+                        + 2 * metadomain.globalNdomainsPerDim()[d] * gh_zones);
+        start.push_back(local_domain->offsetNcells()[d]
+                        + 2 * gh_zones * local_domain->offsetNdomains()[d]);
+        count.push_back(local_domain->ncells()[d] + 2 * gh_zones);
+      }
     }
-
     auto isLayoutRight
       = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
 
@@ -136,10 +88,12 @@ namespace ntt {
       std::reverse(count.begin(), count.end());
       m_io.DefineAttribute("LayoutRight", 0);
     }
+
     /* ------------------ Determine field quantities to output ------------------ */
     for (auto& var : params.outputFields()) {
       m_fields.push_back(InterpretInputForFieldOutput(var));
       m_fields.back().initialize(S);
+      m_fields.back().ghosts = params.outputGhosts();
     }
     for (auto& fld : m_fields) {
       for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
@@ -196,6 +150,63 @@ namespace ntt {
     m_writer = m_io.Open(params.title() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
                          adios2::Mode::Write);
     m_adios.EnterComputationBlock();
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Writer<D, S>::WriteMeshGrid(const Metadomain<D>& metadomain) {
+    auto global_metric = metadomain.globalMetric();
+
+    if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
+      m_io.DefineAttribute("X1Min", global_metric.x1_min);
+      m_io.DefineAttribute("X1Max", global_metric.x1_max);
+
+      const auto Ni1 { metadomain.globalNcells()[0] };
+      auto       x1 = new real_t[Ni1 + 1];
+      for (std::size_t i { 0 }; i <= Ni1; ++i) {
+        coord_t<D> xph { ZERO }, xi { ZERO };
+        for (short d { 0 }; d < (short)D; ++d) {
+          xi[d] = ONE;
+        }
+        xi[0] = (real_t)(i);
+        global_metric.x_Code2Phys(xi, xph);
+        x1[i] = xph[0];
+      }
+      m_io.DefineAttribute("X1", x1, Ni1 + 1);
+    }
+    if constexpr (D == Dim2 || D == Dim3) {
+      m_io.DefineAttribute("X2Min", global_metric.x2_min);
+      m_io.DefineAttribute("X2Max", global_metric.x2_max);
+
+      const auto Ni2 { metadomain.globalNcells()[1] };
+      auto       x2 = new real_t[Ni2 + 1];
+      for (std::size_t i { 0 }; i <= Ni2; ++i) {
+        coord_t<D> xph { ZERO }, xi { ZERO };
+        for (short d { 0 }; d < (short)D; ++d) {
+          xi[d] = ONE;
+        }
+        xi[1] = (real_t)(i);
+        global_metric.x_Code2Phys(xi, xph);
+        x2[i] = xph[1];
+      }
+      m_io.DefineAttribute("X2", x2, Ni2 + 1);
+    }
+    if constexpr (D == Dim3) {
+      m_io.DefineAttribute("X3Min", global_metric.x3_min);
+      m_io.DefineAttribute("X3Max", global_metric.x3_max);
+
+      const auto Ni3 { metadomain.globalNcells()[2] };
+      auto       x3 = new real_t[Ni3];
+      for (std::size_t i { 0 }; i <= Ni3; ++i) {
+        coord_t<D> xph { ZERO }, xi { ZERO };
+        for (short d { 0 }; d < (short)D; ++d) {
+          xi[d] = ONE;
+        }
+        xi[2] = (real_t)(i);
+        global_metric.x_Code2Phys(xi, xph);
+        x3[i] = xph[2];
+      }
+      m_io.DefineAttribute("X3", x3, Ni3 + 1);
+    }
   }
 
   namespace {
@@ -286,8 +297,8 @@ namespace ntt {
       m_writer.BeginStep();
       int step = (int)tstep;
 
-      m_writer.Put<int>(m_io.InquireVariable<int>("Step"), &step);
-      m_writer.Put<real_t>(m_io.InquireVariable<real_t>("Time"), &time);
+      m_writer.Put(m_io.InquireVariable<int>("Step"), &step);
+      m_writer.Put(m_io.InquireVariable<real_t>("Time"), &time);
 
       WriteFields(params, mblock, time, tstep);
       // WriteParticles(params, mblock, time, tstep);
@@ -325,7 +336,9 @@ namespace ntt {
 
 #else
   template <Dimension D, SimulationEngine S>
-  void Writer<D, S>::Initialize(const SimulationParams&, const Meshblock<D, S>&) {}
+  void Writer<D, S>::Initialize(const SimulationParams&,
+                                const Metadomain<D>&,
+                                const Meshblock<D, S>&) {}
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteAll(const SimulationParams&,

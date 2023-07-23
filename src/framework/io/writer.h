@@ -56,6 +56,7 @@ namespace ntt {
     }
 
     void WriteTomlAttribute(const std::string&, const toml::value&);
+    void WriteMeshGrid(const Metadomain<D>&);
 
     void WriteFields(const SimulationParams&,
                      Meshblock<D, S>&,

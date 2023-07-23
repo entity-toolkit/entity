@@ -79,6 +79,8 @@ namespace ntt {
     std::vector<std::string>                    m_output_particles;
     int                                         m_output_mom_smooth;
     std::size_t                                 m_output_prtl_stride;
+    bool                                        m_output_as_is;
+    bool                                        m_output_ghosts;
 
     // Diagnostic parameters
     int                                         m_diag_interval;
@@ -291,6 +293,18 @@ namespace ntt {
      */
     [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
       return m_output_prtl_stride;
+    }
+    /**
+     * @brief Output raw fields or convert and interpolate.
+     */
+    [[nodiscard]] auto outputAsIs() const -> const bool& {
+      return m_output_as_is;
+    }
+    /**
+     * @brief Output ghost zones.
+     */
+    [[nodiscard]] auto outputGhosts() const -> const bool& {
+      return m_output_ghosts;
     }
     /**
      * @brief Get the diagnostic printout interval.

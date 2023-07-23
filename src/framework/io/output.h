@@ -72,6 +72,7 @@ namespace ntt {
     std::vector<std::vector<int>> comp {};
     std::vector<int>              species {};
     std::vector<int>              address {};
+    bool                          ghosts { false };
 
     OutputField(const std::string& name, const FieldID& id) : m_name(name), m_id(id) {}
     ~OutputField() = default;

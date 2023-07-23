@@ -176,6 +176,8 @@ namespace ntt {
       = get<std::vector<std::string>>("output", "particles", std::vector<std::string>());
     m_output_mom_smooth  = get("output", "mom_smooth", defaults::output_mom_smooth);
     m_output_prtl_stride = get("output", "prtl_stride", defaults::output_prtl_stride);
+    m_output_as_is       = get("output", "as_is", false);
+    m_output_ghosts      = get("output", "ghosts", false);
 
     // diagnostic params
     m_diag_interval      = get("diagnostics", "interval", defaults::diag_interval);
