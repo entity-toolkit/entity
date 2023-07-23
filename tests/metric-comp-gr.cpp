@@ -29,16 +29,16 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       /* -------------------- Test components of h_ij and h^ij -------------------- */
-      const auto nx1 = (int)resolution[0];
-      const auto nx2 = (int)resolution[1];
-      bool       correct;
+      const auto nx1 = (std::size_t)resolution[0];
+      const auto nx2 = (std::size_t)resolution[1];
+      const auto rg  = metric.getParameter("rg");
+      const auto a   = metric.getParameter("spin") * rg;
+      auto       correct_cnt { 0 };
       Kokkos::parallel_reduce(
         "Metric components",
-        nx1 * nx2,
-        Lambda(ntt::index_t i, bool& correct_l) {
-          const auto              i1_ = static_cast<real_t>(i % nx1);
-          const auto              i2_ = static_cast<real_t>(i / nx1);
-          ntt::coord_t<ntt::Dim2> xi { i1_ + HALF, i2_ + HALF };
+        ntt::CreateRangePolicy<ntt::Dim2>({ 0, 0 }, { nx1, nx2 }),
+        Lambda(ntt::index_t i1, ntt::index_t i2, int& correct_cnt_l) {
+          ntt::coord_t<ntt::Dim2> xi { (real_t)i1 + HALF, (real_t)i2 + HALF };
           ntt::coord_t<ntt::Dim2> xph { ZERO };
 
           const auto              h11  = metric.h11(xi);
@@ -53,8 +53,6 @@ auto main(int argc, char* argv[]) -> int {
           metric.x_Code2Sph(xi, xph);
           const auto            r     = xph[0];
           const auto            th    = xph[1];
-          const auto            rg    = metric.getParameter("rg");
-          const auto            a     = metric.getParameter("spin") * rg;
 
           const auto            Sigma = SQR(r) + SQR(a * math::cos(th));
           const auto            z     = TWO * r * rg / Sigma;
@@ -101,7 +99,7 @@ auto main(int argc, char* argv[]) -> int {
                                    && h_11isCorrect && h_22isCorrect && h_33isCorrect
                                    && h_13isCorrect;
 
-          correct_l = correct_l && true;
+          correct_cnt_l += 1;
           if (!all_correct) {
             printf("r, th = %f, %f\n", r, th);
             printf("h11 = %f [%f]\n", hij_predict[0], h11_expect);
@@ -114,8 +112,11 @@ auto main(int argc, char* argv[]) -> int {
             printf("h_13 = %f [%f]\n", h_13_predict, h_13_expect);
           }
         },
-        Kokkos::LAnd<bool>(correct));
-      (!correct) ? throw std::logic_error("Metric is incorrect") : (void)0;
+        correct_cnt);
+      if (correct_cnt != nx1 * nx2) {
+        throw std::logic_error("Metric is incorrect: " + std::to_string(correct_cnt)
+                               + " out of " + std::to_string(nx1 * nx2) + " are correct.");
+      }
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
