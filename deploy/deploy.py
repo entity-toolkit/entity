@@ -111,7 +111,12 @@ def get_suffix(debug=False, mpi=False, cuda=False, archs=[]):
         + ("/mpi" if mpi else "")
         + ("/cuda" if cuda else "")
         + "/"
-        + "/".join(f"{arch.lower()}" for arch in archs)
+        + "/".join(
+            f"{arch.lower()}"
+            for arch in sorted(
+                archs, key=lambda x: not any([any(ar in x for ar in gpu_archs)])
+            )
+        )
     )
 
 

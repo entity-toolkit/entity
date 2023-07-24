@@ -1,5 +1,8 @@
 #!/bin/bash
-source ./aux/aux.sh
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+
+source ${SCRIPT_DIR}/aux/aux.sh
 
 declare -r modulename="ADIOS2"
 declare -r has_modulefile="ON"
@@ -15,8 +18,8 @@ declare hdf5="${default_hdf5_path}"
 default_kokkos_path="module:kokkos"
 declare kokkos="${default_kokkos_path}"
 
-source ./aux/default.sh
-source ./aux/globals.sh
+source ${SCRIPT_DIR}/aux/default.sh
+source ${SCRIPT_DIR}/aux/globals.sh
 
 function usage {
   common_help
@@ -40,15 +43,15 @@ function usage {
   echo ""
 }
 
-source ./aux/argparse.sh
-source ./aux/config.sh
+source ${SCRIPT_DIR}/aux/argparse.sh
+source ${SCRIPT_DIR}/aux/config.sh
 
 if [[ $hdf5 = module:* ]]; then
-  hdf5=${hdf5#module:}
+  hdf5_module=${hdf5#module:}
 fi
 
 if [[ $kokkos = module:* ]]; then
-  kokkos=${kokkos#module:}
+  kokkos_module=${kokkos#module:}
 fi
 
 if [ $arch = "AUTO" ]; then
@@ -59,28 +62,32 @@ fi
 if [ $debug = "ON" ]; then
   adios2_module+="/debug"
   install_path+="/debug"
-  kokkos+="/debug"
+  kokkos_module+="/debug"
 fi
 
 if [ $with_mpi != "OFF" ]; then
   adios2_module+="/mpi"
   install_path+="/mpi"
-  hdf5+="/mpi"
-  kokkos+="/mpi"
+  if [ $hdf5 == $default_hdf5_path ]; then
+    hdf5_module+="/mpi"
+  fi
+  kokkos_module+="/mpi"
 else
-  hdf5+="/serial"
+  if [ $hdf5 == $default_hdf5_path ]; then
+    hdf5_module+="/serial"
+  fi
 fi
 
 if [ $enable_cuda = "ON" ]; then
   adios2_module+="/cuda"
   install_path+="/cuda"
-  kokkos+="/cuda"
+  kokkos_module+="/cuda"
 fi
 
 suffix=$(define_kokkos_suffix $arch)
 adios2_module+=$suffix
 install_path+=$suffix
-kokkos+=$suffix
+kokkos_module+=$suffix
 
 flags=()
 
@@ -129,7 +136,7 @@ for flag in "${flags[@]}"; do
   )
 done
 
-source ./aux/run.sh
+source ${SCRIPT_DIR}/aux/run.sh
 
 function prebuild {
   if [ $use_modules = "ON" ]; then
@@ -141,8 +148,8 @@ function prebuild {
     if [ ! $with_mpi = "OFF" ]; then
       runcommand "module load $mpi_module"
     fi
-    runcommand "module load $hdf5"
-    runcommand "module load $kokkos"
+    runcommand "module load $hdf5_module"
+    runcommand "module load $kokkos_module"
   fi
 }
 
@@ -183,6 +190,7 @@ function report {
     "Kokkos"
     "HDF5"
   )
+
   REPORT_VALS+=(
     "${kokkos}"
     "${hdf5}"
@@ -221,7 +229,7 @@ function modulefile {
     if [ ! $with_mpi = "OFF" ]; then
       prereqs+=" $mpi_module"
     fi
-    prereqs+=" $hdf5 $kokkos"
+    prereqs+=" $hdf5_module $kokkos_module"
   fi
   local setflags=""
   for flag in "${flags[@]}"; do
