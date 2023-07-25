@@ -44,6 +44,9 @@ auto main(int argc, char* argv[]) -> int {
       mass     = 1.0
       charge   = 1.0
       maxnpart = 10.0
+
+      [output]
+      format = "disabled"
     )"_toml;
 
     auto       sim    = ntt::PIC<ntt::Dim3>(inputdata);
