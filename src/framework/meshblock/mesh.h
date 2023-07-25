@@ -287,21 +287,6 @@ namespace ntt {
     }
 
     [[nodiscard]] auto extent() const -> std::vector<real_t>;
-
-    [[nodiscard]] auto isPeriodicInX1() const -> bool {
-      NTTHostErrorIf(boundaries.size() < 1, "Invalid number of boundaries");
-      return (boundaries[0][0] == BoundaryCondition::PERIODIC);
-    }
-
-    [[nodiscard]] auto isPeriodicInX2() const -> bool {
-      NTTHostErrorIf(boundaries.size() < 2, "Invalid number of boundaries");
-      return (boundaries[1][0] == BoundaryCondition::PERIODIC);
-    }
-
-    [[nodiscard]] auto isPeriodicInX3() const -> bool {
-      NTTHostErrorIf(boundaries.size() < 3, "Invalid number of boundaries");
-      return (boundaries[2][0] == BoundaryCondition::PERIODIC);
-    }
   };
 }    // namespace ntt
 
