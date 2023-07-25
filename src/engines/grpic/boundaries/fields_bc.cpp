@@ -87,12 +87,10 @@ namespace ntt {
        * r = rmax (absorbing boundary)
        */
       const auto    r_absorb     = params.metricParameters()[2];
-      const auto    absorb_coeff = params.metricParameters()[3];
-      const auto    absorb_norm  = ONE / (ONE - math::exp(absorb_coeff));
       const auto    r_max        = mblock.metric.x1_max;
       coord_t<Dim2> xcu;
       mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
-      NTTHostErrorIf((int)(xcu[0]) >= mblock.i1_max() - 1,
+      NTTHostErrorIf((std::size_t)(xcu[0]) >= mblock.i1_max() - 1,
                      "Absorbing layer is too small, consider "
                      "increasing r_absorb");
       auto range_absorb = CreateRangePolicy<Dim2>(

@@ -2,6 +2,7 @@
 
 #include "io/cargs.h"
 #include "io/output.h"
+
 #include <nttiny/api.h>
 #include <nttiny/tools.h>
 #include <nttiny/vis.h>
@@ -62,8 +63,8 @@ public:
   void setData() override {
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
-    const auto nx1            = Grid.m_size[0] + Grid.m_ngh * 2;
-    const auto nx2            = Grid.m_size[1] + Grid.m_ngh * 2;
+    const auto nx1            = (std::size_t)(Grid.m_size[0] + Grid.m_ngh * 2);
+    const auto nx2            = (std::size_t)(Grid.m_size[1] + Grid.m_ngh * 2);
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
@@ -105,9 +106,9 @@ public:
         }
         auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
 
-        for (auto fi { 0 }; fi < nfields; ++fi) {
+        for (std::size_t fi { 0 }; fi < nfields; ++fi) {
           auto f = fields_to_plot[fi];
-          for (auto c { 0 }; c < f.comp.size(); ++c) {
+          for (std::size_t c { 0 }; c < f.comp.size(); ++c) {
             auto   fld = f.name(c);
 
             real_t val { ZERO };
@@ -170,8 +171,8 @@ public:
     auto&      Grid   = this->m_global_grid;
     const auto nx1 { Grid.m_size[0] + Grid.m_ngh * 2 };
     const auto nx2 { Grid.m_size[1] + Grid.m_ngh * 2 };
-    for (auto i { 0 }; i < m_fields_to_plot.size(); ++i) {
-      for (auto c { 0 }; c < m_fields_to_plot[i].comp.size(); ++c) {
+    for (std::size_t i { 0 }; i < m_fields_to_plot.size(); ++i) {
+      for (std::size_t c { 0 }; c < m_fields_to_plot[i].comp.size(); ++c) {
         Fields.insert({ m_fields_to_plot[i].name(c), new real_t[nx1 * nx2] });
       }
     }
