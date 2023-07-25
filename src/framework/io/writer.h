@@ -47,7 +47,11 @@ namespace ntt {
     ~Writer() = default;
 
     void Initialize(const SimulationParams&, const Metadomain<D>&, const Meshblock<D, S>&);
-    void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);
+    void WriteAll(const SimulationParams&,
+                  const Metadomain<D>&,
+                  Meshblock<D, S>&,
+                  const real_t&,
+                  const std::size_t&);
 
     void Finalize() {
 #ifdef OUTPUT_ENABLED
@@ -64,6 +68,7 @@ namespace ntt {
                      const std::size_t&);
 
     void WriteParticles(const SimulationParams&,
+                        const Metadomain<D>&,
                         Meshblock<D, S>&,
                         const real_t&,
                         const std::size_t&);

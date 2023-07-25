@@ -6,6 +6,7 @@
 #include "sim_params.h"
 
 #include "meshblock/meshblock.h"
+#include "communications/metadomain.h"
 
 #ifdef OUTPUT_ENABLED
 #  include <adios2.h>
@@ -152,7 +153,11 @@ namespace ntt {
 
 #ifdef OUTPUT_ENABLED
     template <Dimension D, SimulationEngine S>
-    void put(adios2::IO&, adios2::Engine&, const SimulationParams&, Meshblock<D, S>&) const;
+    void put(adios2::IO&,
+             adios2::Engine&,
+             const SimulationParams&,
+             const Metadomain<D>&,
+             Meshblock<D, S>&) const;
 #endif
   };
 
