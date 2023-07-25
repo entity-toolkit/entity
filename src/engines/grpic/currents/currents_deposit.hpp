@@ -128,6 +128,14 @@ namespace ntt {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
       }
 
+      if (Ip_f[1] < 0) {    // north
+        Ip_f[1] = 0;
+        xp_f[1] = -xp_f[1];
+      } else if (Ip_f[1] >= static_cast<int>(m_xi2max)) {    // south
+        Ip_f[1] = static_cast<int>(m_xi2max) - 1;
+        xp_f[1] = TWO * m_xi2max - xp_f[1];
+      }
+
       // find 3-velocity
       vec_t<Dim3> u_cntrv { ZERO };
       m_mblock.metric.v3_Cov2Cntrv(
@@ -140,7 +148,6 @@ namespace ntt {
       vp[1]   = m_particles.ux2(p) / gamma;
       vp[2]   = m_particles.ux3(p) / gamma;
 
-      // !Q: no alpha here, right?
       Ip_i[0] = m_particles.i1_prev(p);
       xp_i[0] = static_cast<real_t>(m_particles.i1_prev(p))
                 + static_cast<real_t>(m_particles.dx1_prev(p));

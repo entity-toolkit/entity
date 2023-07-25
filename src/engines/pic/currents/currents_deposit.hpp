@@ -57,7 +57,7 @@ namespace ntt {
      * @brief Iteration of the loop over particles.
      * @param p index.
      */
-    Inline void operator()(index_t p) const {
+    Inline auto operator()(index_t p) const -> void {
       if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
         // _f = final, _i = initial
         tuple_t<int, D> Ip_f, Ip_i;
@@ -87,13 +87,13 @@ namespace ntt {
      * @param[in] xp_i Previous step position.
      * @param[in] xp_r Intermediate point used in zig-zag deposit.
      */
-    Inline void depositCurrentsFromParticle(const real_t&          weight,
+    Inline auto depositCurrentsFromParticle(const real_t&          weight,
                                             const vec_t<Dim3>&     vp,
                                             const tuple_t<int, D>& Ip_f,
                                             const tuple_t<int, D>& Ip_i,
                                             const coord_t<D>&      xp_f,
                                             const coord_t<D>&      xp_i,
-                                            const coord_t<D>&      xp_r) const;
+                                            const coord_t<D>&      xp_r) const -> void;
 
     /**
      * @brief Get particle position in `coord_t` form.
@@ -105,106 +105,212 @@ namespace ntt {
      * @param[out] xp_i Previous step position.
      * @param[out] xp_r Intermediate point used in zig-zag deposit.
      */
-    Inline void getDepositInterval(index_t&         p,
+    Inline auto getDepositInterval(index_t&         p,
                                    vec_t<Dim3>&     vp,
                                    tuple_t<int, D>& Ip_f,
                                    tuple_t<int, D>& Ip_i,
                                    coord_t<D>&      xp_f,
                                    coord_t<D>&      xp_i,
-                                   coord_t<D>&      xp_r) const {
-      real_t               inv_energy;
-      tuple_t<prtldx_t, D> dIp_f;
-
-      if constexpr ((D == Dim1) || (D == Dim2) || (D == Dim3)) {
-        Ip_f[0]  = m_particles.i1(p);
-        dIp_f[0] = m_particles.dx1(p);
-      }
-
-      if constexpr ((D == Dim2) || (D == Dim3)) {
-        Ip_f[1]  = m_particles.i2(p);
-        dIp_f[1] = m_particles.dx2(p);
-      }
-
-      if constexpr (D == Dim3) {
-        Ip_f[2]  = m_particles.i3(p);
-        dIp_f[2] = m_particles.dx3(p);
-      }
-
-      for (short i { 0 }; i < static_cast<short>(D); ++i) {
-        xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
-      }
+                                   coord_t<D>&      xp_r) const -> void;
+  };
 
 #ifdef MINKOWSKI_METRIC
-      m_mblock.metric.v3_Cart2Cntrv(
-        xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
-#else
-      if constexpr (D != Dim1) {
-        coord_t<Dim3> xp;
-        xp[0] = xp_f[0];
-        xp[1] = xp_f[1];
-        if constexpr (D == Dim2) {
-          xp[2] = m_particles.phi(p);
-        } else {
-          xp[2] = xp_f[2];
-        }
+  // 1D
+  template <>
+  Inline auto DepositCurrents_kernel<Dim1>::getDepositInterval(index_t&            p,
+                                                               vec_t<Dim3>&        vp,
+                                                               tuple_t<int, Dim1>& Ip_f,
+                                                               tuple_t<int, Dim1>& Ip_i,
+                                                               coord_t<Dim1>&      xp_f,
+                                                               coord_t<Dim1>&      xp_i,
+                                                               coord_t<Dim1>&      xp_r) const
+    -> void {
+    Ip_f[0] = m_particles.i1(p);
+    xp_f[0] = static_cast<real_t>(Ip_f[0]) + static_cast<real_t>(m_particles.dx1(p));
 
-        m_mblock.metric.v3_Cart2Cntrv(
-          xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
-        if constexpr (D == Dim2) {
-          if (Ip_f[1] == 0 && AlmostEqual(dIp_f[1], 0.0f)) {
-            vp[2] = ZERO;
-          } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
-                     && AlmostEqual(dIp_f[1], static_cast<prtldx_t>(1.0))) {
-            vp[2] = ZERO;
-          }
-        }
-      }
-#endif
-      inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+    m_mblock.metric.v3_Cart2Cntrv(
+      xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
+    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
 
-      // get particle 3-velocity in coordinate basis
-      for (short i { 0 }; i < 3; ++i) {
-        vp[i] *= inv_energy;
-      }
+    vp[0] *= inv_energy;
+    vp[1] *= inv_energy;
+    vp[2] *= inv_energy;
 
-      for (short i { 0 }; i < static_cast<short>(D); ++i) {
-        int I_i;
-        xp_i[i] = xp_f[i] - m_dt * vp[i];
-        from_Xi_to_i(xp_i[i], I_i);
+    xp_i[0] = xp_f[0] - m_dt * vp[0];
 
-#ifndef MINKOWSKI_METRIC
-        if constexpr (D == Dim2) {
-          if (i == 1) {
-            const bool northern_pole  = (I_i < 0);
-            const bool sourthern_pole = (I_i >= static_cast<int>(m_xi2max));
-            if (northern_pole || sourthern_pole) {
-              I_i     = northern_pole ? 0 : static_cast<int>(m_xi2max) - 1;
-              xp_i[i] = northern_pole ? -xp_i[i] : (TWO * m_xi2max - xp_i[i]);
-            }
-          }
-        }
-#endif
-        Ip_i[i]             = I_i;
-        const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
-        xp_r[i]
-          = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                       math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
-      }
+    Ip_i[0] = static_cast<int>(xp_i[0]);
+    xp_r[0] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[0], Ip_f[0]) + 1),
+                         math::fmax(static_cast<real_t>(math::fmax(Ip_i[0], Ip_f[0])),
+                                    HALF * (xp_i[0] + xp_f[0])));
+  }
+  // 2D
+  template <>
+  Inline auto DepositCurrents_kernel<Dim2>::getDepositInterval(index_t&            p,
+                                                               vec_t<Dim3>&        vp,
+                                                               tuple_t<int, Dim2>& Ip_f,
+                                                               tuple_t<int, Dim2>& Ip_i,
+                                                               coord_t<Dim2>&      xp_f,
+                                                               coord_t<Dim2>&      xp_i,
+                                                               coord_t<Dim2>&      xp_r) const
+    -> void {
+    Ip_f[0] = m_particles.i1(p);
+    Ip_f[1] = m_particles.i2(p);
+
+    xp_f[0] = static_cast<real_t>(Ip_f[0]) + static_cast<real_t>(m_particles.dx1(p));
+    xp_f[1] = static_cast<real_t>(Ip_f[1]) + static_cast<real_t>(m_particles.dx2(p));
+
+    m_mblock.metric.v3_Cart2Cntrv(
+      xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
+    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+
+    // get particle 3-velocity in coordinate basis
+    vp[0] *= inv_energy;
+    vp[1] *= inv_energy;
+    vp[2] *= inv_energy;
+
+#  pragma unroll
+    for (auto i { 0 }; i < 2; ++i) {
+      xp_i[i] = xp_f[i] - m_dt * vp[i];
+      Ip_i[i] = static_cast<int>(xp_i[i]);
+      xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                           math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
+                                      HALF * (xp_i[i] + xp_f[i])));
     }
-  };
+  }
+#else    // not MINKOWSKI_METRIC
+  template <>
+  Inline auto DepositCurrents_kernel<Dim1>::getDepositInterval(index_t&,
+                                                               vec_t<Dim3>&,
+                                                               tuple_t<int, Dim1>&,
+                                                               tuple_t<int, Dim1>&,
+                                                               coord_t<Dim1>&,
+                                                               coord_t<Dim1>&,
+                                                               coord_t<Dim1>&) const -> void {
+    NTTError("should not be called");
+  }
+
+  template <>
+  Inline auto DepositCurrents_kernel<Dim2>::getDepositInterval(index_t&            p,
+                                                               vec_t<Dim3>&        vp,
+                                                               tuple_t<int, Dim2>& Ip_f,
+                                                               tuple_t<int, Dim2>& Ip_i,
+                                                               coord_t<Dim2>&      xp_f,
+                                                               coord_t<Dim2>&      xp_i,
+                                                               coord_t<Dim2>&      xp_r) const
+    -> void {
+    Ip_f[0] = m_particles.i1(p);
+    Ip_f[1] = m_particles.i2(p);
+
+    xp_f[0] = static_cast<real_t>(Ip_f[0]) + static_cast<real_t>(m_particles.dx1(p));
+    xp_f[1] = static_cast<real_t>(Ip_f[1]) + static_cast<real_t>(m_particles.dx2(p));
+
+    real_t x2;
+    if (Ip_f[1] < 0) {
+      x2 = -xp_f[1];
+    } else if (Ip_f[1] >= static_cast<int>(m_xi2max)) {
+      x2 = TWO * m_xi2max - xp_f[1];
+    } else {
+      x2 = xp_f[1];
+    }
+
+    m_mblock.metric.v3_Cart2Cntrv(
+      { xp_f[0], x2, m_particles.phi(p) },
+      { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
+      vp);
+
+    // make sure the velocity is defined at the axis
+    if (Ip_f[1] == 0 && AlmostEqual(m_particles.dx2(p), 0.0f)) {
+      vp[2] = ZERO;
+    } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
+               && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
+      vp[2] = ZERO;
+    }
+    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+
+    // get particle 3-velocity in coordinate basis
+    vp[0] *= inv_energy;
+    vp[1] *= inv_energy;
+    vp[2] *= inv_energy;
+
+    xp_i[0] = xp_f[0] - m_dt * vp[0];
+    Ip_i[0] = static_cast<int>(xp_i[0]);
+    xp_i[1] = xp_f[1] - m_dt * vp[1];
+    Ip_i[1] = static_cast<int>(xp_i[1]);
+
+    // take care of the reflection
+    if (Ip_f[1] < 0) {    // north
+      Ip_f[1] = 0;
+      xp_f[1] = -xp_f[1];
+    } else if (Ip_f[1] >= static_cast<int>(m_xi2max)) {    // south
+      Ip_f[1] = static_cast<int>(m_xi2max) - 1;
+      xp_f[1] = TWO * m_xi2max - xp_f[1];
+    }
+    if (Ip_i[1] < 0) {    // north
+      Ip_i[1] = 0;
+      xp_i[1] = -xp_i[1];
+    } else if (Ip_i[1] >= static_cast<int>(m_xi2max)) {    // south
+      Ip_i[1] = static_cast<int>(m_xi2max) - 1;
+      xp_i[1] = TWO * m_xi2max - xp_i[1];
+    }
+
+#  pragma unroll
+    for (auto i { 0 }; i < 2; ++i) {
+      xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                           math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
+                                      HALF * (xp_i[i] + xp_f[i])));
+    }
+  }
+#endif    // MINKOWSKI_METRIC
+
+  // 3D
+  template <>
+  Inline auto DepositCurrents_kernel<Dim3>::getDepositInterval(index_t&            p,
+                                                               vec_t<Dim3>&        vp,
+                                                               tuple_t<int, Dim3>& Ip_f,
+                                                               tuple_t<int, Dim3>& Ip_i,
+                                                               coord_t<Dim3>&      xp_f,
+                                                               coord_t<Dim3>&      xp_i,
+                                                               coord_t<Dim3>&      xp_r) const
+    -> void {
+    Ip_f[0] = m_particles.i1(p);
+    Ip_f[1] = m_particles.i2(p);
+    Ip_f[2] = m_particles.i3(p);
+
+    xp_f[0] = static_cast<real_t>(Ip_f[0]) + static_cast<real_t>(m_particles.dx1(p));
+    xp_f[1] = static_cast<real_t>(Ip_f[1]) + static_cast<real_t>(m_particles.dx2(p));
+    xp_f[2] = static_cast<real_t>(Ip_f[2]) + static_cast<real_t>(m_particles.dx3(p));
+
+    m_mblock.metric.v3_Cart2Cntrv(
+      xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, vp);
+    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+
+    // get particle 3-velocity in coordinate basis
+    vp[0] *= inv_energy;
+    vp[1] *= inv_energy;
+    vp[2] *= inv_energy;
+
+#pragma unroll
+    for (auto i { 0 }; i < 3; ++i) {
+      xp_i[i] = xp_f[i] - m_dt * vp[i];
+      Ip_i[i] = static_cast<int>(xp_i[i]);
+      xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                           math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
+                                      HALF * (xp_i[i] + xp_f[i])));
+    }
+  }
 
   /**
    * !TODO: fix the conversion to I+di
    */
   template <>
-  Inline void DepositCurrents_kernel<Dim1>::depositCurrentsFromParticle(
+  Inline auto DepositCurrents_kernel<Dim1>::depositCurrentsFromParticle(
     const real_t&             weight,
     const vec_t<Dim3>&        vp,
     const tuple_t<int, Dim1>& Ip_f,
     const tuple_t<int, Dim1>& Ip_i,
     const coord_t<Dim1>&      xp_f,
     const coord_t<Dim1>&      xp_i,
-    const coord_t<Dim1>&      xp_r) const {
+    const coord_t<Dim1>&      xp_r) const -> void {
     real_t Wx1_1 { HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0]) };
     real_t Wx1_2 { HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0]) };
     real_t Fx1_1 { (xp_r[0] - xp_i[0]) * weight * m_charge / m_dt };
@@ -232,14 +338,14 @@ namespace ntt {
   }
 
   template <>
-  Inline void DepositCurrents_kernel<Dim2>::depositCurrentsFromParticle(
+  Inline auto DepositCurrents_kernel<Dim2>::depositCurrentsFromParticle(
     const real_t&             weight,
     const vec_t<Dim3>&        vp,
     const tuple_t<int, Dim2>& Ip_f,
     const tuple_t<int, Dim2>& Ip_i,
     const coord_t<Dim2>&      xp_f,
     const coord_t<Dim2>&      xp_i,
-    const coord_t<Dim2>&      xp_r) const {
+    const coord_t<Dim2>&      xp_r) const -> void {
     real_t Wx1_1 { HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0]) };
     real_t Wx1_2 { HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0]) };
     real_t Fx1_1 { (xp_r[0] - xp_i[0]) * weight * m_charge / m_dt };
@@ -276,14 +382,14 @@ namespace ntt {
   }
 
   template <>
-  Inline void DepositCurrents_kernel<Dim3>::depositCurrentsFromParticle(
+  Inline auto DepositCurrents_kernel<Dim3>::depositCurrentsFromParticle(
     const real_t& weight,
     const vec_t<Dim3>&,
     const tuple_t<int, Dim3>& Ip_f,
     const tuple_t<int, Dim3>& Ip_i,
     const coord_t<Dim3>&      xp_f,
     const coord_t<Dim3>&      xp_i,
-    const coord_t<Dim3>&      xp_r) const {
+    const coord_t<Dim3>&      xp_r) const -> void {
     real_t Wx1_1 { HALF * (xp_i[0] + xp_r[0]) - static_cast<real_t>(Ip_i[0]) };
     real_t Wx1_2 { HALF * (xp_f[0] + xp_r[0]) - static_cast<real_t>(Ip_f[0]) };
     real_t Fx1_1 { (xp_r[0] - xp_i[0]) * weight * m_charge / m_dt };

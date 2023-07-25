@@ -91,10 +91,6 @@ namespace ntt {
       pgen.UserDriveParticles(this->m_time, params, mblock);
       timers.stop("UserSpecific");
 
-      timers.start("ParticleBoundaries");
-      this->ParticlesBoundaryConditions();
-      timers.stop("ParticleBoundaries");
-
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
         CurrentsDeposit();
@@ -110,6 +106,7 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
+      this->ParticlesBoundaryConditions();
       this->Communicate(Comm_Prtl);
       timers.stop("ParticleBoundaries");
     }
