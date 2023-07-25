@@ -89,14 +89,6 @@ namespace ntt {
      */
     void Verify();
 
-    /**
-     * @brief Remove dead particles.
-     * @param max_dead_frac Maximum fraction of dead particles allowed ...
-     * ... w.r.t. the living ones (npart).
-     * @return Vector of the fraction of dead particles pre deletion.
-     */
-    auto RemoveDeadParticles(const double&) -> std::vector<double>;
-
     /* ----------------- Additional conversions and computations ---------------- */
 
     /**

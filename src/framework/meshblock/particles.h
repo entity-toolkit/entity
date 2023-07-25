@@ -3,6 +3,7 @@
 
 #include "wrapper.h"
 
+#include "meshblock/mesh.h"
 #include "meshblock/species.h"
 
 #include <cstddef>
@@ -115,17 +116,24 @@ namespace ntt {
      * @brief Count the number of particles with a specific tag.
      * @return The vector of counts for each tag.
      */
-    auto CountTaggedParticles() const -> std::vector<std::size_t>;
+    [[nodiscard]] auto NpartPerTag() const -> std::vector<std::size_t>;
 
     /**
      * @brief Reshuffle particles by their tags.
+     * @param remove_dead Whether to remove dead particles.
+     * @return The vector of counts per each tag.
      */
-    void ReshuffleByTags();
+    auto               ReshuffleByTags(bool = true) -> std::vector<std::size_t>;
+
+    /**
+     * @brief Engine-agnostic boundary conditions for particles.
+     */
+    auto               BoundaryConditions(const Mesh<D>& mesh) -> void;
 
     /**
      * @brief Copy particle data from device to host.
      */
-    void SyncHostDevice() {
+    void               SyncHostDevice() {
       SyncHostDeviceImpl(DimensionTag<D> {});
     }
   };

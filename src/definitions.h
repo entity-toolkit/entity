@@ -194,9 +194,6 @@ namespace ntt {
 
     const bool                 use_weights        = false;
 
-    const int                  shuffle_interval   = 0;
-    const double               max_dead_frac      = 0.0;
-
     const std::string          output_format      = options::outputs[0];
     const int                  output_interval    = 1;
     const int                  output_mom_smooth  = 1;

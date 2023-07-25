@@ -259,12 +259,12 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  auto Particles<D, S>::CountTaggedParticles() const -> std::vector<std::size_t> {
+  auto Particles<D, S>::NpartPerTag() const -> std::vector<std::size_t> {
     auto                      this_tag = this->tag;
     array_t<std::size_t[100]> npart_tag("npart_tags");
     auto npart_tag_scatter { Kokkos::Experimental::create_scatter_view(npart_tag) };
     Kokkos::parallel_for(
-      "CountTaggedParticles", npart(), Lambda(index_t p) {
+      "NpartPerTag", npart(), Lambda(index_t p) {
         auto npart_tag_scatter_access = npart_tag_scatter.access();
         npart_tag_scatter_access((int)(this_tag(p))) += 1;
       });
@@ -279,7 +279,7 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Particles<D, S>::ReshuffleByTags() {
+  auto Particles<D, S>::ReshuffleByTags(bool remove_dead) -> std::vector<std::size_t> {
     using KeyType = array_t<short*>;
     using BinOp   = BinTag<KeyType>;
     BinOp                           bin_op(ParticleTag::NTags);
@@ -319,6 +319,12 @@ namespace ntt {
       }
     }
     Sorter.sort(Kokkos::subview(weight, slice));
+
+    const auto npart_per_tag = NpartPerTag();
+    if (remove_dead) {
+      setNpart(npart_per_tag[(short)(ParticleTag::alive)]);
+    }
+    return npart_per_tag;
   }
 
   template <Dimension D, SimulationEngine S>

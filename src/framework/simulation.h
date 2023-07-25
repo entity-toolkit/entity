@@ -101,7 +101,6 @@ namespace ntt {
      */
     void               PrintDiagnostics(const std::size_t&         step,
                                         const real_t&              time,
-                                        const std::vector<double>& fractions,
                                         const timer::Timers&       timer,
                                         std::vector<long double>&  tstep_durations,
                                         const DiagFlags            diag_flags,
@@ -120,6 +119,14 @@ namespace ntt {
      * @brief Synchronize currents between the blocks by accumulating.
      */
     void               CurrentsSynchronize();
+
+    /* -------------------------------------------------------------------------- */
+    /*                          Engine-agnostic routines                          */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @brief Apply boundary conditions for particles.
+     */
+    void               ParticlesBoundaryConditions();
 
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */

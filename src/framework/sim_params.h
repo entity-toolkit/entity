@@ -40,10 +40,6 @@ namespace ntt {
     // Use particle weights
     bool                                        m_use_weights;
 
-    // Particle shuffle interval.
-    int                                         m_shuffle_interval;
-    double                                      m_max_dead_frac;
-
     // Enable/disable algorithms
     bool                                        m_enable_fieldsolver;
     bool                                        m_enable_deposit;
@@ -171,17 +167,8 @@ namespace ntt {
       return m_species;
     }
     /**
-     * @brief Get the particle shuffle interval.
+     * @brief Get the use_weights flag.
      */
-    [[nodiscard]] auto shuffleInterval() const -> const int& {
-      return m_shuffle_interval;
-    }
-    /**
-     * @brief Get maximum number of dead particles (as a fraction of current active particles).
-     */
-    [[nodiscard]] auto maxDeadFraction() const -> const double& {
-      return m_max_dead_frac;
-    }
     [[nodiscard]] auto useWeights() const -> const bool& {
       return m_use_weights;
     }

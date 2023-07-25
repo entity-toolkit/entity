@@ -308,23 +308,4 @@ namespace ntt {
     }
     Kokkos::Experimental::contribute(this->buff, scatter_buff);
   }
-
-  template <Dimension D, SimulationEngine S>
-  auto Meshblock<D, S>::RemoveDeadParticles(const double& max_dead_frac)
-    -> std::vector<double> {
-    std::vector<double> dead_fractions = {};
-    for (auto& species : particles) {
-      auto npart_tag = species.CountTaggedParticles();
-      auto dead_fraction
-        = species.npart() > 0
-            ? (double)(npart_tag[(short)(ParticleTag::dead)]) / (double)(species.npart())
-            : 0.0;
-      if ((species.npart() > 0) && (dead_fraction >= (double)max_dead_frac)) {
-        species.ReshuffleByTags();
-        species.setNpart(npart_tag[(short)(ParticleTag::alive)]);
-      }
-      dead_fractions.push_back(dead_fraction);
-    }
-    return dead_fractions;
-  }
 }    // namespace ntt

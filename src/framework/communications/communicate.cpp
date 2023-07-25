@@ -19,10 +19,10 @@ namespace ntt {
 #  ifdef MINKOWSKI_METRIC
   // helper function
   template <Dimension D, int N>
-  void CommunicateField(const ndfield_t<D, N>&            fld,
+  auto CommunicateField(const ndfield_t<D, N>&            fld,
                         const std::vector<range_tuple_t>& range_to,
                         const std::vector<range_tuple_t>& range_from,
-                        const range_tuple_t&              comps) {
+                        const range_tuple_t&              comps) -> void {
     if constexpr (D == Dim1) {
       Kokkos::deep_copy(Kokkos::subview(fld, range_to[0], comps),
                         Kokkos::subview(fld, range_from[0], comps));
@@ -95,48 +95,24 @@ namespace ntt {
         }
       }
     }
-
     if (comm & Comm_Prtl) {
       for (auto& species : mblock.particles) {
-        if constexpr (D == Dim1) {
-          const auto ni1 = mblock.Ni1();
-          Kokkos::parallel_for(
-            "Exchange_particles", species.rangeActiveParticles(), Lambda(index_t p) {
-              species.i1(p) += ni1 * static_cast<int>(species.i1(p) < 0)
-                               - ni1 * static_cast<int>(species.i1(p) >= (int)ni1);
-            });
-        } else if constexpr (D == Dim2) {
-          const auto ni1 = mblock.Ni1(), ni2 = mblock.Ni2();
-          Kokkos::parallel_for(
-            "Exchange_particles", species.rangeActiveParticles(), Lambda(index_t p) {
-              species.i1(p) += ni1 * static_cast<int>(species.i1(p) < 0)
-                               - ni1 * static_cast<int>(species.i1(p) >= (int)ni1);
-              species.i2(p) += ni2 * static_cast<int>(species.i2(p) < 0)
-                               - ni2 * static_cast<int>(species.i2(p) >= (int)ni2);
-            });
-        } else if constexpr (D == Dim3) {
-          const auto ni1 = mblock.Ni1(), ni2 = mblock.Ni2(), ni3 = mblock.Ni3();
-          Kokkos::parallel_for(
-            "Exchange_particles", species.rangeActiveParticles(), Lambda(index_t p) {
-              species.i1(p) += ni1 * static_cast<int>(species.i1(p) < 0)
-                               - ni1 * static_cast<int>(species.i1(p) >= (int)ni1);
-              species.i2(p) += ni2 * static_cast<int>(species.i2(p) < 0)
-                               - ni2 * static_cast<int>(species.i2(p) >= (int)ni2);
-              species.i3(p) += ni3 * static_cast<int>(species.i3(p) < 0)
-                               - ni3 * static_cast<int>(species.i3(p) >= (int)ni3);
-            });
-        }
+        species.ReshuffleByTags(true);
       }
     }
   }
 #  else     // not MINKOWSKI_METRIC
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::Communicate(CommTags) {
-    // no single-meshblock communication necessary
+  void Simulation<D, S>::Communicate(CommTags comm) {
+    if (comm & Comm_Prtl) {
+      for (auto& species : this->meshblock.particles) {
+        species.ReshuffleByTags(true);
+      }
+    }
   }
 #  endif    // MINKOWSKI_METRIC
 
-#else       // not MPI_ENABLED
+#else       // MPI_ENABLED
   /* -------------------------------------------------------------------------- */
   /*                     Cross-meshblock MPI communications                     */
   /* -------------------------------------------------------------------------- */
@@ -335,6 +311,7 @@ namespace ntt {
         }
       }
     }
+    // !TODO: Handle particles
   }
 
 #endif      // MPI_ENABLED
