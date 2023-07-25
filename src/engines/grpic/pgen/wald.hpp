@@ -210,21 +210,6 @@ namespace ntt {
     std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
     return (this->m_mblock).buff(i1, i2, 0) < _inj_maxdens;
   }
-
-  template <>
-  inline void ProblemGenerator<Dim2, GRPICEngine>::UserDriveParticles(
-    const real_t& time, const SimulationParams& params, Meshblock<Dim2, GRPICEngine>& mblock) {
-    auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction * HALF;
-    InjectInVolume<Dim2, GRPICEngine, RadialKick, InjectionShell, MaxDensCrit>(
-      params,
-      mblock,
-      { 1, 2 },
-      nppc_per_spec,
-      { mblock.metric.x1_min,
-        (real_t)1.5 * inj_rmax,
-        mblock.metric.x2_min,
-        mblock.metric.x2_max });
-  }
 }    // namespace ntt
 
 #endif

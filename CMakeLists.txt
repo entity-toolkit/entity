@@ -11,24 +11,6 @@ add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 
-# -------------------------- Compilation settings -------------------------- #
-set(DEBUG OFF CACHE BOOL "Debug mode")
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-if(${DEBUG} STREQUAL "OFF")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
-  message(STATUS "Release mode")
-else()
-  set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
-  message(STATUS "Debug mode")
-endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
-
 # ----------------------------- Configurations ----------------------------- #
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults.cmake)
 
@@ -43,6 +25,22 @@ set(gui ${default_gui} CACHE BOOL "Use GUI [nttiny]")
 set(output ${default_output} CACHE BOOL "Enable output")
 
 set(mpi ${default_mpi} CACHE BOOL "Use MPI")
+
+# -------------------------- Compilation settings -------------------------- #
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(${DEBUG} STREQUAL "OFF")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "CMake build type")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+  message(STATUS "Release mode")
+else()
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake build type")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
+  message(STATUS "Debug mode")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
 
 # options
 set(simulation_engines "sandbox" "pic" "grpic" CACHE STRING "Simulation engines")

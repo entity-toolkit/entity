@@ -32,7 +32,7 @@ function usage {
   echo "                                 for example: \`SKX,Volta70\`"
   echo "                                 (default: ${default_arch})"
   echo ""
-  echo "  --kokkos <path|module>         HDF5 path or modulename (\`module:<modulename>\`)"
+  echo "  --kokkos <path|module>         Kokkos path or modulename (\`module:<modulename>\`)"
   echo "                                 default: ${default_kokkos_path}/<automatic>"
   echo ""
   echo "  --hdf5 <path|module>           HDF5 path or modulename (\`module:<modulename>\`)"

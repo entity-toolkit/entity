@@ -92,7 +92,7 @@ namespace ntt {
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveFields(
-    const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    const real_t& time, const SimulationParams&, Meshblock<Dim2, PICEngine>& mblock) {
     {
       coord_t<Dim2> x_ph { r_surf, ZERO };
       coord_t<Dim2> xi { ZERO };
@@ -203,7 +203,7 @@ namespace ntt {
 
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
-    const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     mblock.ComputeMoments(params, FieldID::Rho, {}, { 1, 2 }, 2, 0);
     WaitAndSynchronize();
     auto nppc_per_spec = (real_t)(params.ppc0()) * inj_fraction * HALF;

@@ -24,7 +24,6 @@ skindepth0 = 0.1
 
 [particles]
 n_species    = 1
-shuffle_step = 10
 
 [species_1]
 label    = "e-"

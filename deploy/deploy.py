@@ -145,7 +145,7 @@ if __name__ == "__main__":
                         kokkos_setenvs = []
                         modules = [cc_module] if cc_module else []
                         omp_threads = "1" if mpi else "[exec nproc]"
-                        entity_setenvs += [["Entity_DEBUG", "ON" if debug else "OFF"]]
+                        entity_setenvs += [["Entity_ENABLE_DEBUG", "ON" if debug else "OFF"]]
                         entity_setenvs += [
                             ["Entity_ENABLE_MPI", "ON" if mpi else "OFF"]
                         ]
