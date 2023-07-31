@@ -1,56 +1,61 @@
 [simulation]
-title   = "debug-deposit-fltr"
-runtime = 0.1
+title   = "DepositSR"
+runtime = 2.0
 
 [domain]
-qsph_r0     = -100.0
-qsph_h      = 0.001
-sph_rabsorb = 4.5
-resolution  = [256, 128]
-extent      = [1.0, 5.0]
-boundaries  = ["CUSTOM", "CUSTOM"]
+qsph_r0     = 0.0
+qsph_h      = 0.0
+sph_rabsorb = 19.0
+resolution  = [512, 512]
+extent      = [0.8, 20.0]
+boundaries  = [["CUSTOM", "ABSORB"], ["AXIS"]]
 
 [algorithm]
-CFL             = 0.45
-correction      = 1.0
-fieldsolver_ON  = true
+CFL             = 0.5
+current_filters = 2
 deposit_ON      = true
-current_filters = 0
 
 [units]
-ppc0       = 100.0
-larmor0    = 1e-4
-skindepth0 = 0.02
+ppc0       = 4.0
+larmor0    = 2e-3
+skindepth0 = 0.1
 
 [particles]
-n_species = 2
+n_species    = 2
+shuffle_step = 10
 
 [species_1]
-label    = "electron"
+label    = "e-"
 mass     = 1.0
 charge   = -1.0
 maxnpart = 1e2
 
 [species_2]
-label    = "positron"
+label    = "e+"
 mass     = 1.0
 charge   = 1.0
 maxnpart = 1e2
 
-[species_3]
-label    = "ion"
-mass     = 5.0
-charge   = 1.0
-maxnpart = 1e2
+[problem]
+# r0   = [5.000, 15.0, 18.0, 4.0, 12.0]
+# th0  = [1.5707963268, 0.7853981634, 2.3561944902, 0.1, 3.0415926536]
+# ph0  = [0.0, 0.0, 0.0, 0.0, 0.0]
+# ur0  = [5.0, 5.0, 5.0, 5.0, 5.0]
+# uth0 = [4.0, 7.0, 4.0, -5.0, 9.0]
 
-[species_4]
-label    = "photon"
-mass     = 0.0
-charge   = 0.0
-maxnpart = 1e2
+r0   = [5.98]
+th0  = [0.05]
+ph0  = [0.0]
+# ur0  = [0.000500417084]
+# uth0 = [0.01]
+
+ur0  = [0.0500417084]
+uth0 = [1.0]
 
 [output]
-fields = ["Rho", "E", "B", "J"]
-format   = "disabled"
-
-[problem]
+fields        = ["E", "J", "divE"]
+interval_time = 0.2
+prtl_stride   = 1
+flds_stride   = 1
+particles     = ["X", "U"]
+format        = "HDF5"
