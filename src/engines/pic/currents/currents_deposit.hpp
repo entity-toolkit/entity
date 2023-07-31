@@ -245,13 +245,6 @@ namespace ntt {
       Ip_f[1] = static_cast<int>(m_xi2max) - 1;
       xp_f[1] = TWO * m_xi2max - xp_f[1];
     }
-    if (Ip_i[1] < 0) {    // north
-      Ip_i[1] = 0;
-      xp_i[1] = -xp_i[1];
-    } else if (Ip_i[1] >= static_cast<int>(m_xi2max)) {    // south
-      Ip_i[1] = static_cast<int>(m_xi2max) - 1;
-      xp_i[1] = TWO * m_xi2max - xp_i[1];
-    }
 
 #  pragma unroll
     for (auto i { 0 }; i < 2; ++i) {
