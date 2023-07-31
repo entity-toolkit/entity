@@ -76,6 +76,23 @@ foreach(metric ${all_metrics})
     target_include_directories(test-${title}.xc PRIVATE ${SOURCE_DIR}/engines/${engine})
     add_test(NAME "Writer: ${metric}" COMMAND "test-${title}.xc")
   endif()
+
+  if(${mpi})
+    set(title utils-comm-${metric})
+
+    list(FIND sr_metrics ${metric} sr_metric_index)
+
+    if(NOT ${sr_metric_index} EQUAL -1)
+      set(engine pic)
+    else()
+      set(engine grpic)
+    endif()
+
+    add_executable(test-${title}.xc utils-comm.cpp)
+    target_link_libraries(test-${title}.xc PUBLIC framework-${metric} engine-${engine}-${metric})
+    target_include_directories(test-${title}.xc PRIVATE ${SOURCE_DIR}/engines/${engine})
+    add_test(NAME "Comm: ${metric}" COMMAND "test-${title}.xc")
+  endif()
 endforeach()
 
 # --------------------------------- Metrics -------------------------------- #

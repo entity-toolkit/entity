@@ -11,7 +11,8 @@
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
 
-#include "communications/communicate.cpp"
+#include "communications/comm_nompi.cpp"
+#include "communications/comm_mpi.cpp"
 #include "communications/currents_sync.cpp"
 #include "io/output_flds.cpp"
 #include "io/output_prtls.cpp"

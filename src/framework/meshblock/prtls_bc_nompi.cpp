@@ -1,21 +1,13 @@
-#include "wrapper.h"
+#ifndef MPI_ENABLED
 
-#include "particle_macros.h"
+#  include "wrapper.h"
 
-#include "meshblock/mesh.h"
-#include "meshblock/particles.h"
+#  include "particle_macros.h"
+
+#  include "meshblock/mesh.h"
+#  include "meshblock/particles.h"
 
 namespace ntt {
-  template <>
-  auto Particles<Dim1, SANDBOXEngine>::BoundaryConditions(const Mesh<Dim1>&) -> void {}
-
-  template <>
-  auto Particles<Dim2, SANDBOXEngine>::BoundaryConditions(const Mesh<Dim2>&) -> void {}
-
-  template <>
-  auto Particles<Dim3, SANDBOXEngine>::BoundaryConditions(const Mesh<Dim3>&) -> void {}
-
-#ifndef MPI_ENABLED
   template <>
   auto Particles<Dim1, PICEngine>::BoundaryConditions(const Mesh<Dim1>& mesh) -> void {
     for (auto& bcs : mesh.boundaries) {
@@ -41,7 +33,7 @@ namespace ntt {
     }
     const auto ni1 = mesh.Ni1(), ni2 = mesh.Ni2();
     Kokkos::parallel_for(
-      "Exchange_particles", rangeActiveParticles(), ClassLambda(index_t p) {
+      "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         i1(p) += ni1 * static_cast<int>(i1(p) < 0) - ni1 * static_cast<int>(i1(p) >= (int)ni1);
         i2(p) += ni2 * static_cast<int>(i2(p) < 0) - ni2 * static_cast<int>(i2(p) >= (int)ni2);
       });
@@ -56,7 +48,7 @@ namespace ntt {
     }
     const auto ni1 = mesh.Ni1(), ni2 = mesh.Ni2(), ni3 = mesh.Ni3();
     Kokkos::parallel_for(
-      "Exchange_particles", rangeActiveParticles(), ClassLambda(index_t p) {
+      "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         i1(p) += ni1 * static_cast<int>(i1(p) < 0) - ni1 * static_cast<int>(i1(p) >= (int)ni1);
         i2(p) += ni2 * static_cast<int>(i2(p) < 0) - ni2 * static_cast<int>(i2(p) >= (int)ni2);
         i3(p) += ni3 * static_cast<int>(i3(p) < 0) - ni3 * static_cast<int>(i3(p) >= (int)ni3);
@@ -133,7 +125,7 @@ namespace ntt {
     const auto ni1 = static_cast<int>(mesh.Ni1());
     const auto ni2 = static_cast<int>(mesh.Ni2());
     Kokkos::parallel_for(
-      "prtl_bc", rangeActiveParticles(), ClassLambda(index_t p) {
+      "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         // radial boundary conditions
         if ((i1(p) < i1h) || (i1(p) >= ni1)) {
           tag(p) = static_cast<short>(ParticleTag::dead);
@@ -160,18 +152,21 @@ namespace ntt {
     NTTHostError("not implemented");
   }
 
-#else    // MPI_ENABLED
   template <>
-  auto Particles<Dim1, PICEngine>::BoundaryConditions(const Mesh<Dim1>& mesh) -> void {
-    const auto ni1 { mesh.Ni1() };
-    Kokkos::parallel_for(
-      "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
-        const auto move_i1m = (i1(p) < 0);
-        const auto move_i1p = (i1(p) >= ni1);
-        if (move_i1m) {
-          tag(p) = static_cast<short>(ParticleTag::dead);
-        }
-      });
+  auto Particles<Dim1, SANDBOXEngine>::BoundaryConditions(const Mesh<Dim1>&) -> void {
+    NTTHostError("not implemented");
   }
-#endif
+
+  template <>
+  auto Particles<Dim2, SANDBOXEngine>::BoundaryConditions(const Mesh<Dim2>&) -> void {
+    NTTHostError("not implemented");
+  }
+
+  template <>
+  auto Particles<Dim3, SANDBOXEngine>::BoundaryConditions(const Mesh<Dim3>&) -> void {
+    NTTHostError("not implemented");
+  }
+
 }    // namespace ntt
+
+#endif    // MPI_ENABLED
