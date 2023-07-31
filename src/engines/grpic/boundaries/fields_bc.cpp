@@ -86,8 +86,8 @@ namespace ntt {
       /**
        * r = rmax (absorbing boundary)
        */
-      const auto    r_absorb     = params.metricParameters()[2];
-      const auto    r_max        = mblock.metric.x1_max;
+      const auto    r_absorb = params.metricParameters()[2];
+      const auto    r_max    = mblock.metric.x1_max;
       coord_t<Dim2> xcu;
       mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
       NTTHostErrorIf((std::size_t)(xcu[0]) >= mblock.i1_max() - 1,
@@ -153,7 +153,8 @@ namespace ntt {
           });
       }
     } else {
-      NTTHostError("In GRPIC rmin boundaries should always be OPEN");
+      NTTHostErrorIf(mblock.boundaries[0][0] != BoundaryCondition::COMM,
+                     "In GRPIC rmin boundaries should always be OPEN");
     }
     NTTLog();
   }

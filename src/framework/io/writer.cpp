@@ -33,6 +33,10 @@ namespace ntt {
   void Writer<D, S>::Initialize(const SimulationParams& params,
                                 const Metadomain<D>&    metadomain,
                                 const Meshblock<D, S>&  mblock) {
+    m_output_enabled = (params.outputFormat() != "disabled");
+    if (!m_output_enabled) {
+      return;
+    }
     m_io = m_adios.DeclareIO("EntityOutput");
     m_io.SetEngine(params.outputFormat() != "disabled" ? params.outputFormat() : "HDF5");
     adios2::Dims shape, start, count;
@@ -78,7 +82,7 @@ namespace ntt {
       }
     }
     auto isLayoutRight
-      = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
+      = std::is_same_v<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>;
 
     if (isLayoutRight) {
       m_io.DefineAttribute("LayoutRight", 1);
@@ -129,21 +133,23 @@ namespace ntt {
           for (auto d { 0 }; d < dmax; ++d) {
             m_io.DefineVariable<real_t>(
               "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
-              {},
-              {},
+              { adios2::UnknownDim },
+              { adios2::UnknownDim },
               { adios2::UnknownDim });
           }
         } else if (prtl.id() == PrtlID::U) {
           for (auto d { 0 }; d < 3; ++d) {
             m_io.DefineVariable<real_t>(
               "U" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
-              {},
-              {},
+              { adios2::UnknownDim },
+              { adios2::UnknownDim },
               { adios2::UnknownDim });
           }
         } else if (prtl.id() == PrtlID::W) {
-          m_io.DefineVariable<real_t>(
-            "W_" + std::to_string(sp_index), {}, {}, { adios2::UnknownDim });
+          m_io.DefineVariable<real_t>("W_" + std::to_string(sp_index),
+                                      { adios2::UnknownDim },
+                                      { adios2::UnknownDim },
+                                      { adios2::UnknownDim });
         }
       }
     }
@@ -276,8 +282,6 @@ namespace ntt {
                               Meshblock<D, S>&        mblock,
                               const real_t&           time,
                               const std::size_t&      tstep) {
-    // check if output is enabled
-    auto output_enabled = (params.outputFormat() != "disabled");
     // check if output is done by # of steps or by physical time
     auto output_by_step = (params.outputIntervalTime() <= 0.0);
     auto output_by_time = !output_by_step;
@@ -288,7 +292,7 @@ namespace ntt {
                           || (m_last_output_time <= 0.0);
     // combine the logic
     auto do_output
-      = (output_enabled
+      = (m_output_enabled
          && ((output_by_step && is_output_step) || (output_by_time && is_output_time)));
 
     if (do_output) {

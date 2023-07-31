@@ -40,6 +40,7 @@ namespace ntt {
     std::vector<OutputParticles> m_particles;
 
     real_t                       m_last_output_time { -1.0 };
+    bool                         m_output_enabled { true };
 #endif
 
   public:
@@ -55,7 +56,9 @@ namespace ntt {
 
     void Finalize() {
 #ifdef OUTPUT_ENABLED
-      m_writer.Close();
+      if (m_output_enabled) {
+        m_writer.Close();
+      }
 #endif
     }
 

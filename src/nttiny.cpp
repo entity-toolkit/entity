@@ -7,13 +7,18 @@
 #include <nttiny/tools.h>
 #include <nttiny/vis.h>
 
-#ifdef PIC_ENGINE
-#  include "pic.h"
-#  define SIMULATION_CONTAINER PIC
-#elif defined(GRPIC_ENGINE)
-#  include "grpic.h"
+#if defined(PIC_ENGINE)
 
-#  define SIMULATION_CONTAINER GRPIC
+#  include "pic.h"
+template <ntt::Dimension D>
+using SimEngine = ntt::PIC<D>;
+
+#elif defined(GRPIC_ENGINE)
+
+#  include "grpic.h"
+template <ntt::Dimension D>
+using SimEngine = ntt::GRPIC<D>;
+
 #endif
 
 #include <toml.hpp>
@@ -265,27 +270,21 @@ auto main(int argc, char* argv[]) -> int {
       inputdata, "output", "fields", std::vector<std::string>());
     auto fields_stride = ntt::readFromInput<int>(inputdata, "output", "fields_stride", 1);
 
-#ifdef PIC_ENGINE
-    constexpr auto simulation_engine { ntt::PICEngine };
-#else
-    constexpr auto simulation_engine { ntt::GRPICEngine };
-#endif
-
     std::vector<ntt::OutputField> fields_to_plot;
     for (auto& fld : fields_to_plot_str) {
       fields_to_plot.push_back(ntt::InterpretInputForFieldOutput(fld));
       fields_to_plot.back().initialize(simulation_engine);
     }
 
-    ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
+    SimEngine<ntt::Dim2> sim(inputdata);
 
     sim.Verify();
     sim.ResetSimulation();
     sim.InitialStep();
     sim.PrintDetails();
-    NTTSimulationVis<simulation_engine> visApi(sim, fields_to_plot, fields_stride);
+    NTTSimulationVis<sim.engine>     visApi(sim, fields_to_plot, fields_stride);
 
-    nttiny::Visualization<real_t, 2>    vis { scale };
+    nttiny::Visualization<real_t, 2> vis { scale };
     vis.bindSimulation(&visApi);
     vis.loop();
 

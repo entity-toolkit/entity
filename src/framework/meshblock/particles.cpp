@@ -282,7 +282,12 @@ namespace ntt {
   auto Particles<D, S>::ReshuffleByTags(bool remove_dead) -> std::vector<std::size_t> {
     using KeyType = array_t<short*>;
     using BinOp   = BinTag<KeyType>;
-    BinOp                           bin_op(ParticleTag::NTags);
+#ifndef MPI_ENABLED
+    const auto ntags = 2;
+#else    // MPI_ENABLED
+    const auto ntags = 2 + math::pow(3, (int)D) - 1;
+#endif
+    BinOp                           bin_op(ntags);
     auto                            slice = range_tuple_t(0, npart());
     Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op, false);
     Sorter.create_permute_vector();

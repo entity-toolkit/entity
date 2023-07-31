@@ -26,7 +26,12 @@ namespace ntt {
                   m_params.metricParameters(),
                   m_params.species() },
       writer {},
-      random_pool { constant::RandomSeed } {
+#ifdef MPI_ENABLED
+      random_pool { constant::RandomSeed + m_metadomain.localDomain()->mpiRank() }
+#else
+      random_pool { constant::RandomSeed }
+#endif
+  {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_metadomain.localDomain()->boundaries();
 
