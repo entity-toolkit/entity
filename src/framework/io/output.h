@@ -38,6 +38,10 @@ namespace ntt {
       return "Rho";
     case FieldID::Charge:
       return "Charge";
+    case FieldID::divE:
+      return "divE";
+    case FieldID::divD:
+      return "divD";
     case FieldID::N:
       return "N";
     case FieldID::Nppc:
@@ -85,6 +89,9 @@ namespace ntt {
     [[nodiscard]] auto is_field() const -> bool {
       return (id() == FieldID::E || id() == FieldID::B || id() == FieldID::D
               || id() == FieldID::H);
+    }
+    [[nodiscard]] auto is_divergence() const -> bool {
+      return (id() == FieldID::divE || id() == FieldID::divD);
     }
     [[nodiscard]] auto is_current() const -> bool {
       return (id() == FieldID::J);

@@ -51,6 +51,8 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::~Simulation() {
     writer.Finalize();
+    WaitAndSynchronize();
+    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>
@@ -170,13 +172,6 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   auto Simulation<D, S>::rangeAllCells() -> range_t<D> {
     return meshblock.rangeAllCells();
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::Finalize() {
-    writer.Finalize();
-    WaitAndSynchronize();
-    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>

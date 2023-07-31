@@ -166,7 +166,9 @@ namespace ntt {
   // Field IDs used for io
   enum class FieldID {
     E,         // Electric fields
+    divE,      // Divergence of electric fields
     D,         // Electric fields (GR)
+    divD,      // Divergence of electric fields (GR)
     B,         // Magnetic fields
     H,         // Magnetic fields (GR)
     J,         // Current density

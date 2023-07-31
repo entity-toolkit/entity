@@ -119,6 +119,10 @@ namespace ntt {
       id = FieldID::Charge;
     } else if (fld.find("Nppc") == 0) {
       id = FieldID::Nppc;
+    } else if (fld.find("divE") == 0) {
+      id = FieldID::divE;
+    } else if (fld.find("divD") == 0) {
+      id = FieldID::divD;
     } else if (fld.find("N") == 0) {
       id = FieldID::N;
     } else if (fld.find("E") == 0) {
@@ -136,9 +140,9 @@ namespace ntt {
     } else {
       NTTHostError("Invalid field name");
     }
-    auto is_moment
-      = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc || id == FieldID::N || id == FieldID::Charge);
-    auto is_field = (id == FieldID::E || id == FieldID::B || id == FieldID::D
+    auto is_moment = (id == FieldID::T || id == FieldID::Rho || id == FieldID::Nppc
+                      || id == FieldID::N || id == FieldID::Charge);
+    auto is_field  = (id == FieldID::E || id == FieldID::B || id == FieldID::D
                      || id == FieldID::H || id == FieldID::J);
     if (is_moment) {
       species = InterpretInput_getspecies(fld);

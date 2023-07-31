@@ -31,7 +31,6 @@ namespace ntt {
       }
       WaitAndSynchronize();
     }
-    Simulation<D, PICEngine>::Finalize();
   }
 
   template <Dimension D>

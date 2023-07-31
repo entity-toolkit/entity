@@ -288,8 +288,6 @@ auto main(int argc, char* argv[]) -> int {
     vis.bindSimulation(&visApi);
     vis.loop();
 
-    sim.Finalize();
-
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     ntt::GlobalFinalize();

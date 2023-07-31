@@ -92,11 +92,6 @@ namespace ntt {
     void               PrintDetails();
 
     /**
-     * @brief Finalize the simulation objects.
-     */
-    void               Finalize();
-
-    /**
      * @brief Diagnostic logging.
      * @param os output stream.
      */

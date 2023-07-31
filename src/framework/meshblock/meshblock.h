@@ -111,6 +111,13 @@ namespace ntt {
     void ComputeVectorPotential(ndfield_t<D, 6>&, const int&) {}
 
     /**
+     * @brief Compute the divergence of the E/D-field.
+     * @param buffer Buffer to store the result in.
+     * @param buffer_comp Component of the buffer to store the result in.
+     */
+    void ComputeDivergenceED(ndfield_t<D, 3>&, const int&);
+
+    /**
      * @brief Compute particle moment for output or other usage.
      * @param params SimulationParams object.
      * @param field FieldID for the moment to compute.

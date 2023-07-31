@@ -19,7 +19,7 @@
 #include "io/writer.cpp"
 #include "meshblock/fields.cpp"
 #include "meshblock/meshblock.cpp"
-#include "meshblock/meshblock_output.cpp"
+#include "meshblock/meshblock_aux.cpp"
 #include "meshblock/particles.cpp"
 #include "meshblock/species.cpp"
 #include "simulation.cpp"
