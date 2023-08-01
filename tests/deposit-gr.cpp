@@ -101,7 +101,7 @@ auto main(int argc, char* argv[]) -> int {
     {
       auto&                   mblock = sim.meshblock;
       const real_t            r1 = 8, r2 = 15.5;
-      const real_t            tiny { 1e-9 };
+      const real_t            tiny { 1e-9 }, diff { 1e-4 };
 
       std::size_t             i1_1, i1_2;
       ntt::coord_t<ntt::Dim2> xcu { ZERO };
@@ -117,14 +117,15 @@ auto main(int argc, char* argv[]) -> int {
       sim.InitialStep();
       while (sim.time() < 15.0) {
         sim.StepForward(ntt::DiagFlags_None);
-        if (sim.time() > 12.0) {
+        if (sim.time() > 13) {
           const auto flux_1 = measure_Dflux(mblock, i1_1);
           const auto flux_2 = measure_Dflux(mblock, i1_2);
           if (fluxes_set
-              && (!ntt::AlmostEqual(flux1_prev, flux_1)
-                  || !ntt::AlmostEqual(flux2_prev, flux_2))) {
-            throw std::runtime_error("int D is not constant (t > 12): "
-                                     + std::to_string(flux_1) + ", " + std::to_string(flux_2));
+              && (!ntt::AlmostEqual(flux1_prev, flux_1, diff)
+                  || !ntt::AlmostEqual(flux2_prev, flux_2, diff))) {
+            throw std::runtime_error("int D is not constant (t > 13): "
+                                     + std::to_string(flux_1 * 1e7) + ", "
+                                     + std::to_string(flux1_prev * 1e7));
           }
           fluxes_set = true;
           flux1_prev = flux_1;

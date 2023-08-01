@@ -3,10 +3,10 @@ cmake_policy(SET CMP0110 NEW)
 
 set(PROJECT_NAME entity)
 
-project(${PROJECT_NAME}
+project(
+  ${PROJECT_NAME}
   VERSION 1.0.0.1
-  LANGUAGES CXX C
-)
+  LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
@@ -15,43 +15,74 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults.cmake)
 
 # defaults
-set(DEBUG ${default_debug} CACHE BOOL "Debug mode")
-set(engine ${default_engine} CACHE STRING "Simulation engine")
-set(precision ${default_precision} CACHE STRING "Precision")
-set(pgen ${default_pgen} CACHE STRING "Problem generator")
-set(ext_force ${default_ext_force} CACHE BOOL "External force field")
+set(DEBUG
+    ${default_debug}
+    CACHE BOOL "Debug mode")
+set(engine
+    ${default_engine}
+    CACHE STRING "Simulation engine")
+set(precision
+    ${default_precision}
+    CACHE STRING "Precision")
+set(pgen
+    ${default_pgen}
+    CACHE STRING "Problem generator")
+set(ext_force
+    ${default_ext_force}
+    CACHE BOOL "External force field")
 
-set(gui ${default_gui} CACHE BOOL "Use GUI [nttiny]")
-set(output ${default_output} CACHE BOOL "Enable output")
+set(gui
+    ${default_gui}
+    CACHE BOOL "Use GUI [nttiny]")
+set(output
+    ${default_output}
+    CACHE BOOL "Enable output")
 
-set(mpi ${default_mpi} CACHE BOOL "Use MPI")
+set(mpi
+    ${default_mpi}
+    CACHE BOOL "Use MPI")
 
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(${DEBUG} STREQUAL "OFF")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "CMake build type")
+  set(CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
   message(STATUS "Release mode")
 else()
-  set(CMAKE_BUILD_TYPE Debug CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
+  set(CMAKE_BUILD_TYPE
+      Debug
+      CACHE STRING "CMake build type")
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
   message(STATUS "Debug mode")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
 
 # options
-set(simulation_engines "sandbox" "pic" "grpic" CACHE STRING "Simulation engines")
-set(precisions "single" "double" CACHE STRING "Precisions")
-set(sr_metrics "minkowski" "spherical" "qspherical" CACHE STRING "SR metrics")
-set(gr_metrics "kerr_schild" "qkerr_schild" "kerr_schild_0" CACHE STRING "GR metrics")
+set(simulation_engines
+    "sandbox" "pic" "grpic"
+    CACHE STRING "Simulation engines")
+set(precisions
+    "single" "double"
+    CACHE STRING "Precisions")
+set(sr_metrics
+    "minkowski" "spherical" "qspherical"
+    CACHE STRING "SR metrics")
+set(gr_metrics
+    "kerr_schild" "qkerr_schild" "kerr_schild_0"
+    CACHE STRING "GR metrics")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
 # ------------------------- Third-Party Tests ------------------------------ #
-set(BUILD_TESTING OFF CACHE BOOL "Build tests")
+set(BUILD_TESTING
+    OFF
+    CACHE BOOL "Build tests")
 
 # ------------------------------ Dependencies ------------------------------ #
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
@@ -103,7 +134,9 @@ else()
 
   # ------------------------------- Main source ------------------------------ #
   set_engine(${engine})
-  set(metric ${default_metric} CACHE STRING "Metric")
+  set(metric
+      ${default_metric}
+      CACHE STRING "Metric")
   set_metric(${metric} ${engine})
   set_problem_generator(${pgen} ${engine})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
