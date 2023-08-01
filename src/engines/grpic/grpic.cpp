@@ -29,7 +29,6 @@ namespace ntt {
       }
       WaitAndSynchronize();
     }
-    Simulation<D, GRPICEngine>::Finalize();
   }
 
   template <Dimension D>

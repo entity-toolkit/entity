@@ -71,24 +71,12 @@ namespace ntt {
     const auto ni2 = static_cast<int>(mesh.Ni2());
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
-        // radial boundary conditions
         if ((i1(p) < 0) || (i1(p) >= ni1)) {
+          // radial boundary conditions
           tag(p) = static_cast<short>(ParticleTag::dead);
-        }
-        // axis boundaries
-        if ((i2(p) < 0) || (i2(p) >= ni2)) {
-          i2(p)  = math::min(math::max(i2(p), 0), (int)ni2 - 1);
-          dx2(p) = static_cast<prtldx_t>(1.0) - dx2(p);
-          phi(p) = phi(p) + constant::PI;
-          // reverse u^theta
-          coord_t<Dim3> x_p { get_prtl_x1(*this, p), get_prtl_x2(*this, p), phi(p) };
-          vec_t<Dim3>   u_hat, u_cart;
-          mesh.metric.v3_Cart2Hat(x_p, { ux1(p), ux2(p), ux3(p) }, u_hat);
-          // reverse u^theta
-          mesh.metric.v3_Hat2Cart(x_p, { u_hat[0], -u_hat[1], u_hat[2] }, u_cart);
-          ux1(p) = u_cart[0];
-          ux2(p) = u_cart[1];
-          ux3(p) = u_cart[2];
+        } else if ((i2(p) < 1) || (i2(p) >= ni2 - 1)) {
+          // axis boundaries
+          ux1(p) = -ux1(p);    // reflect u_x
         }
       });
   }
@@ -110,7 +98,7 @@ namespace ntt {
     NTTHostErrorIf(mesh.boundaries[1][0] != BoundaryCondition::AXIS,
                    "2D GR must have axis boundaries in x2");
 
-    const auto    rh = mesh.metric.getParameter("rh");
+    const auto    rh = mesh.metric.getParameter("rhorizon");
     coord_t<Dim2> xh_CU { ZERO };
     mesh.metric.x_Sph2Code({ rh, ZERO }, xh_CU);
     auto       i1h      = static_cast<int>(xh_CU[0]);
@@ -126,23 +114,12 @@ namespace ntt {
     const auto ni2 = static_cast<int>(mesh.Ni2());
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
-        // radial boundary conditions
         if ((i1(p) < i1h) || (i1(p) >= ni1)) {
+          // radial boundary conditions
           tag(p) = static_cast<short>(ParticleTag::dead);
-        }
-        // axis boundaries
-        if ((i2(p) < 0) || (i2(p) >= ni2)) {
-          if (i2(p) < 0) {
-            // reflect particle coordinate
-            i2(p) = 0;
-          } else {
-            // reflect particle coordinate
-            i2(p) = ni2 - 1;
-          }
-          dx2(p) = static_cast<prtldx_t>(1.0) - dx2(p);
-          phi(p) = phi(p) + constant::PI;
-          // reverse u^theta
-          ux2(p) = -ux2(p);
+        } else if ((i2(p) < 1) || (i2(p) >= ni2 - 1)) {
+          // axis boundaries
+          ux2(p) = -ux2(p);    // reflect u_theta
         }
       });
   }

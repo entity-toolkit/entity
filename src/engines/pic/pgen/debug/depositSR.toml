@@ -1,19 +1,20 @@
 [simulation]
 title   = "DepositSR"
-runtime = 2.0
+runtime = 50.0
 
 [domain]
 qsph_r0     = 0.0
-qsph_h      = 0.0
+qsph_h      = 0.5
 sph_rabsorb = 19.0
 resolution  = [512, 512]
 extent      = [0.8, 20.0]
 boundaries  = [["CUSTOM", "ABSORB"], ["AXIS"]]
+# extent     = [0.0, 10.0, 0.0, 10.0]
+# boundaries = [["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
 CFL             = 0.5
-current_filters = 2
-deposit_ON      = true
+current_filters = 4
 
 [units]
 ppc0       = 4.0
@@ -37,20 +38,16 @@ charge   = 1.0
 maxnpart = 1e2
 
 [problem]
-# r0   = [5.000, 15.0, 18.0, 4.0, 12.0]
-# th0  = [1.5707963268, 0.7853981634, 2.3561944902, 0.1, 3.0415926536]
-# ph0  = [0.0, 0.0, 0.0, 0.0, 0.0]
-# ur0  = [5.0, 5.0, 5.0, 5.0, 5.0]
-# uth0 = [4.0, 7.0, 4.0, -5.0, 9.0]
-
-r0   = [5.98]
-th0  = [0.05]
-ph0  = [0.0]
-# ur0  = [0.000500417084]
-# uth0 = [0.01]
-
-ur0  = [0.0500417084]
-uth0 = [1.0]
+# x1 = [5.0]
+# x2 = [1.570796]
+# x3 = [0.0]
+# ux1 = [-1.0]
+# ux2 = [-1.0]
+x1  = [5.000, 15.0, 18.0, 4.0, 12.0]
+x2  = [1.5707963268, 0.7853981634, 2.3561944902, 0.1, 3.0415926536]
+x3  = [0.0, 0.0, 0.0, 0.0, 0.0]
+ux1 = [5.0, 5.0, 5.0, 5.0, 5.0]
+ux2 = [4.0, 7.0, 4.0, -5.0, 9.0]
 
 [output]
 fields        = ["E", "J", "divE"]

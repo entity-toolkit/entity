@@ -128,14 +128,6 @@ namespace ntt {
         xp_f[i] = static_cast<real_t>(Ip_f[i]) + static_cast<real_t>(dIp_f[i]);
       }
 
-      if (Ip_f[1] < 0) {    // north
-        Ip_f[1] = 0;
-        xp_f[1] = -xp_f[1];
-      } else if (Ip_f[1] >= static_cast<int>(m_xi2max)) {    // south
-        Ip_f[1] = static_cast<int>(m_xi2max) - 1;
-        xp_f[1] = TWO * m_xi2max - xp_f[1];
-      }
-
       // find 3-velocity
       vec_t<Dim3> u_cntrv { ZERO };
       m_mblock.metric.v3_Cov2Cntrv(
@@ -162,10 +154,9 @@ namespace ntt {
       }
 
       for (auto i { 0 }; i < static_cast<short>(D); ++i) {
-        const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
-        xp_r[i]
-          = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                       math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
+        xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                             math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
+                                        HALF * (xp_i[i] + xp_f[i])));
       }
     }
   };

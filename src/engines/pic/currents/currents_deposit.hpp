@@ -204,22 +204,13 @@ namespace ntt {
     xp_f[0] = static_cast<real_t>(Ip_f[0]) + static_cast<real_t>(m_particles.dx1(p));
     xp_f[1] = static_cast<real_t>(Ip_f[1]) + static_cast<real_t>(m_particles.dx2(p));
 
-    real_t x2;
-    if (Ip_f[1] < 0) {
-      x2 = -xp_f[1];
-    } else if (Ip_f[1] >= static_cast<int>(m_xi2max)) {
-      x2 = TWO * m_xi2max - xp_f[1];
-    } else {
-      x2 = xp_f[1];
-    }
-
     m_mblock.metric.v3_Cart2Cntrv(
-      { xp_f[0], x2, m_particles.phi(p) },
+      { xp_f[0], xp_f[1], m_particles.phi(p) },
       { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
       vp);
 
     // make sure the velocity is defined at the axis
-    if (Ip_f[1] == 0 && AlmostEqual(m_particles.dx2(p), 0.0f)) {
+    if (Ip_f[1] == 0 && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
       vp[2] = ZERO;
     } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
                && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
@@ -232,22 +223,10 @@ namespace ntt {
     vp[1] *= inv_energy;
     vp[2] *= inv_energy;
 
-    xp_i[0] = xp_f[0] - m_dt * vp[0];
-    Ip_i[0] = static_cast<int>(xp_i[0]);
-    xp_i[1] = xp_f[1] - m_dt * vp[1];
-    Ip_i[1] = static_cast<int>(xp_i[1]);
-
-    // take care of the reflection
-    if (Ip_f[1] < 0) {    // north
-      Ip_f[1] = 0;
-      xp_f[1] = -xp_f[1];
-    } else if (Ip_f[1] >= static_cast<int>(m_xi2max)) {    // south
-      Ip_f[1] = static_cast<int>(m_xi2max) - 1;
-      xp_f[1] = TWO * m_xi2max - xp_f[1];
-    }
-
 #  pragma unroll
     for (auto i { 0 }; i < 2; ++i) {
+      xp_i[i] = xp_f[i] - m_dt * vp[i];
+      Ip_i[i] = static_cast<int>(xp_i[i]);
       xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
                            math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
                                       HALF * (xp_i[i] + xp_f[i])));

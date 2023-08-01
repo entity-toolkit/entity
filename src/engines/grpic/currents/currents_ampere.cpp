@@ -20,7 +20,7 @@ namespace ntt {
     const auto rho0   = params.larmor0();
     const auto de0    = params.skindepth0();
     const auto ncells = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
-    const auto rmin   = mblock.metric.getParameter("rh");
+    const auto rmin   = mblock.metric.getParameter("rhorizon");
     const auto volume = constant::TWO_PI * SQR(rmin);
     const auto n0     = params.ppc0() * (real_t)ncells / volume;
     const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
