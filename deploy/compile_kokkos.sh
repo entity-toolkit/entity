@@ -1,5 +1,8 @@
 #!/bin/bash
-source ./aux/aux.sh
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+source ${SCRIPT_DIR}/aux/aux.sh
 
 declare -r modulename="Kokkos"
 declare -r has_modulefile="ON"
@@ -11,8 +14,8 @@ declare arch="${default_arch}"
 default_mpi_path="module:ompi"
 declare with_mpi="${default_mpi_path}"
 
-source ./aux/default.sh
-source ./aux/globals.sh
+source ${SCRIPT_DIR}/aux/default.sh
+source ${SCRIPT_DIR}/aux/globals.sh
 
 function usage {
   common_help
@@ -30,8 +33,8 @@ function usage {
   echo ""
 }
 
-source ./aux/argparse.sh
-source ./aux/config.sh
+source ${SCRIPT_DIR}/aux/argparse.sh
+source ${SCRIPT_DIR}/aux/config.sh
 
 declare -a archs
 IFS=',' read -ra archs <<<"$arch"
@@ -94,7 +97,7 @@ for flag in "${flags[@]}"; do
   )
 done
 
-source ./aux/run.sh
+source ${SCRIPT_DIR}/aux/run.sh
 
 function prebuild {
   if [ $use_modules = "ON" ]; then

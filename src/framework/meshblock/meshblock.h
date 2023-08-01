@@ -89,14 +89,6 @@ namespace ntt {
      */
     void Verify();
 
-    /**
-     * @brief Remove dead particles.
-     * @param max_dead_frac Maximum fraction of dead particles allowed ...
-     * ... w.r.t. the living ones (npart).
-     * @return Vector of the fraction of dead particles pre deletion.
-     */
-    auto RemoveDeadParticles(const double&) -> std::vector<double>;
-
     /* ----------------- Additional conversions and computations ---------------- */
 
     /**
@@ -117,6 +109,13 @@ namespace ntt {
      * @brief The result is stored inside the buffer(i1, i2, buffer_comp).
      */
     void ComputeVectorPotential(ndfield_t<D, 6>&, const int&) {}
+
+    /**
+     * @brief Compute the divergence of the E/D-field.
+     * @param buffer Buffer to store the result in.
+     * @param buffer_comp Component of the buffer to store the result in.
+     */
+    void ComputeDivergenceED(ndfield_t<D, 3>&, const int&);
 
     /**
      * @brief Compute particle moment for output or other usage.

@@ -61,12 +61,13 @@ namespace ntt {
     Metadomain<D>    m_metadomain;
 
   public:
+    static inline constexpr SimulationEngine engine { S };
     // meshblock with all the fields / metric / and particles
-    Meshblock<D, S>    meshblock;
+    Meshblock<D, S>        meshblock;
     // writer
-    Writer<D, S>       writer;
+    Writer<D, S>           writer;
     // random number pool
-    RandomNumberPool_t random_pool;
+    RandomNumberPool_t     random_pool;
 
     /**
      * @brief Constructor for simulation class.
@@ -91,21 +92,15 @@ namespace ntt {
     void               PrintDetails();
 
     /**
-     * @brief Finalize the simulation objects.
-     */
-    void               Finalize();
-
-    /**
      * @brief Diagnostic logging.
      * @param os output stream.
      */
-    void               PrintDiagnostics(const std::size_t&         step,
-                                        const real_t&              time,
-                                        const std::vector<double>& fractions,
-                                        const timer::Timers&       timer,
-                                        std::vector<long double>&  tstep_durations,
-                                        const DiagFlags            diag_flags,
-                                        std::ostream&              os = std::cout);
+    void               PrintDiagnostics(const std::size_t&        step,
+                                        const real_t&             time,
+                                        const timer::Timers&      timer,
+                                        std::vector<long double>& tstep_durations,
+                                        const DiagFlags           diag_flags,
+                                        std::ostream&             os = std::cout);
 
     /* -------------------------------------------------------------------------- */
     /*                       Inter-meshblock communications                       */
@@ -120,6 +115,14 @@ namespace ntt {
      * @brief Synchronize currents between the blocks by accumulating.
      */
     void               CurrentsSynchronize();
+
+    /* -------------------------------------------------------------------------- */
+    /*                          Engine-agnostic routines                          */
+    /* -------------------------------------------------------------------------- */
+    /**
+     * @brief Apply boundary conditions for particles.
+     */
+    void               ParticlesBoundaryConditions();
 
     /* -------------------------------------------------------------------------- */
     /*                                   Getters                                  */

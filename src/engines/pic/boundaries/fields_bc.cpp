@@ -128,7 +128,8 @@ namespace ntt {
           mblock.em(i1, i2_max, em::ex2)     = -mblock.em(i1, i2_max - 1, em::ex2);
         });
     } else {
-      NTTHostError("2d boundary condition in theta have to be AXIS");
+      NTTHostErrorIf(mblock.boundaries[1][0] != BoundaryCondition::COMM,
+                     "2d boundary condition in theta have to be AXIS");
     }
   }
 

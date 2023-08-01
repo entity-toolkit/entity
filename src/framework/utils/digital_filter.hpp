@@ -116,7 +116,7 @@ namespace ntt {
       cur_ij                  = FILTER_IN_I1(m_buffer, cur::jx1, i, j);
       cur_ijp1                = FILTER_IN_I1(m_buffer, cur::jx1, i, j + 1);
       // ... filter in theta
-      m_array(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijp1;
+      m_array(i, j, cur::jx1) = INV_2 * cur_ij + INV_2 * cur_ijp1;
 
       m_array(i, j, cur::jx3) = ZERO;
 
@@ -133,14 +133,13 @@ namespace ntt {
       cur_ijp1                = FILTER_IN_I1(m_buffer, cur::jx1, i, j + 1);
       cur_ijm1                = FILTER_IN_I1(m_buffer, cur::jx1, i, j - 1);
       // ... filter in theta
-      m_array(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
+      m_array(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * (cur_ijp1 + cur_ijm1);
 
       // ... filter in r
       cur_ij                  = FILTER_IN_I1(m_buffer, cur::jx3, i, j);
       cur_ijp1                = FILTER_IN_I1(m_buffer, cur::jx3, i, j + 1);
-      cur_ijm1                = ZERO;
       // ... filter in theta
-      m_array(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
+      m_array(i, j, cur::jx3) = INV_2 * cur_ij + INV_4 * cur_ijp1;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
@@ -156,14 +155,13 @@ namespace ntt {
       cur_ijp1                = FILTER_IN_I1(m_buffer, cur::jx1, i, j + 1);
       cur_ijm1                = FILTER_IN_I1(m_buffer, cur::jx1, i, j - 1);
       // ... filter in theta
-      m_array(i, j, cur::jx1) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
+      m_array(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * (cur_ijm1 + cur_ijp1);
 
       // ... filter in r
       cur_ij                  = FILTER_IN_I1(m_buffer, cur::jx3, i, j);
-      cur_ijp1                = ZERO;
       cur_ijm1                = FILTER_IN_I1(m_buffer, cur::jx3, i, j - 1);
       // ... filter in theta
-      m_array(i, j, cur::jx3) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
+      m_array(i, j, cur::jx3) = INV_2 * cur_ij + INV_4 * cur_ijm1;
 
       /* ---------------------------------- theta --------------------------------- */
       // ... filter in r
@@ -177,7 +175,7 @@ namespace ntt {
       cur_ij                  = FILTER_IN_I1(m_buffer, cur::jx1, i, j);
       cur_ijm1                = FILTER_IN_I1(m_buffer, cur::jx1, i, j - 1);
       // ... filter in theta
-      m_array(i, j, cur::jx1) = INV_2 * cur_ij + INV_4 * cur_ijm1;
+      m_array(i, j, cur::jx1) = INV_2 * cur_ij + INV_2 * cur_ijm1;
 
       m_array(i, j, cur::jx3) = ZERO;
     } else {

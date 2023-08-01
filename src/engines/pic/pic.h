@@ -111,10 +111,6 @@ namespace ntt {
      * @param f coefficient that gets multiplied by the timestep (def. 1.0).
      */
     void ParticlesPush(const real_t& f = ONE);
-    /**
-     * @brief Apply boundary conditions for particles.
-     */
-    void ParticlesBoundaryConditions();
 
     /**
      * @brief Benchmarking step.

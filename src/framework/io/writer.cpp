@@ -33,6 +33,10 @@ namespace ntt {
   void Writer<D, S>::Initialize(const SimulationParams& params,
                                 const Metadomain<D>&    metadomain,
                                 const Meshblock<D, S>&  mblock) {
+    m_output_enabled = (params.outputFormat() != "disabled");
+    if (!m_output_enabled) {
+      return;
+    }
     m_io = m_adios.DeclareIO("EntityOutput");
     m_io.SetEngine(params.outputFormat() != "disabled" ? params.outputFormat() : "HDF5");
     adios2::Dims shape, start, count;
@@ -78,7 +82,7 @@ namespace ntt {
       }
     }
     auto isLayoutRight
-      = std::is_same<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>::value;
+      = std::is_same_v<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>;
 
     if (isLayoutRight) {
       m_io.DefineAttribute("LayoutRight", 1);
@@ -101,52 +105,54 @@ namespace ntt {
       }
     }
     /* ---------------- Determine particle quantities to output ----------------- */
-    // for (std::size_t sp { 0 }; sp < mblock.particles.size(); ++sp) {
-    //   m_io.DefineAttribute<std::string>("species-" + std::to_string(sp + 1),
-    //                                     mblock.particles[sp].label());
-    // }
-    // for (auto& var : params.outputParticles()) {
-    //   auto prtl_to_output = InterpretInputForParticleOutput(var);
-    //   if (prtl_to_output.speciesID().size() == 0) {
-    //     // if no species specified, pick all
-    //     std::vector<int> species;
-    //     for (std::size_t s { 0 }; s < params.species().size(); ++s) {
-    //       species.push_back(s + 1);
-    //     }
-    //     prtl_to_output.setSpeciesID(species);
-    //   }
-    //   m_particles.push_back(prtl_to_output);
-    // }
-    //     for (auto& prtl : m_particles) {
-    //       for (auto& sp_index : prtl.speciesID()) {
-    //         if (prtl.id() == PrtlID::X) {
-    //           // !TODO: change this to a pre-defined argument (number of coords or smth)
-    // #  ifndef MINKOWSKI_METRIC
-    //           const auto dmax = (D == Dim2) ? 3 : (short)D;
-    // #  else
-    //           const auto dmax = (short)D;
-    // #  endif
-    //           for (auto d { 0 }; d < dmax; ++d) {
-    //             m_io.DefineVariable<real_t>(
-    //               "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
-    //               {},
-    //               {},
-    //               { adios2::UnknownDim });
-    //           }
-    //         } else if (prtl.id() == PrtlID::U) {
-    //           for (auto d { 0 }; d < 3; ++d) {
-    //             m_io.DefineVariable<real_t>(
-    //               "U" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
-    //               {},
-    //               {},
-    //               { adios2::UnknownDim });
-    //           }
-    //         } else if (prtl.id() == PrtlID::W) {
-    //           m_io.DefineVariable<real_t>(
-    //             "W_" + std::to_string(sp_index), {}, {}, { adios2::UnknownDim });
-    //         }
-    //       }
-    //     }
+    for (std::size_t sp { 0 }; sp < mblock.particles.size(); ++sp) {
+      m_io.DefineAttribute<std::string>("species-" + std::to_string(sp + 1),
+                                        mblock.particles[sp].label());
+    }
+    for (auto& var : params.outputParticles()) {
+      auto prtl_to_output = InterpretInputForParticleOutput(var);
+      if (prtl_to_output.speciesID().size() == 0) {
+        // if no species specified, pick all
+        std::vector<int> species;
+        for (std::size_t s { 0 }; s < params.species().size(); ++s) {
+          species.push_back(s + 1);
+        }
+        prtl_to_output.setSpeciesID(species);
+      }
+      m_particles.push_back(prtl_to_output);
+    }
+    for (auto& prtl : m_particles) {
+      for (auto& sp_index : prtl.speciesID()) {
+        if (prtl.id() == PrtlID::X) {
+          // !TODO: change this to a pre-defined argument (number of coords or smth)
+#  ifndef MINKOWSKI_METRIC
+          const auto dmax = (D == Dim2) ? 3 : (short)D;
+#  else
+          const auto dmax = (short)D;
+#  endif
+          for (auto d { 0 }; d < dmax; ++d) {
+            m_io.DefineVariable<real_t>(
+              "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
+              { adios2::UnknownDim },
+              { adios2::UnknownDim },
+              { adios2::UnknownDim });
+          }
+        } else if (prtl.id() == PrtlID::U) {
+          for (auto d { 0 }; d < 3; ++d) {
+            m_io.DefineVariable<real_t>(
+              "U" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
+              { adios2::UnknownDim },
+              { adios2::UnknownDim },
+              { adios2::UnknownDim });
+          }
+        } else if (prtl.id() == PrtlID::W) {
+          m_io.DefineVariable<real_t>("W_" + std::to_string(sp_index),
+                                      { adios2::UnknownDim },
+                                      { adios2::UnknownDim },
+                                      { adios2::UnknownDim });
+        }
+      }
+    }
     m_writer = m_io.Open(params.title() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
                          adios2::Mode::Write);
     m_adios.EnterComputationBlock();
@@ -272,11 +278,10 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteAll(const SimulationParams& params,
+                              const Metadomain<D>&    metadomain,
                               Meshblock<D, S>&        mblock,
                               const real_t&           time,
                               const std::size_t&      tstep) {
-    // check if output is enabled
-    auto output_enabled = (params.outputFormat() != "disabled");
     // check if output is done by # of steps or by physical time
     auto output_by_step = (params.outputIntervalTime() <= 0.0);
     auto output_by_time = !output_by_step;
@@ -287,7 +292,7 @@ namespace ntt {
                           || (m_last_output_time <= 0.0);
     // combine the logic
     auto do_output
-      = (output_enabled
+      = (m_output_enabled
          && ((output_by_step && is_output_step) || (output_by_time && is_output_time)));
 
     if (do_output) {
@@ -301,7 +306,7 @@ namespace ntt {
       m_writer.Put(m_io.InquireVariable<real_t>("Time"), &time);
 
       WriteFields(params, mblock, time, tstep);
-      // WriteParticles(params, mblock, time, tstep);
+      WriteParticles(params, metadomain, mblock, time, tstep);
 
       m_writer.EndStep();
       m_last_output_time = time;
@@ -325,12 +330,13 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteParticles(const SimulationParams& params,
+                                    const Metadomain<D>&    metadomain,
                                     Meshblock<D, S>&        mblock,
                                     const real_t&,
                                     const std::size_t&) {
     // traverse all the particle quantities and put them.
     for (auto& prtl : m_particles) {
-      prtl.put<D, S>(m_io, m_writer, params, mblock);
+      prtl.put<D, S>(m_io, m_writer, params, metadomain, mblock);
     }
   }
 
@@ -342,6 +348,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteAll(const SimulationParams&,
+                              const Metadomain<D>&,
                               Meshblock<D, S>&,
                               const real_t&,
                               const std::size_t&) {}
@@ -354,6 +361,7 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::WriteParticles(const SimulationParams&,
+                                    const Metadomain<D>&,
                                     Meshblock<D, S>&,
                                     const real_t&,
                                     const std::size_t&) {}

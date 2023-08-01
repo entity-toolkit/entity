@@ -31,7 +31,6 @@ namespace ntt {
       }
       WaitAndSynchronize();
     }
-    Simulation<D, PICEngine>::Finalize();
   }
 
   template <Dimension D>
@@ -55,10 +54,11 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
-    auto                            params = *(this->params());
-    auto&                           mblock = this->meshblock;
-    auto&                           wrtr   = this->writer;
-    auto&                           pgen   = this->problem_generator;
+    const auto                      params     = *(this->params());
+    const auto                      metadomain = *(this->metadomain());
+    auto&                           mblock     = this->meshblock;
+    auto&                           wrtr       = this->writer;
+    auto&                           pgen       = this->problem_generator;
 
     timer::Timers                   timers({ "FieldSolver",
                                              "FieldBoundaries",
@@ -68,7 +68,6 @@ namespace ntt {
                                              "UserSpecific",
                                              "Output" },
                          params.blockingTimers());
-    static std::vector<double>      dead_fractions  = {};
     static std::vector<long double> tstep_durations = {};
 
     if (params.fieldsolverEnabled()) {
@@ -91,10 +90,6 @@ namespace ntt {
       pgen.UserDriveParticles(this->m_time, params, mblock);
       timers.stop("UserSpecific");
 
-      timers.start("ParticleBoundaries");
-      ParticlesBoundaryConditions();
-      timers.stop("ParticleBoundaries");
-
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
         CurrentsDeposit();
@@ -110,9 +105,7 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
-      if ((params.shuffleInterval() > 0) && (this->m_tstep % params.shuffleInterval() == 0)) {
-        dead_fractions = mblock.RemoveDeadParticles(params.maxDeadFraction());
-      }
+      this->ParticlesBoundaryConditions();
       this->Communicate(Comm_Prtl);
       timers.stop("ParticleBoundaries");
     }
@@ -142,11 +135,10 @@ namespace ntt {
     }
 
     timers.start("Output");
-    wrtr.WriteAll(params, mblock, this->m_time, this->m_tstep);
+    wrtr.WriteAll(params, metadomain, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
-    this->PrintDiagnostics(
-      this->m_tstep, this->m_time, dead_fractions, timers, tstep_durations, diag_flags);
+    this->PrintDiagnostics(this->m_tstep, this->m_time, timers, tstep_durations, diag_flags);
 
     this->m_time += mblock.timestep();
     pgen.setTime(this->m_time);

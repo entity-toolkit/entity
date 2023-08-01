@@ -1,6 +1,6 @@
 import argparse
 import pathlib
-import tomllib
+from pip._vendor import tomli
 from string import Template
 import os
 from typing import Final
@@ -111,7 +111,12 @@ def get_suffix(debug=False, mpi=False, cuda=False, archs=[]):
         + ("/mpi" if mpi else "")
         + ("/cuda" if cuda else "")
         + "/"
-        + "/".join(f"{arch.lower()}" for arch in archs)
+        + "/".join(
+            f"{arch.lower()}"
+            for arch in sorted(
+                archs, key=lambda x: not any([any(ar in x for ar in gpu_archs)])
+            )
+        )
     )
 
 
@@ -119,8 +124,8 @@ if __name__ == "__main__":
     args = arg_parser.parse_args()
     configfname = args.config
     dependency_build_scripts = []
-    with open(configfname, "rb") as f:
-        config = tomllib.load(f)
+    with open(configfname, "r", encoding="utf-8") as f:
+        config = tomli.loads(f.read())
         modulepath = pathlib.Path(os.path.expandvars(config["entity"]["modulepath"]))
         instances = config["entity"]["instances"]
         dependencies = config["dependencies"]
@@ -140,7 +145,9 @@ if __name__ == "__main__":
                         kokkos_setenvs = []
                         modules = [cc_module] if cc_module else []
                         omp_threads = "1" if mpi else "[exec nproc]"
-                        entity_setenvs += [["Entity_DEBUG", "ON" if debug else "OFF"]]
+                        entity_setenvs += [
+                            ["Entity_ENABLE_DEBUG", "ON" if debug else "OFF"]
+                        ]
                         entity_setenvs += [
                             ["Entity_ENABLE_MPI", "ON" if mpi else "OFF"]
                         ]

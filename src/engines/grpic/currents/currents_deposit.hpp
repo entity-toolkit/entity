@@ -140,7 +140,6 @@ namespace ntt {
       vp[1]   = m_particles.ux2(p) / gamma;
       vp[2]   = m_particles.ux3(p) / gamma;
 
-      // !Q: no alpha here, right?
       Ip_i[0] = m_particles.i1_prev(p);
       xp_i[0] = static_cast<real_t>(m_particles.i1_prev(p))
                 + static_cast<real_t>(m_particles.dx1_prev(p));
@@ -155,10 +154,9 @@ namespace ntt {
       }
 
       for (auto i { 0 }; i < static_cast<short>(D); ++i) {
-        const real_t xi_mid = HALF * (xp_i[i] + xp_f[i]);
-        xp_r[i]
-          = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                       math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])), xi_mid));
+        xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+                             math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
+                                        HALF * (xp_i[i] + xp_f[i])));
       }
     }
   };

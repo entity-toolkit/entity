@@ -40,6 +40,7 @@ namespace ntt {
     std::vector<OutputParticles> m_particles;
 
     real_t                       m_last_output_time { -1.0 };
+    bool                         m_output_enabled { true };
 #endif
 
   public:
@@ -47,11 +48,17 @@ namespace ntt {
     ~Writer() = default;
 
     void Initialize(const SimulationParams&, const Metadomain<D>&, const Meshblock<D, S>&);
-    void WriteAll(const SimulationParams&, Meshblock<D, S>&, const real_t&, const std::size_t&);
+    void WriteAll(const SimulationParams&,
+                  const Metadomain<D>&,
+                  Meshblock<D, S>&,
+                  const real_t&,
+                  const std::size_t&);
 
     void Finalize() {
 #ifdef OUTPUT_ENABLED
-      m_writer.Close();
+      if (m_output_enabled) {
+        m_writer.Close();
+      }
 #endif
     }
 
@@ -64,6 +71,7 @@ namespace ntt {
                      const std::size_t&);
 
     void WriteParticles(const SimulationParams&,
+                        const Metadomain<D>&,
                         Meshblock<D, S>&,
                         const real_t&,
                         const std::size_t&);

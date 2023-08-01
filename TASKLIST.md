@@ -53,6 +53,10 @@
   - [x] deposition near the axes
   - [x] filtering near the axes
 
+### Readability/modulability improvements
+
+  - [ ] make kernels accept views instead of meshblocks
+
 ### Performance improvements to try
 
 - [ ] removing temporary variables in interpolation

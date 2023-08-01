@@ -1,5 +1,8 @@
 #!/bin/bash
-source ./aux/aux.sh
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+source ${SCRIPT_DIR}/aux/aux.sh
 
 declare -r modulename="HDF5"
 declare -r has_modulefile="ON"
@@ -7,8 +10,8 @@ declare -r has_modulefile="ON"
 default_mpi_path="module:ompi"
 declare with_mpi="${default_mpi_path}"
 
-source ./aux/default.sh
-source ./aux/globals.sh
+source ${SCRIPT_DIR}/aux/default.sh
+source ${SCRIPT_DIR}/aux/globals.sh
 
 function usage {
   common_help
@@ -18,8 +21,8 @@ function usage {
   echo ""
 }
 
-source ./aux/argparse.sh
-source ./aux/config.sh
+source ${SCRIPT_DIR}/aux/argparse.sh
+source ${SCRIPT_DIR}/aux/config.sh
 
 if [ ! $with_mpi = "OFF" ]; then
   hdf5_module+="/mpi"
@@ -44,7 +47,7 @@ compile_args+=(
   -O hdf5.log
 )
 
-source ./aux/run.sh
+source ${SCRIPT_DIR}/aux/run.sh
 
 function prebuild {
   if [ $use_modules = "ON" ]; then

@@ -26,7 +26,12 @@ namespace ntt {
                   m_params.metricParameters(),
                   m_params.species() },
       writer {},
-      random_pool { constant::RandomSeed } {
+#ifdef MPI_ENABLED
+      random_pool { constant::RandomSeed + m_metadomain.localDomain()->mpiRank() }
+#else
+      random_pool { constant::RandomSeed }
+#endif
+  {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_metadomain.localDomain()->boundaries();
 
@@ -46,6 +51,8 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::~Simulation() {
     writer.Finalize();
+    WaitAndSynchronize();
+    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>
@@ -53,6 +60,13 @@ namespace ntt {
     NTTLog();
     meshblock.Verify();
     WaitAndSynchronize();
+  }
+
+  template <Dimension D, SimulationEngine S>
+  auto Simulation<D, S>::ParticlesBoundaryConditions() -> void {
+    for (auto& species : meshblock.particles) {
+      species.BoundaryConditions(meshblock);
+    }
   }
 
   template <Dimension D, SimulationEngine S>
@@ -130,19 +144,19 @@ namespace ntt {
     if (meshblock.particles.size() > 0) {
       PLOGN_(InfoFile) << "[particles]";
       int i { 0 };
-      for (auto& prtls : meshblock.particles) {
+      for (auto& species : meshblock.particles) {
         PLOGN_(InfoFile)
           << "  [species #" << i + 1 << "]\n"
-          << std::setw(42) << std::setfill('.') << std::left << "    label: " << prtls.label()
+          << std::setw(42) << std::setfill('.') << std::left
+          << "    label: " << species.label() << "\n"
+          << std::setw(42) << std::setfill('.') << std::left << "    mass: " << species.mass()
           << "\n"
-          << std::setw(42) << std::setfill('.') << std::left << "    mass: " << prtls.mass()
-          << "\n"
           << std::setw(42) << std::setfill('.') << std::left
-          << "    charge: " << prtls.charge() << "\n"
+          << "    charge: " << species.charge() << "\n"
           << std::setw(42) << std::setfill('.') << std::left
-          << "    pusher: " << stringizeParticlePusher(prtls.pusher()) << "\n"
+          << "    pusher: " << stringizeParticlePusher(species.pusher()) << "\n"
           << std::setw(42) << std::setfill('.') << std::left
-          << "    maxnpart: " << prtls.maxnpart() << " (active: " << prtls.npart() << ")";
+          << "    maxnpart: " << species.maxnpart() << " (active: " << species.npart() << ")";
         ++i;
       }
     } else {
@@ -161,20 +175,12 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::Finalize() {
-    writer.Finalize();
-    WaitAndSynchronize();
-    NTTLog();
-  }
-
-  template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::PrintDiagnostics(const std::size_t&         step,
-                                          const real_t&              time,
-                                          const std::vector<double>& fractions,
-                                          const timer::Timers&       timers,
-                                          std::vector<long double>&  tstep_durations,
-                                          const DiagFlags            diag_flags,
-                                          std::ostream&              os) {
+  void Simulation<D, S>::PrintDiagnostics(const std::size_t&        step,
+                                          const real_t&             time,
+                                          const timer::Timers&      timers,
+                                          std::vector<long double>& tstep_durations,
+                                          const DiagFlags           diag_flags,
+                                          std::ostream&             os) {
     tstep_durations.push_back(timers.get("Total"));
     if (step % m_params.diagInterval() == 0) {
       const auto title { "time = " + std::to_string(time)
@@ -188,13 +194,7 @@ namespace ntt {
         for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
           auto& species { meshblock.particles[i] };
           os << "species #" << i << ": " << species.npart() << " ("
-             << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%";
-          if (fractions.size() == meshblock.particles.size()) {
-            auto fraction = fractions[i];
-            os << ", " << fraction * 100 << "% dead)\n";
-          } else {
-            os << ")\n";
-          }
+             << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
         }
       }
       if (diag_flags & DiagFlags_Progress) {

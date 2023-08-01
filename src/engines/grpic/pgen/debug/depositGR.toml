@@ -1,15 +1,17 @@
 [simulation]
 title   = "DepositGR"
-runtime = 100.0
+runtime = 50.0
 
 [domain]
 qsph_r0     = 0.0
-qsph_h      = 0.0
-a           = 0.95
+qsph_h      = 0.5
 sph_rabsorb = 19.0
+a           = 0.95
 resolution  = [512, 512]
 extent      = [0.8, 20.0]
 boundaries  = [["OPEN", "ABSORB"], ["AXIS"]]
+# extent     = [0.0, 10.0, 0.0, 10.0]
+# boundaries = [["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
 CFL             = 0.5
@@ -37,14 +39,21 @@ charge   = 1.0
 maxnpart = 1e2
 
 [problem]
-r0   = [5.000, 15.0, 18.0, 4.0, 12.0]
-th0  = [1.5707963268, 0.7853981634, 2.3561944902, 0.1, 3.0415926536]
-ph0  = [0.0, 0.0, 0.0, 0.0, 0.0]
-ur0  = [10.0, 10.0, 10.0, 10.0, 10.0]
-uth0 = [1.0, 1.0, 1.0, -1.0, 1.0]
+# x1 = [5.0]
+# x2 = [1.570796]
+# x3 = [0.0]
+# ux1 = [-1.0]
+# ux2 = [-1.0]
+x1  = [5.000, 15.0, 18.0, 4.0, 12.0]
+x2  = [1.5707963268, 0.7853981634, 2.3561944902, 0.1, 3.0415926536]
+x3  = [0.0, 0.0, 0.0, 0.0, 0.0]
+ux1 = [5.0, 5.0, 5.0, 5.0, 5.0]
+ux2 = [4.0, 7.0, 4.0, -5.0, 9.0]
 
 [output]
-fields        = ["D"]
-particles     = ["X"]
+fields        = ["D", "divD"]
+interval_time = 0.2
+prtl_stride   = 1
+flds_stride   = 1
+particles     = ["X", "U"]
 format        = "HDF5"
-interval_time = 0.05

@@ -7,6 +7,7 @@
 #include "config.h"
 
 #include "definitions.h"
+#include "directions.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
@@ -35,6 +36,19 @@ namespace ntt {
   // Array alias of arbitrary type
   template <typename T>
   using array_t = Kokkos::View<T, AccelMemSpace>;
+
+  template <short D>
+  using ndarray_t = typename std::conditional<
+    D == 1,
+    array_t<real_t*>,
+    typename std::conditional<
+      D == 2,
+      array_t<real_t**>,
+      typename std::conditional<
+        D == 3,
+        array_t<real_t***>,
+        typename std::conditional<D == 4, array_t<real_t****>, std::nullptr_t>::type>::type>::
+      type>::type;
 
   // Array mirror alias of arbitrary type
   template <typename T>
@@ -143,17 +157,17 @@ namespace ntt {
   void        WaitAndSynchronize();
 
   inline void GlobalInitialize(int argc, char* argv[]) {
+    Kokkos::initialize(argc, argv);
 #if defined(MPI_ENABLED)
     MPI_Init(&argc, &argv);
 #endif    // MPI_ENABLED
-    Kokkos::initialize(argc, argv);
   }
 
   inline void GlobalFinalize() {
-    Kokkos::finalize();
 #if defined(MPI_ENABLED)
     MPI_Finalize();
 #endif    // MPI_ENABLED
+    Kokkos::finalize();
   }
 
 }    // namespace ntt

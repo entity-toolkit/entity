@@ -7,14 +7,23 @@
  * Engine specific instantiations
  */
 #if defined(SANDBOX_ENGINE)
+
 #  include "sandbox.h"
-#  define SIMULATION_CONTAINER SANDBOX
+template <ntt::Dimension D>
+using SimEngine = ntt::SANDBOX<D>;
+
 #elif defined(PIC_ENGINE)
+
 #  include "pic.h"
-#  define SIMULATION_CONTAINER PIC
+template <ntt::Dimension D>
+using SimEngine = ntt::PIC<D>;
+
 #elif defined(GRPIC_ENGINE)
+
 #  include "grpic.h"
-#  define SIMULATION_CONTAINER GRPIC
+template <ntt::Dimension D>
+using SimEngine = ntt::GRPIC<D>;
+
 #endif
 
 #include <plog/Appenders/RollingFileAppender.h>
@@ -64,18 +73,18 @@ auto main(int argc, char* argv[]) -> int {
       ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
     if (res == 1) {
 #ifndef GRPIC_ENGINE
-      ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
+      SimEngine<ntt::Dim1> sim(inputdata);
       NTTLog();
       sim.Run();
 #else
       NTTHostError("GRPIC engine does not support 1D");
 #endif
     } else if (res == 2) {
-      ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
+      SimEngine<ntt::Dim2> sim(inputdata);
       NTTLog();
       sim.Run();
     } else if (res == 3) {
-      ntt::SIMULATION_CONTAINER<ntt::Dim3> sim(inputdata);
+      SimEngine<ntt::Dim3> sim(inputdata);
       NTTLog();
       sim.Run();
     } else {

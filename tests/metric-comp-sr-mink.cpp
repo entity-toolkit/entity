@@ -20,14 +20,14 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       /* ------------------------- Test components of h_ij ------------------------ */
-      const auto nx1 = (std::size_t)resolution[0];
-      const auto nx2 = (std::size_t)resolution[1];
-      const auto nx3 = (std::size_t)resolution[2];
-      auto       correct_cnt { 0 };
+      const auto  nx1 = (std::size_t)resolution[0];
+      const auto  nx2 = (std::size_t)resolution[1];
+      const auto  nx3 = (std::size_t)resolution[2];
+      std::size_t correct_cnt { 0 };
       Kokkos::parallel_reduce(
         "Metric components",
         ntt::CreateRangePolicy<ntt::Dim3>({ 0, 0, 0 }, { nx1, nx2, nx3 }),
-        Lambda(ntt::index_t i1, ntt::index_t i2, ntt::index_t i3, int& correct_cnt_l) {
+        Lambda(ntt::index_t i1, ntt::index_t i2, ntt::index_t i3, std::size_t & correct_cnt_l) {
           ntt::coord_t<ntt::Dim3> xi { (real_t)i1 + HALF,
                                        (real_t)i2 + HALF,
                                        (real_t)i3 + HALF };
@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int {
 
           const auto all_correct   = h_11isCorrect && h_22isCorrect && h_33isCorrect;
 
-          correct_cnt_l += (int)all_correct;
+          correct_cnt_l += (std::size_t)all_correct;
           if (!all_correct) {
             printf("h_11 = %f [%f]\n", h_ij_predict[0], h_11_expect);
             printf("h_22 = %f [%f]\n", h_ij_predict[1], h_22_expect);

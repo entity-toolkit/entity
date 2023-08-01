@@ -11,14 +11,15 @@
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
 
-#include "communications/communicate.cpp"
+#include "communications/comm_nompi.cpp"
+#include "communications/comm_mpi.cpp"
 #include "communications/currents_sync.cpp"
 #include "io/output_flds.cpp"
 #include "io/output_prtls.cpp"
 #include "io/writer.cpp"
 #include "meshblock/fields.cpp"
 #include "meshblock/meshblock.cpp"
-#include "meshblock/meshblock_output.cpp"
+#include "meshblock/meshblock_aux.cpp"
 #include "meshblock/particles.cpp"
 #include "meshblock/species.cpp"
 #include "simulation.cpp"
@@ -125,16 +126,19 @@ template void ntt::OutputParticles::put<ntt::Dim1, ntt::SANDBOXEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim1>&,
   ntt::Meshblock<ntt::Dim1, ntt::SANDBOXEngine>&) const;
 template void ntt::OutputParticles::put<ntt::Dim2, ntt::SANDBOXEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim2>&,
   ntt::Meshblock<ntt::Dim2, ntt::SANDBOXEngine>&) const;
 template void ntt::OutputParticles::put<ntt::Dim3, ntt::SANDBOXEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim3>&,
   ntt::Meshblock<ntt::Dim3, ntt::SANDBOXEngine>&) const;
 
 template void ntt::OutputField::put<ntt::Dim1, ntt::PICEngine>(
@@ -148,16 +152,19 @@ template void ntt::OutputParticles::put<ntt::Dim1, ntt::PICEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim1>&,
   ntt::Meshblock<ntt::Dim1, ntt::PICEngine>&) const;
 template void ntt::OutputParticles::put<ntt::Dim2, ntt::PICEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim2>&,
   ntt::Meshblock<ntt::Dim2, ntt::PICEngine>&) const;
 template void ntt::OutputParticles::put<ntt::Dim3, ntt::PICEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim3>&,
   ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&) const;
 
 template void ntt::OutputField::put<ntt::Dim2, ntt::GRPICEngine>(
@@ -169,10 +176,12 @@ template void ntt::OutputParticles::put<ntt::Dim2, ntt::GRPICEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim2>&,
   ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&) const;
 template void ntt::OutputParticles::put<ntt::Dim3, ntt::GRPICEngine>(
   adios2::IO&,
   adios2::Engine&,
   const ntt::SimulationParams&,
+  const ntt::Metadomain<ntt::Dim3>&,
   ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&) const;
 #endif    // OUTPUT_ENABLED

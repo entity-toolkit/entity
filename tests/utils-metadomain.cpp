@@ -127,6 +127,20 @@ auto main(int argc, char* argv[]) -> int {
     if (last_domain.neighbors({ 0, 1 }) != nullptr) {
       throw std::logic_error("Wrong neighbor assignment: boundaries");
     }
+
+    for (auto& domain : metadomain.domains) {
+      for (auto& direction : ntt::Directions<ntt::Dim2>::all) {
+        if ((domain.neighbors(direction) == nullptr)
+            && (domain.boundaryIn(direction) == ntt::BoundaryCondition::COMM)) {
+          throw std::logic_error("Neighbor == null && BC == COMM.");
+        }
+        if ((domain.neighbors(direction) != nullptr)
+            && (domain.boundaryIn(direction) != ntt::BoundaryCondition::COMM)) {
+          throw std::logic_error("Neighbor != null && BC != COMM.");
+        }
+      }
+    }
+
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     ntt::GlobalFinalize();

@@ -71,6 +71,8 @@ namespace ntt {
       NTTHostErrorIf(comp.size() != 1,
                      "Vector potential is always 1 components for output, but given "
                        + std::to_string(comp.size()));
+    } else if (is_divergence()) {
+      address.push_back(1);
     } else {
       NTTHostError("Unrecognized field type for output");
     }
@@ -165,6 +167,10 @@ namespace ntt {
       }
     } else if (is_vpotential()) {
       mblock.ComputeVectorPotential(mblock.bckp, address[0]);
+    } else if (is_divergence()) {
+      mblock.ComputeDivergenceED(mblock.buff, address[0]);
+    } else {
+      NTTHostError("Unrecognized field type for output");
     }
   }
 
@@ -220,7 +226,7 @@ namespace ntt {
       for (std::size_t i { 0 }; i < address.size(); ++i) {
         PutField<D, 6>(io, writer, name(i), mblock.bckp, address[i], ghosts);
       }
-    } else if (is_current() || is_moment()) {
+    } else if (is_current() || is_moment() || is_divergence()) {
       for (std::size_t i { 0 }; i < address.size(); ++i) {
         PutField<D, 3>(io, writer, name(i), mblock.buff, address[i], ghosts);
       }

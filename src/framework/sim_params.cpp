@@ -53,8 +53,6 @@ namespace ntt {
       }
       m_species.emplace_back(ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher));
     }
-    m_shuffle_interval = get("particles", "shuffle_step", defaults::shuffle_interval);
-    m_max_dead_frac    = get("particles", "max_dead_frac", defaults::max_dead_frac);
     m_use_weights      = get("particles", "use_weights", defaults::use_weights);
 
     m_metric           = SIMULATION_METRIC;

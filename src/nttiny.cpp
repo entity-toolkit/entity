@@ -2,17 +2,23 @@
 
 #include "io/cargs.h"
 #include "io/output.h"
+
 #include <nttiny/api.h>
 #include <nttiny/tools.h>
 #include <nttiny/vis.h>
 
-#ifdef PIC_ENGINE
-#  include "pic.h"
-#  define SIMULATION_CONTAINER PIC
-#elif defined(GRPIC_ENGINE)
-#  include "grpic.h"
+#if defined(PIC_ENGINE)
 
-#  define SIMULATION_CONTAINER GRPIC
+#  include "pic.h"
+template <ntt::Dimension D>
+using SimEngine = ntt::PIC<D>;
+
+#elif defined(GRPIC_ENGINE)
+
+#  include "grpic.h"
+template <ntt::Dimension D>
+using SimEngine = ntt::GRPIC<D>;
+
 #endif
 
 #include <toml.hpp>
@@ -62,8 +68,8 @@ public:
   void setData() override {
     auto&      Grid           = this->m_global_grid;
     auto&      Fields         = this->fields;
-    const auto nx1            = Grid.m_size[0] + Grid.m_ngh * 2;
-    const auto nx2            = Grid.m_size[1] + Grid.m_ngh * 2;
+    const auto nx1            = (std::size_t)(Grid.m_size[0] + Grid.m_ngh * 2);
+    const auto nx2            = (std::size_t)(Grid.m_size[1] + Grid.m_ngh * 2);
     const auto ngh            = Grid.m_ngh;
     const auto nfields        = m_fields_to_plot.size();
     const auto fields_to_plot = m_fields_to_plot;
@@ -105,9 +111,9 @@ public:
         }
         auto idx = Index((int)i1 - ngh, (int)j1 - ngh);
 
-        for (auto fi { 0 }; fi < nfields; ++fi) {
+        for (std::size_t fi { 0 }; fi < nfields; ++fi) {
           auto f = fields_to_plot[fi];
-          for (auto c { 0 }; c < f.comp.size(); ++c) {
+          for (std::size_t c { 0 }; c < f.comp.size(); ++c) {
             auto   fld = f.name(c);
 
             real_t val { ZERO };
@@ -170,8 +176,8 @@ public:
     auto&      Grid   = this->m_global_grid;
     const auto nx1 { Grid.m_size[0] + Grid.m_ngh * 2 };
     const auto nx2 { Grid.m_size[1] + Grid.m_ngh * 2 };
-    for (auto i { 0 }; i < m_fields_to_plot.size(); ++i) {
-      for (auto c { 0 }; c < m_fields_to_plot[i].comp.size(); ++c) {
+    for (std::size_t i { 0 }; i < m_fields_to_plot.size(); ++i) {
+      for (std::size_t c { 0 }; c < m_fields_to_plot[i].comp.size(); ++c) {
         Fields.insert({ m_fields_to_plot[i].name(c), new real_t[nx1 * nx2] });
       }
     }
@@ -264,31 +270,23 @@ auto main(int argc, char* argv[]) -> int {
       inputdata, "output", "fields", std::vector<std::string>());
     auto fields_stride = ntt::readFromInput<int>(inputdata, "output", "fields_stride", 1);
 
-#ifdef PIC_ENGINE
-    constexpr auto simulation_engine { ntt::PICEngine };
-#else
-    constexpr auto simulation_engine { ntt::GRPICEngine };
-#endif
-
     std::vector<ntt::OutputField> fields_to_plot;
     for (auto& fld : fields_to_plot_str) {
       fields_to_plot.push_back(ntt::InterpretInputForFieldOutput(fld));
       fields_to_plot.back().initialize(simulation_engine);
     }
 
-    ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
+    SimEngine<ntt::Dim2> sim(inputdata);
 
     sim.Verify();
     sim.ResetSimulation();
     sim.InitialStep();
     sim.PrintDetails();
-    NTTSimulationVis<simulation_engine> visApi(sim, fields_to_plot, fields_stride);
+    NTTSimulationVis<sim.engine>     visApi(sim, fields_to_plot, fields_stride);
 
-    nttiny::Visualization<real_t, 2>    vis { scale };
+    nttiny::Visualization<real_t, 2> vis { scale };
     vis.bindSimulation(&visApi);
     vis.loop();
-
-    sim.Finalize();
 
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;

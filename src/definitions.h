@@ -162,6 +162,29 @@ namespace ntt {
   using index_t       = const std::size_t;
 
   using range_tuple_t = std::pair<std::size_t, std::size_t>;
+
+  // Field IDs used for io
+  enum class FieldID {
+    E,         // Electric fields
+    divE,      // Divergence of electric fields
+    D,         // Electric fields (GR)
+    divD,      // Divergence of electric fields (GR)
+    B,         // Magnetic fields
+    H,         // Magnetic fields (GR)
+    J,         // Current density
+    A,         // Vector potential
+    T,         // Particle distribution moments
+    Rho,       // Particle mass density
+    Charge,    // Charge density
+    N,         // Particle number density
+    Nppc       // Raw number of particles per each cell
+  };
+
+  enum class PrtlID {
+    X,    // Position
+    U,    // 4-Velocity / 4-Momentum
+    W     // Weight
+  };
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
@@ -194,9 +217,6 @@ namespace ntt {
 
     const bool                 use_weights        = false;
 
-    const int                  shuffle_interval   = 0;
-    const double               max_dead_frac      = 0.0;
-
     const std::string          output_format      = options::outputs[0];
     const int                  output_interval    = 1;
     const int                  output_mom_smooth  = 1;
@@ -206,103 +226,6 @@ namespace ntt {
     const int                  diag_interval      = 1;
     const bool                 blocking_timers    = false;
   }    // namespace defaults
-
-  template <Dimension D>
-  struct Directions {};
-
-  template <>
-  struct Directions<Dim1> {
-    inline static const std::vector<std::vector<short>> all    = { { -1 }, { 1 } };
-    inline static const std::vector<std::vector<short>> unique = { { 1 } };
-  };
-
-  template <>
-  struct Directions<Dim2> {
-    inline static const std::vector<std::vector<short>> all = {
-      {-1, -1},
-      {-1,  0},
-      {-1,  1},
-      { 0, -1},
-      { 0,  1},
-      { 1, -1},
-      { 1,  0},
-      { 1,  1}
-    };
-    inline static const std::vector<std::vector<short>> unique = {
-      { 0, 1},
-      { 1, 1},
-      { 1, 0},
-      {-1, 1}
-    };
-  };
-
-  template <>
-  struct Directions<Dim3> {
-    inline static const std::vector<std::vector<short>> all = {
-      {-1, -1, -1},
-      {-1, -1,  0},
-      {-1, -1,  1},
-      {-1,  0, -1},
-      {-1,  0,  0},
-      {-1,  0,  1},
-      {-1,  1, -1},
-      {-1,  1,  0},
-      {-1,  1,  1},
-      { 0, -1, -1},
-      { 0, -1,  0},
-      { 0, -1,  1},
-      { 0,  0, -1},
-      { 0,  0,  1},
-      { 0,  1, -1},
-      { 0,  1,  0},
-      { 0,  1,  1},
-      { 1, -1, -1},
-      { 1, -1,  0},
-      { 1, -1,  1},
-      { 1,  0, -1},
-      { 1,  0,  0},
-      { 1,  0,  1},
-      { 1,  1, -1},
-      { 1,  1,  0},
-      { 1,  1,  1}
-    };
-    inline static const std::vector<std::vector<short>> unique = {
-      { 0,  0,  1},
-      { 0,  1,  0},
-      { 1,  0,  0},
-      { 1,  1,  0},
-      {-1,  1,  0},
-      { 0,  1,  1},
-      { 0, -1,  1},
-      { 1,  0,  1},
-      {-1,  0,  1},
-      { 1,  1,  1},
-      {-1,  1,  1},
-      { 1, -1,  1},
-      { 1,  1, -1}
-    };
-  };
-
-  // Field IDs used for io
-  enum class FieldID {
-    E,         // Electric fields
-    D,         // Electric fields (GR)
-    B,         // Magnetic fields
-    H,         // Magnetic fields (GR)
-    J,         // Current density
-    A,         // Vector potential
-    T,         // Particle distribution moments
-    Rho,       // Particle mass density
-    Charge,    // Charge density
-    N,         // Particle number density
-    Nppc       // Raw number of particles per each cell
-  };
-
-  enum class PrtlID {
-    X,    // Position
-    U,    // 4-Velocity / 4-Momentum
-    W     // Weight
-  };
 }    // namespace ntt
 
 /* -------------------------------------------------------------------------- */
@@ -341,5 +264,72 @@ namespace plog {
     }
   };
 }    // namespace plog
+
+#ifdef MPI_ENABLED
+
+#  include <mpi.h>
+
+/* -------------------------------------------------------------------------- */
+/*                                     MPI                                    */
+/* -------------------------------------------------------------------------- */
+
+template <typename T>
+[[nodiscard]] constexpr MPI_Datatype mpi_get_type() noexcept {
+  MPI_Datatype mpi_type = MPI_DATATYPE_NULL;
+
+  if constexpr (std::is_same<T, char>::value) {
+    mpi_type = MPI_CHAR;
+  } else if constexpr (std::is_same<T, signed char>::value) {
+    mpi_type = MPI_SIGNED_CHAR;
+  } else if constexpr (std::is_same<T, unsigned char>::value) {
+    mpi_type = MPI_UNSIGNED_CHAR;
+  } else if constexpr (std::is_same<T, wchar_t>::value) {
+    mpi_type = MPI_WCHAR;
+  } else if constexpr (std::is_same<T, signed short>::value) {
+    mpi_type = MPI_SHORT;
+  } else if constexpr (std::is_same<T, unsigned short>::value) {
+    mpi_type = MPI_UNSIGNED_SHORT;
+  } else if constexpr (std::is_same<T, signed int>::value) {
+    mpi_type = MPI_INT;
+  } else if constexpr (std::is_same<T, unsigned int>::value) {
+    mpi_type = MPI_UNSIGNED;
+  } else if constexpr (std::is_same<T, signed long int>::value) {
+    mpi_type = MPI_LONG;
+  } else if constexpr (std::is_same<T, unsigned long int>::value) {
+    mpi_type = MPI_UNSIGNED_LONG;
+  } else if constexpr (std::is_same<T, signed long long int>::value) {
+    mpi_type = MPI_LONG_LONG;
+  } else if constexpr (std::is_same<T, unsigned long long int>::value) {
+    mpi_type = MPI_UNSIGNED_LONG_LONG;
+  } else if constexpr (std::is_same<T, float>::value) {
+    mpi_type = MPI_FLOAT;
+  } else if constexpr (std::is_same<T, double>::value) {
+    mpi_type = MPI_DOUBLE;
+  } else if constexpr (std::is_same<T, long double>::value) {
+    mpi_type = MPI_LONG_DOUBLE;
+  } else if constexpr (std::is_same<T, std::int8_t>::value) {
+    mpi_type = MPI_INT8_T;
+  } else if constexpr (std::is_same<T, std::int16_t>::value) {
+    mpi_type = MPI_INT16_T;
+  } else if constexpr (std::is_same<T, std::int32_t>::value) {
+    mpi_type = MPI_INT32_T;
+  } else if constexpr (std::is_same<T, std::int64_t>::value) {
+    mpi_type = MPI_INT64_T;
+  } else if constexpr (std::is_same<T, std::uint8_t>::value) {
+    mpi_type = MPI_UINT8_T;
+  } else if constexpr (std::is_same<T, std::uint16_t>::value) {
+    mpi_type = MPI_UINT16_T;
+  } else if constexpr (std::is_same<T, std::uint32_t>::value) {
+    mpi_type = MPI_UINT32_T;
+  } else if constexpr (std::is_same<T, std::uint64_t>::value) {
+    mpi_type = MPI_UINT64_T;
+  } else if constexpr (std::is_same<T, bool>::value) {
+    mpi_type = MPI_C_BOOL;
+  }
+
+  assert(mpi_type != MPI_DATATYPE_NULL);
+  return mpi_type;
+}
+#endif
 
 #endif

@@ -25,7 +25,7 @@ set(SIMENGINE ${PROJECT_NAME}-${engine})
 file(GLOB_RECURSE SIMENGINE_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/engines/${engine}/*.cpp)
 add_library(${SIMENGINE} STATIC ${SIMENGINE_SRC_FILES})
 
-target_include_directories(${SIMENGINE} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engines ${CMAKE_CURRENT_SOURCE_DIR}/engines/${engine})
+target_include_directories(${SIMENGINE} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/engines ${CMAKE_CURRENT_SOURCE_DIR}/engines/${engine})
 
 # Main app
 add_executable(${ENTITY} entity.cpp)
