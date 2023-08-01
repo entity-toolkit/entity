@@ -423,8 +423,6 @@ class Data:
     ----------
     fname : str
         The name of the HDF5 file to read.
-    inputfname : str, optional
-        The name of the input toml file. Default is None.
 
     Attributes
     ----------
@@ -434,8 +432,6 @@ class Data:
         The HDF5 file object.
     dataset : xr.Dataset
         The xarray Dataset containing the loaded data.
-    input: dict
-        The input file as a dictionary.
     particles: list
         The list of particle species in the simulation. Each element is an Xarray Dataset.
 
@@ -455,7 +451,7 @@ class Data:
     >>> data.Bx.sel(t=10.0, method="nearest").plot()
     """
 
-    def __init__(self, fname, inputfname=None):
+    def __init__(self, fname):
         if usePickle:
             import h5pickle as h5py
         else:
@@ -518,28 +514,16 @@ class Data:
         coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]
         times = np.array([self.file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
 
-        self._input = {}
-        if inputfname is not None:
-            try:
-                import tomllib
-
-                with open(inputfname, "rb") as f:
-                    tomldata = tomllib.load(f)
-                flattened_data = {}
-                for td_k, td_v in tomldata.items():
-                    for k, v in td_v.items():
-                        flattened_data[f"{td_k}.{k}"] = v
-                self._input.update(flattened_data)
-            except Exception as e:
-                print(f"Could not load input file {inputfname}: {e}")
-                pass
-
         if dimension == 1:
             noghosts = slice(ngh, -ngh) if ngh > 0 else slice(None)
         elif dimension == 2:
             noghosts = (slice(ngh, -ngh), slice(ngh, -ngh)) if ngh > 0 else slice(None)
         elif dimension == 3:
-            noghosts = (slice(ngh, -ngh), slice(ngh, -ngh), slice(ngh, -ngh)) if ngh > 0 else slice(None)
+            noghosts = (
+                (slice(ngh, -ngh), slice(ngh, -ngh), slice(ngh, -ngh))
+                if ngh > 0
+                else slice(None)
+            )
 
         self.dataset = xr.Dataset()
 
@@ -651,10 +635,6 @@ class Data:
         for _, v in self._particles.items():
             del v
         del self
-
-    @property
-    def input(self):
-        return self._input
 
     @property
     def particles(self):
