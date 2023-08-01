@@ -51,20 +51,23 @@ namespace ntt {
     // read additional parameters from the input file [default to 1 if not specified]
     inline ProblemGenerator(const SimulationParams& params)
       : temperature { params.get<real_t>("problem", "temperature", 0.1) },
-        _atmo_max { params.get<real_t>("problem", "atmo_max", (real_t)(10.0)) },
+        _atmo_max { params.get<real_t>("problem", "atmo_max", (real_t)(1.0)) },
         _atmo_rmin { params.get<real_t>("problem", "atmo_rmin", (real_t)(0.1)) },
-        _atmo_stretch { params.get<real_t>("problem", "atmo_stretch", (real_t)(0.1)) } {}
+        _atmo_stretch { params.get<real_t>("problem", "atmo_stretch", (real_t)(50.0)) } {}
     inline void UserDriveParticles(const real_t&,
                                    const SimulationParams&,
                                    Meshblock<D, S>&) override {}
     inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) override {}
     inline void UserInitParticles(const SimulationParams& params,
-                                  Meshblock<D, S>&        mblock) override {
-    }
+                                  Meshblock<D, S>&        mblock) override {}
 #ifdef EXTERNAL_FORCE
     Inline auto ext_force_x1(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
-      return ZERO;
+
+      real_t sign = tanh(_atmo_stretch*x_ph[0]);
+      real_t gacc = _atmo_stretch*temperature*sign;
+      return gacc;
+      
     }
     Inline auto ext_force_x2(const real_t& time, const coord_t<D>& x_ph) const
       -> real_t override {
@@ -97,7 +100,8 @@ namespace ntt {
       const SimulationParams&                         params,
       Meshblock<D, S>&                                mblock,
       std::map<std::string, nttiny::ScrollingBuffer>& buffers) override {
-      buffers["NPRTL"].AddPoint(time, mblock.particles[0].npart() + mblock.particles[1].npart());
+      buffers["NPRTL"].AddPoint(time,
+                                mblock.particles[0].npart() + mblock.particles[1].npart());
       // if constexpr (D == Dim2) {
       //   real_t em_sum { ZERO }, prtl_sum { ZERO };
       //   Kokkos::parallel_reduce(
@@ -109,12 +113,12 @@ namespace ntt {
       //       vec_t<Dim3>  E { ZERO }, B { ZERO };
       //       mblock.metric.v3_Cntrv2Hat(
       //         { i_ + HALF, j_ + HALF },
-      //         { mblock.em(i, j, em::ex1), mblock.em(i, j, em::ex2), mblock.em(i, j, em::ex3) },
-      //         E);
+      //         { mblock.em(i, j, em::ex1), mblock.em(i, j, em::ex2), mblock.em(i, j, em::ex3)
+      //         }, E);
       //       mblock.metric.v3_Cntrv2Hat(
       //         { i_ + HALF, j_ + HALF },
-      //         { mblock.em(i, j, em::bx1), mblock.em(i, j, em::bx2), mblock.em(i, j, em::bx3) },
-      //         B);
+      //         { mblock.em(i, j, em::bx1), mblock.em(i, j, em::bx2), mblock.em(i, j, em::bx3)
+      //         }, B);
       //       sum += (SQR(E[0]) + SQR(E[1]) + SQR(E[2]) + SQR(B[0]) + SQR(B[1]) + SQR(B[2]))
       //              * HALF;
       //     },
@@ -179,26 +183,39 @@ namespace ntt {
     b_out[2] = 0.0;
   }
 
-
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
     const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    const auto _time = this->time();
+    const auto _time      = this->time();
 
-    auto delta_nppc = array_t<real_t**>("delta_nppc",
-                                        mblock.Ni1() + 2 * N_GHOSTS,
-                                        mblock.Ni2() + 2 * N_GHOSTS);
+    auto       delta_nppc = array_t<real_t**>(
+      "delta_nppc", mblock.Ni1() + 2 * N_GHOSTS, mblock.Ni2() + 2 * N_GHOSTS);
+
+    const auto ppc0 = params.ppc0();
+    const auto xmax = mblock.metric.x1_max;
+    const auto xmin = mblock.metric.x1_min;
+
     Kokkos::parallel_for(
-      "ComputeDeltaNPPC", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        delta_nppc(i, j) =  5;
+      "ComputeDeltaNPPC", mblock.rangeActiveCells(), ClassLambda(index_t i, index_t j) {
+        const real_t  i1_ { static_cast<real_t>(static_cast<int>(i)) };
+        const real_t  i2_ { static_cast<real_t>(static_cast<int>(j)) };
+        auto          _atmo_max_m { this->_atmo_max };
+        auto          _atmo_stretch_m { this->_atmo_stretch };
+        auto          _atmo_rmin_m { this->_atmo_rmin };
+        coord_t<Dim2> x_ph { ZERO };
+        mblock.metric.x_Code2Cart({ i1_, i2_ }, x_ph);
+        if(x_ph[0] < xmin + _atmo_rmin_m || x_ph[0] > xmax - _atmo_rmin_m) {
+          delta_nppc(i, j) = ZERO;
+        } else {
+        delta_nppc(i, j)
+          = ppc0 * _atmo_max_m
+            * (math::exp(-(_atmo_stretch_m * (- xmin + x_ph[0] - _atmo_rmin_m)))
+               + math::exp(-(_atmo_stretch_m * (xmax - x_ph[0] - _atmo_rmin_m))));
+        }
       });
-    InjectToFloor<Dim2, PICEngine, ThermalBackground>(
-      params,
-      mblock,
-      { 1, 2 },
-      delta_nppc);
 
-    }
+    InjectToFloor<Dim2, PICEngine, ThermalBackground>(params, mblock, { 1, 2 }, delta_nppc);
+  }
 
   /**
    * Field initialization for 2D:
@@ -263,22 +280,49 @@ namespace ntt {
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t& time, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    auto delta_nppc = array_t<real_t**>("delta_nppc",
-                                        mblock.Ni1() + 2 * N_GHOSTS,
-                                        mblock.Ni2() + 2 * N_GHOSTS);
+    auto delta_nppc = array_t<real_t**>(
+      "delta_nppc", mblock.Ni1() + 2 * N_GHOSTS, mblock.Ni2() + 2 * N_GHOSTS);
 
     mblock.ComputeMoments(params, FieldID::Nppc, {}, { 1, 2 }, 0, 0);
+    const auto ppc0 = params.ppc0();
+    const auto xmax = mblock.metric.x1_max;
+    const auto xmin = mblock.metric.x1_min;
+    auto          _atmo_max_m { this->_atmo_max };
+    auto          _atmo_stretch_m { this->_atmo_stretch };
+    auto          _atmo_rmin_m { this->_atmo_rmin };
 
     Kokkos::parallel_for(
-      "ComputeDeltaNPPC", mblock.rangeActiveCells(), Lambda(index_t i, index_t j) {
-        delta_nppc(i, j) =  5 - mblock.buff(i, j, 0);
+      "ComputeDeltaNPPC", mblock.rangeActiveCells(), ClassLambda(index_t i, index_t j) {
+        const real_t  i1_ { static_cast<real_t>(static_cast<int>(i)) };
+        const real_t  i2_ { static_cast<real_t>(static_cast<int>(j)) };
+        coord_t<Dim2> x_ph { ZERO };
+        mblock.metric.x_Code2Cart({ i1_, i2_ }, x_ph);
+        if(x_ph[0] < xmin + _atmo_rmin_m || x_ph[0] > xmax - _atmo_rmin_m) {
+          delta_nppc(i, j) = ZERO;
+        } else {
+        delta_nppc(i, j)
+          = ppc0 * _atmo_max_m
+            * (math::exp(-(_atmo_stretch_m * (- xmin + x_ph[0] - _atmo_rmin_m)))
+               + math::exp(-(_atmo_stretch_m * (xmax - x_ph[0] - _atmo_rmin_m))));
+        delta_nppc(i, j) -= mblock.buff(i, j, 0);
+        }
       });
 
-    InjectToFloor<Dim2, PICEngine, ThermalBackground>(
-      params,
-      mblock,
-      { 1, 2 },
-      delta_nppc);
+    InjectToFloor<Dim2, PICEngine, ThermalBackground>(params, mblock, { 1, 2 }, delta_nppc);
+
+    for (auto& species : mblock.particles) {
+      Kokkos::parallel_for(
+        "prtl_bc", species.rangeActiveParticles(), ClassLambda(index_t p) {
+        const real_t  i1_ { static_cast<real_t>(species.i1(p) + N_GHOSTS) };
+        const real_t  i2_ { static_cast<real_t>(species.i2(p) + N_GHOSTS)};
+        coord_t<Dim2> x_ph { ZERO };
+        mblock.metric.x_Code2Cart({ i1_, i2_ }, x_ph);
+        if(x_ph[0] < xmin + 0.5 * _atmo_rmin_m || x_ph[0] > xmax - 0.5 * _atmo_rmin_m) {
+            species.tag(p) = static_cast<short>(ParticleTag::dead);
+          }
+        });
+    }
+
   }
 
 }    // namespace ntt
