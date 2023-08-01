@@ -18,10 +18,11 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Compile
         run: |
-          cmake -B build -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D TESTS=ON -D precision=${{ matrix.precision }}
+          cmake -B build -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D TESTS=ON -D precision=${{ matrix.precision }} -D Kokkos_ENABLE_OPENMP=ON
           cd build
-          make -j
+          make -j 40
       - name: Run tests
         run: |
           cd build/tests
-          ctest -j
+          export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=40
+          ctest
