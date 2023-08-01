@@ -30,29 +30,10 @@ namespace ntt {
         ux1 { params.get<std::vector<real_t>>("problem", "ux1") },
         ux2 { params.get<std::vector<real_t>>("problem", "ux2") } {}
     inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) override {}
-    inline void UserDriveParticles(const real_t&,
-                                   const SimulationParams&,
-                                   Meshblock<D, S>&) override {}
 
   private:
     const std::vector<real_t> x1, x2, x3, ux1, ux2;
   };
-
-  template <>
-  inline void ProblemGenerator<Dim2, GRPICEngine>::UserDriveParticles(
-    const real_t&, const SimulationParams& params, Meshblock<Dim2, GRPICEngine>& mblock) {
-    auto&      lecs     = mblock.particles[0];
-    const auto r_absorb = params.metricParameters()[2];
-    Kokkos::parallel_for(
-      "UserInitParticles", lecs.rangeAllParticles(), ClassLambda(index_t p) {
-        coord_t<Dim2> x_cu { ZERO }, x_ph { ZERO };
-        x_cu[0] = (real_t)lecs.i1(p) + (real_t)lecs.dx1(p);
-        mblock.metric.x_Code2Sph(x_cu, x_ph);
-        if (x_ph[0] >= r_absorb) {
-          lecs.ux1(p) = -lecs.ux1(p);
-        }
-      });
-  }
 
   template <>
   inline void ProblemGenerator<Dim2, GRPICEngine>::UserInitParticles(

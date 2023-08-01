@@ -22,10 +22,6 @@ namespace ntt {
         ux1 { params.get<std::vector<real_t>>("problem", "ux1") },
         ux2 { params.get<std::vector<real_t>>("problem", "ux2") } {}
     inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) override {}
-    inline void UserDriveParticles(const real_t&,
-                                   const SimulationParams&,
-                                   Meshblock<D, S>&) override {}
-
   private:
     const std::vector<real_t> x1, x2, x3, ux1, ux2;
   };
@@ -40,30 +36,6 @@ namespace ntt {
     }
   };
 
-  template <>
-  inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
-    const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
-    auto&      lecs     = mblock.particles[0];
-    const auto r_absorb = params.metricParameters()[2];
-    Kokkos::parallel_for(
-      "UserInitParticles", lecs.rangeAllParticles(), ClassLambda(index_t p) {
-        coord_t<Dim2> x_cu { ZERO }, x_ph { ZERO };
-        x_cu[0] = (real_t)lecs.i1(p) + (real_t)lecs.dx1(p);
-        x_cu[1] = (real_t)lecs.i2(p) + (real_t)lecs.dx2(p);
-        mblock.metric.x_Code2Sph(x_cu, x_ph);
-        if (x_ph[0] >= r_absorb) {
-          vec_t<Dim3> u_sph { ZERO }, u_cart { ZERO };
-          mblock.metric.v3_Cart2Cntrv({ x_cu[0], x_cu[1], lecs.phi(p) },
-                                      { lecs.ux1(p), lecs.ux2(p), lecs.ux3(p) },
-                                      u_sph);
-          u_sph[0] = -u_sph[0];
-          mblock.metric.v3_Cntrv2Cart({ x_cu[0], x_cu[1], lecs.phi(p) }, u_sph, u_cart);
-          lecs.ux1(p) = u_cart[0];
-          lecs.ux2(p) = u_cart[1];
-          lecs.ux3(p) = u_cart[2];
-        }
-      });
-  }
 #endif
 
   template <>

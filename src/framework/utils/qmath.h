@@ -91,4 +91,5 @@ template bool ntt::AlmostEqual<ntt::Dim3>(const ntt::vec_t<ntt::Dim3>&,
 
 template bool ntt::CloseToZero<float>(float, float);
 template bool ntt::CloseToZero<double>(double, double);
+
 #endif
