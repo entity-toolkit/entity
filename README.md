@@ -38,8 +38,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
     - [ ]  Radiation (synchrotron/IC)
     - [ ]  QED
   - [ ]  MPI
-    - [ ]  restructure meshblocks
-    - [ ]  rewrite fieldsolvers (addressing + ranges)
+    - [x]  restructure meshblocks
+    - [x]  rewrite fieldsolvers (addressing + ranges)
 
 
 * SR (minkowski)
