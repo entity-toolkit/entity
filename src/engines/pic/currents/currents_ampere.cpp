@@ -29,14 +29,18 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
-    auto&      mblock = this->meshblock;
+    auto&            mblock = this->meshblock;
 
-    auto       params = *(this->params());
-    const auto dt     = mblock.timestep();
-    const auto rho0   = params.larmor0();
-    const auto de0    = params.skindepth0();
-    const auto ppc0   = params.ppc0();
-    const auto coeff  = -dt * rho0 / (SQR(de0) * ppc0);
+    auto             params = *(this->params());
+    const auto       dt     = mblock.timestep();
+    const auto       rho0   = params.larmor0();
+    const auto       de0    = params.skindepth0();
+    const auto       n0     = params.ppc0() / mblock.metric.min_cell_volume();
+    // constant sqrt of det_h is included here ...
+    // ... instead of the kernel
+    const coord_t<D> dummy { ZERO };
+    const auto       sqrt_h = mblock.metric.sqrt_det_h(dummy);
+    const auto       coeff  = -dt * rho0 / (sqrt_h * n0 * SQR(de0));
     Kokkos::parallel_for(
       "AmpereCurrents", mblock.rangeActiveCells(), CurrentsAmpere_kernel<D>(mblock, coeff));
 
@@ -54,10 +58,7 @@ namespace ntt {
     const auto dt     = mblock.timestep();
     const auto rho0   = params.larmor0();
     const auto de0    = params.skindepth0();
-    const auto ncells = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
-    const auto rmin   = mblock.metric.x1_min;
-    const auto volume = constant::TWO_PI * SQR(rmin);
-    const auto n0     = params.ppc0() * (real_t)ncells / volume;
+    const auto n0     = params.ppc0() / mblock.metric.min_cell_volume();
     const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
 
     range_t<D> range;
