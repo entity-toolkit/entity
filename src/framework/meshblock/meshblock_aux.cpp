@@ -375,8 +375,8 @@ namespace ntt {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               real_t x1          = get_prtl_x1(species, p);
-              auto   i1_min      = IMIN(IMAX(i1 - smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
-              auto   i1_max      = IMIN(IMAX(i1 + smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
+              auto   i1_min      = i1 - smooth + N_GHOSTS;
+              auto   i1_max      = i1 + smooth + N_GHOSTS;
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
@@ -420,10 +420,10 @@ namespace ntt {
               auto   i2          = species.i2(p);
               real_t x1          = get_prtl_x1(species, p);
               real_t x2          = get_prtl_x2(species, p);
-              auto   i1_min      = IMIN(IMAX(i1 - smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
-              auto   i1_max      = IMIN(IMAX(i1 + smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
-              auto   i2_min      = IMIN(IMAX(i2 - smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS);
-              auto   i2_max      = IMIN(IMAX(i2 + smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS);
+              auto   i1_min      = i1 - smooth + N_GHOSTS;
+              auto   i1_max      = i1 + smooth + N_GHOSTS;
+              auto   i2_min      = i2 - smooth + N_GHOSTS;
+              auto   i2_max      = i2 + smooth + N_GHOSTS;
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
@@ -486,12 +486,12 @@ namespace ntt {
               real_t x1          = get_prtl_x1(species, p);
               real_t x2          = get_prtl_x2(species, p);
               real_t x3          = get_prtl_x3(species, p);
-              auto   i1_min      = IMIN(IMAX(i1 - smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
-              auto   i1_max      = IMIN(IMAX(i1 + smooth + N_GHOSTS, 0), ni1 + 2 * N_GHOSTS);
-              auto   i2_min      = IMIN(IMAX(i2 - smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS);
-              auto   i2_max      = IMIN(IMAX(i2 + smooth + N_GHOSTS, 0), ni2 + 2 * N_GHOSTS);
-              auto   i3_min      = IMIN(IMAX(i3 - smooth + N_GHOSTS, 0), ni3 + 2 * N_GHOSTS);
-              auto   i3_max      = IMIN(IMAX(i3 + smooth + N_GHOSTS, 0), ni3 + 2 * N_GHOSTS);
+              auto   i1_min      = i1 - smooth + N_GHOSTS;
+              auto   i1_max      = i1 + smooth + N_GHOSTS;
+              auto   i2_min      = i2 - smooth + N_GHOSTS;
+              auto   i2_max      = i2 + smooth + N_GHOSTS;
+              auto   i3_min      = i3 - smooth + N_GHOSTS;
+              auto   i3_max      = i3 + smooth + N_GHOSTS;
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);

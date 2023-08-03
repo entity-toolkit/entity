@@ -26,14 +26,16 @@
 
 # v1.0
 
-- [ ] MPI configuration in cmake
+- [x] MPI configuration in cmake
 - [x] MPI domain decomposition
 - [ ] MPI communications
-  - [ ] fields
+  - [x] fields
   - [ ] particles
-  - [ ] currents
-- [ ] MPI-aware output
+  - [x] currents
+- [x] MPI-aware output
 - [ ] MPI-aware diagnostics
+- [ ] custom boundary conditions for particles and fields
+- [ ] better organization of problem generators
 
 ### Short term things to do/fix
 
