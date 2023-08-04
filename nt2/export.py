@@ -51,7 +51,7 @@ def makeMovie(**ffmpeg_kwargs):
         return False
 
 
-def makeFrames(plot, steps, fpath, num_cpus=None):
+def makeFrames(plot, steps, fpath, data=None, num_cpus=None):
     """
     Create plot frames from a set of timesteps of the same dataset.
     Parameters
@@ -63,6 +63,8 @@ def makeFrames(plot, steps, fpath, num_cpus=None):
         The time indices to use for generating the movie.
     fpath : str
         The file path to save the frames.
+    data : xarray.Dataset, optional
+        The dataset to use for generating the movie (passed to plot as the second argument)
     num_cpus : int, optional
         The number of CPUs to use for parallel processing. If None, use all available CPUs.
     Returns
@@ -91,7 +93,10 @@ def makeFrames(plot, steps, fpath, num_cpus=None):
 
     def plotAndSave(ti, t, fpath):
         try:
-            plot(t)
+            if data is None:
+                plot(t)
+            else:
+                plot(t, data)
             plt.savefig(f"{fpath}/{ti:05d}.png")
             plt.close()
             return True
