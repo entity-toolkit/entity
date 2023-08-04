@@ -60,9 +60,9 @@ namespace ntt {
                                   Meshblock<D, S>&        mblock) override {}
 #ifdef EXTERNAL_FORCE
     Inline auto ext_force_x1(const real_t&, const coord_t<D>& x_ph) const -> real_t override {
-      // real_t wid = ONE / (0.1 * m_h);
-      return -(HALF * m_T / m_h);
-      //  * (math::tanh((x_ph[0] - m_Rstar) * wid) - math::tanh((x_ph[0] - m_rGJ) * wid));
+      real_t wid = ONE / (0.1 * m_h);
+      return -(HALF * m_T / m_h) * (ONE + math::tanh((x_ph[0] - m_Rstar) * wid));
+      // - math::tanh((x_ph[0] - m_rGJ) * wid));
     }
     Inline auto ext_force_x2(const real_t&, const coord_t<D>&) const -> real_t override {
       return ZERO;
@@ -81,21 +81,21 @@ namespace ntt {
                                    vec_t<Dim3>&         e_out,    // electric field [out]
                                    vec_t<Dim3>&         b_out,    // magnetic field [out]
                                    const real_t         time) {
-    b_out[0] = 1.0;
+    b_out[0] = 0.0;
   }
 
   Inline void background_fields_2d(const coord_t<Dim2>& x_ph,     // physical coordinate
                                    vec_t<Dim3>&         e_out,    // electric field [out]
                                    vec_t<Dim3>&         b_out,    // magnetic field [out]
                                    const real_t         time) {
-    b_out[0] = 1.0;
+    b_out[0] = 0.0;
   }
 
   Inline void background_fields_3d(const coord_t<Dim3>& x_ph,     // physical coordinate
                                    vec_t<Dim3>&         e_out,    // electric field [out]
                                    vec_t<Dim3>&         b_out,    // magnetic field [out]
                                    const real_t         time) {
-    b_out[0] = 1.0;
+    b_out[0] = 0.0;
   }
 
   template <>
@@ -110,6 +110,56 @@ namespace ntt {
     if ((int)(star_cu[0]) < (int)params.currentFilters()) {
       NTTWarn("The star boundary is smaller than the current filter stencil.");
     }
+
+    // inject stars in the atmosphere
+    const auto ppc0 = params.ppc0();
+
+    Kokkos::parallel_for(
+      "ComputeDeltaNdens", mblock.rangeActiveCells(), ClassLambda(index_t i1) {
+        const auto          i1_ = static_cast<int>(i1) - N_GHOSTS;
+        const coord_t<Dim1> x_cu { static_cast<real_t>(i1_) + HALF };
+        coord_t<Dim1>       x_ph { ZERO };
+        mblock.metric.x_Code2Phys(x_cu, x_ph);
+        m_ppc_per_spec(i1_)
+          = m_C * math::exp(-(x_ph[0] - m_Rstar) / m_h) * (x_ph[0] > m_Rstar);
+        // 2 -- for two species
+        m_ppc_per_spec(i1_) *= ppc0 / TWO;
+      });
+    InjectNonUniform<Dim1, PICEngine, ThermalBackground>(
+      params, mblock, { 1, 2 }, m_ppc_per_spec);
+  }
+
+  template <>
+  inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
+    const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
+    // initialize buffer array
+    m_ppc_per_spec = ndarray_t<2>("ppc_per_spec", mblock.Ni1(), mblock.Ni2());
+
+    // check that the star surface is far-enough from the boundary
+    coord_t<Dim2> star_cu { ZERO };
+    mblock.metric.x_Phys2Code({ m_Rstar, ZERO }, star_cu);
+    if ((int)(star_cu[0]) < (int)params.currentFilters()) {
+      NTTWarn("The star boundary is smaller than the current filter stencil.");
+    }
+
+    // inject stars in the atmosphere
+    const auto ppc0 = params.ppc0();
+
+    Kokkos::parallel_for(
+      "ComputeDeltaNdens", mblock.rangeActiveCells(), ClassLambda(index_t i1, index_t i2) {
+        const auto          i1_ = static_cast<int>(i1) - N_GHOSTS;
+        const auto          i2_ = static_cast<int>(i2) - N_GHOSTS;
+        const coord_t<Dim2> x_cu { static_cast<real_t>(i1_) + HALF,
+                                   static_cast<real_t>(i2_) + HALF };
+        coord_t<Dim2>       x_ph { ZERO };
+        mblock.metric.x_Code2Phys(x_cu, x_ph);
+        m_ppc_per_spec(i1_, i2_)
+          = m_C * math::exp(-(x_ph[0] - m_Rstar) / m_h) * (x_ph[0] > m_Rstar);
+        // 2 -- for two species
+        m_ppc_per_spec(i1_, i2_) *= ppc0 / TWO;
+      });
+    InjectNonUniform<Dim2, PICEngine, ThermalBackground>(
+      params, mblock, { 1, 2 }, m_ppc_per_spec);
   }
 
   /**
@@ -130,7 +180,8 @@ namespace ntt {
         });
     } else if constexpr (D == Dim3) {
       Kokkos::parallel_for(
-        "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j, index_t k) {
+        "UserInitFields", mblock.rangeActiveCells(), Lambda(index_t i, index_t j, index_t k)
+        {
           set_em_fields_3d(mblock, i, j, k, background_fields_3d, ZERO);
         });
     }
@@ -152,8 +203,8 @@ namespace ntt {
           const coord_t<Dim1> x_cu { static_cast<real_t>(i1_) + HALF };
           coord_t<Dim1>       x_ph { ZERO };
           mblock.metric.x_Code2Phys(x_cu, x_ph);
-          m_ppc_per_spec(i1_)
-            = m_C * math::exp(-(x_ph[0] - m_Rstar) / m_h) * (x_ph[0] > m_Rstar);
+          m_ppc_per_spec(i1_) = m_C * math::exp(-(x_ph[0] - m_Rstar) / m_h)
+                                * (x_ph[0] > m_Rstar) * (x_ph[0] < m_h);
 
           const auto target_ndens = mblock.buff(i1, buff_idx);
           if (m_ppc_per_spec(i1_) > target_ndens) {
@@ -165,11 +216,31 @@ namespace ntt {
           m_ppc_per_spec(i1_) *= ppc0 / TWO;
         });
     } else if constexpr (D == Dim2) {
-      NTTHostError("not implemented");
+      Kokkos::parallel_for(
+        "ComputeDeltaNdens", mblock.rangeActiveCells(), ClassLambda(index_t i1, index_t i2) {
+          const auto          i1_ = static_cast<int>(i1) - N_GHOSTS;
+          const auto          i2_ = static_cast<int>(i2) - N_GHOSTS;
+          const coord_t<Dim2> x_cu { static_cast<real_t>(i1_) + HALF,
+                                     static_cast<real_t>(i2_) + HALF };
+          coord_t<Dim2>       x_ph { ZERO };
+          mblock.metric.x_Code2Phys(x_cu, x_ph);
+          m_ppc_per_spec(i1_, i2_) = m_C * math::exp(-(x_ph[0] - m_Rstar) / m_h)
+                                     * (x_ph[0] > m_Rstar) * (x_ph[0] < m_h);
+
+          const auto target_ndens = mblock.buff(i1, i2, buff_idx);
+          if (m_ppc_per_spec(i1_, i2_) > target_ndens) {
+            m_ppc_per_spec(i1_, i2_) -= target_ndens;
+          } else {
+            m_ppc_per_spec(i1_, i2_) = ZERO;
+          }
+          // 2 -- for two species
+          m_ppc_per_spec(i1_, i2_) *= ppc0 / TWO;
+        });
+
     } else if constexpr (D == Dim3) {
       NTTHostError("not implemented");
     }
-    InjectNonUniform<D, PICEngine, ThermalBackground>(params, mblock, { 1, 2 }, m_ppc_per_spec);
+    InjectNonUniform<D, S, ThermalBackground>(params, mblock, { 1, 2 }, m_ppc_per_spec);
 
     for (auto& species : mblock.particles) {
       Kokkos::parallel_for(
