@@ -719,33 +719,24 @@ namespace ntt {
         if ((Random<real_t>(rand_gen) < n_inject) &&    // # of prtls
             inj_criterion(xph)                          // injection criterion
         ) {
-          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
+          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
+          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc)
+                                             / mblock.metric.min_cell_volume())
+                                          : ONE };
 
           energy_dist(xph, v, species_index1);
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
-          init_prtl_1d_i_di(species1,
-                            offset1 + p,
-                            i1_,
-                            dx1,
-                            v_cart[0],
-                            v_cart[1],
-                            v_cart[2],
-                            use_weights ? mblock.metric.sqrt_det_h(xc) : ONE);
+          init_prtl_1d_i_di(
+            species1, offset1 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], weight);
 
           energy_dist(xph, v, species_index2);
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
-          init_prtl_1d_i_di(species2,
-                            offset2 + p,
-                            i1_,
-                            dx1,
-                            v_cart[0],
-                            v_cart[1],
-                            v_cart[2],
-                            use_weights ? mblock.metric.sqrt_det_h(xc) : ONE);
+          init_prtl_1d_i_di(
+            species2, offset2 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], weight);
         }
         n_inject -= ONE;
       }
@@ -794,9 +785,49 @@ namespace ntt {
         inj_criterion { params, mblock },
         pool { *(mblock.random_pool_ptr) } {}
     Inline void operator()(index_t i1, index_t i2) const {
-      (void)i1;
-      (void)i2;
-      NTTError("Not implemented");
+      // cell node
+      const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
+      const auto i2_ = static_cast<int>(i2) - N_GHOSTS;
+      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };
+
+      RandomGenerator_t rand_gen { pool.get_state() };
+      real_t            n_inject { ppc_per_spec(i1_, i2_) };
+      coord_t<Dim2>     xc { ZERO };
+      coord_t<Dim2>     xph { ZERO };
+      prtldx_t          dx1, dx2;
+      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+
+      while (n_inject > ZERO) {
+        dx1   = Random<prtldx_t>(rand_gen);
+        dx2   = Random<prtldx_t>(rand_gen);
+        xc[0] = xi[0] + dx1;
+        xc[1] = xi[1] + dx2;
+        mblock.metric.x_Code2Phys(xc, xph);
+        if ((Random<real_t>(rand_gen) < n_inject) &&    // # of prtls
+            inj_criterion(xph)                          // injection criterion
+        ) {
+          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
+          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc)
+                                             / mblock.metric.min_cell_volume())
+                                          : ONE };
+
+          energy_dist(xph, v, species_index1);
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
+          init_prtl_2d_i_di(
+            species1, offset1 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
+
+          energy_dist(xph, v, species_index2);
+          v_cart[0] = v[0];
+          v_cart[1] = v[1];
+          v_cart[2] = v[2];
+          init_prtl_2d_i_di(
+            species2, offset2 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
+        }
+        n_inject -= ONE;
+      }
+      pool.free_state(rand_gen);
     }
 
   private:
@@ -870,7 +901,7 @@ namespace ntt {
                    "Injected species must have the same but opposite charge: q1 = -q2");
     array_t<std::size_t> ind("ind_inj");
     if constexpr (D == Dim1) {
-      Kokkos::parallel_for("inject",
+      Kokkos::parallel_for("InjectNonUniform",
                            range_policy,
                            FloorInjector1d_kernel<S, EnDist, InjCrit>(
                              params, mblock, sp1, sp2, ind, ppc_per_spec, time));
