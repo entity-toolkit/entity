@@ -10,7 +10,7 @@ adios2 = "module:$HOME/opt/.modules/adios2"
 modulepath = "$HOME/opt/.modules/entity"
 
 [entity.instances]
-debug = [false]
-with_cuda  = [true]
-with_mpi   = [false]
-archs      = ["ZEN2,AMPERE80"]
+debug     = [false]
+with_cuda = [true]
+with_mpi  = [false]
+archs     = ["ZEN2,AMPERE80"]

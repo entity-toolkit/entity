@@ -66,6 +66,7 @@ function configure {
   prebuild
   runcommand "cd $ompi_src_path"
   runcommand "rm -rf build"
+  runcommand "./autogen.pl"
   runcommand "mkdir build"
   runcommand "cd build"
   local args=$(printf " %s" "${compile_args[@]}")

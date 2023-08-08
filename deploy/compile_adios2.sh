@@ -103,6 +103,7 @@ if [ $with_mpi != "OFF" ]; then
   )
 else
   flags+=(
+    ADIOS2_USE_MPI=OFF
     ADIOS2_HAVE_HDF5_VOL=OFF
   )
 fi

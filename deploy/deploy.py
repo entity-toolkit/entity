@@ -236,7 +236,6 @@ if __name__ == "__main__":
                             )
 
                         if args.depends:
-                            use_default_modules = True
                             dlm = " \\\n  "
                             arch_flag = f"--arch {architectures}"
                             with_debug = f"--debug ON{dlm}" if debug else ""
@@ -253,16 +252,6 @@ if __name__ == "__main__":
                             )
                             with_hdf5 = f"--with-hdf5 {hdf5_path}{dlm}"
                             with_kokkos = f"--with-kokkos {kokkos_path}{dlm}"
-                            if use_default_modules:
-                                with_cc = ""
-                                with_kokkos = ""
-                                with_hdf5 = ""
-                                if cuda:
-                                    with_cuda = ""
-                                if mpi:
-                                    with_mpi = ""
-                                if not debug:
-                                    with_debug = ""
                             flags_kokkos = "{with_debug}{with_cc}{with_cuda}{with_mpi}{with_hdf5}{arch_flag}".format(
                                 **locals()
                             )
