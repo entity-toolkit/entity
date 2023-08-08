@@ -24,8 +24,6 @@ namespace ntt {
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
-    const real_t dx_min;
-
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params)
@@ -43,8 +41,8 @@ namespace ntt {
         dphi_inv { ONE / dphi },
         dchi_sqr { SQR(dchi) },
         deta_sqr { SQR(deta) },
-        dphi_sqr { SQR(dphi) },
-        dx_min { findSmallestCell() } {
+        dphi_sqr { SQR(dphi) } {
+      this->set_dxMin(find_dxMin());
       if constexpr ((D == Dim1) || (D == Dim3)) {
         NTTHostError("Qspherical can only be defined for 2D");
       }
@@ -56,7 +54,7 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]] auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         real_t min_dx { -1.0 };
         for (int i { 0 }; i < this->nx1; ++i) {
@@ -156,7 +154,7 @@ namespace ntt {
      * @returns Minimum cell volume of the grid [code units].
      */
     Inline auto min_cell_volume() const -> real_t {
-      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
+      return math::pow(this->dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
     }
 
     /**

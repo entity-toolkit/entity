@@ -36,12 +36,15 @@ namespace ntt {
     meshblock.boundaries      = m_metadomain.localDomain()->boundaries();
 
     // find timestep and effective cell size
-    meshblock.setMinCellSize(meshblock.metric.dx_min);
+    // synchronize with other blocks
+    meshblock.metric.set_dxMin(m_metadomain.smallestCellSize());
     if (m_params.dt() <= ZERO) {
       meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
     } else {
       meshblock.setTimestep(m_params.dt());
     }
+    NTTHostErrorIf(meshblock.timestep() <= ZERO,
+                   "Timestep is zero or negative. Check CFL condition and/or min cell size.");
 
     // initialize writer
     writer.Initialize(m_params, m_metadomain, meshblock);

@@ -22,8 +22,6 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
-    const real_t dx_min;
-
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> { "spherical", resolution, extent },
         dr((this->x1_max - this->x1_min) / this->nx1),
@@ -34,8 +32,9 @@ namespace ntt {
         dphi_inv { ONE / dphi },
         dr_sqr { SQR(dr) },
         dtheta_sqr { SQR(dtheta) },
-        dphi_sqr { SQR(dphi) },
-        dx_min { findSmallestCell() } {}
+        dphi_sqr { SQR(dphi) } {
+      this->set_dxMin(find_dxMin());
+    }
     ~Metric() = default;
 
     /**
@@ -115,7 +114,8 @@ namespace ntt {
      */
     Inline auto min_cell_volume() const -> real_t {
       // !TODO: this will no longer work when many meshblocks
-      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
+      return math::pow(this->dx_min * math::sqrt(static_cast<real_t>(D)),
+                       static_cast<short>(D));
     }
 
     /**
@@ -149,7 +149,7 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]] auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         auto dx1 { dr };
         auto dx2 { this->x1_min * dtheta };

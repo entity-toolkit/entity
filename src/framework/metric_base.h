@@ -81,8 +81,22 @@ namespace ntt {
     ~MetricBase() = default;
 
     [[nodiscard]] virtual auto getParameter(const std::string&) const -> real_t {
-      return ZERO;
+      return -ONE;
     };
+    [[nodiscard]] virtual auto find_dxMin() const -> real_t {
+      NTTHostError("find_dxMin() not implemented for the metric");
+      return -ONE;
+    }
+    [[nodiscard]] auto dxMin() const -> real_t {
+      return dx_min;
+    }
+
+    auto set_dxMin(real_t dxmin) -> void {
+      dx_min = dxmin;
+    }
+
+  protected:
+    real_t dx_min;
   };
 
 }    // namespace ntt

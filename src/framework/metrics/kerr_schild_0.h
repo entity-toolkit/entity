@@ -28,8 +28,6 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
-    const real_t dx_min;
-
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> { "kerr_schild_0", resolution, extent },
         rh_ { ZERO },
@@ -44,8 +42,9 @@ namespace ntt {
         dphi_inv { ONE / dphi },
         dr_sqr { dr * dr },
         dtheta_sqr { dtheta * dtheta },
-        dphi_sqr { dphi * dphi },
-        dx_min { findSmallestCell() } {}
+        dphi_sqr { dphi * dphi } {
+      this->set_dxMin(find_dxMin());
+    }
     ~Metric() = default;
 
     /**
@@ -199,7 +198,8 @@ namespace ntt {
      * @returns Minimum cell volume of the grid [code units].
      */
     Inline auto min_cell_volume() const -> real_t {
-      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
+      return math::pow(this->dx_min * math::sqrt(static_cast<real_t>(D)),
+                       static_cast<short>(D));
     }
 
     /**
@@ -232,7 +232,7 @@ namespace ntt {
      * Compute minimum effective cell size for a given metric (in physical units).
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]] auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         real_t min_dx { -ONE };
         for (int i { 0 }; i < this->nx1; ++i) {

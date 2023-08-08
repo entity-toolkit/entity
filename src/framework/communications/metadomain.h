@@ -143,31 +143,21 @@ namespace ntt {
     [[nodiscard]] auto index() const -> int {
       return m_index;
     }
-
     [[nodiscard]] auto offsetNdomains() const -> std::vector<unsigned int> {
       return m_offset_ndomains;
     }
-
     [[nodiscard]] auto ncells() const -> std::vector<unsigned int> {
       return m_ncells;
     }
-
     [[nodiscard]] auto offsetNcells() const -> std::vector<unsigned int> {
       return m_offset_ncells;
     }
-
     [[nodiscard]] auto extent() const -> std::vector<real_t> {
       return m_extent;
     }
-
     [[nodiscard]] auto boundaries() const -> std::vector<std::vector<BoundaryCondition>> {
       return m_boundaries;
     }
-
-    auto setBoundary(const direction_t<D>& dir, BoundaryCondition bc) -> void {
-      m_boundaries_map[dir] = bc;
-    }
-
     [[nodiscard]] auto neighbors(const direction_t<D>& dir) const -> const Domain<D>* {
       auto it = m_neighbors.find(dir);
       if (it != m_neighbors.end()) {
@@ -176,7 +166,6 @@ namespace ntt {
         NTTHostError("Neighbor not found");
       }
     }
-
     [[nodiscard]] auto boundaryIn(const direction_t<D>& dir) const -> BoundaryCondition {
       auto it = m_boundaries_map.find(dir);
       if (it != m_boundaries_map.end()) {
@@ -184,6 +173,13 @@ namespace ntt {
       } else {
         NTTHostError("Boundary not found");
       }
+    }
+    [[nodiscard]] auto metric() const -> Metric<D> {
+      return m_metric;
+    }
+
+    auto setBoundary(const direction_t<D>& dir, BoundaryCondition bc) -> void {
+      m_boundaries_map[dir] = bc;
     }
   };
 
@@ -338,8 +334,31 @@ namespace ntt {
             direction, no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
         }
       }
-      // !TODO: estimate the smallest cell size
-      m_smallest_cell_size = 1.0;
+      m_smallest_cell_size = -ONE;
+      for (std::size_t index { 0 }; index < m_global_ndomains; ++index) {
+        if (m_smallest_cell_size < 0) {
+          m_smallest_cell_size = domains[index].metric().dxMin();
+        } else {
+          m_smallest_cell_size
+            = std::min(m_smallest_cell_size, domains[index].metric().dxMin());
+        }
+      }
+#if defined(MPI_ENABLED)
+      auto smallest_cell_sizes       = std::vector<real_t>(m_global_ndomains);
+      smallest_cell_sizes[m_mpirank] = m_smallest_cell_size;
+      MPI_Allgather(&smallest_cell_sizes[m_mpirank],
+                    1,
+                    mpi_get_type<real_t>(),
+                    smallest_cell_sizes.data(),
+                    1,
+                    mpi_get_type<real_t>(),
+                    MPI_COMM_WORLD);
+      for (const auto& sz : smallest_cell_sizes) {
+        NTTHostErrorIf(sz != m_smallest_cell_size,
+                       "smallest cell size is not the same across all MPI ranks");
+      }
+
+#endif
     }
 
     auto domainByIndex(const int& index) const -> const Domain<D>* {
@@ -359,7 +378,7 @@ namespace ntt {
     }
 
     auto localDomain() const -> const Domain<D>* {
-      // !TODO: this has to be more general
+      // !MULTIDOMAIN: this has to be more general
 #if defined(MPI_ENABLED)
       return domainByIndex(m_mpirank);
 #else     // not MPI_ENABLED

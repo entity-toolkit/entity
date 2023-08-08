@@ -22,14 +22,12 @@ namespace ntt {
     const real_t dx, dx_sqr, dx_inv;
 
   public:
-    const real_t dx_min;
-
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> { "minkowski", resolution, extent },
         dx((this->x1_max - this->x1_min) / this->nx1),
         dx_sqr(dx * dx),
-        dx_inv(ONE / dx),
-        dx_min { findSmallestCell() } {
+        dx_inv(ONE / dx) {
+      this->set_dxMin(find_dxMin());
       if constexpr (D == Dim2) {
         NTTHostErrorIf(!AlmostEqual((this->x2_max - this->x2_min) / (real_t)(this->nx2), dx),
                        "dx2 must be equal to dx1 in 2D");
@@ -47,7 +45,7 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]] auto find_dxMin() const -> real_t override {
       return dx / math::sqrt(static_cast<real_t>(D));
     }
 

@@ -59,14 +59,14 @@ namespace ntt {
     /**
      * @brief Get the timestep.
      */
-    [[nodiscard]] auto timestep() const -> const real_t& {
+    [[nodiscard]] auto timestep() const -> real_t {
       return m_timestep;
     }
     /**
      * @brief Get the minimum cell size.
      */
-    [[nodiscard]] auto minCellSize() const -> const real_t& {
-      return m_min_cell_size;
+    [[nodiscard]] auto minCellSize() const -> real_t {
+      return this->metric.dxMin();
     }
 
     /**
@@ -75,13 +75,6 @@ namespace ntt {
      */
     void setTimestep(const real_t& timestep) {
       m_timestep = timestep;
-    }
-    /**
-     * @brief Set the minimum cell size of the meshblock.
-     * @param min_cell_size minimum cell size in physical units.
-     */
-    void setMinCellSize(const real_t& min_cell_size) {
-      m_min_cell_size = min_cell_size;
     }
 
     /**
