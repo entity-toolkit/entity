@@ -506,10 +506,10 @@ class Data:
         except OSError:
             raise OSError(f"Could not open file {self.fname}")
         step0 = list(self.file.keys())[0]
-        nsteps = self.file.attrs["NumSteps"]
-        ngh = self.file.attrs["NGhosts"]
+        nsteps = int(self.file.attrs["NumSteps"])
+        ngh = int(self.file.attrs["NGhosts"])
         layout = "right" if self.file.attrs["LayoutRight"] == 1 else "left"
-        dimension = self.file.attrs["Dimension"]
+        dimension = int(self.file.attrs["Dimension"])
         coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
         if coordinates == "qspherical":
             coordinates = "spherical"
