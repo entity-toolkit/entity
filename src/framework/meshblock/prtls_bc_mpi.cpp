@@ -65,10 +65,10 @@ namespace ntt {
                        "1D SR only supports periodic or comm boundaries");
       }
     }
-    const auto ni1 = mesh.Ni1();
+    const auto ni1 = (int)mesh.Ni1();
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
-        tag(p) = SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
+        tag(p) = SendTag(tag(p), i1(p) < 0, i1(p) >= (int)ni1);
       });
   }
 
@@ -81,7 +81,7 @@ namespace ntt {
                        "2D Minkowski SR only supports periodic or comm boundaries");
       }
     }
-    const auto ni1 = mesh.Ni1(), ni2 = mesh.Ni2();
+    const auto ni1 = (int)mesh.Ni1(), ni2 = (int)mesh.Ni2();
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         tag(p) = SendTag(tag(p), i1(p) < 0, i1(p) >= ni1, i2(p) < 0, i2(p) >= ni2);
@@ -104,7 +104,7 @@ namespace ntt {
                          || (mesh.boundaries[1][1] == BoundaryCondition::CUSTOM));
     const auto ax_jm1 = (mesh.boundaries[1][0] == BoundaryCondition::AXIS);
     const auto ax_jp1 = (mesh.boundaries[1][1] == BoundaryCondition::AXIS);
-    const auto ni1 = mesh.Ni1(), ni2 = mesh.Ni2();
+    const auto ni1 = (int)mesh.Ni1(), ni2 = (int)mesh.Ni2();
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         if (tag(p) != ParticleTag::alive) {
@@ -139,7 +139,7 @@ namespace ntt {
                        "3D SR only supports periodic or comm boundaries");
       }
     }
-    const auto ni1 = mesh.Ni1(), ni2 = mesh.Ni2(), ni3 = mesh.Ni3();
+    const auto ni1 = (int)mesh.Ni1(), ni2 = (int)mesh.Ni2(), ni3 = (int)mesh.Ni3();
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         tag(p) = SendTag(
@@ -163,7 +163,7 @@ namespace ntt {
                          || (mesh.boundaries[1][1] == BoundaryCondition::CUSTOM));
     const auto ax_jm1 = (mesh.boundaries[1][0] == BoundaryCondition::AXIS);
     const auto ax_jp1 = (mesh.boundaries[1][1] == BoundaryCondition::AXIS);
-    const auto ni1 = mesh.Ni1(), ni2 = mesh.Ni2();
+    const auto ni1 = (int)mesh.Ni1(), ni2 = (int)mesh.Ni2();
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         if (tag(p) != ParticleTag::alive) {

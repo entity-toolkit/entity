@@ -52,12 +52,12 @@ namespace ntt {
     /**
      * @brief Main pusher subroutine for photon particles.
      */
-    Inline void operator()(Photon_t, index_t p) const {}
+    Inline void operator()(Photon_t, index_t) const {}
 
     /**
      * @brief Main pusher subroutine for massive particles.
      */
-    Inline void operator()(Massive_t, index_t p) const {}
+    Inline void operator()(Massive_t, index_t) const {}
 
     /**
      * @brief Iterative geodesic pusher substep for momentum only.

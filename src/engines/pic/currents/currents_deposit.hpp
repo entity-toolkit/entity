@@ -284,7 +284,7 @@ namespace ntt {
   }
 
   /**
-   * !TODO: fix the conversion to I+di
+   * !PERFORM: fix the conversion to I+di
    */
   template <>
   Inline auto DepositCurrents_kernel<Dim1>::depositCurrentsFromParticle(

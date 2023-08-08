@@ -70,7 +70,7 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(const Boris_t&, index_t p) const {
-      if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
+      if (m_particles.tag(p) == ParticleTag::alive) {
         vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
         interpolateFields(p, e_int, b_int);
 
@@ -162,7 +162,7 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(const Photon_t&, index_t p) const {
-      if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
+      if (m_particles.tag(p) == ParticleTag::alive) {
 #ifdef MINKOWSKI_METRIC
         coord_t<D> xp;
 #else
