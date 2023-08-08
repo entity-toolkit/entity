@@ -16,13 +16,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
+      - name: Load CUDA Entity
+        if: ${{ matrix.cuda == 'ON' }}
+        run: |
+          module load entity/cuda/volta70/skx
+      - name: Load Entity without CUDA
+        if: ${{ matrix.cuda == 'OFF' }}
+        run: |
+          module load entity/skx
       - name: Compile
         run: |
-          cmake -B build -D Kokkos_ENABLE_CUDA=${{ matrix.cuda }} -D TESTS=ON -D precision=${{ matrix.precision }} -D Kokkos_ENABLE_OPENMP=ON
+          cmake -B build -D TESTS=ON -D precision=${{ matrix.precision }}
           cd build
-          make -j 40
+          make -j $(exec nproc)
       - name: Run tests
         run: |
           cd build/tests
-          export OMP_PROC_BIND=spread OMP_PLACES=threads OMP_NUM_THREADS=40
-          ctest
+          ctest -j $(exec nproc)
