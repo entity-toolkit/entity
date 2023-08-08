@@ -111,17 +111,15 @@ namespace ntt {
   }
 
   template <Dimension D, typename T>
-  void CommunicateParticleQuantity(array_t<T*>&          arr,
-                                   const direction_t<D>& dir,
-                                   const Domain<D>*      send_to,
-                                   const Domain<D>*      recv_from,
-                                   const range_tuple_t&  send_slice,
-                                   const range_tuple_t&  recv_slice) {
+  void CommunicateParticleQuantity(array_t<T*>&         arr,
+                                   const Domain<D>*     send_to,
+                                   const Domain<D>*     recv_from,
+                                   const range_tuple_t& send_slice,
+                                   const range_tuple_t& recv_slice) {
     const auto send_count = send_slice.second - send_slice.first;
     const auto recv_count = recv_slice.second - recv_slice.first;
     if ((send_to != nullptr) && (recv_from != nullptr) && (send_count > 0)
         && (recv_count > 0)) {
-      printf("send_count = %d, recv_count = %d\n", send_count, recv_count);
       MPI_Sendrecv(arr.data() + send_slice.first,
                    send_count,
                    mpi_get_type<T>(),
@@ -135,7 +133,6 @@ namespace ntt {
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
     } else if ((send_to != nullptr) && (send_count > 0)) {
-      printf("send_count = %d\n", send_count);
       MPI_Send(arr.data() + send_slice.first,
                send_count,
                mpi_get_type<T>(),
@@ -143,7 +140,6 @@ namespace ntt {
                0,
                MPI_COMM_WORLD);
     } else if ((recv_from != nullptr) && (recv_count > 0)) {
-      printf("recv_count = %d\n", recv_count);
       MPI_Recv(arr.data() + recv_slice.first,
                recv_count,
                mpi_get_type<T>(),
@@ -191,6 +187,7 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void CommunicateParticles(Particles<D, S>&      particles,
                             const direction_t<D>& dir,
+                            const Domain<D>*      local,
                             const Domain<D>*      send_to,
                             const Domain<D>*      recv_from,
                             const range_tuple_t&  send_slice,
@@ -206,71 +203,97 @@ namespace ntt {
                    "Too many particles to receive (cannot fit into maxptl)");
     const auto recv_slice = range_tuple_t({ index_last, index_last + recv_count });
 
-    CommunicateParticleQuantity(particles.i1, dir, send_to, recv_from, send_slice, recv_slice);
-    CommunicateParticleQuantity(particles.dx1, dir, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.i1, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.dx1, send_to, recv_from, send_slice, recv_slice);
     if constexpr (S == GRPICEngine) {
       CommunicateParticleQuantity(
-        particles.i1_prev, dir, send_to, recv_from, send_slice, recv_slice);
+        particles.i1_prev, send_to, recv_from, send_slice, recv_slice);
       CommunicateParticleQuantity(
-        particles.dx1_prev, dir, send_to, recv_from, send_slice, recv_slice);
+        particles.dx1_prev, send_to, recv_from, send_slice, recv_slice);
     }
     if constexpr (D == Dim2 || D == Dim3) {
-      CommunicateParticleQuantity(
-        particles.i2, dir, send_to, recv_from, send_slice, recv_slice);
-      CommunicateParticleQuantity(
-        particles.dx2, dir, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.i2, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.dx2, send_to, recv_from, send_slice, recv_slice);
       if constexpr (S == GRPICEngine) {
         CommunicateParticleQuantity(
-          particles.i2_prev, dir, send_to, recv_from, send_slice, recv_slice);
+          particles.i2_prev, send_to, recv_from, send_slice, recv_slice);
         CommunicateParticleQuantity(
-          particles.dx2_prev, dir, send_to, recv_from, send_slice, recv_slice);
+          particles.dx2_prev, send_to, recv_from, send_slice, recv_slice);
       }
     }
     if constexpr (D == Dim3) {
-      CommunicateParticleQuantity(
-        particles.i3, dir, send_to, recv_from, send_slice, recv_slice);
-      CommunicateParticleQuantity(
-        particles.dx3, dir, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.i3, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.dx3, send_to, recv_from, send_slice, recv_slice);
       if constexpr (S == GRPICEngine) {
         CommunicateParticleQuantity(
-          particles.i3_prev, dir, send_to, recv_from, send_slice, recv_slice);
+          particles.i3_prev, send_to, recv_from, send_slice, recv_slice);
         CommunicateParticleQuantity(
-          particles.dx3_prev, dir, send_to, recv_from, send_slice, recv_slice);
+          particles.dx3_prev, send_to, recv_from, send_slice, recv_slice);
       }
     }
-    CommunicateParticleQuantity(particles.ux1, dir, send_to, recv_from, send_slice, recv_slice);
-    CommunicateParticleQuantity(particles.ux2, dir, send_to, recv_from, send_slice, recv_slice);
-    CommunicateParticleQuantity(particles.ux3, dir, send_to, recv_from, send_slice, recv_slice);
-    CommunicateParticleQuantity(
-      particles.weight, dir, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.ux1, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.ux2, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.ux3, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.weight, send_to, recv_from, send_slice, recv_slice);
     if constexpr (D == Dim2) {
 #  ifndef MINKOWSKI_METRIC
-      CommunicateParticleQuantity(
-        particles.phi, dir, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.phi, send_to, recv_from, send_slice, recv_slice);
 #  endif
     }
     if (recv_count > 0) {
-      // !TODO: COORDINATE CONVERSIONS...
       if constexpr (D == Dim1) {
+        int shift_in_x1 { 0 };
+        if ((-dir)[0] == -1) {
+          shift_in_x1 = -recv_from->ncells()[0];
+        } else if ((-dir)[0] == 1) {
+          shift_in_x1 = local->ncells()[0];
+        }
         Kokkos::parallel_for(
           "CommunicateParticles", recv_count, Lambda(index_t p) {
             particles.tag(index_last + p) = ParticleTag::alive;
-            particles.i1(index_last + p) = 20;
+            particles.i1(index_last + p) += shift_in_x1;
           });
       } else if constexpr (D == Dim2) {
+        int shift_in_x1 { 0 }, shift_in_x2 { 0 };
+        if ((-dir)[0] == -1) {
+          shift_in_x1 = -recv_from->ncells()[0];
+        } else if ((-dir)[0] == 1) {
+          shift_in_x1 = local->ncells()[0];
+        }
+        if ((-dir)[1] == -1) {
+          shift_in_x2 = -recv_from->ncells()[1];
+        } else if ((-dir)[1] == 1) {
+          shift_in_x2 = local->ncells()[1];
+        }
         Kokkos::parallel_for(
           "CommunicateParticles", recv_count, Lambda(index_t p) {
             particles.tag(index_last + p) = ParticleTag::alive;
-            particles.i1(index_last + p) = 20;
-            particles.i2(index_last + p) = 20;
+            particles.i1(index_last + p) += shift_in_x1;
+            particles.i2(index_last + p) += shift_in_x2;
           });
       } else if constexpr (D == Dim3) {
+        int shift_in_x1 { 0 }, shift_in_x2 { 0 }, shift_in_x3 { 0 };
+        if ((-dir)[0] == -1) {
+          shift_in_x1 = -recv_from->ncells()[0];
+        } else if ((-dir)[0] == 1) {
+          shift_in_x1 = local->ncells()[0];
+        }
+        if ((-dir)[1] == -1) {
+          shift_in_x2 = -recv_from->ncells()[1];
+        } else if ((-dir)[1] == 1) {
+          shift_in_x2 = local->ncells()[1];
+        }
+        if ((-dir)[2] == -1) {
+          shift_in_x3 = -recv_from->ncells()[2];
+        } else if ((-dir)[2] == 1) {
+          shift_in_x3 = local->ncells()[2];
+        }
         Kokkos::parallel_for(
           "CommunicateParticles", recv_count, Lambda(index_t p) {
             particles.tag(index_last + p) = ParticleTag::alive;
-            particles.i1(index_last + p) = 20;
-            particles.i2(index_last + p) = 20;
-            particles.i3(index_last + p) = 20;
+            particles.i1(index_last + p) += shift_in_x1;
+            particles.i2(index_last + p) += shift_in_x2;
+            particles.i3(index_last + p) += shift_in_x3;
           });
       }
       index_last += recv_count;
@@ -398,7 +421,6 @@ namespace ntt {
         }
         auto index_last
           = tag_offset[tag_offset.size() - 1] + npart_per_tag[npart_per_tag.size() - 1];
-        const short n_dirs = math::pow(3, (short)D) - 1;
         for (auto& direction : Directions<D>::all) {
           const auto is_send = (local_domain->neighbors(direction) != nullptr);
           const auto is_recv = (local_domain->neighbors(-direction) != nullptr);
@@ -411,6 +433,7 @@ namespace ntt {
 
           CommunicateParticles(species,
                                direction,
+                               local_domain,
                                local_domain->neighbors(direction),
                                local_domain->neighbors(-direction),
                                { send_pmin, send_pmax },
