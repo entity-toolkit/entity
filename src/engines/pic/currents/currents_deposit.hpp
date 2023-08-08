@@ -28,7 +28,7 @@ namespace ntt {
     const real_t            m_charge;
     const bool              m_use_weights;
     const real_t            m_dt;
-    const real_t            m_xi2max;
+    const int               m_ni2;
 
   public:
     /**
@@ -51,7 +51,7 @@ namespace ntt {
         m_charge(charge),
         m_use_weights { use_weights },
         m_dt(dt),
-        m_xi2max((real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS)) {}
+        m_ni2((int)(m_mblock.Ni2())) {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -177,7 +177,7 @@ namespace ntt {
                                       HALF * (xp_i[i] + xp_f[i])));
     }
   }
-#else    // not MINKOWSKI_METRIC
+#else     // not MINKOWSKI_METRIC
   template <>
   Inline auto DepositCurrents_kernel<Dim1>::getDepositInterval(index_t&,
                                                                vec_t<Dim3>&,
@@ -212,7 +212,7 @@ namespace ntt {
     // make sure the velocity is defined at the axis
     if (Ip_f[1] == 0 && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
       vp[2] = ZERO;
-    } else if (Ip_f[1] == static_cast<int>(m_xi2max) - 1
+    } else if (Ip_f[1] == m_ni2 - 1
                && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
       vp[2] = ZERO;
     }
@@ -223,14 +223,26 @@ namespace ntt {
     vp[1] *= inv_energy;
     vp[2] *= inv_energy;
 
-#  pragma unroll
-    for (auto i { 0 }; i < 2; ++i) {
-      xp_i[i] = xp_f[i] - m_dt * vp[i];
-      Ip_i[i] = static_cast<int>(xp_i[i]);
-      xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                           math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
-                                      HALF * (xp_i[i] + xp_f[i])));
+    xp_i[0] = xp_f[0] - m_dt * vp[0];
+    Ip_i[0] = static_cast<int>(xp_i[0]);
+    xp_r[0] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[0], Ip_f[0]) + 1),
+                         math::fmax(static_cast<real_t>(math::fmax(Ip_i[0], Ip_f[0])),
+                                    HALF * (xp_i[0] + xp_f[0])));
+
+    xp_i[1] = xp_f[1] - m_dt * vp[1];
+    Ip_i[1] = static_cast<int>(xp_i[1]);
+    // reflect off the axis
+    // !HOTFIX: needs to be fixed for MPI
+    if (xp_i[1] < ZERO) {
+      Ip_i[1] = 0;
+      xp_i[1] = -xp_i[1];
+    } else if (xp_i[1] >= static_cast<real_t>(m_ni2)) {
+      xp_i[1] = TWO * static_cast<real_t>(m_ni2) - xp_i[1];
+      Ip_i[1] = m_ni2 - 1;
     }
+    xp_r[1] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[1], Ip_f[1]) + 1),
+                         math::fmax(static_cast<real_t>(math::fmax(Ip_i[1], Ip_f[1])),
+                                    HALF * (xp_i[1] + xp_f[1])));
   }
 #endif    // MINKOWSKI_METRIC
 

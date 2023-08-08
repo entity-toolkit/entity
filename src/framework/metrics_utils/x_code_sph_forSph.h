@@ -38,9 +38,9 @@ Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
     xi[0] = (x[0] - this->x1_min) / dr;
     xi[1] = (x[1] - this->x2_min) / dtheta;
   } else if constexpr (D == Dim3) {
-    x[0] = (xi[0] - this->x1_min) / dr;
-    x[1] = (xi[1] - this->x2_min) / dtheta;
-    x[2] = (xi[2] - this->x3_min) / dphi;
+    xi[0] = (x[0] - this->x1_min) / dr;
+    xi[1] = (x[1] - this->x2_min) / dtheta;
+    xi[2] = (x[2] - this->x3_min) / dphi;
   }
 }
 

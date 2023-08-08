@@ -1,0 +1,42 @@
+[simulation]
+title   = "Turbulence"
+runtime = 10.0
+
+[domain]
+resolution = [128, 128]
+extent     = [-1.0, 1.0, -1.0, 1.0]       # extent of the domain in physical units
+boundaries = [["PERIODIC"], ["PERIODIC"]]
+
+[algorithm]
+CFL             = 0.5
+current_filters = 2
+
+[units]
+ppc0       = 4.0
+larmor0    = 0.02 # fiducial larmor radius in physical units
+skindepth0 = 0.02 # fiducial skin depth in physical units
+
+[particles]
+n_species = 2
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e8
+
+[problem]
+temperature      = 0.1
+atmo_max = 10.0
+
+[output]
+fields        = ["Nppc"]
+particles       = ["X", "U"]
+format        = "HDF5"
+interval_time = 0.1               # output interval in time units

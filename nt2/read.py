@@ -1,5 +1,7 @@
 import xarray as xr
 
+import nt2.export as exp
+
 useGreek = False
 usePickle = False
 
@@ -639,3 +641,19 @@ class Data:
     @property
     def particles(self):
         return self._particles
+
+    def makeMovie(self, plot, fpath, **kwargs):
+        import numpy as np
+
+        if all(
+            exp.makeFrames(plot, np.arange(len(self.t)), f"{fpath}/frames", data=self)
+        ):
+            fname = self.fname.split("/")[-1].split(".")[0]
+            exp.makeMovie(
+                input=f"{fpath}/frames/",
+                overwrite=True,
+                output=f"{fname}.mov",
+                number=5,
+                **kwargs,
+            )
+            return True

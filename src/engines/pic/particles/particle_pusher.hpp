@@ -150,6 +150,11 @@ namespace ntt {
         v[2] *= inv_energy;
 
         positionUpdate(p, v);
+
+#ifndef MINKOWSKI_METRIC
+        // !HOTFIX: THIS NEEDS TO BE FIXED FOR MPI
+        reflectFromAxis(p);
+#endif
       }
     }
     /**
@@ -175,6 +180,9 @@ namespace ntt {
         v[2] *= inv_energy;
 
         positionUpdate(p, v);
+#ifndef MINKOWSKI_METRIC
+        reflectFromAxis(p);
+#endif
       }
     }
 
@@ -192,6 +200,13 @@ namespace ntt {
      * @param coord coordinate of the particle as a vector (of size 3).
      */
     Inline void getParticleCoordinate(index_t&, coord_t<Dim3>&) const;
+
+    /**
+     * @brief Reflect particle coordinate and velocity from the axis ...
+     * @brief ... only for 2D non-minkowski metric.
+     * @param p index of the particle.
+     */
+    Inline void reflectFromAxis(index_t&) const;
 #endif
 
     /**
@@ -249,6 +264,32 @@ namespace ntt {
     xp[1] = get_prtl_x2(m_particles, p);
     xp[2] = m_particles.phi(p);
   }
+
+  template <>
+  Inline void Pusher_kernel<Dim1>::reflectFromAxis(index_t&) const {
+    NTTError("not applicable");
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim2>::reflectFromAxis(index_t& p) const {
+    if ((m_particles.i2(p) < 0) || (m_particles.i2(p) >= m_ni2)) {
+      m_particles.dx2(p) = ONE - m_particles.dx2(p);
+      m_particles.i2(p)  = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
+      coord_t<Dim3> x_cu { get_prtl_x1(m_particles, p),
+                           get_prtl_x2(m_particles, p),
+                           m_particles.phi(p) };
+      vec_t<Dim3>   v_Cntrv { ZERO }, v_Cart { ZERO };
+      m_mblock.metric.v3_Cart2Cntrv(
+        x_cu, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v_Cntrv);
+      m_mblock.metric.v3_Cntrv2Cart(x_cu, { v_Cntrv[0], -v_Cntrv[1], v_Cntrv[2] }, v_Cart);
+      m_particles.ux1(p) = v_Cart[0];
+      m_particles.ux2(p) = v_Cart[1];
+      m_particles.ux3(p) = v_Cart[2];
+    }
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim3>::reflectFromAxis(index_t&) const {}
 #endif
 
   template <>

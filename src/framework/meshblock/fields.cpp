@@ -18,7 +18,7 @@ namespace ntt {
     : em { "EM", res[0] + 2 * N_GHOSTS },
       bckp { "BCKP", res[0] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS } {
+      buff { "BUFF", res[0] + 2 * N_GHOSTS } {
     NTTLog();
   }
 
@@ -27,7 +27,7 @@ namespace ntt {
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       bckp { "BCKP", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
+      buff { "BUFF", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
     NTTLog();
   }
 
@@ -36,7 +36,7 @@ namespace ntt {
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       bckp { "BCKP", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
+      buff { "BUFF", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
     NTTLog();
   }
 
@@ -48,7 +48,7 @@ namespace ntt {
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       bckp { "BCKP", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
+      buff { "BUFF", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       aux { "AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       em0 { "EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS },
       cur0 { "CUR0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS } {
@@ -60,7 +60,7 @@ namespace ntt {
     : em { "EM", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       bckp { "BCKP", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       cur { "J", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
-      buff { "J0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
+      buff { "BUFF", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       aux { "AUX", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       em0 { "EM0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS },
       cur0 { "CUR0", res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS } {
