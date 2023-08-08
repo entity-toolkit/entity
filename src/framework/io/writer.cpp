@@ -47,6 +47,7 @@ namespace ntt {
     m_io.DefineVariable<int>("Step");
     m_io.DefineVariable<real_t>("Time");
 
+    m_io.DefineAttribute("Title", params.title());
     m_io.DefineAttribute("Metric", global_metric.label);
     m_io.DefineAttribute("Coordinates", params.coordinates());
     m_io.DefineAttribute("Engine", stringizeSimulationEngine(S));
