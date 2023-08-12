@@ -411,7 +411,7 @@ namespace ntt {
             }
           });
       } else if constexpr (D == Dim2) {
-        const int ni1 { this->Ni1() }, ni2 { this->Ni2() };
+        const auto ni1 { (int)(this->Ni1()) }, ni2 { (int)(this->Ni2()) };
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
