@@ -177,7 +177,7 @@ auto main(int argc, char* argv[]) -> int {
           sim.Communicate(ntt::Comm_Prtl);
           sim.writer.WriteAll(
             *sim.params(), *sim.metadomain(), mblock, (real_t)i, (std::size_t)i);
-          printf("step: %d, rank: %d, npart1: %d, npart2: %d\n",
+          printf("step: %d, rank: %d, npart1: %ld, npart2: %ld\n",
                  i,
                  sim.metadomain()->mpiRank(),
                  mblock.particles[0].npart(),
