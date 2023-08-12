@@ -807,21 +807,30 @@ namespace ntt {
             inj_criterion(xph)                          // injection criterion
         ) {
           auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
-          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc)
-                                             / mblock.metric.min_cell_volume())
-                                          : ONE };
+          const auto weight { use_weights
+                                ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF })
+                                   / mblock.metric.min_cell_volume())
+                                : ONE };
 
           energy_dist(xph, v, species_index1);
+#ifdef MINKOWSKI_METRIC
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#else
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+#endif
           init_prtl_2d_i_di(
             species1, offset1 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
 
           energy_dist(xph, v, species_index2);
+#ifdef MINKOWSKI_METRIC
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#else
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+#endif
           init_prtl_2d_i_di(
             species2, offset2 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
         }

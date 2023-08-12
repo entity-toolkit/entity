@@ -139,7 +139,8 @@ namespace ntt {
         m_mblock.metric.v3_Cart2Cntrv(
           xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
         // avoid problem for a particle right at the axes
-        if ((m_particles.i2(p) == 0) && AlmostEqual(m_particles.dx2(p), 0.0f)) {
+        if ((m_particles.i2(p) == 0)
+            && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
           v[2] = ZERO;
         } else if ((m_particles.i2(p) == m_ni2 - 1)
                    && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
@@ -253,7 +254,7 @@ namespace ntt {
     xp[0] = get_prtl_x1(m_particles, p);
     xp[1] = get_prtl_x2(m_particles, p);
   }
-#else
+#else    // not MINKOWSKI_METRIC
   template <>
   Inline void Pusher_kernel<Dim1>::getParticleCoordinate(index_t&, coord_t<Dim3>&) const {
     NTTError("not applicable");
@@ -274,17 +275,24 @@ namespace ntt {
   Inline void Pusher_kernel<Dim2>::reflectFromAxis(index_t& p) const {
     if ((m_particles.i2(p) < 0) || (m_particles.i2(p) >= m_ni2)) {
       m_particles.dx2(p) = ONE - m_particles.dx2(p);
-      m_particles.i2(p)  = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
-      coord_t<Dim3> x_cu { get_prtl_x1(m_particles, p),
-                           get_prtl_x2(m_particles, p),
-                           m_particles.phi(p) };
-      vec_t<Dim3>   v_Cntrv { ZERO }, v_Cart { ZERO };
-      m_mblock.metric.v3_Cart2Cntrv(
-        x_cu, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v_Cntrv);
-      m_mblock.metric.v3_Cntrv2Cart(x_cu, { v_Cntrv[0], -v_Cntrv[1], v_Cntrv[2] }, v_Cart);
-      m_particles.ux1(p) = v_Cart[0];
-      m_particles.ux2(p) = v_Cart[1];
-      m_particles.ux3(p) = v_Cart[2];
+      m_particles.i2(p) = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
+      if (((m_particles.i2(p) == 0)
+           && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0)))
+          || ((m_particles.i2(p) == m_ni2 - 1)
+              && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0)))) {
+        m_particles.ux1(p) = -m_particles.ux1(p);
+      } else {
+        coord_t<Dim3> x_cu { get_prtl_x1(m_particles, p),
+                             get_prtl_x2(m_particles, p),
+                             m_particles.phi(p) };
+        vec_t<Dim3> v_Cntrv { ZERO }, v_Cart { ZERO };
+        m_mblock.metric.v3_Cart2Cntrv(
+          x_cu, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v_Cntrv);
+        m_mblock.metric.v3_Cntrv2Cart(x_cu, { v_Cntrv[0], -v_Cntrv[1], v_Cntrv[2] }, v_Cart);
+        m_particles.ux1(p) = v_Cart[0];
+        m_particles.ux2(p) = v_Cart[1];
+        m_particles.ux3(p) = v_Cart[2];
+      }
     }
   }
 

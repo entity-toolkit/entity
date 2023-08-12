@@ -411,6 +411,7 @@ namespace ntt {
             }
           });
       } else if constexpr (D == Dim2) {
+        const int ni1 { this->Ni1() }, ni2 { this->Ni2() };
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
@@ -419,10 +420,12 @@ namespace ntt {
               auto   i2          = species.i2(p);
               real_t x1          = get_prtl_x1(species, p);
               real_t x2          = get_prtl_x2(species, p);
-              auto   i1_min      = i1 - smooth + N_GHOSTS;
-              auto   i1_max      = i1 + smooth + N_GHOSTS;
-              auto   i2_min      = i2 - smooth + N_GHOSTS;
-              auto   i2_max      = i2 + smooth + N_GHOSTS;
+              // !HOTFIX: this needs to be synced with 1d and 3d
+              // !HOTFIX: also fixed for MPI case
+              auto   i1_min      = IMIN(IMAX(i1 - smooth, 0), ni1) + N_GHOSTS;
+              auto   i1_max      = IMIN(IMAX(i1 + smooth, 0), ni1) + N_GHOSTS;
+              auto   i2_min      = IMIN(IMAX(i2 - smooth, 0), ni2) + N_GHOSTS;
+              auto   i2_max      = IMIN(IMAX(i2 + smooth, 0), ni2) + N_GHOSTS;
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
@@ -462,7 +465,10 @@ namespace ntt {
 #endif
               }
               if (field != FieldID::Nppc) {
-                contrib *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1, x2 });
+                // !HOTFIX: this needs to be synced with 1d and 3d
+                contrib *= this_metric.min_cell_volume()
+                           / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF,
+                                                      static_cast<real_t>(i2) + HALF });
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
