@@ -642,17 +642,40 @@ class Data:
     def particles(self):
         return self._particles
 
-    def makeMovie(self, plot, fpath, **kwargs):
+    def makeMovie(self, plot, makeframes=True, **kwargs):
+        """
+        Makes a movie from a plot function
+
+        Parameters
+        ----------
+        plot : function
+            The plot function to use; accepts output timestep and dataset as arguments.
+        makeframes : bool, optional
+            Whether to make the frames, or just proceed to making the movie. Default is True.
+        num_cpus : int, optional
+            The number of CPUs to use for making the frames. Default is None.
+        **kwargs :
+            Additional keyword arguments passed to `ffmpeg`.
+        """
         import numpy as np
 
-        if all(
-            exp.makeFrames(plot, np.arange(len(self.t)), f"{fpath}/frames", data=self)
-        ):
-            fname = self.fname.split("/")[-1].split(".")[0]
+        if makeframes:
+            makemovie = all(
+                exp.makeFrames(
+                    plot,
+                    np.arange(len(self.t)),
+                    f"{self.attrs['Title']}/frames",
+                    data=self,
+                    num_cpus=kwargs.pop("num_cpus", None),
+                )
+            )
+        else:
+            makemovie = True
+        if makemovie:
             exp.makeMovie(
-                input=f"{fpath}/frames/",
+                input=f"{self.attrs['Title']}/frames/",
                 overwrite=True,
-                output=f"{fname}.mov",
+                output=f"{self.attrs['Title']}.mov",
                 number=5,
                 **kwargs,
             )
