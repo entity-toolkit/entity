@@ -69,7 +69,7 @@ namespace ntt {
                                 Meshblock<D, S>&) override {}
 #ifdef EXTERNAL_FORCE
     Inline auto ext_force_x1(const real_t&, const coord_t<D>& x_ph) const -> real_t override {
-      return -(m_T / m_h) * SQR(m_Rstar / x_ph[0]);
+      return -m_g0 * SQR(m_Rstar / x_ph[0]);
     }
     Inline auto ext_force_x2(const real_t&, const coord_t<D>&) const -> real_t override {
       return ZERO;
@@ -233,10 +233,12 @@ namespace ntt {
   inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
     const real_t&, const SimulationParams& params, Meshblock<Dim2, PICEngine>& mblock) {
     const short buff_idx = 0;
-    mblock.ComputeMoments(params, FieldID::N, {}, { 1, 2 }, buff_idx, 2);
+    const short smooth   = 2;
+    mblock.ComputeMoments(params, FieldID::N, {}, { 1, 2 }, buff_idx, smooth);
     m_ppc_per_spec  = ndarray_t<2>("ppc_per_spec", mblock.Ni1(), mblock.Ni2());
     const auto ppc0 = params.ppc0();
-    const auto frac = static_cast<real_t>(0.9) * (ONE - ONE / ppc0);
+    // const auto frac = static_cast<real_t>(0.9) * (ONE - ONE / ppc0);
+    const auto frac = ONE;
 
     Kokkos::parallel_for(
       "ComputeDeltaNdens", mblock.rangeActiveCells(), ClassLambda(index_t i1, index_t i2) {
@@ -257,18 +259,18 @@ namespace ntt {
           m_ppc_per_spec(i1_, i2_) = ZERO;
         }
         // 2 -- for two species
-        m_ppc_per_spec(i1_, i2_) = int(ppc0 * m_ppc_per_spec(i1_, i2_)) / TWO;
+        m_ppc_per_spec(i1_, i2_) = int(ppc0 * m_ppc_per_spec(i1_, i2_) / TWO);
       });
 
     InjectNonUniform<Dim2, PICEngine, ThermalBackground>(
       params, mblock, { 1, 2 }, m_ppc_per_spec);
 
-    for (auto& species : mblock.particles) {
-      Kokkos::parallel_for(
-        "UserDriveParticles", species.rangeActiveParticles(), ClassLambda(index_t p) {
-          species.tag(p) = ParticleTag::alive * (species.i1(p) > 1);
-        });
-    }
+    // for (auto& species : mblock.particles) {
+    //   Kokkos::parallel_for(
+    //     "UserDriveParticles", species.rangeActiveParticles(), ClassLambda(index_t p) {
+    //       species.tag(p) = ParticleTag::alive * (species.i1(p) > 1);
+    //     });
+    // }
   }
 }    // namespace ntt
 
