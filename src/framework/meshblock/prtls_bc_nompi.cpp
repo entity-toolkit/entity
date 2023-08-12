@@ -67,12 +67,12 @@ namespace ntt {
       "2D non-Minkowski SR must have open or custom or absorb boundaries in x1_max");
     NTTHostErrorIf(mesh.boundaries[1][0] != BoundaryCondition::AXIS,
                    "2D non-Minkowski SR must have axis boundaries in x2");
-    const int ni1 { mesh.Ni1() };
+    const auto ni1 { (int)mesh.Ni1() };
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         if ((i1(p) < 0) || (i1(p) >= ni1)) {
           // radial boundary conditions
-          tag(p) = static_cast<short>(ParticleTag::dead);
+          tag(p) = ParticleTag::dead;
         }
       });
   }
@@ -112,7 +112,7 @@ namespace ntt {
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
         if ((i1(p) < i1h) || (i1(p) >= ni1)) {
           // radial boundary conditions
-          tag(p) = static_cast<short>(ParticleTag::dead);
+          tag(p) = ParticleTag::dead;
         } else if ((i2(p) < 1) || (i2(p) >= ni2 - 1)) {
           // axis boundaries
           ux2(p) = -ux2(p);    // reflect u_theta
