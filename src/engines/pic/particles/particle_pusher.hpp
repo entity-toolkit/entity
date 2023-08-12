@@ -70,121 +70,124 @@ namespace ntt {
      * @param p index.
      */
     Inline void operator()(const Boris_t&, index_t p) const {
-      if (m_particles.tag(p) == ParticleTag::alive) {
-        vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
-        interpolateFields(p, e_int, b_int);
+      if (m_particles.tag(p) != ParticleTag::alive) {
+        return;
+      }
+
+      vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
+      interpolateFields(p, e_int, b_int);
 
 #ifdef MINKOWSKI_METRIC
-        coord_t<D> xp { ZERO };
+      coord_t<D> xp { ZERO };
 #else
-        coord_t<Dim3> xp { ZERO };
+      coord_t<Dim3> xp { ZERO };
 #endif
-        getParticleCoordinate(p, xp);
-        m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
-        m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
+      getParticleCoordinate(p, xp);
+      m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
+      m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
 
 #ifdef EXTERNAL_FORCE
-        coord_t<D> xp_ph { ZERO };
+      coord_t<D> xp_ph { ZERO };
 #  ifdef MINKOWSKI_METRIC
-        m_mblock.metric.x_Code2Cart(xp, xp_ph);
+      m_mblock.metric.x_Code2Cart(xp, xp_ph);
 #  else
-        coord_t<D> xp_ND { ZERO };
+      coord_t<D> xp_ND { ZERO };
 #    pragma unroll
-        for (short d { 0 }; d < static_cast<short>(D); ++d) {
-          xp_ND[d] = xp[d];
-        }
-        m_mblock.metric.x_Code2Sph(xp_ND, xp_ph);
+      for (short d { 0 }; d < static_cast<short>(D); ++d) {
+        xp_ND[d] = xp[d];
+      }
+      m_mblock.metric.x_Code2Sph(xp_ND, xp_ph);
 #  endif
 
-        const vec_t<Dim3> force_Hat { m_pgen.ext_force_x1(m_time, xp_ph),
-                                      m_pgen.ext_force_x2(m_time, xp_ph),
-                                      m_pgen.ext_force_x3(m_time, xp_ph) };
-        vec_t<Dim3>       force_Cart { ZERO };
-        m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+      const vec_t<Dim3> force_Hat { m_pgen.ext_force_x1(m_time, xp_ph),
+                                    m_pgen.ext_force_x2(m_time, xp_ph),
+                                    m_pgen.ext_force_x3(m_time, xp_ph) };
+      vec_t<Dim3>       force_Cart { ZERO };
+      m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
 
-        real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                                    + SQR(m_particles.ux3(p)));
-        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p)
-                         + force_Cart[1] * m_particles.ux2(p)
-                         + force_Cart[2] * m_particles.ux3(p);
-        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+      real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                                  + SQR(m_particles.ux3(p)));
+      real_t t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
+                       + force_Cart[2] * m_particles.ux3(p);
+      m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 
-        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+      m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+      m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+      m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
 
 #endif
 
-        BorisUpdate(p, e_int_Cart, b_int_Cart);
+      BorisUpdate(p, e_int_Cart, b_int_Cart);
 
 #ifdef EXTERNAL_FORCE
 
-        t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                             + SQR(m_particles.ux3(p)));
-        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
-                  + force_Cart[2] * m_particles.ux3(p);
-        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+      t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                           + SQR(m_particles.ux3(p)));
+      t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
+                + force_Cart[2] * m_particles.ux3(p);
+      m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 
-        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+      m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+      m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+      m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
 
 #endif
 
-        real_t inv_energy;
-        inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+      real_t inv_energy;
+      inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
 
-        // contravariant 3-velocity: u^i / gamma
-        vec_t<Dim3> v;
-        m_mblock.metric.v3_Cart2Cntrv(
-          xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
-        // avoid problem for a particle right at the axes
-        if ((m_particles.i2(p) == 0)
-            && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
-          v[2] = ZERO;
-        } else if ((m_particles.i2(p) == m_ni2 - 1)
-                   && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
-          v[2] = ZERO;
-        }
-        v[0] *= inv_energy;
-        v[1] *= inv_energy;
-        v[2] *= inv_energy;
+      // contravariant 3-velocity: u^i / gamma
+      vec_t<Dim3> v;
+      m_mblock.metric.v3_Cart2Cntrv(
+        xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
+      // avoid problem for a particle right at the axes
+      if ((m_particles.i2(p) == 0)
+          && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
+        v[2] = ZERO;
+      } else if ((m_particles.i2(p) == m_ni2 - 1)
+                 && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
+        v[2] = ZERO;
+      }
+      v[0] *= inv_energy;
+      v[1] *= inv_energy;
+      v[2] *= inv_energy;
 
-        positionUpdate(p, v);
+      positionUpdate(p, v);
 
 #ifndef MINKOWSKI_METRIC
-        // !HOTFIX: THIS NEEDS TO BE FIXED FOR MPI
-        reflectFromAxis(p);
+      // !HOTFIX: this needs to be fixed for MPI
+      // !HOTFIX: also synchronize with GR
+      reflectFromAxis(p);
 #endif
-      }
     }
     /**
      * @brief Pusher for the photon.
      * @param p index.
      */
     Inline void operator()(const Photon_t&, index_t p) const {
-      if (m_particles.tag(p) == ParticleTag::alive) {
-#ifdef MINKOWSKI_METRIC
-        coord_t<D> xp;
-#else
-        coord_t<Dim3> xp;
-#endif
-        getParticleCoordinate(p, xp);
-        vec_t<Dim3> v;
-        m_mblock.metric.v3_Cart2Cntrv(
-          xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
-
-        real_t inv_energy;
-        inv_energy = ONE / math::sqrt(get_prtl_Usqr_SR(m_particles, p));
-        v[0] *= inv_energy;
-        v[1] *= inv_energy;
-        v[2] *= inv_energy;
-
-        positionUpdate(p, v);
-#ifndef MINKOWSKI_METRIC
-        reflectFromAxis(p);
-#endif
+      if (m_particles.tag(p) != ParticleTag::alive) {
+        return;
       }
+#ifdef MINKOWSKI_METRIC
+      coord_t<D> xp;
+#else
+      coord_t<Dim3> xp;
+#endif
+      getParticleCoordinate(p, xp);
+      vec_t<Dim3> v;
+      m_mblock.metric.v3_Cart2Cntrv(
+        xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
+
+      real_t inv_energy;
+      inv_energy = ONE / math::sqrt(get_prtl_Usqr_SR(m_particles, p));
+      v[0] *= inv_energy;
+      v[1] *= inv_energy;
+      v[2] *= inv_energy;
+
+      positionUpdate(p, v);
+#ifndef MINKOWSKI_METRIC
+      reflectFromAxis(p);
+#endif
     }
 
 #ifdef MINKOWSKI_METRIC
@@ -274,14 +277,18 @@ namespace ntt {
   template <>
   Inline void Pusher_kernel<Dim2>::reflectFromAxis(index_t& p) const {
     if ((m_particles.i2(p) < 0) || (m_particles.i2(p) >= m_ni2)) {
+      // particle is off of the axis
       m_particles.dx2(p) = ONE - m_particles.dx2(p);
       m_particles.i2(p) = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
       if (((m_particles.i2(p) == 0)
            && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0)))
           || ((m_particles.i2(p) == m_ni2 - 1)
               && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0)))) {
+        // just reflect the x-velocity and set y velocity to zero if exactly at the axis
         m_particles.ux1(p) = -m_particles.ux1(p);
+        m_particles.ux2(p) = ZERO;
       } else {
+        // reflect theta-velocity
         coord_t<Dim3> x_cu { get_prtl_x1(m_particles, p),
                              get_prtl_x2(m_particles, p),
                              m_particles.phi(p) };
