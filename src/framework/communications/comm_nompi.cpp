@@ -15,6 +15,7 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
 
 #  ifdef MINKOWSKI_METRIC
+
   // helper function
   template <Dimension D, int N>
   auto CommunicateField(const ndfield_t<D, N>&            fld,
@@ -101,16 +102,21 @@ namespace ntt {
       }
     }
   }
+
 #  else     // not MINKOWSKI_METRIC
+
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Communicate(CommTags comm) {
     if (comm & Comm_Prtl) {
-      for (auto& species : this->meshblock.particles) {
-        species.ReshuffleByTags(true);
+      if (tstep() % params()->shuffleInterval() == 0) {
+        for (auto& species : this->meshblock.particles) {
+          species.ReshuffleByTags(true);
+        }
       }
     }
   }
 #  endif    // MINKOWSKI_METRIC
+
 }    // namespace ntt
 
 #  ifdef MINKOWSKI_METRIC

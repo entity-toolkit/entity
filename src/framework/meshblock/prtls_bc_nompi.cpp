@@ -70,6 +70,9 @@ namespace ntt {
     const auto ni1 { (int)mesh.Ni1() };
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
+        if (tag(p) != ParticleTag::alive) {
+          return;
+        }
         if ((i1(p) < 0) || (i1(p) >= ni1)) {
           // radial boundary conditions
           tag(p) = ParticleTag::dead;
@@ -110,6 +113,9 @@ namespace ntt {
     const auto ni2 = static_cast<int>(mesh.Ni2());
     Kokkos::parallel_for(
       "BoundaryConditions", rangeActiveParticles(), ClassLambda(index_t p) {
+        if (tag(p) != ParticleTag::alive) {
+          return;
+        }
         if ((i1(p) < i1h) || (i1(p) >= ni1)) {
           // radial boundary conditions
           tag(p) = ParticleTag::dead;

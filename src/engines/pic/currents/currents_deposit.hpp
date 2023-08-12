@@ -58,23 +58,25 @@ namespace ntt {
      * @param p index.
      */
     Inline auto operator()(index_t p) const -> void {
-      if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
-        // _f = final, _i = initial
-        tuple_t<int, D> Ip_f, Ip_i;
-        coord_t<D>      xp_f, xp_i, xp_r;
-        vec_t<Dim3>     vp { ZERO, ZERO, ZERO };
-
-        // get [i, di]_init and [i, di]_final (per dimension)
-        getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-        depositCurrentsFromParticle(m_use_weights ? static_cast<real_t>(m_particles.weight(p))
-                                                  : ONE,
-                                    vp,
-                                    Ip_f,
-                                    Ip_i,
-                                    xp_f,
-                                    xp_i,
-                                    xp_r);
+      if (m_particles.tag(p) != ParticleTag::alive) {
+        return;
       }
+
+      // _f = final, _i = initial
+      tuple_t<int, D> Ip_f, Ip_i;
+      coord_t<D>      xp_f, xp_i, xp_r;
+      vec_t<Dim3>     vp { ZERO, ZERO, ZERO };
+
+      // get [i, di]_init and [i, di]_final (per dimension)
+      getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+      depositCurrentsFromParticle(m_use_weights ? static_cast<real_t>(m_particles.weight(p))
+                                                : ONE,
+                                  vp,
+                                  Ip_f,
+                                  Ip_i,
+                                  xp_f,
+                                  xp_i,
+                                  xp_r);
     }
 
     /**
