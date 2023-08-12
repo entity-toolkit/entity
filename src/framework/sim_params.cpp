@@ -53,9 +53,9 @@ namespace ntt {
       }
       m_species.emplace_back(ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher));
     }
-    m_use_weights      = get("particles", "use_weights", defaults::use_weights);
+    m_use_weights = get("particles", "use_weights", defaults::use_weights);
 
-    m_metric           = SIMULATION_METRIC;
+    m_metric      = SIMULATION_METRIC;
     if (m_metric == "minkowski") {
       m_coordinates = "cartesian";
     } else if (m_metric[0] == 'q') {
@@ -162,7 +162,14 @@ namespace ntt {
     assert(m_cfl > 0);
 
     // number of current filter passes
-    m_current_filters = get("algorithm", "current_filters", defaults::current_filters);
+    m_current_filters  = get("algorithm", "current_filters", defaults::current_filters);
+
+    // shuffle interval
+    m_shuffle_interval = get("particles", "shuffle_interval", 1);
+#if defined(MPI_ENABLED)
+    // shuffle every step when MPI is enabled
+    m_shuffle_interval = 1;
+#endif
 
     // output params
     m_output_format   = get("output", "format", defaults::output_format, options::outputs);

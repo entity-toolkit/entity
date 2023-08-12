@@ -94,8 +94,10 @@ namespace ntt {
       }
     }
     if (comm & Comm_Prtl) {
-      for (auto& species : mblock.particles) {
-        species.ReshuffleByTags(true);
+      if (tstep() % params()->shuffleInterval() == 0) {
+        for (auto& species : mblock.particles) {
+          species.ReshuffleByTags(true);
+        }
       }
     }
   }

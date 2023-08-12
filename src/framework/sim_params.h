@@ -47,6 +47,9 @@ namespace ntt {
     // current filtering passes
     unsigned short                              m_current_filters;
 
+    // Particle-specific
+    int                                         m_shuffle_interval;
+
     /**
      * Extent of the whole domain in physical units
      * { x1_min, x1_max, x2_min, x2_max, x3_min, x3_max }.
@@ -103,61 +106,61 @@ namespace ntt {
     /**
      * @brief Get the CFL.
      */
-    [[nodiscard]] auto cfl() const -> const real_t& {
+    [[nodiscard]] auto cfl() const -> real_t {
       return m_cfl;
     }
     /**
      * @brief Get the dt.
      */
-    [[nodiscard]] auto dt() const -> const real_t& {
+    [[nodiscard]] auto dt() const -> real_t {
       return m_dt;
     }
     /**
      * @brief Get the correction to the speed of light.
      */
-    [[nodiscard]] auto correction() const -> const real_t& {
+    [[nodiscard]] auto correction() const -> real_t {
       return m_correction;
     }
     /**
      * @brief Get the GR pusher epsilon.
      */
-    [[nodiscard]] auto grPusherEpsilon() const -> const real_t& {
+    [[nodiscard]] auto grPusherEpsilon() const -> real_t {
       return m_gr_pusher_epsilon;
     }
     /**
      * @brief Get the GR pusher niter.
      */
-    [[nodiscard]] auto grPusherNiter() const -> const int& {
+    [[nodiscard]] auto grPusherNiter() const -> int {
       return m_gr_pusher_niter;
     }
     /**
      * @brief Get the total runtime in physical units.
      */
-    [[nodiscard]] auto totalRuntime() const -> const real_t& {
+    [[nodiscard]] auto totalRuntime() const -> real_t {
       return m_total_runtime;
     }
     /**
      * @brief Get the fiducial number of particles per cell.
      */
-    [[nodiscard]] auto ppc0() const -> const real_t& {
+    [[nodiscard]] auto ppc0() const -> real_t {
       return m_ppc0;
     }
     /**
      * @brief Get the fiducial Larmor radius.
      */
-    [[nodiscard]] auto larmor0() const -> const real_t& {
+    [[nodiscard]] auto larmor0() const -> real_t {
       return m_larmor0;
     }
     /**
      * @brief Get the fiducial skin depth.
      */
-    [[nodiscard]] auto skindepth0() const -> const real_t& {
+    [[nodiscard]] auto skindepth0() const -> real_t {
       return m_skindepth0;
     }
     /**
      * @brief Get the fiducial sigma.
      */
-    [[nodiscard]] auto sigma0() const -> const real_t& {
+    [[nodiscard]] auto sigma0() const -> real_t {
       return m_sigma0;
     }
     /**
@@ -169,8 +172,14 @@ namespace ntt {
     /**
      * @brief Get the use_weights flag.
      */
-    [[nodiscard]] auto useWeights() const -> const bool& {
+    [[nodiscard]] auto useWeights() const -> bool {
       return m_use_weights;
+    }
+    /**
+     * @brief Get the shuffle interval.
+     */
+    [[nodiscard]] auto shuffleInterval() const -> int {
+      return m_shuffle_interval;
     }
     /**
      * @brief Get the extent of the simulation box.
@@ -224,19 +233,19 @@ namespace ntt {
     /**
      * @brief Get the enable_fieldsolver flag.
      */
-    [[nodiscard]] auto fieldsolverEnabled() const -> const bool& {
+    [[nodiscard]] auto fieldsolverEnabled() const -> bool {
       return m_enable_fieldsolver;
     }
     /**
      * @brief number of current filter passes
      */
-    [[nodiscard]] auto currentFilters() const -> const unsigned short& {
+    [[nodiscard]] auto currentFilters() const -> unsigned short {
       return m_current_filters;
     }
     /**
      * @brief Get the enable_deposit flag.
      */
-    [[nodiscard]] auto depositEnabled() const -> const bool& {
+    [[nodiscard]] auto depositEnabled() const -> bool {
       return m_enable_deposit;
     }
     /**
@@ -248,13 +257,13 @@ namespace ntt {
     /**
      * @brief Get the output interval.
      */
-    [[nodiscard]] auto outputInterval() const -> const int& {
+    [[nodiscard]] auto outputInterval() const -> int {
       return m_output_interval;
     }
     /**
      * @brief Get the output interval in physical time units.
      */
-    [[nodiscard]] auto outputIntervalTime() const -> const real_t& {
+    [[nodiscard]] auto outputIntervalTime() const -> real_t {
       return m_output_interval_time;
     }
     /**
@@ -272,37 +281,37 @@ namespace ntt {
     /**
      * @brief Get the smoothing size for moments.
      */
-    [[nodiscard]] auto outputMomSmooth() const -> const int& {
+    [[nodiscard]] auto outputMomSmooth() const -> int {
       return m_output_mom_smooth;
     }
     /**
      * @brief Get the particle stride for the output.
      */
-    [[nodiscard]] auto outputPrtlStride() const -> const std::size_t& {
+    [[nodiscard]] auto outputPrtlStride() const -> std::size_t {
       return m_output_prtl_stride;
     }
     /**
      * @brief Output raw fields or convert and interpolate.
      */
-    [[nodiscard]] auto outputAsIs() const -> const bool& {
+    [[nodiscard]] auto outputAsIs() const -> bool {
       return m_output_as_is;
     }
     /**
      * @brief Output ghost zones.
      */
-    [[nodiscard]] auto outputGhosts() const -> const bool& {
+    [[nodiscard]] auto outputGhosts() const -> bool {
       return m_output_ghosts;
     }
     /**
      * @brief Get the diagnostic printout interval.
      */
-    [[nodiscard]] auto diagInterval() const -> const int& {
+    [[nodiscard]] auto diagInterval() const -> int {
       return m_diag_interval;
     }
     /**
      * @brief Get the blocking timers flag.
      */
-    [[nodiscard]] auto blockingTimers() const -> const bool& {
+    [[nodiscard]] auto blockingTimers() const -> bool {
       return m_blocking_timers;
     }
 
