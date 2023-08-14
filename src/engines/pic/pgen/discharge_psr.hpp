@@ -167,8 +167,9 @@ namespace ntt {
                                    static_cast<real_t>(i2_) + HALF };
         coord_t<Dim2>       x_ph { ZERO };
         mblock.metric.x_Code2Phys(x_cu, x_ph);
-        m_ppc_per_spec(i1_, i2_)
-          = densityProfile(x_ph[0], m_C, m_h, m_Rstar) * (x_ph[0] > m_Rstar);
+        m_ppc_per_spec(i1_, i2_) = densityProfile(x_ph[0], m_C, m_h, m_Rstar)
+                                   * (x_ph[0] > m_Rstar)
+                                   * (x_ph[0] < m_Rstar + static_cast<real_t>(10) * m_h);
         // 2 -- for two species
         m_ppc_per_spec(i1_, i2_) *= ppc0 / TWO;
       });
