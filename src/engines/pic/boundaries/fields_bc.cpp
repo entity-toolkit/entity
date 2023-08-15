@@ -42,7 +42,8 @@ namespace ntt {
        */
       pgen.UserDriveFields(this->m_time, params, mblock);
     } else {
-      NTTHostError("2d boundary condition in r_min have to be CUSTOM");
+      NTTHostErrorIf(mblock.boundaries[0][0] != BoundaryCondition::COMM,
+                     "2d boundary condition in r_min have to be CUSTOM");
     }
     if (mblock.boundaries[0][1] == BoundaryCondition::ABSORB
         || mblock.boundaries[0][1] == BoundaryCondition::OPEN) {

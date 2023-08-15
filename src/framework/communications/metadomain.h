@@ -143,19 +143,20 @@ namespace ntt {
     [[nodiscard]] auto index() const -> int {
       return m_index;
     }
-    [[nodiscard]] auto offsetNdomains() const -> std::vector<unsigned int> {
+    [[nodiscard]] auto offsetNdomains() const -> const std::vector<unsigned int>& {
       return m_offset_ndomains;
     }
-    [[nodiscard]] auto ncells() const -> std::vector<unsigned int> {
+    [[nodiscard]] auto ncells() const -> const std::vector<unsigned int>& {
       return m_ncells;
     }
-    [[nodiscard]] auto offsetNcells() const -> std::vector<unsigned int> {
+    [[nodiscard]] auto offsetNcells() const -> const std::vector<unsigned int>& {
       return m_offset_ncells;
     }
-    [[nodiscard]] auto extent() const -> std::vector<real_t> {
+    [[nodiscard]] auto extent() const -> const std::vector<real_t>& {
       return m_extent;
     }
-    [[nodiscard]] auto boundaries() const -> std::vector<std::vector<BoundaryCondition>> {
+    [[nodiscard]] auto boundaries() const
+      -> const std::vector<std::vector<BoundaryCondition>>& {
       return m_boundaries;
     }
     [[nodiscard]] auto neighbors(const direction_t<D>& dir) const -> const Domain<D>* {
@@ -174,7 +175,7 @@ namespace ntt {
         NTTHostError("Boundary not found");
       }
     }
-    [[nodiscard]] auto metric() const -> Metric<D> {
+    [[nodiscard]] auto metric() const -> const Metric<D>& {
       return m_metric;
     }
 
@@ -194,7 +195,7 @@ namespace ntt {
     std::vector<unsigned int>                         m_global_ndomains_per_dim;
     std::vector<std::vector<unsigned int>>            m_domain_offsets;
     std::map<std::vector<unsigned int>, unsigned int> m_domain_indices;
-    real_t                                            m_smallest_cell_size;
+    real_t m_smallest_cell_size, m_fiducial_cell_volume;
 
 #if defined(MPI_ENABLED)
     int m_mpisize;
@@ -334,16 +335,18 @@ namespace ntt {
             direction, no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
         }
       }
-      m_smallest_cell_size = -ONE;
-      for (std::size_t index { 0 }; index < m_global_ndomains; ++index) {
-        if (m_smallest_cell_size < 0) {
-          m_smallest_cell_size = domains[index].metric().dxMin();
-        } else {
-          m_smallest_cell_size
-            = std::min(m_smallest_cell_size, domains[index].metric().dxMin());
-        }
+      m_smallest_cell_size = m_global_metric.dxMin();
+      coord_t<D> x_corner { ZERO };
+      for (short d { 0 }; d < (short)D; ++d) {
+        x_corner[d] = HALF;
       }
+      m_fiducial_cell_volume = m_global_metric.sqrt_det_h(x_corner);
+      // sanity check
+      NTTHostErrorIf(m_fiducial_cell_volume != domains[0].metric().sqrt_det_h(x_corner),
+                     "fiducial cell volume is not the same across all domains");
+
 #if defined(MPI_ENABLED)
+      // sanity check
       auto smallest_cell_sizes       = std::vector<real_t>(m_global_ndomains);
       smallest_cell_sizes[m_mpirank] = m_smallest_cell_size;
       MPI_Allgather(&smallest_cell_sizes[m_mpirank],
@@ -390,11 +393,11 @@ namespace ntt {
      * Getters
      */
 
-    [[nodiscard]] auto globalNcells() const -> std::vector<unsigned int> {
+    [[nodiscard]] auto globalNcells() const -> const std::vector<unsigned int>& {
       return m_global_ncells;
     }
 
-    [[nodiscard]] auto globalExtent() const -> std::vector<real_t> {
+    [[nodiscard]] auto globalExtent() const -> const std::vector<real_t>& {
       return m_global_extent;
     }
 
@@ -402,21 +405,21 @@ namespace ntt {
       return m_global_ndomains;
     }
 
-    [[nodiscard]] auto globalNdomainsPerDim() const -> std::vector<unsigned int> {
+    [[nodiscard]] auto globalNdomainsPerDim() const -> const std::vector<unsigned int>& {
       return m_global_ndomains_per_dim;
     }
 
-    [[nodiscard]] auto domainOffsets() const -> std::vector<std::vector<unsigned int>> {
+    [[nodiscard]] auto domainOffsets() const -> const std::vector<std::vector<unsigned int>>& {
       return m_domain_offsets;
     }
 
     [[nodiscard]] auto domainIndices() const
-      -> std::map<std::vector<unsigned int>, unsigned int> {
+      -> const std::map<std::vector<unsigned int>, unsigned int>& {
       return m_domain_indices;
     }
 
     [[nodiscard]] auto globalBoundaries() const
-      -> std::vector<std::vector<BoundaryCondition>> {
+      -> const std::vector<std::vector<BoundaryCondition>>& {
       return m_global_boundaries;
     }
 
@@ -426,6 +429,9 @@ namespace ntt {
 
     [[nodiscard]] auto smallestCellSize() const -> real_t {
       return m_smallest_cell_size;
+    }
+    [[nodiscard]] auto fiducialCellVolume() const -> real_t {
+      return m_fiducial_cell_volume;
     }
 
 #if defined(MPI_ENABLED)

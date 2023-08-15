@@ -29,6 +29,8 @@ namespace ntt {
     const bool              m_use_weights;
     const real_t            m_dt;
     const int               m_ni2;
+    const bool              m_ax_i2min;
+    const bool              m_ax_i2max;
 
   public:
     /**
@@ -51,7 +53,11 @@ namespace ntt {
         m_charge(charge),
         m_use_weights { use_weights },
         m_dt(dt),
-        m_ni2((int)(m_mblock.Ni2())) {}
+        m_ni2((int)(m_mblock.Ni2())),
+        m_ax_i2min { (mblock.boundaries.size() > 1)
+                     && (mblock.boundaries[1][0] == BoundaryCondition::AXIS) },
+        m_ax_i2max { (mblock.boundaries.size() > 1)
+                     && (mblock.boundaries[1][1] == BoundaryCondition::AXIS) } {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -66,17 +72,11 @@ namespace ntt {
       tuple_t<int, D> Ip_f, Ip_i;
       coord_t<D>      xp_f, xp_i, xp_r;
       vec_t<Dim3>     vp { ZERO, ZERO, ZERO };
+      const auto      weight = (m_use_weights ? m_particles.weight(p) : ONE);
 
       // get [i, di]_init and [i, di]_final (per dimension)
       getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-      depositCurrentsFromParticle(m_use_weights ? static_cast<real_t>(m_particles.weight(p))
-                                                : ONE,
-                                  vp,
-                                  Ip_f,
-                                  Ip_i,
-                                  xp_f,
-                                  xp_i,
-                                  xp_r);
+      depositCurrentsFromParticle(weight, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
     }
 
     /**
@@ -212,9 +212,10 @@ namespace ntt {
       vp);
 
     // make sure the velocity is defined at the axis
-    if (Ip_f[1] == 0 && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
+    if (m_ax_i2min && Ip_f[1] == 0
+        && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
       vp[2] = ZERO;
-    } else if (Ip_f[1] == m_ni2 - 1
+    } else if (m_ax_i2max && Ip_f[1] == m_ni2 - 1
                && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
       vp[2] = ZERO;
     }
@@ -234,11 +235,10 @@ namespace ntt {
     xp_i[1] = xp_f[1] - m_dt * vp[1];
     Ip_i[1] = static_cast<int>(xp_i[1]);
     // reflect off the axis
-    // !HOTFIX: needs to be fixed for MPI
-    if (xp_i[1] < ZERO) {
+    if (m_ax_i2min && xp_i[1] < ZERO) {
       Ip_i[1] = 0;
       xp_i[1] = -xp_i[1];
-    } else if (xp_i[1] >= static_cast<real_t>(m_ni2)) {
+    } else if (m_ax_i2max && xp_i[1] >= static_cast<real_t>(m_ni2)) {
       xp_i[1] = TWO * static_cast<real_t>(m_ni2) - xp_i[1];
       Ip_i[1] = m_ni2 - 1;
     }

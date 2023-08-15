@@ -9,8 +9,23 @@
 #define STRINGIZE_DETAIL(x) #x
 #define LINE_STRING         STRINGIZE(__LINE__)
 
-#define NTTLog()                                                                              \
-  { PLOGV_(ntt::LogFile); }
+#if defined(MPI_ENABLED)
+#  include <mpi.h>
+
+#  define NTTLog()                                                                            \
+    {                                                                                         \
+      int mpi_rank;                                                                           \
+      MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);                                               \
+      if (mpi_rank == 0) {                                                                    \
+        PLOGV_(ntt::LogFile);                                                                 \
+      }                                                                                       \
+    }
+
+#else    // not MPI_ENABLED
+#  define NTTLog()                                                                            \
+    { PLOGV_(ntt::LogFile); }
+
+#endif
 
 #define NTTWarn(msg)                                                                          \
   { PLOGW_(ntt::LogFile) << msg; }
@@ -33,9 +48,9 @@
     }                                                                                         \
   }
 
-#ifdef ENABLE_GPU
+#if defined(GPU_ENABLED)
 #  define NTTError(msg) ({})
-#else
+#else    // not GPU_ENABLED
 #  define NTTError(msg) NTTHostError(msg)
 #endif
 

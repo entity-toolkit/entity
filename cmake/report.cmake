@@ -151,6 +151,16 @@ PrintChoices("GUI"
   0
   36
 )
+PrintChoices("MPI"
+  "mpi"
+  "${ON_OFF_VALUES}"
+  ${mpi}
+  OFF
+  "${Green}"
+  MPI_REPORT
+  0
+  42
+)
 PrintChoices("Debug mode"
   "DEBUG"
   "${ON_OFF_VALUES}"
@@ -287,6 +297,8 @@ message("  ${CXX_COMPILER_REPORT}\n")
 if(NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
   message("  ${CUDA_COMPILER_REPORT}\n")
 endif()
+
+message("  ${MPI_REPORT}\n")
 
 message("  ${DEBUG_REPORT}\n")
 

@@ -35,6 +35,8 @@ namespace ntt {
 #endif
     const real_t m_time, m_coeff, m_dt;
     const int    m_ni2;
+    const bool   m_ax_i2min;
+    const bool   m_ax_i2max;
 
   public:
     /**
@@ -62,7 +64,11 @@ namespace ntt {
         m_time { time },
         m_coeff { coeff },
         m_dt { dt },
-        m_ni2 { (int)mblock.Ni2() } {
+        m_ni2 { (int)mblock.Ni2() },
+        m_ax_i2min { (mblock.boundaries.size() > 1)
+                     && (mblock.boundaries[1][0] == BoundaryCondition::AXIS) },
+        m_ax_i2max { (mblock.boundaries.size() > 1)
+                     && (mblock.boundaries[1][1] == BoundaryCondition::AXIS) } {
     }
 
     /**
@@ -141,10 +147,10 @@ namespace ntt {
       m_mblock.metric.v3_Cart2Cntrv(
         xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
       // avoid problem for a particle right at the axes
-      if ((m_particles.i2(p) == 0)
+      if (m_ax_i2min && (m_particles.i2(p) == 0)
           && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
         v[2] = ZERO;
-      } else if ((m_particles.i2(p) == m_ni2 - 1)
+      } else if (m_ax_i2max && (m_particles.i2(p) == m_ni2 - 1)
                  && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
         v[2] = ZERO;
       }
@@ -155,7 +161,6 @@ namespace ntt {
       positionUpdate(p, v);
 
 #ifndef MINKOWSKI_METRIC
-      // !HOTFIX: this needs to be fixed for MPI
       // !HOTFIX: also synchronize with GR
       reflectFromAxis(p);
 #endif
@@ -276,7 +281,8 @@ namespace ntt {
 
   template <>
   Inline void Pusher_kernel<Dim2>::reflectFromAxis(index_t& p) const {
-    if ((m_particles.i2(p) < 0) || (m_particles.i2(p) >= m_ni2)) {
+    if (((m_particles.i2(p) < 0) && m_ax_i2min)
+        || ((m_particles.i2(p) >= m_ni2) && m_ax_i2max)) {
       // particle is off of the axis
       m_particles.dx2(p) = ONE - m_particles.dx2(p);
       m_particles.i2(p) = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
