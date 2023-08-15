@@ -5,6 +5,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 ## Dev team (alphabetical)
 
+💁‍♂️ __Alexander Chernoglazov__ {[@SChernoglazov](https://github.com/SChernoglazov): PIC}
+
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
 
 🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
