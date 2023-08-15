@@ -40,8 +40,10 @@ To compile the code you need to have the following dependencies installed:
     | `precision` | floating point precision | `single`, `double` | `single` |
     | `output` | enable output | `ON`, `OFF` | `OFF` |
     | `gui` | enable the `nttiny` GUI | `ON`, `OFF` | `OFF` |
-    | `mpi` | enable MPI _(TBR in v1.1)_ | `ON`, `OFF` | `OFF` |
+    | `mpi` | enable MPI _(TBR in v1.0)_ | `ON`, `OFF` | `OFF` |
     | `DEBUG` | enable debug mode | `ON`, `OFF` | `OFF` |
+    | `BENCHMARKS` | compile the executables for benchmarking | `ON`, `OFF` | `OFF` |
+    | `TESTS` | compile the unit tests | `ON`, `OFF` | `OFF` |
     
     Additionally, there are some CMake and other library-specific options (for [Kokkos](https://kokkos.github.io/kokkos-core-wiki/keywords.html) and [ADIOS2](https://adios2.readthedocs.io/en/latest/setting_up/setting_up.html#cmake-options)) that can be specified along with the above ones. While the code picks most of these options for the end-user, some of them can/should be specified manually. In particular:
 
@@ -77,8 +79,28 @@ There are two types of executables produced after the compilation is done: `enti
 
 !!! note
     
-    When running the `entity-GUI.xc` on a remote machine (e.g., via a `vnc` server), one needs to run with `vglrun ./path/to/entity-GUI.xc -input <INPUT>`. This is because `entity-GUI.xc` uses OpenGL for rendering the GUI, and `vglrun` is a wrapper that enables OpenGL on a remote machine.
+    When running the `entity-GUI.xc` on a remote machine (e.g., via a `vnc` server), one needs to run with `vglrun ./path/to/entity-GUI.xc`. This is because `entity-GUI.xc` uses OpenGL for rendering the GUI, and `vglrun` is a wrapper that enables OpenGL on a remote machine.
       
+!!! note "For the Stellar Princeton cluster users"
+    
+    For convenience we provide precompiled libraries (`kokkos` and `adios2`) for the Stellar users. To use them, run the following:
+    ```shell
+    # this line can also be added to your ~/.bashrc or ~/.zshrc for auto loading
+    module use --append /home/hakobyan/.modules
+    # see the new available modules with ...
+    module avail
+    # load ...
+    module load entity/gpu-volta-70
+    # or ...
+    module load entity/gui
+    # or ...
+    module load entity/gpu-ampere-80
+    # ... depending on the architecture
+    # then configuring the code is quite straightforward
+    cmake -B build -D pgen=... -D metric=...
+    # Kokkos_ARCH_***, Kokkos_ENABLE_CUDA, etc. are already set
+    ```
+
 ## Docker 
 
 !!! warning

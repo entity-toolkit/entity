@@ -57,7 +57,7 @@ $$
 \end{aligned}
 $$
 
-where $q_p$ is the charge of the particle $p$ in its rest frame. $dx^i_p/dt$ is the particle three-velocity defined in agreement with [the equation of motion](../3p1/#equations-of-motion-for-particles): in practice it is $\left((x^i_p)^{\rm (new)} - (x^i_p)^{\rm (old)}\right) / \Delta t$. After the deposition, we can then recover the physical contravariant currents that go into the Maxwell's equations: $\bm{J}^i = \bm{\mathcal{J}}^i / (\alpha \sqrt{h})$.
+where $q_p$ is the charge of the particle $p$ in its rest frame. $dx^i_p/dt$ is the particle three-velocity defined in agreement with [the equation of motion](../3p1/#equations-of-motion-for-particles): in practice it is $\left((x^i_p)^{\rm (new)} - (x^i_p)^{\rm (old)}\right) / \Delta t$. After the deposition, we can then recover the physical contravariant currents that go into the Maxwell's equations: $\bm{J}^i = \bm{\mathcal{J}}^i / \sqrt{h}$.
 
 Full deposition loop can be expressed with the following pseudocode (actual array names and structures are different).
 
