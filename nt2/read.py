@@ -600,8 +600,19 @@ class Data:
         self._particles = {}
         for s in species:
             prtl_data = {}
-            for q in [f"X1_{s}", f"X2_{s}", f"X3_{s}", f"U1_{s}", f"U2_{s}", f"U3_{s}"]:
-                q_ = PrtlDict[coordinates][q.split("_")[0]]
+            for q in [
+                f"X1_{s}",
+                f"X2_{s}",
+                f"X3_{s}",
+                f"U1_{s}",
+                f"U2_{s}",
+                f"U3_{s}",
+                f"W_{s}",
+            ]:
+                if q[0] in ["X", "U"]:
+                    q_ = PrtlDict[coordinates][q.split("_")[0]]
+                else:
+                    q_ = q.split("_")[0]
                 if q not in prtls:
                     continue
                 if q not in prtl_data.keys():

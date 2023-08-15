@@ -99,7 +99,18 @@ namespace ntt {
           writer.Put<real_t>(var, ui_host);
         }
       } else if (m_id == PrtlID::W) {
-        NTTHostError("OutputParticles::put() not implemented for PrtlID::W");
+        array_t<real_t*> w("w", size);
+        Kokkos::parallel_for(
+          "ParticlesOutput_Ui",
+          Kokkos::RangePolicy<AccelExeSpace>(0, size),
+          Lambda(index_t p) { w(p) = prtls.weight(p * prtl_stride); });
+        auto w_host = Kokkos::create_mirror_view(w);
+        Kokkos::deep_copy(w_host, w);
+        auto varname = "W_" + std::to_string(s);
+        auto var     = io.InquireVariable<real_t>(varname);
+        var.SetShape({ total_size });
+        var.SetSelection({ { offset }, { size } });
+        writer.Put<real_t>(var, w_host);
       }
     }
   }
