@@ -25,8 +25,8 @@ namespace ntt {
     Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
       : MetricBase<D> { "spherical", resolution, extent },
         dr((this->x1_max - this->x1_min) / this->nx1),
-        dtheta(constant::PI / this->nx2),
-        dphi(constant::TWO_PI / this->nx3),
+        dtheta((this->x2_max - this->x2_min) / this->nx2),
+        dphi((this->x3_max - this->x3_min) / this->nx3),
         dr_inv { ONE / dr },
         dtheta_inv { ONE / dtheta },
         dphi_inv { ONE / dphi },

@@ -4,6 +4,7 @@
 #include "wrapper.h"
 
 #include "communications/decomposition.h"
+#include "utils/qmath.h"
 #include "utils/utils.h"
 
 #include METRIC_HEADER
@@ -13,6 +14,8 @@
 #if defined(MPI_ENABLED)
 #  include <mpi.h>
 #endif    // MPI_ENABLED
+
+#include <fmt/core.h>
 
 /**
  *
@@ -342,8 +345,12 @@ namespace ntt {
       }
       m_fiducial_cell_volume = m_global_metric.sqrt_det_h(x_corner);
       // sanity check
-      NTTHostErrorIf(m_fiducial_cell_volume != domains[0].metric().sqrt_det_h(x_corner),
-                     "fiducial cell volume is not the same across all domains");
+      NTTHostErrorIf(
+        !AlmostEqual(m_fiducial_cell_volume, domains[0].metric().sqrt_det_h(x_corner)),
+        fmt::format("fiducial cell volume is not the same across all domains: "
+                    "{:.6e} != {:.6e}",
+                    m_fiducial_cell_volume,
+                    domains[0].metric().sqrt_det_h(x_corner)));
 
 #if defined(MPI_ENABLED)
       // sanity check
@@ -357,7 +364,7 @@ namespace ntt {
                     mpi_get_type<real_t>(),
                     MPI_COMM_WORLD);
       for (const auto& sz : smallest_cell_sizes) {
-        NTTHostErrorIf(sz != m_smallest_cell_size,
+        NTTHostErrorIf(!AlmostEqual(sz, m_smallest_cell_size),
                        "smallest cell size is not the same across all MPI ranks");
       }
 
