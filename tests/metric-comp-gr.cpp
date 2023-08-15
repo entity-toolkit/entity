@@ -12,7 +12,7 @@ auto main(int argc, char* argv[]) -> int {
   ntt::GlobalInitialize(argc, argv);
   try {
     const auto resolution = std::vector<unsigned int>({ 1080, 512 });
-    const auto extent     = std::vector<real_t>({ 1.0, 2000.0 });
+    const auto extent     = std::vector<real_t>({ 1.0, 2000.0, 0.0, ntt::constant::PI });
     const auto spin       = (real_t)(0.5);
     const auto rh         = ONE + std::sqrt(ONE - SQR(spin));
     // optional for Qspherical

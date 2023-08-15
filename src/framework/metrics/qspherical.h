@@ -31,7 +31,7 @@ namespace ntt {
         r0 { params[0] },
         h { params[1] },
         chi_min { math::log(this->x1_min - r0) },
-        eta_min { theta2eta(this->x2_min) },    // !HOTFIX: fix this for MPI
+        eta_min { theta2eta(this->x2_min) },
         phi_min { this->x3_min },
         dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
         deta { (theta2eta(this->x2_max) - eta_min) / this->nx2 },
@@ -129,9 +129,8 @@ namespace ntt {
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
         real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
-        real_t eta { x[1] * deta + eta_min };
-        return dchi * deta * exp_chi * dtheta_deta(eta) * SQR(r0 + exp_chi)
-               * math::sin(eta2theta(eta));
+        return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) * SQR(r0 + exp_chi)
+               * math::sin(eta2theta(x[1] * deta + eta_min));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
