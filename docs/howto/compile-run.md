@@ -34,12 +34,13 @@ To compile the code you need to have the following dependencies installed:
 
     | Option | Description | Values | Default |
     | --- | --- | --- | --- |
-    | `engine` | simulation type | `pic`, `grpic` _(TBR in v0.9)_ | `pic` |
+    | `engine` | simulation type | `pic`, `grpic` | `pic` |
     | `pgen` | problem generator | see `<engine>/pgen/` directory | `dummy` |
-    | `metric` | metric | `minkowski`, `spherical`, `qspherical`, `kerr_schild`, `qkerr_schild` | `minkowski` for `pic`, and `kerr_schild` for `grpic` |
+    | `metric` | metric | `minkowski`, `spherical`, `qspherical`, `kerr_schild`, `qkerr_schild`, `kerr_schild_0` | `minkowski` for `pic`, and `kerr_schild` for `grpic` |
     | `precision` | floating point precision | `single`, `double` | `single` |
     | `output` | enable output | `ON`, `OFF` | `OFF` |
-    | `nttiny` | enable `nttiny` GUI | `ON`, `OFF` | `OFF` |
+    | `gui` | enable the `nttiny` GUI | `ON`, `OFF` | `OFF` |
+    | `mpi` | enable MPI _(TBR in v1.1)_ | `ON`, `OFF` | `OFF` |
     | `DEBUG` | enable debug mode | `ON`, `OFF` | `OFF` |
     
     Additionally, there are some CMake and other library-specific options (for [Kokkos](https://kokkos.github.io/kokkos-core-wiki/keywords.html) and [ADIOS2](https://adios2.readthedocs.io/en/latest/setting_up/setting_up.html#cmake-options)) that can be specified along with the above ones. While the code picks most of these options for the end-user, some of them can/should be specified manually. In particular:
@@ -65,18 +66,18 @@ To compile the code you need to have the following dependencies installed:
 
 ## Running
 
-There are two types of executables produced after the compilation is done: `entity.xc` and `nttiny.xc` (if compiled with the `nttiny` GUI). In both cases one can run the code with the following command:
+There are two types of executables produced after the compilation is done: `entity.xc` and `entity-GUI.xc` (if compiled with the `nttiny` GUI). In both cases one can run the code with the following command:
 
 ```shell
 <path/to/executable>.xc -input <path/to/input_file>.toml
 ```
 `entity.xc` runs headlessly, producing a generic diagnostic output. To enable data dumping (output), one needs to compile with the `-D output=ON` flag. 
 
-`nttiny.xc` runs the simulation together with the GUI. The simulation lives as long as the GUI window is open. Additionally, `nttiny.xc` also accepts the `-scale <S>` flag, where `<S>` is the scale factor for the GUI (e.g. `-scale 2` will make the GUI twice as big; this setting depends on the personal preference and the monitor DPI/resolution used).
+`entity-GUI.xc` runs the simulation together with the GUI. The simulation lives as long as the GUI window is open. Additionally, `entity-GUI.xc` also accepts the `-scale <S>` flag, where `<S>` is the scale factor for the GUI (e.g. `-scale 2` will make the GUI twice as big; this setting depends on the personal preference and the monitor DPI/resolution used).
 
 !!! note
     
-    When running the `nttiny.xc` on a remote machine (e.g., via a `vnc` server), one needs to run with `vglrun ./path/to/nttiny.xc`. This is because `nttiny.xc` uses OpenGL for rendering the GUI, and `vglrun` is a wrapper that enables OpenGL on a remote machine.
+    When running the `entity-GUI.xc` on a remote machine (e.g., via a `vnc` server), one needs to run with `vglrun ./path/to/entity-GUI.xc -input <INPUT>`. This is because `entity-GUI.xc` uses OpenGL for rendering the GUI, and `vglrun` is a wrapper that enables OpenGL on a remote machine.
       
 ## Docker 
 

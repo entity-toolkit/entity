@@ -16,12 +16,16 @@ title   = "MySimulation" # (5)!
 # ...
 
 [output]
-format       = "HDF5" # (2)!
-fields       = ["Bx", "Ei", "Rho_1_2", ...] # (1)!
-particles    = ["X_1_2", "U_3_4", "W"] # (7)!
-interval     = 100 # (3)!
-mom_smooth   = 2 # (4)!
-prtl_stride  = 10 # (6)!
+format          = "HDF5" # (2)!
+fields          = ["B", "E", "Rho_1_2", ...] # (1)!
+particles       = ["X_1_2", "U_3_4", "W"] # (7)!
+interval        = 100 # (3)!
+interval_time   = 0.1 # (8)!
+mom_smooth      = 2 # (4)!
+fields_stride   = 2 # (9)!
+prtl_stride     = 10 # (6)!
+as_is           = false # (10)!
+ghosts          = false # (11)!
 ```
 
 1. fields to write
@@ -31,19 +35,31 @@ prtl_stride  = 10 # (6)!
 5. title is used for the output filename
 6. stride used for particle output (write every `prtl_stride`-th particle) [defaults to 100]
 7. particle quantities to write
+8. output interval in time units (overrides `interval` if specified)
+9. stride used for field output (write every `fields_stride`-th cell) [defaults to 1]
+10. write the field quantities as-is (without conversion/interpolation) [defaults to false]
+11. write the ghost cells [defaults to false]
 
 Output is written in the run directory in a single `hdf5` file: `MySimulation.h5`. All the steps are written in the same file, and the time step is stored as an attribute of the dataset: `Step0`, `Step1`, `Step2`, etc. Thus to access, say, the `Ez` field at the 10th output step (not the same as the simulation timestep), one has to access the dataset `/Step9/Ez` in the `hdf5` file. If one needs the `X1` coordinates of particles of species 2 at the 5th output step, one has to access the dataset `/Step4/X1_2` in the `hdf5` file, etc.
 
 Following is the list of the supported fields
 
-| Field name | Description | Units |
-|------------|-------------|------|
-| `Ei` | Electric field (all components) | $B_0$ |
-| `Bi` | Magnetic field (all components) |  $B_0$ |
-| `Ji` | Current density (all components) | $q_0 n_0$ |
-| `Rho` | Mass density | $m_0 n_0$ |
-| `N` | Number density |  $n_0$ |
-| `Tij` | Energy-momentum tensor (all components) | $m_0 n_0$ |
+| Field name  | Description                       | Normalization         |
+|---          |---                                |---                    |
+| `E`         | Electric field (all components)   | $B_0$                 |
+| `B`         | Magnetic field (all components)   | $B_0$                 |
+| `D`         | GR: electric field (all components)   | $B_0$                 |
+| `H`         | GR: aux. magnetic field (all components)   | $B_0$                 |
+| `J`         | Current density (all components)  | $4\pi q_0 n_0$        |
+| `Rho`       | Mass density                      | $m_0 n_0$             |
+| `Charge`    | Charge density                    | $q_0 n_0$             |
+| `N`         | Number density                    | $n_0$                 |
+| `Nppc`      | Raw number of particles per cell  | dimensionless         |
+| `Nppc`      | Raw number of particles per cell  | dimensionless         |
+| `Tij`       | Energy-momentum tensor (all components) | $m_0 n_0$       |
+| `divE`      | Divergence of $E$  | arb. units         |
+| `divD`      | GR: divergence of $D$  | arb. units         |
+| `A`         | GR: 2D vector potential $A_\varphi$  | arb. units         |
 
 and particle quantities
 
@@ -55,13 +71,13 @@ and particle quantities
 
 !!! note "Refining fields and particle quantities for the output"
 
-    One can specify particular components to output for the fields. For instance, `E1` (or, e.g., `By`) will only output `Ex` (or, correspondigly, `By`). The same applies to the `Ji` and `Tij` fields. Additionally, `T0i` will output the `T00`, `T01`, and `T02` components, while `Tii` will output only the diagonal components: `T11`, `T22`, and `T33`. One can also specify the particle species which will be used to compute the moments or output particle quantities: `Rho_1` (density of species 1), `N_2_3` (number density of species 2 and 3), `Tij_1_3` (energy-momentum tensor for species 1 and 3), etc. Or for the particle quantities: `X_1_2` will write the coordinates of particles of species 1 and 2 only. If no species are specified, the moments will be computed for all the species with $m_s \ne 0$.
+    One can specify particular components to output for the `Tij` fields: `T0i` will output the `T00`, `T01`, and `T02` components, while `Tii` will output only the diagonal components: `T11`, `T22`, and `T33`. One can also specify the particle species which will be used to compute the moments or output particle quantities: `Rho_1` (density of species 1), `N_2_3` (number density of species 2 and 3), `Tij_1_3` (energy-momentum tensor for species 1 and 3), etc. Or for the particle quantities: `X_1_2` will write the coordinates of particles of species 1 and 2 only. If no species are specified, the moments will be computed for all the species with $m_s \ne 0$.
 
 All of the vector fields are interpolated to cell centers before the output, and converted to orthonormal basis. The particle-based moments are smoothed with a stencil (specified in the input file; `mom_smooth`) for each particle.
 
 !!! failure "Can one track particles at different times?"
 
-    Particle tracking (outputting the same batch of particles at every timestep) is unfortunately not yet implemented.
+    Particle tracking (outputting the same batch of particles at every timestep) is unfortunately not yet implemented, and will unlikely be available due to limitations imposed by the nature of GPU computations.
 
 ## `nt2.py`
 

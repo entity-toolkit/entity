@@ -34,16 +34,14 @@ hide:
 
     This wiki page is under active construction and does not properly reflect the current development stage. If you don't find answers to your questions, please feel free to contact via email [haykh[dot]astro[at]gmail](mailto:haykh.astro+entity@gmail.com) or submit a [github issue](https://github.com/haykh/entity/issues). If you are interested in working with us, please contact us at [haykh[dot]astro[at]gmail](mailto:haykh.astro+entity@gmail.com).
 
-### Core developers
+### Dev team (alphabetical)
 
-* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh): framework, PIC, GR, cubed-sphere}
-* :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann): cubed-sphere, framework, MPI}
-
-### Contributors
-
-* :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph): all-around}
+* 💁‍♂️ Alexander Chernoglazov {[@SChernoglazov](https://github.com/SChernoglazov): PIC}
 * :tea: Benjamin Crinquand {[@bcrinquand](https://github.com/bcrinquand): GR, cubed-sphere}
 * :bubble_tea: Alisa Galishnikova {[@alisagk](https://github.com/alisagk): GR}
+* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh): framework, PIC, GR, cubed-sphere}
+* :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann): cubed-sphere, framework, MPI}
+* :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph): all-around}
 * 🤷‍♂️ Arno Vanthieghem {[@vanthieg](https://github.com/vanthieg): PIC}
 
 ### Timeline
@@ -63,12 +61,12 @@ hide:
 - title: First official release
   content: v1.0 will be the first official release of the Entity toolkit. It will fully support non-GR and GR PIC simulations on multiple nodes (GPU & CPU) in arbitrary geometries.
   icon: v1.0
-  sub_title: 2023-May
+  sub_title: 2023-Fall
   key: v1-0
 - title: Advanced features
   content: TBD (cubed-sphere, QED, force-free, etc.).
   icon: v1.1
-  sub_title: 2023-Jun
+  sub_title: late 2023
   key: v1-1
 
 ::/timeline::

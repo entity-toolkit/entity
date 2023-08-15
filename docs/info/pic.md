@@ -18,7 +18,6 @@ Here we demonstrate the full particle-in-cell (PIC) algorithm in the most genera
     \begin{aligned}
     \text{field solvers}&
     \begin{cases}
-    C_0 = \rho_0 / (n_0 d_0^2)\\[1em]
     \frac{\Delta\texttt{b}_i}{\Delta \texttt{t}} = -\frac{1}{\sqrt{h}} \left[\Delta_j (h_{k}\texttt{e}_k) - \Delta_k (h_{j}\texttt{e}_j)\right]\\[1em]
     \frac{\Delta \texttt{e}_i}{\Delta \texttt{t}} = \frac{1}{\sqrt{h}} \left[\Delta_j (h_{k}\texttt{b}_k) - \Delta_k (h_{j}\texttt{b}_j)\right] - \frac{C_0}{\sqrt{h}}\texttt{j}_i
     \end{cases}\\[4em]
@@ -27,7 +26,7 @@ Here we demonstrate the full particle-in-cell (PIC) algorithm in the most genera
     \texttt{e},~\texttt{b} \xrightarrow[\text{interpolation}]{} \texttt{e}_p,~\texttt{b}_p\\[1em]
     \texttt{e}_p,~\texttt{b}_p \xrightarrow[\text{to global XYZ}]{\text{contravariant}} \hat{\texttt{e}}_p,~\hat{\texttt{b}}_p\\[1em]
     \gamma = \sqrt{1 + \hat{\texttt{u}}_i^2 + \hat{\texttt{u}}_j^2 + \hat{\texttt{u}}_k^2}\\[1em]
-    \frac{\Delta \hat{\texttt{u}}_i}{\Delta t} = \frac{\tilde{q}_p/\tilde{m}_p}{\rho_0}\left(
+    \frac{\Delta \hat{\texttt{u}}_i}{\Delta t} = \frac{\tilde{q}_p}{\tilde{m}_p}B_0\left(
       \hat{\texttt{e}}_i 
       + \frac{\hat{\texttt{u}}_j}{\gamma} \hat{\texttt{b}}_k
       - \frac{\hat{\texttt{u}}_k}{\gamma} \hat{\texttt{b}}_j
@@ -45,7 +44,7 @@ Here we demonstrate the full particle-in-cell (PIC) algorithm in the most genera
 
 === "`ntt::GRPIC`"
 
-## Particle pusher
+<!-- ## Particle pusher
 
 ## Charge-conservative current deposition
 
@@ -113,7 +112,7 @@ Full deposition loop can be expressed with the following pseudocode (actual arra
 
 === "`ntt::GRPIC`"
 
-    NA
+    NA -->
 
 ## PIC algorithm loop
 
