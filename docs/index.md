@@ -62,20 +62,12 @@ hide:
 - title: First official release
   content: v1.0 will be the first official release of the Entity toolkit. It will fully support SR and GR PIC simulations on multiple nodes (GPU & CPU) in arbitrary geometries.
   icon: v1.0
-<<<<<<< HEAD
   sub_title: 2023-Fall
-=======
-  sub_title: 2023-Aug
->>>>>>> refs/remotes/origin/wiki
   key: v1-0
 - title: Advanced features
   content: TBD (cubed-sphere, QED, force-free, etc.).
   icon: v1.1
-<<<<<<< HEAD
   sub_title: late 2023
-=======
-  sub_title: "2023"
->>>>>>> refs/remotes/origin/wiki
   key: v1-1
 
 ::/timeline::
