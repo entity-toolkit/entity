@@ -31,7 +31,7 @@ namespace ntt {
         r0 { params[0] },
         h { params[1] },
         chi_min { math::log(this->x1_min - r0) },
-        eta_min { ZERO },
+        eta_min { ZERO },    // !HOTFIX: fix this for MPI
         phi_min { ZERO },
         dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
         deta { static_cast<real_t>(constant::PI) / this->nx2 },
@@ -84,8 +84,7 @@ namespace ntt {
      */
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        return dchi_sqr * math::exp(2.0 * chi);
+        return dchi_sqr * math::exp(TWO * (x[0] * dchi + chi_min));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
@@ -99,11 +98,8 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta + eta_min };
-        real_t dtheta_deta_ { dtheta_deta(eta) };
-        return deta_sqr * SQR(dtheta_deta_) * r * r;
+        return deta_sqr * SQR(dtheta_deta(x[1] * deta + eta_min))
+               * SQR(r0 + math::exp(x[0] * dchi + chi_min));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
@@ -117,12 +113,8 @@ namespace ntt {
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t sin_theta { math::sin(theta) };
-        return r * r * sin_theta * sin_theta;
+        return SQR((r0 + math::exp(x[0] * dchi + chi_min))
+                   * math::sin(eta2theta(x[1] * deta + eta_min)));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
@@ -136,25 +128,14 @@ namespace ntt {
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
+        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
         real_t eta { x[1] * deta + eta_min };
-        real_t theta { eta2theta(eta) };
-        real_t sin_theta { math::sin(theta) };
-        real_t dtheta_deta_ { dtheta_deta(eta) };
-        return dchi * deta * math::exp(chi) * r * r * sin_theta * dtheta_deta_;
+        return dchi * deta * exp_chi * dtheta_deta(eta) * SQR(r0 + exp_chi)
+               * math::sin(eta2theta(eta));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
       }
-    }
-    /**
-     * Compute the fiducial minimum cell volume.
-     *
-     * @returns Minimum cell volume of the grid [code units].
-     */
-    Inline auto min_cell_volume() const -> real_t {
-      return math::pow(this->dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
     }
 
     /**
@@ -165,11 +146,8 @@ namespace ntt {
      */
     Inline auto polar_area(const real_t& x1) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x1 * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t del_eta { HALF * deta };
-        real_t del_theta { eta2theta(del_eta) };
-        return dchi * math::exp(chi) * r * r * (ONE - math::cos(del_theta));
+        real_t exp_chi { math::exp(x1 * dchi + chi_min) };
+        return dchi * exp_chi * SQR(r0 + exp_chi) * (ONE - math::cos(eta2theta(HALF * deta)));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;

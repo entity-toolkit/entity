@@ -35,9 +35,10 @@ namespace ntt {
     meshblock.random_pool_ptr = &random_pool;
     meshblock.boundaries      = m_metadomain.localDomain()->boundaries();
 
-    // find timestep and effective cell size
+    // find timestep, effective cell size, fiducial cell volume
     // synchronize with other blocks
     meshblock.metric.set_dxMin(m_metadomain.smallestCellSize());
+    m_params.setV0(m_metadomain.fiducialCellVolume());
     if (m_params.dt() <= ZERO) {
       meshblock.setTimestep(m_params.cfl() * meshblock.minCellSize());
     } else {
@@ -59,7 +60,7 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::Verify() {
+  auto Simulation<D, S>::Verify() -> void {
     NTTLog();
     meshblock.Verify();
     WaitAndSynchronize();
@@ -73,7 +74,7 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::PrintDetails() {
+  auto Simulation<D, S>::PrintDetails() -> void {
     std::string bc { "" };
     for (auto& boundaries_xi : m_params.boundaries()) {
       bc += "{";
@@ -178,13 +179,18 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Simulation<D, S>::PrintDiagnostics(const std::size_t&        step,
+  auto Simulation<D, S>::PrintDiagnostics(const std::size_t&        step,
                                           const real_t&             time,
                                           const timer::Timers&      timers,
                                           std::vector<long double>& tstep_durations,
                                           const DiagFlags           diag_flags,
-                                          std::ostream&             os) {
+                                          std::ostream&             os) -> void {
     tstep_durations.push_back(timers.get("Total"));
+#if defined(MPI_ENABLED)
+    if (metadomain()->localDomain()->mpiRank() != 0) {
+      return;
+    }
+#endif
     if (step % m_params.diagInterval() == 0) {
       const auto title { "time = " + std::to_string(time)
                          + " : step = " + std::to_string(step) };

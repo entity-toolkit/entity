@@ -14,7 +14,7 @@ namespace ntt {
       const real_t dt { factor * mblock.timestep() };
       const real_t charge_ovr_mass { species.mass() > ZERO ? species.charge() / species.mass()
                                                            : ZERO };
-      const real_t coeff { charge_ovr_mass * HALF * dt / params.larmor0() };
+      const real_t coeff { charge_ovr_mass * HALF * dt * params.B0() };
 
       if (species.pusher() == ParticlePusher::PHOTON) {
         // push photons

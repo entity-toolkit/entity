@@ -117,14 +117,14 @@ namespace ntt {
      * @param components Components of the field to compute (if applicable).
      * @param prtl_species Particle species to compute the moment for.
      * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
-     * @param smooth Smoothing order (default: 2).
+     * @param window Smoothing window (default: 2).
      */
     void ComputeMoments(const SimulationParams& params,
                         const FieldID&          field,
                         const std::vector<int>& components,
                         const std::vector<int>& prtl_species,
                         const int&              buff_ind,
-                        const short&            smooth = 2);
+                        const short&            window = 2);
   };
 }    // namespace ntt
 

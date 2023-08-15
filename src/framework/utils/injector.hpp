@@ -275,6 +275,7 @@ namespace ntt {
         index { ind },
         nppc { ppc },
         use_weights { params.useWeights() },
+        V0 { params.V0() },
         energy_dist { params, mblock },
         spatial_dist { params, mblock },
         inj_criterion { params, mblock },
@@ -298,8 +299,8 @@ namespace ntt {
             inj_criterion(xph) &&                             // injection criterion
             (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
         ) {
-          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
-          cell_vol = mblock.metric.sqrt_det_h(xc) / mblock.metric.min_cell_volume();
+          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
+          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc) / V0) : ONE };
 
           energy_dist(xph, v, species_index1);
           v_cart[0] = v[0];
@@ -312,7 +313,7 @@ namespace ntt {
                             v_cart[0],
                             v_cart[1],
                             v_cart[2],
-                            use_weights ? cell_vol : ONE);
+                            weight);
 
           energy_dist(xph, v, species_index2);
           v_cart[0] = v[0];
@@ -325,7 +326,7 @@ namespace ntt {
                             v_cart[0],
                             v_cart[1],
                             v_cart[2],
-                            use_weights ? cell_vol : ONE);
+                            weight);
         }
         n_inject -= ONE;
       }
@@ -341,6 +342,7 @@ namespace ntt {
     array_t<std::size_t> index;
     const real_t         nppc;
     const bool           use_weights;
+    const real_t         V0;
     EnDist<Dim1, S>      energy_dist;
     SpDist<Dim1, S>      spatial_dist;
     InjCrit<Dim1, S>     inj_criterion;
@@ -373,6 +375,7 @@ namespace ntt {
         index { ind },
         nppc { ppc },
         use_weights { params.useWeights() },
+        V0 { params.V0() },
         energy_dist { params, mblock },
         spatial_dist { params, mblock },
         inj_criterion { params, mblock },
@@ -403,8 +406,8 @@ namespace ntt {
             inj_criterion(xph) &&                             // injection criterion
             (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
         ) {
-          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
-          cell_vol = mblock.metric.sqrt_det_h(xc) / mblock.metric.min_cell_volume();
+          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
+          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc) / V0) : ONE };
 
           energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
@@ -423,7 +426,7 @@ namespace ntt {
                             v_cart[0],
                             v_cart[1],
                             v_cart[2],
-                            use_weights ? cell_vol : ONE);
+                            weight);
 
           energy_dist(xph, v, species_index2);
 #ifdef MINKOWSKI_METRIC
@@ -442,7 +445,7 @@ namespace ntt {
                             v_cart[0],
                             v_cart[1],
                             v_cart[2],
-                            use_weights ? cell_vol : ONE);
+                            weight);
         }
         n_inject -= ONE;
       }
@@ -458,6 +461,7 @@ namespace ntt {
     array_t<std::size_t> index;
     const real_t         nppc;
     const bool           use_weights;
+    const real_t         V0;
     EnDist<Dim2, S>      energy_dist;
     SpDist<Dim2, S>      spatial_dist;
     InjCrit<Dim2, S>     inj_criterion;
@@ -490,6 +494,7 @@ namespace ntt {
         index { ind },
         nppc { ppc },
         use_weights { params.useWeights() },
+        V0 { params.V0() },
         energy_dist { params, mblock },
         spatial_dist { params, mblock },
         inj_criterion { params, mblock },
@@ -523,8 +528,8 @@ namespace ntt {
             inj_criterion(xph) &&                             // injection criterion
             (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
         ) {
-          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
-          cell_vol = mblock.metric.sqrt_det_h(xc) / mblock.metric.min_cell_volume();
+          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
+          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc) / V0) : ONE };
 
           energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
@@ -545,7 +550,7 @@ namespace ntt {
                             v_cart[0],
                             v_cart[1],
                             v_cart[2],
-                            use_weights ? cell_vol : ONE);
+                            weight);
 
           energy_dist(xph, v, species_index2);
 #ifdef MINKOWSKI_METRIC
@@ -566,7 +571,7 @@ namespace ntt {
                             v_cart[0],
                             v_cart[1],
                             v_cart[2],
-                            use_weights ? cell_vol : ONE);
+                            weight);
         }
         n_inject -= ONE;
       }
@@ -582,6 +587,7 @@ namespace ntt {
     array_t<std::size_t> index;
     const real_t         nppc;
     const bool           use_weights;
+    const real_t         V0;
     EnDist<Dim3, S>      energy_dist;
     SpDist<Dim3, S>      spatial_dist;
     InjCrit<Dim3, S>     inj_criterion;
@@ -719,24 +725,21 @@ namespace ntt {
         if ((Random<real_t>(rand_gen) < n_inject) &&    // # of prtls
             inj_criterion(xph)                          // injection criterion
         ) {
-          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
-          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc)
-                                             / mblock.metric.min_cell_volume())
-                                          : ONE };
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
           energy_dist(xph, v, species_index1);
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
           init_prtl_1d_i_di(
-            species1, offset1 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], weight);
+            species1, offset1 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], ONE);
 
           energy_dist(xph, v, species_index2);
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
           init_prtl_1d_i_di(
-            species2, offset2 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], weight);
+            species2, offset2 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], ONE);
         }
         n_inject -= ONE;
       }
@@ -781,6 +784,7 @@ namespace ntt {
         index { ind },
         ppc_per_spec { ppc },
         use_weights { params.useWeights() },
+        V0 { params.V0() },
         energy_dist { params, mblock },
         inj_criterion { params, mblock },
         pool { *(mblock.random_pool_ptr) } {}
@@ -789,6 +793,9 @@ namespace ntt {
       const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
       const auto i2_ = static_cast<int>(i2) - N_GHOSTS;
       const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };
+      const auto weight { use_weights
+                            ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
+                            : ONE };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_, i2_) };
@@ -806,11 +813,7 @@ namespace ntt {
         if ((Random<real_t>(rand_gen) < n_inject) &&    // # of prtls
             inj_criterion(xph)                          // injection criterion
         ) {
-          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
-          const auto weight { use_weights
-                                ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF })
-                                   / mblock.metric.min_cell_volume())
-                                : ONE };
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
           energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
@@ -848,6 +851,7 @@ namespace ntt {
     array_t<std::size_t> index;
     ndarray_t<2>         ppc_per_spec;
     const bool           use_weights;
+    const real_t         V0;
     EnDist<Dim2, S>      energy_dist;
     InjCrit<Dim2, S>     inj_criterion;
     RandomNumberPool_t   pool;
@@ -931,6 +935,100 @@ namespace ntt {
     sp1.setNpart(sp1.npart() + ind_h());
     sp2.setNpart(sp2.npart() + ind_h());
   }
+
+  /* -------------------------------------------------------------------------- */
+
+  // #ifdef MINKOWSKI_METRIC
+  //   template <Dimension D, SimulationEngine S>
+  //   auto InjectParticleGlobally(Meshblock<D, S>&  mblock,
+  //                               short             species_id,
+  //                               const coord_t<D>& x,
+  //                               const vec_t<D>&   u,
+  //                               real_t            w = ONE) -> bool {
+  //     auto                 in_bounds = true;
+  //     coord_t<D>           Xi { ZERO };
+  //     tuple_t<int, D>      I { 0 };
+  //     tuple_t<prtldx_t, D> dI { (prtldx_t)0 };
+  //     mblock.metric.x_Phys2Code(x, Xi);
+  //     for (short d { 0 }; d < (short)D; ++d) {
+  //       from_Xi_to_i_di(Xi[d], I[d], dI[d]);
+  //       in_bounds = (in_bounds) && (I[d] >= 0) && (I[d] < mblock.Ni(d));
+  //     }
+  //     if (!in_bounds) {
+  //       return false;
+  //     }
+  //     auto&      species = mblock.particles[species_id];
+  //     const auto p0      = species.npart();
+
+  //     if constexpr (D == Dim1) {
+  //       Kokkos::parallel_for(
+  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
+  //           init_prtl_1d(mblock, sp, p0 + p, Xi[0], u[0], u[1], u[2], w);
+  //         });
+  //     } else if constexpr (D == Dim2) {
+  //       Kokkos::parallel_for(
+  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
+  //           init_prtl_2d(mblock, sp, p0 + p, Xi[0], Xi[1], u[0], u[1], u[2], w);
+  //         });
+  //     } else if constexpr (D == Dim3) {
+  //       Kokkos::parallel_for(
+  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
+  //           init_prtl_3d(mblock, sp, p0 + p, Xi[0], Xi[1], Xi[2], u[0], u[1], u[2], w);
+  //         });
+  //     }
+  //     species.setNpart(p0 + 1);
+  //     return true;
+  //   }
+  // #else    // not MINKOWSKI_METRIC
+  //   template <Dimension D, SimulationEngine S>
+  //   auto InjectParticleGlobally(Meshblock<D, S>& mblock,
+  //                               short species_id,
+  //                               const coord_t<Dim3>& x,
+  //                               const vec_t<Dim3>& u,
+  //                               real_t w = ONE) -> bool {
+  //     coord_t<D> Xi { ZERO };
+  //     coord_t<D> X_ph { ZERO };
+  //     for (short d { 0 }; d < (short)D; ++d) {
+  //       X_ph[d] = x[d];
+  //     }
+  //     tuple_t<int, D> I { 0 };
+  //     mblock.metric.x_Phys2Code(X_ph, Xi);
+  //     printf("particle coords CU %f %f\n", Xi[0], Xi[1]);
+  //     const auto dtheta = (mblock.metric.x2_max - mblock.metric.x2_min) / mblock.Ni2();
+  //     std::cout << "TEST : " << (X_ph[1] - mblock.metric.x2_min) / dtheta << " " << Xi[1]
+  //               << "\n";
+  //     for (short d { 0 }; d < (short)D; ++d) {
+  //       // from_Xi_to_i(Xi[d], I[d]);
+  //       I[d] = static_cast<int>(math::floor(Xi[d]));
+  //       if (!((I[d] >= 0) && (I[d] < mblock.Ni(d)))) {
+  //         return false;
+  //       }
+  //     }
+  //     printf("  going to inject particle at %d %d %f %f\n", I[0], I[1], X_ph[0], X_ph[1]);
+  //     printf("  bounds are %f %f %f %f %d %d\n",
+  //            mblock.metric.x1_min,
+  //            mblock.metric.x1_max,
+  //            mblock.metric.x2_min,
+  //            mblock.metric.x2_max,
+  //            mblock.Ni1(),
+  //            mblock.Ni2());
+  //     auto& species = mblock.particles[species_id];
+  //     const auto p0 = species.npart();
+
+  //     if constexpr (D == Dim2) {
+  //       Kokkos::parallel_for(
+  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
+  //           init_prtl_2d(mblock, species, p0 + p, Xi[0], Xi[1], u[0], u[1], u[2], w);
+  //           species.phi(p) = Xi[2];
+  //         });
+  //     } else if constexpr (D == Dim3) {
+  //       NTTHostError("not implemented");
+  //       return false;
+  //     }
+  //     species.setNpart(p0 + 1);
+  //     return true;
+  //   }
+  // #endif
 
 }    // namespace ntt
 

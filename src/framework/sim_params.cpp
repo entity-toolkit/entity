@@ -150,11 +150,11 @@ namespace ntt {
       }
     }
 
-    // plasma params
+    // fundamental parameters
     m_ppc0       = get<real_t>("units", "ppc0");
     m_larmor0    = get<real_t>("units", "larmor0");
     m_skindepth0 = get<real_t>("units", "skindepth0");
-    m_sigma0     = SQR(m_skindepth0) / SQR(m_larmor0);
+    m_V0         = -ONE;    // defined later
 
     // if dt not specified (== -1), will use CFL to calculate it
     m_dt         = get("algorithm", "dt", -ONE);

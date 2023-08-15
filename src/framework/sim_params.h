@@ -29,7 +29,8 @@ namespace ntt {
     // Independent simulation parameters.
     real_t                                      m_ppc0, m_larmor0, m_skindepth0;
     // Deduced simulation parameters.
-    real_t                                      m_sigma0;
+    real_t                                      m_V0;
+
     // Vector of user-defined species parameters.
     std::vector<ParticleSpecies>                m_species;
 
@@ -158,10 +159,41 @@ namespace ntt {
       return m_skindepth0;
     }
     /**
-     * @brief Get the fiducial sigma.
+     * @brief Get the fiducial sigma0.
      */
     [[nodiscard]] auto sigma0() const -> real_t {
-      return m_sigma0;
+      return SQR(m_skindepth0) / SQR(m_larmor0);
+    }
+    /**
+     * @brief Get the fiducial V0.
+     */
+    [[nodiscard]] auto V0() const -> real_t {
+      NTTHostErrorIf(m_V0 < ZERO, "V0 not properly defined");
+      return m_V0;
+    }
+    /**
+     * @brief Set the fiducial V0.
+     */
+    auto setV0(real_t V0) -> void {
+      m_V0 = V0;
+    }
+    /**
+     * @brief Get the fiducial n0.
+     */
+    [[nodiscard]] auto n0() const -> real_t {
+      return m_ppc0 / m_V0;
+    }
+    /**
+     * @brief Get the fiducial q0.
+     */
+    [[nodiscard]] auto q0() const -> real_t {
+      return ONE / (n0() * SQR(m_skindepth0));
+    }
+    /**
+     * @brief Get the fiducial B0.
+     */
+    [[nodiscard]] auto B0() const -> real_t {
+      return ONE / m_larmor0;
     }
     /**
      * @brief Get the vector of user-defined species parameters.

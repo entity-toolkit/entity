@@ -297,16 +297,6 @@ namespace ntt {
     }
 
     /**
-     * Fiducial minimum cell volume.
-     *
-     * @returns Minimum cell volume of the grid [code units].
-     */
-    Inline auto min_cell_volume() const -> real_t {
-      return math::pow(this->dx_min * math::sqrt(static_cast<real_t>(D)),
-                       static_cast<short>(D));
-    }
-
-    /**
      * Area at the pole (used in axisymmetric solvers).
      * Approximate solution for the polar area.
      *

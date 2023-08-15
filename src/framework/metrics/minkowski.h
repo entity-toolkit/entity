@@ -87,15 +87,6 @@ namespace ntt {
       return math::pow(dx, static_cast<short>(D));
     }
 
-    /**
-     * Compute the fiducial minimum cell volume.
-     *
-     * @returns Minimum cell volume of the grid [code units].
-     */
-    Inline auto min_cell_volume() const -> real_t {
-      return math::pow(dx, static_cast<short>(D));
-    }
-
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a diagonal metric here

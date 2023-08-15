@@ -29,20 +29,14 @@ namespace ntt {
    */
   template <Dimension D>
   void PIC<D>::AmpereCurrents() {
-    auto&            mblock = this->meshblock;
-
-    auto             params = *(this->params());
-    const auto       dt     = mblock.timestep();
-    const auto       rho0   = params.larmor0();
-    const auto       de0    = params.skindepth0();
-    const auto       n0     = params.ppc0() / mblock.metric.min_cell_volume();
-    // constant sqrt of det_h is included here ...
-    // ... instead of the kernel
-    const coord_t<D> dummy { ZERO };
-    const auto       sqrt_h = mblock.metric.sqrt_det_h(dummy);
-    const auto       coeff  = -dt * rho0 / (sqrt_h * n0 * SQR(de0));
-    Kokkos::parallel_for(
-      "AmpereCurrents", mblock.rangeActiveCells(), CurrentsAmpere_kernel<D>(mblock, coeff));
+    auto&      mblock = this->meshblock;
+    auto       params = *(this->params());
+    const auto coeff
+      = -mblock.timestep() * params.q0() * params.n0() / (params.B0() * params.V0());
+    const auto inv_n0 = ONE / params.n0();
+    Kokkos::parallel_for("AmpereCurrents",
+                         mblock.rangeActiveCells(),
+                         CurrentsAmpere_kernel<D>(mblock, coeff, inv_n0));
 
     NTTLog();
   }
@@ -55,14 +49,8 @@ namespace ntt {
   void PIC<D>::AmpereCurrents() {
     auto&      mblock = this->meshblock;
     auto       params = *(this->params());
-    const auto dt     = mblock.timestep();
-    const auto rho0   = params.larmor0();
-    const auto de0    = params.skindepth0();
-    const auto ncells = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
-    // !HOTFIX: this needs to be verified
-    const auto volume = ONE / (real_t)ncells;
-    const auto n0     = params.ppc0() / volume;
-    const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+    const auto coeff  = -mblock.timestep() * params.q0() * params.n0() / params.B0();
+    const auto inv_n0 = ONE / params.n0();
 
     range_t<D> range;
     // skip the axis
@@ -92,7 +80,8 @@ namespace ntt {
      *    . . . . . . . . . . . . .
      *
      */
-    Kokkos::parallel_for("AmpereCurrents-1", range, CurrentsAmpere_kernel<D>(mblock, coeff));
+    Kokkos::parallel_for(
+      "AmpereCurrents-1", range, CurrentsAmpere_kernel<D>(mblock, coeff, inv_n0));
     // do axes separately
     if constexpr (D == Dim2) {
       /**
@@ -112,7 +101,7 @@ namespace ntt {
        */
       Kokkos::parallel_for("AmpereCurrents-2",
                            CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
-                           CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
+                           CurrentsAmperePoles_kernel<Dim2>(mblock, coeff, inv_n0));
     }
 
     NTTLog();

@@ -59,8 +59,7 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t r { x[0] * dr + this->x1_min };
-        return dtheta_sqr * SQR(r);
+        return dtheta_sqr * SQR(x[0] * dr + this->x1_min);
       } else {
         NTTError("1D spherical not available");
         return ZERO;
@@ -74,13 +73,11 @@ namespace ntt {
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t r { x[0] * dr + this->x1_min };
-        real_t theta { x[1] * dtheta + this->x2_min };
-        real_t sin_theta { math::sin(theta) };
         if constexpr (D == Dim2) {
-          return SQR(r) * SQR(sin_theta);
+          return SQR(x[0] * dr + this->x1_min) * SQR(math::sin(x[1] * dtheta + this->x2_min));
         } else {
-          return dphi_sqr * SQR(r) * SQR(sin_theta);
+          return dphi_sqr * SQR(x[0] * dr + this->x1_min)
+                 * SQR(math::sin(x[1] * dtheta + this->x2_min));
         }
       } else {
         NTTError("1D spherical not available");
@@ -95,27 +92,17 @@ namespace ntt {
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t r { x[0] * dr + this->x1_min };
-        real_t theta { x[1] * dtheta + this->x2_min };
         if constexpr (D == Dim2) {
-          return dr * dtheta * SQR(r) * math::sin(theta);
+          return dr * dtheta * SQR(x[0] * dr + this->x1_min)
+                 * math::sin(x[1] * dtheta + this->x2_min);
         } else {
-          return dr * dtheta * dphi * SQR(r) * math::sin(theta);
+          return dr * dtheta * dphi * SQR(x[0] * dr + this->x1_min)
+                 * math::sin(x[1] * dtheta + this->x2_min);
         }
       } else {
         NTTError("1D spherical not available");
         return ZERO;
       }
-    }
-    /**
-     * Compute the fiducial minimum cell volume.
-     *
-     * @returns Minimum cell volume of the grid [code units].
-     */
-    Inline auto min_cell_volume() const -> real_t {
-      // !TODO: this will no longer work when many meshblocks
-      return math::pow(this->dx_min * math::sqrt(static_cast<real_t>(D)),
-                       static_cast<short>(D));
     }
 
     /**
@@ -125,9 +112,7 @@ namespace ntt {
      * @returns Area at the pole.
      */
     Inline auto polar_area(const real_t& x1) const -> real_t {
-      real_t r { x1 * dr + this->x1_min };
-      real_t del_theta { HALF * dtheta };
-      return dr * SQR(r) * (ONE - math::cos(del_theta));
+      return dr * SQR(x1 * dr + this->x1_min) * (ONE - math::cos(HALF * dtheta));
     }
 
 /**

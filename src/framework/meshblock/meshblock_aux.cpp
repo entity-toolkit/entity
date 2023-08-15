@@ -320,12 +320,10 @@ namespace ntt {
                                        const std::vector<int>& components,
                                        const std::vector<int>& prtl_species,
                                        const int&              buff_ind,
-                                       const short&            smooth) {
+                                       const short&            window) {
     NTTLog();
-    real_t weight = ONE / math::pow(2.0 * smooth + 1.0, static_cast<int>(D));
-    if (field != FieldID::Nppc) {
-      weight /= params.ppc0();
-    }
+    const auto smooth = ONE / math::pow(2.0 * window + 1.0, static_cast<int>(D));
+    const auto inv_n0 = ONE / params.n0();
     if constexpr (D == Dim1) {
       Kokkos::deep_copy(Kokkos::subview(this->buff, Kokkos::ALL(), (int)buff_ind), ZERO);
     } else if constexpr (D == Dim2) {
@@ -356,10 +354,10 @@ namespace ntt {
       comp2 = components[1];
     }
 
-    auto this_metric  = this->metric;
-    auto use_weights  = params.useWeights();
+    auto       this_metric  = this->metric;
+    const auto use_weights  = params.useWeights();
 
-    auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
+    auto       scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
     for (auto& sp : out_species) {
       auto species = particles[sp - 1];
       auto mass    = species.mass();
@@ -373,9 +371,8 @@ namespace ntt {
             if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
-              real_t x1          = get_prtl_x1(species, p);
-              auto   i1_min      = i1 - smooth + N_GHOSTS;
-              auto   i1_max      = i1 + smooth + N_GHOSTS;
+              auto   i1_min      = i1 - window + N_GHOSTS;
+              auto   i1_max      = i1 + window + N_GHOSTS;
               real_t contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
@@ -400,33 +397,33 @@ namespace ntt {
                 }
               }
               if (field != FieldID::Nppc) {
-                contrib *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1 });
+                contrib *= inv_n0 / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF });
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
               }
               for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
-                buff_access(i1_, buff_ind) += contrib * weight;
+                buff_access(i1_, buff_ind) += contrib * smooth;
               }
             }
           });
       } else if constexpr (D == Dim2) {
-        const auto ni1 { (int)(this->Ni1()) }, ni2 { (int)(this->Ni2()) };
+        const auto ax_i2min { (this->boundaries.size() > 1)
+                              && (this->boundaries[1][0] == BoundaryCondition::AXIS) };
+        const auto ax_i2max { (this->boundaries.size() > 1)
+                              && (this->boundaries[1][1] == BoundaryCondition::AXIS) };
+        const auto ni2 { (int)(this->Ni2()) };
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
-              auto   buff_access = scatter_buff.access();
-              auto   i1          = species.i1(p);
-              auto   i2          = species.i2(p);
-              real_t x1          = get_prtl_x1(species, p);
-              real_t x2          = get_prtl_x2(species, p);
-              // !HOTFIX: this needs to be synced with 1d and 3d
-              // !HOTFIX: also fixed for MPI case
-              auto   i1_min      = IMIN(IMAX(i1 - smooth, 0), ni1) + N_GHOSTS;
-              auto   i1_max      = IMIN(IMAX(i1 + smooth, 0), ni1) + N_GHOSTS;
-              auto   i2_min      = IMIN(IMAX(i2 - smooth, 0), ni2) + N_GHOSTS;
-              auto   i2_max      = IMIN(IMAX(i2 + smooth, 0), ni2) + N_GHOSTS;
-              real_t contrib { ZERO };
+              auto      buff_access = scatter_buff.access();
+              auto      i1          = species.i1(p);
+              auto      i2          = species.i2(p);
+              const int i1_min      = i1 - window + N_GHOSTS;
+              const int i1_max      = i1 + window + N_GHOSTS;
+              const int i2_min      = i2 - window + N_GHOSTS;
+              const int i2_max      = i2 + window + N_GHOSTS;
+              real_t    contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
               } else if (field == FieldID::Charge) {
@@ -450,23 +447,23 @@ namespace ntt {
                   }
                 }
 #else
-                  real_t      phi = species.phi(p);
-                  vec_t<Dim3> u_hat;
-                  this_metric.v3_Cart2Hat({ x1, x2, phi },
-                                         { species.ux1(p), species.ux2(p), species.ux3(p) },
-                                         u_hat);
-                  for (auto& c : { comp1, comp2 }) {
-                    if (c == 0) {
-                      contrib *= energy;
-                    } else { 
-                      contrib *= u_hat[c - 1];
-                    }
+                const real_t      x1  = get_prtl_x1(species, p);
+                const real_t      x2  = get_prtl_x2(species, p);
+                const real_t      phi = species.phi(p);
+                vec_t<Dim3> u_hat;
+                this_metric.v3_Cart2Hat(
+                  { x1, x2, phi }, { species.ux1(p), species.ux2(p), species.ux3(p) }, u_hat);
+                for (auto& c : { comp1, comp2 }) {
+                  if (c == 0) {
+                    contrib *= energy;
+                  } else {
+                    contrib *= u_hat[c - 1];
+                  }
                   }
 #endif
               }
               if (field != FieldID::Nppc) {
-                // !HOTFIX: this needs to be synced with 1d and 3d
-                contrib *= this_metric.min_cell_volume()
+                contrib *= inv_n0
                            / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF,
                                                       static_cast<real_t>(i2) + HALF });
                 if (use_weights) {
@@ -475,7 +472,18 @@ namespace ntt {
               }
               for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
                 for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
-                  buff_access(i1_, i2_, buff_ind) += contrib * weight;
+                  if (ax_i2min && (i2_ - static_cast<int>(N_GHOSTS) < 0)) {
+                    // reflect from theta = 0
+                    buff_access(i1_, -i2_ + 2 * static_cast<int>(N_GHOSTS), buff_ind)
+                      += contrib * smooth;
+                  } else if (ax_i2max && (i2_ - static_cast<int>(N_GHOSTS) >= ni2)) {
+                    // reflect from theta = pi
+                    buff_access(
+                      i1_, 2 * ni2 - i2_ + 2 * static_cast<int>(N_GHOSTS) - 1, buff_ind)
+                      += contrib * smooth;
+                  } else {
+                    buff_access(i1_, i2_, buff_ind) += contrib * smooth;
+                  }
                 }
               }
             }
@@ -484,20 +492,17 @@ namespace ntt {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
             if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
-              auto   buff_access = scatter_buff.access();
-              auto   i1          = species.i1(p);
-              auto   i2          = species.i2(p);
-              auto   i3          = species.i3(p);
-              real_t x1          = get_prtl_x1(species, p);
-              real_t x2          = get_prtl_x2(species, p);
-              real_t x3          = get_prtl_x3(species, p);
-              auto   i1_min      = i1 - smooth + N_GHOSTS;
-              auto   i1_max      = i1 + smooth + N_GHOSTS;
-              auto   i2_min      = i2 - smooth + N_GHOSTS;
-              auto   i2_max      = i2 + smooth + N_GHOSTS;
-              auto   i3_min      = i3 - smooth + N_GHOSTS;
-              auto   i3_max      = i3 + smooth + N_GHOSTS;
-              real_t contrib { ZERO };
+              auto      buff_access = scatter_buff.access();
+              auto      i1          = species.i1(p);
+              auto      i2          = species.i2(p);
+              auto      i3          = species.i3(p);
+              const int i1_min      = i1 - window + N_GHOSTS;
+              const int i1_max      = i1 + window + N_GHOSTS;
+              const int i2_min      = i2 - window + N_GHOSTS;
+              const int i2_max      = i2 + window + N_GHOSTS;
+              const int i3_min      = i3 - window + N_GHOSTS;
+              const int i3_max      = i3 + window + N_GHOSTS;
+              real_t    contrib { ZERO };
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
               } else if (field == FieldID::Charge) {
@@ -521,6 +526,9 @@ namespace ntt {
                   }
                 }
 #else
+                const real_t      x1 = get_prtl_x1(species, p);
+                const real_t      x2 = get_prtl_x2(species, p);
+                const real_t      x3 = get_prtl_x3(species, p);
                 vec_t<Dim3> u_hat;
                 this_metric.v3_Cart2Hat(
                   { x1, x2, x3 }, { species.ux1(p), species.ux2(p), species.ux3(p) }, u_hat);
@@ -534,8 +542,10 @@ namespace ntt {
 #endif
               }
               if (field != FieldID::Nppc) {
-                contrib
-                  *= this_metric.min_cell_volume() / this_metric.sqrt_det_h({ x1, x2, x3 });
+                contrib *= inv_n0
+                           / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF,
+                                                      static_cast<real_t>(i2) + HALF,
+                                                      static_cast<real_t>(i3) + HALF });
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
@@ -543,7 +553,7 @@ namespace ntt {
               for (auto i3_ { i3_min }; i3_ <= i3_max; ++i3_) {
                 for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
                   for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
-                    buff_access(i1_, i2_, i3_, buff_ind) += contrib * weight;
+                    buff_access(i1_, i2_, i3_, buff_ind) += contrib * smooth;
                   }
                 }
               }
