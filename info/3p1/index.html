@@ -1,0 +1,879 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://haykh.github.io/entity/info/3p1/">
+      
+      
+        <link rel="prev" href="../../howto/docs/">
+      
+      
+        <link rel="next" href="../pic/">
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+    
+    
+      
+        <title>3+1 formulation - Entity: wiki</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+  
+  
+    
+    
+  
+  
+  <style>:root{--md-admonition-icon--abstract:url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 3h2v2H5v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5h2v2H5c-1.07-.27-2-.9-2-2v-4a2 2 0 0 0-2-2H0v-2h1a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2m14 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3h2m-7 12a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-4 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m8 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1Z"/></svg>');}</style>
+
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+    
+      <link rel="stylesheet" href="../../css/neotoroi/neoteroi-mkdocs.min.css">
+    
+      <link rel="stylesheet" href="../../css/neotoroi/neoteroi-cards.css">
+    
+      <link rel="stylesheet" href="../../css/neotoroi/neoteroi-timeline.css">
+    
+      <link rel="stylesheet" href="../../css/neotoroi/neoteroi-gantt.css">
+    
+      <link rel="stylesheet" href="../../css/neotoroi/neoteroi-spantable.css">
+    
+      <link rel="stylesheet" href="../../css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#maxwells-equations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Entity: wiki" class="md-header__button md-logo" aria-label="Entity: wiki" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Entity: wiki
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              3+1 formulation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/haykh/entity" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348a1.848 1.848 0 0 1 0 2.6 1.844 1.844 0 0 1-2.609 0 1.834 1.834 0 0 1 0-2.598c.182-.18.387-.316.605-.406V8.835a1.834 1.834 0 0 1-.996-2.41L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477a1.545 1.545 0 0 0 2.186 0l10.43-10.43a1.544 1.544 0 0 0 0-2.187"/></svg>
+  </div>
+  <div class="md-source__repository">
+    entity
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Entity: wiki" class="md-nav__button md-logo" aria-label="Entity: wiki" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    Entity: wiki
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/haykh/entity" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348a1.848 1.848 0 0 1 0 2.6 1.844 1.844 0 0 1-2.609 0 1.834 1.834 0 0 1 0-2.598c.182-.18.387-.316.605-.406V8.835a1.834 1.834 0 0 1-.996-2.41L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477a1.545 1.545 0 0 0 2.186 0l10.43-10.43a1.544 1.544 0 0 0 0-2.187"/></svg>
+  </div>
+  <div class="md-source__repository">
+    entity
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          How-to
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          How-to
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../howto/compile-run/" class="md-nav__link">
+        Compiling/running
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../howto/pgen/" class="md-nav__link">
+        Writing a problem generator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../howto/units/" class="md-nav__link">
+        Understanding the units
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../howto/vis/" class="md-nav__link">
+        Output & visualization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../howto/docs/" class="md-nav__link">
+        Documenting
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          How it works
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How it works
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          3+1 formulation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        3+1 formulation
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#maxwells-equations" class="md-nav__link">
+    Maxwell's equations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equations-of-motion-for-particles" class="md-nav__link">
+    Equations of motion for particles
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-deposition" class="md-nav__link">
+    Current deposition
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pic/" class="md-nav__link">
+        PIC algorithm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coords/" class="md-nav__link">
+        Coordinate systems
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          Code guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Code guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/ranges/" class="md-nav__link">
+        Ranges
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          Fun
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Fun
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../fun/cubed_sphere/" class="md-nav__link">
+        Cubed sphere
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../fun/reconnection/" class="md-nav__link">
+        "Reconnection"
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>3+1 formulation</h1>
+
+<p>In order to host both GR and non-GR equations in a single framework while still retaining the maximum level of generality, we employ the 3+1 formulation of Maxwell's equations (see, e.g., <a href="https://link.springer.com/book/10.1007/978-3-642-24525-1">Gourgoulhon, 2012</a>).</p>
+<p>In the most general 3+1 formulation the metric in arbitrary coordinate system can be represented in the following form:</p>
+<div class="arithmatex">\[
+g_{\mu\nu} = \begin{bmatrix}
+-\alpha^2+\beta^2 &amp; \beta_j\\
+\beta_i &amp; h_{ij}\\
+\end{bmatrix},
+\]</div>
+<p>where <span class="arithmatex">\(\alpha\)</span> is the metric <em>lapse function</em>, and <span class="arithmatex">\(\beta_i\)</span> is the metric <em>shift vector</em>. We will also denote <span class="arithmatex">\(h \equiv \mathrm{det}{(h_{ij})}\)</span> (notice, that <span class="arithmatex">\(g\equiv \mathrm{det}{(g_{\mu\nu})} = -\alpha^2 h\)</span>)</p>
+<p>In our code we only work with contravariant vectors (spatial components), <span class="arithmatex">\(A^i\)</span>. Covariant counterparts are stored only for the auxiliary fields in GR, or otherwise may be obtained using the <span class="arithmatex">\(h_{ij}\)</span> spatial metric: <span class="arithmatex">\(A_i = h_{ij} A^j\)</span>.</p>
+<div class="admonition example">
+<p class="admonition-title">Flat orthogonal metric</p>
+<p>In flat spacetime with orthogonal coordinate system (e.g., cartesian, spherical, cylindrical, etc) we have <span class="arithmatex">\(\alpha = 1\)</span>, <span class="arithmatex">\(\beta_i = 0\)</span>, and <span class="arithmatex">\(h_{ij} = \mathrm{diag}\left[h_1, h_2, h_3\right]\)</span>, also <span class="arithmatex">\(h = h_1 h_2 h_3\)</span>. Covariant vector component can be trivially obtained: <span class="arithmatex">\(A_i = h_i A^i\)</span> (summation not implied here).</p>
+</div>
+<p>In this system, we can now express the curl of an arbitrary vector:</p>
+<div class="arithmatex">\[
+(\nabla\times A)^i = \frac{1}{\sqrt{h}}\varepsilon^{ijk}\partial_j A_k,
+\]</div>
+<p>where <span class="arithmatex">\(A_i = h_{ij} A^j\)</span>, and <span class="arithmatex">\(\varepsilon^{ijk}\)</span> is the Levi-Civita symbol.</p>
+<h2 id="maxwells-equations">Maxwell's equations<a class="headerlink" href="#maxwells-equations" title="Permanent link">&para;</a></h2>
+<p>In 3+1 formulation there are two "physical" fields (the ones measured by fiducial observers, FIDOs), <span class="arithmatex">\(B^i\)</span>, and <span class="arithmatex">\(D^i\)</span>. Evolution equations on these two fields can be written as:</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\frac{\partial D^i}{c\partial t} &amp;= \frac{1}{\sqrt{h}} \varepsilon^{ijk}\partial_j H_k - \frac{4\pi}{c} J^i, \\
+\frac{\partial B^i}{c\partial t} &amp;= -\frac{1}{\sqrt{h}} \varepsilon^{ijk}\partial_j E_k,
+\end{aligned}
+\]</div>
+<p>where <span class="arithmatex">\(H_i\)</span>, and <span class="arithmatex">\(E_i\)</span> are the covariant auxiliary fields, defined as follows:</p>
+<div class="arithmatex">\[
+\begin{aligned}
+H_i &amp;= \alpha h_{ij} B^j - \frac{1}{\sqrt{h}}\varepsilon_{ijk}\beta^j D^k, \\
+E_i &amp;= \alpha h_{ij} D^j + \frac{1}{\sqrt{h}}\varepsilon_{ijk}\beta^j B^k.
+\end{aligned}
+\]</div>
+<div class="admonition example">
+<p class="admonition-title">Flat orthogonal metric</p>
+<p>In flat space-time with diagonal <span class="arithmatex">\(h_{ij}\)</span>, <span class="arithmatex">\(D_i = E_i = h_i E^i\)</span>, and <span class="arithmatex">\(B_i = H_i = h_i B^i\)</span> (again, no summation implied here). Maxwell's equations (for the <span class="arithmatex">\(i = 1\)</span> component) expand to the following (having <span class="arithmatex">\(h = h_1 h_2 h_3\)</span>):</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\frac{\partial E^i}{c\partial t} &amp;= \frac{1}{\sqrt{h}} \left[\partial_j (B_k) - \partial_k (B_j)\right] - \frac{4\pi}{c} J^i, \\
+\frac{\partial B^i}{c\partial t} &amp;= -\frac{1}{\sqrt{h}} \left[\partial_j (E_k) - \partial_k (E_j)\right],
+\end{aligned}
+\]</div>
+<p>where <span class="arithmatex">\(B_i = h_i B^i\)</span>, <span class="arithmatex">\(E_i = h_i E^i\)</span> (no summation implied, <span class="arithmatex">\(i\ne j\ne k\)</span>, and <span class="arithmatex">\(ijk\)</span> is an even permutation of <span class="arithmatex">\(123\)</span>, i.e., <span class="arithmatex">\(\varepsilon^{ijk}=+1\)</span>).</p>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Conversion to orthonormal basis (flat orthogonal metric)</p>
+<p>Notice that in general the basis where this metric and field components are defined is not orthonormal. In general, one might need to convert the contravariant vector components, <span class="arithmatex">\(A^i\)</span>, to orthonormal basis: <span class="arithmatex">\(A^{\hat{i}}\)</span>. In case of flat orthogonal metric this can be written as (no summation implied): <span class="arithmatex">\(A^{\hat{i}} = \sqrt{h_{i}} A^i\)</span>.</p>
+</div>
+<!-- ### Axisymmetric
+
+In 2D spherical coordinate system (axisymmetric, $\partial_\phi = 0$) discretized version of Maxwell's equation on $E^1$ ("radial") is singular at the polar axis: $h^{(i+1/2,~0)} = h^{(i+1/2,~n_2-1)} = 0$. -->
+
+<h2 id="equations-of-motion-for-particles">Equations of motion for particles<a class="headerlink" href="#equations-of-motion-for-particles" title="Permanent link">&para;</a></h2>
+<p>The equation of motion for relativistic particles in such a 3+1 formulation have the following form:</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\frac{d x^i}{cd t} &amp;= \alpha \frac{1}{\gamma}h^{ij} u_j - \beta^i,\\
+\frac{d u_i}{cd t} &amp;=
+\underbrace{
+  -\gamma \partial_i \alpha + u_j\partial_i \beta^j - \alpha\frac{1}{2\gamma} u_j u_k\partial_i h^{jk}
+}_{\text{``curvature'' force}} +
+\underbrace{
+  \frac{q}{m c^2}\alpha\left(h_{ij}D^j + \frac{1}{\sqrt{h}\gamma}\varepsilon_{ijk}h^{jl} u_l B^k\right)
+}_{\text{Lorentz force}}
+\end{aligned}
+\]</div>
+<p>Here <span class="arithmatex">\(u_i\)</span> is the covariant particle four-velocity, <span class="arithmatex">\(x^i\)</span> is its position, <span class="arithmatex">\(\gamma = \sqrt{1+h^{ij}u_{i}u_j}\)</span> is the Lorentz factor of the particle, <span class="arithmatex">\(h_{ij}\)</span>, <span class="arithmatex">\(h^{ij}\)</span>, <span class="arithmatex">\(\sqrt{h}\)</span> as well as <span class="arithmatex">\(\alpha\)</span>, and <span class="arithmatex">\(\beta^i\)</span> are the metric coefficients at particle position. <span class="arithmatex">\(D^i\)</span> and <span class="arithmatex">\(B^i\)</span> are the contravariant field components measured at particle position.</p>
+<h2 id="current-deposition">Current deposition<a class="headerlink" href="#current-deposition" title="Permanent link">&para;</a></h2>
+<p>Charged particles deposit currents, <span class="arithmatex">\(\bm{J}^i\)</span>, that go into Maxwell's equations as source terms. In general <span class="arithmatex">\(\bm{J}^i = \rho \bm{\beta}^i c\)</span>, where <span class="arithmatex">\(\rho\)</span> is the charge density measured in the lab frame. Coupled with the equations of motion and Maxwell's equations, this relation ensures exact charge conservation, i.e., <span class="arithmatex">\(\nabla\cdot \bm{J}^\mu\equiv \bm{J}^\mu_{;\mu} = 0\)</span>, where <span class="arithmatex">\(\bm{J}^\mu\)</span> is the contravariant four-current with <span class="arithmatex">\(J^0 = \rho c\)</span>. Substituting <span class="arithmatex">\(\tilde{\rho}\equiv \sqrt{h}\rho\)</span>, and <span class="arithmatex">\(\bm{\mathcal{J}}^i\equiv \sqrt{h}\bm{J}^i\)</span>, we can rewrite the charge conservation in a more concise form:</p>
+<div class="arithmatex">\[
+\frac{\partial \tilde{\rho}}{\partial t} + \partial_i \bm{\mathcal{J}}^i = 0
+\]</div>
+<p>Thus, depositing currents as <span class="arithmatex">\(\bm{\mathcal{J}}^i\)</span> and then converting to <span class="arithmatex">\(\bm{J}^i=\bm{\mathcal{J}}^i/\sqrt{h}\)</span> one can ensure that the exact charge conservation is maintained (see <a href="/how/pic#charge-conservative-current-deposition">charge-conservative current deposition</a>).</p>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 15, 2023</span>
+      
+    
+  </small>
+</div>
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2021+ Entity dev team @ PPPL/Princeton
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/haykh/entity/" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tracking", "navigation.expand", "toc.integrate", "content.code.annotate", "content.code.copy", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      
+        
+          <script src="../../js/init.js"></script>
+        
+      
+        
+          <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+        
+      
+        
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.6.1/d3.min.js"></script>
+        
+      
+        
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.5.0/p5.js"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/@davepagurek/p5.buildgeometry@0.0.4/build/p5.buildGeometry.js"></script>
+        
+      
+        
+          <script src="../../js/how/pic_nongr.js"></script>
+        
+      
+        
+          <script src="../../js/how/pic_gr.js"></script>
+        
+      
+        
+          <script src="../../js/how/coord_sys_ax.js"></script>
+        
+      
+        
+          <script src="../../js/fun/3d_cubed_sphere.js"></script>
+        
+      
+        
+          <script src="../../js/fun/reconnection.js"></script>
+        
+      
+    
+  </body>
+</html>

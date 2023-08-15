@@ -1,0 +1,356 @@
+:root {
+  font-variant-ligatures: normal;
+  font-size: 1.25em;
+  --color-one-h: 209;
+  --color-one-s: 91%;
+  --color-one-l: 47%;
+
+  --color-two-h: 253;
+  --color-two-s: 74%;
+  --color-two-l: 64%;
+
+  --color-three-h: 288;
+  --color-three-s: 67%;
+  --color-three-l: 61%;
+
+  --color-four-h: 318;
+  --color-four-s: 66%;
+  --color-four-l: 53%;
+
+  --border-color-h: 218;
+  --border-color-s: 100%;
+  --border-color-l: 63%;
+
+  --color-one: hsl(var(--color-one-h), var(--color-one-s), var(--color-one-l));
+  --color-two: hsl(var(--color-two-h), var(--color-two-s), var(--color-two-l));
+  --color-three: hsl(var(--color-three-h), var(--color-three-s), var(--color-three-l));
+  --color-four: hsl(var(--color-four-h), var(--color-four-s), var(--color-four-l));
+  --border-color: hsl(var(--border-color-h), var(--border-color-s), var(--border-color-l));
+}
+
+[data-md-color-scheme="default"] {
+  --md-admonition-bg-color: hsl(232, 25%, 98%);
+  --gradient-color-one: hsl(300, 43%, 13%);
+  --gradient-color-two: hsl(0, 0%, 18%);
+  --gradient-color-three: hsl(265, 54%, 21%);
+  --gradient-color-four: hsl(0, 11%, 11%);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-admonition-bg-color: hsl(232, 15%, 25%);
+  --md-typeset-a-color: hsl(231, 100%, 64%);
+  --gradient-color-one: var(--color-one);
+  --gradient-color-two: var(--color-two);
+  --gradient-color-three: var(--color-three);
+  --gradient-color-four: var(--color-four);
+}
+
+.md-header {
+  box-shadow: none;
+}
+
+/* Home */
+.entity-cover {
+  width: 100%;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+}
+
+@media (max-width: 768px) {
+  .entity-cover {
+    height: 100px;
+  }
+}
+
+[data-md-color-scheme="default"] .entity-cover {
+  background-image: url("../assets/cover_light.gif");
+}
+
+[data-md-color-scheme="slate"] .entity-cover {
+  background-image: url("../assets/cover_dark.gif");
+}
+
+.nt-card {
+  background-color: var(--md-admonition-bg-color) !important;
+  box-shadow: var(--md-shadow-z1) !important;
+  border: .05rem solid hsl(199, 100%, 50%) !important;
+  border-radius: 2px;
+  padding-top: 0.8rem;
+}
+
+.nt-card-image {
+  background-size: contain !important;
+}
+
+[data-md-color-scheme="default"] .nt-card.core .nt-card-image {
+  background-image: url("../assets/icons/framework-icon-dark.svg") !important;
+}
+
+[data-md-color-scheme="default"] .nt-card.sim .nt-card-image {
+  background-image: url("../assets/icons/engine-icon-dark.svg") !important;
+}
+
+[data-md-color-scheme="default"] .nt-card.vis .nt-card-image {
+  background-image: url("../assets/icons/vis-icon-dark.svg") !important;
+}
+
+.nt-timeline-item:nth-child(1) .nt-timeline-dot {
+  background-color: var(--color-one) !important;
+}
+
+.nt-timeline-item:nth-child(2) .nt-timeline-dot {
+  background-color: var(--color-two) !important;
+}
+
+.nt-timeline-item:nth-child(3) .nt-timeline-dot {
+  background-color: var(--color-three) !important;
+}
+
+.nt-timeline-item:nth-child(4) .nt-timeline-dot {
+  background-color: var(--color-three) !important;
+}
+
+.nt-timeline-dot {
+  border-radius: 25% 0% 0% 25% !important;
+  border: 1px solid white !important;
+  width: 45px !important;
+}
+
+.nt-timeline.vertical.left .nt-timeline-items {
+  background: linear-gradient(var(--color-one) 0%,
+      var(--color-two) 25%,
+      var(--color-three) 50%,
+      var(--color-four) 100%) no-repeat 30px/2px 100% !important;
+}
+
+.nt-timeline.vertical.left .nt-timeline-before {
+  background: linear-gradient(rgba(252, 70, 107, 0) 0%, var(--color-one) 100%) no-repeat 30px/2px 100% !important;
+}
+
+.nt-timeline.vertical.left .nt-timeline-after {
+  background: linear-gradient(var(--color-four) 0%, rgba(252, 70, 107, 0) 100%) no-repeat 30px/2px 100% !important;
+}
+
+.nt-timeline-content {
+  border: none !important;
+}
+
+#contributors+ul li,
+#core-developers+ul li {
+  list-style-type: circle;
+}
+
+#contributors+ul li span,
+#core-developers+ul li span {
+  padding: 0 0.3em;
+  margin: 0 0.1em;
+  border-radius: 0.4em;
+  color: white;
+}
+
+#contributors+ul .tag.framework,
+#core-developers+ul .tag.framework {
+  background-color: var(--color-one);
+}
+
+#contributors+ul .tag.pic,
+#core-developers+ul .tag.pic {
+  background-color: var(--color-two);
+}
+
+#contributors+ul .tag.gr,
+#core-developers+ul .tag.gr {
+  background-color: var(--color-three);
+}
+
+#contributors+ul .tag.cubed-sphere,
+#core-developers+ul .tag.cubed-sphere {
+  background-color: var(--color-four);
+}
+
+#contributors+ul .tag.all-around,
+#core-developers+ul .tag.all-around {
+  background-color: var(--border-color);
+}
+
+#contributors+ul .tag.mpi,
+#core-developers+ul .tag.mpi {
+  background-color: var(--color-three);
+}
+
+#supporting-grants+p span {
+  text-decoration: underline;
+}
+
+/* Collapsable in header */
+.nt-cards {
+  overflow: visible !important;
+}
+
+/* .nt-card:hover {
+  cursor: pointer;
+} */
+
+.nt-card.active {
+  background-color: hsla(199, 100%, 50%, 0.102) !important;
+}
+
+.collapsable {
+  display: inline-block;
+}
+
+.collapsable.collapsed {
+  display: none;
+}
+
+/* Header */
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+header {
+  background: linear-gradient(-45deg, var(--gradient-color-one), var(--gradient-color-two), var(--gradient-color-three), var(--gradient-color-four));
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+.md-header__source {
+  width: 7rem;
+  max-width: 11.7rem;
+}
+
+/* Additional admonition */
+
+:root {
+  --md-admonition-icon--code: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 3h2v2H5v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5h2v2H5c-1.07-.27-2-.9-2-2v-4a2 2 0 0 0-2-2H0v-2h1a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2m14 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3h2m-7 12a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-4 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m8 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1Z" /></svg>')
+}
+
+.md-typeset .admonition.code,
+.md-typeset details.code {
+  border-color: rgb(155, 43, 140);
+}
+
+.md-typeset .code>.admonition-title,
+.md-typeset .code>summary {
+  background-color: rgba(155, 43, 140, 0.1);
+}
+
+.md-typeset .code>.admonition-title::before,
+.md-typeset .code>summary::before {
+  background-color: rgb(155, 43, 140);
+  -webkit-mask-image: var(--md-admonition-icon--code);
+  mask-image: var(--md-admonition-icon--code);
+}
+
+/* Code blocks */
+
+[data-md-color-scheme="slate"]:root>* {
+  --md-code-hl-keyword-color: #BD96C2;
+  --md-code-hl-punctuation-color: #74B0B1;
+  --md-code-hl-operator-color: #72AEAF;
+  --md-code-hl-name-color: #CED3DD;
+  --md-code-hl-number-color: #EA9662;
+  --md-code-hl-function-color: #7198C7;
+  --md-code-hl-string-color: #A2C699;
+  --md-code-hl-comment-color: #67737D;
+}
+
+.hide-overflow-x code {
+  white-space: pre-wrap !important;
+}
+
+/* Katex */
+.katex-display {
+  margin: 0px;
+}
+
+.katex .text>.mord {
+  font-family: var(--md-text-font);
+  font-weight: normal;
+}
+
+.katex .tag {
+  right: 25px !important;
+}
+
+/* p5 canvases */
+
+.p5canvas input {
+  background-color: var(--md-admonition-bg-color);
+}
+
+.p5canvas th {
+  min-width: 3rem !important;
+}
+
+.p5canvas input {
+  width: 60px;
+}
+
+.p5canvas input[type="range"] {
+  width: 120px;
+}
+
+.p5canvas button {
+  color: white;
+  padding: 10px 0px 10px 0px;
+  background-color: var(--md-primary-fg-color);
+}
+
+.p5canvas button:hover {
+  background-color: var(--md-primary-fg-color--light);
+  cursor: pointer;
+}
+
+div[id^="plot"] .label,
+div[id^="grplot"] .label,
+div[id^="plot"] .tick text,
+div[id^="grplot"] .tick text {
+  font-family: 'JetBrains Mono';
+  font-size: 16px;
+}
+
+@media (max-width: 992px) {
+
+  div[id^="plot"] .label,
+  div[id^="grplot"] .label,
+  div[id^="plot"] .tick text div[id^="grplot"] .tick text {
+    font-size: 0.6em;
+  }
+}
+
+[data-md-color-scheme="slate"] div[id^="plot"] .label,
+[data-md-color-scheme="slate"] div[id^="grplot"] .label {
+  fill: var(--md-default-fg-color--light);
+}
+
+/* Extra */
+figure.under-construction {
+  margin-top: -3rem !important;
+}
+
+figure.under-construction:before {
+  content: "under construction";
+  position: relative;
+  font-size: 2rem;
+  line-height: 2rem;
+  top: 9rem;
+  color: white;
+  text-shadow: 0 0 0.5rem #000000;
+  -moz-text-shadow: 0 0 0.5rem #000000;
+  -o-text-shadow: 0 0 0.5rem #000000;
+  -webkit-text-shadow: 0 0 0.5rem #000000;
+  -ms-text-shadow: 0 0 0.5rem #000000;
+}
