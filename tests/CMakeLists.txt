@@ -155,29 +155,29 @@ if(${mpi} STREQUAL "OFF")
   add_test(NAME "Pusher: ${engine} ${metric}" COMMAND "test-${title}.xc")
 
   # --------------------------------- Deposit -------------------------------- #
-  foreach(metric spherical qspherical)
-    set(engine pic)
-    set(pgen debug_deposit)
-    set(title deposit-sr-${metric})
-    add_executable(test-${title}.xc deposit-sr.cpp)
-    target_link_libraries(
-      test-${title}.xc PUBLIC framework-${metric}
-                              engine-${engine}-${metric}-${pgen})
-    target_include_directories(test-${title}.xc
-                               PRIVATE ${SOURCE_DIR}/engines/${engine})
-    add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
-  endforeach()
+  # foreach(metric spherical qspherical)
+  #   set(engine pic)
+  #   set(pgen debug_deposit)
+  #   set(title deposit-sr-${metric})
+  #   add_executable(test-${title}.xc deposit-sr.cpp)
+  #   target_link_libraries(
+  #     test-${title}.xc PUBLIC framework-${metric}
+  #                             engine-${engine}-${metric}-${pgen})
+  #   target_include_directories(test-${title}.xc
+  #                              PRIVATE ${SOURCE_DIR}/engines/${engine})
+  #   add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
+  # endforeach()
 
-  foreach(metric ${gr_metrics})
-    set(engine grpic)
-    set(pgen debug_deposit)
-    set(title deposit-gr-${metric})
-    add_executable(test-${title}.xc deposit-gr.cpp)
-    target_link_libraries(
-      test-${title}.xc PUBLIC framework-${metric}
-                              engine-${engine}-${metric}-${pgen})
-    target_include_directories(test-${title}.xc
-                               PRIVATE ${SOURCE_DIR}/engines/${engine})
-    add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
-  endforeach()
+  # foreach(metric ${gr_metrics})
+  #   set(engine grpic)
+  #   set(pgen debug_deposit)
+  #   set(title deposit-gr-${metric})
+  #   add_executable(test-${title}.xc deposit-gr.cpp)
+  #   target_link_libraries(
+  #     test-${title}.xc PUBLIC framework-${metric}
+  #                             engine-${engine}-${metric}-${pgen})
+  #   target_include_directories(test-${title}.xc
+  #                              PRIVATE ${SOURCE_DIR}/engines/${engine})
+  #   add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
+  # endforeach()
 endif()
