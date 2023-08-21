@@ -319,10 +319,10 @@ namespace ntt {
                                        const FieldID&          field,
                                        const std::vector<int>& components,
                                        const std::vector<int>& prtl_species,
-                                       const int&              buff_ind,
-                                       const short&            window) {
+                                       int                     buff_ind,
+                                       short                   window) {
     NTTLog();
-    const auto smooth = ONE / math::pow(2.0 * window + 1.0, static_cast<int>(D));
+    const auto smooth = ONE / math::pow(TWO * window + ONE, static_cast<int>(D));
     const auto inv_n0 = ONE / params.n0();
     if constexpr (D == Dim1) {
       Kokkos::deep_copy(Kokkos::subview(this->buff, Kokkos::ALL(), (int)buff_ind), ZERO);
@@ -368,7 +368,7 @@ namespace ntt {
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
+            if (species.tag(p) == ParticleTag::alive) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
               auto   i1_min      = i1 - window + N_GHOSTS;
@@ -415,7 +415,7 @@ namespace ntt {
         const auto ni2 { (int)(this->Ni2()) };
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
+            if (species.tag(p) == ParticleTag::alive) {
               auto      buff_access = scatter_buff.access();
               auto      i1          = species.i1(p);
               auto      i2          = species.i2(p);
@@ -459,7 +459,7 @@ namespace ntt {
                   } else {
                     contrib *= u_hat[c - 1];
                   }
-                  }
+                }
 #endif
               }
               if (field != FieldID::Nppc) {
@@ -491,7 +491,7 @@ namespace ntt {
       } else if constexpr (D == Dim3) {
         Kokkos::parallel_for(
           "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
-            if (species.tag(p) == static_cast<short>(ParticleTag::alive)) {
+            if (species.tag(p) == ParticleTag::alive) {
               auto      buff_access = scatter_buff.access();
               auto      i1          = species.i1(p);
               auto      i2          = species.i2(p);

@@ -123,8 +123,8 @@ namespace ntt {
                         const FieldID&          field,
                         const std::vector<int>& components,
                         const std::vector<int>& prtl_species,
-                        const int&              buff_ind,
-                        const short&            window = 2);
+                        int                     buff_ind,
+                        short                   window = 2);
   };
 }    // namespace ntt
 

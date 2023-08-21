@@ -821,7 +821,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
           init_prtl_2d_i_di(
             species1, offset1 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
@@ -832,7 +832,7 @@ namespace ntt {
           v_cart[1] = v[1];
           v_cart[2] = v[2];
 #else
-          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], xc[2] }, v, v_cart);
+          mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
           init_prtl_2d_i_di(
             species2, offset2 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
