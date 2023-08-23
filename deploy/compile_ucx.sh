@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 source ${SCRIPT_DIR}/aux/aux.sh
 
@@ -14,6 +14,12 @@ function usage {
 
 source ${SCRIPT_DIR}/aux/argparse.sh
 source ${SCRIPT_DIR}/aux/config.sh
+
+if [ $enable_cuda = "ON" ]; then
+  install_path="${install_path}/cuda"
+else
+  install_path="${install_path}/cpu"
+fi
 
 compile_args=(
   --prefix=$install_path

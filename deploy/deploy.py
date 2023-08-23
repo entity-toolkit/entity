@@ -161,25 +161,22 @@ if __name__ == "__main__":
                         if mpi and (mpi_path := dependencies["mpi"]).startswith(
                             "module:"
                         ):
-                            modules += [(mpi_module := mpi_path.split(":")[1])]
+                            modules += [
+                                (
+                                    mpi_module := mpi_path.split(":")[1]
+                                    + ("/cuda" if cuda else "/cpu")
+                                )
+                            ]
                         if (hdf5_path := dependencies["hdf5"]).startswith("module:"):
-                            modules += (
-                                [
-                                    (
-                                        hdf5_module := (
-                                            hdf5_path := hdf5_path + "/mpi"
-                                        ).split(":")[1]
-                                    )
-                                ]
-                                if mpi
-                                else [
-                                    (
-                                        hdf5_module := (
-                                            hdf5_path := hdf5_path + "/serial"
-                                        ).split(":")[1]
-                                    )
-                                ]
+                            hdf5_path += (
+                                ("/mpi" if cuda else "/mpi") if mpi else "/serial"
                             )
+                            modules += [
+                                (hdf5_module := hdf5_path.split(":")[1])
+                                + ("/cuda" if cuda else "/cpu")
+                                if mpi
+                                else ""
+                            ]
                         kokkos_setenvs += [
                             ["Kokkos_ENABLE_CUDA", "ON" if cuda else "OFF"]
                         ]
