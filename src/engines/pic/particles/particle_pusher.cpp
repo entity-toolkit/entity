@@ -11,6 +11,9 @@ namespace ntt {
     auto  params = *(this->params());
     auto  time   = this->m_time;
     for (auto& species : mblock.particles) {
+      if (species.npart() == 0) {
+        continue;
+      }
       const real_t dt { factor * mblock.timestep() };
       const real_t charge_ovr_mass { species.mass() > ZERO ? species.charge() / species.mass()
                                                            : ZERO };

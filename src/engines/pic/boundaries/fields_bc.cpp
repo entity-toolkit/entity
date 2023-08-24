@@ -26,7 +26,9 @@ namespace ntt {
    */
 #ifdef MINKOWSKI_METRIC
   template <Dimension D>
-  void PIC<D>::FieldsBoundaryConditions() {}
+  void PIC<D>::FieldsBoundaryConditions() {
+    NTTLog();
+  }
 
 #else
 
@@ -132,6 +134,7 @@ namespace ntt {
       NTTHostErrorIf(mblock.boundaries[1][0] != BoundaryCondition::COMM,
                      "2d boundary condition in theta have to be AXIS");
     }
+    NTTLog();
   }
 
   template <>
