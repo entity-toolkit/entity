@@ -31,6 +31,11 @@ if [ ! $with_mpi = "OFF" ]; then
   if [[ $with_mpi == module:* ]]; then
     mpi_module=$(echo $with_mpi | cut -d':' -f2)
     use_modules="ON"
+    if [ ! $with_cuda = "OFF" ]; then
+      mpi_module=$mpi_module/cuda
+    else
+      mpi_module=$mpi_module/cpu
+    fi
   else
     mpi_path=$with_mpi
   fi

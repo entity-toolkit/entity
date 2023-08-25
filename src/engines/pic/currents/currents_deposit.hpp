@@ -29,8 +29,8 @@ namespace ntt {
     const bool              m_use_weights;
     const real_t            m_dt;
     const int               m_ni2;
-    const bool              m_ax_i2min;
-    const bool              m_ax_i2max;
+    bool                    m_ax_i2min;
+    bool                    m_ax_i2max;
 
   public:
     /**
@@ -53,11 +53,13 @@ namespace ntt {
         m_charge(charge),
         m_use_weights { use_weights },
         m_dt(dt),
-        m_ni2((int)(m_mblock.Ni2())),
-        m_ax_i2min { (mblock.boundaries.size() > 1)
-                     && (mblock.boundaries[1][0] == BoundaryCondition::AXIS) },
-        m_ax_i2max { (mblock.boundaries.size() > 1)
-                     && (mblock.boundaries[1][1] == BoundaryCondition::AXIS) } {}
+        m_ni2((int)(m_mblock.Ni2())) {
+      if constexpr (D == Dim2) {
+        NTTHostErrorIf(mblock.boundaries.size() < 2, "boundaries defined incorrectly");
+        m_ax_i2min = (mblock.boundaries[1][0] == BoundaryCondition::AXIS);
+        m_ax_i2max = (mblock.boundaries[1][1] == BoundaryCondition::AXIS);
+      }
+    }
 
     /**
      * @brief Iteration of the loop over particles.

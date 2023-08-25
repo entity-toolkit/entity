@@ -28,6 +28,9 @@ namespace ntt {
     Kokkos::deep_copy(mblock.cur, ZERO);
     auto scatter_cur = Kokkos::Experimental::create_scatter_view(mblock.cur);
     for (auto& species : mblock.particles) {
+      if (species.npart() == 0) {
+        continue;
+      }
       if (species.charge() != 0.0) {
         const real_t dt { mblock.timestep() };
         const real_t charge { species.charge() };

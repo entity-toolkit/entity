@@ -101,6 +101,7 @@ namespace ntt {
         }
       }
     }
+    NTTLog();
   }
 
 #  else     // not MINKOWSKI_METRIC
@@ -114,6 +115,7 @@ namespace ntt {
         }
       }
     }
+    NTTLog();
   }
 #  endif    // MINKOWSKI_METRIC
 

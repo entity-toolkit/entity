@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 source ${SCRIPT_DIR}/aux/aux.sh
 
@@ -27,6 +27,13 @@ source ${SCRIPT_DIR}/aux/config.sh
 if [ ! $with_mpi = "OFF" ]; then
   hdf5_module+="/mpi"
   install_path+="/mpi"
+  if [ $enable_cuda = "ON" ]; then
+    hdf5_module+="/cuda"
+    install_path+="/cuda"
+  else
+    hdf5_module+="/cpu"
+    install_path+="/cpu"
+  fi
 else
   hdf5_module+="/serial"
   install_path+="/serial"

@@ -70,6 +70,11 @@ if [ $with_mpi != "OFF" ]; then
   install_path+="/mpi"
   if [ $hdf5 == $default_hdf5_path ]; then
     hdf5_module+="/mpi"
+    if [ $enable_cuda = "ON" ]; then
+      hdf5_module+="/cuda"
+    else
+      hdf5_module+="/cpu"
+    fi
   fi
   kokkos_module+="/mpi"
 else
