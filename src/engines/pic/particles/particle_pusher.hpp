@@ -110,34 +110,54 @@ namespace ntt {
                                     m_pgen.ext_force_x3(m_time, xp_ph) };
       vec_t<Dim3>       force_Cart { ZERO };
       m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+#endif    // EXTERNAL_FORCE
 
-      real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                                  + SQR(m_particles.ux3(p)));
-      real_t t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
-                       + force_Cart[2] * m_particles.ux3(p);
-      m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+      real_t       t_gamma { math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                                  + SQR(m_particles.ux3(p))) };
+      const real_t rL { t_gamma * m_dt
+                        / (TWO * m_coeff
+                           * math::sqrt(SQR(b_int_Cart[0]) + SQR(b_int_Cart[1])
+                                        + SQR(b_int_Cart[2]))) };
+      const real_t esqr { SQR(e_int_Cart[0]) + SQR(e_int_Cart[1]) + SQR(e_int_Cart[2]) };
+      const real_t bsqr { SQR(b_int_Cart[0]) + SQR(b_int_Cart[1]) + SQR(b_int_Cart[2]) };
+      if (math::fabs(rL) > 0.05 || (esqr / bsqr) > static_cast<real_t>(0.81)) {
+        /* ------------------------------ Boris Update ------------------------------ */
+#ifdef EXTERNAL_FORCE
+        real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                                    + SQR(m_particles.ux3(p)));
+        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p)
+                         + force_Cart[1] * m_particles.ux2(p)
+                         + force_Cart[2] * m_particles.ux3(p);
+        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 
-      m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-      m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-      m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
-
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
 #endif
 
-      BorisUpdate(p, e_int_Cart, b_int_Cart);
+        BorisUpdate(p, e_int_Cart, b_int_Cart);
 
 #ifdef EXTERNAL_FORCE
 
-      t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                           + SQR(m_particles.ux3(p)));
-      t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
-                + force_Cart[2] * m_particles.ux3(p);
-      m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
+        t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
+                             + SQR(m_particles.ux3(p)));
+        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
+                  + force_Cart[2] * m_particles.ux3(p);
+        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
 
-      m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-      m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-      m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
-
+        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
+        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
+        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
 #endif
+      } else {
+        /* --------------------------- GCA velocity update -------------------------- */
+        // GCAUpdate(p, xp, e_int_Cart, b_int_Cart, force_Cart);
+#ifdef EXTERNAL_FORCE	
+        GCAUpdate(p, force_Cart, e_int_Cart, b_int_Cart);
+#else
+	GCAUpdate(p, e_int_Cart, b_int_Cart);
+#endif	
+      }
 
       real_t inv_energy;
       inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
@@ -159,7 +179,6 @@ namespace ntt {
       v[2] *= inv_energy;
 
       positionUpdate(p, v);
-
 #ifndef MINKOWSKI_METRIC
       // !HOTFIX: also synchronize with GR
       reflectFromAxis(p);
@@ -250,6 +269,49 @@ namespace ntt {
      * @param b interpolated b-field vector of size 3 [modified].
      */
     Inline void BorisUpdate(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
+
+    Inline void GCAUpdate(index_t&     p,
+#ifdef  EXTERNAL_FORCE
+			  vec_t<Dim3>& force_Cart,
+#endif 			  
+                      vec_t<Dim3>& e_Cart,
+                      vec_t<Dim3>& b_Cart) const {
+        const auto bmag { math::sqrt(SQR(b_Cart[0]) + SQR(b_Cart[1]) + SQR(b_Cart[2])) };
+        const auto epar { (e_Cart[0] * b_Cart[0] + e_Cart[1] * b_Cart[1] + e_Cart[2] * b_Cart[2])
+                    / bmag };
+        auto       upar { (m_particles.ux1(p) * b_Cart[0] + m_particles.ux2(p) * b_Cart[1]
+                        + m_particles.ux3(p) * b_Cart[2]) / bmag };
+#ifdef EXTERNAL_FORCE
+        const auto fpar { (force_Cart[0] * b_Cart[0] + force_Cart[1] * b_Cart[1]
+                      + force_Cart[2] * b_Cart[2])/ bmag };
+#endif
+        upar += m_coeff * TWO * epar;
+#ifdef EXTERNAL_FORCE
+        upar += m_dt * fpar;
+#endif
+
+        const auto        e_sqr { SQR(e_Cart[0]) + SQR(e_Cart[1]) + SQR(e_Cart[2]) };
+        const vec_t<Dim3> wE {
+            (e_Cart[1] * b_Cart[2] - e_Cart[2] * b_Cart[1]) / (SQR(bmag) + e_sqr),
+            (e_Cart[2] * b_Cart[0] - e_Cart[0] * b_Cart[2]) / (SQR(bmag) + e_sqr),
+            (e_Cart[0] * b_Cart[1] - e_Cart[1] * b_Cart[0]) / (SQR(bmag) + e_sqr)
+        };
+        const auto        wE_sqr { SQR(wE[0]) + SQR(wE[1]) + SQR(wE[2]) };
+        real_t factor;
+        if (wE_sqr < static_cast<real_t>(0.01)) {
+          factor = ONE + wE_sqr + 2*SQR(wE_sqr)+5*SQR(wE_sqr)*wE_sqr;
+        } else {
+          factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
+        }
+        const vec_t<Dim3> vE_Cart { wE[0] * factor, wE[1] * factor, wE[2] * factor };
+        const auto        kappa {
+          ONE / math::sqrt(ONE - SQR(vE_Cart[0]) - SQR(vE_Cart[1]) - SQR(vE_Cart[2]))
+        };
+        const auto Gamma { kappa * math::sqrt(ONE + SQR(upar)) };
+        m_particles.ux1(p) = upar * b_Cart[0] / bmag + vE_Cart[0] * Gamma;
+        m_particles.ux2(p) = upar * b_Cart[1] / bmag + vE_Cart[1] * Gamma;
+        m_particles.ux3(p) = upar * b_Cart[2] / bmag + vE_Cart[2] * Gamma;
+    }
   };
 
 #ifdef MINKOWSKI_METRIC
@@ -285,7 +347,7 @@ namespace ntt {
         || ((m_particles.i2(p) >= m_ni2) && m_ax_i2max)) {
       // particle is off of the axis
       m_particles.dx2(p) = ONE - m_particles.dx2(p);
-      m_particles.i2(p) = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
+      m_particles.i2(p)  = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
       if (((m_particles.i2(p) == 0)
            && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0)))
           || ((m_particles.i2(p) == m_ni2 - 1)
@@ -298,7 +360,7 @@ namespace ntt {
         coord_t<Dim3> x_cu { get_prtl_x1(m_particles, p),
                              get_prtl_x2(m_particles, p),
                              m_particles.phi(p) };
-        vec_t<Dim3> v_Cntrv { ZERO }, v_Cart { ZERO };
+        vec_t<Dim3>   v_Cntrv { ZERO }, v_Cart { ZERO };
         m_mblock.metric.v3_Cart2Cntrv(
           x_cu, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v_Cntrv);
         m_mblock.metric.v3_Cntrv2Cart(x_cu, { v_Cntrv[0], -v_Cntrv[1], v_Cntrv[2] }, v_Cart);

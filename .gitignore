@@ -25,6 +25,7 @@ logs/
 
 # Trash files
 .trash/
+*~
 
 .vscode/*.log
 
