@@ -36,15 +36,19 @@ namespace ntt {
         const real_t charge { species.charge() };
         Kokkos::parallel_for("CurrentsDeposit",
                              species.rangeActiveParticles(),
-                             DepositCurrents_kernel<D>(
-                               mblock, species, scatter_cur, charge, params.useWeights(), dt));
+                             DepositCurrents_kernel<D>(mblock,
+                                                       species,
+                                                       scatter_cur,
+                                                       charge,
+                                                       params.useWeights(),
+                                                       dt));
       }
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
 
     NTTLog();
   }
-}    // namespace ntt
+} // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::CurrentsDeposit();
 template void ntt::PIC<ntt::Dim2>::CurrentsDeposit();

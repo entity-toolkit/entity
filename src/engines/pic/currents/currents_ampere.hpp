@@ -24,8 +24,13 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(Meshblock<D, PICEngine>& mblock, real_t coeff, real_t inv_n0)
-      : m_mblock { mblock }, m_coeff { coeff }, m_inv_n0 { inv_n0 } {}
+    CurrentsAmpere_kernel(Meshblock<D, PICEngine>& mblock,
+                          real_t                   coeff,
+                          real_t                   inv_n0) :
+      m_mblock { mblock },
+      m_coeff { coeff },
+      m_inv_n0 { inv_n0 } {}
+
     /**
      * @brief 1D version of the add current.
      * @param i1 index.
@@ -69,7 +74,9 @@ namespace ntt {
   }
 
   template <>
-  Inline void CurrentsAmpere_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void CurrentsAmpere_kernel<Dim3>::operator()(index_t i,
+                                                      index_t j,
+                                                      index_t k) const {
     JX1(i, j, k) *= m_inv_n0;
     JX2(i, j, k) *= m_inv_n0;
     JX3(i, j, k) *= m_inv_n0;
@@ -95,15 +102,21 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(Meshblock<D, PICEngine>& mblock, real_t coeff, real_t inv_n0)
-      : m_mblock { mblock }, m_coeff { coeff }, m_inv_n0 { inv_n0 } {}
+    CurrentsAmpere_kernel(Meshblock<D, PICEngine>& mblock,
+                          real_t                   coeff,
+                          real_t                   inv_n0) :
+      m_mblock { mblock },
+      m_coeff { coeff },
+      m_inv_n0 { inv_n0 } {}
+
     /**
      * @brief 1D version of the add current.
      * @param i1 index.
      */
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(index_t) const {
       NTTError("not applicable");
     }
+
     /**
      * @brief 2D version of the add current.
      * @param i1 index.
@@ -139,13 +152,18 @@ namespace ntt {
   }
 
   template <>
-  Inline void CurrentsAmpere_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void CurrentsAmpere_kernel<Dim3>::operator()(index_t i,
+                                                      index_t j,
+                                                      index_t k) const {
     real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
     real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
     real_t k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
-    real_t inv_sqrt_detH_iPjk { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_, k_ }) };
-    real_t inv_sqrt_detH_ijPk { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF, k_ }) };
-    real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_, k_ + HALF }) };
+    real_t inv_sqrt_detH_iPjk { ONE / m_mblock.metric.sqrt_det_h(
+                                        { i_ + HALF, j_, k_ }) };
+    real_t inv_sqrt_detH_ijPk { ONE / m_mblock.metric.sqrt_det_h(
+                                        { i_, j_ + HALF, k_ }) };
+    real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h(
+                                        { i_, j_, k_ + HALF }) };
 
     JX1(i, j, k) *= inv_sqrt_detH_iPjk * m_inv_n0;
     JX2(i, j, k) *= inv_sqrt_detH_ijPk * m_inv_n0;
@@ -170,13 +188,16 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmperePoles_kernel(Meshblock<D, PICEngine>& mblock, real_t coeff, real_t inv_n0)
-      : m_mblock { mblock },
-        m_coeff { coeff },
-        m_inv_n0 { inv_n0 },
-        m_ni2 { m_mblock.Ni2() },
-        j_min { N_GHOSTS },
-        j_max { m_ni2 + N_GHOSTS } {}
+    CurrentsAmperePoles_kernel(Meshblock<D, PICEngine>& mblock,
+                               real_t                   coeff,
+                               real_t                   inv_n0) :
+      m_mblock { mblock },
+      m_coeff { coeff },
+      m_inv_n0 { inv_n0 },
+      m_ni2 { m_mblock.Ni2() },
+      j_min { N_GHOSTS },
+      j_max { m_ni2 + N_GHOSTS } {}
+
     /**
      * @param i index.
      */
@@ -203,6 +224,6 @@ namespace ntt {
   }
 
 #endif
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // PIC_CURRENTS_AMPERE_H
+#endif // PIC_CURRENTS_AMPERE_H

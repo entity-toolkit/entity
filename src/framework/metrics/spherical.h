@@ -22,19 +22,22 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
-    Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
-      : MetricBase<D> { "spherical", resolution, extent },
-        dr((this->x1_max - this->x1_min) / this->nx1),
-        dtheta((this->x2_max - this->x2_min) / this->nx2),
-        dphi((this->x3_max - this->x3_min) / this->nx3),
-        dr_inv { ONE / dr },
-        dtheta_inv { ONE / dtheta },
-        dphi_inv { ONE / dphi },
-        dr_sqr { SQR(dr) },
-        dtheta_sqr { SQR(dtheta) },
-        dphi_sqr { SQR(dphi) } {
+    Metric(std::vector<unsigned int> resolution,
+           std::vector<real_t>       extent,
+           const real_t*) :
+      MetricBase<D> { "spherical", resolution, extent },
+      dr((this->x1_max - this->x1_min) / this->nx1),
+      dtheta((this->x2_max - this->x2_min) / this->nx2),
+      dphi((this->x3_max - this->x3_min) / this->nx3),
+      dr_inv { ONE / dr },
+      dtheta_inv { ONE / dtheta },
+      dphi_inv { ONE / dphi },
+      dr_sqr { SQR(dr) },
+      dtheta_sqr { SQR(dtheta) },
+      dphi_sqr { SQR(dphi) } {
       this->set_dxMin(find_dxMin());
     }
+
     ~Metric() = default;
 
     /**
@@ -51,6 +54,7 @@ namespace ntt {
         return ZERO;
       }
     }
+
     /**
      * Compute metric component 22.
      *
@@ -65,6 +69,7 @@ namespace ntt {
         return ZERO;
       }
     }
+
     /**
      * Compute metric component 33.
      *
@@ -74,16 +79,18 @@ namespace ntt {
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
         if constexpr (D == Dim2) {
-          return SQR(x[0] * dr + this->x1_min) * SQR(math::sin(x[1] * dtheta + this->x2_min));
+          return SQR(x[0] * dr + this->x1_min) *
+                 SQR(math::sin(x[1] * dtheta + this->x2_min));
         } else {
-          return dphi_sqr * SQR(x[0] * dr + this->x1_min)
-                 * SQR(math::sin(x[1] * dtheta + this->x2_min));
+          return dphi_sqr * SQR(x[0] * dr + this->x1_min) *
+                 SQR(math::sin(x[1] * dtheta + this->x2_min));
         }
       } else {
         NTTError("1D spherical not available");
         return ZERO;
       }
     }
+
     /**
      * Compute the square root of the determinant of h-matrix.
      *
@@ -93,11 +100,11 @@ namespace ntt {
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
         if constexpr (D == Dim2) {
-          return dr * dtheta * SQR(x[0] * dr + this->x1_min)
-                 * math::sin(x[1] * dtheta + this->x2_min);
+          return dr * dtheta * SQR(x[0] * dr + this->x1_min) *
+                 math::sin(x[1] * dtheta + this->x2_min);
         } else {
-          return dr * dtheta * dphi * SQR(x[0] * dr + this->x1_min)
-                 * math::sin(x[1] * dtheta + this->x2_min);
+          return dr * dtheta * dphi * SQR(x[0] * dr + this->x1_min) *
+                 math::sin(x[1] * dtheta + this->x2_min);
         }
       } else {
         NTTError("1D spherical not available");
@@ -134,7 +141,8 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    [[nodiscard]] auto find_dxMin() const -> real_t override {
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         auto dx1 { dr };
         auto dx2 { this->x1_min * dtheta };
@@ -146,6 +154,6 @@ namespace ntt {
     }
   };
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

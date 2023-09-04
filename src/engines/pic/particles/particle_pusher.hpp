@@ -3,22 +3,42 @@
 
 #include "wrapper.h"
 
-#include "field_macros.h"
-#include "particle_macros.h"
 #include "pic.h"
 
 #include "io/output.h"
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
 #include "utils/qmath.h"
+#include METRIC_HEADER
+
+#include <typeindex>
 
 #ifdef EXTERNAL_FORCE
-#  include PGEN_HEADER
+  #include PGEN_HEADER
 #endif
 
 namespace ntt {
   struct Boris_t {};
+
+  struct Vay_t {};
+
+  struct Boris_GCA_t {};
+
+  struct Vay_GCA_t {};
+
+  struct GCA_t {};
+
   struct Photon_t {};
+
+  struct Massive_t {};
+
+  struct Massless_t {};
+
+#ifdef MINKOWSKI_METRIC
+  #define FullD D
+#else
+  #define FullD Dim3
+#endif
 
   /**
    * @brief Algorithm for the Particle pusher.
@@ -26,1221 +46,911 @@ namespace ntt {
    */
   template <Dimension D>
   class Pusher_kernel {
-    Meshblock<D, PICEngine> m_mblock;
-    Particles<D, PICEngine> m_particles;
+    ndfield_t<D, 6>    EB;
+    array_t<int*>      i1, i2, i3;
+    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<real_t*>   ux1, ux2, ux3;
+    array_t<real_t*>   phi;
+    array_t<short*>    tag;
+    const Metric<D>    metric;
+
+    const real_t time, coeff, dt;
+    const int    ni2;
+    const real_t gca_larmor { 0.05 }, gca_EovrB_sqr { 0.81 };
+    bool         is_ax_i2min { false }, is_ax_i2max { false };
+
 #ifdef EXTERNAL_FORCE
-    // PgenForceField<D, PICEngine> m_force_field;
-    ProblemGenerator<D, PICEngine> m_pgen;
-    array_t<real_t*>               m_work;
+    ProblemGenerator<D, PICEngine> pgen;
 #endif
-    const real_t m_time, m_coeff, m_dt;
-    const int    m_ni2;
-    bool         m_ax_i2min;
-    bool         m_ax_i2max;
 
   public:
-    /**
-     * @brief Constructor.
-     * @param mblock Meshblock.
-     * @param particles Particles.
-     * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
-     * @param dt Time step.
-     */
-    Pusher_kernel(const Meshblock<D, PICEngine>& mblock,
-                  const Particles<D, PICEngine>& particles,
+    Pusher_kernel(Meshblock<D, PICEngine>&        mblock,
+                  Particles<D, PICEngine>&        particles,
+                  real_t                          time,
+                  real_t                          coeff,
+                  real_t                          dt,
+                  ProblemGenerator<D, PICEngine>& pgen) :
+      EB { mblock.em },
+      i1 { particles.i1 },
+      i2 { particles.i2 },
+      i3 { particles.i3 },
+      dx1 { particles.dx1 },
+      dx2 { particles.dx2 },
+      dx3 { particles.dx3 },
+      ux1 { particles.ux1 },
+      ux2 { particles.ux2 },
+      ux3 { particles.ux3 },
+      phi { particles.phi },
+      tag { particles.tag },
+      metric { mblock.metric },
+      time { time },
+      coeff { coeff },
+      dt { dt },
+      ni2 { (int)mblock.Ni2() }
 #ifdef EXTERNAL_FORCE
-                  const ProblemGenerator<D, PICEngine>& pgen,
-                  array_t<real_t*>&                     work,
+      ,
+      pgen { pgen }
 #endif
-                  const real_t& time,
-                  const real_t& coeff,
-                  const real_t& dt)
-      : m_mblock { mblock },
-        m_particles { particles },
-#ifdef EXTERNAL_FORCE
-        m_pgen { pgen },
-        m_work { work },
-#endif
-        m_time { time },
-        m_coeff { coeff },
-        m_dt { dt },
-        m_ni2 { (int)mblock.Ni2() } {
+    {
+      (void)pgen;
       if constexpr (D == Dim2) {
-        NTTHostErrorIf(mblock.boundaries.size() < 2, "boundaries defined incorrectly");
-        m_ax_i2min = (mblock.boundaries[1][0] == BoundaryCondition::AXIS);
-        m_ax_i2max = (mblock.boundaries[1][1] == BoundaryCondition::AXIS);
+        NTTHostErrorIf(mblock.boundaries.size() < 2,
+                       "boundaries defined incorrectly");
+        is_ax_i2min = (mblock.boundaries[1][0] == BoundaryCondition::AXIS);
+        is_ax_i2max = (mblock.boundaries[1][1] == BoundaryCondition::AXIS);
       }
     }
 
+    Inline void operator()(Boris_t, index_t) const;
+    Inline void operator()(Vay_t, index_t) const;
+    Inline void operator()(Boris_GCA_t, index_t) const;
+    Inline void operator()(Vay_GCA_t, index_t) const;
+    Inline void operator()(Photon_t, index_t) const;
+
+    // Updaters
+
     /**
-     * @brief Pusher for the forward Boris algorithm.
-     * @param p index.
+     * @brief update particle velocities
+     * @param tag algorithm
+     * @param p, e0, b0 index & interpolated fields
      */
-    Inline void operator()(const Boris_t&, index_t p) const {
-      if (m_particles.tag(p) != ParticleTag::alive) {
-        return;
-      }
-
-      vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
-      interpolateFields(p, e_int, b_int);
-
-#ifdef MINKOWSKI_METRIC
-      coord_t<D> xp { ZERO };
+    Inline void velUpd(Boris_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
+    Inline void velUpd(Vay_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
+#ifndef EXTERNAL_FORCE
+    Inline void velUpd(GCA_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 #else
-      coord_t<Dim3> xp { ZERO };
-#endif
-      getParticleCoordinate(p, xp);
-      m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
-      m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
-
-#ifdef EXTERNAL_FORCE
-      coord_t<D> xp_ph { ZERO };
-#  ifdef MINKOWSKI_METRIC
-      m_mblock.metric.x_Code2Cart(xp, xp_ph);
-#  else
-      coord_t<D> xp_ND { ZERO };
-#    pragma unroll
-      for (short d { 0 }; d < static_cast<short>(D); ++d) {
-        xp_ND[d] = xp[d];
-      }
-      m_mblock.metric.x_Code2Sph(xp_ND, xp_ph);
-#  endif
-
-      const vec_t<Dim3> force_Hat { m_pgen.ext_force_x1(m_time, xp_ph),
-                                    m_pgen.ext_force_x2(m_time, xp_ph),
-                                    m_pgen.ext_force_x3(m_time, xp_ph) };
-      vec_t<Dim3>       force_Cart { ZERO };
-      m_mblock.metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
-#endif    // EXTERNAL_FORCE
-
-      real_t       t_gamma { math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                                  + SQR(m_particles.ux3(p))) };
-      const real_t rL { t_gamma * m_dt
-                        / (TWO * m_coeff
-                           * math::sqrt(SQR(b_int_Cart[0]) + SQR(b_int_Cart[1])
-                                        + SQR(b_int_Cart[2]))) };
-      const real_t esqr { SQR(e_int_Cart[0]) + SQR(e_int_Cart[1]) + SQR(e_int_Cart[2]) };
-      const real_t bsqr { SQR(b_int_Cart[0]) + SQR(b_int_Cart[1]) + SQR(b_int_Cart[2]) };
-      if (math::fabs(rL) > 0.05 || (esqr / bsqr) > static_cast<real_t>(0.81)) {
-        /* ------------------------------ Boris Update ------------------------------ */
-#ifdef EXTERNAL_FORCE
-        real_t t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                                    + SQR(m_particles.ux3(p)));
-        real_t t_fdotu = force_Cart[0] * m_particles.ux1(p)
-                         + force_Cart[1] * m_particles.ux2(p)
-                         + force_Cart[2] * m_particles.ux3(p);
-        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
-
-        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
+    Inline void velUpd(GCA_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 #endif
 
-        BorisUpdate(p, e_int_Cart, b_int_Cart);
+    /**
+     * @brief update particle positions with updated velocities
+     * @param p, v index & 3-velocity
+     */
+    Inline void posUpd(index_t&, const vec_t<Dim3>&) const;
 
-#ifdef EXTERNAL_FORCE
+    /**
+     * @brief same as posUpd but per component
+     */
+    Inline void upd_x1(index_t&, const real_t&) const;
+    Inline void upd_x2(index_t&, const real_t&) const;
+    Inline void upd_x3(index_t&, const real_t&) const;
 
-        t_gamma = math::sqrt(ONE + SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p))
-                             + SQR(m_particles.ux3(p)));
-        t_fdotu = force_Cart[0] * m_particles.ux1(p) + force_Cart[1] * m_particles.ux2(p)
-                  + force_Cart[2] * m_particles.ux3(p);
-        m_work(p) += HALF * m_dt * t_fdotu / t_gamma;
-
-        m_particles.ux1(p) += HALF * m_dt * force_Cart[0];
-        m_particles.ux2(p) += HALF * m_dt * force_Cart[1];
-        m_particles.ux3(p) += HALF * m_dt * force_Cart[2];
-#endif
-      } else {
-        /* --------------------------- GCA velocity update -------------------------- */
-        // GCAUpdate(p, xp, e_int_Cart, b_int_Cart, force_Cart);
-#ifdef EXTERNAL_FORCE	
-        GCAUpdate(p, force_Cart, e_int_Cart, b_int_Cart);
-#else
-	GCAUpdate(p, e_int_Cart, b_int_Cart);
-#endif	
-      }
-
-      real_t inv_energy;
-      inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
-
-      // contravariant 3-velocity: u^i / gamma
-      vec_t<Dim3> v;
-      m_mblock.metric.v3_Cart2Cntrv(
-        xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
-      // avoid problem for a particle right at the axes
-      if (m_ax_i2min && (m_particles.i2(p) == 0)
-          && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0))) {
-        v[2] = ZERO;
-      } else if (m_ax_i2max && (m_particles.i2(p) == m_ni2 - 1)
-                 && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0))) {
-        v[2] = ZERO;
-      }
-      v[0] *= inv_energy;
-      v[1] *= inv_energy;
-      v[2] *= inv_energy;
-
-      positionUpdate(p, v);
 #ifndef MINKOWSKI_METRIC
-      // !HOTFIX: also synchronize with GR
-      reflectFromAxis(p);
-#endif
-    }
     /**
-     * @brief Pusher for the photon.
-     * @param p index.
+     * @brief reflect particle velocities near the axes
      */
-    Inline void operator()(const Photon_t&, index_t p) const {
-      if (m_particles.tag(p) != ParticleTag::alive) {
-        return;
-      }
-#ifdef MINKOWSKI_METRIC
-      coord_t<D> xp;
-#else
-      coord_t<Dim3> xp;
+    Inline void axisReflect(index_t&, coord_t<FullD>&) const;
 #endif
-      getParticleCoordinate(p, xp);
-      vec_t<Dim3> v;
-      m_mblock.metric.v3_Cart2Cntrv(
-        xp, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v);
 
-      real_t inv_energy;
-      inv_energy = ONE / math::sqrt(get_prtl_Usqr_SR(m_particles, p));
-      v[0] *= inv_energy;
-      v[1] *= inv_energy;
-      v[2] *= inv_energy;
-
-      positionUpdate(p, v);
-#ifndef MINKOWSKI_METRIC
-      reflectFromAxis(p);
-#endif
-    }
+    // Getters
 
 #ifdef MINKOWSKI_METRIC
-    /**
-     * @brief Transform particle coordinate from code units i+di to `real_t` type.
-     * @param p index of the particle.
-     * @param coord coordinate of the particle as a vector (of size D).
-     */
-    Inline void getParticleCoordinate(index_t&, coord_t<D>&) const;
+    Inline void getPrtlPos(index_t&, coord_t<D>&) const;
 #else
-    /**
-     * @brief Transform particle coordinate from code units i+di to `real_t` type.
-     * @param p index of the particle.
-     * @param coord coordinate of the particle as a vector (of size 3).
-     */
-    Inline void getParticleCoordinate(index_t&, coord_t<Dim3>&) const;
-
-    /**
-     * @brief Reflect particle coordinate and velocity from the axis ...
-     * @brief ... only for 2D non-minkowski metric.
-     * @param p index of the particle.
-     */
-    Inline void reflectFromAxis(index_t&) const;
+    Inline void getPrtlPos(index_t&, coord_t<FullD>&) const;
 #endif
+    template <typename T>
+    Inline void get3VelCntrv(T, index_t&, vec_t<FullD>&, vec_t<Dim3>&) const;
+    Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
+    Inline auto getEnergy(Massless_t, index_t& p) const -> real_t;
+    Inline void getInterpFlds(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
-    /**
-     * @brief First order Yee mesh field interpolation to particle position.
-     * @param p index of the particle.
-     * @param e interpolated e-field vector of size 3 [return].
-     * @param b interpolated b-field vector of size 3 [return].
-     */
-    Inline void interpolateFields(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
+    // Extra
 
-    /**
-     * @brief Update particle positions according to updated velocities.
-     * @param p index of the particle.
-     * @param v particle 3-velocity.
-     */
-    Inline void positionUpdate(index_t&, const vec_t<Dim3>&) const;
-
-    /**
-     * @brief Update each position component.
-     * @param p index of the particle.
-     * @param v corresponding 3-velocity component.
-     */
-    Inline void positionUpdate_x1(index_t&, const real_t&) const;
-    Inline void positionUpdate_x2(index_t&, const real_t&) const;
-    Inline void positionUpdate_x3(index_t&, const real_t&) const;
-
-    /**
-     * @brief Boris algorithm.
-     * @note Fields are modified inside the function and cannot be reused.
-     * @param p index of the particle.
-     * @param e interpolated e-field vector of size 3 [modified].
-     * @param b interpolated b-field vector of size 3 [modified].
-     */
-    Inline void BorisUpdate(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
-
-    Inline void GCAUpdate(index_t&     p,
-#ifdef  EXTERNAL_FORCE
-			  vec_t<Dim3>& force_Cart,
-#endif 			  
-                      vec_t<Dim3>& e_Cart,
-                      vec_t<Dim3>& b_Cart) const {
-        const auto bmag { math::sqrt(SQR(b_Cart[0]) + SQR(b_Cart[1]) + SQR(b_Cart[2])) };
-        const auto epar { (e_Cart[0] * b_Cart[0] + e_Cart[1] * b_Cart[1] + e_Cart[2] * b_Cart[2])
-                    / bmag };
-        auto       upar { (m_particles.ux1(p) * b_Cart[0] + m_particles.ux2(p) * b_Cart[1]
-                        + m_particles.ux3(p) * b_Cart[2]) / bmag };
 #ifdef EXTERNAL_FORCE
-        const auto fpar { (force_Cart[0] * b_Cart[0] + force_Cart[1] * b_Cart[1]
-                      + force_Cart[2] * b_Cart[2])/ bmag };
+  #ifdef MINKOWSKI_METRIC
+    Inline void initForce(coord_t<D>&, vec_t<Dim3>&) const;
+  #else
+    Inline void initForce(coord_t<FullD>&, vec_t<Dim3>&) const;
+  #endif
+    Inline void forceHalfUpdate(index_t&, vec_t<Dim3>&) const;
 #endif
-        upar += m_coeff * TWO * epar;
-#ifdef EXTERNAL_FORCE
-        upar += m_dt * fpar;
-#endif
-
-        const auto        e_sqr { SQR(e_Cart[0]) + SQR(e_Cart[1]) + SQR(e_Cart[2]) };
-        const vec_t<Dim3> wE {
-            (e_Cart[1] * b_Cart[2] - e_Cart[2] * b_Cart[1]) / (SQR(bmag) + e_sqr),
-            (e_Cart[2] * b_Cart[0] - e_Cart[0] * b_Cart[2]) / (SQR(bmag) + e_sqr),
-            (e_Cart[0] * b_Cart[1] - e_Cart[1] * b_Cart[0]) / (SQR(bmag) + e_sqr)
-        };
-        const auto        wE_sqr { SQR(wE[0]) + SQR(wE[1]) + SQR(wE[2]) };
-        real_t factor;
-        if (wE_sqr < static_cast<real_t>(0.01)) {
-          factor = ONE + wE_sqr + 2*SQR(wE_sqr)+5*SQR(wE_sqr)*wE_sqr;
-        } else {
-          factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
-        }
-        const vec_t<Dim3> vE_Cart { wE[0] * factor, wE[1] * factor, wE[2] * factor };
-        const auto        kappa {
-          ONE / math::sqrt(ONE - SQR(vE_Cart[0]) - SQR(vE_Cart[1]) - SQR(vE_Cart[2]))
-        };
-        const auto Gamma { kappa * math::sqrt(ONE + SQR(upar)) };
-        m_particles.ux1(p) = upar * b_Cart[0] / bmag + vE_Cart[0] * Gamma;
-        m_particles.ux2(p) = upar * b_Cart[1] / bmag + vE_Cart[1] * Gamma;
-        m_particles.ux3(p) = upar * b_Cart[2] / bmag + vE_Cart[2] * Gamma;
-    }
   };
 
-#ifdef MINKOWSKI_METRIC
-  template <>
-  Inline void Pusher_kernel<Dim1>::getParticleCoordinate(index_t& p, coord_t<Dim1>& xp) const {
-    xp[0] = get_prtl_x1(m_particles, p);
-  }
-  template <>
-  Inline void Pusher_kernel<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim2>& xp) const {
-    xp[0] = get_prtl_x1(m_particles, p);
-    xp[1] = get_prtl_x2(m_particles, p);
-  }
-#else    // not MINKOWSKI_METRIC
-  template <>
-  Inline void Pusher_kernel<Dim1>::getParticleCoordinate(index_t&, coord_t<Dim3>&) const {
-    NTTError("not applicable");
-  }
-  template <>
-  Inline void Pusher_kernel<Dim2>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
-    xp[0] = get_prtl_x1(m_particles, p);
-    xp[1] = get_prtl_x2(m_particles, p);
-    xp[2] = m_particles.phi(p);
+  template <Dimension D, typename P>
+  void PushLoop(const SimulationParams&         params,
+                Meshblock<D, PICEngine>&        mblock,
+                Particles<D, PICEngine>&        particles,
+                ProblemGenerator<D, PICEngine>& pgen,
+                real_t                          time,
+                real_t                          factor) {
+    const auto dt              = factor * mblock.timestep();
+    const auto charge_ovr_mass = particles.mass() > ZERO
+                                   ? particles.charge() / particles.mass()
+                                   : ZERO;
+    const auto coeff           = charge_ovr_mass * HALF * dt * params.B0();
+    Kokkos::parallel_for(
+      "ParticlesPush",
+      Kokkos::RangePolicy<AccelExeSpace, P>(0, particles.npart()),
+      Pusher_kernel<D>(mblock, particles, time, coeff, dt, pgen));
   }
 
-  template <>
-  Inline void Pusher_kernel<Dim1>::reflectFromAxis(index_t&) const {
-    NTTError("not applicable");
-  }
+  /**
+   * Definitions
+   */
 
-  template <>
-  Inline void Pusher_kernel<Dim2>::reflectFromAxis(index_t& p) const {
-    if (((m_particles.i2(p) < 0) && m_ax_i2min)
-        || ((m_particles.i2(p) >= m_ni2) && m_ax_i2max)) {
-      // particle is off of the axis
-      m_particles.dx2(p) = ONE - m_particles.dx2(p);
-      m_particles.i2(p)  = IMIN(IMAX(m_particles.i2(p), 0), m_ni2 - 1);
-      if (((m_particles.i2(p) == 0)
-           && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(0.0)))
-          || ((m_particles.i2(p) == m_ni2 - 1)
-              && AlmostEqual(m_particles.dx2(p), static_cast<prtldx_t>(1.0)))) {
-        // just reflect the x-velocity and set y velocity to zero if exactly at the axis
-        m_particles.ux1(p) = -m_particles.ux1(p);
-        m_particles.ux2(p) = ZERO;
-      } else {
-        // reflect theta-velocity
-        coord_t<Dim3> x_cu { get_prtl_x1(m_particles, p),
-                             get_prtl_x2(m_particles, p),
-                             m_particles.phi(p) };
-        vec_t<Dim3>   v_Cntrv { ZERO }, v_Cart { ZERO };
-        m_mblock.metric.v3_Cart2Cntrv(
-          x_cu, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, v_Cntrv);
-        m_mblock.metric.v3_Cntrv2Cart(x_cu, { v_Cntrv[0], -v_Cntrv[1], v_Cntrv[2] }, v_Cart);
-        m_particles.ux1(p) = v_Cart[0];
-        m_particles.ux2(p) = v_Cart[1];
-        m_particles.ux3(p) = v_Cart[2];
-      }
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::operator()(Photon_t, index_t p) const {
+    if (tag(p) == ParticleTag::alive) {
+      coord_t<FullD> xp { ZERO };
+      vec_t<Dim3>    v { ZERO };
+      getPrtlPos(p, xp);
+#ifndef MINKOWSKI_METRIC
+      axisReflect(p, xp);
+#endif
+      get3VelCntrv(Massless_t {}, p, xp, v);
+      posUpd(p, v);
     }
   }
 
-  template <>
-  Inline void Pusher_kernel<Dim3>::reflectFromAxis(index_t&) const {}
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::operator()(Boris_t, index_t p) const {
+    if (tag(p) == ParticleTag::alive) {
+      coord_t<FullD> xp { ZERO };
+      vec_t<Dim3>    ei { ZERO }, bi { ZERO };
+      vec_t<Dim3>    ei_Cart { ZERO }, bi_Cart { ZERO };
+      getPrtlPos(p, xp);
+
+      getInterpFlds(p, ei, bi);
+      metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
+      metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+
+#ifdef EXTERNAL_FORCE
+      vec_t<Dim3> force_Cart { ZERO };
+      initForce(xp, force_Cart);
+      forceHalfUpdate(p, force_Cart);
 #endif
-
-  template <>
-  Inline void Pusher_kernel<Dim3>::getParticleCoordinate(index_t& p, coord_t<Dim3>& xp) const {
-    xp[0] = get_prtl_x1(m_particles, p);
-    xp[1] = get_prtl_x2(m_particles, p);
-    xp[2] = get_prtl_x3(m_particles, p);
-  }
-
-  // * * * * * * * * * * * * * * *
-  // General position update
-  // * * * * * * * * * * * * * * *
-  template <>
-  Inline void Pusher_kernel<Dim1>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
-    positionUpdate_x1(p, v[0]);
-  }
-  template <>
-  Inline void Pusher_kernel<Dim2>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
-    positionUpdate_x1(p, v[0]);
-    positionUpdate_x2(p, v[1]);
+      velUpd(Boris_t {}, p, ei_Cart, bi_Cart);
+#ifdef EXTERNAL_FORCE
+      forceHalfUpdate(p, force_Cart);
+#endif
 #ifndef MINKOWSKI_METRIC
-    m_particles.phi(p) += m_dt * v[2];
+      axisReflect(p, xp);
 #endif
-  }
-  template <>
-  Inline void Pusher_kernel<Dim3>::positionUpdate(index_t& p, const vec_t<Dim3>& v) const {
-    positionUpdate_x1(p, v[0]);
-    positionUpdate_x2(p, v[1]);
-    positionUpdate_x3(p, v[2]);
+
+      vec_t<Dim3> v { ZERO };
+      get3VelCntrv(Massive_t {}, p, xp, v);
+      posUpd(p, v);
+    }
   }
 
   template <Dimension D>
-  Inline void Pusher_kernel<D>::positionUpdate_x1(index_t& p, const real_t& vx1) const {
-    m_particles.dx1(p) = m_particles.dx1(p) + static_cast<prtldx_t>(m_dt * vx1);
-    int      temp_i { static_cast<int>(m_particles.dx1(p)) };
-    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx1(p)) + temp_i,
-                                 static_cast<prtldx_t>(temp_i))
-                      - static_cast<prtldx_t>(1.0) };
-    temp_i             = static_cast<int>(temp_r);
-    m_particles.i1(p)  = m_particles.i1(p) + temp_i;
-    m_particles.dx1(p) = m_particles.dx1(p) - temp_r;
-  }
-  template <Dimension D>
-  Inline void Pusher_kernel<D>::positionUpdate_x2(index_t& p, const real_t& vx2) const {
-    m_particles.dx2(p) = m_particles.dx2(p) + static_cast<prtldx_t>(m_dt * vx2);
-    int      temp_i { static_cast<int>(m_particles.dx2(p)) };
-    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx2(p)) + temp_i,
-                                 static_cast<prtldx_t>(temp_i))
-                      - static_cast<prtldx_t>(1.0) };
-    temp_i             = static_cast<int>(temp_r);
-    m_particles.i2(p)  = m_particles.i2(p) + temp_i;
-    m_particles.dx2(p) = m_particles.dx2(p) - temp_r;
-  }
-  template <Dimension D>
-  Inline void Pusher_kernel<D>::positionUpdate_x3(index_t& p, const real_t& vx3) const {
-    m_particles.dx3(p) = m_particles.dx3(p) + static_cast<prtldx_t>(m_dt * vx3);
-    int      temp_i { static_cast<int>(m_particles.dx3(p)) };
-    prtldx_t temp_r { math::fmax(SIGNf(m_particles.dx3(p)) + temp_i,
-                                 static_cast<prtldx_t>(temp_i))
-                      - static_cast<prtldx_t>(1.0) };
-    temp_i             = static_cast<int>(temp_r);
-    m_particles.i3(p)  = m_particles.i3(p) + temp_i;
-    m_particles.dx3(p) = m_particles.dx3(p) - temp_r;
+  Inline void Pusher_kernel<D>::operator()(Vay_t, index_t p) const {
+    if (tag(p) == ParticleTag::alive) {
+      coord_t<FullD> xp { ZERO };
+      vec_t<Dim3>    ei { ZERO }, bi { ZERO };
+      vec_t<Dim3>    ei_Cart { ZERO }, bi_Cart { ZERO };
+      getPrtlPos(p, xp);
+
+      getInterpFlds(p, ei, bi);
+      metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
+      metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+
+#ifdef EXTERNAL_FORCE
+      vec_t<Dim3> force_Cart { ZERO };
+      initForce(xp, force_Cart);
+      forceHalfUpdate(p, force_Cart);
+#endif
+      velUpd(Vay_t {}, p, ei_Cart, bi_Cart);
+#ifdef EXTERNAL_FORCE
+      forceHalfUpdate(p, force_Cart);
+#endif
+#ifndef MINKOWSKI_METRIC
+      axisReflect(p, xp);
+#endif
+
+      vec_t<Dim3> v { ZERO };
+      get3VelCntrv(Massive_t {}, p, xp, v);
+      posUpd(p, v);
+    }
   }
 
-  // * * * * * * * * * * * * * * *
-  // Boris velocity update
-  // * * * * * * * * * * * * * * *
   template <Dimension D>
-  Inline void Pusher_kernel<D>::BorisUpdate(index_t&     p,
-                                            vec_t<Dim3>& e0,
-                                            vec_t<Dim3>& b0) const {
-    real_t COEFF { m_coeff };
+  Inline void Pusher_kernel<D>::operator()(Boris_GCA_t, index_t p) const {
+    if (tag(p) == ParticleTag::alive) {
+      coord_t<FullD> xp { ZERO };
+      vec_t<Dim3>    ei { ZERO }, bi { ZERO };
+      vec_t<Dim3>    ei_Cart { ZERO }, bi_Cart { ZERO };
+      getPrtlPos(p, xp);
+
+      getInterpFlds(p, ei, bi);
+      metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
+      metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+
+      const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
+      const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
+      const auto rL { math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p))) * dt /
+                      (TWO * coeff * math::sqrt(B2)) };
+      if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
+#ifdef EXTERNAL_FORCE
+        vec_t<Dim3> force_Cart { ZERO };
+        initForce(xp, force_Cart);
+        velUpd(GCA_t {}, p, force_Cart, ei_Cart, bi_Cart);
+#else
+        velUpd(GCA_t {}, p, ei_Cart, bi_Cart);
+#endif
+      } else {
+#ifdef EXTERNAL_FORCE
+        vec_t<Dim3> force_Cart { ZERO };
+        initForce(xp, force_Cart);
+        forceHalfUpdate(p, force_Cart);
+#endif
+        velUpd(Boris_t {}, p, ei_Cart, bi_Cart);
+#ifdef EXTERNAL_FORCE
+        forceHalfUpdate(p, force_Cart);
+#endif
+      }
+#ifndef MINKOWSKI_METRIC
+      axisReflect(p, xp);
+#endif
+
+      vec_t<Dim3> v { ZERO };
+      get3VelCntrv(Massive_t {}, p, xp, v);
+      posUpd(p, v);
+    }
+  }
+
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::operator()(Vay_GCA_t, index_t p) const {
+    if (tag(p) == ParticleTag::alive) {
+      coord_t<FullD> xp { ZERO };
+      vec_t<Dim3>    ei { ZERO }, bi { ZERO };
+      vec_t<Dim3>    ei_Cart { ZERO }, bi_Cart { ZERO };
+      getPrtlPos(p, xp);
+
+      getInterpFlds(p, ei, bi);
+      metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
+      metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+
+      const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
+      const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
+      const auto rL { math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p))) * dt /
+                      (TWO * coeff * math::sqrt(B2)) };
+      if (rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
+#ifdef EXTERNAL_FORCE
+        vec_t<Dim3> force_Cart { ZERO };
+        initForce(xp, force_Cart);
+        velUpd(GCA_t {}, p, force_Cart, ei_Cart, bi_Cart);
+#else
+        velUpd(GCA_t {}, p, ei_Cart, bi_Cart);
+#endif
+      } else {
+#ifdef EXTERNAL_FORCE
+        vec_t<Dim3> force_Cart { ZERO };
+        initForce(xp, force_Cart);
+        forceHalfUpdate(p, force_Cart);
+#endif
+        velUpd(Vay_t {}, p, ei_Cart, bi_Cart);
+#ifdef EXTERNAL_FORCE
+        forceHalfUpdate(p, force_Cart);
+#endif
+      }
+#ifndef MINKOWSKI_METRIC
+      axisReflect(p, xp);
+#endif
+
+      vec_t<Dim3> v { ZERO };
+      get3VelCntrv(Massive_t {}, p, xp, v);
+      posUpd(p, v);
+    }
+  }
+
+  // Velocity update
+
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::velUpd(Boris_t,
+                                       index_t&     p,
+                                       vec_t<Dim3>& e0,
+                                       vec_t<Dim3>& b0) const {
+    real_t COEFF { coeff };
 
     e0[0] *= COEFF;
     e0[1] *= COEFF;
     e0[2] *= COEFF;
-    vec_t<Dim3> u0 { m_particles.ux1(p) + e0[0],
-                     m_particles.ux2(p) + e0[1],
-                     m_particles.ux3(p) + e0[2] };
+    vec_t<Dim3> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
 
-    COEFF *= ONE / math::sqrt(ONE + SQR(u0[0]) + SQR(u0[1]) + SQR(u0[2]));
+    COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
     b0[0] *= COEFF;
     b0[1] *= COEFF;
     b0[2] *= COEFF;
-    COEFF = TWO / (ONE + SQR(b0[0]) + SQR(b0[1]) + SQR(b0[2]));
+    COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
 
-    vec_t<Dim3> u1 { (u0[0] + u0[1] * b0[2] - u0[2] * b0[1]) * COEFF,
-                     (u0[1] + u0[2] * b0[0] - u0[0] * b0[2]) * COEFF,
-                     (u0[2] + u0[0] * b0[1] - u0[1] * b0[0]) * COEFF };
+    vec_t<Dim3> u1 {
+      (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
+      (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
+      (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
+    };
 
-    u0[0] += u1[1] * b0[2] - u1[2] * b0[1] + e0[0];
-    u0[1] += u1[2] * b0[0] - u1[0] * b0[2] + e0[1];
-    u0[2] += u1[0] * b0[1] - u1[1] * b0[0] + e0[2];
+    u0[0] += CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[0];
+    u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[1];
+    u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[2];
 
-    m_particles.ux1(p) = u0[0];
-    m_particles.ux2(p) = u0[1];
-    m_particles.ux3(p) = u0[2];
+    ux1(p) = u0[0];
+    ux2(p) = u0[1];
+    ux3(p) = u0[2];
   }
 
-  // * * * * * * * * * * * * * * *
-  // Field interpolations
-  // * * * * * * * * * * * * * * *
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::velUpd(Vay_t,
+                                       index_t&     p,
+                                       vec_t<Dim3>& e0,
+                                       vec_t<Dim3>& b0) const {
+    auto COEFF { coeff };
+    e0[0] *= COEFF;
+    e0[1] *= COEFF;
+    e0[2] *= COEFF;
 
-  template <>
-  Inline void Pusher_kernel<Dim1>::interpolateFields(index_t&     p,
-                                                     vec_t<Dim3>& e0,
-                                                     vec_t<Dim3>& b0) const {
-    const auto   i { m_particles.i1(p) + N_GHOSTS };
-    const real_t dx1 { static_cast<real_t>(m_particles.dx1(p)) };
+    b0[0] *= COEFF;
+    b0[1] *= COEFF;
+    b0[2] *= COEFF;
 
-    // first order
-    real_t       c0, c1;
+    COEFF = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
 
-    // Ex1
-    // interpolate to nodes
-    c0    = HALF * (EX1(i) + EX1(i - 1));
-    c1    = HALF * (EX1(i) + EX1(i + 1));
-    // interpolate from nodes to the particle position
-    e0[0] = c0 * (ONE - dx1) + c1 * dx1;
-    // Ex2
-    c0    = EX2(i);
-    c1    = EX2(i + 1);
-    e0[1] = c0 * (ONE - dx1) + c1 * dx1;
-    // Ex3
-    c0    = EX3(i);
-    c1    = EX3(i + 1);
-    e0[2] = c0 * (ONE - dx1) + c1 * dx1;
+    vec_t<Dim3> u1 {
+      (ux1(p) + TWO * e0[0] +
+       CROSS_x1(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
+      (ux2(p) + TWO * e0[1] +
+       CROSS_x2(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
+      (ux3(p) + TWO * e0[2] +
+       CROSS_x3(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF)
+    };
+    COEFF = DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
+    auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
+                  NORM_SQR(b0[0], b0[1], b0[2]) };
 
-    // Bx1
-    c0    = BX1(i);
-    c1    = BX1(i + 1);
-    b0[0] = c0 * (ONE - dx1) + c1 * dx1;
-    // Bx2
-    c0    = HALF * (BX2(i - 1) + BX2(i));
-    c1    = HALF * (BX2(i) + BX2(i + 1));
-    b0[1] = c0 * (ONE - dx1) + c1 * dx1;
-    // Bx3
-    c0    = HALF * (BX3(i - 1) + BX3(i));
-    c1    = HALF * (BX3(i) + BX3(i + 1));
-    b0[2] = c0 * (ONE - dx1) + c1 * dx1;
+    COEFF = ONE /
+            math::sqrt(
+              INV_2 * (COEFF2 + math::sqrt(SQR(COEFF2) +
+                                           FOUR * (SQR(b0[0]) + SQR(b0[1]) +
+                                                   SQR(b0[2]) + SQR(COEFF)))));
+    COEFF2 = ONE /
+             (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) + SQR(b0[2] * COEFF));
+
+    ux1(p) = COEFF2 * (u1[0] +
+                       COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                         (b0[0] * COEFF) +
+                       u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
+    ux2(p) = COEFF2 * (u1[1] +
+                       COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                         (b0[1] * COEFF) +
+                       u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
+    ux3(p) = COEFF2 * (u1[2] +
+                       COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                         (b0[2] * COEFF) +
+                       u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
   }
 
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::velUpd(GCA_t,
+                                       index_t& p,
+#ifdef EXTERNAL_FORCE
+                                       vec_t<Dim3>& f0,
+#endif
+                                       vec_t<Dim3>& e0,
+                                       vec_t<Dim3>& b0) const {
+    const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
+                        NORM_SQR(b0[0], b0[1], b0[2]) };
+
+    const vec_t<Dim3> wE {
+      CROSS_x1(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+      CROSS_x2(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+      CROSS_x3(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr
+    };
+
+    {
+      const auto b_norm_inv { ONE / NORM(b0[0], b0[1], b0[2]) };
+      b0[0] *= b_norm_inv;
+      b0[1] *= b_norm_inv;
+      b0[2] *= b_norm_inv;
+    }
+    auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
+                coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
+
+#ifdef EXTERNAL_FORCE
+    upar += dt * DOT(f0[0], f0[1], f0[2], b0[0], b0[1], b0[2]);
+#endif
+
+    real_t factor;
+    {
+      const auto wE_sqr { NORM_SQR(wE[0], wE[1], wE[2]) };
+      if (wE_sqr < static_cast<real_t>(0.01)) {
+        factor = ONE + wE_sqr + TWO * SQR(wE_sqr) + FIVE * SQR(wE_sqr) * wE_sqr;
+      } else {
+        factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
+      }
+    }
+    const vec_t<Dim3> vE_Cart { wE[0] * factor, wE[1] * factor, wE[2] * factor };
+    const auto Gamma { math::sqrt(ONE + SQR(upar)) /
+                       math::sqrt(
+                         ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
+    ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
+    ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
+    ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+  }
+
+  // Position update
   template <>
-  Inline void Pusher_kernel<Dim2>::interpolateFields(index_t&     p,
-                                                     vec_t<Dim3>& e0,
-                                                     vec_t<Dim3>& b0) const {
-    const auto   i { m_particles.i1(p) + N_GHOSTS };
-    const real_t dx1 { static_cast<real_t>(m_particles.dx1(p)) };
-    const auto   j { m_particles.i2(p) + N_GHOSTS };
-    const real_t dx2 { static_cast<real_t>(m_particles.dx2(p)) };
-
-    // first order
-    real_t       c000, c100, c010, c110, c00, c10;
-
-    // Ex1
-    // interpolate to nodes
-    c000  = HALF * (EX1(i, j) + EX1(i - 1, j));
-    c100  = HALF * (EX1(i, j) + EX1(i + 1, j));
-    c010  = HALF * (EX1(i, j + 1) + EX1(i - 1, j + 1));
-    c110  = HALF * (EX1(i, j + 1) + EX1(i + 1, j + 1));
-    // interpolate from nodes to the particle position
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    e0[0] = c00 * (ONE - dx2) + c10 * dx2;
-    // Ex2
-    c000  = HALF * (EX2(i, j) + EX2(i, j - 1));
-    c100  = HALF * (EX2(i + 1, j) + EX2(i + 1, j - 1));
-    c010  = HALF * (EX2(i, j) + EX2(i, j + 1));
-    c110  = HALF * (EX2(i + 1, j) + EX2(i + 1, j + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    e0[1] = c00 * (ONE - dx2) + c10 * dx2;
-    // Ex3
-    c000  = EX3(i, j);
-    c100  = EX3(i + 1, j);
-    c010  = EX3(i, j + 1);
-    c110  = EX3(i + 1, j + 1);
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    e0[2] = c00 * (ONE - dx2) + c10 * dx2;
-
-    // Bx1
-    c000  = HALF * (BX1(i, j) + BX1(i, j - 1));
-    c100  = HALF * (BX1(i + 1, j) + BX1(i + 1, j - 1));
-    c010  = HALF * (BX1(i, j) + BX1(i, j + 1));
-    c110  = HALF * (BX1(i + 1, j) + BX1(i + 1, j + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    b0[0] = c00 * (ONE - dx2) + c10 * dx2;
-    // Bx2
-    c000  = HALF * (BX2(i - 1, j) + BX2(i, j));
-    c100  = HALF * (BX2(i, j) + BX2(i + 1, j));
-    c010  = HALF * (BX2(i - 1, j + 1) + BX2(i, j + 1));
-    c110  = HALF * (BX2(i, j + 1) + BX2(i + 1, j + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    b0[1] = c00 * (ONE - dx2) + c10 * dx2;
-    // Bx3
-    c000  = INV_4 * (BX3(i - 1, j - 1) + BX3(i - 1, j) + BX3(i, j - 1) + BX3(i, j));
-    c100  = INV_4 * (BX3(i, j - 1) + BX3(i, j) + BX3(i + 1, j - 1) + BX3(i + 1, j));
-    c010  = INV_4 * (BX3(i - 1, j) + BX3(i - 1, j + 1) + BX3(i, j) + BX3(i, j + 1));
-    c110  = INV_4 * (BX3(i, j) + BX3(i, j + 1) + BX3(i + 1, j) + BX3(i + 1, j + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    b0[2] = c00 * (ONE - dx2) + c10 * dx2;
+  Inline void Pusher_kernel<Dim1>::posUpd(index_t& p, const vec_t<Dim3>& v) const {
+    upd_x1(p, v[0]);
   }
 
   template <>
-  Inline void Pusher_kernel<Dim3>::interpolateFields(index_t&     p,
-                                                     vec_t<Dim3>& e0,
-                                                     vec_t<Dim3>& b0) const {
-    const auto   i { m_particles.i1(p) + N_GHOSTS };
-    const real_t dx1 { static_cast<real_t>(m_particles.dx1(p)) };
-    const auto   j { m_particles.i2(p) + N_GHOSTS };
-    const real_t dx2 { static_cast<real_t>(m_particles.dx2(p)) };
-    const auto   k { m_particles.i3(p) + N_GHOSTS };
-    const real_t dx3 { static_cast<real_t>(m_particles.dx3(p)) };
+  Inline void Pusher_kernel<Dim2>::posUpd(index_t& p, const vec_t<Dim3>& v) const {
+    upd_x1(p, v[0]);
+    upd_x2(p, v[1]);
+#ifndef MINKOWSKI_METRIC
+    phi(p) += dt * v[2];
+#endif
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim3>::posUpd(index_t& p, const vec_t<Dim3>& v) const {
+    upd_x1(p, v[0]);
+    upd_x2(p, v[1]);
+    upd_x3(p, v[2]);
+  }
+
+  // !TODO: check if SIGNf can be done better
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::upd_x1(index_t& p, const real_t& vx1) const {
+    dx1(p) += static_cast<prtldx_t>(dt * vx1);
+    auto temp_i { static_cast<int>(dx1(p)) };
+    auto temp_r { math::fmax(SIGNf(dx1(p)) + temp_i, static_cast<prtldx_t>(temp_i)) -
+                  static_cast<prtldx_t>(1.0) };
+    temp_i = static_cast<int>(temp_r);
+    i1(p)  = i1(p) + temp_i;
+    dx1(p) = dx1(p) - temp_r;
+  }
+
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::upd_x2(index_t& p, const real_t& vx2) const {
+    dx2(p) += static_cast<prtldx_t>(dt * vx2);
+    auto temp_i { static_cast<int>(dx2(p)) };
+    auto temp_r { math::fmax(SIGNf(dx2(p)) + temp_i, static_cast<prtldx_t>(temp_i)) -
+                  static_cast<prtldx_t>(1.0) };
+    temp_i = static_cast<int>(temp_r);
+    i2(p)  = i2(p) + temp_i;
+    dx2(p) = dx2(p) - temp_r;
+  }
+
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::upd_x3(index_t& p, const real_t& vx3) const {
+    dx3(p) += static_cast<prtldx_t>(dt * vx3);
+    auto temp_i { static_cast<int>(dx3(p)) };
+    auto temp_r { math::fmax(SIGNf(dx3(p)) + temp_i, static_cast<prtldx_t>(temp_i)) -
+                  static_cast<prtldx_t>(1.0) };
+    temp_i = static_cast<int>(temp_r);
+    i3(p)  = i3(p) + temp_i;
+    dx3(p) = dx3(p) - temp_r;
+  }
+
+  // Getters
+  template <Dimension D>
+  template <typename T>
+  Inline void Pusher_kernel<D>::get3VelCntrv(T,
+                                             index_t&      p,
+                                             vec_t<FullD>& xp,
+                                             vec_t<Dim3>&  v) const {
+    metric.v3_Cart2Cntrv(xp, { ux1(p), ux2(p), ux3(p) }, v);
+    auto inv_energy { ONE / getEnergy(T {}, p) };
+    v[0] *= inv_energy;
+    v[1] *= inv_energy;
+    v[2] *= inv_energy;
+  }
+
+#ifdef MINKOWSKI_METRIC
+  template <>
+  Inline void Pusher_kernel<Dim1>::getPrtlPos(index_t& p, coord_t<Dim1>& xp) const {
+    xp[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<Dim2>& xp) const {
+    xp[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+    xp[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+  }
+#else
+  template <>
+  Inline void Pusher_kernel<Dim1>::getPrtlPos(index_t&, coord_t<FullD>&) const {
+    NTTError("not applicable");
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<FullD>& xp) const {
+    xp[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+    xp[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+    xp[2] = phi(p);
+  }
+#endif
+
+  template <>
+  Inline void Pusher_kernel<Dim3>::getPrtlPos(index_t& p, coord_t<Dim3>& xp) const {
+    xp[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+    xp[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+    xp[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+  }
+
+  template <Dimension D>
+  Inline auto Pusher_kernel<D>::getEnergy(Massive_t, index_t& p) const -> real_t {
+    return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
+  }
+
+  template <Dimension D>
+  Inline auto Pusher_kernel<D>::getEnergy(Massless_t, index_t& p) const -> real_t {
+    return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim1>::getInterpFlds(index_t&     p,
+                                                 vec_t<Dim3>& e0,
+                                                 vec_t<Dim3>& b0) const {
+    const auto i { i1(p) + N_GHOSTS };
+    const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
     // first order
-    real_t       c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01, c11, c0, c1;
+    real_t c0, c1;
 
     // Ex1
     // interpolate to nodes
-    c000  = HALF * (EX1(i, j, k) + EX1(i - 1, j, k));
-    c100  = HALF * (EX1(i, j, k) + EX1(i + 1, j, k));
-    c010  = HALF * (EX1(i, j + 1, k) + EX1(i - 1, j + 1, k));
-    c110  = HALF * (EX1(i, j + 1, k) + EX1(i + 1, j + 1, k));
+    c0    = HALF * (EB(i, em::ex1) + EB(i - 1, em::ex1));
+    c1    = HALF * (EB(i, em::ex1) + EB(i + 1, em::ex1));
     // interpolate from nodes to the particle position
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    // interpolate to nodes
-    c001  = HALF * (EX1(i, j, k + 1) + EX1(i - 1, j, k + 1));
-    c101  = HALF * (EX1(i, j, k + 1) + EX1(i + 1, j, k + 1));
-    c011  = HALF * (EX1(i, j + 1, k + 1) + EX1(i - 1, j + 1, k + 1));
-    c111  = HALF * (EX1(i, j + 1, k + 1) + EX1(i + 1, j + 1, k + 1));
-    // interpolate from nodes to the particle position
-    c01   = c001 * (ONE - dx1) + c101 * dx1;
-    c11   = c011 * (ONE - dx1) + c111 * dx1;
-    c1    = c01 * (ONE - dx2) + c11 * dx2;
-    e0[0] = c0 * (ONE - dx3) + c1 * dx3;
-
+    e0[0] = c0 * (ONE - dx1_) + c1 * dx1_;
     // Ex2
-    c000  = HALF * (EX2(i, j, k) + EX2(i, j - 1, k));
-    c100  = HALF * (EX2(i + 1, j, k) + EX2(i + 1, j - 1, k));
-    c010  = HALF * (EX2(i, j, k) + EX2(i, j + 1, k));
-    c110  = HALF * (EX2(i + 1, j, k) + EX2(i + 1, j + 1, k));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    c001  = HALF * (EX2(i, j, k + 1) + EX2(i, j - 1, k + 1));
-    c101  = HALF * (EX2(i + 1, j, k + 1) + EX2(i + 1, j - 1, k + 1));
-    c011  = HALF * (EX2(i, j, k + 1) + EX2(i, j + 1, k + 1));
-    c111  = HALF * (EX2(i + 1, j, k + 1) + EX2(i + 1, j + 1, k + 1));
-    c01   = c001 * (ONE - dx1) + c101 * dx1;
-    c11   = c011 * (ONE - dx1) + c111 * dx1;
-    c1    = c01 * (ONE - dx2) + c11 * dx2;
-    e0[1] = c0 * (ONE - dx3) + c1 * dx3;
-
+    c0    = EB(i, em::ex2);
+    c1    = EB(i + 1, em::ex2);
+    e0[1] = c0 * (ONE - dx1_) + c1 * dx1_;
     // Ex3
-    c000  = HALF * (EX3(i, j, k) + EX3(i, j, k - 1));
-    c100  = HALF * (EX3(i + 1, j, k) + EX3(i + 1, j, k - 1));
-    c010  = HALF * (EX3(i, j + 1, k) + EX3(i, j + 1, k - 1));
-    c110  = HALF * (EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k - 1));
-    c001  = HALF * (EX3(i, j, k) + EX3(i, j, k + 1));
-    c101  = HALF * (EX3(i + 1, j, k) + EX3(i + 1, j, k + 1));
-    c011  = HALF * (EX3(i, j + 1, k) + EX3(i, j + 1, k + 1));
-    c111  = HALF * (EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c01   = c001 * (ONE - dx1) + c101 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c11   = c011 * (ONE - dx1) + c111 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    c1    = c01 * (ONE - dx2) + c11 * dx2;
-    e0[2] = c0 * (ONE - dx3) + c1 * dx3;
+    c0    = EB(i, em::ex3);
+    c1    = EB(i + 1, em::ex3);
+    e0[2] = c0 * (ONE - dx1_) + c1 * dx1_;
 
     // Bx1
-    c000 = INV_4 * (BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1));
-    c100 = INV_4
-           * (BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1)
-              + BX1(i + 1, j - 1, k - 1));
-    c001 = INV_4 * (BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1));
-    c101 = INV_4
-           * (BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k)
-              + BX1(i + 1, j - 1, k + 1));
-    c010 = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1));
-    c110 = INV_4
-           * (BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1)
-              + BX1(i + 1, j + 1, k));
-    c011 = INV_4 * (BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1));
-    c111 = INV_4
-           * (BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1)
-              + BX1(i + 1, j, k + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c01   = c001 * (ONE - dx1) + c101 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c11   = c011 * (ONE - dx1) + c111 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    c1    = c01 * (ONE - dx2) + c11 * dx2;
-    b0[0] = c0 * (ONE - dx3) + c1 * dx3;
-
+    c0    = EB(i, em::bx1);
+    c1    = EB(i + 1, em::bx1);
+    b0[0] = c0 * (ONE - dx1_) + c1 * dx1_;
     // Bx2
-    c000 = INV_4 * (BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k));
-    c100 = INV_4 * (BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k));
-    c001 = INV_4 * (BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1));
-    c101 = INV_4 * (BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1));
-    c010 = INV_4
-           * (BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1)
-              + BX2(i, j + 1, k));
-    c110 = INV_4
-           * (BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1)
-              + BX2(i + 1, j + 1, k));
-    c011 = INV_4
-           * (BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k)
-              + BX2(i, j + 1, k + 1));
-    c111 = INV_4
-           * (BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k)
-              + BX2(i + 1, j + 1, k + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c01   = c001 * (ONE - dx1) + c101 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c11   = c011 * (ONE - dx1) + c111 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    c1    = c01 * (ONE - dx2) + c11 * dx2;
-    b0[1] = c0 * (ONE - dx3) + c1 * dx3;
-
+    c0    = HALF * (EB(i - 1, em::bx2) + EB(i, em::bx2));
+    c1    = HALF * (EB(i, em::bx2) + EB(i + 1, em::bx2));
+    b0[1] = c0 * (ONE - dx1_) + c1 * dx1_;
     // Bx3
-    c000 = INV_4 * (BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k));
-    c100 = INV_4 * (BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k));
-    c001 = INV_4
-           * (BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1)
-              + BX3(i, j, k + 1));
-    c101 = INV_4
-           * (BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1)
-              + BX3(i + 1, j, k + 1));
-    c010 = INV_4 * (BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k));
-    c110 = INV_4 * (BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k));
-    c011 = INV_4
-           * (BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1)
-              + BX3(i, j + 1, k + 1));
-    c111 = INV_4
-           * (BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1)
-              + BX3(i + 1, j + 1, k + 1));
-    c00   = c000 * (ONE - dx1) + c100 * dx1;
-    c01   = c001 * (ONE - dx1) + c101 * dx1;
-    c10   = c010 * (ONE - dx1) + c110 * dx1;
-    c11   = c011 * (ONE - dx1) + c111 * dx1;
-    c0    = c00 * (ONE - dx2) + c10 * dx2;
-    c1    = c01 * (ONE - dx2) + c11 * dx2;
-    b0[2] = c0 * (ONE - dx3) + c1 * dx3;
+    c0    = HALF * (EB(i - 1, em::bx3) + EB(i, em::bx3));
+    c1    = HALF * (EB(i, em::bx3) + EB(i + 1, em::bx3));
+    b0[2] = c0 * (ONE - dx1_) + c1 * dx1_;
   }
 
-}    // namespace ntt
+  template <>
+  Inline void Pusher_kernel<Dim2>::getInterpFlds(index_t&     p,
+                                                 vec_t<Dim3>& e0,
+                                                 vec_t<Dim3>& b0) const {
+    const auto i { i1(p) + N_GHOSTS };
+    const auto j { i2(p) + N_GHOSTS };
+    const auto dx1_ { static_cast<real_t>(dx1(p)) };
+    const auto dx2_ { static_cast<real_t>(dx2(p)) };
 
-/*
-// Inline void operator()(const BorisBwd_t&, index_t p) const {
-//   real_t inv_energy;
-//   inv_energy = SQR(m_particles.ux1(p)) + SQR(m_particles.ux2(p)) +
-//   SQR(m_particles.ux3(p)); inv_energy = ONE / math::sqrt(ONE + inv_energy);
+    // first order
+    real_t c000, c100, c010, c110, c00, c10;
 
-//   coord_t<D> xp;
-//   getParticleCoordinate(p, xp);
+    // Ex1
+    // interpolate to nodes
+    c000  = HALF * (EB(i, j, em::ex1) + EB(i - 1, j, em::ex1));
+    c100  = HALF * (EB(i, j, em::ex1) + EB(i + 1, j, em::ex1));
+    c010  = HALF * (EB(i, j + 1, em::ex1) + EB(i - 1, j + 1, em::ex1));
+    c110  = HALF * (EB(i, j + 1, em::ex1) + EB(i + 1, j + 1, em::ex1));
+    // interpolate from nodes to the particle position
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    e0[0] = c00 * (ONE - dx2_) + c10 * dx2_;
+    // Ex2
+    c000  = HALF * (EB(i, j, em::ex2) + EB(i, j - 1, em::ex2));
+    c100  = HALF * (EB(i + 1, j, em::ex2) + EB(i + 1, j - 1, em::ex2));
+    c010  = HALF * (EB(i, j, em::ex2) + EB(i, j + 1, em::ex2));
+    c110  = HALF * (EB(i + 1, j, em::ex2) + EB(i + 1, j + 1, em::ex2));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    e0[1] = c00 * (ONE - dx2_) + c10 * dx2_;
+    // Ex3
+    c000  = EB(i, j, em::ex3);
+    c100  = EB(i + 1, j, em::ex3);
+    c010  = EB(i, j + 1, em::ex3);
+    c110  = EB(i + 1, j + 1, em::ex3);
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    e0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
 
-//   vec_t<Dim3> v;
-//   m_mblock.metric.v3_Cart2Cntrv(
-//     xp, {m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p)}, v);
-//   v[0] *= inv_energy;
-//   v[1] *= inv_energy;
-//   v[2] *= inv_energy;
-//   positionUpdate(p, v);
-//   getParticleCoordinate(p, xp);
+    // Bx1
+    c000  = HALF * (EB(i, j, em::bx1) + EB(i, j - 1, em::bx1));
+    c100  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j - 1, em::bx1));
+    c010  = HALF * (EB(i, j, em::bx1) + EB(i, j + 1, em::bx1));
+    c110  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j + 1, em::bx1));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    b0[0] = c00 * (ONE - dx2_) + c10 * dx2_;
+    // Bx2
+    c000  = HALF * (EB(i - 1, j, em::bx2) + EB(i, j, em::bx2));
+    c100  = HALF * (EB(i, j, em::bx2) + EB(i + 1, j, em::bx2));
+    c010  = HALF * (EB(i - 1, j + 1, em::bx2) + EB(i, j + 1, em::bx2));
+    c110  = HALF * (EB(i, j + 1, em::bx2) + EB(i + 1, j + 1, em::bx2));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    b0[1] = c00 * (ONE - dx2_) + c10 * dx2_;
+    // Bx3
+    c000  = INV_4 * (EB(i - 1, j - 1, em::bx3) + EB(i - 1, j, em::bx3) +
+                    EB(i, j - 1, em::bx3) + EB(i, j, em::bx3));
+    c100  = INV_4 * (EB(i, j - 1, em::bx3) + EB(i, j, em::bx3) +
+                    EB(i + 1, j - 1, em::bx3) + EB(i + 1, j, em::bx3));
+    c010  = INV_4 * (EB(i - 1, j, em::bx3) + EB(i - 1, j + 1, em::bx3) +
+                    EB(i, j, em::bx3) + EB(i, j + 1, em::bx3));
+    c110  = INV_4 * (EB(i, j, em::bx3) + EB(i, j + 1, em::bx3) +
+                    EB(i + 1, j, em::bx3) + EB(i + 1, j + 1, em::bx3));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    b0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
+  }
 
-//   vec_t<Dim3> e_int, b_int, e_int_Cart, b_int_Cart;
-//   interpolateFields(p, e_int, b_int);
+  template <>
+  Inline void Pusher_kernel<Dim3>::getInterpFlds(index_t&     p,
+                                                 vec_t<Dim3>& e0,
+                                                 vec_t<Dim3>& b0) const {
+    const auto i { i1(p) + N_GHOSTS };
+    const auto j { i2(p) + N_GHOSTS };
+    const auto k { i3(p) + N_GHOSTS };
+    const auto dx1_ { static_cast<real_t>(dx1(p)) };
+    const auto dx2_ { static_cast<real_t>(dx2(p)) };
+    const auto dx3_ { static_cast<real_t>(dx3(p)) };
 
-//   m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
-//   m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
+    // first order
+    real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01, c11,
+      c0, c1;
 
-//   BorisUpdate(p, e_int_Cart, b_int_Cart);
-// }
+    // Ex1
+    // interpolate to nodes
+    c000 = HALF * (EB(i, j, k, em::ex1) + EB(i - 1, j, k, em::ex1));
+    c100 = HALF * (EB(i, j, k, em::ex1) + EB(i + 1, j, k, em::ex1));
+    c010 = HALF * (EB(i, j + 1, k, em::ex1) + EB(i - 1, j + 1, k, em::ex1));
+    c110 = HALF * (EB(i, j + 1, k, em::ex1) + EB(i + 1, j + 1, k, em::ex1));
+    // interpolate from nodes to the particle position
+    c00  = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10  = c010 * (ONE - dx1_) + c110 * dx1_;
+    c0   = c00 * (ONE - dx2_) + c10 * dx2_;
+    // interpolate to nodes
+    c001 = HALF * (EB(i, j, k + 1, em::ex1) + EB(i - 1, j, k + 1, em::ex1));
+    c101 = HALF * (EB(i, j, k + 1, em::ex1) + EB(i + 1, j, k + 1, em::ex1));
+    c011 = HALF *
+           (EB(i, j + 1, k + 1, em::ex1) + EB(i - 1, j + 1, k + 1, em::ex1));
+    c111 = HALF *
+           (EB(i, j + 1, k + 1, em::ex1) + EB(i + 1, j + 1, k + 1, em::ex1));
+    // interpolate from nodes to the particle position
+    c01   = c001 * (ONE - dx1_) + c101 * dx1_;
+    c11   = c011 * (ONE - dx1_) + c111 * dx1_;
+    c1    = c01 * (ONE - dx2_) + c11 * dx2_;
+    e0[0] = c0 * (ONE - dx3_) + c1 * dx3_;
 
-// !HACK: hack for sync. radiation
-// real_t ux1_init { m_particles.ux1(p) };
-// real_t ux2_init { m_particles.ux2(p) };
-// real_t ux3_init { m_particles.ux3(p) };
-// real_t ex1 { e0[0] };
-// real_t ex2 { e0[1] };
-// real_t ex3 { e0[2] };
-// real_t bx1 { b0[0] };
-// real_t bx2 { b0[1] };
-// real_t bx3 { b0[2] };
+    // Ex2
+    c000 = HALF * (EB(i, j, k, em::ex2) + EB(i, j - 1, k, em::ex2));
+    c100 = HALF * (EB(i + 1, j, k, em::ex2) + EB(i + 1, j - 1, k, em::ex2));
+    c010 = HALF * (EB(i, j, k, em::ex2) + EB(i, j + 1, k, em::ex2));
+    c110 = HALF * (EB(i + 1, j, k, em::ex2) + EB(i + 1, j + 1, k, em::ex2));
+    c00  = c000 * (ONE - dx1_) + c100 * dx1_;
+    c10  = c010 * (ONE - dx1_) + c110 * dx1_;
+    c0   = c00 * (ONE - dx2_) + c10 * dx2_;
+    c001 = HALF * (EB(i, j, k + 1, em::ex2) + EB(i, j - 1, k + 1, em::ex2));
+    c101 = HALF *
+           (EB(i + 1, j, k + 1, em::ex2) + EB(i + 1, j - 1, k + 1, em::ex2));
+    c011 = HALF * (EB(i, j, k + 1, em::ex2) + EB(i, j + 1, k + 1, em::ex2));
+    c111 = HALF *
+           (EB(i + 1, j, k + 1, em::ex2) + EB(i + 1, j + 1, k + 1, em::ex2));
+    c01   = c001 * (ONE - dx1_) + c101 * dx1_;
+    c11   = c011 * (ONE - dx1_) + c111 * dx1_;
+    c1    = c01 * (ONE - dx2_) + c11 * dx2_;
+    e0[1] = c0 * (ONE - dx3_) + c1 * dx3_;
 
-// {
-// !HACK: radiation
-// ux1_init     = HALF * (ux1_init + u0[0]);
-// ux2_init     = HALF * (ux2_init + u0[1]);
-// ux3_init     = HALF * (ux3_init + u0[2]);
-// real_t gamma = math::sqrt(ONE + SQR(ux1_init) + SQR(ux2_init) + SQR(ux3_init));
-// if (gamma > 5.0) {
-//   real_t beta       = math::sqrt(ONE - ONE / SQR(gamma));
-//   real_t e_bar_x1   = ex1 + (ux2_init * bx3 - ux3_init * bx2) / gamma;
-//   real_t e_bar_x2   = ex2 + (ux3_init * bx1 - ux1_init * bx3) / gamma;
-//   real_t e_bar_x3   = ex3 + (ux1_init * bx2 - ux2_init * bx1) / gamma;
-//   real_t e_bar_sq   = SQR(e_bar_x1) + SQR(e_bar_x2) + SQR(e_bar_x3);
-//   real_t beta_dot_e = (ex1 * ux1_init + ex2 * ux2_init + ex3 * ux3_init) / gamma;
-//   real_t chiR_sq    = math::abs(e_bar_sq - beta_dot_e * beta_dot_e);
-//   real_t kappaR_x1  = (bx3 * e_bar_x2 - bx2 * e_bar_x3) + ex1 * beta_dot_e;
-//   real_t kappaR_x2  = (bx1 * e_bar_x3 - bx3 * e_bar_x1) + ex2 * beta_dot_e;
-//   real_t kappaR_x3  = (bx2 * e_bar_x1 - bx1 * e_bar_x2) + ex3 * beta_dot_e;
+    // Ex3
+    c000 = HALF * (EB(i, j, k, em::ex3) + EB(i, j, k - 1, em::ex3));
+    c100 = HALF * (EB(i + 1, j, k, em::ex3) + EB(i + 1, j, k - 1, em::ex3));
+    c010 = HALF * (EB(i, j + 1, k, em::ex3) + EB(i, j + 1, k - 1, em::ex3));
+    c110 = HALF *
+           (EB(i + 1, j + 1, k, em::ex3) + EB(i + 1, j + 1, k - 1, em::ex3));
+    c001 = HALF * (EB(i, j, k, em::ex3) + EB(i, j, k + 1, em::ex3));
+    c101 = HALF * (EB(i + 1, j, k, em::ex3) + EB(i + 1, j, k + 1, em::ex3));
+    c011 = HALF * (EB(i, j + 1, k, em::ex3) + EB(i, j + 1, k + 1, em::ex3));
+    c111 = HALF *
+           (EB(i + 1, j + 1, k, em::ex3) + EB(i + 1, j + 1, k + 1, em::ex3));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c01   = c001 * (ONE - dx1_) + c101 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    c11   = c011 * (ONE - dx1_) + c111 * dx1_;
+    c0    = c00 * (ONE - dx2_) + c10 * dx2_;
+    c1    = c01 * (ONE - dx2_) + c11 * dx2_;
+    e0[2] = c0 * (ONE - dx3_) + c1 * dx3_;
 
-//   real_t dummy = TWO * COEFF * static_cast<real_t>(0.1) / SQR(static_cast<real_t>(1.0));
-//   u0[0] += dummy * (kappaR_x1 - chiR_sq * gamma * ux1_init);
-//   u0[1] += dummy * (kappaR_x2 - chiR_sq * gamma * ux2_init);
-//   u0[2] += dummy * (kappaR_x3 - chiR_sq * gamma * ux3_init);
-// }
-// !HACK: parallel + ExB velocity only
-// real_t b_sq { SQR(bx1) + SQR(bx2) + SQR(bx3) };
-// if (b_sq > 0.1) {
-//   real_t Gamma { math::sqrt(ONE + SQR(u0[0]) + SQR(u0[1]) + SQR(u0[2])) };
-//   real_t e_sq { SQR(ex1) + SQR(ex2) + SQR(ex3) };
-//   real_t e_dot_b { ex1 * bx1 + ex2 * bx2 + ex3 * bx3 };
-//   real_t e_prime_sq { TWO * SQR(e_dot_b)
-//                       / ((b_sq - e_sq)
-//                          + math::sqrt(SQR(b_sq - e_sq) + FOUR * SQR(e_dot_b))) };
-//   real_t beta0_x1 { (ex2 * bx3 - ex3 * bx2) / (b_sq + e_prime_sq) };
-//   real_t beta0_x2 { (ex3 * bx1 - ex1 * bx3) / (b_sq + e_prime_sq) };
-//   real_t beta0_x3 { (ex1 * bx2 - ex2 * bx1) / (b_sq + e_prime_sq) };
-//   real_t beta0_sq { SQR(beta0_x1) + SQR(beta0_x2) + SQR(beta0_x3) };
-//   real_t bprime_x1 { bx1 - (beta0_x2 * ex3 - beta0_x3 * ex2) };
-//   real_t bprime_x2 { bx2 - (beta0_x3 * ex1 - beta0_x1 * ex3) };
-//   real_t bprime_x3 { bx3 - (beta0_x1 * ex2 - beta0_x2 * ex1) };
-//   real_t bprime_sq { SQR(bprime_x1) + SQR(bprime_x2) + SQR(bprime_x3) };
-//   real_t u_dot_bprime { u0[0] * bprime_x1 + u0[1] * bprime_x2 + u0[2] * bprime_x3 };
-//   real_t uprime_x1 { u_dot_bprime * bprime_x1 / bprime_sq };
-//   real_t uprime_x2 { u_dot_bprime * bprime_x2 / bprime_sq };
-//   real_t uprime_x3 { u_dot_bprime * bprime_x3 / bprime_sq };
-//   real_t uprime_sq { SQR(uprime_x1) + SQR(uprime_x2) + SQR(uprime_x3) };
-//   Gamma = math::sqrt((ONE + uprime_sq) / (ONE - beta0_sq));
-//   u0[0] = beta0_x1 * Gamma + uprime_x1;
-//   u0[1] = beta0_x2 * Gamma + uprime_x2;
-//   u0[2] = beta0_x3 * Gamma + uprime_x3;
-// }
-// }
+    // Bx1
+    c000 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j - 1, k, em::bx1) +
+                    EB(i, j, k - 1, em::bx1) + EB(i, j - 1, k - 1, em::bx1));
+    c100 = INV_4 *
+           (EB(i + 1, j, k, em::bx1) + EB(i + 1, j - 1, k, em::bx1) +
+            EB(i + 1, j, k - 1, em::bx1) + EB(i + 1, j - 1, k - 1, em::bx1));
+    c001 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j, k + 1, em::bx1) +
+                    EB(i, j - 1, k, em::bx1) + EB(i, j - 1, k + 1, em::bx1));
+    c101 = INV_4 *
+           (EB(i + 1, j, k, em::bx1) + EB(i + 1, j, k + 1, em::bx1) +
+            EB(i + 1, j - 1, k, em::bx1) + EB(i + 1, j - 1, k + 1, em::bx1));
+    c010 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j + 1, k, em::bx1) +
+                    EB(i, j, k - 1, em::bx1) + EB(i, j + 1, k - 1, em::bx1));
+    c110 = INV_4 *
+           (EB(i + 1, j, k, em::bx1) + EB(i + 1, j, k - 1, em::bx1) +
+            EB(i + 1, j + 1, k - 1, em::bx1) + EB(i + 1, j + 1, k, em::bx1));
+    c011 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j + 1, k, em::bx1) +
+                    EB(i, j + 1, k + 1, em::bx1) + EB(i, j, k + 1, em::bx1));
+    c111 = INV_4 *
+           (EB(i + 1, j, k, em::bx1) + EB(i + 1, j + 1, k, em::bx1) +
+            EB(i + 1, j + 1, k + 1, em::bx1) + EB(i + 1, j, k + 1, em::bx1));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c01   = c001 * (ONE - dx1_) + c101 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    c11   = c011 * (ONE - dx1_) + c111 * dx1_;
+    c0    = c00 * (ONE - dx2_) + c10 * dx2_;
+    c1    = c01 * (ONE - dx2_) + c11 * dx2_;
+    b0[0] = c0 * (ONE - dx3_) + c1 * dx3_;
 
-// // Interpolation ifdefs
+    // Bx2
+    c000 = INV_4 * (EB(i - 1, j, k - 1, em::bx2) + EB(i - 1, j, k, em::bx2) +
+                    EB(i, j, k - 1, em::bx2) + EB(i, j, k, em::bx2));
+    c100 = INV_4 * (EB(i, j, k - 1, em::bx2) + EB(i, j, k, em::bx2) +
+                    EB(i + 1, j, k - 1, em::bx2) + EB(i + 1, j, k, em::bx2));
+    c001 = INV_4 * (EB(i - 1, j, k, em::bx2) + EB(i - 1, j, k + 1, em::bx2) +
+                    EB(i, j, k, em::bx2) + EB(i, j, k + 1, em::bx2));
+    c101 = INV_4 * (EB(i, j, k, em::bx2) + EB(i, j, k + 1, em::bx2) +
+                    EB(i + 1, j, k, em::bx2) + EB(i + 1, j, k + 1, em::bx2));
+    c010 = INV_4 *
+           (EB(i - 1, j + 1, k - 1, em::bx2) + EB(i - 1, j + 1, k, em::bx2) +
+            EB(i, j + 1, k - 1, em::bx2) + EB(i, j + 1, k, em::bx2));
+    c110 = INV_4 *
+           (EB(i, j + 1, k - 1, em::bx2) + EB(i, j + 1, k, em::bx2) +
+            EB(i + 1, j + 1, k - 1, em::bx2) + EB(i + 1, j + 1, k, em::bx2));
+    c011 = INV_4 *
+           (EB(i - 1, j + 1, k, em::bx2) + EB(i - 1, j + 1, k + 1, em::bx2) +
+            EB(i, j + 1, k, em::bx2) + EB(i, j + 1, k + 1, em::bx2));
+    c111 = INV_4 *
+           (EB(i, j + 1, k, em::bx2) + EB(i, j + 1, k + 1, em::bx2) +
+            EB(i + 1, j + 1, k, em::bx2) + EB(i + 1, j + 1, k + 1, em::bx2));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c01   = c001 * (ONE - dx1_) + c101 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    c11   = c011 * (ONE - dx1_) + c111 * dx1_;
+    c0    = c00 * (ONE - dx2_) + c10 * dx2_;
+    c1    = c01 * (ONE - dx2_) + c11 * dx2_;
+    b0[1] = c0 * (ONE - dx3_) + c1 * dx3_;
 
-// #define C0_EX1     HALF*(EX1(i) + EX1(i - 1))
-// #define C1_EX1     HALF*(EX1(i) + EX1(i + 1))
-// #define EX1_INTERP C0_EX1*(ONE - dx1) + C1_EX1* dx1
+    // Bx3
+    c000 = INV_4 * (EB(i - 1, j - 1, k, em::bx3) + EB(i - 1, j, k, em::bx3) +
+                    EB(i, j - 1, k, em::bx3) + EB(i, j, k, em::bx3));
+    c100 = INV_4 * (EB(i, j - 1, k, em::bx3) + EB(i, j, k, em::bx3) +
+                    EB(i + 1, j - 1, k, em::bx3) + EB(i + 1, j, k, em::bx3));
+    c001 = INV_4 *
+           (EB(i - 1, j - 1, k + 1, em::bx3) + EB(i - 1, j, k + 1, em::bx3) +
+            EB(i, j - 1, k + 1, em::bx3) + EB(i, j, k + 1, em::bx3));
+    c101 = INV_4 *
+           (EB(i, j - 1, k + 1, em::bx3) + EB(i, j, k + 1, em::bx3) +
+            EB(i + 1, j - 1, k + 1, em::bx3) + EB(i + 1, j, k + 1, em::bx3));
+    c010 = INV_4 * (EB(i - 1, j, k, em::bx3) + EB(i - 1, j + 1, k, em::bx3) +
+                    EB(i, j, k, em::bx3) + EB(i, j + 1, k, em::bx3));
+    c110 = INV_4 * (EB(i, j, k, em::bx3) + EB(i, j + 1, k, em::bx3) +
+                    EB(i + 1, j, k, em::bx3) + EB(i + 1, j + 1, k, em::bx3));
+    c011 = INV_4 *
+           (EB(i - 1, j, k + 1, em::bx3) + EB(i - 1, j + 1, k + 1, em::bx3) +
+            EB(i, j, k + 1, em::bx3) + EB(i, j + 1, k + 1, em::bx3));
+    c111 = INV_4 *
+           (EB(i, j, k + 1, em::bx3) + EB(i, j + 1, k + 1, em::bx3) +
+            EB(i + 1, j, k + 1, em::bx3) + EB(i + 1, j + 1, k + 1, em::bx3));
+    c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+    c01   = c001 * (ONE - dx1_) + c101 * dx1_;
+    c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+    c11   = c011 * (ONE - dx1_) + c111 * dx1_;
+    c0    = c00 * (ONE - dx2_) + c10 * dx2_;
+    c1    = c01 * (ONE - dx2_) + c11 * dx2_;
+    b0[2] = c0 * (ONE - dx3_) + c1 * dx3_;
+  }
 
-// #define C0_EX2     EX2(i)
-// #define C1_EX2     EX2(i + 1)
-// #define EX2_INTERP C0_EX2*(ONE - dx1) + C1_EX2* dx1
+  // Extra
 
-// #define C0_EX3     EX3(i)
-// #define C1_EX3     EX3(i + 1)
-// #define EX3_INTERP C0_EX3*(ONE - dx1) + C1_EX3* dx1
+#ifndef MINKOWSKI_METRIC
+  template <>
+  Inline void Pusher_kernel<Dim1>::axisReflect(index_t&, coord_t<FullD>&) const {
+    NTTError("not applicable");
+  }
 
-// #define C0_BX1     BX1(i)
-// #define C1_BX1     BX1(i + 1)
-// #define BX1_INTERP C0_BX1*(ONE - dx1) + C1_BX1* dx1
+  template <>
+  Inline void Pusher_kernel<Dim2>::axisReflect(index_t& p, coord_t<FullD>& xp) const {
+    if (i2(p) < 1 && is_ax_i2min) {
+      vec_t<Dim3> u_Sph { ZERO }, u_Cart { ZERO };
+      metric.v3_Cart2Hat(xp, { ux1(p), ux2(p), ux3(p) }, u_Sph);
+      if (u_Sph[1] < 0) {
+        metric.v3_Hat2Cart(xp, { u_Sph[0], -u_Sph[1], u_Sph[2] }, u_Cart);
+        ux1(p) = u_Cart[0];
+        ux2(p) = u_Cart[1];
+        ux3(p) = u_Cart[2];
+      }
+    } else if (i2(p) >= ni2 - 1 && is_ax_i2max) {
+      vec_t<Dim3> u_Sph { ZERO }, u_Cart { ZERO };
+      metric.v3_Cart2Hat(xp, { ux1(p), ux2(p), ux3(p) }, u_Sph);
+      if (u_Sph[1] > 0) {
+        metric.v3_Hat2Cart(xp, { u_Sph[0], -u_Sph[1], u_Sph[2] }, u_Cart);
+        ux1(p) = u_Cart[0];
+        ux2(p) = u_Cart[1];
+        ux3(p) = u_Cart[2];
+      }
+    }
+  }
 
-// #define C0_BX2     HALF*(BX2(i - 1) + BX2(i))
-// #define C1_BX2     HALF*(BX2(i) + BX2(i + 1))
-// #define BX2_INTERP C0_BX2*(ONE - dx1) + C1_BX2* dx1
+  template <>
+  Inline void Pusher_kernel<Dim3>::axisReflect(index_t&, coord_t<FullD>&) const {
+    NTTError("not applicable");
+  }
+#endif
 
-// #define C0_BX3     HALF*(BX3(i - 1) + BX3(i))
-// #define C1_BX3     HALF*(BX3(i) + BX3(i + 1))
-// #define BX3_INTERP C0_BX3*(ONE - dx1) + C1_BX3* dx1
+#ifdef EXTERNAL_FORCE
 
-//   template <>
-//   Inline void Pusher_kernel<Dim1>::interpolateFields(index_t&     p,
-//                                                      vec_t<Dim3>& e0,
-//                                                      vec_t<Dim3>& b0) const {
-//     const auto i { m_particles.i1(p) + N_GHOSTS };
-//     const auto dx1 { static_cast<real_t>(m_particles.dx1(p)) };
+  #ifdef MINKOWSKI_METRIC
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::initForce(coord_t<D>&  xp,
+                                          vec_t<Dim3>& force_Cart) const {
+    coord_t<D> xp_Ph { ZERO };
+    metric.x_Code2Cart(xp, xp_Ph);
+    const vec_t<Dim3> force_Hat { pgen.ext_force_x1(time, xp_Ph),
+                                  pgen.ext_force_x2(time, xp_Ph),
+                                  pgen.ext_force_x3(time, xp_Ph) };
+    metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+  }
+  #else
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::initForce(coord_t<FullD>& xp,
+                                          vec_t<Dim3>&    force_Cart) const {
+    coord_t<D> xp_Ph { ZERO };
+    coord_t<D> xp_ND { ZERO };
+    #pragma unroll
+    for (short d { 0 }; d < static_cast<short>(D); ++d) {
+      xp_ND[d] = xp[d];
+    }
+    metric.x_Code2Sph(xp_ND, xp_Ph);
+    const vec_t<Dim3> force_Hat { pgen.ext_force_x1(time, xp_Ph),
+                                  pgen.ext_force_x2(time, xp_Ph),
+                                  pgen.ext_force_x3(time, xp_Ph) };
+    metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+  }
+  #endif
 
-//     e0[0] = EX1_INTERP;
-//     e0[1] = EX2_INTERP;
-//     e0[2] = EX3_INTERP;
-//     b0[0] = BX1_INTERP;
-//     b0[1] = BX2_INTERP;
-//     b0[2] = BX3_INTERP;
-//   }
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::forceHalfUpdate(index_t&     p,
+                                                vec_t<Dim3>& force_Cart) const {
+    ux1(p) += HALF * dt * force_Cart[0];
+    ux2(p) += HALF * dt * force_Cart[1];
+    ux3(p) += HALF * dt * force_Cart[2];
+  }
 
-// #undef C0_EX1
-// #undef C1_EX1
-// #undef EX1_INTERP
+#endif
 
-// #undef C0_EX2
-// #undef C1_EX2
-// #undef EX2_INTERP
+#undef FullD
 
-// #undef C0_EX3
-// #undef C1_EX3
-// #undef EX3_INTERP
-
-// #undef C0_BX1
-// #undef C1_BX1
-// #undef BX1_INTERP
-
-// #undef C0_BX2
-// #undef C1_BX2
-// #undef BX2_INTERP
-
-// #undef C0_BX3
-// #undef C1_BX3
-// #undef BX3_INTERP
-
-// #define C000_EX1   HALF*(EX1(i, j) + EX1(i - 1, j))
-// #define C100_EX1   HALF*(EX1(i, j) + EX1(i + 1, j))
-// #define C010_EX1   HALF*(EX1(i, j + 1) + EX1(i - 1, j + 1))
-// #define C110_EX1   HALF*(EX1(i, j + 1) + EX1(i + 1, j + 1))
-// #define C00_EX1    C000_EX1*(ONE - dx1) + C100_EX1* dx1
-// #define C10_EX1    C010_EX1*(ONE - dx1) + C110_EX1* dx1
-// #define EX1_INTERP C00_EX1*(ONE - dx2) + C10_EX1* dx2
-
-// #define C000_EX2   HALF*(EX2(i, j) + EX2(i, j - 1))
-// #define C100_EX2   HALF*(EX2(i + 1, j) + EX2(i + 1, j - 1))
-// #define C010_EX2   HALF*(EX2(i, j) + EX2(i, j + 1))
-// #define C110_EX2   HALF*(EX2(i + 1, j) + EX2(i + 1, j + 1))
-// #define C00_EX2    C000_EX2*(ONE - dx1) + C100_EX2* dx1
-// #define C10_EX2    C010_EX2*(ONE - dx1) + C110_EX2* dx1
-// #define EX2_INTERP C00_EX2*(ONE - dx2) + C10_EX2* dx2
-
-// #define C000_EX3   EX3(i, j)
-// #define C100_EX3   EX3(i + 1, j)
-// #define C010_EX3   EX3(i, j + 1)
-// #define C110_EX3   EX3(i + 1, j + 1)
-// #define C00_EX3    C000_EX3*(ONE - dx1) + C100_EX3* dx1
-// #define C10_EX3    C010_EX3*(ONE - dx1) + C110_EX3* dx1
-// #define EX3_INTERP C00_EX3*(ONE - dx2) + C10_EX3* dx2
-
-// #define C000_BX1   HALF*(BX1(i, j) + BX1(i, j - 1))
-// #define C100_BX1   HALF*(BX1(i + 1, j) + BX1(i + 1, j - 1))
-// #define C010_BX1   HALF*(BX1(i, j) + BX1(i, j + 1))
-// #define C110_BX1   HALF*(BX1(i + 1, j) + BX1(i + 1, j + 1))
-// #define C00_BX1    C000_BX1*(ONE - dx1) + C100_BX1* dx1
-// #define C10_BX1    C010_BX1*(ONE - dx1) + C110_BX1* dx1
-// #define BX1_INTERP C00_BX1*(ONE - dx2) + C10_BX1* dx2
-
-// #define C000_BX2   HALF*(BX2(i - 1, j) + BX2(i, j))
-// #define C100_BX2   HALF*(BX2(i, j) + BX2(i + 1, j))
-// #define C010_BX2   HALF*(BX2(i - 1, j + 1) + BX2(i, j + 1))
-// #define C110_BX2   HALF*(BX2(i, j + 1) + BX2(i + 1, j + 1))
-// #define C00_BX2    C000_BX2*(ONE - dx1) + C100_BX2* dx1
-// #define C10_BX2    C010_BX2*(ONE - dx1) + C110_BX2* dx1
-// #define BX2_INTERP C00_BX2*(ONE - dx2) + C10_BX2* dx2
-
-// #define C000_BX3   INV_4*(BX3(i - 1, j - 1) + BX3(i - 1, j) + BX3(i, j - 1) + BX3(i, j))
-// #define C100_BX3   INV_4*(BX3(i, j - 1) + BX3(i, j) + BX3(i + 1, j - 1) + BX3(i + 1, j))
-// #define C010_BX3   INV_4*(BX3(i - 1, j) + BX3(i - 1, j + 1) + BX3(i, j) + BX3(i, j + 1))
-// #define C110_BX3   INV_4*(BX3(i, j) + BX3(i, j + 1) + BX3(i + 1, j) + BX3(i + 1, j + 1))
-// #define C00_BX3    C000_BX3*(ONE - dx1) + C100_BX3* dx1
-// #define C10_BX3    C010_BX3*(ONE - dx1) + C110_BX3* dx1
-// #define BX3_INTERP C00_BX3*(ONE - dx2) + C10_BX3* dx2
-
-//   template <>
-//   Inline void Pusher_kernel<Dim2>::interpolateFields(index_t&     p,
-//                                                      vec_t<Dim3>& e0,
-//                                                      vec_t<Dim3>& b0) const {
-//     const auto i { m_particles.i1(p) + N_GHOSTS };
-//     const auto dx1 { static_cast<real_t>(m_particles.dx1(p)) };
-//     const auto j { m_particles.i2(p) + N_GHOSTS };
-//     const auto dx2 { static_cast<real_t>(m_particles.dx2(p)) };
-
-//     e0[0] = EX1_INTERP;
-//     e0[1] = EX2_INTERP;
-//     e0[2] = EX3_INTERP;
-//     b0[0] = BX1_INTERP;
-//     b0[1] = BX2_INTERP;
-//     b0[2] = BX3_INTERP;
-//   }
-
-// #undef C000_EX1
-// #undef C100_EX1
-// #undef C010_EX1
-// #undef C110_EX1
-// #undef C00_EX1
-// #undef C10_EX1
-// #undef EX1_INTERP
-
-// #undef C000_EX2
-// #undef C100_EX2
-// #undef C010_EX2
-// #undef C110_EX2
-// #undef C00_EX2
-// #undef C10_EX2
-// #undef EX2_INTERP
-
-// #undef C000_EX3
-// #undef C100_EX3
-// #undef C010_EX3
-// #undef C110_EX3
-// #undef C00_EX3
-// #undef C10_EX3
-// #undef EX3_INTERP
-
-// #undef C000_BX1
-// #undef C100_BX1
-// #undef C010_BX1
-// #undef C110_BX1
-// #undef C00_BX1
-// #undef C10_BX1
-// #undef BX1_INTERP
-
-// #undef C000_BX2
-// #undef C100_BX2
-// #undef C010_BX2
-// #undef C110_BX2
-// #undef C00_BX2
-// #undef C10_BX2
-// #undef BX2_INTERP
-
-// #undef C000_BX3
-// #undef C100_BX3
-// #undef C010_BX3
-// #undef C110_BX3
-// #undef C00_BX3
-// #undef C10_BX3
-// #undef BX3_INTERP
-
-// #define C000_EX1   (HALF * (EX1(i, j, k) + EX1(i - 1, j, k)))
-// #define C100_EX1   (HALF * (EX1(i, j, k) + EX1(i + 1, j, k)))
-// #define C010_EX1   (HALF * (EX1(i, j + 1, k) + EX1(i - 1, j + 1, k)))
-// #define C110_EX1   (HALF * (EX1(i, j + 1, k) + EX1(i + 1, j + 1, k)))
-// #define C001_EX1   (HALF * (EX1(i, j, k + 1) + EX1(i - 1, j, k + 1)))
-// #define C101_EX1   (HALF * (EX1(i, j, k + 1) + EX1(i + 1, j, k + 1)))
-// #define C011_EX1   (HALF * (EX1(i, j + 1, k + 1) + EX1(i - 1, j + 1, k + 1)))
-// #define C111_EX1   (HALF * (EX1(i, j + 1, k + 1) + EX1(i + 1, j + 1, k + 1)))
-// #define C00_EX1    (C000_EX1 * (ONE - dx1) + C100_EX1 * dx1)
-// #define C10_EX1    (C010_EX1 * (ONE - dx1) + C110_EX1 * dx1)
-// #define C01_EX1    (C001_EX1 * (ONE - dx1) + C101_EX1 * dx1)
-// #define C11_EX1    (C011_EX1 * (ONE - dx1) + C111_EX1 * dx1)
-// #define C0_EX1     (C00_EX1 * (ONE - dx2) + C10_EX1 * dx2)
-// #define C1_EX1     (C01_EX1 * (ONE - dx2) + C11_EX1 * dx2)
-// #define EX1_INTERP (C0_EX1 * (ONE - dx3) + C1_EX1 * dx3)
-
-// #define C000_EX2   HALF*(EX2(i, j, k) + EX2(i, j - 1, k))
-// #define C100_EX2   HALF*(EX2(i + 1, j, k) + EX2(i + 1, j - 1, k))
-// #define C010_EX2   HALF*(EX2(i, j, k) + EX2(i, j + 1, k))
-// #define C110_EX2   HALF*(EX2(i + 1, j, k) + EX2(i + 1, j + 1, k))
-// #define C00_EX2    C000_EX2*(ONE - dx1) + C100_EX2* dx1
-// #define C10_EX2    C010_EX2*(ONE - dx1) + C110_EX2* dx1
-// #define C0_EX2     C00_EX2*(ONE - dx2) + C10_EX2* dx2
-// #define C001_EX2   HALF*(EX2(i, j, k + 1) + EX2(i, j - 1, k + 1))
-// #define C101_EX2   HALF*(EX2(i + 1, j, k + 1) + EX2(i + 1, j - 1, k + 1))
-// #define C011_EX2   HALF*(EX2(i, j, k + 1) + EX2(i, j + 1, k + 1))
-// #define C111_EX2   HALF*(EX2(i + 1, j, k + 1) + EX2(i + 1, j + 1, k + 1))
-// #define C01_EX2    C001_EX2*(ONE - dx1) + C101_EX2* dx1
-// #define C11_EX2    C011_EX2*(ONE - dx1) + C111_EX2* dx1
-// #define C1_EX2     C01_EX2*(ONE - dx2) + C11_EX2* dx2
-// #define EX2_INTERP C0_EX2*(ONE - dx3) + C1_EX2* dx3
-
-// #define C000_EX3   HALF*(EX3(i, j, k) + EX3(i, j, k - 1))
-// #define C100_EX3   HALF*(EX3(i + 1, j, k) + EX3(i + 1, j, k - 1))
-// #define C010_EX3   HALF*(EX3(i, j + 1, k) + EX3(i, j + 1, k - 1))
-// #define C110_EX3   HALF*(EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k - 1))
-// #define C001_EX3   HALF*(EX3(i, j, k) + EX3(i, j, k + 1))
-// #define C101_EX3   HALF*(EX3(i + 1, j, k) + EX3(i + 1, j, k + 1))
-// #define C011_EX3   HALF*(EX3(i, j + 1, k) + EX3(i, j + 1, k + 1))
-// #define C111_EX3   HALF*(EX3(i + 1, j + 1, k) + EX3(i + 1, j + 1, k + 1))
-// #define C00_EX3    C000_EX3*(ONE - dx1) + C100_EX3* dx1
-// #define C01_EX3    C001_EX3*(ONE - dx1) + C101_EX3* dx1
-// #define C10_EX3    C010_EX3*(ONE - dx1) + C110_EX3* dx1
-// #define C11_EX3    C011_EX3*(ONE - dx1) + C111_EX3* dx1
-// #define C0_EX3     C00_EX3*(ONE - dx2) + C10_EX3* dx2
-// #define C1_EX3     C01_EX3*(ONE - dx2) + C11_EX3* dx2
-// #define EX3_INTERP C0_EX2*(ONE - dx3) + C1_EX2* dx3
-
-// #define C000_BX1 \
-//   INV_4*(BX1(i, j, k) + BX1(i, j - 1, k) + BX1(i, j, k - 1) + BX1(i, j - 1, k - 1))
-// #define C100_BX1 \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j - 1, k) + BX1(i + 1, j, k - 1) \
-//          + BX1(i + 1, j - 1, k - 1))
-// #define C001_BX1 \
-//   INV_4*(BX1(i, j, k) + BX1(i, j, k + 1) + BX1(i, j - 1, k) + BX1(i, j - 1, k + 1))
-// #define C101_BX1 \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k + 1) + BX1(i + 1, j - 1, k) \
-//          + BX1(i + 1, j - 1, k + 1))
-// #define C010_BX1 \
-//   INV_4*(BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j, k - 1) + BX1(i, j + 1, k - 1))
-// #define C110_BX1 \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j, k - 1) + BX1(i + 1, j + 1, k - 1) \
-//          + BX1(i + 1, j + 1, k))
-// #define C011_BX1 \
-//   INV_4*(BX1(i, j, k) + BX1(i, j + 1, k) + BX1(i, j + 1, k + 1) + BX1(i, j, k + 1))
-// #define C111_BX1 \
-//   INV_4*(BX1(i + 1, j, k) + BX1(i + 1, j + 1, k) + BX1(i + 1, j + 1, k + 1) \
-//          + BX1(i + 1, j, k + 1))
-// #define C00_BX1    C000_BX1*(ONE - dx1) + C100_BX1* dx1
-// #define C01_BX1    C001_BX1*(ONE - dx1) + C101_BX1* dx1
-// #define C10_BX1    C010_BX1*(ONE - dx1) + C110_BX1* dx1
-// #define C11_BX1    C011_BX1*(ONE - dx1) + C111_BX1* dx1
-// #define C0_BX1     C00_BX1*(ONE - dx2) + C10_BX1* dx2
-// #define C1_BX1     C01_BX1*(ONE - dx2) + C11_BX1* dx2
-// #define BX1_INTERP C0_BX1*(ONE - dx3) + C1_BX1* dx3
-
-// #define C000_BX2 \
-//   INV_4*(BX2(i - 1, j, k - 1) + BX2(i - 1, j, k) + BX2(i, j, k - 1) + BX2(i, j, k))
-// #define C100_BX2 \
-//   INV_4*(BX2(i, j, k - 1) + BX2(i, j, k) + BX2(i + 1, j, k - 1) + BX2(i + 1, j, k))
-// #define C001_BX2 \
-//   INV_4*(BX2(i - 1, j, k) + BX2(i - 1, j, k + 1) + BX2(i, j, k) + BX2(i, j, k + 1))
-// #define C101_BX2 \
-//   INV_4*(BX2(i, j, k) + BX2(i, j, k + 1) + BX2(i + 1, j, k) + BX2(i + 1, j, k + 1))
-// #define C010_BX2 \
-//   INV_4*(BX2(i - 1, j + 1, k - 1) + BX2(i - 1, j + 1, k) + BX2(i, j + 1, k - 1) \
-//          + BX2(i, j + 1, k))
-// #define C110_BX2 \
-//   INV_4*(BX2(i, j + 1, k - 1) + BX2(i, j + 1, k) + BX2(i + 1, j + 1, k - 1) \
-//          + BX2(i + 1, j + 1, k))
-// #define C011_BX2 \
-//   INV_4*(BX2(i - 1, j + 1, k) + BX2(i - 1, j + 1, k + 1) + BX2(i, j + 1, k) \
-//          + BX2(i, j + 1, k + 1))
-// #define C111_BX2 \
-//   INV_4*(BX2(i, j + 1, k) + BX2(i, j + 1, k + 1) + BX2(i + 1, j + 1, k) \
-//          + BX2(i + 1, j + 1, k + 1))
-// #define C00_BX2    C000_BX2*(ONE - dx1) + C100_BX2* dx1
-// #define C01_BX2    C001_BX2*(ONE - dx1) + C101_BX2* dx1
-// #define C10_BX2    C010_BX2*(ONE - dx1) + C110_BX2* dx1
-// #define C11_BX2    C011_BX2*(ONE - dx1) + C111_BX2* dx1
-// #define C0_BX2     C00_BX2*(ONE - dx2) + C10_BX2* dx2
-// #define C1_BX2     C01_BX2*(ONE - dx2) + C11_BX2* dx2
-// #define BX2_INTERP C0_BX2*(ONE - dx3) + C1_BX2* dx3
-
-// #define C000_BX3 \
-//   INV_4*(BX3(i - 1, j - 1, k) + BX3(i - 1, j, k) + BX3(i, j - 1, k) + BX3(i, j, k))
-// #define C100_BX3 \
-//   INV_4*(BX3(i, j - 1, k) + BX3(i, j, k) + BX3(i + 1, j - 1, k) + BX3(i + 1, j, k))
-// #define C001_BX3 \
-//   INV_4*(BX3(i - 1, j - 1, k + 1) + BX3(i - 1, j, k + 1) + BX3(i, j - 1, k + 1) \
-//          + BX3(i, j, k + 1))
-// #define C101_BX3 \
-//   INV_4*(BX3(i, j - 1, k + 1) + BX3(i, j, k + 1) + BX3(i + 1, j - 1, k + 1) \
-//          + BX3(i + 1, j, k + 1))
-// #define C010_BX3 \
-//   INV_4*(BX3(i - 1, j, k) + BX3(i - 1, j + 1, k) + BX3(i, j, k) + BX3(i, j + 1, k))
-// #define C110_BX3 \
-//   INV_4*(BX3(i, j, k) + BX3(i, j + 1, k) + BX3(i + 1, j, k) + BX3(i + 1, j + 1, k))
-// #define C011_BX3 \
-//   INV_4*(BX3(i - 1, j, k + 1) + BX3(i - 1, j + 1, k + 1) + BX3(i, j, k + 1) \
-//          + BX3(i, j + 1, k + 1))
-// #define C111_BX3 \
-//   INV_4*(BX3(i, j, k + 1) + BX3(i, j + 1, k + 1) + BX3(i + 1, j, k + 1) \
-//          + BX3(i + 1, j + 1, k + 1))
-// #define C00_BX3    C000_BX3*(ONE - dx1) + C100_BX3* dx1
-// #define C01_BX3    C001_BX3*(ONE - dx1) + C101_BX3* dx1
-// #define C10_BX3    C010_BX3*(ONE - dx1) + C110_BX3* dx1
-// #define C11_BX3    C011_BX3*(ONE - dx1) + C111_BX3* dx1
-// #define C0_BX3     C00_BX3*(ONE - dx2) + C10_BX3* dx2
-// #define C1_BX3     C01_BX3*(ONE - dx2) + C11_BX3* dx2
-// #define BX3_INTERP C0_BX3*(ONE - dx3) + C1_BX3* dx3
-
-//   template <>
-//   Inline void Pusher_kernel<Dim3>::interpolateFields(index_t&     p,
-//                                                      vec_t<Dim3>& e0,
-//                                                      vec_t<Dim3>& b0) const {
-//     const auto i { m_particles.i1(p) + N_GHOSTS };
-//     const auto dx1 { static_cast<real_t>(m_particles.dx1(p)) };
-//     const auto j { m_particles.i2(p) + N_GHOSTS };
-//     const auto dx2 { static_cast<real_t>(m_particles.dx2(p)) };
-//     const auto k { m_particles.i3(p) + N_GHOSTS };
-//     const auto dx3 { static_cast<real_t>(m_particles.dx3(p)) };
-//     e0[0] = EX1_INTERP;
-//     e0[1] = EX2_INTERP;
-//     e0[2] = EX3_INTERP;
-//     b0[0] = BX1_INTERP;
-//     b0[1] = BX2_INTERP;
-//     b0[2] = BX3_INTERP;
-//   }
-
-// #undef C000_EX1
-// #undef C100_EX1
-// #undef C010_EX1
-// #undef C110_EX1
-// #undef C001_EX1
-// #undef C101_EX1
-// #undef C011_EX1
-// #undef C111_EX1
-// #undef C00_EX1
-// #undef C10_EX1
-// #undef C01_EX1
-// #undef C11_EX1
-// #undef C0_EX1
-// #undef C1_EX1
-// #undef EX1_INTERP
-
-// #undef C000_EX2
-// #undef C100_EX2
-// #undef C010_EX2
-// #undef C110_EX2
-// #undef C00_EX2
-// #undef C10_EX2
-// #undef C0_EX2
-// #undef C001_EX2
-// #undef C101_EX2
-// #undef C011_EX2
-// #undef C111_EX2
-// #undef C01_EX2
-// #undef C11_EX2
-// #undef C1_EX2
-// #undef EX2_INTERP
-
-// #undef C000_EX3
-// #undef C100_EX3
-// #undef C010_EX3
-// #undef C110_EX3
-// #undef C001_EX3
-// #undef C101_EX3
-// #undef C011_EX3
-// #undef C111_EX3
-// #undef C00_EX3
-// #undef C01_EX3
-// #undef C10_EX3
-// #undef C11_EX3
-// #undef C0_EX3
-// #undef C1_EX3
-// #undef EX3_INTERP
-
-// #undef C000_BX1
-// #undef C100_BX1
-// #undef C001_BX1
-// #undef C101_BX1
-// #undef C010_BX1
-// #undef C110_BX1
-// #undef C011_BX1
-// #undef C111_BX1
-// #undef C00_BX1
-// #undef C01_BX1
-// #undef C10_BX1
-// #undef C11_BX1
-// #undef C0_BX1
-// #undef C1_BX1
-// #undef BX1_INTERP
-
-// #undef C000_BX2
-// #undef C100_BX2
-// #undef C001_BX2
-// #undef C101_BX2
-// #undef C010_BX2
-// #undef C110_BX2
-// #undef C011_BX2
-// #undef C111_BX2
-// #undef C00_BX2
-// #undef C01_BX2
-// #undef C10_BX2
-// #undef C11_BX2
-// #undef C0_BX2
-// #undef C1_BX2
-// #undef BX2_INTERP
-
-// #undef C000_BX3
-// #undef C100_BX3
-// #undef C001_BX3
-// #undef C101_BX3
-// #undef C010_BX3
-// #undef C110_BX3
-// #undef C011_BX3
-// #undef C111_BX3
-// #undef C00_BX3
-// #undef C01_BX3
-// #undef C10_BX3
-// #undef C11_BX3
-// #undef C0_BX3
-// #undef C1_BX3
-// #undef BX3_INTERP
-*/
+} // namespace ntt
 #endif

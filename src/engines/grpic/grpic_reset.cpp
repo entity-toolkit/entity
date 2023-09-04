@@ -70,7 +70,7 @@ namespace ntt {
     Kokkos::deep_copy(mblock.cur0, ZERO);
     Kokkos::deep_copy(mblock.buff, ZERO);
   }
-}    // namespace ntt
+} // namespace ntt
 
 template void ntt::GRPIC<ntt::Dim2>::ResetSimulation();
 template void ntt::GRPIC<ntt::Dim3>::ResetSimulation();

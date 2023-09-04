@@ -11,19 +11,22 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   template <int N, int M>
-  void Meshblock<D, S>::PrepareFieldsForOutput(const ndfield_t<D, N>&    field,
-                                               ndfield_t<D, M>&          buffer,
-                                               const int&                fx1,
-                                               const int&                fx2,
-                                               const int&                fx3,
+  void Meshblock<D, S>::PrepareFieldsForOutput(const ndfield_t<D, N>& field,
+                                               ndfield_t<D, M>&       buffer,
+                                               const int&             fx1,
+                                               const int&             fx2,
+                                               const int&             fx3,
                                                const PrepareOutputFlags& flags) {
     NTTLog();
-    NTTHostErrorIf(fx1 >= N || fx2 >= N || fx3 >= N || fx1 >= M || fx2 >= M || fx3 >= M,
+    NTTHostErrorIf(fx1 >= N || fx2 >= N || fx3 >= N || fx1 >= M || fx2 >= M ||
+                     fx3 >= M,
                    "Invalid field index");
     if constexpr (D == Dim1) {
       Kokkos::parallel_for(
-        "PrepareFieldsForOutput", this->rangeActiveCells(), ClassLambda(index_t i) {
-          real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+        "PrepareFieldsForOutput",
+        this->rangeActiveCells(),
+        ClassLambda(index_t i) {
+          real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
           vec_t<Dim3> f_int { ZERO }, f_sph { ZERO };
           auto        cell_center = false;
           if (flags & PrepareOutput_InterpToCellCenterFromEdges) {
@@ -62,18 +65,19 @@ namespace ntt {
         });
     } else if constexpr (D == Dim2) {
       Kokkos::parallel_for(
-        "PrepareFieldsForOutput", this->rangeActiveCells(), ClassLambda(index_t i, index_t j) {
-          real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          real_t      j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+        "PrepareFieldsForOutput",
+        this->rangeActiveCells(),
+        ClassLambda(index_t i, index_t j) {
+          real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+          real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
           vec_t<Dim3> f_int { ZERO }, f_sph { ZERO };
           auto        cell_center = false;
           if (flags & PrepareOutput_InterpToCellCenterFromEdges) {
-            f_int[0] = INV_2 * (field(i, j, fx1) + field(i, j + 1, fx1));
-            f_int[1] = INV_2 * (field(i, j, fx2) + field(i + 1, j, fx2));
-            f_int[2] = INV_4
-                       * (field(i, j, fx3) + field(i + 1, j, fx3) + field(i, j + 1, fx3)
-                          + field(i + 1, j + 1, fx3));
+            f_int[0]    = INV_2 * (field(i, j, fx1) + field(i, j + 1, fx1));
+            f_int[1]    = INV_2 * (field(i, j, fx2) + field(i + 1, j, fx2));
+            f_int[2]    = INV_4 * (field(i, j, fx3) + field(i + 1, j, fx3) +
+                                field(i, j + 1, fx3) + field(i + 1, j + 1, fx3));
             cell_center = true;
           } else if (flags & PrepareOutput_InterpToCellCenterFromFaces) {
             f_int[0]    = INV_2 * (field(i, j, fx1) + field(i + 1, j, fx1));
@@ -111,27 +115,27 @@ namespace ntt {
         "PrepareFieldsForOutput",
         this->rangeActiveCells(),
         ClassLambda(index_t i, index_t j, index_t k) {
-          real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          real_t      j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
-          real_t      k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
+          real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+          real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+          real_t k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
 
           vec_t<Dim3> f_int { ZERO }, f_sph { ZERO };
           auto        cell_center = false;
           if (flags & PrepareOutput_InterpToCellCenterFromEdges) {
-            f_int[0] = INV_4
-                       * (field(i, j, k, fx1) + field(i, j + 1, k, fx1)
-                          + field(i, j, k + 1, fx1) + field(i, j + 1, k + 1, fx1));
-            f_int[1] = INV_4
-                       * (field(i, j, k, fx2) + field(i + 1, j, k, fx2)
-                          + field(i, j, k + 1, fx2) + field(i + 1, j, k + 1, fx2));
-            f_int[2] = INV_4
-                       * (field(i, j, k, fx3) + field(i + 1, j, k, fx3)
-                          + field(i, j + 1, k, fx3) + field(i + 1, j + 1, k, fx3));
+            f_int[0] = INV_4 *
+                       (field(i, j, k, fx1) + field(i, j + 1, k, fx1) +
+                        field(i, j, k + 1, fx1) + field(i, j + 1, k + 1, fx1));
+            f_int[1] = INV_4 *
+                       (field(i, j, k, fx2) + field(i + 1, j, k, fx2) +
+                        field(i, j, k + 1, fx2) + field(i + 1, j, k + 1, fx2));
+            f_int[2] = INV_4 *
+                       (field(i, j, k, fx3) + field(i + 1, j, k, fx3) +
+                        field(i, j + 1, k, fx3) + field(i + 1, j + 1, k, fx3));
             cell_center = true;
           } else if (flags & PrepareOutput_InterpToCellCenterFromFaces) {
-            f_int[0]    = INV_2 * (field(i, j, k, fx1) + field(i + 1, j, k, fx1));
-            f_int[1]    = INV_2 * (field(i, j, k, fx2) + field(i, j + 1, k, fx2));
-            f_int[2]    = INV_2 * (field(i, j, k, fx3) + field(i, j, k + 1, fx3));
+            f_int[0] = INV_2 * (field(i, j, k, fx1) + field(i + 1, j, k, fx1));
+            f_int[1] = INV_2 * (field(i, j, k, fx2) + field(i, j + 1, k, fx2));
+            f_int[2] = INV_2 * (field(i, j, k, fx3) + field(i, j, k + 1, fx3));
             cell_center = true;
           } else {
             f_int[0] = field(i, j, k, fx1);
@@ -165,12 +169,15 @@ namespace ntt {
   }
 
   template <>
-  void Meshblock<Dim2, GRPICEngine>::ComputeVectorPotential(ndfield_t<Dim2, 6>& buffer,
-                                                            const int&          buffer_comp) {
+  void Meshblock<Dim2, GRPICEngine>::ComputeVectorPotential(
+    ndfield_t<Dim2, 6>& buffer,
+    const int&          buffer_comp) {
     const auto i2_min = this->i2_min();
     // !TODO: this is quite slow
     Kokkos::parallel_for(
-      "ComputeVectorPotential", this->rangeActiveCells(), ClassLambda(index_t i, index_t j) {
+      "ComputeVectorPotential",
+      this->rangeActiveCells(),
+      ClassLambda(index_t i, index_t j) {
         const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
         const auto   k_min = (i2_min - N_GHOSTS) + 1;
         const auto   k_max = (j - N_GHOSTS);
@@ -180,64 +187,74 @@ namespace ntt {
           real_t sqrt_detH_ij1 { this->metric.sqrt_det_h({ i_, k_ - HALF }) };
           real_t sqrt_detH_ij2 { this->metric.sqrt_det_h({ i_, k_ + HALF }) };
           auto   k1 { k + N_GHOSTS };
-          A3 += HALF
-                * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1)
-                   + sqrt_detH_ij2 * this->em(i, k1, em::bx1));
+          A3 += HALF * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1) +
+                        sqrt_detH_ij2 * this->em(i, k1, em::bx1));
         }
         buffer(i, j, buffer_comp) = A3;
       });
   }
 
   template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::ComputeDivergenceED(ndfield_t<D, 3>& buffer, const int& buffer_comp) {
+  void Meshblock<D, S>::ComputeDivergenceED(ndfield_t<D, 3>& buffer,
+                                            const int&       buffer_comp) {
     // divE/D is defined in cell centers
 
     if constexpr (D == Dim1) {
       Kokkos::parallel_for(
-        "ComputeDivergenceED", this->rangeActiveCells(), ClassLambda(index_t i) {
+        "ComputeDivergenceED",
+        this->rangeActiveCells(),
+        ClassLambda(index_t i) {
           const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          const real_t ex1_i { INV_2 * (this->em(i, em::ex1) + this->em(i - 1, em::ex1)) };
-          const real_t ex1_iP1 { INV_2 * (this->em(i + 1, em::ex1) + this->em(i, em::ex1)) };
+          const real_t ex1_i { INV_2 * (this->em(i, em::ex1) +
+                                        this->em(i - 1, em::ex1)) };
+          const real_t ex1_iP1 { INV_2 * (this->em(i + 1, em::ex1) +
+                                          this->em(i, em::ex1)) };
 
           const real_t sqrt_detH_i { this->metric.sqrt_det_h({ i_ }) };
           const real_t sqrt_detH_iP1 { this->metric.sqrt_det_h({ i_ + ONE }) };
-          const real_t one_ovr_sqrt_detH_iP { ONE / this->metric.sqrt_det_h({ i_ + HALF }) };
-          buffer(i, buffer_comp)
-            = one_ovr_sqrt_detH_iP * (sqrt_detH_iP1 * ex1_iP1 - sqrt_detH_i * ex1_i);
+          const real_t one_ovr_sqrt_detH_iP { ONE / this->metric.sqrt_det_h(
+                                                      { i_ + HALF }) };
+          buffer(i, buffer_comp) = one_ovr_sqrt_detH_iP *
+                                   (sqrt_detH_iP1 * ex1_iP1 - sqrt_detH_i * ex1_i);
         });
     } else if constexpr (D == Dim2) {
       Kokkos::parallel_for(
-        "ComputeDivergenceED", this->rangeActiveCells(), ClassLambda(index_t i, index_t j) {
+        "ComputeDivergenceED",
+        this->rangeActiveCells(),
+        ClassLambda(index_t i, index_t j) {
           const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
           const real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
-          const real_t ex1_ijP { INV_4
-                                 * (this->em(i, j, em::ex1) + this->em(i, j + 1, em::ex1)
-                                    + this->em(i - 1, j, em::ex1)
-                                    + this->em(i - 1, j + 1, em::ex1)) };
-          const real_t ex1_iP1jP { INV_4
-                                   * (this->em(i, j, em::ex1) + this->em(i, j + 1, em::ex1)
-                                      + this->em(i + 1, j, em::ex1)
-                                      + this->em(i + 1, j + 1, em::ex1)) };
-          const real_t ex2_iPj { INV_4
-                                 * (this->em(i, j, em::ex2) + this->em(i, j - 1, em::ex2)
-                                    + this->em(i + 1, j, em::ex2)
-                                    + this->em(i + 1, j - 1, em::ex2)) };
-          const real_t ex2_iPjP1 { INV_4
-                                   * (this->em(i, j, em::ex2) + this->em(i, j + 1, em::ex2)
-                                      + this->em(i + 1, j, em::ex2)
-                                      + this->em(i + 1, j + 1, em::ex2)) };
-          const real_t sqrt_detH_iP1jP { this->metric.sqrt_det_h({ i_ + ONE, j_ + HALF }) };
+          const real_t ex1_ijP {
+            INV_4 * (this->em(i, j, em::ex1) + this->em(i, j + 1, em::ex1) +
+                     this->em(i - 1, j, em::ex1) + this->em(i - 1, j + 1, em::ex1))
+          };
+          const real_t ex1_iP1jP {
+            INV_4 * (this->em(i, j, em::ex1) + this->em(i, j + 1, em::ex1) +
+                     this->em(i + 1, j, em::ex1) + this->em(i + 1, j + 1, em::ex1))
+          };
+          const real_t ex2_iPj {
+            INV_4 * (this->em(i, j, em::ex2) + this->em(i, j - 1, em::ex2) +
+                     this->em(i + 1, j, em::ex2) + this->em(i + 1, j - 1, em::ex2))
+          };
+          const real_t ex2_iPjP1 {
+            INV_4 * (this->em(i, j, em::ex2) + this->em(i, j + 1, em::ex2) +
+                     this->em(i + 1, j, em::ex2) + this->em(i + 1, j + 1, em::ex2))
+          };
+          const real_t sqrt_detH_iP1jP { this->metric.sqrt_det_h(
+            { i_ + ONE, j_ + HALF }) };
           const real_t sqrt_detH_ijP { this->metric.sqrt_det_h({ i_, j_ + HALF }) };
-          const real_t sqrt_detH_iPjP1 { this->metric.sqrt_det_h({ i_ + HALF, j_ + ONE }) };
+          const real_t sqrt_detH_iPjP1 { this->metric.sqrt_det_h(
+            { i_ + HALF, j_ + ONE }) };
           const real_t sqrt_detH_iPj { this->metric.sqrt_det_h({ i_ + HALF, j_ }) };
           const real_t one_ovr_sqrt_detH_iPjP {
             ONE / this->metric.sqrt_det_h({ i_ + HALF, j_ + HALF })
           };
-          buffer(i, j, buffer_comp)
-            = one_ovr_sqrt_detH_iPjP
-              * ((sqrt_detH_iP1jP * ex1_iP1jP - sqrt_detH_ijP * ex1_ijP)
-                 + (sqrt_detH_iPjP1 * ex2_iPjP1 - sqrt_detH_iPj * ex2_iPj));
+          buffer(i, j, buffer_comp) = one_ovr_sqrt_detH_iPjP *
+                                      ((sqrt_detH_iP1jP * ex1_iP1jP -
+                                        sqrt_detH_ijP * ex1_ijP) +
+                                       (sqrt_detH_iPjP1 * ex2_iPjP1 -
+                                        sqrt_detH_iPj * ex2_iPj));
         });
     } else {
       Kokkos::parallel_for(
@@ -248,46 +265,52 @@ namespace ntt {
           const real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
           const real_t k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
           const real_t ex1_ijPkP {
-            INV_8
-            * (this->em(i, j, k, em::ex1) + this->em(i, j + 1, k, em::ex1)
-               + this->em(i - 1, j, k, em::ex1) + this->em(i - 1, j + 1, k, em::ex1)
-               + this->em(i, j, k + 1, em::ex1) + this->em(i, j + 1, k + 1, em::ex1)
-               + this->em(i - 1, j, k + 1, em::ex1) + this->em(i - 1, j + 1, k + 1, em::ex1))
+            INV_8 *
+            (this->em(i, j, k, em::ex1) + this->em(i, j + 1, k, em::ex1) +
+             this->em(i - 1, j, k, em::ex1) + this->em(i - 1, j + 1, k, em::ex1) +
+             this->em(i, j, k + 1, em::ex1) + this->em(i, j + 1, k + 1, em::ex1) +
+             this->em(i - 1, j, k + 1, em::ex1) +
+             this->em(i - 1, j + 1, k + 1, em::ex1))
           };
           const real_t ex1_iP1jPkP {
-            INV_8
-            * (this->em(i, j, k, em::ex1) + this->em(i, j + 1, k, em::ex1)
-               + this->em(i + 1, j, k, em::ex1) + this->em(i + 1, j + 1, k, em::ex1)
-               + this->em(i, j, k + 1, em::ex1) + this->em(i, j + 1, k + 1, em::ex1)
-               + this->em(i + 1, j, k + 1, em::ex1) + this->em(i + 1, j + 1, k + 1, em::ex1))
+            INV_8 *
+            (this->em(i, j, k, em::ex1) + this->em(i, j + 1, k, em::ex1) +
+             this->em(i + 1, j, k, em::ex1) + this->em(i + 1, j + 1, k, em::ex1) +
+             this->em(i, j, k + 1, em::ex1) + this->em(i, j + 1, k + 1, em::ex1) +
+             this->em(i + 1, j, k + 1, em::ex1) +
+             this->em(i + 1, j + 1, k + 1, em::ex1))
           };
           const real_t ex2_iPjkP {
-            INV_8
-            * (this->em(i, j, k, em::ex2) + this->em(i, j - 1, k, em::ex2)
-               + this->em(i + 1, j, k, em::ex2) + this->em(i + 1, j - 1, k, em::ex2)
-               + this->em(i, j, k + 1, em::ex2) + this->em(i, j - 1, k + 1, em::ex2)
-               + this->em(i + 1, j, k + 1, em::ex2) + this->em(i + 1, j - 1, k + 1, em::ex2))
+            INV_8 *
+            (this->em(i, j, k, em::ex2) + this->em(i, j - 1, k, em::ex2) +
+             this->em(i + 1, j, k, em::ex2) + this->em(i + 1, j - 1, k, em::ex2) +
+             this->em(i, j, k + 1, em::ex2) + this->em(i, j - 1, k + 1, em::ex2) +
+             this->em(i + 1, j, k + 1, em::ex2) +
+             this->em(i + 1, j - 1, k + 1, em::ex2))
           };
           const real_t ex2_iPjP1kP {
-            INV_8
-            * (this->em(i, j, k, em::ex2) + this->em(i, j + 1, k, em::ex2)
-               + this->em(i + 1, j, k, em::ex2) + this->em(i + 1, j + 1, k, em::ex2)
-               + this->em(i, j, k + 1, em::ex2) + this->em(i, j + 1, k + 1, em::ex2)
-               + this->em(i + 1, j, k + 1, em::ex2) + this->em(i + 1, j + 1, k + 1, em::ex2))
+            INV_8 *
+            (this->em(i, j, k, em::ex2) + this->em(i, j + 1, k, em::ex2) +
+             this->em(i + 1, j, k, em::ex2) + this->em(i + 1, j + 1, k, em::ex2) +
+             this->em(i, j, k + 1, em::ex2) + this->em(i, j + 1, k + 1, em::ex2) +
+             this->em(i + 1, j, k + 1, em::ex2) +
+             this->em(i + 1, j + 1, k + 1, em::ex2))
           };
           const real_t ex3_iPjPk {
-            INV_8
-            * (this->em(i, j, k, em::ex3) + this->em(i, j, k - 1, em::ex3)
-               + this->em(i + 1, j, k, em::ex3) + this->em(i + 1, j, k - 1, em::ex3)
-               + this->em(i, j + 1, k, em::ex3) + this->em(i, j + 1, k - 1, em::ex3)
-               + this->em(i + 1, j + 1, k, em::ex3) + this->em(i + 1, j + 1, k - 1, em::ex3))
+            INV_8 *
+            (this->em(i, j, k, em::ex3) + this->em(i, j, k - 1, em::ex3) +
+             this->em(i + 1, j, k, em::ex3) + this->em(i + 1, j, k - 1, em::ex3) +
+             this->em(i, j + 1, k, em::ex3) + this->em(i, j + 1, k - 1, em::ex3) +
+             this->em(i + 1, j + 1, k, em::ex3) +
+             this->em(i + 1, j + 1, k - 1, em::ex3))
           };
           const real_t ex3_iPjPkP1 {
-            INV_8
-            * (this->em(i, j, k, em::ex3) + this->em(i, j, k + 1, em::ex3)
-               + this->em(i + 1, j, k, em::ex3) + this->em(i + 1, j, k + 1, em::ex3)
-               + this->em(i, j + 1, k, em::ex3) + this->em(i, j + 1, k + 1, em::ex3)
-               + this->em(i + 1, j + 1, k, em::ex3) + this->em(i + 1, j + 1, k + 1, em::ex3))
+            INV_8 *
+            (this->em(i, j, k, em::ex3) + this->em(i, j, k + 1, em::ex3) +
+             this->em(i + 1, j, k, em::ex3) + this->em(i + 1, j, k + 1, em::ex3) +
+             this->em(i, j + 1, k, em::ex3) + this->em(i, j + 1, k + 1, em::ex3) +
+             this->em(i + 1, j + 1, k, em::ex3) +
+             this->em(i + 1, j + 1, k + 1, em::ex3))
           };
 
           const real_t sqrt_detH_ijPkP { this->metric.sqrt_det_h(
@@ -305,11 +328,11 @@ namespace ntt {
           const real_t one_ovr_sqrt_detH_iPjPkP {
             ONE / this->metric.sqrt_det_h({ i_ + HALF, j_ + HALF, k_ + HALF })
           };
-          buffer(i, j, k, buffer_comp)
-            = one_ovr_sqrt_detH_iPjPkP
-              * ((sqrt_detH_iP1jPkP * ex1_iP1jPkP - sqrt_detH_ijPkP * ex1_ijPkP)
-                 + (sqrt_detH_iPjP1kP * ex2_iPjP1kP - sqrt_detH_iPjkP * ex2_iPjkP)
-                 + (sqrt_detH_iPjPkP1 * ex3_iPjPk - sqrt_detH_iPjPk * ex3_iPjPkP1));
+          buffer(i, j, k, buffer_comp) =
+            one_ovr_sqrt_detH_iPjPkP *
+            ((sqrt_detH_iP1jPkP * ex1_iP1jPkP - sqrt_detH_ijPkP * ex1_ijPkP) +
+             (sqrt_detH_iPjP1kP * ex2_iPjP1kP - sqrt_detH_iPjkP * ex2_iPjkP) +
+             (sqrt_detH_iPjPkP1 * ex3_iPjPk - sqrt_detH_iPjPk * ex3_iPjPkP1));
         });
     }
   }
@@ -325,14 +348,19 @@ namespace ntt {
     const auto smooth = ONE / math::pow(TWO * window + ONE, static_cast<int>(D));
     const auto inv_n0 = ONE / params.n0();
     if constexpr (D == Dim1) {
-      Kokkos::deep_copy(Kokkos::subview(this->buff, Kokkos::ALL(), (int)buff_ind), ZERO);
+      Kokkos::deep_copy(Kokkos::subview(this->buff, Kokkos::ALL(), (int)buff_ind),
+                        ZERO);
     } else if constexpr (D == Dim2) {
       Kokkos::deep_copy(
-        Kokkos::subview(this->buff, Kokkos::ALL(), Kokkos::ALL(), (int)buff_ind), ZERO);
-    } else if constexpr (D == Dim3) {
-      Kokkos::deep_copy(
-        Kokkos::subview(this->buff, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), (int)buff_ind),
+        Kokkos::subview(this->buff, Kokkos::ALL(), Kokkos::ALL(), (int)buff_ind),
         ZERO);
+    } else if constexpr (D == Dim3) {
+      Kokkos::deep_copy(Kokkos::subview(this->buff,
+                                        Kokkos::ALL(),
+                                        Kokkos::ALL(),
+                                        Kokkos::ALL(),
+                                        (int)buff_ind),
+                        ZERO);
     }
 
     // if species not specified, use all massive particles
@@ -354,10 +382,10 @@ namespace ntt {
       comp2 = components[1];
     }
 
-    auto       this_metric  = this->metric;
-    const auto use_weights  = params.useWeights();
+    auto       this_metric = this->metric;
+    const auto use_weights = params.useWeights();
 
-    auto       scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
+    auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
     for (auto& sp : out_species) {
       auto species = particles[sp - 1];
       auto mass    = species.mass();
@@ -367,7 +395,9 @@ namespace ntt {
       }
       if constexpr (D == Dim1) {
         Kokkos::parallel_for(
-          "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
+          "ComputeMoments",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
             if (species.tag(p) == ParticleTag::alive) {
               auto   buff_access = scatter_buff.access();
               auto   i1          = species.i1(p);
@@ -397,7 +427,8 @@ namespace ntt {
                 }
               }
               if (field != FieldID::Nppc) {
-                contrib *= inv_n0 / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF });
+                contrib *= inv_n0 / this_metric.sqrt_det_h(
+                                      { static_cast<real_t>(i1) + HALF });
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
@@ -408,13 +439,15 @@ namespace ntt {
             }
           });
       } else if constexpr (D == Dim2) {
-        const auto ax_i2min { (this->boundaries.size() > 1)
-                              && (this->boundaries[1][0] == BoundaryCondition::AXIS) };
-        const auto ax_i2max { (this->boundaries.size() > 1)
-                              && (this->boundaries[1][1] == BoundaryCondition::AXIS) };
+        const auto ax_i2min { (this->boundaries.size() > 1) &&
+                              (this->boundaries[1][0] == BoundaryCondition::AXIS) };
+        const auto ax_i2max { (this->boundaries.size() > 1) &&
+                              (this->boundaries[1][1] == BoundaryCondition::AXIS) };
         const auto ni2 { (int)(this->Ni2()) };
         Kokkos::parallel_for(
-          "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
+          "ComputeMoments",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
             if (species.tag(p) == ParticleTag::alive) {
               auto      buff_access = scatter_buff.access();
               auto      i1          = species.i1(p);
@@ -447,12 +480,14 @@ namespace ntt {
                   }
                 }
 #else
-                const real_t      x1  = get_prtl_x1(species, p);
-                const real_t      x2  = get_prtl_x2(species, p);
-                const real_t      phi = species.phi(p);
-                vec_t<Dim3> u_hat;
+                const real_t x1  = get_prtl_x1(species, p);
+                const real_t x2  = get_prtl_x2(species, p);
+                const real_t phi = species.phi(p);
+                vec_t<Dim3>  u_hat;
                 this_metric.v3_Cart2Hat(
-                  { x1, x2, phi }, { species.ux1(p), species.ux2(p), species.ux3(p) }, u_hat);
+                  { x1, x2, phi },
+                  { species.ux1(p), species.ux2(p), species.ux3(p) },
+                  u_hat);
                 for (auto& c : { comp1, comp2 }) {
                   if (c == 0) {
                     contrib *= energy;
@@ -463,9 +498,9 @@ namespace ntt {
 #endif
               }
               if (field != FieldID::Nppc) {
-                contrib *= inv_n0
-                           / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF,
-                                                      static_cast<real_t>(i2) + HALF });
+                contrib *= inv_n0 / this_metric.sqrt_det_h(
+                                      { static_cast<real_t>(i1) + HALF,
+                                        static_cast<real_t>(i2) + HALF });
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
@@ -474,13 +509,14 @@ namespace ntt {
                 for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
                   if (ax_i2min && (i2_ - static_cast<int>(N_GHOSTS) < 0)) {
                     // reflect from theta = 0
-                    buff_access(i1_, -i2_ + 2 * static_cast<int>(N_GHOSTS), buff_ind)
-                      += contrib * smooth;
+                    buff_access(i1_,
+                                -i2_ + 2 * static_cast<int>(N_GHOSTS),
+                                buff_ind) += contrib * smooth;
                   } else if (ax_i2max && (i2_ - static_cast<int>(N_GHOSTS) >= ni2)) {
                     // reflect from theta = pi
-                    buff_access(
-                      i1_, 2 * ni2 - i2_ + 2 * static_cast<int>(N_GHOSTS) - 1, buff_ind)
-                      += contrib * smooth;
+                    buff_access(i1_,
+                                2 * ni2 - i2_ + 2 * static_cast<int>(N_GHOSTS) - 1,
+                                buff_ind) += contrib * smooth;
                   } else {
                     buff_access(i1_, i2_, buff_ind) += contrib * smooth;
                   }
@@ -490,7 +526,9 @@ namespace ntt {
           });
       } else if constexpr (D == Dim3) {
         Kokkos::parallel_for(
-          "ComputeMoments", species.rangeActiveParticles(), Lambda(index_t p) {
+          "ComputeMoments",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
             if (species.tag(p) == ParticleTag::alive) {
               auto      buff_access = scatter_buff.access();
               auto      i1          = species.i1(p);
@@ -526,12 +564,14 @@ namespace ntt {
                   }
                 }
 #else
-                const real_t      x1 = get_prtl_x1(species, p);
-                const real_t      x2 = get_prtl_x2(species, p);
-                const real_t      x3 = get_prtl_x3(species, p);
-                vec_t<Dim3> u_hat;
+                const real_t x1 = get_prtl_x1(species, p);
+                const real_t x2 = get_prtl_x2(species, p);
+                const real_t x3 = get_prtl_x3(species, p);
+                vec_t<Dim3>  u_hat;
                 this_metric.v3_Cart2Hat(
-                  { x1, x2, x3 }, { species.ux1(p), species.ux2(p), species.ux3(p) }, u_hat);
+                  { x1, x2, x3 },
+                  { species.ux1(p), species.ux2(p), species.ux3(p) },
+                  u_hat);
                 for (auto& c : { comp1, comp2 }) {
                   if (c == 0) {
                     contrib *= energy;
@@ -542,10 +582,10 @@ namespace ntt {
 #endif
               }
               if (field != FieldID::Nppc) {
-                contrib *= inv_n0
-                           / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF,
-                                                      static_cast<real_t>(i2) + HALF,
-                                                      static_cast<real_t>(i3) + HALF });
+                contrib *= inv_n0 / this_metric.sqrt_det_h(
+                                      { static_cast<real_t>(i1) + HALF,
+                                        static_cast<real_t>(i2) + HALF,
+                                        static_cast<real_t>(i3) + HALF });
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
@@ -564,4 +604,92 @@ namespace ntt {
     Kokkos::Experimental::contribute(this->buff, scatter_buff);
   }
 
-}    // namespace ntt
+  template <Dimension D, SimulationEngine S>
+  void Meshblock<D, S>::CheckNaNs(const std::string& msg, CheckNaNFlags flags) {
+    (void)msg;
+    (void)flags;
+#ifdef DEBUG
+    if constexpr (D == Dim2) {
+      auto found_nan   = array_t<int>("found_nan");
+      auto found_nan_h = Kokkos::create_mirror_view(found_nan);
+      if (flags & CheckNaN_Fields) {
+        Kokkos::parallel_for(
+          "Check-NAN-Fields",
+          this->rangeActiveCells(),
+          ClassLambda(index_t i1, index_t i2) {
+            auto nan_found = Kokkos::isnan(this->em(i1, i2, em::ex1)) ||
+                             Kokkos::isnan(this->em(i1, i2, em::ex2)) ||
+                             Kokkos::isnan(this->em(i1, i2, em::ex3)) ||
+                             Kokkos::isnan(this->em(i1, i2, em::bx1)) ||
+                             Kokkos::isnan(this->em(i1, i2, em::bx2)) ||
+                             Kokkos::isnan(this->em(i1, i2, em::bx3));
+            Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found);
+            if (nan_found) {
+              printf("NAN in fields at %ld %ld %f %f %f %f %f %f\n",
+                     i1,
+                     i2,
+                     this->em(i1, i2, em::ex1),
+                     this->em(i1, i2, em::ex2),
+                     this->em(i1, i2, em::ex3),
+                     this->em(i1, i2, em::bx1),
+                     this->em(i1, i2, em::bx2),
+                     this->em(i1, i2, em::bx3));
+            }
+          });
+        Kokkos::deep_copy(found_nan_h, found_nan);
+        NTTHostErrorIf(found_nan_h() > 0,
+                       fmt::format("{}: NaNs in fields: {}", msg, found_nan_h()));
+      }
+      if (flags & CheckNaN_Currents) {
+        Kokkos::parallel_for(
+          "Check-NAN-Currents",
+          this->rangeActiveCells(),
+          ClassLambda(index_t i1, index_t i2) {
+            auto nan_found = Kokkos::isnan(this->cur(i1, i2, cur::jx1)) ||
+                             Kokkos::isnan(this->cur(i1, i2, cur::jx2)) ||
+                             Kokkos::isnan(this->cur(i1, i2, cur::jx3));
+            Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found);
+            if (nan_found) {
+              printf("NAN in fields at %ld %ld %f %f %f\n",
+                     i1,
+                     i2,
+                     this->cur(i1, i2, cur::jx1),
+                     this->cur(i1, i2, cur::jx2),
+                     this->cur(i1, i2, cur::jx3));
+            }
+          });
+        Kokkos::deep_copy(found_nan_h, found_nan);
+        NTTHostErrorIf(found_nan_h() > 0,
+                       fmt::format("{}: NaNs in fields: {}", msg, found_nan_h()));
+      }
+      if (flags & CheckNaN_Particles) {
+        for (auto& species : particles) {
+          Kokkos::parallel_for(
+            "Check-NAN-Particles",
+            species.rangeActiveParticles(),
+            ClassLambda(index_t p) {
+              auto nan_found = Kokkos::isnan(species.ux1(p)) ||
+                               Kokkos::isnan(species.ux2(p)) ||
+                               Kokkos::isnan(species.ux3(p));
+              Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found);
+              if (nan_found) {
+                printf("NAN in particles at %ld %d %d %f %f %f\n",
+                       p,
+                       species.i1(p),
+                       species.i2(p),
+                       species.ux1(p),
+                       species.ux2(p),
+                       species.ux3(p));
+              }
+            });
+          Kokkos::deep_copy(found_nan_h, found_nan);
+          NTTHostErrorIf(
+            found_nan_h() > 0,
+            fmt::format("{}: NaNs in particles: {}", msg, found_nan_h()));
+        }
+      }
+    }
+#endif
+  }
+
+} // namespace ntt

@@ -32,18 +32,19 @@ auto main(int argc, char* argv[]) -> int {
     const auto qsph_r0 = (real_t)(0.0);
     const auto qsph_h  = (real_t)(0.25);
 
-    auto       params  = new real_t[6];
-    params[0]          = qsph_r0;
-    params[1]          = qsph_h;
-    params[4]          = spin;
-    params[5]          = rh;
+    auto params = new real_t[6];
+    params[0]   = qsph_r0;
+    params[1]   = qsph_h;
+    params[4]   = spin;
+    params[5]   = rh;
     ntt::Metric<ntt::Dim2> metric(resolution, extent, params);
     delete[] params;
 
     // acceptable error for cartesian/spherical transformations
-    const real_t        tinyCart = 1e-3;
+    const real_t tinyCart = 1e-3;
 
-    std::vector<real_t> x1 { HALF, resolution[0] - HALF }, x2 { HALF, resolution[1] - HALF };
+    std::vector<real_t> x1 { HALF, resolution[0] - HALF },
+      x2 { HALF, resolution[1] - HALF };
 
     {
       /* ----------- Test conversion covariant <-> hat <-> contravariant ---------- */
@@ -66,11 +67,13 @@ auto main(int argc, char* argv[]) -> int {
           metric.v3_Cntrv2Hat(xi, v_cntrv_from_hat, v_hat_from_cntrv);
           metric.v3_Cov2Cntrv(xi, v_cov, v_cntrv_from_cov);
 
-          const auto correct1 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_from_cntrv);
+          const auto correct1 = ntt::AlmostEqual<ntt::Dim3>(v_cov,
+                                                            v_cov_from_cntrv);
           const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_from_hat);
-          const auto correct3
-            = ntt::AlmostEqual<ntt::Dim3>(v_cntrv_from_hat, v_cntrv_from_cov);
-          const auto correct4 = ntt::AlmostEqual<ntt::Dim3>(v_hat_from_cov, v_hat_from_cntrv);
+          const auto correct3    = ntt::AlmostEqual<ntt::Dim3>(v_cntrv_from_hat,
+                                                            v_cntrv_from_cov);
+          const auto correct4    = ntt::AlmostEqual<ntt::Dim3>(v_hat_from_cov,
+                                                            v_hat_from_cntrv);
           const auto all_correct = correct1 && correct2 && correct3 && correct4;
 
           if (!all_correct) {
@@ -96,7 +99,8 @@ auto main(int argc, char* argv[]) -> int {
           correct = correct && all_correct;
         }
       }
-      !correct ? throw std::logic_error("Cov2Hat <-> Hat2Cntrv <-> Cntrv2Cov not correct")
+      !correct ? throw std::logic_error(
+                   "Cov2Hat <-> Hat2Cntrv <-> Cntrv2Cov not correct")
                : (void)0;
     }
 
@@ -107,15 +111,18 @@ auto main(int argc, char* argv[]) -> int {
         for (auto j { 0 }; j < 2; ++j) {
           ntt::coord_t<ntt::Dim2> xi { x1[i], x2[j] };
           ntt::coord_t<ntt::Dim2> xi_from_sph { ZERO }, xi_from_cart { ZERO };
-          ntt::coord_t<ntt::Dim2> xsph_from_code { ZERO }, xcart_from_code { ZERO };
+          ntt::coord_t<ntt::Dim2> xsph_from_code { ZERO },
+            xcart_from_code { ZERO };
 
           metric.x_Code2Sph(xi, xsph_from_code);
           metric.x_Code2Cart(xi, xcart_from_code);
           metric.x_Sph2Code(xsph_from_code, xi_from_sph);
           metric.x_Cart2Code(xcart_from_code, xi_from_cart);
 
-          const auto correct1    = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_sph, tinyCart);
-          const auto correct2    = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_cart, tinyCart);
+          const auto correct1 = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_sph, tinyCart);
+          const auto correct2    = ntt::AlmostEqual<ntt::Dim2>(xi,
+                                                            xi_from_cart,
+                                                            tinyCart);
           const auto all_correct = correct1 && correct2;
 
           if (!all_correct) {
@@ -132,17 +139,18 @@ auto main(int argc, char* argv[]) -> int {
           correct = correct && all_correct;
         }
       }
-      !correct ? throw std::logic_error(
-        "Code2Cart <-> Cart2Code or Code2Sph <-> Sph2Code not correct")
-               : (void)0;
+      !correct
+        ? throw std::logic_error(
+            "Code2Cart <-> Cart2Code or Code2Sph <-> Sph2Code not correct")
+        : (void)0;
     }
 
     {
       /* --------- Test conversion codeCntrv/codeCov <-> physCntrv/physCov -------- */
       ntt::vec_t<ntt::Dim3> v_cntrv { -5.4, -25.3, 12.5 };
       ntt::vec_t<ntt::Dim3> v_cov { 15.2, 12.3, -12.3 };
-      const auto            v_norm
-        = v_cntrv[0] * v_cov[0] + v_cntrv[1] * v_cov[1] + v_cntrv[2] * v_cov[2];
+      const auto v_norm = v_cntrv[0] * v_cov[0] + v_cntrv[1] * v_cov[1] +
+                          v_cntrv[2] * v_cov[2];
       auto correct = true;
       for (auto i { 0 }; i < 2; ++i) {
         for (auto j { 0 }; j < 2; ++j) {
@@ -157,11 +165,13 @@ auto main(int argc, char* argv[]) -> int {
           metric.v3_PhysCntrv2Cntrv(xi, v_physCntrv, v_cntrv_fromPhys);
           metric.v3_PhysCov2Cov(xi, v_physCov, v_cov_fromPhys);
 
-          const auto v_normPhys = v_physCntrv[0] * v_physCov[0] + v_physCntrv[1] * v_physCov[1]
-                                  + v_physCntrv[2] * v_physCov[2];
+          const auto v_normPhys = v_physCntrv[0] * v_physCov[0] +
+                                  v_physCntrv[1] * v_physCov[1] +
+                                  v_physCntrv[2] * v_physCov[2];
 
-          const auto correct1    = ntt::AlmostEqual<ntt::Dim3>(v_cntrv, v_cntrv_fromPhys);
-          const auto correct2    = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_fromPhys);
+          const auto correct1 = ntt::AlmostEqual<ntt::Dim3>(v_cntrv,
+                                                            v_cntrv_fromPhys);
+          const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_fromPhys);
           const auto correct3    = ntt::AlmostEqual(v_norm, v_normPhys);
           const auto all_correct = correct1 && correct2 && correct3;
 
@@ -184,7 +194,8 @@ auto main(int argc, char* argv[]) -> int {
           correct = correct && all_correct;
         }
       }
-      !correct ? throw std::logic_error("codeCntrv/codeCov <-> physCntrv/physCov not correct")
+      !correct ? throw std::logic_error(
+                   "codeCntrv/codeCov <-> physCntrv/physCov not correct")
                : (void)0;
     }
 
@@ -215,11 +226,15 @@ auto main(int argc, char* argv[]) -> int {
             metric.v3_Cart2Cntrv(xi3D, v_cart_fromCov, v_cntrv_fromCart);
             metric.v3_Cart2Cov(xi3D, v_cart_fromCntrv, v_cov_fromCart);
 
-            const auto correct1
-              = ntt::AlmostEqual<ntt::Dim3>(v_cntrv, v_cntrv_fromCart, tinyCart);
-            const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov, v_cov_fromCart, tinyCart);
-            const auto correct3
-              = ntt::AlmostEqual<ntt::Dim3>(v_cart_fromCntrv, v_cart_fromCov, tinyCart);
+            const auto correct1 = ntt::AlmostEqual<ntt::Dim3>(v_cntrv,
+                                                              v_cntrv_fromCart,
+                                                              tinyCart);
+            const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(v_cov,
+                                                              v_cov_fromCart,
+                                                              tinyCart);
+            const auto correct3 = ntt::AlmostEqual<ntt::Dim3>(v_cart_fromCntrv,
+                                                              v_cart_fromCov,
+                                                              tinyCart);
             const auto all_correct = correct1 && correct2 && correct3;
 
             if (!all_correct) {
@@ -241,7 +256,8 @@ auto main(int argc, char* argv[]) -> int {
           }
         }
       }
-      !correct ? throw std::logic_error("cart <-> cntrv <-> cov not correct") : (void)0;
+      !correct ? throw std::logic_error("cart <-> cntrv <-> cov not correct")
+               : (void)0;
     }
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;

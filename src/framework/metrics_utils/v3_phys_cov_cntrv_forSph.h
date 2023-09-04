@@ -85,4 +85,4 @@ Inline void v3_PhysCov2Cov(const coord_t<D>&,
   }
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_V3_PHYS_COV_CNTRV_FORSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_V3_PHYS_COV_CNTRV_FORSPH_H

@@ -17,9 +17,9 @@
 #include <plog/Log.h>
 
 #ifdef MINKOWSKI_METRIC
-#  include "faraday_mink.hpp"
+  #include "faraday_mink.hpp"
 #else
-#  include "faraday_curv.hpp"
+  #include "faraday_curv.hpp"
 #endif
 
 #include <stdexcept>
@@ -32,9 +32,11 @@ namespace ntt {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
-    Kokkos::parallel_for(
-      "Faraday", mblock.rangeActiveCells(), Faraday_kernel<D>(mblock, coeff / dx));
+    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) /
+                    mblock.metric.nx1 };
+    Kokkos::parallel_for("Faraday",
+                         mblock.rangeActiveCells(),
+                         Faraday_kernel<D>(mblock, coeff / dx));
     NTTLog();
   }
 
@@ -45,8 +47,9 @@ namespace ntt {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    Kokkos::parallel_for(
-      "Faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff));
+    Kokkos::parallel_for("Faraday",
+                         mblock.rangeActiveCells(),
+                         Faraday_kernel<Dim2>(mblock, coeff));
     NTTLog();
   }
 
@@ -54,6 +57,7 @@ namespace ntt {
   void PIC<Dim1>::Faraday(const real_t&) {
     NTTHostError("not applicable");
   }
+
   template <>
   void PIC<Dim3>::Faraday(const real_t&) {
     NTTHostError("not implemented");
@@ -61,7 +65,7 @@ namespace ntt {
 
 #endif
 
-}    // namespace ntt
+} // namespace ntt
 
 #ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::Faraday(const real_t&);

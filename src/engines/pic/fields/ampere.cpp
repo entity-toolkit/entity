@@ -15,9 +15,9 @@
 #include "pic.h"
 
 #ifdef MINKOWSKI_METRIC
-#  include "ampere_mink.hpp"
+  #include "ampere_mink.hpp"
 #else
-#  include "ampere_curv.hpp"
+  #include "ampere_curv.hpp"
 #endif
 
 #include <stdexcept>
@@ -30,9 +30,11 @@ namespace ntt {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) / mblock.metric.nx1 };
-    Kokkos::parallel_for(
-      "Ampere", mblock.rangeActiveCells(), Ampere_kernel<D>(mblock, coeff / dx));
+    const auto   dx { (mblock.metric.x1_max - mblock.metric.x1_min) /
+                    mblock.metric.nx1 };
+    Kokkos::parallel_for("Ampere",
+                         mblock.rangeActiveCells(),
+                         Ampere_kernel<D>(mblock, coeff / dx));
     NTTLog();
   }
 
@@ -43,13 +45,15 @@ namespace ntt {
     auto&        mblock = this->meshblock;
     auto         params = *(this->params());
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
-    Kokkos::parallel_for("Ampere",
-                         CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
-                                                 { mblock.i1_max(), mblock.i2_max() }),
-                         Ampere_kernel<Dim2>(mblock, coeff));
-    Kokkos::parallel_for("Ampere-1",
-                         CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
-                         AmperePoles_kernel<Dim2>(mblock, coeff));
+    Kokkos::parallel_for(
+      "Ampere",
+      CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
+                              { mblock.i1_max(), mblock.i2_max() }),
+      Ampere_kernel<Dim2>(mblock, coeff));
+    Kokkos::parallel_for(
+      "Ampere-1",
+      CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
+      AmperePoles_kernel<Dim2>(mblock, coeff));
     NTTLog();
   }
 
@@ -57,6 +61,7 @@ namespace ntt {
   void PIC<Dim1>::Ampere(const real_t&) {
     NTTHostError("not applicable");
   }
+
   template <>
   void PIC<Dim3>::Ampere(const real_t&) {
     NTTHostError("not implemented");
@@ -64,7 +69,7 @@ namespace ntt {
 
 #endif
 
-}    // namespace ntt
+} // namespace ntt
 
 #ifdef MINKOWSKI_METRIC
 template void ntt::PIC<ntt::Dim1>::Ampere(const real_t&);

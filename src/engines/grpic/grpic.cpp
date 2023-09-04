@@ -200,11 +200,11 @@ namespace ntt {
   template <Dimension D>
   void GRPIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
-    const auto                      params     = *(this->params());
-    const auto                      metadomain = *(this->metadomain());
-    auto&                           mblock     = this->meshblock;
-    auto&                           wrtr       = this->writer;
-    auto&                           pgen       = this->problem_generator;
+    const auto params     = *(this->params());
+    const auto metadomain = *(this->metadomain());
+    auto&      mblock     = this->meshblock;
+    auto&      wrtr       = this->writer;
+    auto&      pgen       = this->problem_generator;
 
     timer::Timers                   timers({ "FieldSolver",
                                              "FieldBoundaries",
@@ -444,7 +444,11 @@ namespace ntt {
     wrtr.WriteAll(params, metadomain, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
-    this->PrintDiagnostics(this->m_tstep, this->m_time, timers, tstep_durations, diag_flags);
+    this->PrintDiagnostics(this->m_tstep,
+                           this->m_time,
+                           timers,
+                           tstep_durations,
+                           diag_flags);
 
     this->m_time += mblock.timestep();
     pgen.setTime(this->m_time);
@@ -454,7 +458,7 @@ namespace ntt {
   template <Dimension D>
   void GRPIC<D>::StepBackward() {}
 
-}    // namespace ntt
+} // namespace ntt
 
 template class ntt::GRPIC<ntt::Dim2>;
 template class ntt::GRPIC<ntt::Dim3>;

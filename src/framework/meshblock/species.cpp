@@ -8,11 +8,13 @@ namespace ntt {
                                    const float&          m_,
                                    const float&          ch_,
                                    const std::size_t&    maxnpart_,
-                                   const ParticlePusher& pusher_)
-    : m_index(index_),
-      m_label(std::move(label_)),
-      m_mass(m_),
-      m_charge(ch_),
-      m_maxnpart(maxnpart_),
-      m_pusher(pusher_) {}
-}    // namespace ntt
+                                   const ParticlePusher& pusher_,
+                                   const unsigned short& npld_) :
+    m_index { index_ },
+    m_label { std::move(label_) },
+    m_mass { m_ },
+    m_charge { ch_ },
+    m_maxnpart { maxnpart_ },
+    m_pusher { pusher_ },
+    m_npld { npld_ } {}
+} // namespace ntt

@@ -5,7 +5,7 @@
 namespace ntt {
   template <Dimension D>
   void SANDBOX<D>::Run() {}
-}    // namespace ntt
+} // namespace ntt
 
 template class ntt::SANDBOX<ntt::Dim1>;
 template class ntt::SANDBOX<ntt::Dim2>;

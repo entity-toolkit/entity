@@ -34,7 +34,8 @@ label              = <string>
 mass               = <float>
 charge             = <float>
 maxnpart           = <int>
-pusher             = <string: { "Boris" | "Photon" | "None" }>
+pusher             = <string: { "Boris" | "Photon" | "Vay" | "None" }>
+n_payloads         = <short>
 
 [problem]
 ...

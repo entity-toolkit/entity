@@ -31,8 +31,8 @@ namespace ntt {
   void PIC<D>::AmpereCurrents() {
     auto&      mblock = this->meshblock;
     auto       params = *(this->params());
-    const auto coeff
-      = -mblock.timestep() * params.q0() * params.n0() / (params.B0() * params.V0());
+    const auto coeff  = -mblock.timestep() * params.q0() * params.n0() /
+                       (params.B0() * params.V0());
     const auto inv_n0 = ONE / params.n0();
     Kokkos::parallel_for("AmpereCurrents",
                          mblock.rangeActiveCells(),
@@ -49,7 +49,8 @@ namespace ntt {
   void PIC<D>::AmpereCurrents() {
     auto&      mblock = this->meshblock;
     auto       params = *(this->params());
-    const auto coeff  = -mblock.timestep() * params.q0() * params.n0() / params.B0();
+    const auto coeff  = -mblock.timestep() * params.q0() * params.n0() /
+                       params.B0();
     const auto inv_n0 = ONE / params.n0();
 
     range_t<D> range;
@@ -60,9 +61,9 @@ namespace ntt {
       range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
                                       { mblock.i1_max(), mblock.i2_max() });
     } else if constexpr (D == Dim3) {
-      range
-        = CreateRangePolicy<Dim3>({ mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
-                                  { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
+      range = CreateRangePolicy<Dim3>(
+        { mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
+        { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
     }
 
     /**
@@ -80,8 +81,9 @@ namespace ntt {
      *    . . . . . . . . . . . . .
      *
      */
-    Kokkos::parallel_for(
-      "AmpereCurrents-1", range, CurrentsAmpere_kernel<D>(mblock, coeff, inv_n0));
+    Kokkos::parallel_for("AmpereCurrents-1",
+                         range,
+                         CurrentsAmpere_kernel<D>(mblock, coeff, inv_n0));
     // do axes separately
     if constexpr (D == Dim2) {
       /**
@@ -99,15 +101,16 @@ namespace ntt {
        *    . . . . . . . . . . . . .
        *
        */
-      Kokkos::parallel_for("AmpereCurrents-2",
-                           CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
-                           CurrentsAmperePoles_kernel<Dim2>(mblock, coeff, inv_n0));
+      Kokkos::parallel_for(
+        "AmpereCurrents-2",
+        CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }),
+        CurrentsAmperePoles_kernel<Dim2>(mblock, coeff, inv_n0));
     }
 
     NTTLog();
   }
 #endif
-}    // namespace ntt
+} // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::AmpereCurrents();
 template void ntt::PIC<ntt::Dim2>::AmpereCurrents();

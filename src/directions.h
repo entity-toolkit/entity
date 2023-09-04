@@ -12,9 +12,11 @@ namespace ntt {
   template <Dimension D>
   struct direction_t : public std::vector<short> {
     direction_t() : std::vector<short>(static_cast<short>(D), 0) {}
+
     direction_t(std::initializer_list<short> list) : std::vector<short>(list) {
-      NTTHostErrorIf(list.size() != static_cast<short>(D),
-                     "Wrong number of elements in direction_t initializer list");
+      NTTHostErrorIf(
+        list.size() != static_cast<short>(D),
+        "Wrong number of elements in direction_t initializer list");
     }
 
     auto operator-() const -> direction_t<D> {
@@ -24,6 +26,7 @@ namespace ntt {
       }
       return result;
     }
+
     auto operator==(const direction_t<D>& other) const -> bool {
       for (std::size_t i = 0; i < (short)D; ++i) {
         if ((*this)[i] != other[i]) {
@@ -33,8 +36,10 @@ namespace ntt {
       return true;
     }
   };
+
   template <Dimension D>
-  inline auto operator<<(std::ostream& os, const direction_t<D>& dir) -> std::ostream& {
+  inline auto operator<<(std::ostream& os, const direction_t<D>& dir)
+    -> std::ostream& {
     for (auto& d : dir) {
       os << d << " ";
     }
@@ -43,7 +48,7 @@ namespace ntt {
 
   template <>
   struct Directions<Dim1> {
-    inline static const std::vector<direction_t<Dim1>> all    = { { -1 }, { 1 } };
+    inline static const std::vector<direction_t<Dim1>> all = { { -1 }, { 1 } };
     inline static const std::vector<direction_t<Dim1>> unique = { { 1 } };
   };
 
@@ -123,6 +128,7 @@ namespace ntt {
       }
       return Directions<D>::all[tag - 2];
     }
+
     inline static auto dir2tag(const direction_t<D>&) -> short;
   };
 
@@ -130,7 +136,8 @@ namespace ntt {
   struct PrtlSendTag<Dim1> {
     inline static constexpr short im1 { 2 };
     inline static constexpr short ip1 { 3 };
-    inline static auto            dir2tag(const direction_t<Dim1>& dir) -> short {
+
+    inline static auto dir2tag(const direction_t<Dim1>& dir) -> short {
       if (dir == direction_t<Dim1>({ -1 })) {
         return im1;
       } else if (dir == direction_t<Dim1>({ 1 })) {
@@ -151,7 +158,8 @@ namespace ntt {
     inline static constexpr short ip1_jm1 { 7 };
     inline static constexpr short ip1__j0 { 8 };
     inline static constexpr short ip1_jp1 { 9 };
-    inline static auto            dir2tag(const direction_t<Dim2>& dir) -> short {
+
+    inline static auto dir2tag(const direction_t<Dim2>& dir) -> short {
       if (dir == direction_t<Dim2>({ -1, -1 })) {
         return im1_jm1;
       } else if (dir == direction_t<Dim2>({ -1, 0 })) {
@@ -202,7 +210,8 @@ namespace ntt {
     inline static constexpr short ip1_jp1_km1 { 25 };
     inline static constexpr short ip1_jp1__k0 { 26 };
     inline static constexpr short ip1_jp1_kp1 { 27 };
-    inline static auto            dir2tag(const direction_t<Dim3>& dir) -> short {
+
+    inline static auto dir2tag(const direction_t<Dim3>& dir) -> short {
       if (dir == direction_t<Dim3>({ -1, -1, -1 })) {
         return im1_jm1_km1;
       } else if (dir == direction_t<Dim3>({ -1, -1, 0 })) {
@@ -262,6 +271,6 @@ namespace ntt {
   };
 #endif
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // DIRECTIONS_H
+#endif // DIRECTIONS_H

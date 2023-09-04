@@ -25,8 +25,10 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    Ampere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+    Ampere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff) {}
+
     /**
      * @brief 2D version of the algorithm.
      * @param i1 index.
@@ -58,11 +60,13 @@ namespace ntt {
     real_t h3_iPjM { m_mblock.metric.h_33({ i_ + HALF, j_ - HALF }) };
     real_t h3_iPjP { m_mblock.metric.h_33({ i_ + HALF, j_ + HALF }) };
 
-    EX1(i, j) += m_coeff * inv_sqrt_detH_iPj * (h3_iPjP * BX3(i, j) - h3_iPjM * BX3(i, j - 1));
-    EX2(i, j) += m_coeff * inv_sqrt_detH_ijP * (h3_iMjP * BX3(i - 1, j) - h3_iPjP * BX3(i, j));
-    EX3(i, j) += m_coeff * inv_sqrt_detH_ij
-                 * (h1_ijM * BX1(i, j - 1) - h1_ijP * BX1(i, j) + h2_iPj * BX2(i, j)
-                    - h2_iMj * BX2(i - 1, j));
+    EX1(i, j) += m_coeff * inv_sqrt_detH_iPj *
+                 (h3_iPjP * BX3(i, j) - h3_iPjM * BX3(i, j - 1));
+    EX2(i, j) += m_coeff * inv_sqrt_detH_ijP *
+                 (h3_iMjP * BX3(i - 1, j) - h3_iPjP * BX3(i, j));
+    EX3(i, j) += m_coeff * inv_sqrt_detH_ij *
+                 (h1_ijM * BX1(i, j - 1) - h1_ijP * BX1(i, j) +
+                  h2_iPj * BX2(i, j) - h2_iMj * BX2(i - 1, j));
   }
 
   template <>
@@ -71,8 +75,8 @@ namespace ntt {
   }
 
   /**
-   * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space near the
-   * polar axes (integral form).
+   * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear
+   * space near the polar axes (integral form).
    * @tparam D Dimension.
    */
   template <Dimension D>
@@ -87,8 +91,11 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    AmperePoles_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_ni2(m_mblock.Ni2()) {}
+    AmperePoles_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff),
+      m_ni2(m_mblock.Ni2()) {}
+
     /**
      * @brief Implementation of the algorithm.
      * @param i radial index.
@@ -101,15 +108,15 @@ namespace ntt {
     index_t j_min { N_GHOSTS };
     index_t j_max { m_ni2 + N_GHOSTS };
 
-    real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-    real_t  j_max_ { static_cast<real_t>(static_cast<int>(j_max) - N_GHOSTS) };
+    real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+    real_t j_max_ { static_cast<real_t>(static_cast<int>(j_max) - N_GHOSTS) };
 
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
-    real_t  h3_min_iPjP { m_mblock.metric.h_33({ i_ + HALF, HALF }) };
-    real_t  h3_max_iPjM { m_mblock.metric.h_33({ i_ + HALF, j_max_ - HALF }) };
+    real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
+    real_t h3_min_iPjP { m_mblock.metric.h_33({ i_ + HALF, HALF }) };
+    real_t h3_max_iPjM { m_mblock.metric.h_33({ i_ + HALF, j_max_ - HALF }) };
 
-    real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
-    real_t  h3_min_iMjP { m_mblock.metric.h_33({ i_ - HALF, HALF }) };
+    real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
+    real_t h3_min_iMjP { m_mblock.metric.h_33({ i_ - HALF, HALF }) };
 
     // theta = 0
     EX1(i, j_min) += inv_polar_area_iPj * m_coeff * (h3_min_iPjP * BX3(i, j_min));
@@ -117,9 +124,10 @@ namespace ntt {
     EX1(i, j_max) -= inv_polar_area_iPj * m_coeff * (h3_max_iPjM * BX3(i, j_max));
 
     // j = jmin + 1/2
-    EX2(i, j_min) += inv_sqrt_detH_ijP * m_coeff
-                     * (h3_min_iMjP * BX3(i - 1, j_min) - h3_min_iPjP * BX3(i, j_min));
+    EX2(i, j_min) += inv_sqrt_detH_ijP * m_coeff *
+                     (h3_min_iMjP * BX3(i - 1, j_min) -
+                      h3_min_iPjP * BX3(i, j_min));
   }
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // NTT_AMPERE_KERNEL_HPP
+#endif // NTT_AMPERE_KERNEL_HPP

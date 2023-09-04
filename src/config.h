@@ -10,48 +10,50 @@
 #define LINE_STRING         STRINGIZE(__LINE__)
 
 #if defined(MPI_ENABLED)
-#  include <mpi.h>
+  #include <mpi.h>
 
-#  define NTTLog()                                                                            \
-    {                                                                                         \
-      int mpi_rank;                                                                           \
-      MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);                                               \
-      if (mpi_rank == 0) {                                                                    \
-        PLOGV_(ntt::LogFile);                                                                 \
-      }                                                                                       \
+  #define NTTLog()                                                             \
+    {                                                                          \
+      int mpi_rank;                                                            \
+      MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);                                \
+      if (mpi_rank == 0) {                                                     \
+        PLOGV_(ntt::LogFile);                                                  \
+      }                                                                        \
     }
 
-#else    // not MPI_ENABLED
-#  define NTTLog()                                                                            \
+#else // not MPI_ENABLED
+  #define NTTLog()                                                             \
     { PLOGV_(ntt::LogFile); }
 
 #endif
 
-#define NTTWarn(msg)                                                                          \
+#define NTTWarn(msg)                                                           \
   { PLOGW_(ntt::LogFile) << msg; }
 
-#define NTTFatal()                                                                            \
+#define NTTFatal()                                                             \
   { PLOGF_(ntt::LogFile); }
 
-#define NTTHostError(msg)                                                                     \
-  {                                                                                           \
-    auto err                                                                                  \
-      = fmt::format("# ERROR: {}  : filename: {} : line: {}", msg, __FILE__, LINE_STRING);    \
-    NTTFatal();                                                                               \
-    throw std::runtime_error(err);                                                            \
+#define NTTHostError(msg)                                                      \
+  {                                                                            \
+    auto err = fmt::format("# ERROR: {}  : filename: {} : line: {}",           \
+                           msg,                                                \
+                           __FILE__,                                           \
+                           LINE_STRING);                                       \
+    NTTFatal();                                                                \
+    throw std::runtime_error(err);                                             \
   }
 
-#define NTTHostErrorIf(condition, msg)                                                        \
-  {                                                                                           \
-    if ((condition)) {                                                                        \
-      NTTHostError(msg);                                                                      \
-    }                                                                                         \
+#define NTTHostErrorIf(condition, msg)                                         \
+  {                                                                            \
+    if ((condition)) {                                                         \
+      NTTHostError(msg);                                                       \
+    }                                                                          \
   }
 
 #if defined(GPU_ENABLED)
-#  define NTTError(msg) ({})
-#else    // not GPU_ENABLED
-#  define NTTError(msg) NTTHostError(msg)
+  #define NTTError(msg) ({})
+#else // not GPU_ENABLED
+  #define NTTError(msg) NTTHostError(msg)
 #endif
 
 // Defining precision-based constants and types
@@ -64,4 +66,4 @@ using real_t = double;
 
 inline constexpr unsigned int N_GHOSTS = 2;
 
-#endif    // CONFIG_H
+#endif // CONFIG_H

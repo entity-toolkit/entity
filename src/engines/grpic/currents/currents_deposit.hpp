@@ -44,14 +44,14 @@ namespace ntt {
                            const scatter_ndfield_t<D, 3>&   scatter_cur0,
                            const real_t&                    charge,
                            const bool&                      use_weights,
-                           const real_t&                    dt)
-      : m_mblock { mblock },
-        m_particles { particles },
-        m_scatter_cur0 { scatter_cur0 },
-        m_charge { charge },
-        m_use_weights { use_weights },
-        m_dt { dt },
-        m_xi2max { (real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS) } {}
+                           const real_t&                    dt) :
+      m_mblock { mblock },
+      m_particles { particles },
+      m_scatter_cur0 { scatter_cur0 },
+      m_charge { charge },
+      m_use_weights { use_weights },
+      m_dt { dt },
+      m_xi2max { (real_t)(m_mblock.i2_max()) - (real_t)(N_GHOSTS) } {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -66,14 +66,14 @@ namespace ntt {
 
         // get [i, di]_init and [i, di]_final (per dimension)
         getDepositInterval(p, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-        depositCurrentsFromParticle(m_use_weights ? static_cast<real_t>(m_particles.weight(p))
-                                                  : ONE,
-                                    vp,
-                                    Ip_f,
-                                    Ip_i,
-                                    xp_f,
-                                    xp_i,
-                                    xp_r);
+        depositCurrentsFromParticle(
+          m_use_weights ? static_cast<real_t>(m_particles.weight(p)) : ONE,
+          vp,
+          Ip_f,
+          Ip_i,
+          xp_f,
+          xp_i,
+          xp_r);
       }
     }
 
@@ -132,32 +132,35 @@ namespace ntt {
       // find 3-velocity
       vec_t<Dim3> u_cntrv { ZERO };
       m_mblock.metric.v3_Cov2Cntrv(
-        xp_f, { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) }, u_cntrv);
-      const auto gamma
-        = math::sqrt(ONE + m_particles.ux1(p) * u_cntrv[0] + m_particles.ux2(p) * u_cntrv[1]
-                     + m_particles.ux3(p) * u_cntrv[2]);
+        xp_f,
+        { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
+        u_cntrv);
+      const auto gamma = math::sqrt(ONE + m_particles.ux1(p) * u_cntrv[0] +
+                                    m_particles.ux2(p) * u_cntrv[1] +
+                                    m_particles.ux3(p) * u_cntrv[2]);
 
-      vp[0]   = m_particles.ux1(p) / gamma;
-      vp[1]   = m_particles.ux2(p) / gamma;
-      vp[2]   = m_particles.ux3(p) / gamma;
+      vp[0] = m_particles.ux1(p) / gamma;
+      vp[1] = m_particles.ux2(p) / gamma;
+      vp[2] = m_particles.ux3(p) / gamma;
 
       Ip_i[0] = m_particles.i1_prev(p);
-      xp_i[0] = static_cast<real_t>(m_particles.i1_prev(p))
-                + static_cast<real_t>(m_particles.dx1_prev(p));
+      xp_i[0] = static_cast<real_t>(m_particles.i1_prev(p)) +
+                static_cast<real_t>(m_particles.dx1_prev(p));
       Ip_i[1] = m_particles.i2_prev(p);
-      xp_i[1] = static_cast<real_t>(m_particles.i2_prev(p))
-                + static_cast<real_t>(m_particles.dx2_prev(p));
+      xp_i[1] = static_cast<real_t>(m_particles.i2_prev(p)) +
+                static_cast<real_t>(m_particles.dx2_prev(p));
 
       if constexpr (D == Dim3) {
         Ip_i[2] = m_particles.i3_prev(p);
-        xp_i[2] = static_cast<real_t>(m_particles.i3_prev(p))
-                  + static_cast<real_t>(m_particles.dx3_prev(p));
+        xp_i[2] = static_cast<real_t>(m_particles.i3_prev(p)) +
+                  static_cast<real_t>(m_particles.dx3_prev(p));
       }
 
       for (auto i { 0 }; i < static_cast<short>(D); ++i) {
-        xp_r[i] = math::fmin(static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
-                             math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
-                                        HALF * (xp_i[i] + xp_f[i])));
+        xp_r[i] = math::fmin(
+          static_cast<real_t>(math::fmin(Ip_i[i], Ip_f[i]) + 1),
+          math::fmax(static_cast<real_t>(math::fmax(Ip_i[i], Ip_f[i])),
+                     HALF * (xp_i[i] + xp_f[i])));
       }
     }
   };
@@ -184,23 +187,23 @@ namespace ntt {
     real_t Fx3_1 { HALF * vp[2] * weight * m_charge };
     real_t Fx3_2 { HALF * vp[2] * weight * m_charge };
 
-    auto   cur_access = m_scatter_cur0.access();
-    ATOMIC_JX1(Ip_i[0], Ip_i[1]) += Fx1_1 * (ONE - Wx2_1);
+    auto cur_access                   = m_scatter_cur0.access();
+    ATOMIC_JX1(Ip_i[0], Ip_i[1])     += Fx1_1 * (ONE - Wx2_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1) += Fx1_1 * Wx2_1;
-    ATOMIC_JX1(Ip_f[0], Ip_f[1]) += Fx1_2 * (ONE - Wx2_2);
+    ATOMIC_JX1(Ip_f[0], Ip_f[1])     += Fx1_2 * (ONE - Wx2_2);
     ATOMIC_JX1(Ip_f[0], Ip_f[1] + 1) += Fx1_2 * Wx2_2;
 
-    ATOMIC_JX2(Ip_i[0], Ip_i[1]) += Fx2_1 * (ONE - Wx1_1);
+    ATOMIC_JX2(Ip_i[0], Ip_i[1])     += Fx2_1 * (ONE - Wx1_1);
     ATOMIC_JX2(Ip_i[0] + 1, Ip_i[1]) += Fx2_1 * Wx1_1;
-    ATOMIC_JX2(Ip_f[0], Ip_f[1]) += Fx2_2 * (ONE - Wx1_2);
+    ATOMIC_JX2(Ip_f[0], Ip_f[1])     += Fx2_2 * (ONE - Wx1_2);
     ATOMIC_JX2(Ip_f[0] + 1, Ip_f[1]) += Fx2_2 * Wx1_2;
 
-    ATOMIC_JX3(Ip_i[0], Ip_i[1]) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+    ATOMIC_JX3(Ip_i[0], Ip_i[1])     += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
     ATOMIC_JX3(Ip_i[0] + 1, Ip_i[1]) += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
     ATOMIC_JX3(Ip_i[0], Ip_i[1] + 1) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
     ATOMIC_JX3(Ip_i[0] + 1, Ip_i[1] + 1) += Fx3_1 * Wx1_1 * Wx2_1;
 
-    ATOMIC_JX3(Ip_f[0], Ip_f[1]) += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+    ATOMIC_JX3(Ip_f[0], Ip_f[1])     += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
     ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1]) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
     ATOMIC_JX3(Ip_f[0], Ip_f[1] + 1) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
     ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1] + 1) += Fx3_2 * Wx1_2 * Wx2_2;
@@ -230,7 +233,7 @@ namespace ntt {
     real_t Fx3_1 { (xp_r[2] - xp_i[2]) * weight * m_charge / m_dt };
     real_t Fx3_2 { (xp_f[2] - xp_r[2]) * weight * m_charge / m_dt };
 
-    auto   cur_access = m_scatter_cur0.access();
+    auto cur_access = m_scatter_cur0.access();
     ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2]) += Fx1_1 * (ONE - Wx2_1) * (ONE - Wx3_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1] + 1, Ip_i[2]) += Fx1_1 * Wx2_1 * (ONE - Wx3_1);
     ATOMIC_JX1(Ip_i[0], Ip_i[1], Ip_i[2] + 1) += Fx1_1 * (ONE - Wx2_1) * Wx3_1;
@@ -262,6 +265,6 @@ namespace ntt {
     ATOMIC_JX3(Ip_f[0] + 1, Ip_f[1] + 1, Ip_f[2]) += Fx3_2 * Wx1_2 * Wx2_2;
   }
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // GRPIC_CURRENTS_DEPOSIT_H
+#endif // GRPIC_CURRENTS_DEPOSIT_H

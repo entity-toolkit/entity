@@ -7,6 +7,7 @@
 
 namespace ntt {
   using resolution_t = std::vector<unsigned int>;
+
   enum em {
     ex1 = 0,
     ex2 = 1,
@@ -21,7 +22,12 @@ namespace ntt {
     hx2 = 4,
     hx3 = 5
   };
-  enum cur { jx1 = 0, jx2 = 1, jx3 = 2 };
+
+  enum cur {
+    jx1 = 0,
+    jx2 = 1,
+    jx3 = 2
+  };
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.
@@ -52,8 +58,8 @@ namespace ntt {
     /**
      * Backup fields used for intermediate operations.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
-     * component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each
+     * field component.
      * @note Address : bckp(i, j, k, ***).
      */
     ndfield_t<D, 6> bckp;
@@ -72,8 +78,8 @@ namespace ntt {
     /**
      * Buffers for fields/currents/moments.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each field
-     * component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x3 for each
+     * field component.
      * @note Address : buff(i, j, k, ***).
      */
     ndfield_t<D, 3> buff;
@@ -85,8 +91,8 @@ namespace ntt {
     /**
      * Auxiliary E and H fields stored as Kokkos Views of dimension D * 6.
      *
-     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each field
-     * component.
+     * @note Sizes are : resolution + 2 * N_GHOSTS in each direction x6 for each
+     * field component.
      * @note Address : aux(i, j, k, em::***).
      */
     ndfield_t<D, 6> aux;
@@ -114,6 +120,6 @@ namespace ntt {
     ~Fields() = default;
   };
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

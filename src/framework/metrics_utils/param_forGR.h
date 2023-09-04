@@ -1,7 +1,8 @@
 #ifndef FRAMEWORK_METRICS_UTILS_PARAM_FORGR_H
 #define FRAMEWORK_METRICS_UTILS_PARAM_FORGR_H
 
-[[nodiscard]] auto getParameter(const std::string& parameter) const -> real_t override {
+[[nodiscard]]
+auto getParameter(const std::string& parameter) const -> real_t override {
   if (parameter == "spin") {
     return a;
   } else if (parameter == "rhorizon") {
@@ -13,4 +14,4 @@
   }
 };
 
-#endif    // FRAMEWORK_METRICS_UTILS_PARAM_FORGR_H
+#endif // FRAMEWORK_METRICS_UTILS_PARAM_FORGR_H

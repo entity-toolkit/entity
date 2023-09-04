@@ -58,12 +58,13 @@ namespace ntt {
       }
 #endif
       Kokkos::deep_copy(mblock.buff, mblock.cur);
-      Kokkos::parallel_for(
-        "CurrentsFilter", range, DigitalFilter_kernel<D>(mblock.cur, mblock.buff, size));
+      Kokkos::parallel_for("CurrentsFilter",
+                           range,
+                           DigitalFilter_kernel<D>(mblock.cur, mblock.buff, size));
       this->Communicate(Comm_J);
     }
   }
-}    // namespace ntt
+} // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::CurrentsFilter();
 template void ntt::PIC<ntt::Dim2>::CurrentsFilter();

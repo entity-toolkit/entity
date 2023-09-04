@@ -10,6 +10,7 @@
 
 namespace ntt {
   struct OutputPositions_t {};
+
   struct OutputVelocities_t {};
 
   template <Dimension D, SimulationEngine S>
@@ -25,12 +26,12 @@ namespace ntt {
                                  const Particles<D, S>& particles,
                                  array_t<real_t*>&      buffer,
                                  const std::size_t&     stride,
-                                 const short&           component)
-      : m_mblock(mblock),
-        m_particles(particles),
-        m_buffer(buffer),
-        m_stride(stride),
-        m_component(component) {}
+                                 const short&           component) :
+      m_mblock(mblock),
+      m_particles(particles),
+      m_buffer(buffer),
+      m_stride(stride),
+      m_component(component) {}
 
     Inline auto operator()(const OutputPositions_t&, index_t) const -> void;
     Inline auto operator()(const OutputVelocities_t&, index_t) const -> void;
@@ -38,8 +39,9 @@ namespace ntt {
 
   // default implementation
   template <Dimension D, SimulationEngine S>
-  Inline auto PreparePrtlQuantities_kernel<D, S>::operator()(const OutputPositions_t&,
-                                                             index_t p) const -> void {
+  Inline auto PreparePrtlQuantities_kernel<D, S>::operator()(
+    const OutputPositions_t&,
+    index_t p) const -> void {
     coord_t<D> xcode { ZERO }, xph { ZERO };
     if (m_component == 0) {
       xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -53,8 +55,9 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  Inline auto PreparePrtlQuantities_kernel<D, S>::operator()(const OutputVelocities_t&,
-                                                             index_t p) const -> void {
+  Inline auto PreparePrtlQuantities_kernel<D, S>::operator()(
+    const OutputVelocities_t&,
+    index_t p) const -> void {
     if (m_component == 0) {
       m_buffer(p) = m_particles.ux1(p * m_stride);
     } else if (m_component == 1) {
@@ -70,7 +73,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, PICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
+    const OutputPositions_t&,
+    index_t p) const {
     if (m_component == 2) {
       m_buffer(p) = m_particles.phi(p * m_stride);
     } else {
@@ -87,7 +91,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, SANDBOXEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
+    const OutputPositions_t&,
+    index_t p) const {
     if (m_component == 2) {
       m_buffer(p) = m_particles.phi(p * m_stride);
     } else {
@@ -106,13 +111,15 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim1, PICEngine>::operator()(
-    const OutputVelocities_t&, index_t) const {
+    const OutputVelocities_t&,
+    index_t) const {
     NTTError("not applicable");
   }
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, PICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO };
     vec_t<Dim3>   vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -128,7 +135,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, PICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO };
     vec_t<Dim3>   vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -144,7 +152,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, SANDBOXEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO };
     vec_t<Dim3>   vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -160,7 +169,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, SANDBOXEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO };
     vec_t<Dim3>   vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -178,7 +188,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
+    const OutputPositions_t&,
+    index_t p) const {
     if (m_component == 2) {
       // phi is at (n)
       m_buffer(p) = m_particles.phi(p * m_stride);
@@ -201,7 +212,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, GRPICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
+    const OutputPositions_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO }, xcode_prev { ZERO }, xph { ZERO };
     // x is taken at (n - 1/2)
     if (m_component == 0) {
@@ -225,7 +237,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     // velocity should be at (n - 1/2)
     // velocity at (n - 1/2)
     coord_t<Dim2> xcode { ZERO }, xcode_prev { ZERO };
@@ -247,7 +260,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, GRPICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     // velocity should be at (n - 1/2)
     coord_t<Dim3> xcode { ZERO }, xcode_prev { ZERO };
     vec_t<Dim3>   vcov_sph { ZERO };
@@ -271,6 +285,6 @@ namespace ntt {
 
 #endif
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_IO_OUTPUT_PRTLS_H
+#endif // FRAMEWORK_IO_OUTPUT_PRTLS_H

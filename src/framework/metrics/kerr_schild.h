@@ -26,7 +26,8 @@ namespace ntt {
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
-    Inline auto  Delta(const real_t& r) const -> real_t {
+
+    Inline auto Delta(const real_t& r) const -> real_t {
       return SQR(r) - TWO * r + a_sqr;
     }
 
@@ -45,23 +46,24 @@ namespace ntt {
   public:
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*             params)
-      : MetricBase<D> { "kerr_schild", resolution, extent },
-        rh_ { params[5] },
-        rg_ { ONE },
-        a { params[4] },
-        a_sqr { SQR(a) },
-        dr { (this->x1_max - this->x1_min) / this->nx1 },
-        dtheta { (this->x2_max - this->x2_min) / this->nx2 },
-        dphi { (this->x3_max - this->x3_min) / this->nx3 },
-        dr_inv { ONE / dr },
-        dtheta_inv { ONE / dtheta },
-        dphi_inv { ONE / dphi },
-        dr_sqr { dr * dr },
-        dtheta_sqr { dtheta * dtheta },
-        dphi_sqr { dphi * dphi } {
+           const real_t*             params) :
+      MetricBase<D> { "kerr_schild", resolution, extent },
+      rh_ { params[5] },
+      rg_ { ONE },
+      a { params[4] },
+      a_sqr { SQR(a) },
+      dr { (this->x1_max - this->x1_min) / this->nx1 },
+      dtheta { (this->x2_max - this->x2_min) / this->nx2 },
+      dphi { (this->x3_max - this->x3_min) / this->nx3 },
+      dr_inv { ONE / dr },
+      dtheta_inv { ONE / dtheta },
+      dphi_inv { ONE / dphi },
+      dr_sqr { dr * dr },
+      dtheta_sqr { dtheta * dtheta },
+      dphi_sqr { dphi * dphi } {
       this->set_dxMin(find_dxMin());
     }
+
     ~Metric() = default;
 
     /**
@@ -212,11 +214,11 @@ namespace ntt {
       const real_t r { xi[0] * dr + this->x1_min };
       const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
-        return dr * dtheta * Sigma(r, theta) * math::sin(theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * Sigma(r, theta) * math::sin(theta) *
+               math::sqrt(ONE + z(r, theta));
       } else {
-        return dr * dtheta * dphi * Sigma(r, theta) * math::sin(theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * dphi * Sigma(r, theta) * math::sin(theta) *
+               math::sqrt(ONE + z(r, theta));
       }
     }
 
@@ -232,7 +234,8 @@ namespace ntt {
       if constexpr (D == Dim2) {
         return dr * dtheta * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
       } else {
-        return dr * dtheta * dphi * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * dphi * Sigma(r, theta) *
+               math::sqrt(ONE + z(r, theta));
       }
     }
 
@@ -246,9 +249,10 @@ namespace ntt {
     Inline auto polar_area(const real_t& x1) const -> real_t {
       real_t r { x1 * dr + this->x1_min };
       real_t del_theta { HALF * dtheta };
-      return dr * (SQR(r) + a_sqr) * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr))
-             * (ONE - math::cos(del_theta));
+      return dr * (SQR(r) + a_sqr) * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) *
+             (ONE - math::cos(del_theta));
     }
+
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
@@ -267,7 +271,8 @@ namespace ntt {
      * Compute minimum effective cell size for a given metric (in physical units).
      * @returns Minimum cell size of the grid [physical units].
      */
-    [[nodiscard]] auto find_dxMin() const -> real_t override {
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         real_t min_dx { -ONE };
         for (int i { 0 }; i < this->nx1; ++i) {
@@ -275,9 +280,9 @@ namespace ntt {
             real_t        i_ { static_cast<real_t>(i) + HALF };
             real_t        j_ { static_cast<real_t>(j) + HALF };
             coord_t<Dim2> ij { i_, j_ };
-            real_t        dx = ONE
-                        / (this->alpha(ij) * std::sqrt(this->h11(ij) + this->h22(ij))
-                           + this->beta1(ij));
+            real_t        dx = ONE / (this->alpha(ij) *
+                                 std::sqrt(this->h11(ij) + this->h22(ij)) +
+                               this->beta1(ij));
             if ((min_dx > dx) || (min_dx < 0.0)) {
               min_dx = dx;
             }
@@ -290,6 +295,6 @@ namespace ntt {
       }
     }
   };
-}    // namespace ntt
+} // namespace ntt
 
 #endif

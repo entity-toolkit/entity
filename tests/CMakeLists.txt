@@ -49,7 +49,7 @@ function(add_engine_library metric engine pgen)
     PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE
            -DSIMULATION_METRIC=\"${metric}\"
            -DMETRIC_HEADER=\"metrics/${metric}.h\")
-  target_compile_options(${title} PUBLIC "-DPGEN_HEADER=\"pgen/${pgen}.hpp\"")
+  target_compile_options(${title} PUBLIC "-DPGEN_HEADER=\"../setups/${pgen}.hpp\"")
   target_include_directories(${title} PRIVATE ${SOURCE_DIR}/engines
                                               ${SOURCE_DIR}/engines/${engine})
 endfunction()

@@ -19,7 +19,9 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
 
   public:
-    ComputeAuxE_D0_B_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
+    ComputeAuxE_D0_B_kernel(const Meshblock<D, GRPICEngine>& mblock) :
+      m_mblock(mblock) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -45,16 +47,16 @@ namespace ntt {
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + HALF, j_ });
     h_13_ij1 = m_mblock.metric.h_13({ i_ - HALF, j_ });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + HALF, j_ });
-    real_t D1_half { (w1 * h_13_ij1 * D0X1(i - 1, j) + w2 * h_13_ij2 * D0X1(i, j))
-                     / (w1 + w2) };
+    real_t D1_half { (w1 * h_13_ij1 * D0X1(i - 1, j) + w2 * h_13_ij2 * D0X1(i, j)) /
+                     (w1 + w2) };
 
     sqrt_detH_ij1 = m_mblock.metric.sqrt_det_h({ i_ - HALF, j_ });
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ });
     beta_ij1      = m_mblock.metric.beta1({ i_ - HALF, j_ });
     beta_ij2      = m_mblock.metric.beta1({ i_ + HALF, j_ });
-    real_t B2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * BX2(i - 1, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * BX2(i, j))
-                     / (w1 + w2) };
+    real_t B2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * BX2(i - 1, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * BX2(i, j)) /
+                     (w1 + w2) };
 
     w1            = m_mblock.metric.sqrt_det_h_tilde({ i_ - HALF, j_ + HALF });
     w2            = m_mblock.metric.sqrt_det_h_tilde({ i_ + HALF, j_ + HALF });
@@ -62,16 +64,16 @@ namespace ntt {
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ + HALF });
     beta_ij1      = m_mblock.metric.beta1({ i_ - HALF, j_ + HALF });
     beta_ij2      = m_mblock.metric.beta1({ i_ + HALF, j_ + HALF });
-    real_t B3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * BX3(i - 1, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * BX3(i, j))
-                     / (w1 + w2) };
+    real_t B3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * BX3(i - 1, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * BX3(i, j)) /
+                     (w1 + w2) };
 
     w1       = m_mblock.metric.sqrt_det_h_tilde({ i_, j_ });
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + ONE, j_ });
     h_13_ij1 = m_mblock.metric.h_13({ i_, j_ });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + ONE, j_ });
-    real_t D3_half { (w1 * h_13_ij1 * D0X3(i, j) + w2 * h_13_ij2 * D0X3(i + 1, j))
-                     / (w1 + w2) };
+    real_t D3_half { (w1 * h_13_ij1 * D0X3(i, j) + w2 * h_13_ij2 * D0X3(i + 1, j)) /
+                     (w1 + w2) };
 
     real_t D1_cov { h_11_iPj * D0X1(i, j) + D3_half };
     real_t D2_cov { h_22_ijP * D0X2(i, j) };
@@ -87,7 +89,9 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
 
   public:
-    ComputeAuxE_D_B0_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
+    ComputeAuxE_D_B0_kernel(const Meshblock<D, GRPICEngine>& mblock) :
+      m_mblock(mblock) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -113,15 +117,16 @@ namespace ntt {
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + HALF, j_ });
     h_13_ij1 = m_mblock.metric.h_13({ i_ - HALF, j_ });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + HALF, j_ });
-    real_t D1_half { (w1 * h_13_ij1 * DX1(i - 1, j) + w2 * h_13_ij2 * DX1(i, j)) / (w1 + w2) };
+    real_t D1_half { (w1 * h_13_ij1 * DX1(i - 1, j) + w2 * h_13_ij2 * DX1(i, j)) /
+                     (w1 + w2) };
 
     sqrt_detH_ij1 = m_mblock.metric.sqrt_det_h({ i_ - HALF, j_ });
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ });
     beta_ij1      = m_mblock.metric.beta1({ i_ - HALF, j_ });
     beta_ij2      = m_mblock.metric.beta1({ i_ + HALF, j_ });
-    real_t B2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * B0X2(i - 1, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * B0X2(i, j))
-                     / (w1 + w2) };
+    real_t B2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * B0X2(i - 1, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * B0X2(i, j)) /
+                     (w1 + w2) };
 
     w1            = m_mblock.metric.sqrt_det_h_tilde({ i_ - HALF, j_ + HALF });
     w2            = m_mblock.metric.sqrt_det_h_tilde({ i_ + HALF, j_ + HALF });
@@ -129,15 +134,16 @@ namespace ntt {
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ + HALF });
     beta_ij1      = m_mblock.metric.beta1({ i_ - HALF, j_ + HALF });
     beta_ij2      = m_mblock.metric.beta1({ i_ + HALF, j_ + HALF });
-    real_t B3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * B0X3(i - 1, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * B0X3(i, j))
-                     / (w1 + w2) };
+    real_t B3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * B0X3(i - 1, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * B0X3(i, j)) /
+                     (w1 + w2) };
 
     h_13_ij1 = m_mblock.metric.h_13({ i_, j_ });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + ONE, j_ });
     w1       = m_mblock.metric.sqrt_det_h_tilde({ i_, j_ });
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + ONE, j_ });
-    real_t D3_half { (w1 * h_13_ij1 * DX3(i, j) + w2 * h_13_ij2 * DX3(i + 1, j)) / (w1 + w2) };
+    real_t D3_half { (w1 * h_13_ij1 * DX3(i, j) + w2 * h_13_ij2 * DX3(i + 1, j)) /
+                     (w1 + w2) };
 
     real_t D1_cov { h_11_iPj * DX1(i, j) + D3_half };
     real_t D2_cov { h_22_ijP * DX2(i, j) };
@@ -157,7 +163,9 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
 
   public:
-    ComputeAuxH_D_B0_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
+    ComputeAuxH_D_B0_kernel(const Meshblock<D, GRPICEngine>& mblock) :
+      m_mblock(mblock) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -183,16 +191,16 @@ namespace ntt {
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + ONE, j_ + HALF });
     h_13_ij1 = m_mblock.metric.h_13({ i_, j_ + HALF });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + ONE, j_ + HALF });
-    real_t B1_half { (w1 * h_13_ij1 * B0X1(i, j) + w2 * h_13_ij2 * B0X1(i + 1, j))
-                     / (w1 + w2) };
+    real_t B1_half { (w1 * h_13_ij1 * B0X1(i, j) + w2 * h_13_ij2 * B0X1(i + 1, j)) /
+                     (w1 + w2) };
 
     sqrt_detH_ij1 = m_mblock.metric.sqrt_det_h({ i_, j_ + HALF });
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + ONE, j_ + HALF });
     beta_ij1      = m_mblock.metric.beta1({ i_, j_ + HALF });
     beta_ij2      = m_mblock.metric.beta1({ i_ + ONE, j_ + HALF });
-    real_t D2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * DX2(i, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * DX2(i + 1, j))
-                     / (w1 + w2) };
+    real_t D2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * DX2(i, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * DX2(i + 1, j)) /
+                     (w1 + w2) };
 
     w1            = m_mblock.metric.sqrt_det_h_tilde({ i_, j_ });
     w2            = m_mblock.metric.sqrt_det_h_tilde({ i_ + ONE, j_ });
@@ -200,16 +208,16 @@ namespace ntt {
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + ONE, j_ });
     beta_ij1      = m_mblock.metric.beta1({ i_, j_ });
     beta_ij2      = m_mblock.metric.beta1({ i_ + ONE, j_ });
-    real_t D3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * DX3(i, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * DX3(i + 1, j))
-                     / (w1 + w2) };
+    real_t D3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * DX3(i, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * DX3(i + 1, j)) /
+                     (w1 + w2) };
 
     w1       = m_mblock.metric.sqrt_det_h_tilde({ i_ - HALF, j_ + HALF });
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + HALF, j_ + HALF });
     h_13_ij1 = m_mblock.metric.h_13({ i_ - HALF, j_ + HALF });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + HALF, j_ + HALF });
-    real_t B3_half { (w1 * h_13_ij1 * B0X3(i - 1, j) + w2 * h_13_ij2 * B0X3(i, j))
-                     / (w1 + w2) };
+    real_t B3_half { (w1 * h_13_ij1 * B0X3(i - 1, j) + w2 * h_13_ij2 * B0X3(i, j)) /
+                     (w1 + w2) };
 
     real_t B1_cov { h_11_ijP * B0X1(i, j) + B3_half };
     real_t B2_cov { h_22_iPj * B0X2(i, j) };
@@ -225,7 +233,9 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
 
   public:
-    ComputeAuxH_D0_B0_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
+    ComputeAuxH_D0_B0_kernel(const Meshblock<D, GRPICEngine>& mblock) :
+      m_mblock(mblock) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -251,16 +261,16 @@ namespace ntt {
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + ONE, j_ + HALF });
     h_13_ij1 = m_mblock.metric.h_13({ i_, j_ + HALF });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + ONE, j_ + HALF });
-    real_t B1_half { (w1 * h_13_ij1 * B0X1(i, j) + w2 * h_13_ij2 * B0X1(i + 1, j))
-                     / (w1 + w2) };
+    real_t B1_half { (w1 * h_13_ij1 * B0X1(i, j) + w2 * h_13_ij2 * B0X1(i + 1, j)) /
+                     (w1 + w2) };
 
     sqrt_detH_ij1 = m_mblock.metric.sqrt_det_h({ i_, j_ + HALF });
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + ONE, j_ + HALF });
     beta_ij1      = m_mblock.metric.beta1({ i_, j_ + HALF });
     beta_ij2      = m_mblock.metric.beta1({ i_ + ONE, j_ + HALF });
-    real_t D2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * D0X2(i, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * D0X2(i + 1, j))
-                     / (w1 + w2) };
+    real_t D2_half { (w1 * sqrt_detH_ij1 * beta_ij1 * D0X2(i, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * D0X2(i + 1, j)) /
+                     (w1 + w2) };
 
     w1            = m_mblock.metric.sqrt_det_h_tilde({ i_, j_ });
     w2            = m_mblock.metric.sqrt_det_h_tilde({ i_ + ONE, j_ });
@@ -268,16 +278,16 @@ namespace ntt {
     sqrt_detH_ij2 = m_mblock.metric.sqrt_det_h({ i_ + ONE, j_ });
     beta_ij1      = m_mblock.metric.beta1({ i_, j_ });
     beta_ij2      = m_mblock.metric.beta1({ i_ + ONE, j_ });
-    real_t D3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * D0X3(i, j)
-                      + w2 * sqrt_detH_ij2 * beta_ij2 * D0X3(i + 1, j))
-                     / (w1 + w2) };
+    real_t D3_half { (w1 * sqrt_detH_ij1 * beta_ij1 * D0X3(i, j) +
+                      w2 * sqrt_detH_ij2 * beta_ij2 * D0X3(i + 1, j)) /
+                     (w1 + w2) };
 
     w1       = m_mblock.metric.sqrt_det_h_tilde({ i_ - HALF, j_ + HALF });
     w2       = m_mblock.metric.sqrt_det_h_tilde({ i_ + HALF, j_ + HALF });
     h_13_ij1 = m_mblock.metric.h_13({ i_ - HALF, j_ + HALF });
     h_13_ij2 = m_mblock.metric.h_13({ i_ + HALF, j_ + HALF });
-    real_t B3_half { (w1 * h_13_ij1 * B0X3(i - 1, j) + w2 * h_13_ij2 * B0X3(i, j))
-                     / (w1 + w2) };
+    real_t B3_half { (w1 * h_13_ij1 * B0X3(i - 1, j) + w2 * h_13_ij2 * B0X3(i, j)) /
+                     (w1 + w2) };
 
     real_t B1_cov { h_11_ijP * B0X1(i, j) + B3_half };
     real_t B2_cov { h_22_iPj * B0X2(i, j) };
@@ -297,7 +307,9 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
 
   public:
-    TimeAverageDB_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
+    TimeAverageDB_kernel(const Meshblock<D, GRPICEngine>& mblock) :
+      m_mblock(mblock) {}
+
     Inline void operator()(index_t, index_t) const;
     Inline void operator()(index_t, index_t, index_t) const;
   };
@@ -313,7 +325,9 @@ namespace ntt {
   }
 
   template <>
-  Inline void TimeAverageDB_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void TimeAverageDB_kernel<Dim3>::operator()(index_t i,
+                                                     index_t j,
+                                                     index_t k) const {
     B0X1(i, j, k) = HALF * (B0X1(i, j, k) + BX1(i, j, k));
     B0X2(i, j, k) = HALF * (B0X2(i, j, k) + BX2(i, j, k));
     B0X3(i, j, k) = HALF * (B0X3(i, j, k) + BX3(i, j, k));
@@ -331,7 +345,9 @@ namespace ntt {
     Meshblock<D, GRPICEngine> m_mblock;
 
   public:
-    TimeAverageJ_kernel(const Meshblock<D, GRPICEngine>& mblock) : m_mblock(mblock) {}
+    TimeAverageJ_kernel(const Meshblock<D, GRPICEngine>& mblock) :
+      m_mblock(mblock) {}
+
     Inline void operator()(index_t, index_t) const;
     Inline void operator()(index_t, index_t, index_t) const;
   };
@@ -344,12 +360,14 @@ namespace ntt {
   }
 
   template <>
-  Inline void TimeAverageJ_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void TimeAverageJ_kernel<Dim3>::operator()(index_t i,
+                                                    index_t j,
+                                                    index_t k) const {
     JX1(i, j, k) = HALF * (J0X1(i, j, k) + JX1(i, j, k));
     JX2(i, j, k) = HALF * (J0X2(i, j, k) + JX2(i, j, k));
     JX3(i, j, k) = HALF * (J0X3(i, j, k) + JX3(i, j, k));
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

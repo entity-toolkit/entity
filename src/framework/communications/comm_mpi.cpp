@@ -1,19 +1,19 @@
 #ifdef MPI_ENABLED
 
-#  include "wrapper.h"
+  #include "wrapper.h"
 
-#  include "simulation.h"
+  #include "simulation.h"
 
-#  include "communications/metadomain.h"
-#  include "meshblock/fields.h"
-#  include "meshblock/meshblock.h"
+  #include "communications/metadomain.h"
+  #include "meshblock/fields.h"
+  #include "meshblock/meshblock.h"
 
-#  include <mpi.h>
+  #include <mpi.h>
 
 namespace ntt {
 
   /* -------------------------------------------------------------------------- */
-  /*                     Cross-meshblock MPI communications                     */
+  /*                     Cross-meshblock MPI communications */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, int N>
   void CommunicateField(ndfield_t<D, N>&                  fld,
@@ -22,7 +22,8 @@ namespace ntt {
                         const std::vector<range_tuple_t>& send_slice,
                         const std::vector<range_tuple_t>& recv_slice,
                         const range_tuple_t&              comps) {
-    std::size_t nsend { comps.second - comps.first }, nrecv { comps.second - comps.first };
+    std::size_t nsend { comps.second - comps.first },
+      nrecv { comps.second - comps.first };
     ndarray_t<(short)D + 1> send_fld, recv_fld;
     for (short d { 0 }; d < (short)D; ++d) {
       if (send_to != nullptr) {
@@ -35,15 +36,18 @@ namespace ntt {
 
     if (send_to != nullptr) {
       if constexpr (D == Dim1) {
-        send_fld = ndarray_t<2>(
-          "send_fld", send_slice[0].second - send_slice[0].first, comps.second - comps.first);
+        send_fld = ndarray_t<2>("send_fld",
+                                send_slice[0].second - send_slice[0].first,
+                                comps.second - comps.first);
         Kokkos::deep_copy(send_fld, Kokkos::subview(fld, send_slice[0], comps));
       } else if constexpr (D == Dim2) {
         send_fld = ndarray_t<3>("send_fld",
                                 send_slice[0].second - send_slice[0].first,
                                 send_slice[1].second - send_slice[1].first,
                                 comps.second - comps.first);
-        Kokkos::deep_copy(send_fld, Kokkos::subview(fld, send_slice[0], send_slice[1], comps));
+        Kokkos::deep_copy(
+          send_fld,
+          Kokkos::subview(fld, send_slice[0], send_slice[1], comps));
       } else if constexpr (D == Dim3) {
         send_fld = ndarray_t<4>("send_fld",
                                 send_slice[0].second - send_slice[0].first,
@@ -51,13 +55,15 @@ namespace ntt {
                                 send_slice[2].second - send_slice[2].first,
                                 comps.second - comps.first);
         Kokkos::deep_copy(
-          send_fld, Kokkos::subview(fld, send_slice[0], send_slice[1], send_slice[2], comps));
+          send_fld,
+          Kokkos::subview(fld, send_slice[0], send_slice[1], send_slice[2], comps));
       }
     }
     if (recv_from != nullptr) {
       if constexpr (D == Dim1) {
-        recv_fld = ndarray_t<2>(
-          "recv_fld", recv_slice[0].second - recv_slice[0].first, comps.second - comps.first);
+        recv_fld = ndarray_t<2>("recv_fld",
+                                recv_slice[0].second - recv_slice[0].first,
+                                comps.second - comps.first);
       } else if constexpr (D == Dim2) {
         recv_fld = ndarray_t<3>("recv_fld",
                                 recv_slice[0].second - recv_slice[0].first,
@@ -85,8 +91,12 @@ namespace ntt {
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
     } else if (send_to != nullptr) {
-      MPI_Send(
-        send_fld.data(), nsend, mpi_get_type<real_t>(), send_to->mpiRank(), 0, MPI_COMM_WORLD);
+      MPI_Send(send_fld.data(),
+               nsend,
+               mpi_get_type<real_t>(),
+               send_to->mpiRank(),
+               0,
+               MPI_COMM_WORLD);
     } else if (recv_from != nullptr) {
       MPI_Recv(recv_fld.data(),
                nrecv,
@@ -102,10 +112,12 @@ namespace ntt {
       if constexpr (D == Dim1) {
         Kokkos::deep_copy(Kokkos::subview(fld, recv_slice[0], comps), recv_fld);
       } else if constexpr (D == Dim2) {
-        Kokkos::deep_copy(Kokkos::subview(fld, recv_slice[0], recv_slice[1], comps), recv_fld);
+        Kokkos::deep_copy(Kokkos::subview(fld, recv_slice[0], recv_slice[1], comps),
+                          recv_fld);
       } else if constexpr (D == Dim3) {
         Kokkos::deep_copy(
-          Kokkos::subview(fld, recv_slice[0], recv_slice[1], recv_slice[2], comps), recv_fld);
+          Kokkos::subview(fld, recv_slice[0], recv_slice[1], recv_slice[2], comps),
+          recv_fld);
       }
     }
   }
@@ -118,8 +130,8 @@ namespace ntt {
                                    const range_tuple_t& recv_slice) {
     const auto send_count = send_slice.second - send_slice.first;
     const auto recv_count = recv_slice.second - recv_slice.first;
-    if ((send_to != nullptr) && (recv_from != nullptr) && (send_count > 0)
-        && (recv_count > 0)) {
+    if ((send_to != nullptr) && (recv_from != nullptr) && (send_count > 0) &&
+        (recv_count > 0)) {
       MPI_Sendrecv(arr.data() + send_slice.first,
                    send_count,
                    mpi_get_type<T>(),
@@ -169,8 +181,12 @@ namespace ntt {
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
     } else if (send_to != nullptr) {
-      MPI_Send(
-        &send_count, 1, mpi_get_type<std::size_t>(), send_to->mpiRank(), 0, MPI_COMM_WORLD);
+      MPI_Send(&send_count,
+               1,
+               mpi_get_type<std::size_t>(),
+               send_to->mpiRank(),
+               0,
+               MPI_COMM_WORLD);
     } else if (recv_from != nullptr) {
       MPI_Recv(&recv_count,
                1,
@@ -206,39 +222,73 @@ namespace ntt {
     CommunicateParticleQuantity(particles.i1, send_to, recv_from, send_slice, recv_slice);
     CommunicateParticleQuantity(particles.dx1, send_to, recv_from, send_slice, recv_slice);
     if constexpr (S == GRPICEngine) {
-      CommunicateParticleQuantity(
-        particles.i1_prev, send_to, recv_from, send_slice, recv_slice);
-      CommunicateParticleQuantity(
-        particles.dx1_prev, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.i1_prev,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
+      CommunicateParticleQuantity(particles.dx1_prev,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
     }
     if constexpr (D == Dim2 || D == Dim3) {
       CommunicateParticleQuantity(particles.i2, send_to, recv_from, send_slice, recv_slice);
-      CommunicateParticleQuantity(particles.dx2, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.dx2,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
       if constexpr (S == GRPICEngine) {
-        CommunicateParticleQuantity(
-          particles.i2_prev, send_to, recv_from, send_slice, recv_slice);
-        CommunicateParticleQuantity(
-          particles.dx2_prev, send_to, recv_from, send_slice, recv_slice);
+        CommunicateParticleQuantity(particles.i2_prev,
+                                    send_to,
+                                    recv_from,
+                                    send_slice,
+                                    recv_slice);
+        CommunicateParticleQuantity(particles.dx2_prev,
+                                    send_to,
+                                    recv_from,
+                                    send_slice,
+                                    recv_slice);
       }
     }
     if constexpr (D == Dim3) {
       CommunicateParticleQuantity(particles.i3, send_to, recv_from, send_slice, recv_slice);
-      CommunicateParticleQuantity(particles.dx3, send_to, recv_from, send_slice, recv_slice);
+      CommunicateParticleQuantity(particles.dx3,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
       if constexpr (S == GRPICEngine) {
-        CommunicateParticleQuantity(
-          particles.i3_prev, send_to, recv_from, send_slice, recv_slice);
-        CommunicateParticleQuantity(
-          particles.dx3_prev, send_to, recv_from, send_slice, recv_slice);
+        CommunicateParticleQuantity(particles.i3_prev,
+                                    send_to,
+                                    recv_from,
+                                    send_slice,
+                                    recv_slice);
+        CommunicateParticleQuantity(particles.dx3_prev,
+                                    send_to,
+                                    recv_from,
+                                    send_slice,
+                                    recv_slice);
       }
     }
     CommunicateParticleQuantity(particles.ux1, send_to, recv_from, send_slice, recv_slice);
     CommunicateParticleQuantity(particles.ux2, send_to, recv_from, send_slice, recv_slice);
     CommunicateParticleQuantity(particles.ux3, send_to, recv_from, send_slice, recv_slice);
-    CommunicateParticleQuantity(particles.weight, send_to, recv_from, send_slice, recv_slice);
+    CommunicateParticleQuantity(particles.weight,
+                                send_to,
+                                recv_from,
+                                send_slice,
+                                recv_slice);
     if constexpr (D == Dim2) {
-#  ifndef MINKOWSKI_METRIC
-      CommunicateParticleQuantity(particles.phi, send_to, recv_from, send_slice, recv_slice);
-#  endif
+  #ifndef MINKOWSKI_METRIC
+      CommunicateParticleQuantity(particles.phi,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
+  #endif
     }
     if (recv_count > 0) {
       if constexpr (D == Dim1) {
@@ -249,9 +299,11 @@ namespace ntt {
           shift_in_x1 = local->ncells()[0];
         }
         Kokkos::parallel_for(
-          "CommunicateParticles", recv_count, Lambda(index_t p) {
-            particles.tag(index_last + p) = ParticleTag::alive;
-            particles.i1(index_last + p) += shift_in_x1;
+          "CommunicateParticles",
+          recv_count,
+          Lambda(index_t p) {
+            particles.tag(index_last + p)  = ParticleTag::alive;
+            particles.i1(index_last + p)  += shift_in_x1;
           });
       } else if constexpr (D == Dim2) {
         int shift_in_x1 { 0 }, shift_in_x2 { 0 };
@@ -266,10 +318,12 @@ namespace ntt {
           shift_in_x2 = local->ncells()[1];
         }
         Kokkos::parallel_for(
-          "CommunicateParticles", recv_count, Lambda(index_t p) {
-            particles.tag(index_last + p) = ParticleTag::alive;
-            particles.i1(index_last + p) += shift_in_x1;
-            particles.i2(index_last + p) += shift_in_x2;
+          "CommunicateParticles",
+          recv_count,
+          Lambda(index_t p) {
+            particles.tag(index_last + p)  = ParticleTag::alive;
+            particles.i1(index_last + p)  += shift_in_x1;
+            particles.i2(index_last + p)  += shift_in_x2;
           });
       } else if constexpr (D == Dim3) {
         int shift_in_x1 { 0 }, shift_in_x2 { 0 }, shift_in_x3 { 0 };
@@ -289,11 +343,13 @@ namespace ntt {
           shift_in_x3 = local->ncells()[2];
         }
         Kokkos::parallel_for(
-          "CommunicateParticles", recv_count, Lambda(index_t p) {
-            particles.tag(index_last + p) = ParticleTag::alive;
-            particles.i1(index_last + p) += shift_in_x1;
-            particles.i2(index_last + p) += shift_in_x2;
-            particles.i3(index_last + p) += shift_in_x3;
+          "CommunicateParticles",
+          recv_count,
+          Lambda(index_t p) {
+            particles.tag(index_last + p)  = ParticleTag::alive;
+            particles.i1(index_last + p)  += shift_in_x1;
+            particles.i2(index_last + p)  += shift_in_x2;
+            particles.i3(index_last + p)  += shift_in_x3;
           });
       }
       index_last += recv_count;
@@ -305,7 +361,8 @@ namespace ntt {
   void Simulation<D, S>::Communicate(CommTags comm) {
     NTTHostErrorIf((comm == Comm_None), "Communicate called with Comm_None");
     if constexpr (S != GRPICEngine) {
-      NTTHostErrorIf((comm & Comm_D) || (comm & Comm_H) || (comm & Comm_D0) || (comm & Comm_B0),
+      NTTHostErrorIf((comm & Comm_D) || (comm & Comm_H) || (comm & Comm_D0) ||
+                       (comm & Comm_B0),
                      "SR only supports E, B, J, and particles in Communicate");
     } else {
       NTTHostErrorIf((comm & Comm_E) || (comm & Comm_H),
@@ -315,8 +372,9 @@ namespace ntt {
     const auto local_domain = m_metadomain.localDomain();
     auto&      mblock       = this->meshblock;
 
-    const auto comm_fields  = (comm & Comm_E) || (comm & Comm_B) || (comm & Comm_J)
-                             || (comm & Comm_D) || (comm & Comm_D0) || (comm & Comm_B0);
+    const auto comm_fields = (comm & Comm_E) || (comm & Comm_B) ||
+                             (comm & Comm_J) || (comm & Comm_D) ||
+                             (comm & Comm_D0) || (comm & Comm_B0);
     const auto comm_em  = (comm & Comm_E) || (comm & Comm_B) || (comm & Comm_D);
     const auto comm_em0 = (comm & Comm_B0) || (comm & Comm_D0);
 
@@ -324,7 +382,8 @@ namespace ntt {
       auto comp_range_fld = range_tuple_t {};
       auto comp_range_cur = range_tuple_t {};
       if constexpr (S == GRPICEngine) {
-        if (((comm & Comm_D) && (comm & Comm_B)) || ((comm & Comm_D0) && (comm & Comm_B0))) {
+        if (((comm & Comm_D) && (comm & Comm_B)) ||
+            ((comm & Comm_D0) && (comm & Comm_B0))) {
           comp_range_fld = range_tuple_t(em::dx1, em::bx3 + 1);
         } else if ((comm & Comm_D) || (comm & Comm_D0)) {
           comp_range_fld = range_tuple_t(em::dx1, em::dx3 + 1);
@@ -419,8 +478,8 @@ namespace ntt {
         for (std::size_t i { 0 }; i < tag_offset.size(); ++i) {
           tag_offset[i] -= npart_per_tag[i];
         }
-        auto index_last
-          = tag_offset[tag_offset.size() - 1] + npart_per_tag[npart_per_tag.size() - 1];
+        auto index_last = tag_offset[tag_offset.size() - 1] +
+                          npart_per_tag[npart_per_tag.size() - 1];
         for (auto& direction : Directions<D>::all) {
           const auto is_send = (local_domain->neighbors(direction) != nullptr);
           const auto is_recv = (local_domain->neighbors(-direction) != nullptr);
@@ -429,7 +488,8 @@ namespace ntt {
           }
           const auto send_dir_tag = PrtlSendTag<D>::dir2tag(direction);
           const auto send_pmin    = tag_offset[send_dir_tag];
-          const auto send_pmax    = tag_offset[send_dir_tag] + npart_per_tag[send_dir_tag];
+          const auto send_pmax    = tag_offset[send_dir_tag] +
+                                 npart_per_tag[send_dir_tag];
 
           CommunicateParticles(species,
                                direction,
@@ -442,48 +502,54 @@ namespace ntt {
       }
     }
   }
-}    // namespace ntt
+} // namespace ntt
 
-template void ntt::CommunicateField<ntt::Dim1, 6>(ntt::ndfield_t<ntt::Dim1, 6>&,
-                                                  const ntt::Domain<ntt::Dim1>*,
-                                                  const ntt::Domain<ntt::Dim1>*,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim1, 6>(
+  ntt::ndfield_t<ntt::Dim1, 6>&,
+  const ntt::Domain<ntt::Dim1>*,
+  const ntt::Domain<ntt::Dim1>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim2, 6>(ntt::ndfield_t<ntt::Dim2, 6>&,
-                                                  const ntt::Domain<ntt::Dim2>*,
-                                                  const ntt::Domain<ntt::Dim2>*,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim2, 6>(
+  ntt::ndfield_t<ntt::Dim2, 6>&,
+  const ntt::Domain<ntt::Dim2>*,
+  const ntt::Domain<ntt::Dim2>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim3, 6>(ntt::ndfield_t<ntt::Dim3, 6>&,
-                                                  const ntt::Domain<ntt::Dim3>*,
-                                                  const ntt::Domain<ntt::Dim3>*,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim3, 6>(
+  ntt::ndfield_t<ntt::Dim3, 6>&,
+  const ntt::Domain<ntt::Dim3>*,
+  const ntt::Domain<ntt::Dim3>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim1, 3>(ntt::ndfield_t<ntt::Dim1, 3>&,
-                                                  const ntt::Domain<ntt::Dim1>*,
-                                                  const ntt::Domain<ntt::Dim1>*,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim1, 3>(
+  ntt::ndfield_t<ntt::Dim1, 3>&,
+  const ntt::Domain<ntt::Dim1>*,
+  const ntt::Domain<ntt::Dim1>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim2, 3>(ntt::ndfield_t<ntt::Dim2, 3>&,
-                                                  const ntt::Domain<ntt::Dim2>*,
-                                                  const ntt::Domain<ntt::Dim2>*,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim2, 3>(
+  ntt::ndfield_t<ntt::Dim2, 3>&,
+  const ntt::Domain<ntt::Dim2>*,
+  const ntt::Domain<ntt::Dim2>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim3, 3>(ntt::ndfield_t<ntt::Dim3, 3>&,
-                                                  const ntt::Domain<ntt::Dim3>*,
-                                                  const ntt::Domain<ntt::Dim3>*,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim3, 3>(
+  ntt::ndfield_t<ntt::Dim3, 3>&,
+  const ntt::Domain<ntt::Dim3>*,
+  const ntt::Domain<ntt::Dim3>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
 #endif

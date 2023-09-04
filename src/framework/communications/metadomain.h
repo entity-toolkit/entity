@@ -12,8 +12,8 @@
 #include <iomanip>
 
 #if defined(MPI_ENABLED)
-#  include <mpi.h>
-#endif    // MPI_ENABLED
+  #include <mpi.h>
+#endif // MPI_ENABLED
 
 #include <fmt/core.h>
 
@@ -62,12 +62,12 @@ namespace ntt {
     std::vector<std::vector<BoundaryCondition>> m_boundaries;
     std::map<direction_t<D>, BoundaryCondition> m_boundaries_map;
 
-    Metric<D>                                   m_metric;
+    Metric<D> m_metric;
 
     // MPI rank of the domain (used only when MPI enabled)
-    int                                         m_mpi_rank;
+    int m_mpi_rank;
 
-    std::map<direction_t<D>, Domain<D>*>        m_neighbors;
+    std::map<direction_t<D>, Domain<D>*> m_neighbors;
 
   public:
     Domain(const int&                                        index,
@@ -77,21 +77,22 @@ namespace ntt {
            const std::vector<real_t>&                        extent,
            const real_t*                                     metric_params,
            const std::vector<std::vector<BoundaryCondition>> boundaries,
-           const int&                                        mpi_rank = -1)
-      : m_index { index },
-        m_offset_ndomains { offset_ndomains },
-        m_ncells { ncells },
-        m_offset_ncells { offset_ncells },
-        m_extent { extent },
-        m_boundaries { boundaries },
-        m_metric { ncells, extent, metric_params },
-        m_mpi_rank { mpi_rank } {}
+           const int&                                        mpi_rank = -1) :
+      m_index { index },
+      m_offset_ndomains { offset_ndomains },
+      m_ncells { ncells },
+      m_offset_ncells { offset_ncells },
+      m_extent { extent },
+      m_boundaries { boundaries },
+      m_metric { ncells, extent, metric_params },
+      m_mpi_rank { mpi_rank } {}
 
 #if defined(MPI_ENABLED)
-    [[nodiscard]] auto mpiRank() const -> int {
+    [[nodiscard]]
+    auto mpiRank() const -> int {
       return m_mpi_rank;
     }
-#endif    // MPI_ENABLED
+#endif // MPI_ENABLED
 
     auto assignNeighbor(const direction_t<D>& dir, Domain<D>* neighbor) -> void {
       m_neighbors[dir] = neighbor;
@@ -118,7 +119,8 @@ namespace ntt {
       std::cout << std::setw(20) << std::left << "\n  boundaries: ";
       for (auto& bound : m_boundaries) {
         for (auto& bc : bound) {
-          std::cout << std::setw(10) << std::right << stringizeBoundaryCondition(bc);
+          std::cout << std::setw(10) << std::right
+                    << stringizeBoundaryCondition(bc);
         }
       }
       std::cout << std::setw(20) << std::left << "\n  neighbors:";
@@ -143,26 +145,38 @@ namespace ntt {
      * Getters
      */
 
-    [[nodiscard]] auto index() const -> int {
+    [[nodiscard]]
+    auto index() const -> int {
       return m_index;
     }
-    [[nodiscard]] auto offsetNdomains() const -> const std::vector<unsigned int>& {
+
+    [[nodiscard]]
+    auto offsetNdomains() const -> const std::vector<unsigned int>& {
       return m_offset_ndomains;
     }
-    [[nodiscard]] auto ncells() const -> const std::vector<unsigned int>& {
+
+    [[nodiscard]]
+    auto ncells() const -> const std::vector<unsigned int>& {
       return m_ncells;
     }
-    [[nodiscard]] auto offsetNcells() const -> const std::vector<unsigned int>& {
+
+    [[nodiscard]]
+    auto offsetNcells() const -> const std::vector<unsigned int>& {
       return m_offset_ncells;
     }
-    [[nodiscard]] auto extent() const -> const std::vector<real_t>& {
+
+    [[nodiscard]]
+    auto extent() const -> const std::vector<real_t>& {
       return m_extent;
     }
-    [[nodiscard]] auto boundaries() const
-      -> const std::vector<std::vector<BoundaryCondition>>& {
+
+    [[nodiscard]]
+    auto boundaries() const -> const std::vector<std::vector<BoundaryCondition>>& {
       return m_boundaries;
     }
-    [[nodiscard]] auto neighbors(const direction_t<D>& dir) const -> const Domain<D>* {
+
+    [[nodiscard]]
+    auto neighbors(const direction_t<D>& dir) const -> const Domain<D>* {
       auto it = m_neighbors.find(dir);
       if (it != m_neighbors.end()) {
         return it->second;
@@ -170,7 +184,9 @@ namespace ntt {
         NTTHostError("Neighbor not found");
       }
     }
-    [[nodiscard]] auto boundaryIn(const direction_t<D>& dir) const -> BoundaryCondition {
+
+    [[nodiscard]]
+    auto boundaryIn(const direction_t<D>& dir) const -> BoundaryCondition {
       auto it = m_boundaries_map.find(dir);
       if (it != m_boundaries_map.end()) {
         return it->second;
@@ -178,7 +194,9 @@ namespace ntt {
         NTTHostError("Boundary not found");
       }
     }
-    [[nodiscard]] auto metric() const -> const Metric<D>& {
+
+    [[nodiscard]]
+    auto metric() const -> const Metric<D>& {
       return m_metric;
     }
 
@@ -189,10 +207,10 @@ namespace ntt {
 
   template <Dimension D>
   class Metadomain {
-    std::vector<unsigned int>                         m_global_ncells;
-    std::vector<real_t>                               m_global_extent;
-    Metric<D>                                         m_global_metric;
-    std::vector<std::vector<BoundaryCondition>>       m_global_boundaries;
+    std::vector<unsigned int>                   m_global_ncells;
+    std::vector<real_t>                         m_global_extent;
+    Metric<D>                                   m_global_metric;
+    std::vector<std::vector<BoundaryCondition>> m_global_boundaries;
 
     unsigned int                                      m_global_ndomains;
     std::vector<unsigned int>                         m_global_ndomains_per_dim;
@@ -203,21 +221,21 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     int m_mpisize;
     int m_mpirank;
-#endif    // MPI_ENABLED
+#endif // MPI_ENABLED
 
   public:
     std::vector<Domain<D>> domains;
 
-    Metadomain(const std::vector<unsigned int>&                   global_ncells,
-               const std::vector<real_t>&                         global_extent,
-               const std::vector<unsigned int>&                   global_decomposition,
-               const real_t*                                      metric_params,
+    Metadomain(const std::vector<unsigned int>& global_ncells,
+               const std::vector<real_t>&       global_extent,
+               const std::vector<unsigned int>& global_decomposition,
+               const real_t*                    metric_params,
                const std::vector<std::vector<BoundaryCondition>>& global_boundaries,
-               const bool                                         allow_multidomain = false)
-      : m_global_ncells { global_ncells },
-        m_global_extent { global_extent },
-        m_global_metric { global_ncells, global_extent, metric_params },
-        m_global_boundaries { global_boundaries } {
+               const bool allow_multidomain = false) :
+      m_global_ncells { global_ncells },
+      m_global_extent { global_extent },
+      m_global_metric { global_ncells, global_extent, metric_params },
+      m_global_boundaries { global_boundaries } {
 #if defined(MPI_ENABLED)
       MPI_Comm_size(MPI_COMM_WORLD, &m_mpisize);
       MPI_Comm_rank(MPI_COMM_WORLD, &m_mpirank);
@@ -229,8 +247,9 @@ namespace ntt {
                                               std::multiplies<unsigned int>());
       NTTHostErrorIf(!allow_multidomain && ((int)m_global_ndomains != m_mpisize),
                      "ndomains != mpisize is not allowed");
-      NTTHostErrorIf((int)m_global_ndomains < m_mpisize, "ndomains < mpisize is not possible");
-#else     // not MPI_ENABLED
+      NTTHostErrorIf((int)m_global_ndomains < m_mpisize,
+                     "ndomains < mpisize is not possible");
+#else  // not MPI_ENABLED
       m_global_ndomains = global_decomposition.empty()
                             ? 1
                             : std::accumulate(global_decomposition.begin(),
@@ -239,9 +258,11 @@ namespace ntt {
                                               std::multiplies<unsigned int>());
       NTTHostErrorIf(!allow_multidomain and (m_global_ndomains != 1),
                      "ndomains > 1 is not allowed");
-#endif    // MPI_ENABLED
+#endif // MPI_ENABLED
 
-      auto d_ncells = Decompose(m_global_ndomains, m_global_ncells, global_decomposition);
+      auto d_ncells = Decompose(m_global_ndomains,
+                                m_global_ncells,
+                                global_decomposition);
       NTTHostErrorIf(d_ncells.size() != (short)D, "Invalid number of dimensions");
       auto d_offset_ncells = std::vector<std::vector<unsigned int>> {};
       auto d_offset_ndoms  = std::vector<std::vector<unsigned int>> {};
@@ -263,17 +284,17 @@ namespace ntt {
       auto domain_offset_ncells = TensorProduct<unsigned int>(d_offset_ncells);
       auto domain_offset_ndoms  = TensorProduct<unsigned int>(d_offset_ndoms);
 
-      m_domain_offsets          = domain_offset_ndoms;
+      m_domain_offsets = domain_offset_ndoms;
 
       // create domains
       for (std::size_t index { 0 }; index < m_global_ndomains; ++index) {
-        auto       l_offset_ndomains = domain_offset_ndoms[index];
-        auto       l_ncells          = domain_ncells[index];
-        auto       l_offset_ncells   = domain_offset_ncells[index];
-        auto       l_extent          = std::vector<real_t> {};
-        auto       l_boundaries      = std::vector<std::vector<BoundaryCondition>> { {} };
-        coord_t<D> low_corner_cu { ZERO }, up_corner_cu { ZERO }, low_corner_ph { ZERO },
-          up_corner_ph { ZERO };
+        auto l_offset_ndomains = domain_offset_ndoms[index];
+        auto l_ncells          = domain_ncells[index];
+        auto l_offset_ncells   = domain_offset_ncells[index];
+        auto l_extent          = std::vector<real_t> {};
+        auto l_boundaries = std::vector<std::vector<BoundaryCondition>> { {} };
+        coord_t<D> low_corner_cu { ZERO }, up_corner_cu { ZERO },
+          low_corner_ph { ZERO }, up_corner_ph { ZERO };
         for (auto d { 0 }; d < (short)D; ++d) {
           low_corner_cu[d] = (real_t)l_offset_ncells[d];
           up_corner_cu[d]  = (real_t)(l_offset_ncells[d] + l_ncells[d]);
@@ -318,24 +339,29 @@ namespace ntt {
             auto dir = direction[d];
             if ((dir == -1) && (current_offset[d] == 0)) {
               neighbor_offset[d] = m_global_ndomains_per_dim[d] - 1;
-            } else if ((dir == 1) && (current_offset[d] == m_global_ndomains_per_dim[d] - 1)) {
+            } else if ((dir == 1) &&
+                       (current_offset[d] == m_global_ndomains_per_dim[d] - 1)) {
               neighbor_offset[d] = 0;
             } else {
               neighbor_offset[d] += dir;
             }
-            if ((dir == -1) && (domains[index].boundaries()[d][0] != BoundaryCondition::COMM)
-                && (domains[index].boundaries()[d][0] != BoundaryCondition::PERIODIC)) {
+            if ((dir == -1) &&
+                (domains[index].boundaries()[d][0] != BoundaryCondition::COMM) &&
+                (domains[index].boundaries()[d][0] != BoundaryCondition::PERIODIC)) {
               no_neighbor = true;
             }
-            if ((dir == 1) && (domains[index].boundaries()[d][1] != BoundaryCondition::COMM)
-                && (domains[index].boundaries()[d][1] != BoundaryCondition::PERIODIC)) {
+            if ((dir == 1) &&
+                (domains[index].boundaries()[d][1] != BoundaryCondition::COMM) &&
+                (domains[index].boundaries()[d][1] != BoundaryCondition::PERIODIC)) {
               no_neighbor = true;
             }
           }
-          domains[index].setBoundary(
-            direction, no_neighbor ? BoundaryCondition::UNDEFINED : BoundaryCondition::COMM);
+          domains[index].setBoundary(direction,
+                                     no_neighbor ? BoundaryCondition::UNDEFINED
+                                                 : BoundaryCondition::COMM);
           domains[index].assignNeighbor(
-            direction, no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
+            direction,
+            no_neighbor ? nullptr : &domains[offset2index(neighbor_offset)]);
         }
       }
       m_smallest_cell_size = m_global_metric.dxMin();
@@ -346,7 +372,8 @@ namespace ntt {
       m_fiducial_cell_volume = m_global_metric.sqrt_det_h(x_corner);
       // sanity check
       NTTHostErrorIf(
-        !AlmostEqual(m_fiducial_cell_volume, domains[0].metric().sqrt_det_h(x_corner)),
+        !AlmostEqual(m_fiducial_cell_volume,
+                     domains[0].metric().sqrt_det_h(x_corner)),
         fmt::format("fiducial cell volume is not the same across all domains: "
                     "{:.6e} != {:.6e}",
                     m_fiducial_cell_volume,
@@ -364,8 +391,9 @@ namespace ntt {
                     mpi_get_type<real_t>(),
                     MPI_COMM_WORLD);
       for (const auto& sz : smallest_cell_sizes) {
-        NTTHostErrorIf(!AlmostEqual(sz, m_smallest_cell_size),
-                       "smallest cell size is not the same across all MPI ranks");
+        NTTHostErrorIf(
+          !AlmostEqual(sz, m_smallest_cell_size),
+          "smallest cell size is not the same across all MPI ranks");
       }
 
 #endif
@@ -375,7 +403,8 @@ namespace ntt {
       return &(domains[index]);
     }
 
-    auto domainByOffset(const std::vector<unsigned int>& d) const -> const Domain<D>* {
+    auto domainByOffset(const std::vector<unsigned int>& d) const
+      -> const Domain<D>* {
       return domainByIndex(offset2index(d));
     }
 
@@ -391,67 +420,80 @@ namespace ntt {
       // !MULTIDOMAIN: this has to be more general
 #if defined(MPI_ENABLED)
       return domainByIndex(m_mpirank);
-#else     // not MPI_ENABLED
+#else  // not MPI_ENABLED
       return domainByIndex(0);
-#endif    // MPI_ENABLED
+#endif // MPI_ENABLED
     }
 
     /**
      * Getters
      */
 
-    [[nodiscard]] auto globalNcells() const -> const std::vector<unsigned int>& {
+    [[nodiscard]]
+    auto globalNcells() const -> const std::vector<unsigned int>& {
       return m_global_ncells;
     }
 
-    [[nodiscard]] auto globalExtent() const -> const std::vector<real_t>& {
+    [[nodiscard]]
+    auto globalExtent() const -> const std::vector<real_t>& {
       return m_global_extent;
     }
 
-    [[nodiscard]] auto globalNdomains() const -> unsigned int {
+    [[nodiscard]]
+    auto globalNdomains() const -> unsigned int {
       return m_global_ndomains;
     }
 
-    [[nodiscard]] auto globalNdomainsPerDim() const -> const std::vector<unsigned int>& {
+    [[nodiscard]]
+    auto globalNdomainsPerDim() const -> const std::vector<unsigned int>& {
       return m_global_ndomains_per_dim;
     }
 
-    [[nodiscard]] auto domainOffsets() const -> const std::vector<std::vector<unsigned int>>& {
+    [[nodiscard]]
+    auto domainOffsets() const -> const std::vector<std::vector<unsigned int>>& {
       return m_domain_offsets;
     }
 
-    [[nodiscard]] auto domainIndices() const
+    [[nodiscard]]
+    auto domainIndices() const
       -> const std::map<std::vector<unsigned int>, unsigned int>& {
       return m_domain_indices;
     }
 
-    [[nodiscard]] auto globalBoundaries() const
+    [[nodiscard]]
+    auto globalBoundaries() const
       -> const std::vector<std::vector<BoundaryCondition>>& {
       return m_global_boundaries;
     }
 
-    [[nodiscard]] auto globalMetric() const -> const Metric<D>& {
+    [[nodiscard]]
+    auto globalMetric() const -> const Metric<D>& {
       return m_global_metric;
     }
 
-    [[nodiscard]] auto smallestCellSize() const -> real_t {
+    [[nodiscard]]
+    auto smallestCellSize() const -> real_t {
       return m_smallest_cell_size;
     }
-    [[nodiscard]] auto fiducialCellVolume() const -> real_t {
+
+    [[nodiscard]]
+    auto fiducialCellVolume() const -> real_t {
       return m_fiducial_cell_volume;
     }
 
 #if defined(MPI_ENABLED)
-    [[nodiscard]] auto mpiSize() const -> int {
+    [[nodiscard]]
+    auto mpiSize() const -> int {
       return m_mpisize;
     }
 
-    [[nodiscard]] auto mpiRank() const -> int {
+    [[nodiscard]]
+    auto mpiRank() const -> int {
       return m_mpirank;
     }
-#endif    // MPI_ENABLED
+#endif // MPI_ENABLED
   };
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_COMM_METADOMAIN_H
+#endif // FRAMEWORK_COMM_METADOMAIN_H

@@ -14,8 +14,9 @@ namespace ntt {
   Meshblock<D, S>::Meshblock(const std::vector<unsigned int>&    res,
                              const std::vector<real_t>&          ext,
                              const real_t*                       params,
-                             const std::vector<ParticleSpecies>& species)
-    : Mesh<D>(res, ext, params), Fields<D, S>(res) {
+                             const std::vector<ParticleSpecies>& species) :
+    Mesh<D>(res, ext, params),
+    Fields<D, S>(res) {
     for (auto& part : species) {
       particles.emplace_back(part);
     }
@@ -30,13 +31,14 @@ namespace ntt {
     for (auto& species : particles) {
       if constexpr (D == Dim1) {
         NTTHostErrorIf(
-          (species.i2.extent(0) != 0) || (species.i3.extent(0) != 0)
-            || (species.dx2.extent(0) != 0) || (species.dx3.extent(0) != 0)
-            || (species.i2_prev.extent(0) != 0) || (species.i3_prev.extent(0) != 0)
-            || (species.dx2_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
+          (species.i2.extent(0) != 0) || (species.i3.extent(0) != 0) ||
+            (species.dx2.extent(0) != 0) || (species.dx3.extent(0) != 0) ||
+            (species.i2_prev.extent(0) != 0) || (species.i3_prev.extent(0) != 0) ||
+            (species.dx2_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
           "Wrong particle arrays allocated for 1D mesh");
         if constexpr (S == PICEngine) {
-          NTTHostErrorIf((species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0),
+          NTTHostErrorIf((species.i1_prev.extent(0) != 0) ||
+                           (species.dx1_prev.extent(0) != 0),
                          "Wrong particle arrays allocated for 1D mesh PIC");
         }
 #ifdef MINKOWSKI_METRIC
@@ -44,14 +46,15 @@ namespace ntt {
                        "Wrong particle arrays allocated for 1D mesh MINKOWSKI");
 #endif
       } else if constexpr (D == Dim2) {
-        NTTHostErrorIf((species.i3.extent(0) != 0) || (species.dx3.extent(0) != 0)
-                         || (species.i3_prev.extent(0) != 0)
-                         || (species.dx3_prev.extent(0) != 0),
-                       "Wrong particle arrays allocated for 2D mesh");
+        NTTHostErrorIf(
+          (species.i3.extent(0) != 0) || (species.dx3.extent(0) != 0) ||
+            (species.i3_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
+          "Wrong particle arrays allocated for 2D mesh");
         if constexpr (S == PICEngine) {
-          NTTHostErrorIf((species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0)
-                           || (species.i2_prev.extent(0) != 0)
-                           || (species.dx2_prev.extent(0) != 0),
+          NTTHostErrorIf((species.i1_prev.extent(0) != 0) ||
+                           (species.dx1_prev.extent(0) != 0) ||
+                           (species.i2_prev.extent(0) != 0) ||
+                           (species.dx2_prev.extent(0) != 0),
                          "Wrong particle arrays allocated for 2D mesh PIC");
         }
 #ifdef MINKOWSKI_METRIC
@@ -60,11 +63,13 @@ namespace ntt {
 #endif
       } else {
         if constexpr (S == PICEngine) {
-          NTTHostErrorIf(
-            (species.i1_prev.extent(0) != 0) || (species.dx1_prev.extent(0) != 0)
-              || (species.i2_prev.extent(0) != 0) || (species.dx2_prev.extent(0) != 0)
-              || (species.i3_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
-            "Wrong particle arrays allocated for 2D mesh PIC");
+          NTTHostErrorIf((species.i1_prev.extent(0) != 0) ||
+                           (species.dx1_prev.extent(0) != 0) ||
+                           (species.i2_prev.extent(0) != 0) ||
+                           (species.dx2_prev.extent(0) != 0) ||
+                           (species.i3_prev.extent(0) != 0) ||
+                           (species.dx3_prev.extent(0) != 0),
+                         "Wrong particle arrays allocated for 2D mesh PIC");
         }
 #ifdef MINKOWSKI_METRIC
         NTTHostErrorIf(species.phi.extent(0) != 0,
@@ -73,4 +78,4 @@ namespace ntt {
       }
     }
   }
-}    // namespace ntt
+} // namespace ntt

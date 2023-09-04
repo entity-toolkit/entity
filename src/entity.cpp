@@ -8,19 +8,19 @@
  */
 #if defined(SANDBOX_ENGINE)
 
-#  include "sandbox.h"
+  #include "sandbox.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::SANDBOX<D>;
 
 #elif defined(PIC_ENGINE)
 
-#  include "pic.h"
+  #include "pic.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::PIC<D>;
 
 #elif defined(GRPIC_ENGINE)
 
-#  include "grpic.h"
+  #include "grpic.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::GRPIC<D>;
 
@@ -43,10 +43,13 @@ auto main(int argc, char* argv[]) -> int {
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
-    auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
+    auto inputfilename = cl_args.getArgument("-input",
+                                             ntt::defaults::input_filename);
     auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
-    auto log_level     = ntt::readFromInput<std::string>(
-      inputdata, "diagnostics", "log_level", ntt::defaults::log_level);
+    auto log_level     = ntt::readFromInput<std::string>(inputdata,
+                                                     "diagnostics",
+                                                     "log_level",
+                                                     ntt::defaults::log_level);
     plog::Severity log_level_enum { plog::info };
     if (log_level == "DEBUG") {
       log_level_enum = plog::verbose;
@@ -58,14 +61,18 @@ auto main(int argc, char* argv[]) -> int {
       log_level_enum = plog::error;
     }
 
-    auto sim_title = ntt::readFromInput<std::string>(
-      inputdata, "simulation", "title", ntt::defaults::title);
+    auto sim_title     = ntt::readFromInput<std::string>(inputdata,
+                                                     "simulation",
+                                                     "title",
+                                                     ntt::defaults::title);
     auto logfile_name  = sim_title + ".log";
     auto infofile_name = sim_title + ".info";
     std::remove(logfile_name.c_str());
     std::remove(infofile_name.c_str());
-    plog::RollingFileAppender<plog::TxtFormatter>     logfileAppender(logfile_name.c_str());
-    plog::RollingFileAppender<plog::Nt2InfoFormatter> infofileAppender(infofile_name.c_str());
+    plog::RollingFileAppender<plog::TxtFormatter> logfileAppender(
+      logfile_name.c_str());
+    plog::RollingFileAppender<plog::Nt2InfoFormatter> infofileAppender(
+      infofile_name.c_str());
     plog::init<ntt::LogFile>(log_level_enum, &logfileAppender);
     plog::init<ntt::InfoFile>(plog::verbose, &infofileAppender);
 

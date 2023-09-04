@@ -1,20 +1,20 @@
 #ifndef MPI_ENABLED
-#  include "wrapper.h"
+  #include "wrapper.h"
 
-#  include "simulation.h"
+  #include "simulation.h"
 
-#  include "meshblock/fields.h"
-#  include "meshblock/meshblock.h"
+  #include "meshblock/fields.h"
+  #include "meshblock/meshblock.h"
 
-#  include <vector>
+  #include <vector>
 
 namespace ntt {
 
   /* -------------------------------------------------------------------------- */
-  /*                    Single meshblock self-communications                    */
+  /*                    Single meshblock self-communications */
   /* -------------------------------------------------------------------------- */
 
-#  ifdef MINKOWSKI_METRIC
+  #ifdef MINKOWSKI_METRIC
 
   // helper function
   template <Dimension D, int N>
@@ -42,14 +42,15 @@ namespace ntt {
     if constexpr (S == GRPICEngine) {
       NTTHostError("Wrong communicate call");
     }
-    NTTHostErrorIf((comm == Comm_None), "Communicate called with Comm_None");
+    NTTHostErrorIf(comm == Comm_None, "Communicate called with Comm_None");
     for (auto& bcs : mblock.boundaries) {
       for (auto& bc : bcs) {
-        NTTHostErrorIf((bc != BoundaryCondition::PERIODIC),
+        NTTHostErrorIf(bc != BoundaryCondition::PERIODIC,
                        "Minkowski only supports periodic boundaries");
       }
     }
-    NTTHostErrorIf((comm & Comm_D) || (comm & Comm_H) || (comm & Comm_D0) || (comm & Comm_B0),
+    NTTHostErrorIf((comm & Comm_D) || (comm & Comm_H) || (comm & Comm_D0) ||
+                     (comm & Comm_B0),
                    "SR only supports E, B, J, and particles in Communicate");
 
     if ((comm & Comm_E) || (comm & Comm_B) || (comm & Comm_J)) {
@@ -95,7 +96,8 @@ namespace ntt {
       }
     }
     if (comm & Comm_Prtl) {
-      if ((params()->shuffleInterval() > 0) && (tstep() % params()->shuffleInterval() == 0)) {
+      if ((params()->shuffleInterval() > 0) &&
+          (tstep() % params()->shuffleInterval() == 0)) {
         for (auto& species : mblock.particles) {
           species.ReshuffleByTags(true);
         }
@@ -104,12 +106,13 @@ namespace ntt {
     NTTLog();
   }
 
-#  else     // not MINKOWSKI_METRIC
+  #else  // not MINKOWSKI_METRIC
 
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Communicate(CommTags comm) {
     if (comm & Comm_Prtl) {
-      if ((params()->shuffleInterval() > 0) && (tstep() % params()->shuffleInterval() == 0)) {
+      if ((params()->shuffleInterval() > 0) &&
+          (tstep() % params()->shuffleInterval() == 0)) {
         for (auto& species : this->meshblock.particles) {
           species.ReshuffleByTags(true);
         }
@@ -117,40 +120,46 @@ namespace ntt {
     }
     NTTLog();
   }
-#  endif    // MINKOWSKI_METRIC
+  #endif // MINKOWSKI_METRIC
 
-}    // namespace ntt
+} // namespace ntt
 
-#  ifdef MINKOWSKI_METRIC
-template void ntt::CommunicateField<ntt::Dim1, 3>(const ntt::ndfield_t<ntt::Dim1, 3>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+  #ifdef MINKOWSKI_METRIC
+template void ntt::CommunicateField<ntt::Dim1, 3>(
+  const ntt::ndfield_t<ntt::Dim1, 3>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim2, 3>(const ntt::ndfield_t<ntt::Dim2, 3>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim2, 3>(
+  const ntt::ndfield_t<ntt::Dim2, 3>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim3, 3>(const ntt::ndfield_t<ntt::Dim3, 3>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim3, 3>(
+  const ntt::ndfield_t<ntt::Dim3, 3>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim1, 6>(const ntt::ndfield_t<ntt::Dim1, 6>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim1, 6>(
+  const ntt::ndfield_t<ntt::Dim1, 6>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim2, 6>(const ntt::ndfield_t<ntt::Dim2, 6>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
+template void ntt::CommunicateField<ntt::Dim2, 6>(
+  const ntt::ndfield_t<ntt::Dim2, 6>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
 
-template void ntt::CommunicateField<ntt::Dim3, 6>(const ntt::ndfield_t<ntt::Dim3, 6>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const std::vector<ntt::range_tuple_t>&,
-                                                  const ntt::range_tuple_t&);
-#  endif
+template void ntt::CommunicateField<ntt::Dim3, 6>(
+  const ntt::ndfield_t<ntt::Dim3, 6>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&,
+  const ntt::range_tuple_t&);
+  #endif
 
-#endif    // MPI_ENABLED
+#endif // MPI_ENABLED

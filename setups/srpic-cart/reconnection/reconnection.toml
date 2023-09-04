@@ -1,0 +1,42 @@
+[simulation]
+title   = "Reconnection"
+runtime = 5.0
+
+[domain]
+resolution = [2048, 2048]
+extent     = [-0.5, 0.5, -0.5, 0.5]
+boundaries = [["PERIODIC"], ["PERIODIC"]]
+
+[algorithm]
+CFL             = 0.9
+current_filters = 8
+
+[units]
+ppc0       = 8.0
+larmor0    = 0.00125
+skindepth0 = 0.00375
+
+[particles]
+n_species        = 2
+shuffle_interval = 0
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e8
+
+[problem]
+cs_width    = 0.01875
+cs_overdens = 3.0
+
+[output]
+fields        = ["E", "B", "Rho", "T00"]
+format        = "HDF5"
+interval_time = 0.01

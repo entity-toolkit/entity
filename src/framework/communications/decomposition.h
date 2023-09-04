@@ -25,7 +25,8 @@ namespace ntt {
       }
       auto sum = std::accumulate(ncells_domain.begin(), ncells_domain.end(), 0);
       NTTHostErrorIf(sum != (int)ncells, "Decomposition error: sum != ncells");
-      NTTHostErrorIf(ncells_domain.size() != ndomains, "Decomposition error: size != ndomains");
+      NTTHostErrorIf(ncells_domain.size() != ndomains,
+                     "Decomposition error: size != ndomains");
       return ncells_domain;
     }
 
@@ -66,8 +67,8 @@ namespace ntt {
                                const unsigned int& s2,
                                const unsigned int& s3)
       -> std::tuple<unsigned int, unsigned int, unsigned int> {
-      auto n1
-        = (unsigned int)(std::cbrt((double)ntot * (double)(SQR(s1)) / (double)(s2 * s3)));
+      auto n1 = (unsigned int)(std::cbrt(
+        (double)ntot * (double)(SQR(s1)) / (double)(s2 * s3)));
       if (n1 > ntot) {
         return { ntot, 1, 1 };
       } else {
@@ -83,7 +84,7 @@ namespace ntt {
         return { n1, n2, n3 };
       }
     }
-  }    // anonymous namespace
+  } // anonymous namespace
 
   /**
    * @brief Decompose a domain into ndomains domains
@@ -91,8 +92,8 @@ namespace ntt {
    * @param ncells Number of cells in each dimension
    * @param decomposition Number of domains in each dimension
    *
-   * @return A vector of vectors containing the number of cells in each domain in each
-   * dimension
+   * @return A vector of vectors containing the number of cells in each domain
+   * in each dimension
    *
    * @note If decomposition is empty, the domain is decomposed automatically
    */
@@ -109,13 +110,16 @@ namespace ntt {
                    "Decomposition error: decomposition.size() != dimension");
     NTTHostErrorIf(ndomains == 0, "Decomposition error: ndomains == 0");
     NTTHostErrorIf(
-      !auto_decompose
-        && std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<>())
-             != (int)ndomains,
-      fmt::format(
-        "Decomposition error: sum(decomposition) != ndomains {} {}",
-        std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<>()),
-        (int)ndomains));
+      !auto_decompose && std::accumulate(decomposition.begin(),
+                                         decomposition.end(),
+                                         1,
+                                         std::multiplies<>()) != (int)ndomains,
+      fmt::format("Decomposition error: sum(decomposition) != ndomains {} {}",
+                  std::accumulate(decomposition.begin(),
+                                  decomposition.end(),
+                                  1,
+                                  std::multiplies<>()),
+                  (int)ndomains));
     if (dimension == 1) {
       return { decompose1D(ndomains, ncells[0]) };
     } else if (dimension == 2) {
@@ -128,7 +132,10 @@ namespace ntt {
       }
     } else {
       if (auto_decompose) {
-        auto [n1, n2, n3] = divideInProportions3D(ndomains, ncells[0], ncells[1], ncells[2]);
+        auto [n1, n2, n3] = divideInProportions3D(ndomains,
+                                                  ncells[0],
+                                                  ncells[1],
+                                                  ncells[2]);
         return { decompose1D(n1, ncells[0]),
                  decompose1D(n2, ncells[1]),
                  decompose1D(n3, ncells[2]) };
@@ -139,6 +146,6 @@ namespace ntt {
       }
     }
   }
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_COMM_DECOMPOSITION_H
+#endif // FRAMEWORK_COMM_DECOMPOSITION_H

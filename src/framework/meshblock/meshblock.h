@@ -22,8 +22,17 @@ namespace ntt {
       PrepareOutput_ConvertToPhysCntrv          = 1 << 3,
       PrepareOutput_ConvertToPhysCov            = 1 << 4,
     };
-  }    // namespace
+
+    enum CheckNaNFlags_ {
+      CheckNaN_None      = 0,
+      CheckNaN_Particles = 1 << 0,
+      CheckNaN_Fields    = 1 << 1,
+      CheckNaN_Currents  = 1 << 2,
+    };
+  } // namespace
+
   typedef int PrepareOutputFlags;
+  typedef int CheckNaNFlags;
 
   /**
    * @brief Container for the fields, particles and coordinate system.
@@ -31,7 +40,8 @@ namespace ntt {
    * @tparam S Simulation engine.
    */
   template <Dimension D, SimulationEngine S>
-  class Meshblock : public Mesh<D>, public Fields<D, S> {
+  class Meshblock : public Mesh<D>,
+                    public Fields<D, S> {
   private:
     // Timestep duration in physical units defined at the meshblock.
     real_t m_timestep;
@@ -59,13 +69,16 @@ namespace ntt {
     /**
      * @brief Get the timestep.
      */
-    [[nodiscard]] auto timestep() const -> real_t {
+    [[nodiscard]]
+    auto timestep() const -> real_t {
       return m_timestep;
     }
+
     /**
      * @brief Get the minimum cell size.
      */
-    [[nodiscard]] auto minCellSize() const -> real_t {
+    [[nodiscard]]
+    auto minCellSize() const -> real_t {
       return this->metric.dxMin();
     }
 
@@ -125,7 +138,9 @@ namespace ntt {
                         const std::vector<int>& prtl_species,
                         int                     buff_ind,
                         short                   window = 2);
+
+    void CheckNaNs(const std::string&, CheckNaNFlags);
   };
-}    // namespace ntt
+} // namespace ntt
 
 #endif

@@ -54,11 +54,11 @@ namespace ntt {
   template <Dimension D>
   void PIC<D>::StepForward(const DiagFlags diag_flags) {
     NTTLog();
-    const auto                      params     = *(this->params());
-    const auto                      metadomain = *(this->metadomain());
-    auto&                           mblock     = this->meshblock;
-    auto&                           wrtr       = this->writer;
-    auto&                           pgen       = this->problem_generator;
+    const auto params     = *(this->params());
+    const auto metadomain = *(this->metadomain());
+    auto&      mblock     = this->meshblock;
+    auto&      wrtr       = this->writer;
+    auto&      pgen       = this->problem_generator;
 
     timer::Timers                   timers({ "FieldSolver",
                                              "FieldBoundaries",
@@ -73,64 +73,77 @@ namespace ntt {
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
       Faraday();
+      // mblock.CheckNaNs("After 1st Faraday", CheckNaN_Fields);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
       this->Communicate(Comm_E);
       FieldsBoundaryConditions();
+      mblock.CheckNaNs("After 1st Fields BC", CheckNaN_Fields);
       timers.stop("FieldBoundaries");
     }
 
     {
       timers.start("ParticlePusher");
       ParticlesPush();
+      mblock.CheckNaNs("After Push", CheckNaN_Particles);
       timers.stop("ParticlePusher");
 
       timers.start("UserSpecific");
       pgen.UserDriveParticles(this->m_time, params, mblock);
+      mblock.CheckNaNs("After Drive", CheckNaN_Particles);
       timers.stop("UserSpecific");
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
         CurrentsDeposit();
+        mblock.CheckNaNs("After Deposit", CheckNaN_Currents);
 
         timers.start("FieldBoundaries");
         this->CurrentsSynchronize();
         this->Communicate(Comm_J);
         CurrentsBoundaryConditions();
+        mblock.CheckNaNs("After Currents BC", CheckNaN_Currents);
         timers.stop("FieldBoundaries");
 
         CurrentsFilter();
+        mblock.CheckNaNs("After Currents Filter", CheckNaN_Currents);
         timers.stop("CurrentDeposit");
       }
 
       timers.start("ParticleBoundaries");
       this->ParticlesBoundaryConditions();
       this->Communicate(Comm_Prtl);
+      mblock.CheckNaNs("After Prtls BC", CheckNaN_Particles);
       timers.stop("ParticleBoundaries");
     }
 
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
       Faraday();
+      // mblock.CheckNaNs("After 2nd Faraday", CheckNaN_Fields);
       timers.stop("FieldSolver");
 
       timers.start("FieldBoundaries");
       this->Communicate(Comm_B);
       FieldsBoundaryConditions();
+      mblock.CheckNaNs("After 2nd Fields BC", CheckNaN_Fields);
       timers.stop("FieldBoundaries");
 
       timers.start("FieldSolver");
       Ampere();
+      mblock.CheckNaNs("After Ampere", CheckNaN_Fields);
       timers.stop("FieldSolver");
 
       if (params.depositEnabled()) {
         AmpereCurrents();
+        mblock.CheckNaNs("After Ampere Currents", CheckNaN_Fields);
       }
 
       timers.start("FieldBoundaries");
       this->Communicate(Comm_E);
       FieldsBoundaryConditions();
+      mblock.CheckNaNs("After 3rd Fields BC", CheckNaN_Fields);
       timers.stop("FieldBoundaries");
     }
 
@@ -138,7 +151,11 @@ namespace ntt {
     wrtr.WriteAll(params, metadomain, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");
 
-    this->PrintDiagnostics(this->m_tstep, this->m_time, timers, tstep_durations, diag_flags);
+    this->PrintDiagnostics(this->m_tstep,
+                           this->m_time,
+                           timers,
+                           tstep_durations,
+                           diag_flags);
 
     this->m_time += mblock.timestep();
     pgen.setTime(this->m_time);
@@ -147,7 +164,7 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::StepBackward() {}
-}    // namespace ntt
+} // namespace ntt
 
 template class ntt::PIC<ntt::Dim1>;
 template class ntt::PIC<ntt::Dim2>;

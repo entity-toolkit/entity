@@ -29,6 +29,7 @@ Inline void x_Code2Cart(const coord_t<D>& xi, coord_t<D>& x) const {
     x[2] = x_sph[0] * math::cos(x_sph[1]);
   }
 }
+
 /**
  * Coordinate conversion from Cartesian physical units to code units.
  *
@@ -53,4 +54,4 @@ Inline void x_Cart2Code(const coord_t<D>& x, coord_t<D>& xi) const {
   }
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_X_CODE_CART_FORGSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_X_CODE_CART_FORGSPH_H

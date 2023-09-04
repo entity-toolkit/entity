@@ -14,22 +14,22 @@
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>
-  Simulation<D, S>::Simulation(const toml::value& inputdata)
-    : m_params { inputdata, D },
-      m_metadomain { m_params.resolution(),
-                     m_params.extent(),
-                     m_params.domaindecomposition(),
-                     m_params.metricParameters(),
-                     m_params.boundaries() },
-      meshblock { m_metadomain.localDomain()->ncells(),
-                  m_metadomain.localDomain()->extent(),
-                  m_params.metricParameters(),
-                  m_params.species() },
-      writer {},
+  Simulation<D, S>::Simulation(const toml::value& inputdata) :
+    m_params { inputdata, D },
+    m_metadomain { m_params.resolution(),
+                   m_params.extent(),
+                   m_params.domaindecomposition(),
+                   m_params.metricParameters(),
+                   m_params.boundaries() },
+    meshblock { m_metadomain.localDomain()->ncells(),
+                m_metadomain.localDomain()->extent(),
+                m_params.metricParameters(),
+                m_params.species() },
+    writer {},
 #ifdef MPI_ENABLED
-      random_pool { constant::RandomSeed + m_metadomain.localDomain()->mpiRank() }
+    random_pool { constant::RandomSeed + m_metadomain.localDomain()->mpiRank() }
 #else
-      random_pool { constant::RandomSeed }
+    random_pool { constant::RandomSeed }
 #endif
   {
     meshblock.random_pool_ptr = &random_pool;
@@ -44,14 +44,14 @@ namespace ntt {
     } else {
       meshblock.setTimestep(m_params.dt());
     }
-    NTTHostErrorIf(meshblock.timestep() <= ZERO,
-                   "Timestep is zero or negative. Check CFL condition and/or min cell size.");
+    NTTHostErrorIf(meshblock.timestep() <= ZERO, "Timestep is zero or negative. Check CFL condition and/or min cell size.");
 
     // initialize writer
     writer.Initialize(m_params, m_metadomain, meshblock);
 
     WaitAndSynchronize();
   }
+
   template <Dimension D, SimulationEngine S>
   Simulation<D, S>::~Simulation() {
     writer.Finalize();
@@ -95,8 +95,8 @@ namespace ntt {
 
     std::string ext { "" };
     for (auto i { 0 }; i < (int)(m_params.extent().size()); i += 2) {
-      ext += "{" + std::to_string(m_params.extent()[i]) + ", "
-             + std::to_string(m_params.extent()[i + 1]) + "} ";
+      ext += "{" + std::to_string(m_params.extent()[i]) + ", " +
+             std::to_string(m_params.extent()[i + 1]) + "} ";
     }
 
     std::string cell { "" };
@@ -107,8 +107,8 @@ namespace ntt {
       << "Entity v" << ENTITY_VERSION << "\n"
       << "============================================================\n\n"
       << "[Simulation parameters]\n"
-      << std::setw(42) << std::setfill('.') << std::left << "  title:" << m_params.title()
-      << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  title:" << m_params.title() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  engine:" << stringizeSimulationEngine(S) << "\n"
       << std::setw(42) << std::setfill('.') << std::left
@@ -117,17 +117,21 @@ namespace ntt {
       << "  CFL:" << meshblock.timestep() / meshblock.minCellSize() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  total runtime:" << m_params.totalRuntime() << " ["
-      << static_cast<int>(m_params.totalRuntime() / meshblock.timestep()) << " steps]\n"
+      << static_cast<int>(m_params.totalRuntime() / meshblock.timestep())
+      << " steps]\n"
       << "[domain]\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  dimension:" << static_cast<short>(D) << "D\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  metric:" << (meshblock.metric.label) << "\n"
-      << std::setw(42) << std::setfill('.') << std::left << "  boundary conditions:" << bc
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  boundary conditions:" << bc << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  resolution:" << res << "\n"
+      << std::setw(42) << std::setfill('.') << std::left << "  extent:" << ext
       << "\n"
-      << std::setw(42) << std::setfill('.') << std::left << "  resolution:" << res << "\n"
-      << std::setw(42) << std::setfill('.') << std::left << "  extent:" << ext << "\n"
-      << std::setw(42) << std::setfill('.') << std::left << "  cell size:" << cell << "\n"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  cell size:" << cell << "\n"
       << "[fiducial parameters]\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  particles per cell [ppc0]:" << m_params.ppc0() << "\n"
@@ -135,12 +139,13 @@ namespace ntt {
       << "  Larmor radius [rho0]:" << m_params.larmor0() << " ["
       << m_params.larmor0() / meshblock.minCellSize() << " cells]\n"
       << std::setw(42) << std::setfill('.') << std::left
-      << "  Larmor frequency [omegaB0 * dt]:" << meshblock.timestep() / m_params.larmor0()
-      << "\n"
+      << "  Larmor frequency [omegaB0 * dt]:"
+      << meshblock.timestep() / m_params.larmor0() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  skin depth [d0]:" << m_params.skindepth0() << " ["
       << m_params.skindepth0() / meshblock.minCellSize() << " cells]\n"
-      << std::setw(42) << std::setfill('.') << std::left << "  plasma frequency [omp0 * dt]:"
+      << std::setw(42) << std::setfill('.') << std::left
+      << "  plasma frequency [omp0 * dt]:"
       << (ONE / m_params.skindepth0()) * meshblock.timestep() << "\n"
       << std::setw(42) << std::setfill('.') << std::left
       << "  magnetization [sigma0]:" << m_params.sigma0();
@@ -149,18 +154,19 @@ namespace ntt {
       PLOGN_(InfoFile) << "[particles]";
       int i { 0 };
       for (auto& species : meshblock.particles) {
-        PLOGN_(InfoFile)
-          << "  [species #" << i + 1 << "]\n"
-          << std::setw(42) << std::setfill('.') << std::left
-          << "    label: " << species.label() << "\n"
-          << std::setw(42) << std::setfill('.') << std::left << "    mass: " << species.mass()
-          << "\n"
-          << std::setw(42) << std::setfill('.') << std::left
-          << "    charge: " << species.charge() << "\n"
-          << std::setw(42) << std::setfill('.') << std::left
-          << "    pusher: " << stringizeParticlePusher(species.pusher()) << "\n"
-          << std::setw(42) << std::setfill('.') << std::left
-          << "    maxnpart: " << species.maxnpart() << " (active: " << species.npart() << ")";
+        PLOGN_(InfoFile) << "  [species #" << i + 1 << "]\n"
+                         << std::setw(42) << std::setfill('.') << std::left
+                         << "    label: " << species.label() << "\n"
+                         << std::setw(42) << std::setfill('.') << std::left
+                         << "    mass: " << species.mass() << "\n"
+                         << std::setw(42) << std::setfill('.') << std::left
+                         << "    charge: " << species.charge() << "\n"
+                         << std::setw(42) << std::setfill('.') << std::left
+                         << "    pusher: "
+                         << stringizeParticlePusher(species.pusher()) << "\n"
+                         << std::setw(42) << std::setfill('.') << std::left
+                         << "    maxnpart: " << species.maxnpart()
+                         << " (active: " << species.npart() << ")";
         ++i;
       }
     } else {
@@ -179,12 +185,12 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  auto Simulation<D, S>::PrintDiagnostics(const std::size_t&        step,
-                                          const real_t&             time,
-                                          const timer::Timers&      timers,
+  auto Simulation<D, S>::PrintDiagnostics(const std::size_t&   step,
+                                          const real_t&        time,
+                                          const timer::Timers& timers,
                                           std::vector<long double>& tstep_durations,
-                                          const DiagFlags           diag_flags,
-                                          std::ostream&             os) -> void {
+                                          const DiagFlags diag_flags,
+                                          std::ostream&   os) -> void {
     tstep_durations.push_back(timers.get("Total"));
 #if defined(MPI_ENABLED)
     if (metadomain()->localDomain()->mpiRank() != 0) {
@@ -192,8 +198,8 @@ namespace ntt {
     }
 #endif
     if (step % m_params.diagInterval() == 0) {
-      const auto title { "time = " + std::to_string(time)
-                         + " : step = " + std::to_string(step) };
+      const auto title { "time = " + std::to_string(time) +
+                         " : step = " + std::to_string(step) };
       if (diag_flags & DiagFlags_Timers) {
         timers.printAll(title);
       } else {
@@ -203,7 +209,8 @@ namespace ntt {
         for (std::size_t i { 0 }; i < meshblock.particles.size(); ++i) {
           auto& species { meshblock.particles[i] };
           os << "species #" << i << ": " << species.npart() << " ("
-             << (double)(species.npart()) * 100 / (double)(species.maxnpart()) << "%)\n";
+             << (double)(species.npart()) * 100 / (double)(species.maxnpart())
+             << "%)\n";
         }
       }
       if (diag_flags & DiagFlags_Progress) {
@@ -214,4 +221,4 @@ namespace ntt {
     }
   }
 
-}    // namespace ntt
+} // namespace ntt

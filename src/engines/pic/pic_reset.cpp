@@ -76,7 +76,7 @@ namespace ntt {
     Kokkos::deep_copy(mblock.cur, ZERO);
     Kokkos::deep_copy(mblock.buff, ZERO);
   }
-}    // namespace ntt
+} // namespace ntt
 
 template void ntt::PIC<ntt::Dim1>::ResetParticles();
 template void ntt::PIC<ntt::Dim2>::ResetParticles();

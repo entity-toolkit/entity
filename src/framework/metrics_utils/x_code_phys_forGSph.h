@@ -27,4 +27,4 @@ Inline void x_Phys2Code(const coord_t<D>& x, coord_t<D>& xi) const {
   this->x_Sph2Code(x, xi);
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_X_CODE_PHYS_FORGSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_X_CODE_PHYS_FORGSPH_H

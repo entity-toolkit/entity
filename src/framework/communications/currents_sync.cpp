@@ -6,14 +6,14 @@
 #include "meshblock/meshblock.h"
 
 #ifdef MPI_ENABLED
-#  include <mpi.h>
+  #include <mpi.h>
 #endif
 
 namespace ntt {
 #ifndef MPI_ENABLED
   // Single meshblock self-synchronization of currents
 
-#  ifdef MINKOWSKI_METRIC
+  #ifdef MINKOWSKI_METRIC
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::CurrentsSynchronize() {
     auto& mblock = this->meshblock;
@@ -40,7 +40,7 @@ namespace ntt {
             range_max[d] = mblock.i_max(d);
           }
         }
-        auto        range = CreateRangePolicy<D>(range_min, range_max);
+        auto range = CreateRangePolicy<D>(range_min, range_max);
 
         std::size_t I1L1 { 0 }, I1L2 { 0 }, I1R1 { 0 }, I1R2 { 0 };
         std::size_t I2L1 { 0 }, I2L2 { 0 }, I2R1 { 0 }, I2R2 { 0 };
@@ -84,8 +84,10 @@ namespace ntt {
         }
         if constexpr (D == Dim1) {
           Kokkos::parallel_for(
-            "CurrentsSynchronize", range, Lambda(index_t i1) {
-#    pragma unroll
+            "CurrentsSynchronize",
+            range,
+            Lambda(index_t i1) {
+    #pragma unroll
               for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
                 mblock.cur(I1L1 + i1, comp) += mblock.cur(I1R1 + i1, comp);
                 mblock.cur(I1L2 + i1, comp) += mblock.cur(I1R2 + i1, comp);
@@ -93,38 +95,44 @@ namespace ntt {
             });
         } else if constexpr (D == Dim2) {
           Kokkos::parallel_for(
-            "CurrentsSynchronize", range, Lambda(index_t i1, index_t i2) {
-#    pragma unroll
+            "CurrentsSynchronize",
+            range,
+            Lambda(index_t i1, index_t i2) {
+    #pragma unroll
               for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
-                mblock.cur(I1L1 + i1, I2L1 + i2, comp)
-                  += mblock.cur(I1R1 + i1, I2R1 + i2, comp);
-                mblock.cur(I1L2 + i1, I2L2 + i2, comp)
-                  += mblock.cur(I1R2 + i1, I2R2 + i2, comp);
+                mblock.cur(I1L1 + i1, I2L1 + i2, comp) += mblock.cur(I1R1 + i1,
+                                                                     I2R1 + i2,
+                                                                     comp);
+                mblock.cur(I1L2 + i1, I2L2 + i2, comp) += mblock.cur(I1R2 + i1,
+                                                                     I2R2 + i2,
+                                                                     comp);
               }
             });
         } else if constexpr (D == Dim3) {
           Kokkos::parallel_for(
-            "CurrentsSynchronize", range, Lambda(index_t i1, index_t i2, index_t i3) {
-#    pragma unroll
+            "CurrentsSynchronize",
+            range,
+            Lambda(index_t i1, index_t i2, index_t i3) {
+    #pragma unroll
               for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
-                mblock.cur(I1L1 + i1, I2L1 + i2, I3L1 + i3, comp)
-                  += mblock.cur(I1R1 + i1, I2R1 + i2, I3R1 + i3, comp);
-                mblock.cur(I1L2 + i1, I2L2 + i2, I3L2 + i3, comp)
-                  += mblock.cur(I1R2 + i1, I2R2 + i2, I3R2 + i3, comp);
+                mblock.cur(I1L1 + i1, I2L1 + i2, I3L1 + i3, comp) +=
+                  mblock.cur(I1R1 + i1, I2R1 + i2, I3R1 + i3, comp);
+                mblock.cur(I1L2 + i1, I2L2 + i2, I3L2 + i3, comp) +=
+                  mblock.cur(I1R2 + i1, I2R2 + i2, I3R2 + i3, comp);
               }
             });
         }
       }
     }
   }
-#  else     // not MINKOWSKI_METRIC
+  #else // not MINKOWSKI_METRIC
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::CurrentsSynchronize() {
     // no cross-meshblock current synchronization necessary
   }
 
-#  endif    // MINKOWSKI_METRIC
+  #endif // MINKOWSKI_METRIC
 
-#endif      // MPI_ENABLED
+#endif // MPI_ENABLED
 
-}    // namespace ntt
+} // namespace ntt

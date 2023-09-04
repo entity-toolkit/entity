@@ -13,8 +13,8 @@ namespace ntt {
    */
   template <Dimension D>
   void GRPIC<D>::AmpereCurrents(const gr_ampere& g) {
-    auto&      mblock = this->meshblock;
-    auto       params = *(this->params());
+    auto& mblock = this->meshblock;
+    auto  params = *(this->params());
 
     const auto dt     = mblock.timestep();
     const auto rho0   = params.larmor0();
@@ -30,16 +30,18 @@ namespace ntt {
       range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
                                       { mblock.i1_max(), mblock.i2_max() });
     } else if constexpr (D == Dim3) {
-      range
-        = CreateRangePolicy<Dim3>({ mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
-                                  { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
+      range = CreateRangePolicy<Dim3>(
+        { mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
+        { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
     }
-    auto range_pole { CreateRangePolicy<Dim1>({ mblock.i1_min() }, { mblock.i1_max() }) };
+    auto range_pole { CreateRangePolicy<Dim1>({ mblock.i1_min() },
+                                              { mblock.i1_max() }) };
 
     if (g == gr_ampere::aux) {
       // D0(n-1/2) -> (J(n)) -> D0(n+1/2)
-      Kokkos::parallel_for(
-        "AmpereCurrentsAux-1", range, CurrentsAmpereAux_kernel<D>(mblock, coeff));
+      Kokkos::parallel_for("AmpereCurrentsAux-1",
+                           range,
+                           CurrentsAmpereAux_kernel<D>(mblock, coeff));
       if constexpr (D == Dim2) {
         Kokkos::parallel_for("AmpereCurrentsAux-2",
                              range_pole,
@@ -47,17 +49,19 @@ namespace ntt {
       }
     } else if (g == gr_ampere::main) {
       // D0(n) -> (J0(n+1/2)) -> D0(n+1)
-      Kokkos::parallel_for(
-        "AmpereCurrentsMain-1", range, CurrentsAmpere_kernel<D>(mblock, coeff));
+      Kokkos::parallel_for("AmpereCurrentsMain-1",
+                           range,
+                           CurrentsAmpere_kernel<D>(mblock, coeff));
       if constexpr (D == Dim2) {
-        Kokkos::parallel_for(
-          "AmpereCurrentsMain-2", range_pole, CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
+        Kokkos::parallel_for("AmpereCurrentsMain-2",
+                             range_pole,
+                             CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
       }
     }
     NTTLog();
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 template void ntt::GRPIC<ntt::Dim2>::AmpereCurrents(const gr_ampere&);
 template void ntt::GRPIC<ntt::Dim3>::AmpereCurrents(const gr_ampere&);

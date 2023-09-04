@@ -25,6 +25,7 @@ Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
     x[2] = xi[2] * dphi + this->x3_min;
   }
 }
+
 /**
  * Coordinate conversion from Spherical physical units to code units.
  *
@@ -44,4 +45,4 @@ Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
   }
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORSPH_H

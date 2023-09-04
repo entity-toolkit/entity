@@ -1,54 +1,54 @@
 #ifdef MPI_ENABLED
-#  include "wrapper.h"
+  #include "wrapper.h"
 
-#  if defined(SANDBOX_ENGINE)
+  #if defined(SANDBOX_ENGINE)
 
-#    include "sandbox.h"
+    #include "sandbox.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::SANDBOX<D>;
 
-#  elif defined(PIC_ENGINE)
+  #elif defined(PIC_ENGINE)
 
-#    include "pic.h"
+    #include "pic.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::PIC<D>;
 
-#  elif defined(GRPIC_ENGINE)
+  #elif defined(GRPIC_ENGINE)
 
-#    include "grpic.h"
+    #include "grpic.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::GRPIC<D>;
 
-#  endif
+  #endif
 
-#  include "sim_params.h"
+  #include "sim_params.h"
 
-#  include "communications/decomposition.h"
-#  include "communications/metadomain.h"
-#  include "meshblock/meshblock.h"
-#  include "utils/qmath.h"
+  #include "communications/decomposition.h"
+  #include "communications/metadomain.h"
+  #include "meshblock/meshblock.h"
+  #include "utils/qmath.h"
 
-#  include "utils/injector.hpp"
+  #include "utils/injector.hpp"
 
-#  include <adios2.h>
-#  include <adios2/cxx11/KokkosView.h>
-#  include <mpi.h>
-#  include <toml.hpp>
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
+  #include <mpi.h>
+  #include <toml.hpp>
 
-#  include <cstdio>
-#  include <iomanip>
-#  include <iostream>
-#  include <stdexcept>
-#  include <vector>
+  #include <cstdio>
+  #include <iomanip>
+  #include <iostream>
+  #include <stdexcept>
+  #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
   ntt::GlobalInitialize(argc, argv);
   try {
     toml::table simulation, domain, units, output, algorithm;
     toml::table particles, species_1, species_2;
-    const auto  simname    = "Writer-" + std::string(SIMULATION_METRIC);
-    simulation["title"]    = simname;
-    domain["resolution"]   = toml::array { 64, 64 };
+    const auto  simname  = "Writer-" + std::string(SIMULATION_METRIC);
+    simulation["title"]  = simname;
+    domain["resolution"] = toml::array { 64, 64 };
 
     particles["n_species"] = 2;
     species_1["mass"]      = 0.0;
@@ -58,24 +58,24 @@ auto main(int argc, char* argv[]) -> int {
     species_2["charge"]    = 0.0;
     species_2["maxnpart"]  = 1e2;
 
-#  ifdef MINKOWSKI_METRIC
-    domain["extent"] = toml::array { -1.0, 1.0, -1.0, 1.0 };
-    domain["boundaries"]
-      = toml::array { toml::array { "PERIODIC" }, toml::array { "PERIODIC" } };
-#  else
+  #ifdef MINKOWSKI_METRIC
+    domain["extent"]     = toml::array { -1.0, 1.0, -1.0, 1.0 };
+    domain["boundaries"] = toml::array { toml::array { "PERIODIC" },
+                                         toml::array { "PERIODIC" } };
+  #else
     domain["extent"]     = toml::array { 0.8, 20.0 };
     domain["boundaries"] = toml::array {
       toml::array { "OPEN", "ABSORB" },
-       toml::array { "AXIS" }
+      toml::array { "AXIS" }
     };
     domain["qsph_r0"] = 0.0;
     domain["qsph_h"]  = 0.4;
     domain["spin"]    = 0.5;
-#  endif
+  #endif
 
-    units["ppc0"]         = 1.0;
-    units["larmor0"]      = 0.1;
-    units["skindepth0"]   = 1.0;
+    units["ppc0"]       = 1.0;
+    units["larmor0"]    = 0.1;
+    units["skindepth0"] = 1.0;
 
     // output["fields"]      = toml::array { "E", "B" };
     output["particles"]   = toml::array { "X", "U" };
@@ -84,14 +84,14 @@ auto main(int argc, char* argv[]) -> int {
     output["as_is"]       = true;
     output["ghosts"]      = true;
 
-    auto inputdata        = toml::table {
-             {"simulation", simulation},
-             {    "domain",     domain},
-             {     "units",      units},
-             {    "output",     output},
-             { "particles",  particles},
-             { "species_1",  species_1},
-             { "species_2",  species_2}
+    auto inputdata = toml::table {
+      {"simulation", simulation},
+      {    "domain",     domain},
+      {     "units",      units},
+      {    "output",     output},
+      { "particles",  particles},
+      { "species_1",  species_1},
+      { "species_2",  species_2}
     };
 
     // write
@@ -108,18 +108,28 @@ auto main(int argc, char* argv[]) -> int {
 
       // allocate particles
       for (auto& specie : mblock.particles) {
-        specie.i1     = ntt::array_t<int*> { specie.label() + "_i1", specie.maxnpart() };
-        specie.i2     = ntt::array_t<int*> { specie.label() + "_i2", specie.maxnpart() };
-        specie.dx1    = ntt::array_t<prtldx_t*> { specie.label() + "_dx1", specie.maxnpart() };
-        specie.dx2    = ntt::array_t<prtldx_t*> { specie.label() + "_dx2", specie.maxnpart() };
-        specie.ux1    = ntt::array_t<real_t*> { specie.label() + "_ux1", specie.maxnpart() };
-        specie.ux2    = ntt::array_t<real_t*> { specie.label() + "_ux2", specie.maxnpart() };
-        specie.ux3    = ntt::array_t<real_t*> { specie.label() + "_ux3", specie.maxnpart() };
-        specie.weight = ntt::array_t<real_t*> { specie.label() + "_w", specie.maxnpart() };
-#  ifndef MINKOWSKI_METRIC
-        specie.phi = ntt::array_t<real_t*> { specie.label() + "_phi", specie.maxnpart() };
-#  endif
-        specie.tag = ntt::array_t<short*> { specie.label() + "_tag", specie.maxnpart() };
+        specie.i1     = ntt::array_t<int*> { specie.label() + "_i1",
+                                             specie.maxnpart() };
+        specie.i2     = ntt::array_t<int*> { specie.label() + "_i2",
+                                             specie.maxnpart() };
+        specie.dx1    = ntt::array_t<prtldx_t*> { specie.label() + "_dx1",
+                                                  specie.maxnpart() };
+        specie.dx2    = ntt::array_t<prtldx_t*> { specie.label() + "_dx2",
+                                                  specie.maxnpart() };
+        specie.ux1    = ntt::array_t<real_t*> { specie.label() + "_ux1",
+                                                specie.maxnpart() };
+        specie.ux2    = ntt::array_t<real_t*> { specie.label() + "_ux2",
+                                                specie.maxnpart() };
+        specie.ux3    = ntt::array_t<real_t*> { specie.label() + "_ux3",
+                                                specie.maxnpart() };
+        specie.weight = ntt::array_t<real_t*> { specie.label() + "_w",
+                                                specie.maxnpart() };
+  #ifndef MINKOWSKI_METRIC
+        specie.phi = ntt::array_t<real_t*> { specie.label() + "_phi",
+                                             specie.maxnpart() };
+  #endif
+        specie.tag = ntt::array_t<short*> { specie.label() + "_tag",
+                                            specie.maxnpart() };
       }
 
       {
@@ -146,7 +156,9 @@ auto main(int argc, char* argv[]) -> int {
           specie1.setNpart(2);
           specie2.setNpart(2);
           Kokkos::parallel_for(
-            "FillWithDummies-Prtls", specie1.rangeActiveParticles(), Lambda(ntt::index_t p) {
+            "FillWithDummies-Prtls",
+            specie1.rangeActiveParticles(),
+            Lambda(ntt::index_t p) {
               specie1.tag(p) = ntt::ParticleTag::alive;
               specie1.i1(p)  = 1 + p;
               specie1.i2(p)  = 1 + 5 * p;
@@ -175,8 +187,11 @@ auto main(int argc, char* argv[]) -> int {
           sim.ParticlesPush();
           sim.ParticlesBoundaryConditions();
           sim.Communicate(ntt::Comm_Prtl);
-          sim.writer.WriteAll(
-            *sim.params(), *sim.metadomain(), mblock, (real_t)i, (std::size_t)i);
+          sim.writer.WriteAll(*sim.params(),
+                              *sim.metadomain(),
+                              mblock,
+                              (real_t)i,
+                              (std::size_t)i);
           printf("step: %d, rank: %d, npart1: %ld, npart2: %ld\n",
                  i,
                  sim.metadomain()->mpiRank(),

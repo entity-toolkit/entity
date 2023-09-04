@@ -31,8 +31,12 @@ namespace ntt {
     AbsorbCurrents_kernel(const Meshblock<D, GRPICEngine>&        mblock,
                           const ProblemGenerator<D, GRPICEngine>& pgen,
                           real_t                                  r_absorb,
-                          real_t                                  r_max)
-      : m_mblock { mblock }, m_pgen { pgen }, m_rabsorb { r_absorb }, m_rmax { r_max } {}
+                          real_t                                  r_max) :
+      m_mblock { mblock },
+      m_pgen { pgen },
+      m_rabsorb { r_absorb },
+      m_rmax { r_max } {}
+
     /**
      * @brief 2D implementation of the algorithm.
      * @param i1 index.
@@ -43,8 +47,8 @@ namespace ntt {
 
   template <>
   Inline void AbsorbCurrents_kernel<Dim2>::operator()(index_t i, index_t j) const {
-    real_t      i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-    real_t      j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+    real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+    real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
     vec_t<Dim2> rth_;
     m_mblock.metric.x_Code2Sph({ i_, j_ }, rth_);
@@ -55,6 +59,6 @@ namespace ntt {
     J0X2(i, j) = (ONE - sigma_r1) * J0X2(i, j);
     J0X3(i, j) = (ONE - sigma_r1) * J0X3(i, j);
   }
-}    // namespace ntt
+} // namespace ntt
 
 #endif

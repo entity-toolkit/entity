@@ -16,7 +16,7 @@
 namespace ntt {
 
   /* -------------------------------------------------------------------------- */
-  /*                   Uniform injection kernels and routines                   */
+  /*                   Uniform injection kernels and routines */
   /* -------------------------------------------------------------------------- */
 
   /**
@@ -29,23 +29,24 @@ namespace ntt {
                              const Particles<Dim1, S>& sp1,
                              const Particles<Dim1, S>& sp2,
                              const list_t<real_t, 2>&  box,
-                             const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        region { box[0], box[1] },
-        energy_dist { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                             const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      region { box[0], box[1] },
+      energy_dist { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim1>                               x { ZERO };
-      vec_t<Dim3>                                 v { ZERO };
+      coord_t<Dim1> x { ZERO };
+      vec_t<Dim3>   v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       energy_dist(x, v, species_index1);
       init_prtl_1d(mblock, species1, p + offset1, x[0], v[0], v[1], v[2], ONE);
@@ -75,23 +76,24 @@ namespace ntt {
                              const Particles<Dim2, S>& sp1,
                              const Particles<Dim2, S>& sp2,
                              const list_t<real_t, 4>&  box,
-                             const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        region { box[0], box[1], box[2], box[3] },
-        energy_dist { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                             const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      region { box[0], box[1], box[2], box[3] },
+      energy_dist { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim2>                               x { ZERO };
-      vec_t<Dim3>                                 v { ZERO };
+      coord_t<Dim2> x { ZERO };
+      vec_t<Dim3>   v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       energy_dist(x, v, species_index1);
@@ -122,23 +124,24 @@ namespace ntt {
                              const Particles<Dim3, S>& sp1,
                              const Particles<Dim3, S>& sp2,
                              const list_t<real_t, 6>&  box,
-                             const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        region { box[0], box[1], box[2], box[3], box[4], box[5] },
-        energy_dist { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                             const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      region { box[0], box[1], box[2], box[3], box[4], box[5] },
+      energy_dist { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t p) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
 
-      coord_t<Dim3>                               x { ZERO };
-      vec_t<Dim3>                                 v { ZERO };
+      coord_t<Dim3> x { ZERO };
+      vec_t<Dim3>   v { ZERO };
       x[0] = rand_gen.frand(region[0], region[1]);
       x[1] = rand_gen.frand(region[2], region[3]);
       x[2] = rand_gen.frand(region[4], region[5]);
@@ -173,20 +176,20 @@ namespace ntt {
    * @param region region to inject particles as a list of coordinates [optional].
    * @param time current time [optional].
    */
-  template <Dimension        D,
-            SimulationEngine S,
-            template <Dimension, SimulationEngine> class EnDist = ColdDist>
+  template <Dimension D, SimulationEngine S, template <Dimension, SimulationEngine> class EnDist = ColdDist>
   inline void InjectUniform(const SimulationParams& params,
                             Meshblock<D, S>&        mblock,
                             const std::vector<int>& species,
                             const real_t&           ppc_per_spec,
                             std::vector<real_t>     region = {},
                             const real_t&           time   = ZERO) {
-    NTTHostErrorIf(species.size() != 2, "Exactly two species can be injected at the same time");
+    NTTHostErrorIf(species.size() != 2,
+                   "Exactly two species can be injected at the same time");
     auto& sp1 = mblock.particles[species[0] - 1];
     auto& sp2 = mblock.particles[species[1] - 1];
-    NTTHostErrorIf(sp1.charge() != -sp2.charge(),
-                   "Injected species must have the same but opposite charge: q1 = -q2");
+    NTTHostErrorIf(
+      sp1.charge() != -sp2.charge(),
+      "Injected species must have the same but opposite charge: q1 = -q2");
     auto   ncells = (std::size_t)(mblock.Ni1() * mblock.Ni2() * mblock.Ni3());
     real_t delta_V, full_V;
     if (region.size() == 0) {
@@ -198,27 +201,29 @@ namespace ntt {
       full_V  = (mblock.extent()[1] - mblock.extent()[0]);
     } else if constexpr (D == Dim2) {
       delta_V = (region[1] - region[0]) * (region[3] - region[2]);
-      full_V  = (mblock.extent()[1] - mblock.extent()[0])
-               * (mblock.extent()[3] - mblock.extent()[2]);
+      full_V  = (mblock.extent()[1] - mblock.extent()[0]) *
+               (mblock.extent()[3] - mblock.extent()[2]);
     } else if constexpr (D == Dim3) {
-      delta_V = (region[1] - region[0]) * (region[3] - region[2]) * (region[5] - region[4]);
-      full_V  = (mblock.extent()[1] - mblock.extent()[0])
-               * (mblock.extent()[3] - mblock.extent()[2])
-               * (mblock.extent()[5] - mblock.extent()[4]);
+      delta_V = (region[1] - region[0]) * (region[3] - region[2]) *
+                (region[5] - region[4]);
+      full_V = (mblock.extent()[1] - mblock.extent()[0]) *
+               (mblock.extent()[3] - mblock.extent()[2]) *
+               (mblock.extent()[5] - mblock.extent()[4]);
     }
 #else
     if constexpr (D == Dim2) {
       delta_V = (SQR(region[1]) - SQR(region[0])) * (region[3] - region[2]);
-      full_V  = (SQR(mblock.extent()[1]) - SQR(mblock.extent()[0])) * constant::PI * HALF;
+      full_V  = (SQR(mblock.extent()[1]) - SQR(mblock.extent()[0])) *
+               constant::PI * HALF;
     } else if constexpr (D == Dim3) {
       // !TODO: need to be a bit more careful
-      delta_V = (CUBE(region[1]) - CUBE(region[0])) * (region[3] - region[2])
-                * (region[5] - region[4]);
-      full_V
-        = (CUBE(mblock.extent()[1]) - CUBE(mblock.extent()[0])) * (4.0 / 3.0) * constant::PI;
+      delta_V = (CUBE(region[1]) - CUBE(region[0])) * (region[3] - region[2]) *
+                (region[5] - region[4]);
+      full_V = (CUBE(mblock.extent()[1]) - CUBE(mblock.extent()[0])) *
+               (4.0 / 3.0) * constant::PI;
     }
 #endif
-    ncells              = (std::size_t)((real_t)ncells * delta_V / full_V);
+    ncells = (std::size_t)((real_t)ncells * delta_V / full_V);
 
     auto npart_per_spec = (std::size_t)((double)(ncells * ppc_per_spec));
     list_t<real_t, 2 * static_cast<short>(D)> box { ZERO };
@@ -247,7 +252,7 @@ namespace ntt {
   }
 
   /* -------------------------------------------------------------------------- */
-  /*                    Volume injection kernels and routines                   */
+  /*                    Volume injection kernels and routines */
   /* -------------------------------------------------------------------------- */
   template <SimulationEngine S,
             template <Dimension, SimulationEngine>
@@ -263,44 +268,47 @@ namespace ntt {
                             const Particles<Dim1, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        index { ind },
-        nppc { ppc },
-        use_weights { params.useWeights() },
-        V0 { params.V0() },
-        energy_dist { params, mblock },
-        spatial_dist { params, mblock },
-        inj_criterion { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                            const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      index { ind },
+      nppc { ppc },
+      use_weights { params.useWeights() },
+      V0 { params.V0() },
+      energy_dist { params, mblock },
+      spatial_dist { params, mblock },
+      inj_criterion { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t i1) const {
       // cell node
-      coord_t<Dim1>     xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS) };
+      coord_t<Dim1> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS) };
+      const auto    weight { use_weights
+                               ? (mblock.metric.sqrt_det_h({ xi[0] + HALF }) / V0)
+                               : ONE };
+
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { nppc };
       coord_t<Dim1>     xc { ZERO };
       coord_t<Dim1>     xph { ZERO };
-      prtldx_t          dx1, dx2;
+      prtldx_t          dx1;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
-      real_t            cell_vol;
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         mblock.metric.x_Code2Cart(xc, xph);
-        if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
-            inj_criterion(xph) &&                             // injection criterion
-            (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
+        if ((Random<real_t>(rand_gen) < n_inject) && // # of prtls
+            inj_criterion(xph) &&                    // injection criterion
+            (Random<real_t>(rand_gen) < spatial_dist(xph)) // spatial distribution
         ) {
-          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
-          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc) / V0) : ONE };
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
           energy_dist(xph, v, species_index1);
           v_cart[0] = v[0];
@@ -363,34 +371,40 @@ namespace ntt {
                             const Particles<Dim2, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        index { ind },
-        nppc { ppc },
-        use_weights { params.useWeights() },
-        V0 { params.V0() },
-        energy_dist { params, mblock },
-        spatial_dist { params, mblock },
-        inj_criterion { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                            const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      index { ind },
+      nppc { ppc },
+      use_weights { params.useWeights() },
+      V0 { params.V0() },
+      energy_dist { params, mblock },
+      spatial_dist { params, mblock },
+      inj_criterion { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
-      coord_t<Dim2>     xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+      coord_t<Dim2> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
                          static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS) };
+      const auto    weight {
+        use_weights
+             ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
+             : ONE
+      };
+
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { nppc };
       coord_t<Dim2>     xc { ZERO };
       coord_t<Dim2>     xph { ZERO };
       prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
-      real_t            cell_vol;
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -402,12 +416,11 @@ namespace ntt {
 #else
         mblock.metric.x_Code2Sph(xc, xph);
 #endif
-        if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
-            inj_criterion(xph) &&                             // injection criterion
-            (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
+        if ((Random<real_t>(rand_gen) < n_inject) && // # of prtls
+            inj_criterion(xph) &&                    // injection criterion
+            (Random<real_t>(rand_gen) < spatial_dist(xph)) // spatial distribution
         ) {
-          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
-          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc) / V0) : ONE };
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
           energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
@@ -482,35 +495,41 @@ namespace ntt {
                             const Particles<Dim3, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        index { ind },
-        nppc { ppc },
-        use_weights { params.useWeights() },
-        V0 { params.V0() },
-        energy_dist { params, mblock },
-        spatial_dist { params, mblock },
-        inj_criterion { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                            const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      index { ind },
+      nppc { ppc },
+      use_weights { params.useWeights() },
+      V0 { params.V0() },
+      energy_dist { params, mblock },
+      spatial_dist { params, mblock },
+      inj_criterion { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       // cell node
-      coord_t<Dim3>     xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
+      coord_t<Dim3> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
                          static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS),
                          static_cast<real_t>(static_cast<int>(i3) - N_GHOSTS) };
+      const auto    weight { use_weights
+                               ? (mblock.metric.sqrt_det_h(
+                                 { xi[0] + HALF, xi[1] + HALF, xi[2] + HALF }) /
+                               V0)
+                               : ONE };
+
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { nppc };
       coord_t<Dim3>     xc { ZERO };
       coord_t<Dim3>     xph { ZERO };
       prtldx_t          dx1, dx2, dx3;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
-      real_t            cell_vol;
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -524,12 +543,11 @@ namespace ntt {
 #else
         mblock.metric.x_Code2Sph(xc, xph);
 #endif
-        if ((Random<real_t>(rand_gen) < n_inject) &&          // # of prtls
-            inj_criterion(xph) &&                             // injection criterion
-            (Random<real_t>(rand_gen) < spatial_dist(xph))    // spatial distribution
+        if ((Random<real_t>(rand_gen) < n_inject) && // # of prtls
+            inj_criterion(xph) &&                    // injection criterion
+            (Random<real_t>(rand_gen) < spatial_dist(xph)) // spatial distribution
         ) {
-          auto       p { Kokkos::atomic_fetch_add(&index(), 1) };
-          const auto weight { use_weights ? (mblock.metric.sqrt_det_h(xc) / V0) : ONE };
+          auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
           energy_dist(xph, v, species_index1);
 #ifdef MINKOWSKI_METRIC
@@ -648,27 +666,47 @@ namespace ntt {
       NTTHostError("region must be empty or have 2 * D elements");
     }
 
-    NTTHostErrorIf(species.size() != 2, "Exactly two species can be injected at the same time");
+    NTTHostErrorIf(species.size() != 2,
+                   "Exactly two species can be injected at the same time");
     auto& sp1 = mblock.particles[species[0] - 1];
     auto& sp2 = mblock.particles[species[1] - 1];
-    NTTHostErrorIf(sp1.charge() != -sp2.charge(),
-                   "Injected species must have the same but opposite charge: q1 = -q2");
+    NTTHostErrorIf(
+      sp1.charge() != -sp2.charge(),
+      "Injected species must have the same but opposite charge: q1 = -q2");
     array_t<std::size_t> ind("ind_inj");
     if constexpr (D == Dim1) {
-      Kokkos::parallel_for("InjectInVolume",
-                           range_policy,
-                           VolumeInjector1d_kernel<S, EnDist, SpDist, InjCrit>(
-                             params, mblock, sp1, sp2, ind, ppc_per_spec, time));
+      Kokkos::parallel_for(
+        "InjectInVolume",
+        range_policy,
+        VolumeInjector1d_kernel<S, EnDist, SpDist, InjCrit>(params,
+                                                            mblock,
+                                                            sp1,
+                                                            sp2,
+                                                            ind,
+                                                            ppc_per_spec,
+                                                            time));
     } else if constexpr (D == Dim2) {
-      Kokkos::parallel_for("InjectInVolume",
-                           range_policy,
-                           VolumeInjector2d_kernel<S, EnDist, SpDist, InjCrit>(
-                             params, mblock, sp1, sp2, ind, ppc_per_spec, time));
+      Kokkos::parallel_for(
+        "InjectInVolume",
+        range_policy,
+        VolumeInjector2d_kernel<S, EnDist, SpDist, InjCrit>(params,
+                                                            mblock,
+                                                            sp1,
+                                                            sp2,
+                                                            ind,
+                                                            ppc_per_spec,
+                                                            time));
     } else if constexpr (D == Dim3) {
-      Kokkos::parallel_for("InjectInVolume",
-                           range_policy,
-                           VolumeInjector3d_kernel<S, EnDist, SpDist, InjCrit>(
-                             params, mblock, sp1, sp2, ind, ppc_per_spec, time));
+      Kokkos::parallel_for(
+        "InjectInVolume",
+        range_policy,
+        VolumeInjector3d_kernel<S, EnDist, SpDist, InjCrit>(params,
+                                                            mblock,
+                                                            sp1,
+                                                            sp2,
+                                                            ind,
+                                                            ppc_per_spec,
+                                                            time));
     }
 
     auto ind_h = Kokkos::create_mirror(ind);
@@ -691,25 +729,26 @@ namespace ntt {
                            const Particles<Dim1, S>&   sp2,
                            const array_t<std::size_t>& ind,
                            const ndarray_t<1>&         ppc,
-                           const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        index { ind },
-        ppc_per_spec { ppc },
-        use_weights { params.useWeights() },
-        energy_dist { params, mblock },
-        inj_criterion { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                           const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      index { ind },
+      ppc_per_spec { ppc },
+      use_weights { params.useWeights() },
+      energy_dist { params, mblock },
+      inj_criterion { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t i1) const {
       // cell node
-      const auto        i1_ = static_cast<int>(i1) - N_GHOSTS;
-      const auto        xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
+      const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
+      const auto xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_) };
@@ -722,8 +761,8 @@ namespace ntt {
         dx1   = Random<prtldx_t>(rand_gen);
         xc[0] = xi[0] + dx1;
         mblock.metric.x_Code2Phys(xc, xph);
-        if ((Random<real_t>(rand_gen) < n_inject) &&    // # of prtls
-            inj_criterion(xph)                          // injection criterion
+        if ((Random<real_t>(rand_gen) < n_inject) && // # of prtls
+            inj_criterion(xph)                       // injection criterion
         ) {
           auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
@@ -731,15 +770,27 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
-          init_prtl_1d_i_di(
-            species1, offset1 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], ONE);
+          init_prtl_1d_i_di(species1,
+                            offset1 + p,
+                            i1_,
+                            dx1,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            ONE);
 
           energy_dist(xph, v, species_index2);
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
-          init_prtl_1d_i_di(
-            species2, offset2 + p, i1_, dx1, v_cart[0], v_cart[1], v_cart[2], ONE);
+          init_prtl_1d_i_di(species2,
+                            offset2 + p,
+                            i1_,
+                            dx1,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            ONE);
         }
         n_inject -= ONE;
       }
@@ -772,30 +823,34 @@ namespace ntt {
                            const Particles<Dim2, S>&   sp2,
                            const array_t<std::size_t>& ind,
                            const ndarray_t<2>&         ppc,
-                           const real_t&)
-      : params { pr },
-        mblock { mb },
-        species1 { sp1 },
-        species2 { sp2 },
-        species_index1 { sp1.index() },
-        species_index2 { sp2.index() },
-        offset1 { sp1.npart() },
-        offset2 { sp2.npart() },
-        index { ind },
-        ppc_per_spec { ppc },
-        use_weights { params.useWeights() },
-        V0 { params.V0() },
-        energy_dist { params, mblock },
-        inj_criterion { params, mblock },
-        pool { *(mblock.random_pool_ptr) } {}
+                           const real_t&) :
+      params { pr },
+      mblock { mb },
+      species1 { sp1 },
+      species2 { sp2 },
+      species_index1 { sp1.index() },
+      species_index2 { sp2.index() },
+      offset1 { sp1.npart() },
+      offset2 { sp2.npart() },
+      index { ind },
+      ppc_per_spec { ppc },
+      use_weights { params.useWeights() },
+      V0 { params.V0() },
+      energy_dist { params, mblock },
+      inj_criterion { params, mblock },
+      pool { *(mblock.random_pool_ptr) } {}
+
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
       const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
       const auto i2_ = static_cast<int>(i2) - N_GHOSTS;
-      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };
-      const auto weight { use_weights
-                            ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
-                            : ONE };
+      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_),
+                                       static_cast<real_t>(i2_) };
+      const auto weight {
+        use_weights
+          ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
+          : ONE
+      };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_, i2_) };
@@ -810,8 +865,8 @@ namespace ntt {
         xc[0] = xi[0] + dx1;
         xc[1] = xi[1] + dx2;
         mblock.metric.x_Code2Phys(xc, xph);
-        if ((Random<real_t>(rand_gen) < n_inject) &&    // # of prtls
-            inj_criterion(xph)                          // injection criterion
+        if ((Random<real_t>(rand_gen) < n_inject) && // # of prtls
+            inj_criterion(xph)                       // injection criterion
         ) {
           auto p { Kokkos::atomic_fetch_add(&index(), 1) };
 
@@ -823,8 +878,16 @@ namespace ntt {
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-          init_prtl_2d_i_di(
-            species1, offset1 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
+          init_prtl_2d_i_di(species1,
+                            offset1 + p,
+                            i1_,
+                            i2_,
+                            dx1,
+                            dx2,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            weight);
 
           energy_dist(xph, v, species_index2);
 #ifdef MINKOWSKI_METRIC
@@ -834,8 +897,16 @@ namespace ntt {
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
-          init_prtl_2d_i_di(
-            species2, offset2 + p, i1_, i2_, dx1, dx2, v_cart[0], v_cart[1], v_cart[2], weight);
+          init_prtl_2d_i_di(species2,
+                            offset2 + p,
+                            i1_,
+                            i2_,
+                            dx1,
+                            dx2,
+                            v_cart[0],
+                            v_cart[1],
+                            v_cart[2],
+                            weight);
         }
         n_inject -= ONE;
       }
@@ -907,22 +978,34 @@ namespace ntt {
       NTTHostError("region must be empty or have 2 * D elements");
     }
 
-    NTTHostErrorIf(species.size() != 2, "Exactly two species can be injected at the same time");
+    NTTHostErrorIf(species.size() != 2,
+                   "Exactly two species can be injected at the same time");
     auto& sp1 = mblock.particles[species[0] - 1];
     auto& sp2 = mblock.particles[species[1] - 1];
-    NTTHostErrorIf(sp1.charge() != -sp2.charge(),
-                   "Injected species must have the same but opposite charge: q1 = -q2");
+    NTTHostErrorIf(
+      sp1.charge() != -sp2.charge(),
+      "Injected species must have the same but opposite charge: q1 = -q2");
     array_t<std::size_t> ind("ind_inj");
     if constexpr (D == Dim1) {
       Kokkos::parallel_for("InjectNonUniform",
                            range_policy,
-                           FloorInjector1d_kernel<S, EnDist, InjCrit>(
-                             params, mblock, sp1, sp2, ind, ppc_per_spec, time));
+                           FloorInjector1d_kernel<S, EnDist, InjCrit>(params,
+                                                                      mblock,
+                                                                      sp1,
+                                                                      sp2,
+                                                                      ind,
+                                                                      ppc_per_spec,
+                                                                      time));
     } else if constexpr (D == Dim2) {
       Kokkos::parallel_for("InjectNonUniform",
                            range_policy,
-                           FloorInjector2d_kernel<S, EnDist, InjCrit>(
-                             params, mblock, sp1, sp2, ind, ppc_per_spec, time));
+                           FloorInjector2d_kernel<S, EnDist, InjCrit>(params,
+                                                                      mblock,
+                                                                      sp1,
+                                                                      sp2,
+                                                                      ind,
+                                                                      ppc_per_spec,
+                                                                      time));
     } else if constexpr (D == Dim3) {
       // Kokkos::parallel_for("inject",
       //                      range_policy,
@@ -1018,8 +1101,8 @@ namespace ntt {
   //     if constexpr (D == Dim2) {
   //       Kokkos::parallel_for(
   //         "InjectParticleGlobally", 1, Lambda(index_t p) {
-  //           init_prtl_2d(mblock, species, p0 + p, Xi[0], Xi[1], u[0], u[1], u[2], w);
-  //           species.phi(p) = Xi[2];
+  //           init_prtl_2d(mblock, species, p0 + p, Xi[0], Xi[1], u[0], u[1],
+  //           u[2], w); species.phi(p) = Xi[2];
   //         });
   //     } else if constexpr (D == Dim3) {
   //       NTTHostError("not implemented");
@@ -1030,6 +1113,6 @@ namespace ntt {
   //   }
   // #endif
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_INJECTOR_H
+#endif // FRAMEWORK_INJECTOR_H

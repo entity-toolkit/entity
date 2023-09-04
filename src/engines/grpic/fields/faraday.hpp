@@ -22,10 +22,11 @@ namespace ntt {
     index_t                   j_min;
 
   public:
-    FaradayAux_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock { mblock },
-        m_coeff { coeff },
-        j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
+    FaradayAux_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff) :
+      m_mblock { mblock },
+      m_coeff { coeff },
+      j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -37,7 +38,8 @@ namespace ntt {
 
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
-    real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ + HALF }) };
+    real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h(
+                                        { i_ + HALF, j_ + HALF }) };
 
     B0X1(i, j) += m_coeff * inv_sqrt_detH_ijP * (EX3(i, j) - EX3(i, j + 1));
 
@@ -46,8 +48,8 @@ namespace ntt {
     } else {
       B0X2(i, j) += m_coeff * inv_sqrt_detH_iPj * (EX3(i + 1, j) - EX3(i, j));
     }
-    B0X3(i, j) += m_coeff * inv_sqrt_detH_iPjP
-                  * (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
+    B0X3(i, j) += m_coeff * inv_sqrt_detH_iPjP *
+                  (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
   }
 
   template <Dimension D>
@@ -57,10 +59,11 @@ namespace ntt {
     index_t                   j_min;
 
   public:
-    Faraday_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock { mblock },
-        m_coeff { coeff },
-        j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
+    Faraday_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff) :
+      m_mblock { mblock },
+      m_coeff { coeff },
+      j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -72,21 +75,24 @@ namespace ntt {
 
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
-    real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ + HALF }) };
+    real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h(
+                                        { i_ + HALF, j_ + HALF }) };
 
-    B0X1(i, j) = BX1(i, j) + m_coeff * inv_sqrt_detH_ijP * (EX3(i, j) - EX3(i, j + 1));
+    B0X1(i, j) = BX1(i, j) +
+                 m_coeff * inv_sqrt_detH_ijP * (EX3(i, j) - EX3(i, j + 1));
 
     if (j == j_min) {
       B0X2(i, j) = ZERO;
     } else {
-      B0X2(i, j) = BX2(i, j) + m_coeff * inv_sqrt_detH_iPj * (EX3(i + 1, j) - EX3(i, j));
+      B0X2(i, j) = BX2(i, j) +
+                   m_coeff * inv_sqrt_detH_iPj * (EX3(i + 1, j) - EX3(i, j));
     }
 
-    B0X3(i, j) = BX3(i, j)
-                 + m_coeff * inv_sqrt_detH_iPjP
-                     * (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
+    B0X3(i, j) = BX3(i, j) +
+                 m_coeff * inv_sqrt_detH_iPjP *
+                   (EX1(i, j + 1) - EX1(i, j) + EX2(i, j) - EX2(i + 1, j));
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

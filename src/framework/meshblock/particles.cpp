@@ -19,22 +19,27 @@ namespace ntt {
                                         const float&          m_,
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
-                                        const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ },
-      i1 { label_ + "_i1", maxnpart_ },
-      dx1 { label_ + "_dx1", maxnpart_ },
-      ux1 { label_ + "_ux1", maxnpart_ },
-      ux2 { label_ + "_ux2", maxnpart_ },
-      ux3 { label_ + "_ux3", maxnpart_ },
-      weight { label_ + "_w", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ },
-      i1_h { Kokkos::create_mirror_view(i1) },
-      dx1_h { Kokkos::create_mirror_view(dx1) },
-      ux1_h { Kokkos::create_mirror_view(ux1) },
-      ux2_h { Kokkos::create_mirror_view(ux2) },
-      ux3_h { Kokkos::create_mirror_view(ux3) },
-      weight_h { Kokkos::create_mirror_view(weight) },
-      tag_h { Kokkos::create_mirror_view(tag) } {
+                                        const ParticlePusher& pusher_,
+                                        const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    i1 { label_ + "_i1", maxnpart_ },
+    dx1 { label_ + "_dx1", maxnpart_ },
+    ux1 { label_ + "_ux1", maxnpart_ },
+    ux2 { label_ + "_ux2", maxnpart_ },
+    ux3 { label_ + "_ux3", maxnpart_ },
+    weight { label_ + "_w", maxnpart_ },
+    tag { label_ + "_tag", maxnpart_ },
+    i1_h { Kokkos::create_mirror_view(i1) },
+    dx1_h { Kokkos::create_mirror_view(dx1) },
+    ux1_h { Kokkos::create_mirror_view(ux1) },
+    ux2_h { Kokkos::create_mirror_view(ux2) },
+    ux3_h { Kokkos::create_mirror_view(ux3) },
+    weight_h { Kokkos::create_mirror_view(weight) },
+    tag_h { Kokkos::create_mirror_view(tag) } {
+    for (auto n { 0 }; n < npld(); ++n) {
+      pld.push_back(array_t<real_t*>("pld", maxnpart()));
+      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    }
     NTTLog();
   }
 
@@ -45,57 +50,67 @@ namespace ntt {
                                         const float&          m_,
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
-                                        const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ },
-      i1 { label_ + "_i1", maxnpart_ },
-      i2 { label_ + "_i2", maxnpart_ },
-      dx1 { label_ + "_dx1", maxnpart_ },
-      dx2 { label_ + "_dx2", maxnpart_ },
-      ux1 { label_ + "_ux1", maxnpart_ },
-      ux2 { label_ + "_ux2", maxnpart_ },
-      ux3 { label_ + "_ux3", maxnpart_ },
-      weight { label_ + "_w", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ },
-      i1_h { Kokkos::create_mirror_view(i1) },
-      i2_h { Kokkos::create_mirror_view(i2) },
-      dx1_h { Kokkos::create_mirror_view(dx1) },
-      dx2_h { Kokkos::create_mirror_view(dx2) },
-      ux1_h { Kokkos::create_mirror_view(ux1) },
-      ux2_h { Kokkos::create_mirror_view(ux2) },
-      ux3_h { Kokkos::create_mirror_view(ux3) },
-      weight_h { Kokkos::create_mirror_view(weight) },
-      tag_h { Kokkos::create_mirror_view(tag) } {
+                                        const ParticlePusher& pusher_,
+                                        const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    i1 { label_ + "_i1", maxnpart_ },
+    i2 { label_ + "_i2", maxnpart_ },
+    dx1 { label_ + "_dx1", maxnpart_ },
+    dx2 { label_ + "_dx2", maxnpart_ },
+    ux1 { label_ + "_ux1", maxnpart_ },
+    ux2 { label_ + "_ux2", maxnpart_ },
+    ux3 { label_ + "_ux3", maxnpart_ },
+    weight { label_ + "_w", maxnpart_ },
+    tag { label_ + "_tag", maxnpart_ },
+    i1_h { Kokkos::create_mirror_view(i1) },
+    i2_h { Kokkos::create_mirror_view(i2) },
+    dx1_h { Kokkos::create_mirror_view(dx1) },
+    dx2_h { Kokkos::create_mirror_view(dx2) },
+    ux1_h { Kokkos::create_mirror_view(ux1) },
+    ux2_h { Kokkos::create_mirror_view(ux2) },
+    ux3_h { Kokkos::create_mirror_view(ux3) },
+    weight_h { Kokkos::create_mirror_view(weight) },
+    tag_h { Kokkos::create_mirror_view(tag) } {
+    for (auto n { 0 }; n < npld(); ++n) {
+      pld.push_back(array_t<real_t*>("pld", maxnpart()));
+      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    }
     NTTLog();
   }
-#else    // axisymmetry
+#else // axisymmetry
   template <>
   Particles<Dim2, PICEngine>::Particles(const int&            index_,
                                         const std::string&    label_,
                                         const float&          m_,
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
-                                        const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ },
-      i1 { label_ + "_i1", maxnpart_ },
-      i2 { label_ + "_i2", maxnpart_ },
-      dx1 { label_ + "_dx1", maxnpart_ },
-      dx2 { label_ + "_dx2", maxnpart_ },
-      ux1 { label_ + "_ux1", maxnpart_ },
-      ux2 { label_ + "_ux2", maxnpart_ },
-      ux3 { label_ + "_ux3", maxnpart_ },
-      weight { label_ + "_w", maxnpart_ },
-      phi { label_ + "_phi", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ },
-      i1_h { Kokkos::create_mirror_view(i1) },
-      i2_h { Kokkos::create_mirror_view(i2) },
-      dx1_h { Kokkos::create_mirror_view(dx1) },
-      dx2_h { Kokkos::create_mirror_view(dx2) },
-      ux1_h { Kokkos::create_mirror_view(ux1) },
-      ux2_h { Kokkos::create_mirror_view(ux2) },
-      ux3_h { Kokkos::create_mirror_view(ux3) },
-      weight_h { Kokkos::create_mirror_view(weight) },
-      phi_h { Kokkos::create_mirror_view(phi) },
-      tag_h { Kokkos::create_mirror_view(tag) } {
+                                        const ParticlePusher& pusher_,
+                                        const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    i1 { label_ + "_i1", maxnpart_ },
+    i2 { label_ + "_i2", maxnpart_ },
+    dx1 { label_ + "_dx1", maxnpart_ },
+    dx2 { label_ + "_dx2", maxnpart_ },
+    ux1 { label_ + "_ux1", maxnpart_ },
+    ux2 { label_ + "_ux2", maxnpart_ },
+    ux3 { label_ + "_ux3", maxnpart_ },
+    weight { label_ + "_w", maxnpart_ },
+    phi { label_ + "_phi", maxnpart_ },
+    tag { label_ + "_tag", maxnpart_ },
+    i1_h { Kokkos::create_mirror_view(i1) },
+    i2_h { Kokkos::create_mirror_view(i2) },
+    dx1_h { Kokkos::create_mirror_view(dx1) },
+    dx2_h { Kokkos::create_mirror_view(dx2) },
+    ux1_h { Kokkos::create_mirror_view(ux1) },
+    ux2_h { Kokkos::create_mirror_view(ux2) },
+    ux3_h { Kokkos::create_mirror_view(ux3) },
+    weight_h { Kokkos::create_mirror_view(weight) },
+    phi_h { Kokkos::create_mirror_view(phi) },
+    tag_h { Kokkos::create_mirror_view(tag) } {
+    for (auto n { 0 }; n < npld(); ++n) {
+      pld.push_back(array_t<real_t*>("pld", maxnpart()));
+      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    }
     NTTLog();
   }
 #endif
@@ -105,30 +120,35 @@ namespace ntt {
                                         const float&          m_,
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
-                                        const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ },
-      i1 { label_ + "_i1", maxnpart_ },
-      i2 { label_ + "_i2", maxnpart_ },
-      i3 { label_ + "_i3", maxnpart_ },
-      dx1 { label_ + "_dx1", maxnpart_ },
-      dx2 { label_ + "_dx2", maxnpart_ },
-      dx3 { label_ + "_dx3", maxnpart_ },
-      ux1 { label_ + "_ux1", maxnpart_ },
-      ux2 { label_ + "_ux2", maxnpart_ },
-      ux3 { label_ + "_ux3", maxnpart_ },
-      weight { label_ + "_w", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ },
-      i1_h { Kokkos::create_mirror_view(i1) },
-      i2_h { Kokkos::create_mirror_view(i2) },
-      i3_h { Kokkos::create_mirror_view(i3) },
-      dx1_h { Kokkos::create_mirror_view(dx1) },
-      dx2_h { Kokkos::create_mirror_view(dx2) },
-      dx3_h { Kokkos::create_mirror_view(dx3) },
-      ux1_h { Kokkos::create_mirror_view(ux1) },
-      ux2_h { Kokkos::create_mirror_view(ux2) },
-      ux3_h { Kokkos::create_mirror_view(ux3) },
-      weight_h { Kokkos::create_mirror_view(weight) },
-      tag_h { Kokkos::create_mirror_view(tag) } {
+                                        const ParticlePusher& pusher_,
+                                        const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    i1 { label_ + "_i1", maxnpart_ },
+    i2 { label_ + "_i2", maxnpart_ },
+    i3 { label_ + "_i3", maxnpart_ },
+    dx1 { label_ + "_dx1", maxnpart_ },
+    dx2 { label_ + "_dx2", maxnpart_ },
+    dx3 { label_ + "_dx3", maxnpart_ },
+    ux1 { label_ + "_ux1", maxnpart_ },
+    ux2 { label_ + "_ux2", maxnpart_ },
+    ux3 { label_ + "_ux3", maxnpart_ },
+    weight { label_ + "_w", maxnpart_ },
+    tag { label_ + "_tag", maxnpart_ },
+    i1_h { Kokkos::create_mirror_view(i1) },
+    i2_h { Kokkos::create_mirror_view(i2) },
+    i3_h { Kokkos::create_mirror_view(i3) },
+    dx1_h { Kokkos::create_mirror_view(dx1) },
+    dx2_h { Kokkos::create_mirror_view(dx2) },
+    dx3_h { Kokkos::create_mirror_view(dx3) },
+    ux1_h { Kokkos::create_mirror_view(ux1) },
+    ux2_h { Kokkos::create_mirror_view(ux2) },
+    ux3_h { Kokkos::create_mirror_view(ux3) },
+    weight_h { Kokkos::create_mirror_view(weight) },
+    tag_h { Kokkos::create_mirror_view(tag) } {
+    for (auto n { 0 }; n < npld(); ++n) {
+      pld.push_back(array_t<real_t*>("pld", maxnpart()));
+      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    }
     NTTLog();
   }
 
@@ -141,32 +161,37 @@ namespace ntt {
                                           const float&          m_,
                                           const float&          ch_,
                                           const std::size_t&    maxnpart_,
-                                          const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ },
-      i1 { label_ + "_i1", maxnpart_ },
-      i2 { label_ + "_i2", maxnpart_ },
-      dx1 { label_ + "_dx1", maxnpart_ },
-      dx2 { label_ + "_dx2", maxnpart_ },
-      ux1 { label_ + "_ux1", maxnpart_ },
-      ux2 { label_ + "_ux2", maxnpart_ },
-      ux3 { label_ + "_ux3", maxnpart_ },
-      weight { label_ + "_w", maxnpart_ },
-      i1_prev { label_ + "_i1_prev", maxnpart_ },
-      i2_prev { label_ + "_i2_prev", maxnpart_ },
-      dx1_prev { label_ + "_dx1_prev", maxnpart_ },
-      dx2_prev { label_ + "_dx2_prev", maxnpart_ },
-      phi { label_ + "_phi", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ },
-      i1_h { Kokkos::create_mirror_view(i1) },
-      i2_h { Kokkos::create_mirror_view(i2) },
-      dx1_h { Kokkos::create_mirror_view(dx1) },
-      dx2_h { Kokkos::create_mirror_view(dx2) },
-      ux1_h { Kokkos::create_mirror_view(ux1) },
-      ux2_h { Kokkos::create_mirror_view(ux2) },
-      ux3_h { Kokkos::create_mirror_view(ux3) },
-      weight_h { Kokkos::create_mirror_view(weight) },
-      phi_h { Kokkos::create_mirror_view(phi) },
-      tag_h { Kokkos::create_mirror_view(tag) } {
+                                          const ParticlePusher& pusher_,
+                                          const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    i1 { label_ + "_i1", maxnpart_ },
+    i2 { label_ + "_i2", maxnpart_ },
+    dx1 { label_ + "_dx1", maxnpart_ },
+    dx2 { label_ + "_dx2", maxnpart_ },
+    ux1 { label_ + "_ux1", maxnpart_ },
+    ux2 { label_ + "_ux2", maxnpart_ },
+    ux3 { label_ + "_ux3", maxnpart_ },
+    weight { label_ + "_w", maxnpart_ },
+    i1_prev { label_ + "_i1_prev", maxnpart_ },
+    i2_prev { label_ + "_i2_prev", maxnpart_ },
+    dx1_prev { label_ + "_dx1_prev", maxnpart_ },
+    dx2_prev { label_ + "_dx2_prev", maxnpart_ },
+    phi { label_ + "_phi", maxnpart_ },
+    tag { label_ + "_tag", maxnpart_ },
+    i1_h { Kokkos::create_mirror_view(i1) },
+    i2_h { Kokkos::create_mirror_view(i2) },
+    dx1_h { Kokkos::create_mirror_view(dx1) },
+    dx2_h { Kokkos::create_mirror_view(dx2) },
+    ux1_h { Kokkos::create_mirror_view(ux1) },
+    ux2_h { Kokkos::create_mirror_view(ux2) },
+    ux3_h { Kokkos::create_mirror_view(ux3) },
+    weight_h { Kokkos::create_mirror_view(weight) },
+    phi_h { Kokkos::create_mirror_view(phi) },
+    tag_h { Kokkos::create_mirror_view(tag) } {
+    for (auto n { 0 }; n < npld(); ++n) {
+      pld.push_back(array_t<real_t*>("pld", maxnpart()));
+      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    }
     NTTLog();
   }
 
@@ -176,36 +201,41 @@ namespace ntt {
                                           const float&          m_,
                                           const float&          ch_,
                                           const std::size_t&    maxnpart_,
-                                          const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ },
-      i1 { label_ + "_i1", maxnpart_ },
-      i2 { label_ + "_i2", maxnpart_ },
-      i3 { label_ + "_i3", maxnpart_ },
-      dx1 { label_ + "_dx1", maxnpart_ },
-      dx2 { label_ + "_dx2", maxnpart_ },
-      dx3 { label_ + "_dx3", maxnpart_ },
-      ux1 { label_ + "_ux1", maxnpart_ },
-      ux2 { label_ + "_ux2", maxnpart_ },
-      ux3 { label_ + "_ux3", maxnpart_ },
-      weight { label_ + "_w", maxnpart_ },
-      i1_prev { label_ + "_i1_prev", maxnpart_ },
-      i2_prev { label_ + "_i2_prev", maxnpart_ },
-      i3_prev { label_ + "_i3_prev", maxnpart_ },
-      dx1_prev { label_ + "_dx1_prev", maxnpart_ },
-      dx2_prev { label_ + "_dx2_prev", maxnpart_ },
-      dx3_prev { label_ + "_dx3_prev", maxnpart_ },
-      tag { label_ + "_tag", maxnpart_ },
-      i1_h { Kokkos::create_mirror_view(i1) },
-      i2_h { Kokkos::create_mirror_view(i2) },
-      i3_h { Kokkos::create_mirror_view(i3) },
-      dx1_h { Kokkos::create_mirror_view(dx1) },
-      dx2_h { Kokkos::create_mirror_view(dx2) },
-      dx3_h { Kokkos::create_mirror_view(dx3) },
-      ux1_h { Kokkos::create_mirror_view(ux1) },
-      ux2_h { Kokkos::create_mirror_view(ux2) },
-      ux3_h { Kokkos::create_mirror_view(ux3) },
-      weight_h { Kokkos::create_mirror_view(weight) },
-      tag_h { Kokkos::create_mirror_view(tag) } {
+                                          const ParticlePusher& pusher_,
+                                          const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    i1 { label_ + "_i1", maxnpart_ },
+    i2 { label_ + "_i2", maxnpart_ },
+    i3 { label_ + "_i3", maxnpart_ },
+    dx1 { label_ + "_dx1", maxnpart_ },
+    dx2 { label_ + "_dx2", maxnpart_ },
+    dx3 { label_ + "_dx3", maxnpart_ },
+    ux1 { label_ + "_ux1", maxnpart_ },
+    ux2 { label_ + "_ux2", maxnpart_ },
+    ux3 { label_ + "_ux3", maxnpart_ },
+    weight { label_ + "_w", maxnpart_ },
+    i1_prev { label_ + "_i1_prev", maxnpart_ },
+    i2_prev { label_ + "_i2_prev", maxnpart_ },
+    i3_prev { label_ + "_i3_prev", maxnpart_ },
+    dx1_prev { label_ + "_dx1_prev", maxnpart_ },
+    dx2_prev { label_ + "_dx2_prev", maxnpart_ },
+    dx3_prev { label_ + "_dx3_prev", maxnpart_ },
+    tag { label_ + "_tag", maxnpart_ },
+    i1_h { Kokkos::create_mirror_view(i1) },
+    i2_h { Kokkos::create_mirror_view(i2) },
+    i3_h { Kokkos::create_mirror_view(i3) },
+    dx1_h { Kokkos::create_mirror_view(dx1) },
+    dx2_h { Kokkos::create_mirror_view(dx2) },
+    dx3_h { Kokkos::create_mirror_view(dx3) },
+    ux1_h { Kokkos::create_mirror_view(ux1) },
+    ux2_h { Kokkos::create_mirror_view(ux2) },
+    ux3_h { Kokkos::create_mirror_view(ux3) },
+    weight_h { Kokkos::create_mirror_view(weight) },
+    tag_h { Kokkos::create_mirror_view(tag) } {
+    for (auto n { 0 }; n < npld(); ++n) {
+      pld.push_back(array_t<real_t*>("pld", maxnpart()));
+      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    }
     NTTLog();
   }
 
@@ -215,8 +245,9 @@ namespace ntt {
                                             const float&          m_,
                                             const float&          ch_,
                                             const std::size_t&    maxnpart_,
-                                            const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ } {
+                                            const ParticlePusher& pusher_,
+                                            const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ } {
     NTTLog();
   }
 
@@ -226,8 +257,9 @@ namespace ntt {
                                             const float&          m_,
                                             const float&          ch_,
                                             const std::size_t&    maxnpart_,
-                                            const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ } {
+                                            const ParticlePusher& pusher_,
+                                            const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ } {
     NTTLog();
   }
 
@@ -237,16 +269,21 @@ namespace ntt {
                                             const float&          m_,
                                             const float&          ch_,
                                             const std::size_t&    maxnpart_,
-                                            const ParticlePusher& pusher_)
-    : ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_ } {
+                                            const ParticlePusher& pusher_,
+                                            const unsigned short& npld_) :
+    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ } {
     NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>
-  Particles<D, S>::Particles(const ParticleSpecies& spec)
-    : Particles(
-      spec.index(), spec.label(), spec.mass(), spec.charge(), spec.maxnpart(), spec.pusher()) {
-  }
+  Particles<D, S>::Particles(const ParticleSpecies& spec) :
+    Particles(spec.index(),
+              spec.label(),
+              spec.mass(),
+              spec.charge(),
+              spec.maxnpart(),
+              spec.pusher(),
+              spec.npld()) {}
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::rangeActiveParticles() -> range_t<Dim1> {
@@ -264,7 +301,9 @@ namespace ntt {
     array_t<std::size_t[100]> npart_tag("npart_tags");
     auto npart_tag_scatter { Kokkos::Experimental::create_scatter_view(npart_tag) };
     Kokkos::parallel_for(
-      "NpartPerTag", npart(), Lambda(index_t p) {
+      "NpartPerTag",
+      npart(),
+      Lambda(index_t p) {
         auto npart_tag_scatter_access = npart_tag_scatter.access();
         npart_tag_scatter_access((int)(this_tag(p))) += 1;
       });
@@ -279,16 +318,17 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  auto Particles<D, S>::ReshuffleByTags(bool remove_dead) -> std::vector<std::size_t> {
+  auto Particles<D, S>::ReshuffleByTags(bool remove_dead)
+    -> std::vector<std::size_t> {
     using KeyType = array_t<short*>;
     using BinOp   = BinTag<KeyType>;
 #ifndef MPI_ENABLED
     const auto ntags = 2;
-#else    // MPI_ENABLED
+#else // MPI_ENABLED
     const auto ntags = 2 + math::pow(3, (int)D) - 1;
 #endif
-    BinOp                           bin_op(ntags);
-    auto                            slice = range_tuple_t(0, npart());
+    BinOp bin_op(ntags);
+    auto  slice = range_tuple_t(0, npart());
     Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op, false);
     Sorter.create_permute_vector();
 
@@ -325,6 +365,10 @@ namespace ntt {
     }
     Sorter.sort(Kokkos::subview(weight, slice));
 
+    for (auto n { 0 }; n < npld(); ++n) {
+      Sorter.sort(Kokkos::subview(pld[n], slice));
+    }
+
     const auto npart_per_tag = NpartPerTag();
     if (remove_dead) {
       setNpart(npart_per_tag[(short)(ParticleTag::alive)]);
@@ -341,6 +385,9 @@ namespace ntt {
     Kokkos::deep_copy(ux3_h, ux3);
     Kokkos::deep_copy(weight_h, weight);
     Kokkos::deep_copy(tag_h, tag);
+    for (auto n { 0 }; n < npld(); ++n) {
+      Kokkos::deep_copy(pld_h[n], pld[n]);
+    }
   }
 
   template <Dimension D, SimulationEngine S>
@@ -357,6 +404,9 @@ namespace ntt {
     Kokkos::deep_copy(phi_h, phi);
 #endif
     Kokkos::deep_copy(tag_h, tag);
+    for (auto n { 0 }; n < npld(); ++n) {
+      Kokkos::deep_copy(pld_h[n], pld[n]);
+    }
   }
 
   template <Dimension D, SimulationEngine S>
@@ -372,6 +422,9 @@ namespace ntt {
     Kokkos::deep_copy(ux3_h, ux3);
     Kokkos::deep_copy(weight_h, weight);
     Kokkos::deep_copy(tag_h, tag);
+    for (auto n { 0 }; n < npld(); ++n) {
+      Kokkos::deep_copy(pld_h[n], pld[n]);
+    }
   }
 
-}    // namespace ntt
+} // namespace ntt

@@ -25,8 +25,9 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dE/dt = coeff * curl B.
      */
-    Ampere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+    Ampere_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff) {}
 
     /**
      * @brief 1D implementation of the algorithm.
@@ -65,12 +66,12 @@ namespace ntt {
 
   template <>
   Inline void Ampere_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    EX1(i, j, k)
-      += m_coeff * (BX2(i, j, k - 1) - BX2(i, j, k) + BX3(i, j, k) - BX3(i, j - 1, k));
-    EX2(i, j, k)
-      += m_coeff * (BX3(i - 1, j, k) - BX3(i, j, k) + BX1(i, j, k) - BX1(i, j, k - 1));
-    EX3(i, j, k)
-      += m_coeff * (BX1(i, j - 1, k) - BX1(i, j, k) + BX2(i, j, k) - BX2(i - 1, j, k));
+    EX1(i, j, k) += m_coeff * (BX2(i, j, k - 1) - BX2(i, j, k) + BX3(i, j, k) -
+                               BX3(i, j - 1, k));
+    EX2(i, j, k) += m_coeff * (BX3(i - 1, j, k) - BX3(i, j, k) + BX1(i, j, k) -
+                               BX1(i, j, k - 1));
+    EX3(i, j, k) += m_coeff * (BX1(i, j - 1, k) - BX1(i, j, k) + BX2(i, j, k) -
+                               BX2(i - 1, j, k));
   }
-}    // namespace ntt
-#endif    // PIC_AMPERE_MINKOWSKI_H
+} // namespace ntt
+#endif // PIC_AMPERE_MINKOWSKI_H

@@ -12,15 +12,18 @@ namespace ntt {
   class ParticleSpecies {
   protected:
     // Species index.
-    const int      m_index;
+    const int   m_index;
     // Species label.
-    std::string    m_label;
+    std::string m_label;
     // Species mass in units of m0.
-    float          m_mass;
+    float       m_mass;
     // Species charge in units of q0.
-    float          m_charge;
+    float       m_charge;
     // Max number of allocated particles for the species.
-    std::size_t    m_maxnpart;
+    std::size_t m_maxnpart;
+
+    unsigned short m_npld;
+
     // Pusher assigned for the species.
     ParticlePusher m_pusher;
 
@@ -40,7 +43,8 @@ namespace ntt {
                     const float&          m,
                     const float&          ch,
                     const std::size_t&    maxnpart,
-                    const ParticlePusher& pusher);
+                    const ParticlePusher& pusher,
+                    const unsigned short& npld = 0);
 
     /**
      * @brief Copy constructor for the particle species container.
@@ -53,62 +57,43 @@ namespace ntt {
     /**
      * @brief Destructor for the particle species container.
      */
-    ~ParticleSpecies()                      = default;
+    ~ParticleSpecies() = default;
 
-    /**
-     * @brief Get the species label.
-     *
-     * @return The species label as a std::string.
-     */
-    [[nodiscard]] auto label() const -> std::string {
+    [[nodiscard]]
+    auto label() const -> std::string {
       return m_label;
     }
 
-    /**
-     * @brief Get the species mass.
-     *
-     * @return The species mass as a float.
-     */
-    [[nodiscard]] auto mass() const -> float {
+    [[nodiscard]]
+    auto mass() const -> float {
       return m_mass;
     }
 
-    /**
-     * @brief Get the species charge.
-     *
-     * @return The species charge as a float.
-     */
-    [[nodiscard]] auto charge() const -> float {
+    [[nodiscard]]
+    auto charge() const -> float {
       return m_charge;
     }
 
-    /**
-     * @brief Get the max number of allocated particles.
-     *
-     * @return The maximum number of allocated particles as a std::size_t.
-     */
-    [[nodiscard]] auto maxnpart() const -> std::size_t {
+    [[nodiscard]]
+    auto maxnpart() const -> std::size_t {
       return m_maxnpart;
     }
 
-    /**
-     * @brief Get the pusher assigned for the species.
-     *
-     * @return The pusher assigned for the species as a ParticlePusher.
-     */
-    [[nodiscard]] auto pusher() const -> ParticlePusher {
+    [[nodiscard]]
+    auto pusher() const -> ParticlePusher {
       return m_pusher;
     }
 
-    /**
-     * @brief Get the species index.
-     *
-     * @return The index of the species in the meshblock::particles vector as an int.
-     */
-    [[nodiscard]] auto index() const -> int {
+    [[nodiscard]]
+    auto index() const -> int {
       return m_index;
     }
-  };
-}    // namespace ntt
 
-#endif    // FRAMEWORK_SPECIES_H
+    [[nodiscard]]
+    auto npld() const -> unsigned short {
+      return m_npld;
+    }
+  };
+} // namespace ntt
+
+#endif // FRAMEWORK_SPECIES_H

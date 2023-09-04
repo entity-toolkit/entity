@@ -101,4 +101,4 @@ Inline void v3_Cntrv2Cov(const coord_t<D>&  xi,
   vi_cov[2] = vi_cntrv[2] * h_33(xi);
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_V3_HAT_CNTRV_COV_FORSR_H
+#endif // FRAMEWORK_METRICS_UTILS_V3_HAT_CNTRV_COV_FORSR_H

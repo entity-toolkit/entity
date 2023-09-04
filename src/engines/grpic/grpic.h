@@ -10,11 +10,29 @@
 #include <toml.hpp>
 
 namespace ntt {
-  enum class gr_bc { Dfield, Efield, Bfield, Hfield };
-  enum class gr_faraday { aux, main };
-  enum class gr_ampere { init, aux, main };
-  enum class gr_getE { D0_B, D_B0 };
-  enum class gr_getH { D_B0, D0_B0 };
+  enum class gr_bc {
+    Dfield,
+    Efield,
+    Bfield,
+    Hfield
+  };
+  enum class gr_faraday {
+    aux,
+    main
+  };
+  enum class gr_ampere {
+    init,
+    aux,
+    main
+  };
+  enum class gr_getE {
+    D0_B,
+    D_B0
+  };
+  enum class gr_getH {
+    D_B0,
+    D0_B0
+  };
 
   /**
    * Class for GRPIC simulations, inherits from `Simulation<D, GRPICEngine>`.
@@ -31,8 +49,10 @@ namespace ntt {
      *
      * @param inputdata toml-object with parsed toml parameters.
      */
-    GRPIC(const toml::value& inputdata)
-      : Simulation<D, GRPICEngine>(inputdata), problem_generator { this->m_params } {}
+    GRPIC(const toml::value& inputdata) :
+      Simulation<D, GRPICEngine>(inputdata),
+      problem_generator { this->m_params } {}
+
     GRPIC(const GRPIC<D>&) = delete;
     ~GRPIC()               = default;
 
@@ -138,10 +158,12 @@ namespace ntt {
      * @brief Deposit currents from particles.
      */
     void CurrentsDeposit();
+
     /**
      * @brief Apply boundary conditions for currents.
      */
     void CurrentsBoundaryConditions() {}
+
     /**
      * @brief Time average J currents.
      */
@@ -162,6 +184,7 @@ namespace ntt {
       std::swap(mblock.em, mblock.em0);
       std::swap(mblock.cur, mblock.cur0);
     }
+
     /**
      * @brief Copies em fields into em0
      */
@@ -171,6 +194,6 @@ namespace ntt {
     }
   };
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

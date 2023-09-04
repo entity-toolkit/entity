@@ -51,7 +51,8 @@ namespace ntt {
        */
       Kokkos::parallel_for(
         "CurrentsBoundaryConditions",
-        CreateRangePolicy<Dim2>({ i1_absorb, 0 }, { mblock.i1_max(), mblock.i2_max() }),
+        CreateRangePolicy<Dim2>({ i1_absorb, 0 },
+                                { mblock.i1_max(), mblock.i2_max() }),
         AbsorbCurrents_kernel<Dim2>(mblock, pgen, r_absorb, r_max));
     }
   }
@@ -61,4 +62,4 @@ namespace ntt {
     NTTHostError("not implemented");
   }
 
-}    // namespace ntt
+} // namespace ntt

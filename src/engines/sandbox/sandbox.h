@@ -18,9 +18,11 @@ namespace ntt {
      * @brief Constructor for SANDBOX class.
      * @param inputdata toml-object with parsed toml parameters.
      */
-    SANDBOX(const toml::value& inputdata) : Simulation<D, SANDBOXEngine>(inputdata) {}
+    SANDBOX(const toml::value& inputdata) :
+      Simulation<D, SANDBOXEngine>(inputdata) {}
+
     // SANDBOX(const SANDBOX<D>&) = delete;
-    ~SANDBOX()                 = default;
+    ~SANDBOX() = default;
 
     /**
      * @brief Run the simulation (calling initialize, verify, mainloop, etc).
@@ -28,6 +30,6 @@ namespace ntt {
     void Run();
   };
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

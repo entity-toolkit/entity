@@ -21,8 +21,10 @@ namespace ntt {
     real_t                    m_coeff;
 
   public:
-    AmpereAux_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+    AmpereAux_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -38,8 +40,8 @@ namespace ntt {
 
     D0X1(i, j) += m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
     D0X2(i, j) += m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
-    D0X3(i, j)
-      += m_coeff * inv_sqrt_detH_ij * (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
+    D0X3(i, j) += m_coeff * inv_sqrt_detH_ij *
+                  (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
   }
 
   template <Dimension D>
@@ -48,8 +50,10 @@ namespace ntt {
     real_t                    m_coeff;
 
   public:
-    Ampere_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+    Ampere_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -63,11 +67,13 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
 
-    D0X1(i, j) = DX1(i, j) + m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
-    D0X2(i, j) = DX2(i, j) + m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
-    D0X3(i, j)
-      = DX3(i, j)
-        + m_coeff * inv_sqrt_detH_ij * (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
+    D0X1(i, j) = DX1(i, j) +
+                 m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
+    D0X2(i, j) = DX2(i, j) +
+                 m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
+    D0X3(i, j) = DX3(i, j) +
+                 m_coeff * inv_sqrt_detH_ij *
+                   (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
   }
 
   template <Dimension D>
@@ -76,8 +82,10 @@ namespace ntt {
     real_t                    m_coeff;
 
   public:
-    AmpereInit_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+    AmpereInit_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff) {}
+
     Inline void operator()(index_t, index_t) const;
   };
 
@@ -93,8 +101,8 @@ namespace ntt {
 
     DX1(i, j) += m_coeff * inv_sqrt_detH_iPj * (HX3(i, j) - HX3(i, j - 1));
     DX2(i, j) += m_coeff * inv_sqrt_detH_ijP * (HX3(i - 1, j) - HX3(i, j));
-    DX3(i, j)
-      += m_coeff * inv_sqrt_detH_ij * (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
+    DX3(i, j) += m_coeff * inv_sqrt_detH_ij *
+                 (HX1(i, j - 1) - HX1(i, j) + HX2(i, j) - HX2(i - 1, j));
   }
 
   /**
@@ -108,8 +116,12 @@ namespace ntt {
     const std::size_t         m_ni2;
 
   public:
-    AmpereAuxPoles_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_ni2 { m_mblock.Ni2() } {}
+    AmpereAuxPoles_kernel(const Meshblock<D, GRPICEngine>& mblock,
+                          const real_t&                    coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff),
+      m_ni2 { m_mblock.Ni2() } {}
+
     Inline void operator()(index_t) const;
   };
 
@@ -120,15 +132,16 @@ namespace ntt {
     index_t j_max { m_ni2 + N_GHOSTS - 1 };
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
-    real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
+    real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
+    real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
 
     // theta = 0
-    D0X1(i, j_min) += inv_polar_area_iPj * m_coeff * HX3(i, j_min);
+    D0X1(i, j_min)     += inv_polar_area_iPj * m_coeff * HX3(i, j_min);
     // theta = pi
     D0X1(i, j_max + 1) -= inv_polar_area_iPj * m_coeff * HX3(i, j_max);
     // j = jmin + 1/2
-    D0X2(i, j_min) += inv_sqrt_detH_ijP * m_coeff * (HX3(i - 1, j_min) - HX3(i, j_min));
+    D0X2(i, j_min)     += inv_sqrt_detH_ijP * m_coeff *
+                      (HX3(i - 1, j_min) - HX3(i, j_min));
   }
 
   template <Dimension D>
@@ -138,8 +151,12 @@ namespace ntt {
     const std::size_t         m_ni2;
 
   public:
-    AmperePoles_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_ni2 { m_mblock.Ni2() } {}
+    AmperePoles_kernel(const Meshblock<D, GRPICEngine>& mblock,
+                       const real_t&                    coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff),
+      m_ni2 { m_mblock.Ni2() } {}
+
     Inline void operator()(index_t) const;
   };
 
@@ -150,16 +167,17 @@ namespace ntt {
     index_t j_max { m_ni2 + N_GHOSTS - 1 };
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
-    real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
+    real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
+    real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
 
     // theta = 0
-    D0X1(i, j_min)     = DX1(i, j_min) + inv_polar_area_iPj * m_coeff * HX3(i, j_min);
+    D0X1(i, j_min) = DX1(i, j_min) + inv_polar_area_iPj * m_coeff * HX3(i, j_min);
     // theta = pi
-    D0X1(i, j_max + 1) = DX1(i, j_max + 1) - inv_polar_area_iPj * m_coeff * HX3(i, j_max);
+    D0X1(i, j_max + 1) = DX1(i, j_max + 1) -
+                         inv_polar_area_iPj * m_coeff * HX3(i, j_max);
     // j = jmin + 1/2
-    D0X2(i, j_min)
-      = DX2(i, j_min) + inv_sqrt_detH_ijP * m_coeff * (HX3(i - 1, j_min) - HX3(i, j_min));
+    D0X2(i, j_min) = DX2(i, j_min) + inv_sqrt_detH_ijP * m_coeff *
+                                       (HX3(i - 1, j_min) - HX3(i, j_min));
   }
 
   template <Dimension D>
@@ -169,8 +187,12 @@ namespace ntt {
     const std::size_t         m_ni2;
 
   public:
-    AmpereInitPoles_kernel(const Meshblock<D, GRPICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff), m_ni2 { m_mblock.Ni2() } {}
+    AmpereInitPoles_kernel(const Meshblock<D, GRPICEngine>& mblock,
+                           const real_t&                    coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff),
+      m_ni2 { m_mblock.Ni2() } {}
+
     Inline void operator()(index_t) const;
   };
 
@@ -181,17 +203,18 @@ namespace ntt {
     index_t j_max { m_ni2 + N_GHOSTS - 1 };
     real_t  i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
 
-    real_t  inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
-    real_t  inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
+    real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
+    real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
 
     // theta = 0
-    DX1(i, j_min) += inv_polar_area_iPj * m_coeff * HX3(i, j_min);
+    DX1(i, j_min)     += inv_polar_area_iPj * m_coeff * HX3(i, j_min);
     // theta = pi
     DX1(i, j_max + 1) -= inv_polar_area_iPj * m_coeff * HX3(i, j_max);
     // j = jmin + 1/2
-    DX2(i, j_min) += inv_sqrt_detH_ijP * m_coeff * (HX3(i - 1, j_min) - HX3(i, j_min));
+    DX2(i, j_min)     += inv_sqrt_detH_ijP * m_coeff *
+                     (HX3(i - 1, j_min) - HX3(i, j_min));
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

@@ -24,8 +24,9 @@ namespace ntt {
      */
     DigitalFilter_kernel(ndfield_t<D, 3>&               array,
                          ndfield_t<D, 3>&               buffer,
-                         const tuple_t<std::size_t, D>& size)
-      : m_array { array }, m_buffer { buffer } {
+                         const tuple_t<std::size_t, D>& size) :
+      m_array { array },
+      m_buffer { buffer } {
       for (auto i = 0; i < (short)D; ++i) {
         m_size[i] = size[i];
       }
@@ -55,55 +56,57 @@ namespace ntt {
   template <>
   Inline void DigitalFilter_kernel<Dim1>::operator()(index_t i) const {
     for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
-      m_array(i, comp)
-        = INV_2 * m_buffer(i, comp) + INV_4 * (m_buffer(i - 1, comp) + m_buffer(i + 1, comp));
+      m_array(i, comp) = INV_2 * m_buffer(i, comp) +
+                         INV_4 * (m_buffer(i - 1, comp) + m_buffer(i + 1, comp));
     }
   }
 
   template <>
   Inline void DigitalFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
     for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
-      m_array(i, j, comp)
-        = INV_4 * m_buffer(i, j, comp)
-          + INV_8
-              * (m_buffer(i - 1, j, comp) + m_buffer(i + 1, j, comp) + m_buffer(i, j - 1, comp)
-                 + m_buffer(i, j + 1, comp))
-          + INV_16
-              * (m_buffer(i - 1, j - 1, comp) + m_buffer(i + 1, j + 1, comp)
-                 + m_buffer(i - 1, j + 1, comp) + m_buffer(i + 1, j - 1, comp));
+      m_array(i, j, comp) =
+        INV_4 * m_buffer(i, j, comp) +
+        INV_8 * (m_buffer(i - 1, j, comp) + m_buffer(i + 1, j, comp) +
+                 m_buffer(i, j - 1, comp) + m_buffer(i, j + 1, comp)) +
+        INV_16 * (m_buffer(i - 1, j - 1, comp) + m_buffer(i + 1, j + 1, comp) +
+                  m_buffer(i - 1, j + 1, comp) + m_buffer(i + 1, j - 1, comp));
     }
   }
 
   template <>
-  Inline void DigitalFilter_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
+  Inline void DigitalFilter_kernel<Dim3>::operator()(index_t i,
+                                                     index_t j,
+                                                     index_t k) const {
     for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
-      m_array(i, j, k, comp)
-        = INV_8 * m_buffer(i, j, k, comp)
-          + INV_16
-              * (m_buffer(i - 1, j, k, comp) + m_buffer(i + 1, j, k, comp)
-                 + m_buffer(i, j - 1, k, comp) + m_buffer(i, j + 1, k, comp)
-                 + m_buffer(i, j, k - 1, comp) + m_buffer(i, j, k + 1, comp))
-          + INV_32
-              * (m_buffer(i - 1, j - 1, k, comp) + m_buffer(i + 1, j + 1, k, comp)
-                 + m_buffer(i - 1, j + 1, k, comp) + m_buffer(i + 1, j - 1, k, comp)
-                 + m_buffer(i, j - 1, k - 1, comp) + m_buffer(i, j + 1, k + 1, comp)
-                 + m_buffer(i, j, k - 1, comp) + m_buffer(i, j, k + 1, comp)
-                 + m_buffer(i - 1, j, k - 1, comp) + m_buffer(i + 1, j, k + 1, comp)
-                 + m_buffer(i - 1, j, k + 1, comp) + m_buffer(i + 1, j, k - 1, comp))
-          + INV_64
-              * (m_buffer(i - 1, j - 1, k - 1, comp) + m_buffer(i + 1, j + 1, k + 1, comp)
-                 + m_buffer(i - 1, j + 1, k + 1, comp) + m_buffer(i + 1, j - 1, k - 1, comp)
-                 + m_buffer(i - 1, j - 1, k + 1, comp) + m_buffer(i + 1, j + 1, k - 1, comp)
-                 + m_buffer(i - 1, j + 1, k - 1, comp) + m_buffer(i + 1, j - 1, k + 1, comp));
+      m_array(i, j, k, comp) =
+        INV_8 * m_buffer(i, j, k, comp) +
+        INV_16 * (m_buffer(i - 1, j, k, comp) + m_buffer(i + 1, j, k, comp) +
+                  m_buffer(i, j - 1, k, comp) + m_buffer(i, j + 1, k, comp) +
+                  m_buffer(i, j, k - 1, comp) + m_buffer(i, j, k + 1, comp)) +
+        INV_32 *
+          (m_buffer(i - 1, j - 1, k, comp) + m_buffer(i + 1, j + 1, k, comp) +
+           m_buffer(i - 1, j + 1, k, comp) + m_buffer(i + 1, j - 1, k, comp) +
+           m_buffer(i, j - 1, k - 1, comp) + m_buffer(i, j + 1, k + 1, comp) +
+           m_buffer(i, j, k - 1, comp) + m_buffer(i, j, k + 1, comp) +
+           m_buffer(i - 1, j, k - 1, comp) + m_buffer(i + 1, j, k + 1, comp) +
+           m_buffer(i - 1, j, k + 1, comp) + m_buffer(i + 1, j, k - 1, comp)) +
+        INV_64 * (m_buffer(i - 1, j - 1, k - 1, comp) +
+                  m_buffer(i + 1, j + 1, k + 1, comp) +
+                  m_buffer(i - 1, j + 1, k + 1, comp) +
+                  m_buffer(i + 1, j - 1, k - 1, comp) +
+                  m_buffer(i - 1, j - 1, k + 1, comp) +
+                  m_buffer(i + 1, j + 1, k - 1, comp) +
+                  m_buffer(i - 1, j + 1, k - 1, comp) +
+                  m_buffer(i + 1, j - 1, k + 1, comp));
     }
   }
 #else
   template <>
   Inline void DigitalFilter_kernel<Dim1>::operator()(index_t) const {}
 
-#  define FILTER_IN_I1(ARR, COMP, I, J)                                                       \
-    INV_2*(ARR)((I), (J), (COMP))                                                             \
-      + INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+  #define FILTER_IN_I1(ARR, COMP, I, J)                                        \
+    INV_2*(ARR)((I), (J), (COMP)) +                                            \
+      INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
   template <>
   Inline void DigitalFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
@@ -179,27 +182,26 @@ namespace ntt {
 
       m_array(i, j, cur::jx3) = ZERO;
     } else {
-#  pragma unroll
+  #pragma unroll
       for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
-        m_array(i, j, comp)
-          = INV_4 * m_buffer(i, j, comp)
-            + INV_8
-                * (m_buffer(i - 1, j, comp) + m_buffer(i + 1, j, comp)
-                   + m_buffer(i, j - 1, comp) + m_buffer(i, j + 1, comp))
-            + INV_16
-                * (m_buffer(i - 1, j - 1, comp) + m_buffer(i + 1, j + 1, comp)
-                   + m_buffer(i - 1, j + 1, comp) + m_buffer(i + 1, j - 1, comp));
+        m_array(i, j, comp) =
+          INV_4 * m_buffer(i, j, comp) +
+          INV_8 * (m_buffer(i - 1, j, comp) + m_buffer(i + 1, j, comp) +
+                   m_buffer(i, j - 1, comp) + m_buffer(i, j + 1, comp)) +
+          INV_16 * (m_buffer(i - 1, j - 1, comp) + m_buffer(i + 1, j + 1, comp) +
+                    m_buffer(i - 1, j + 1, comp) + m_buffer(i + 1, j - 1, comp));
       }
     }
   }
 
-#  undef FILTER_IN_I1
+  #undef FILTER_IN_I1
 
   template <>
-  Inline void DigitalFilter_kernel<Dim3>::operator()(index_t, index_t, index_t) const {}
+  Inline void DigitalFilter_kernel<Dim3>::operator()(index_t, index_t, index_t) const {
+  }
 
 #endif
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_DIGITAL_FILTER_H
+#endif // FRAMEWORK_DIGITAL_FILTER_H

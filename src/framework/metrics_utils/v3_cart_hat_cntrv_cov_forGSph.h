@@ -92,8 +92,8 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
 }
 
 /**
- * @brief Vector transformations from global Spherical (hatted) to global Cartesian basis and
- * back.
+ * @brief Vector transformations from global Spherical (hatted) to global
+ * Cartesian basis and back.
  *
  */
 
@@ -118,12 +118,12 @@ Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
     this->x_Code2Sph(xi, x_sph);
   }
   if constexpr (D != Dim1) {
-    vi_cart[0] = vi_hat[0] * math::sin(x_sph[1]) * math::cos(x_sph[2])
-                 + vi_hat[1] * math::cos(x_sph[1]) * math::cos(x_sph[2])
-                 - vi_hat[2] * math::sin(x_sph[2]);
-    vi_cart[1] = vi_hat[0] * math::sin(x_sph[1]) * math::sin(x_sph[2])
-                 + vi_hat[1] * math::cos(x_sph[1]) * math::sin(x_sph[2])
-                 + vi_hat[2] * math::cos(x_sph[2]);
+    vi_cart[0] = vi_hat[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]) +
+                 vi_hat[1] * math::cos(x_sph[1]) * math::cos(x_sph[2]) -
+                 vi_hat[2] * math::sin(x_sph[2]);
+    vi_cart[1] = vi_hat[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]) +
+                 vi_hat[1] * math::cos(x_sph[1]) * math::sin(x_sph[2]) +
+                 vi_hat[2] * math::cos(x_sph[2]);
     vi_cart[2] = vi_hat[0] * math::cos(x_sph[1]) - vi_hat[1] * math::sin(x_sph[1]);
   }
 }
@@ -149,14 +149,15 @@ Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
     this->x_Code2Sph(xi, x_sph);
   }
   if constexpr (D != Dim1) {
-    vi_hat[0] = vi_cart[0] * math::sin(x_sph[1]) * math::cos(x_sph[2])
-                + vi_cart[1] * math::sin(x_sph[1]) * math::sin(x_sph[2])
-                + vi_cart[2] * math::cos(x_sph[1]);
-    vi_hat[1] = vi_cart[0] * math::cos(x_sph[1]) * math::cos(x_sph[2])
-                + vi_cart[1] * math::cos(x_sph[1]) * math::sin(x_sph[2])
-                - vi_cart[2] * math::sin(x_sph[1]);
-    vi_hat[2] = -vi_cart[0] * math::sin(x_sph[2]) + vi_cart[1] * math::cos(x_sph[2]);
+    vi_hat[0] = vi_cart[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]) +
+                vi_cart[1] * math::sin(x_sph[1]) * math::sin(x_sph[2]) +
+                vi_cart[2] * math::cos(x_sph[1]);
+    vi_hat[1] = vi_cart[0] * math::cos(x_sph[1]) * math::cos(x_sph[2]) +
+                vi_cart[1] * math::cos(x_sph[1]) * math::sin(x_sph[2]) -
+                vi_cart[2] * math::sin(x_sph[1]);
+    vi_hat[2] = -vi_cart[0] * math::sin(x_sph[2]) +
+                vi_cart[1] * math::cos(x_sph[2]);
   }
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H

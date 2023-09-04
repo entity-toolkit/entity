@@ -23,8 +23,10 @@ namespace ntt {
      * @brief Constructor for PIC class.
      * @param inputdata toml-object with parsed toml parameters.
      */
-    PIC(const toml::value& inputdata)
-      : Simulation<D, PICEngine>(inputdata), problem_generator { this->m_params } {}
+    PIC(const toml::value& inputdata) :
+      Simulation<D, PICEngine>(inputdata),
+      problem_generator { this->m_params } {}
+
     PIC(const PIC<D>&) = delete;
     ~PIC()             = default;
 
@@ -118,6 +120,6 @@ namespace ntt {
     void Benchmark();
   };
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

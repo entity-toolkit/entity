@@ -11,8 +11,8 @@
 #include "utils/utils.h"
 
 #ifdef OUTPUT_ENABLED
-#  include <adios2.h>
-#  include <adios2/cxx11/KokkosView.h>
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
 #endif
 
 #include <plog/Log.h>
@@ -28,6 +28,12 @@
 
 namespace ntt {
 
+#ifdef MINKOWSKI_METRIC
+  #define FullD D
+#else
+  #define FullD Dim3
+#endif
+
 #ifdef OUTPUT_ENABLED
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::Initialize(const SimulationParams& params,
@@ -38,11 +44,12 @@ namespace ntt {
       return;
     }
     m_io = m_adios.DeclareIO("EntityOutput");
-    m_io.SetEngine(params.outputFormat() != "disabled" ? params.outputFormat() : "HDF5");
+    m_io.SetEngine(params.outputFormat() != "disabled" ? params.outputFormat()
+                                                       : "HDF5");
     adios2::Dims shape, start, count;
 
     /* ---------------------------- Common attributes --------------------------- */
-    auto         global_metric = metadomain.globalMetric();
+    auto global_metric = metadomain.globalMetric();
 
     m_io.DefineVariable<int>("Step");
     m_io.DefineVariable<real_t>("Time");
@@ -75,15 +82,15 @@ namespace ntt {
       const auto gh_zones = params.outputGhosts() ? N_GHOSTS : 0;
       m_io.DefineAttribute("NGhosts", gh_zones);
       for (short d = 0; d < (short)D; ++d) {
-        shape.push_back(metadomain.globalNcells()[d]
-                        + 2 * metadomain.globalNdomainsPerDim()[d] * gh_zones);
-        start.push_back(local_domain->offsetNcells()[d]
-                        + 2 * gh_zones * local_domain->offsetNdomains()[d]);
+        shape.push_back(metadomain.globalNcells()[d] +
+                        2 * metadomain.globalNdomainsPerDim()[d] * gh_zones);
+        start.push_back(local_domain->offsetNcells()[d] +
+                        2 * gh_zones * local_domain->offsetNdomains()[d]);
         count.push_back(local_domain->ncells()[d] + 2 * gh_zones);
       }
     }
-    auto isLayoutRight
-      = std::is_same_v<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>;
+    auto isLayoutRight =
+      std::is_same_v<typename ndfield_t<D, 6>::array_layout, Kokkos::LayoutRight>;
 
     if (isLayoutRight) {
       m_io.DefineAttribute("LayoutRight", 1);
@@ -125,13 +132,7 @@ namespace ntt {
     for (auto& prtl : m_particles) {
       for (auto& sp_index : prtl.speciesID()) {
         if (prtl.id() == PrtlID::X) {
-          // !TODO: change this to a pre-defined argument (number of coords or smth)
-#  ifndef MINKOWSKI_METRIC
-          const auto dmax = (D == Dim2) ? 3 : (short)D;
-#  else
-          const auto dmax = (short)D;
-#  endif
-          for (auto d { 0 }; d < dmax; ++d) {
+          for (auto d { 0 }; d < (short)FullD; ++d) {
             m_io.DefineVariable<real_t>(
               "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
               { adios2::UnknownDim },
@@ -154,8 +155,6 @@ namespace ntt {
         }
       }
     }
-    m_writer = m_io.Open(params.title() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
-                         adios2::Mode::Write);
     m_adios.EnterComputationBlock();
   }
 
@@ -230,50 +229,51 @@ namespace ntt {
         return val_vec;
       }
     }
-  }    // namespace
+  } // namespace
 
   template <Dimension D, SimulationEngine S>
-  void Writer<D, S>::WriteTomlAttribute(const std::string& name, const toml::value& attr) {
+  void Writer<D, S>::WriteTomlAttribute(const std::string& name,
+                                        const toml::value& attr) {
     auto isSimpleType = [](const toml::value_t& type) {
-      return (type == toml::value_t::integer || type == toml::value_t::floating
-              || type == toml::value_t::string || type == toml::value_t::boolean);
+      return (type == toml::value_t::integer || type == toml::value_t::floating ||
+              type == toml::value_t::string || type == toml::value_t::boolean);
     };
     switch (attr.type()) {
-    case toml::value_t::integer:
-      m_io.DefineAttribute(name, attr.as_integer());
-      break;
-    case toml::value_t::floating:
-      m_io.DefineAttribute(name, attr.as_floating());
-      break;
-    case toml::value_t::string:
-      m_io.DefineAttribute(name, (std::string)attr.as_string());
-      break;
-    case toml::value_t::boolean:
-      m_io.DefineAttribute(name, (attr.as_boolean() ? 1 : 0));
-      break;
-    case toml::value_t::array: {
-      auto is_simple = isSimpleType(attr.at(0).type());
-      auto element   = is_simple ? attr.at(0) : attr.at(0).at(0);
-      if (element.is_integer()) {
-        auto attrs = unrollTomlVector<int>(attr, is_simple);
-        m_io.DefineAttribute(name, attrs.data(), attrs.size());
-      } else if (element.is_floating()) {
-        auto attrs = unrollTomlVector<real_t>(attr, is_simple);
-        m_io.DefineAttribute(name, attrs.data(), attrs.size());
-      } else if (element.is_boolean()) {
-        auto attrs = unrollTomlVector<int>(attr, is_simple);
-        m_io.DefineAttribute(name, attrs.data(), attrs.size());
-      } else if (element.is_string()) {
-        auto attrs = unrollTomlVector<std::string>(attr, is_simple);
-        m_io.DefineAttribute(name, attrs.data(), attrs.size());
-      } else {
-        NTTHostError("Unknown type of attribute: " + name);
+      case toml::value_t::integer:
+        m_io.DefineAttribute(name, attr.as_integer());
+        break;
+      case toml::value_t::floating:
+        m_io.DefineAttribute(name, attr.as_floating());
+        break;
+      case toml::value_t::string:
+        m_io.DefineAttribute(name, (std::string)attr.as_string());
+        break;
+      case toml::value_t::boolean:
+        m_io.DefineAttribute(name, (attr.as_boolean() ? 1 : 0));
+        break;
+      case toml::value_t::array: {
+        auto is_simple = isSimpleType(attr.at(0).type());
+        auto element   = is_simple ? attr.at(0) : attr.at(0).at(0);
+        if (element.is_integer()) {
+          auto attrs = unrollTomlVector<int>(attr, is_simple);
+          m_io.DefineAttribute(name, attrs.data(), attrs.size());
+        } else if (element.is_floating()) {
+          auto attrs = unrollTomlVector<real_t>(attr, is_simple);
+          m_io.DefineAttribute(name, attrs.data(), attrs.size());
+        } else if (element.is_boolean()) {
+          auto attrs = unrollTomlVector<int>(attr, is_simple);
+          m_io.DefineAttribute(name, attrs.data(), attrs.size());
+        } else if (element.is_string()) {
+          auto attrs = unrollTomlVector<std::string>(attr, is_simple);
+          m_io.DefineAttribute(name, attrs.data(), attrs.size());
+        } else {
+          NTTHostError("Unknown type of attribute: " + name);
+        }
+        break;
       }
-      break;
-    }
-    default:
-      NTTHostError("Unknown type of attribute: " + name);
-      break;
+      default:
+        NTTHostError("Unknown type of attribute: " + name);
+        break;
     }
   }
 
@@ -289,15 +289,19 @@ namespace ntt {
     // check if current timestep is an output step
     // based on # of steps or passed time since last output
     auto is_output_step = (tstep % params.outputInterval() == 0);
-    auto is_output_time = (time - m_last_output_time >= params.outputIntervalTime())
-                          || (m_last_output_time <= 0.0);
+    auto is_output_time = (time - m_last_output_time >=
+                           params.outputIntervalTime()) ||
+                          (m_last_output_time <= 0.0);
     // combine the logic
-    auto do_output
-      = (m_output_enabled
-         && ((output_by_step && is_output_step) || (output_by_time && is_output_time)));
+    auto do_output = (m_output_enabled && ((output_by_step && is_output_step) ||
+                                           (output_by_time && is_output_time)));
 
     if (do_output) {
       m_adios.ExitComputationBlock();
+      m_writer = m_io.Open(
+        params.title() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
+        m_mode);
+      m_mode = adios2::Mode::Append;
       WaitAndSynchronize();
       NTTLog();
       m_writer.BeginStep();
@@ -311,6 +315,7 @@ namespace ntt {
 
       m_writer.EndStep();
       m_last_output_time = time;
+      m_writer.Close();
       m_adios.EnterComputationBlock();
     }
   }
@@ -369,4 +374,4 @@ namespace ntt {
 
 #endif
 
-}    // namespace ntt
+} // namespace ntt

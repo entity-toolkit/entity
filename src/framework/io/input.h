@@ -18,7 +18,7 @@ namespace ntt {
       }
       return false;
     }
-  }    // namespace
+  } // namespace
 
   template <typename T>
   auto readFromInput(const toml::value& inputdata,
@@ -28,11 +28,12 @@ namespace ntt {
       auto& val_block = toml::find(inputdata, blockname);
       return toml::find<T>(val_block, variable);
     }
-    auto msg = "Cannot find variable <" + variable + "> from block [" + blockname
-               + "] in the input file.";
+    auto msg = "Cannot find variable <" + variable + "> from block [" +
+               blockname + "] in the input file.";
     PLOGE_(LogFile) << msg;
     throw std::invalid_argument(msg);
   }
+
   template <typename T>
   auto readFromInput(const toml::value& inputdata,
                      const std::string& blockname,
@@ -45,6 +46,6 @@ namespace ntt {
     return defval;
   }
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // IO_INPUT_H
+#endif // IO_INPUT_H

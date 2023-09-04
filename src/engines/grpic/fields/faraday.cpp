@@ -11,11 +11,13 @@ namespace ntt {
     auto         params = *(this->params());
     const real_t coeff  = fraction * params.correction() * mblock.timestep();
     if (g == gr_faraday::aux) {
-      Kokkos::parallel_for(
-        "faraday", mblock.rangeActiveCells(), FaradayAux_kernel<Dim2>(mblock, coeff));
+      Kokkos::parallel_for("faraday",
+                           mblock.rangeActiveCells(),
+                           FaradayAux_kernel<Dim2>(mblock, coeff));
     } else if (g == gr_faraday::main) {
-      Kokkos::parallel_for(
-        "faraday", mblock.rangeActiveCells(), Faraday_kernel<Dim2>(mblock, coeff));
+      Kokkos::parallel_for("faraday",
+                           mblock.rangeActiveCells(),
+                           Faraday_kernel<Dim2>(mblock, coeff));
     } else {
       NTTHostError("Wrong option for `g`");
     }
@@ -27,4 +29,4 @@ namespace ntt {
     NTTHostError("not implemented");
   }
 
-}    // namespace ntt
+} // namespace ntt

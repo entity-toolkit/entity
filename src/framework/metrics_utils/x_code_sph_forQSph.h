@@ -51,4 +51,4 @@ Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
   }
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORQSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_X_CODE_SPH_FORQSPH_H

@@ -1,24 +1,24 @@
 #ifdef OUTPUT_ENABLED
 
-#  include "output_prtls.hpp"
+  #include "output_prtls.hpp"
 
-#  include "wrapper.h"
+  #include "wrapper.h"
 
-#  include "particle_macros.h"
-#  include "sim_params.h"
+  #include "particle_macros.h"
+  #include "sim_params.h"
 
-#  include "io/output.h"
-#  include "meshblock/meshblock.h"
-#  include "meshblock/particles.h"
+  #include "io/output.h"
+  #include "meshblock/meshblock.h"
+  #include "meshblock/particles.h"
 
-#  include <adios2.h>
-#  include <adios2/cxx11/KokkosView.h>
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
 
-#  include <string>
+  #include <string>
 
-#  ifdef MPI_ENABLED
-#    include <mpi.h>
-#  endif
+  #ifdef MPI_ENABLED
+    #include <mpi.h>
+  #endif
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>
@@ -35,28 +35,35 @@ namespace ntt {
         size        = prtls.npart();
         prtl_stride = 1;
       }
-#  ifdef MPI_ENABLED
+  #ifdef MPI_ENABLED
       std::vector<std::size_t> sizes_g(metadomain.globalNdomains());
-      MPI_Allgather(
-        &size, 1, MPI_UNSIGNED_LONG, sizes_g.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-      const auto total_size = std::accumulate(sizes_g.begin(), sizes_g.end(), (std::size_t)0);
+      MPI_Allgather(&size,
+                    1,
+                    MPI_UNSIGNED_LONG,
+                    sizes_g.data(),
+                    1,
+                    MPI_UNSIGNED_LONG,
+                    MPI_COMM_WORLD);
+      const auto total_size = std::accumulate(sizes_g.begin(),
+                                              sizes_g.end(),
+                                              (std::size_t)0);
       auto       offset     = (std::size_t)0;
       for (auto i { 0 }; i < metadomain.localDomain()->mpiRank(); ++i) {
         offset += sizes_g[i];
       }
-#  else    // not MPI_ENABLED
+  #else // not MPI_ENABLED
       const auto offset     = (std::size_t)0;
       const auto total_size = size;
       (void)metadomain;
-#  endif
+  #endif
 
       if (m_id == PrtlID::X) {
         // phi is treated separately for 2D non-Minkowski metric
-#  ifndef MINKOWSKI_METRIC
+  #ifndef MINKOWSKI_METRIC
         const auto dmax = (D == Dim2) ? 3 : (short)D;
-#  else
+  #else
         const auto dmax = (short)D;
-#  endif
+  #endif
         for (auto d { 0 }; d < dmax; ++d) {
           array_t<real_t*> xi("xi", size);
 
@@ -78,7 +85,8 @@ namespace ntt {
           array_t<real_t*> ui("ui", size);
 
           if (params.outputAsIs()) {
-            auto prtl_ui = (d == 0) ? prtls.ux1 : ((d == 1) ? prtls.ux2 : prtls.ux3);
+            auto prtl_ui = (d == 0) ? prtls.ux1
+                                    : ((d == 1) ? prtls.ux2 : prtls.ux3);
             Kokkos::parallel_for(
               "ParticlesOutput_Ui",
               Kokkos::RangePolicy<AccelExeSpace>(0, size),
@@ -115,6 +123,6 @@ namespace ntt {
     }
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

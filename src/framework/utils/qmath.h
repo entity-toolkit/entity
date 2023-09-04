@@ -55,9 +55,10 @@ namespace ntt {
    * @returns true/false.
    */
   template <Dimension D>
-  Inline bool AlmostEqual(const vec_t<D>& a,
-                          const vec_t<D>& b,
-                          real_t epsilon = std::is_same_v<real_t, float> ? 0.00001f : 1e-8) {
+  Inline bool AlmostEqual(
+    const vec_t<D>& a,
+    const vec_t<D>& b,
+    real_t          epsilon = std::is_same_v<real_t, float> ? 0.00001f : 1e-8) {
     for (auto i { 0 }; i < static_cast<short>(D); ++i) {
       if (!AlmostEqual(a[i], b[i], epsilon)) {
         return false;
@@ -74,10 +75,11 @@ namespace ntt {
    * @returns true/false.
    */
   template <typename T>
-  Inline bool CloseToZero(T a, T epsilon = std::is_same_v<T, float> ? 0.00001f : 1e-8) {
+  Inline bool CloseToZero(T a,
+                          T epsilon = std::is_same_v<T, float> ? 0.00001f : 1e-8) {
     return math::abs(a) < epsilon;
   }
-}    // namespace ntt
+} // namespace ntt
 
 template bool ntt::AlmostEqual<ntt::Dim1>(const ntt::vec_t<ntt::Dim1>&,
                                           const ntt::vec_t<ntt::Dim1>&,

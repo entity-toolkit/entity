@@ -14,6 +14,7 @@
 
 namespace ntt {
   struct Massive_t {};
+
   struct Photon_t {};
 
   /**
@@ -41,13 +42,13 @@ namespace ntt {
                   const real_t&                    coeff,
                   const real_t&                    dt,
                   const real_t&                    epsilon,
-                  const int&                       niter)
-      : m_mblock(mblock),
-        m_particles(particles),
-        m_coeff(coeff),
-        m_dt(dt),
-        m_epsilon(epsilon),
-        m_niter(niter) {}
+                  const int&                       niter) :
+      m_mblock(mblock),
+      m_particles(particles),
+      m_coeff(coeff),
+      m_dt(dt),
+      m_epsilon(epsilon),
+      m_niter(niter) {}
 
     /**
      * @brief Main pusher subroutine for photon particles.
@@ -108,7 +109,10 @@ namespace ntt {
      * @param phi updated phi [return].
      */
     template <typename T>
-    Inline void UpdatePhi(T, const coord_t<D>& xp, const vec_t<Dim3>& vp, real_t& phi) const {}
+    Inline void UpdatePhi(T,
+                          const coord_t<D>&  xp,
+                          const vec_t<Dim3>& vp,
+                          real_t&            phi) const {}
 
     /**
      * @brief EM pusher (Boris) substep.
@@ -139,17 +143,19 @@ namespace ntt {
       vp_upd_hat[1] += D0[1];
       vp_upd_hat[2] += D0[2];
 
-      COEFF
-        *= ONE
-           / math::sqrt(ONE + SQR(vp_upd_hat[0]) + SQR(vp_upd_hat[1]) + SQR(vp_upd_hat[2]));
+      COEFF *= ONE / math::sqrt(ONE + SQR(vp_upd_hat[0]) + SQR(vp_upd_hat[1]) +
+                                SQR(vp_upd_hat[2]));
       B0[0] *= COEFF;
       B0[1] *= COEFF;
       B0[2] *= COEFF;
-      COEFF     = TWO / (ONE + SQR(B0[0]) + SQR(B0[1]) + SQR(B0[2]));
+      COEFF  = TWO / (ONE + SQR(B0[0]) + SQR(B0[1]) + SQR(B0[2]));
 
-      vp_hat[0] = (vp_upd_hat[0] + vp_upd_hat[1] * B0[2] - vp_upd_hat[2] * B0[1]) * COEFF;
-      vp_hat[1] = (vp_upd_hat[1] + vp_upd_hat[2] * B0[0] - vp_upd_hat[0] * B0[2]) * COEFF;
-      vp_hat[2] = (vp_upd_hat[2] + vp_upd_hat[0] * B0[1] - vp_upd_hat[1] * B0[0]) * COEFF;
+      vp_hat[0] = (vp_upd_hat[0] + vp_upd_hat[1] * B0[2] - vp_upd_hat[2] * B0[1]) *
+                  COEFF;
+      vp_hat[1] = (vp_upd_hat[1] + vp_upd_hat[2] * B0[0] - vp_upd_hat[0] * B0[2]) *
+                  COEFF;
+      vp_hat[2] = (vp_upd_hat[2] + vp_upd_hat[0] * B0[1] - vp_upd_hat[1] * B0[0]) *
+                  COEFF;
 
       vp_upd_hat[0] += vp_hat[1] * B0[2] - vp_hat[2] * B0[1] + D0[0];
       vp_upd_hat[1] += vp_hat[2] * B0[0] - vp_hat[0] * B0[2] + D0[1];
@@ -166,7 +172,9 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void interpolateFields(index_t& p, vec_t<Dim3>& e, vec_t<Dim3>& b) const {};
+    Inline void interpolateFields(index_t&     p,
+                                  vec_t<Dim3>& e,
+                                  vec_t<Dim3>& b) const {};
 
     /**
      * @brief Compute the gamma parameter Gamma = sqrt(u_i u_j h^ij) for massless particles.
@@ -174,7 +182,8 @@ namespace ntt {
     Inline auto computeGamma(const Photon_t&,
                              const vec_t<Dim3>& u_cov,
                              const vec_t<Dim3>& u_cntrv) const -> real_t {
-      return math::sqrt(u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1] + u_cov[2] * u_cntrv[2]);
+      return math::sqrt(
+        u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1] + u_cov[2] * u_cntrv[2]);
     }
 
     /**
@@ -183,13 +192,13 @@ namespace ntt {
     Inline auto computeGamma(const Massive_t&,
                              const vec_t<Dim3>& u_cov,
                              const vec_t<Dim3>& u_cntrv) const -> real_t {
-      return math::sqrt(ONE + u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1]
-                        + u_cov[2] * u_cntrv[2]);
+      return math::sqrt(ONE + u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1] +
+                        u_cov[2] * u_cntrv[2]);
     }
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                               Geodesic pusher                              */
+  /*                               Geodesic pusher */
   /* -------------------------------------------------------------------------- */
   // namespace {
   //   inline constexpr real_t EPSILON { 1e-2 };
@@ -197,22 +206,22 @@ namespace ntt {
   //   inline constexpr int    N_ITER { 10 };
   // }    // namespace
 
-#define DERIVATIVE_IN_R(func, x)                                                              \
-  ((m_mblock.metric.func({ x[0] + m_epsilon, x[1] })                                          \
-    - m_mblock.metric.func({ x[0] - m_epsilon, x[1] }))                                       \
-   / (TWO * m_epsilon))
+#define DERIVATIVE_IN_R(func, x)                                               \
+  ((m_mblock.metric.func({ x[0] + m_epsilon, x[1] }) -                         \
+    m_mblock.metric.func({ x[0] - m_epsilon, x[1] })) /                        \
+   (TWO * m_epsilon))
 
-#define DERIVATIVE_IN_TH(func, x)                                                             \
-  ((m_mblock.metric.func({ x[0], x[1] + m_epsilon })                                          \
-    - m_mblock.metric.func({ x[0], x[1] - m_epsilon }))                                       \
-   / (TWO * m_epsilon))
+#define DERIVATIVE_IN_TH(func, x)                                              \
+  ((m_mblock.metric.func({ x[0], x[1] + m_epsilon }) -                         \
+    m_mblock.metric.func({ x[0], x[1] - m_epsilon })) /                        \
+   (TWO * m_epsilon))
 
   template <>
   template <typename T>
   Inline void Pusher_kernel<Dim2>::GeodesicMomentumPush(T,
                                                         const coord_t<Dim2>& xp,
                                                         const vec_t<Dim3>&   vp,
-                                                        vec_t<Dim3>&         vp_upd) const {
+                                                        vec_t<Dim3>& vp_upd) const {
     // initialize midpoint values & updated values
     vec_t<Dim3> vp_mid { ZERO };
     vec_t<Dim3> vp_mid_cntrv { ZERO };
@@ -230,36 +239,38 @@ namespace ntt {
       m_mblock.metric.v3_Cov2Cntrv(xp, vp_mid, vp_mid_cntrv);
 
       // find Gamma / alpha at midpoint
-      real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / m_mblock.metric.alpha(xp) };
+      real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) /
+                  m_mblock.metric.alpha(xp) };
 
       // find updated velocity
-      vp_upd[0] = vp[0]
-                  + m_dt
-                      * (-m_mblock.metric.alpha(xp) * u0 * DERIVATIVE_IN_R(alpha, xp)
-                         + vp_mid[0] * DERIVATIVE_IN_R(beta1, xp)
-                         - (HALF / u0)
-                             * (DERIVATIVE_IN_R(h11, xp) * SQR(vp_mid[0])
-                                + DERIVATIVE_IN_R(h22, xp) * SQR(vp_mid[1])
-                                + DERIVATIVE_IN_R(h33, xp) * SQR(vp_mid[2])
-                                + TWO * DERIVATIVE_IN_R(h13, xp) * vp_mid[0] * vp_mid[2]));
-      vp_upd[1] = vp[1]
-                  + m_dt
-                      * (-m_mblock.metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp)
-                         + vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp)
-                         - (HALF / u0)
-                             * (DERIVATIVE_IN_TH(h11, xp) * SQR(vp_mid[0])
-                                + DERIVATIVE_IN_TH(h22, xp) * SQR(vp_mid[1])
-                                + DERIVATIVE_IN_TH(h33, xp) * SQR(vp_mid[2])
-                                + TWO * DERIVATIVE_IN_TH(h13, xp) * vp_mid[0] * vp_mid[2]));
+      vp_upd[0] = vp[0] +
+                  m_dt *
+                    (-m_mblock.metric.alpha(xp) * u0 * DERIVATIVE_IN_R(alpha, xp) +
+                     vp_mid[0] * DERIVATIVE_IN_R(beta1, xp) -
+                     (HALF / u0) *
+                       (DERIVATIVE_IN_R(h11, xp) * SQR(vp_mid[0]) +
+                        DERIVATIVE_IN_R(h22, xp) * SQR(vp_mid[1]) +
+                        DERIVATIVE_IN_R(h33, xp) * SQR(vp_mid[2]) +
+                        TWO * DERIVATIVE_IN_R(h13, xp) * vp_mid[0] * vp_mid[2]));
+      vp_upd[1] = vp[1] +
+                  m_dt *
+                    (-m_mblock.metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
+                     vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
+                     (HALF / u0) *
+                       (DERIVATIVE_IN_TH(h11, xp) * SQR(vp_mid[0]) +
+                        DERIVATIVE_IN_TH(h22, xp) * SQR(vp_mid[1]) +
+                        DERIVATIVE_IN_TH(h33, xp) * SQR(vp_mid[2]) +
+                        TWO * DERIVATIVE_IN_TH(h13, xp) * vp_mid[0] * vp_mid[2]));
     }
   }
 
   template <>
   template <typename T>
-  Inline void Pusher_kernel<Dim2>::GeodesicCoordinatePush(T,
-                                                          const coord_t<Dim2>& xp,
-                                                          const vec_t<Dim3>&   vp,
-                                                          coord_t<Dim2>&       xp_upd) const {
+  Inline void Pusher_kernel<Dim2>::GeodesicCoordinatePush(
+    T,
+    const coord_t<Dim2>& xp,
+    const vec_t<Dim3>&   vp,
+    coord_t<Dim2>&       xp_upd) const {
     vec_t<Dim3>   vp_cntrv { ZERO };
     coord_t<Dim2> xp_mid { ZERO };
     xp_upd[0] = xp[0];
@@ -278,7 +289,8 @@ namespace ntt {
       real_t u0 { gamma / m_mblock.metric.alpha(xp_mid) };
 
       // find updated coordinate shift
-      xp_upd[0] = xp[0] + m_dt * (vp_cntrv[0] / u0 - m_mblock.metric.beta1(xp_mid));
+      xp_upd[0] = xp[0] +
+                  m_dt * (vp_cntrv[0] / u0 - m_mblock.metric.beta1(xp_mid));
       xp_upd[1] = xp[1] + m_dt * (vp_cntrv[1] / u0);
     }
   }
@@ -289,7 +301,7 @@ namespace ntt {
                                                     const coord_t<Dim2>& xp,
                                                     const vec_t<Dim3>&   vp,
                                                     coord_t<Dim2>&       xp_upd,
-                                                    vec_t<Dim3>&         vp_upd) const {
+                                                    vec_t<Dim3>& vp_upd) const {
     // initialize midpoint values & updated values
     vec_t<Dim2> xp_mid { ZERO };
     vec_t<Dim3> vp_mid { ZERO }, vp_mid_cntrv { ZERO };
@@ -312,32 +324,35 @@ namespace ntt {
       m_mblock.metric.v3_Cov2Cntrv(xp_mid, vp_mid, vp_mid_cntrv);
 
       // find Gamma / alpha at midpoint
-      real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / m_mblock.metric.alpha(xp_mid) };
+      real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) /
+                  m_mblock.metric.alpha(xp_mid) };
 
       // find updated coordinate shift
-      xp_upd[0] = xp[0] + m_dt * (vp_mid_cntrv[0] / u0 - m_mblock.metric.beta1(xp_mid));
+      xp_upd[0] = xp[0] +
+                  m_dt * (vp_mid_cntrv[0] / u0 - m_mblock.metric.beta1(xp_mid));
       xp_upd[1] = xp[1] + m_dt * (vp_mid_cntrv[1] / u0);
 
       // find updated velocity
-      vp_upd[0] = vp[0]
-                  + m_dt
-                      * (-m_mblock.metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_R(alpha, xp_mid)
-                         + vp_mid[0] * DERIVATIVE_IN_R(beta1, xp_mid)
-                         - (HALF / u0)
-                             * (DERIVATIVE_IN_R(h11, xp_mid) * SQR(vp_mid[0])
-                                + DERIVATIVE_IN_R(h22, xp_mid) * SQR(vp_mid[1])
-                                + DERIVATIVE_IN_R(h33, xp_mid) * SQR(vp_mid[2])
-                                + TWO * DERIVATIVE_IN_R(h13, xp_mid) * vp_mid[0] * vp_mid[2]));
-      vp_upd[1]
-        = vp[1]
-          + m_dt
-              * (-m_mblock.metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_TH(alpha, xp_mid)
-                 + vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid)
-                 - (HALF / u0)
-                     * (DERIVATIVE_IN_TH(h11, xp_mid) * SQR(vp_mid[0])
-                        + DERIVATIVE_IN_TH(h22, xp_mid) * SQR(vp_mid[1])
-                        + DERIVATIVE_IN_TH(h33, xp_mid) * SQR(vp_mid[2])
-                        + TWO * DERIVATIVE_IN_TH(h13, xp_mid) * vp_mid[0] * vp_mid[2]));
+      vp_upd[0] = vp[0] +
+                  m_dt * (-m_mblock.metric.alpha(xp_mid) * u0 *
+                            DERIVATIVE_IN_R(alpha, xp_mid) +
+                          vp_mid[0] * DERIVATIVE_IN_R(beta1, xp_mid) -
+                          (HALF / u0) *
+                            (DERIVATIVE_IN_R(h11, xp_mid) * SQR(vp_mid[0]) +
+                             DERIVATIVE_IN_R(h22, xp_mid) * SQR(vp_mid[1]) +
+                             DERIVATIVE_IN_R(h33, xp_mid) * SQR(vp_mid[2]) +
+                             TWO * DERIVATIVE_IN_R(h13, xp_mid) * vp_mid[0] *
+                               vp_mid[2]));
+      vp_upd[1] = vp[1] +
+                  m_dt * (-m_mblock.metric.alpha(xp_mid) * u0 *
+                            DERIVATIVE_IN_TH(alpha, xp_mid) +
+                          vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid) -
+                          (HALF / u0) *
+                            (DERIVATIVE_IN_TH(h11, xp_mid) * SQR(vp_mid[0]) +
+                             DERIVATIVE_IN_TH(h22, xp_mid) * SQR(vp_mid[1]) +
+                             DERIVATIVE_IN_TH(h33, xp_mid) * SQR(vp_mid[2]) +
+                             TWO * DERIVATIVE_IN_TH(h13, xp_mid) * vp_mid[0] *
+                               vp_mid[2]));
     }
   }
 
@@ -345,7 +360,7 @@ namespace ntt {
 #undef DERIVATIVE_IN_R
 
   /* -------------------------------------------------------------------------- */
-  /*                                 Phi pusher                                 */
+  /*                                 Phi pusher */
   /* -------------------------------------------------------------------------- */
   template <>
   template <typename T>
@@ -377,48 +392,52 @@ namespace ntt {
     // Using fields em::e = D(t = n), and em::b0 = B(t = n)
 
     // Ex1
-    e0[0] = ((HALF * (EX1(i, j) + EX1(i - 1, j))) * (ONE - dx1)
-             + (HALF * (EX1(i, j) + EX1(i + 1, j))) * dx1)
-              * (ONE - dx2)
-            + ((HALF * (EX1(i, j + 1) + EX1(i - 1, j + 1))) * (ONE - dx1)
-               + (HALF * (EX1(i, j + 1) + EX1(i + 1, j + 1))) * dx1)
-                * dx2;
+    e0[0] = ((HALF * (EX1(i, j) + EX1(i - 1, j))) * (ONE - dx1) +
+             (HALF * (EX1(i, j) + EX1(i + 1, j))) * dx1) *
+              (ONE - dx2) +
+            ((HALF * (EX1(i, j + 1) + EX1(i - 1, j + 1))) * (ONE - dx1) +
+             (HALF * (EX1(i, j + 1) + EX1(i + 1, j + 1))) * dx1) *
+              dx2;
     // Ex2
-    e0[1] = ((HALF * (EX2(i, j) + EX2(i, j - 1))) * (ONE - dx1)
-             + (HALF * (EX2(i + 1, j) + EX2(i + 1, j - 1))) * dx1)
-              * (ONE - dx2)
-            + ((HALF * (EX2(i, j) + EX2(i, j + 1))) * (ONE - dx1)
-               + (HALF * (EX2(i + 1, j) + EX2(i + 1, j + 1))) * dx1)
-                * dx2;
+    e0[1] = ((HALF * (EX2(i, j) + EX2(i, j - 1))) * (ONE - dx1) +
+             (HALF * (EX2(i + 1, j) + EX2(i + 1, j - 1))) * dx1) *
+              (ONE - dx2) +
+            ((HALF * (EX2(i, j) + EX2(i, j + 1))) * (ONE - dx1) +
+             (HALF * (EX2(i + 1, j) + EX2(i + 1, j + 1))) * dx1) *
+              dx2;
     // Ex3
-    e0[2] = ((EX3(i, j)) * (ONE - dx1) + (EX3(i + 1, j)) * dx1) * (ONE - dx2)
-            + ((EX3(i, j + 1)) * (ONE - dx1) + (EX3(i + 1, j + 1)) * dx1) * dx2;
+    e0[2] = ((EX3(i, j)) * (ONE - dx1) + (EX3(i + 1, j)) * dx1) * (ONE - dx2) +
+            ((EX3(i, j + 1)) * (ONE - dx1) + (EX3(i + 1, j + 1)) * dx1) * dx2;
 
     // B0x1
-    b0[0] = ((HALF * (B0X1(i, j) + B0X1(i, j - 1))) * (ONE - dx1)
-             + (HALF * (B0X1(i + 1, j) + B0X1(i + 1, j - 1))) * dx1)
-              * (ONE - dx2)
-            + ((HALF * (B0X1(i, j) + B0X1(i, j + 1))) * (ONE - dx1)
-               + (HALF * (B0X1(i + 1, j) + B0X1(i + 1, j + 1))) * dx1)
-                * dx2;
+    b0[0] = ((HALF * (B0X1(i, j) + B0X1(i, j - 1))) * (ONE - dx1) +
+             (HALF * (B0X1(i + 1, j) + B0X1(i + 1, j - 1))) * dx1) *
+              (ONE - dx2) +
+            ((HALF * (B0X1(i, j) + B0X1(i, j + 1))) * (ONE - dx1) +
+             (HALF * (B0X1(i + 1, j) + B0X1(i + 1, j + 1))) * dx1) *
+              dx2;
     // B0x2
-    b0[1] = ((HALF * (B0X2(i - 1, j) + B0X2(i, j))) * (ONE - dx1)
-             + (HALF * (B0X2(i, j) + B0X2(i + 1, j))) * dx1)
-              * (ONE - dx2)
-            + ((HALF * (B0X2(i - 1, j + 1) + B0X2(i, j + 1))) * (ONE - dx1)
-               + (HALF * (B0X2(i, j + 1) + B0X2(i + 1, j + 1))) * dx1)
-                * dx2;
+    b0[1] = ((HALF * (B0X2(i - 1, j) + B0X2(i, j))) * (ONE - dx1) +
+             (HALF * (B0X2(i, j) + B0X2(i + 1, j))) * dx1) *
+              (ONE - dx2) +
+            ((HALF * (B0X2(i - 1, j + 1) + B0X2(i, j + 1))) * (ONE - dx1) +
+             (HALF * (B0X2(i, j + 1) + B0X2(i + 1, j + 1))) * dx1) *
+              dx2;
     // B0x3
-    b0[2]
-      = ((INV_4 * (B0X3(i - 1, j - 1) + B0X3(i - 1, j) + B0X3(i, j - 1) + B0X3(i, j)))
-           * (ONE - dx1)
-         + (INV_4 * (B0X3(i, j - 1) + B0X3(i, j) + B0X3(i + 1, j - 1) + B0X3(i + 1, j))) * dx1)
-          * (ONE - dx2)
-        + ((INV_4 * (B0X3(i - 1, j) + B0X3(i - 1, j + 1) + B0X3(i, j) + B0X3(i, j + 1)))
-             * (ONE - dx1)
-           + (INV_4 * (B0X3(i, j) + B0X3(i, j + 1) + B0X3(i + 1, j) + B0X3(i + 1, j + 1)))
-               * dx1)
-            * dx2;
+    b0[2] = ((INV_4 * (B0X3(i - 1, j - 1) + B0X3(i - 1, j) + B0X3(i, j - 1) +
+                       B0X3(i, j))) *
+               (ONE - dx1) +
+             (INV_4 * (B0X3(i, j - 1) + B0X3(i, j) + B0X3(i + 1, j - 1) +
+                       B0X3(i + 1, j))) *
+               dx1) *
+              (ONE - dx2) +
+            ((INV_4 * (B0X3(i - 1, j) + B0X3(i - 1, j + 1) + B0X3(i, j) +
+                       B0X3(i, j + 1))) *
+               (ONE - dx1) +
+             (INV_4 * (B0X3(i, j) + B0X3(i, j + 1) + B0X3(i + 1, j) +
+                       B0X3(i + 1, j + 1))) *
+               dx1) *
+              dx2;
   }
 
   /* ------------------------------ Photon pusher ----------------------------- */
@@ -432,7 +451,7 @@ namespace ntt {
       m_particles.dx2_prev(p) = m_particles.dx2(p);
 
       coord_t<Dim2> xp { ZERO };
-      vec_t<Dim3>   vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
+      vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
 
       xp[0] = get_prtl_x1(m_particles, p);
       xp[1] = get_prtl_x2(m_particles, p);
@@ -483,7 +502,8 @@ namespace ntt {
       xp[0] = get_prtl_x1(m_particles, p);
       xp[1] = get_prtl_x2(m_particles, p);
 
-      vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO }, Bp_hat { ZERO };
+      vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
+        Bp_hat { ZERO };
       interpolateFields(p, Dp_cntrv, Bp_cntrv);
       m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
       m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
@@ -509,10 +529,11 @@ namespace ntt {
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
 
       // update phi
-      UpdatePhi<Massive_t>(Massive_t {},
-                           { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
-                           vp_upd,
-                           m_particles.phi(p));
+      UpdatePhi<Massive_t>(
+        Massive_t {},
+        { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
+        vp_upd,
+        m_particles.phi(p));
 
       /* ------------------------------- Old pusher ------------------------------- */
       // GeodesicFullPush<Massive_t>(Massive_t {}, xp, vp, xp_upd, vp_upd);
@@ -536,6 +557,6 @@ namespace ntt {
     }
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

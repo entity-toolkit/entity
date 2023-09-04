@@ -82,7 +82,16 @@ class DatasetPolarPlotAccessor:
         assert DataIs2DPolar(self._obj), "Data must be 2D polar"
         self._obj[value].polar.pcolor(**kwargs)
 
-    def fieldplot(self, fr, fth, start_points=None, sample=None, **kwargs):
+    def fieldplot(
+        self,
+        fr,
+        fth,
+        start_points=None,
+        sample=None,
+        invert_x=False,
+        invert_y=False,
+        **kwargs,
+    ):
         """
         Plot field lines of a vector field defined by functions fr and fth.
 
@@ -98,6 +107,10 @@ class DatasetPolarPlotAccessor:
             Sampling template for generating starting points. Either this or `start_points` must be specified.
             The template can be "dipole" or "monopole". The dict also contains the starting `radius`,
             and the number of points in theta `nth` key.
+        invert_x : bool, optional
+            Whether to invert the x-axis. Default is False.
+        invert_y : bool, optional
+            Whether to invert the y-axis. Default is False.
         **kwargs :
             Additional keyword arguments passed to `fieldlines` and `ax.plot`.
 
@@ -112,7 +125,7 @@ class DatasetPolarPlotAccessor:
 
         Examples
         --------
-        >>> ds.fieldplot("Br", "Bth", sample={"template": "dipole", "nth": 30, "radius": 2.0})
+        >>> ds.polar.fieldplot("Br", "Bth", sample={"template": "dipole", "nth": 30, "radius": 2.0})
         """
         import matplotlib.pyplot as plt
 
@@ -131,6 +144,10 @@ class DatasetPolarPlotAccessor:
         fieldlines = self.fieldlines(fr, fth, start_points, **kwargs).compute()
         ax = kwargs.pop("ax", plt.gca())
         for fieldline in fieldlines:
+            if invert_x:
+                fieldline[:, 0] = -fieldline[:, 0]
+            if invert_y:
+                fieldline[:, 1] = -fieldline[:, 1]
             ax.plot(*fieldline.T, **kwargs)
 
     @dask.delayed
@@ -162,7 +179,7 @@ class DatasetPolarPlotAccessor:
 
         Examples
         --------
-        >>> ds.fieldlines("Br", "Bth", [[2.0, np.pi / 4], [2.0, 3 * np.pi / 4]], stopWhen = lambda xy, rth: rth[0] > 5.0)
+        >>> ds.polar.fieldlines("Br", "Bth", [[2.0, np.pi / 4], [2.0, 3 * np.pi / 4]], stopWhen = lambda xy, rth: rth[0] > 5.0)
         """
 
         import numpy as np

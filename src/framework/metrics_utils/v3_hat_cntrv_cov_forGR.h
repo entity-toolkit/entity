@@ -24,7 +24,8 @@ Inline void v3_Hat2Cntrv(const coord_t<D>&  xi,
   real_t A0 { math::sqrt(h11(xi)) };
   vi_cntrv[0] = vi_hat[0] * A0;
   vi_cntrv[1] = vi_hat[1] / math::sqrt(h_22(xi));
-  vi_cntrv[2] = vi_hat[2] / math::sqrt(h_33(xi)) - vi_hat[0] * A0 * h_13(xi) / h_33(xi);
+  vi_cntrv[2] = vi_hat[2] / math::sqrt(h_33(xi)) -
+                vi_hat[0] * A0 * h_13(xi) / h_33(xi);
 }
 
 /**
@@ -39,8 +40,8 @@ Inline void v3_Cntrv2Hat(const coord_t<D>&  xi,
                          vec_t<Dim3>&       vi_hat) const {
   vi_hat[0] = vi_cntrv[0] / math::sqrt(h11(xi));
   vi_hat[1] = vi_cntrv[1] * math::sqrt(h_22(xi));
-  vi_hat[2]
-    = vi_cntrv[2] * math::sqrt(h_33(xi)) + vi_cntrv[0] * h_13(xi) / math::sqrt(h_33(xi));
+  vi_hat[2] = vi_cntrv[2] * math::sqrt(h_33(xi)) +
+              vi_cntrv[0] * h_13(xi) / math::sqrt(h_33(xi));
 }
 
 /**
@@ -53,7 +54,8 @@ Inline void v3_Cntrv2Hat(const coord_t<D>&  xi,
 Inline void v3_Hat2Cov(const coord_t<D>&  xi,
                        const vec_t<Dim3>& vi_hat,
                        vec_t<Dim3>&       vi_cov) const {
-  vi_cov[0] = vi_hat[0] / math::sqrt(h11(xi)) + vi_hat[2] * h_13(xi) / math::sqrt(h_33(xi));
+  vi_cov[0] = vi_hat[0] / math::sqrt(h11(xi)) +
+              vi_hat[2] * h_13(xi) / math::sqrt(h_33(xi));
   vi_cov[1] = vi_hat[1] * math::sqrt(h_22(xi));
   vi_cov[2] = vi_hat[2] * math::sqrt(h_33(xi));
 }
@@ -104,4 +106,4 @@ Inline void v3_Cntrv2Cov(const coord_t<D>&  xi,
   vi_cov[2] = vi_cntrv[0] * h_13(xi) + vi_cntrv[2] * h_33(xi);
 }
 
-#endif    // FRAMEWORK_METRICS_UTILS_V3_HAT_CNTRV_COV_FORGR_H
+#endif // FRAMEWORK_METRICS_UTILS_V3_HAT_CNTRV_COV_FORGR_H

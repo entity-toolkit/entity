@@ -26,8 +26,10 @@ namespace ntt {
      * @param mblock Meshblock.
      * @param coeff Coefficient to be multiplied by dB/dt = coeff * -curl E.
      */
-    Faraday_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff)
-      : m_mblock(mblock), m_coeff(coeff) {}
+    Faraday_kernel(const Meshblock<D, PICEngine>& mblock, const real_t& coeff) :
+      m_mblock(mblock),
+      m_coeff(coeff) {}
+
     /**
      * @brief 1D implementation of the algorithm.
      * @param i1 index.
@@ -63,13 +65,13 @@ namespace ntt {
 
   template <>
   Inline void Faraday_kernel<Dim3>::operator()(index_t i, index_t j, index_t k) const {
-    BX1(i, j, k)
-      += m_coeff * (EX2(i, j, k + 1) - EX2(i, j, k) + EX3(i, j, k) - EX3(i, j + 1, k));
-    BX2(i, j, k)
-      += m_coeff * (EX3(i + 1, j, k) - EX3(i, j, k) + EX1(i, j, k) - EX1(i, j, k + 1));
-    BX3(i, j, k)
-      += m_coeff * (EX1(i, j + 1, k) - EX1(i, j, k) + EX2(i, j, k) - EX2(i + 1, j, k));
+    BX1(i, j, k) += m_coeff * (EX2(i, j, k + 1) - EX2(i, j, k) + EX3(i, j, k) -
+                               EX3(i, j + 1, k));
+    BX2(i, j, k) += m_coeff * (EX3(i + 1, j, k) - EX3(i, j, k) + EX1(i, j, k) -
+                               EX1(i, j, k + 1));
+    BX3(i, j, k) += m_coeff * (EX1(i, j + 1, k) - EX1(i, j, k) + EX2(i, j, k) -
+                               EX2(i + 1, j, k));
   }
-}    // namespace ntt
+} // namespace ntt
 
 #endif
