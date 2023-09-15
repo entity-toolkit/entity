@@ -93,10 +93,7 @@ module-whatis   "Entity ${configuration}"
 conflict        entity
 
 ${kokkos_setenvs}
-setenv          Kokkos_ENABLE_OPENMP       ON
-setenv          OMP_PROC_BIND              spread
-setenv          OMP_PLACES                 threads
-setenv          OMP_NUM_THREADS            ${omp_threads}
+${openmp_setenvs}
 
 ${entity_setenvs}
 
@@ -143,8 +140,8 @@ if __name__ == "__main__":
 
                         entity_setenvs = []
                         kokkos_setenvs = []
+                        openmp_setenvs = []
                         modules = [cc_module] if cc_module else []
-                        omp_threads = "1" if mpi else "[exec nproc]"
                         entity_setenvs += [
                             ["Entity_ENABLE_DEBUG", "ON" if debug else "OFF"]
                         ]
@@ -166,6 +163,13 @@ if __name__ == "__main__":
                                     mpi_module := mpi_path.split(":")[1]
                                     + ("/cuda" if cuda else "/cpu")
                                 )
+                            ]
+                        else:
+                            openmp_setenvs += [
+                                ["Kokkos_ENABLE_OPENMP", "ON"],
+                                ["OMP_PROC_BIND", "spread"],
+                                ["OMP_PLACES", "threads"],
+                                ["OMP_NUM_THREADS", "[exec nproc]"],
                             ]
                         if (hdf5_path := dependencies["hdf5"]).startswith("module:"):
                             hdf5_path += (
@@ -209,6 +213,9 @@ if __name__ == "__main__":
                         kokkos_setenvs = "\n".join(
                             f"{'setenv':<16}{e[0]:<27}{e[1]}" for e in kokkos_setenvs
                         )
+                        openmp_setenvs = "\n".join(
+                            f"{'setenv':<16}{e[0]:<27}{e[1]}" for e in openmp_setenvs
+                        )
                         modules = "\n".join(
                             f"{'module load':<16}" + os.path.expandvars(m)
                             for m in modules
@@ -218,8 +225,8 @@ if __name__ == "__main__":
                             configuration=configuration,
                             entity_setenvs=entity_setenvs,
                             kokkos_setenvs=kokkos_setenvs,
+                            openmp_setenvs=openmp_setenvs,
                             modules=modules,
-                            omp_threads=omp_threads,
                         )
                         if args.deploy:
                             modulefile.parent.mkdir(parents=True, exist_ok=True)
@@ -228,7 +235,7 @@ if __name__ == "__main__":
                         print(modulefile)
                         if args.verbose or not args.deploy:
                             print(
-                                ColoredText(modulefile_content, "gray"),
+                                ColoredText(modulefile_content, "nc"),
                                 sep="\n",
                             )
 

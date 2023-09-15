@@ -58,9 +58,13 @@ suffix=$(define_kokkos_suffix $arch)
 kokkos_module+=$suffix
 install_path+=$suffix
 
-flags=(
-  Kokkos_ENABLE_OPENMP=ON
-)
+flags=()
+
+if [ $with_mpi = "OFF" ]; then
+  flags+=(
+    Kokkos_ENABLE_OPENMP=ON
+  )
+fi
 
 if [ $enable_cuda = "ON" ]; then
   flags+=(

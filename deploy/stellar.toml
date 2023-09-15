@@ -12,5 +12,5 @@ modulepath = "$HOME/.modules/entity"
 [entity.instances]
 debug     = [true, false]
 with_cuda = [true, false]
-with_mpi  = [true]
+with_mpi  = [true, false]
 archs     = ["ZEN2,AMPERE80", "VOLTA70,SKX", "SKX"]
