@@ -5,7 +5,7 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.0.0.1
+  VERSION 1.0.0.2
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -89,10 +89,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 find_or_fetch_dependency(Kokkos FALSE)
-find_or_fetch_dependency(fmt TRUE)
 find_or_fetch_dependency(plog TRUE)
 find_or_fetch_dependency(toml11 TRUE)
-set(DEPENDENCIES Kokkos::kokkos fmt::fmt-header-only)
+set(DEPENDENCIES Kokkos::kokkos)
 include_directories(${plog_SRC}/include)
 include_directories(${toml11_SRC})
 

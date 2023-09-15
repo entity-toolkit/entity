@@ -86,7 +86,6 @@ Tests are automatically run when on pull requests to the `master` branch.
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
 2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
-3. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
 
 ## Dependencies
 

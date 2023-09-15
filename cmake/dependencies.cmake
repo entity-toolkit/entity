@@ -1,5 +1,4 @@
 set(Kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
-set(fmt_REPOSITORY https://github.com/fmtlib/fmt.git CACHE STRING "fmt repository")
 set(plog_REPOSITORY https://github.com/SergiusTheBest/plog.git CACHE STRING "plog repository")
 set(toml11_REPOSITORY https://github.com/ToruNiina/toml11 CACHE STRING "toml11 repository")
 
