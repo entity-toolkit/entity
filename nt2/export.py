@@ -16,7 +16,7 @@ def makeMovie(**ffmpeg_kwargs):
     Examples
     --------
     >>> makeMovie(ffmpeg="/path/to/ffmpeg", framerate="30", start="0", input="step_", number=3,
-                  extension="png", compression="1", overwrite=True, output="anim.mov")
+                  extension="png", compression="1", overwrite=True, output="anim.mp4")
     """
     import subprocess
 
@@ -37,7 +37,7 @@ def makeMovie(**ffmpeg_kwargs):
         "-filter_complex",
         "[0:v]format=yuv420p,pad=ceil(iw/2)*2:ceil(ih/2)*2",
         "-y" if ffmpeg_kwargs.get("overwrite", False) else None,
-        ffmpeg_kwargs.get("output", "anim.mov"),
+        ffmpeg_kwargs.get("output", "anim.mp4"),
     ]
     command = [str(c) for c in command if c is not None]
     print("Command:\n", " ".join(command))

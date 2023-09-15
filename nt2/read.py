@@ -703,7 +703,7 @@ class Data:
             exp.makeMovie(
                 input=f"{self.attrs['Title']}/frames/",
                 overwrite=True,
-                output=f"{self.attrs['Title']}.mov",
+                output=f"{self.attrs['Title']}.mp4",
                 number=5,
                 **kwargs,
             )
