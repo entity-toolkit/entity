@@ -30,6 +30,12 @@ namespace ntt {
     void SyncHostDeviceImpl(DimensionTag<Dim2>);
     void SyncHostDeviceImpl(DimensionTag<Dim3>);
 
+#if !defined(MPI_ENABLED)
+    const std::size_t m_ntags { 2 };
+#else // MPI_ENABLED
+    const std::size_t m_ntags { (std::size_t)(2 + math::pow(3, (int)D) - 1) };
+#endif
+
   public:
     /**
      * Arrays containing particle data.
@@ -101,11 +107,18 @@ namespace ntt {
 
     /**
      * @brief Get the number of active particles.
-     * @return The number of active particles as a std::size_t.
      */
     [[nodiscard]]
     auto npart() const -> std::size_t {
       return m_npart;
+    }
+
+    /**
+     * @brief Get the number of distinct tags possible.
+     */
+    [[nodiscard]]
+    auto ntags() const -> std::size_t {
+      return m_ntags;
     }
 
     /**
@@ -116,7 +129,7 @@ namespace ntt {
       NTTHostErrorIf(
         npart > maxnpart(),
         fmt::format(
-          "Trying to set npart to {} which is larger than maxnpart {}.",
+          "Trying to set npart to %d which is larger than maxnpart %d.",
           npart,
           maxnpart()));
       m_npart = npart;
@@ -131,10 +144,9 @@ namespace ntt {
 
     /**
      * @brief Reshuffle particles by their tags.
-     * @param remove_dead Whether to remove dead particles.
      * @return The vector of counts per each tag.
      */
-    auto ReshuffleByTags(bool = true) -> std::vector<std::size_t>;
+    auto ReshuffleByTags() -> std::vector<std::size_t>;
 
     /**
      * @brief Engine-agnostic boundary conditions for particles.
@@ -147,6 +159,11 @@ namespace ntt {
     void SyncHostDevice() {
       SyncHostDeviceImpl(DimensionTag<D> {});
     }
+
+    /**
+     * @brief Print particle counts.
+     */
+    void PrintParticleCounts(std::ostream& os = std::cout) const;
   };
 
 } // namespace ntt

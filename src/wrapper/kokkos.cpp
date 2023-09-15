@@ -5,8 +5,14 @@
 #include <Kokkos_Core.hpp>
 
 namespace ntt {
-  auto WaitAndSynchronize() -> void {
-    Kokkos::fence();
+  auto WaitAndSynchronize(bool debug_only) -> void {
+    if (debug_only) {
+#ifdef DEBUG
+      Kokkos::fence();
+#endif
+    } else {
+      Kokkos::fence();
+    }
   }
 
   template <>

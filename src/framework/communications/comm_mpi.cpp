@@ -15,6 +15,233 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                     Cross-meshblock MPI communications */
   /* -------------------------------------------------------------------------- */
+
+  template <Dimension D>
+  void CurrentsSendRecv(ndfield_t<D, 3>                   cur,
+                        ndfield_t<D, 3>                   buff,
+                        const Domain<D>*                  send_to,
+                        const Domain<D>*                  recv_from,
+                        const std::vector<range_tuple_t>& send_slice,
+                        const std::vector<range_tuple_t>& recv_slice) {
+    const auto  comps = range_tuple_t { cur::jx1, cur::jx3 + 1 };
+    std::size_t nsend { comps.second - comps.first },
+      nrecv { comps.second - comps.first };
+    for (short d { 0 }; d < (short)D; ++d) {
+      if (send_to != nullptr) {
+        nsend *= (send_slice[d].second - send_slice[d].first);
+      }
+      if (recv_from != nullptr) {
+        nrecv *= (recv_slice[d].second - recv_slice[d].first);
+      }
+    }
+    ndarray_t<(short)D + 1> send_cur, recv_cur;
+
+    if (send_to != nullptr) {
+      // adding currents to the send buffer
+      if constexpr (D == Dim1) {
+        send_cur = ndarray_t<2>("send_cur",
+                                send_slice[0].second - send_slice[0].first,
+                                comps.second - comps.first);
+        Kokkos::deep_copy(send_cur, Kokkos::subview(cur, send_slice[0], comps));
+      } else if constexpr (D == Dim2) {
+        send_cur = ndarray_t<3>("send_cur",
+                                send_slice[0].second - send_slice[0].first,
+                                send_slice[1].second - send_slice[1].first,
+                                comps.second - comps.first);
+        Kokkos::deep_copy(
+          send_cur,
+          Kokkos::subview(cur, send_slice[0], send_slice[1], comps));
+      } else if constexpr (D == Dim3) {
+        send_cur = ndarray_t<4>("send_cur",
+                                send_slice[0].second - send_slice[0].first,
+                                send_slice[1].second - send_slice[1].first,
+                                send_slice[2].second - send_slice[2].first,
+                                comps.second - comps.first);
+        Kokkos::deep_copy(
+          send_cur,
+          Kokkos::subview(cur, send_slice[0], send_slice[1], send_slice[2], comps));
+      }
+    }
+    if (recv_from != nullptr) {
+      // allocating recv buffer
+      if constexpr (D == Dim1) {
+        recv_cur = ndarray_t<2>("recv_cur",
+                                recv_slice[0].second - recv_slice[0].first,
+                                comps.second - comps.first);
+      } else if constexpr (D == Dim2) {
+        recv_cur = ndarray_t<3>("recv_cur",
+                                recv_slice[0].second - recv_slice[0].first,
+                                recv_slice[1].second - recv_slice[1].first,
+                                comps.second - comps.first);
+      } else if constexpr (D == Dim3) {
+        recv_cur = ndarray_t<4>("recv_cur",
+                                recv_slice[0].second - recv_slice[0].first,
+                                recv_slice[1].second - recv_slice[1].first,
+                                recv_slice[2].second - recv_slice[2].first,
+                                comps.second - comps.first);
+      }
+    }
+    if (send_to != nullptr && recv_from != nullptr) {
+      MPI_Sendrecv(send_cur.data(),
+                   nsend,
+                   mpi_get_type<real_t>(),
+                   send_to->mpiRank(),
+                   0,
+                   recv_cur.data(),
+                   nrecv,
+                   mpi_get_type<real_t>(),
+                   recv_from->mpiRank(),
+                   0,
+                   MPI_COMM_WORLD,
+                   MPI_STATUS_IGNORE);
+    } else if (send_to != nullptr) {
+      MPI_Send(send_cur.data(),
+               nsend,
+               mpi_get_type<real_t>(),
+               send_to->mpiRank(),
+               0,
+               MPI_COMM_WORLD);
+    } else if (recv_from != nullptr) {
+      MPI_Recv(recv_cur.data(),
+               nrecv,
+               mpi_get_type<real_t>(),
+               recv_from->mpiRank(),
+               0,
+               MPI_COMM_WORLD,
+               MPI_STATUS_IGNORE);
+    } else {
+      NTTHostError("CommunicateField called with nullptrs");
+    }
+    if (recv_from != nullptr) {
+      // extracting the received buffer
+      if constexpr (D == Dim1) {
+        const auto offset_x1 = (long int)(recv_slice[0].first);
+        Kokkos::parallel_for(
+          "CurrentsSendRecv-extract",
+          CreateRangePolicy<Dim1>({ recv_slice[0].first }, { recv_slice[0].second }),
+          Lambda(index_t i1) {
+  #pragma unroll
+            for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+              buff(i1, comp) += recv_cur(i1 - offset_x1, comp);
+            }
+          });
+      } else if constexpr (D == Dim2) {
+        const auto offset_x1 = (long int)(recv_slice[0].first);
+        const auto offset_x2 = (long int)(recv_slice[1].first);
+        Kokkos::parallel_for(
+          "CurrentsSendRecv-extract",
+          CreateRangePolicy<Dim2>({ recv_slice[0].first, recv_slice[1].first },
+                                  { recv_slice[0].second, recv_slice[1].second }),
+          Lambda(index_t i1, index_t i2) {
+  #pragma unroll
+            for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+              buff(i1, i2, comp) += recv_cur(i1 - offset_x1, i2 - offset_x2, comp);
+            }
+          });
+      } else if constexpr (D == Dim3) {
+        const auto offset_x1 = (long int)(recv_slice[0].first);
+        const auto offset_x2 = (long int)(recv_slice[1].first);
+        const auto offset_x3 = (long int)(recv_slice[2].first);
+        Kokkos::parallel_for(
+          "CurrentsSendRecv-extract",
+          CreateRangePolicy<Dim3>(
+            { recv_slice[0].first, recv_slice[1].first, recv_slice[2].first },
+            { recv_slice[0].second, recv_slice[1].second, recv_slice[2].second }),
+          Lambda(index_t i1, index_t i2, index_t i3) {
+  #pragma unroll
+            for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+              buff(i1, i2, i3, comp) += recv_cur(i1 - offset_x1,
+                                                 i2 - offset_x2,
+                                                 i3 - offset_x3,
+                                                 comp);
+            }
+          });
+      }
+    }
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Simulation<D, S>::CurrentsSynchronize() {
+    const auto local_domain = m_metadomain.localDomain();
+    auto&      mblock       = this->meshblock;
+    Kokkos::deep_copy(mblock.buff, ZERO);
+    for (auto& direction : Directions<D>::all) {
+      const auto should_send = (local_domain->neighbors(direction) != nullptr);
+      const auto should_recv = (local_domain->neighbors(-direction) != nullptr);
+      if (!should_send && !should_recv) {
+        continue;
+      }
+      auto send_slice = std::vector<range_tuple_t> {};
+      auto recv_slice = std::vector<range_tuple_t> {};
+      for (short d { 0 }; d < (short)(direction.size()); ++d) {
+        const auto dir = direction[d];
+        if (should_send) {
+          if (dir == 0) {
+            send_slice.emplace_back(mblock.i_min(d) - N_GHOSTS,
+                                    mblock.i_max(d) + N_GHOSTS);
+          } else if (dir == 1) {
+            send_slice.emplace_back(mblock.i_max(d) - N_GHOSTS,
+                                    mblock.i_max(d) + N_GHOSTS);
+          } else {
+            send_slice.emplace_back(mblock.i_min(d) - N_GHOSTS,
+                                    mblock.i_min(d) + N_GHOSTS);
+          }
+        }
+        if (should_recv) {
+          if (-dir == 0) {
+            recv_slice.emplace_back(mblock.i_min(d) - N_GHOSTS,
+                                    mblock.i_max(d) + N_GHOSTS);
+          } else if (-dir == 1) {
+            recv_slice.emplace_back(mblock.i_max(d) - N_GHOSTS,
+                                    mblock.i_max(d) + N_GHOSTS);
+          } else {
+            recv_slice.emplace_back(mblock.i_min(d) - N_GHOSTS,
+                                    mblock.i_min(d) + N_GHOSTS);
+          }
+        }
+      }
+      CurrentsSendRecv<D>(mblock.cur,
+                          mblock.buff,
+                          local_domain->neighbors(direction),
+                          local_domain->neighbors(-direction),
+                          send_slice,
+                          recv_slice);
+      WaitAndSynchronize();
+    }
+    if constexpr (D == Dim1) {
+      Kokkos::parallel_for(
+        "CurrentsSynchronize",
+        mblock.rangeActiveCells(),
+        Lambda(index_t i1) {
+  #pragma unroll
+          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            mblock.cur(i1, comp) += mblock.buff(i1, comp);
+          }
+        });
+    } else if constexpr (D == Dim2) {
+      Kokkos::parallel_for(
+        "CurrentsSynchronize",
+        mblock.rangeActiveCells(),
+        Lambda(index_t i1, index_t i2) {
+  #pragma unroll
+          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            mblock.cur(i1, i2, comp) += mblock.buff(i1, i2, comp);
+          }
+        });
+    } else if constexpr (D == Dim3) {
+      Kokkos::parallel_for(
+        "CurrentsSynchronize",
+        mblock.rangeActiveCells(),
+        Lambda(index_t i1, index_t i2, index_t i3) {
+  #pragma unroll
+          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            mblock.cur(i1, i2, i3, comp) += mblock.buff(i1, i2, i3, comp);
+          }
+        });
+    }
+    NTTLog();
+  }
+
   template <Dimension D, int N>
   void CommunicateField(ndfield_t<D, N>&                  fld,
                         const Domain<D>*                  send_to,
@@ -290,6 +517,13 @@ namespace ntt {
                                   recv_slice);
   #endif
     }
+    for (auto p { 0 }; p < particles.npld(); ++p) {
+      CommunicateParticleQuantity(particles.pld[p],
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
+    }
     if (recv_count > 0) {
       if constexpr (D == Dim1) {
         int shift_in_x1 { 0 };
@@ -456,19 +690,21 @@ namespace ntt {
                                  local_domain->neighbors(-direction),
                                  send_slice,
                                  recv_slice,
-                                 comp_range_fld);
+                                 comp_range_cur);
         }
       }
     }
     if (comm & Comm_Prtl) {
       for (auto& species : mblock.particles) {
-        const auto npart_per_tag = species.ReshuffleByTags(true);
+        const auto npart_per_tag = species.ReshuffleByTags();
         /**
-         *    alive        dead         tag1        tag2
-         * [ 11111111   000000000    222222222    3333333 .... ]
+         *                                                        index_last
+         *                                                            |
+         *    alive     new dead         tag1        tag2             v   dead
+         * [ 11111111   000000000    222222222    3333333 .... nnnnnnn  00000000 ... ]
          *                           ^        ^
          *                           |        |
-         *     tag_offset[tag1] -----+        +----- tag_offset[tag1] + npart_per_tag[tag2]
+         *     tag_offset[tag1] -----+        +----- tag_offset[tag1] + npart_per_tag[tag1]
          *          "send_pmin"                      "send_pmax" (after last element)
          */
         auto       tag_offset { npart_per_tag };
@@ -498,9 +734,15 @@ namespace ntt {
                                local_domain->neighbors(-direction),
                                { send_pmin, send_pmax },
                                index_last);
+          Kokkos::deep_copy(
+            Kokkos::subview(species.tag, std::make_pair(send_pmin, send_pmax)),
+            ParticleTag::dead);
         }
+        // !TODO: maybe there is a way to not shuffle twice
+        species.ReshuffleByTags();
       }
     }
+    NTTLog();
   }
 } // namespace ntt
 
@@ -551,5 +793,29 @@ template void ntt::CommunicateField<ntt::Dim3, 3>(
   const std::vector<ntt::range_tuple_t>&,
   const std::vector<ntt::range_tuple_t>&,
   const ntt::range_tuple_t&);
+
+template void ntt::CurrentsSendRecv<ntt::Dim1>(
+  ntt::ndfield_t<ntt::Dim1, 3>,
+  ntt::ndfield_t<ntt::Dim1, 3>,
+  const Domain<ntt::Dim1>*,
+  const Domain<ntt::Dim1>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&);
+
+template void ntt::CurrentsSendRecv<ntt::Dim2>(
+  ntt::ndfield_t<ntt::Dim2, 3>,
+  ntt::ndfield_t<ntt::Dim2, 3>,
+  const Domain<ntt::Dim2>*,
+  const Domain<ntt::Dim2>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&);
+
+template void ntt::CurrentsSendRecv<ntt::Dim3>(
+  ntt::ndfield_t<ntt::Dim3, 3>,
+  ntt::ndfield_t<ntt::Dim3, 3>,
+  const Domain<ntt::Dim3>*,
+  const Domain<ntt::Dim3>*,
+  const std::vector<ntt::range_tuple_t>&,
+  const std::vector<ntt::range_tuple_t>&);
 
 #endif

@@ -604,7 +604,7 @@ namespace ntt {
   Inline void Pusher_kernel<Dim1>::getInterpFlds(index_t&     p,
                                                  vec_t<Dim3>& e0,
                                                  vec_t<Dim3>& b0) const {
-    const auto i { i1(p) + N_GHOSTS };
+    const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
     const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
     // first order
@@ -643,8 +643,8 @@ namespace ntt {
   Inline void Pusher_kernel<Dim2>::getInterpFlds(index_t&     p,
                                                  vec_t<Dim3>& e0,
                                                  vec_t<Dim3>& b0) const {
-    const auto i { i1(p) + N_GHOSTS };
-    const auto j { i2(p) + N_GHOSTS };
+    const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+    const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
     const auto dx1_ { static_cast<real_t>(dx1(p)) };
     const auto dx2_ { static_cast<real_t>(dx2(p)) };
 
@@ -712,9 +712,9 @@ namespace ntt {
   Inline void Pusher_kernel<Dim3>::getInterpFlds(index_t&     p,
                                                  vec_t<Dim3>& e0,
                                                  vec_t<Dim3>& b0) const {
-    const auto i { i1(p) + N_GHOSTS };
-    const auto j { i2(p) + N_GHOSTS };
-    const auto k { i3(p) + N_GHOSTS };
+    const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+    const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+    const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
     const auto dx1_ { static_cast<real_t>(dx1(p)) };
     const auto dx2_ { static_cast<real_t>(dx2(p)) };
     const auto dx3_ { static_cast<real_t>(dx3(p)) };

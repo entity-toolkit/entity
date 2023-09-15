@@ -722,14 +722,14 @@ namespace ntt {
             class EnDist,
             template <Dimension, SimulationEngine>
             class InjCrit>
-  struct FloorInjector1d_kernel {
-    FloorInjector1d_kernel(const SimulationParams&     pr,
-                           const Meshblock<Dim1, S>&   mb,
-                           const Particles<Dim1, S>&   sp1,
-                           const Particles<Dim1, S>&   sp2,
-                           const array_t<std::size_t>& ind,
-                           const ndarray_t<1>&         ppc,
-                           const real_t&) :
+  struct NonUniformInjector1d_kernel {
+    NonUniformInjector1d_kernel(const SimulationParams&     pr,
+                                const Meshblock<Dim1, S>&   mb,
+                                const Particles<Dim1, S>&   sp1,
+                                const Particles<Dim1, S>&   sp2,
+                                const array_t<std::size_t>& ind,
+                                const ndarray_t<1>&         ppc,
+                                const real_t&) :
       params { pr },
       mblock { mb },
       species1 { sp1 },
@@ -816,14 +816,14 @@ namespace ntt {
             class EnDist,
             template <Dimension, SimulationEngine>
             class InjCrit>
-  struct FloorInjector2d_kernel {
-    FloorInjector2d_kernel(const SimulationParams&     pr,
-                           const Meshblock<Dim2, S>&   mb,
-                           const Particles<Dim2, S>&   sp1,
-                           const Particles<Dim2, S>&   sp2,
-                           const array_t<std::size_t>& ind,
-                           const ndarray_t<2>&         ppc,
-                           const real_t&) :
+  struct NonUniformInjector2d_kernel {
+    NonUniformInjector2d_kernel(const SimulationParams&     pr,
+                                const Meshblock<Dim2, S>&   mb,
+                                const Particles<Dim2, S>&   sp1,
+                                const Particles<Dim2, S>&   sp2,
+                                const array_t<std::size_t>& ind,
+                                const ndarray_t<2>&         ppc,
+                                const real_t&) :
       params { pr },
       mblock { mb },
       species1 { sp1 },
@@ -987,30 +987,29 @@ namespace ntt {
       "Injected species must have the same but opposite charge: q1 = -q2");
     array_t<std::size_t> ind("ind_inj");
     if constexpr (D == Dim1) {
-      Kokkos::parallel_for("InjectNonUniform",
-                           range_policy,
-                           FloorInjector1d_kernel<S, EnDist, InjCrit>(params,
-                                                                      mblock,
-                                                                      sp1,
-                                                                      sp2,
-                                                                      ind,
-                                                                      ppc_per_spec,
-                                                                      time));
+      Kokkos::parallel_for(
+        "InjectNonUniform",
+        range_policy,
+        NonUniformInjector1d_kernel<S, EnDist, InjCrit>(params,
+                                                        mblock,
+                                                        sp1,
+                                                        sp2,
+                                                        ind,
+                                                        ppc_per_spec,
+                                                        time));
     } else if constexpr (D == Dim2) {
-      Kokkos::parallel_for("InjectNonUniform",
-                           range_policy,
-                           FloorInjector2d_kernel<S, EnDist, InjCrit>(params,
-                                                                      mblock,
-                                                                      sp1,
-                                                                      sp2,
-                                                                      ind,
-                                                                      ppc_per_spec,
-                                                                      time));
+      Kokkos::parallel_for(
+        "InjectNonUniform",
+        range_policy,
+        NonUniformInjector2d_kernel<S, EnDist, InjCrit>(params,
+                                                        mblock,
+                                                        sp1,
+                                                        sp2,
+                                                        ind,
+                                                        ppc_per_spec,
+                                                        time));
     } else if constexpr (D == Dim3) {
-      // Kokkos::parallel_for("inject",
-      //                      range_policy,
-      //                      VolumeInjector3d_kernel<S, EnDist, SpDist, InjCrit>(
-      //                        params, mblock, sp1, sp2, ind, ppc_per_spec, time));
+      NTTHostError("Not implemented");
     }
 
     auto ind_h = Kokkos::create_mirror(ind);
@@ -1018,100 +1017,6 @@ namespace ntt {
     sp1.setNpart(sp1.npart() + ind_h());
     sp2.setNpart(sp2.npart() + ind_h());
   }
-
-  /* -------------------------------------------------------------------------- */
-
-  // #ifdef MINKOWSKI_METRIC
-  //   template <Dimension D, SimulationEngine S>
-  //   auto InjectParticleGlobally(Meshblock<D, S>&  mblock,
-  //                               short             species_id,
-  //                               const coord_t<D>& x,
-  //                               const vec_t<D>&   u,
-  //                               real_t            w = ONE) -> bool {
-  //     auto                 in_bounds = true;
-  //     coord_t<D>           Xi { ZERO };
-  //     tuple_t<int, D>      I { 0 };
-  //     tuple_t<prtldx_t, D> dI { (prtldx_t)0 };
-  //     mblock.metric.x_Phys2Code(x, Xi);
-  //     for (short d { 0 }; d < (short)D; ++d) {
-  //       from_Xi_to_i_di(Xi[d], I[d], dI[d]);
-  //       in_bounds = (in_bounds) && (I[d] >= 0) && (I[d] < mblock.Ni(d));
-  //     }
-  //     if (!in_bounds) {
-  //       return false;
-  //     }
-  //     auto&      species = mblock.particles[species_id];
-  //     const auto p0      = species.npart();
-
-  //     if constexpr (D == Dim1) {
-  //       Kokkos::parallel_for(
-  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
-  //           init_prtl_1d(mblock, sp, p0 + p, Xi[0], u[0], u[1], u[2], w);
-  //         });
-  //     } else if constexpr (D == Dim2) {
-  //       Kokkos::parallel_for(
-  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
-  //           init_prtl_2d(mblock, sp, p0 + p, Xi[0], Xi[1], u[0], u[1], u[2], w);
-  //         });
-  //     } else if constexpr (D == Dim3) {
-  //       Kokkos::parallel_for(
-  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
-  //           init_prtl_3d(mblock, sp, p0 + p, Xi[0], Xi[1], Xi[2], u[0], u[1], u[2], w);
-  //         });
-  //     }
-  //     species.setNpart(p0 + 1);
-  //     return true;
-  //   }
-  // #else    // not MINKOWSKI_METRIC
-  //   template <Dimension D, SimulationEngine S>
-  //   auto InjectParticleGlobally(Meshblock<D, S>& mblock,
-  //                               short species_id,
-  //                               const coord_t<Dim3>& x,
-  //                               const vec_t<Dim3>& u,
-  //                               real_t w = ONE) -> bool {
-  //     coord_t<D> Xi { ZERO };
-  //     coord_t<D> X_ph { ZERO };
-  //     for (short d { 0 }; d < (short)D; ++d) {
-  //       X_ph[d] = x[d];
-  //     }
-  //     tuple_t<int, D> I { 0 };
-  //     mblock.metric.x_Phys2Code(X_ph, Xi);
-  //     printf("particle coords CU %f %f\n", Xi[0], Xi[1]);
-  //     const auto dtheta = (mblock.metric.x2_max - mblock.metric.x2_min) / mblock.Ni2();
-  //     std::cout << "TEST : " << (X_ph[1] - mblock.metric.x2_min) / dtheta << " " << Xi[1]
-  //               << "\n";
-  //     for (short d { 0 }; d < (short)D; ++d) {
-  //       // from_Xi_to_i(Xi[d], I[d]);
-  //       I[d] = static_cast<int>(math::floor(Xi[d]));
-  //       if (!((I[d] >= 0) && (I[d] < mblock.Ni(d)))) {
-  //         return false;
-  //       }
-  //     }
-  //     printf("  going to inject particle at %d %d %f %f\n", I[0], I[1], X_ph[0], X_ph[1]);
-  //     printf("  bounds are %f %f %f %f %d %d\n",
-  //            mblock.metric.x1_min,
-  //            mblock.metric.x1_max,
-  //            mblock.metric.x2_min,
-  //            mblock.metric.x2_max,
-  //            mblock.Ni1(),
-  //            mblock.Ni2());
-  //     auto& species = mblock.particles[species_id];
-  //     const auto p0 = species.npart();
-
-  //     if constexpr (D == Dim2) {
-  //       Kokkos::parallel_for(
-  //         "InjectParticleGlobally", 1, Lambda(index_t p) {
-  //           init_prtl_2d(mblock, species, p0 + p, Xi[0], Xi[1], u[0], u[1],
-  //           u[2], w); species.phi(p) = Xi[2];
-  //         });
-  //     } else if constexpr (D == Dim3) {
-  //       NTTHostError("not implemented");
-  //       return false;
-  //     }
-  //     species.setNpart(p0 + 1);
-  //     return true;
-  //   }
-  // #endif
 
 } // namespace ntt
 

@@ -18,7 +18,6 @@ namespace ntt {
     inline ProblemGenerator(const SimulationParams& params) :
       x1 { params.get<std::vector<real_t>>("problem", "x1") },
       x2 { params.get<std::vector<real_t>>("problem", "x2") },
-      x3 { params.get<std::vector<real_t>>("problem", "x3") },
       ux1 { params.get<std::vector<real_t>>("problem", "ux1") },
       ux2 { params.get<std::vector<real_t>>("problem", "ux2") } {}
 
@@ -26,9 +25,10 @@ namespace ntt {
                                   Meshblock<D, S>&) override {}
 
   private:
-    const std::vector<real_t> x1, x2, x3, ux1, ux2;
+    const std::vector<real_t> x1, x2, ux1, ux2;
   };
 
+#ifndef MINKOWSKI_METRIC
   template <Dimension D, SimulationEngine S>
   struct PgenTargetFields : public TargetFields<D, S> {
     PgenTargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock) :
@@ -39,6 +39,8 @@ namespace ntt {
     }
   };
 
+#endif
+
   template <>
   inline void ProblemGenerator<Dim2, PICEngine>::UserInitParticles(
     const SimulationParams&,
@@ -48,36 +50,57 @@ namespace ntt {
     auto&            lecs  = mblock.particles[0];
     auto&            ions  = mblock.particles[1];
     const auto       npart = x1.size();
-    array_t<real_t*> x1_d("x1", npart), x2_d("x2", npart), x3_d("x3", npart),
-      ux1_d("ux1", npart), ux2_d("ux2", npart);
+    array_t<real_t*> x1_d { "x1", npart }, x2_d { "x2", npart },
+      ux1_d { "ux1", npart }, ux2_d { "ux2", npart };
     auto x1_h  = Kokkos::create_mirror_view(x1_d);
     auto x2_h  = Kokkos::create_mirror_view(x2_d);
-    auto x3_h  = Kokkos::create_mirror_view(x3_d);
     auto ux1_h = Kokkos::create_mirror_view(ux1_d);
     auto ux2_h = Kokkos::create_mirror_view(ux2_d);
     for (std::size_t i { 0 }; i < npart; ++i) {
       x1_h(i)  = x1[i];
       x2_h(i)  = x2[i];
-      x3_h(i)  = x3[i];
       ux1_h(i) = ux1[i];
       ux2_h(i) = ux2[i];
     }
     Kokkos::deep_copy(x1_d, x1_h);
     Kokkos::deep_copy(x2_d, x2_h);
-    Kokkos::deep_copy(x3_d, x3_h);
     Kokkos::deep_copy(ux1_d, ux1_h);
     Kokkos::deep_copy(ux2_d, ux2_h);
-    lecs.setNpart(npart);
-    ions.setNpart(npart);
+    auto lecs_idx    = array_t<std::size_t>("lecs_idx");
+    auto ions_idx    = array_t<std::size_t>("ions_idx");
+    auto lecs_offset = lecs.npart();
+    auto ions_offset = ions.npart();
     Kokkos::parallel_for(
       "UserInitParticles",
       npart,
-      ClassLambda(index_t p) {
-        init_prtl_2d(mblock, lecs, p, x1_d(p), x2_d(p), ux1_d(p), ux2_d(p), ZERO, ONE);
-        init_prtl_2d(mblock, ions, p, x1_d(p), x2_d(p), -ux1_d(p), -ux2_d(p), ZERO, ONE);
-        lecs.phi(p) = x3_d(p);
-        ions.phi(p) = x3_d(p);
+      Lambda(index_t p) {
+        InjectParticle_2D(mblock,
+                          lecs,
+                          lecs_idx,
+                          lecs_offset,
+                          x1_d(p),
+                          x2_d(p),
+                          ux1_d(p),
+                          ux2_d(p),
+                          ZERO,
+                          ONE);
+        InjectParticle_2D(mblock,
+                          ions,
+                          ions_idx,
+                          ions_offset,
+                          x1_d(p),
+                          x2_d(p),
+                          -ux1_d(p),
+                          -ux2_d(p),
+                          ZERO,
+                          ONE);
       });
+    auto lecs_idx_h = Kokkos::create_mirror_view(lecs_idx);
+    auto ions_idx_h = Kokkos::create_mirror_view(ions_idx);
+    Kokkos::deep_copy(lecs_idx_h, lecs_idx);
+    Kokkos::deep_copy(ions_idx_h, ions_idx);
+    lecs.setNpart(lecs.npart() + lecs_idx_h());
+    ions.setNpart(ions.npart() + ions_idx_h());
   }
 } // namespace ntt
 

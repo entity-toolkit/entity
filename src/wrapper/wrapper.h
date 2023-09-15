@@ -150,8 +150,9 @@ namespace ntt {
 
   /**
    * @brief Synchronize CPU/GPU before advancing.
+   * @param debug_only Only synchronize if `DEBUG` is defined (default: always sync).
    */
-  void WaitAndSynchronize();
+  void WaitAndSynchronize(bool debug_only = false);
 
   inline void GlobalInitialize(int argc, char* argv[]) {
     Kokkos::initialize(argc, argv);

@@ -14,23 +14,19 @@ namespace ntt {
 
   template <Dimension D>
   void PIC<D>::Run() {
-    // register the content of em fields
-    Simulation<D, PICEngine>::Verify();
-    {
-      auto  params = *(this->params());
-      auto& mblock = this->meshblock;
-      auto  timax  = (unsigned long)(params.totalRuntime() / mblock.timestep());
+    auto  params = *(this->params());
+    auto& mblock = this->meshblock;
+    auto  timax  = (unsigned long)(params.totalRuntime() / mblock.timestep());
 
-      ResetSimulation();
-      Simulation<D, PICEngine>::PrintDetails();
-      InitialStep();
-      for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGV_(LogFile) << "step = " << this->m_tstep;
-        PLOGV_(LogFile) << std::endl;
-        StepForward();
-      }
-      WaitAndSynchronize();
+    ResetSimulation();
+    this->PrintDetails();
+    this->Verify();
+    InitialStep();
+    for (unsigned long ti { 0 }; ti < timax; ++ti) {
+      NTTLogPrint(fmt::format("step = %d", this->m_tstep));
+      StepForward();
     }
+    WaitAndSynchronize();
   }
 
   template <Dimension D>
@@ -61,10 +57,12 @@ namespace ntt {
     auto&      pgen       = this->problem_generator;
 
     timer::Timers                   timers({ "FieldSolver",
-                                             "FieldBoundaries",
+                                             "CurrentFiltering",
                                              "CurrentDeposit",
                                              "ParticlePusher",
+                                             "FieldBoundaries",
                                              "ParticleBoundaries",
+                                             "Communications",
                                              "UserSpecific",
                                              "Output" },
                          params.blockingTimers());
@@ -73,78 +71,105 @@ namespace ntt {
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
       Faraday();
-      // mblock.CheckNaNs("After 1st Faraday", CheckNaN_Fields);
       timers.stop("FieldSolver");
 
-      timers.start("FieldBoundaries");
+      timers.start("Communications");
       this->Communicate(Comm_E);
+      timers.stop("Communications");
+
+      timers.start("FieldBoundaries");
       FieldsBoundaryConditions();
-      mblock.CheckNaNs("After 1st Fields BC", CheckNaN_Fields);
       timers.stop("FieldBoundaries");
+
+      { mblock.CheckNaNs("After 1st Fields BC", CheckNaN_Fields); }
     }
 
     {
       timers.start("ParticlePusher");
       ParticlesPush();
-      mblock.CheckNaNs("After Push", CheckNaN_Particles);
       timers.stop("ParticlePusher");
+
+      { mblock.CheckNaNs("After Push", CheckNaN_Particles); }
 
       timers.start("UserSpecific");
       pgen.UserDriveParticles(this->m_time, params, mblock);
-      mblock.CheckNaNs("After Drive", CheckNaN_Particles);
       timers.stop("UserSpecific");
+
+      { mblock.CheckNaNs("After Drive", CheckNaN_Particles); }
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
         CurrentsDeposit();
-        mblock.CheckNaNs("After Deposit", CheckNaN_Currents);
+        timers.stop("CurrentDeposit");
+
+        { mblock.CheckNaNs("After Deposit", CheckNaN_Currents); }
+
+        timers.start("Communications");
+        this->CurrentsSynchronize();
+        timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        this->CurrentsSynchronize();
-        this->Communicate(Comm_J);
         CurrentsBoundaryConditions();
-        mblock.CheckNaNs("After Currents BC", CheckNaN_Currents);
         timers.stop("FieldBoundaries");
 
+        { mblock.CheckNaNs("After Currents BC", CheckNaN_Currents); }
+
+        timers.start("CurrentFiltering");
         CurrentsFilter();
-        mblock.CheckNaNs("After Currents Filter", CheckNaN_Currents);
-        timers.stop("CurrentDeposit");
+        timers.stop("CurrentFiltering");
+
+        { mblock.CheckNaNs("After Currents Filter", CheckNaN_Currents); }
       }
 
       timers.start("ParticleBoundaries");
       this->ParticlesBoundaryConditions();
-      this->Communicate(Comm_Prtl);
-      mblock.CheckNaNs("After Prtls BC", CheckNaN_Particles);
       timers.stop("ParticleBoundaries");
+
+      timers.start("Communications");
+      this->Communicate(Comm_Prtl);
+      timers.stop("Communications");
+
+      { mblock.CheckNaNs("After Prtls BC", CheckNaN_Particles); }
     }
 
     if (params.fieldsolverEnabled()) {
       timers.start("FieldSolver");
       Faraday();
-      // mblock.CheckNaNs("After 2nd Faraday", CheckNaN_Fields);
       timers.stop("FieldSolver");
 
-      timers.start("FieldBoundaries");
+      timers.start("Communications");
       this->Communicate(Comm_B);
+      timers.stop("Communications");
+
+      timers.start("FieldBoundaries");
       FieldsBoundaryConditions();
-      mblock.CheckNaNs("After 2nd Fields BC", CheckNaN_Fields);
       timers.stop("FieldBoundaries");
+
+      { mblock.CheckNaNs("After 2nd Fields BC", CheckNaN_Fields); }
 
       timers.start("FieldSolver");
       Ampere();
-      mblock.CheckNaNs("After Ampere", CheckNaN_Fields);
       timers.stop("FieldSolver");
 
+      { mblock.CheckNaNs("After Ampere", CheckNaN_Fields); }
+
       if (params.depositEnabled()) {
+        timers.start("FieldSolver");
         AmpereCurrents();
-        mblock.CheckNaNs("After Ampere Currents", CheckNaN_Fields);
+        timers.stop("FieldSolver");
+
+        { mblock.CheckNaNs("After Ampere Currents", CheckNaN_Fields); }
       }
 
-      timers.start("FieldBoundaries");
+      timers.start("Communications");
       this->Communicate(Comm_E);
+      timers.stop("Communications");
+
+      timers.start("FieldBoundaries");
       FieldsBoundaryConditions();
-      mblock.CheckNaNs("After 3rd Fields BC", CheckNaN_Fields);
       timers.stop("FieldBoundaries");
+
+      { mblock.CheckNaNs("After 3rd Fields BC", CheckNaN_Fields); }
     }
 
     timers.start("Output");

@@ -35,13 +35,97 @@ namespace ntt {
     }
   }
 
+  template <Dimension D>
+  auto SyncCurrents(const ndfield_t<D, 3>&            cur,
+                    const std::vector<range_tuple_t>& range_to,
+                    const std::vector<range_tuple_t>& range_from) -> void {
+    if constexpr (D == Dim1) {
+      const auto offset_x1 = (long int)(range_from[0].first) -
+                             (long int)(range_to[0].first);
+      Kokkos::parallel_for(
+        "CommCurrents",
+        CreateRangePolicy<Dim1>({ range_to[0].first }, { range_to[0].second }),
+        Lambda(index_t i1) {
+    #pragma unroll
+          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            cur(i1, comp) += cur(i1 + offset_x1, comp);
+          }
+        });
+    } else if constexpr (D == Dim2) {
+      const auto offset_x1 = (long int)(range_from[0].first) -
+                             (long int)(range_to[0].first);
+      const auto offset_x2 = (long int)(range_from[1].first) -
+                             (long int)(range_to[1].first);
+      Kokkos::parallel_for(
+        "CommCurrents",
+        CreateRangePolicy<Dim2>({ range_to[0].first, range_to[1].first },
+                                { range_to[0].second, range_to[1].second }),
+        Lambda(index_t i1, index_t i2) {
+    #pragma unroll
+          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            cur(i1, i2, comp) += cur(i1 + offset_x1, i2 + offset_x2, comp);
+          }
+        });
+    } else if constexpr (D == Dim3) {
+      auto offset_x1 = (long int)(range_from[0].first) -
+                       (long int)(range_to[0].first);
+      auto offset_x2 = (long int)(range_from[1].first) -
+                       (long int)(range_to[1].first);
+      auto offset_x3 = (long int)(range_from[2].first) -
+                       (long int)(range_to[2].first);
+      Kokkos::parallel_for(
+        "CommCurrents",
+        CreateRangePolicy<Dim3>(
+          { range_to[0].first, range_to[1].first, range_to[2].first },
+          { range_to[0].second, range_to[1].second, range_to[2].second }),
+        Lambda(index_t i1, index_t i2, index_t i3) {
+    #pragma unroll
+          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            cur(i1, i2, i3, comp) += cur(i1 + offset_x1,
+                                         i2 + offset_x2,
+                                         i3 + offset_x3,
+                                         comp);
+          }
+        });
+    }
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Simulation<D, S>::CurrentsSynchronize() {
+    auto& mblock = this->meshblock;
+    for (auto& bcs : mblock.boundaries) {
+      for (auto& bc : bcs) {
+        NTTHostErrorIf(bc != BoundaryCondition::PERIODIC,
+                       "Minkowski only supports periodic boundaries");
+      }
+    }
+    for (auto& direction : Directions<D>::all) {
+      auto range_to   = std::vector<range_tuple_t> {};
+      auto range_from = std::vector<range_tuple_t> {};
+      NTTHostErrorIf(direction.size() != (std::size_t)D, "Wrong direction size");
+
+      for (short d { 0 }; d < (short)(direction.size()); ++d) {
+        const auto dir = direction[d];
+        if (dir == -1) {
+          range_to.emplace_back(mblock.i_min(d), mblock.i_min(d) + N_GHOSTS);
+          range_from.emplace_back(mblock.i_max(d), mblock.i_max(d) + N_GHOSTS);
+        } else if (dir == 0) {
+          range_to.emplace_back(mblock.i_min(d), mblock.i_max(d));
+          range_from.emplace_back(mblock.i_min(d), mblock.i_max(d));
+        } else if (dir == 1) {
+          range_to.emplace_back(mblock.i_max(d) - N_GHOSTS, mblock.i_max(d));
+          range_from.emplace_back(mblock.i_min(d) - N_GHOSTS, mblock.i_min(d));
+        } else {
+          NTTHostError("Wrong direction");
+        }
+      }
+      SyncCurrents<D>(mblock.cur, range_to, range_from);
+    }
+  }
+
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Communicate(CommTags comm) {
     auto& mblock = this->meshblock;
-
-    if constexpr (S == GRPICEngine) {
-      NTTHostError("Wrong communicate call");
-    }
     NTTHostErrorIf(comm == Comm_None, "Communicate called with Comm_None");
     for (auto& bcs : mblock.boundaries) {
       for (auto& bc : bcs) {
@@ -99,7 +183,7 @@ namespace ntt {
       if ((params()->shuffleInterval() > 0) &&
           (tstep() % params()->shuffleInterval() == 0)) {
         for (auto& species : mblock.particles) {
-          species.ReshuffleByTags(true);
+          species.ReshuffleByTags();
         }
       }
     }
@@ -114,7 +198,7 @@ namespace ntt {
       if ((params()->shuffleInterval() > 0) &&
           (tstep() % params()->shuffleInterval() == 0)) {
         for (auto& species : this->meshblock.particles) {
-          species.ReshuffleByTags(true);
+          species.ReshuffleByTags();
         }
       }
     }

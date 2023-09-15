@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <iomanip>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -352,13 +353,29 @@ namespace plog {
   };
 } // namespace plog
 
-#ifdef MPI_ENABLED
+#if !defined(MPI_ENABLED)
+template <typename Func, typename... Args>
+void PrintOnce(Func func, Args&&... args) {
+  func(std::forward<Args>(args)...);
+}
+#endif
+
+#if defined(MPI_ENABLED)
 
   #include <mpi.h>
 
 /* -------------------------------------------------------------------------- */
 /*                                     MPI                                    */
 /* -------------------------------------------------------------------------- */
+
+template <typename Func, typename... Args>
+void PrintOnce(Func func, Args&&... args) {
+  int rank, root_rank { 0 };
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == root_rank) {
+    func(std::forward<Args>(args)...);
+  }
+}
 
 template <typename T>
 [[nodiscard]]

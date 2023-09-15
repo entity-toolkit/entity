@@ -7,7 +7,9 @@
 #include "utils/utils.h"
 
 #include <cstddef>
+#include <numeric>
 #include <string>
+#include <vector>
 
 namespace ntt {
   // * * * * * * * * * * * * * * * * * * * *
@@ -297,8 +299,8 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   auto Particles<D, S>::NpartPerTag() const -> std::vector<std::size_t> {
-    auto                      this_tag = this->tag;
-    array_t<std::size_t[100]> npart_tag("npart_tags");
+    auto                  this_tag = this->tag;
+    array_t<std::size_t*> npart_tag("npart_tags", ntags());
     auto npart_tag_scatter { Kokkos::Experimental::create_scatter_view(npart_tag) };
     Kokkos::parallel_for(
       "NpartPerTag",
@@ -311,23 +313,20 @@ namespace ntt {
     auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
     Kokkos::deep_copy(npart_tag_host, npart_tag);
     std::vector<std::size_t> npart_tag_vec;
-    for (auto i { 0 }; i < 100; ++i) {
-      npart_tag_vec.push_back(npart_tag_host(i));
+    for (std::size_t t { 0 }; t < ntags(); ++t) {
+      npart_tag_vec.push_back(npart_tag_host(t));
     }
     return npart_tag_vec;
   }
 
   template <Dimension D, SimulationEngine S>
-  auto Particles<D, S>::ReshuffleByTags(bool remove_dead)
-    -> std::vector<std::size_t> {
+  auto Particles<D, S>::ReshuffleByTags() -> std::vector<std::size_t> {
+    if (npart() == 0) {
+      return NpartPerTag();
+    }
     using KeyType = array_t<short*>;
     using BinOp   = BinTag<KeyType>;
-#ifndef MPI_ENABLED
-    const auto ntags = 2;
-#else // MPI_ENABLED
-    const auto ntags = 2 + math::pow(3, (int)D) - 1;
-#endif
-    BinOp bin_op(ntags);
+    BinOp bin_op(ntags());
     auto  slice = range_tuple_t(0, npart());
     Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op, false);
     Sorter.create_permute_vector();
@@ -370,9 +369,7 @@ namespace ntt {
     }
 
     const auto npart_per_tag = NpartPerTag();
-    if (remove_dead) {
-      setNpart(npart_per_tag[(short)(ParticleTag::alive)]);
-    }
+    setNpart(npart_per_tag[(short)(ParticleTag::alive)]);
     return npart_per_tag;
   }
 
@@ -425,6 +422,71 @@ namespace ntt {
     for (auto n { 0 }; n < npld(); ++n) {
       Kokkos::deep_copy(pld_h[n], pld[n]);
     }
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Particles<D, S>::PrintParticleCounts(std::ostream& os) const {
+#if defined(MPI_ENABLED)
+    int rank, size, root_rank { 0 };
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    std::vector<std::size_t> npart_rank(size, 0);
+    std::vector<std::size_t> maxnpart_rank(size, 0);
+    auto                     this_npart    = npart();
+    auto                     this_maxnpart = maxnpart();
+    MPI_Gather(&this_npart,
+               1,
+               mpi_get_type<unsigned long long>(),
+               npart_rank.data(),
+               1,
+               mpi_get_type<unsigned long long>(),
+               root_rank,
+               MPI_COMM_WORLD);
+    MPI_Gather(&this_maxnpart,
+               1,
+               mpi_get_type<unsigned long long>(),
+               maxnpart_rank.data(),
+               1,
+               mpi_get_type<unsigned long long>(),
+               root_rank,
+               MPI_COMM_WORLD);
+    if (rank != root_rank) {
+      return;
+    }
+    auto tot_npart = std::accumulate(npart_rank.begin(), npart_rank.end(), 0);
+    std::size_t npart_max = *std::max_element(npart_rank.begin(), npart_rank.end());
+    std::size_t npart_min = *std::min_element(npart_rank.begin(), npart_rank.end());
+    std::vector<double> load_rank(size, 0.0);
+    for (auto r { 0 }; r < size; ++r) {
+      load_rank[r] = 100.0 * (double)(npart_rank[r]) / (double)(maxnpart_rank[r]);
+    }
+    double load_max = *std::max_element(load_rank.begin(), load_rank.end());
+    double load_min = *std::min_element(load_rank.begin(), load_rank.end());
+    auto   npart_min_str = npart_min > 9999
+                             ? fmt::format("%.2Le", (long double)npart_min)
+                             : std::to_string(npart_min);
+    auto   tot_npart_str = tot_npart > 9999
+                             ? fmt::format("%.2Le", (long double)tot_npart)
+                             : std::to_string(tot_npart);
+#else // not MPI_ENABLED
+    auto npart_max = npart();
+    auto load_max  = 100.0 * (double)(npart()) / (double)(maxnpart());
+#endif
+    auto npart_max_str = npart_max > 9999
+                           ? fmt::format("%.2Le", (long double)npart_max)
+                           : std::to_string(npart_max);
+    os << "  species " << this->index() << " (" << this->label() << ")";
+#if defined(MPI_ENABLED)
+    os << std::setw(21) << std::right << std::setfill('.') << tot_npart_str
+       << "  | " << std::setw(14) << std::right << std::setfill(' ')
+       << fmt::format("%s (%.1f%%) : ", npart_min_str.c_str(), load_min)
+       << fmt::format("%s (%.1f%%)", npart_max_str.c_str(), load_max);
+
+#else // not MPI_ENABLED
+    os << std::setw(21) << std::right << std::setfill('.')
+       << fmt::format("%s (%.1f%%)", npart_max_str.c_str(), load_max);
+#endif
+    os << std::endl;
   }
 
 } // namespace ntt

@@ -22,10 +22,10 @@ namespace ntt {
     // Max number of allocated particles for the species.
     std::size_t m_maxnpart;
 
-    unsigned short m_npld;
-
     // Pusher assigned for the species.
     ParticlePusher m_pusher;
+
+    unsigned short m_npld;
 
   public:
     /**

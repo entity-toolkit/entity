@@ -14,7 +14,7 @@ namespace ntt {
   namespace pbar {
     // averaging window (last 10 % of steps)
     inline constexpr int       average_last_pct { 10 };
-    inline constexpr int       width { 37 };
+    inline constexpr int       width { 52 };
     constexpr std::string_view fill { "■" };
     constexpr std::string_view empty { " " };
     constexpr std::string_view start { "[" };
@@ -29,10 +29,29 @@ namespace ntt {
     const auto window = IMIN(
       IMAX((int)(durations.size() * pbar::average_last_pct / 100), 10),
       (int)durations.size());
-    const auto avg_duration = std::accumulate(durations.end() - window,
-                                              durations.end(),
-                                              0.0) /
-                              static_cast<long double>(window);
+    auto avg_duration = std::accumulate(durations.end() - window,
+                                        durations.end(),
+                                        0.0) /
+                        static_cast<long double>(window);
+
+#if defined(MPI_ENABLED)
+    int rank, size, root_rank { 0 };
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    std::vector<long double> mpi_durations(size, 0.0);
+    MPI_Gather(&avg_duration,
+               1,
+               mpi_get_type<long double>(),
+               mpi_durations.data(),
+               1,
+               mpi_get_type<long double>(),
+               root_rank,
+               MPI_COMM_WORLD);
+    if (rank != root_rank) {
+      return;
+    }
+    avg_duration = *std::max_element(mpi_durations.begin(), mpi_durations.end());
+#endif
     auto avg_reduced = avg_duration;
     auto avg_units   = "us";
     if (avg_reduced > 1e6) {

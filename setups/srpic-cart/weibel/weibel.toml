@@ -18,6 +18,7 @@ skindepth0 = 1.0
 
 [particles]
 n_species = 4
+shuffle_interval = 1
 
 [species_1]
 label    = "e-_p"

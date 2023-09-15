@@ -3,8 +3,6 @@
 
 #include "wrapper.h"
 
-#include <fmt/core.h>
-
 #include <cmath>
 #include <numeric>
 #include <vector>
@@ -114,7 +112,7 @@ namespace ntt {
                                          decomposition.end(),
                                          1,
                                          std::multiplies<>()) != (int)ndomains,
-      fmt::format("Decomposition error: sum(decomposition) != ndomains {} {}",
+      fmt::format("Decomposition error: sum(decomposition) != ndomains %d %d",
                   std::accumulate(decomposition.begin(),
                                   decomposition.end(),
                                   1,

@@ -15,8 +15,6 @@
   #include <mpi.h>
 #endif // MPI_ENABLED
 
-#include <fmt/core.h>
-
 /**
  *
  * Metadomain
@@ -371,13 +369,12 @@ namespace ntt {
       }
       m_fiducial_cell_volume = m_global_metric.sqrt_det_h(x_corner);
       // sanity check
-      NTTHostErrorIf(
-        !AlmostEqual(m_fiducial_cell_volume,
-                     domains[0].metric().sqrt_det_h(x_corner)),
-        fmt::format("fiducial cell volume is not the same across all domains: "
-                    "{:.6e} != {:.6e}",
-                    m_fiducial_cell_volume,
-                    domains[0].metric().sqrt_det_h(x_corner)));
+      NTTHostErrorIf(!AlmostEqual(m_fiducial_cell_volume,
+                                  domains[0].metric().sqrt_det_h(x_corner)),
+                     fmt::format("fiducial cell volume is not the same across "
+                                 "all domains: %.6e != %.6e",
+                                 m_fiducial_cell_volume,
+                                 domains[0].metric().sqrt_det_h(x_corner)));
 
 #if defined(MPI_ENABLED)
       // sanity check

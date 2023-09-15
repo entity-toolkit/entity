@@ -139,7 +139,18 @@ namespace ntt {
                         int                     buff_ind,
                         short                   window = 2);
 
+    /**
+     * @brief Check for NaNs in the fields, currents and/or particles.
+     * @param msg Message to print if NaNs are found.
+     * @param flags Pick which quantities to check using the `CheckNaNFlags`.
+     */
     void CheckNaNs(const std::string&, CheckNaNFlags);
+
+    /**
+     * @brief Check for particles out of bounds.
+     * @param msg Message to print if particles are out of bounds.
+     */
+    void CheckOutOfBounds(const std::string&);
   };
 } // namespace ntt
 

@@ -83,8 +83,9 @@ namespace ntt {
     bool                     m_output_ghosts;
 
     // Diagnostic parameters
-    int  m_diag_interval;
-    bool m_blocking_timers;
+    int         m_diag_interval;
+    std::size_t m_diag_maxn_for_pbar { 10000 };
+    bool        m_blocking_timers;
 
     // Container with data from the parsed input file.
     toml::value m_inputdata;
@@ -416,6 +417,14 @@ namespace ntt {
     [[nodiscard]]
     auto diagInterval() const -> int {
       return m_diag_interval;
+    }
+
+    /**
+     * @brief Get the maximum # of timesteps to extrapolate the remaining time.
+     */
+    [[nodiscard]]
+    auto diagMaxnForPbar() const -> std::size_t {
+      return m_diag_maxn_for_pbar;
     }
 
     /**

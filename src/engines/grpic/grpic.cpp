@@ -12,23 +12,20 @@ namespace ntt {
 
   template <Dimension D>
   void GRPIC<D>::Run() {
-    // register the content of em fields
-    Simulation<D, GRPICEngine>::Verify();
-    {
-      auto  params = *(this->params());
-      auto& mblock = this->meshblock;
-      auto  timax  = (unsigned long)(params.totalRuntime() / mblock.timestep());
+    auto  params = *(this->params());
+    auto& mblock = this->meshblock;
+    auto  timax  = (unsigned long)(params.totalRuntime() / mblock.timestep());
 
-      ResetSimulation();
-      Simulation<D, GRPICEngine>::PrintDetails();
-      InitialStep();
-      for (unsigned long ti { 0 }; ti < timax; ++ti) {
-        PLOGV_(LogFile) << "step = " << this->m_tstep;
-        PLOGV_(LogFile) << std::endl;
-        StepForward();
-      }
-      WaitAndSynchronize();
+    ResetSimulation();
+    this->PrintDetails();
+    this->Verify();
+    InitialStep();
+    for (unsigned long ti { 0 }; ti < timax; ++ti) {
+      PLOGV_(LogFile) << "step = " << this->m_tstep;
+      PLOGV_(LogFile) << std::endl;
+      StepForward();
     }
+    WaitAndSynchronize();
   }
 
   template <Dimension D>

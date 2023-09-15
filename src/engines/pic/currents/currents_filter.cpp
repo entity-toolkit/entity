@@ -57,12 +57,15 @@ namespace ntt {
                                         { mblock.i1_max(), mblock.i2_max() + 1 });
       }
 #endif
+      this->Communicate(Comm_J);
       Kokkos::deep_copy(mblock.buff, mblock.cur);
       Kokkos::parallel_for("CurrentsFilter",
                            range,
                            DigitalFilter_kernel<D>(mblock.cur, mblock.buff, size));
-      this->Communicate(Comm_J);
+      WaitAndSynchronize();
+      // this->Communicate(Comm_J);
     }
+    NTTLog();
   }
 } // namespace ntt
 

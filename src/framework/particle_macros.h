@@ -32,17 +32,6 @@
   (static_cast<real_t>((PARTICLES).i3_prev((P))) +                             \
    static_cast<real_t>((PARTICLES).dx3_prev((P))))
 
-#define get_prtl_Usqr_SR(PARTICLES, P)                                         \
-  (PARTICLES).ux1((P)) * (PARTICLES).ux1((P)) +                                \
-    (PARTICLES).ux2((P)) * (PARTICLES).ux2((P)) +                              \
-    (PARTICLES).ux3((P)) * (PARTICLES).ux3((P))
-
-#define get_prtl_Gamma_SR(PARTICLES, P)                                        \
-  (math::sqrt(static_cast<real_t>(1.0) + get_prtl_Usqr_SR((PARTICLES), (P))))
-
-#define get_photon_Energy_SR(PARTICLES, P)                                     \
-  (math::sqrt(get_prtl_Usqr_SR((PARTICLES), (P))))
-
 #define init_prtl_1d_i_di(SPECIES, INDEX, I1, DI1, U1, U2, U3, WEIGHT)         \
   {                                                                            \
     (SPECIES).i1((INDEX))     = I1;                                            \
@@ -82,55 +71,43 @@
     (SPECIES).weight((INDEX)) = WEIGHT;                                                  \
   }
 
-#ifdef MINKOWSKI_METRIC
+#if defined(PIC_ENGINE)
 
   #define init_prtl_1d(MBLOCK, SPECIES, INDEX, X1, U1, U2, U3, WEIGHT)         \
     {                                                                          \
       coord_t<Dim1> X_CU;                                                      \
       int           I;                                                         \
       prtldx_t      DX;                                                        \
-      ((MBLOCK).metric).x_Cart2Code({ (X1) }, X_CU);                           \
+      ((MBLOCK).metric).x_Phys2Code({ (X1) }, X_CU);                           \
       from_Xi_to_i_di(X_CU[0], I, DX);                                         \
       init_prtl_1d_i_di(SPECIES, INDEX, I, DX, U1, U2, U3, WEIGHT);            \
     }
 
-  #define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3, WEIGHT)     \
-    {                                                                          \
-      coord_t<Dim2> X_CU;                                                      \
-      int           I1, I2;                                                    \
-      prtldx_t      DX1, DX2;                                                  \
-      ((MBLOCK).metric).x_Cart2Code({ (X1), (X2) }, X_CU);                     \
-      from_Xi_to_i_di(X_CU[0], I1, DX1);                                       \
-      from_Xi_to_i_di(X_CU[1], I2, DX2);                                       \
-      init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U1, U2, U3, WEIGHT); \
-    }
-
-  #define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3, WEIGHT)          \
-    {                                                                                   \
-      coord_t<Dim3> X_CU;                                                               \
-      int           I1, I2, I3;                                                         \
-      prtldx_t      DX1, DX2, DX3;                                                      \
-      ((MBLOCK).metric).x_Cart2Code({ (X1), (X2), (X3) }, X_CU);                        \
-      from_Xi_to_i_di(X_CU[0], I1, DX1);                                                \
-      from_Xi_to_i_di(X_CU[1], I2, DX2);                                                \
-      from_Xi_to_i_di(X_CU[2], I3, DX3);                                                \
-      init_prtl_3d_i_di(SPECIES, INDEX, I1, I2, I3, DX1, DX2, DX3, U1, U2, U3, WEIGHT); \
-    }
-
-#elif defined(PIC_ENGINE)
-
-  #define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3, WEIGHT)                 \
-    {                                                                                      \
-      coord_t<Dim2> X_CU;                                                                  \
-      vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                              \
-      int           I1, I2;                                                                \
-      prtldx_t      DX1, DX2;                                                              \
-      ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                  \
-      ((MBLOCK).metric).v3_Hat2Cart({ X_CU[0], X_CU[1], ZERO }, { U1, U2, U3 }, U_C);      \
-      from_Xi_to_i_di(X_CU[0], I1, DX1);                                                   \
-      from_Xi_to_i_di(X_CU[1], I2, DX2);                                                   \
-      init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U_C[0], U_C[1], U_C[2], WEIGHT); \
-    }
+  #ifdef MINKOWSKI_METRIC
+    #define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3, WEIGHT)     \
+      {                                                                          \
+        coord_t<Dim2> X_CU;                                                      \
+        int           I1, I2;                                                    \
+        prtldx_t      DX1, DX2;                                                  \
+        ((MBLOCK).metric).x_Phys2Code({ (X1), (X2) }, X_CU);                     \
+        from_Xi_to_i_di(X_CU[0], I1, DX1);                                       \
+        from_Xi_to_i_di(X_CU[1], I2, DX2);                                       \
+        init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U1, U2, U3, WEIGHT); \
+      }
+  #else
+    #define init_prtl_2d(MBLOCK, SPECIES, INDEX, X1, X2, U1, U2, U3, WEIGHT)                 \
+      {                                                                                      \
+        coord_t<Dim2> X_CU;                                                                  \
+        vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                              \
+        int           I1, I2;                                                                \
+        prtldx_t      DX1, DX2;                                                              \
+        ((MBLOCK).metric).x_Phys2Code({ (X1), (X2) }, X_CU);                                 \
+        ((MBLOCK).metric).v3_Hat2Cart({ X_CU[0], X_CU[1], ZERO }, { U1, U2, U3 }, U_C);      \
+        from_Xi_to_i_di(X_CU[0], I1, DX1);                                                   \
+        from_Xi_to_i_di(X_CU[1], I2, DX2);                                                   \
+        init_prtl_2d_i_di(SPECIES, INDEX, I1, I2, DX1, DX2, U_C[0], U_C[1], U_C[2], WEIGHT); \
+      }
+  #endif
 
   #define init_prtl_3d(MBLOCK, SPECIES, INDEX, X1, X2, X3, U1, U2, U3, WEIGHT) \
     {                                                                          \
@@ -138,7 +115,7 @@
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                  \
       int           I1, I2, I3;                                                \
       prtldx_t      DX1, DX2, DX3;                                             \
-      ((MBLOCK).metric).x_Sph2Code({ (X1), (X2), (X3) }, X_CU);                \
+      ((MBLOCK).metric).x_Phys2Code({ (X1), (X2), (X3) }, X_CU);               \
       ((MBLOCK).metric).v3_Hat2Cart(X_CU, { U1, U2, U3 }, U_C);                \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                       \
       from_Xi_to_i_di(X_CU[1], I2, DX2);                                       \
@@ -165,7 +142,7 @@
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                              \
       int           I1, I2;                                                                \
       prtldx_t      DX1, DX2;                                                              \
-      ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                  \
+      ((MBLOCK).metric).x_Phys2Code({ (X1), (X2) }, X_CU);                                 \
       ((MBLOCK).metric).v3_Hat2Cov({ X_CU[0], X_CU[1] }, { U1, U2, U3 }, U_C);             \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                   \
       from_Xi_to_i_di(X_CU[1], I2, DX2);                                                   \
@@ -178,7 +155,7 @@
       vec_t<Dim3>   U_C { ZERO, ZERO, ZERO };                                              \
       int           I1, I2;                                                                \
       prtldx_t      DX1, DX2;                                                              \
-      ((MBLOCK).metric).x_Sph2Code({ (X1), (X2) }, X_CU);                                  \
+      ((MBLOCK).metric).x_Phys2Code({ (X1), (X2) }, X_CU);                                 \
       ((MBLOCK).metric).v3_PhysCov2Cov({ X_CU[0], X_CU[1] }, { U1, U2, U3 }, U_C);         \
       from_Xi_to_i_di(X_CU[0], I1, DX1);                                                   \
       from_Xi_to_i_di(X_CU[1], I2, DX2);                                                   \
@@ -186,5 +163,30 @@
     }
 
 #endif
+
+#define InjectParticle_1D(MBLOCK, SPECIES, ATOMIC_INDEX, OFFSET, X1, U1, U2, U3, WEIGHT) \
+  {                                                                                      \
+    if ((X1) >= (MBLOCK).metric.x1_min && (X1) < (MBLOCK).metric.x1_max) {               \
+      auto p { (OFFSET) + Kokkos::atomic_fetch_add(&(ATOMIC_INDEX)(), 1) };              \
+      init_prtl_1d(MBLOCK, SPECIES, p, X1, U1, U2, U3, WEIGHT);                          \
+    }                                                                                    \
+  }
+#define InjectParticle_2D(MBLOCK, SPECIES, ATOMIC_INDEX, OFFSET, X1, X2, U1, U2, U3, WEIGHT) \
+  {                                                                                          \
+    if ((X1) >= (MBLOCK).metric.x1_min && (X1) < (MBLOCK).metric.x1_max &&                   \
+        (X2) >= (MBLOCK).metric.x2_min && (X2) < (MBLOCK).metric.x2_max) {                   \
+      auto P { (OFFSET) + Kokkos::atomic_fetch_add(&(ATOMIC_INDEX)(), 1) };                  \
+      init_prtl_2d(MBLOCK, SPECIES, P, X1, X2, U1, U2, U3, WEIGHT);                          \
+    }                                                                                        \
+  }
+#define InjectParticle_3D(MBLOCK, SPECIES, ATOMIC_INDEX, OFFSET, X1, X2, X3, U1, U2, U3, WEIGHT) \
+  {                                                                                              \
+    if ((X1) >= (MBLOCK).metric.x1_min && (X1) < (MBLOCK).metric.x1_max &&                       \
+        (X2) >= (MBLOCK).metric.x2_min && (X2) < (MBLOCK).metric.x2_max &&                       \
+        (X3) >= (MBLOCK).metric.x3_min && (X3) < (MBLOCK).metric.x3_max) {                       \
+      auto p { (OFFSET) + Kokkos::atomic_fetch_add(&(ATOMIC_INDEX)(), 1) };                      \
+      init_prtl_3d(MBLOCK, SPECIES, p, X1, X2, X3, U1, U2, U3, WEIGHT);                          \
+    }                                                                                            \
+  }
 
 #endif

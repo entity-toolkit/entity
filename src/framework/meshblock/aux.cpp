@@ -411,8 +411,13 @@ namespace ntt {
               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
-                real_t energy { ((mass == ZERO) ? get_photon_Energy_SR(species, p)
-                                                : get_prtl_Gamma_SR(species, p)) };
+                real_t energy {
+                  (mass == ZERO)
+                    ? NORM(species.ux1(p), species.ux2(p), species.ux3(p))
+                    : math::sqrt(ONE + NORM_SQR(species.ux1(p),
+                                                species.ux2(p),
+                                                species.ux3(p)))
+                };
                 contrib = ((mass == ZERO) ? ONE : mass) / energy;
                 for (auto& c : { comp1, comp2 }) {
                   if (c == 0) {
@@ -464,8 +469,13 @@ namespace ntt {
               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
-                real_t energy { ((mass == ZERO) ? get_photon_Energy_SR(species, p)
-                                                : get_prtl_Gamma_SR(species, p)) };
+                real_t energy {
+                  (mass == ZERO)
+                    ? NORM(species.ux1(p), species.ux2(p), species.ux3(p))
+                    : math::sqrt(ONE + NORM_SQR(species.ux1(p),
+                                                species.ux2(p),
+                                                species.ux3(p)))
+                };
                 contrib = ((mass == ZERO) ? ONE : mass) / energy;
 #ifdef MINKOWSKI_METRIC
                 for (auto& c : { comp1, comp2 }) {
@@ -548,8 +558,13 @@ namespace ntt {
               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
                 contrib = ONE;
               } else if (field == FieldID::T) {
-                real_t energy { ((mass == ZERO) ? get_photon_Energy_SR(species, p)
-                                                : get_prtl_Gamma_SR(species, p)) };
+                real_t energy {
+                  (mass == ZERO)
+                    ? NORM(species.ux1(p), species.ux2(p), species.ux3(p))
+                    : math::sqrt(ONE + NORM_SQR(species.ux1(p),
+                                                species.ux2(p),
+                                                species.ux3(p)))
+                };
                 contrib = ((mass == ZERO) ? ONE : mass) / energy;
 #ifdef MINKOWSKI_METRIC
                 for (auto& c : { comp1, comp2 }) {
@@ -605,6 +620,76 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
+  void Meshblock<D, S>::CheckOutOfBounds(const std::string& msg) {
+#if !defined(MPI_ENABLED)
+    const auto ntags = 2;
+#else
+    const auto ntags = 2 + math::pow(3, (int)D) - 1;
+#endif
+    for (auto& species : particles) {
+      auto found_oob   = array_t<int>("found_oob");
+      auto found_oob_h = Kokkos::create_mirror_view(found_oob);
+      if constexpr (D == Dim1) {
+        const auto ni1 { (int)(this->Ni1()) };
+        Kokkos::parallel_for(
+          "Check-OutOfBounds",
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p) {
+            auto oob_found = species.i1(p) < 0 || species.i1(p) >= ni1 ||
+                             species.tag(p) < 0 || species.tag(p) >= ntags;
+            Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
+            if (oob_found) {
+              printf("OutOfBounds particle at %ld %d\n", p, species.i1(p));
+            }
+          });
+      } else if constexpr (D == Dim2) {
+        const auto ni1 { (int)(this->Ni1()) }, ni2 { (int)(this->Ni2()) };
+        Kokkos::parallel_for(
+          "Check-OutOfBounds",
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p) {
+            auto oob_found = species.i1(p) < 0 || species.i1(p) >= ni1 ||
+                             species.i2(p) < 0 || species.i2(p) >= ni2 ||
+                             species.tag(p) < 0 || species.tag(p) >= ntags;
+            Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
+            if (oob_found) {
+              printf("OutOfBounds particle at %ld %d %d\n",
+                     p,
+                     species.i1(p),
+                     species.i2(p));
+            }
+          });
+      } else if constexpr (D == Dim3) {
+        const auto ni1 { (int)(this->Ni1()) }, ni2 { (int)(this->Ni2()) },
+          ni3 { (int)(this->Ni3()) };
+        Kokkos::parallel_for(
+          "Check-OutOfBounds",
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p) {
+            auto oob_found = species.i1(p) < 0 || species.i1(p) >= ni1 ||
+                             species.i2(p) < 0 || species.i2(p) >= ni2 ||
+                             species.i3(p) < 0 || species.i3(p) >= ni3 ||
+                             species.tag(p) < 0 || species.tag(p) >= ntags;
+            Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
+            if (oob_found) {
+              printf("OutOfBounds particle at %ld %d %d %d\n",
+                     p,
+                     species.i1(p),
+                     species.i2(p),
+                     species.i3(p));
+            }
+          });
+      }
+      Kokkos::deep_copy(found_oob_h, found_oob);
+      NTTHostErrorIf(found_oob_h() > 0,
+                     fmt::format("%s: OutOfBounds particles (%s): %d",
+                                 msg,
+                                 species.label(),
+                                 found_oob_h()));
+    }
+  }
+
+  template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::CheckNaNs(const std::string& msg, CheckNaNFlags flags) {
     (void)msg;
     (void)flags;
@@ -638,7 +723,7 @@ namespace ntt {
           });
         Kokkos::deep_copy(found_nan_h, found_nan);
         NTTHostErrorIf(found_nan_h() > 0,
-                       fmt::format("{}: NaNs in fields: {}", msg, found_nan_h()));
+                       fmt::format("%s: NaNs in fields: %d", msg, found_nan_h()));
       }
       if (flags & CheckNaN_Currents) {
         Kokkos::parallel_for(
@@ -660,7 +745,7 @@ namespace ntt {
           });
         Kokkos::deep_copy(found_nan_h, found_nan);
         NTTHostErrorIf(found_nan_h() > 0,
-                       fmt::format("{}: NaNs in fields: {}", msg, found_nan_h()));
+                       fmt::format("%s: NaNs in fields: %d", msg, found_nan_h()));
       }
       if (flags & CheckNaN_Particles) {
         for (auto& species : particles) {
@@ -685,7 +770,7 @@ namespace ntt {
           Kokkos::deep_copy(found_nan_h, found_nan);
           NTTHostErrorIf(
             found_nan_h() > 0,
-            fmt::format("{}: NaNs in particles: {}", msg, found_nan_h()));
+            fmt::format("%s: NaNs in particles: %d", msg, found_nan_h()));
         }
       }
     }

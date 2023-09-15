@@ -63,6 +63,7 @@ namespace ntt {
                            DigitalFilter_kernel<D>(mblock.cur0, mblock.buff, size));
       this->Communicate(Comm_J);
     }
+    NTTLog();
   }
 } // namespace ntt
 

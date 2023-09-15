@@ -138,7 +138,9 @@ namespace ntt {
       xp_f,
       { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
       vp);
-    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+    const real_t inv_energy = ONE / math::sqrt(ONE + NORM_SQR(m_particles.ux1(p),
+                                                              m_particles.ux2(p),
+                                                              m_particles.ux3(p)));
 
     vp[0] *= inv_energy;
     vp[1] *= inv_energy;
@@ -175,7 +177,9 @@ namespace ntt {
       xp_f,
       { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
       vp);
-    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+    const real_t inv_energy = ONE / math::sqrt(ONE + NORM_SQR(m_particles.ux1(p),
+                                                              m_particles.ux2(p),
+                                                              m_particles.ux3(p)));
 
     // get particle 3-velocity in coordinate basis
     vp[0] *= inv_energy;
@@ -228,7 +232,9 @@ namespace ntt {
       { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
       vp);
 
-    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+    const real_t inv_energy = ONE / math::sqrt(ONE + NORM_SQR(m_particles.ux1(p),
+                                                              m_particles.ux2(p),
+                                                              m_particles.ux3(p)));
 
     // get particle 3-velocity in coordinate basis
     vp[0] *= inv_energy;
@@ -276,7 +282,9 @@ namespace ntt {
       xp_f,
       { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) },
       vp);
-    const real_t inv_energy = ONE / get_prtl_Gamma_SR(m_particles, p);
+    const real_t inv_energy = ONE / math::sqrt(ONE + NORM_SQR(m_particles.ux1(p),
+                                                              m_particles.ux2(p),
+                                                              m_particles.ux3(p)));
 
     // get particle 3-velocity in coordinate basis
     vp[0] *= inv_energy;
