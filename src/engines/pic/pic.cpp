@@ -91,12 +91,6 @@ namespace ntt {
 
       { mblock.CheckNaNs("After Push", CheckNaN_Particles); }
 
-      timers.start("UserSpecific");
-      pgen.UserDriveParticles(this->m_time, params, mblock);
-      timers.stop("UserSpecific");
-
-      { mblock.CheckNaNs("After Drive", CheckNaN_Particles); }
-
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
         CurrentsDeposit();
@@ -171,6 +165,12 @@ namespace ntt {
 
       { mblock.CheckNaNs("After 3rd Fields BC", CheckNaN_Fields); }
     }
+
+    timers.start("UserSpecific");
+    pgen.UserDriveParticles(this->m_time, params, mblock);
+    timers.stop("UserSpecific");
+
+    { mblock.CheckNaNs("After Drive", CheckNaN_Particles); }
 
     timers.start("Output");
     wrtr.WriteAll(params, metadomain, mblock, this->m_time, this->m_tstep);
