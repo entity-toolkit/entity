@@ -35,13 +35,28 @@ function(add_framework_library metric)
 endfunction()
 
 function(add_engine_library metric engine pgen)
+  if (${pgen} STREQUAL "dummy")
+    set(pgen_full "dummy")
+  else()
+    if (engine STREQUAL "pic")
+      if (metric STREQUAL "minkowski")
+        set(pgen_full "srpic-cart/${pgen}")
+      else()
+        set(pgen_full "srpic-axisym/${pgen}")
+      endif()
+    else()
+      set(pgen_full "grpic-axisym/${pgen}")
+    endif()
+  endif()
+
   string(TOUPPER ${metric} metric_upper)
   string(TOUPPER ${engine} engine_upper)
   set(title engine-${engine}-${metric})
+  set(pgen_name ${pgen})
   if(NOT ${pgen} STREQUAL "dummy")
     string(REPLACE "/" "_" pgen_name ${pgen})
-    set(title ${title}-${pgen_name})
   endif()
+  set(title ${title}-${pgen_name})
   file(GLOB_RECURSE ${engine_upper}_FILES ${SOURCE_DIR}/engines/${engine}/*.cpp)
   add_library(${title} STATIC EXCLUDE_FROM_ALL ${${engine_upper}_FILES})
   target_compile_options(
@@ -49,7 +64,7 @@ function(add_engine_library metric engine pgen)
     PUBLIC -D${metric_upper}_METRIC -D${engine_upper}_ENGINE
            -DSIMULATION_METRIC=\"${metric}\"
            -DMETRIC_HEADER=\"metrics/${metric}.h\")
-  target_compile_options(${title} PUBLIC "-DPGEN_HEADER=\"../setups/${pgen}.hpp\"")
+  target_compile_options(${title} PUBLIC "-DPGEN_HEADER=\"../setups/${pgen_full}.hpp\"")
   target_include_directories(${title} PRIVATE ${SOURCE_DIR}/engines
                                               ${SOURCE_DIR}/engines/${engine})
 endfunction()
@@ -68,7 +83,6 @@ foreach(metric ${all_metrics})
 
   add_framework_library(${metric})
   add_engine_library(${metric} ${engine} dummy)
-  add_engine_library(${metric} ${engine} debug/deposit)
   add_engine_library(${metric} sandbox dummy)
 endforeach()
 
@@ -146,27 +160,28 @@ if(${mpi} STREQUAL "OFF")
   # --------------------------------- Pusher --------------------------------- #
   set(metric minkowski)
   set(engine pic)
+  set(pgen dummy)
   set(title pusher-sr-minkowski)
   add_executable(test-${title}.xc pusher-sr-mink.cpp)
   target_link_libraries(test-${title}.xc PUBLIC framework-${metric}
-                                                engine-${engine}-${metric})
+                                                engine-${engine}-${metric}-${pgen})
   target_include_directories(test-${title}.xc
                              PRIVATE ${SOURCE_DIR}/engines/${engine})
   add_test(NAME "Pusher: ${engine} ${metric}" COMMAND "test-${title}.xc")
 
   # --------------------------------- Deposit -------------------------------- #
-  # foreach(metric spherical qspherical)
-  #   set(engine pic)
-  #   set(pgen debug_deposit)
-  #   set(title deposit-sr-${metric})
-  #   add_executable(test-${title}.xc deposit-sr.cpp)
-  #   target_link_libraries(
-  #     test-${title}.xc PUBLIC framework-${metric}
-  #                             engine-${engine}-${metric}-${pgen})
-  #   target_include_directories(test-${title}.xc
-  #                              PRIVATE ${SOURCE_DIR}/engines/${engine})
-  #   add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
-  # endforeach()
+  foreach(metric ${sr_metrics})
+    set(engine pic)
+    set(pgen dummy)
+    set(title deposit-sr-${metric})
+    add_executable(test-${title}.xc deposit-sr.cpp)
+    target_link_libraries(
+      test-${title}.xc PUBLIC framework-${metric}
+                              engine-${engine}-${metric}-${pgen})
+    target_include_directories(test-${title}.xc
+                               PRIVATE ${SOURCE_DIR}/engines/${engine})
+    add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
+  endforeach()
 
   # foreach(metric ${gr_metrics})
   #   set(engine grpic)
