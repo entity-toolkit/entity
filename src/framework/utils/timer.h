@@ -105,7 +105,7 @@ namespace ntt {
         }
         std::string header = fmt::format("%s %27s", "[SUBSTEP]", "[DURATION]");
         if (flags & TimerFlags_PrintRelative) {
-          header += "   [% TOT]";
+          header += "  [% TOT]";
         }
 #if defined(MPI_ENABLED)
         header += "   [MIN : MAX]";

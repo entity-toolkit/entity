@@ -240,13 +240,19 @@ namespace ntt {
     }
     tstep_durations.push_back(timers.get("Total"));
     if (step % m_params.diagInterval() == 0) {
-      auto& mblock = this->meshblock;
-      const auto title { fmt::format("Time = %f : step = %d : Δt = %f", time, step, mblock.timestep()) };
-      timers.printAll(title,
-                      (diag_flags & DiagFlags_Timers)
-                        ? timer::TimerFlags_Default
-                        : timer::TimerFlags_PrintTitle,
-                      os);
+      auto&      mblock = this->meshblock;
+      const auto title {
+        fmt::format("Time = %f : step = %d : Δt = %f", time, step, mblock.timestep())
+      };
+      PrintOnce(
+        [](std::ostream& os, std::string title) {
+          os << title << std::endl;
+        },
+        os,
+        title);
+      if (diag_flags & DiagFlags_Timers) {
+        timers.printAll("", timer::TimerFlags_Default, os);
+      }
       if (diag_flags & DiagFlags_Species) {
         auto header = fmt::format("%s %27s", "[SPECIES]", "[TOT]");
 #if defined(MPI_ENABLED)

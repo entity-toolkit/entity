@@ -193,6 +193,9 @@ namespace ntt {
   #else  // not MINKOWSKI_METRIC
 
   template <Dimension D, SimulationEngine S>
+  void Simulation<D, S>::CurrentsSynchronize() {}
+
+  template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Communicate(CommTags comm) {
     if (comm & Comm_Prtl) {
       if ((params()->shuffleInterval() > 0) &&
