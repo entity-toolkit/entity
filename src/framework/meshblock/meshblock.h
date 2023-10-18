@@ -112,16 +112,16 @@ namespace ntt {
 
     /**
      * @brief Compute A3 vector potential (for GRPIC 2D).
-     * @brief The result is stored inside the buffer(i1, i2, buffer_comp).
+     * @brief The result is stored inside the buffer(i1, i2, buff_ind).
      */
-    void ComputeVectorPotential(ndfield_t<D, 6>&, const int&) {}
+    void ComputeVectorPotential(ndfield_t<D, 6>&, int) {}
 
     /**
      * @brief Compute the divergence of the E/D-field.
      * @param buffer Buffer to store the result in.
-     * @param buffer_comp Component of the buffer to store the result in.
+     * @param buff_ind Component of the buffer to store the result in.
      */
-    void ComputeDivergenceED(ndfield_t<D, 3>&, const int&);
+    void ComputeDivergenceED(ndfield_t<D, 3>&, int);
 
     /**
      * @brief Compute particle moment for output or other usage.
@@ -147,10 +147,23 @@ namespace ntt {
     void CheckNaNs(const std::string&, CheckNaNFlags);
 
     /**
+     * @brief Compute the charge density.
+     * @param params SimulationParams object.
+     * @param buffer Buffer to store the result in.
+     * @param prtl_species Particle species to compute the charge density for.
+     * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
+     */
+    void ComputeChargeDensity(const SimulationParams&,
+                              ndfield_t<D, 3>&,
+                              const std::vector<int>&,
+                              int);
+
+    /**
      * @brief Check for particles out of bounds.
      * @param msg Message to print if particles are out of bounds.
+     * @param only_on_debug Only run when DEBUG enabled.
      */
-    void CheckOutOfBounds(const std::string&);
+    void CheckOutOfBounds(const std::string&, bool = true);
   };
 } // namespace ntt
 

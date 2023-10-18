@@ -116,9 +116,12 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      if constexpr (D != Dim1) {
+      if constexpr (D == Dim2) {
         return SQR((r0 + math::exp(x[0] * dchi + chi_min)) *
                    math::sin(eta2theta(x[1] * deta + eta_min)));
+      } else if constexpr (D == Dim3) {
+        return dphi_sqr * SQR((r0 + math::exp(x[0] * dchi + chi_min)) *
+                              math::sin(eta2theta(x[1] * deta + eta_min)));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
@@ -132,10 +135,32 @@ namespace ntt {
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      if constexpr (D != Dim1) {
+      if constexpr (D == Dim2) {
         real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
         return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
                SQR(r0 + exp_chi) * math::sin(eta2theta(x[1] * deta + eta_min));
+      } else if constexpr (D == Dim3) {
+        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        return dchi * deta * dphi * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
+               SQR(r0 + exp_chi) * math::sin(eta2theta(x[1] * deta + eta_min));
+
+      } else {
+        NTTError("1D qspherical not available");
+        return ZERO;
+      }
+    }
+
+    /**
+     * Square root of the determinant of h-matrix divided by sin(theta).
+     *
+     * @param x coordinate array in code units
+     * @returns sqrt(det(h))/sin(theta).
+     */
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      if constexpr (D != Dim1) {
+        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
+               SQR(r0 + exp_chi);
       } else {
         NTTError("1D qspherical not available");
         return ZERO;

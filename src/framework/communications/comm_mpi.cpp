@@ -12,6 +12,105 @@
 
 namespace ntt {
 
+  // Functions to tag particles for communication
+
+  Inline auto SendTag(short tag, bool im1, bool ip1) -> short {
+    return ((im1) * (PrtlSendTag<Dim1>::im1 - 1) +
+            (ip1) * (PrtlSendTag<Dim1>::ip1 - 1) + 1) *
+           tag;
+  }
+
+  Inline auto SendTag(short tag, bool im1, bool ip1, bool jm1, bool jp1) -> short {
+    return ((im1 && jm1) * (PrtlSendTag<Dim2>::im1_jm1 - 1) +
+            (im1 && jp1) * (PrtlSendTag<Dim2>::im1_jp1 - 1) +
+            (ip1 && jm1) * (PrtlSendTag<Dim2>::ip1_jm1 - 1) +
+            (ip1 && jp1) * (PrtlSendTag<Dim2>::ip1_jp1 - 1) +
+            (im1 && !jp1 && !jm1) * (PrtlSendTag<Dim2>::im1__j0 - 1) +
+            (ip1 && !jp1 && !jm1) * (PrtlSendTag<Dim2>::ip1__j0 - 1) +
+            (jm1 && !ip1 && !im1) * (PrtlSendTag<Dim2>::i0__jm1 - 1) +
+            (jp1 && !ip1 && !im1) * (PrtlSendTag<Dim2>::i0__jp1 - 1) + 1) *
+           tag;
+  }
+
+  Inline auto SendTag(short tag, bool im1, bool ip1, bool jm1, bool jp1, bool km1, bool kp1)
+    -> short {
+    return ((im1 && jm1 && km1) * (PrtlSendTag<Dim3>::im1_jm1_km1 - 1) +
+            (im1 && jm1 && kp1) * (PrtlSendTag<Dim3>::im1_jm1_kp1 - 1) +
+            (im1 && jp1 && km1) * (PrtlSendTag<Dim3>::im1_jp1_km1 - 1) +
+            (im1 && jp1 && kp1) * (PrtlSendTag<Dim3>::im1_jp1_kp1 - 1) +
+            (ip1 && jm1 && km1) * (PrtlSendTag<Dim3>::ip1_jm1_km1 - 1) +
+            (ip1 && jm1 && kp1) * (PrtlSendTag<Dim3>::ip1_jm1_kp1 - 1) +
+            (ip1 && jp1 && km1) * (PrtlSendTag<Dim3>::ip1_jp1_km1 - 1) +
+            (ip1 && jp1 && kp1) * (PrtlSendTag<Dim3>::ip1_jp1_kp1 - 1) +
+            (im1 && jm1 && !km1 && !kp1) * (PrtlSendTag<Dim3>::im1_jm1__k0 - 1) +
+            (im1 && jp1 && !km1 && !kp1) * (PrtlSendTag<Dim3>::im1_jp1__k0 - 1) +
+            (ip1 && jm1 && !km1 && !kp1) * (PrtlSendTag<Dim3>::ip1_jm1__k0 - 1) +
+            (ip1 && jp1 && !km1 && !kp1) * (PrtlSendTag<Dim3>::ip1_jp1__k0 - 1) +
+            (im1 && !jm1 && !jp1 && km1) * (PrtlSendTag<Dim3>::im1__j0_km1 - 1) +
+            (im1 && !jm1 && !jp1 && kp1) * (PrtlSendTag<Dim3>::im1__j0_kp1 - 1) +
+            (ip1 && !jm1 && !jp1 && km1) * (PrtlSendTag<Dim3>::ip1__j0_km1 - 1) +
+            (ip1 && !jm1 && !jp1 && kp1) * (PrtlSendTag<Dim3>::ip1__j0_kp1 - 1) +
+            (!im1 && !ip1 && jm1 && km1) * (PrtlSendTag<Dim3>::i0__jm1_km1 - 1) +
+            (!im1 && !ip1 && jm1 && kp1) * (PrtlSendTag<Dim3>::i0__jm1_kp1 - 1) +
+            (!im1 && !ip1 && jp1 && km1) * (PrtlSendTag<Dim3>::i0__jp1_km1 - 1) +
+            (!im1 && !ip1 && jp1 && kp1) * (PrtlSendTag<Dim3>::i0__jp1_kp1 - 1) +
+            (!im1 && !ip1 && !jm1 && !jp1 && km1) *
+              (PrtlSendTag<Dim3>::i0___j0_km1 - 1) +
+            (!im1 && !ip1 && !jm1 && !jp1 && kp1) *
+              (PrtlSendTag<Dim3>::i0___j0_kp1 - 1) +
+            (!im1 && !ip1 && jm1 && !km1 && !kp1) *
+              (PrtlSendTag<Dim3>::i0__jm1__k0 - 1) +
+            (!im1 && !ip1 && jp1 && !km1 && !kp1) *
+              (PrtlSendTag<Dim3>::i0__jp1__k0 - 1) +
+            (im1 && !jm1 && !jp1 && !km1 && !kp1) *
+              (PrtlSendTag<Dim3>::im1__j0__k0 - 1) +
+            (ip1 && !jm1 && !jp1 && !km1 && !kp1) *
+              (PrtlSendTag<Dim3>::ip1__j0__k0 - 1) +
+            1) *
+           tag;
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void TagParticles(const Meshblock<D, S>& mblock, Particles<D, S>& particles) {
+    const auto ni1 = (int)mblock.Ni1();
+    const auto ni2 = (int)mblock.Ni2();
+    const auto ni3 = (int)mblock.Ni3();
+    if constexpr (D == Dim1) {
+      Kokkos::parallel_for(
+        "TagParticles",
+        particles.rangeActiveParticles(),
+        ClassLambda(index_t p) {
+          particles.tag(p) = SendTag(particles.tag(p),
+                                     particles.i1(p) < 0,
+                                     particles.i1(p) >= ni1);
+        });
+    } else if constexpr (D == Dim2) {
+      Kokkos::parallel_for(
+        "TagParticles",
+        particles.rangeActiveParticles(),
+        ClassLambda(index_t p) {
+          particles.tag(p) = SendTag(particles.tag(p),
+                                     particles.i1(p) < 0,
+                                     particles.i1(p) >= ni1,
+                                     particles.i2(p) < 0,
+                                     particles.i2(p) >= ni2);
+        });
+    } else if constexpr (D == Dim3) {
+      Kokkos::parallel_for(
+        "TagParticles",
+        particles.rangeActiveParticles(),
+        ClassLambda(index_t p) {
+          particles.tag(p) = SendTag(particles.tag(p),
+                                     particles.i1(p) < 0,
+                                     particles.i1(p) >= ni1,
+                                     particles.i2(p) < 0,
+                                     particles.i2(p) >= ni2,
+                                     particles.i3(p) < 0,
+                                     particles.i3(p) >= ni3);
+        });
+    }
+  }
+
   /* -------------------------------------------------------------------------- */
   /*                     Cross-meshblock MPI communications */
   /* -------------------------------------------------------------------------- */
@@ -448,18 +547,16 @@ namespace ntt {
 
     CommunicateParticleQuantity(particles.i1, send_to, recv_from, send_slice, recv_slice);
     CommunicateParticleQuantity(particles.dx1, send_to, recv_from, send_slice, recv_slice);
-    if constexpr (S == GRPICEngine) {
-      CommunicateParticleQuantity(particles.i1_prev,
-                                  send_to,
-                                  recv_from,
-                                  send_slice,
-                                  recv_slice);
-      CommunicateParticleQuantity(particles.dx1_prev,
-                                  send_to,
-                                  recv_from,
-                                  send_slice,
-                                  recv_slice);
-    }
+    CommunicateParticleQuantity(particles.i1_prev,
+                                send_to,
+                                recv_from,
+                                send_slice,
+                                recv_slice);
+    CommunicateParticleQuantity(particles.dx1_prev,
+                                send_to,
+                                recv_from,
+                                send_slice,
+                                recv_slice);
     if constexpr (D == Dim2 || D == Dim3) {
       CommunicateParticleQuantity(particles.i2, send_to, recv_from, send_slice, recv_slice);
       CommunicateParticleQuantity(particles.dx2,
@@ -467,18 +564,16 @@ namespace ntt {
                                   recv_from,
                                   send_slice,
                                   recv_slice);
-      if constexpr (S == GRPICEngine) {
-        CommunicateParticleQuantity(particles.i2_prev,
-                                    send_to,
-                                    recv_from,
-                                    send_slice,
-                                    recv_slice);
-        CommunicateParticleQuantity(particles.dx2_prev,
-                                    send_to,
-                                    recv_from,
-                                    send_slice,
-                                    recv_slice);
-      }
+      CommunicateParticleQuantity(particles.i2_prev,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
+      CommunicateParticleQuantity(particles.dx2_prev,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
     }
     if constexpr (D == Dim3) {
       CommunicateParticleQuantity(particles.i3, send_to, recv_from, send_slice, recv_slice);
@@ -487,18 +582,16 @@ namespace ntt {
                                   recv_from,
                                   send_slice,
                                   recv_slice);
-      if constexpr (S == GRPICEngine) {
-        CommunicateParticleQuantity(particles.i3_prev,
-                                    send_to,
-                                    recv_from,
-                                    send_slice,
-                                    recv_slice);
-        CommunicateParticleQuantity(particles.dx3_prev,
-                                    send_to,
-                                    recv_from,
-                                    send_slice,
-                                    recv_slice);
-      }
+      CommunicateParticleQuantity(particles.i3_prev,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
+      CommunicateParticleQuantity(particles.dx3_prev,
+                                  send_to,
+                                  recv_from,
+                                  send_slice,
+                                  recv_slice);
     }
     CommunicateParticleQuantity(particles.ux1, send_to, recv_from, send_slice, recv_slice);
     CommunicateParticleQuantity(particles.ux2, send_to, recv_from, send_slice, recv_slice);
@@ -536,8 +629,9 @@ namespace ntt {
           "CommunicateParticles",
           recv_count,
           Lambda(index_t p) {
-            particles.tag(index_last + p)  = ParticleTag::alive;
-            particles.i1(index_last + p)  += shift_in_x1;
+            particles.tag(index_last + p)      = ParticleTag::alive;
+            particles.i1(index_last + p)      += shift_in_x1;
+            particles.i1_prev(index_last + p) += shift_in_x1;
           });
       } else if constexpr (D == Dim2) {
         int shift_in_x1 { 0 }, shift_in_x2 { 0 };
@@ -555,9 +649,11 @@ namespace ntt {
           "CommunicateParticles",
           recv_count,
           Lambda(index_t p) {
-            particles.tag(index_last + p)  = ParticleTag::alive;
-            particles.i1(index_last + p)  += shift_in_x1;
-            particles.i2(index_last + p)  += shift_in_x2;
+            particles.tag(index_last + p)      = ParticleTag::alive;
+            particles.i1(index_last + p)      += shift_in_x1;
+            particles.i2(index_last + p)      += shift_in_x2;
+            particles.i1_prev(index_last + p) += shift_in_x1;
+            particles.i2_prev(index_last + p) += shift_in_x2;
           });
       } else if constexpr (D == Dim3) {
         int shift_in_x1 { 0 }, shift_in_x2 { 0 }, shift_in_x3 { 0 };
@@ -580,10 +676,13 @@ namespace ntt {
           "CommunicateParticles",
           recv_count,
           Lambda(index_t p) {
-            particles.tag(index_last + p)  = ParticleTag::alive;
-            particles.i1(index_last + p)  += shift_in_x1;
-            particles.i2(index_last + p)  += shift_in_x2;
-            particles.i3(index_last + p)  += shift_in_x3;
+            particles.tag(index_last + p)      = ParticleTag::alive;
+            particles.i1(index_last + p)      += shift_in_x1;
+            particles.i2(index_last + p)      += shift_in_x2;
+            particles.i3(index_last + p)      += shift_in_x3;
+            particles.i1_prev(index_last + p) += shift_in_x1;
+            particles.i2_prev(index_last + p) += shift_in_x2;
+            particles.i3_prev(index_last + p) += shift_in_x3;
           });
       }
       index_last += recv_count;
@@ -696,6 +795,9 @@ namespace ntt {
     }
     if (comm & Comm_Prtl) {
       for (auto& species : mblock.particles) {
+        // tag particles to send
+        TagParticles(mblock, species);
+
         const auto npart_per_tag = species.ReshuffleByTags();
         /**
          *                                                        index_last
@@ -817,5 +919,41 @@ template void ntt::CurrentsSendRecv<ntt::Dim3>(
   const Domain<ntt::Dim3>*,
   const std::vector<ntt::range_tuple_t>&,
   const std::vector<ntt::range_tuple_t>&);
+
+template void ntt::TagParticles<ntt::Dim1, ntt::PICEngine>(
+  const ntt::Meshblock<ntt::Dim1, ntt::PICEngine>&,
+  ntt::Particles<ntt::Dim1, ntt::PICEngine>&);
+
+template void ntt::TagParticles<ntt::Dim2, ntt::PICEngine>(
+  const ntt::Meshblock<ntt::Dim2, ntt::PICEngine>&,
+  ntt::Particles<ntt::Dim2, ntt::PICEngine>&);
+
+template void ntt::TagParticles<ntt::Dim3, ntt::PICEngine>(
+  const ntt::Meshblock<ntt::Dim3, ntt::PICEngine>&,
+  ntt::Particles<ntt::Dim3, ntt::PICEngine>&);
+
+template void ntt::TagParticles<ntt::Dim1, ntt::GRPICEngine>(
+  const ntt::Meshblock<ntt::Dim1, ntt::GRPICEngine>&,
+  ntt::Particles<ntt::Dim1, ntt::GRPICEngine>&);
+
+template void ntt::TagParticles<ntt::Dim2, ntt::GRPICEngine>(
+  const ntt::Meshblock<ntt::Dim2, ntt::GRPICEngine>&,
+  ntt::Particles<ntt::Dim2, ntt::GRPICEngine>&);
+
+template void ntt::TagParticles<ntt::Dim3, ntt::GRPICEngine>(
+  const ntt::Meshblock<ntt::Dim3, ntt::GRPICEngine>&,
+  ntt::Particles<ntt::Dim3, ntt::GRPICEngine>&);
+
+template void ntt::TagParticles<ntt::Dim1, ntt::SANDBOXEngine>(
+  const ntt::Meshblock<ntt::Dim1, ntt::SANDBOXEngine>&,
+  ntt::Particles<ntt::Dim1, ntt::SANDBOXEngine>&);
+
+template void ntt::TagParticles<ntt::Dim2, ntt::SANDBOXEngine>(
+  const ntt::Meshblock<ntt::Dim2, ntt::SANDBOXEngine>&,
+  ntt::Particles<ntt::Dim2, ntt::SANDBOXEngine>&);
+
+template void ntt::TagParticles<ntt::Dim3, ntt::SANDBOXEngine>(
+  const ntt::Meshblock<ntt::Dim3, ntt::SANDBOXEngine>&,
+  ntt::Particles<ntt::Dim3, ntt::SANDBOXEngine>&);
 
 #endif

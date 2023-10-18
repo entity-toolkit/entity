@@ -10,6 +10,10 @@
     DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
   }
 
+#define Xi_to_i(XI) static_cast<int>((XI))
+
+#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+
 #define get_prtl_x1(PARTICLES, P)                                              \
   (static_cast<real_t>((PARTICLES).i1((P))) +                                  \
    static_cast<real_t>((PARTICLES).dx1((P))))

@@ -59,13 +59,12 @@ namespace ntt {
     real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
     // i
-    vec_t<Dim2> rth_ { ZERO };
-    m_mblock.metric.x_Code2Sph({ i_, j_ }, rth_);
-    real_t delta_r1 { (rth_[0] - m_rabsorb) / (m_rmax - m_rabsorb) };
+    real_t delta_r1 { (m_mblock.metric.x1_Code2Sph(i_) - m_rabsorb) /
+                      (m_rmax - m_rabsorb) };
     real_t sigma_r1 { HEAVISIDE(delta_r1) * CUBE(delta_r1) };
     // i + 1/2
-    m_mblock.metric.x_Code2Sph({ i_ + HALF, j_ }, rth_);
-    real_t delta_r2 { (rth_[0] - m_rabsorb) / (m_rmax - m_rabsorb) };
+    real_t delta_r2 { (m_mblock.metric.x1_Code2Sph(i_ + HALF) - m_rabsorb) /
+                      (m_rmax - m_rabsorb) };
     real_t sigma_r2 { HEAVISIDE(delta_r2) * CUBE(delta_r2) };
 
     // components at the axes treated separately

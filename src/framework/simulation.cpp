@@ -65,16 +65,8 @@ namespace ntt {
     meshblock.Verify();
     meshblock.CheckNaNs("Initial check",
                         CheckNaN_Fields | CheckNaN_Particles | CheckNaN_Currents);
-    meshblock.CheckOutOfBounds("Initial check");
+    meshblock.CheckOutOfBounds("Initial check", false);
     WaitAndSynchronize();
-  }
-
-  template <Dimension D, SimulationEngine S>
-  auto Simulation<D, S>::ParticlesBoundaryConditions() -> void {
-    for (auto& species : meshblock.particles) {
-      species.BoundaryConditions(meshblock);
-    }
-    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>

@@ -50,8 +50,8 @@ namespace ntt {
     real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
     real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
-    vec_t<Dim2> rth_;
-    m_mblock.metric.x_Code2Sph({ i_, j_ }, rth_);
+    vec_t<FullD> rth_;
+    m_mblock.metric.x_Code2Sph({ i_, j_, ZERO }, rth_);
     real_t delta_r1 { (rth_[0] - m_rabsorb) / (m_rmax - m_rabsorb) };
     real_t sigma_r1 { HEAVISIDE(delta_r1) * delta_r1 * delta_r1 * delta_r1 };
 

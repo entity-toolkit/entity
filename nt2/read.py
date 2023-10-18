@@ -491,6 +491,49 @@ class PolarPlotAccessor:
         return im
 
 
+class Metric:
+    def __init__(self, base):
+        self.base = base
+
+
+class MinkowskiMetric(Metric):
+    def __init__(self):
+        super().__init__("minkowski")
+
+    def sqrt_h(self, **coords):
+        return 1
+
+    def h_11(self, **coords):
+        return 1
+
+    def h_22(self, **coords):
+        return 1
+
+    def h_33(self, **coords):
+        return 1
+
+
+class SphericalMetric(Metric):
+    def __init__(self):
+        super().__init__("spherical")
+
+    def sqrt_h(self, r, th):
+        import numpy as np
+
+        return r**2 * np.sin(th)
+
+    def h_11(self, r, th):
+        return 1
+
+    def h_22(self, r, th):
+        return r**2
+
+    def h_33(self, r, th):
+        import numpy as np
+
+        return r**2 * np.sin(th) ** 2
+
+
 class Data:
     """
     A class to load data from the Entity single-HDF5 file and store it as a lazily loaded xarray Dataset.
@@ -587,6 +630,10 @@ class Data:
         coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
         if coordinates == "qspherical":
             coordinates = "spherical"
+        if coordinates == "spherical":
+            self.metric = SphericalMetric()
+        else:
+            self.metric = MinkowskiMetric()
         coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]
         # cell-centered coords
         cc_coords = {

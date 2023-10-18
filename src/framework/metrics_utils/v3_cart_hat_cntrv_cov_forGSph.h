@@ -108,15 +108,7 @@ Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_hat,
                         vec_t<Dim3>&         vi_cart) const {
   coord_t<Dim3> x_sph;
-  if constexpr (D == Dim2) {
-    coord_t<Dim2> x_sph_2d;
-    this->x_Code2Sph({ xi[0], xi[1] }, x_sph_2d);
-    x_sph[0] = x_sph_2d[0];
-    x_sph[1] = x_sph_2d[1];
-    x_sph[2] = xi[2];
-  } else if constexpr (D == Dim3) {
-    this->x_Code2Sph(xi, x_sph);
-  }
+  this->x_Code2Sph(xi, x_sph);
   if constexpr (D != Dim1) {
     vi_cart[0] = vi_hat[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]) +
                  vi_hat[1] * math::cos(x_sph[1]) * math::cos(x_sph[2]) -
@@ -139,15 +131,7 @@ Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cart,
                         vec_t<Dim3>&         vi_hat) const {
   coord_t<Dim3> x_sph;
-  if constexpr (D == Dim2) {
-    coord_t<Dim2> x_sph_2d;
-    this->x_Code2Sph({ xi[0], xi[1] }, x_sph_2d);
-    x_sph[0] = x_sph_2d[0];
-    x_sph[1] = x_sph_2d[1];
-    x_sph[2] = xi[2];
-  } else if constexpr (D == Dim3) {
-    this->x_Code2Sph(xi, x_sph);
-  }
+  this->x_Code2Sph(xi, x_sph);
   if constexpr (D != Dim1) {
     vi_hat[0] = vi_cart[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]) +
                 vi_cart[1] * math::sin(x_sph[1]) * math::sin(x_sph[2]) +

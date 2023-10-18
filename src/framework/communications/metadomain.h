@@ -291,7 +291,7 @@ namespace ntt {
         auto l_offset_ncells   = domain_offset_ncells[index];
         auto l_extent          = std::vector<real_t> {};
         auto l_boundaries = std::vector<std::vector<BoundaryCondition>> { {} };
-        coord_t<D> low_corner_cu { ZERO }, up_corner_cu { ZERO },
+        coord_t<FullD> low_corner_cu { ZERO }, up_corner_cu { ZERO },
           low_corner_ph { ZERO }, up_corner_ph { ZERO };
         for (auto d { 0 }; d < (short)D; ++d) {
           low_corner_cu[d] = (real_t)l_offset_ncells[d];

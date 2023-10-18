@@ -50,7 +50,7 @@ namespace ntt {
     array_t<real_t*>              weight;
     // Additional variables (specific to different cases)
     // previous coordinates (GR specific)
-    array_t<real_t*>              i1_prev, i2_prev, i3_prev;
+    array_t<int*>                 i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*>            dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>              phi;
@@ -147,11 +147,6 @@ namespace ntt {
      * @return The vector of counts per each tag.
      */
     auto ReshuffleByTags() -> std::vector<std::size_t>;
-
-    /**
-     * @brief Engine-agnostic boundary conditions for particles.
-     */
-    auto BoundaryConditions(const Mesh<D>& mesh) -> void;
 
     /**
      * @brief Copy particle data from device to host.
