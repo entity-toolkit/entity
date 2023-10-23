@@ -1,0 +1,30 @@
+[simulation]
+title   = "Wald"
+runtime = 200.0
+
+[domain]
+qsph_r0     = 0.0
+qsph_h      = 0.0
+sph_rabsorb = 19.0
+a           = 0.95
+resolution  = [2048, 1720]
+extent      = [0.8, 20.0]
+boundaries  = [["OPEN", "ABSORB"], ["AXIS"]]
+
+[algorithm]
+CFL             = 0.5
+current_filters = 0
+
+[units]
+ppc0       = 4.0
+larmor0    = 2e-3
+skindepth0 = 0.1
+
+[particles]
+n_species = 0
+
+[output]
+fields        = ["D", "B"]
+interval_time = 0.5
+flds_stride   = 1
+format        = "HDF5"
