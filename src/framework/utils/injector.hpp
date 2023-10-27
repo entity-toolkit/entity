@@ -805,6 +805,12 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
+#if defined(GRPIC_ENGINE) || defined(MINKOWSKI_METRIC)
+  #define CoordDim Dim2
+#else
+  #define CoordDim FullD
+#endif
+
   template <SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
@@ -848,8 +854,8 @@ namespace ntt {
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_, i2_) };
-      coord_t<FullD>    xc { ZERO };
-      coord_t<FullD>    xph { ZERO };
+      coord_t<CoordDim> xc { ZERO };
+      coord_t<CoordDim> xph { ZERO };
       prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
 

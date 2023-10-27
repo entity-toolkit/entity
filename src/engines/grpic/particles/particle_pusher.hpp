@@ -39,7 +39,7 @@ namespace ntt {
     const real_t epsilon;
     const int    niter;
 
-    bool is_ax_i2min { false }, is_ax_i2max { false };
+    bool is_axis_i2min { false }, is_axis_i2max { false };
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
     bool is_absorb_i2min { false }, is_absorb_i2max { false };
 
@@ -98,8 +98,8 @@ namespace ntt {
       is_absorb_i2max = (mblock.boundaries[1][1] == BoundaryCondition::OPEN) ||
                         (mblock.boundaries[1][1] == BoundaryCondition::CUSTOM) ||
                         (mblock.boundaries[1][1] == BoundaryCondition::ABSORB);
-      is_ax_i2min = (mblock.boundaries[1][0] == BoundaryCondition::AXIS);
-      is_ax_i2max = (mblock.boundaries[1][1] == BoundaryCondition::AXIS);
+      is_axis_i2min = (mblock.boundaries[1][0] == BoundaryCondition::AXIS);
+      is_axis_i2max = (mblock.boundaries[1][1] == BoundaryCondition::AXIS);
     }
 
     /**
@@ -247,6 +247,11 @@ namespace ntt {
       return math::sqrt(ONE + u_cov[0] * u_cntrv[0] + u_cov[1] * u_cntrv[1] +
                         u_cov[2] * u_cntrv[2]);
     }
+
+    // Extra
+    Inline void boundaryConditions(index_t&) const;
+    Inline void boundaryConditions_x1(index_t&) const;
+    Inline void boundaryConditions_x2(index_t&) const;
   };
 
   /* -------------------------------------------------------------------------- */
@@ -260,7 +265,7 @@ namespace ntt {
 
 #define DERIVATIVE_IN_R(func, x)                                                     \
   ((metric.func({ x[0] + epsilon, x[1] }) - metric.func({ x[0] - epsilon, x[1] })) / \
-   (TWO * m_epsilon))
+   (TWO * epsilon))
 
 #define DERIVATIVE_IN_TH(func, x)                                                    \
   ((metric.func({ x[0], x[1] + epsilon }) - metric.func({ x[0], x[1] - epsilon })) / \
@@ -293,16 +298,15 @@ namespace ntt {
 
       // find updated velocity
       vp_upd[0] = vp[0] +
-                  m_dt *
-                    (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(alpha, xp) +
-                     vp_mid[0] * DERIVATIVE_IN_R(beta1, xp) -
-                     (HALF / u0) *
-                       (DERIVATIVE_IN_R(h11, xp) * SQR(vp_mid[0]) +
-                        DERIVATIVE_IN_R(h22, xp) * SQR(vp_mid[1]) +
-                        DERIVATIVE_IN_R(h33, xp) * SQR(vp_mid[2]) +
-                        TWO * DERIVATIVE_IN_R(h13, xp) * vp_mid[0] * vp_mid[2]));
+                  dt * (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(alpha, xp) +
+                        vp_mid[0] * DERIVATIVE_IN_R(beta1, xp) -
+                        (HALF / u0) *
+                          (DERIVATIVE_IN_R(h11, xp) * SQR(vp_mid[0]) +
+                           DERIVATIVE_IN_R(h22, xp) * SQR(vp_mid[1]) +
+                           DERIVATIVE_IN_R(h33, xp) * SQR(vp_mid[2]) +
+                           TWO * DERIVATIVE_IN_R(h13, xp) * vp_mid[0] * vp_mid[2]));
       vp_upd[1] = vp[1] +
-                  m_dt *
+                  dt *
                     (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
                      vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
                      (HALF / u0) *
@@ -325,7 +329,7 @@ namespace ntt {
     xp_upd[0] = xp[0];
     xp_upd[1] = xp[1];
 
-    for (auto i { 0 }; i < m_niter; ++i) {
+    for (auto i { 0 }; i < niter; ++i) {
       // find midpoint values
       xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
       xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
@@ -338,8 +342,8 @@ namespace ntt {
       real_t u0 { gamma / metric.alpha(xp_mid) };
 
       // find updated coordinate shift
-      xp_upd[0] = xp[0] + m_dt * (vp_cntrv[0] / u0 - metric.beta1(xp_mid));
-      xp_upd[1] = xp[1] + m_dt * (vp_cntrv[1] / u0);
+      xp_upd[0] = xp[0] + dt * (vp_cntrv[0] / u0 - metric.beta1(xp_mid));
+      xp_upd[1] = xp[1] + dt * (vp_cntrv[1] / u0);
     }
   }
 
@@ -359,7 +363,7 @@ namespace ntt {
     vp_upd[1] = vp[1];
     vp_upd[2] = vp[2];
 
-    for (auto i { 0 }; i < m_niter; ++i) {
+    for (auto i { 0 }; i < niter; ++i) {
       xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
       xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
 
@@ -375,12 +379,12 @@ namespace ntt {
       real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / metric.alpha(xp_mid) };
 
       // find updated coordinate shift
-      xp_upd[0] = xp[0] + m_dt * (vp_mid_cntrv[0] / u0 - metric.beta1(xp_mid));
-      xp_upd[1] = xp[1] + m_dt * (vp_mid_cntrv[1] / u0);
+      xp_upd[0] = xp[0] + dt * (vp_mid_cntrv[0] / u0 - metric.beta1(xp_mid));
+      xp_upd[1] = xp[1] + dt * (vp_mid_cntrv[1] / u0);
 
       // find updated velocity
       vp_upd[0] = vp[0] +
-                  m_dt *
+                  dt *
                     (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_R(alpha, xp_mid) +
                      vp_mid[0] * DERIVATIVE_IN_R(beta1, xp_mid) -
                      (HALF / u0) *
@@ -389,15 +393,14 @@ namespace ntt {
                         DERIVATIVE_IN_R(h33, xp_mid) * SQR(vp_mid[2]) +
                         TWO * DERIVATIVE_IN_R(h13, xp_mid) * vp_mid[0] * vp_mid[2]));
       vp_upd[1] = vp[1] +
-                  m_dt *
-                    (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_TH(alpha, xp_mid) +
-                     vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid) -
-                     (HALF / u0) *
-                       (DERIVATIVE_IN_TH(h11, xp_mid) * SQR(vp_mid[0]) +
-                        DERIVATIVE_IN_TH(h22, xp_mid) * SQR(vp_mid[1]) +
-                        DERIVATIVE_IN_TH(h33, xp_mid) * SQR(vp_mid[2]) +
-                        TWO * DERIVATIVE_IN_TH(h13, xp_mid) * vp_mid[0] *
-                          vp_mid[2]));
+                  dt * (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_TH(alpha, xp_mid) +
+                        vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid) -
+                        (HALF / u0) *
+                          (DERIVATIVE_IN_TH(h11, xp_mid) * SQR(vp_mid[0]) +
+                           DERIVATIVE_IN_TH(h22, xp_mid) * SQR(vp_mid[1]) +
+                           DERIVATIVE_IN_TH(h33, xp_mid) * SQR(vp_mid[2]) +
+                           TWO * DERIVATIVE_IN_TH(h13, xp_mid) * vp_mid[0] *
+                             vp_mid[2]));
     }
   }
 
@@ -416,7 +419,7 @@ namespace ntt {
     vec_t<Dim3> vp_cntrv { ZERO };
     metric.v3_Cov2Cntrv(xp, vp, vp_cntrv);
     real_t u0 { computeGamma(T {}, vp, vp_cntrv) / metric.alpha(xp) };
-    phi += m_dt * vp_cntrv[2] / u0;
+    phi += dt * vp_cntrv[2] / u0;
     if (phi >= constant::TWO_PI) {
       phi -= constant::TWO_PI;
     } else if (phi < ZERO) {
@@ -428,11 +431,6 @@ namespace ntt {
   Inline void Pusher_kernel<Dim2>::interpolateFields(index_t&     p,
                                                      vec_t<Dim3>& e0,
                                                      vec_t<Dim3>& b0) const {
-    const auto   i { i1(p) + N_GHOSTS };
-    const real_t dx1 { static_cast<real_t>(dx1(p)) };
-    const auto   j { i2(p) + N_GHOSTS };
-    const real_t dx2 { static_cast<real_t>(dx2(p)) };
-
     // first order interpolation
     // Using fields em::e = D(t = n), and em::b0 = B(t = n)
 
@@ -501,6 +499,23 @@ namespace ntt {
     b0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
   }
 
+  template <>
+  Inline void Pusher_kernel<Dim1>::boundaryConditions(index_t& p) const {
+    boundaryConditions_x1(p);
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim2>::boundaryConditions(index_t& p) const {
+    boundaryConditions_x1(p);
+    boundaryConditions_x2(p);
+  }
+
+  template <>
+  Inline void Pusher_kernel<Dim3>::boundaryConditions(index_t& p) const {
+    boundaryConditions_x1(p);
+    boundaryConditions_x2(p);
+  }
+
   /* ------------------------------ Photon pusher ----------------------------- */
   template <>
   Inline void Pusher_kernel<Dim2>::operator()(Photon_t, index_t p) const {
@@ -512,10 +527,10 @@ namespace ntt {
       dx2_prev(p) = dx2(p);
 
       coord_t<Dim2> xp { ZERO };
-      vec_t<Dim3> vp { ux1(p), ux2(p), ux3(p) };
+      vec_t<Dim3>   vp { ux1(p), ux2(p), ux3(p) };
 
-      xp[0] = get_prtl_x1(m_particles, p);
-      xp[1] = get_prtl_x2(m_particles, p);
+      xp[0] = i_di_to_Xi(i1(p), dx1(p));
+      xp[1] = i_di_to_Xi(i2(p), dx2(p));
 
       /* ----------------------------- Leapfrog pusher ---------------------------- */
       // u_i(n - 1/2) -> u_i(n + 1/2)
@@ -528,22 +543,24 @@ namespace ntt {
       UpdatePhi<Photon_t>(Photon_t {},
                           { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
                           vp_upd,
-                          m_particles.phi(p));
+                          phi(p));
 
       // update coordinate
-      int      i1, i2;
-      prtldx_t dx1, dx2;
-      from_Xi_to_i_di(xp_upd[0], i1, dx1);
-      from_Xi_to_i_di(xp_upd[1], i2, dx2);
-      m_particles.i1(p)  = i1;
-      m_particles.dx1(p) = dx1;
-      m_particles.i2(p)  = i2;
-      m_particles.dx2(p) = dx2;
+      int      i1_, i2_;
+      prtldx_t dx1_, dx2_;
+      from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
+      from_Xi_to_i_di(xp_upd[1], i2_, dx2_);
+      i1(p)  = i1_;
+      dx1(p) = dx1_;
+      i2(p)  = i2_;
+      dx2(p) = dx2_;
 
       // update velocity
-      m_particles.ux1(p) = vp_upd[0];
-      m_particles.ux2(p) = vp_upd[1];
-      m_particles.ux3(p) = vp_upd[2];
+      ux1(p) = vp_upd[0];
+      ux2(p) = vp_upd[1];
+      ux3(p) = vp_upd[2];
+
+      boundaryConditions(p);
     }
   }
 
@@ -551,25 +568,25 @@ namespace ntt {
 
   template <>
   Inline void Pusher_kernel<Dim2>::operator()(Massive_t, index_t p) const {
-    if (m_particles.tag(p) == static_cast<short>(ParticleTag::alive)) {
+    if (tag(p) == static_cast<short>(ParticleTag::alive)) {
       // record previous coordinate
-      m_particles.i1_prev(p)  = m_particles.i1(p);
-      m_particles.i2_prev(p)  = m_particles.i2(p);
-      m_particles.dx1_prev(p) = m_particles.dx1(p);
-      m_particles.dx2_prev(p) = m_particles.dx2(p);
+      i1_prev(p)  = i1(p);
+      i2_prev(p)  = i2(p);
+      dx1_prev(p) = dx1(p);
+      dx2_prev(p) = dx2(p);
 
       coord_t<Dim2> xp { ZERO };
 
-      xp[0] = get_prtl_x1(m_particles, p);
-      xp[1] = get_prtl_x2(m_particles, p);
+      xp[0] = i_di_to_Xi(i1(p), dx1(p));
+      xp[1] = i_di_to_Xi(i2(p), dx2(p));
 
       vec_t<Dim3> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
         Bp_hat { ZERO };
       interpolateFields(p, Dp_cntrv, Bp_cntrv);
-      m_mblock.metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
-      m_mblock.metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
+      metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
+      metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
 
-      vec_t<Dim3> vp { m_particles.ux1(p), m_particles.ux2(p), m_particles.ux3(p) };
+      vec_t<Dim3> vp { ux1(p), ux2(p), ux3(p) };
 
       /* -------------------------------- Leapfrog -------------------------------- */
       /* u_i(n - 1/2) -> u*_i(n) */
@@ -594,24 +611,54 @@ namespace ntt {
         Massive_t {},
         { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
         vp_upd,
-        m_particles.phi(p));
-
-      /* ------------------------------- Old pusher ------------------------------- */
+        phi(p));
 
       // update coordinate
-      int      i1, i2;
-      prtldx_t dx1, dx2;
-      from_Xi_to_i_di(xp_upd[0], i1, dx1);
-      from_Xi_to_i_di(xp_upd[1], i2, dx2);
-      m_particles.i1(p)  = i1;
-      m_particles.dx1(p) = dx1;
-      m_particles.i2(p)  = i2;
-      m_particles.dx2(p) = dx2;
+      int      i1_, i2_;
+      prtldx_t dx1_, dx2_;
+      from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
+      from_Xi_to_i_di(xp_upd[1], i2_, dx2_);
+      i1(p)  = i1_;
+      dx1(p) = dx1_;
+      i2(p)  = i2_;
+      dx2(p) = dx2_;
 
       // update velocity
-      m_particles.ux1(p) = vp_upd[0];
-      m_particles.ux2(p) = vp_upd[1];
-      m_particles.ux3(p) = vp_upd[2];
+      ux1(p) = vp_upd[0];
+      ux2(p) = vp_upd[1];
+      ux3(p) = vp_upd[2];
+
+      boundaryConditions(p);
+    }
+  }
+
+  // Boundary conditions
+
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::boundaryConditions_x1(index_t& p) const {
+    if (i1(p) < 0 && is_absorb_i1min) {
+      tag(p) = ParticleTag::dead;
+    } else if (i1(p) >= ni1 && is_absorb_i1max) {
+      tag(p) = ParticleTag::dead;
+    }
+  }
+
+  template <Dimension D>
+  Inline void Pusher_kernel<D>::boundaryConditions_x2(index_t& p) const {
+    if (i2(p) < 0) {
+      if (is_absorb_i2min) {
+        tag(p) = ParticleTag::dead;
+      } else if (is_axis_i2min) {
+        i2(p)  = 0;
+        dx2(p) = ONE - dx2(p);
+      }
+    } else if (i2(p) >= ni2) {
+      if (is_absorb_i2max) {
+        tag(p) = ParticleTag::dead;
+      } else if (is_axis_i2min) {
+        i2(p)  = ni2 - 1;
+        dx2(p) = ONE - dx2(p);
+      }
     }
   }
 

@@ -604,10 +604,17 @@ namespace ntt {
                 const real_t x2  = get_prtl_x2(species, p);
                 const real_t phi = species.phi(p);
                 vec_t<Dim3>  u_hat;
+  #if defined(PIC_ENGINE)
                 this_metric.v3_Cart2Hat(
                   { x1, x2, phi },
                   { species.ux1(p), species.ux2(p), species.ux3(p) },
                   u_hat);
+  #elif defined(GRPIC_ENGINE)
+                this_metric.v3_Cov2Hat(
+                  { x1, x2 },
+                  { species.ux1(p), species.ux2(p), species.ux3(p) },
+                  u_hat);
+  #endif
                 for (auto& c : { comp1, comp2 }) {
                   if (c == 0) {
                     contrib *= energy;

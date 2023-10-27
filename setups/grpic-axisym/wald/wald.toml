@@ -24,7 +24,7 @@ skindepth0 = 0.1
 n_species = 0
 
 [output]
-fields        = ["D", "B"]
+fields        = ["D", "B", "Aphi"]
 interval_time = 0.5
 flds_stride   = 1
 format        = "HDF5"

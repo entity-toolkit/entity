@@ -18,9 +18,9 @@
  * @param vi_cntrv vector in contravariant basis
  * @param vi_cart vector in global Cartesian basis
  */
-Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
-                          const vec_t<Dim3>&   vi_cntrv,
-                          vec_t<Dim3>&         vi_cart) const {
+Inline void v3_Cntrv2Cart(const coord_t<FullD>& xi,
+                          const vec_t<Dim3>&    vi_cntrv,
+                          vec_t<Dim3>&          vi_cart) const {
   if constexpr (D == Dim2) {
     vec_t<Dim3> vi_hat { ZERO };
     this->v3_Cntrv2Hat({ xi[0], xi[1] }, vi_cntrv, vi_hat);
@@ -39,9 +39,9 @@ Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
  * @param vi_cart vector in global Cartesian basis
  * @param vi_cntrv vector in contravariant basis
  */
-Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
-                          const vec_t<Dim3>&   vi_cart,
-                          vec_t<Dim3>&         vi_cntrv) const {
+Inline void v3_Cart2Cntrv(const coord_t<FullD>& xi,
+                          const vec_t<Dim3>&    vi_cart,
+                          vec_t<Dim3>&          vi_cntrv) const {
   if constexpr (D == Dim2) {
     vec_t<Dim3> vi_hat { ZERO };
     this->v3_Cart2Hat(xi, vi_cart, vi_hat);
@@ -60,9 +60,9 @@ Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
  * @param vi_cov vector in covariant basis
  * @param vi_cart vector in global Cartesian basis
  */
-Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_cov,
-                        vec_t<Dim3>&         vi_cart) const {
+Inline void v3_Cov2Cart(const coord_t<FullD>& xi,
+                        const vec_t<Dim3>&    vi_cov,
+                        vec_t<Dim3>&          vi_cart) const {
   vec_t<Dim3> vi_hat { ZERO };
   if constexpr (D == Dim2) {
     this->v3_Cov2Hat({ xi[0], xi[1] }, vi_cov, vi_hat);
@@ -79,9 +79,9 @@ Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
  * @param vi_cart vector in global Cartesian basis
  * @param vi_cov vector in covariant basis
  */
-Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_cart,
-                        vec_t<Dim3>&         vi_cov) const {
+Inline void v3_Cart2Cov(const coord_t<FullD>& xi,
+                        const vec_t<Dim3>&    vi_cart,
+                        vec_t<Dim3>&          vi_cov) const {
   vec_t<Dim3> vi_hat { ZERO };
   this->v3_Cart2Hat(xi, vi_cart, vi_hat);
   if constexpr (D == Dim2) {
@@ -104,9 +104,9 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
  * @param vi_hat vector in hatted (spherical) basis
  * @param vi_cart vector in global Cartesian basis
  */
-Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_hat,
-                        vec_t<Dim3>&         vi_cart) const {
+Inline void v3_Hat2Cart(const coord_t<FullD>& xi,
+                        const vec_t<Dim3>&    vi_hat,
+                        vec_t<Dim3>&          vi_cart) const {
   coord_t<Dim3> x_sph;
   this->x_Code2Sph(xi, x_sph);
   if constexpr (D != Dim1) {
@@ -127,9 +127,9 @@ Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
  * @param vi_cart vector in global Cartesian basis
  * @param vi_hat vector in hatted (spherical) basis
  */
-Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_cart,
-                        vec_t<Dim3>&         vi_hat) const {
+Inline void v3_Cart2Hat(const coord_t<FullD>& xi,
+                        const vec_t<Dim3>&    vi_cart,
+                        vec_t<Dim3>&          vi_hat) const {
   coord_t<Dim3> x_sph;
   this->x_Code2Sph(xi, x_sph);
   if constexpr (D != Dim1) {

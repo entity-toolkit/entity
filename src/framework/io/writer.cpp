@@ -164,13 +164,7 @@ namespace ntt {
       const auto Ni1 { metadomain.globalNcells()[0] };
       auto       x1 = new real_t[Ni1 + 1];
       for (std::size_t i { 0 }; i <= Ni1; ++i) {
-        coord_t<FullD> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)FullD; ++d) {
-          xi[d] = ONE;
-        }
-        xi[0] = (real_t)(i);
-        global_metric.x_Code2Phys(xi, xph);
-        x1[i] = xph[0];
+        x1[i] = global_metric.x1_Code2Phys((real_t)i);
       }
       m_io.DefineAttribute("X1", x1, Ni1 + 1);
     }
@@ -181,13 +175,7 @@ namespace ntt {
       const auto Ni2 { metadomain.globalNcells()[1] };
       auto       x2 = new real_t[Ni2 + 1];
       for (std::size_t i { 0 }; i <= Ni2; ++i) {
-        coord_t<FullD> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)FullD; ++d) {
-          xi[d] = ONE;
-        }
-        xi[1] = (real_t)(i);
-        global_metric.x_Code2Phys(xi, xph);
-        x2[i] = xph[1];
+        x2[i] = global_metric.x2_Code2Phys((real_t)i);
       }
       m_io.DefineAttribute("X2", x2, Ni2 + 1);
     }
@@ -198,13 +186,7 @@ namespace ntt {
       const auto Ni3 { metadomain.globalNcells()[2] };
       auto       x3 = new real_t[Ni3];
       for (std::size_t i { 0 }; i <= Ni3; ++i) {
-        coord_t<D> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)D; ++d) {
-          xi[d] = ONE;
-        }
-        xi[2] = (real_t)(i);
-        global_metric.x_Code2Phys(xi, xph);
-        x3[i] = xph[2];
+        x3[i] = global_metric.x3_Code2Phys((real_t)i);
       }
       m_io.DefineAttribute("X3", x3, Ni3 + 1);
     }
