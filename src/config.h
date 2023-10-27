@@ -62,7 +62,7 @@ namespace fmt {
 #define NTTHostError(msg)                                                      \
   {                                                                            \
     auto err = fmt::format("# ERROR: %s : filename: %s : line: %s",            \
-                           msg,                                                \
+                           std::string(msg).c_str(),                        \
                            __FILE__,                                           \
                            LINE_STRING);                                       \
     NTTFatal();                                                                \
@@ -91,5 +91,7 @@ using real_t = double;
 #endif
 
 inline constexpr unsigned int N_GHOSTS = 2;
+#define COORD(I)                                                               \
+  (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
 
 #endif // CONFIG_H

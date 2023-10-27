@@ -36,11 +36,6 @@ namespace ntt {
             (species.i2_prev.extent(0) != 0) || (species.i3_prev.extent(0) != 0) ||
             (species.dx2_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
           "Wrong particle arrays allocated for 1D mesh");
-        if constexpr (S == PICEngine) {
-          NTTHostErrorIf((species.i1_prev.extent(0) != 0) ||
-                           (species.dx1_prev.extent(0) != 0),
-                         "Wrong particle arrays allocated for 1D mesh PIC");
-        }
 #ifdef MINKOWSKI_METRIC
         NTTHostErrorIf(species.phi.extent(0) != 0,
                        "Wrong particle arrays allocated for 1D mesh MINKOWSKI");
@@ -50,27 +45,11 @@ namespace ntt {
           (species.i3.extent(0) != 0) || (species.dx3.extent(0) != 0) ||
             (species.i3_prev.extent(0) != 0) || (species.dx3_prev.extent(0) != 0),
           "Wrong particle arrays allocated for 2D mesh");
-        if constexpr (S == PICEngine) {
-          NTTHostErrorIf((species.i1_prev.extent(0) != 0) ||
-                           (species.dx1_prev.extent(0) != 0) ||
-                           (species.i2_prev.extent(0) != 0) ||
-                           (species.dx2_prev.extent(0) != 0),
-                         "Wrong particle arrays allocated for 2D mesh PIC");
-        }
 #ifdef MINKOWSKI_METRIC
         NTTHostErrorIf(species.phi.extent(0) != 0,
                        "Wrong particle arrays allocated for 2D mesh MINKOWSKI");
 #endif
       } else {
-        if constexpr (S == PICEngine) {
-          NTTHostErrorIf((species.i1_prev.extent(0) != 0) ||
-                           (species.dx1_prev.extent(0) != 0) ||
-                           (species.i2_prev.extent(0) != 0) ||
-                           (species.dx2_prev.extent(0) != 0) ||
-                           (species.i3_prev.extent(0) != 0) ||
-                           (species.dx3_prev.extent(0) != 0),
-                         "Wrong particle arrays allocated for 2D mesh PIC");
-        }
 #ifdef MINKOWSKI_METRIC
         NTTHostErrorIf(species.phi.extent(0) != 0,
                        "Wrong particle arrays allocated for 2D mesh MINKOWSKI");

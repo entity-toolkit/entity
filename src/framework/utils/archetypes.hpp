@@ -37,17 +37,17 @@ namespace ntt {
                                            Meshblock<D, S>&) {}
 
 #ifdef EXTERNAL_FORCE
-    Inline virtual auto ext_force_x1(const real_t&, const coord_t<D>&) const
+    Inline virtual auto ext_force_x1(const real_t&, const coord_t<FullD>&) const
       -> real_t {
       return ZERO;
     }
 
-    Inline virtual auto ext_force_x2(const real_t&, const coord_t<D>&) const
+    Inline virtual auto ext_force_x2(const real_t&, const coord_t<FullD>&) const
       -> real_t {
       return ZERO;
     }
 
-    Inline virtual auto ext_force_x3(const real_t&, const coord_t<D>&) const
+    Inline virtual auto ext_force_x3(const real_t&, const coord_t<FullD>&) const
       -> real_t {
       return ZERO;
     }
@@ -88,7 +88,8 @@ namespace ntt {
       m_params { params },
       m_mblock { mblock } {}
 
-    Inline virtual auto operator()(const em&, const coord_t<D>&) const -> real_t {
+    Inline virtual auto operator()(const em&, const coord_t<FullD>&) const
+      -> real_t {
       return ZERO;
     }
 
@@ -130,7 +131,7 @@ namespace ntt {
       m_params { params },
       m_mblock { mblock } {}
 
-    Inline virtual void operator()(const coord_t<D>&,
+    Inline virtual void operator()(const coord_t<FullD>&,
                                    vec_t<Dim3>& v,
                                    const int& = 0) const {
       v[0] = ZERO;
@@ -167,7 +168,7 @@ namespace ntt {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
       real_t u { ZERO }, eta { ZERO }, theta { ZERO };
       real_t X1 { ZERO }, X2 { ZERO };
-      if (temp < 0.1) {
+      if (temp < 0.5) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
         while (AlmostEqual(u, ZERO)) {
           u = rand_gen.frand();
@@ -180,7 +181,7 @@ namespace ntt {
       } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
         u = ONE;
-        while (SQR(eta) <= SQR(u)) {
+        while (SQR(eta) <= SQR(u) + ONE) {
           while (AlmostEqual(X1, ZERO)) {
             X1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
           }
@@ -281,7 +282,7 @@ namespace ntt {
       m_params { params },
       m_mblock { mblock } {}
 
-    Inline virtual auto operator()(const coord_t<D>&) const -> bool {
+    Inline virtual auto operator()(const coord_t<FullD>&) const -> bool {
       return true;
     }
 
@@ -295,7 +296,7 @@ namespace ntt {
     NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock) :
       InjectionCriterion<D, S>(params, mblock) {}
 
-    Inline auto operator()(const coord_t<D>&) const -> bool {
+    Inline auto operator()(const coord_t<FullD>&) const -> bool {
       return true;
     }
   };

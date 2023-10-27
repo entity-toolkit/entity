@@ -9,6 +9,23 @@
 
 namespace ntt {
 
+  namespace {
+    template <Dimension D, int M>
+    void ResetBuffer(ndfield_t<D, M>& buffer, int buff_ind) {
+      if constexpr (D == Dim1) {
+        Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL(), buff_ind), ZERO);
+      } else if constexpr (D == Dim2) {
+        Kokkos::deep_copy(
+          Kokkos::subview(buffer, Kokkos::ALL(), Kokkos::ALL(), buff_ind),
+          ZERO);
+      } else if constexpr (D == Dim3) {
+        Kokkos::deep_copy(
+          Kokkos::subview(buffer, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), buff_ind),
+          ZERO);
+      }
+    }
+  } // namespace
+
   template <Dimension D, SimulationEngine S>
   template <int N, int M>
   void Meshblock<D, S>::PrepareFieldsForOutput(const ndfield_t<D, N>& field,
@@ -169,9 +186,10 @@ namespace ntt {
   }
 
   template <>
-  void Meshblock<Dim2, GRPICEngine>::ComputeVectorPotential(
-    ndfield_t<Dim2, 6>& buffer,
-    const int&          buffer_comp) {
+  void Meshblock<Dim2, GRPICEngine>::ComputeVectorPotential(ndfield_t<Dim2, 6>& buffer,
+                                                            int buff_ind) {
+    NTTLog();
+    ResetBuffer<Dim2, 6>(buffer, buff_ind);
     const auto i2_min = this->i2_min();
     // !TODO: this is quite slow
     Kokkos::parallel_for(
@@ -190,151 +208,257 @@ namespace ntt {
           A3 += HALF * (sqrt_detH_ij1 * this->em(i, k1 - 1, em::bx1) +
                         sqrt_detH_ij2 * this->em(i, k1, em::bx1));
         }
-        buffer(i, j, buffer_comp) = A3;
+        buffer(i, j, buff_ind) = A3;
       });
   }
 
   template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::ComputeDivergenceED(ndfield_t<D, 3>& buffer,
-                                            const int&       buffer_comp) {
-    // divE/D is defined in cell centers
-
+  void Meshblock<D, S>::ComputeDivergenceED(ndfield_t<D, 3>& buffer, int buff_ind) {
+    NTTLog();
+    ResetBuffer<D, 3>(buffer, buff_ind);
+    // divE/D is defined in the nodes (i, j, k)
     if constexpr (D == Dim1) {
       Kokkos::parallel_for(
         "ComputeDivergenceED",
         this->rangeActiveCells(),
-        ClassLambda(index_t i) {
-          const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          const real_t ex1_i { INV_2 * (this->em(i, em::ex1) +
-                                        this->em(i - 1, em::ex1)) };
-          const real_t ex1_iP1 { INV_2 * (this->em(i + 1, em::ex1) +
-                                          this->em(i, em::ex1)) };
-
-          const real_t sqrt_detH_i { this->metric.sqrt_det_h({ i_ }) };
-          const real_t sqrt_detH_iP1 { this->metric.sqrt_det_h({ i_ + ONE }) };
-          const real_t one_ovr_sqrt_detH_iP { ONE / this->metric.sqrt_det_h(
-                                                      { i_ + HALF }) };
-          buffer(i, buffer_comp) = one_ovr_sqrt_detH_iP *
-                                   (sqrt_detH_iP1 * ex1_iP1 - sqrt_detH_i * ex1_i);
+        ClassLambda(index_t i1) {
+          const auto i1_ { COORD(i1) };
+          buffer(i1, buff_ind) = (this->em(i1, em::ex1) *
+                                    this->metric.sqrt_det_h({ i1_ + HALF }) -
+                                  this->em(i1 - 1, em::ex1) *
+                                    this->metric.sqrt_det_h({ i1_ - HALF })) /
+                                 this->metric.sqrt_det_h({ i1_ });
         });
     } else if constexpr (D == Dim2) {
+      const auto i2_min = this->i2_min();
+      const auto i2_max = this->i2_max();
+#ifdef MINKOWSKI_METRIC
+      const auto ax_i2min = false;
+      const auto ax_i2max = false;
+#else
+      const auto ax_i2min = (this->boundaries[1][0] == BoundaryCondition::AXIS);
+      const auto ax_i2max = (this->boundaries[1][1] == BoundaryCondition::AXIS);
+#endif
       Kokkos::parallel_for(
         "ComputeDivergenceED",
         this->rangeActiveCells(),
-        ClassLambda(index_t i, index_t j) {
-          const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          const real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+        ClassLambda(index_t i1, index_t i2) {
+          const auto i1_ { COORD(i1) };
+          const auto i2_ { COORD(i2) };
 
-          const real_t ex1_ijP {
-            INV_4 * (this->em(i, j, em::ex1) + this->em(i, j + 1, em::ex1) +
-                     this->em(i - 1, j, em::ex1) + this->em(i - 1, j + 1, em::ex1))
-          };
-          const real_t ex1_iP1jP {
-            INV_4 * (this->em(i, j, em::ex1) + this->em(i, j + 1, em::ex1) +
-                     this->em(i + 1, j, em::ex1) + this->em(i + 1, j + 1, em::ex1))
-          };
-          const real_t ex2_iPj {
-            INV_4 * (this->em(i, j, em::ex2) + this->em(i, j - 1, em::ex2) +
-                     this->em(i + 1, j, em::ex2) + this->em(i + 1, j - 1, em::ex2))
-          };
-          const real_t ex2_iPjP1 {
-            INV_4 * (this->em(i, j, em::ex2) + this->em(i, j + 1, em::ex2) +
-                     this->em(i + 1, j, em::ex2) + this->em(i + 1, j + 1, em::ex2))
-          };
-          const real_t sqrt_detH_iP1jP { this->metric.sqrt_det_h(
-            { i_ + ONE, j_ + HALF }) };
-          const real_t sqrt_detH_ijP { this->metric.sqrt_det_h({ i_, j_ + HALF }) };
-          const real_t sqrt_detH_iPjP1 { this->metric.sqrt_det_h(
-            { i_ + HALF, j_ + ONE }) };
-          const real_t sqrt_detH_iPj { this->metric.sqrt_det_h({ i_ + HALF, j_ }) };
-          const real_t one_ovr_sqrt_detH_iPjP {
-            ONE / this->metric.sqrt_det_h({ i_ + HALF, j_ + HALF })
-          };
-          buffer(i, j, buffer_comp) = one_ovr_sqrt_detH_iPjP *
-                                      ((sqrt_detH_iP1jP * ex1_iP1jP -
-                                        sqrt_detH_ijP * ex1_ijP) +
-                                       (sqrt_detH_iPjP1 * ex2_iPjP1 -
-                                        sqrt_detH_iPj * ex2_iPj));
+          if (ax_i2min && i2 == i2_min) {
+            // northern axis
+            buffer(
+              i1,
+              i2,
+              buff_ind) = (this->em(i1, i2, em::ex1) *
+                             this->metric.sqrt_det_h_tilde({ i1_ + HALF, i2_ }) -
+                           this->em(i1 - 1, i2, em::ex1) *
+                             this->metric.sqrt_det_h_tilde({ i1_ - HALF, i2_ }) +
+                           TWO * this->em(i1, i2, em::ex2) *
+                             this->metric.sqrt_det_h({ i1_, i2_ + HALF })) /
+                          this->metric.sqrt_det_h_tilde({ i1_, i2_ });
+          } else {
+            buffer(i1,
+                   i2,
+                   buff_ind) = (this->em(i1, i2, em::ex1) *
+                                  this->metric.sqrt_det_h({ i1_ + HALF, i2_ }) -
+                                this->em(i1 - 1, i2, em::ex1) *
+                                  this->metric.sqrt_det_h({ i1_ - HALF, i2_ }) +
+                                this->em(i1, i2, em::ex2) *
+                                  this->metric.sqrt_det_h({ i1_, i2_ + HALF }) -
+                                this->em(i1, i2 - 1, em::ex2) *
+                                  this->metric.sqrt_det_h({ i1_, i2_ - HALF })) /
+                               this->metric.sqrt_det_h({ i1_, i2_ });
+          }
         });
     } else {
+      const auto i2_min = this->i2_min();
+      const auto i2_max = this->i2_max();
+#ifdef MINKOWSKI_METRIC
+      const auto ax_i2min = false;
+      const auto ax_i2max = false;
+#else
+      const auto ax_i2min = (this->boundaries[1][0] == BoundaryCondition::AXIS);
+      const auto ax_i2max = (this->boundaries[1][1] == BoundaryCondition::AXIS);
+#endif
       Kokkos::parallel_for(
         "ComputeDivergenceED",
         this->rangeActiveCells(),
-        ClassLambda(index_t i, index_t j, index_t k) {
-          const real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-          const real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
-          const real_t k_ { static_cast<real_t>(static_cast<int>(k) - N_GHOSTS) };
-          const real_t ex1_ijPkP {
-            INV_8 *
-            (this->em(i, j, k, em::ex1) + this->em(i, j + 1, k, em::ex1) +
-             this->em(i - 1, j, k, em::ex1) + this->em(i - 1, j + 1, k, em::ex1) +
-             this->em(i, j, k + 1, em::ex1) + this->em(i, j + 1, k + 1, em::ex1) +
-             this->em(i - 1, j, k + 1, em::ex1) +
-             this->em(i - 1, j + 1, k + 1, em::ex1))
-          };
-          const real_t ex1_iP1jPkP {
-            INV_8 *
-            (this->em(i, j, k, em::ex1) + this->em(i, j + 1, k, em::ex1) +
-             this->em(i + 1, j, k, em::ex1) + this->em(i + 1, j + 1, k, em::ex1) +
-             this->em(i, j, k + 1, em::ex1) + this->em(i, j + 1, k + 1, em::ex1) +
-             this->em(i + 1, j, k + 1, em::ex1) +
-             this->em(i + 1, j + 1, k + 1, em::ex1))
-          };
-          const real_t ex2_iPjkP {
-            INV_8 *
-            (this->em(i, j, k, em::ex2) + this->em(i, j - 1, k, em::ex2) +
-             this->em(i + 1, j, k, em::ex2) + this->em(i + 1, j - 1, k, em::ex2) +
-             this->em(i, j, k + 1, em::ex2) + this->em(i, j - 1, k + 1, em::ex2) +
-             this->em(i + 1, j, k + 1, em::ex2) +
-             this->em(i + 1, j - 1, k + 1, em::ex2))
-          };
-          const real_t ex2_iPjP1kP {
-            INV_8 *
-            (this->em(i, j, k, em::ex2) + this->em(i, j + 1, k, em::ex2) +
-             this->em(i + 1, j, k, em::ex2) + this->em(i + 1, j + 1, k, em::ex2) +
-             this->em(i, j, k + 1, em::ex2) + this->em(i, j + 1, k + 1, em::ex2) +
-             this->em(i + 1, j, k + 1, em::ex2) +
-             this->em(i + 1, j + 1, k + 1, em::ex2))
-          };
-          const real_t ex3_iPjPk {
-            INV_8 *
-            (this->em(i, j, k, em::ex3) + this->em(i, j, k - 1, em::ex3) +
-             this->em(i + 1, j, k, em::ex3) + this->em(i + 1, j, k - 1, em::ex3) +
-             this->em(i, j + 1, k, em::ex3) + this->em(i, j + 1, k - 1, em::ex3) +
-             this->em(i + 1, j + 1, k, em::ex3) +
-             this->em(i + 1, j + 1, k - 1, em::ex3))
-          };
-          const real_t ex3_iPjPkP1 {
-            INV_8 *
-            (this->em(i, j, k, em::ex3) + this->em(i, j, k + 1, em::ex3) +
-             this->em(i + 1, j, k, em::ex3) + this->em(i + 1, j, k + 1, em::ex3) +
-             this->em(i, j + 1, k, em::ex3) + this->em(i, j + 1, k + 1, em::ex3) +
-             this->em(i + 1, j + 1, k, em::ex3) +
-             this->em(i + 1, j + 1, k + 1, em::ex3))
-          };
+        ClassLambda(index_t i1, index_t i2, index_t i3) {
+          const auto i1_ { COORD(i1) };
+          const auto i2_ { COORD(i2) };
+          const auto i3_ { COORD(i3) };
 
-          const real_t sqrt_detH_ijPkP { this->metric.sqrt_det_h(
-            { i_, j_ + HALF, k_ + HALF }) };
-          const real_t sqrt_detH_iP1jPkP { this->metric.sqrt_det_h(
-            { i_ + ONE, j_ + HALF, k_ + HALF }) };
-          const real_t sqrt_detH_iPjkP { this->metric.sqrt_det_h(
-            { i_ + HALF, j_, k_ + HALF }) };
-          const real_t sqrt_detH_iPjP1kP { this->metric.sqrt_det_h(
-            { i_ + HALF, j_ + ONE, k_ + HALF }) };
-          const real_t sqrt_detH_iPjPk { this->metric.sqrt_det_h(
-            { i_ + HALF, j_ + HALF, k_ }) };
-          const real_t sqrt_detH_iPjPkP1 { this->metric.sqrt_det_h(
-            { i_ + HALF, j_ + HALF, k_ + ONE }) };
-          const real_t one_ovr_sqrt_detH_iPjPkP {
-            ONE / this->metric.sqrt_det_h({ i_ + HALF, j_ + HALF, k_ + HALF })
-          };
-          buffer(i, j, k, buffer_comp) =
-            one_ovr_sqrt_detH_iPjPkP *
-            ((sqrt_detH_iP1jPkP * ex1_iP1jPkP - sqrt_detH_ijPkP * ex1_ijPkP) +
-             (sqrt_detH_iPjP1kP * ex2_iPjP1kP - sqrt_detH_iPjkP * ex2_iPjkP) +
-             (sqrt_detH_iPjPkP1 * ex3_iPjPk - sqrt_detH_iPjPk * ex3_iPjPkP1));
+          if ((ax_i2min && i2 == i2_min) || (ax_i2max && i2 == i2_max)) {
+            buffer(i1, i2, i3, buff_ind) = ZERO;
+          } else {
+            buffer(i1, i2, i3, buff_ind) =
+              (this->em(i1, i2, i3, em::ex1) *
+                 this->metric.sqrt_det_h({ i1_ + HALF, i2_, i3_ }) -
+               this->em(i1 - 1, i2, i3, em::ex1) *
+                 this->metric.sqrt_det_h({ i1_ - HALF, i2_, i3_ }) +
+               this->em(i1, i2, i3, em::ex2) *
+                 this->metric.sqrt_det_h({ i1_, i2_ + HALF, i3_ }) -
+               this->em(i1, i2 - 1, i3, em::ex2) *
+                 this->metric.sqrt_det_h({ i1_, i2_ - HALF, i3_ }) +
+               this->em(i1, i2, i3, em::ex3) *
+                 this->metric.sqrt_det_h({ i1_, i2_, i3_ + HALF }) -
+               this->em(i1, i2, i3 - 1, em::ex3) *
+                 this->metric.sqrt_det_h({ i1_, i2_, i3_ - HALF })) /
+              this->metric.sqrt_det_h({ i1_, i2_, i3_ });
+          }
         });
     }
+  }
+
+  template <Dimension D, SimulationEngine S>
+  void Meshblock<D, S>::ComputeChargeDensity(const SimulationParams& params,
+                                             ndfield_t<D, 3>&        buffer,
+                                             const std::vector<int>& prtl_species,
+                                             int buff_ind) {
+    NTTLog();
+    ResetBuffer<D, 3>(this->buff, buff_ind);
+    // charge density is defined in the nodes
+
+    // if species not specified, use all charged particles
+    std::vector<int> out_species = prtl_species;
+    if (out_species.size() == 0) {
+      for (auto& specs : particles) {
+        if (specs.charge() > 0.0) {
+          out_species.push_back(specs.index());
+        }
+      }
+    }
+    auto       this_metric = this->metric;
+    const auto use_weights = params.useWeights();
+
+    auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
+    for (auto& sp : out_species) {
+      auto       species = particles[sp - 1];
+      const auto q_n0    = species.charge() / params.n0();
+      if constexpr (D == Dim1) {
+        Kokkos::parallel_for(
+          "ComputeChargeDensity",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (species.tag(p) == ParticleTag::alive) {
+              auto       buff_access = scatter_buff.access();
+              const auto i1          = species.i1(p);
+              const auto i1_         = COORD(i1);
+              const auto dx1         = species.dx1(p);
+              const auto coeff = (use_weights) ? (q_n0 * species.weight(p))
+                                               : (q_n0);
+
+              buff_access(i1, buff_ind) += coeff * species.weight(p) *
+                                           (ONE - dx1) /
+                                           this_metric.sqrt_det_h({ i1_ });
+              buff_access(i1 + 1,
+                          buff_ind) += coeff * species.weight(p) * dx1 /
+                                       this_metric.sqrt_det_h({ i1_ + ONE });
+            }
+          });
+      } else if constexpr (D == Dim2) {
+        const auto ax_i2min { (this->boundaries.size() > 1) &&
+                              (this->boundaries[1][0] == BoundaryCondition::AXIS) };
+        const auto ax_i2max { (this->boundaries.size() > 1) &&
+                              (this->boundaries[1][1] == BoundaryCondition::AXIS) };
+        const auto ni2 { (int)(this->Ni2()) };
+        Kokkos::parallel_for(
+          "ComputeChargeDensity",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (species.tag(p) == ParticleTag::alive) {
+              auto       buff_access = scatter_buff.access();
+              const auto i1          = species.i1(p);
+              const auto i2          = species.i2(p);
+              const auto i1_         = COORD(i1);
+              const auto i2_         = COORD(i2);
+            }
+          });
+      } else if constexpr (D == Dim3) {
+        //         Kokkos::parallel_for(
+        //           "ComputeMoments",
+        //           species.rangeActiveParticles(),
+        //           Lambda(index_t p) {
+        //             if (species.tag(p) == ParticleTag::alive) {
+        //               auto      buff_access = scatter_buff.access();
+        //               auto      i1          = species.i1(p);
+        //               auto      i2          = species.i2(p);
+        //               auto      i3          = species.i3(p);
+        //               const int i1_min      = i1 - window + N_GHOSTS;
+        //               const int i1_max      = i1 + window + N_GHOSTS;
+        //               const int i2_min      = i2 - window + N_GHOSTS;
+        //               const int i2_max      = i2 + window + N_GHOSTS;
+        //               const int i3_min      = i3 - window + N_GHOSTS;
+        //               const int i3_max      = i3 + window + N_GHOSTS;
+        //               real_t    contrib { ZERO };
+        //               if (field == FieldID::Rho) {
+        //                 contrib = ((mass == ZERO) ? ONE : mass);
+        //               } else if (field == FieldID::Charge) {
+        //                 contrib = charge;
+        //               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
+        //                 contrib = ONE;
+        //               } else if (field == FieldID::T) {
+        //                 real_t energy {
+        //                   (mass == ZERO)
+        //                     ? NORM(species.ux1(p), species.ux2(p), species.ux3(p))
+        //                     : math::sqrt(ONE + NORM_SQR(species.ux1(p),
+        //                                                 species.ux2(p),
+        //                                                 species.ux3(p)))
+        //                 };
+        //                 contrib = ((mass == ZERO) ? ONE : mass) / energy;
+        // #ifdef MINKOWSKI_METRIC
+        //                 for (auto& c : { comp1, comp2 }) {
+        //                   if (c == 0) {
+        //                     contrib *= energy;
+        //                   } else if (c == 1) {
+        //                     contrib *= species.ux1(p);
+        //                   } else if (c == 2) {
+        //                     contrib *= species.ux2(p);
+        //                   } else if (c == 3) {
+        //                     contrib *= species.ux3(p);
+        //                   }
+        //                 }
+        // #else
+        //                 const real_t x1 = get_prtl_x1(species, p);
+        //                 const real_t x2 = get_prtl_x2(species, p);
+        //                 const real_t x3 = get_prtl_x3(species, p);
+        //                 vec_t<Dim3>  u_hat;
+        //                 this_metric.v3_Cart2Hat(
+        //                   { x1, x2, x3 },
+        //                   { species.ux1(p), species.ux2(p), species.ux3(p) },
+        //                   u_hat);
+        //                 for (auto& c : { comp1, comp2 }) {
+        //                   if (c == 0) {
+        //                     contrib *= energy;
+        //                   } else {
+        //                     contrib *= u_hat[c - 1];
+        //                   }
+        //                 }
+        // #endif
+        //               }
+        //               if (field != FieldID::Nppc) {
+        //                 contrib *= inv_n0 / this_metric.sqrt_det_h(
+        //                                       { static_cast<real_t>(i1) + HALF,
+        //                                         static_cast<real_t>(i2) + HALF,
+        //                                         static_cast<real_t>(i3) + HALF });
+        //                 if (use_weights) {
+        //                   contrib *= species.weight(p);
+        //                 }
+        //               }
+        //               for (auto i3_ { i3_min }; i3_ <= i3_max; ++i3_) {
+        //                 for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
+        //                   for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
+        //                     buff_access(i1_, i2_, i3_, buff_ind) += contrib * smooth;
+        //                   }
+        //                 }
+        //               }
+        //             }
+        //           });
+      }
+    }
+    Kokkos::Experimental::contribute(this->buff, scatter_buff);
   }
 
   template <Dimension D, SimulationEngine S>
@@ -345,23 +469,9 @@ namespace ntt {
                                        int                     buff_ind,
                                        short                   window) {
     NTTLog();
+    ResetBuffer<D, 3>(this->buff, buff_ind);
     const auto smooth = ONE / math::pow(TWO * window + ONE, static_cast<int>(D));
     const auto inv_n0 = ONE / params.n0();
-    if constexpr (D == Dim1) {
-      Kokkos::deep_copy(Kokkos::subview(this->buff, Kokkos::ALL(), (int)buff_ind),
-                        ZERO);
-    } else if constexpr (D == Dim2) {
-      Kokkos::deep_copy(
-        Kokkos::subview(this->buff, Kokkos::ALL(), Kokkos::ALL(), (int)buff_ind),
-        ZERO);
-    } else if constexpr (D == Dim3) {
-      Kokkos::deep_copy(Kokkos::subview(this->buff,
-                                        Kokkos::ALL(),
-                                        Kokkos::ALL(),
-                                        Kokkos::ALL(),
-                                        (int)buff_ind),
-                        ZERO);
-    }
 
     // if species not specified, use all massive particles
     std::vector<int> out_species = prtl_species;
@@ -620,7 +730,13 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::CheckOutOfBounds(const std::string& msg) {
+  void Meshblock<D, S>::CheckOutOfBounds(const std::string& msg,
+                                         bool               only_on_debug) {
+    if (only_on_debug) {
+#ifndef DEBUG
+      return;
+#endif
+    }
 #if !defined(MPI_ENABLED)
     const auto ntags = 2;
 #else
@@ -635,11 +751,16 @@ namespace ntt {
           "Check-OutOfBounds",
           species.rangeActiveParticles(),
           ClassLambda(index_t p) {
-            auto oob_found = species.i1(p) < 0 || species.i1(p) >= ni1 ||
-                             species.tag(p) < 0 || species.tag(p) >= ntags;
+            auto oob_found = ((species.tag(p) == ParticleTag::alive) &&
+                              (species.i1(p) < 0 || species.i1(p) >= ni1)) ||
+                             (species.tag(p) < 0 || species.tag(p) >= ntags);
             Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
             if (oob_found) {
-              printf("OutOfBounds particle at %ld %d\n", p, species.i1(p));
+              printf("OutOfBounds particle at %ld %d %f [%d]\n",
+                     p,
+                     species.i1(p),
+                     species.dx1(p),
+                     species.tag(p));
             }
           });
       } else if constexpr (D == Dim2) {
@@ -648,15 +769,19 @@ namespace ntt {
           "Check-OutOfBounds",
           species.rangeActiveParticles(),
           ClassLambda(index_t p) {
-            auto oob_found = species.i1(p) < 0 || species.i1(p) >= ni1 ||
-                             species.i2(p) < 0 || species.i2(p) >= ni2 ||
-                             species.tag(p) < 0 || species.tag(p) >= ntags;
+            auto oob_found = ((species.tag(p) == ParticleTag::alive) &&
+                              (species.i1(p) < 0 || species.i1(p) >= ni1 ||
+                               species.i2(p) < 0 || species.i2(p) >= ni2)) ||
+                             (species.tag(p) < 0 || species.tag(p) >= ntags);
             Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
             if (oob_found) {
-              printf("OutOfBounds particle at %ld %d %d\n",
+              printf("OutOfBounds particle at %ld %d %d %f %f [%d]\n",
                      p,
                      species.i1(p),
-                     species.i2(p));
+                     species.i2(p),
+                     species.dx1(p),
+                     species.dx2(p),
+                     species.tag(p));
             }
           });
       } else if constexpr (D == Dim3) {
@@ -666,26 +791,31 @@ namespace ntt {
           "Check-OutOfBounds",
           species.rangeActiveParticles(),
           ClassLambda(index_t p) {
-            auto oob_found = species.i1(p) < 0 || species.i1(p) >= ni1 ||
-                             species.i2(p) < 0 || species.i2(p) >= ni2 ||
-                             species.i3(p) < 0 || species.i3(p) >= ni3 ||
-                             species.tag(p) < 0 || species.tag(p) >= ntags;
+            auto oob_found = ((species.tag(p) == ParticleTag::alive) &&
+                              (species.i1(p) < 0 || species.i1(p) >= ni1 ||
+                               species.i2(p) < 0 || species.i2(p) >= ni2 ||
+                               species.i3(p) < 0 || species.i3(p) >= ni3)) ||
+                             (species.tag(p) < 0 || species.tag(p) >= ntags);
             Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
             if (oob_found) {
-              printf("OutOfBounds particle at %ld %d %d %d\n",
+              printf("OutOfBounds particle at %ld %d %d %d %f %f %f [%d]\n",
                      p,
                      species.i1(p),
                      species.i2(p),
-                     species.i3(p));
+                     species.i3(p),
+                     species.dx1(p),
+                     species.dx2(p),
+                     species.dx3(p),
+                     species.tag(p));
             }
           });
       }
       Kokkos::deep_copy(found_oob_h, found_oob);
       NTTHostErrorIf(found_oob_h() > 0,
-                     fmt::format("%s: OutOfBounds particles (%s): %d",
-                                 msg,
-                                 species.label(),
-                                 found_oob_h()));
+                     fmt::format("%s: found %d OutOfBounds particles (%s)",
+                                 msg.c_str(),
+                                 found_oob_h(),
+                                 species.label().c_str()));
     }
   }
 
@@ -702,17 +832,23 @@ namespace ntt {
           "Check-NAN-Fields",
           this->rangeActiveCells(),
           ClassLambda(index_t i1, index_t i2) {
+            auto inf_found = Kokkos::isinf(this->em(i1, i2, em::ex1)) ||
+                             Kokkos::isinf(this->em(i1, i2, em::ex2)) ||
+                             Kokkos::isinf(this->em(i1, i2, em::ex3)) ||
+                             Kokkos::isinf(this->em(i1, i2, em::bx1)) ||
+                             Kokkos::isinf(this->em(i1, i2, em::bx2)) ||
+                             Kokkos::isinf(this->em(i1, i2, em::bx3));
             auto nan_found = Kokkos::isnan(this->em(i1, i2, em::ex1)) ||
                              Kokkos::isnan(this->em(i1, i2, em::ex2)) ||
                              Kokkos::isnan(this->em(i1, i2, em::ex3)) ||
                              Kokkos::isnan(this->em(i1, i2, em::bx1)) ||
                              Kokkos::isnan(this->em(i1, i2, em::bx2)) ||
                              Kokkos::isnan(this->em(i1, i2, em::bx3));
-            Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found);
-            if (nan_found) {
+            Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found + (int)inf_found);
+            if (nan_found || inf_found) {
               printf("NAN in fields at %ld %ld %f %f %f %f %f %f\n",
-                     i1,
-                     i2,
+                     i1 - N_GHOSTS,
+                     i2 - N_GHOSTS,
                      this->em(i1, i2, em::ex1),
                      this->em(i1, i2, em::ex2),
                      this->em(i1, i2, em::ex3),
@@ -722,8 +858,9 @@ namespace ntt {
             }
           });
         Kokkos::deep_copy(found_nan_h, found_nan);
-        NTTHostErrorIf(found_nan_h() > 0,
-                       fmt::format("%s: NaNs in fields: %d", msg, found_nan_h()));
+        NTTHostErrorIf(
+          found_nan_h() > 0,
+          fmt::format("%s: found %d NaNs in fields", msg.c_str(), found_nan_h()));
       }
       if (flags & CheckNaN_Currents) {
         Kokkos::parallel_for(
@@ -733,19 +870,23 @@ namespace ntt {
             auto nan_found = Kokkos::isnan(this->cur(i1, i2, cur::jx1)) ||
                              Kokkos::isnan(this->cur(i1, i2, cur::jx2)) ||
                              Kokkos::isnan(this->cur(i1, i2, cur::jx3));
-            Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found);
-            if (nan_found) {
-              printf("NAN in fields at %ld %ld %f %f %f\n",
-                     i1,
-                     i2,
+            auto inf_found = Kokkos::isinf(this->cur(i1, i2, cur::jx1)) ||
+                             Kokkos::isinf(this->cur(i1, i2, cur::jx2)) ||
+                             Kokkos::isinf(this->cur(i1, i2, cur::jx3));
+            Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found + (int)inf_found);
+            if (nan_found || inf_found) {
+              printf("NAN in currents at %ld %ld %f %f %f\n",
+                     i1 - N_GHOSTS,
+                     i2 - N_GHOSTS,
                      this->cur(i1, i2, cur::jx1),
                      this->cur(i1, i2, cur::jx2),
                      this->cur(i1, i2, cur::jx3));
             }
           });
         Kokkos::deep_copy(found_nan_h, found_nan);
-        NTTHostErrorIf(found_nan_h() > 0,
-                       fmt::format("%s: NaNs in fields: %d", msg, found_nan_h()));
+        NTTHostErrorIf(
+          found_nan_h() > 0,
+          fmt::format("%s: found %d NaNs in currents", msg.c_str(), found_nan_h()));
       }
       if (flags & CheckNaN_Particles) {
         for (auto& species : particles) {
@@ -753,11 +894,15 @@ namespace ntt {
             "Check-NAN-Particles",
             species.rangeActiveParticles(),
             ClassLambda(index_t p) {
+              auto inf_found = Kokkos::isinf(species.ux1(p)) ||
+                               Kokkos::isinf(species.ux2(p)) ||
+                               Kokkos::isinf(species.ux3(p));
               auto nan_found = Kokkos::isnan(species.ux1(p)) ||
                                Kokkos::isnan(species.ux2(p)) ||
                                Kokkos::isnan(species.ux3(p));
-              Kokkos::atomic_fetch_add(&found_nan(), (int)nan_found);
-              if (nan_found) {
+              Kokkos::atomic_fetch_add(&found_nan(),
+                                       (int)nan_found + (int)inf_found);
+              if (nan_found || inf_found) {
                 printf("NAN in particles at %ld %d %d %f %f %f\n",
                        p,
                        species.i1(p),
@@ -768,9 +913,10 @@ namespace ntt {
               }
             });
           Kokkos::deep_copy(found_nan_h, found_nan);
-          NTTHostErrorIf(
-            found_nan_h() > 0,
-            fmt::format("%s: NaNs in particles: %d", msg, found_nan_h()));
+          NTTHostErrorIf(found_nan_h() > 0,
+                         fmt::format("%s: found %d NaNs in particles",
+                                     msg.c_str(),
+                                     found_nan_h()));
         }
       }
     }

@@ -28,13 +28,8 @@
 
 namespace ntt {
 
-#ifdef MINKOWSKI_METRIC
-  #define FullD D
-#else
-  #define FullD Dim3
-#endif
-
 #ifdef OUTPUT_ENABLED
+
   template <Dimension D, SimulationEngine S>
   void Writer<D, S>::Initialize(const SimulationParams& params,
                                 const Metadomain<D>&    metadomain,
@@ -169,8 +164,8 @@ namespace ntt {
       const auto Ni1 { metadomain.globalNcells()[0] };
       auto       x1 = new real_t[Ni1 + 1];
       for (std::size_t i { 0 }; i <= Ni1; ++i) {
-        coord_t<D> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)D; ++d) {
+        coord_t<FullD> xph { ZERO }, xi { ZERO };
+        for (short d { 0 }; d < (short)FullD; ++d) {
           xi[d] = ONE;
         }
         xi[0] = (real_t)(i);
@@ -186,8 +181,8 @@ namespace ntt {
       const auto Ni2 { metadomain.globalNcells()[1] };
       auto       x2 = new real_t[Ni2 + 1];
       for (std::size_t i { 0 }; i <= Ni2; ++i) {
-        coord_t<D> xph { ZERO }, xi { ZERO };
-        for (short d { 0 }; d < (short)D; ++d) {
+        coord_t<FullD> xph { ZERO }, xi { ZERO };
+        for (short d { 0 }; d < (short)FullD; ++d) {
           xi[d] = ONE;
         }
         xi[1] = (real_t)(i);

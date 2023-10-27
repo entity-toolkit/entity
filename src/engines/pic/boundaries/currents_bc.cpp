@@ -37,8 +37,8 @@ namespace ntt {
       auto          params   = *(this->params());
       auto          r_absorb = params.metricParameters()[2];
       auto          r_max    = mblock.metric.x1_max;
-      coord_t<Dim2> xcu;
-      mblock.metric.x_Sph2Code({ r_absorb, 0.0 }, xcu);
+      coord_t<FullD> xcu;
+      mblock.metric.x_Sph2Code({ r_absorb, 0.0, ZERO }, xcu);
       const auto i1_absorb = (std::size_t)(xcu[0]);
       NTTHostErrorIf(i1_absorb >= mblock.i1_max(),
                      "Absorbing layer is too small, consider "

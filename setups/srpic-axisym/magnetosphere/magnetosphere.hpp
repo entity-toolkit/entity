@@ -34,7 +34,9 @@ namespace ntt {
       maxwellian { mblock },
       temperature { params.get<real_t>("problem", "atm_T") } {}
 
-    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
+    Inline void operator()(const coord_t<FullD>&,
+                           vec_t<Dim3>& v,
+                           const int&) const override {
       maxwellian(v, temperature);
       v[1] = ZERO;
       v[2] = ZERO;
@@ -81,18 +83,18 @@ namespace ntt {
                                 const SimulationParams&,
                                 Meshblock<D, S>&) override {}
 
-    Inline auto ext_force_x1(const real_t&, const coord_t<D>& x_ph) const
+    Inline auto ext_force_x1(const real_t&, const coord_t<FullD>& x_ph) const
       -> real_t override {
       return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) *
              (x_ph[0] < m_psr_Rstar + m_atm_h * TWO);
     }
 
-    Inline auto ext_force_x2(const real_t&, const coord_t<D>&) const
+    Inline auto ext_force_x2(const real_t&, const coord_t<FullD>&) const
       -> real_t override {
       return ZERO;
     }
 
-    Inline auto ext_force_x3(const real_t&, const coord_t<D>&) const
+    Inline auto ext_force_x3(const real_t&, const coord_t<FullD>&) const
       -> real_t override {
       return ZERO;
     }
@@ -105,7 +107,7 @@ namespace ntt {
     ndarray_t<(short)(D)> m_ppc_per_spec;
   };
 
-  Inline void mainBField(const coord_t<Dim2>& x_ph,
+  Inline void mainBField(const coord_t<FullD>& x_ph,
                          vec_t<Dim3>&,
                          vec_t<Dim3>& b_out,
                          real_t       _rstar,
@@ -122,13 +124,13 @@ namespace ntt {
     }
   }
 
-  Inline void surfaceRotationField(const coord_t<Dim2>& x_ph,
-                                   vec_t<Dim3>&         e_out,
-                                   vec_t<Dim3>&         b_out,
-                                   real_t               _rstar,
-                                   real_t               _bsurf,
-                                   int                  _mode,
-                                   real_t               _omega) {
+  Inline void surfaceRotationField(const coord_t<FullD>& x_ph,
+                                   vec_t<Dim3>&          e_out,
+                                   vec_t<Dim3>&          b_out,
+                                   real_t                _rstar,
+                                   real_t                _bsurf,
+                                   int                   _mode,
+                                   real_t                _omega) {
     mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
     e_out[0] = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
     e_out[1] = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
@@ -143,11 +145,12 @@ namespace ntt {
       _bsurf { params.get<real_t>("problem", "psr_Bsurf", ONE) },
       _mode { params.get<int>("problem", "psr_field_mode", 2) } {}
 
-    Inline real_t operator()(const em& comp, const coord_t<D>& xi) const override {
+    Inline real_t operator()(const em&             comp,
+                             const coord_t<FullD>& xi) const override {
       if ((comp == em::bx1) || (comp == em::bx2)) {
-        vec_t<Dim3> e_out { ZERO }, b_out { ZERO };
-        coord_t<D>  x_ph { ZERO };
-        (this->m_mblock).metric.x_Code2Sph(xi, x_ph);
+        vec_t<Dim3>    e_out { ZERO }, b_out { ZERO };
+        coord_t<FullD> x_ph { ZERO };
+        (this->m_mblock).metric.x_Code2Phys(xi, x_ph);
         mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
         return (comp == em::bx1) ? b_out[0] : b_out[1];
       } else {
@@ -170,15 +173,6 @@ namespace ntt {
     Meshblock<Dim2, PICEngine>& mblock) {
     // initialize buffer array
     m_ppc_per_spec = ndarray_t<2>("ppc_per_spec", mblock.Ni1(), mblock.Ni2());
-    {
-      // check that the star surface is far-enough from the boundary
-      coord_t<Dim2> star_Code { ZERO };
-      mblock.metric.x_Phys2Code({ m_psr_Rstar, ZERO }, star_Code);
-      if ((int)(star_Code[0]) < (int)params.currentFilters()) {
-        NTTWarn(
-          "The star boundary is smaller than the current filter stencil.");
-      }
-    }
 
     // inject stars in the atmosphere
     {
@@ -191,16 +185,11 @@ namespace ntt {
         "ComputeDeltaNdens",
         mblock.rangeActiveCells(),
         ClassLambda(index_t i1, index_t i2) {
-          const auto    i1_ = static_cast<int>(i1) - N_GHOSTS;
-          const auto    i2_ = static_cast<int>(i2) - N_GHOSTS;
-          coord_t<Dim2> x_ph { ZERO };
-          mblock.metric.x_Code2Phys(
-            { static_cast<real_t>(i1_) + HALF, static_cast<real_t>(i2_) + HALF },
-            x_ph);
-          m_ppc_per_spec(i1_,
-                         i2_) = densityProfile(x_ph[0], C, h, rstar) *
-                                (x_ph[0] > rstar) *
-                                (x_ph[0] < rstar + static_cast<real_t>(10) * h);
+          const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
+          const auto i2_ = static_cast<int>(i2) - N_GHOSTS;
+          const auto r = mblock.metric.x1_Code2Phys(static_cast<real_t>(i1_) + HALF);
+          m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) * (r > rstar) *
+                                     (r < rstar + static_cast<real_t>(10) * h);
           // 2 -- for two species
           m_ppc_per_spec(i1_, i2_) *= ppc0 / TWO;
         });
@@ -220,12 +209,10 @@ namespace ntt {
     const SimulationParams&     params,
     Meshblock<Dim2, PICEngine>& mblock) {
     {
-      const auto    _rmin = mblock.metric.x1_min;
-      coord_t<Dim2> x_ph { m_psr_Rstar, ZERO };
-      coord_t<Dim2> xi { ZERO };
-      mblock.metric.x_Sph2Code(x_ph, xi);
-      NTTHostErrorIf(_rmin >= m_psr_Rstar, "rmin > r_surf");
-      NTTHostErrorIf(xi[0] < params.currentFilters(), "r_surf - rmin < filters");
+      const auto rmin   = mblock.metric.x1_min;
+      const auto x1_psr = mblock.metric.x1_Phys2Code(m_psr_Rstar);
+      NTTHostErrorIf(rmin >= m_psr_Rstar, "rmin > r_surf");
+      NTTHostErrorIf(x1_psr < params.currentFilters(), "r_surf - rmin < filters");
     }
     {
       const auto rstar = m_psr_Rstar;
@@ -245,14 +232,10 @@ namespace ntt {
     const real_t& time,
     const SimulationParams&,
     Meshblock<Dim2, PICEngine>& mblock) {
-    unsigned int i1_surf;
-    const auto   i1_min = mblock.i1_min();
-    {
-      coord_t<Dim2> x_ph { m_psr_Rstar, ZERO };
-      coord_t<Dim2> xi { ZERO };
-      mblock.metric.x_Sph2Code(x_ph, xi);
-      i1_surf = (unsigned int)(xi[0] + N_GHOSTS);
-    }
+    const unsigned int i1_surf {
+      static_cast<int>(mblock.metric.x1_Phys2Code(m_psr_Rstar)) + N_GHOSTS
+    };
+    const auto i1_min = mblock.i1_min();
 
     {
       const auto rstar = m_psr_Rstar;
@@ -303,15 +286,12 @@ namespace ntt {
         "ComputeDeltaNdens",
         mblock.rangeActiveCells(),
         ClassLambda(index_t i1, index_t i2) {
-          const auto    i1_ = static_cast<int>(i1) - N_GHOSTS;
-          const auto    i2_ = static_cast<int>(i2) - N_GHOSTS;
-          coord_t<Dim2> x_ph { ZERO };
-          mblock.metric.x_Code2Phys(
-            { static_cast<real_t>(i1_) + HALF, static_cast<real_t>(i2_) + HALF },
-            x_ph);
+          const auto i1_ = i1 - static_cast<int>(N_GHOSTS),
+                     i2_ = i2 - static_cast<int>(N_GHOSTS);
+          const auto r   = mblock.metric.x1_Code2Phys(i1_ + HALF);
 
-          m_ppc_per_spec(i1_, i2_) = densityProfile(x_ph[0], C, h, rstar) *
-                                     (x_ph[0] > rstar) * (x_ph[0] < rstar + h);
+          m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) *
+                                     (r > rstar) * (r < rstar + h);
 
           const auto actual_ndens = mblock.buff(i1, i2, buff_idx);
           if (frac * m_ppc_per_spec(i1_, i2_) > actual_ndens) {

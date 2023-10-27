@@ -138,6 +138,12 @@ namespace ntt {
   template <Dimension D>
   struct DimensionTag {};
 
+#ifdef MINKOWSKI_METRIC
+  #define FullD D
+#else
+  #define FullD Dim3
+#endif
+
   enum class SimulationEngine {
     UNDEFINED,
     SANDBOX,

@@ -96,6 +96,17 @@ namespace ntt {
       return math::pow(dx, static_cast<short>(D));
     }
 
+    /**
+     * Compute the square root of the determinant of h-matrix.
+     * @note for compatibility purposes
+     *
+     * @param x coordinate array in code units
+     * @returns sqrt(det(h_ij)).
+     */
+    Inline auto sqrt_det_h_tilde(const coord_t<D>&) const -> real_t {
+      return math::pow(dx, static_cast<short>(D));
+    }
+
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a diagonal metric here

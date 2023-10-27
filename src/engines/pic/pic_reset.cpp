@@ -33,9 +33,13 @@ namespace ntt {
     for (auto& species : mblock.particles) {
       Kokkos::deep_copy(species.i1, 0);
       Kokkos::deep_copy(species.dx1, ZERO);
+      Kokkos::deep_copy(species.i1_prev, 0);
+      Kokkos::deep_copy(species.dx1_prev, ZERO);
       if constexpr (D != Dim1) {
         Kokkos::deep_copy(species.i2, 0);
         Kokkos::deep_copy(species.dx2, ZERO);
+        Kokkos::deep_copy(species.i2_prev, 0);
+        Kokkos::deep_copy(species.dx2_prev, ZERO);
 #ifndef MINKOWSKI_METRIC
         Kokkos::deep_copy(species.phi, ZERO);
 #endif
@@ -43,6 +47,8 @@ namespace ntt {
       if constexpr (D == Dim3) {
         Kokkos::deep_copy(species.i3, 0);
         Kokkos::deep_copy(species.dx3, ZERO);
+        Kokkos::deep_copy(species.i3_prev, 0);
+        Kokkos::deep_copy(species.dx3_prev, ZERO);
       }
       Kokkos::deep_copy(species.ux1, ZERO);
       Kokkos::deep_copy(species.ux2, ZERO);

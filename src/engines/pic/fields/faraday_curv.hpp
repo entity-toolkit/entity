@@ -67,8 +67,12 @@ namespace ntt {
 
     BX1(i, j) += m_coeff * inv_sqrt_detH_ijP *
                  (h3_ij * EX3(i, j) - h3_ijP1 * EX3(i, j + 1));
-    BX2(i, j) += m_coeff * inv_sqrt_detH_iPj *
-                 (h3_iP1j * EX3(i + 1, j) - h3_ij * EX3(i, j));
+    if (j == N_GHOSTS) {
+      BX2(i, j) =m_coeff * (EX3(i + 1, j) - EX3(i, j));
+    } else {
+      BX2(i, j) += m_coeff * inv_sqrt_detH_iPj *
+                   (h3_iP1j * EX3(i + 1, j) - h3_ij * EX3(i, j));
+    }
     BX3(i, j) += m_coeff * inv_sqrt_detH_iPjP *
                  (h1_iPjP1 * EX1(i, j + 1) - h1_iPj * EX1(i, j) +
                   h2_ijP * EX2(i, j) - h2_iP1jP * EX2(i + 1, j));

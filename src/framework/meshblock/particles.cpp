@@ -30,6 +30,8 @@ namespace ntt {
     ux2 { label_ + "_ux2", maxnpart_ },
     ux3 { label_ + "_ux3", maxnpart_ },
     weight { label_ + "_w", maxnpart_ },
+    i1_prev { label_ + "_i1_prev", maxnpart_ },
+    dx1_prev { label_ + "_dx1_prev", maxnpart_ },
     tag { label_ + "_tag", maxnpart_ },
     i1_h { Kokkos::create_mirror_view(i1) },
     dx1_h { Kokkos::create_mirror_view(dx1) },
@@ -63,6 +65,10 @@ namespace ntt {
     ux2 { label_ + "_ux2", maxnpart_ },
     ux3 { label_ + "_ux3", maxnpart_ },
     weight { label_ + "_w", maxnpart_ },
+    i1_prev { label_ + "_i1_prev", maxnpart_ },
+    i2_prev { label_ + "_i2_prev", maxnpart_ },
+    dx1_prev { label_ + "_dx1_prev", maxnpart_ },
+    dx2_prev { label_ + "_dx2_prev", maxnpart_ },
     tag { label_ + "_tag", maxnpart_ },
     i1_h { Kokkos::create_mirror_view(i1) },
     i2_h { Kokkos::create_mirror_view(i2) },
@@ -97,6 +103,10 @@ namespace ntt {
     ux2 { label_ + "_ux2", maxnpart_ },
     ux3 { label_ + "_ux3", maxnpart_ },
     weight { label_ + "_w", maxnpart_ },
+    i1_prev { label_ + "_i1_prev", maxnpart_ },
+    i2_prev { label_ + "_i2_prev", maxnpart_ },
+    dx1_prev { label_ + "_dx1_prev", maxnpart_ },
+    dx2_prev { label_ + "_dx2_prev", maxnpart_ },
     phi { label_ + "_phi", maxnpart_ },
     tag { label_ + "_tag", maxnpart_ },
     i1_h { Kokkos::create_mirror_view(i1) },
@@ -135,6 +145,12 @@ namespace ntt {
     ux2 { label_ + "_ux2", maxnpart_ },
     ux3 { label_ + "_ux3", maxnpart_ },
     weight { label_ + "_w", maxnpart_ },
+    i1_prev { label_ + "_i1_prev", maxnpart_ },
+    i2_prev { label_ + "_i2_prev", maxnpart_ },
+    i3_prev { label_ + "_i3_prev", maxnpart_ },
+    dx1_prev { label_ + "_dx1_prev", maxnpart_ },
+    dx2_prev { label_ + "_dx2_prev", maxnpart_ },
+    dx3_prev { label_ + "_dx3_prev", maxnpart_ },
     tag { label_ + "_tag", maxnpart_ },
     i1_h { Kokkos::create_mirror_view(i1) },
     i2_h { Kokkos::create_mirror_view(i2) },
@@ -350,17 +366,15 @@ namespace ntt {
       Sorter.sort(Kokkos::subview(phi, slice));
     }
 #endif
-    if constexpr (S == GRPICEngine) {
-      Sorter.sort(Kokkos::subview(i1_prev, slice));
-      Sorter.sort(Kokkos::subview(dx1_prev, slice));
-      if constexpr (D == Dim2 || D == Dim3) {
-        Sorter.sort(Kokkos::subview(i2_prev, slice));
-        Sorter.sort(Kokkos::subview(dx2_prev, slice));
-      }
-      if constexpr (D == Dim3) {
-        Sorter.sort(Kokkos::subview(i3_prev, slice));
-        Sorter.sort(Kokkos::subview(dx3_prev, slice));
-      }
+    Sorter.sort(Kokkos::subview(i1_prev, slice));
+    Sorter.sort(Kokkos::subview(dx1_prev, slice));
+    if constexpr (D == Dim2 || D == Dim3) {
+      Sorter.sort(Kokkos::subview(i2_prev, slice));
+      Sorter.sort(Kokkos::subview(dx2_prev, slice));
+    }
+    if constexpr (D == Dim3) {
+      Sorter.sort(Kokkos::subview(i3_prev, slice));
+      Sorter.sort(Kokkos::subview(dx3_prev, slice));
     }
     Sorter.sort(Kokkos::subview(weight, slice));
 

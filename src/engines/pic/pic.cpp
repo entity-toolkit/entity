@@ -73,6 +73,8 @@ namespace ntt {
       Faraday();
       timers.stop("FieldSolver");
 
+      { mblock.CheckNaNs("After 1st Faraday", CheckNaN_Fields); }
+
       timers.start("Communications");
       this->Communicate(Comm_E);
       timers.stop("Communications");
@@ -89,7 +91,10 @@ namespace ntt {
       ParticlesPush();
       timers.stop("ParticlePusher");
 
-      { mblock.CheckNaNs("After Push", CheckNaN_Particles); }
+      {
+        mblock.CheckNaNs("After Push", CheckNaN_Particles);
+        mblock.CheckOutOfBounds("After Push");
+      }
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");
@@ -115,15 +120,14 @@ namespace ntt {
         { mblock.CheckNaNs("After Currents Filter", CheckNaN_Currents); }
       }
 
-      timers.start("ParticleBoundaries");
-      this->ParticlesBoundaryConditions();
-      timers.stop("ParticleBoundaries");
-
       timers.start("Communications");
       this->Communicate(Comm_Prtl);
       timers.stop("Communications");
 
-      { mblock.CheckNaNs("After Prtls BC", CheckNaN_Particles); }
+      {
+        mblock.CheckNaNs("After Prtls Comm", CheckNaN_Particles);
+        mblock.CheckOutOfBounds("After Prtls Comm");
+      }
     }
 
     if (params.fieldsolverEnabled()) {
