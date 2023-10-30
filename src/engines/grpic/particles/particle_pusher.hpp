@@ -38,6 +38,7 @@ namespace ntt {
     const int    ni1, ni2, ni3;
     const real_t epsilon;
     const int    niter;
+    const int    i1_absorb;
 
     bool is_axis_i2min { false }, is_axis_i2max { false };
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
@@ -83,7 +84,8 @@ namespace ntt {
       ni2 { (int)mblock.Ni2() },
       ni3 { (int)mblock.Ni3() },
       epsilon { epsilon },
-      niter { niter } {
+      niter { niter },
+      i1_absorb { static_cast<int>(metric.x1_Phys2Code(metric.rhorizon())) - 5 } {
       NTTHostErrorIf(mblock.boundaries.size() < 2,
                      "boundaries defined incorrectly");
       is_absorb_i1min = (mblock.boundaries[0][0] == BoundaryCondition::OPEN) ||
@@ -636,7 +638,7 @@ namespace ntt {
 
   template <Dimension D>
   Inline void Pusher_kernel<D>::boundaryConditions_x1(index_t& p) const {
-    if (i1(p) < 0 && is_absorb_i1min) {
+    if (i1(p) < i1_absorb && is_absorb_i1min) {
       tag(p) = ParticleTag::dead;
     } else if (i1(p) >= ni1 && is_absorb_i1max) {
       tag(p) = ParticleTag::dead;
@@ -645,19 +647,21 @@ namespace ntt {
 
   template <Dimension D>
   Inline void Pusher_kernel<D>::boundaryConditions_x2(index_t& p) const {
-    if (i2(p) < 0) {
+    if (i2(p) < 1) {
       if (is_absorb_i2min) {
         tag(p) = ParticleTag::dead;
       } else if (is_axis_i2min) {
-        i2(p)  = 0;
-        dx2(p) = ONE - dx2(p);
+        // i2(p)  = 0;
+        // dx2(p) = ONE - dx2(p);
+        ux2(p) = -ux2(p);
       }
-    } else if (i2(p) >= ni2) {
+    } else if (i2(p) >= ni2 - 1) {
       if (is_absorb_i2max) {
         tag(p) = ParticleTag::dead;
       } else if (is_axis_i2min) {
-        i2(p)  = ni2 - 1;
-        dx2(p) = ONE - dx2(p);
+        // i2(p)  = ni2 - 1;
+        // dx2(p) = ONE - dx2(p);
+        ux2(p) = -ux2(p);
       }
     }
   }

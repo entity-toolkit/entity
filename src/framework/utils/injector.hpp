@@ -875,6 +875,8 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ xc[0], xc[1] }, v, v_cart);
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
@@ -894,6 +896,8 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ xc[0], xc[1] }, v, v_cart);
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
