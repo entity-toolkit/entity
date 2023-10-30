@@ -14,7 +14,8 @@ namespace ntt {
   template <Dimension D>
   class CurrentsAmpere_kernel {
     Meshblock<D, GRPICEngine> m_mblock;
-    real_t                    m_coeff;
+    const real_t              m_coeff;
+    const real_T              m_inv_n0;
 
   public:
     /**
@@ -22,9 +23,11 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmpere_kernel(const Meshblock<D, GRPICEngine>& mblock,
-                          const real_t&                    coeff) :
+                          const real_t&                    coeff, 
+                          const real_t&                    inv_n0) :
       m_mblock { mblock },
-      m_coeff { coeff } {}
+      m_coeff { coeff },
+      m_inv_n0 { inv_n0} {}
 
     /**
      * @brief 2D version of the add current.
@@ -49,13 +52,13 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
 
-    J0X1(i, j) *= m_coeff * inv_sqrt_detH_iPj;
-    J0X2(i, j) *= m_coeff * inv_sqrt_detH_ijP;
-    J0X3(i, j) *= m_coeff * inv_sqrt_detH_ij;
+    J0X1(i, j) *= m_inv_n0 * inv_sqrt_detH_iPj;
+    J0X2(i, j) *= m_inv_n0 * inv_sqrt_detH_ijP;
+    J0X3(i, j) *= m_inv_n0 * inv_sqrt_detH_ij;
 
-    D0X1(i, j) += J0X1(i, j);
-    D0X2(i, j) += J0X2(i, j);
-    D0X3(i, j) += J0X3(i, j);
+    D0X1(i, j) += J0X1(i, j) * m_coeff;
+    D0X2(i, j) += J0X2(i, j) * m_coeff;
+    D0X3(i, j) += J0X3(i, j) * m_coeff;
   }
 
   template <>
@@ -72,19 +75,20 @@ namespace ntt {
     real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h(
                                         { i_, j_, k_ + HALF }) };
 
-    J0X1(i, j, k) *= m_coeff * inv_sqrt_detH_iPjk;
-    J0X2(i, j, k) *= m_coeff * inv_sqrt_detH_ijPk;
-    J0X3(i, j, k) *= m_coeff * inv_sqrt_detH_ijkP;
+    J0X1(i, j, k) *= m_inv_n0 * inv_sqrt_detH_iPjk;
+    J0X2(i, j, k) *= m_inv_n0 * inv_sqrt_detH_ijPk;
+    J0X3(i, j, k) *= m_inv_n0 * inv_sqrt_detH_ijkP;
 
-    D0X1(i, j, k) += J0X1(i, j, k);
-    D0X2(i, j, k) += J0X2(i, j, k);
-    D0X3(i, j, k) += J0X3(i, j, k);
+    D0X1(i, j, k) += J0X1(i, j, k) * m_coeff;
+    D0X2(i, j, k) += J0X2(i, j, k) * m_coeff;
+    D0X3(i, j, k) += J0X3(i, j, k) * m_coeff;
   }
 
   template <Dimension D>
   class CurrentsAmperePoles_kernel {
     Meshblock<D, GRPICEngine> m_mblock;
-    real_t                    m_coeff;
+    const real_t              m_coeff;
+    const real_t              m_inv_n0;
     const std::size_t         m_ni2;
 
   public:
@@ -93,9 +97,11 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmperePoles_kernel(const Meshblock<D, GRPICEngine>& mblock,
-                               const real_t&                    coeff) :
+                               const real_t&                    coeff,
+                               const real_t&                    inv_n0) :
       m_mblock { mblock },
       m_coeff { coeff },
+      m_inv_n0 { inv_n0 },
       m_ni2 { m_mblock.Ni2() } {}
 
     /**
@@ -114,16 +120,16 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
     real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
     // theta = 0
-    J0X1(i, j_min) *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_min) += J0X1(i, j_min);
+    J0X1(i, j_min) *= HALF * m_inv_n0 * inv_polar_area_iPj;
+    D0X1(i, j_min) += J0X1(i, j_min) * m_coeff;
 
     // theta = pi
-    J0X1(i, j_max) *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_max) += J0X1(i, j_max);
+    J0X1(i, j_max) *= HALF * m_inv_n0 * inv_polar_area_iPj;
+    D0X1(i, j_max) += J0X1(i, j_max) * m_coeff;
 
     // j = jmin + 1/2
-    J0X2(i, j_min) *= m_coeff * inv_sqrt_detH_ijP;
-    D0X2(i, j_min) += J0X2(i, j_min);
+    J0X2(i, j_min) *= m_inv_n0 * inv_sqrt_detH_ijP;
+    D0X2(i, j_min) += J0X2(i, j_min) * m_coeff;
   }
 
   /**
@@ -133,7 +139,8 @@ namespace ntt {
   template <Dimension D>
   class CurrentsAmpereAux_kernel {
     Meshblock<D, GRPICEngine> m_mblock;
-    real_t                    m_coeff;
+    const real_t              m_coeff;
+    const real_t              m_inv_n0;
 
   public:
     /**
@@ -141,9 +148,11 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmpereAux_kernel(const Meshblock<D, GRPICEngine>& mblock,
-                             const real_t&                    coeff) :
+                             const real_t&                    coeff,
+                             const real_t&                    inv_n0) :
       m_mblock { mblock },
-      m_coeff { coeff } {}
+      m_coeff { coeff },
+      m_inv_n0 { inv_n0 } {}
 
     /**
      * @brief 2D version of the add current.
@@ -168,13 +177,13 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
 
-    JX1(i, j) *= m_coeff * inv_sqrt_detH_iPj;
-    JX2(i, j) *= m_coeff * inv_sqrt_detH_ijP;
-    JX3(i, j) *= m_coeff * inv_sqrt_detH_ij;
+    JX1(i, j) *= m_inv_n0 * inv_sqrt_detH_iPj;
+    JX2(i, j) *= m_inv_n0 * inv_sqrt_detH_ijP;
+    JX3(i, j) *= m_inv_n0 * inv_sqrt_detH_ij;
 
-    D0X1(i, j) += JX1(i, j);
-    D0X2(i, j) += JX2(i, j);
-    D0X3(i, j) += JX3(i, j);
+    D0X1(i, j) += JX1(i, j) * m_coeff;
+    D0X2(i, j) += JX2(i, j) * m_coeff;
+    D0X3(i, j) += JX3(i, j) * m_coeff;
   }
 
   template <>
@@ -191,19 +200,20 @@ namespace ntt {
     real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h(
                                         { i_, j_, k_ + HALF }) };
 
-    JX1(i, j, k) *= m_coeff * inv_sqrt_detH_iPjk;
-    JX2(i, j, k) *= m_coeff * inv_sqrt_detH_ijPk;
-    JX3(i, j, k) *= m_coeff * inv_sqrt_detH_ijkP;
+    JX1(i, j, k) *= m_inv_n0 * inv_sqrt_detH_iPjk;
+    JX2(i, j, k) *= m_inv_n0 * inv_sqrt_detH_ijPk;
+    JX3(i, j, k) *= m_inv_n0 * inv_sqrt_detH_ijkP;
 
-    D0X1(i, j, k) += JX1(i, j, k);
-    D0X2(i, j, k) += JX2(i, j, k);
-    D0X3(i, j, k) += JX3(i, j, k);
+    D0X1(i, j, k) += JX1(i, j, k) * m_coeff;
+    D0X2(i, j, k) += JX2(i, j, k) * m_coeff;
+    D0X3(i, j, k) += JX3(i, j, k) * m_coeff;
   }
 
   template <Dimension D>
   class CurrentsAmpereAuxPoles_kernel {
     Meshblock<D, GRPICEngine> m_mblock;
-    real_t                    m_coeff;
+    const real_t              m_coeff;
+    const real_t              m_inv_n0;
     const std::size_t         m_ni2;
 
   public:
@@ -212,9 +222,11 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmpereAuxPoles_kernel(const Meshblock<D, GRPICEngine>& mblock,
-                                  const real_t&                    coeff) :
+                                  const real_t&                    coeff,
+                                  const real_t&                    inv_n0) :
       m_mblock { mblock },
       m_coeff { coeff },
+      m_inv_n0 { inv_n0 },
       m_ni2 { m_mblock.Ni2() } {}
 
     /**
@@ -234,16 +246,16 @@ namespace ntt {
     real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
 
     // theta = 0
-    JX1(i, j_min)  *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_min) += JX1(i, j_min);
+    JX1(i, j_min)  *= HALF * m_inv_n0 * inv_polar_area_iPj;
+    D0X1(i, j_min) += JX1(i, j_min) * m_coeff;
 
     // theta = pi
-    JX1(i, j_max)  *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_max) += JX1(i, j_max);
+    JX1(i, j_max)  *= HALF * m_inv_n0 * inv_polar_area_iPj;
+    D0X1(i, j_max) += JX1(i, j_max) * m_coeff;
 
     // j = jmin + 1/2
-    JX2(i, j_min)  *= m_coeff * inv_sqrt_detH_ijP;
-    D0X2(i, j_min) += JX2(i, j_min);
+    JX2(i, j_min)  *= m_inv_n0 * inv_sqrt_detH_ijP;
+    D0X2(i, j_min) += JX2(i, j_min) * m_coeff;
   }
 } // namespace ntt
 
