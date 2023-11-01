@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-cmake_policy(SET CMP0110 NEW)
+# cmake_policy(SET CMP0110 NEW)
 
 set(PROJECT_NAME entity)
 
