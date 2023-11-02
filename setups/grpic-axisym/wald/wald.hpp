@@ -93,9 +93,9 @@ namespace ntt {
   template <>
   Inline auto VerticalPotential<Dim2, GRPICEngine>::A_x3(
     const coord_t<Dim2>& x_cu) const -> real_t {
-    coord_t<Dim2> x_ph;
-    (this->m_mblock).metric.x_Code2Sph(x_cu, x_ph);
-    return HALF * SQR(x_ph[0]) * SQR(math::sin(x_ph[1]));
+    const auto r { (this->m_mblock).metric.x1_Code2Sph(x_cu[0]) };
+    const auto th { (this->m_mblock).metric.x2_Code2Sph(x_cu[1]) };
+    return HALF * SQR(r) * SQR(math::sin(th));
   }
 
   template <Dimension D, SimulationEngine S>
@@ -180,62 +180,62 @@ namespace ntt {
       });
   }
 
-  template <Dimension D, SimulationEngine S>
-  struct RadialKick : public EnergyDistribution<D, S> {
-    RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock) :
-      EnergyDistribution<D, S>(params, mblock),
-      u_kick { params.get<real_t>("problem", "u_kick", ZERO) } {}
+  // template <Dimension D, SimulationEngine S>
+  // struct RadialKick : public EnergyDistribution<D, S> {
+  // RadialKick(const SimulationParams& params, const Meshblock<D, S>& mblock) :
+  // EnergyDistribution<D, S>(params, mblock),
+  // u_kick { params.get<real_t>("problem", "u_kick", ZERO) } {}
 
-    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
-      v[0] = u_kick;
-    }
+  // Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const
+  // override { v[0] = u_kick;
+  //}
 
-  private:
-    const real_t u_kick;
-  };
+  // private:
+  // const real_t u_kick;
+  //};
 
-  template <Dimension D, SimulationEngine S>
-  struct InjectionShell : public SpatialDistribution<D, S> {
-    explicit InjectionShell(const SimulationParams& params,
-                            Meshblock<D, S>&        mblock) :
-      SpatialDistribution<D, S>(params, mblock),
-      _inj_rmin { params.get<real_t>("problem", "r_surf", (real_t)(1.0)) },
-      _inj_rmax { params.get<real_t>("problem", "inj_rmax", (real_t)(1.5)) } {
-      NTTHostErrorIf(_inj_rmin >= _inj_rmax, "inj_rmin >= inj_rmax");
-    }
+  // template <Dimension D, SimulationEngine S>
+  // struct InjectionShell : public SpatialDistribution<D, S> {
+  // explicit InjectionShell(const SimulationParams& params,
+  // Meshblock<D, S>&        mblock) :
+  // SpatialDistribution<D, S>(params, mblock),
+  //_inj_rmin { params.get<real_t>("problem", "r_surf", (real_t)(1.0)) },
+  //_inj_rmax { params.get<real_t>("problem", "inj_rmax", (real_t)(1.5)) } {
+  // NTTHostErrorIf(_inj_rmin >= _inj_rmax, "inj_rmin >= inj_rmax");
+  //}
 
-    Inline real_t operator()(const coord_t<D>& x_ph) const {
-      return ((x_ph[0] <= _inj_rmax) && (x_ph[0] > _inj_rmin)) ? ONE : ZERO;
-    }
+  // Inline real_t operator()(const coord_t<D>& x_ph) const {
+  // return ((x_ph[0] <= _inj_rmax) && (x_ph[0] > _inj_rmin)) ? ONE : ZERO;
+  //}
 
-  private:
-    const real_t _inj_rmin, _inj_rmax;
-  };
+  // private:
+  // const real_t _inj_rmin, _inj_rmax;
+  //};
 
-  template <Dimension D, SimulationEngine S>
-  struct MaxDensCrit : public InjectionCriterion<D, S> {
-    explicit MaxDensCrit(const SimulationParams& params, Meshblock<D, S>& mblock) :
-      InjectionCriterion<D, S>(params, mblock),
-      _inj_maxdens { params.get<real_t>("problem", "inj_maxdens", (real_t)(5.0)) } {
-    }
+  // template <Dimension D, SimulationEngine S>
+  // struct MaxDensCrit : public InjectionCriterion<D, S> {
+  // explicit MaxDensCrit(const SimulationParams& params, Meshblock<D, S>& mblock) :
+  // InjectionCriterion<D, S>(params, mblock),
+  //_inj_maxdens { params.get<real_t>("problem", "inj_maxdens", (real_t)(5.0)) } {
+  //}
 
-    Inline bool operator()(const coord_t<D>&) const {
-      return true;
-    }
+  // Inline bool operator()(const coord_t<D>&) const {
+  // return true;
+  //}
 
-  private:
-    const real_t _inj_maxdens;
-  };
+  // private:
+  // const real_t _inj_maxdens;
+  //};
 
-  template <>
-  Inline bool MaxDensCrit<Dim2, GRPICEngine>::operator()(
-    const coord_t<Dim2>& xph) const {
-    coord_t<Dim2> xi { ZERO };
-    (this->m_mblock).metric.x_Sph2Code(xph, xi);
-    std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
-    std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
-    return (this->m_mblock).buff(i1, i2, 0) < _inj_maxdens;
-  }
+  // template <>
+  // Inline bool MaxDensCrit<Dim2, GRPICEngine>::operator()(
+  // const coord_t<Dim2>& xph) const {
+  // coord_t<Dim3> xi { ZERO };
+  //(this->m_mblock).metric.x_Sph2Code(xph, xi);
+  // std::size_t i1 = (std::size_t)(xi[0] + N_GHOSTS);
+  // std::size_t i2 = (std::size_t)(xi[1] + N_GHOSTS);
+  // return (this->m_mblock).buff(i1, i2, 0) < _inj_maxdens;
+  //}
 } // namespace ntt
 
 #endif

@@ -16,14 +16,15 @@ namespace ntt {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
 
-    const auto dt     = mblock.timestep();
-    const auto rho0   = params.larmor0();
-    const auto de0    = params.skindepth0();
-    const auto ncells = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
-    const auto rmin   = mblock.metric.getParameter("rhorizon");
-    const auto volume = constant::TWO_PI * SQR(rmin);
-    const auto n0     = params.ppc0() * (real_t)ncells / volume;
-    const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+    // const auto dt     = mblock.timestep();
+    // const auto rho0   = params.larmor0();
+    // const auto de0    = params.skindepth0();
+    // const auto ncells = mblock.Ni1() * mblock.Ni2() * mblock.Ni3();
+    // const auto rmin   = mblock.metric.getParameter("rhorizon");
+    // const auto volume = constant::TWO_PI * SQR(rmin);
+    // const auto n0     = params.ppc0() * (real_t)ncells / volume;
+    // const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+    const auto coeff = -mblock.timestep() * params.q0() / params.B0();
 
     range_t<D> range;
     if constexpr (D == Dim2) {

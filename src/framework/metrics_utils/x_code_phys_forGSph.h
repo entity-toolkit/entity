@@ -13,7 +13,7 @@
  * @param xi coordinate array in code units
  * @param x coordinate array in Spherical coordinates in physical units
  */
-Inline void x_Code2Phys(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
+Inline void x_Code2Phys(const coord_t<FullD>& xi, coord_t<FullD>& x) const {
   this->x_Code2Sph(xi, x);
 }
 
@@ -35,7 +35,7 @@ Inline auto x3_Code2Phys(const real_t& x3) const -> real_t {
  * @param x coordinate array in Spherical coordinates in physical units
  * @param xi coordinate array in code units
  */
-Inline void x_Phys2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
+Inline void x_Phys2Code(const coord_t<FullD>& x, coord_t<FullD>& xi) const {
   this->x_Sph2Code(x, xi);
 }
 

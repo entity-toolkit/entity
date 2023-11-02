@@ -138,7 +138,7 @@ namespace ntt {
   template <Dimension D>
   struct DimensionTag {};
 
-#ifdef MINKOWSKI_METRIC
+#if defined(MINKOWSKI_METRIC) || defined(GRPIC_ENGINE)
   #define FullD D
 #else
   #define FullD Dim3
