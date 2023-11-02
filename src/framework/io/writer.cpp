@@ -324,8 +324,8 @@ namespace ntt {
     // ... also make sure that the fields are ready for output, ...
     // ... i.e. they have been written into proper arrays
     for (auto& fld : m_fields) {
-      fld.compute<D, S>(params, mblock);
-      fld.put<D, S>(m_io, m_writer, mblock);
+      fld.template compute<D, S>(params, mblock);
+      fld.template put<D, S>(m_io, m_writer, mblock);
     }
   }
 
@@ -337,7 +337,7 @@ namespace ntt {
                                     const std::size_t&) {
     // traverse all the particle quantities and put them.
     for (auto& prtl : m_particles) {
-      prtl.put<D, S>(m_io, m_writer, params, metadomain, mblock);
+      prtl.template put<D, S>(m_io, m_writer, params, metadomain, mblock);
     }
   }
 

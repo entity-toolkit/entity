@@ -1,10 +1,10 @@
 [simulation]
 title   = "Weibel"
-runtime = 100.0
+runtime = 1.0
 
 [domain]
-resolution = [1024, 1024]
-extent     = [-51.2, 51.2, -51.2, 51.2]
+resolution = [128, 128]
+extent     = [-12.8, 12.8, -12.8, 12.8]
 boundaries = [["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
@@ -12,7 +12,7 @@ CFL             = 0.5
 current_filters = 25
 
 [units]
-ppc0       = 16.0
+ppc0       = 8.0
 larmor0    = 1.0
 skindepth0 = 1.0
 
@@ -28,7 +28,7 @@ maxnpart = 1e8
 
 [species_2]
 label    = "e+_p"
-mass     = 25.0
+mass     = 1.0
 charge   = 1.0
 maxnpart = 1e8
 
@@ -40,20 +40,20 @@ maxnpart = 1e8
 
 [species_4]
 label    = "e+_b"
-mass     = 50.0
+mass     = 1.0
 charge   = 1.0
 maxnpart = 1e8
 
 [problem]
-drift_p       = 10.0
-drift_b       = 10.0
-temperature_p = 0.1
-temperature_b = 0.1
+drift_p       = 0.0
+drift_b       = 0.0
+temperature_p = 0.6
+temperature_b = 0.6
 
 [output]
 fields        = ["B", "Rho"]
 particles     = ["X", "U"]
-prtl_stride   = 100
+prtl_stride   = 1
 fields_stride = 2
 format        = "HDF5"
 interval_time = 1.0

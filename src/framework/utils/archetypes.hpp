@@ -170,14 +170,29 @@ namespace ntt {
       real_t X1 { ZERO }, X2 { ZERO };
       if (temp < 0.5) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
+        
+        u = rand_gen.frand();
         while (AlmostEqual(u, ZERO)) {
           u = rand_gen.frand();
         }
         eta = math::sqrt(-TWO * math::log(u));
+        theta = constant::TWO_PI * rand_gen.frand();
         while (AlmostEqual(theta, ZERO)) {
           theta = constant::TWO_PI * rand_gen.frand();
         }
-        u = eta * math::cos(theta) * math::sqrt(temp);
+        v[0] = eta * math::cos(theta) * math::sqrt(temp);
+        v[1] = eta * math::sin(theta) * math::sqrt(temp);
+        u = rand_gen.frand();
+        while (AlmostEqual(u, ZERO)) {
+          u = rand_gen.frand();
+        }
+        eta = math::sqrt(-TWO * math::log(u));
+        theta = constant::TWO_PI * rand_gen.frand();
+        while (AlmostEqual(theta, ZERO)) {
+          theta = constant::TWO_PI * rand_gen.frand();
+        }
+        v[2] = eta * math::cos(theta) * math::sqrt(temp);
+
       } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
         u = ONE;
@@ -186,19 +201,19 @@ namespace ntt {
             X1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
           }
           u  = -temp * math::log(X1);
-          X1 = rand_gen.frand();
-          while (AlmostEqual(X1, 0)) {
-            X1 = rand_gen.frand();
+          X2 = rand_gen.frand();
+          while (AlmostEqual(X2, 0)) {
+            X2 = rand_gen.frand();
           }
-          eta = u - temp * math::log(X1);
+          eta = -temp * math::log(X1*X2);
         }
+        X1   = rand_gen.frand();
+        X2   = rand_gen.frand();
+        v[0] = u * (TWO * X1 - ONE);
+        v[2] = TWO * u * math::sqrt(X1 * (ONE - X1));
+        v[1] = v[2] * math::cos(constant::TWO_PI * X2);
+        v[2] = v[2] * math::sin(constant::TWO_PI * X2);
       }
-      X1   = rand_gen.frand();
-      X2   = rand_gen.frand();
-      v[0] = u * (TWO * X1 - ONE);
-      v[2] = TWO * u * math::sqrt(X1 * (ONE - X1));
-      v[1] = v[2] * math::cos(constant::TWO_PI * X2);
-      v[2] = v[2] * math::sin(constant::TWO_PI * X2);
       pool.free_state(rand_gen);
     }
 

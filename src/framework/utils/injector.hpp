@@ -711,7 +711,8 @@ namespace ntt {
 
   /* -------------------------------------------------------------------------- */
 
-  template <SimulationEngine S,
+  template <Dimension        D,
+            SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
             template <Dimension, SimulationEngine>
@@ -742,7 +743,10 @@ namespace ntt {
     Inline void operator()(index_t i1) const {
       // cell node
       const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
-      const auto xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
+      // const auto xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
+      coord_t<Dim1> xi = { static_cast<real_t>(i1_) };
+      // const auto& xi = temp;
+
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_) };
@@ -805,7 +809,8 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
-  template <SimulationEngine S,
+  template <Dimension        D,
+            SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
             template <Dimension, SimulationEngine>
@@ -838,8 +843,10 @@ namespace ntt {
       // cell node
       const auto i1_ = i1 - static_cast<int>(N_GHOSTS);
       const auto i2_ = i2 - static_cast<int>(N_GHOSTS);
-      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_),
-                                       static_cast<real_t>(i2_) };
+      coord_t<Dim2> xi = { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };
+      // const auto& xi = temp;
+      // const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_),
+      //                                  static_cast<real_t>(i2_) };
       const auto weight {
         use_weights
           ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
@@ -984,7 +991,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "InjectNonUniform",
         range_policy,
-        NonUniformInjector1d_kernel<S, EnDist, InjCrit>(params,
+        NonUniformInjector1d_kernel<D, S, EnDist, InjCrit>(params,
                                                         mblock,
                                                         sp1,
                                                         sp2,
@@ -995,7 +1002,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "InjectNonUniform",
         range_policy,
-        NonUniformInjector2d_kernel<S, EnDist, InjCrit>(params,
+        NonUniformInjector2d_kernel<D, S, EnDist, InjCrit>(params,
                                                         mblock,
                                                         sp1,
                                                         sp2,

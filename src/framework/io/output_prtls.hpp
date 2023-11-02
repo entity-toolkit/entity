@@ -43,12 +43,19 @@ namespace ntt {
     const OutputPositions_t&,
     index_t p) const -> void {
     coord_t<FullD> xcode { ZERO }, xph { ZERO };
+    const int xcodeSize = sizeof(xcode) / sizeof(xcode[0]);
     if (m_component == 0) {
-      xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+      if (xcodeSize > 0) {
+        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+      }
     } else if (m_component == 1) {
-      xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+      if (xcodeSize > 1) { 
+        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+      }
     } else if (m_component == 2) {
-      xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+      if (xcodeSize > 2) { 
+        xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+      }
     }
     m_mblock.metric.x_Code2Phys(xcode, xph);
     m_buffer(p) = xph[m_component];
