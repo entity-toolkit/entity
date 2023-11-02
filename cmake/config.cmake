@@ -77,7 +77,6 @@ function(set_problem_generator pgen_name engine_name)
       list(APPEND problem_generators_full ${new_pgen})
 
       string(REPLACE "/" ";" new_pgen_list ${new_pgen})
-      message(STATUS ${new_pgen_list})
       list(GET new_pgen_list 0 pgen_left)
       list(GET new_pgen_list 1 pgen_right)
       if (${pgen_left} STREQUAL ${pgen_right})
