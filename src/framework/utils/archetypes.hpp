@@ -166,53 +166,57 @@ namespace ntt {
     // Juttner-Synge distribution
     Inline void JS(vec_t<Dim3>& v, const real_t& temp) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
-      real_t u { ZERO }, eta { ZERO }, theta { ZERO };
-      real_t X1 { ZERO }, X2 { ZERO };
+      real_t randu { rand_gen.frand() }, randeta { rand_gen.frand() };
+      real_t randX1 { rand_gen.frand() }, randX2 { rand_gen.frand() };
       if (temp < 0.5) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
-        
-        u = rand_gen.frand();
-        while (AlmostEqual(u, ZERO)) {
-          u = rand_gen.frand();
-        }
-        eta = math::sqrt(-TWO * math::log(u));
-        theta = constant::TWO_PI * rand_gen.frand();
-        while (AlmostEqual(theta, ZERO)) {
-          theta = constant::TWO_PI * rand_gen.frand();
-        }
-        v[0] = eta * math::cos(theta) * math::sqrt(temp);
-        v[1] = eta * math::sin(theta) * math::sqrt(temp);
-        u = rand_gen.frand();
-        while (AlmostEqual(u, ZERO)) {
-          u = rand_gen.frand();
-        }
-        eta = math::sqrt(-TWO * math::log(u));
-        theta = constant::TWO_PI * rand_gen.frand();
-        while (AlmostEqual(theta, ZERO)) {
-          theta = constant::TWO_PI * rand_gen.frand();
-        }
-        v[2] = eta * math::cos(theta) * math::sqrt(temp);
 
-      } else {
-        // Juttner-Synge distribution using the Sobol method - relativistic
-        u = ONE;
-        while (SQR(eta) <= SQR(u) + ONE) {
-          while (AlmostEqual(X1, ZERO)) {
-            X1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
-          }
-          u  = -temp * math::log(X1);
-          X2 = rand_gen.frand();
-          while (AlmostEqual(X2, 0)) {
-            X2 = rand_gen.frand();
-          }
-          eta = -temp * math::log(X1*X2);
+        randX1 = rand_gen.frand();
+        while (AlmostEqual(randX1, ZERO)) {
+          randX1 = rand_gen.frand();
         }
-        X1   = rand_gen.frand();
-        X2   = rand_gen.frand();
-        v[0] = u * (TWO * X1 - ONE);
-        v[2] = TWO * u * math::sqrt(X1 * (ONE - X1));
-        v[1] = v[2] * math::cos(constant::TWO_PI * X2);
-        v[2] = v[2] * math::sin(constant::TWO_PI * X2);
+        randX1 = math::sqrt(-TWO * math::log(randX1));
+        randX2 = constant::TWO_PI * rand_gen.frand();
+        v[0] = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+        randX1 = rand_gen.frand();
+        while (AlmostEqual(randX1, ZERO)) {
+          randX1 = rand_gen.frand();
+        }
+        randX1 = math::sqrt(-TWO * math::log(randX1));
+        randX2 = constant::TWO_PI * rand_gen.frand();
+        v[1] = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+        randX1 = rand_gen.frand();
+        while (AlmostEqual(randX1, ZERO)) {
+          randX1 = rand_gen.frand();
+        }
+        randX1 = math::sqrt(-TWO * math::log(randX1));
+        randX2 = constant::TWO_PI * rand_gen.frand();
+        v[2] = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+      } 
+      else {
+        // Juttner-Synge distribution using the Sobol method - relativistic
+        randu = ONE;
+        while (SQR(randeta) <= SQR(randu) + ONE) {
+          randX1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
+          while (AlmostEqual(randX1, ZERO)) {
+            randX1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
+          }
+          randu  = -temp * math::log(randX1);
+          randX2 = rand_gen.frand();
+          while (AlmostEqual(randX2, 0)) {
+            randX2 = rand_gen.frand();
+          }
+          randeta = -temp * math::log(randX1*randX2);
+        }
+        randX1   = rand_gen.frand();
+        randX2   = rand_gen.frand();
+        v[0] = randu * (TWO * randX1 - ONE);
+        v[2] = TWO * randu * math::sqrt(randX1 * (ONE - randX1));
+        v[1] = v[2] * math::cos(constant::TWO_PI * randX2);
+        v[2] = v[2] * math::sin(constant::TWO_PI * randX2);
       }
       pool.free_state(rand_gen);
     }
