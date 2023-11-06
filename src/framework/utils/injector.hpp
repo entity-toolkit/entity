@@ -652,8 +652,8 @@ namespace ntt {
       mblock.metric.x_Phys2Code(xmin_ph, xmin_cu);
       mblock.metric.x_Phys2Code(xmax_ph, xmax_cu);
       for (short i = 0; i < static_cast<short>(D); ++i) {
-        region_min[i] = static_cast<std::size_t>(xmin_cu[i]);
-        region_max[i] = static_cast<std::size_t>(xmax_cu[i]);
+        region_min[i] = static_cast<std::size_t>(xmin_cu[i]) + N_GHOSTS;
+        region_max[i] = static_cast<std::size_t>(xmax_cu[i]) + N_GHOSTS;
       }
       range_policy = CreateRangePolicy<D>(region_min, region_max);
     } else {
@@ -742,7 +742,7 @@ namespace ntt {
     Inline void operator()(index_t i1) const {
       // cell node
       const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
-      const auto xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
+      const coord_t<Dim1> xi { static_cast<real_t>(i1_) };  
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_) };
@@ -844,8 +844,8 @@ namespace ntt {
       // cell node
       const auto i1_ = i1 - static_cast<int>(N_GHOSTS);
       const auto i2_ = i2 - static_cast<int>(N_GHOSTS);
-      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_),
-                                       static_cast<real_t>(i2_) };
+      const coord_t<Dim2> xi { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };  
+      
       const auto weight {
         use_weights
           ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
@@ -880,6 +880,7 @@ namespace ntt {
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
+
           init_prtl_2d_i_di(species1,
                             offset1 + p,
                             i1_,
@@ -958,7 +959,7 @@ namespace ntt {
                                std::vector<real_t>          region = {},
                                const real_t&                time   = ZERO) {
     EnDist<D, S>  energy_dist(params, mblock);
-    InjCrit<D, S> inj_criterion(params, mblock);
+    InjCrit<D, S> iterion(params, mblock);
     range_t<D>    range_policy;
     if (region.size() == 0) {
       range_policy = mblock.rangeActiveCells();
@@ -974,8 +975,8 @@ namespace ntt {
       mblock.metric.x_Phys2Code(xmin_ph, xmin_cu);
       mblock.metric.x_Phys2Code(xmax_ph, xmax_cu);
       for (short i = 0; i < static_cast<short>(D); ++i) {
-        region_min[i] = static_cast<std::size_t>(xmin_cu[i]);
-        region_max[i] = static_cast<std::size_t>(xmax_cu[i]);
+        region_min[i] = static_cast<std::size_t>(xmin_cu[i]) + N_GHOSTS;
+        region_max[i] = static_cast<std::size_t>(xmax_cu[i]) + N_GHOSTS;
       }
       range_policy = CreateRangePolicy<D>(region_min, region_max);
     } else {

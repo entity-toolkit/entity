@@ -637,7 +637,7 @@ namespace ntt {
                   if (ax_i2min && (i2_ - static_cast<int>(N_GHOSTS) < 0)) {
                     // reflect from theta = 0
                     buff_access(i1_,
-                                -i2_ + 2 * static_cast<int>(N_GHOSTS),
+                                -i2_ + 2 * static_cast<int>(N_GHOSTS) - 1,
                                 buff_ind) += contrib * smooth;
                   } else if (ax_i2max && (i2_ - static_cast<int>(N_GHOSTS) >= ni2)) {
                     // reflect from theta = pi
