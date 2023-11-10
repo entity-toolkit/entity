@@ -741,8 +741,8 @@ namespace ntt {
 
     Inline void operator()(index_t i1) const {
       // cell node
-      const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
-      const auto xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
+      const auto    i1_ = static_cast<int>(i1) - N_GHOSTS;
+      coord_t<Dim1> xi  = { static_cast<real_t>(i1_) };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_) };
@@ -805,6 +805,12 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
+#if defined(GRPIC_ENGINE) || defined(MINKOWSKI_METRIC)
+  #define CoordDim Dim2
+#else
+  #define CoordDim FullD
+#endif
+
   template <SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
@@ -836,20 +842,19 @@ namespace ntt {
 
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
-      const auto i1_ = i1 - static_cast<int>(N_GHOSTS);
-      const auto i2_ = i2 - static_cast<int>(N_GHOSTS);
-      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_),
-                                       static_cast<real_t>(i2_) };
-      const auto weight {
+      const auto    i1_ = i1 - static_cast<int>(N_GHOSTS);
+      const auto    i2_ = i2 - static_cast<int>(N_GHOSTS);
+      coord_t<Dim2> xi = { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };
+      const auto    weight {
         use_weights
-          ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
-          : ONE
+             ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
+             : ONE
       };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_, i2_) };
-      coord_t<FullD>    xc { ZERO };
-      coord_t<FullD>    xph { ZERO };
+      coord_t<CoordDim> xc { ZERO };
+      coord_t<CoordDim> xph { ZERO };
       prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
 
@@ -869,6 +874,8 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ xc[0], xc[1] }, v, v_cart);
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
@@ -888,6 +895,8 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ xc[0], xc[1] }, v, v_cart);
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif

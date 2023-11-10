@@ -43,12 +43,19 @@ namespace ntt {
     const OutputPositions_t&,
     index_t p) const -> void {
     coord_t<FullD> xcode { ZERO }, xph { ZERO };
+    const int xcodeSize = sizeof(xcode) / sizeof(xcode[0]);
     if (m_component == 0) {
-      xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+      if (xcodeSize > 0) {
+        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+      }
     } else if (m_component == 1) {
-      xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+      if (xcodeSize > 1) { 
+        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+      }
     } else if (m_component == 2) {
-      xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+      if (xcodeSize > 2) { 
+        xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+      }
     }
     m_mblock.metric.x_Code2Phys(xcode, xph);
     m_buffer(p) = xph[m_component];
@@ -76,10 +83,12 @@ namespace ntt {
     const OutputPositions_t&,
     index_t p) const {
     coord_t<Dim3> xcode { ZERO }, xph { ZERO };
-    xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-    xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-    xcode[2] = m_particles.phi(p * m_stride);
-    m_mblock.metric.x_Code2Sph(xcode, xph);
+    xcode[0]    = get_prtl_x1(m_particles, p * m_stride);
+    xcode[1]    = get_prtl_x2(m_particles, p * m_stride);
+    xcode[2]    = m_particles.phi(p * m_stride);
+    xph[0]      = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]      = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]      = m_mblock.metric.x3_Code2Sph(xcode[2]);
     m_buffer(p) = xph[m_component];
   }
 
@@ -88,14 +97,17 @@ namespace ntt {
     const OutputPositions_t&,
     index_t p) const {
     coord_t<Dim3> xcode { ZERO }, xph { ZERO };
-    xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-    xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-    xcode[2] = m_particles.phi(p * m_stride);
-    m_mblock.metric.x_Code2Sph(xcode, xph);
+    xcode[0]    = get_prtl_x1(m_particles, p * m_stride);
+    xcode[1]    = get_prtl_x2(m_particles, p * m_stride);
+    xcode[2]    = m_particles.phi(p * m_stride);
+    xph[0]      = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]      = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]      = m_mblock.metric.x3_Code2Sph(xcode[2]);
     m_buffer(p) = xph[m_component];
   }
 
   /* ----------------------------- PIC velocities ----------------------------- */
+  #if defined(PIC_ENGINE)
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim1, PICEngine>::operator()(
@@ -137,6 +149,7 @@ namespace ntt {
                                 vhat);
     m_buffer(p) = vhat[m_component];
   }
+  #elif defined(SANDBOX_ENGINE)
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, SANDBOXEngine>::operator()(
@@ -171,6 +184,7 @@ namespace ntt {
                                 vhat);
     m_buffer(p) = vhat[m_component];
   }
+  #elif defined(GRPIC_ENGINE)
 
   /* ----------------------------- GRPIC positions ---------------------------- */
 
@@ -187,8 +201,10 @@ namespace ntt {
     xcode_prev[1] = get_prtl_x2_prev(m_particles, p * m_stride);
     xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
     xcode[2]      = m_particles.phi(p * m_stride);
-    m_mblock.metric.x_Code2Sph(xcode, xph);
-    m_buffer(p) = xph[m_component];
+    xph[0]        = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]        = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]        = m_mblock.metric.x3_Code2Sph(xcode[2]);
+    m_buffer(p)   = xph[m_component];
   }
 
   template <>
@@ -210,7 +226,9 @@ namespace ntt {
       xcode_prev[2] = get_prtl_x3_prev(m_particles, p * m_stride);
       xcode[2]      = HALF * (xcode[2] + xcode_prev[2]);
     }
-    m_mblock.metric.x_Code2Sph(xcode, xph);
+    xph[0]      = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]      = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]      = m_mblock.metric.x3_Code2Sph(xcode[2]);
     m_buffer(p) = xph[m_component];
   }
 
@@ -263,6 +281,7 @@ namespace ntt {
                                    vcov_sph);
     m_buffer(p) = vcov_sph[m_component];
   }
+  #endif
 
 #endif
 

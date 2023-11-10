@@ -348,6 +348,54 @@ namespace ntt {
       v_hat[1] = v_cart[1];
       v_hat[2] = v_cart[2];
     }
+
+    Inline auto x1_Code2Cart(const real_t& x1) const -> real_t {
+      return x1 * dx + this->x1_min;
+    }
+
+    Inline auto x2_Code2Cart(const real_t& x2) const -> real_t {
+      return x2 * dx + this->x2_min;
+    }
+
+    Inline auto x3_Code2Cart(const real_t& x3) const -> real_t {
+      return x3 * dx + this->x3_min;
+    }
+
+    Inline auto x1_Cart2Code(const real_t& x) const -> real_t {
+      return (x - this->x1_min) * dx_inv;
+    }
+
+    Inline auto x2_Cart2Code(const real_t& y) const -> real_t {
+      return (y - this->x2_min) * dx_inv;
+    }
+
+    Inline auto x3_Cart2Code(const real_t& z) const -> real_t {
+      return (z - this->x3_min) * dx_inv;
+    }
+
+    Inline auto x1_Code2Phys(const real_t& x1) const -> real_t {
+      return this->x1_Code2Cart(x1);
+    }
+
+    Inline auto x2_Code2Phys(const real_t& x2) const -> real_t {
+      return this->x2_Code2Cart(x2);
+    }
+
+    Inline auto x3_Code2Phys(const real_t& x3) const -> real_t {
+      return this->x3_Code2Cart(x3);
+    }
+
+    Inline auto x1_Phys2Code(const real_t& x) const -> real_t {
+      return this->x1_Cart2Code(x);
+    }
+
+    Inline auto x2_Phys2Code(const real_t& y) const -> real_t {
+      return this->x2_Cart2Code(y);
+    }
+
+    Inline auto x3_Phys2Code(const real_t& z) const -> real_t {
+      return this->x3_Cart2Code(z);
+    }
   };
 
   /* -------------------------------------------------------------------------- */
