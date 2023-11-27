@@ -309,15 +309,21 @@ namespace ntt {
 
     const bool use_weights = false;
 
-    const std::string output_format      = options::outputs[0];
-    const int         output_interval    = 1;
-    const int         output_mom_smooth  = 1;
-    const std::size_t output_prtl_stride = 100;
+    namespace output {
+      const std::string format      = options::outputs[0];
+      const int         interval    = 1;
+      const int         mom_smooth  = 1;
+      const std::size_t prtl_stride = 100;
+    } // namespace output
 
     const std::string log_level       = "info";
     const int         diag_interval   = 1;
     const bool        blocking_timers = false;
-  } // namespace defaults
+
+    namespace gca {
+      const real_t EovrB_max = 0.9;
+    } // namespace gca
+  }   // namespace defaults
 } // namespace ntt
 
 /* -------------------------------------------------------------------------- */

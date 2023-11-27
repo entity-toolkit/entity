@@ -44,6 +44,7 @@ namespace ntt {
     // Enable/disable algorithms
     bool m_enable_fieldsolver;
     bool m_enable_deposit;
+    bool m_enable_extforce;
 
     // current filtering passes
     unsigned short m_current_filters;
@@ -89,6 +90,10 @@ namespace ntt {
 
     // Container with data from the parsed input file.
     toml::value m_inputdata;
+
+    // Algorithm specific
+    // ... GCA
+    real_t m_gca_EovrB_max, m_gca_larmor_max;
 
   public:
     /**
@@ -340,6 +345,14 @@ namespace ntt {
     }
 
     /**
+     * @brief Get the enable_extforce flag.
+     */
+    [[nodiscard]]
+    auto extforceEnabled() const -> bool {
+      return m_enable_extforce;
+    }
+
+    /**
      * @brief Get the output format.
      */
     [[nodiscard]]
@@ -433,6 +446,22 @@ namespace ntt {
     [[nodiscard]]
     auto blockingTimers() const -> bool {
       return m_blocking_timers;
+    }
+
+    /**
+     * @brief Get the GCA E/B max.
+     */
+    [[nodiscard]]
+    auto GCAEovrBMax() const -> real_t {
+      return m_gca_EovrB_max;
+    }
+
+    /**
+     * @brief Get the GCA larmor max.
+     */
+    [[nodiscard]]
+    auto GCALarmorMax() const -> real_t {
+      return m_gca_larmor_max;
     }
 
     /**

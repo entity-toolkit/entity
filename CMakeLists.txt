@@ -27,9 +27,6 @@ set(precision
 set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
-set(ext_force
-    ${default_ext_force}
-    CACHE BOOL "External force field")
 
 set(gui
     ${default_gui}
@@ -97,7 +94,6 @@ include_directories(${toml11_SRC})
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
-set_ext_force(${ext_force})
 
 # MPI
 if(${mpi})

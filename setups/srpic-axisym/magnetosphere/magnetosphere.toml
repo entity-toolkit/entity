@@ -12,6 +12,11 @@ qsph_h     = 0.0
 [algorithm]
 CFL             = 0.75
 current_filters = 8
+extforce_ON     = true
+
+[GCA]
+EovrB_max  = 0.9
+larmor_max = 0.05
 
 [units]
 ppc0       = 4.0

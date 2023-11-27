@@ -45,7 +45,8 @@ namespace ntt {
    * @tparam D Dimension.
    */
   template <Dimension D>
-  class Pusher_kernel {
+  class PusherBase_kernel {
+  protected:
     ndfield_t<D, 6>    EB;
     array_t<int*>      i1, i2, i3;
     array_t<int*>      i1_prev, i2_prev, i3_prev;
@@ -58,7 +59,7 @@ namespace ntt {
 
     const real_t time, coeff, dt;
     const int    ni1, ni2, ni3;
-    const real_t gca_larmor { 0.05 }, gca_EovrB_sqr { 0.81 };
+    const real_t gca_larmor, gca_EovrB_sqr;
     bool         is_absorb_i1min { false }, is_absorb_i1max { false };
     bool         is_absorb_i2min { false }, is_absorb_i2max { false };
     bool         is_absorb_i3min { false }, is_absorb_i3max { false };
@@ -66,18 +67,16 @@ namespace ntt {
     bool         is_periodic_i2min { false }, is_periodic_i2max { false };
     bool         is_periodic_i3min { false }, is_periodic_i3max { false };
     bool         is_axis_i2min { false }, is_axis_i2max { false };
-
-#ifdef EXTERNAL_FORCE
     ProblemGenerator<D, PICEngine> pgen;
-#endif
 
   public:
-    Pusher_kernel(Meshblock<D, PICEngine>&        mblock,
-                  Particles<D, PICEngine>&        particles,
-                  real_t                          time,
-                  real_t                          coeff,
-                  real_t                          dt,
-                  ProblemGenerator<D, PICEngine>& pgen) :
+    PusherBase_kernel(const SimulationParams&         params,
+                      Meshblock<D, PICEngine>&        mblock,
+                      Particles<D, PICEngine>&        particles,
+                      real_t                          time,
+                      real_t                          coeff,
+                      real_t                          dt,
+                      ProblemGenerator<D, PICEngine>& pgen) :
       EB { mblock.em },
       i1 { particles.i1 },
       i2 { particles.i2 },
@@ -102,13 +101,10 @@ namespace ntt {
       dt { dt },
       ni1 { (int)mblock.Ni1() },
       ni2 { (int)mblock.Ni2() },
-      ni3 { (int)mblock.Ni3() }
-#ifdef EXTERNAL_FORCE
-      ,
-      pgen { pgen }
-#endif
-    {
-      (void)pgen;
+      ni3 { (int)mblock.Ni3() },
+      pgen { pgen },
+      gca_larmor { params.GCALarmorMax() },
+      gca_EovrB_sqr { SQR(params.GCAEovrBMax()) } {
       NTTHostErrorIf(mblock.boundaries.size() < 1,
                      "boundaries defined incorrectly");
       is_absorb_i1min = (mblock.boundaries[0][0] == BoundaryCondition::OPEN) ||
@@ -147,9 +143,6 @@ namespace ntt {
       }
     }
 
-    template <typename P>
-    Inline void operator()(P, index_t) const;
-
     // Updaters
 
     /**
@@ -159,21 +152,13 @@ namespace ntt {
      */
     Inline void velUpd(Boris_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
     Inline void velUpd(Vay_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
-    Inline void velUpd(GCA_t,
-                       index_t&,
-#ifdef EXTERNAL_FORCE
-                       vec_t<Dim3>&,
-#endif
-                       vec_t<Dim3>&,
-                       vec_t<Dim3>&) const;
+    Inline void velUpd(GCA_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
+    Inline void velUpd(GCA_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
     // Getters
     Inline void getPrtlPos(index_t&, coord_t<FullD>&) const;
-
     Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
-
     Inline auto getEnergy(Massless_t, index_t& p) const -> real_t;
-
     Inline void getInterpFlds(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
     // Extra
@@ -181,136 +166,164 @@ namespace ntt {
     Inline void boundaryConditions_x1(index_t&) const;
     Inline void boundaryConditions_x2(index_t&) const;
     Inline void boundaryConditions_x3(index_t&) const;
-
-#ifdef EXTERNAL_FORCE
     Inline void initForce(coord_t<FullD>&, vec_t<Dim3>&) const;
-#endif
   };
 
-  template <Dimension D, typename P>
-  void PushLoop(const SimulationParams&         params,
-                Meshblock<D, PICEngine>&        mblock,
-                Particles<D, PICEngine>&        particles,
-                ProblemGenerator<D, PICEngine>& pgen,
-                real_t                          time,
-                real_t                          factor) {
+  template <Dimension D, typename P, bool ExtForce>
+  struct Pusher_kernel : public PusherBase_kernel<D> {
+    Pusher_kernel(const SimulationParams&         params,
+                  Meshblock<D, PICEngine>&        mblock,
+                  Particles<D, PICEngine>&        particles,
+                  real_t                          time,
+                  real_t                          coeff,
+                  real_t                          dt,
+                  ProblemGenerator<D, PICEngine>& pgen) :
+      PusherBase_kernel<D>(params, mblock, particles, time, coeff, dt, pgen) {}
+
+    Inline void operator()(P, index_t p) const {
+      if (this->tag(p) == ParticleTag::alive) {
+        coord_t<FullD> xp { ZERO };
+        this->getPrtlPos(p, xp);
+        // update cartesian velocity
+        if constexpr (!std::is_same_v<P, Photon_t>) {
+          // not a photon
+          vec_t<Dim3> ei { ZERO }, bi { ZERO };
+          vec_t<Dim3> ei_Cart { ZERO }, bi_Cart { ZERO };
+          vec_t<Dim3> force_Cart { ZERO };
+
+          this->getInterpFlds(p, ei, bi);
+          this->metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
+          this->metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+          if constexpr (ExtForce) {
+            this->initForce(xp, force_Cart);
+          }
+          if constexpr (std::is_same_v<P, Boris_GCA_t> ||
+                        std::is_same_v<P, Vay_GCA_t>) {
+            const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
+            const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
+            const auto rL {
+              math::sqrt(ONE + NORM_SQR(this->ux1(p), this->ux2(p), this->ux3(p))) *
+              this->dt / (TWO * this->coeff * math::sqrt(B2))
+            };
+            if (B2 > ZERO && rL < this->gca_larmor &&
+                (E2 / B2) < this->gca_EovrB_sqr) {
+              // update with GCA
+              if constexpr (ExtForce) {
+                this->velUpd(GCA_t {}, p, force_Cart, ei_Cart, bi_Cart);
+              } else {
+                this->velUpd(GCA_t {}, p, ei_Cart, bi_Cart);
+              }
+            } else {
+              // update with conventional pusher
+              if constexpr (ExtForce) {
+                this->ux1(p) += HALF * this->dt * force_Cart[0];
+                this->ux2(p) += HALF * this->dt * force_Cart[1];
+                this->ux3(p) += HALF * this->dt * force_Cart[2];
+              }
+              this->velUpd(Reduced_t<P> {}, p, ei_Cart, bi_Cart);
+              if constexpr (ExtForce) {
+                this->ux1(p) += HALF * this->dt * force_Cart[0];
+                this->ux2(p) += HALF * this->dt * force_Cart[1];
+                this->ux3(p) += HALF * this->dt * force_Cart[2];
+              }
+            }
+          } else {
+            // update with conventional pusher
+            this->velUpd(P {}, p, ei_Cart, bi_Cart);
+          }
+        }
+        // update position
+        {
+          // get cartesian velocity
+          const real_t   inv_energy { ONE / getEnergy(Mass_t<P> {}, p) };
+          vec_t<Dim3>    vp_Cart { this->ux1(p) * inv_energy,
+                                this->ux2(p) * inv_energy,
+                                this->ux3(p) * inv_energy };
+          // get cartesian position
+          coord_t<FullD> xp_Cart { ZERO };
+          this->metric.x_Code2Cart(xp, xp_Cart);
+          // update cartesian position
+          for (short d { 0 }; d < static_cast<short>(FullD); ++d) {
+            xp_Cart[d] += vp_Cart[d] * this->dt;
+          }
+          // transform back to code
+          this->metric.x_Cart2Code(xp_Cart, xp);
+
+          // update x1
+          this->i1_prev(p)  = this->i1(p);
+          this->dx1_prev(p) = this->dx1(p);
+          from_Xi_to_i_di(xp[0], this->i1(p), this->dx1(p));
+
+          // update x2 & phi
+          if constexpr (D != Dim1) {
+            this->i2_prev(p)  = this->i2(p);
+            this->dx2_prev(p) = this->dx2(p);
+            from_Xi_to_i_di(xp[1], this->i2(p), this->dx2(p));
+#ifndef MINKOWSKI_METRIC
+            this->phi(p) = xp[2];
+#endif
+          }
+
+          // update x3
+          if constexpr (D == Dim3) {
+            this->i3_prev(p)  = this->i3(p);
+            this->dx3_prev(p) = this->dx3(p);
+            from_Xi_to_i_di(xp[2], this->i3(p), this->dx3(p));
+          }
+        }
+        this->boundaryConditions(p);
+      }
+    }
+  };
+
+  template <Dimension D, typename P, bool ExtForce>
+  void PushLoopWith(const SimulationParams&         params,
+                    Meshblock<D, PICEngine>&        mblock,
+                    Particles<D, PICEngine>&        species,
+                    ProblemGenerator<D, PICEngine>& pgen,
+                    real_t                          time,
+                    real_t                          factor) {
     const auto dt              = factor * mblock.timestep();
-    const auto charge_ovr_mass = particles.mass() > ZERO
-                                   ? particles.charge() / particles.mass()
+    const auto charge_ovr_mass = species.mass() > ZERO
+                                   ? species.charge() / species.mass()
                                    : ZERO;
     const auto coeff           = charge_ovr_mass * HALF * dt * params.B0();
     Kokkos::parallel_for(
       "ParticlesPush",
-      Kokkos::RangePolicy<AccelExeSpace, P>(0, particles.npart()),
-      Pusher_kernel<D>(mblock, particles, time, coeff, dt, pgen));
+      Kokkos::RangePolicy<AccelExeSpace, P>(0, species.npart()),
+      Pusher_kernel<D, P, ExtForce>(params, mblock, species, time, coeff, dt, pgen));
   }
 
-  /**
-   * Definitions
-   */
-
-  template <Dimension D>
-  template <typename P>
-  Inline void Pusher_kernel<D>::operator()(P, index_t p) const {
-    if (tag(p) == ParticleTag::alive) {
-      coord_t<FullD> xp { ZERO };
-      getPrtlPos(p, xp);
-      // update cartesian velocity
-      if constexpr (!std::is_same_v<P, Photon_t>) {
-        // not a photon
-        vec_t<Dim3> ei { ZERO }, bi { ZERO };
-        vec_t<Dim3> ei_Cart { ZERO }, bi_Cart { ZERO };
-        getInterpFlds(p, ei, bi);
-        metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
-        metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
-#ifdef EXTERNAL_FORCE
-        vec_t<Dim3> force_Cart { ZERO };
-        initForce(xp, force_Cart);
-#endif
-        if constexpr (std::is_same_v<P, Boris_GCA_t> ||
-                      std::is_same_v<P, Vay_GCA_t>) {
-          const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
-          const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
-          const auto rL { math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p))) *
-                          dt / (TWO * coeff * math::sqrt(B2)) };
-          if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
-            // update with GCA
-            velUpd(GCA_t {},
-                   p,
-#ifdef EXTERNAL_FORCE
-                   force_Cart,
-#endif
-                   ei_Cart,
-                   bi_Cart);
-          } else {
-// update with conventional pusher
-#ifdef EXTERNAL_FORCE
-            ux1(p) += HALF * dt * force_Cart[0];
-            ux2(p) += HALF * dt * force_Cart[1];
-            ux3(p) += HALF * dt * force_Cart[2];
-#endif
-            velUpd(Reduced_t<P> {}, p, ei_Cart, bi_Cart);
-#ifdef EXTERNAL_FORCE
-            ux1(p) += HALF * dt * force_Cart[0];
-            ux2(p) += HALF * dt * force_Cart[1];
-            ux3(p) += HALF * dt * force_Cart[2];
-#endif
-          }
-        } else {
-          // update with conventional pusher
-          velUpd(P {}, p, ei_Cart, bi_Cart);
-        }
-      }
-      // update position
-      {
-        // get cartesian velocity
-        const real_t   inv_energy { ONE / getEnergy(Mass_t<P> {}, p) };
-        vec_t<Dim3>    vp_Cart { ux1(p) * inv_energy,
-                              ux2(p) * inv_energy,
-                              ux3(p) * inv_energy };
-        // get cartesian position
-        coord_t<FullD> xp_Cart { ZERO };
-        metric.x_Code2Cart(xp, xp_Cart);
-        // update cartesian position
-        for (short d { 0 }; d < static_cast<short>(FullD); ++d) {
-          xp_Cart[d] += vp_Cart[d] * dt;
-        }
-        // transform back to code
-        metric.x_Cart2Code(xp_Cart, xp);
-
-        // update x1
-        i1_prev(p)  = i1(p);
-        dx1_prev(p) = dx1(p);
-        from_Xi_to_i_di(xp[0], i1(p), dx1(p));
-
-        // update x2 & phi
-        if constexpr (D != Dim1) {
-          i2_prev(p)  = i2(p);
-          dx2_prev(p) = dx2(p);
-          from_Xi_to_i_di(xp[1], i2(p), dx2(p));
-#ifndef MINKOWSKI_METRIC
-          phi(p) = xp[2];
-#endif
-        }
-
-        // update x3
-        if constexpr (D == Dim3) {
-          i3_prev(p)  = i3(p);
-          dx3_prev(p) = dx3(p);
-          from_Xi_to_i_di(xp[2], i3(p), dx3(p));
-        }
-      }
-      boundaryConditions(p);
+  template <Dimension D, bool ExtForce>
+  void PushLoop(const SimulationParams&         params,
+                Meshblock<D, PICEngine>&        mblock,
+                Particles<D, PICEngine>&        species,
+                ProblemGenerator<D, PICEngine>& pgen,
+                real_t                          time,
+                real_t                          factor) {
+    const auto pusher = species.pusher();
+    if (pusher == ParticlePusher::PHOTON) {
+      PushLoopWith<D, Photon_t, ExtForce>(params, mblock, species, pgen, time, factor);
+    } else if (pusher == ParticlePusher::BORIS) {
+      PushLoopWith<D, Boris_t, ExtForce>(params, mblock, species, pgen, time, factor);
+    } else if (pusher == ParticlePusher::VAY) {
+      PushLoopWith<D, Vay_t, ExtForce>(params, mblock, species, pgen, time, factor);
+    } else if (pusher == ParticlePusher::BORIS_GCA) {
+      PushLoopWith<D, Boris_GCA_t, ExtForce>(params, mblock, species, pgen, time, factor);
+    } else if (pusher == ParticlePusher::VAY_GCA) {
+      PushLoopWith<D, Vay_GCA_t, ExtForce>(params, mblock, species, pgen, time, factor);
+    } else {
+      NTTHostError("not implemented");
     }
   }
 
   // Velocity update
 
   template <Dimension D>
-  Inline void Pusher_kernel<D>::velUpd(Boris_t,
-                                       index_t&     p,
-                                       vec_t<Dim3>& e0,
-                                       vec_t<Dim3>& b0) const {
+  Inline void PusherBase_kernel<D>::velUpd(Boris_t,
+                                           index_t&     p,
+                                           vec_t<Dim3>& e0,
+                                           vec_t<Dim3>& b0) const {
     real_t COEFF { coeff };
 
     e0[0] *= COEFF;
@@ -340,10 +353,10 @@ namespace ntt {
   }
 
   template <Dimension D>
-  Inline void Pusher_kernel<D>::velUpd(Vay_t,
-                                       index_t&     p,
-                                       vec_t<Dim3>& e0,
-                                       vec_t<Dim3>& b0) const {
+  Inline void PusherBase_kernel<D>::velUpd(Vay_t,
+                                           index_t&     p,
+                                           vec_t<Dim3>& e0,
+                                           vec_t<Dim3>& b0) const {
     auto COEFF { coeff };
     e0[0] *= COEFF;
     e0[1] *= COEFF;
@@ -390,13 +403,53 @@ namespace ntt {
   }
 
   template <Dimension D>
-  Inline void Pusher_kernel<D>::velUpd(GCA_t,
-                                       index_t& p,
-#ifdef EXTERNAL_FORCE
-                                       vec_t<Dim3>& f0,
-#endif
-                                       vec_t<Dim3>& e0,
-                                       vec_t<Dim3>& b0) const {
+  Inline void PusherBase_kernel<D>::velUpd(GCA_t,
+                                           index_t&     p,
+                                           vec_t<Dim3>& f0,
+                                           vec_t<Dim3>& e0,
+                                           vec_t<Dim3>& b0) const {
+    const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
+                        NORM_SQR(b0[0], b0[1], b0[2]) };
+
+    const vec_t<Dim3> wE {
+      CROSS_x1(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+      CROSS_x2(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+      CROSS_x3(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr
+    };
+
+    {
+      const auto b_norm_inv { ONE / NORM(b0[0], b0[1], b0[2]) };
+      b0[0] *= b_norm_inv;
+      b0[1] *= b_norm_inv;
+      b0[2] *= b_norm_inv;
+    }
+    auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
+                coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) +
+                dt * DOT(f0[0], f0[1], f0[2], b0[0], b0[1], b0[2]) };
+
+    real_t factor;
+    {
+      const auto wE_sqr { NORM_SQR(wE[0], wE[1], wE[2]) };
+      if (wE_sqr < static_cast<real_t>(0.01)) {
+        factor = ONE + wE_sqr + TWO * SQR(wE_sqr) + FIVE * SQR(wE_sqr) * wE_sqr;
+      } else {
+        factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
+      }
+    }
+    const vec_t<Dim3> vE_Cart { wE[0] * factor, wE[1] * factor, wE[2] * factor };
+    const auto Gamma { math::sqrt(ONE + SQR(upar)) /
+                       math::sqrt(
+                         ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
+    ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
+    ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
+    ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+  }
+
+  template <Dimension D>
+  Inline void PusherBase_kernel<D>::velUpd(GCA_t,
+                                           index_t&     p,
+                                           vec_t<Dim3>& e0,
+                                           vec_t<Dim3>& b0) const {
     const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
                         NORM_SQR(b0[0], b0[1], b0[2]) };
 
@@ -414,10 +467,6 @@ namespace ntt {
     }
     auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
                 coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
-
-#ifdef EXTERNAL_FORCE
-    upar += dt * DOT(f0[0], f0[1], f0[2], b0[0], b0[1], b0[2]);
-#endif
 
     real_t factor;
     {
@@ -439,23 +488,26 @@ namespace ntt {
 
 #ifdef MINKOWSKI_METRIC
   template <>
-  Inline void Pusher_kernel<Dim1>::getPrtlPos(index_t& p, coord_t<Dim1>& xp) const {
+  Inline void PusherBase_kernel<Dim1>::getPrtlPos(index_t&       p,
+                                                  coord_t<Dim1>& xp) const {
     xp[0] = i_di_to_Xi(i1(p), dx1(p));
   }
 
   template <>
-  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<Dim2>& xp) const {
+  Inline void PusherBase_kernel<Dim2>::getPrtlPos(index_t&       p,
+                                                  coord_t<Dim2>& xp) const {
     xp[0] = i_di_to_Xi(i1(p), dx1(p));
     xp[1] = i_di_to_Xi(i2(p), dx2(p));
   }
 #else
   template <>
-  Inline void Pusher_kernel<Dim1>::getPrtlPos(index_t&, coord_t<FullD>&) const {
+  Inline void PusherBase_kernel<Dim1>::getPrtlPos(index_t&, coord_t<FullD>&) const {
     NTTError("not applicable");
   }
 
   template <>
-  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<FullD>& xp) const {
+  Inline void PusherBase_kernel<Dim2>::getPrtlPos(index_t&        p,
+                                                  coord_t<FullD>& xp) const {
     xp[0] = i_di_to_Xi(i1(p), dx1(p));
     xp[1] = i_di_to_Xi(i2(p), dx2(p));
     xp[2] = phi(p);
@@ -463,26 +515,29 @@ namespace ntt {
 #endif
 
   template <>
-  Inline void Pusher_kernel<Dim3>::getPrtlPos(index_t& p, coord_t<Dim3>& xp) const {
+  Inline void PusherBase_kernel<Dim3>::getPrtlPos(index_t&       p,
+                                                  coord_t<Dim3>& xp) const {
     xp[0] = i_di_to_Xi(i1(p), dx1(p));
     xp[1] = i_di_to_Xi(i2(p), dx2(p));
     xp[2] = i_di_to_Xi(i3(p), dx3(p));
   }
 
   template <Dimension D>
-  Inline auto Pusher_kernel<D>::getEnergy(Massive_t, index_t& p) const -> real_t {
+  Inline auto PusherBase_kernel<D>::getEnergy(Massive_t, index_t& p) const
+    -> real_t {
     return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
   template <Dimension D>
-  Inline auto Pusher_kernel<D>::getEnergy(Massless_t, index_t& p) const -> real_t {
+  Inline auto PusherBase_kernel<D>::getEnergy(Massless_t, index_t& p) const
+    -> real_t {
     return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
   template <>
-  Inline void Pusher_kernel<Dim1>::getInterpFlds(index_t&     p,
-                                                 vec_t<Dim3>& e0,
-                                                 vec_t<Dim3>& b0) const {
+  Inline void PusherBase_kernel<Dim1>::getInterpFlds(index_t&     p,
+                                                     vec_t<Dim3>& e0,
+                                                     vec_t<Dim3>& b0) const {
     const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
     const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
@@ -519,9 +574,9 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher_kernel<Dim2>::getInterpFlds(index_t&     p,
-                                                 vec_t<Dim3>& e0,
-                                                 vec_t<Dim3>& b0) const {
+  Inline void PusherBase_kernel<Dim2>::getInterpFlds(index_t&     p,
+                                                     vec_t<Dim3>& e0,
+                                                     vec_t<Dim3>& b0) const {
     const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
     const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
     const auto dx1_ { static_cast<real_t>(dx1(p)) };
@@ -588,9 +643,9 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher_kernel<Dim3>::getInterpFlds(index_t&     p,
-                                                 vec_t<Dim3>& e0,
-                                                 vec_t<Dim3>& b0) const {
+  Inline void PusherBase_kernel<Dim3>::getInterpFlds(index_t&     p,
+                                                     vec_t<Dim3>& e0,
+                                                     vec_t<Dim3>& b0) const {
     const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
     const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
     const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
@@ -754,7 +809,7 @@ namespace ntt {
   // Boundary conditions
 
   template <Dimension D>
-  Inline void Pusher_kernel<D>::boundaryConditions_x1(index_t& p) const {
+  Inline void PusherBase_kernel<D>::boundaryConditions_x1(index_t& p) const {
     if (i1(p) < 0) {
       if (is_periodic_i1min) {
         i1(p)      += ni1;
@@ -773,7 +828,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  Inline void Pusher_kernel<D>::boundaryConditions_x2(index_t& p) const {
+  Inline void PusherBase_kernel<D>::boundaryConditions_x2(index_t& p) const {
     if (i2(p) < 0) {
       if (is_periodic_i2min) {
         i2(p)      += ni2;
@@ -798,7 +853,7 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher_kernel<Dim3>::boundaryConditions_x3(index_t& p) const {
+  Inline void PusherBase_kernel<Dim3>::boundaryConditions_x3(index_t& p) const {
     if (i3(p) < 0) {
       if (is_periodic_i3min) {
         i3(p)      += ni3;
@@ -817,18 +872,18 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher_kernel<Dim1>::boundaryConditions(index_t& p) const {
+  Inline void PusherBase_kernel<Dim1>::boundaryConditions(index_t& p) const {
     boundaryConditions_x1(p);
   }
 
   template <>
-  Inline void Pusher_kernel<Dim2>::boundaryConditions(index_t& p) const {
+  Inline void PusherBase_kernel<Dim2>::boundaryConditions(index_t& p) const {
     boundaryConditions_x1(p);
     boundaryConditions_x2(p);
   }
 
   template <>
-  Inline void Pusher_kernel<Dim3>::boundaryConditions(index_t& p) const {
+  Inline void PusherBase_kernel<Dim3>::boundaryConditions(index_t& p) const {
     boundaryConditions_x1(p);
     boundaryConditions_x2(p);
     boundaryConditions_x3(p);
@@ -836,11 +891,9 @@ namespace ntt {
 
   // External force
 
-#ifdef EXTERNAL_FORCE
-
   template <Dimension D>
-  Inline void Pusher_kernel<D>::initForce(coord_t<FullD>& xp,
-                                          vec_t<Dim3>&    force_Cart) const {
+  Inline void PusherBase_kernel<D>::initForce(coord_t<FullD>& xp,
+                                              vec_t<Dim3>& force_Cart) const {
     coord_t<FullD> xp_Ph { ZERO };
     metric.x_Code2Phys(xp, xp_Ph);
     const vec_t<Dim3> force_Hat { pgen.ext_force_x1(time, xp_Ph),
@@ -848,8 +901,6 @@ namespace ntt {
                                   pgen.ext_force_x3(time, xp_Ph) };
     metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
   }
-
-#endif
 
 } // namespace ntt
 #endif

@@ -115,10 +115,3 @@ function(set_problem_generator pgen_name engine_name)
     endif()
   endif()
 endfunction()
-
-# ----------------------------- External force ---------------------------- #
-function(set_ext_force ext_force_flag)
-  if(${ext_force_flag})
-    add_compile_options("-D EXTERNAL_FORCE")
-  endif()
-endfunction()

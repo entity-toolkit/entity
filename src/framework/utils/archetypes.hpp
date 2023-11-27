@@ -36,7 +36,6 @@ namespace ntt {
                                            const SimulationParams&,
                                            Meshblock<D, S>&) {}
 
-#ifdef EXTERNAL_FORCE
     Inline virtual auto ext_force_x1(const real_t&, const coord_t<FullD>&) const
       -> real_t {
       return ZERO;
@@ -51,7 +50,6 @@ namespace ntt {
       -> real_t {
       return ZERO;
     }
-#endif
 
 #ifdef GUI_ENABLED
     virtual inline void UserInitBuffers_nttiny(
@@ -97,30 +95,7 @@ namespace ntt {
     SimulationParams m_params;
     Meshblock<D, S>  m_mblock;
   };
-
-  /* -------------------------------------------------------------------------- */
-  /*                             Force field class */
-  /* -------------------------------------------------------------------------- */
-  // template <Dimension D, SimulationEngine S>
-  // struct ForceField {
-  //   ForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
-  //     : m_params { params }, m_mblock { mblock } {}
-
-  //   Inline virtual auto x1(const real_t&, const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-  //   Inline virtual auto x2(const real_t&, const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-  //   Inline virtual auto x3(const real_t&, const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-
-  // protected:
-  //   SimulationParams m_params;
-  //   Meshblock<D, S>  m_mblock;
-  // };
-
+  
   /* -------------------------------------------------------------------------- */
   /*                             Energy distribution */
   /* -------------------------------------------------------------------------- */
@@ -177,7 +152,7 @@ namespace ntt {
         }
         randX1 = math::sqrt(-TWO * math::log(randX1));
         randX2 = constant::TWO_PI * rand_gen.frand();
-        v[0] = randX1 * math::cos(randX2) * math::sqrt(temp);
+        v[0]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
         randX1 = rand_gen.frand();
         while (AlmostEqual(randX1, ZERO)) {
@@ -185,7 +160,7 @@ namespace ntt {
         }
         randX1 = math::sqrt(-TWO * math::log(randX1));
         randX2 = constant::TWO_PI * rand_gen.frand();
-        v[1] = randX1 * math::cos(randX2) * math::sqrt(temp);
+        v[1]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
         randX1 = rand_gen.frand();
         while (AlmostEqual(randX1, ZERO)) {
@@ -193,10 +168,9 @@ namespace ntt {
         }
         randX1 = math::sqrt(-TWO * math::log(randX1));
         randX2 = constant::TWO_PI * rand_gen.frand();
-        v[2] = randX1 * math::cos(randX2) * math::sqrt(temp);
+        v[2]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
-      } 
-      else {
+      } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
         randu = ONE;
         while (SQR(randeta) <= SQR(randu) + ONE) {
@@ -209,14 +183,14 @@ namespace ntt {
           while (AlmostEqual(randX2, 0)) {
             randX2 = rand_gen.frand();
           }
-          randeta = -temp * math::log(randX1*randX2);
+          randeta = -temp * math::log(randX1 * randX2);
         }
-        randX1   = rand_gen.frand();
-        randX2   = rand_gen.frand();
-        v[0] = randu * (TWO * randX1 - ONE);
-        v[2] = TWO * randu * math::sqrt(randX1 * (ONE - randX1));
-        v[1] = v[2] * math::cos(constant::TWO_PI * randX2);
-        v[2] = v[2] * math::sin(constant::TWO_PI * randX2);
+        randX1 = rand_gen.frand();
+        randX2 = rand_gen.frand();
+        v[0]   = randu * (TWO * randX1 - ONE);
+        v[2]   = TWO * randu * math::sqrt(randX1 * (ONE - randX1));
+        v[1]   = v[2] * math::cos(constant::TWO_PI * randX2);
+        v[2]   = v[2] * math::sin(constant::TWO_PI * randX2);
       }
       pool.free_state(rand_gen);
     }
