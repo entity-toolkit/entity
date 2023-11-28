@@ -5,7 +5,7 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.0.0.2
+  VERSION 1.0.0.3
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(CMAKE_CXX_EXTENSIONS OFF)

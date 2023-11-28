@@ -18,6 +18,7 @@
 #endif
 
 namespace ntt {
+  // Pushers
   struct Boris_t {};
 
   struct Vay_t {};
@@ -40,6 +41,11 @@ namespace ntt {
   template <typename T>
   using Mass_t = std::conditional_t<std::is_same_v<T, Photon_t>, Massless_t, Massive_t>;
 
+  // Cooling
+  struct NoCooling_t {};
+
+  struct Synchrotron_t {};
+
   /**
    * @brief Algorithm for the Particle pusher.
    * @tparam D Dimension.
@@ -59,7 +65,6 @@ namespace ntt {
 
     const real_t time, coeff, dt;
     const int    ni1, ni2, ni3;
-    const real_t gca_larmor, gca_EovrB_sqr;
     bool         is_absorb_i1min { false }, is_absorb_i1max { false };
     bool         is_absorb_i2min { false }, is_absorb_i2max { false };
     bool         is_absorb_i3min { false }, is_absorb_i3max { false };
@@ -102,9 +107,7 @@ namespace ntt {
       ni1 { (int)mblock.Ni1() },
       ni2 { (int)mblock.Ni2() },
       ni3 { (int)mblock.Ni3() },
-      pgen { pgen },
-      gca_larmor { params.GCALarmorMax() },
-      gca_EovrB_sqr { SQR(params.GCAEovrBMax()) } {
+      pgen { pgen } {
       NTTHostErrorIf(mblock.boundaries.size() < 1,
                      "boundaries defined incorrectly");
       is_absorb_i1min = (mblock.boundaries[0][0] == BoundaryCondition::OPEN) ||
@@ -169,16 +172,81 @@ namespace ntt {
     Inline void initForce(coord_t<FullD>&, vec_t<Dim3>&) const;
   };
 
-  template <Dimension D, typename P, bool ExtForce>
+  template <Dimension D, typename P, bool ExtForce, typename... Cs>
   struct Pusher_kernel : public PusherBase_kernel<D> {
+  private:
+    // gca parameters
+    const real_t gca_larmor, gca_EovrB_sqr;
+    // synchrotron cooling parameters
+    const real_t coeff_sync;
+
+  public:
     Pusher_kernel(const SimulationParams&         params,
                   Meshblock<D, PICEngine>&        mblock,
                   Particles<D, PICEngine>&        particles,
                   real_t                          time,
                   real_t                          coeff,
+                  real_t                          coeff_sync,
                   real_t                          dt,
                   ProblemGenerator<D, PICEngine>& pgen) :
-      PusherBase_kernel<D>(params, mblock, particles, time, coeff, dt, pgen) {}
+      PusherBase_kernel<D>(params, mblock, particles, time, coeff, dt, pgen),
+      gca_larmor { params.GCALarmorMax() },
+      gca_EovrB_sqr { SQR(params.GCAEovrBMax()) },
+      coeff_sync { coeff_sync } {}
+
+    Inline void synchrotronDrag(index_t&           p,
+                                vec_t<Dim3>&       u_prime,
+                                const vec_t<Dim3>& e0,
+                                const vec_t<Dim3>& b0) const {
+      real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
+                                                               u_prime[1],
+                                                               u_prime[2]));
+      u_prime[0]             *= gamma_prime_sqr;
+      u_prime[1]             *= gamma_prime_sqr;
+      u_prime[2]             *= gamma_prime_sqr;
+      gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
+      const real_t beta_dot_e {
+        DOT(u_prime[0], u_prime[1], u_prime[2], e0[0], e0[1], e0[2])
+      };
+      vec_t<Dim3> e_plus_beta_cross_b {
+        e0[0] + CROSS_x1(u_prime[0], u_prime[1], u_prime[2], b0[0], b0[1], b0[2]),
+        e0[1] + CROSS_x2(u_prime[0], u_prime[1], u_prime[2], b0[0], b0[1], b0[2]),
+        e0[2] + CROSS_x3(u_prime[0], u_prime[1], u_prime[2], b0[0], b0[1], b0[2])
+      };
+      vec_t<Dim3> kappaR {
+        CROSS_x1(e_plus_beta_cross_b[0],
+                 e_plus_beta_cross_b[1],
+                 e_plus_beta_cross_b[2],
+                 b0[0],
+                 b0[1],
+                 b0[2]) +
+          beta_dot_e * e0[0],
+        CROSS_x2(e_plus_beta_cross_b[0],
+                 e_plus_beta_cross_b[1],
+                 e_plus_beta_cross_b[2],
+                 b0[0],
+                 b0[1],
+                 b0[2]) +
+          beta_dot_e * e0[1],
+        CROSS_x3(e_plus_beta_cross_b[0],
+                 e_plus_beta_cross_b[1],
+                 e_plus_beta_cross_b[2],
+                 b0[0],
+                 b0[1],
+                 b0[2]) +
+          beta_dot_e * e0[2],
+      };
+      const real_t chiR_sqr { NORM_SQR(e_plus_beta_cross_b[0],
+                                       e_plus_beta_cross_b[1],
+                                       e_plus_beta_cross_b[2]) -
+                              SQR(beta_dot_e) };
+      this->ux1(p) += coeff_sync *
+                      (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
+      this->ux2(p) += coeff_sync *
+                      (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
+      this->ux3(p) += coeff_sync *
+                      (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
+    }
 
     Inline void operator()(P, index_t p) const {
       if (this->tag(p) == ParticleTag::alive) {
@@ -190,10 +258,25 @@ namespace ntt {
           vec_t<Dim3> ei { ZERO }, bi { ZERO };
           vec_t<Dim3> ei_Cart { ZERO }, bi_Cart { ZERO };
           vec_t<Dim3> force_Cart { ZERO };
+          vec_t<Dim3> u_prime { ZERO };
+          vec_t<Dim3> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
+          bool        is_gca { false };
 
           this->getInterpFlds(p, ei, bi);
           this->metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
           this->metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+          if constexpr (!std::disjunction_v<std::is_same<NoCooling_t, Cs>...>) {
+            // backup fields & velocities to use later in cooling
+            ei_Cart_rad[0] = ei_Cart[0];
+            ei_Cart_rad[1] = ei_Cart[1];
+            ei_Cart_rad[2] = ei_Cart[2];
+            bi_Cart_rad[0] = bi_Cart[0];
+            bi_Cart_rad[1] = bi_Cart[1];
+            bi_Cart_rad[2] = bi_Cart[2];
+            u_prime[0]     = this->ux1(p);
+            u_prime[1]     = this->ux2(p);
+            u_prime[2]     = this->ux3(p);
+          }
           if constexpr (ExtForce) {
             this->initForce(xp, force_Cart);
           }
@@ -205,8 +288,8 @@ namespace ntt {
               math::sqrt(ONE + NORM_SQR(this->ux1(p), this->ux2(p), this->ux3(p))) *
               this->dt / (TWO * this->coeff * math::sqrt(B2))
             };
-            if (B2 > ZERO && rL < this->gca_larmor &&
-                (E2 / B2) < this->gca_EovrB_sqr) {
+            if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
+              is_gca = true;
               // update with GCA
               if constexpr (ExtForce) {
                 this->velUpd(GCA_t {}, p, force_Cart, ei_Cart, bi_Cart);
@@ -229,7 +312,26 @@ namespace ntt {
             }
           } else {
             // update with conventional pusher
+            if constexpr (ExtForce) {
+              this->ux1(p) += HALF * this->dt * force_Cart[0];
+              this->ux2(p) += HALF * this->dt * force_Cart[1];
+              this->ux3(p) += HALF * this->dt * force_Cart[2];
+            }
             this->velUpd(P {}, p, ei_Cart, bi_Cart);
+            if constexpr (ExtForce) {
+              this->ux1(p) += HALF * this->dt * force_Cart[0];
+              this->ux2(p) += HALF * this->dt * force_Cart[1];
+              this->ux3(p) += HALF * this->dt * force_Cart[2];
+            }
+          }
+          // cooling
+          if constexpr (std::disjunction_v<std::is_same<Synchrotron_t, Cs>...>) {
+            if (!is_gca) {
+              u_prime[0] = HALF * (u_prime[0] + this->ux1(p));
+              u_prime[1] = HALF * (u_prime[1] + this->ux2(p));
+              u_prime[2] = HALF * (u_prime[2] + this->ux3(p));
+              this->synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
+            }
           }
         }
         // update position
@@ -287,11 +389,34 @@ namespace ntt {
     const auto charge_ovr_mass = species.mass() > ZERO
                                    ? species.charge() / species.mass()
                                    : ZERO;
-    const auto coeff           = charge_ovr_mass * HALF * dt * params.B0();
-    Kokkos::parallel_for(
-      "ParticlesPush",
-      Kokkos::RangePolicy<AccelExeSpace, P>(0, species.npart()),
-      Pusher_kernel<D, P, ExtForce>(params, mblock, species, time, coeff, dt, pgen));
+    const auto coeff           = charge_ovr_mass * HALF * dt * params.omegaB0();
+    if (species.cooling() == Cooling::NONE) {
+      Kokkos::parallel_for(
+        "ParticlesPush",
+        Kokkos::RangePolicy<AccelExeSpace, P>(0, species.npart()),
+        Pusher_kernel<D, P, ExtForce, NoCooling_t>(params,
+                                                   mblock,
+                                                   species,
+                                                   time,
+                                                   coeff,
+                                                   ZERO,
+                                                   dt,
+                                                   pgen));
+    } else if (species.cooling() == Cooling::SYNCHROTRON) {
+      const auto coeff_sync = (real_t)(0.1) * dt * params.omegaB0() /
+                              (SQR(params.SynchrotronGammarad()) * species.mass());
+      Kokkos::parallel_for(
+        "ParticlesPush",
+        Kokkos::RangePolicy<AccelExeSpace, P>(0, species.npart()),
+        Pusher_kernel<D, P, ExtForce, Synchrotron_t>(params,
+                                                     mblock,
+                                                     species,
+                                                     time,
+                                                     coeff,
+                                                     coeff_sync,
+                                                     dt,
+                                                     pgen));
+    }
   }
 
   template <Dimension D, bool ExtForce>

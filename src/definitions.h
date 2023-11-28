@@ -168,8 +168,14 @@ namespace ntt {
     VAY_GCA,
     PHOTON
   };
+  enum class Cooling {
+    UNDEFINED,
+    NONE,
+    SYNCHROTRON
+  };
   using PusherIterator =
     Iterator<ParticlePusher, ParticlePusher::UNDEFINED, ParticlePusher::PHOTON>;
+  using CoolingIterator = Iterator<Cooling, Cooling::UNDEFINED, Cooling::SYNCHROTRON>;
 
   inline constexpr auto Dim1          = Dimension::ONE_D;
   inline constexpr auto Dim2          = Dimension::TWO_D;
@@ -231,6 +237,17 @@ namespace ntt {
     }
   }
 
+  inline auto stringizeCooling(const Cooling& cooling) -> std::string {
+    switch (cooling) {
+      case Cooling::SYNCHROTRON:
+        return "Synchrotron";
+      case Cooling::NONE:
+        return "None";
+      default:
+        return "N/A";
+    }
+  }
+
   // ND list alias
   template <typename T, Dimension D>
   using tuple_t = T[static_cast<short>(D)];
@@ -283,6 +300,7 @@ namespace ntt {
   namespace options {
     const std::vector<std::string> pushers = { "Boris",   "Vay",       "Photon",
                                                "Vay,GCA", "Boris,GCA", "None" };
+    const std::vector<std::string> cooling = { "None", "Synchrotron" };
     const std::vector<std::string> boundaries = { "PERIODIC",
                                                   "ABSORB",
                                                   "CUSTOM",

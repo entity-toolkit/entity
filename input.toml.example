@@ -23,6 +23,9 @@ current_filters    = <int>
 [GCA]
 EovrB_max          = <float: 0.0 < ... < 1.0>
 larmor_max         = <float>
+
+[synchrotron]
+gamma_rad          = <float>
    
 [units]   
 ppc0               = <float>
@@ -41,22 +44,7 @@ charge             = <float>
 maxnpart           = <int>
 pusher             = <string: { "Boris" | "Photon" | "Vay" | "Boris,GCA" | "Vay,GCA" | "None" }>
 n_payloads         = <short>
-
-[radiation_synchrotron]
-species  = [........]
-emission = <bool>
-photon = ........
-gamma_syn = <float>
-gamma_syn_emit = <float>
-emission_threshold = <float>
-
-[radiation_curvature]
-species  = [........]
-emission = <bool>
-photon = ........
-gamma_crv = <float>
-gamma_crv_emit = <float>
-emission_threshold = <float>
+cooling            = <string: { "None" | "Synchrotron" }>
 
 [problem]
 ...

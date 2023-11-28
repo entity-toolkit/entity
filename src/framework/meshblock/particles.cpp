@@ -22,8 +22,10 @@ namespace ntt {
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
                                         const ParticlePusher& pusher_,
+                                        const Cooling&        cooling_,
                                         const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ },
     i1 { label_ + "_i1", maxnpart_ },
     dx1 { label_ + "_dx1", maxnpart_ },
     ux1 { label_ + "_ux1", maxnpart_ },
@@ -55,8 +57,10 @@ namespace ntt {
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
                                         const ParticlePusher& pusher_,
+                                        const Cooling&        cooling_,
                                         const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ },
     i1 { label_ + "_i1", maxnpart_ },
     i2 { label_ + "_i2", maxnpart_ },
     dx1 { label_ + "_dx1", maxnpart_ },
@@ -93,8 +97,10 @@ namespace ntt {
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
                                         const ParticlePusher& pusher_,
+                                        const Cooling&        cooling_,
                                         const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ },
     i1 { label_ + "_i1", maxnpart_ },
     i2 { label_ + "_i2", maxnpart_ },
     dx1 { label_ + "_dx1", maxnpart_ },
@@ -133,8 +139,10 @@ namespace ntt {
                                         const float&          ch_,
                                         const std::size_t&    maxnpart_,
                                         const ParticlePusher& pusher_,
+                                        const Cooling&        cooling_,
                                         const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ },
     i1 { label_ + "_i1", maxnpart_ },
     i2 { label_ + "_i2", maxnpart_ },
     i3 { label_ + "_i3", maxnpart_ },
@@ -180,8 +188,10 @@ namespace ntt {
                                           const float&          ch_,
                                           const std::size_t&    maxnpart_,
                                           const ParticlePusher& pusher_,
+                                          const Cooling&        cooling_,
                                           const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ },
     i1 { label_ + "_i1", maxnpart_ },
     i2 { label_ + "_i2", maxnpart_ },
     dx1 { label_ + "_dx1", maxnpart_ },
@@ -220,8 +230,10 @@ namespace ntt {
                                           const float&          ch_,
                                           const std::size_t&    maxnpart_,
                                           const ParticlePusher& pusher_,
+                                          const Cooling&        cooling_,
                                           const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ },
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ },
     i1 { label_ + "_i1", maxnpart_ },
     i2 { label_ + "_i2", maxnpart_ },
     i3 { label_ + "_i3", maxnpart_ },
@@ -264,8 +276,10 @@ namespace ntt {
                                             const float&          ch_,
                                             const std::size_t&    maxnpart_,
                                             const ParticlePusher& pusher_,
+                                            const Cooling&        cooling_,
                                             const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ } {
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ } {
     NTTLog();
   }
 
@@ -276,8 +290,10 @@ namespace ntt {
                                             const float&          ch_,
                                             const std::size_t&    maxnpart_,
                                             const ParticlePusher& pusher_,
+                                            const Cooling&        cooling_,
                                             const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ } {
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ } {
     NTTLog();
   }
 
@@ -288,8 +304,10 @@ namespace ntt {
                                             const float&          ch_,
                                             const std::size_t&    maxnpart_,
                                             const ParticlePusher& pusher_,
+                                            const Cooling&        cooling_,
                                             const unsigned short& npld_) :
-    ParticleSpecies { index_, label_, m_, ch_, maxnpart_, pusher_, npld_ } {
+    ParticleSpecies { index_,    label_,  m_,       ch_,
+                      maxnpart_, pusher_, cooling_, npld_ } {
     NTTLog();
   }
 
@@ -301,6 +319,7 @@ namespace ntt {
               spec.charge(),
               spec.maxnpart(),
               spec.pusher(),
+              spec.cooling(),
               spec.npld()) {}
 
   template <Dimension D, SimulationEngine S>

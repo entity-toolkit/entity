@@ -63,6 +63,14 @@ namespace ntt {
   auto Simulation<D, S>::Verify() -> void {
     NTTLog();
     meshblock.Verify();
+    // check correctness of parameters
+    for (auto& species : meshblock.particles) {
+      if (species.cooling() == Cooling::SYNCHROTRON) {
+        NTTHostErrorIf(m_params.SynchrotronGammarad() <= ZERO,
+                       "Wrong synchrotron parameters. Check 'gamma_rad' in "
+                       "`[synchrotron]` block in input file.");
+      }
+    }
     meshblock.CheckNaNs("Initial check",
                         CheckNaN_Fields | CheckNaN_Particles | CheckNaN_Currents);
     meshblock.CheckOutOfBounds("Initial check", false);
@@ -164,8 +172,13 @@ namespace ntt {
                            << "    charge: " << species.charge() << "\n"
                            << std::setw(42) << std::setfill('.') << std::left
                            << "    pusher: "
-                           << stringizeParticlePusher(species.pusher()) << "\n"
-                           << std::setw(42) << std::setfill('.') << std::left
+                           << stringizeParticlePusher(species.pusher());
+          if (species.cooling() != Cooling::NONE) {
+            PLOGN_(InfoFile)
+              << std::setw(42) << std::setfill('.') << std::left
+              << "    cooling: " << stringizeCooling(species.cooling());
+          }
+          PLOGN_(InfoFile) << std::setw(42) << std::setfill('.') << std::left
                            << "    maxnpart: " << species.maxnpart()
                            << " (active: " << species.npart() << ")";
           ++i;

@@ -49,6 +49,11 @@ namespace ntt {
                             default_pusher,
                             options::pushers);
 
+      auto cooling_str = get("species_" + std::to_string(i + 1),
+                             "cooling",
+                             (std::string)("None"),
+                             options::cooling);
+
       ParticlePusher pusher { ParticlePusher::UNDEFINED };
       for (auto p : PusherIterator()) {
         if (stringizeParticlePusher(p) == pusher_str) {
@@ -56,11 +61,21 @@ namespace ntt {
           break;
         }
       }
+      Cooling cooling { Cooling::UNDEFINED };
+      for (auto c : CoolingIterator()) {
+        if (stringizeCooling(c) == cooling_str) {
+          cooling = c;
+          break;
+        }
+      }
       if (pusher == ParticlePusher::UNDEFINED) {
         NTTHostError("unrecognized pusher");
       }
+      if (cooling == Cooling::UNDEFINED) {
+        NTTHostError("unrecognized cooling mechanism");
+      }
       m_species.emplace_back(
-        ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher, npayloads));
+        ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher, cooling, npayloads));
     }
     m_use_weights = get("particles", "use_weights", defaults::use_weights);
 
@@ -211,7 +226,9 @@ namespace ntt {
 
     // algorithm specific parameters
     // ... GCA
-    m_gca_EovrB_max  = get("GCA", "EovrB_max", defaults::gca::EovrB_max);
-    m_gca_larmor_max = get("GCA", "larmor_max", ZERO);
+    m_gca_EovrB_max        = get("GCA", "EovrB_max", defaults::gca::EovrB_max);
+    m_gca_larmor_max       = get("GCA", "larmor_max", ZERO);
+    // ... Synchrotron
+    m_synchrotron_gammarad = get("synchrotron", "gamma_rad", -ONE);
   }
 } // namespace ntt

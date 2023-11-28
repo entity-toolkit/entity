@@ -471,6 +471,32 @@
     set_bx3_3d((MBLOCK), (I), (J), (K), (FUNC), __VA_ARGS__);                  \
   }
 
+#define set_em_fields(MBLOCK, FUNC, ...)                                       \
+  {                                                                            \
+    if constexpr (D == Dim1) {                                                 \
+      Kokkos::parallel_for(                                                    \
+        "SetEMFields",                                                         \
+        (MBLOCK).rangeActiveCells(),                                           \
+        ClassLambda(index_t i) {                                               \
+          set_em_fields_1d((MBLOCK), i, (FUNC), __VA_ARGS__);                  \
+        });                                                                    \
+    } else if constexpr (D == Dim2) {                                          \
+      Kokkos::parallel_for(                                                    \
+        "SetEMFields",                                                         \
+        (MBLOCK).rangeActiveCells(),                                           \
+        ClassLambda(index_t i, index_t j) {                                    \
+          set_em_fields_2d((MBLOCK), i, j, (FUNC), __VA_ARGS__);               \
+        });                                                                    \
+    } else if constexpr (D == Dim3) {                                          \
+      Kokkos::parallel_for(                                                    \
+        "SetEMFields",                                                         \
+        (MBLOCK).rangeActiveCells(),                                           \
+        ClassLambda(index_t i, index_t j, index_t k) {                         \
+          set_em_fields_3d((MBLOCK), i, j, k, (FUNC), __VA_ARGS__);            \
+        });                                                                    \
+    }                                                                          \
+  }
+
 // regex
 
 // find: m_mblock.em\((.*?), em::bx(.*?)\)

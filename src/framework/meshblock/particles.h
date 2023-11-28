@@ -76,6 +76,8 @@ namespace ntt {
      * @param ch The charge of the species.
      * @param maxnpart The maximum number of allocated particles for the species.
      * @param pusher The pusher assigned for the species.
+     * @param cooling The cooling mechanism assigned for the species.
+     * @param npld The number of payloads for the species.
      */
     Particles(const int&            index,
               const std::string&    label,
@@ -83,6 +85,7 @@ namespace ntt {
               const float&          ch,
               const std::size_t&    maxnpart,
               const ParticlePusher& pusher,
+              const Cooling&        cooling,
               const unsigned short& npld = 0);
 
     /**

@@ -9,6 +9,7 @@ namespace ntt {
                                    const float&          ch_,
                                    const std::size_t&    maxnpart_,
                                    const ParticlePusher& pusher_,
+                                   const Cooling&        cooling_,
                                    const unsigned short& npld_) :
     m_index { index_ },
     m_label { std::move(label_) },
@@ -16,5 +17,6 @@ namespace ntt {
     m_charge { ch_ },
     m_maxnpart { maxnpart_ },
     m_pusher { pusher_ },
+    m_cooling { cooling_ },
     m_npld { npld_ } {}
 } // namespace ntt
