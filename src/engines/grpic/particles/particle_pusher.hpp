@@ -11,6 +11,7 @@
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
 #include "utils/qmath.h"
+#include METRIC_HEADER
 
 namespace ntt {
   struct Massive_t {};
@@ -226,9 +227,8 @@ namespace ntt {
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void interpolateFields(index_t&     p,
-                                  vec_t<Dim3>& e,
-                                  vec_t<Dim3>& b) const {};
+    Inline void interpolateFields(index_t& p, vec_t<Dim3>& e, vec_t<Dim3>& b) const {
+    };
 
     /**
      * @brief Compute the gamma parameter Gamma = sqrt(u_i u_j h^ij) for massless particles.

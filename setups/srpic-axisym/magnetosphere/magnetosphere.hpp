@@ -34,7 +34,7 @@ namespace ntt {
       maxwellian { mblock },
       temperature { params.get<real_t>("problem", "atm_T") } {}
 
-    Inline void operator()(const coord_t<FullD>&,
+    Inline void operator()(const coord_t<PrtlCoordD>&,
                            vec_t<Dim3>& v,
                            const int&) const override {
       maxwellian(v, temperature);
@@ -83,18 +83,18 @@ namespace ntt {
                                 const SimulationParams&,
                                 Meshblock<D, S>&) override {}
 
-    Inline auto ext_force_x1(const real_t&, const coord_t<FullD>& x_ph) const
+    Inline auto ext_force_x1(const real_t&, const coord_t<PrtlCoordD>& x_ph) const
       -> real_t override {
       return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) *
              (x_ph[0] < m_psr_Rstar + m_atm_h * TWO);
     }
 
-    Inline auto ext_force_x2(const real_t&, const coord_t<FullD>&) const
+    Inline auto ext_force_x2(const real_t&, const coord_t<PrtlCoordD>&) const
       -> real_t override {
       return ZERO;
     }
 
-    Inline auto ext_force_x3(const real_t&, const coord_t<FullD>&) const
+    Inline auto ext_force_x3(const real_t&, const coord_t<PrtlCoordD>&) const
       -> real_t override {
       return ZERO;
     }
@@ -107,7 +107,7 @@ namespace ntt {
     ndarray_t<(short)(D)> m_ppc_per_spec;
   };
 
-  Inline void mainBField(const coord_t<FullD>& x_ph,
+  Inline void mainBField(const coord_t<PrtlCoordD>& x_ph,
                          vec_t<Dim3>&,
                          vec_t<Dim3>& b_out,
                          real_t       _rstar,
@@ -124,7 +124,7 @@ namespace ntt {
     }
   }
 
-  Inline void surfaceRotationField(const coord_t<FullD>& x_ph,
+  Inline void surfaceRotationField(const coord_t<PrtlCoordD>& x_ph,
                                    vec_t<Dim3>&          e_out,
                                    vec_t<Dim3>&          b_out,
                                    real_t                _rstar,
@@ -146,10 +146,10 @@ namespace ntt {
       _mode { params.get<int>("problem", "psr_field_mode", 2) } {}
 
     Inline real_t operator()(const em&             comp,
-                             const coord_t<FullD>& xi) const override {
+                             const coord_t<PrtlCoordD>& xi) const override {
       if ((comp == em::bx1) || (comp == em::bx2)) {
         vec_t<Dim3>    e_out { ZERO }, b_out { ZERO };
-        coord_t<FullD> x_ph { ZERO };
+        coord_t<PrtlCoordD> x_ph { ZERO };
         (this->m_mblock).metric.x_Code2Phys(xi, x_ph);
         mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
         return (comp == em::bx1) ? b_out[0] : b_out[1];

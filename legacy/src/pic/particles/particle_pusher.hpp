@@ -200,10 +200,10 @@ namespace ntt {
     // Inline void boundaryConditions_x3(index_t&) const;
 
     // Getters
-    Inline void getPrtlPos(index_t&, coord_t<FullD>&) const;
+    Inline void getPrtlPos(index_t&, coord_t<PrtlCoordD>&) const;
 
     template <typename T>
-    Inline void get3VelCntrv(T, index_t&, vec_t<FullD>&, vec_t<Dim3>&) const;
+    Inline void get3VelCntrv(T, index_t&, vec_t<PrtlCoordD>&, vec_t<Dim3>&) const;
 
     Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
 
@@ -217,7 +217,7 @@ namespace ntt {
   #ifdef MINKOWSKI_METRIC
     Inline void initForce(coord_t<D>&, vec_t<Dim3>&) const;
   #else
-    Inline void initForce(coord_t<FullD>&, vec_t<Dim3>&) const;
+    Inline void initForce(coord_t<PrtlCoordD>&, vec_t<Dim3>&) const;
   #endif
     Inline void forceHalfUpdate(index_t&, vec_t<Dim3>&) const;
 #endif
@@ -249,7 +249,7 @@ namespace ntt {
   template <typename P, typename G, typename M>
   Inline void Pusher_kernel<D>::operator()(P, G, M, index_t p) const {
     if (tag(p) == ParticleTag::alive) {
-      coord_t<FullD> xp { ZERO }, xp_Cart;
+      coord_t<PrtlCoordD> xp { ZERO }, xp_Cart;
       getPrtlPos(p, xp);
       metric.x_Code2Cart(xp, xp_Cart);
 
@@ -279,7 +279,7 @@ namespace ntt {
   //   template <Dimension D>
   //   Inline void Pusher_kernel<D>::operator()(Photon_t, index_t p) const {
   //     if (tag(p) == ParticleTag::alive) {
-  //       coord_t<FullD> xp { ZERO };
+  //       coord_t<PrtlCoordD> xp { ZERO };
   //       vec_t<Dim3>    v { ZERO };
   //       getPrtlPos(p, xp);
   //       get3VelCntrv(Massless_t {}, p, xp, v);
@@ -291,7 +291,7 @@ namespace ntt {
   //   template <Dimension D>
   //   Inline void Pusher_kernel<D>::operator()(Boris_t, index_t p) const {
   //     if (tag(p) == ParticleTag::alive) {
-  //       coord_t<FullD> xp { ZERO }, xp_Cart;
+  //       coord_t<PrtlCoordD> xp { ZERO }, xp_Cart;
   //       getPrtlPos(p, xp);
   //       metric.x_Code2Cart(xp, xp_Cart);
 
@@ -321,7 +321,7 @@ namespace ntt {
   //   template <Dimension D>
   //   Inline void Pusher_kernel<D>::operator()(Vay_t, index_t p) const {
   //     if (tag(p) == ParticleTag::alive) {
-  //       coord_t<FullD> xp { ZERO };
+  //       coord_t<PrtlCoordD> xp { ZERO };
   //       getPrtlPos(p, xp);
 
   //       vec_t<Dim3> ei { ZERO }, bi { ZERO };
@@ -350,7 +350,7 @@ namespace ntt {
   //   template <Dimension D>
   //   Inline void Pusher_kernel<D>::operator()(Boris_GCA_t, index_t p) const {
   //     if (tag(p) == ParticleTag::alive) {
-  //       coord_t<FullD> xp { ZERO };
+  //       coord_t<PrtlCoordD> xp { ZERO };
   //       getPrtlPos(p, xp);
 
   //       vec_t<Dim3> ei { ZERO }, bi { ZERO };
@@ -393,7 +393,7 @@ namespace ntt {
   //   template <Dimension D>
   //   Inline void Pusher_kernel<D>::operator()(Vay_GCA_t, index_t p) const {
   //     if (tag(p) == ParticleTag::alive) {
-  //       coord_t<FullD> xp { ZERO };
+  //       coord_t<PrtlCoordD> xp { ZERO };
   //       getPrtlPos(p, xp);
 
   //       vec_t<Dim3> ei { ZERO }, bi { ZERO };
@@ -639,7 +639,7 @@ namespace ntt {
   template <typename T>
   Inline void Pusher_kernel<D>::get3VelCntrv(T,
                                              index_t&      p,
-                                             vec_t<FullD>& xp,
+                                             vec_t<PrtlCoordD>& xp,
                                              vec_t<Dim3>&  v) const {
     metric.v3_Cart2Cntrv(xp, { ux1(p), ux2(p), ux3(p) }, v);
     auto inv_energy { ONE / getEnergy(T {}, p) };
@@ -661,12 +661,12 @@ namespace ntt {
   }
 #else
   template <>
-  Inline void Pusher_kernel<Dim1>::getPrtlPos(index_t&, coord_t<FullD>&) const {
+  Inline void Pusher_kernel<Dim1>::getPrtlPos(index_t&, coord_t<PrtlCoordD>&) const {
     NTTError("not applicable");
   }
 
   template <>
-  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<FullD>& xp) const {
+  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<PrtlCoordD>& xp) const {
     xp[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
     xp[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
     xp[2] = phi(p);
@@ -1065,11 +1065,11 @@ namespace ntt {
   }
   #else
   template <Dimension D>
-  Inline void Pusher_kernel<D>::initForce(coord_t<FullD>& xp,
+  Inline void Pusher_kernel<D>::initForce(coord_t<PrtlCoordD>& xp,
                                           vec_t<Dim3>&    force_Cart) const {
-    coord_t<FullD> xp_Ph { ZERO };
-    coord_t<FullD> xp_Code { ZERO };
-    for (short d { 0 }; d < static_cast<short>(FullD); ++d) {
+    coord_t<PrtlCoordD> xp_Ph { ZERO };
+    coord_t<PrtlCoordD> xp_Code { ZERO };
+    for (short d { 0 }; d < static_cast<short>(PrtlCoordD); ++d) {
       xp_Code[d] = xp[d];
     }
     metric.x_Code2Sph(xp_Code, xp_Ph);

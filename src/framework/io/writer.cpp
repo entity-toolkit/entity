@@ -127,7 +127,7 @@ namespace ntt {
     for (auto& prtl : m_particles) {
       for (auto& sp_index : prtl.speciesID()) {
         if (prtl.id() == PrtlID::X) {
-          for (auto d { 0 }; d < (short)FullD; ++d) {
+          for (auto d { 0 }; d < (short)PrtlCoordD; ++d) {
             m_io.DefineVariable<real_t>(
               "X" + std::to_string(d + 1) + "_" + std::to_string(sp_index),
               { adios2::UnknownDim },

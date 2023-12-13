@@ -12,13 +12,13 @@
  * @param xi coordinate array in code units
  * @param x coordinate array in Spherical coordinates in physical units
  */
-Inline void x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
-  x[0] = xi[0] * dr + this->x1_min;
-  x[1] = xi[1] * dtheta + this->x2_min;
-  if constexpr (D == Dim2) {
-    x[2] = xi[2];
-  } else if constexpr (D == Dim3) {
-    x[2] = xi[2] * dphi + this->x3_min;
+Inline void x_Code2Sph(const coord_t<D>& xi, coord_t<D>& x) const {
+  x[0] = x1_Code2Sph(xi[0]);
+  if constexpr (D != Dim1) {
+    x[1] = x2_Code2Sph(xi[1]);
+    if constexpr (D == Dim3) {
+      x[2] = x3_Code2Sph(xi[2]);
+    }
   }
 }
 
@@ -31,9 +31,9 @@ Inline auto x2_Code2Sph(const real_t& x2) const -> real_t {
 }
 
 Inline auto x3_Code2Sph(const real_t& x3) const -> real_t {
-  if constexpr (D == Dim2) {
+  if constexpr (D != Dim3) {
     return x3;
-  } else if constexpr (D == Dim3) {
+  } else {
     return x3 * dphi + this->x3_min;
   }
 }
@@ -43,13 +43,13 @@ Inline auto x3_Code2Sph(const real_t& x3) const -> real_t {
  * @param x coordinate array in Spherical coordinates in physical units
  * @param xi coordinate array in code units
  */
-Inline void x_Sph2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
-  xi[0] = (x[0] - this->x1_min) * dr_inv;
-  xi[1] = (x[1] - this->x2_min) * dtheta_inv;
-  if constexpr (D == Dim2) {
-    xi[2] = x[2];
-  } else if constexpr (D == Dim3) {
-    xi[2] = (x[2] - this->x3_min) * dphi_inv;
+Inline void x_Sph2Code(const coord_t<D>& x, coord_t<D>& xi) const {
+  xi[0] = x1_Sph2Code(x[0]);
+  if constexpr (D != Dim1) {
+    xi[1] = x2_Sph2Code(x[1]);
+    if constexpr (D == Dim3) {
+      xi[2] = x3_Sph2Code(x[2]);
+    }
   }
 }
 
@@ -62,9 +62,9 @@ Inline auto x2_Sph2Code(const real_t& th) const -> real_t {
 }
 
 Inline auto x3_Sph2Code(const real_t& phi) const -> real_t {
-  if constexpr (D == Dim2) {
+  if constexpr (D != Dim3) {
     return phi;
-  } else if constexpr (D == Dim3) {
+  } else {
     return (phi - this->x3_min) * dphi_inv;
   }
 }

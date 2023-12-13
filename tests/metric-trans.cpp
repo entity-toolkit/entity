@@ -8,8 +8,19 @@
 #include <stdexcept>
 #include <vector>
 
-void printCoordinate(const std::string& label, const ntt::coord_t<ntt::Dim2>& x) {
+template <ntt::Dimension D>
+void printCoordinate(const std::string& label, const ntt::coord_t<D>& x);
+
+template <>
+void printCoordinate<ntt::Dim2>(const std::string&             label,
+                                const ntt::coord_t<ntt::Dim2>& x) {
   printf("%s: %f %f\n", label.c_str(), x[0], x[1]);
+}
+
+template <>
+void printCoordinate<ntt::Dim3>(const std::string&             label,
+                                const ntt::coord_t<ntt::Dim3>& x) {
+  printf("%s: %f %f %f\n", label.c_str(), x[0], x[1], x[2]);
 }
 
 void printVector(const std::string& label, const ntt::vec_t<ntt::Dim3>& v) {
@@ -77,7 +88,7 @@ auto main(int argc, char* argv[]) -> int {
           const auto all_correct = correct1 && correct2 && correct3 && correct4;
 
           if (!all_correct) {
-            printCoordinate("xi", xi);
+            printCoordinate<ntt::Dim2>("xi", xi);
             if (!correct1) {
               printVector("v_cov", v_cov);
               printVector("v_cov_from_cntrv", v_cov_from_cntrv);
@@ -110,31 +121,54 @@ auto main(int argc, char* argv[]) -> int {
       for (auto i { 0 }; i < 2; ++i) {
         for (auto j { 0 }; j < 2; ++j) {
           ntt::coord_t<ntt::Dim2> xi { x1[i], x2[j] };
-          ntt::coord_t<ntt::Dim2> xi_from_sph { ZERO }, xi_from_cart { ZERO };
-          ntt::coord_t<ntt::Dim2> xsph_from_code { ZERO },
-            xcart_from_code { ZERO };
+#ifdef MINKOWSKI_METRIC
+          ntt::coord_t<ntt::Dim2> xi3D { x1[i], x2[j] };
+          ntt::coord_t<ntt::Dim2> xi_from_cart { ZERO }, xcart_from_code { ZERO };
+#else
+          ntt::coord_t<ntt::Dim3> xi3D { x1[i], x2[j], ZERO };
+          ntt::coord_t<ntt::Dim3> xi_from_cart { ZERO }, xcart_from_code { ZERO };
+#endif
+          ntt::coord_t<ntt::Dim2> xi_from_sph { ZERO };
+          ntt::coord_t<ntt::Dim2> xsph_from_code { ZERO };
+          // xcart_from_code { ZERO };
 
           metric.x_Code2Sph(xi, xsph_from_code);
-          metric.x_Code2Cart(xi, xcart_from_code);
+          metric.x_Code2Cart(xi3D, xcart_from_code);
           metric.x_Sph2Code(xsph_from_code, xi_from_sph);
           metric.x_Cart2Code(xcart_from_code, xi_from_cart);
 
           const auto correct1 = ntt::AlmostEqual<ntt::Dim2>(xi, xi_from_sph, tinyCart);
-          const auto correct2    = ntt::AlmostEqual<ntt::Dim2>(xi,
+
+#ifdef MINKOWSKI_METRIC
+          const auto correct2 = ntt::AlmostEqual<ntt::Dim2>(xi3D,
                                                             xi_from_cart,
                                                             tinyCart);
+#else
+          const auto correct2 = ntt::AlmostEqual<ntt::Dim3>(xi3D,
+                                                            xi_from_cart,
+                                                            tinyCart);
+#endif
           const auto all_correct = correct1 && correct2;
 
           if (!all_correct) {
-            printCoordinate("xi", xi);
+            printCoordinate<ntt::Dim2>("xi", xi);
             if (!correct1) {
-              printCoordinate("xi_from_sph", xi_from_sph);
+              printCoordinate<ntt::Dim2>("xi_from_sph", xi_from_sph);
             }
             if (!correct2) {
-              printCoordinate("xi_from_cart", xi_from_cart);
+#ifdef MINKOWSKI_METRIC
+              printCoordinate<ntt::Dim2>("xi_from_cart", xi_from_cart);
+#else
+              printCoordinate<ntt::Dim3>("xi_from_cart", xi_from_cart);
+#endif
             }
-            printCoordinate("xsph_from_code", xsph_from_code);
-            printCoordinate("xcart_from_code", xcart_from_code);
+            printCoordinate<ntt::Dim2>("xsph_from_code", xsph_from_code);
+
+#ifdef MINKOWSKI_METRIC
+            printCoordinate<ntt::Dim2>("xcart_from_code", xcart_from_code);
+#else
+            printCoordinate<ntt::Dim3>("xcart_from_code", xcart_from_code);
+#endif
           }
           correct = correct && all_correct;
         }
@@ -176,7 +210,7 @@ auto main(int argc, char* argv[]) -> int {
           const auto all_correct = correct1 && correct2 && correct3;
 
           if (!all_correct) {
-            printCoordinate("xi", xi);
+            printCoordinate<ntt::Dim2>("xi", xi);
             if (!correct1) {
               printVector("v_cntrv", v_cntrv);
               printVector("v_cntrv_fromPhys", v_cntrv_fromPhys);
@@ -238,7 +272,7 @@ auto main(int argc, char* argv[]) -> int {
             const auto all_correct = correct1 && correct2 && correct3;
 
             if (!all_correct) {
-              printCoordinate("xi", xi);
+              printCoordinate<ntt::Dim2>("xi", xi);
               if (!correct1) {
                 printVector("v_cntrv", v_cntrv);
                 printVector("v_cntrv_fromCart", v_cntrv_fromCart);

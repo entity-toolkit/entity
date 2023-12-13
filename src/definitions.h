@@ -139,9 +139,9 @@ namespace ntt {
   struct DimensionTag {};
 
 #if defined(MINKOWSKI_METRIC) || defined(GRPIC_ENGINE)
-  #define FullD D
+  #define PrtlCoordD D
 #else
-  #define FullD Dim3
+  #define PrtlCoordD Dim3
 #endif
 
   enum class SimulationEngine {
@@ -184,8 +184,7 @@ namespace ntt {
   inline constexpr auto PICEngine     = SimulationEngine::PIC;
   inline constexpr auto GRPICEngine   = SimulationEngine::GRPIC;
 
-  inline auto stringizeSimulationEngine(const SimulationEngine& sim)
-    -> std::string {
+  inline auto stringizeSimulationEngine(const SimulationEngine& sim) -> std::string {
     switch (sim) {
       case SANDBOXEngine:
         return "Sandbox";
@@ -198,8 +197,7 @@ namespace ntt {
     }
   }
 
-  inline auto stringizeBoundaryCondition(const BoundaryCondition& bc)
-    -> std::string {
+  inline auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
     switch (bc) {
       case BoundaryCondition::PERIODIC:
         return "Periodic";
@@ -341,7 +339,7 @@ namespace ntt {
     namespace gca {
       const real_t EovrB_max = 0.9;
     } // namespace gca
-  }   // namespace defaults
+  } // namespace defaults
 } // namespace ntt
 
 /* -------------------------------------------------------------------------- */

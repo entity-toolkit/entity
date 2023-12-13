@@ -14,10 +14,12 @@
  */
 Inline void x_Code2Cart(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
   coord_t<Dim3> x_sph { ZERO };
-  x_Code2Sph(xi, x_sph);
-  x[0] = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
-  x[1] = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
-  x[2] = x_sph[0] * math::cos(x_sph[1]);
+  x_sph[0] = x1_Code2Sph(xi[0]);
+  x_sph[1] = x2_Code2Sph(xi[1]);
+  x_sph[2] = x3_Code2Sph(xi[2]);
+  x[0]     = x_sph[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]);
+  x[1]     = x_sph[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]);
+  x[2]     = x_sph[0] * math::cos(x_sph[1]);
 }
 
 /**
@@ -32,7 +34,9 @@ Inline void x_Cart2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
   x_sph[1]           = static_cast<real_t>(constant::HALF_PI) -
              math::atan2(x[2], math::sqrt(rxy2));
   x_sph[2] = static_cast<real_t>(constant::PI) - math::atan2(x[1], -x[0]);
-  x_Sph2Code(x_sph, xi);
+  xi[0]    = x1_Sph2Code(x_sph[0]);
+  xi[1]    = x2_Sph2Code(x_sph[1]);
+  xi[2]    = x3_Sph2Code(x_sph[2]);
 }
 
 #endif // FRAMEWORK_METRICS_UTILS_X_CODE_CART_FORGSPH_H

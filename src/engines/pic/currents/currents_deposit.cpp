@@ -18,6 +18,8 @@
 
 #include "io/output.h"
 
+#include METRIC_HEADER
+
 namespace ntt {
   template <Dimension D>
   void PIC<D>::CurrentsDeposit() {
@@ -35,7 +37,11 @@ namespace ntt {
       Kokkos::parallel_for(
         "CurrentsDeposit",
         species.rangeActiveParticles(),
-        DepositCurrents_kernel<D, PICEngine>(mblock, species, scatter_cur, charge, dt));
+        DepositCurrents_kernel<D, PICEngine, Metric<D>>(mblock,
+                                                        species,
+                                                        scatter_cur,
+                                                        charge,
+                                                        dt));
     }
     Kokkos::Experimental::contribute(mblock.cur, scatter_cur);
 

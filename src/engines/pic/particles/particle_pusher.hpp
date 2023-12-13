@@ -3,6 +3,7 @@
 
 #include "wrapper.h"
 
+#include "particle_macros.h"
 #include "pic.h"
 
 #include "io/output.h"
@@ -10,12 +11,9 @@
 #include "meshblock/particles.h"
 #include "utils/qmath.h"
 #include METRIC_HEADER
+#include PGEN_HEADER
 
 #include <typeindex>
-
-#ifdef EXTERNAL_FORCE
-  #include PGEN_HEADER
-#endif
 
 namespace ntt {
   // Pushers
@@ -159,7 +157,7 @@ namespace ntt {
     Inline void velUpd(GCA_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
     // Getters
-    Inline void getPrtlPos(index_t&, coord_t<FullD>&) const;
+    Inline void getPrtlPos(index_t&, coord_t<PrtlCoordD>&) const;
     Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
     Inline auto getEnergy(Massless_t, index_t& p) const -> real_t;
     Inline void getInterpFlds(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
@@ -169,7 +167,7 @@ namespace ntt {
     Inline void boundaryConditions_x1(index_t&) const;
     Inline void boundaryConditions_x2(index_t&) const;
     Inline void boundaryConditions_x3(index_t&) const;
-    Inline void initForce(coord_t<FullD>&, vec_t<Dim3>&) const;
+    Inline void initForce(coord_t<PrtlCoordD>&, vec_t<Dim3>&) const;
   };
 
   template <Dimension D, typename P, bool ExtForce, typename... Cs>
@@ -250,7 +248,7 @@ namespace ntt {
 
     Inline void operator()(P, index_t p) const {
       if (this->tag(p) == ParticleTag::alive) {
-        coord_t<FullD> xp { ZERO };
+        coord_t<PrtlCoordD> xp { ZERO };
         this->getPrtlPos(p, xp);
         // update cartesian velocity
         if constexpr (!std::is_same_v<P, Photon_t>) {
@@ -337,15 +335,15 @@ namespace ntt {
         // update position
         {
           // get cartesian velocity
-          const real_t   inv_energy { ONE / getEnergy(Mass_t<P> {}, p) };
-          vec_t<Dim3>    vp_Cart { this->ux1(p) * inv_energy,
+          const real_t inv_energy { ONE / this->getEnergy(Mass_t<P> {}, p) };
+          vec_t<Dim3>  vp_Cart { this->ux1(p) * inv_energy,
                                 this->ux2(p) * inv_energy,
                                 this->ux3(p) * inv_energy };
           // get cartesian position
-          coord_t<FullD> xp_Cart { ZERO };
+          coord_t<PrtlCoordD> xp_Cart { ZERO };
           this->metric.x_Code2Cart(xp, xp_Cart);
           // update cartesian position
-          for (short d { 0 }; d < static_cast<short>(FullD); ++d) {
+          for (short d { 0 }; d < static_cast<short>(PrtlCoordD); ++d) {
             xp_Cart[d] += vp_Cart[d] * this->dt;
           }
           // transform back to code
@@ -626,13 +624,14 @@ namespace ntt {
   }
 #else
   template <>
-  Inline void PusherBase_kernel<Dim1>::getPrtlPos(index_t&, coord_t<FullD>&) const {
+  Inline void PusherBase_kernel<Dim1>::getPrtlPos(index_t&,
+                                                  coord_t<PrtlCoordD>&) const {
     NTTError("not applicable");
   }
 
   template <>
-  Inline void PusherBase_kernel<Dim2>::getPrtlPos(index_t&        p,
-                                                  coord_t<FullD>& xp) const {
+  Inline void PusherBase_kernel<Dim2>::getPrtlPos(index_t& p,
+                                                  coord_t<PrtlCoordD>& xp) const {
     xp[0] = i_di_to_Xi(i1(p), dx1(p));
     xp[1] = i_di_to_Xi(i2(p), dx2(p));
     xp[2] = phi(p);
@@ -648,14 +647,13 @@ namespace ntt {
   }
 
   template <Dimension D>
-  Inline auto PusherBase_kernel<D>::getEnergy(Massive_t, index_t& p) const
-    -> real_t {
+  Inline auto PusherBase_kernel<D>::getEnergy(Massive_t, index_t& p) const -> real_t {
     return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
   template <Dimension D>
-  Inline auto PusherBase_kernel<D>::getEnergy(Massless_t, index_t& p) const
-    -> real_t {
+  Inline auto PusherBase_kernel<D>::getEnergy(Massless_t,
+                                              index_t& p) const -> real_t {
     return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
@@ -1017,10 +1015,17 @@ namespace ntt {
   // External force
 
   template <Dimension D>
-  Inline void PusherBase_kernel<D>::initForce(coord_t<FullD>& xp,
+  Inline void PusherBase_kernel<D>::initForce(coord_t<PrtlCoordD>& xp,
                                               vec_t<Dim3>& force_Cart) const {
-    coord_t<FullD> xp_Ph { ZERO };
-    metric.x_Code2Phys(xp, xp_Ph);
+    coord_t<PrtlCoordD> xp_Ph { ZERO };
+    xp_Ph[0] = metric.x1_Code2Phys(xp[0]);
+    if constexpr (PrtlCoordD != Dim1) {
+      xp_Ph[1] = metric.x2_Code2Phys(xp[1]);
+    }
+    if constexpr (PrtlCoordD == Dim3) {
+      xp_Ph[2] = metric.x3_Code2Phys(xp[2]);
+    }
+    // metric.x_Code2Phys(xp, xp_Ph);
     const vec_t<Dim3> force_Hat { pgen.ext_force_x1(time, xp_Ph),
                                   pgen.ext_force_x2(time, xp_Ph),
                                   pgen.ext_force_x3(time, xp_Ph) };

@@ -158,7 +158,7 @@
   {                                                                            \
     vec_t<Dim3>    e_hat { ZERO }, b_hat { ZERO };                             \
     vec_t<Dim3>    e_cntrv { ZERO };                                           \
-    coord_t<FullD> x_ph { ZERO };                                              \
+    coord_t<PrtlCoordD> x_ph { ZERO };                                              \
     (MBLOCK).metric.x_Code2Phys((XCODE), x_ph);                                \
     FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                     \
     (MBLOCK).metric.v3_Hat2Cntrv({ (XCODE)[0] }, e_hat, e_cntrv);              \
@@ -169,7 +169,7 @@
   {                                                                            \
     vec_t<Dim3>    e_hat { ZERO }, b_hat { ZERO };                             \
     vec_t<Dim3>    b_cntrv { ZERO };                                           \
-    coord_t<FullD> x_ph { ZERO };                                              \
+    coord_t<PrtlCoordD> x_ph { ZERO };                                              \
     (MBLOCK).metric.x_Code2Phys((XCODE), x_ph);                                \
     FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                     \
     (MBLOCK).metric.v3_Hat2Cntrv({ (XCODE)[0] }, b_hat, b_cntrv);              \
@@ -181,7 +181,7 @@
   {                                                                            \
     vec_t<Dim3>    e_hat { ZERO }, b_hat { ZERO };                             \
     vec_t<Dim3>    e_cntrv { ZERO };                                           \
-    coord_t<FullD> x_ph { ZERO };                                              \
+    coord_t<PrtlCoordD> x_ph { ZERO };                                              \
     (MBLOCK).metric.x_Code2Phys((XCODE), x_ph);                                \
     FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                     \
     (MBLOCK).metric.v3_Hat2Cntrv({ (XCODE)[0], (XCODE)[1] }, e_hat, e_cntrv);  \
@@ -192,7 +192,7 @@
   {                                                                            \
     vec_t<Dim3>    e_hat { ZERO }, b_hat { ZERO };                             \
     vec_t<Dim3>    b_cntrv { ZERO };                                           \
-    coord_t<FullD> x_ph { ZERO };                                              \
+    coord_t<PrtlCoordD> x_ph { ZERO };                                              \
     (MBLOCK).metric.x_Code2Phys((XCODE), x_ph);                                \
     FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                     \
     (MBLOCK).metric.v3_Hat2Cntrv({ (XCODE)[0], (XCODE)[1] }, b_hat, b_cntrv);  \
@@ -204,7 +204,7 @@
   {                                                                            \
     vec_t<Dim3>    e_hat { ZERO }, b_hat { ZERO };                             \
     vec_t<Dim3>    e_cntrv { ZERO };                                           \
-    coord_t<FullD> x_ph { ZERO };                                              \
+    coord_t<PrtlCoordD> x_ph { ZERO };                                              \
     (MBLOCK).metric.x_Code2Phys((XCODE), x_ph);                                \
     FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                     \
     (MBLOCK).metric.v3_Hat2Cntrv((XCODE), e_hat, e_cntrv);                     \
@@ -215,7 +215,7 @@
   {                                                                            \
     vec_t<Dim3>    e_hat { ZERO }, b_hat { ZERO };                             \
     vec_t<Dim3>    b_cntrv { ZERO };                                           \
-    coord_t<FullD> x_ph { ZERO };                                              \
+    coord_t<PrtlCoordD> x_ph { ZERO };                                              \
     (MBLOCK).metric.x_Code2Phys((XCODE), x_ph);                                \
     FUNC(x_ph, e_hat, b_hat, __VA_ARGS__);                                     \
     (MBLOCK).metric.v3_Hat2Cntrv((XCODE), b_hat, b_cntrv);                     \
@@ -227,7 +227,7 @@
   {                                                                              \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };   \
     {                                                                            \
-      coord_t<FullD> x_code { ZERO };                                            \
+      coord_t<PrtlCoordD> x_code { ZERO };                                            \
       x_code[0] = i_ + HALF;                                                     \
       set_em_E_1d((MBLOCK), (I), (x_code), (em::ex1), (0), (FUNC), __VA_ARGS__); \
     }                                                                            \
@@ -237,7 +237,7 @@
   {                                                                              \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };   \
     {                                                                            \
-      coord_t<FullD> x_code { ZERO };                                            \
+      coord_t<PrtlCoordD> x_code { ZERO };                                            \
       x_code[0] = i_;                                                            \
       set_em_E_1d((MBLOCK), (I), (x_code), (em::ex2), (1), (FUNC), __VA_ARGS__); \
     }                                                                            \
@@ -247,7 +247,7 @@
   {                                                                              \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };   \
     {                                                                            \
-      coord_t<FullD> x_code { ZERO };                                            \
+      coord_t<PrtlCoordD> x_code { ZERO };                                            \
       x_code[0] = i_;                                                            \
       set_em_E_1d((MBLOCK), (I), (x_code), (em::ex3), (2), (FUNC), __VA_ARGS__); \
     }                                                                            \
@@ -257,7 +257,7 @@
   {                                                                              \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };   \
     {                                                                            \
-      coord_t<FullD> x_code { ZERO };                                            \
+      coord_t<PrtlCoordD> x_code { ZERO };                                            \
       x_code[0] = i_;                                                            \
       set_em_B_1d((MBLOCK), (I), (x_code), (em::bx1), (0), (FUNC), __VA_ARGS__); \
     }                                                                            \
@@ -267,7 +267,7 @@
   {                                                                              \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };   \
     {                                                                            \
-      coord_t<FullD> x_code { ZERO };                                            \
+      coord_t<PrtlCoordD> x_code { ZERO };                                            \
       x_code[0] = i_ + HALF;                                                     \
       set_em_B_1d((MBLOCK), (I), (x_code), (em::bx2), (1), (FUNC), __VA_ARGS__); \
     }                                                                            \
@@ -277,7 +277,7 @@
   {                                                                              \
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };   \
     {                                                                            \
-      coord_t<FullD> x_code { ZERO };                                            \
+      coord_t<PrtlCoordD> x_code { ZERO };                                            \
       x_code[0] = i_ + HALF;                                                     \
       set_em_B_1d((MBLOCK), (I), (x_code), (em::bx3), (2), (FUNC), __VA_ARGS__); \
     }                                                                            \
@@ -289,7 +289,7 @@
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };        \
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };        \
     {                                                                                 \
-      coord_t<FullD> x_code { ZERO };                                                 \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                 \
       x_code[0] = i_ + HALF;                                                          \
       x_code[1] = j_;                                                                 \
       set_em_E_2d((MBLOCK), (I), (J), (x_code), (em::ex1), (0), (FUNC), __VA_ARGS__); \
@@ -301,7 +301,7 @@
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };        \
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };        \
     {                                                                                 \
-      coord_t<FullD> x_code { ZERO };                                                 \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                 \
       x_code[0] = i_;                                                                 \
       x_code[1] = j_ + HALF;                                                          \
       set_em_E_2d((MBLOCK), (I), (J), (x_code), (em::ex2), (1), (FUNC), __VA_ARGS__); \
@@ -313,7 +313,7 @@
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };        \
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };        \
     {                                                                                 \
-      coord_t<FullD> x_code { ZERO };                                                 \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                 \
       x_code[0] = i_;                                                                 \
       x_code[1] = j_;                                                                 \
       set_em_E_2d((MBLOCK), (I), (J), (x_code), (em::ex3), (2), (FUNC), __VA_ARGS__); \
@@ -325,7 +325,7 @@
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };        \
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };        \
     {                                                                                 \
-      coord_t<FullD> x_code { ZERO };                                                 \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                 \
       x_code[0] = i_;                                                                 \
       x_code[1] = j_ + HALF;                                                          \
       set_em_B_2d((MBLOCK), (I), (J), (x_code), (em::bx1), (0), (FUNC), __VA_ARGS__); \
@@ -337,7 +337,7 @@
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };        \
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };        \
     {                                                                                 \
-      coord_t<FullD> x_code { ZERO };                                                 \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                 \
       x_code[0] = i_ + HALF;                                                          \
       x_code[1] = j_;                                                                 \
       set_em_B_2d((MBLOCK), (I), (J), (x_code), (em::bx2), (1), (FUNC), __VA_ARGS__); \
@@ -349,7 +349,7 @@
     const real_t i_ { static_cast<real_t>(static_cast<int>((I)) - N_GHOSTS) };        \
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };        \
     {                                                                                 \
-      coord_t<FullD> x_code { ZERO };                                                 \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                 \
       x_code[0] = i_ + HALF;                                                          \
       x_code[1] = j_ + HALF;                                                          \
       set_em_B_2d((MBLOCK), (I), (J), (x_code), (em::bx3), (2), (FUNC), __VA_ARGS__); \
@@ -363,7 +363,7 @@
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };             \
     const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };             \
     {                                                                                      \
-      coord_t<FullD> x_code { ZERO };                                                      \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                      \
       x_code[0] = i_ + HALF;                                                               \
       x_code[1] = j_;                                                                      \
       x_code[2] = k_;                                                                      \
@@ -377,7 +377,7 @@
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };             \
     const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };             \
     {                                                                                      \
-      coord_t<FullD> x_code { ZERO };                                                      \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                      \
       x_code[0] = i_;                                                                      \
       x_code[1] = j_ + HALF;                                                               \
       x_code[2] = k_;                                                                      \
@@ -391,7 +391,7 @@
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };             \
     const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };             \
     {                                                                                      \
-      coord_t<FullD> x_code { ZERO };                                                      \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                      \
       x_code[0] = i_;                                                                      \
       x_code[1] = j_;                                                                      \
       x_code[2] = k_ + HALF;                                                               \
@@ -405,7 +405,7 @@
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };             \
     const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };             \
     {                                                                                      \
-      coord_t<FullD> x_code { ZERO };                                                      \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                      \
       x_code[0] = i_;                                                                      \
       x_code[1] = j_ + HALF;                                                               \
       x_code[2] = k_ + HALF;                                                               \
@@ -419,7 +419,7 @@
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };             \
     const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };             \
     {                                                                                      \
-      coord_t<FullD> x_code { ZERO };                                                      \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                      \
       x_code[0] = i_ + HALF;                                                               \
       x_code[1] = j_;                                                                      \
       x_code[2] = k_ + HALF;                                                               \
@@ -433,7 +433,7 @@
     const real_t j_ { static_cast<real_t>(static_cast<int>((J)) - N_GHOSTS) };             \
     const real_t k_ { static_cast<real_t>(static_cast<int>((K)) - N_GHOSTS) };             \
     {                                                                                      \
-      coord_t<FullD> x_code { ZERO };                                                      \
+      coord_t<PrtlCoordD> x_code { ZERO };                                                      \
       x_code[0] = i_ + HALF;                                                               \
       x_code[1] = j_ + HALF;                                                               \
       x_code[2] = k_;                                                                      \

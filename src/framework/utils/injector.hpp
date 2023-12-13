@@ -808,7 +808,7 @@ namespace ntt {
 #if defined(GRPIC_ENGINE) || defined(MINKOWSKI_METRIC)
   #define CoordDim Dim2
 #else
-  #define CoordDim FullD
+  #define CoordDim PrtlCoordD
 #endif
 
   template <SimulationEngine S,
@@ -964,8 +964,8 @@ namespace ntt {
     } else if (region.size() == 2 * static_cast<short>(D)) {
       tuple_t<std::size_t, D> region_min;
       tuple_t<std::size_t, D> region_max;
-      coord_t<FullD>          xmin_ph { ZERO }, xmax_ph { ZERO };
-      coord_t<FullD>          xmin_cu { ZERO }, xmax_cu { ZERO };
+      coord_t<PrtlCoordD>     xmin_ph { ZERO }, xmax_ph { ZERO };
+      coord_t<PrtlCoordD>     xmin_cu { ZERO }, xmax_cu { ZERO };
       for (short i = 0; i < static_cast<short>(D); ++i) {
         xmin_ph[i] = region[2 * i];
         xmax_ph[i] = region[2 * i + 1];

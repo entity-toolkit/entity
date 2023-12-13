@@ -8,7 +8,7 @@
  * @notes: - The deposited currents are not the "physical" currents used ...
  *           ... in the Ampere's law, they need to be converted further.
  *         - Previous coordinate of the particle is stored in _prev arrays.
- * 
+ *
  */
 
 #include "utils/currents_deposit.hpp"
@@ -18,6 +18,8 @@
 #include "grpic.h"
 
 #include "io/output.h"
+
+#include METRIC_HEADER
 
 namespace ntt {
   template <Dimension D>
@@ -33,13 +35,14 @@ namespace ntt {
       }
       const real_t dt { mblock.timestep() };
       const real_t charge { species.charge() };
-      Kokkos::parallel_for("CurrentsDeposit",
-                           species.rangeActiveParticles(),
-                           DepositCurrents_kernel<D, GRPICEngine>(mblock,
-                                                                  species,
-                                                                  scatter_cur0,
-                                                                  charge,
-                                                                  dt));
+      Kokkos::parallel_for(
+        "CurrentsDeposit",
+        species.rangeActiveParticles(),
+        DepositCurrents_kernel<D, GRPICEngine, Metric<D>>(mblock,
+                                                          species,
+                                                          scatter_cur0,
+                                                          charge,
+                                                          dt));
     }
     Kokkos::Experimental::contribute(mblock.cur0, scatter_cur0);
 

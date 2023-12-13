@@ -170,11 +170,20 @@ if(${mpi} STREQUAL "OFF")
   add_test(NAME "Pusher: ${engine} ${metric}" COMMAND "test-${title}.xc")
 
   # --------------------------------- Deposit -------------------------------- #
-  foreach(metric ${sr_metrics})
-    set(engine pic)
+  foreach(metric ${all_metrics})
+    set(metric ${metric})
+
+    list(FIND sr_metrics ${metric} sr_metric_index)
+
+    if(NOT ${sr_metric_index} EQUAL -1)
+      set(engine pic)
+    else()
+      set(engine grpic)
+    endif()
+
     set(pgen dummy)
-    set(title deposit-sr-${metric})
-    add_executable(test-${title}.xc deposit-sr.cpp)
+    set(title deposit-${metric})
+    add_executable(test-${title}.xc deposit.cpp)
     target_link_libraries(
       test-${title}.xc PUBLIC framework-${metric}
                               engine-${engine}-${metric}-${pgen})
@@ -183,16 +192,27 @@ if(${mpi} STREQUAL "OFF")
     add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
   endforeach()
 
-  # foreach(metric ${gr_metrics})
-  #   set(engine grpic)
-  #   set(pgen debug_deposit)
-  #   set(title deposit-gr-${metric})
-  #   add_executable(test-${title}.xc deposit-gr.cpp)
-  #   target_link_libraries(
-  #     test-${title}.xc PUBLIC framework-${metric}
-  #                             engine-${engine}-${metric}-${pgen})
-  #   target_include_directories(test-${title}.xc
-  #                              PRIVATE ${SOURCE_DIR}/engines/${engine})
-  #   add_test(NAME "Deposit: ${engine} ${metric}" COMMAND "test-${title}.xc")
-  # endforeach()
 endif()
+
+# --------------------------------- Kernel unit tests --------------------------------
+foreach(metric ${all_metrics})
+  set(metric ${metric})
+
+  list(FIND sr_metrics ${metric} sr_metric_index)
+
+  if(NOT ${sr_metric_index} EQUAL -1)
+    set(engine pic)
+  else()
+    set(engine grpic)
+  endif()
+
+  set(pgen dummy)
+  set(title kernels-${metric})
+  add_executable(test-${title}.xc kernels.cpp)
+  target_link_libraries(
+    test-${title}.xc PUBLIC framework-${metric}
+                            engine-${engine}-${metric}-${pgen})
+  target_include_directories(test-${title}.xc
+                              PRIVATE ${SOURCE_DIR}/engines/${engine})
+  add_test(NAME "Kernels: ${engine} ${metric}" COMMAND "test-${title}.xc")
+endforeach()
