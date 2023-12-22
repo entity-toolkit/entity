@@ -1,0 +1,52 @@
+[simulation]
+title   = "./data/wald_ff/Wald_ff"
+runtime = 20.0
+
+[domain]
+qsph_r0     = -10.0
+qsph_h      = 0.5
+sph_rabsorb = 7.5
+a           = 0.99
+resolution  = [128, 128]
+extent      = [0.8, 8.0]
+boundaries  = [["OPEN", "ABSORB"], ["AXIS"]]
+
+[algorithm]
+CFL             = 0.5
+current_filters = 4
+
+[units]
+ppc0       = 8.0
+larmor0    = 0.0025
+skindepth0 = 0.05
+
+[particles]
+n_species   = 2
+use_weights = true
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 2e6
+pusher   = "Boris"
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 2e6
+pusher   = "Boris"
+
+[problem]
+multiplicity = 1.0
+sigma_max = 1000.0
+inj_rmin = 1.2
+inj_rmax = 7.5
+
+[output]
+fields      = ["D", "B", "Aphi", "J", "N_1", "N_2", "Nppc_1", "Nppc_2"]
+interval    = 100
+flds_stride = 1
+mom_smooth  = 0
+format      = "HDF5"
