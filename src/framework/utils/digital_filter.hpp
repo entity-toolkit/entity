@@ -111,7 +111,7 @@ namespace ntt {
 
     // #define FILTER_IN_I1(ARR, COMP, I, J) (ARR)((I), (J), (COMP))
 
-  #define BELYAEV_FILTER
+//   #define BELYAEV_FILTER
 
   template <>
   Inline void DigitalFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {

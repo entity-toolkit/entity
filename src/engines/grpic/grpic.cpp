@@ -287,10 +287,6 @@ namespace ntt {
       ParticlesPush();
       timers.stop("ParticlePusher");
 
-      timers.start("UserSpecific");
-      pgen.UserDriveParticles(this->m_time, params, mblock);
-      timers.stop("UserSpecific");
-
       /**
        * cur0::J <- current deposition
        *
@@ -437,6 +433,11 @@ namespace ntt {
      *          x_prtl   at n+1
      *          u_prtl   at n+1/2
      */
+
+    timers.start("UserSpecific");
+    pgen.UserDriveParticles(this->m_time, params, mblock);
+    timers.stop("UserSpecific");
+
     timers.start("Output");
     wrtr.WriteAll(params, metadomain, mblock, this->m_time, this->m_tstep);
     timers.stop("Output");

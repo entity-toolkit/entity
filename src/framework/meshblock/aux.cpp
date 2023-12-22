@@ -572,6 +572,7 @@ namespace ntt {
               const int i2_min      = i2 - window + N_GHOSTS;
               const int i2_max      = i2 + window + N_GHOSTS;
               real_t    contrib { ZERO };
+
               if (field == FieldID::Rho) {
                 contrib = ((mass == ZERO) ? ONE : mass);
               } else if (field == FieldID::Charge) {
@@ -625,13 +626,14 @@ namespace ntt {
 #endif
               }
               if (field != FieldID::Nppc) {
-                contrib *= inv_n0 / this_metric.sqrt_det_h(
+                contrib *= inv_n0 / ABS(this_metric.sqrt_det_h(
                                       { static_cast<real_t>(i1) + HALF,
-                                        static_cast<real_t>(i2) + HALF });
+                                        static_cast<real_t>(i2) + HALF }));
                 if (use_weights) {
                   contrib *= species.weight(p);
                 }
               }
+
               for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
                 for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
                   if (ax_i2min && (i2_ - static_cast<int>(N_GHOSTS) < 0)) {
@@ -649,6 +651,7 @@ namespace ntt {
                   }
                 }
               }
+
             }
           });
       } else if constexpr (D == Dim3) {
@@ -735,6 +738,217 @@ namespace ntt {
     }
     Kokkos::Experimental::contribute(this->buff, scatter_buff);
   }
+
+  template <Dimension D, SimulationEngine S>
+  void Meshblock<D, S>::ComputeDensity(const SimulationParams& params,
+                                       const std::vector<int>& prtl_species,
+                                       int                     buff_ind,
+                                       short                   window) {
+    NTTLog();
+    ResetBuffer<D, 3>(this->buff, buff_ind);
+    const auto smooth = ONE / math::pow(TWO * window + ONE, static_cast<int>(D));
+    const auto inv_n0 = ONE / params.n0();
+
+    // if species not specified, use all massive particles
+    std::vector<int> out_species = prtl_species;
+    if (out_species.size() == 0) {
+      for (auto& specs : particles) {
+        if (specs.mass() > 0.0) {
+          out_species.push_back(specs.index());
+        }
+      }
+    }
+
+    auto       this_metric = this->metric;
+    const auto use_weights = params.useWeights();
+
+    auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
+    for (auto& sp : out_species) {
+      auto species = particles[sp - 1];
+
+      if constexpr (D == Dim1) {
+        Kokkos::parallel_for(
+          "ComputeDensity",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (species.tag(p) == ParticleTag::alive) {
+              auto   buff_access = scatter_buff.access();
+              auto   i1          = species.i1(p);
+              auto   i1_min      = i1 - window + N_GHOSTS;
+              auto   i1_max      = i1 + window + N_GHOSTS;
+              real_t contrib { ONE };
+              real_t smooth_1 {ZERO};
+              contrib *= inv_n0 / this_metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF });
+                if (use_weights) {
+                  contrib *= species.weight(p);
+                }
+              for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
+
+
+                    if (window == 0) {
+
+                    if (i1_== (i1 + N_GHOSTS)) {
+                        smooth_1 = 1.0;
+                    }
+
+                    } else if (window == 1) {
+
+                    if (i1_== (i1 + N_GHOSTS)) {
+                        smooth_1 = 0.50;
+                    } else {
+                        smooth_1 = 0.25;
+                    }
+
+                    } else if (window == 2) {
+
+                    if (i1_== (i1 + N_GHOSTS)) {
+                        smooth_1 = 0.375;
+                    } else if (ABS(i1_ - i1 - N_GHOSTS ) == 1) {
+                        smooth_1 = 0.25;
+                    } else {
+                        smooth_1 = 0.0625;
+                    }
+
+                    } else {
+                      NTTHostError("Smoothing kernel for density computation must have size 0, 1, or 2.");
+                    }
+
+                buff_access(i1_, buff_ind) += contrib * smooth_1;
+              }
+            }
+          }
+          );
+      } else if constexpr (D == Dim2) {
+        const auto ax_i2min { (this->boundaries.size() > 1) &&
+                              (this->boundaries[1][0] == BoundaryCondition::AXIS) };
+        const auto ax_i2max { (this->boundaries.size() > 1) &&
+                              (this->boundaries[1][1] == BoundaryCondition::AXIS) };
+        const auto ni2 { (int)(this->Ni2()) };
+        Kokkos::parallel_for(
+          "ComputeDensity",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (species.tag(p) == ParticleTag::alive) {
+              auto      buff_access = scatter_buff.access();
+              auto      i1          = species.i1(p);
+              auto      i2          = species.i2(p);
+              const int i1_min      = i1 - window + N_GHOSTS;
+              const int i1_max      = i1 + window + N_GHOSTS;
+              const int i2_min      = i2 - window + N_GHOSTS;
+              const int i2_max      = i2 + window + N_GHOSTS;
+              real_t    contrib { ONE };
+              real_t smooth_1 {ZERO};
+              real_t smooth_2 {ZERO};
+
+                contrib *= inv_n0 / ABS(this_metric.sqrt_det_h(
+                                      { static_cast<real_t>(i1) + HALF,
+                                        static_cast<real_t>(i2) + HALF }));
+                if (use_weights) {
+                  contrib *= species.weight(p);
+                }
+
+            for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
+                for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
+
+                    if (window == 0) {
+
+                    if (i1_== (i1 + N_GHOSTS)) {
+                        smooth_1 = 1.0;
+                    }
+                    if (i2_== (i2 + N_GHOSTS)) {
+                        smooth_2 = 1.0;
+                    }
+
+                    } else if (window == 1) {
+
+                    if (i1_== (i1 + N_GHOSTS)) {
+                        smooth_1 = 0.50;
+                    } else {
+                        smooth_1 = 0.25;
+                    }
+                    if (i2_== (i2 + N_GHOSTS)) {
+                        smooth_2 = 0.50;
+                    } else {
+                        smooth_2 = 0.25;
+                    }
+
+                    } else if (window == 2) {
+
+                    if (i1_== (i1 + N_GHOSTS)) {
+                        smooth_1 = 0.375;
+                    } else if (ABS(i1_ - i1 - N_GHOSTS ) == 1) {
+                        smooth_1 = 0.25;
+                    } else {
+                        smooth_1 = 0.0625;
+                    }
+                    if (i2_== (i2 + N_GHOSTS)) {
+                        smooth_2 = 0.375;
+                    } else if (ABS(i2_ - i2 - N_GHOSTS ) == 1) {
+                        smooth_2 = 0.25;
+                    } else {
+                        smooth_2 = 0.0625;
+                    }
+
+                    } else {
+                      NTTHostError("Smoothing kernel for density computation must have size 0, 1, or 2.");
+                    }
+
+                  if (ax_i2min && (i2_ - static_cast<int>(N_GHOSTS) < 0)) {
+                    // reflect from theta = 0
+                    buff_access(i1_,
+                                -i2_ + 2 * static_cast<int>(N_GHOSTS) - 1,
+                                buff_ind) += contrib * smooth_1 * smooth_2;
+                  } else if (ax_i2max && (i2_ - static_cast<int>(N_GHOSTS) >= ni2)) {
+                    // reflect from theta = pi
+                    buff_access(i1_,
+                                2 * ni2 - i2_ + 2 * static_cast<int>(N_GHOSTS) - 1,
+                                buff_ind) += contrib * smooth_1 * smooth_2;
+                  } else {
+                    buff_access(i1_, i2_, buff_ind) += contrib * smooth_1 * smooth_2;
+                    }
+                }
+            }
+            }
+          });
+      } else if constexpr (D == Dim3) {
+        Kokkos::parallel_for(
+          "ComputeDensity",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (species.tag(p) == ParticleTag::alive) {
+              auto      buff_access = scatter_buff.access();
+              auto      i1          = species.i1(p);
+              auto      i2          = species.i2(p);
+              auto      i3          = species.i3(p);
+              const int i1_min      = i1 - window + N_GHOSTS;
+              const int i1_max      = i1 + window + N_GHOSTS;
+              const int i2_min      = i2 - window + N_GHOSTS;
+              const int i2_max      = i2 + window + N_GHOSTS;
+              const int i3_min      = i3 - window + N_GHOSTS;
+              const int i3_max      = i3 + window + N_GHOSTS;
+              real_t    contrib { ONE };
+                contrib *= inv_n0 / this_metric.sqrt_det_h(
+                                      { static_cast<real_t>(i1) + HALF,
+                                        static_cast<real_t>(i2) + HALF,
+                                        static_cast<real_t>(i3) + HALF });
+                if (use_weights) {
+                  contrib *= species.weight(p);
+                }
+
+              for (auto i3_ { i3_min }; i3_ <= i3_max; ++i3_) {
+                for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
+                  for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
+                    buff_access(i1_, i2_, i3_, buff_ind) += contrib * smooth;
+                  }
+                }
+              }
+            }
+          });
+      }
+    }
+    Kokkos::Experimental::contribute(this->buff, scatter_buff);
+  }
+
 
   template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::CheckOutOfBounds(const std::string& msg,

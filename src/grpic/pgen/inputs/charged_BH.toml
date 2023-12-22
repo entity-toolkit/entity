@@ -1,0 +1,57 @@
+[simulation]
+title   = "Charged_BH"
+runtime = 2.0
+
+[domain]
+a           = 0.0
+sph_rabsorb = 19.0
+resolution  = [512, 512]
+extent      = [0.8, 20.0]
+boundaries  = [["OPEN", "ABSORB"], ["AXIS"]]
+
+[algorithm]
+CFL             = 0.5
+correction      = 1.0
+current_filters = 4
+fieldsolver_ON  = false
+
+[units]
+ppc0       = 1.0
+larmor0    = 1e-3
+skindepth0 = 0.1
+
+[particles]
+n_species    = 2
+
+[species_1]
+label    = "positrons"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e4
+pusher   = "Boris"
+
+[species_2]
+label    = "electrons"
+mass     =  1.0
+charge   = -1.0
+maxnpart = 1e4
+pusher   = "Boris"
+
+[output]
+fields    = ["E"]
+particles = ["X", "U"]
+format    = "HDF5"
+interval  = 10
+
+[problem]
+r0e   = 15.0
+th0e  = 1.5707963267948966
+ur0e  = -1.0
+uth0e = 0.0
+uph0e = 0.0
+
+r0p   = 15.0
+th0p  = 1.5707963267948966
+ur0p  = 1.0
+uth0p = 0.0
+uph0p = 0.0

@@ -140,6 +140,20 @@ namespace ntt {
                         short                   window = 2);
 
     /**
+     * @brief Compute particle moment for output or other usage.
+     * @param params SimulationParams object.
+     * @param field FieldID for the moment to compute.
+     * @param components Components of the field to compute (if applicable).
+     * @param prtl_species Particle species to compute the moment for.
+     * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
+     * @param window Smoothing window (default: 2).
+     */
+    void ComputeDensity(const SimulationParams& params,
+                        const std::vector<int>& prtl_species,
+                        int                     buff_ind,
+                        short                   window = 2);
+
+    /**
      * @brief Check for NaNs in the fields, currents and/or particles.
      * @param msg Message to print if NaNs are found.
      * @param flags Pick which quantities to check using the `CheckNaNFlags`.
