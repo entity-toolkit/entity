@@ -79,7 +79,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "TagParticles",
         particles.rangeActiveParticles(),
-        ClassLambda(index_t p) {
+        Lambda(index_t p) {
           particles.tag(p) = SendTag(particles.tag(p),
                                      particles.i1(p) < 0,
                                      particles.i1(p) >= ni1);
@@ -88,7 +88,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "TagParticles",
         particles.rangeActiveParticles(),
-        ClassLambda(index_t p) {
+        Lambda(index_t p) {
           particles.tag(p) = SendTag(particles.tag(p),
                                      particles.i1(p) < 0,
                                      particles.i1(p) >= ni1,
@@ -99,7 +99,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "TagParticles",
         particles.rangeActiveParticles(),
-        ClassLambda(index_t p) {
+        Lambda(index_t p) {
           particles.tag(p) = SendTag(particles.tag(p),
                                      particles.i1(p) < 0,
                                      particles.i1(p) >= ni1,
