@@ -82,42 +82,6 @@ namespace ntt {
       inv_dt { ONE / dt } {}
 
     /**
-     * @brief Constructor.
-     * @param mblock Meshblock.
-     * @param particles Particles.
-     * @param scatter_cur Scatter array of the currents.
-     * @param charge charge of the species (code units).
-     * @param dt Time step.
-     */
-    DepositCurrents_kernel(const Meshblock<D, S>&         mblock,
-                           const Particles<D, S>&         particles,
-                           const scatter_ndfield_t<D, 3>& scatter_cur,
-                           const real_t&                  charge,
-                           const real_t&                  dt) :
-      DepositCurrents_kernel<D, S, M>(scatter_cur,
-                                      particles.i1,
-                                      particles.i2,
-                                      particles.i3,
-                                      particles.i1_prev,
-                                      particles.i2_prev,
-                                      particles.i3_prev,
-                                      particles.dx1,
-                                      particles.dx2,
-                                      particles.dx3,
-                                      particles.dx1_prev,
-                                      particles.dx2_prev,
-                                      particles.dx3_prev,
-                                      particles.ux1,
-                                      particles.ux2,
-                                      particles.ux3,
-                                      particles.phi,
-                                      particles.weight,
-                                      particles.tag,
-                                      mblock.metric,
-                                      charge,
-                                      dt) {}
-
-    /**
      * @brief Iteration of the loop over particles.
      * @param p index.
      */
