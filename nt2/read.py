@@ -14,7 +14,9 @@ def configure(use_greek=False, use_pickle=False):
 
 
 def DataIs2DPolar(ds):
-    return "r" in ds.dims and ("θ" in ds.dims or "th" in ds.dims) and len(ds.dims) == 2
+    return ("r" in ds.dims and ("θ" in ds.dims or "th" in ds.dims)) and len(
+        ds.dims
+    ) == 2
 
 
 def DipoleSampling(**kwargs):
@@ -269,6 +271,10 @@ class PolarPlotAccessor:
         ----------
         ax : Axes object, optional
             The axes on which to plot. Default is the current axes.
+        cell_centered : bool, optional
+            Whether the data is cell-centered. Default is True.
+        cell_size : float, optional
+            If not cell_centered, defines the fraction of the cell to use for coloring. Default is 0.75.
         cbar_size : str, optional
             The size of the colorbar. Default is "5%".
         cbar_pad : float, optional
@@ -305,7 +311,6 @@ class PolarPlotAccessor:
         Additional keyword arguments are passed to `pcolormesh`.
         """
 
-        import warnings
         import numpy as np
         import matplotlib.pyplot as plt
         import matplotlib as mpl
@@ -325,6 +330,8 @@ class PolarPlotAccessor:
         ylabel = kwargs.pop("ylabel", "y")
         xlabel = kwargs.pop("xlabel", "x")
         label = kwargs.pop("label", None)
+        cell_centered = kwargs.pop("cell_centered", True)
+        cell_size = kwargs.pop("cell_size", 0.75)
 
         assert ax.name != "polar", "`ax` must be a rectilinear projection"
         assert "t" not in self._obj.dims, "Time must be specified"
@@ -335,22 +342,72 @@ class PolarPlotAccessor:
             cm = mpl.colormaps[cm]
             cm.set_bad(cm(0))
             kwargs["cmap"] = cm
-        r, th = np.meshgrid(
-            self._obj.coords["r"], self._obj.coords["θ" if useGreek else "th"]
-        )
-        x, y = r * np.sin(th), r * np.cos(th)
+
+        vals = self._obj.values.flatten()
+        vals = np.concatenate((vals, vals))
+        if not cell_centered:
+            drs = self._obj.coords["r_2"] - self._obj.coords["r_1"]
+            dths = (
+                self._obj.coords["θ_2" if useGreek else "th_2"]
+                - self._obj.coords["θ_1" if useGreek else "th_1"]
+            )
+            r1s = self._obj.coords["r_1"] - drs * cell_size / 2
+            r2s = self._obj.coords["r_1"] + drs * cell_size / 2
+            th1s = (
+                self._obj.coords["θ_1" if useGreek else "th_1"] - dths * cell_size / 2
+            )
+            th2s = (
+                self._obj.coords["θ_1" if useGreek else "th_1"] + dths * cell_size / 2
+            )
+            rs = np.ravel(np.column_stack((r1s, r2s)))
+            ths = np.ravel(np.column_stack((th1s, th2s)))
+            nr = len(rs)
+            nth = len(ths)
+            rs, ths = np.meshgrid(rs, ths)
+            rs = rs.flatten()
+            ths = ths.flatten()
+            points_1 = np.arange(nth * nr).reshape(nth, -1)[:-1:2, :-1:2].flatten()
+            points_2 = np.arange(nth * nr).reshape(nth, -1)[:-1:2, 1::2].flatten()
+            points_3 = np.arange(nth * nr).reshape(nth, -1)[1::2, 1::2].flatten()
+            points_4 = np.arange(nth * nr).reshape(nth, -1)[1::2, :-1:2].flatten()
+
+        else:
+            rs = np.append(self._obj.coords["r_1"], self._obj.coords["r_2"][-1])
+            ths = np.append(
+                self._obj.coords["θ_1" if useGreek else "th_1"],
+                self._obj.coords["θ_2" if useGreek else "th_2"][-1],
+            )
+            nr = len(rs)
+            nth = len(ths)
+            rs, ths = np.meshgrid(rs, ths)
+            rs = rs.flatten()
+            ths = ths.flatten()
+            points_1 = np.arange(nth * nr).reshape(nth, -1)[:-1, :-1].flatten()
+            points_2 = np.arange(nth * nr).reshape(nth, -1)[:-1, 1:].flatten()
+            points_3 = np.arange(nth * nr).reshape(nth, -1)[1:, 1:].flatten()
+            points_4 = np.arange(nth * nr).reshape(nth, -1)[1:, :-1].flatten()
+        x, y = rs * np.sin(ths), rs * np.cos(ths)
         if invert_x:
             x = -x
         if invert_y:
             y = -y
+        triang = mpl.tri.Triangulation(
+            x,
+            y,
+            triangles=np.concatenate(
+                [
+                    np.array([points_1, points_2, points_3]).T,
+                    np.array([points_1, points_3, points_4]).T,
+                ],
+                axis=0,
+            ),
+        )
         ax.set(
             aspect="equal",
             xlabel=xlabel,
             ylabel=ylabel,
         )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            im = ax.pcolormesh(x, y, self._obj.values, rasterized=True, **kwargs)
+        im = ax.tripcolor(triang, vals, rasterized=True, shading="flat", **kwargs)
         if cbar_pos is not None:
             divider = make_axes_locatable(ax)
             cax = divider.append_axes(cbar_pos, size=cbar_size, pad=cbar_pad)
@@ -432,6 +489,49 @@ class PolarPlotAccessor:
             im = ax.contour(x, y, self._obj.values, **kwargs)
 
         return im
+
+
+class Metric:
+    def __init__(self, base):
+        self.base = base
+
+
+class MinkowskiMetric(Metric):
+    def __init__(self):
+        super().__init__("minkowski")
+
+    def sqrt_h(self, **coords):
+        return 1
+
+    def h_11(self, **coords):
+        return 1
+
+    def h_22(self, **coords):
+        return 1
+
+    def h_33(self, **coords):
+        return 1
+
+
+class SphericalMetric(Metric):
+    def __init__(self):
+        super().__init__("spherical")
+
+    def sqrt_h(self, r, th):
+        import numpy as np
+
+        return r**2 * np.sin(th)
+
+    def h_11(self, r, th):
+        return 1
+
+    def h_22(self, r, th):
+        return r**2
+
+    def h_33(self, r, th):
+        import numpy as np
+
+        return r**2 * np.sin(th) ** 2
 
 
 class Data:
@@ -530,7 +630,32 @@ class Data:
         coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
         if coordinates == "qspherical":
             coordinates = "spherical"
+        if coordinates == "spherical":
+            self.metric = SphericalMetric()
+        else:
+            self.metric = MinkowskiMetric()
         coords = list(CoordinateDict[coordinates].values())[::-1][-dimension:]
+        # cell-centered coords
+        cc_coords = {
+            c: EdgeToCenter(self.file.attrs[f"X{i+1}"])
+            for i, c in enumerate(coords[::-1])
+        }
+        # upper and lower limits of the cell
+        cell_1 = {
+            f"{c}_1": (
+                c,
+                self.file.attrs[f"X{i+1}"][:-1],
+            )
+            for i, c in enumerate(coords[::-1])
+        }
+        cell_2 = {
+            f"{c}_2": (
+                c,
+                self.file.attrs[f"X{i+1}"][1:],
+            )
+            for i, c in enumerate(coords[::-1])
+        }
+
         times = np.array([self.file[f"Step{s}"]["Time"][()] for s in range(nsteps)])
 
         if dimension == 1:
@@ -590,10 +715,9 @@ class Data:
                 name=k_,
                 coords={
                     "t": times,
-                    **{
-                        k: EdgeToCenter(self.file.attrs[f"X{i+1}"])
-                        for i, k in enumerate(coords[::-1])
-                    },
+                    **cc_coords,
+                    **cell_1,
+                    **cell_2,
                 },
             )
             self.dataset[k_] = x
@@ -645,6 +769,20 @@ class Data:
                 prtl_data[q_] = xr.DataArray(
                     prtl_data[q_], dims=["t", "id"], name=q_, coords={"t": times}
                 )
+            if coordinates == "spherical":
+                prtl_data["x"] = (
+                    prtl_data[PrtlDict[coordinates]["X1"]]
+                    * np.sin(prtl_data[PrtlDict[coordinates]["X2"]])
+                    * np.cos(prtl_data[PrtlDict[coordinates]["X3"]])
+                )
+                prtl_data["y"] = (
+                    prtl_data[PrtlDict[coordinates]["X1"]]
+                    * np.sin(prtl_data[PrtlDict[coordinates]["X2"]])
+                    * np.sin(prtl_data[PrtlDict[coordinates]["X3"]])
+                )
+                prtl_data["z"] = prtl_data[PrtlDict[coordinates]["X1"]] * np.cos(
+                    prtl_data[PrtlDict[coordinates]["X2"]]
+                )
             self._particles[s] = xr.Dataset(prtl_data)
 
     def __del__(self):
@@ -669,6 +807,54 @@ class Data:
     @property
     def particles(self):
         return self._particles
+
+    def plotGrid(self, ax, **kwargs):
+        import matplotlib as mpl
+        import numpy as np
+
+        coordinates = self.file.attrs["Coordinates"].decode("UTF-8")
+        if coordinates == "qspherical":
+            coordinates = "spherical"
+
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        options = {
+            "lw": 1,
+            "color": "k",
+            "ls": "-",
+        }
+        options.update(kwargs)
+
+        if coordinates == "cartesian":
+            for x in self.attrs["X1"]:
+                ax.plot([x, x], [self.attrs["X2Min"], self.attrs["X2Max"]], **options)
+            for y in self.attrs["X2"]:
+                ax.plot([self.attrs["X1Min"], self.attrs["X1Max"]], [y, y], **options)
+        else:
+            for r in self.attrs["X1"]:
+                ax.add_patch(
+                    mpl.patches.Arc(
+                        (0, 0),
+                        2 * r,
+                        2 * r,
+                        theta1=-90,
+                        theta2=90,
+                        fill=False,
+                        **options,
+                    )
+                )
+            for th in self.attrs["X2"]:
+                ax.plot(
+                    [
+                        self.attrs["X1Min"] * np.sin(th),
+                        self.attrs["X1Max"] * np.sin(th),
+                    ],
+                    [
+                        self.attrs["X1Min"] * np.cos(th),
+                        self.attrs["X1Max"] * np.cos(th),
+                    ],
+                    **options,
+                )
+        ax.set(xlim=xlim, ylim=ylim)
 
     def makeMovie(self, plot, makeframes=True, **kwargs):
         """

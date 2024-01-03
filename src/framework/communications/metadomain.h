@@ -131,9 +131,7 @@ namespace ntt {
         if (neighbor != nullptr) {
           std::cout << " -> " << neighbor->index() << "\n";
         } else {
-          std::cout << " -> "
-                    << "N/A"
-                    << "\n";
+          std::cout << " -> " << "N/A" << "\n";
         }
       }
       std::cout << "\n";
@@ -400,8 +398,8 @@ namespace ntt {
       return &(domains[index]);
     }
 
-    auto domainByOffset(const std::vector<unsigned int>& d) const
-      -> const Domain<D>* {
+    auto domainByOffset(
+      const std::vector<unsigned int>& d) const -> const Domain<D>* {
       return domainByIndex(offset2index(d));
     }
 

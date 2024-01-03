@@ -5,9 +5,9 @@
  * @depends: `pic.h`, `utils/digital_filter.hpp`
  *
  * @notes: - Filter is applied uniformly everywhere, except for the axis ...
- *           ... in 2D axisymmetric simulations. For that we employ ...
- *           ... a special treatment that reflects the particle shape ...
- *           ... from the axis (see Belyaev 2015).
+ *           ... in 2D axisymmetric simulations. On the axis we reflect ...
+ *           ... the shape function.
+ *
  */
 
 #include "wrapper.h"
@@ -63,7 +63,6 @@ namespace ntt {
                            range,
                            DigitalFilter_kernel<D>(mblock.cur, mblock.buff, size));
       WaitAndSynchronize();
-      // this->Communicate(Comm_J);
     }
     NTTLog();
   }

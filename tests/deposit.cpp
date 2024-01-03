@@ -1,8 +1,14 @@
 #include "wrapper.h"
 
-#include "pic.h"
+#if defined(PIC_ENGINE)
+  #include "pic.h"
 template <ntt::Dimension D>
 using SimEngine = ntt::PIC<D>;
+#else // GRPIC_ENGINE
+  #include "grpic.h"
+template <ntt::Dimension D>
+using SimEngine = ntt::GRPIC<D>;
+#endif
 
 #include <Kokkos_Core.hpp>
 #include <plog/Appenders/ColorConsoleAppender.h>
@@ -12,7 +18,6 @@ using SimEngine = ntt::PIC<D>;
 #include <plog/Log.h>
 #include <toml.hpp>
 
-#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -27,70 +32,60 @@ auto main(int argc, char* argv[]) -> int {
     const real_t r     = 0.4;
     real_t       omega = 10.0;
 
-    const auto enable_output = false;
-
-    auto inputdata = toml::table {
-      {"simulation",
+    const auto inputdata = toml::table {
+      { "simulation",
        {
        { "title", simname },
        { "runtime", 2.0 * ntt::constant::TWO_PI / omega },
-       }},
-      {    "domain",
+       } },
+      {     "domain",
        {
        { "resolution", { 256, 256 } },
-       #ifdef MINKOWSKI_METRIC
+#ifdef MINKOWSKI_METRIC
        { "extent", { 1.0, 10.0, 1.0, 10.0 } },
-       #else
+#else
           { "extent", { 1.0, 10.0 } },
           { "qsph_r0", 0.0 },
           { "qsph_h", 0.0 },
-       #endif
+#endif
        {
        "boundaries",
        {
-       #ifdef MINKOWSKI_METRIC
+#ifdef MINKOWSKI_METRIC
        toml::array { "PERIODIC" },
        toml::array { "PERIODIC" },
-       #else
+#elif defined(PIC_ENGINE)
               toml::array { "CUSTOM", "ABSORB" },
               toml::array { "AXIS" },
-       #endif
+#else
+              toml::array { "OPEN", "ABSORB" },
+              toml::array { "AXIS" },
+#endif
        },
        },
-       }},
-      {     "units",
+       } },
+      {      "units",
        {
        { "ppc0", 1.0 },
        { "larmor0", 1.0 },
        { "skindepth0", 1.0 },
-       }},
-      { "particles",
+       } },
+      {  "particles",
        {
        { "n_species", 1 },
-       }},
-      { "algorithm",
+       } },
+      {  "algorithm",
        {
        { "CFL", 0.9 },
        { "current_filters", 0 },
-       }},
-      { "species_1",
+       } },
+      {  "species_1",
        {
        { "mass", 1.0 },
        { "charge", -1.0 },
        { "maxnpart", 1e2 },
-       }},
+       } },
     };
-
-    if (enable_output) {
-      plog::ColorConsoleAppender<plog::TxtFormatter> logapp;
-      plog::init<ntt::LogFile>(plog::verbose, &logapp);
-
-      auto infofile_name = simname + ".info";
-      std::remove(infofile_name.c_str());
-      plog::RollingFileAppender<plog::Nt2InfoFormatter> infofileAppender(
-        infofile_name.c_str());
-      plog::init<ntt::InfoFile>(plog::verbose, &infofileAppender);
-    }
 
     SimEngine<ntt::Dim2> sim(inputdata);
     sim.ResetSimulation();
@@ -113,15 +108,17 @@ auto main(int argc, char* argv[]) -> int {
           electrons.dx1(p) = x1 - math::floor(x1);
           electrons.dx2(p) = x2 - math::floor(x2);
 
-          ntt::vec_t<ntt::Dim3> u_Cart { ZERO };
-#ifdef MINKOWSKI_METRIC
-          mblock.metric.v3_Cntrv2Cart({ x1, x2 }, { ux1, ux2, ZERO }, u_Cart);
+          ntt::vec_t<ntt::Dim3> u { ZERO };
+#if defined(MINKOWSKI_METRIC)
+          mblock.metric.v3_Hat2Cart({ x1, x2 }, { ux1, ux2, ZERO }, u);
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ x1, x2 }, { ux1, ux2, ZERO }, u);
 #else
-          mblock.metric.v3_Cntrv2Cart({ x1, x2, ZERO }, { ux1, ux2, ZERO }, u_Cart);
+          mblock.metric.v3_Hat2Cart({ x1, x2, ZERO }, { ux1, ux2, ZERO }, u);
 #endif
-          electrons.ux1(p) = u_Cart[0];
-          electrons.ux2(p) = u_Cart[1];
-          electrons.ux3(p) = u_Cart[2];
+          electrons.ux1(p) = u[0];
+          electrons.ux2(p) = u[1];
+          electrons.ux3(p) = u[2];
           electrons.tag(p) = ntt::ParticleTag::alive;
         });
       electrons.setNpart(1);
@@ -130,35 +127,6 @@ auto main(int argc, char* argv[]) -> int {
     sim.PrintDetails();
     sim.Verify();
     sim.InitialStep();
-
-    auto prtl_file   = std::ofstream("prtl.csv");
-    auto q_file      = std::ofstream("q.csv");
-    auto ex1_file    = std::ofstream("ex1.csv");
-    auto ex2_file    = std::ofstream("ex2.csv");
-    auto metric_file = std::ofstream("metric.csv");
-    if (enable_output) {
-      prtl_file << "i1,i2,dx1,dx2,ux1,ux2,ux3" << std::endl;
-      q_file << "q_A,q_B,q_C,q_D,q_E,q_F" << std::endl;
-      ex1_file << std::setprecision(std::numeric_limits<real_t>::digits10);
-      ex2_file << std::setprecision(std::numeric_limits<real_t>::digits10);
-      metric_file << std::setprecision(std::numeric_limits<real_t>::digits10);
-      ex1_file
-        << "ex1_{i-1/2;j},ex1_{i+1/2;j},ex1_{i+3/2;j},ex1_{i+5/2;j},"
-           "ex1_{i-1/2;j+1},ex1_{i+1/2;j+1},ex1_{i+3/2;j+1},ex1_{i+5/2;j+1}"
-        << std::endl;
-      ex2_file << "ex2_{i;j-1/2},ex2_{i;j+1/2},ex2_{i;j+3/2},"
-                  "ex2_{i+1;j-1/2},ex2_{i+1;j+1/2},"
-                  "ex2_{i+1;j+3/2},ex2_{i+2;j-1/2},"
-                  "ex2_{i+2;j+1/2},ex2_{i+2;j+3/2}"
-               << std::endl;
-      metric_file << "h_{i-1/2;j},h_{i+1/2;j},h_{i+3/2;j},"
-                     "h_{i+5/2;j},h_{i-1/2;j+1},h_{i+1/2;j+1},"
-                     "h_{i+3/2;j+1},h_{i+5/2;j+1},h_{i;j-1/2},"
-                     "h_{i;j+1/2},h_{i;j+3/2},h_{i+1;j-1/2},"
-                     "h_{i+1;j+1/2},h_{i+1;j+3/2},h_{i+2;j-1/2},"
-                     "h_{i+2;j+1/2},h_{i+2;j+3/2}"
-                  << std::endl;
-    }
 
     auto& mblock    = sim.meshblock;
     auto& electrons = mblock.particles[0];
@@ -187,17 +155,17 @@ auto main(int argc, char* argv[]) -> int {
                             static_cast<real_t>(electrons.dx1(p));
           const auto x2_p = static_cast<real_t>(electrons.i2(p)) +
                             static_cast<real_t>(electrons.dx2(p));
-          ntt::vec_t<ntt::Dim3> u_Cart { ZERO };
-#ifdef MINKOWSKI_METRIC
-          mblock.metric.v3_Cntrv2Cart({ x1_p, x2_p }, { ux1, ux2, ZERO }, u_Cart);
+          ntt::vec_t<ntt::Dim3> u { ZERO };
+#if defined(MINKOWSKI_METRIC)
+          mblock.metric.v3_Hat2Cart({ x1_p, x2_p }, { ux1, ux2, ZERO }, u);
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ x1_p, x2_p }, { ux1, ux2, ZERO }, u);
 #else
-          mblock.metric.v3_Cntrv2Cart({ x1_p, x2_p, ZERO },
-                                      { ux1, ux2, ZERO },
-                                      u_Cart);
+          mblock.metric.v3_Hat2Cart({ x1_p, x2_p, ZERO }, { ux1, ux2, ZERO }, u);
 #endif
-          electrons.ux1(p) = u_Cart[0];
-          electrons.ux2(p) = u_Cart[1];
-          electrons.ux3(p) = u_Cart[2];
+          electrons.ux1(p) = u[0];
+          electrons.ux2(p) = u[1];
+          electrons.ux3(p) = u[2];
         });
 
       electrons.SyncHostDevice();
@@ -254,61 +222,6 @@ auto main(int argc, char* argv[]) -> int {
                       mblock.metric.sqrt_det_h({ x0 + TWO, y0 + 3.0 * HALF }) -
                     em_h(i0 + 2, j0, ntt::em::ex2) *
                       mblock.metric.sqrt_det_h({ x0 + TWO, y0 + HALF }));
-      if (enable_output) {
-        q_file << q_A.back() << "," << q_B.back() << "," << q_C.back() << ","
-               << q_D.back() << "," << q_E.back() << "," << q_F.back()
-               << std::endl;
-
-        prtl_file << electrons.i1_h(0) << "," << electrons.i2_h(0) << ","
-                  << electrons.dx1_h(0) << "," << electrons.dx2_h(0) << ","
-                  << electrons.ux1_h(0) << "," << electrons.ux2_h(0) << ","
-                  << electrons.ux3_h(0) << std::endl;
-
-        for (auto j { 0 }; j < 2; ++j) {
-          for (auto i { -1 }; i < 3; ++i) {
-            ex1_file << em_h(128 + N_GHOSTS + i, 128 + N_GHOSTS + j, ntt::em::ex1);
-            if (i != 2 || j != 1) {
-              ex1_file << ",";
-            }
-          }
-        }
-        ex1_file << std::endl;
-        for (auto i { 0 }; i < 3; ++i) {
-          for (auto j { -1 }; j < 2; ++j) {
-            ex2_file << em_h(128 + N_GHOSTS + i, 128 + N_GHOSTS + j, ntt::em::ex2);
-            if (i != 2 || j != 1) {
-              ex2_file << ",";
-            }
-          }
-        }
-        ex2_file << std::endl;
-      }
-    }
-    if (enable_output) {
-      prtl_file.close();
-      q_file.close();
-      ex1_file.close();
-      ex2_file.close();
-      for (auto j { 0 }; j < 2; ++j) {
-        for (auto i { -1 }; i < 3; ++i) {
-
-          metric_file
-            << mblock.metric.sqrt_det_h(
-                 { (real_t)128.0 + (real_t)i + HALF, (real_t)128.0 + (real_t)j })
-            << ",";
-        }
-      }
-      for (auto i { 0 }; i < 3; ++i) {
-        for (auto j { -1 }; j < 2; ++j) {
-          metric_file << mblock.metric.sqrt_det_h(
-            { (real_t)128.0 + (real_t)i, (real_t)128.0 + (real_t)j + HALF });
-          if (i != 2 || j != 1) {
-            metric_file << ",";
-          }
-        }
-      }
-      metric_file << std::endl;
-      metric_file.close();
     }
     std::vector<real_t> q_error;
     auto                q_max   = std::numeric_limits<real_t>::min();

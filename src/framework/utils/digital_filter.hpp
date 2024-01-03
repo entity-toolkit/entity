@@ -109,11 +109,81 @@ namespace ntt {
     INV_2*(ARR)((I), (J), (COMP)) +                                            \
       INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
+    // #define FILTER_IN_I1(ARR, COMP, I, J) (ARR)((I), (J), (COMP))
+
+  #define BELYAEV_FILTER
+
   template <>
   Inline void DigitalFilter_kernel<Dim2>::operator()(index_t i, index_t j) const {
     const std::size_t j_min = N_GHOSTS, j_min_p1 = j_min + 1;
     const std::size_t j_max = size[1] + N_GHOSTS, j_max_m1 = j_max - 1;
     real_t            cur_ij, cur_ijp1, cur_ijm1;
+  #ifdef BELYAEV_FILTER // Belyaev filter
+    if (j == j_min) {
+      /* --------------------------------- r, phi --------------------------------- */
+      for (auto& comp : { cur::jx1, cur::jx3 }) {
+        // ... filter in r
+        cur_ij            = FILTER_IN_I1(buffer, comp, i, j);
+        cur_ijp1          = FILTER_IN_I1(buffer, comp, i, j + 1);
+        // ... filter in theta
+        array(i, j, comp) = INV_2 * cur_ij + INV_4 * cur_ijp1;
+      }
+
+      /* ---------------------------------- theta --------------------------------- */
+      // ... filter in r
+      cur_ij                = FILTER_IN_I1(buffer, cur::jx2, i, j);
+      cur_ijp1              = FILTER_IN_I1(buffer, cur::jx2, i, j + 1);
+      // ... filter in theta
+      array(i, j, cur::jx2) = INV_4 * (cur_ij + cur_ijp1);
+    } else if (j == j_min_p1) {
+      /* --------------------------------- r, phi --------------------------------- */
+      // ... filter in r
+      for (auto& comp : { cur::jx1, cur::jx3 }) {
+        // ... filter in r
+        cur_ij            = FILTER_IN_I1(buffer, comp, i, j);
+        cur_ijp1          = FILTER_IN_I1(buffer, comp, i, j + 1);
+        cur_ijm1          = FILTER_IN_I1(buffer, comp, i, j - 1);
+        // ... filter in theta
+        array(i, j, comp) = INV_2 * (cur_ij + cur_ijm1) + INV_4 * cur_ijp1;
+      }
+
+      /* ---------------------------------- theta --------------------------------- */
+      // ... filter in r
+      cur_ij                = FILTER_IN_I1(buffer, cur::jx2, i, j);
+      cur_ijp1              = FILTER_IN_I1(buffer, cur::jx2, i, j + 1);
+      cur_ijm1              = FILTER_IN_I1(buffer, cur::jx2, i, j - 1);
+      // ... filter in theta
+      array(i, j, cur::jx2) = INV_2 * cur_ij + INV_4 * (cur_ijm1 + cur_ijp1);
+    } else if (j == j_max_m1) {
+      /* --------------------------------- r, phi --------------------------------- */
+      // ... filter in r
+      for (auto& comp : { cur::jx1, cur::jx3 }) {
+        // ... filter in r
+        cur_ij            = FILTER_IN_I1(buffer, comp, i, j);
+        cur_ijp1          = FILTER_IN_I1(buffer, comp, i, j + 1);
+        cur_ijm1          = FILTER_IN_I1(buffer, comp, i, j - 1);
+        // ... filter in theta
+        array(i, j, comp) = INV_2 * (cur_ij + cur_ijp1) + INV_4 * cur_ijm1;
+      }
+
+      /* ---------------------------------- theta --------------------------------- */
+      // ... filter in r
+      cur_ij                = FILTER_IN_I1(buffer, cur::jx2, i, j);
+      cur_ijm1              = FILTER_IN_I1(buffer, cur::jx2, i, j - 1);
+      // ... filter in theta
+      array(i, j, cur::jx2) = INV_4 * (cur_ij + cur_ijm1);
+    } else if (j == j_max) {
+      /* --------------------------------- r, phi --------------------------------- */
+      for (auto& comp : { cur::jx1, cur::jx3 }) {
+        // ... filter in r
+        cur_ij            = FILTER_IN_I1(buffer, comp, i, j);
+        cur_ijm1          = FILTER_IN_I1(buffer, comp, i, j - 1);
+        // ... filter in theta
+        array(i, j, comp) = INV_2 * cur_ij + INV_4 * cur_ijm1;
+      }
+      // no theta component in the last cell
+    } else {
+  #else                 // more conventional filtering
     if (j == j_min) {
       /* --------------------------------- r, phi --------------------------------- */
       // ... filter in r
@@ -183,6 +253,7 @@ namespace ntt {
 
       array(i, j, cur::jx3) = ZERO;
     } else {
+  #endif
   #pragma unroll
       for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
         array(i, j, comp) = INV_4 * buffer(i, j, comp) +

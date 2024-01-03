@@ -66,6 +66,21 @@ namespace ntt {
 
     ~Metric() = default;
 
+    [[nodiscard]]
+    Inline auto spin() const -> const real_t& {
+      return a;
+    }
+
+    [[nodiscard]]
+    Inline auto rhorizon() const -> const real_t& {
+      return rh_;
+    }
+
+    [[nodiscard]]
+    Inline auto rg() const -> const real_t& {
+      return rg_;
+    }
+
     /**
      * Metric component 11.
      *

@@ -311,7 +311,7 @@ namespace ntt {
       }
 
       timers.start("ParticleBoundaries");
-      this->ParticlesBoundaryConditions();
+      //this->ParticlesBoundaryConditions();
       this->Communicate(Comm_Prtl);
       timers.stop("ParticleBoundaries");
     }

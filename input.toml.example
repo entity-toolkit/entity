@@ -17,7 +17,15 @@ CFL                = <float: 0.0 < ... < 1.0>
 correction         = <float: ~1>
 fieldsolver_ON     = <bool>
 deposit_ON         = <bool>
+extforce_ON        = <bool>
 current_filters    = <int>
+
+[GCA]
+EovrB_max          = <float: 0.0 < ... < 1.0>
+larmor_max         = <float>
+
+[synchrotron]
+gamma_rad          = <float>
    
 [units]   
 ppc0               = <float>
@@ -34,8 +42,9 @@ label              = <string>
 mass               = <float>
 charge             = <float>
 maxnpart           = <int>
-pusher             = <string: { "Boris" | "Photon" | "Vay" | "None" }>
+pusher             = <string: { "Boris" | "Photon" | "Vay" | "Boris,GCA" | "Vay,GCA" | "None" }>
 n_payloads         = <short>
+cooling            = <string: { "None" | "Synchrotron" }>
 
 [problem]
 ...

@@ -44,6 +44,7 @@ namespace ntt {
     // Enable/disable algorithms
     bool m_enable_fieldsolver;
     bool m_enable_deposit;
+    bool m_enable_extforce;
 
     // current filtering passes
     unsigned short m_current_filters;
@@ -90,6 +91,12 @@ namespace ntt {
     // Container with data from the parsed input file.
     toml::value m_inputdata;
 
+    // Algorithm specific
+    // ... GCA
+    real_t m_gca_EovrB_max, m_gca_larmor_max;
+    // ... synchrotron
+    real_t m_synchrotron_gammarad;
+
   public:
     /**
      * @brief Constructor for simulation parameters class.
@@ -99,25 +106,16 @@ namespace ntt {
     SimulationParams(const toml::value&, Dimension);
     ~SimulationParams() = default;
 
-    /**
-     * @brief Get the simulation title.
-     */
     [[nodiscard]]
     auto title() const -> const std::string& {
       return m_title;
     }
 
-    /**
-     * @brief Get the CFL.
-     */
     [[nodiscard]]
     auto cfl() const -> real_t {
       return m_cfl;
     }
 
-    /**
-     * @brief Get the dt.
-     */
     [[nodiscard]]
     auto dt() const -> real_t {
       return m_dt;
@@ -131,17 +129,11 @@ namespace ntt {
       return m_correction;
     }
 
-    /**
-     * @brief Get the GR pusher epsilon.
-     */
     [[nodiscard]]
     auto grPusherEpsilon() const -> real_t {
       return m_gr_pusher_epsilon;
     }
 
-    /**
-     * @brief Get the GR pusher niter.
-     */
     [[nodiscard]]
     auto grPusherNiter() const -> int {
       return m_gr_pusher_niter;
@@ -155,57 +147,36 @@ namespace ntt {
       return m_total_runtime;
     }
 
-    /**
-     * @brief Get the fiducial number of particles per cell.
-     */
     [[nodiscard]]
     auto ppc0() const -> real_t {
       return m_ppc0;
     }
 
-    /**
-     * @brief Get the fiducial Larmor radius.
-     */
     [[nodiscard]]
     auto larmor0() const -> real_t {
       return m_larmor0;
     }
 
-    /**
-     * @brief Get the fiducial skin depth.
-     */
     [[nodiscard]]
     auto skindepth0() const -> real_t {
       return m_skindepth0;
     }
 
-    /**
-     * @brief Get the fiducial sigma0.
-     */
     [[nodiscard]]
     auto sigma0() const -> real_t {
       return SQR(m_skindepth0) / SQR(m_larmor0);
     }
 
-    /**
-     * @brief Get the fiducial V0.
-     */
     [[nodiscard]]
     auto V0() const -> real_t {
       NTTHostErrorIf(m_V0 < ZERO, "V0 not properly defined");
       return m_V0;
     }
 
-    /**
-     * @brief Set the fiducial V0.
-     */
     auto setV0(real_t V0) -> void {
       m_V0 = V0;
     }
 
-    /**
-     * @brief Get the fiducial n0.
-     */
     [[nodiscard]]
     auto n0() const -> real_t {
       return m_ppc0 / m_V0;
@@ -219,12 +190,14 @@ namespace ntt {
       return ONE / (n0() * SQR(m_skindepth0));
     }
 
-    /**
-     * @brief Get the fiducial B0.
-     */
     [[nodiscard]]
     auto B0() const -> real_t {
       return ONE / m_larmor0;
+    }
+
+    [[nodiscard]]
+    auto omegaB0() const -> real_t {
+      return B0();
     }
 
     /**
@@ -235,17 +208,11 @@ namespace ntt {
       return m_species;
     }
 
-    /**
-     * @brief Get the use_weights flag.
-     */
     [[nodiscard]]
     auto useWeights() const -> bool {
       return m_use_weights;
     }
 
-    /**
-     * @brief Get the shuffle interval.
-     */
     [[nodiscard]]
     auto shuffleInterval() const -> int {
       return m_shuffle_interval;
@@ -299,9 +266,6 @@ namespace ntt {
       return m_coordinates;
     }
 
-    /**
-     * @brief Get the metric parameters.
-     */
     [[nodiscard]]
     auto metricParameters() const -> const real_t* {
       return m_metric_parameters;
@@ -315,9 +279,6 @@ namespace ntt {
       return m_inputdata;
     }
 
-    /**
-     * @brief Get the enable_fieldsolver flag.
-     */
     [[nodiscard]]
     auto fieldsolverEnabled() const -> bool {
       return m_enable_fieldsolver;
@@ -331,25 +292,21 @@ namespace ntt {
       return m_current_filters;
     }
 
-    /**
-     * @brief Get the enable_deposit flag.
-     */
     [[nodiscard]]
     auto depositEnabled() const -> bool {
       return m_enable_deposit;
     }
 
-    /**
-     * @brief Get the output format.
-     */
+    [[nodiscard]]
+    auto extforceEnabled() const -> bool {
+      return m_enable_extforce;
+    }
+
     [[nodiscard]]
     auto outputFormat() const -> const std::string& {
       return m_output_format;
     }
 
-    /**
-     * @brief Get the output interval.
-     */
     [[nodiscard]]
     auto outputInterval() const -> int {
       return m_output_interval;
@@ -387,9 +344,6 @@ namespace ntt {
       return m_output_mom_smooth;
     }
 
-    /**
-     * @brief Get the particle stride for the output.
-     */
     [[nodiscard]]
     auto outputPrtlStride() const -> std::size_t {
       return m_output_prtl_stride;
@@ -403,9 +357,6 @@ namespace ntt {
       return m_output_as_is;
     }
 
-    /**
-     * @brief Output ghost zones.
-     */
     [[nodiscard]]
     auto outputGhosts() const -> bool {
       return m_output_ghosts;
@@ -427,12 +378,24 @@ namespace ntt {
       return m_diag_maxn_for_pbar;
     }
 
-    /**
-     * @brief Get the blocking timers flag.
-     */
     [[nodiscard]]
     auto blockingTimers() const -> bool {
       return m_blocking_timers;
+    }
+
+    [[nodiscard]]
+    auto GCAEovrBMax() const -> real_t {
+      return m_gca_EovrB_max;
+    }
+
+    [[nodiscard]]
+    auto GCALarmorMax() const -> real_t {
+      return m_gca_larmor_max;
+    }
+
+    [[nodiscard]]
+    auto SynchrotronGammarad() const -> real_t {
+      return m_synchrotron_gammarad;
     }
 
     /**

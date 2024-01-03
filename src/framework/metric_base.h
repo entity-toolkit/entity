@@ -65,6 +65,8 @@ namespace ntt {
     // extent in `x3` in physical units
     const real_t      x3_min, x3_max;
 
+    static constexpr Dimension PosDim { PrtlCoordD };
+
     MetricBase(const std::string&        label_,
                std::vector<unsigned int> resolution,
                std::vector<real_t>       extent) :

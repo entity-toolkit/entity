@@ -50,7 +50,7 @@ namespace ntt {
     array_t<real_t*>              weight;
     // Additional variables (specific to different cases)
     // previous coordinates (GR specific)
-    array_t<real_t*>              i1_prev, i2_prev, i3_prev;
+    array_t<int*>                 i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*>            dx1_prev, dx2_prev, dx3_prev;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>              phi;
@@ -76,6 +76,8 @@ namespace ntt {
      * @param ch The charge of the species.
      * @param maxnpart The maximum number of allocated particles for the species.
      * @param pusher The pusher assigned for the species.
+     * @param cooling The cooling mechanism assigned for the species.
+     * @param npld The number of payloads for the species.
      */
     Particles(const int&            index,
               const std::string&    label,
@@ -83,6 +85,7 @@ namespace ntt {
               const float&          ch,
               const std::size_t&    maxnpart,
               const ParticlePusher& pusher,
+              const Cooling&        cooling,
               const unsigned short& npld = 0);
 
     /**
@@ -147,11 +150,6 @@ namespace ntt {
      * @return The vector of counts per each tag.
      */
     auto ReshuffleByTags() -> std::vector<std::size_t>;
-
-    /**
-     * @brief Engine-agnostic boundary conditions for particles.
-     */
-    auto BoundaryConditions(const Mesh<D>& mesh) -> void;
 
     /**
      * @brief Copy particle data from device to host.

@@ -5,7 +5,7 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.0.0.2
+  VERSION 1.0.0.3
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -27,9 +27,6 @@ set(precision
 set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
-set(ext_force
-    ${default_ext_force}
-    CACHE BOOL "External force field")
 
 set(gui
     ${default_gui}
@@ -97,7 +94,6 @@ include_directories(${toml11_SRC})
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
-set_ext_force(${ext_force})
 
 # MPI
 if(${mpi})

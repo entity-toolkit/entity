@@ -49,13 +49,9 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
 
-    J0X1(i, j) *= m_coeff * inv_sqrt_detH_iPj;
-    J0X2(i, j) *= m_coeff * inv_sqrt_detH_ijP;
-    J0X3(i, j) *= m_coeff * inv_sqrt_detH_ij;
-
-    D0X1(i, j) += J0X1(i, j);
-    D0X2(i, j) += J0X2(i, j);
-    D0X3(i, j) += J0X3(i, j);
+    D0X1(i, j) += J0X1(i, j) * m_coeff * inv_sqrt_detH_iPj;
+    D0X2(i, j) += J0X2(i, j) * m_coeff * inv_sqrt_detH_ijP;
+    D0X3(i, j) += J0X3(i, j) * m_coeff * inv_sqrt_detH_ij;
   }
 
   template <>
@@ -72,13 +68,9 @@ namespace ntt {
     real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h(
                                         { i_, j_, k_ + HALF }) };
 
-    J0X1(i, j, k) *= m_coeff * inv_sqrt_detH_iPjk;
-    J0X2(i, j, k) *= m_coeff * inv_sqrt_detH_ijPk;
-    J0X3(i, j, k) *= m_coeff * inv_sqrt_detH_ijkP;
-
-    D0X1(i, j, k) += J0X1(i, j, k);
-    D0X2(i, j, k) += J0X2(i, j, k);
-    D0X3(i, j, k) += J0X3(i, j, k);
+    D0X1(i, j, k) += J0X1(i, j, k) * m_coeff * inv_sqrt_detH_iPjk;
+    D0X2(i, j, k) += J0X2(i, j, k) * m_coeff * inv_sqrt_detH_ijPk;
+    D0X3(i, j, k) += J0X3(i, j, k) * m_coeff * inv_sqrt_detH_ijkP;
   }
 
   template <Dimension D>
@@ -114,16 +106,13 @@ namespace ntt {
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, HALF }) };
     real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
     // theta = 0
-    J0X1(i, j_min) *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_min) += J0X1(i, j_min);
+    D0X1(i, j_min) += J0X1(i, j_min) * HALF * m_coeff * inv_polar_area_iPj;
 
     // theta = pi
-    J0X1(i, j_max) *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_max) += J0X1(i, j_max);
+    D0X1(i, j_max) += J0X1(i, j_max) * HALF * m_coeff * inv_polar_area_iPj;
 
     // j = jmin + 1/2
-    J0X2(i, j_min) *= m_coeff * inv_sqrt_detH_ijP;
-    D0X2(i, j_min) += J0X2(i, j_min);
+    D0X2(i, j_min) += J0X2(i, j_min) * m_coeff * inv_sqrt_detH_ijP;
   }
 
   /**
@@ -168,13 +157,9 @@ namespace ntt {
     real_t inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
     real_t inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
 
-    JX1(i, j) *= m_coeff * inv_sqrt_detH_iPj;
-    JX2(i, j) *= m_coeff * inv_sqrt_detH_ijP;
-    JX3(i, j) *= m_coeff * inv_sqrt_detH_ij;
-
-    D0X1(i, j) += JX1(i, j);
-    D0X2(i, j) += JX2(i, j);
-    D0X3(i, j) += JX3(i, j);
+    D0X1(i, j) += JX1(i, j) * m_coeff * inv_sqrt_detH_iPj;
+    D0X2(i, j) += JX2(i, j) * m_coeff * inv_sqrt_detH_ijP;
+    D0X3(i, j) += JX3(i, j) * m_coeff * inv_sqrt_detH_ij;
   }
 
   template <>
@@ -191,13 +176,9 @@ namespace ntt {
     real_t inv_sqrt_detH_ijkP { ONE / m_mblock.metric.sqrt_det_h(
                                         { i_, j_, k_ + HALF }) };
 
-    JX1(i, j, k) *= m_coeff * inv_sqrt_detH_iPjk;
-    JX2(i, j, k) *= m_coeff * inv_sqrt_detH_ijPk;
-    JX3(i, j, k) *= m_coeff * inv_sqrt_detH_ijkP;
-
-    D0X1(i, j, k) += JX1(i, j, k);
-    D0X2(i, j, k) += JX2(i, j, k);
-    D0X3(i, j, k) += JX3(i, j, k);
+    D0X1(i, j, k) += JX1(i, j, k) * m_coeff * inv_sqrt_detH_iPjk;
+    D0X2(i, j, k) += JX2(i, j, k) * m_coeff * inv_sqrt_detH_ijPk;
+    D0X3(i, j, k) += JX3(i, j, k) * m_coeff * inv_sqrt_detH_ijkP;
   }
 
   template <Dimension D>
@@ -234,16 +215,13 @@ namespace ntt {
     real_t inv_polar_area_iPj { ONE / m_mblock.metric.polar_area(i_ + HALF) };
 
     // theta = 0
-    JX1(i, j_min)  *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_min) += JX1(i, j_min);
+    D0X1(i, j_min) += JX1(i, j_min) * HALF * m_coeff * inv_polar_area_iPj;
 
     // theta = pi
-    JX1(i, j_max)  *= HALF * m_coeff * inv_polar_area_iPj;
-    D0X1(i, j_max) += JX1(i, j_max);
+    D0X1(i, j_max) += JX1(i, j_max) * HALF * m_coeff * inv_polar_area_iPj;
 
     // j = jmin + 1/2
-    JX2(i, j_min)  *= m_coeff * inv_sqrt_detH_ijP;
-    D0X2(i, j_min) += JX2(i, j_min);
+    D0X2(i, j_min) += JX2(i, j_min) * m_coeff * inv_sqrt_detH_ijP;
   }
 } // namespace ntt
 

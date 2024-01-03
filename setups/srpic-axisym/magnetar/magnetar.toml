@@ -1,10 +1,10 @@
 [simulation]
 title   = "Magnetosphere"
-runtime = 200.0
+runtime = 50.0
 
 [domain]
-resolution = [1560, 1024]
-extent     = [1.0, 100.0]
+resolution = [2048, 2048]
+extent     = [1.0, 50.0]
 boundaries = [["CUSTOM", "ABSORB"], ["AXIS"]]
 qsph_r0    = 0.0
 qsph_h     = 0.0
@@ -12,11 +12,6 @@ qsph_h     = 0.0
 [algorithm]
 CFL             = 0.75
 current_filters = 8
-extforce_ON     = true
-
-[GCA]
-EovrB_max  = 0.9
-larmor_max = 0.05
 
 [units]
 ppc0       = 4.0
@@ -25,21 +20,49 @@ skindepth0 = 0.01
 
 [particles]
 shuffle_interval = 100
-n_species        = 2
+n_species        = 6
 use_weights      = true
 
 [species_1]
 label    = "e-"
 mass     = 1.0
 charge   = -1.0
-maxnpart = 2e8
+maxnpart = 1e7
 pusher   = "Boris,GCA"
 
 [species_2]
 label    = "e+"
 mass     = 1.0
 charge   = 1.0
-maxnpart = 2e8
+maxnpart = 1e7
+pusher   = "Boris,GCA"
+
+[species_3]
+label    = "ppar"
+mass     = 0.0
+charge   = 0.0
+maxnpart = 1e8
+n_payloads = 1
+
+[species_4]
+label    = "pperp"
+mass     = 0.0
+charge   = 0.0
+maxnpart = 1e8
+n_payloads = 1
+
+[species_5]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+pusher   = "Boris,GCA"
+
+[species_6]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e8
 pusher   = "Boris,GCA"
 
 [problem]
@@ -48,13 +71,18 @@ atm_contrast    = 4.0
 atm_h           = 0.05
 atm_buff        = 0.1
 psr_Bsurf       = 1.0
-psr_omega       = 0.125
+psr_omega       = 0.005
 psr_spinup_time = 5.0
 psr_field_mode  = 2
+fid_freq = 0.002
+bq = 0.1
+angThres = 0.1
+gamma_curv_ph = 260000.0
+gamma_curv = 26000000.0
 
 [output]
-fields        = ["N_1", "N_2", "B", "E"]
+fields        = ["N_1", "N_2","N_3", "N_4","N_5", "N_6","B"]
 format        = "HDF5"
 fields_stride = 2
 mom_smooth    = 2
-interval_time = 0.25
+interval_time = 0.1

@@ -120,17 +120,6 @@ PrintChoices("Precision"
   1
   36
 )
-PrintChoices("External force"
-  "ext_force"
-  "${ON_OFF_VALUES}"
-  ${ext_force}
-  ${default_ext_force}
-  "${Green}"
-  EXT_FORCE_REPORT
-  0
-  36
-)
-
 PrintChoices("Output"
   "output"
   "${ON_OFF_VALUES}"
@@ -277,8 +266,6 @@ message("  ${METRIC_REPORT}\n")
 if(${PGEN_FOUND})
   message("  ${PGEN_REPORT}\n")
 endif()
-
-message("  ${EXT_FORCE_REPORT}\n")
 
 message("  ${PRECISION_REPORT}\n")
 message("  ${OUTPUT_REPORT}\n")

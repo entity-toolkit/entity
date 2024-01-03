@@ -24,6 +24,7 @@ namespace ntt {
     m_correction         = get("algorithm", "correction", defaults::correction);
     m_enable_fieldsolver = get("algorithm", "fieldsolver_ON", true);
     m_enable_deposit     = get("algorithm", "deposit_ON", true);
+    m_enable_extforce    = get("algorithm", "extforce_ON", false);
 
     // reading particle parameters
     auto nspec = get("particles", "n_species", defaults::n_species);
@@ -48,6 +49,11 @@ namespace ntt {
                             default_pusher,
                             options::pushers);
 
+      auto cooling_str = get("species_" + std::to_string(i + 1),
+                             "cooling",
+                             (std::string)("None"),
+                             options::cooling);
+
       ParticlePusher pusher { ParticlePusher::UNDEFINED };
       for (auto p : PusherIterator()) {
         if (stringizeParticlePusher(p) == pusher_str) {
@@ -55,11 +61,21 @@ namespace ntt {
           break;
         }
       }
+      Cooling cooling { Cooling::UNDEFINED };
+      for (auto c : CoolingIterator()) {
+        if (stringizeCooling(c) == cooling_str) {
+          cooling = c;
+          break;
+        }
+      }
       if (pusher == ParticlePusher::UNDEFINED) {
         NTTHostError("unrecognized pusher");
       }
+      if (cooling == Cooling::UNDEFINED) {
+        NTTHostError("unrecognized cooling mechanism");
+      }
       m_species.emplace_back(
-        ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher, npayloads));
+        ParticleSpecies(i + 1, label, mass, charge, maxnpart, pusher, cooling, npayloads));
     }
     m_use_weights = get("particles", "use_weights", defaults::use_weights);
 
@@ -185,8 +201,11 @@ namespace ntt {
 #endif
 
     // output params
-    m_output_format = get("output", "format", defaults::output_format, options::outputs);
-    m_output_interval = get("output", "interval", defaults::output_interval);
+    m_output_format   = get("output",
+                          "format",
+                          defaults::output::format,
+                          options::outputs);
+    m_output_interval = get("output", "interval", defaults::output::interval);
     m_output_interval_time = get("output", "interval_time", -1.0);
     m_output_fields        = get<std::vector<std::string>>("output",
                                                     "fields",
@@ -194,8 +213,8 @@ namespace ntt {
     m_output_particles     = get<std::vector<std::string>>("output",
                                                        "particles",
                                                        std::vector<std::string>());
-    m_output_mom_smooth = get("output", "mom_smooth", defaults::output_mom_smooth);
-    m_output_prtl_stride = get("output", "prtl_stride", defaults::output_prtl_stride);
+    m_output_mom_smooth = get("output", "mom_smooth", defaults::output::mom_smooth);
+    m_output_prtl_stride = get("output", "prtl_stride", defaults::output::prtl_stride);
     m_output_as_is  = get("output", "as_is", false);
     m_output_ghosts = get("output", "ghosts", false);
 
@@ -204,5 +223,12 @@ namespace ntt {
     m_blocking_timers = get("diagnostics",
                             "blocking_timers",
                             defaults::blocking_timers);
+
+    // algorithm specific parameters
+    // ... GCA
+    m_gca_EovrB_max        = get("GCA", "EovrB_max", defaults::gca::EovrB_max);
+    m_gca_larmor_max       = get("GCA", "larmor_max", ZERO);
+    // ... Synchrotron
+    m_synchrotron_gammarad = get("synchrotron", "gamma_rad", -ONE);
   }
 } // namespace ntt

@@ -138,6 +138,12 @@ namespace ntt {
   template <Dimension D>
   struct DimensionTag {};
 
+#if defined(MINKOWSKI_METRIC) || defined(GRPIC_ENGINE)
+  #define PrtlCoordD D
+#else
+  #define PrtlCoordD Dim3
+#endif
+
   enum class SimulationEngine {
     UNDEFINED,
     SANDBOX,
@@ -162,8 +168,14 @@ namespace ntt {
     VAY_GCA,
     PHOTON
   };
+  enum class Cooling {
+    UNDEFINED,
+    NONE,
+    SYNCHROTRON
+  };
   using PusherIterator =
     Iterator<ParticlePusher, ParticlePusher::UNDEFINED, ParticlePusher::PHOTON>;
+  using CoolingIterator = Iterator<Cooling, Cooling::UNDEFINED, Cooling::SYNCHROTRON>;
 
   inline constexpr auto Dim1          = Dimension::ONE_D;
   inline constexpr auto Dim2          = Dimension::TWO_D;
@@ -172,8 +184,7 @@ namespace ntt {
   inline constexpr auto PICEngine     = SimulationEngine::PIC;
   inline constexpr auto GRPICEngine   = SimulationEngine::GRPIC;
 
-  inline auto stringizeSimulationEngine(const SimulationEngine& sim)
-    -> std::string {
+  inline auto stringizeSimulationEngine(const SimulationEngine& sim) -> std::string {
     switch (sim) {
       case SANDBOXEngine:
         return "Sandbox";
@@ -186,8 +197,7 @@ namespace ntt {
     }
   }
 
-  inline auto stringizeBoundaryCondition(const BoundaryCondition& bc)
-    -> std::string {
+  inline auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
     switch (bc) {
       case BoundaryCondition::PERIODIC:
         return "Periodic";
@@ -219,6 +229,17 @@ namespace ntt {
       case ParticlePusher::PHOTON:
         return "Photon";
       case ParticlePusher::NONE:
+        return "None";
+      default:
+        return "N/A";
+    }
+  }
+
+  inline auto stringizeCooling(const Cooling& cooling) -> std::string {
+    switch (cooling) {
+      case Cooling::SYNCHROTRON:
+        return "Synchrotron";
+      case Cooling::NONE:
         return "None";
       default:
         return "N/A";
@@ -277,6 +298,7 @@ namespace ntt {
   namespace options {
     const std::vector<std::string> pushers = { "Boris",   "Vay",       "Photon",
                                                "Vay,GCA", "Boris,GCA", "None" };
+    const std::vector<std::string> cooling = { "None", "Synchrotron" };
     const std::vector<std::string> boundaries = { "PERIODIC",
                                                   "ABSORB",
                                                   "CUSTOM",
@@ -303,14 +325,20 @@ namespace ntt {
 
     const bool use_weights = false;
 
-    const std::string output_format      = options::outputs[0];
-    const int         output_interval    = 1;
-    const int         output_mom_smooth  = 1;
-    const std::size_t output_prtl_stride = 100;
+    namespace output {
+      const std::string format      = options::outputs[0];
+      const int         interval    = 1;
+      const int         mom_smooth  = 1;
+      const std::size_t prtl_stride = 100;
+    } // namespace output
 
     const std::string log_level       = "info";
     const int         diag_interval   = 1;
     const bool        blocking_timers = false;
+
+    namespace gca {
+      const real_t EovrB_max = 0.9;
+    } // namespace gca
   } // namespace defaults
 } // namespace ntt
 

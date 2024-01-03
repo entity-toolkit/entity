@@ -77,14 +77,12 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      if constexpr (D != Dim1) {
-        if constexpr (D == Dim2) {
-          return SQR(x[0] * dr + this->x1_min) *
-                 SQR(math::sin(x[1] * dtheta + this->x2_min));
-        } else {
-          return dphi_sqr * SQR(x[0] * dr + this->x1_min) *
-                 SQR(math::sin(x[1] * dtheta + this->x2_min));
-        }
+      if constexpr (D == Dim2) {
+        return SQR(x[0] * dr + this->x1_min) *
+               SQR(math::sin(x[1] * dtheta + this->x2_min));
+      } else if constexpr (D == Dim3) {
+        return dphi_sqr * SQR(x[0] * dr + this->x1_min) *
+               SQR(math::sin(x[1] * dtheta + this->x2_min));
       } else {
         NTTError("1D spherical not available");
         return ZERO;
@@ -98,14 +96,29 @@ namespace ntt {
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      if constexpr (D != Dim1) {
-        if constexpr (D == Dim2) {
-          return dr * dtheta * SQR(x[0] * dr + this->x1_min) *
-                 math::sin(x[1] * dtheta + this->x2_min);
-        } else {
-          return dr * dtheta * dphi * SQR(x[0] * dr + this->x1_min) *
-                 math::sin(x[1] * dtheta + this->x2_min);
-        }
+      if constexpr (D == Dim2) {
+        return dr * dtheta * SQR(x[0] * dr + this->x1_min) *
+               math::sin(x[1] * dtheta + this->x2_min);
+      } else if constexpr (D == Dim3) {
+        return dr * dtheta * dphi * SQR(x[0] * dr + this->x1_min) *
+               math::sin(x[1] * dtheta + this->x2_min);
+      } else {
+        NTTError("1D spherical not available");
+        return ZERO;
+      }
+    }
+
+    /**
+     * Square root of the determinant of h-matrix divided by sin(theta).
+     *
+     * @param x coordinate array in code units
+     * @returns sqrt(det(h))/sin(theta).
+     */
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      if constexpr (D == Dim2) {
+        return dr * dtheta * SQR(x[0] * dr + this->x1_min);
+      } else if constexpr (D == Dim3) {
+        return dr * dtheta * dphi * SQR(x[0] * dr + this->x1_min);
       } else {
         NTTError("1D spherical not available");
         return ZERO;

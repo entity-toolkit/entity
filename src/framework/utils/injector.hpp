@@ -391,8 +391,7 @@ namespace ntt {
 
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
-      coord_t<Dim2> xi { static_cast<real_t>(static_cast<int>(i1) - N_GHOSTS),
-                         static_cast<real_t>(static_cast<int>(i2) - N_GHOSTS) };
+      coord_t<Dim2> xi { COORD(i1), COORD(i2) };
       const auto    weight {
         use_weights
              ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
@@ -432,8 +431,8 @@ namespace ntt {
 #endif
           init_prtl_2d_i_di(species1,
                             offset1 + p,
-                            static_cast<int>(i1) - N_GHOSTS,
-                            static_cast<int>(i2) - N_GHOSTS,
+                            COORD(i1),
+                            COORD(i2),
                             dx1,
                             dx2,
                             v_cart[0],
@@ -451,8 +450,8 @@ namespace ntt {
 #endif
           init_prtl_2d_i_di(species2,
                             offset2 + p,
-                            static_cast<int>(i1) - N_GHOSTS,
-                            static_cast<int>(i2) - N_GHOSTS,
+                            COORD(i1),
+                            COORD(i2),
                             dx1,
                             dx2,
                             v_cart[0],
@@ -650,13 +649,8 @@ namespace ntt {
         xmin_ph[i] = region[2 * i];
         xmax_ph[i] = region[2 * i + 1];
       }
-#ifdef MINKOWSKI_METRIC
-      mblock.metric.x_Cart2Code(xmin_ph, xmin_cu);
-      mblock.metric.x_Cart2Code(xmax_ph, xmax_cu);
-#else
-      mblock.metric.x_Sph2Code(xmin_ph, xmin_cu);
-      mblock.metric.x_Sph2Code(xmax_ph, xmax_cu);
-#endif
+      mblock.metric.x_Phys2Code(xmin_ph, xmin_cu);
+      mblock.metric.x_Phys2Code(xmax_ph, xmax_cu);
       for (short i = 0; i < static_cast<short>(D); ++i) {
         region_min[i] = static_cast<std::size_t>(xmin_cu[i]);
         region_max[i] = static_cast<std::size_t>(xmax_cu[i]);
@@ -747,8 +741,8 @@ namespace ntt {
 
     Inline void operator()(index_t i1) const {
       // cell node
-      const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
-      const auto xi  = coord_t<Dim1> { static_cast<real_t>(i1_) };
+      const auto    i1_ = static_cast<int>(i1) - N_GHOSTS;
+      coord_t<Dim1> xi  = { static_cast<real_t>(i1_) };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_) };
@@ -811,6 +805,12 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
+#if defined(GRPIC_ENGINE) || defined(MINKOWSKI_METRIC)
+  #define CoordDim Dim2
+#else
+  #define CoordDim PrtlCoordD
+#endif
+
   template <SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
@@ -842,20 +842,19 @@ namespace ntt {
 
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
-      const auto i1_ = static_cast<int>(i1) - N_GHOSTS;
-      const auto i2_ = static_cast<int>(i2) - N_GHOSTS;
-      const auto xi  = coord_t<Dim2> { static_cast<real_t>(i1_),
-                                       static_cast<real_t>(i2_) };
-      const auto weight {
+      const auto    i1_ = i1 - static_cast<int>(N_GHOSTS);
+      const auto    i2_ = i2 - static_cast<int>(N_GHOSTS);
+      coord_t<Dim2> xi = { static_cast<real_t>(i1_), static_cast<real_t>(i2_) };
+      const auto    weight {
         use_weights
-          ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
-          : ONE
+             ? (mblock.metric.sqrt_det_h({ xi[0] + HALF, xi[1] + HALF }) / V0)
+             : ONE
       };
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_, i2_) };
-      coord_t<Dim2>     xc { ZERO };
-      coord_t<Dim2>     xph { ZERO };
+      coord_t<CoordDim> xc { ZERO };
+      coord_t<CoordDim> xph { ZERO };
       prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
 
@@ -875,6 +874,8 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ xc[0], xc[1] }, v, v_cart);
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
@@ -894,6 +895,8 @@ namespace ntt {
           v_cart[0] = v[0];
           v_cart[1] = v[1];
           v_cart[2] = v[2];
+#elif defined(GRPIC_ENGINE)
+          mblock.metric.v3_Hat2Cov({ xc[0], xc[1] }, v, v_cart);
 #else
           mblock.metric.v3_Hat2Cart({ xc[0], xc[1], ZERO }, v, v_cart);
 #endif
@@ -961,8 +964,8 @@ namespace ntt {
     } else if (region.size() == 2 * static_cast<short>(D)) {
       tuple_t<std::size_t, D> region_min;
       tuple_t<std::size_t, D> region_max;
-      coord_t<D>              xmin_ph { ZERO }, xmax_ph { ZERO };
-      coord_t<D>              xmin_cu { ZERO }, xmax_cu { ZERO };
+      coord_t<PrtlCoordD>     xmin_ph { ZERO }, xmax_ph { ZERO };
+      coord_t<PrtlCoordD>     xmin_cu { ZERO }, xmax_cu { ZERO };
       for (short i = 0; i < static_cast<short>(D); ++i) {
         xmin_ph[i] = region[2 * i];
         xmax_ph[i] = region[2 * i + 1];

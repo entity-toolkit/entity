@@ -13,22 +13,13 @@ namespace ntt {
     auto  params = *(this->params());
     auto  time   = this->m_time;
     for (auto& species : mblock.particles) {
-      auto pusher = species.pusher();
-      if (species.npart() == 0 || pusher == ParticlePusher::NONE) {
+      if (species.npart() == 0 || species.pusher() == ParticlePusher::NONE) {
         continue;
       }
-      if (pusher == ParticlePusher::PHOTON) {
-        PushLoop<D, Photon_t>(params, mblock, species, pgen, time, factor);
-      } else if (pusher == ParticlePusher::BORIS) {
-        PushLoop<D, Boris_t>(params, mblock, species, pgen, time, factor);
-      } else if (pusher == ParticlePusher::VAY) {
-        PushLoop<D, Vay_t>(params, mblock, species, pgen, time, factor);
-      } else if (pusher == ParticlePusher::BORIS_GCA) {
-        PushLoop<D, Boris_GCA_t>(params, mblock, species, pgen, time, factor);
-      } else if (pusher == ParticlePusher::VAY_GCA) {
-        PushLoop<D, Vay_GCA_t>(params, mblock, species, pgen, time, factor);
+      if (params.extforceEnabled()) {
+        PushLoop<D, true>(params, mblock, species, pgen, time, factor);
       } else {
-        NTTHostError("not implemented");
+        PushLoop<D, false>(params, mblock, species, pgen, time, factor);
       }
     }
     NTTLog();

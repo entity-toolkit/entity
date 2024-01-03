@@ -25,6 +25,9 @@ namespace ntt {
     // Pusher assigned for the species.
     ParticlePusher m_pusher;
 
+    // Cooling drag mechanism assigned for the species.
+    Cooling m_cooling;
+
     unsigned short m_npld;
 
   public:
@@ -44,6 +47,7 @@ namespace ntt {
                     const float&          ch,
                     const std::size_t&    maxnpart,
                     const ParticlePusher& pusher,
+                    const Cooling&        cooling,
                     const unsigned short& npld = 0);
 
     /**
@@ -82,6 +86,11 @@ namespace ntt {
     [[nodiscard]]
     auto pusher() const -> ParticlePusher {
       return m_pusher;
+    }
+
+    [[nodiscard]]
+    auto cooling() const -> Cooling {
+      return m_cooling;
     }
 
     [[nodiscard]]
