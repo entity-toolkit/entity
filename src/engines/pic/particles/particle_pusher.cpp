@@ -3,6 +3,8 @@
 #include "wrapper.h"
 
 #include "pic.h"
+#include PGEN_HEADER
+#include METRIC_HEADER
 
 namespace ntt {
 
@@ -17,9 +19,19 @@ namespace ntt {
         continue;
       }
       if (params.extforceEnabled()) {
-        PushLoop<D, true>(params, mblock, species, pgen, time, factor);
+        PushLoop<D, Metric<D>, ProblemGenerator<D, PICEngine>, true>(params,
+                                                                     mblock,
+                                                                     species,
+                                                                     pgen,
+                                                                     time,
+                                                                     factor);
       } else {
-        PushLoop<D, false>(params, mblock, species, pgen, time, factor);
+        PushLoop<D, Metric<D>, ProblemGenerator<D, PICEngine>, false>(params,
+                                                                      mblock,
+                                                                      species,
+                                                                      pgen,
+                                                                      time,
+                                                                      factor);
       }
     }
     NTTLog();
