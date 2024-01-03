@@ -37,7 +37,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "CurrentsDeposit",
         species.rangeActiveParticles(),
-        DepositCurrents_kernel<D, PICEngine, Metric<D>>(scatter_cur0,
+        DepositCurrents_kernel<D, PICEngine, Metric<D>>(scatter_cur,
                                                         species.i1,
                                                         species.i2,
                                                         species.i3,
