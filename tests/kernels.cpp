@@ -13,7 +13,8 @@
   #define SIMENGINE ntt::SimulationEngine::GRPIC
 #endif
 
-#include "utils/currents_deposit.hpp"
+#include "kernels/currents_deposit.hpp"
+#include "kernels/digital_filter.hpp"
 
 template <typename T>
 void put_value(ntt::array_t<T*> arr, T value, int i) {
@@ -23,30 +24,36 @@ void put_value(ntt::array_t<T*> arr, T value, int i) {
   Kokkos::deep_copy(arr, arr_h);
 }
 
+auto dummy_metric(const unsigned int nx1, const unsigned int nx2)
+  -> ntt::Metric<ntt::Dim2> {
+  const auto resolution = std::vector<unsigned int>({ nx1, nx2 });
+#ifdef MINKOWSKI_METRIC
+  const auto extent = std::vector<real_t>({ 0.0, 55.0, 0.0, 55.0 });
+#else
+  const auto extent = std::vector<real_t>({ 1.0, 100.0, ZERO, ntt::constant::PI });
+#endif
+  // optional for GR
+  const auto spin    = (real_t)(0.9);
+  const auto rh      = ONE + std::sqrt(ONE - SQR(spin));
+  // optional for Qspherical
+  const auto qsph_r0 = (real_t)(0.0);
+  const auto qsph_h  = (real_t)(0.25);
+
+  auto params = new real_t[6];
+  params[0]   = qsph_r0;
+  params[1]   = qsph_h;
+  params[4]   = spin;
+  params[5]   = rh;
+  ntt::Metric<ntt::Dim2> metric(resolution, extent, params);
+  delete[] params;
+  return metric;
+}
+
 auto main(int argc, char* argv[]) -> int {
   ntt::GlobalInitialize(argc, argv);
   try {
     constexpr auto nx1 = 10, nx2 = 10;
-    const auto     resolution = std::vector<unsigned int>({ nx1, nx2 });
-#ifdef MINKOWSKI_METRIC
-    const auto extent = std::vector<real_t>({ 0.0, 55.0, 0.0, 55.0 });
-#else
-    const auto extent = std::vector<real_t>({ 1.0, 100.0, ZERO, ntt::constant::PI });
-#endif
-    // optional for GR
-    const auto spin    = (real_t)(0.9);
-    const auto rh      = ONE + std::sqrt(ONE - SQR(spin));
-    // optional for Qspherical
-    const auto qsph_r0 = (real_t)(0.0);
-    const auto qsph_h  = (real_t)(0.25);
-
-    auto params = new real_t[6];
-    params[0]   = qsph_r0;
-    params[1]   = qsph_h;
-    params[4]   = spin;
-    params[5]   = rh;
-    const ntt::Metric<ntt::Dim2> metric(resolution, extent, params);
-    delete[] params;
+    auto           metric = dummy_metric(nx1, nx2);
     {
       /* --------------------------------- deposit -------------------------------- */
       ntt::ndfield_t<ntt::Dim2, 3> J { "J", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
@@ -143,7 +150,7 @@ auto main(int argc, char* argv[]) -> int {
         "SumDivJ",
         Kokkos::MDRangePolicy<Kokkos::Rank<2>>({ N_GHOSTS, N_GHOSTS },
                                                { nx1 + N_GHOSTS, nx2 + N_GHOSTS }),
-        KOKKOS_LAMBDA(const int i, const int j, real_t& sum) {
+        Lambda(const int i, const int j, real_t& sum) {
           sum += J(i, j, ntt::cur::jx1) - J(i - 1, j, ntt::cur::jx1) +
                  J(i, j, ntt::cur::jx2) - J(i, j - 1, ntt::cur::jx2);
         },
@@ -168,6 +175,58 @@ auto main(int argc, char* argv[]) -> int {
       if (!ntt::AlmostEqual(Jy2,
                             J_h(i0 + 1 + N_GHOSTS, j0 + N_GHOSTS, ntt::cur::jx2))) {
         throw std::logic_error("DepositCurrents_kernel::Jy2 is incorrect");
+      }
+    }
+    {
+      /* --------------------------------- filter --------------------------------- */
+      ntt::ndfield_t<ntt::Dim2, 3> J { "J", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS },
+        Jbuff { "Jbuff", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
+
+      ntt::tuple_t<std::size_t, ntt::Dim2> size;
+      size[0]                  = nx1;
+      size[1]                  = nx2;
+      auto J_h                 = Kokkos::create_mirror_view(J);
+      J_h(5, 5, ntt::cur::jx1) = 1.0;
+      J_h(4, 5, ntt::cur::jx2) = 1.0;
+      J_h(5, 4, ntt::cur::jx3) = 1.0;
+      Kokkos::deep_copy(J, J_h);
+      const auto range = ntt::CreateRangePolicy<ntt::Dim2>(
+        { N_GHOSTS, N_GHOSTS },
+        { nx1 + N_GHOSTS, nx2 + N_GHOSTS + 1 });
+      Kokkos::deep_copy(Jbuff, J);
+      Kokkos::parallel_for("CurrentsFilter",
+                           range,
+                           ntt::DigitalFilter_kernel<ntt::Dim2>(J, Jbuff, size));
+      real_t SumJx1 { 0.0 }, SumJx2 { 0.0 }, SumJx3 { 0.0 };
+      Kokkos::parallel_reduce(
+        "SumJx1",
+        range,
+        Lambda(const int i, const int j, real_t& sum) {
+          sum += J(i, j, ntt::cur::jx1);
+        },
+        SumJx1);
+      Kokkos::parallel_reduce(
+        "SumJx2",
+        range,
+        Lambda(const int i, const int j, real_t& sum) {
+          sum += J(i, j, ntt::cur::jx2);
+        },
+        SumJx2);
+      Kokkos::parallel_reduce(
+        "SumJx3",
+        range,
+        Lambda(const int i, const int j, real_t& sum) {
+          sum += J(i, j, ntt::cur::jx3);
+        },
+        SumJx3);
+      if (!ntt::AlmostEqual(ONE, SumJx1)) {
+        throw std::logic_error("DigitalFilter_kernel::SumJx1 != 1");
+      }
+      if (!ntt::AlmostEqual(ONE, SumJx2)) {
+        throw std::logic_error("DigitalFilter_kernel::SumJx2 != 1");
+      }
+      if (!ntt::AlmostEqual(ONE, SumJx3)) {
+        throw std::logic_error("DigitalFilter_kernel::SumJx3 != 1");
       }
     }
   }

@@ -2,12 +2,12 @@
  * @file currents_filter.cpp
  * @brief Gaussian filtering of the deposited currents `Meshblock::currentFilters` times.
  * @implements: `CurrentsFilter` method of the `GRPIC` class
- * @depends: `grpic.h`, `utils/digital_filter.hpp
+ * @depends: `grpic.h`, `kernels/digital_filter.hpp
  *
  * @notes: - Filter is applied uniformly everywhere, except for the axis ...
  *           ... in 2D axisymmetric simulations. On the axis we reflect ...
  *           ... the shape function.
- * 
+ *
  */
 
 #include "wrapper.h"
@@ -16,7 +16,7 @@
 
 #include "io/output.h"
 
-#include "utils/digital_filter.hpp"
+#include "kernels/digital_filter.hpp"
 
 namespace ntt {
 

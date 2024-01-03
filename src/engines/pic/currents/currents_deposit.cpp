@@ -2,7 +2,7 @@
  * @file currents_deposit.cpp
  * @brief Atomic current deposition for all charged particles.
  * @implements: `CurrentsDeposit` method of the `PIC` class
- * @includes: `utils/currents_deposit.hpp
+ * @includes: `kernels/currents_deposit.hpp
  * @depends: `pic.h`
  *
  * @notes: - The deposited currents are not the "physical" currents used ...
@@ -10,7 +10,7 @@
  *         - Previous coordinate of the particle is stored in _prev arrays.
  */
 
-#include "utils/currents_deposit.hpp"
+#include "kernels/currents_deposit.hpp"
 
 #include "wrapper.h"
 
