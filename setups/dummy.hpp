@@ -14,6 +14,8 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   struct ProblemGenerator : public PGen<D, S> {
     inline ProblemGenerator(const SimulationParams&) {}
+
+    inline ProblemGenerator() {}
   };
 
   template <Dimension D, SimulationEngine S>

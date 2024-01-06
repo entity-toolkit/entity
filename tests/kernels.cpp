@@ -19,7 +19,6 @@
 template <typename T>
 void put_value(ntt::array_t<T*> arr, T value, int i) {
   auto arr_h = Kokkos::create_mirror_view(arr);
-  Kokkos::deep_copy(arr_h, arr);
   arr_h(i) = value;
   Kokkos::deep_copy(arr, arr_h);
 }

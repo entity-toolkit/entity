@@ -1,11 +1,12 @@
-#ifndef PIC_PARTICLE_PUSHER_H
-#define PIC_PARTICLE_PUSHER_H
+#ifndef FRAMEWORK_KERNELS_PARTICLE_PUSHER_SR_H
+#define FRAMEWORK_KERNELS_PARTICLE_PUSHER_SR_H
 
 #include "wrapper.h"
 
 #include "particle_macros.h"
-#include "pic.h"
 
+#include "meshblock/fields.h"
+#include "meshblock/particles.h"
 #include "utils/qmath.h"
 
 #include <typeindex>
@@ -42,6 +43,8 @@ namespace ntt {
   /**
    * @brief Algorithm for the Particle pusher.
    * @tparam D Dimension.
+   * @tparam M Metric.
+   * @tparam PG Problem generator.
    */
   template <Dimension D, class M, class PG>
   class PusherBase_kernel {

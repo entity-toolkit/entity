@@ -1,12 +1,11 @@
-#ifndef CURRENTS_DEPOSIT_H
-#define CURRENTS_DEPOSIT_H
+#ifndef FRAMEWORK_KERNELS_CURRENTS_DEPOSIT_H
+#define FRAMEWORK_KERNELS_CURRENTS_DEPOSIT_H
 
 #include "wrapper.h"
 
 #include "particle_macros.h"
 
-#include "io/output.h"
-#include "meshblock/meshblock.h"
+#include "meshblock/fields.h"
 #include "meshblock/particles.h"
 #include "utils/qmath.h"
 

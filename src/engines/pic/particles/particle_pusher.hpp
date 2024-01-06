@@ -1,5 +1,5 @@
-#ifndef PIC_PARTICLES_PUSHER_HPP
-#define PIC_PARTICLES_PUSHER_HPP
+#ifndef PIC_PARTICLE_PUSHER_HPP
+#define PIC_PARTICLE_PUSHER_HPP
 
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
@@ -9,12 +9,12 @@
 namespace ntt {
 
   template <Dimension D, class M, class PG, typename P, bool ExtForce>
-  void PushLoopWith(const SimulationParams&         params,
-                    Meshblock<D, PICEngine>&        mblock,
-                    Particles<D, PICEngine>&        species,
-                    ProblemGenerator<D, PICEngine>& pgen,
-                    real_t                          time,
-                    real_t                          factor) {
+  void PushLoopWith(const SimulationParams&  params,
+                    Meshblock<D, PICEngine>& mblock,
+                    Particles<D, PICEngine>& species,
+                    PG&                      pgen,
+                    real_t                   time,
+                    real_t                   factor) {
     const auto dt              = factor * mblock.timestep();
     const auto charge_ovr_mass = species.mass() > ZERO
                                    ? species.charge() / species.mass()
@@ -94,12 +94,12 @@ namespace ntt {
   }
 
   template <Dimension D, class M, class PG, bool ExtForce>
-  void PushLoop(const SimulationParams&         params,
-                Meshblock<D, PICEngine>&        mblock,
-                Particles<D, PICEngine>&        species,
-                ProblemGenerator<D, PICEngine>& pgen,
-                real_t                          time,
-                real_t                          factor) {
+  void PushLoop(const SimulationParams&  params,
+                Meshblock<D, PICEngine>& mblock,
+                Particles<D, PICEngine>& species,
+                PG&                      pgen,
+                real_t                   time,
+                real_t                   factor) {
     const auto pusher = species.pusher();
     if (pusher == ParticlePusher::PHOTON) {
       PushLoopWith<D, M, PG, Photon_t, ExtForce>(params,
@@ -132,4 +132,4 @@ namespace ntt {
   }
 } // namespace ntt
 
-#endif // PIC_PARTICLES_PUSHER_HPP
+#endif // PIC_PARTICLE_PUSHER_HPP
