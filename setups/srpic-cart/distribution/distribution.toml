@@ -1,0 +1,59 @@
+[simulation]
+title   = "distribution"
+runtime = 1.0
+
+[domain]
+resolution = [128, 128]
+extent     = [-12.8, 12.8, -12.8, 12.8]
+boundaries = [["PERIODIC"], ["PERIODIC"]]
+
+[algorithm]
+CFL             = 0.5
+current_filters = 25
+
+[units]
+ppc0       = 8.0
+larmor0    = 1.0
+skindepth0 = 1.0
+
+[particles]
+n_species = 4
+shuffle_interval = 1
+
+[species_1]
+label    = "e-_p"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+
+[species_2]
+label    = "e+_p"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e8
+
+[species_3]
+label    = "e-_b"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+
+[species_4]
+label    = "e+_b"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e8
+
+[problem]
+temperature_1 = 0.005
+temperature_2 = 0.1
+temperature_3 = 0.6
+temperature_4 = 10.0
+
+[output]
+fields        = ["B", "Rho"]
+particles     = ["X", "U"]
+prtl_stride   = 1
+fields_stride = 2
+format        = "HDF5"
+interval_time = 1.0

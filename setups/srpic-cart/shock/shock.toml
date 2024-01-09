@@ -1,0 +1,47 @@
+[simulation]
+title   = "shock"
+runtime = 300.0
+
+[domain]
+resolution = [1280, 128]
+extent     = [0.0, 320.0, -16.0, 16.0]
+boundaries = [["PERIODIC"], ["PERIODIC"]]
+
+[algorithm]
+CFL             = 0.5
+current_filters = 0
+
+[units]
+ppc0       = 10.0
+larmor0    = 1.0
+skindepth0 = 1.0
+
+[particles]
+n_species = 2
+shuffle_interval = 1
+
+[species_1]
+label    = "e-_p"
+mass     = 1.0
+charge   = -1.0
+maxnpart = 1e8
+
+[species_2]
+label    = "e+_p"
+mass     = 1.0
+charge   = 1.0
+maxnpart = 1e8
+
+[problem]
+drift_p       = 10.0
+temperature_p = 0.08
+ninj          = 500
+x1_inj_0      = 50.0
+
+[output]
+fields        = ["B", "E", "Rho"]
+particles     = ["X", "U"]
+prtl_stride   = 1
+fields_stride = 1
+format        = "HDF5"
+interval_time = 1.0
