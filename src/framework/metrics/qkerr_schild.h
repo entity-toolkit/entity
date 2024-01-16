@@ -48,6 +48,8 @@ namespace ntt {
     }
 
   public:
+    constexpr static Dimension PrtlD = D;
+
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params) :

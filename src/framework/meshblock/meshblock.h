@@ -146,17 +146,17 @@ namespace ntt {
      */
     void CheckNaNs(const std::string&, CheckNaNFlags);
 
-    /**
-     * @brief Compute the charge density.
-     * @param params SimulationParams object.
-     * @param buffer Buffer to store the result in.
-     * @param prtl_species Particle species to compute the charge density for.
-     * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
-     */
-    void ComputeChargeDensity(const SimulationParams&,
-                              ndfield_t<D, 3>&,
-                              const std::vector<int>&,
-                              int);
+    // /**
+    //  * @brief Compute the charge density.
+    //  * @param params SimulationParams object.
+    //  * @param buffer Buffer to store the result in.
+    //  * @param prtl_species Particle species to compute the charge density for.
+    //  * @param buff_ind Buffer index to store the result in (`meshblock::buff` array).
+    //  */
+    // void ComputeChargeDensity(const SimulationParams&,
+    //                           ndfield_t<D, 3>&,
+    //                           const std::vector<int>&,
+    //                           int);
 
     /**
      * @brief Check for particles out of bounds.

@@ -212,6 +212,7 @@ namespace ntt {
       });
   }
 
+  // !TODO: capture i2max properly (at the moment, the loop does not include it)
   template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::ComputeDivergenceED(ndfield_t<D, 3>& buffer, int buff_ind) {
     NTTLog();
@@ -246,7 +247,7 @@ namespace ntt {
           const auto i1_ { COORD(i1) };
           const auto i2_ { COORD(i2) };
 
-          if (ax_i2min && i2 == i2_min) {
+          if ((ax_i2min && i2 == i2_min) || (ax_i2max && i2 == i2_max)) {
             // northern axis
             buffer(
               i1,
@@ -272,7 +273,7 @@ namespace ntt {
                                this->metric.sqrt_det_h({ i1_, i2_ });
           }
         });
-    } else {
+    } else if constexpr (D == Dim3) {
       const auto i2_min = this->i2_min();
       const auto i2_max = this->i2_max();
 #ifdef MINKOWSKI_METRIC
@@ -312,154 +313,154 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, SimulationEngine S>
-  void Meshblock<D, S>::ComputeChargeDensity(const SimulationParams& params,
-                                             ndfield_t<D, 3>&        buffer,
-                                             const std::vector<int>& prtl_species,
-                                             int buff_ind) {
-    NTTLog();
-    ResetBuffer<D, 3>(this->buff, buff_ind);
-    // charge density is defined in the nodes
+  // template <Dimension D, SimulationEngine S>
+  // void Meshblock<D, S>::ComputeChargeDensity(const SimulationParams& params,
+  //                                            ndfield_t<D, 3>&        buffer,
+  //                                            const std::vector<int>&
+  //                                            prtl_species, int buff_ind) {
+  //   NTTLog();
+  //   ResetBuffer<D, 3>(this->buff, buff_ind);
+  //   // charge density is defined in the nodes
 
-    // if species not specified, use all charged particles
-    std::vector<int> out_species = prtl_species;
-    if (out_species.size() == 0) {
-      for (auto& specs : particles) {
-        if (specs.charge() > 0.0) {
-          out_species.push_back(specs.index());
-        }
-      }
-    }
-    auto       this_metric = this->metric;
-    const auto use_weights = params.useWeights();
+  //   // if species not specified, use all charged particles
+  //   std::vector<int> out_species = prtl_species;
+  //   if (out_species.size() == 0) {
+  //     for (auto& specs : particles) {
+  //       if (specs.charge() > 0.0) {
+  //         out_species.push_back(specs.index());
+  //       }
+  //     }
+  //   }
+  //   auto       this_metric = this->metric;
+  //   const auto use_weights = params.useWeights();
 
-    auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
-    for (auto& sp : out_species) {
-      auto       species = particles[sp - 1];
-      const auto q_n0    = species.charge() / params.n0();
-      if constexpr (D == Dim1) {
-        Kokkos::parallel_for(
-          "ComputeChargeDensity",
-          species.rangeActiveParticles(),
-          Lambda(index_t p) {
-            if (species.tag(p) == ParticleTag::alive) {
-              auto       buff_access = scatter_buff.access();
-              const auto i1          = species.i1(p);
-              const auto i1_         = COORD(i1);
-              const auto dx1         = species.dx1(p);
-              const auto coeff = (use_weights) ? (q_n0 * species.weight(p))
-                                               : (q_n0);
+  //   auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
+  //   for (auto& sp : out_species) {
+  //     auto       species = particles[sp - 1];
+  //     const auto q_n0    = species.charge() / params.n0();
+  //     if constexpr (D == Dim1) {
+  //       Kokkos::parallel_for(
+  //         "ComputeChargeDensity",
+  //         species.rangeActiveParticles(),
+  //         Lambda(index_t p) {
+  //           if (species.tag(p) == ParticleTag::alive) {
+  //             auto       buff_access = scatter_buff.access();
+  //             const auto i1          = species.i1(p);
+  //             const auto i1_         = COORD(i1);
+  //             const auto dx1         = species.dx1(p);
+  //             const auto coeff = (use_weights) ? (q_n0 * species.weight(p))
+  //                                              : (q_n0);
 
-              buff_access(i1, buff_ind) += coeff * species.weight(p) *
-                                           (ONE - dx1) /
-                                           this_metric.sqrt_det_h({ i1_ });
-              buff_access(i1 + 1,
-                          buff_ind) += coeff * species.weight(p) * dx1 /
-                                       this_metric.sqrt_det_h({ i1_ + ONE });
-            }
-          });
-      } else if constexpr (D == Dim2) {
-        const auto ax_i2min { (this->boundaries.size() > 1) &&
-                              (this->boundaries[1][0] == BoundaryCondition::AXIS) };
-        const auto ax_i2max { (this->boundaries.size() > 1) &&
-                              (this->boundaries[1][1] == BoundaryCondition::AXIS) };
-        const auto ni2 { (int)(this->Ni2()) };
-        Kokkos::parallel_for(
-          "ComputeChargeDensity",
-          species.rangeActiveParticles(),
-          Lambda(index_t p) {
-            if (species.tag(p) == ParticleTag::alive) {
-              auto       buff_access = scatter_buff.access();
-              const auto i1          = species.i1(p);
-              const auto i2          = species.i2(p);
-              const auto i1_         = COORD(i1);
-              const auto i2_         = COORD(i2);
-            }
-          });
-      } else if constexpr (D == Dim3) {
-        //         Kokkos::parallel_for(
-        //           "ComputeMoments",
-        //           species.rangeActiveParticles(),
-        //           Lambda(index_t p) {
-        //             if (species.tag(p) == ParticleTag::alive) {
-        //               auto      buff_access = scatter_buff.access();
-        //               auto      i1          = species.i1(p);
-        //               auto      i2          = species.i2(p);
-        //               auto      i3          = species.i3(p);
-        //               const int i1_min      = i1 - window + N_GHOSTS;
-        //               const int i1_max      = i1 + window + N_GHOSTS;
-        //               const int i2_min      = i2 - window + N_GHOSTS;
-        //               const int i2_max      = i2 + window + N_GHOSTS;
-        //               const int i3_min      = i3 - window + N_GHOSTS;
-        //               const int i3_max      = i3 + window + N_GHOSTS;
-        //               real_t    contrib { ZERO };
-        //               if (field == FieldID::Rho) {
-        //                 contrib = ((mass == ZERO) ? ONE : mass);
-        //               } else if (field == FieldID::Charge) {
-        //                 contrib = charge;
-        //               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
-        //                 contrib = ONE;
-        //               } else if (field == FieldID::T) {
-        //                 real_t energy {
-        //                   (mass == ZERO)
-        //                     ? NORM(species.ux1(p), species.ux2(p), species.ux3(p))
-        //                     : math::sqrt(ONE + NORM_SQR(species.ux1(p),
-        //                                                 species.ux2(p),
-        //                                                 species.ux3(p)))
-        //                 };
-        //                 contrib = ((mass == ZERO) ? ONE : mass) / energy;
-        // #ifdef MINKOWSKI_METRIC
-        //                 for (auto& c : { comp1, comp2 }) {
-        //                   if (c == 0) {
-        //                     contrib *= energy;
-        //                   } else if (c == 1) {
-        //                     contrib *= species.ux1(p);
-        //                   } else if (c == 2) {
-        //                     contrib *= species.ux2(p);
-        //                   } else if (c == 3) {
-        //                     contrib *= species.ux3(p);
-        //                   }
-        //                 }
-        // #else
-        //                 const real_t x1 = get_prtl_x1(species, p);
-        //                 const real_t x2 = get_prtl_x2(species, p);
-        //                 const real_t x3 = get_prtl_x3(species, p);
-        //                 vec_t<Dim3>  u_hat;
-        //                 this_metric.v3_Cart2Hat(
-        //                   { x1, x2, x3 },
-        //                   { species.ux1(p), species.ux2(p), species.ux3(p) },
-        //                   u_hat);
-        //                 for (auto& c : { comp1, comp2 }) {
-        //                   if (c == 0) {
-        //                     contrib *= energy;
-        //                   } else {
-        //                     contrib *= u_hat[c - 1];
-        //                   }
-        //                 }
-        // #endif
-        //               }
-        //               if (field != FieldID::Nppc) {
-        //                 contrib *= inv_n0 / this_metric.sqrt_det_h(
-        //                                       { static_cast<real_t>(i1) + HALF,
-        //                                         static_cast<real_t>(i2) + HALF,
-        //                                         static_cast<real_t>(i3) + HALF });
-        //                 if (use_weights) {
-        //                   contrib *= species.weight(p);
-        //                 }
-        //               }
-        //               for (auto i3_ { i3_min }; i3_ <= i3_max; ++i3_) {
-        //                 for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
-        //                   for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
-        //                     buff_access(i1_, i2_, i3_, buff_ind) += contrib * smooth;
-        //                   }
-        //                 }
-        //               }
-        //             }
-        //           });
-      }
-    }
-    Kokkos::Experimental::contribute(this->buff, scatter_buff);
-  }
+  //             buff_access(i1, buff_ind) += coeff * species.weight(p) *
+  //                                          (ONE - dx1) /
+  //                                          this_metric.sqrt_det_h({ i1_ });
+  //             buff_access(i1 + 1,
+  //                         buff_ind) += coeff * species.weight(p) * dx1 /
+  //                                      this_metric.sqrt_det_h({ i1_ + ONE });
+  //           }
+  //         });
+  //     } else if constexpr (D == Dim2) {
+  //       const auto ax_i2min { (this->boundaries.size() > 1) &&
+  //                             (this->boundaries[1][0] == BoundaryCondition::AXIS) };
+  //       const auto ax_i2max { (this->boundaries.size() > 1) &&
+  //                             (this->boundaries[1][1] == BoundaryCondition::AXIS) };
+  //       const auto ni2 { (int)(this->Ni2()) };
+  //       Kokkos::parallel_for(
+  //         "ComputeChargeDensity",
+  //         species.rangeActiveParticles(),
+  //         Lambda(index_t p) {
+  //           if (species.tag(p) == ParticleTag::alive) {
+  //             auto       buff_access = scatter_buff.access();
+  //             const auto i1          = species.i1(p);
+  //             const auto i2          = species.i2(p);
+  //             const auto i1_         = COORD(i1);
+  //             const auto i2_         = COORD(i2);
+  //           }
+  //         });
+  //     } else if constexpr (D == Dim3) {
+  //       //         Kokkos::parallel_for(
+  //       //           "ComputeMoments",
+  //       //           species.rangeActiveParticles(),
+  //       //           Lambda(index_t p) {
+  //       //             if (species.tag(p) == ParticleTag::alive) {
+  //       //               auto      buff_access = scatter_buff.access();
+  //       //               auto      i1          = species.i1(p);
+  //       //               auto      i2          = species.i2(p);
+  //       //               auto      i3          = species.i3(p);
+  //       //               const int i1_min      = i1 - window + N_GHOSTS;
+  //       //               const int i1_max      = i1 + window + N_GHOSTS;
+  //       //               const int i2_min      = i2 - window + N_GHOSTS;
+  //       //               const int i2_max      = i2 + window + N_GHOSTS;
+  //       //               const int i3_min      = i3 - window + N_GHOSTS;
+  //       //               const int i3_max      = i3 + window + N_GHOSTS;
+  //       //               real_t    contrib { ZERO };
+  //       //               if (field == FieldID::Rho) {
+  //       //                 contrib = ((mass == ZERO) ? ONE : mass);
+  //       //               } else if (field == FieldID::Charge) {
+  //       //                 contrib = charge;
+  //       //               } else if ((field == FieldID::N) || (field == FieldID::Nppc)) {
+  //       //                 contrib = ONE;
+  //       //               } else if (field == FieldID::T) {
+  //       //                 real_t energy {
+  //       //                   (mass == ZERO)
+  //       //                     ? NORM(species.ux1(p), species.ux2(p), species.ux3(p))
+  //       //                     : math::sqrt(ONE + NORM_SQR(species.ux1(p),
+  //       //                                                 species.ux2(p),
+  //       //                                                 species.ux3(p)))
+  //       //                 };
+  //       //                 contrib = ((mass == ZERO) ? ONE : mass) / energy;
+  //       // #ifdef MINKOWSKI_METRIC
+  //       //                 for (auto& c : { comp1, comp2 }) {
+  //       //                   if (c == 0) {
+  //       //                     contrib *= energy;
+  //       //                   } else if (c == 1) {
+  //       //                     contrib *= species.ux1(p);
+  //       //                   } else if (c == 2) {
+  //       //                     contrib *= species.ux2(p);
+  //       //                   } else if (c == 3) {
+  //       //                     contrib *= species.ux3(p);
+  //       //                   }
+  //       //                 }
+  //       // #else
+  //       //                 const real_t x1 = get_prtl_x1(species, p);
+  //       //                 const real_t x2 = get_prtl_x2(species, p);
+  //       //                 const real_t x3 = get_prtl_x3(species, p);
+  //       //                 vec_t<Dim3>  u_hat;
+  //       //                 this_metric.v3_Cart2Hat(
+  //       //                   { x1, x2, x3 },
+  //       //                   { species.ux1(p), species.ux2(p), species.ux3(p) },
+  //       //                   u_hat);
+  //       //                 for (auto& c : { comp1, comp2 }) {
+  //       //                   if (c == 0) {
+  //       //                     contrib *= energy;
+  //       //                   } else {
+  //       //                     contrib *= u_hat[c - 1];
+  //       //                   }
+  //       //                 }
+  //       // #endif
+  //       //               }
+  //       //               if (field != FieldID::Nppc) {
+  //       //                 contrib *= inv_n0 / this_metric.sqrt_det_h(
+  //       //                                       { static_cast<real_t>(i1) + HALF,
+  //       //                                         static_cast<real_t>(i2) + HALF,
+  //       //                                         static_cast<real_t>(i3) + HALF });
+  //       //                 if (use_weights) {
+  //       //                   contrib *= species.weight(p);
+  //       //                 }
+  //       //               }
+  //       //               for (auto i3_ { i3_min }; i3_ <= i3_max; ++i3_) {
+  //       //                 for (auto i2_ { i2_min }; i2_ <= i2_max; ++i2_) {
+  //       //                   for (auto i1_ { i1_min }; i1_ <= i1_max; ++i1_) {
+  //       //                     buff_access(i1_, i2_, i3_, buff_ind) += contrib * smooth;
+  //       //                   }
+  //       //                 }
+  //       //               }
+  //       //             }
+  //       //           });
+  //     }
+  //   }
+  //   Kokkos::Experimental::contribute(this->buff, scatter_buff);
+  // }
 
   template <Dimension D, SimulationEngine S>
   void Meshblock<D, S>::ComputeMoments(const SimulationParams& params,
@@ -600,16 +601,16 @@ namespace ntt {
                   }
                 }
 #else
-                const real_t x1  = get_prtl_x1(species, p);
-                const real_t x2  = get_prtl_x2(species, p);
-                const real_t phi = species.phi(p);
+                const real_t x1 = get_prtl_x1(species, p);
+                const real_t x2 = get_prtl_x2(species, p);
                 vec_t<Dim3>  u_hat;
-  #if defined(PIC_ENGINE)
+  #ifdef PIC_ENGINE
+                const real_t phi = species.phi(p);
                 this_metric.v3_Cart2Hat(
                   { x1, x2, phi },
                   { species.ux1(p), species.ux2(p), species.ux3(p) },
                   u_hat);
-  #elif defined(GRPIC_ENGINE)
+  #else
                 this_metric.v3_Cov2Hat(
                   { x1, x2 },
                   { species.ux1(p), species.ux2(p), species.ux3(p) },

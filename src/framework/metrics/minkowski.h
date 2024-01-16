@@ -22,6 +22,8 @@ namespace ntt {
     const real_t dx, dx_sqr, dx_inv;
 
   public:
+    constexpr static Dimension PrtlD = D;
+
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*) :

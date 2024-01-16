@@ -5,12 +5,14 @@
 
 #include "particle_macros.h"
 
+#include "meshblock/fields.h"
+#include "meshblock/particles.h"
 #include "utils/qmath.h"
 
 namespace ntt {
   struct Massive_t {};
 
-  struct Photon_t {};
+  struct Massless_t {};
 
   /**
    * @brief Algorithm for the Particle pusher.
@@ -118,7 +120,7 @@ namespace ntt {
     /**
      * @brief Main pusher subroutine for photon particles.
      */
-    Inline void operator()(Photon_t, index_t) const;
+    Inline void operator()(Massless_t, index_t) const;
 
     /**
      * @brief Main pusher subroutine for massive particles.
@@ -127,7 +129,7 @@ namespace ntt {
 
     /**
      * @brief Iterative geodesic pusher substep for momentum only.
-     * @tparam T Push type (Photon_t or Massive_t)
+     * @tparam T Push type (Massless_t or Massive_t)
      * @param xp particle coordinate.
      * @param vp particle velocity.
      * @param vp_upd updated particle velocity [return].
@@ -140,7 +142,7 @@ namespace ntt {
 
     /**
      * @brief Iterative geodesic pusher substep for coordinate only.
-     * @tparam T Push type (Photon_t or Massive_t)
+     * @tparam T Push type (Massless_t or Massive_t)
      * @param xp particle coordinate.
      * @param vp particle velocity.
      * @param xp_upd updated particle coordinate [return].
@@ -153,7 +155,7 @@ namespace ntt {
 
     /**
      * @brief Iterative geodesic pusher substep (old method).
-     * @tparam T Push type (Photon_t or Massive_t)
+     * @tparam T Push type (Massless_t or Massive_t)
      * @param xp particle coordinate.
      * @param vp particle velocity.
      * @param xp_upd updated particle coordinate [return].
@@ -168,7 +170,7 @@ namespace ntt {
 
     /**
      * @brief Iterative geodesic pusher substep (old method).
-     * @tparam T Push type (Photon_t or Massive_t)
+     * @tparam T Push type (Massless_t or Massive_t)
      * @param xp particle coordinate (at n + 1/2 for leapfrog, at n for old scheme).
      * @param vp particle velocity (at n + 1/2 for leapfrog, at n for old scheme).
      * @param phi updated phi [return].
@@ -242,7 +244,7 @@ namespace ntt {
     /**
      * @brief Compute the gamma parameter Gamma = sqrt(u_i u_j h^ij) for massless particles.
      */
-    Inline auto computeGamma(const Photon_t&,
+    Inline auto computeGamma(const Massless_t&,
                              const vec_t<Dim3>& u_cov,
                              const vec_t<Dim3>& u_cntrv) const -> real_t {
       return math::sqrt(
@@ -539,7 +541,7 @@ namespace ntt {
   /* ------------------------------ Photon pusher ----------------------------- */
 
   template <Dimension D, class M>
-  Inline void Pusher_kernel<D, M>::operator()(Photon_t, index_t p) const {
+  Inline void Pusher_kernel<D, M>::operator()(Massless_t, index_t p) const {
     if constexpr (D == Dim1) {
       NTTError("not applicable");
     } else if constexpr (D == Dim2) {
@@ -559,13 +561,13 @@ namespace ntt {
         /* ----------------------------- Leapfrog pusher ---------------------------- */
         // u_i(n - 1/2) -> u_i(n + 1/2)
         vec_t<Dim3> vp_upd { ZERO };
-        GeodesicMomentumPush<Photon_t>(Photon_t {}, xp, vp, vp_upd);
+        GeodesicMomentumPush<Massless_t>(Massless_t {}, xp, vp, vp_upd);
         // x^i(n) -> x^i(n + 1)
         coord_t<Dim2> xp_upd { ZERO };
-        GeodesicCoordinatePush<Photon_t>(Photon_t {}, xp, vp_upd, xp_upd);
+        GeodesicCoordinatePush<Massless_t>(Massless_t {}, xp, vp_upd, xp_upd);
         // update phi
-        UpdatePhi<Photon_t>(
-          Photon_t {},
+        UpdatePhi<Massless_t>(
+          Massless_t {},
           { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
           vp_upd,
           phi(p));

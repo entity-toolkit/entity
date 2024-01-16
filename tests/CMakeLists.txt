@@ -233,3 +233,19 @@ foreach(metric ${sr_metrics})
     PRIVATE ${SOURCE_DIR}/engines/${engine})
   add_test(NAME "Kernels SR: ${engine} ${metric}" COMMAND "test-${title}.xc")
 endforeach()
+
+foreach(metric ${gr_metrics})
+  set(metric ${metric})
+
+  set(engine grpic)
+
+  set(pgen dummy)
+  set(title kernels-gr-${metric})
+  add_executable(test-${title}.xc kernels-gr.cpp)
+  target_link_libraries(
+    test-${title}.xc PUBLIC framework-${metric}
+    engine-${engine}-${metric}-${pgen})
+  target_include_directories(test-${title}.xc
+    PRIVATE ${SOURCE_DIR}/engines/${engine})
+  add_test(NAME "Kernels GR: ${engine} ${metric}" COMMAND "test-${title}.xc")
+endforeach()

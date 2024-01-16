@@ -53,7 +53,7 @@ namespace ntt {
 
     if (species.pusher() == ParticlePusher::PHOTON) {
       // push photons
-      auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Photon_t>(
+      auto range_policy = Kokkos::RangePolicy<AccelExeSpace, Massless_t>(
         0,
         species.npart());
       Kokkos::parallel_for("ParticlesPush", range_policy, kernel);

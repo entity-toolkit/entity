@@ -88,6 +88,9 @@ auto main(int argc, char* argv[]) -> int {
     auto           metric = dummy_metric(nx1, nx2);
     auto           pgen   = dummy_pgen();
     {
+      /* -------------------------------------------------------------------------- */
+      /*                                   pusher */
+      /* -------------------------------------------------------------------------- */
       ntt::ndfield_t<ntt::Dim2, 6> EB { "EB", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
       ntt::array_t<int*>      i1 { "i1", 10 };
       ntt::array_t<int*>      i2 { "i2", 10 };

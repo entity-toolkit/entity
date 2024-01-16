@@ -24,6 +24,8 @@ namespace ntt {
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
+    constexpr static Dimension PrtlD = Dim3;
+
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
            const real_t*             params) :

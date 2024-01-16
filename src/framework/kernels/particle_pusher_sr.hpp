@@ -172,14 +172,14 @@ namespace ntt {
     Inline void velUpd(GCA_t, index_t&, vec_t<Dim3>&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
     // Getters
-    Inline void getPrtlPos(index_t&, coord_t<PrtlCoordD>&) const;
+    Inline void getPrtlPos(index_t&, coord_t<M::PrtlD>&) const;
     Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
     Inline auto getEnergy(Massless_t, index_t& p) const -> real_t;
     Inline void getInterpFlds(index_t&, vec_t<Dim3>&, vec_t<Dim3>&) const;
 
     // Extra
     Inline void boundaryConditions(index_t&) const;
-    Inline void initForce(coord_t<PrtlCoordD>&, vec_t<Dim3>&) const;
+    Inline void initForce(coord_t<M::PrtlD>&, vec_t<Dim3>&) const;
   };
 
   template <Dimension D, class M, class PG, typename P, bool ExtForce, typename... Cs>
@@ -308,7 +308,7 @@ namespace ntt {
 
     Inline void operator()(P, index_t p) const {
       if (this->tag(p) == ParticleTag::alive) {
-        coord_t<PrtlCoordD> xp { ZERO };
+        coord_t<M::PrtlD> xp { ZERO };
         this->getPrtlPos(p, xp);
         // update cartesian velocity
         if constexpr (!std::is_same_v<P, Photon_t>) {
@@ -400,28 +400,30 @@ namespace ntt {
                                 this->ux2(p) * inv_energy,
                                 this->ux3(p) * inv_energy };
           // get cartesian position
-          coord_t<PrtlCoordD> xp_Cart { ZERO };
+          coord_t<M::PrtlD> xp_Cart { ZERO };
           this->metric.x_Code2Cart(xp, xp_Cart);
           // update cartesian position
-          for (short d { 0 }; d < static_cast<short>(PrtlCoordD); ++d) {
+          for (short d { 0 }; d < static_cast<short>(M::PrtlD); ++d) {
             xp_Cart[d] += vp_Cart[d] * this->dt;
           }
           // transform back to code
           this->metric.x_Cart2Code(xp_Cart, xp);
 
           // update x1
-          this->i1_prev(p)  = this->i1(p);
-          this->dx1_prev(p) = this->dx1(p);
-          from_Xi_to_i_di(xp[0], this->i1(p), this->dx1(p));
+          if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
+            this->i1_prev(p)  = this->i1(p);
+            this->dx1_prev(p) = this->dx1(p);
+            from_Xi_to_i_di(xp[0], this->i1(p), this->dx1(p));
+          }
 
           // update x2 & phi
-          if constexpr (D != Dim1) {
+          if constexpr (D == Dim2 || D == Dim3) {
             this->i2_prev(p)  = this->i2(p);
             this->dx2_prev(p) = this->dx2(p);
             from_Xi_to_i_di(xp[1], this->i2(p), this->dx2(p));
-#ifndef MINKOWSKI_METRIC
-            this->phi(p) = xp[2];
-#endif
+            if constexpr (D == Dim2 && M::PrtlD == Dim3) {
+              this->phi(p) = xp[2];
+            }
           }
 
           // update x3
@@ -607,13 +609,13 @@ namespace ntt {
 
   template <Dimension D, class M, class PG>
   Inline void PusherBase_kernel<D, M, PG>::getPrtlPos(index_t& p,
-                                                      coord_t<PrtlCoordD>& xp) const {
+                                                      coord_t<M::PrtlD>& xp) const {
     if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
     }
     if constexpr (D == Dim2) {
       xp[1] = i_di_to_Xi(i2(p), dx2(p));
-      if constexpr (PrtlCoordD == Dim3) {
+      if constexpr (M::PrtlD == Dim3) {
         xp[2] = phi(p);
       }
     }
@@ -965,14 +967,14 @@ namespace ntt {
   // External force
 
   template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::initForce(coord_t<PrtlCoordD>& xp,
+  Inline void PusherBase_kernel<D, M, PG>::initForce(coord_t<M::PrtlD>& xp,
                                                      vec_t<Dim3>& force_Cart) const {
-    coord_t<PrtlCoordD> xp_Ph { ZERO };
+    coord_t<M::PrtlD> xp_Ph { ZERO };
     xp_Ph[0] = metric.x1_Code2Phys(xp[0]);
-    if constexpr (PrtlCoordD != Dim1) {
+    if constexpr (M::PrtlD != Dim1) {
       xp_Ph[1] = metric.x2_Code2Phys(xp[1]);
     }
-    if constexpr (PrtlCoordD == Dim3) {
+    if constexpr (M::PrtlD == Dim3) {
       xp_Ph[2] = metric.x3_Code2Phys(xp[2]);
     }
     const vec_t<Dim3> force_Hat { pgen.ext_force_x1(time, xp_Ph),
