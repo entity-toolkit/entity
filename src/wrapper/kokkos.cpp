@@ -7,12 +7,11 @@
 namespace ntt {
   auto WaitAndSynchronize(bool debug_only) -> void {
     if (debug_only) {
-#ifdef DEBUG
-      Kokkos::fence();
+#ifndef DEBUG
+      return;
 #endif
-    } else {
-      Kokkos::fence();
     }
+    Kokkos::fence();
   }
 
   template <>

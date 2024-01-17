@@ -925,10 +925,17 @@ namespace ntt {
               Kokkos::atomic_fetch_add(&found_nan(),
                                        (int)nan_found + (int)inf_found);
               if (nan_found || inf_found) {
-                printf("NAN in particles at %ld %d %d %f %f %f\n",
+                printf("NAN in particles at %ld %d (%d) %d (%d) %f (%f) %f "
+                       "(%f), %f %f %f\n",
                        p,
                        species.i1(p),
+                       species.i1_prev(p),
                        species.i2(p),
+                       species.i2_prev(p),
+                       species.dx1(p),
+                       species.dx1_prev(p),
+                       species.dx2(p),
+                       species.dx2_prev(p),
                        species.ux1(p),
                        species.ux2(p),
                        species.ux3(p));

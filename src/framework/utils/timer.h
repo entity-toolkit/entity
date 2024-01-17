@@ -3,6 +3,8 @@
 
 #include "wrapper.h"
 
+#include <mpi.h>
+
 #include <chrono>
 #include <string>
 
@@ -67,6 +69,9 @@ namespace ntt {
       void stop(const std::string& name) {
         if (m_blocking) {
           WaitAndSynchronize();
+#ifdef MPI_ENABLED
+          MPI_Barrier(MPI_COMM_WORLD);
+#endif
         }
         auto end     = std::chrono::system_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -143,8 +148,8 @@ namespace ntt {
           total       += std::accumulate(timers.begin(), timers.end(), 0.0);
         }
         for (std::size_t t { 0 }; t < m_names.size(); ++t) {
-          auto  label  = m_names[t];
-          auto  timers = mpi_timers[label];
+          auto label  = m_names[t];
+          auto timers = mpi_timers[label];
           // compute min, max, mean
           long double min_time = *std::min_element(timers.begin(), timers.end());
           long double max_time = *std::max_element(timers.begin(), timers.end());
