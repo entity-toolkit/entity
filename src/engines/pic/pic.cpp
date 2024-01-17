@@ -93,7 +93,6 @@ namespace ntt {
 
       {
         mblock.CheckNaNs("After Push", CheckNaN_Particles);
-        mblock.CheckOutOfBounds("After Push");
       }
 
       if (params.depositEnabled()) {

@@ -764,10 +764,12 @@ namespace ntt {
                              (species.tag(p) < 0 || species.tag(p) >= ntags);
             Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
             if (oob_found) {
-              printf("OutOfBounds particle at %ld %d %f [%d]\n",
+              printf("OutOfBounds particle at %ld %d (%d) %f (%f) [%d]\n",
                      p,
                      species.i1(p),
+                     species.i1_prev(p),
                      species.dx1(p),
+                     species.dx1_prev(p),
                      species.tag(p));
             }
           });
@@ -783,12 +785,17 @@ namespace ntt {
                              (species.tag(p) < 0 || species.tag(p) >= ntags);
             Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
             if (oob_found) {
-              printf("OutOfBounds particle at %ld %d %d %f %f [%d]\n",
+              printf("OutOfBounds particle at %ld %d (%d) %d (%d) %f (%f) %f "
+                     "(%f) [%d]\n",
                      p,
                      species.i1(p),
+                     species.i1_prev(p),
                      species.i2(p),
+                     species.i2_prev(p),
                      species.dx1(p),
+                     species.dx1_prev(p),
                      species.dx2(p),
+                     species.dx2_prev(p),
                      species.tag(p));
             }
           });
@@ -806,14 +813,21 @@ namespace ntt {
                              (species.tag(p) < 0 || species.tag(p) >= ntags);
             Kokkos::atomic_fetch_add(&found_oob(), (int)oob_found);
             if (oob_found) {
-              printf("OutOfBounds particle at %ld %d %d %d %f %f %f [%d]\n",
+              printf("OutOfBounds particle at %ld %d (%d) %d (%d) %d (%d) %f "
+                     "(%f) %f (%f) %f (%f) [%d]\n",
                      p,
                      species.i1(p),
+                     species.i1_prev(p),
                      species.i2(p),
+                     species.i2_prev(p),
                      species.i3(p),
+                     species.i3_prev(p),
                      species.dx1(p),
+                     species.dx1_prev(p),
                      species.dx2(p),
+                     species.dx2_prev(p),
                      species.dx3(p),
+                     species.dx3_prev(p),
                      species.tag(p));
             }
           });

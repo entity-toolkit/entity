@@ -403,6 +403,8 @@ namespace ntt {
 
     const auto npart_per_tag = NpartPerTag();
     setNpart(npart_per_tag[(short)(ParticleTag::alive)]);
+
+    NTTLog();
     return npart_per_tag;
   }
 

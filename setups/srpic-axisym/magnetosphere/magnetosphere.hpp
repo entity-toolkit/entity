@@ -34,9 +34,7 @@ namespace ntt {
       maxwellian { mblock },
       temperature { params.get<real_t>("problem", "atm_T") } {}
 
-    Inline void operator()(const coord_t<PrtlCoordD>&,
-                           vec_t<Dim3>& v,
-                           const int&) const override {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
       maxwellian(v, temperature);
       v[1] = ZERO;
       v[2] = ZERO;
@@ -107,7 +105,8 @@ namespace ntt {
     ndarray_t<(short)(D)> m_ppc_per_spec;
   };
 
-  Inline void mainBField(const coord_t<PrtlCoordD>& x_ph,
+  template <Dimension D>
+  Inline void mainBField(const coord_t<D>& x_ph,
                          vec_t<Dim3>&,
                          vec_t<Dim3>& b_out,
                          real_t       _rstar,
@@ -124,14 +123,15 @@ namespace ntt {
     }
   }
 
-  Inline void surfaceRotationField(const coord_t<PrtlCoordD>& x_ph,
-                                   vec_t<Dim3>&          e_out,
-                                   vec_t<Dim3>&          b_out,
-                                   real_t                _rstar,
-                                   real_t                _bsurf,
-                                   int                   _mode,
-                                   real_t                _omega) {
-    mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
+  template <Dimension D>
+  Inline void surfaceRotationField(const coord_t<D>& x_ph,
+                                   vec_t<Dim3>&      e_out,
+                                   vec_t<Dim3>&      b_out,
+                                   real_t            _rstar,
+                                   real_t            _bsurf,
+                                   int               _mode,
+                                   real_t            _omega) {
+    mainBField<D>(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
     e_out[0] = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
     e_out[1] = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
     e_out[2] = 0.0;
@@ -145,13 +145,12 @@ namespace ntt {
       _bsurf { params.get<real_t>("problem", "psr_Bsurf", ONE) },
       _mode { params.get<int>("problem", "psr_field_mode", 2) } {}
 
-    Inline real_t operator()(const em&             comp,
-                             const coord_t<PrtlCoordD>& xi) const override {
+    Inline real_t operator()(const em& comp, const coord_t<D>& xi) const override {
       if ((comp == em::bx1) || (comp == em::bx2)) {
-        vec_t<Dim3>    e_out { ZERO }, b_out { ZERO };
-        coord_t<PrtlCoordD> x_ph { ZERO };
+        vec_t<Dim3> e_out { ZERO }, b_out { ZERO };
+        coord_t<D>  x_ph { ZERO };
         (this->m_mblock).metric.x_Code2Phys(xi, x_ph);
-        mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
+        mainBField<D>(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
         return (comp == em::bx1) ? b_out[0] : b_out[1];
       } else {
         return ZERO;
@@ -209,10 +208,9 @@ namespace ntt {
     const SimulationParams&     params,
     Meshblock<Dim2, PICEngine>& mblock) {
     {
-      const auto rmin   = mblock.metric.x1_min;
-      const auto x1_psr = mblock.metric.x1_Phys2Code(m_psr_Rstar);
-      NTTHostErrorIf(rmin >= m_psr_Rstar, "rmin > r_surf");
-      NTTHostErrorIf(x1_psr < params.currentFilters(), "r_surf - rmin < filters");
+      const auto atm_cells = mblock.metric.x1_Phys2Code(m_psr_Rstar) -
+                             mblock.metric.x1_Phys2Code(m_psr_Rstar - m_atm_h);
+      NTTHostErrorIf(atm_cells < params.currentFilters(), "atm_cells < filters");
     }
     {
       const auto rstar = m_psr_Rstar;
@@ -222,7 +220,7 @@ namespace ntt {
         "UserInitFields",
         mblock.rangeActiveCells(),
         ClassLambda(index_t i, index_t j) {
-          set_em_fields_2d(mblock, i, j, mainBField, rstar, bsurf, mode);
+          set_em_fields_2d(mblock, i, j, mainBField<Dim2>, rstar, bsurf, mode);
         });
     }
   }
@@ -250,13 +248,13 @@ namespace ntt {
         CreateRangePolicy<Dim2>({ i1_min, mblock.i2_min() },
                                 { i1_surf, mblock.i2_max() }),
         ClassLambda(index_t i1, index_t i2) {
-          set_ex2_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-          set_ex3_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-          set_bx1_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
+          set_ex2_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+          set_ex3_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+          set_bx1_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
           if (i1 < i1_surf - 1) {
-            set_ex1_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-            set_bx2_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-            set_bx3_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
+            set_ex1_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+            set_bx2_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+            set_bx3_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
           }
         });
     }
