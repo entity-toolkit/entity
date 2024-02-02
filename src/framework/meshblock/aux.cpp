@@ -498,6 +498,7 @@ namespace ntt {
 
     auto scatter_buff = Kokkos::Experimental::create_scatter_view(this->buff);
     for (auto& sp : out_species) {
+      NTTHostErrorIf(sp < 0 || sp >= particles.size(), "Invalid species index");
       auto species = particles[sp - 1];
       auto mass    = species.mass();
       auto charge  = species.charge();
