@@ -24,7 +24,7 @@ larmor0    = 2.5e-5
 skindepth0 = 0.01
 
 [particles]
-shuffle_interval = 100
+sort_interval = 100
 n_species        = 2
 use_weights      = true
 

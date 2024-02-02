@@ -106,10 +106,6 @@ namespace ntt {
         this->CurrentsSynchronize();
         timers.stop("Communications");
 
-        timers.start("FieldBoundaries");
-        CurrentsBoundaryConditions();
-        timers.stop("FieldBoundaries");
-
         { mblock.CheckNaNs("After Currents BC", CheckNaN_Currents); }
 
         timers.start("CurrentFiltering");

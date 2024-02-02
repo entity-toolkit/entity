@@ -800,7 +800,7 @@ namespace ntt {
         // tag particles to send
         TagParticles(mblock, species);
 
-        const auto npart_per_tag = species.ReshuffleByTags();
+        const auto npart_per_tag = species.SortByTags();
         /**
          *                                                        index_last
          *                                                            |
@@ -842,8 +842,8 @@ namespace ntt {
             Kokkos::subview(species.tag, std::make_pair(send_pmin, send_pmax)),
             ParticleTag::dead);
         }
-        // !TODO: maybe there is a way to not shuffle twice
-        species.ReshuffleByTags();
+        // !TODO: maybe there is a way to not sort twice
+        species.SortByTags();
       }
     }
     NTTLog();

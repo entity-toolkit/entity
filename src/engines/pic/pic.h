@@ -102,10 +102,6 @@ namespace ntt {
      * @brief Deposit currents from particles.
      */
     void CurrentsDeposit();
-    /**
-     * @brief Apply boundary conditions for currents.
-     */
-    void CurrentsBoundaryConditions();
 
     /* -------------------------------- Particles ------------------------------- */
     /**

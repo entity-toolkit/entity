@@ -22,7 +22,7 @@ namespace ntt {
     }
 
     template <class ViewType, typename iT1, typename iT2>
-    Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
+    Inline auto operator()(ViewType&, iT1&, iT2&) const -> bool {
       return false;
     }
   };

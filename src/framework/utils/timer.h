@@ -3,8 +3,6 @@
 
 #include "wrapper.h"
 
-#include <mpi.h>
-
 #include <chrono>
 #include <string>
 

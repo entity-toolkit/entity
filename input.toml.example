@@ -35,7 +35,7 @@ skindepth0         = <float>
 [particles]
 n_species          = <int>
 use_weights        = <bool>
-shuffle_interval   = <int>
+sort_interval   = <int>
 
 [species_<INT>]
 label              = <string>
