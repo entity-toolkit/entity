@@ -5,8 +5,6 @@
 
 #include "meshblock/fields.h"
 
-#include <stdexcept>
-
 namespace ntt {
 
   /**

@@ -1,8 +1,19 @@
-#include "ampere.hpp"
+/**
+ * @file ampere.cpp
+ * @brief pushes varios version of D/D0 with H
+ * @implements: `Ampere` method of the `GRPIC` class
+ * @includes: `kernels/ampere_gr.hpp`
+ * @depends: `grpic.h`
+ *
+ */
 
 #include "wrapper.h"
 
 #include "grpic.h"
+
+#include "kernels/ampere_gr.hpp"
+
+#include METRIC_HEADER
 
 namespace ntt {
 
@@ -12,25 +23,44 @@ namespace ntt {
     auto  params = *(this->params());
 
     const real_t coeff = fraction * params.correction() * mblock.timestep();
-    auto range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
-                                         { mblock.i1_max(), mblock.i2_max() });
-    auto range_pole { CreateRangePolicy<Dim1>({ mblock.i1_min() },
-                                              { mblock.i1_max() }) };
+    auto range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() },
+                                         { mblock.i1_max(), mblock.i2_max() + 1 });
     if (g == gr_ampere::aux) {
-      Kokkos::parallel_for("Ampere-1", range, AmpereAux_kernel<Dim2>(mblock, coeff));
-      Kokkos::parallel_for("Ampere-2",
-                           range_pole,
-                           AmpereAuxPoles_kernel<Dim2>(mblock, coeff));
+      // push D0 with H
+      Kokkos::parallel_for(
+        "Ampere-1",
+        range,
+        Ampere_kernel_new<Dim2, Metric<Dim2>>(mblock.em0,
+                                              mblock.em0,
+                                              mblock.aux,
+                                              mblock.metric,
+                                              coeff,
+                                              mblock.Ni2(),
+                                              mblock.boundaries));
     } else if (g == gr_ampere::main) {
-      Kokkos::parallel_for("Ampere-3", range, Ampere_kernel<Dim2>(mblock, coeff));
-      Kokkos::parallel_for("Ampere-4",
-                           range_pole,
-                           AmperePoles_kernel<Dim2>(mblock, coeff));
+      // push D with H but assign to D0
+      Kokkos::parallel_for(
+        "Ampere-2",
+        range,
+        Ampere_kernel_new<Dim2, Metric<Dim2>>(mblock.em,
+                                              mblock.em0,
+                                              mblock.aux,
+                                              mblock.metric,
+                                              coeff,
+                                              mblock.Ni2(),
+                                              mblock.boundaries));
     } else if (g == gr_ampere::init) {
-      Kokkos::parallel_for("Ampere-5", range, AmpereInit_kernel<Dim2>(mblock, coeff));
-      Kokkos::parallel_for("Ampere-6",
-                           range_pole,
-                           AmpereInitPoles_kernel<Dim2>(mblock, coeff));
+      // push D0 with H but assign to D
+      Kokkos::parallel_for(
+        "Ampere-3",
+        range,
+        Ampere_kernel_new<Dim2, Metric<Dim2>>(mblock.em,
+                                              mblock.em,
+                                              mblock.aux,
+                                              mblock.metric,
+                                              coeff,
+                                              mblock.Ni2(),
+                                              mblock.boundaries));
     } else {
       NTTHostError("Wrong option for `g`");
     }

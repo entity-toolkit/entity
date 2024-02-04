@@ -21,8 +21,6 @@
 
 #include METRIC_HEADER
 
-#include <stdexcept>
-
 namespace ntt {
 
 #ifdef MINKOWSKI_METRIC

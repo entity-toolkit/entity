@@ -107,8 +107,8 @@ namespace ntt {
     }
 
   private:
-    const real_t        _epsilon;
-    WaldPotential<D, S> v_pot;
+    const real_t            _epsilon;
+    VerticalPotential<D, S> v_pot;
   };
 
   template <>
@@ -165,7 +165,7 @@ namespace ntt {
       "UserInitFields",
       CreateRangePolicy<Dim2>({ mblock.i1_min() - 1, mblock.i2_min() },
                               { mblock.i1_max(), mblock.i2_max() + 1 }),
-      Generate2DGRFromVectorPotential_kernel<WaldPotential>(params, mblock, ONE));
+      Generate2DGRFromVectorPotential_kernel<VerticalPotential>(params, mblock, ONE));
 
     Kokkos::parallel_for(
       "UserInitFields",

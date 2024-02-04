@@ -9,6 +9,7 @@ namespace ntt {
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space.
    * @tparam D Dimension.
+   * @tparam M Metric.
    */
   template <Dimension D, class M>
   class Ampere_kernel {
@@ -54,14 +55,14 @@ namespace ntt {
         const real_t h3_mHpH { metric.h_33({ i1_ - HALF, i2_ + HALF }) };
         const real_t h3_pHpH { metric.h_33({ i1_ + HALF, i2_ + HALF }) };
 
-        EB(i1, i2, em::ex2) += coeff * inv_sqrt_detH_0pH *
-                               (h3_mHpH * EB(i1 - 1, i2, em::bx3) -
-                                h3_pHpH * EB(i1, i2, em::bx3));
         if ((i2 == i2min) && is_axis_i2min) {
           // theta = 0
           const real_t inv_polar_area_pH0 { ONE / metric.polar_area(i1_ + HALF) };
           EB(i1, i2, em::ex1) += inv_polar_area_pH0 * coeff *
                                  (h3_pHpH * EB(i1, i2, em::bx3));
+          EB(i1, i2, em::ex2) += coeff * inv_sqrt_detH_0pH *
+                                 (h3_mHpH * EB(i1 - 1, i2, em::bx3) -
+                                  h3_pHpH * EB(i1, i2, em::bx3));
         } else if ((i2 == i2max) && is_axis_i2max) {
           // theta = pi
           const real_t inv_polar_area_pH0 { ONE / metric.polar_area(i1_ + HALF) };
@@ -80,6 +81,9 @@ namespace ntt {
           EB(i1, i2, em::ex1) += coeff * inv_sqrt_detH_pH0 *
                                  (h3_pHpH * EB(i1, i2, em::bx3) -
                                   h3_pHmH * EB(i1, i2 - 1, em::bx3));
+          EB(i1, i2, em::ex2) += coeff * inv_sqrt_detH_0pH *
+                                 (h3_mHpH * EB(i1 - 1, i2, em::bx3) -
+                                  h3_pHpH * EB(i1, i2, em::bx3));
           EB(i1, i2, em::ex3) += coeff * inv_sqrt_detH_00 *
                                  (h1_0mH * EB(i1, i2 - 1, em::bx1) -
                                   h1_0pH * EB(i1, i2, em::bx1) +
