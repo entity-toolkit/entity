@@ -47,17 +47,17 @@ namespace ntt {
     if (m_component == 0) {
       if (xcodeSize > 0) {
         xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-        xph[0]   = m_mblock.metric.x1_Code2Sph(xcode[0]);
+        xph[0]   = m_mblock.metric.x1_Code2Phys(xcode[0]);
       }
     } else if (m_component == 1) {
       if (xcodeSize > 1) {
         xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-        xph[1]   = m_mblock.metric.x2_Code2Sph(xcode[1]);
+        xph[1]   = m_mblock.metric.x2_Code2Phys(xcode[1]);
       }
     } else if (m_component == 2) {
       if (xcodeSize > 2) {
         xcode[2] = get_prtl_x3(m_particles, p * m_stride);
-        xph[2]   = m_mblock.metric.x3_Code2Sph(xcode[2]);
+        xph[2]   = m_mblock.metric.x3_Code2Phys(xcode[2]);
       }
     }
     m_buffer(p) = xph[m_component];
