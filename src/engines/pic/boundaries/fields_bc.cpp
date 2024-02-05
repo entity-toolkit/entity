@@ -9,7 +9,6 @@
  * @depends: `pic.h`
  *
  * @notes: - Periodic boundary conditions are implemented in `fields_exch.cpp`
- *
  */
 
 #include "wrapper.h"
@@ -91,7 +90,9 @@ namespace ntt {
         AbsorbFields_kernel<Dim2>(params, mblock, r_absorb, r_max));
     }
 
-    if (mblock.boundaries[1][0] == BoundaryCondition::AXIS) {
+    const auto is_axis_i2min = (mblock.boundaries[1][0] == BoundaryCondition::AXIS);
+    const auto is_axis_i2max = (mblock.boundaries[1][1] == BoundaryCondition::AXIS);
+    if (is_axis_i2min || is_axis_i2max) {
       /**
        * theta = 0 / pi boundaries (axis)
        *    . . . . . . . . . . . . .
@@ -115,19 +116,26 @@ namespace ntt {
         CreateRangePolicy<Dim1>({ 0 }, { mblock.i1_max() + N_GHOSTS }),
         Lambda(index_t i1) {
           // first active cell (axis):
-          mblock.em(i1, i2_min, em::bx2) = ZERO;
-          mblock.em(i1, i2_min, em::ex3) = ZERO; // mblock.em(i1, i2_min + 1, em::ex3);
+          if (is_axis_i2min) {
+            mblock.em(i1, i2_min, em::bx2) = ZERO;
+            mblock.em(i1, i2_min, em::ex3) = ZERO; // mblock.em(i1, i2_min + 1, em::ex3);
+
+            mblock.em(i1, i2_min - 1, em::bx1) = mblock.em(i1, i2_min, em::bx1);
+            mblock.em(i1, i2_min - 1, em::bx3) = mblock.em(i1, i2_min, em::bx3);
+
+            mblock.em(i1, i2_min - 1, em::ex2) = -mblock.em(i1, i2_min, em::ex2);
+          }
+
           // first ghost cell at end of domain (axis):
-          mblock.em(i1, i2_max, em::bx2) = ZERO;
-          mblock.em(i1, i2_max, em::ex3) = ZERO; // mblock.em(i1, i2_max - 1, em::ex3);
+          if (is_axis_i2max) {
+            mblock.em(i1, i2_max, em::bx2) = ZERO;
+            mblock.em(i1, i2_max, em::ex3) = ZERO; // mblock.em(i1, i2_max - 1, em::ex3);
 
-          mblock.em(i1, i2_min - 1, em::bx1) = mblock.em(i1, i2_min, em::bx1);
-          mblock.em(i1, i2_min - 1, em::bx3) = mblock.em(i1, i2_min, em::bx3);
-          mblock.em(i1, i2_max, em::bx1) = mblock.em(i1, i2_max - 1, em::bx1);
-          mblock.em(i1, i2_max, em::bx3) = mblock.em(i1, i2_max - 1, em::bx3);
+            mblock.em(i1, i2_max, em::bx1) = mblock.em(i1, i2_max - 1, em::bx1);
+            mblock.em(i1, i2_max, em::bx3) = mblock.em(i1, i2_max - 1, em::bx3);
 
-          mblock.em(i1, i2_min - 1, em::ex2) = -mblock.em(i1, i2_min, em::ex2);
-          mblock.em(i1, i2_max, em::ex2) = -mblock.em(i1, i2_max - 1, em::ex2);
+            mblock.em(i1, i2_max, em::ex2) = -mblock.em(i1, i2_max - 1, em::ex2);
+          }
         });
     } else {
       NTTHostErrorIf(mblock.boundaries[1][0] != BoundaryCondition::COMM,

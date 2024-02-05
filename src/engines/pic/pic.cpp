@@ -93,7 +93,6 @@ namespace ntt {
 
       {
         mblock.CheckNaNs("After Push", CheckNaN_Particles);
-        mblock.CheckOutOfBounds("After Push");
       }
 
       if (params.depositEnabled()) {
@@ -106,10 +105,6 @@ namespace ntt {
         timers.start("Communications");
         this->CurrentsSynchronize();
         timers.stop("Communications");
-
-        timers.start("FieldBoundaries");
-        CurrentsBoundaryConditions();
-        timers.stop("FieldBoundaries");
 
         { mblock.CheckNaNs("After Currents BC", CheckNaN_Currents); }
 

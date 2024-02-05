@@ -146,10 +146,10 @@ namespace ntt {
     auto NpartPerTag() const -> std::vector<std::size_t>;
 
     /**
-     * @brief Reshuffle particles by their tags.
+     * @brief Sort particles by their tags.
      * @return The vector of counts per each tag.
      */
-    auto ReshuffleByTags() -> std::vector<std::size_t>;
+    auto SortByTags() -> std::vector<std::size_t>;
 
     /**
      * @brief Copy particle data from device to host.

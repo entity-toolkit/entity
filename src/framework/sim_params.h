@@ -50,7 +50,7 @@ namespace ntt {
     unsigned short m_current_filters;
 
     // Particle-specific
-    int m_shuffle_interval;
+    int m_sort_interval;
 
     /**
      * Extent of the whole domain in physical units
@@ -214,8 +214,8 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto shuffleInterval() const -> int {
-      return m_shuffle_interval;
+    auto sortInterval() const -> int {
+      return m_sort_interval;
     }
 
     /**

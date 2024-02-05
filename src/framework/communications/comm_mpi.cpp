@@ -109,6 +109,7 @@ namespace ntt {
                                      particles.i3(p) >= ni3);
         });
     }
+    NTTLog();
   }
 
   /* -------------------------------------------------------------------------- */
@@ -538,7 +539,7 @@ namespace ntt {
       NTTHostError("No send or recv in CommunicateParticles");
     }
     const auto  send_count { send_slice.second - send_slice.first };
-    std::size_t recv_count;
+    std::size_t recv_count { 0 };
     ParticleSendRecvCount(send_to, recv_from, send_count, recv_count);
 
     NTTHostErrorIf((index_last + recv_count) >= particles.maxnpart(),
@@ -688,6 +689,7 @@ namespace ntt {
       index_last += recv_count;
       particles.setNpart(index_last);
     }
+    NTTLog();
   }
 
   template <Dimension D, SimulationEngine S>
@@ -798,11 +800,11 @@ namespace ntt {
         // tag particles to send
         TagParticles(mblock, species);
 
-        const auto npart_per_tag = species.ReshuffleByTags();
+        const auto npart_per_tag = species.SortByTags();
         /**
          *                                                        index_last
          *                                                            |
-         *    alive     new dead         tag1        tag2             v   dead
+         *    alive      new dead         tag1       tag2             v     dead
          * [ 11111111   000000000    222222222    3333333 .... nnnnnnn  00000000 ... ]
          *                           ^        ^
          *                           |        |
@@ -825,9 +827,9 @@ namespace ntt {
             continue;
           }
           const auto send_dir_tag = PrtlSendTag<D>::dir2tag(direction);
+          const auto nsend        = npart_per_tag[send_dir_tag];
           const auto send_pmin    = tag_offset[send_dir_tag];
-          const auto send_pmax    = tag_offset[send_dir_tag] +
-                                 npart_per_tag[send_dir_tag];
+          const auto send_pmax    = tag_offset[send_dir_tag] + nsend;
 
           CommunicateParticles(species,
                                direction,
@@ -840,8 +842,8 @@ namespace ntt {
             Kokkos::subview(species.tag, std::make_pair(send_pmin, send_pmax)),
             ParticleTag::dead);
         }
-        // !TODO: maybe there is a way to not shuffle twice
-        species.ReshuffleByTags();
+        // !TODO: maybe there is a way to not sort twice
+        species.SortByTags();
       }
     }
     NTTLog();

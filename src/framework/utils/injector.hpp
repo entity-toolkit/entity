@@ -805,12 +805,6 @@ namespace ntt {
     RandomNumberPool_t   pool;
   };
 
-#if defined(GRPIC_ENGINE) || defined(MINKOWSKI_METRIC)
-  #define CoordDim Dim2
-#else
-  #define CoordDim PrtlCoordD
-#endif
-
   template <SimulationEngine S,
             template <Dimension, SimulationEngine>
             class EnDist,
@@ -853,8 +847,8 @@ namespace ntt {
 
       RandomGenerator_t rand_gen { pool.get_state() };
       real_t            n_inject { ppc_per_spec(i1_, i2_) };
-      coord_t<CoordDim> xc { ZERO };
-      coord_t<CoordDim> xph { ZERO };
+      coord_t<Dim2>     xc { ZERO };
+      coord_t<Dim2>     xph { ZERO };
       prtldx_t          dx1, dx2;
       vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
 
@@ -964,8 +958,8 @@ namespace ntt {
     } else if (region.size() == 2 * static_cast<short>(D)) {
       tuple_t<std::size_t, D> region_min;
       tuple_t<std::size_t, D> region_max;
-      coord_t<PrtlCoordD>     xmin_ph { ZERO }, xmax_ph { ZERO };
-      coord_t<PrtlCoordD>     xmin_cu { ZERO }, xmax_cu { ZERO };
+      coord_t<D>              xmin_ph { ZERO }, xmax_ph { ZERO };
+      coord_t<D>              xmin_cu { ZERO }, xmax_cu { ZERO };
       for (short i = 0; i < static_cast<short>(D); ++i) {
         xmin_ph[i] = region[2 * i];
         xmax_ph[i] = region[2 * i + 1];

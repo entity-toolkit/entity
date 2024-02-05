@@ -2,25 +2,24 @@
  * @file faraday.cpp
  * @brief B^n = B^n-1/2 - (dt/2) * curl E^(n)
  * @implements: `Faraday` method of the `PIC` class
- * @includes: `faraday_mink.hpp` or `faraday_curv.hpp`
+ * @includes: `kernels/faraday_mink.hpp` or `kernels/faraday_sr.hpp`
  * @depends: `pic.h`
  *
  * @notes: - `dx` (cell size) is passed to the solver explicitly ...
  *           ... in minkowski case to avoid trivial metric computations.
- *
  */
 
 #include "wrapper.h"
 
 #include "pic.h"
 
-#include <plog/Log.h>
-
 #ifdef MINKOWSKI_METRIC
-  #include "faraday_mink.hpp"
+  #include "kernels/faraday_mink.hpp"
 #else
-  #include "faraday_curv.hpp"
+  #include "kernels/faraday_sr.hpp"
 #endif
+
+#include METRIC_HEADER
 
 #include <stdexcept>
 
@@ -36,7 +35,7 @@ namespace ntt {
                     mblock.metric.nx1 };
     Kokkos::parallel_for("Faraday",
                          mblock.rangeActiveCells(),
-                         Faraday_kernel<D>(mblock, coeff / dx));
+                         Faraday_kernel<D>(mblock.em, coeff / dx));
     NTTLog();
   }
 
@@ -49,7 +48,10 @@ namespace ntt {
     const real_t coeff { fraction * params.correction() * mblock.timestep() };
     Kokkos::parallel_for("Faraday",
                          mblock.rangeActiveCells(),
-                         Faraday_kernel<Dim2>(mblock, coeff));
+                         Faraday_kernel<Dim2, Metric<Dim2>>(mblock.em,
+                                                            mblock.metric,
+                                                            coeff,
+                                                            mblock.boundaries));
     NTTLog();
   }
 

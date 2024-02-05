@@ -193,11 +193,10 @@ namespace ntt {
     // number of current filter passes
     m_current_filters = get("algorithm", "current_filters", defaults::current_filters);
 
-    // shuffle interval
-    m_shuffle_interval = get("particles", "shuffle_interval", 100);
+    m_sort_interval = get("particles", "sort_interval", 100);
 #if defined(MPI_ENABLED)
-    // shuffle every step when MPI is enabled
-    m_shuffle_interval = 1;
+    // sort every step when MPI is enabled
+    m_sort_interval = 1;
 #endif
 
     // output params

@@ -1,12 +1,11 @@
-#ifndef CURRENTS_DEPOSIT_H
-#define CURRENTS_DEPOSIT_H
+#ifndef FRAMEWORK_KERNELS_CURRENTS_DEPOSIT_H
+#define FRAMEWORK_KERNELS_CURRENTS_DEPOSIT_H
 
 #include "wrapper.h"
 
 #include "particle_macros.h"
 
-#include "io/output.h"
-#include "meshblock/meshblock.h"
+#include "meshblock/fields.h"
 #include "meshblock/particles.h"
 #include "utils/qmath.h"
 
@@ -80,42 +79,6 @@ namespace ntt {
       metric { metric },
       charge { charge },
       inv_dt { ONE / dt } {}
-
-    /**
-     * @brief Constructor.
-     * @param mblock Meshblock.
-     * @param particles Particles.
-     * @param scatter_cur Scatter array of the currents.
-     * @param charge charge of the species (code units).
-     * @param dt Time step.
-     */
-    DepositCurrents_kernel(const Meshblock<D, S>&         mblock,
-                           const Particles<D, S>&         particles,
-                           const scatter_ndfield_t<D, 3>& scatter_cur,
-                           const real_t&                  charge,
-                           const real_t&                  dt) :
-      DepositCurrents_kernel<D, S, M>(scatter_cur,
-                                      particles.i1,
-                                      particles.i2,
-                                      particles.i3,
-                                      particles.i1_prev,
-                                      particles.i2_prev,
-                                      particles.i3_prev,
-                                      particles.dx1,
-                                      particles.dx2,
-                                      particles.dx3,
-                                      particles.dx1_prev,
-                                      particles.dx2_prev,
-                                      particles.dx3_prev,
-                                      particles.ux1,
-                                      particles.ux2,
-                                      particles.ux3,
-                                      particles.phi,
-                                      particles.weight,
-                                      particles.tag,
-                                      mblock.metric,
-                                      charge,
-                                      dt) {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -389,11 +352,11 @@ namespace ntt {
     }
 
     // Getters
-    Inline void getPrtlPos(index_t& p, coord_t<M::PosDim>& xp) const {
+    Inline void getPrtlPos(index_t& p, coord_t<M::PrtlD>& xp) const {
       if constexpr (D == Dim1) {
         xp[0] = i_di_to_Xi(i1(p), dx1(p));
       } else if constexpr (D == Dim2) {
-        if constexpr (M::PosDim == Dim3) {
+        if constexpr (M::PrtlD == Dim3) {
           xp[0] = i_di_to_Xi(i1(p), dx1(p));
           xp[1] = i_di_to_Xi(i2(p), dx2(p));
           xp[2] = phi(p);
@@ -409,7 +372,7 @@ namespace ntt {
     }
 
     Inline void getPrtl3Vel(index_t& p, vec_t<Dim3>& vp) const {
-      coord_t<M::PosDim> xp { ZERO };
+      coord_t<M::PrtlD> xp { ZERO };
       getPrtlPos(p, xp);
       auto inv_energy { ZERO };
       if constexpr (S == PICEngine) {

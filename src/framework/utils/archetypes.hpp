@@ -36,18 +36,18 @@ namespace ntt {
                                            const SimulationParams&,
                                            Meshblock<D, S>&) {}
 
-    Inline virtual auto ext_force_x1(const real_t&,
-                                     const coord_t<PrtlCoordD>&) const -> real_t {
+    Inline virtual auto ext_force_x1(const real_t&, const coord_t<PrtlCoordD>&) const
+      -> real_t {
       return ZERO;
     }
 
-    Inline virtual auto ext_force_x2(const real_t&,
-                                     const coord_t<PrtlCoordD>&) const -> real_t {
+    Inline virtual auto ext_force_x2(const real_t&, const coord_t<PrtlCoordD>&) const
+      -> real_t {
       return ZERO;
     }
 
-    Inline virtual auto ext_force_x3(const real_t&,
-                                     const coord_t<PrtlCoordD>&) const -> real_t {
+    Inline virtual auto ext_force_x3(const real_t&, const coord_t<PrtlCoordD>&) const
+      -> real_t {
       return ZERO;
     }
 
@@ -86,8 +86,7 @@ namespace ntt {
       m_params { params },
       m_mblock { mblock } {}
 
-    Inline virtual auto operator()(const em&,
-                                   const coord_t<PrtlCoordD>&) const -> real_t {
+    Inline virtual auto operator()(const em&, const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -106,7 +105,7 @@ namespace ntt {
       m_params { params },
       m_mblock { mblock } {}
 
-    Inline virtual void operator()(const coord_t<PrtlCoordD>&,
+    Inline virtual void operator()(const coord_t<D>&,
                                    vec_t<Dim3>& v,
                                    const int& = 0) const {
       v[0] = ZERO;
@@ -275,7 +274,7 @@ namespace ntt {
       m_params { params },
       m_mblock { mblock } {}
 
-    Inline virtual auto operator()(const coord_t<PrtlCoordD>&) const -> bool {
+    Inline virtual auto operator()(const coord_t<D>&) const -> bool {
       return true;
     }
 
@@ -289,7 +288,7 @@ namespace ntt {
     NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock) :
       InjectionCriterion<D, S>(params, mblock) {}
 
-    Inline auto operator()(const coord_t<PrtlCoordD>&) const -> bool {
+    Inline auto operator()(const coord_t<D>&) const -> bool {
       return true;
     }
   };

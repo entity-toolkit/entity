@@ -12,9 +12,6 @@
 #ifdef OUTPUT_ENABLED
   #include <adios2.h>
   #include <adios2/cxx11/KokkosView.h>
-  #ifdef MPI_ENABLED
-    #include <mpi.h>
-  #endif
 #endif
 
 #include <toml.hpp>

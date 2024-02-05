@@ -1,18 +1,31 @@
-#include "currents_ampere.hpp"
+/**
+ * @file currents_ampere.cpp
+ * @brief D^(n+1) = D' - 4 pi * dt * J
+ * @implements: `AmpereCurrents` method of the `GRPIC` class
+ * @includes: `kernels/ampere_gr.hpp`
+ * @depends: `grpic.h`
+ *
+ * @notes: - minus sign in the current is included with the `coeff`, ...
+ *           ... so the kernel adds `coeff * J`
+ *         - charge renormalization is done to keep the charge density ...
+ *           ... independent of the resolution and `ppc0`
+ */
 
 #include "wrapper.h"
 
 #include "grpic.h"
 
-#include "io/output.h"
+#include "kernels/ampere_gr.hpp"
+
+#include METRIC_HEADER
 
 namespace ntt {
 
   /**
-   * @brief Add currents to the E-field
+   * @brief Add currents to the D-field
    */
-  template <Dimension D>
-  void GRPIC<D>::AmpereCurrents(const gr_ampere& g) {
+  template <>
+  void GRPIC<Dim2>::AmpereCurrents(const gr_ampere& g) {
     auto& mblock = this->meshblock;
     auto  params = *(this->params());
 
@@ -24,45 +37,39 @@ namespace ntt {
     // const auto volume = constant::TWO_PI * SQR(rmin);
     // const auto n0     = params.ppc0() * (real_t)ncells / volume;
     // const auto coeff  = -dt * rho0 / (n0 * SQR(de0));
+    auto range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() },
+                                         { mblock.i1_max(), mblock.i2_max() + 1 });
+
     const auto coeff = -mblock.timestep() * params.q0() / params.B0();
-
-    range_t<D> range;
-    if constexpr (D == Dim2) {
-      range = CreateRangePolicy<Dim2>({ mblock.i1_min(), mblock.i2_min() + 1 },
-                                      { mblock.i1_max(), mblock.i2_max() });
-    } else if constexpr (D == Dim3) {
-      range = CreateRangePolicy<Dim3>(
-        { mblock.i1_min(), mblock.i2_min() + 1, mblock.i3_min() },
-        { mblock.i1_max(), mblock.i2_max(), mblock.i3_max() });
-    }
-    auto range_pole { CreateRangePolicy<Dim1>({ mblock.i1_min() },
-                                              { mblock.i1_max() }) };
-
     if (g == gr_ampere::aux) {
-      // D0(n-1/2) -> (J(n)) -> D0(n+1/2)
-      Kokkos::parallel_for("AmpereCurrentsAux-1",
-                           range,
-                           CurrentsAmpereAux_kernel<D>(mblock, coeff));
-      if constexpr (D == Dim2) {
-        Kokkos::parallel_for("AmpereCurrentsAux-2",
-                             range_pole,
-                             CurrentsAmpereAuxPoles_kernel<Dim2>(mblock, coeff));
-      }
+      Kokkos::parallel_for(
+        "AmpereCurrents-1",
+        range,
+        CurrentsAmpere_kernel<Dim2, Metric<Dim2>>(mblock.em0,
+                                                  mblock.cur,
+                                                  mblock.metric,
+                                                  coeff,
+                                                  mblock.Ni2(),
+                                                  mblock.boundaries));
     } else if (g == gr_ampere::main) {
-      // D0(n) -> (J0(n+1/2)) -> D0(n+1)
-      Kokkos::parallel_for("AmpereCurrentsMain-1",
-                           range,
-                           CurrentsAmpere_kernel<D>(mblock, coeff));
-      if constexpr (D == Dim2) {
-        Kokkos::parallel_for("AmpereCurrentsMain-2",
-                             range_pole,
-                             CurrentsAmperePoles_kernel<Dim2>(mblock, coeff));
-      }
+      Kokkos::parallel_for(
+        "AmpereCurrents-2",
+        range,
+        CurrentsAmpere_kernel<Dim2, Metric<Dim2>>(mblock.em0,
+                                                  mblock.cur0,
+                                                  mblock.metric,
+                                                  coeff,
+                                                  mblock.Ni2(),
+                                                  mblock.boundaries));
+    } else {
+      NTTHostError("Wrong option for `g`");
     }
     NTTLog();
   }
 
-} // namespace ntt
+  template <>
+  void GRPIC<Dim3>::AmpereCurrents(const gr_ampere&) {
+    NTTHostError("not implemented");
+  }
 
-template void ntt::GRPIC<ntt::Dim2>::AmpereCurrents(const gr_ampere&);
-template void ntt::GRPIC<ntt::Dim3>::AmpereCurrents(const gr_ampere&);
+} // namespace ntt

@@ -2,7 +2,7 @@
  * @file currents_filter.cpp
  * @brief Gaussian filtering of the deposited currents `Meshblock::currentFilters` times.
  * @implements: `CurrentsFilter` method of the `PIC` class
- * @depends: `pic.h`, `utils/digital_filter.hpp`
+ * @depends: `pic.h`, `kernels/digital_filter.hpp`
  *
  * @notes: - Filter is applied uniformly everywhere, except for the axis ...
  *           ... in 2D axisymmetric simulations. On the axis we reflect ...
@@ -16,7 +16,7 @@
 
 #include "io/output.h"
 
-#include "utils/digital_filter.hpp"
+#include "kernels/digital_filter.hpp"
 
 namespace ntt {
 

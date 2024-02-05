@@ -180,10 +180,10 @@ namespace ntt {
       }
     }
     if (comm & Comm_Prtl) {
-      if ((params()->shuffleInterval() > 0) &&
-          (tstep() % params()->shuffleInterval() == 0)) {
+      if ((params()->sortInterval() > 0) &&
+          (tstep() % params()->sortInterval() == 0)) {
         for (auto& species : mblock.particles) {
-          species.ReshuffleByTags();
+          species.SortByTags();
         }
       }
     }
@@ -198,10 +198,10 @@ namespace ntt {
   template <Dimension D, SimulationEngine S>
   void Simulation<D, S>::Communicate(CommTags comm) {
     if (comm & Comm_Prtl) {
-      if ((params()->shuffleInterval() > 0) &&
-          (tstep() % params()->shuffleInterval() == 0)) {
+      if ((params()->sortInterval() > 0) &&
+          (tstep() % params()->sortInterval() == 0)) {
         for (auto& species : this->meshblock.particles) {
-          species.ReshuffleByTags();
+          species.SortByTags();
         }
       }
     }

@@ -355,7 +355,7 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  auto Particles<D, S>::ReshuffleByTags() -> std::vector<std::size_t> {
+  auto Particles<D, S>::SortByTags() -> std::vector<std::size_t> {
     if (npart() == 0) {
       return NpartPerTag();
     }
@@ -403,6 +403,8 @@ namespace ntt {
 
     const auto npart_per_tag = NpartPerTag();
     setNpart(npart_per_tag[(short)(ParticleTag::alive)]);
+
+    NTTLog();
     return npart_per_tag;
   }
 

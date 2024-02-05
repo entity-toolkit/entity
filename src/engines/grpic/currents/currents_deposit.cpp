@@ -2,7 +2,7 @@
  * @file currents_deposit.cpp
  * @brief Atomic current deposition for all charged particles.
  * @implements: `CurrentsDeposit` method of the `GRPIC` class
- * @includes: `utils/currents_deposit.hpp
+ * @includes: `kernels/currents_deposit.hpp
  * @depends: `grpic.h`
  *
  * @notes: - The deposited currents are not the "physical" currents used ...
@@ -11,7 +11,7 @@
  *
  */
 
-#include "utils/currents_deposit.hpp"
+#include "kernels/currents_deposit.hpp"
 
 #include "wrapper.h"
 
@@ -38,9 +38,26 @@ namespace ntt {
       Kokkos::parallel_for(
         "CurrentsDeposit",
         species.rangeActiveParticles(),
-        DepositCurrents_kernel<D, GRPICEngine, Metric<D>>(mblock,
-                                                          species,
-                                                          scatter_cur0,
+        DepositCurrents_kernel<D, GRPICEngine, Metric<D>>(scatter_cur0,
+                                                          species.i1,
+                                                          species.i2,
+                                                          species.i3,
+                                                          species.i1_prev,
+                                                          species.i2_prev,
+                                                          species.i3_prev,
+                                                          species.dx1,
+                                                          species.dx2,
+                                                          species.dx3,
+                                                          species.dx1_prev,
+                                                          species.dx2_prev,
+                                                          species.dx3_prev,
+                                                          species.ux1,
+                                                          species.ux2,
+                                                          species.ux3,
+                                                          species.phi,
+                                                          species.weight,
+                                                          species.tag,
+                                                          mblock.metric,
                                                           charge,
                                                           dt));
     }

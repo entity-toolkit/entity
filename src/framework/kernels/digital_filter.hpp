@@ -1,5 +1,5 @@
-#ifndef FRAMEWORK_DIGITAL_FILTER_H
-#define FRAMEWORK_DIGITAL_FILTER_H
+#ifndef FRAMEWORK_KERNELS_DIGITAL_FILTER_H
+#define FRAMEWORK_KERNELS_DIGITAL_FILTER_H
 
 #include "wrapper.h"
 
@@ -17,11 +17,6 @@ namespace ntt {
     tuple_t<std::size_t, D> size;
 
   public:
-    /**
-     * @brief Constructor.
-     * @param ndfield_t array to be filtered.
-     * @param ndfield_t buffer to store the intermediate filtered array.
-     */
     DigitalFilter_kernel(ndfield_t<D, 3>&               array,
                          ndfield_t<D, 3>&               buffer,
                          const tuple_t<std::size_t, D>& size_) :
@@ -32,23 +27,8 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 1D implementation of the algorithm.
-     * @param i1 index.
-     */
     Inline void operator()(index_t) const;
-    /**
-     * @brief 2D implementation of the algorithm.
-     * @param i1 index.
-     * @param i2 index.
-     */
     Inline void operator()(index_t, index_t) const;
-    /**
-     * @brief 3D implementation of the algorithm.
-     * @param i1 index.
-     * @param i2 index.
-     * @param i3 index.
-     */
     Inline void operator()(index_t, index_t, index_t) const;
   };
 

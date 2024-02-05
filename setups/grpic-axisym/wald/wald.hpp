@@ -19,20 +19,49 @@ namespace ntt {
     WaldPotential(const SimulationParams& params, const Meshblock<D, S>& mblock) :
       VectorPotential<D, S>(params, mblock) {}
 
-    Inline auto A_x0(const coord_t<D>&) const -> real_t {
-      return ZERO;
+    Inline auto A_x0(const coord_t<D>& x_cu) const -> real_t {
+      if constexpr (D == Dim2) {
+        real_t g00 { -(this->m_mblock).metric.alpha(x_cu) *
+                       (this->m_mblock).metric.alpha(x_cu) +
+                     (this->m_mblock).metric.h_11(x_cu) *
+                       (this->m_mblock).metric.beta1(x_cu) *
+                       (this->m_mblock).metric.beta1(x_cu) };
+        return HALF * ((this->m_mblock).metric.h_13(x_cu) *
+                         (this->m_mblock).metric.beta1(x_cu) +
+                       TWO * (this->m_mblock).metric.spin() * g00);
+
+      } else {
+        (void)x_cu;
+        return ZERO;
+      }
     }
 
-    Inline auto A_x1(const coord_t<D>&) const -> real_t {
-      return ZERO;
+    Inline auto A_x1(const coord_t<D>& x_cu) const -> real_t {
+      if constexpr (D == Dim2) {
+        return HALF * ((this->m_mblock).metric.h_13(x_cu) +
+                       TWO * (this->m_mblock).metric.spin() *
+                         (this->m_mblock).metric.h_11(x_cu) *
+                         (this->m_mblock).metric.beta1(x_cu));
+      } else {
+        (void)x_cu;
+        return ZERO;
+      }
     }
 
     Inline auto A_x2(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    Inline auto A_x3(const coord_t<D>&) const -> real_t {
-      return ZERO;
+    Inline auto A_x3(const coord_t<D>& x_cu) const -> real_t {
+      if constexpr (D == Dim2) {
+        return HALF * ((this->m_mblock).metric.h_33(x_cu) +
+                       TWO * (this->m_mblock).metric.spin() *
+                         (this->m_mblock).metric.h_13(x_cu) *
+                         (this->m_mblock).metric.beta1(x_cu));
+      } else {
+        (void)x_cu;
+        return ZERO;
+      }
     }
   };
 
@@ -54,49 +83,17 @@ namespace ntt {
       return ZERO;
     }
 
-    Inline auto A_x3(const coord_t<D>&) const -> real_t {
-      return ZERO;
+    Inline auto A_x3(const coord_t<D>& x_cu) const -> real_t {
+      if constexpr (D == Dim2) {
+        const auto r { (this->m_mblock).metric.x1_Code2Sph(x_cu[0]) };
+        const auto th { (this->m_mblock).metric.x2_Code2Sph(x_cu[1]) };
+        return HALF * SQR(r) * SQR(math::sin(th));
+      } else {
+        (void)x_cu;
+        return ZERO;
+      }
     }
   };
-
-  template <>
-  Inline auto WaldPotential<Dim2, GRPICEngine>::A_x0(const coord_t<Dim2>& x_cu) const
-    -> real_t {
-    real_t g00 { -(this->m_mblock).metric.alpha(x_cu) *
-                   (this->m_mblock).metric.alpha(x_cu) +
-                 (this->m_mblock).metric.h_11(x_cu) *
-                   (this->m_mblock).metric.beta1(x_cu) *
-                   (this->m_mblock).metric.beta1(x_cu) };
-    return HALF * ((this->m_mblock).metric.h_13(x_cu) *
-                     (this->m_mblock).metric.beta1(x_cu) +
-                   TWO * (this->m_mblock).metric.spin() * g00);
-  }
-
-  template <>
-  Inline auto WaldPotential<Dim2, GRPICEngine>::A_x1(const coord_t<Dim2>& x_cu) const
-    -> real_t {
-    return HALF * ((this->m_mblock).metric.h_13(x_cu) +
-                   TWO * (this->m_mblock).metric.spin() *
-                     (this->m_mblock).metric.h_11(x_cu) *
-                     (this->m_mblock).metric.beta1(x_cu));
-  }
-
-  template <>
-  Inline auto WaldPotential<Dim2, GRPICEngine>::A_x3(const coord_t<Dim2>& x_cu) const
-    -> real_t {
-    return HALF * ((this->m_mblock).metric.h_33(x_cu) +
-                   TWO * (this->m_mblock).metric.spin() *
-                     (this->m_mblock).metric.h_13(x_cu) *
-                     (this->m_mblock).metric.beta1(x_cu));
-  }
-
-  template <>
-  Inline auto VerticalPotential<Dim2, GRPICEngine>::A_x3(
-    const coord_t<Dim2>& x_cu) const -> real_t {
-    const auto r { (this->m_mblock).metric.x1_Code2Sph(x_cu[0]) };
-    const auto th { (this->m_mblock).metric.x2_Code2Sph(x_cu[1]) };
-    return HALF * SQR(r) * SQR(math::sin(th));
-  }
 
   template <Dimension D, SimulationEngine S>
   struct PgenTargetFields : public TargetFields<D, S> {
@@ -110,8 +107,8 @@ namespace ntt {
     }
 
   private:
-    const real_t        _epsilon;
-    WaldPotential<D, S> v_pot;
+    const real_t            _epsilon;
+    VerticalPotential<D, S> v_pot;
   };
 
   template <>
@@ -168,7 +165,7 @@ namespace ntt {
       "UserInitFields",
       CreateRangePolicy<Dim2>({ mblock.i1_min() - 1, mblock.i2_min() },
                               { mblock.i1_max(), mblock.i2_max() + 1 }),
-      Generate2DGRFromVectorPotential_kernel<WaldPotential>(params, mblock, ONE));
+      Generate2DGRFromVectorPotential_kernel<VerticalPotential>(params, mblock, ONE));
 
     Kokkos::parallel_for(
       "UserInitFields",
@@ -186,8 +183,8 @@ namespace ntt {
   // EnergyDistribution<D, S>(params, mblock),
   // u_kick { params.get<real_t>("problem", "u_kick", ZERO) } {}
 
-  // Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const
-  // override { v[0] = u_kick;
+  // Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&)
+  // const override { v[0] = u_kick;
   //}
 
   // private:

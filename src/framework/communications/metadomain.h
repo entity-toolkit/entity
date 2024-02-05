@@ -11,10 +11,6 @@
 
 #include <iomanip>
 
-#if defined(MPI_ENABLED)
-  #include <mpi.h>
-#endif // MPI_ENABLED
-
 /**
  *
  * Metadomain
