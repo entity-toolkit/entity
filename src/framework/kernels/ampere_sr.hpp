@@ -20,9 +20,6 @@ namespace ntt {
     bool              is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    /**
-     * @brief Constructor.
-     */
     Ampere_kernel(const ndfield_t<D, 6>& EB,
                   const M&               metric,
                   real_t                 coeff,
@@ -39,11 +36,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 2D version of the algorithm.
-     * @param i1 index.
-     * @param i2 index.
-     */
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim2) {
         constexpr std::size_t i2min { N_GHOSTS };
@@ -95,9 +87,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 3D version of the algorithm.
-     */
     Inline void operator()(index_t, index_t, index_t) const {
       if constexpr (D == Dim3) {
         NTTError("not implemented");
@@ -113,7 +102,7 @@ namespace ntt {
    */
   template <Dimension D, class M>
   class CurrentsAmpere_kernel {
-    ndfield_t<D, 6>   EB;
+    ndfield_t<D, 6>   E;
     ndfield_t<D, 3>   J;
     const M           metric;
     const std::size_t i2max;
@@ -128,14 +117,14 @@ namespace ntt {
      * @param mblock Meshblock.
      */
     CurrentsAmpere_kernel(
-      const ndfield_t<D, 6>&                             EB,
+      const ndfield_t<D, 6>&                             E,
       const ndfield_t<D, 3>&                             J,
       const M&                                           metric,
       real_t                                             coeff,
       real_t                                             inv_n0,
       std::size_t                                        ni2,
       const std::vector<std::vector<BoundaryCondition>>& boundaries) :
-      EB { EB },
+      E { E },
       J { J },
       metric { metric },
       i2max { ni2 + N_GHOSTS },
@@ -148,9 +137,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 2D version of the add current.
-     */
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim2) {
         constexpr std::size_t i2min { N_GHOSTS };
@@ -167,12 +153,12 @@ namespace ntt {
 
           // theta
           J(i1, i2, cur::jx2) *= inv_n0 / metric.sqrt_det_h({ i1_, i2_ + HALF });
-          EB(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
+          E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
 
           // phi
           J(i1, i2, cur::jx3) = ZERO;
         } else if ((i2 == i2max) && is_axis_i2max) {
-          // theta = pi (last ghost cell)
+          // theta = pi (first ghost cell from end)
           // r
           J(i1, i2, cur::jx1) *= inv_n0 * HALF / metric.polar_area(i1_ + HALF);
 
@@ -185,14 +171,14 @@ namespace ntt {
 
           // theta
           J(i1, i2, cur::jx2) *= inv_n0 / metric.sqrt_det_h({ i1_, i2_ + HALF });
-          EB(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
+          E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
 
           // phi
           J(i1, i2, cur::jx3) *= inv_n0 / metric.sqrt_det_h({ i1_, i2_ });
-          EB(i1, i2, em::ex3) += J(i1, i2, cur::jx3) * coeff;
+          E(i1, i2, em::ex3)  += J(i1, i2, cur::jx3) * coeff;
         }
 
-        EB(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
+        E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
       }
 
       else {

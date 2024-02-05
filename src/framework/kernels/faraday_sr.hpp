@@ -20,9 +20,6 @@ namespace ntt {
     bool            is_axis_i2min { false };
 
   public:
-    /**
-     * @brief Constructor.
-     */
     Faraday_kernel(const ndfield_t<D, 6>& EB,
                    const M&               metric,
                    real_t                 coeff,
@@ -36,9 +33,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 2D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim2) {
         constexpr std::size_t i2min { N_GHOSTS };
@@ -77,9 +71,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 3D implementation of the algorithm.
-     */
     Inline void operator()(index_t, index_t, index_t) const {
       if constexpr (D == Dim3) {
         NTTError("not implemented");

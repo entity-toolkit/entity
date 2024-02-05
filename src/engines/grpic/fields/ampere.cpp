@@ -27,40 +27,37 @@ namespace ntt {
                                          { mblock.i1_max(), mblock.i2_max() + 1 });
     if (g == gr_ampere::aux) {
       // push D0 with H
-      Kokkos::parallel_for(
-        "Ampere-1",
-        range,
-        Ampere_kernel_new<Dim2, Metric<Dim2>>(mblock.em0,
-                                              mblock.em0,
-                                              mblock.aux,
-                                              mblock.metric,
-                                              coeff,
-                                              mblock.Ni2(),
-                                              mblock.boundaries));
+      Kokkos::parallel_for("Ampere-1",
+                           range,
+                           Ampere_kernel<Dim2, Metric<Dim2>>(mblock.em0,
+                                                             mblock.em0,
+                                                             mblock.aux,
+                                                             mblock.metric,
+                                                             coeff,
+                                                             mblock.Ni2(),
+                                                             mblock.boundaries));
     } else if (g == gr_ampere::main) {
       // push D with H but assign to D0
-      Kokkos::parallel_for(
-        "Ampere-2",
-        range,
-        Ampere_kernel_new<Dim2, Metric<Dim2>>(mblock.em,
-                                              mblock.em0,
-                                              mblock.aux,
-                                              mblock.metric,
-                                              coeff,
-                                              mblock.Ni2(),
-                                              mblock.boundaries));
+      Kokkos::parallel_for("Ampere-2",
+                           range,
+                           Ampere_kernel<Dim2, Metric<Dim2>>(mblock.em,
+                                                             mblock.em0,
+                                                             mblock.aux,
+                                                             mblock.metric,
+                                                             coeff,
+                                                             mblock.Ni2(),
+                                                             mblock.boundaries));
     } else if (g == gr_ampere::init) {
       // push D0 with H but assign to D
-      Kokkos::parallel_for(
-        "Ampere-3",
-        range,
-        Ampere_kernel_new<Dim2, Metric<Dim2>>(mblock.em,
-                                              mblock.em,
-                                              mblock.aux,
-                                              mblock.metric,
-                                              coeff,
-                                              mblock.Ni2(),
-                                              mblock.boundaries));
+      Kokkos::parallel_for("Ampere-3",
+                           range,
+                           Ampere_kernel<Dim2, Metric<Dim2>>(mblock.em,
+                                                             mblock.em,
+                                                             mblock.aux,
+                                                             mblock.metric,
+                                                             coeff,
+                                                             mblock.Ni2(),
+                                                             mblock.boundaries));
     } else {
       NTTHostError("Wrong option for `g`");
     }

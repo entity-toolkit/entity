@@ -17,16 +17,10 @@ namespace ntt {
     real_t          coeff;
 
   public:
-    /**
-     * @brief Constructor.
-     */
     Faraday_kernel(const ndfield_t<D, 6>& EB, real_t coeff) :
       EB { EB },
       coeff { coeff } {}
 
-    /**
-     * @brief 1D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim1) {
         EB(i1, em::bx2) += coeff * (EB(i1 + 1, em::ex3) - EB(i1, em::ex3));
@@ -36,9 +30,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 2D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim2) {
         EB(i1, i2, em::bx1) += coeff *
@@ -54,9 +45,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 3D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim3) {
         EB(i1, i2, i3, em::bx1) += coeff * (EB(i1, i2, i3 + 1, em::ex2) -

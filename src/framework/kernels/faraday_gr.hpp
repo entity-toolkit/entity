@@ -15,25 +15,25 @@ namespace ntt {
    */
   template <Dimension D, class M>
   class Faraday_kernel {
-    ndfield_t<D, 6>   DBin;
-    ndfield_t<D, 6>   DBout;
-    ndfield_t<D, 6>   EH;
+    ndfield_t<D, 6>   Bin;
+    ndfield_t<D, 6>   Bout;
+    ndfield_t<D, 6>   E;
     const M           metric;
     const std::size_t i2max;
     const real_t      coeff;
     bool              is_axis_i2min { false };
 
   public:
-    Faraday_kernel(const ndfield_t<D, 6>& DBin,
-                   const ndfield_t<D, 6>& DBout,
-                   const ndfield_t<D, 6>& EH,
+    Faraday_kernel(const ndfield_t<D, 6>& Bin,
+                   const ndfield_t<D, 6>& Bout,
+                   const ndfield_t<D, 6>& E,
                    const M&               metric,
                    real_t                 coeff,
                    std::size_t            ni2,
                    const std::vector<std::vector<BoundaryCondition>>& boundaries) :
-      DBin { DBin },
-      DBout { DBout },
-      EH { EH },
+      Bin { Bin },
+      Bout { Bout },
+      E { E },
       metric { metric },
       i2max { ni2 + N_GHOSTS },
       coeff { coeff } {
@@ -53,22 +53,21 @@ namespace ntt {
         const real_t          inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h(
                                                   { i1_ + HALF, i2_ + HALF }) };
 
-        DBout(i1, i2, em::bx1) = DBin(i1, i2, em::bx1) +
-                                 coeff * inv_sqrt_detH_0pH *
-                                   (EH(i1, i2, em::ex3) - EH(i1, i2 + 1, em::ex3));
+        Bout(i1, i2, em::bx1) = Bin(i1, i2, em::bx1) +
+                                coeff * inv_sqrt_detH_0pH *
+                                  (E(i1, i2, em::ex3) - E(i1, i2 + 1, em::ex3));
         if ((i2 != i2min) || !is_axis_i2min) {
           const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
                                                    { i1_ + HALF, i2_ }) };
-          DBout(i1, i2, em::bx2) = DBin(i1, i2, em::bx2) +
-                                   coeff * inv_sqrt_detH_pH0 *
-                                     (EH(i1 + 1, i2, em::ex3) -
-                                      EH(i1, i2, em::ex3));
+          Bout(i1, i2, em::bx2) = Bin(i1, i2, em::bx2) +
+                                  coeff * inv_sqrt_detH_pH0 *
+                                    (E(i1 + 1, i2, em::ex3) - E(i1, i2, em::ex3));
         }
 
-        DBout(i1, i2, em::bx3) = DBin(i1, i2, em::bx3) +
-                                 coeff * inv_sqrt_detH_pHpH *
-                                   (EH(i1, i2 + 1, em::ex1) - EH(i1, i2, em::ex1) +
-                                    EH(i1, i2, em::ex2) - EH(i1 + 1, i2, em::ex2));
+        Bout(i1, i2, em::bx3) = Bin(i1, i2, em::bx3) +
+                                coeff * inv_sqrt_detH_pHpH *
+                                  (E(i1, i2 + 1, em::ex1) - E(i1, i2, em::ex1) +
+                                   E(i1, i2, em::ex2) - E(i1 + 1, i2, em::ex2));
       } else {
         NTTError("Faraday_kernel: 2D implementation called for D != 2");
       }

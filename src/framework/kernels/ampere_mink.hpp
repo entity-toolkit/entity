@@ -16,16 +16,10 @@ namespace ntt {
     real_t          coeff;
 
   public:
-    /**
-     * @brief Constructor.
-     */
     Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff) :
       EB { EB },
       coeff { coeff } {}
 
-    /**
-     * @brief 1D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim1) {
         EB(i1, em::ex2) += coeff * (EB(i1 - 1, em::bx3) - EB(i1, em::bx3));
@@ -35,9 +29,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 2D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim2) {
         EB(i1, i2, em::ex1) += coeff *
@@ -52,9 +43,6 @@ namespace ntt {
       }
     }
 
-    /**
-     * @brief 3D implementation of the algorithm.
-     */
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim3) {
         EB(i1, i2, i3, em::ex1) += coeff * (EB(i1, i2, i3 - 1, em::bx2) -
@@ -82,72 +70,59 @@ namespace ntt {
    */
   template <Dimension D>
   class CurrentsAmpere_kernel {
-    ndfield_t<D, 6> EB;
+    ndfield_t<D, 6> E;
     ndfield_t<D, 3> J;
     const real_t    coeff;
     const real_t    inv_n0;
 
   public:
-    /**
-     * @brief Constructor.
-     * @param mblock Meshblock.
-     */
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>& EB,
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
                           const ndfield_t<D, 3>  J,
                           real_t                 coeff,
                           real_t                 inv_n0) :
-      EB { EB },
+      E { E },
       J { J },
       coeff { coeff },
       inv_n0 { inv_n0 } {}
 
-    /**
-     * @brief 1D version of the add current.
-     */
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim1) {
         J(i1, cur::jx1) *= inv_n0;
         J(i1, cur::jx2) *= inv_n0;
         J(i1, cur::jx3) *= inv_n0;
 
-        EB(i1, em::ex1) += J(i1, cur::jx1) * coeff;
-        EB(i1, em::ex2) += J(i1, cur::jx2) * coeff;
-        EB(i1, em::ex3) += J(i1, cur::jx3) * coeff;
+        E(i1, em::ex1) += J(i1, cur::jx1) * coeff;
+        E(i1, em::ex2) += J(i1, cur::jx2) * coeff;
+        E(i1, em::ex3) += J(i1, cur::jx3) * coeff;
       } else {
         NTTError("CurrentsAmpere_kernel: 1D implementation called for D != 1");
       }
     }
 
-    /**
-     * @brief 2D version of the add current.
-     */
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim2) {
         J(i1, i2, cur::jx1) *= inv_n0;
         J(i1, i2, cur::jx2) *= inv_n0;
         J(i1, i2, cur::jx3) *= inv_n0;
 
-        EB(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
-        EB(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
-        EB(i1, i2, em::ex3) += J(i1, i2, cur::jx3) * coeff;
+        E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
+        E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
+        E(i1, i2, em::ex3) += J(i1, i2, cur::jx3) * coeff;
 
       } else {
         NTTError("CurrentsAmpere_kernel: 2D implementation called for D != 2");
       }
     }
 
-    /**
-     * @brief 3D version of the add current.
-     */
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim3) {
         J(i1, i2, i3, cur::jx1) *= inv_n0;
         J(i1, i2, i3, cur::jx2) *= inv_n0;
         J(i1, i2, i3, cur::jx3) *= inv_n0;
 
-        EB(i1, i2, i3, em::ex1) += J(i1, i2, i3, cur::jx1) * coeff;
-        EB(i1, i2, i3, em::ex2) += J(i1, i2, i3, cur::jx2) * coeff;
-        EB(i1, i2, i3, em::ex3) += J(i1, i2, i3, cur::jx3) * coeff;
+        E(i1, i2, i3, em::ex1) += J(i1, i2, i3, cur::jx1) * coeff;
+        E(i1, i2, i3, em::ex2) += J(i1, i2, i3, cur::jx2) * coeff;
+        E(i1, i2, i3, em::ex3) += J(i1, i2, i3, cur::jx3) * coeff;
       } else {
         NTTError("CurrentsAmpere_kernel: 3D implementation called for D != 3");
       }
