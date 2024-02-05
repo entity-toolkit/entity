@@ -310,104 +310,104 @@ namespace ntt {
       if (this->tag(p) == ParticleTag::alive) {
         coord_t<M::PrtlD> xp { ZERO };
         this->getPrtlPos(p, xp);
-        // // update cartesian velocity
-        // if constexpr (!std::is_same_v<P, Photon_t>) {
-        //   // not a photon
-        //   vec_t<Dim3> ei { ZERO }, bi { ZERO };
-        //   vec_t<Dim3> ei_Cart { ZERO }, bi_Cart { ZERO };
-        //   vec_t<Dim3> force_Cart { ZERO };
-        //   vec_t<Dim3> u_prime { ZERO };
-        //   vec_t<Dim3> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
-        //   bool        is_gca { false };
+        // update cartesian velocity
+        if constexpr (!std::is_same_v<P, Photon_t>) {
+          // not a photon
+          vec_t<Dim3> ei { ZERO }, bi { ZERO };
+          vec_t<Dim3> ei_Cart { ZERO }, bi_Cart { ZERO };
+          vec_t<Dim3> force_Cart { ZERO };
+          vec_t<Dim3> u_prime { ZERO };
+          vec_t<Dim3> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
+          bool        is_gca { false };
 
-        //   this->getInterpFlds(p, ei, bi);
-        //   this->metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
-        //   this->metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
-        //   if constexpr (!std::disjunction_v<std::is_same<NoCooling_t, Cs>...>) {
-        //     // backup fields & velocities to use later in cooling
-        //     ei_Cart_rad[0] = ei_Cart[0];
-        //     ei_Cart_rad[1] = ei_Cart[1];
-        //     ei_Cart_rad[2] = ei_Cart[2];
-        //     bi_Cart_rad[0] = bi_Cart[0];
-        //     bi_Cart_rad[1] = bi_Cart[1];
-        //     bi_Cart_rad[2] = bi_Cart[2];
-        //     u_prime[0]     = this->ux1(p);
-        //     u_prime[1]     = this->ux2(p);
-        //     u_prime[2]     = this->ux3(p);
-        //   }
-        //   if constexpr (ExtForce) {
-        //     this->initForce(xp, force_Cart);
-        //   }
-        //   if constexpr (std::is_same_v<P, Boris_GCA_t> ||
-        //                 std::is_same_v<P, Vay_GCA_t>) {
-        //     const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
-        //     const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
-        //     const auto rL {
-        //       math::sqrt(ONE + NORM_SQR(this->ux1(p), this->ux2(p), this->ux3(p))) *
-        //       this->dt / (TWO * this->coeff * math::sqrt(B2))
-        //     };
-        //     if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
-        //       is_gca = true;
-        //       // update with GCA
-        //       if constexpr (ExtForce) {
-        //         this->velUpd(GCA_t {}, p, force_Cart, ei_Cart, bi_Cart);
-        //       } else {
-        //         this->velUpd(GCA_t {}, p, ei_Cart, bi_Cart);
-        //       }
-        //     } else {
-        //       // update with conventional pusher
-        //       if constexpr (ExtForce) {
-        //         this->ux1(p) += HALF * this->dt * force_Cart[0];
-        //         this->ux2(p) += HALF * this->dt * force_Cart[1];
-        //         this->ux3(p) += HALF * this->dt * force_Cart[2];
-        //       }
-        //       this->velUpd(Reduced_t<P> {}, p, ei_Cart, bi_Cart);
-        //       if constexpr (ExtForce) {
-        //         this->ux1(p) += HALF * this->dt * force_Cart[0];
-        //         this->ux2(p) += HALF * this->dt * force_Cart[1];
-        //         this->ux3(p) += HALF * this->dt * force_Cart[2];
-        //       }
-        //     }
-        //   } else {
-        //     // update with conventional pusher
-        //     if constexpr (ExtForce) {
-        //       this->ux1(p) += HALF * this->dt * force_Cart[0];
-        //       this->ux2(p) += HALF * this->dt * force_Cart[1];
-        //       this->ux3(p) += HALF * this->dt * force_Cart[2];
-        //     }
-        //     this->velUpd(P {}, p, ei_Cart, bi_Cart);
-        //     if constexpr (ExtForce) {
-        //       this->ux1(p) += HALF * this->dt * force_Cart[0];
-        //       this->ux2(p) += HALF * this->dt * force_Cart[1];
-        //       this->ux3(p) += HALF * this->dt * force_Cart[2];
-        //     }
-        //   }
-        //   // cooling
-        //   if constexpr (std::disjunction_v<std::is_same<Synchrotron_t, Cs>...>) {
-        //     if (!is_gca) {
-        //       u_prime[0] = HALF * (u_prime[0] + this->ux1(p));
-        //       u_prime[1] = HALF * (u_prime[1] + this->ux2(p));
-        //       u_prime[2] = HALF * (u_prime[2] + this->ux3(p));
-        //       this->synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
-        //     }
-        //   }
-        // }
-        // // update position
+          this->getInterpFlds(p, ei, bi);
+          this->metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
+          this->metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+          if constexpr (!std::disjunction_v<std::is_same<NoCooling_t, Cs>...>) {
+            // backup fields & velocities to use later in cooling
+            ei_Cart_rad[0] = ei_Cart[0];
+            ei_Cart_rad[1] = ei_Cart[1];
+            ei_Cart_rad[2] = ei_Cart[2];
+            bi_Cart_rad[0] = bi_Cart[0];
+            bi_Cart_rad[1] = bi_Cart[1];
+            bi_Cart_rad[2] = bi_Cart[2];
+            u_prime[0]     = this->ux1(p);
+            u_prime[1]     = this->ux2(p);
+            u_prime[2]     = this->ux3(p);
+          }
+          if constexpr (ExtForce) {
+            this->initForce(xp, force_Cart);
+          }
+          if constexpr (std::is_same_v<P, Boris_GCA_t> ||
+                        std::is_same_v<P, Vay_GCA_t>) {
+            const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
+            const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
+            const auto rL {
+              math::sqrt(ONE + NORM_SQR(this->ux1(p), this->ux2(p), this->ux3(p))) *
+              this->dt / (TWO * this->coeff * math::sqrt(B2))
+            };
+            if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
+              is_gca = true;
+              // update with GCA
+              if constexpr (ExtForce) {
+                this->velUpd(GCA_t {}, p, force_Cart, ei_Cart, bi_Cart);
+              } else {
+                this->velUpd(GCA_t {}, p, ei_Cart, bi_Cart);
+              }
+            } else {
+              // update with conventional pusher
+              if constexpr (ExtForce) {
+                this->ux1(p) += HALF * this->dt * force_Cart[0];
+                this->ux2(p) += HALF * this->dt * force_Cart[1];
+                this->ux3(p) += HALF * this->dt * force_Cart[2];
+              }
+              this->velUpd(Reduced_t<P> {}, p, ei_Cart, bi_Cart);
+              if constexpr (ExtForce) {
+                this->ux1(p) += HALF * this->dt * force_Cart[0];
+                this->ux2(p) += HALF * this->dt * force_Cart[1];
+                this->ux3(p) += HALF * this->dt * force_Cart[2];
+              }
+            }
+          } else {
+            // update with conventional pusher
+            if constexpr (ExtForce) {
+              this->ux1(p) += HALF * this->dt * force_Cart[0];
+              this->ux2(p) += HALF * this->dt * force_Cart[1];
+              this->ux3(p) += HALF * this->dt * force_Cart[2];
+            }
+            this->velUpd(P {}, p, ei_Cart, bi_Cart);
+            if constexpr (ExtForce) {
+              this->ux1(p) += HALF * this->dt * force_Cart[0];
+              this->ux2(p) += HALF * this->dt * force_Cart[1];
+              this->ux3(p) += HALF * this->dt * force_Cart[2];
+            }
+          }
+          // cooling
+          if constexpr (std::disjunction_v<std::is_same<Synchrotron_t, Cs>...>) {
+            if (!is_gca) {
+              u_prime[0] = HALF * (u_prime[0] + this->ux1(p));
+              u_prime[1] = HALF * (u_prime[1] + this->ux2(p));
+              u_prime[2] = HALF * (u_prime[2] + this->ux3(p));
+              this->synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
+            }
+          }
+        }
+        // update position
         {
-          // // get cartesian velocity
-          // const real_t inv_energy { ONE / this->getEnergy(Mass_t<P> {}, p) };
-          // vec_t<Dim3>  vp_Cart { this->ux1(p) * inv_energy,
-          //                       this->ux2(p) * inv_energy,
-          //                       this->ux3(p) * inv_energy };
-          // // get cartesian position
-          // coord_t<M::PrtlD> xp_Cart { ZERO };
-          // this->metric.x_Code2Cart(xp, xp_Cart);
-          // // update cartesian position
-          // for (short d { 0 }; d < static_cast<short>(M::PrtlD); ++d) {
-          //   xp_Cart[d] += vp_Cart[d] * this->dt;
-          // }
-          // // transform back to code
-          // this->metric.x_Cart2Code(xp_Cart, xp);
+          // get cartesian velocity
+          const real_t inv_energy { ONE / this->getEnergy(Mass_t<P> {}, p) };
+          vec_t<Dim3>  vp_Cart { this->ux1(p) * inv_energy,
+                                this->ux2(p) * inv_energy,
+                                this->ux3(p) * inv_energy };
+          // get cartesian position
+          coord_t<M::PrtlD> xp_Cart { ZERO };
+          this->metric.x_Code2Cart(xp, xp_Cart);
+          // update cartesian position
+          for (short d { 0 }; d < static_cast<short>(M::PrtlD); ++d) {
+            xp_Cart[d] += vp_Cart[d] * this->dt;
+          }
+          // transform back to code
+          this->metric.x_Cart2Code(xp_Cart, xp);
 
           // update x1
           if constexpr (D == Dim1 || D == Dim2 || D == Dim3) {
