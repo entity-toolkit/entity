@@ -1,0 +1,59 @@
+[simulation]
+title   = "testMPI"
+runtime = 30.0
+
+[domain]
+resolution = [2048,2048]
+#decomposition = [1, 2]
+extent     = [1.0, 20.0]   # extent of the domain in physical units
+boundaries = [["CUSTOM", "ABSORB"], ["AXIS"]]
+qsph_r0    = 0.0
+qsph_h     = 0.0
+
+[algorithm]
+CFL             = 0.75
+current_filters = 8
+extforce_ON     = true
+fieldsolver_ON  = false
+deposit_ON      = false 
+
+[GCA]
+EovrB_max  = 0.9
+larmor_max = 0.05
+
+[units]
+ppc0       = 2.0
+larmor0    = 5e-6  # fiducial larmor radius in physical units
+skindepth0 = 0.005  # fiducial skin depth in physical units
+
+[particles]
+shuffle_interval  = 100
+n_species = 2
+use_weights = true
+
+[species_1]
+label    = "e-"
+mass     = 1.0
+charge   = -1.0
+pusher   = "Boris,GCA"
+maxnpart = 1e8
+
+[species_2]
+label    = "e+"
+mass     = 1.0
+charge   = 1.0
+pusher   = "Boris,GCA"
+maxnpart = 1e8
+
+[problem]
+T        = 0.1
+atm_buff    = 0.2
+
+[output]
+fields     = ["N", "N_1", "N_2", "B", "E", "J", "T00"]
+#particles  = ["X", "U"]
+format     = "HDF5"
+fields_stride   = 100
+prtl_stride     = 20
+mom_smooth = 2
+interval_time = 0.2# output interval in time units
