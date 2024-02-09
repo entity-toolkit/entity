@@ -939,7 +939,7 @@ namespace ntt {
           i2_prev(p) -= ni2;
         } else if (is_absorb_i2max) {
           tag(p) = ParticleTag::dead;
-        } else if (is_axis_i2min) {
+        } else if (is_axis_i2max) {
           i2(p)  = ni2 - 1;
           dx2(p) = ONE - dx2(p);
         }
