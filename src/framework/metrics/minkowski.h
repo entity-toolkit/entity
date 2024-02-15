@@ -5,6 +5,8 @@
 
 #include "metric_base.h"
 
+#include "utils/qmath.h"
+
 #include <cmath>
 
 namespace ntt {
@@ -20,14 +22,30 @@ namespace ntt {
     const real_t dx, dx_sqr, dx_inv;
 
   public:
-    const real_t dx_min;
+    constexpr static Dimension PrtlD = D;
 
-    Metric(std::vector<unsigned int> resolution, std::vector<real_t> extent, const real_t*)
-      : MetricBase<D> { "minkowski", resolution, extent },
-        dx((this->x1_max - this->x1_min) / this->nx1),
-        dx_sqr(dx * dx),
-        dx_inv(ONE / dx),
-        dx_min { findSmallestCell() } {}
+    Metric(std::vector<unsigned int> resolution,
+           std::vector<real_t>       extent,
+           const real_t*) :
+      MetricBase<D> { "minkowski", resolution, extent },
+      dx((this->x1_max - this->x1_min) / this->nx1),
+      dx_sqr(dx * dx),
+      dx_inv(ONE / dx) {
+      this->set_dxMin(find_dxMin());
+      if constexpr (D == Dim2) {
+        NTTHostErrorIf(
+          !AlmostEqual((this->x2_max - this->x2_min) / (real_t)(this->nx2), dx),
+          "dx2 must be equal to dx1 in 2D");
+      } else if constexpr (D == Dim3) {
+        NTTHostErrorIf(
+          !AlmostEqual((this->x2_max - this->x2_min) / (real_t)(this->nx2), dx),
+          "dx2 must be equal to dx1 in 3D");
+        NTTHostErrorIf(
+          !AlmostEqual((this->x3_max - this->x3_min) / (real_t)(this->nx3), dx),
+          "dx3 must be equal to dx1 in 3D");
+      }
+    }
+
     ~Metric() = default;
 
     /**
@@ -35,7 +53,8 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
       return dx / math::sqrt(static_cast<real_t>(D));
     }
 
@@ -48,6 +67,7 @@ namespace ntt {
     Inline auto h_11(const coord_t<D>&) const -> real_t {
       return dx_sqr;
     }
+
     /**
      * Compute metric component 22.
      *
@@ -57,6 +77,7 @@ namespace ntt {
     Inline auto h_22(const coord_t<D>&) const -> real_t {
       return dx_sqr;
     }
+
     /**
      * Compute metric component 33.
      *
@@ -78,11 +99,13 @@ namespace ntt {
     }
 
     /**
-     * Compute the fiducial minimum cell volume.
+     * Compute the square root of the determinant of h-matrix.
+     * @note for compatibility purposes
      *
-     * @returns Minimum cell volume of the grid [code units].
+     * @param x coordinate array in code units
+     * @returns sqrt(det(h_ij)).
      */
-    Inline auto min_cell_volume() const -> real_t {
+    Inline auto sqrt_det_h_tilde(const coord_t<D>&) const -> real_t {
       return math::pow(dx, static_cast<short>(D));
     }
 
@@ -91,6 +114,8 @@ namespace ntt {
  *       include vector transformations for a diagonal metric here
  *       (and not in the base class).
  */
+#include "metrics_utils/param_forSR.h"
+
 #include "metrics_utils/v3_hat_cntrv_cov_forSR.h"
 
     /**
@@ -108,6 +133,27 @@ namespace ntt {
      * @param xi coordinate array in code units
      */
     Inline void x_Cart2Code(const coord_t<D>&, coord_t<D>&) const;
+
+    /**
+     * Coordinate conversion from code units to Cartesian physical units.
+     *
+     * @param xi coordinate array in code units
+     * @param x coordinate array in Cartesian physical units
+     */
+    Inline void x_Code2Phys(const coord_t<D>& xi, coord_t<D>& x) const {
+      this->x_Code2Cart(xi, x);
+    }
+
+    /**
+     * Coordinate conversion from Cartesian physical units to code units.
+     *
+     * @param x coordinate array in Cartesian coordinates in physical units
+     * @param xi coordinate array in code units
+     */
+    Inline void x_Phys2Code(const coord_t<D>& x, coord_t<D>& xi) const {
+      this->x_Cart2Code(x, xi);
+    }
+
     /**
      * Coordinate conversion from code units to Spherical physical units.
      *
@@ -304,46 +350,109 @@ namespace ntt {
       v_hat[1] = v_cart[1];
       v_hat[2] = v_cart[2];
     }
+
+    Inline auto x1_Code2Cart(const real_t& x1) const -> real_t {
+      return x1 * dx + this->x1_min;
+    }
+
+    Inline auto x2_Code2Cart(const real_t& x2) const -> real_t {
+      return x2 * dx + this->x2_min;
+    }
+
+    Inline auto x3_Code2Cart(const real_t& x3) const -> real_t {
+      return x3 * dx + this->x3_min;
+    }
+
+    Inline auto x1_Cart2Code(const real_t& x) const -> real_t {
+      return (x - this->x1_min) * dx_inv;
+    }
+
+    Inline auto x2_Cart2Code(const real_t& y) const -> real_t {
+      return (y - this->x2_min) * dx_inv;
+    }
+
+    Inline auto x3_Cart2Code(const real_t& z) const -> real_t {
+      return (z - this->x3_min) * dx_inv;
+    }
+
+    Inline auto x1_Code2Phys(const real_t& x1) const -> real_t {
+      return this->x1_Code2Cart(x1);
+    }
+
+    Inline auto x2_Code2Phys(const real_t& x2) const -> real_t {
+      return this->x2_Code2Cart(x2);
+    }
+
+    Inline auto x3_Code2Phys(const real_t& x3) const -> real_t {
+      return this->x3_Code2Cart(x3);
+    }
+
+    Inline auto x1_Phys2Code(const real_t& x) const -> real_t {
+      return this->x1_Cart2Code(x);
+    }
+
+    Inline auto x2_Phys2Code(const real_t& y) const -> real_t {
+      return this->x2_Cart2Code(y);
+    }
+
+    Inline auto x3_Phys2Code(const real_t& z) const -> real_t {
+      return this->x3_Cart2Code(z);
+    }
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                                     1D                                     */
+  /*                                     1D */
   /* -------------------------------------------------------------------------- */
   template <>
-  Inline void Metric<Dim1>::x_Code2Cart(const coord_t<Dim1>& xi, coord_t<Dim1>& x) const {
+  Inline void Metric<Dim1>::x_Code2Cart(const coord_t<Dim1>& xi,
+                                        coord_t<Dim1>&       x) const {
     x[0] = xi[0] * dx + this->x1_min;
   }
+
   template <>
-  Inline void Metric<Dim1>::x_Cart2Code(const coord_t<Dim1>& x, coord_t<Dim1>& xi) const {
+  Inline void Metric<Dim1>::x_Cart2Code(const coord_t<Dim1>& x,
+                                        coord_t<Dim1>&       xi) const {
     xi[0] = (x[0] - this->x1_min) * dx_inv;
   }
+
   template <>
-  Inline void Metric<Dim1>::x_Code2Sph(const coord_t<Dim1>&, coord_t<Dim1>&) const {}
+  Inline void Metric<Dim1>::x_Code2Sph(const coord_t<Dim1>&, coord_t<Dim1>&) const {
+  }
+
   template <>
-  Inline void Metric<Dim1>::x_Sph2Code(const coord_t<Dim1>&, coord_t<Dim1>&) const {}
+  Inline void Metric<Dim1>::x_Sph2Code(const coord_t<Dim1>&, coord_t<Dim1>&) const {
+  }
 
   /* -------------------------------------------------------------------------- */
-  /*                                     2D                                     */
+  /*                                     2D */
   /* -------------------------------------------------------------------------- */
   template <>
-  Inline void Metric<Dim2>::x_Code2Cart(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
+  Inline void Metric<Dim2>::x_Code2Cart(const coord_t<Dim2>& xi,
+                                        coord_t<Dim2>&       x) const {
     x[0] = xi[0] * dx + this->x1_min;
     x[1] = xi[1] * dx + this->x2_min;
   }
+
   template <>
-  Inline void Metric<Dim2>::x_Cart2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
+  Inline void Metric<Dim2>::x_Cart2Code(const coord_t<Dim2>& x,
+                                        coord_t<Dim2>&       xi) const {
     xi[0] = (x[0] - this->x1_min) * dx_inv;
     xi[1] = (x[1] - this->x2_min) * dx_inv;
   }
+
   template <>
-  Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi, coord_t<Dim2>& x) const {
+  Inline void Metric<Dim2>::x_Code2Sph(const coord_t<Dim2>& xi,
+                                       coord_t<Dim2>&       x) const {
     coord_t<Dim2> x_cart { ZERO };
     x_Code2Cart(xi, x_cart);
     x[0] = math::sqrt(SQR(x_cart[0]) + SQR(x_cart[1]));
-    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x_cart[1], x_cart[0]);
+    x[1] = static_cast<real_t>(constant::HALF_PI) -
+           math::atan2(x_cart[1], x_cart[0]);
   }
+
   template <>
-  Inline void Metric<Dim2>::x_Sph2Code(const coord_t<Dim2>& x, coord_t<Dim2>& xi) const {
+  Inline void Metric<Dim2>::x_Sph2Code(const coord_t<Dim2>& x,
+                                       coord_t<Dim2>&       xi) const {
     coord_t<Dim2> x_cart { ZERO };
     x_cart[0] = x[0] * math::sin(x[1]);
     x_cart[1] = x[0] * math::cos(x[1]);
@@ -351,30 +460,38 @@ namespace ntt {
   }
 
   /* -------------------------------------------------------------------------- */
-  /*                                     3D                                     */
+  /*                                     3D */
   /* -------------------------------------------------------------------------- */
   template <>
-  Inline void Metric<Dim3>::x_Code2Cart(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
+  Inline void Metric<Dim3>::x_Code2Cart(const coord_t<Dim3>& xi,
+                                        coord_t<Dim3>&       x) const {
     x[0] = xi[0] * dx + this->x1_min;
     x[1] = xi[1] * dx + this->x2_min;
     x[2] = xi[2] * dx + this->x3_min;
   }
+
   template <>
-  Inline void Metric<Dim3>::x_Cart2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
+  Inline void Metric<Dim3>::x_Cart2Code(const coord_t<Dim3>& x,
+                                        coord_t<Dim3>&       xi) const {
     xi[0] = (x[0] - this->x1_min) * dx_inv;
     xi[1] = (x[1] - this->x2_min) * dx_inv;
     xi[2] = (x[2] - this->x3_min) * dx_inv;
   }
+
   template <>
-  Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi, coord_t<Dim3>& x) const {
+  Inline void Metric<Dim3>::x_Code2Sph(const coord_t<Dim3>& xi,
+                                       coord_t<Dim3>&       x) const {
     coord_t<Dim3> x_cart { ZERO };
     x_Code2Cart(xi, x_cart);
     x[0] = math::sqrt(SQR(x_cart[0]) + SQR(x_cart[1]) + SQR(x_cart[2]));
-    x[1] = static_cast<real_t>(constant::HALF_PI) - math::atan2(x_cart[1], x_cart[0]);
+    x[1] = static_cast<real_t>(constant::HALF_PI) -
+           math::atan2(x_cart[1], x_cart[0]);
     x[2] = math::acos(x_cart[2] / x_cart[0]);
   }
+
   template <>
-  Inline void Metric<Dim3>::x_Sph2Code(const coord_t<Dim3>& x, coord_t<Dim3>& xi) const {
+  Inline void Metric<Dim3>::x_Sph2Code(const coord_t<Dim3>& x,
+                                       coord_t<Dim3>&       xi) const {
     coord_t<Dim3> x_cart { ZERO };
     x_cart[0] = x[0] * math::sin(x[1]) * math::cos(x[2]);
     x_cart[1] = x[0] * math::sin(x[1]) * math::sin(x[2]);
@@ -382,6 +499,6 @@ namespace ntt {
     x_Cart2Code(x_cart, xi);
   }
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

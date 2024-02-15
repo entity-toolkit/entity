@@ -18,15 +18,16 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t dr, dtheta, dphi;
-    const real_t dr_inv, dtheta_inv, dphi_inv;
-    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
     const real_t rh_, rg_, a, a_sqr;
 
-    Inline auto  Delta(const real_t& r) const -> real_t {
+    const real_t dr, dtheta, dphi;
+    const real_t dr_inv, dtheta_inv, dphi_inv;
+    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
+
+    Inline auto Delta(const real_t& r) const -> real_t {
       return SQR(r) - TWO * r + a_sqr;
     }
 
@@ -43,35 +44,42 @@ namespace ntt {
     }
 
   public:
-    const real_t dx_min;
+    constexpr static Dimension PrtlD = D;
 
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*             params)
-      : MetricBase<D> { "kerr_schild", resolution, extent },
-        rh_ { params[5] },
-        rg_ { ONE },
-        a { params[4] },
-        a_sqr { SQR(a) },
-        dr { (this->x1_max - this->x1_min) / this->nx1 },
-        dtheta { static_cast<real_t>(constant::PI / this->nx2) },
-        dphi { static_cast<real_t>(constant::TWO_PI / this->nx3) },
-        dr_inv { ONE / dr },
-        dtheta_inv { ONE / dtheta },
-        dphi_inv { ONE / dphi },
-        dr_sqr { dr * dr },
-        dtheta_sqr { dtheta * dtheta },
-        dphi_sqr { dphi * dphi },
-        dx_min { findSmallestCell() } {}
+           const real_t*             params) :
+      MetricBase<D> { "kerr_schild", resolution, extent },
+      rh_ { params[5] },
+      rg_ { ONE },
+      a { params[4] },
+      a_sqr { SQR(a) },
+      dr { (this->x1_max - this->x1_min) / this->nx1 },
+      dtheta { (this->x2_max - this->x2_min) / this->nx2 },
+      dphi { (this->x3_max - this->x3_min) / this->nx3 },
+      dr_inv { ONE / dr },
+      dtheta_inv { ONE / dtheta },
+      dphi_inv { ONE / dphi },
+      dr_sqr { dr * dr },
+      dtheta_sqr { dtheta * dtheta },
+      dphi_sqr { dphi * dphi } {
+      this->set_dxMin(find_dxMin());
+    }
+
     ~Metric() = default;
 
-    [[nodiscard]] Inline auto spin() const -> const real_t& {
+    [[nodiscard]]
+    Inline auto spin() const -> const real_t& {
       return a;
     }
-    [[nodiscard]] Inline auto rhorizon() const -> const real_t& {
+
+    [[nodiscard]]
+    Inline auto rhorizon() const -> const real_t& {
       return rh_;
     }
-    [[nodiscard]] Inline auto rg() const -> const real_t& {
+
+    [[nodiscard]]
+    Inline auto rg() const -> const real_t& {
       return rg_;
     }
 
@@ -83,7 +91,7 @@ namespace ntt {
      */
     Inline auto h_11(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return dr_sqr * (ONE + z(r, theta));
     }
 
@@ -95,7 +103,7 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return dtheta_sqr * Sigma(r, theta);
     }
 
@@ -107,7 +115,7 @@ namespace ntt {
      */
     Inline auto h_33(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
       } else {
@@ -123,7 +131,7 @@ namespace ntt {
      */
     Inline auto h_13(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return -dr * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
       } else {
@@ -139,7 +147,7 @@ namespace ntt {
      */
     Inline auto h11(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       const real_t Sigma_ { Sigma(r, theta) };
       return SQR(dr_inv) * A(r, theta) / (Sigma_ * (Sigma_ + TWO * r));
     }
@@ -152,7 +160,7 @@ namespace ntt {
      */
     Inline auto h22(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return SQR(dtheta_inv) / Sigma(r, theta);
     }
 
@@ -164,7 +172,7 @@ namespace ntt {
      */
     Inline auto h33(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return ONE / (Sigma(r, theta) * SQR(math::sin(theta)));
       } else {
@@ -180,7 +188,7 @@ namespace ntt {
      */
     Inline auto h13(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return dr_inv * a / Sigma(r, theta);
       } else {
@@ -196,7 +204,7 @@ namespace ntt {
      */
     Inline auto alpha(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       return ONE / math::sqrt(ONE + z(r, theta));
     }
 
@@ -208,7 +216,7 @@ namespace ntt {
      */
     Inline auto beta1(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       const real_t z_ { z(r, theta) };
       return dr_inv * z_ / (ONE + z_);
     }
@@ -221,13 +229,13 @@ namespace ntt {
      */
     Inline auto sqrt_det_h(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
-        return dr * dtheta * Sigma(r, theta) * math::sin(theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * Sigma(r, theta) * math::sin(theta) *
+               math::sqrt(ONE + z(r, theta));
       } else {
-        return dr * dtheta * dphi * Sigma(r, theta) * math::sin(theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * dphi * Sigma(r, theta) * math::sin(theta) *
+               math::sqrt(ONE + z(r, theta));
       }
     }
 
@@ -239,21 +247,13 @@ namespace ntt {
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& xi) const -> real_t {
       const real_t r { xi[0] * dr + this->x1_min };
-      const real_t theta { xi[1] * dtheta };
+      const real_t theta { xi[1] * dtheta + this->x2_min };
       if constexpr (D == Dim2) {
         return dr * dtheta * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
       } else {
-        return dr * dtheta * dphi * Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
+        return dr * dtheta * dphi * Sigma(r, theta) *
+               math::sqrt(ONE + z(r, theta));
       }
-    }
-
-    /**
-     * Compute the fiducial minimum cell volume.
-     *
-     * @returns Minimum cell volume of the grid [code units].
-     */
-    Inline auto min_cell_volume() const -> real_t {
-      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
     }
 
     /**
@@ -266,15 +266,18 @@ namespace ntt {
     Inline auto polar_area(const real_t& x1) const -> real_t {
       real_t r { x1 * dr + this->x1_min };
       real_t del_theta { HALF * dtheta };
-      return dr * (SQR(r) + a_sqr) * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr))
-             * (ONE - math::cos(del_theta));
+      return dr * (SQR(r) + a_sqr) * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) *
+             (ONE - math::cos(del_theta));
     }
+
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
+#include "metrics_utils/param_forGR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
+#include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forSph.h"
 
 #include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
@@ -285,7 +288,8 @@ namespace ntt {
      * Compute minimum effective cell size for a given metric (in physical units).
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         real_t min_dx { -ONE };
         for (int i { 0 }; i < this->nx1; ++i) {
@@ -293,9 +297,9 @@ namespace ntt {
             real_t        i_ { static_cast<real_t>(i) + HALF };
             real_t        j_ { static_cast<real_t>(j) + HALF };
             coord_t<Dim2> ij { i_, j_ };
-            real_t        dx = ONE
-                        / (this->alpha(ij) * std::sqrt(this->h11(ij) + this->h22(ij))
-                           + this->beta1(ij));
+            real_t        dx = ONE / (this->alpha(ij) *
+                                 std::sqrt(this->h11(ij) + this->h22(ij)) +
+                               this->beta1(ij));
             if ((min_dx > dx) || (min_dx < 0.0)) {
               min_dx = dx;
             }
@@ -308,6 +312,6 @@ namespace ntt {
       }
     }
   };
-}    // namespace ntt
+} // namespace ntt
 
 #endif

@@ -1,15 +1,6 @@
 #ifndef FRAMEWORK_METRICS_UTILS_V3_PHYS_COV_CNTRV_FORSPH_H
 #define FRAMEWORK_METRICS_UTILS_V3_PHYS_COV_CNTRV_FORSPH_H
 
-#ifdef __INTELLISENSE__
-#  pragma diag_suppress 1670
-#  pragma diag_suppress 864
-#  pragma diag_suppress 258
-#  pragma diag_suppress 77
-#  pragma diag_suppress 65
-#  pragma diag_suppress 20
-#endif
-
 /**
  * @brief Vector transformations for normal spherical.
  * @implements v3: Cntrv -> PhysCntrv
@@ -94,13 +85,4 @@ Inline void v3_PhysCov2Cov(const coord_t<D>&,
   }
 }
 
-#ifdef __INTELLISENSE__
-#  pragma diag_default 20
-#  pragma diag_default 65
-#  pragma diag_default 77
-#  pragma diag_default 258
-#  pragma diag_default 864
-#  pragma diag_default 1670
-#endif
-
-#endif    // FRAMEWORK_METRICS_UTILS_V3_PHYS_COV_CNTRV_FORSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_V3_PHYS_COV_CNTRV_FORSPH_H

@@ -67,20 +67,44 @@ namespace ntt {
 
     MetricBase(const std::string&        label_,
                std::vector<unsigned int> resolution,
-               std::vector<real_t>       extent)
-      : label { label_ },
-        nx1 { resolution.size() > 0 ? (real_t)(resolution[0]) : ONE },
-        nx2 { resolution.size() > 1 ? (real_t)(resolution[1]) : ONE },
-        nx3 { resolution.size() > 2 ? (real_t)(resolution[2]) : ONE },
-        x1_min { resolution.size() > 0 ? extent[0] : ZERO },
-        x1_max { resolution.size() > 0 ? extent[1] : ZERO },
-        x2_min { resolution.size() > 1 ? extent[2] : ZERO },
-        x2_max { resolution.size() > 1 ? extent[3] : ZERO },
-        x3_min { resolution.size() > 2 ? extent[4] : ZERO },
-        x3_max { resolution.size() > 2 ? extent[5] : ZERO } {}
+               std::vector<real_t>       extent) :
+      label { label_ },
+      nx1 { resolution.size() > 0 ? (real_t)(resolution[0]) : ONE },
+      nx2 { resolution.size() > 1 ? (real_t)(resolution[1]) : ONE },
+      nx3 { resolution.size() > 2 ? (real_t)(resolution[2]) : ONE },
+      x1_min { resolution.size() > 0 ? extent[0] : ZERO },
+      x1_max { resolution.size() > 0 ? extent[1] : ZERO },
+      x2_min { resolution.size() > 1 ? extent[2] : ZERO },
+      x2_max { resolution.size() > 1 ? extent[3] : ZERO },
+      x3_min { resolution.size() > 2 ? extent[4] : ZERO },
+      x3_max { resolution.size() > 2 ? extent[5] : ZERO } {}
+
     ~MetricBase() = default;
+
+    [[nodiscard]]
+    virtual auto getParameter(const std::string&) const -> real_t {
+      return -ONE;
+    };
+
+    [[nodiscard]]
+    virtual auto find_dxMin() const -> real_t {
+      NTTHostError("find_dxMin() not implemented for the metric");
+      return -ONE;
+    }
+
+    [[nodiscard]]
+    auto dxMin() const -> real_t {
+      return dx_min;
+    }
+
+    auto set_dxMin(real_t dxmin) -> void {
+      dx_min = dxmin;
+    }
+
+  protected:
+    real_t dx_min;
   };
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_METRIC_BASE_H
+#endif // FRAMEWORK_METRIC_BASE_H

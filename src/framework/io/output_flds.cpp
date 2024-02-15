@@ -8,8 +8,8 @@
 #include "utils/utils.h"
 
 #ifdef OUTPUT_ENABLED
-#  include <adios2.h>
-#  include <adios2/cxx11/KokkosView.h>
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
 #endif
 
 #include <string>
@@ -40,7 +40,8 @@ namespace ntt {
       }
     } else if (is_gr_aux_field()) {
       if (S == GRPICEngine) {
-        NTTHostErrorIf(comp.size() != 3, "Aux fields are always 3 components for output");
+        NTTHostErrorIf(comp.size() != 3,
+                       "Aux fields are always 3 components for output");
         if (is_efield()) {
           address.push_back(em::ex1);
           address.push_back(em::ex2);
@@ -56,27 +57,33 @@ namespace ntt {
         NTTHostError("GRPICEngine is required for GR aux fields");
       }
     } else if (is_current()) {
-      NTTHostErrorIf(comp.size() != 3, "Currents are always 3 components for output");
+      NTTHostErrorIf(comp.size() != 3,
+                     "Currents are always 3 components for output");
       interp_flag = PrepareOutput_InterpToCellCenterFromEdges;
       address.push_back(cur::jx1);
       address.push_back(cur::jx2);
       address.push_back(cur::jx3);
     } else if (is_moment()) {
-      NTTHostErrorIf(comp.size() > 3, "Cannot output more than 3 components for moments");
+      NTTHostErrorIf(comp.size() > 3,
+                     "Cannot output more than 3 components for moments");
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         address.push_back(i);
       }
     } else if (is_vpotential()) {
       address.push_back(0);
-      NTTHostErrorIf(comp.size() != 1,
-                     "Vector potential is always 1 components for output, but given "
-                       + std::to_string(comp.size()));
+      NTTHostErrorIf(
+        comp.size() != 1,
+        "Vector potential is always 1 components for output, but given " +
+          std::to_string(comp.size()));
+    } else if (is_divergence()) {
+      address.push_back(1);
     } else {
       NTTHostError("Unrecognized field type for output");
     }
   }
 
-  [[nodiscard]] auto OutputField::name(const int& i) const -> std::string {
+  [[nodiscard]]
+  auto OutputField::name(const int& i) const -> std::string {
     std::string myname { m_name };
     for (auto& cc : comp[i]) {
 #ifdef MINKOWSKI_METRIC
@@ -97,47 +104,66 @@ namespace ntt {
   }
 
   template <Dimension D, SimulationEngine S>
-  void OutputField::compute(const SimulationParams& params, Meshblock<D, S>& mblock) const {
+  void OutputField::compute(const SimulationParams& params,
+                            Meshblock<D, S>&        mblock) const {
     auto slice_i1 = Kokkos::ALL;
     auto slice_i2 = Kokkos::ALL;
     auto slice_i3 = Kokkos::ALL;
 
     if (is_field()) {
-      auto slice_comp = std::make_pair(address[0], address[2]);
+      auto slice_comp = std::make_pair(address[0], address[2] + 1);
       if constexpr (D == Dim1) {
         Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_comp),
                           Kokkos::subview(mblock.em, slice_i1, slice_comp));
       } else if constexpr (D == Dim2) {
-        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
-                          Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_comp));
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
+          Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_comp));
       } else if constexpr (D == Dim3) {
         Kokkos::deep_copy(
           Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_i3, slice_comp),
           Kokkos::subview(mblock.em, slice_i1, slice_i2, slice_i3, slice_comp));
       }
-      // Kokkos::deep_copy(mblock.bckp, mblock.em);
-      mblock.template PrepareFieldsForOutput<6, 6>(
-        mblock.em, mblock.bckp, address[0], address[1], address[2], interp_flag | prepare_flag);
+      if (!params.outputAsIs()) {
+        mblock.template PrepareFieldsForOutput<6, 6>(mblock.em,
+                                                     mblock.bckp,
+                                                     address[0],
+                                                     address[1],
+                                                     address[2],
+                                                     interp_flag | prepare_flag);
+      }
     } else if (is_gr_aux_field()) {
-      auto slice_comp = std::make_pair(address[0], address[2]);
+      auto slice_comp = std::make_pair(address[0], address[2] + 1);
       if constexpr (D == Dim1) {
         Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_comp),
                           Kokkos::subview(mblock.aux, slice_i1, slice_comp));
       } else if constexpr (D == Dim2) {
-        Kokkos::deep_copy(Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
-                          Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_comp));
+        Kokkos::deep_copy(
+          Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_comp),
+          Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_comp));
       } else if constexpr (D == Dim3) {
         Kokkos::deep_copy(
           Kokkos::subview(mblock.bckp, slice_i1, slice_i2, slice_i3, slice_comp),
           Kokkos::subview(mblock.aux, slice_i1, slice_i2, slice_i3, slice_comp));
       }
-      // Kokkos::deep_copy(mblock.bckp, mblock.aux);
-      mblock.template PrepareFieldsForOutput<6, 6>(
-        mblock.aux, mblock.bckp, address[0], address[1], address[2], interp_flag | prepare_flag);
+      if (!params.outputAsIs()) {
+        mblock.template PrepareFieldsForOutput<6, 6>(mblock.aux,
+                                                     mblock.bckp,
+                                                     address[0],
+                                                     address[1],
+                                                     address[2],
+                                                     interp_flag | prepare_flag);
+      }
     } else if (is_current()) {
       Kokkos::deep_copy(mblock.buff, mblock.cur);
-      mblock.template PrepareFieldsForOutput<3, 3>(
-        mblock.cur, mblock.buff, address[0], address[1], address[2], interp_flag | prepare_flag);
+      if (!params.outputAsIs()) {
+        mblock.template PrepareFieldsForOutput<3, 3>(mblock.cur,
+                                                     mblock.buff,
+                                                     address[0],
+                                                     address[1],
+                                                     address[2],
+                                                     interp_flag | prepare_flag);
+      }
     } else if (is_moment()) {
       for (std::size_t i { 0 }; i < comp.size(); ++i) {
         mblock.ComputeMoments(params,
@@ -149,6 +175,10 @@ namespace ntt {
       }
     } else if (is_vpotential()) {
       mblock.ComputeVectorPotential(mblock.bckp, address[0]);
+    } else if (is_divergence()) {
+      mblock.ComputeDivergenceED(mblock.buff, address[0]);
+    } else {
+      NTTHostError("Unrecognized field type for output");
     }
   }
 
@@ -160,52 +190,61 @@ namespace ntt {
                   adios2::Engine&        writer,
                   const std::string&     varname,
                   const ndfield_t<D, N>& field,
-                  const int&             comp) {
-      auto slice_i1 = Kokkos::ALL;
-      auto slice_i2 = Kokkos::ALL;
-      auto slice_i3 = Kokkos::ALL;
-
-      auto var      = io.InquireVariable<real_t>(varname);
+                  int                    comp,
+                  bool                   ghosts) {
+      auto       var      = io.InquireVariable<real_t>(varname);
+      const auto gh_zones = ghosts ? 0 : N_GHOSTS;
 
       if constexpr (D == Dim1) {
+        auto slice_i1     = range_tuple_t(gh_zones, field.extent(0) - gh_zones);
         auto slice        = Kokkos::subview(field, slice_i1, comp);
         auto output_field = array_t<real_t*>("output_field", slice.extent(0));
         Kokkos::deep_copy(output_field, slice);
         auto output_field_host = Kokkos::create_mirror_view(output_field);
         Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
+        writer.Put(var, output_field_host);
       } else if constexpr (D == Dim2) {
-        auto slice = Kokkos::subview(field, slice_i1, slice_i2, comp);
-        auto output_field
-          = array_t<real_t**>("output_field", slice.extent(0), slice.extent(1));
+        auto slice_i1     = range_tuple_t(gh_zones, field.extent(0) - gh_zones);
+        auto slice_i2     = range_tuple_t(gh_zones, field.extent(1) - gh_zones);
+        auto slice        = Kokkos::subview(field, slice_i1, slice_i2, comp);
+        auto output_field = array_t<real_t**>("output_field",
+                                              slice.extent(0),
+                                              slice.extent(1));
         Kokkos::deep_copy(output_field, slice);
         auto output_field_host = Kokkos::create_mirror_view(output_field);
         Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
+        writer.Put(var, output_field_host);
       } else if constexpr (D == Dim3) {
-        auto slice        = Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp);
-        auto output_field = array_t<real_t***>(
-          "output_field", slice.extent(0), slice.extent(1), slice.extent(2));
+        auto slice_i1 = range_tuple_t(gh_zones, field.extent(0) - gh_zones);
+        auto slice_i2 = range_tuple_t(gh_zones, field.extent(1) - gh_zones);
+        auto slice_i3 = range_tuple_t(gh_zones, field.extent(2) - gh_zones);
+        auto slice = Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp);
+        auto output_field = array_t<real_t***>("output_field",
+                                               slice.extent(0),
+                                               slice.extent(1),
+                                               slice.extent(2));
         Kokkos::deep_copy(output_field, slice);
         auto output_field_host = Kokkos::create_mirror_view(output_field);
         Kokkos::deep_copy(output_field_host, output_field);
-        writer.Put<real_t>(var, output_field_host);
+        writer.Put(var, output_field_host);
       }
     }
-  }    // namespace
+  } // namespace
 
   template <Dimension D, SimulationEngine S>
-  void OutputField::put(adios2::IO& io, adios2::Engine& writer, Meshblock<D, S>& mblock) const {
+  void OutputField::put(adios2::IO&      io,
+                        adios2::Engine&  writer,
+                        Meshblock<D, S>& mblock) const {
     if (is_field() || is_gr_aux_field() || is_vpotential()) {
       for (std::size_t i { 0 }; i < address.size(); ++i) {
-        PutField<D, 6>(io, writer, name(i), mblock.bckp, address[i]);
+        PutField<D, 6>(io, writer, name(i), mblock.bckp, address[i], ghosts);
       }
-    } else if (is_current() || is_moment()) {
+    } else if (is_current() || is_moment() || is_divergence()) {
       for (std::size_t i { 0 }; i < address.size(); ++i) {
-        PutField<D, 3>(io, writer, name(i), mblock.buff, address[i]);
+        PutField<D, 3>(io, writer, name(i), mblock.buff, address[i], ghosts);
       }
     }
   }
 #endif
 
-}    // namespace ntt
+} // namespace ntt

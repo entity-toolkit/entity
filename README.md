@@ -5,6 +5,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 ## Dev team (alphabetical)
 
+💁‍♂️ __Alexander Chernoglazov__ {[@SChernoglazov](https://github.com/SChernoglazov): PIC}
+
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
 
 🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
@@ -38,8 +40,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
     - [ ]  Radiation (synchrotron/IC)
     - [ ]  QED
   - [ ]  MPI
-    - [ ]  restructure meshblocks
-    - [ ]  rewrite fieldsolvers (addressing + ranges)
+    - [x]  restructure meshblocks
+    - [x]  rewrite fieldsolvers (addressing + ranges)
 
 
 * SR (minkowski)
@@ -84,7 +86,6 @@ Tests are automatically run when on pull requests to the `master` branch.
 
 1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
 2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
-3. [`fmt`](https://github.com/fmtlib/fmt): for string formatting
 
 ## Dependencies
 

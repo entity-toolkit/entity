@@ -89,7 +89,7 @@ const auto default_input {
 };
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     ntt::CommandLineArguments cl_args;
     cl_args.readCommandLineArguments(argc, argv);
@@ -112,7 +112,6 @@ auto main(int argc, char* argv[]) -> int {
     {
       const auto extent = params.extent();
 
-      sim.Initialize();
       sim.ResetSimulation();
       using namespace ntt;
       const real_t sx1 = extent[1] - extent[0];
@@ -136,10 +135,10 @@ auto main(int argc, char* argv[]) -> int {
 
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }

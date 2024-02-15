@@ -3,7 +3,6 @@
 
 #include "wrapper.h"
 
-#include "field_macros.h"
 #include "sim_params.h"
 
 #include "meshblock/meshblock.h"
@@ -19,24 +18,27 @@ namespace ntt {
     index_t                            j_min;
 
   public:
-    Generate2DGRFromVectorPotential_kernel(const SimulationParams&             params,
+    Generate2DGRFromVectorPotential_kernel(const SimulationParams& params,
                                            const Meshblock<Dim2, GRPICEngine>& mblock,
-                                           const real_t&                       eps)
-      : m_mblock { mblock },
-        m_v_pot { params, mblock },
-        m_eps { eps },
-        j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
+                                           const real_t& eps) :
+      m_mblock { mblock },
+      m_v_pot { params, mblock },
+      m_eps { eps },
+      j_min { static_cast<index_t>(m_mblock.i2_min()) } {}
 
     Inline void operator()(index_t i, index_t j) const {
-      real_t        i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
-      real_t        j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
+      real_t i_ { static_cast<real_t>(static_cast<int>(i) - N_GHOSTS) };
+      real_t j_ { static_cast<real_t>(static_cast<int>(j) - N_GHOSTS) };
 
       coord_t<Dim2> x0m { ZERO }, x0p { ZERO };
 
-      real_t        inv_sqrt_detH_ij { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ }) };
-      real_t        inv_sqrt_detH_ijP { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
-      real_t        inv_sqrt_detH_iPj { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
-      real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ + HALF }) };
+      real_t inv_sqrt_detH_ij { ONE / m_mblock.metric.sqrt_det_h({ i_, j_ }) };
+      real_t inv_sqrt_detH_ijP { ONE /
+                                 m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
+      real_t inv_sqrt_detH_iPj { ONE /
+                                 m_mblock.metric.sqrt_det_h({ i_ + HALF, j_ }) };
+      real_t inv_sqrt_detH_iPjP { ONE / m_mblock.metric.sqrt_det_h(
+                                          { i_ + HALF, j_ + HALF }) };
       real_t sqrt_detH_ij { m_mblock.metric.sqrt_det_h({ i_, j_ }) };
       real_t sqrt_detH_ijP { m_mblock.metric.sqrt_det_h({ i_, j_ + HALF }) };
       real_t alpha_ij { m_mblock.metric.alpha({ i_, j_ }) };
@@ -56,8 +58,10 @@ namespace ntt {
       x0p[1] = j_ + HALF + HALF * m_eps;
 
       real_t E2d { (m_v_pot.A_x0(x0p) - m_v_pot.A_x0(x0m)) / m_eps };
-      real_t B1u { (m_v_pot.A_x3(x0p) - m_v_pot.A_x3(x0m)) * inv_sqrt_detH_ijP / m_eps };
-      real_t B3_aux { -(m_v_pot.A_x1(x0p) - m_v_pot.A_x1(x0m)) * inv_sqrt_detH_ijP / m_eps };
+      real_t B1u { (m_v_pot.A_x3(x0p) - m_v_pot.A_x3(x0m)) * inv_sqrt_detH_ijP /
+                   m_eps };
+      real_t B3_aux { -(m_v_pot.A_x1(x0p) - m_v_pot.A_x1(x0m)) *
+                      inv_sqrt_detH_ijP / m_eps };
 
       x0m[0] = i_ + HALF - HALF * m_eps;
       x0m[1] = j_;
@@ -77,7 +81,8 @@ namespace ntt {
       x0p[0] = i_ + HALF;
       x0p[1] = j_ + HALF + HALF * m_eps;
 
-      real_t B3u { -(m_v_pot.A_x1(x0p) - m_v_pot.A_x1(x0m)) * inv_sqrt_detH_iPjP / m_eps };
+      real_t B3u { -(m_v_pot.A_x1(x0p) - m_v_pot.A_x1(x0m)) *
+                   inv_sqrt_detH_iPjP / m_eps };
 
       x0m[0] = i_ - HALF * m_eps;
       x0m[1] = j_;
@@ -107,14 +112,14 @@ namespace ntt {
       } else {
         D3u = h33_ij * D3d + h13_ij * D1d;
       }
-      BX1(i, j) = B1u;
-      BX2(i, j) = B2u;
-      BX3(i, j) = B3u;
-      DX1(i, j) = D1u;
-      DX2(i, j) = D2u;
-      DX3(i, j) = D3u;
+      m_mblock.em(i, j, em::bx1) = B1u;
+      m_mblock.em(i, j, em::bx2) = B2u;
+      m_mblock.em(i, j, em::bx3) = B3u;
+      m_mblock.em(i, j, em::dx1) = D1u;
+      m_mblock.em(i, j, em::dx2) = D2u;
+      m_mblock.em(i, j, em::dx3) = D3u;
     }
   };
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_GRPIC_GENERATE_HPP
+#endif // FRAMEWORK_GRPIC_GENERATE_HPP

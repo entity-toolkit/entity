@@ -10,6 +10,7 @@
 
 namespace ntt {
   struct OutputPositions_t {};
+
   struct OutputVelocities_t {};
 
   template <Dimension D, SimulationEngine S>
@@ -25,42 +26,55 @@ namespace ntt {
                                  const Particles<D, S>& particles,
                                  array_t<real_t*>&      buffer,
                                  const std::size_t&     stride,
-                                 const short&           component)
-      : m_mblock(mblock),
-        m_particles(particles),
-        m_buffer(buffer),
-        m_stride(stride),
-        m_component(component) {}
+                                 const short&           component) :
+      m_mblock(mblock),
+      m_particles(particles),
+      m_buffer(buffer),
+      m_stride(stride),
+      m_component(component) {}
 
-#ifdef MINKOWSKI_METRIC
-    Inline void operator()(const OutputPositions_t&, index_t p) const {
-      coord_t<D> xcode { ZERO }, xph { ZERO };
-      if (m_component == 0) {
-        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-      } else if (m_component == 1) {
-        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-      } else if (m_component == 2) {
-        xcode[2] = get_prtl_x3(m_particles, p * m_stride);
-      }
-      m_mblock.metric.x_Code2Cart(xcode, xph);
-      m_buffer(p) = xph[m_component];
-    }
-
-    Inline void operator()(const OutputVelocities_t&, index_t p) const {
-      if (m_component == 0) {
-        m_buffer(p) = m_particles.ux1(p * m_stride);
-      } else if (m_component == 1) {
-        m_buffer(p) = m_particles.ux2(p * m_stride);
-      } else if (m_component == 2) {
-        m_buffer(p) = m_particles.ux3(p * m_stride);
-      }
-    }
-#else
-    // defined below
-    Inline void operator()(const OutputVelocities_t&, index_t p) const {}
-    Inline void operator()(const OutputPositions_t&, index_t p) const {}
-#endif
+    Inline auto operator()(const OutputPositions_t&, index_t) const -> void;
+    Inline auto operator()(const OutputVelocities_t&, index_t) const -> void;
   };
+
+  // default implementation
+  template <Dimension D, SimulationEngine S>
+  Inline auto PreparePrtlQuantities_kernel<D, S>::operator()(
+    const OutputPositions_t&,
+    index_t p) const -> void {
+    coord_t<PrtlCoordD> xcode { ZERO }, xph { ZERO };
+    const int           xcodeSize = sizeof(xcode) / sizeof(xcode[0]);
+    if (m_component == 0) {
+      if (xcodeSize > 0) {
+        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+        xph[0]   = m_mblock.metric.x1_Code2Phys(xcode[0]);
+      }
+    } else if (m_component == 1) {
+      if (xcodeSize > 1) {
+        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+        xph[1]   = m_mblock.metric.x2_Code2Phys(xcode[1]);
+      }
+    } else if (m_component == 2) {
+      if (xcodeSize > 2) {
+        xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+        xph[2]   = m_mblock.metric.x3_Code2Phys(xcode[2]);
+      }
+    }
+    m_buffer(p) = xph[m_component];
+  }
+
+  template <Dimension D, SimulationEngine S>
+  Inline auto PreparePrtlQuantities_kernel<D, S>::operator()(
+    const OutputVelocities_t&,
+    index_t p) const -> void {
+    if (m_component == 0) {
+      m_buffer(p) = m_particles.ux1(p * m_stride);
+    } else if (m_component == 1) {
+      m_buffer(p) = m_particles.ux2(p * m_stride);
+    } else if (m_component == 2) {
+      m_buffer(p) = m_particles.ux3(p * m_stride);
+    }
+  }
 
 #ifndef MINKOWSKI_METRIC
 
@@ -68,47 +82,46 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, PICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
-    if (m_component == 2) {
-      m_buffer(p) = m_particles.phi(p);
-    } else {
-      coord_t<Dim2> xcode { ZERO }, xph { ZERO };
-      if (m_component == 0) {
-        xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-      } else if (m_component == 1) {
-        xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-      }
-      m_mblock.metric.x_Code2Sph(xcode, xph);
-      m_buffer(p) = xph[m_component];
-    }
+    const OutputPositions_t&,
+    index_t p) const {
+    coord_t<Dim3> xcode { ZERO }, xph { ZERO };
+    xcode[0]    = get_prtl_x1(m_particles, p * m_stride);
+    xcode[1]    = get_prtl_x2(m_particles, p * m_stride);
+    xcode[2]    = m_particles.phi(p * m_stride);
+    xph[0]      = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]      = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]      = m_mblock.metric.x3_Code2Sph(xcode[2]);
+    m_buffer(p) = xph[m_component];
   }
 
   template <>
-  Inline void PreparePrtlQuantities_kernel<Dim3, PICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
+  Inline void PreparePrtlQuantities_kernel<Dim2, SANDBOXEngine>::operator()(
+    const OutputPositions_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO }, xph { ZERO };
-    if (m_component == 0) {
-      xcode[0] = get_prtl_x1(m_particles, p * m_stride);
-    } else if (m_component == 1) {
-      xcode[1] = get_prtl_x2(m_particles, p * m_stride);
-    } else if (m_component == 2) {
-      xcode[2] = get_prtl_x3(m_particles, p * m_stride);
-    }
-    m_mblock.metric.x_Code2Sph(xcode, xph);
+    xcode[0]    = get_prtl_x1(m_particles, p * m_stride);
+    xcode[1]    = get_prtl_x2(m_particles, p * m_stride);
+    xcode[2]    = m_particles.phi(p * m_stride);
+    xph[0]      = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]      = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]      = m_mblock.metric.x3_Code2Sph(xcode[2]);
     m_buffer(p) = xph[m_component];
   }
 
   /* ----------------------------- PIC velocities ----------------------------- */
+  #if defined(PIC_ENGINE)
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim1, PICEngine>::operator()(
-    const OutputVelocities_t&, index_t) const {
+    const OutputVelocities_t&,
+    index_t) const {
     NTTError("not applicable");
   }
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, PICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO };
     vec_t<Dim3>   vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -124,7 +137,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, PICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO };
     vec_t<Dim3>   vhat { ZERO };
     xcode[0] = get_prtl_x1(m_particles, p * m_stride);
@@ -137,35 +151,68 @@ namespace ntt {
                                 vhat);
     m_buffer(p) = vhat[m_component];
   }
+  #elif defined(SANDBOX_ENGINE)
+
+  template <>
+  Inline void PreparePrtlQuantities_kernel<Dim2, SANDBOXEngine>::operator()(
+    const OutputVelocities_t&,
+    index_t p) const {
+    coord_t<Dim3> xcode { ZERO };
+    vec_t<Dim3>   vhat { ZERO };
+    xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+    xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+    xcode[2] = m_particles.phi(p * m_stride);
+    m_mblock.metric.v3_Cart2Hat(xcode,
+                                { m_particles.ux1(p * m_stride),
+                                  m_particles.ux2(p * m_stride),
+                                  m_particles.ux3(p * m_stride) },
+                                vhat);
+    m_buffer(p) = vhat[m_component];
+  }
+
+  template <>
+  Inline void PreparePrtlQuantities_kernel<Dim3, SANDBOXEngine>::operator()(
+    const OutputVelocities_t&,
+    index_t p) const {
+    coord_t<Dim3> xcode { ZERO };
+    vec_t<Dim3>   vhat { ZERO };
+    xcode[0] = get_prtl_x1(m_particles, p * m_stride);
+    xcode[1] = get_prtl_x2(m_particles, p * m_stride);
+    xcode[2] = get_prtl_x3(m_particles, p * m_stride);
+    m_mblock.metric.v3_Cart2Hat(xcode,
+                                { m_particles.ux1(p * m_stride),
+                                  m_particles.ux2(p * m_stride),
+                                  m_particles.ux3(p * m_stride) },
+                                vhat);
+    m_buffer(p) = vhat[m_component];
+  }
+  #elif defined(GRPIC_ENGINE)
 
   /* ----------------------------- GRPIC positions ---------------------------- */
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
-    if (m_component == 2) {
-      // phi is at (n)
-      m_buffer(p) = m_particles.phi(p);
-    } else {
-      // x is taken at (n - 1/2)
-      coord_t<Dim2> xcode { ZERO }, xcode_prev { ZERO }, xph { ZERO };
-      if (m_component == 0) {
-        xcode[0]      = get_prtl_x1(m_particles, p * m_stride);
-        xcode_prev[0] = get_prtl_x1_prev(m_particles, p * m_stride);
-        xcode[0]      = HALF * (xcode[0] + xcode_prev[0]);
-      } else if (m_component == 1) {
-        xcode[1]      = get_prtl_x2(m_particles, p * m_stride);
-        xcode_prev[1] = get_prtl_x2_prev(m_particles, p * m_stride);
-        xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
-      }
-      m_mblock.metric.x_Code2Sph(xcode, xph);
-      m_buffer(p) = xph[m_component];
-    }
+    const OutputPositions_t&,
+    index_t p) const {
+    // x is taken at (n - 1/2)
+    coord_t<Dim3> xcode { ZERO }, xcode_prev { ZERO }, xph { ZERO };
+    xcode[0]      = get_prtl_x1(m_particles, p * m_stride);
+    xcode_prev[0] = get_prtl_x1_prev(m_particles, p * m_stride);
+    xcode[0]      = HALF * (xcode[0] + xcode_prev[0]);
+    xcode[1]      = get_prtl_x2(m_particles, p * m_stride);
+    xcode_prev[1] = get_prtl_x2_prev(m_particles, p * m_stride);
+    xcode[1]      = HALF * (xcode[1] + xcode_prev[1]);
+    xcode[2]      = m_particles.phi(p * m_stride);
+    xph[0]        = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]        = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]        = m_mblock.metric.x3_Code2Sph(xcode[2]);
+    m_buffer(p)   = xph[m_component];
   }
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, GRPICEngine>::operator()(
-    const OutputPositions_t&, index_t p) const {
+    const OutputPositions_t&,
+    index_t p) const {
     coord_t<Dim3> xcode { ZERO }, xcode_prev { ZERO }, xph { ZERO };
     // x is taken at (n - 1/2)
     if (m_component == 0) {
@@ -181,7 +228,9 @@ namespace ntt {
       xcode_prev[2] = get_prtl_x3_prev(m_particles, p * m_stride);
       xcode[2]      = HALF * (xcode[2] + xcode_prev[2]);
     }
-    m_mblock.metric.x_Code2Sph(xcode, xph);
+    xph[0]      = m_mblock.metric.x1_Code2Sph(xcode[0]);
+    xph[1]      = m_mblock.metric.x2_Code2Sph(xcode[1]);
+    xph[2]      = m_mblock.metric.x3_Code2Sph(xcode[2]);
     m_buffer(p) = xph[m_component];
   }
 
@@ -189,7 +238,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim2, GRPICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     // velocity should be at (n - 1/2)
     // velocity at (n - 1/2)
     coord_t<Dim2> xcode { ZERO }, xcode_prev { ZERO };
@@ -211,7 +261,8 @@ namespace ntt {
 
   template <>
   Inline void PreparePrtlQuantities_kernel<Dim3, GRPICEngine>::operator()(
-    const OutputVelocities_t&, index_t p) const {
+    const OutputVelocities_t&,
+    index_t p) const {
     // velocity should be at (n - 1/2)
     coord_t<Dim3> xcode { ZERO }, xcode_prev { ZERO };
     vec_t<Dim3>   vcov_sph { ZERO };
@@ -232,9 +283,10 @@ namespace ntt {
                                    vcov_sph);
     m_buffer(p) = vcov_sph[m_component];
   }
+  #endif
 
 #endif
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_IO_OUTPUT_PRTLS_H
+#endif // FRAMEWORK_IO_OUTPUT_PRTLS_H

@@ -20,17 +20,18 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t r0, h;
-    const real_t chi_min, eta_min, phi_min;
-    const real_t dchi, deta, dphi;
-    const real_t dchi_inv, deta_inv, dphi_inv;
-    const real_t dchi_sqr, deta_sqr, dphi_sqr;
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
     const real_t rh_, rg_, a, a_sqr;
 
-    Inline auto  Delta(const real_t& r) const -> real_t {
+    const real_t r0, h;
+    const real_t chi_min, eta_min, phi_min;
+    const real_t dchi, deta, dphi;
+    const real_t dchi_inv, deta_inv, dphi_inv;
+    const real_t dchi_sqr, deta_sqr, dphi_sqr;
+
+    Inline auto Delta(const real_t& r) const -> real_t {
       return SQR(r) - TWO * r + a_sqr;
     }
 
@@ -47,40 +48,47 @@ namespace ntt {
     }
 
   public:
-    const real_t dx_min;
+    constexpr static Dimension PrtlD = D;
 
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*             params)
-      : MetricBase<D> { "qkerr_schild", resolution, extent },
-        rh_ { params[5] },
-        rg_ { ONE },
-        a(params[4]),
-        a_sqr { SQR(a) },
-        r0(params[0]),
-        h(params[1]),
-        chi_min { math::log(this->x1_min - r0) },
-        eta_min { ZERO },
-        phi_min { ZERO },
-        dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
-        deta { static_cast<real_t>(constant::PI / this->nx2) },
-        dphi { static_cast<real_t>(constant::TWO_PI / this->nx3) },
-        dchi_inv { ONE / dchi },
-        deta_inv { ONE / deta },
-        dphi_inv { ONE / dphi },
-        dchi_sqr { SQR(dchi) },
-        deta_sqr { SQR(deta) },
-        dphi_sqr { SQR(dphi) },
-        dx_min { findSmallestCell() } {}
+           const real_t*             params) :
+      MetricBase<D> { "qkerr_schild", resolution, extent },
+      rh_ { params[5] },
+      rg_ { ONE },
+      a(params[4]),
+      a_sqr { SQR(a) },
+      r0(params[0]),
+      h(params[1]),
+      chi_min { math::log(this->x1_min - r0) },
+      eta_min { theta2eta(this->x2_min) },
+      phi_min { this->x3_min },
+      dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
+      deta { (theta2eta(this->x2_max) - eta_min) / this->nx2 },
+      dphi { (this->x3_max - phi_min) / this->nx3 },
+      dchi_inv { ONE / dchi },
+      deta_inv { ONE / deta },
+      dphi_inv { ONE / dphi },
+      dchi_sqr { SQR(dchi) },
+      deta_sqr { SQR(deta) },
+      dphi_sqr { SQR(dphi) } {
+      this->set_dxMin(find_dxMin());
+    }
+
     ~Metric() = default;
 
-    [[nodiscard]] Inline auto spin() const -> const real_t& {
+    [[nodiscard]]
+    Inline auto spin() const -> const real_t& {
       return a;
     }
-    [[nodiscard]] Inline auto rhorizon() const -> const real_t& {
+
+    [[nodiscard]]
+    Inline auto rhorizon() const -> const real_t& {
       return rh_;
     }
-    [[nodiscard]] Inline auto rg() const -> const real_t& {
+
+    [[nodiscard]]
+    Inline auto rg() const -> const real_t& {
       return rg_;
     }
 
@@ -88,7 +96,8 @@ namespace ntt {
      * Minimum effective cell size for a given metric (in physical units).
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         real_t min_dx { -ONE };
         for (int i { 0 }; i < this->nx1; ++i) {
@@ -96,9 +105,9 @@ namespace ntt {
             real_t        i_ { static_cast<real_t>(i) + HALF };
             real_t        j_ { static_cast<real_t>(j) + HALF };
             coord_t<Dim2> ij { i_, j_ };
-            real_t        dx = ONE
-                        / (this->alpha(ij) * std::sqrt(this->h11(ij) + this->h22(ij))
-                           + this->beta1(ij));
+            real_t        dx = ONE / (this->alpha(ij) *
+                                 std::sqrt(this->h11(ij) + this->h22(ij)) +
+                               this->beta1(ij));
             if ((min_dx > dx) || (min_dx < 0.0)) {
               min_dx = dx;
             }
@@ -164,9 +173,11 @@ namespace ntt {
       const real_t r { r0 + math::exp(chi) };
       const real_t theta { eta2theta(xi[1] * deta + eta_min) };
       if constexpr (D == Dim2) {
-        return -dchi * math::exp(chi) * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
+        return -dchi * math::exp(chi) * a * (ONE + z(r, theta)) *
+               SQR(math::sin(theta));
       } else {
-        return -dchi * math::exp(chi) * dphi * a * (ONE + z(r, theta)) * SQR(math::sin(theta));
+        return -dchi * math::exp(chi) * dphi * a * (ONE + z(r, theta)) *
+               SQR(math::sin(theta));
       }
     }
 
@@ -181,7 +192,8 @@ namespace ntt {
       const real_t r { r0 + math::exp(chi) };
       const real_t theta { eta2theta(xi[1] * deta + eta_min) };
       const real_t Sigma_ { Sigma(r, theta) };
-      return (math::exp(-TWO * chi) / dchi_sqr) * A(r, theta) / (Sigma_ * (Sigma_ + TWO * r));
+      return (math::exp(-TWO * chi) / dchi_sqr) * A(r, theta) /
+             (Sigma_ * (Sigma_ + TWO * r));
     }
 
     /**
@@ -268,11 +280,11 @@ namespace ntt {
       const real_t eta { xi[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
       if constexpr (D == Dim2) {
-        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * Sigma(r, theta)
-               * math::sin(theta) * math::sqrt(ONE + z(r, theta));
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * Sigma(r, theta) *
+               math::sin(theta) * math::sqrt(ONE + z(r, theta));
       } else {
-        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * dphi * Sigma(r, theta)
-               * math::sin(theta) * math::sqrt(ONE + z(r, theta));
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * dphi *
+               Sigma(r, theta) * math::sin(theta) * math::sqrt(ONE + z(r, theta));
       }
     }
 
@@ -288,21 +300,12 @@ namespace ntt {
       const real_t eta { xi[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
       if constexpr (D == Dim2) {
-        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * Sigma(r, theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta *
+               Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
       } else {
-        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * dphi * Sigma(r, theta)
-               * math::sqrt(ONE + z(r, theta));
+        return dchi * math::exp(chi) * dtheta_deta(eta) * deta * dphi *
+               Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
       }
-    }
-
-    /**
-     * Fiducial minimum cell volume.
-     *
-     * @returns Minimum cell volume of the grid [code units].
-     */
-    Inline auto min_cell_volume() const -> real_t {
-      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
     }
 
     /**
@@ -316,16 +319,20 @@ namespace ntt {
       real_t chi { x1 * dchi + chi_min };
       real_t r { r0 + math::exp(chi) };
       real_t del_theta { eta2theta(HALF * deta + eta_min) };
-      return dchi * math::exp(chi) * (SQR(r) + a_sqr)
-             * math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) * (ONE - math::cos(del_theta));
+      return dchi * math::exp(chi) * (SQR(r) + a_sqr) *
+             math::sqrt(ONE + TWO * r / (SQR(r) + a_sqr)) *
+             (ONE - math::cos(del_theta));
     }
+
 /**
  * @note Since kokkos disallows virtual inheritance, we have to
  *       include vector transformations for a non-diagonal metric here
  *       (and not in the base class).
  */
 #include "metrics_utils/angle_stretch_forQSph.h"
+#include "metrics_utils/param_forGR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
+#include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forQSph.h"
 
 #include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
@@ -333,6 +340,6 @@ namespace ntt {
 #include "metrics_utils/v3_phys_cov_cntrv_forQSph.h"
   };
 
-}    // namespace ntt
+} // namespace ntt
 
 #endif

@@ -11,15 +11,18 @@ namespace ntt {
   template <class KeyViewType>
   struct BinBool {
     BinBool() = default;
+
     template <class ViewType>
     Inline auto bin(ViewType& keys, const int& i) const -> int {
       return keys(i) ? 1 : 0;
     }
+
     Inline auto max_bins() const -> int {
       return 2;
     }
+
     template <class ViewType, typename iT1, typename iT2>
-    Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
+    Inline auto operator()(ViewType&, iT1&, iT2&) const -> bool {
       return false;
     }
   };
@@ -27,15 +30,18 @@ namespace ntt {
   template <class KeyViewType>
   struct BinTag {
     BinTag(const int& max_bins) : m_max_bins { max_bins } {}
+
     template <class ViewType>
     Inline auto bin(ViewType& keys, const int& i) const -> int {
       return (keys(i) == 0) ? 1 : ((keys(i) == 1) ? 0 : keys(i));
     }
+
     Inline auto max_bins() const -> int {
       return m_max_bins;
     }
+
     template <class ViewType, typename iT1, typename iT2>
-    Inline auto operator()(ViewType& keys, iT1& i1, iT2& i2) const -> bool {
+    Inline auto operator()(ViewType&, iT1&, iT2&) const -> bool {
       return false;
     }
 
@@ -71,6 +77,28 @@ namespace ntt {
     return { std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
              std::sregex_token_iterator() };
   }
-}    // namespace ntt
+
+  /**
+   * @brief Compute a tensor product of a list of vectors
+   * @param list List of vectors
+   * @return Tensor product of list
+   */
+  template <typename T>
+  inline auto TensorProduct(const std::vector<std::vector<T>> list)
+    -> std::vector<std::vector<T>> {
+    std::vector<std::vector<unsigned int>> result = { {} };
+    for (const auto& sublist : list) {
+      std::vector<std::vector<unsigned int>> temp;
+      for (const auto& element : sublist) {
+        for (const auto& r : result) {
+          temp.push_back(r);
+          temp.back().push_back(element);
+        }
+      }
+      result = temp;
+    }
+    return result;
+  }
+} // namespace ntt
 
 #endif

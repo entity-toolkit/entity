@@ -120,17 +120,6 @@ PrintChoices("Precision"
   1
   36
 )
-PrintChoices("External force"
-  "ext_force"
-  "${ON_OFF_VALUES}"
-  ${ext_force}
-  ${default_ext_force}
-  "${Green}"
-  EXT_FORCE_REPORT
-  0
-  36
-)
-
 PrintChoices("Output"
   "output"
   "${ON_OFF_VALUES}"
@@ -150,6 +139,16 @@ PrintChoices("GUI"
   GUI_REPORT
   0
   36
+)
+PrintChoices("MPI"
+  "mpi"
+  "${ON_OFF_VALUES}"
+  ${mpi}
+  OFF
+  "${Green}"
+  MPI_REPORT
+  0
+  42
 )
 PrintChoices("Debug mode"
   "DEBUG"
@@ -268,8 +267,6 @@ if(${PGEN_FOUND})
   message("  ${PGEN_REPORT}\n")
 endif()
 
-message("  ${EXT_FORCE_REPORT}\n")
-
 message("  ${PRECISION_REPORT}\n")
 message("  ${OUTPUT_REPORT}\n")
 message("  ${GUI_REPORT}\n")
@@ -287,6 +284,8 @@ message("  ${CXX_COMPILER_REPORT}\n")
 if(NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
   message("  ${CUDA_COMPILER_REPORT}\n")
 endif()
+
+message("  ${MPI_REPORT}\n")
 
 message("  ${DEBUG_REPORT}\n")
 

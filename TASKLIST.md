@@ -10,7 +10,7 @@
 - [x] refine output
 - [ ] fix bugs in `nttiny`
   - [x] delete plot removes all labels
-  - [ ] add particles to `nttiny`
+  - [x] add particles to `nttiny`
   - [x] state should also save skip interval
   - [ ] (?) add autosave state
   - [x] why last cell does not work?
@@ -24,6 +24,19 @@
 - [ ] add moments for GR
 - [ ] add Maxwellian for GR
 
+# v1.0
+
+- [x] MPI configuration in cmake
+- [x] MPI domain decomposition
+- [ ] MPI communications
+  - [x] fields
+  - [ ] particles
+  - [x] currents
+- [x] MPI-aware output
+- [ ] MPI-aware diagnostics
+- [ ] custom boundary conditions for particles and fields
+- [ ] better organization of problem generators
+
 ### Short term things to do/fix
 
   - [x] routine for easy side/corner range selection
@@ -32,6 +45,7 @@
   - [x] add a simple current filtering
   - [x] field mirrors
   - [x] unit tests + implement with github actions
+  - [x] deployment scripts
 
 ### Intermediate term things to do/fix
 
@@ -41,3 +55,12 @@
   - [x] deposition near the axes
   - [x] filtering near the axes
 
+### Readability/modulability improvements
+
+  - [ ] make kernels accept views instead of meshblocks
+
+### Performance improvements to try
+
+- [ ] removing temporary variables in interpolation
+- [ ] passing by value vs const ref in metric
+- [ ] return physical coords one-by-one instead of by passing full vector

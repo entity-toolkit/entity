@@ -18,37 +18,38 @@ namespace ntt {
   template <Dimension D>
   class Metric : public MetricBase<D> {
   private:
-    const real_t r0, h, chi_min, phi_min, eta_min;
+    const real_t r0, h, chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_inv, deta_inv, dphi_inv;
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
-    const real_t dx_min;
+    constexpr static Dimension PrtlD = Dim3;
 
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*             params)
-      : MetricBase<D> { "qspherical", resolution, extent },
-        r0 { params[0] },
-        h { params[1] },
-        chi_min { math::log(this->x1_min - r0) },
-        eta_min { ZERO },
-        phi_min { ZERO },
-        dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
-        deta { static_cast<real_t>(constant::PI) / this->nx2 },
-        dphi { static_cast<real_t>(constant::TWO_PI) / this->nx3 },
-        dchi_inv { ONE / dchi },
-        deta_inv { ONE / deta },
-        dphi_inv { ONE / dphi },
-        dchi_sqr { SQR(dchi) },
-        deta_sqr { SQR(deta) },
-        dphi_sqr { SQR(dphi) },
-        dx_min { findSmallestCell() } {
+           const real_t*             params) :
+      MetricBase<D> { "qspherical", resolution, extent },
+      r0 { params[0] },
+      h { params[1] },
+      chi_min { math::log(this->x1_min - r0) },
+      eta_min { theta2eta(this->x2_min) },
+      phi_min { this->x3_min },
+      dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
+      deta { (theta2eta(this->x2_max) - eta_min) / this->nx2 },
+      dphi { (this->x3_max - this->x3_min) / this->nx3 },
+      dchi_inv { ONE / dchi },
+      deta_inv { ONE / deta },
+      dphi_inv { ONE / dphi },
+      dchi_sqr { SQR(dchi) },
+      deta_sqr { SQR(deta) },
+      dphi_sqr { SQR(dphi) } {
+      this->set_dxMin(find_dxMin());
       if constexpr ((D == Dim1) || (D == Dim3)) {
         NTTHostError("Qspherical can only be defined for 2D");
       }
     }
+
     ~Metric() = default;
 
     /**
@@ -56,7 +57,8 @@ namespace ntt {
      *
      * @returns Minimum cell size of the grid [physical units].
      */
-    auto findSmallestCell() const -> real_t {
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
       if constexpr (D == Dim2) {
         real_t min_dx { -1.0 };
         for (int i { 0 }; i < this->nx1; ++i) {
@@ -86,13 +88,13 @@ namespace ntt {
      */
     Inline auto h_11(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        return dchi_sqr * math::exp(2.0 * chi);
+        return dchi_sqr * math::exp(TWO * (x[0] * dchi + chi_min));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
       }
     }
+
     /**
      * Compute metric component 22.
      *
@@ -101,16 +103,14 @@ namespace ntt {
      */
     Inline auto h_22(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta };
-        real_t dtheta_deta_ { dtheta_deta(eta) };
-        return deta_sqr * SQR(dtheta_deta_) * r * r;
+        return deta_sqr * SQR(dtheta_deta(x[1] * deta + eta_min)) *
+               SQR(r0 + math::exp(x[0] * dchi + chi_min));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
       }
     }
+
     /**
      * Compute metric component 33.
      *
@@ -118,18 +118,18 @@ namespace ntt {
      * @returns h_33 (covariant, lower index) metric component.
      */
     Inline auto h_33(const coord_t<D>& x) const -> real_t {
-      if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta };
-        real_t theta { eta2theta(eta) };
-        real_t sin_theta { math::sin(theta) };
-        return r * r * sin_theta * sin_theta;
+      if constexpr (D == Dim2) {
+        return SQR((r0 + math::exp(x[0] * dchi + chi_min)) *
+                   math::sin(eta2theta(x[1] * deta + eta_min)));
+      } else if constexpr (D == Dim3) {
+        return dphi_sqr * SQR((r0 + math::exp(x[0] * dchi + chi_min)) *
+                              math::sin(eta2theta(x[1] * deta + eta_min)));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
       }
     }
+
     /**
      * Compute the square root of the determinant of h-matrix.
      *
@@ -137,26 +137,36 @@ namespace ntt {
      * @returns sqrt(det(h_ij)).
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
-      if constexpr (D != Dim1) {
-        real_t chi { x[0] * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t eta { x[1] * deta };
-        real_t theta { eta2theta(eta) };
-        real_t sin_theta { math::sin(theta) };
-        real_t dtheta_deta_ { dtheta_deta(eta) };
-        return dchi * deta * math::exp(chi) * r * r * sin_theta * dtheta_deta_;
+      if constexpr (D == Dim2) {
+        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
+               SQR(r0 + exp_chi) * math::sin(eta2theta(x[1] * deta + eta_min));
+      } else if constexpr (D == Dim3) {
+        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        return dchi * deta * dphi * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
+               SQR(r0 + exp_chi) * math::sin(eta2theta(x[1] * deta + eta_min));
+
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
       }
     }
+
     /**
-     * Compute the fiducial minimum cell volume.
+     * Square root of the determinant of h-matrix divided by sin(theta).
      *
-     * @returns Minimum cell volume of the grid [code units].
+     * @param x coordinate array in code units
+     * @returns sqrt(det(h))/sin(theta).
      */
-    Inline auto min_cell_volume() const -> real_t {
-      return math::pow(dx_min * math::sqrt(static_cast<real_t>(D)), static_cast<short>(D));
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      if constexpr (D != Dim1) {
+        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
+               SQR(r0 + exp_chi);
+      } else {
+        NTTError("1D qspherical not available");
+        return ZERO;
+      }
     }
 
     /**
@@ -167,11 +177,9 @@ namespace ntt {
      */
     Inline auto polar_area(const real_t& x1) const -> real_t {
       if constexpr (D != Dim1) {
-        real_t chi { x1 * dchi + chi_min };
-        real_t r { r0 + math::exp(chi) };
-        real_t del_eta { HALF * deta };
-        real_t del_theta { eta2theta(del_eta) };
-        return dchi * math::exp(chi) * r * r * (ONE - math::cos(del_theta));
+        real_t exp_chi { math::exp(x1 * dchi + chi_min) };
+        return dchi * exp_chi * SQR(r0 + exp_chi) *
+               (ONE - math::cos(eta2theta(HALF * deta)));
       } else {
         NTTError("1D qspherical not available");
         return ZERO;
@@ -184,13 +192,15 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metrics_utils/angle_stretch_forQSph.h"
+#include "metrics_utils/param_forSR.h"
 #include "metrics_utils/x_code_cart_forGSph.h"
+#include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forQSph.h"
 
 #include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
 #include "metrics_utils/v3_hat_cntrv_cov_forSR.h"
 #include "metrics_utils/v3_phys_cov_cntrv_forQSph.h"
   };
-}    // namespace ntt
+} // namespace ntt
 
 #endif

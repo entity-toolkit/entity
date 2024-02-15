@@ -7,11 +7,16 @@
 #include "config.h"
 
 #include "definitions.h"
+#include "directions.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_Sort.hpp>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif // MPI_ENABLED
 
 #include <cstddef>
 #include <iomanip>
@@ -32,6 +37,18 @@ namespace ntt {
   template <typename T>
   using array_t = Kokkos::View<T, AccelMemSpace>;
 
+  template <short D>
+  using ndarray_t = typename std::conditional<
+    D == 1,
+    array_t<real_t*>,
+    typename std::conditional<
+      D == 2,
+      array_t<real_t**>,
+      typename std::conditional<
+        D == 3,
+        array_t<real_t***>,
+        typename std::conditional<D == 4, array_t<real_t****>, std::nullptr_t>::type>::type>::type>::type;
+
   // Array mirror alias of arbitrary type
   template <typename T>
   using array_mirror_t = typename array_t<T>::HostMirror;
@@ -48,8 +65,7 @@ namespace ntt {
     typename std::conditional<
       D == Dim2,
       array_t<real_t** [N]>,
-      typename std::conditional<D == Dim3, array_t<real_t*** [N]>, std::nullptr_t>::type>::type>::
-    type;
+      typename std::conditional<D == Dim3, array_t<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
 
   // D x N dimensional array (host memspace) for storing fields on ND hypercube
   template <Dimension D, int N>
@@ -60,11 +76,10 @@ namespace ntt {
   using scatter_ndfield_t = typename std::conditional<
     D == Dim1,
     scatter_array_t<real_t* [N]>,
-    typename std::conditional<D == Dim2,
-                              scatter_array_t<real_t** [N]>,
-                              typename std::conditional<D == Dim3,
-                                                        scatter_array_t<real_t*** [N]>,
-                                                        std::nullptr_t>::type>::type>::type;
+    typename std::conditional<
+      D == Dim2,
+      scatter_array_t<real_t** [N]>,
+      typename std::conditional<D == Dim3, scatter_array_t<real_t*** [N]>, std::nullptr_t>::type>::type>::type;
 
   // !TODO: this looks ugly, template it...
 
@@ -118,8 +133,8 @@ namespace ntt {
    * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
    */
   template <Dimension D>
-  auto CreateRangePolicy(const tuple_t<std::size_t, D>&, const tuple_t<std::size_t, D>&)
-    -> range_t<D>;
+  auto CreateRangePolicy(const tuple_t<std::size_t, D>&,
+                         const tuple_t<std::size_t, D>&) -> range_t<D>;
 
   /**
    * @brief Function template for generating ND Kokkos range policy on the host.
@@ -130,14 +145,29 @@ namespace ntt {
    * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the host execution space.
    */
   template <Dimension D>
-  auto CreateRangePolicyOnHost(const tuple_t<std::size_t, D>&, const tuple_t<std::size_t, D>&)
-    -> range_h_t<D>;
+  auto CreateRangePolicyOnHost(const tuple_t<std::size_t, D>&,
+                               const tuple_t<std::size_t, D>&) -> range_h_t<D>;
 
   /**
    * @brief Synchronize CPU/GPU before advancing.
+   * @param debug_only Only synchronize if `DEBUG` is defined (default: always sync).
    */
-  void WaitAndSynchronize();
+  void WaitAndSynchronize(bool debug_only = false);
 
-}    // namespace ntt
+  inline void GlobalInitialize(int argc, char* argv[]) {
+    Kokkos::initialize(argc, argv);
+#if defined(MPI_ENABLED)
+    MPI_Init(&argc, &argv);
+#endif // MPI_ENABLED
+  }
+
+  inline void GlobalFinalize() {
+#if defined(MPI_ENABLED)
+    MPI_Finalize();
+#endif // MPI_ENABLED
+    Kokkos::finalize();
+  }
+
+} // namespace ntt
 
 #endif

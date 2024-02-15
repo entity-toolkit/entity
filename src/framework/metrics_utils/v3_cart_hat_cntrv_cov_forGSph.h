@@ -1,15 +1,6 @@
 #ifndef FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
 #define FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
 
-#ifdef __INTELLISENSE__
-#  pragma diag_suppress 1670
-#  pragma diag_suppress 864
-#  pragma diag_suppress 258
-#  pragma diag_suppress 77
-#  pragma diag_suppress 65
-#  pragma diag_suppress 20
-#endif
-
 /**
  * @brief Vector transformations for generalized spherical.
  * @implements v3: Cntrv -> Cart
@@ -30,15 +21,15 @@
 Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
                           const vec_t<Dim3>&   vi_cntrv,
                           vec_t<Dim3>&         vi_cart) const {
-  if constexpr (D == Dim2) {
-    vec_t<Dim3> vi_hat { ZERO };
+  vec_t<Dim3> vi_hat { ZERO };
+  if constexpr (D == Dim1) {
+    this->v3_Cntrv2Hat({ xi[0] }, vi_cntrv, vi_hat);
+  } else if constexpr (D == Dim2) {
     this->v3_Cntrv2Hat({ xi[0], xi[1] }, vi_cntrv, vi_hat);
-    this->v3_Hat2Cart(xi, vi_hat, vi_cart);
-  } else if constexpr (D == Dim3) {
-    vec_t<Dim3> vi_hat { ZERO };
+  } else {
     this->v3_Cntrv2Hat(xi, vi_cntrv, vi_hat);
-    this->v3_Hat2Cart(xi, vi_hat, vi_cart);
   }
+  this->v3_Hat2Cart(xi, vi_hat, vi_cart);
 }
 
 /**
@@ -51,13 +42,13 @@ Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
 Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
                           const vec_t<Dim3>&   vi_cart,
                           vec_t<Dim3>&         vi_cntrv) const {
-  if constexpr (D == Dim2) {
-    vec_t<Dim3> vi_hat { ZERO };
-    this->v3_Cart2Hat(xi, vi_cart, vi_hat);
+  vec_t<Dim3> vi_hat { ZERO };
+  this->v3_Cart2Hat(xi, vi_cart, vi_hat);
+  if constexpr (D == Dim1) {
+    this->v3_Hat2Cntrv({ xi[0] }, vi_hat, vi_cntrv);
+  } else if constexpr (D == Dim2) {
     this->v3_Hat2Cntrv({ xi[0], xi[1] }, vi_hat, vi_cntrv);
-  } else if constexpr (D == Dim3) {
-    vec_t<Dim3> vi_hat { ZERO };
-    this->v3_Cart2Hat(xi, vi_cart, vi_hat);
+  } else {
     this->v3_Hat2Cntrv(xi, vi_hat, vi_cntrv);
   }
 }
@@ -73,7 +64,9 @@ Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cov,
                         vec_t<Dim3>&         vi_cart) const {
   vec_t<Dim3> vi_hat { ZERO };
-  if constexpr (D == Dim2) {
+  if constexpr (D == Dim1) {
+    this->v3_Cov2Hat({ xi[0] }, vi_cov, vi_hat);
+  } else if constexpr (D == Dim2) {
     this->v3_Cov2Hat({ xi[0], xi[1] }, vi_cov, vi_hat);
   } else {
     this->v3_Cov2Hat(xi, vi_cov, vi_hat);
@@ -93,7 +86,9 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
                         vec_t<Dim3>&         vi_cov) const {
   vec_t<Dim3> vi_hat { ZERO };
   this->v3_Cart2Hat(xi, vi_cart, vi_hat);
-  if constexpr (D == Dim2) {
+  if constexpr (D == Dim1) {
+    this->v3_Hat2Cov({ xi[0] }, vi_cov, vi_hat);
+  } else if constexpr (D == Dim2) {
     this->v3_Hat2Cov({ xi[0], xi[1] }, vi_hat, vi_cov);
   } else {
     this->v3_Hat2Cov(xi, vi_hat, vi_cov);
@@ -101,8 +96,8 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
 }
 
 /**
- * @brief Vector transformations from global Spherical (hatted) to global Cartesian basis and
- * back.
+ * @brief Vector transformations from global Spherical (hatted) to global
+ * Cartesian basis and back.
  *
  */
 
@@ -116,25 +111,17 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
 Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_hat,
                         vec_t<Dim3>&         vi_cart) const {
-  coord_t<Dim3> x_sph;
-  if constexpr (D == Dim2) {
-    coord_t<Dim2> x_sph_2d;
-    this->x_Code2Sph({ xi[0], xi[1] }, x_sph_2d);
-    x_sph[0] = x_sph_2d[0];
-    x_sph[1] = x_sph_2d[1];
-    x_sph[2] = xi[2];
-  } else if constexpr (D == Dim3) {
-    this->x_Code2Sph(xi, x_sph);
-  }
-  if constexpr (D != Dim1) {
-    vi_cart[0] = vi_hat[0] * math::sin(x_sph[1]) * math::cos(x_sph[2])
-                 + vi_hat[1] * math::cos(x_sph[1]) * math::cos(x_sph[2])
-                 - vi_hat[2] * math::sin(x_sph[2]);
-    vi_cart[1] = vi_hat[0] * math::sin(x_sph[1]) * math::sin(x_sph[2])
-                 + vi_hat[1] * math::cos(x_sph[1]) * math::sin(x_sph[2])
-                 + vi_hat[2] * math::cos(x_sph[2]);
-    vi_cart[2] = vi_hat[0] * math::cos(x_sph[1]) - vi_hat[1] * math::sin(x_sph[1]);
-  }
+  coord_t<Dim3> x_sph { ZERO };
+  x_sph[0]   = this->x1_Code2Sph(xi[0]);
+  x_sph[1]   = this->x2_Code2Sph(xi[1]);
+  x_sph[2]   = this->x3_Code2Sph(xi[2]);
+  vi_cart[0] = vi_hat[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]) +
+               vi_hat[1] * math::cos(x_sph[1]) * math::cos(x_sph[2]) -
+               vi_hat[2] * math::sin(x_sph[2]);
+  vi_cart[1] = vi_hat[0] * math::sin(x_sph[1]) * math::sin(x_sph[2]) +
+               vi_hat[1] * math::cos(x_sph[1]) * math::sin(x_sph[2]) +
+               vi_hat[2] * math::cos(x_sph[2]);
+  vi_cart[2] = vi_hat[0] * math::cos(x_sph[1]) - vi_hat[1] * math::sin(x_sph[1]);
 }
 
 /**
@@ -147,34 +134,17 @@ Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
 Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
                         const vec_t<Dim3>&   vi_cart,
                         vec_t<Dim3>&         vi_hat) const {
-  coord_t<Dim3> x_sph;
-  if constexpr (D == Dim2) {
-    coord_t<Dim2> x_sph_2d;
-    this->x_Code2Sph({ xi[0], xi[1] }, x_sph_2d);
-    x_sph[0] = x_sph_2d[0];
-    x_sph[1] = x_sph_2d[1];
-    x_sph[2] = xi[2];
-  } else if constexpr (D == Dim3) {
-    this->x_Code2Sph(xi, x_sph);
-  }
-  if constexpr (D != Dim1) {
-    vi_hat[0] = vi_cart[0] * math::sin(x_sph[1]) * math::cos(x_sph[2])
-                + vi_cart[1] * math::sin(x_sph[1]) * math::sin(x_sph[2])
-                + vi_cart[2] * math::cos(x_sph[1]);
-    vi_hat[1] = vi_cart[0] * math::cos(x_sph[1]) * math::cos(x_sph[2])
-                + vi_cart[1] * math::cos(x_sph[1]) * math::sin(x_sph[2])
-                - vi_cart[2] * math::sin(x_sph[1]);
-    vi_hat[2] = -vi_cart[0] * math::sin(x_sph[2]) + vi_cart[1] * math::cos(x_sph[2]);
-  }
+  coord_t<Dim3> x_sph { ZERO };
+  x_sph[0]  = this->x1_Code2Sph(xi[0]);
+  x_sph[1]  = this->x2_Code2Sph(xi[1]);
+  x_sph[2]  = this->x3_Code2Sph(xi[2]);
+  vi_hat[0] = vi_cart[0] * math::sin(x_sph[1]) * math::cos(x_sph[2]) +
+              vi_cart[1] * math::sin(x_sph[1]) * math::sin(x_sph[2]) +
+              vi_cart[2] * math::cos(x_sph[1]);
+  vi_hat[1] = vi_cart[0] * math::cos(x_sph[1]) * math::cos(x_sph[2]) +
+              vi_cart[1] * math::cos(x_sph[1]) * math::sin(x_sph[2]) -
+              vi_cart[2] * math::sin(x_sph[1]);
+  vi_hat[2] = -vi_cart[0] * math::sin(x_sph[2]) + vi_cart[1] * math::cos(x_sph[2]);
 }
 
-#ifdef __INTELLISENSE__
-#  pragma diag_default 20
-#  pragma diag_default 65
-#  pragma diag_default 77
-#  pragma diag_default 258
-#  pragma diag_default 864
-#  pragma diag_default 1670
-#endif
-
-#endif    // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
+#endif // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H

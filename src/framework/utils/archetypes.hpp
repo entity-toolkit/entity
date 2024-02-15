@@ -10,7 +10,7 @@
 #include "utils/qmath.h"
 
 #ifdef GUI_ENABLED
-#  include "nttiny/api.h"
+  #include "nttiny/api.h"
 #endif
 
 #include <map>
@@ -18,49 +18,58 @@
 namespace ntt {
 
   /* -------------------------------------------------------------------------- */
-  /*                              Master pgen class                             */
+  /*                              Master pgen class */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
   struct PGen {
-    virtual inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) {}
-    virtual inline void UserInitParticles(const SimulationParams&, Meshblock<D, S>&) {}
+    virtual inline void UserInitFields(const SimulationParams&, Meshblock<D, S>&) {
+    }
+
+    virtual inline void UserInitParticles(const SimulationParams&,
+                                          Meshblock<D, S>&) {}
 
     virtual inline void UserDriveFields(const real_t&,
                                         const SimulationParams&,
                                         Meshblock<D, S>&) {}
+
     virtual inline void UserDriveParticles(const real_t&,
                                            const SimulationParams&,
                                            Meshblock<D, S>&) {}
 
-#ifdef EXTERNAL_FORCE
-    Inline virtual auto ext_force_x1(const real_t&, const coord_t<D>&) const -> real_t {
+    Inline virtual auto ext_force_x1(const real_t&, const coord_t<PrtlCoordD>&) const
+      -> real_t {
       return ZERO;
     }
-    Inline virtual auto ext_force_x2(const real_t&, const coord_t<D>&) const -> real_t {
+
+    Inline virtual auto ext_force_x2(const real_t&, const coord_t<PrtlCoordD>&) const
+      -> real_t {
       return ZERO;
     }
-    Inline virtual auto ext_force_x3(const real_t&, const coord_t<D>&) const -> real_t {
+
+    Inline virtual auto ext_force_x3(const real_t&, const coord_t<PrtlCoordD>&) const
+      -> real_t {
       return ZERO;
     }
-#endif
 
 #ifdef GUI_ENABLED
-    virtual inline void UserInitBuffers_nttiny(const SimulationParams&,
-                                               const Meshblock<D, S>&,
-                                               std::map<std::string, nttiny::ScrollingBuffer>&) {
-    }
-    virtual inline void UserSetBuffers_nttiny(const real_t&,
-                                              const SimulationParams&,
-                                              Meshblock<D, S>&,
-                                              std::map<std::string, nttiny::ScrollingBuffer>&) {
-    }
+    virtual inline void UserInitBuffers_nttiny(
+      const SimulationParams&,
+      const Meshblock<D, S>&,
+      std::map<std::string, nttiny::ScrollingBuffer>&) {}
+
+    virtual inline void UserSetBuffers_nttiny(
+      const real_t&,
+      const SimulationParams&,
+      Meshblock<D, S>&,
+      std::map<std::string, nttiny::ScrollingBuffer>&) {}
 #endif
 
     void setTime(const real_t& t) {
       m_time = t;
     }
 
-    [[nodiscard]] auto time() const -> real_t {
+    [[nodiscard]]
+    auto time() const -> real_t {
       return m_time;
     }
 
@@ -69,12 +78,13 @@ namespace ntt {
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                             Target field class                             */
+  /*                             Target field class */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
   struct TargetFields {
-    TargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params { params }, m_mblock { mblock } {}
+    TargetFields(const SimulationParams& params, const Meshblock<D, S>& mblock) :
+      m_params { params },
+      m_mblock { mblock } {}
 
     Inline virtual auto operator()(const em&, const coord_t<D>&) const -> real_t {
       return ZERO;
@@ -86,37 +96,18 @@ namespace ntt {
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                             Force field class                              */
-  /* -------------------------------------------------------------------------- */
-  // template <Dimension D, SimulationEngine S>
-  // struct ForceField {
-  //   ForceField(const SimulationParams& params, const Meshblock<D, S>& mblock)
-  //     : m_params { params }, m_mblock { mblock } {}
-
-  //   Inline virtual auto x1(const real_t&, const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-  //   Inline virtual auto x2(const real_t&, const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-  //   Inline virtual auto x3(const real_t&, const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-
-  // protected:
-  //   SimulationParams m_params;
-  //   Meshblock<D, S>  m_mblock;
-  // };
-
-  /* -------------------------------------------------------------------------- */
-  /*                             Energy distribution                            */
+  /*                             Energy distribution */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
   struct EnergyDistribution {
-    EnergyDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params { params }, m_mblock { mblock } {}
+    EnergyDistribution(const SimulationParams& params,
+                       const Meshblock<D, S>&  mblock) :
+      m_params { params },
+      m_mblock { mblock } {}
 
-    Inline virtual void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int& = 0) const {
+    Inline virtual void operator()(const coord_t<D>&,
+                                   vec_t<Dim3>& v,
+                                   const int& = 0) const {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -129,9 +120,12 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   struct ColdDist : public EnergyDistribution<D, S> {
-    ColdDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : EnergyDistribution<D, S>(params, mblock) {}
-    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int& = 0) const override {
+    ColdDist(const SimulationParams& params, const Meshblock<D, S>& mblock) :
+      EnergyDistribution<D, S>(params, mblock) {}
+
+    Inline void operator()(const coord_t<D>&,
+                           vec_t<Dim3>& v,
+                           const int& = 0) const override {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -140,47 +134,68 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   struct Maxwellian {
-    Maxwellian(const Meshblock<D, S>& mblock) : pool { *(mblock.random_pool_ptr) } {}
+    Maxwellian(const Meshblock<D, S>& mblock) :
+      pool { *(mblock.random_pool_ptr) } {}
+
     // Juttner-Synge distribution
     Inline void JS(vec_t<Dim3>& v, const real_t& temp) const {
       typename RandomNumberPool_t::generator_type rand_gen = pool.get_state();
-      real_t                                      u { ZERO }, eta { ZERO }, theta { ZERO };
-      real_t                                      X1 { ZERO }, X2 { ZERO };
-      if (temp < 0.1) {
+      real_t randu { rand_gen.frand() }, randeta { rand_gen.frand() };
+      real_t randX1 { rand_gen.frand() }, randX2 { rand_gen.frand() };
+      if (temp < 0.5) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
-        while (AlmostEqual(u, ZERO)) {
-          u = rand_gen.frand();
+
+        randX1 = rand_gen.frand();
+        while (AlmostEqual(randX1, ZERO)) {
+          randX1 = rand_gen.frand();
         }
-        eta = math::sqrt(-TWO * math::log(u));
-        while (AlmostEqual(theta, ZERO)) {
-          theta = constant::TWO_PI * rand_gen.frand();
+        randX1 = math::sqrt(-TWO * math::log(randX1));
+        randX2 = constant::TWO_PI * rand_gen.frand();
+        v[0]   = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+        randX1 = rand_gen.frand();
+        while (AlmostEqual(randX1, ZERO)) {
+          randX1 = rand_gen.frand();
         }
-        u = eta * math::cos(theta) * math::sqrt(temp);
+        randX1 = math::sqrt(-TWO * math::log(randX1));
+        randX2 = constant::TWO_PI * rand_gen.frand();
+        v[1]   = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+        randX1 = rand_gen.frand();
+        while (AlmostEqual(randX1, ZERO)) {
+          randX1 = rand_gen.frand();
+        }
+        randX1 = math::sqrt(-TWO * math::log(randX1));
+        randX2 = constant::TWO_PI * rand_gen.frand();
+        v[2]   = randX1 * math::cos(randX2) * math::sqrt(temp);
+
       } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
-        u = ONE;
-        while (SQR(eta) <= SQR(u)) {
-          while (AlmostEqual(X1, ZERO)) {
-            X1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
+        randu = ONE;
+        while (SQR(randeta) <= SQR(randu) + ONE) {
+          randX1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
+          while (AlmostEqual(randX1, ZERO)) {
+            randX1 = rand_gen.frand() * rand_gen.frand() * rand_gen.frand();
           }
-          u  = -temp * math::log(X1);
-          X1 = rand_gen.frand();
-          while (AlmostEqual(X1, 0)) {
-            X1 = rand_gen.frand();
+          randu  = -temp * math::log(randX1);
+          randX2 = rand_gen.frand();
+          while (AlmostEqual(randX2, 0)) {
+            randX2 = rand_gen.frand();
           }
-          eta = u - temp * math::log(X1);
+          randeta = -temp * math::log(randX1 * randX2);
         }
+        randX1 = rand_gen.frand();
+        randX2 = rand_gen.frand();
+        v[0]   = randu * (TWO * randX1 - ONE);
+        v[2]   = TWO * randu * math::sqrt(randX1 * (ONE - randX1));
+        v[1]   = v[2] * math::cos(constant::TWO_PI * randX2);
+        v[2]   = v[2] * math::sin(constant::TWO_PI * randX2);
       }
-      X1   = rand_gen.frand();
-      X2   = rand_gen.frand();
-      v[0] = u * (TWO * X1 - ONE);
-      v[2] = TWO * u * math::sqrt(X1 * (ONE - X1));
-      v[1] = v[2] * math::cos(constant::TWO_PI * X2);
-      v[2] = v[2] * math::sin(constant::TWO_PI * X2);
       pool.free_state(rand_gen);
     }
-    // Boost a symmetric distribution to a relativistic speed using flipping method
-    // https://arxiv.org/pdf/1504.03910.pdf
+
+    // Boost a symmetric distribution to a relativistic speed using flipping
+    // method https://arxiv.org/pdf/1504.03910.pdf
     Inline void boost(vec_t<Dim3>&  v,
                       const real_t& boost_vel,
                       const short&  boost_direction) const {
@@ -221,12 +236,14 @@ namespace ntt {
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                            Spatial distribution                            */
+  /*                            Spatial distribution */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
   struct SpatialDistribution {
-    SpatialDistribution(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params { params }, m_mblock { mblock } {}
+    SpatialDistribution(const SimulationParams& params,
+                        const Meshblock<D, S>&  mblock) :
+      m_params { params },
+      m_mblock { mblock } {}
 
     Inline virtual auto operator()(const coord_t<D>&) const -> real_t {
       return ONE;
@@ -239,20 +256,23 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   struct UniformDist : public SpatialDistribution<D, S> {
-    UniformDist(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : SpatialDistribution<D, S>(params, mblock) {}
+    UniformDist(const SimulationParams& params, const Meshblock<D, S>& mblock) :
+      SpatialDistribution<D, S>(params, mblock) {}
+
     Inline auto operator()(const coord_t<D>&) const -> real_t override {
       return ONE;
     }
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                             Injection criterion                            */
+  /*                             Injection criterion */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
   struct InjectionCriterion {
-    InjectionCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params { params }, m_mblock { mblock } {}
+    InjectionCriterion(const SimulationParams& params,
+                       const Meshblock<D, S>&  mblock) :
+      m_params { params },
+      m_mblock { mblock } {}
 
     Inline virtual auto operator()(const coord_t<D>&) const -> bool {
       return true;
@@ -265,30 +285,35 @@ namespace ntt {
 
   template <Dimension D, SimulationEngine S>
   struct NoCriterion : public InjectionCriterion<D, S> {
-    NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : InjectionCriterion<D, S>(params, mblock) {}
+    NoCriterion(const SimulationParams& params, const Meshblock<D, S>& mblock) :
+      InjectionCriterion<D, S>(params, mblock) {}
+
     Inline auto operator()(const coord_t<D>&) const -> bool {
       return true;
     }
   };
 
   /* -------------------------------------------------------------------------- */
-  /*                              Vector potential                              */
+  /*                              Vector potential */
   /* -------------------------------------------------------------------------- */
   template <Dimension D, SimulationEngine S>
   struct VectorPotential {
-    VectorPotential(const SimulationParams& params, const Meshblock<D, S>& mblock)
-      : m_params { params }, m_mblock { mblock } {}
+    VectorPotential(const SimulationParams& params, const Meshblock<D, S>& mblock) :
+      m_params { params },
+      m_mblock { mblock } {}
 
     Inline virtual auto A_x0(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
+
     Inline virtual auto A_x1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
+
     Inline virtual auto A_x2(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
+
     Inline virtual auto A_x3(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
@@ -298,6 +323,6 @@ namespace ntt {
     Meshblock<D, S>  m_mblock;
   };
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif    // FRAMEWORK_ARCHETYPES_H
+#endif // FRAMEWORK_ARCHETYPES_H
