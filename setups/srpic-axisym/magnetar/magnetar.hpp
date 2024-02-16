@@ -34,9 +34,7 @@ namespace ntt {
       maxwellian { mblock },
       temperature { params.get<real_t>("problem", "atm_T") } {}
 
-    Inline void operator()(const coord_t<PrtlCoordD>&,
-                           vec_t<Dim3>& v,
-                           const int&) const override {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
       maxwellian(v, temperature);
       v[1] = ZERO;
       v[2] = ZERO;
@@ -107,7 +105,8 @@ namespace ntt {
     ndarray_t<(short)(D)> m_ppc_per_spec;
   };
 
-  Inline void mainBField(const coord_t<PrtlCoordD>& x_ph,
+  template <Dimension D>
+  Inline void mainBField(const coord_t<D>& x_ph,
                          vec_t<Dim3>&,
                          vec_t<Dim3>& b_out,
                          real_t       _rstar,
@@ -124,24 +123,27 @@ namespace ntt {
     }
   }
 
-  Inline void surfaceRotationField(const coord_t<PrtlCoordD>& x_ph,
-                                   vec_t<Dim3>&          e_out,
-                                   vec_t<Dim3>&          b_out,
-                                   real_t                _rstar,
-                                   real_t                _bsurf,
-                                   int                   _mode,
-                                   real_t                _omega) {
-    mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
-    // e_out[0] = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
-    // e_out[1] = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
+  template <Dimension D>
+  Inline void surfaceRotationField(const coord_t<D>& x_ph,
+                                   vec_t<Dim3>&      e_out,
+                                   vec_t<Dim3>&      b_out,
+                                   real_t            _rstar,
+                                   real_t            _bsurf,
+                                   int               _mode,
+                                   real_t            _omega) {
+    mainBField<D>(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
+    // _omega   *= -0.5 * (math::tanh(50 * (-0.6108652381980153 + x_ph[1])) *
+    //                   (-1 + math::tanh(50 * (-0.6981317007977319 + x_ph[1])) *
+    //                           math::tanh(50 * (-0.5235987755982989 + x_ph[1]))));
+    // e_out[0]  = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
+    // e_out[1]  = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
 
-    // _omega   *= 0.5 * (1 - math::tanh(50 * (-0.698132 + x_ph[1])) *
-    //                        math::tanh(50 * (-0.523599 + x_ph[1])));
-    _omega   *= -0.5 * (math::tanh(50 * (-0.6108652381980153 + x_ph[1])) *
-                      (-1 + math::tanh(50 * (-0.6981317007977319 + x_ph[1])) *
-                              math::tanh(50 * (-0.5235987755982989 + x_ph[1]))));
-    e_out[0]  = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
-    e_out[1]  = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
+    auto pival = 3.141592653589793;
+    auto sigma = (x_ph[1] - 0.5 * pival) / (0.25 * pival);
+    _omega *= sigma * math::exp((1.0 - SQR(SQR(sigma)))/4);
+    e_out[0]  = _omega * b_out[1] * x_ph[0];
+    e_out[1]  = -_omega * b_out[0] * x_ph[0];
+
   }
 
   template <Dimension D, SimulationEngine S>
@@ -152,13 +154,12 @@ namespace ntt {
       _bsurf { params.get<real_t>("problem", "psr_Bsurf", ONE) },
       _mode { params.get<int>("problem", "psr_field_mode", 2) } {}
 
-    Inline real_t operator()(const em&             comp,
-                             const coord_t<PrtlCoordD>& xi) const override {
+    Inline real_t operator()(const em& comp, const coord_t<D>& xi) const override {
       if ((comp == em::bx1) || (comp == em::bx2)) {
-        vec_t<Dim3>    e_out { ZERO }, b_out { ZERO };
-        coord_t<PrtlCoordD> x_ph { ZERO };
+        vec_t<Dim3> e_out { ZERO }, b_out { ZERO };
+        coord_t<D>  x_ph { ZERO };
         (this->m_mblock).metric.x_Code2Phys(xi, x_ph);
-        mainBField(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
+        mainBField<D>(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
         return (comp == em::bx1) ? b_out[0] : b_out[1];
       } else {
         return ZERO;
@@ -170,9 +171,73 @@ namespace ntt {
     const int    _mode;
   };
 
-  Inline auto densityProfile(real_t r, real_t C, real_t h, real_t Rstar) -> real_t {
-    return C * math::exp(-(Rstar / h) * (ONE - (Rstar / r)));
+  Inline void boost_photon(const real_t el,
+                           const real_t ux,
+                           const real_t uy,
+                           const real_t uz,
+                           const real_t gammab,
+                           const real_t uxb,
+                           const real_t uyb,
+                           const real_t uzb,
+                           real_t&      el1,
+                           real_t&      ux1,
+                           real_t&      uy1,
+                           real_t&      uz1) {
+
+    auto psq = uxb * uxb + uyb * uyb + uzb * uzb;
+    el1      = -ux * uxb - uy * uyb - uz * uzb + el * gammab;
+    ux1 = (-(uz * uxb * uzb) + ux * (pow(uyb, 2) + pow(uzb, 2)) - el * uxb * psq +
+           uy * uxb * uyb * (-1 + gammab) + uxb * (ux * uxb + uz * uzb) * gammab) /
+          psq;
+    uy1 = (-(uyb * (ux * uxb + uz * uzb + el * psq)) +
+           uyb * (ux * uxb + uz * uzb) * gammab +
+           uy * (pow(uxb, 2) + pow(uzb, 2) + pow(uyb, 2) * gammab)) /
+          psq;
+    uz1 = (-(uzb * (ux * uxb + uy * uyb + el * psq)) +
+           (ux * uxb + uy * uyb) * uzb * gammab +
+           uz * (pow(uxb, 2) + pow(uyb, 2) + pow(uzb, 2) * gammab)) /
+          psq;
+    // el1 = math::sqrt(ZERO + ux1 * ux1 + uy1 * uy1 + uz1 * uz1);
+
+    // if (fabs(1 - el1 / math::sqrt(ZERO + ux1 * ux1 + uy1 * uy1 + uz1 * uz1)) > 1e-3) {
+    //   printf("WARNING: Lepton energy in boost is not accurate.\n");
+    // }
   }
+
+  Inline void boost_lepton(const real_t el,
+                           const real_t ux,
+                           const real_t uy,
+                           const real_t uz,
+                           const real_t gammab,
+                           const real_t uxb,
+                           const real_t uyb,
+                           const real_t uzb,
+                           real_t&      el1,
+                           real_t&      ux1,
+                           real_t&      uy1,
+                           real_t&      uz1) {
+
+    auto psq = uxb * uxb + uyb * uyb + uzb * uzb;
+    el1      = -ux * uxb - uy * uyb - uz * uzb + el * gammab;
+    ux1 = (-(uz * uxb * uzb) + ux * (pow(uyb, 2) + pow(uzb, 2)) - el * uxb * psq +
+           uy * uxb * uyb * (-1 + gammab) + uxb * (ux * uxb + uz * uzb) * gammab) /
+          psq;
+    uy1 = (-(uyb * (ux * uxb + uz * uzb + el * psq)) +
+           uyb * (ux * uxb + uz * uzb) * gammab +
+           uy * (pow(uxb, 2) + pow(uzb, 2) + pow(uyb, 2) * gammab)) /
+          psq;
+    uz1 = (-(uzb * (ux * uxb + uy * uyb + el * psq)) +
+           (ux * uxb + uy * uyb) * uzb * gammab +
+           uz * (pow(uxb, 2) + pow(uyb, 2) + pow(uzb, 2) * gammab)) /
+          psq;
+    // el1 = math::sqrt(ONE + ux1 * ux1 + uy1 * uy1 + uz1 * uz1);
+
+    // if (fabs(1.0 - el1 / math::sqrt(ONE + ux1 * ux1 + uy1 * uy1 + uz1 * uz1)) >
+    //     1e-3) {
+    //   printf("WARNING: Lepton energy in boost is not accurate.\n");
+    // }
+  }
+
 
   Inline auto planckSample(RandomNumberPool_t::generator_type rand_gen) -> real_t {
     real_t prob, n, rnd;
@@ -187,6 +252,10 @@ namespace ntt {
                         Random<real_t>(rand_gen) +
                       1e-16) /
            n;
+  }
+
+  Inline auto densityProfile(real_t r, real_t C, real_t h, real_t Rstar) -> real_t {
+    return C * math::exp(-(Rstar / h) * (ONE - (Rstar / r)));
   }
 
   template <>
@@ -231,10 +300,9 @@ namespace ntt {
     const SimulationParams&     params,
     Meshblock<Dim2, PICEngine>& mblock) {
     {
-      const auto rmin   = mblock.metric.x1_min;
-      const auto x1_psr = mblock.metric.x1_Phys2Code(m_psr_Rstar);
-      NTTHostErrorIf(rmin >= m_psr_Rstar, "rmin > r_surf");
-      NTTHostErrorIf(x1_psr < params.currentFilters(), "r_surf - rmin < filters");
+      const auto atm_cells = mblock.metric.x1_Phys2Code(m_psr_Rstar) -
+                             mblock.metric.x1_Phys2Code(m_psr_Rstar - m_atm_h);
+      NTTHostErrorIf(atm_cells < params.currentFilters(), "atm_cells < filters");
     }
     {
       const auto rstar = m_psr_Rstar;
@@ -244,7 +312,7 @@ namespace ntt {
         "UserInitFields",
         mblock.rangeActiveCells(),
         ClassLambda(index_t i, index_t j) {
-          set_em_fields_2d(mblock, i, j, mainBField, rstar, bsurf, mode);
+          set_em_fields_2d(mblock, i, j, mainBField<Dim2>, rstar, bsurf, mode);
         });
     }
   }
@@ -272,13 +340,13 @@ namespace ntt {
         CreateRangePolicy<Dim2>({ i1_min, mblock.i2_min() },
                                 { i1_surf, mblock.i2_max() }),
         ClassLambda(index_t i1, index_t i2) {
-          set_ex2_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-          set_ex3_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-          set_bx1_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
+          set_ex2_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+          set_ex3_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+          set_bx1_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
           if (i1 < i1_surf - 1) {
-            set_ex1_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-            set_bx2_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
-            set_bx3_2d(mblock, i1, i2, surfaceRotationField, rstar, bsurf, mode, omega);
+            set_ex1_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+            set_bx2_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
+            set_bx3_2d(mblock, i1, i2, surfaceRotationField<Dim2>, rstar, bsurf, mode, omega);
           }
         });
     }
@@ -334,7 +402,6 @@ namespace ntt {
 
     // Resonant scattering kernel
     {
-      const auto angThres { params.get<real_t>("problem", "angThres") };
       const auto fid_freq { params.get<real_t>("problem", "fid_freq") };
       const auto bq { params.get<real_t>("problem", "bq") };
       auto       random_pool  = *(m_mblock.random_pool_ptr);
@@ -342,6 +409,8 @@ namespace ntt {
       auto&      photons_perp = m_mblock.particles[3];
       const auto l0           = params.larmor0();
       const auto dt           = m_mblock.timestep();
+      const auto m_atm_h { params.get<real_t>("problem", "atm_h") };
+      const auto m_psr_Rstar { params.get<real_t>("problem", "atm_buff") + params.extent()[0] };
 
       for (std::size_t s { 0 }; s < 6; ++s) {
         if ((s == 2) || (s == 3)) {
@@ -352,6 +421,8 @@ namespace ntt {
         array_t<std::size_t> ph_ind_perp("ph_ind");
         const auto           ph_offset_par  = photons_par.npart();
         const auto           ph_offset_perp = photons_perp.npart();
+        const auto           dt = m_mblock.timestep();
+
 
         Kokkos::parallel_for(
           "ResonantScattering",
@@ -361,7 +432,7 @@ namespace ntt {
               return;
             }
 
-            // Interpolation of B to the position of the photon
+             // Interpolation of B to the position of the photon
             vec_t<Dim3> b_int_Cart;
             {
               vec_t<Dim3> b_int;
@@ -455,14 +526,31 @@ namespace ntt {
               m_mblock.metric.v3_Cntrv2Cart(xp, e_int, e_int_Cart);
             }
 
+
+            const vec_t<Dim2> xi { i_di_to_Xi(species.i1(p), species.dx1(p)),
+                                    i_di_to_Xi(species.i2(p), species.dx2(p))};
+            coord_t<Dim2>     x_ph;
+            m_mblock.metric.x_Code2Sph(xi, x_ph);
+
+            if(x_ph[0] < m_psr_Rstar + m_atm_h * TWO) {
+              return;
+            }
+
+            // printf("bx0_rest = %e, by0_rest = %e, bz0_rest = %e\n, x_ph[0] = %e, x_ph[1] = %e\n",
+            //        b_int_Cart[0],
+            //        b_int_Cart[1],
+            //        b_int_Cart[2],
+            //        x_ph[0],
+            //        x_ph[1]);
+
             auto px      = species.ux1(p);
             auto py      = species.ux2(p);
             auto pz      = species.ux3(p);
-            auto gamma   = math::sqrt(ONE + px * px + py * py + pz * pz);
+            auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
             auto betax   = px / gamma;
             auto betay   = py / gamma;
             auto betaz   = pz / gamma;
-            auto beta_sq = betax * betax + betay * betay + betaz * betaz;
+            auto beta_sq = SQR(betax) + SQR(betay) + SQR(betaz);
 
             // Boost magnetic fields to the rest frame
             auto bx0_rest = gamma * (b_int_Cart[0] - betay * e_int_Cart[2] +
@@ -515,39 +603,36 @@ namespace ntt {
               b_RF_x = -a_RF_y / a_RF_x;
               b_RF_y = 1.0;
               b_RF_z = 0.0;
-              norm        = 1.0 / sqrt(b_RF_x * b_RF_x + b_RF_y * b_RF_y);
-              b_RF_x      = b_RF_x * norm;
-              b_RF_y      = b_RF_y * norm;
+              norm   = 1.0 / sqrt(b_RF_x * b_RF_x + b_RF_y * b_RF_y);
+              b_RF_x = b_RF_x * norm;
+              b_RF_y = b_RF_y * norm;
             }
             auto c_RF_x = b_RF_z * a_RF_y - b_RF_y * a_RF_z;
             auto c_RF_y = b_RF_x * a_RF_z - b_RF_z * a_RF_x;
             auto c_RF_z = b_RF_y * a_RF_x - b_RF_x * a_RF_y;
-
-            // Calculate gyrofrequency in the lepton rest frame
-            auto omegaB0 = 1.0 / l0;
-            auto omegaB  = omegaB0 *
-                          math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
-                                     bz0_rest * bz0_rest);
 
             // Monte Carlo evaluation of the cross section
             auto   tres  = 0.0;
             auto   qdist = 0.0;
             auto   vmax  = 0.0;
             auto   vmin  = 100000.0;
-            auto   nmax  = 1;
+            auto   nmax  = 100;
             real_t eph_LF_L, eph_RF_L, u_ph_RF_L, v_ph_RF_L, w_ph_RF_L, u_ph_L,
-              v_ph_L, w_ph_L;
+              v_ph_L, w_ph_L, boostfactor;
+
 
             for (std::size_t n { 0 }; n < nmax; ++n) {
 
               // Calculate the photon energy and momentum
               typename RandomNumberPool_t::generator_type rand_gen =
                 random_pool.get_state();
-              auto eph_LF = fid_freq * omegaB0 * bq * planckSample(rand_gen);
+              auto eph_LF = fid_freq * planckSample(rand_gen);
+              // auto eph_LF = fid_freq;
 
               // Here fix the direction of photon momentum (e.g., spherical from
               // star, isotropic, etc.) Isotropic photon distribution
-              // auto rand_costheta_RF = math::cos(Random<real_t>(rand_gen) * M_PI);
+              // auto rand_costheta_RF = math::cos(120./180. * Random<real_t>(rand_gen) * M_PI);
+              // // auto rand_costheta_RF = math::cos(120./180. * M_PI);
               // auto rand_sintheta_RF = math::sqrt(
               //   1.0 - rand_costheta_RF * rand_costheta_RF);
               // auto rand_phi_RF    = 2.0 * M_PI * Random<real_t>(rand_gen);
@@ -563,7 +648,7 @@ namespace ntt {
               //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
               //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
 
-              // Radial photon distribution
+              // // Radial photon distribution
               const vec_t<Dim3> xi { i_di_to_Xi(species.i1(p), species.dx1(p)),
                                      i_di_to_Xi(species.i2(p), species.dx2(p)),
                                      species.phi(p) };
@@ -576,26 +661,51 @@ namespace ntt {
               auto u_ph   = eph_LF * x1norm;
               auto v_ph   = eph_LF * x2norm;
               auto w_ph   = eph_LF * x3norm;
-              auto rand_costheta_RF {
-                DOT(px, py, pz, x1norm, x2norm, x3norm) / NORM(px, py, pz)
-              };
+              auto rand_costheta_RF { DOT(px, py, pz, x1norm, x2norm, x3norm) /
+                                      NORM(px, py, pz) };
+              eph_LF = math::sqrt(SQR(u_ph) + SQR(v_ph) + SQR(w_ph));
 
-              // Boost photon momentum to the lepton rest frame
-              auto pdotk   = u_ph * px + v_ph * py + w_ph * pz;
-              auto eph_RF  = gamma * eph_LF - pdotk;
-              auto u_ph_RF = u_ph + (pdotk / (1.0 + gamma) - eph_LF) * px;
-              auto v_ph_RF = v_ph + (pdotk / (1.0 + gamma) - eph_LF) * py;
-              auto w_ph_RF = w_ph + (pdotk / (1.0 + gamma) - eph_LF) * pz;
 
-              // Boost resonant frequency back to the lab frame
-              auto omegaBL = (omegaB + px * u_ph + py * v_ph + pz * w_ph) / gamma;
+              // if (fabs(1.0 - eph_LF / math::sqrt(SQR(u_ph) + SQR(v_ph) +
+              //                                    SQR(w_ph))) > 1e-3) {
+              //   printf(
+              //     "WARNING: Photon energy in eph_LF is not accurate: %e.\n",
+              //     eph_LF - math::sqrt(SQR(u_ph) + SQR(v_ph) + SQR(w_ph)));
+              // }
+
+              real_t eph_RF, u_ph_RF, v_ph_RF, w_ph_RF;
+              boost_photon(eph_LF,
+                           u_ph,
+                           v_ph,
+                           w_ph,
+                           gamma,
+                           px,
+                           py,
+                           pz,
+                           eph_RF,
+                           u_ph_RF,
+                           v_ph_RF,
+                           w_ph_RF);
+
+              // if (fabs(1.0 - eph_RF / math::sqrt(SQR(u_ph_RF) + SQR(v_ph_RF) +
+              //                                    SQR(w_ph_RF))) > 1e-3) {
+              //   printf(
+              //     "WARNING: Photon energy in eph_RF is not accurate: %e, %e.\n",
+              //     eph_RF,
+              //     math::sqrt(SQR(u_ph_RF) + SQR(v_ph_RF) + SQR(w_ph_RF)));
+              // }
 
               // Calculate the resonance quality factor
-              auto xres = (1.0 - omegaBL / eph_LF);
-              auto qres = math::exp(-0.5 * xres * xres /
-                                    ((0.1 / gamma) * (0.1 / gamma))) /
-                          sqrt(2.0 * M_PI * ((0.1 / gamma) * (0.1 / gamma))) *
-                          (1.0 - sqrt(beta_sq) * rand_costheta_RF) / eph_LF;
+              auto xres = (eph_RF * bq / math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest + bz0_rest * bz0_rest) - 1.0);
+
+              auto qres = 0.0;
+              auto gfac = 0.001;
+              if(fabs(xres) < 10.0*gfac) {
+               qres = math::exp(-0.5 * xres * xres /
+                                    ((gfac) * (gfac))) /
+                          sqrt(2.0 * M_PI * ((gfac) * (gfac)));               
+              }
+
               tres += qres;
 
               if (qres > qdist) {
@@ -607,6 +717,7 @@ namespace ntt {
                 u_ph_L    = u_ph;
                 v_ph_L    = v_ph;
                 w_ph_L    = w_ph;
+                boostfactor = (1.0 - sqrt(beta_sq) * rand_costheta_RF);
               }
 
               if (xres > vmax) {
@@ -621,27 +732,41 @@ namespace ntt {
             }
 
             // Calculate cross section and trigger scattering event
-            auto p_scatter = tres / static_cast<real_t>(nmax) * 1.0 / (vmax - vmin);
+            auto p_scatter = tres / static_cast<real_t>(nmax) * 1.0 / (vmax - vmin) * boostfactor;
+            
+            
             typename RandomNumberPool_t::generator_type rand_gen =
               random_pool.get_state();
+
+            u_ph_RF_L = u_ph_RF_L / eph_LF_L * math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                     bz0_rest * bz0_rest) / bq;
+            v_ph_RF_L = v_ph_RF_L / eph_LF_L * math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                      bz0_rest * bz0_rest) / bq;
+            w_ph_RF_L = w_ph_RF_L / eph_LF_L * math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                      bz0_rest * bz0_rest) / bq;
+
             if (Random<real_t>(rand_gen) < p_scatter) {
 
-              // Calculate energy and momentum of the excited lepton
-              auto gammaeb     = 1.0 + math::sqrt(u_ph_RF_L * u_ph_RF_L +
-                                              v_ph_RF_L * v_ph_RF_L +
-                                              w_ph_RF_L * w_ph_RF_L);
-              auto betax_ex    = u_ph_RF_L / gammaeb;
-              auto betay_ex    = v_ph_RF_L / gammaeb;
-              auto betaz_ex    = w_ph_RF_L / gammaeb;
-              auto gamma_ex    = 1.0 / math::sqrt(1.0 - betax_ex * betax_ex -
-                                               betay_ex * betay_ex -
-                                               betaz_ex * betaz_ex);
-              auto eb          = gammaeb / gamma_ex;
-              auto pel_ex_x    = gamma_ex * betax_ex;
-              auto pel_ex_y    = gamma_ex * betay_ex;
-              auto pel_ex_z    = gamma_ex * betaz_ex;
-              auto betax_ex_sq = betax_ex * betax_ex + betay_ex * betay_ex +
-                                 betaz_ex * betaz_ex;
+              auto eb = math::sqrt(1.0 + 2.0 * math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                     bz0_rest * bz0_rest) / bq);
+              auto gammaeb = 1.0 + math::sqrt(u_ph_RF_L*u_ph_RF_L + v_ph_RF_L*v_ph_RF_L + w_ph_RF_L*w_ph_RF_L);
+              auto gamma_ex = gammaeb / eb;
+              auto betax_ex = u_ph_RF_L * 1.0 / gammaeb;
+              auto betay_ex = v_ph_RF_L * 1.0 / gammaeb;
+              auto betaz_ex = w_ph_RF_L * 1.0 / gammaeb;
+              auto pel_ex_x = gamma_ex * betax_ex;
+              auto pel_ex_y = gamma_ex * betay_ex;
+              auto pel_ex_z = gamma_ex * betaz_ex;
+              auto betax_ex_sq = SQR(betax_ex) + SQR(betay_ex) + SQR(betaz_ex);
+
+              // if (fabs(1.0 - gamma_ex /
+              //                  math::sqrt(ONE + SQR(pel_ex_x) + SQR(pel_ex_y) +
+              //                             SQR(pel_ex_z))) > 1e-3) {
+              //   printf("WARNING: Photon energy in gamma_ex is not accurate.\n");
+              // }
+
+              // gamma_ex = math::sqrt(ONE + SQR(pel_ex_x) + SQR(pel_ex_y) +
+              //                       SQR(pel_ex_z));
 
               // Boost fields into the de-excitation rest frame
               auto bx0_drest = gamma_ex * (bx0_rest - betay_ex * ez0_rest +
@@ -663,6 +788,11 @@ namespace ntt {
                                   bz0_rest * betaz_ex) *
                                  betaz_ex / betax_ex_sq;
 
+              // printf("bx0_drest = %e, by0_drest = %e, bz0_drest = %e\n",
+              //        bx0_drest,
+              //        by0_drest,
+              //        bz0_drest);
+
               // Prescribe the fraction of parallel polarization
               bool pol_par = false;
               if (Random<real_t>(rand_gen) < 0.25) {
@@ -683,9 +813,9 @@ namespace ntt {
                 mudash = (2.0 * mudash - 1.0);
               }
 
-              if(fabs(mudash) >= 1.0) {
-                printf("mudash = %e\n", mudash);
-              }
+              // if (fabs(mudash) >= 1.0) {
+              //   printf("mudash = %e\n", mudash);
+              // }
 
               // Build a basis along the rest frame magnetic field
               auto norm { 1.0 / NORM(bx0_drest, by0_drest, bz0_drest) };
@@ -710,160 +840,138 @@ namespace ntt {
               // Calculate emission vector for photon
               auto rand_phi_RF      = 2.0 * M_PI * Random<real_t>(rand_gen);
               auto rand_costheta_RF = mudash;
-              auto rand_sintheta_RF = math::sqrt(1.0 - mudash * mudash);
+              auto rand_sintheta_RF = math::sqrt(1.0 - SQR(mudash));
               auto rand_cosphi_RF   = math::cos(rand_phi_RF);
               auto rand_sinphi_RF   = math::sin(rand_phi_RF);
 
               // Calculate rest frame energy and momentum of emitted photon
-              auto eph_RF = eb / (rand_sintheta_RF * rand_sintheta_RF) *
-                            (1.0 -
-                             math::sqrt((rand_costheta_RF * rand_costheta_RF) +
-                                        (1.0 / (eb * eb)) *
-                                          (rand_sintheta_RF * rand_sintheta_RF)));
-              
-              if(fabs(mudash) >= 1.0) {
-                eph_RF = (-1 + pow(eb,2))/(2.*eb);
+              auto eph_RFS = eb / (rand_sintheta_RF * rand_sintheta_RF) *
+                             (1.0 - math::sqrt(
+                                      (rand_costheta_RF * rand_costheta_RF) +
+                                      (1.0 / (eb * eb)) *
+                                        (rand_sintheta_RF * rand_sintheta_RF)));
+
+              if (fabs(mudash) >= 1.0) {
+                eph_RFS = (-1 + SQR(eb)) / (2. * eb);
               }
 
-              auto kph_RF_x = eph_RF *
-                              (rand_costheta_RF * a_RF_x +
-                               rand_sintheta_RF * rand_cosphi_RF * b_RF_x +
-                               rand_sintheta_RF * rand_sinphi_RF * c_RF_x);
-              auto kph_RF_y = eph_RF *
-                              (rand_costheta_RF * a_RF_y +
-                               rand_sintheta_RF * rand_cosphi_RF * b_RF_y +
-                               rand_sintheta_RF * rand_sinphi_RF * c_RF_y);
-              auto kph_RF_z = eph_RF *
-                              (rand_costheta_RF * a_RF_z +
-                               rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
-                               rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
+              auto kph_RFS_x = eph_RFS *
+                               (rand_costheta_RF * a_RF_x +
+                                rand_sintheta_RF * rand_cosphi_RF * b_RF_x +
+                                rand_sintheta_RF * rand_sinphi_RF * c_RF_x);
+              auto kph_RFS_y = eph_RFS *
+                               (rand_costheta_RF * a_RF_y +
+                                rand_sintheta_RF * rand_cosphi_RF * b_RF_y +
+                                rand_sintheta_RF * rand_sinphi_RF * c_RF_y);
+              auto kph_RFS_z = eph_RFS *
+                               (rand_costheta_RF * a_RF_z +
+                                rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
+                                rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
+
+              // if (fabs(1.0 - eph_RFS / math::sqrt(ZERO + SQR(kph_RFS_x) +
+              //                                     SQR(kph_RFS_y) +
+              //                                     SQR(kph_RFS_z))) > 1e-3) {
+              //   printf("WARNING: Photon energy in scattered eph_RFS is not "
+              //          "accurate.\n");
+              // }
+
+              // eph_RF = math::sqrt(SQR(kph_RF_x) + SQR(kph_RF_y) + SQR(kph_RF_z));
 
               // Calculate the lepton energy and momentum after scattering
-              auto el_RF   = eb - eph_RF;
-              auto kl_RF_x = - eph_RF * rand_costheta_RF * a_RF_x;
-              auto kl_RF_y = - eph_RF * rand_costheta_RF * a_RF_y;
-              auto kl_RF_z = - eph_RF * rand_costheta_RF * a_RF_z;
+              auto el_RF   = eb - eph_RFS;
+              auto kl_RF_x = -eph_RFS * rand_costheta_RF * a_RF_x;
+              auto kl_RF_y = -eph_RFS * rand_costheta_RF * a_RF_y;
+              auto kl_RF_z = -eph_RFS * rand_costheta_RF * a_RF_z;
+              // auto el_RF   = math::sqrt(
+              //   ONE + SQR(kl_RF_x) + SQR(kl_RF_y) + SQR(kl_RF_z));
 
-              // Boost lepton momentum to excitation frame
-              auto el_EX = -(-pel_ex_x) * kl_RF_x - (-pel_ex_y) * kl_RF_y -
-                           (-pel_ex_z) * kl_RF_z + el_RF * gamma_ex;
-              auto kl_EX_x =
-                (-(kl_RF_z * (-pel_ex_x) * (-pel_ex_z)) +
-                 kl_RF_x * (math::pow(-pel_ex_y, 2) + math::pow(-pel_ex_z, 2)) -
-                 el_RF * (-pel_ex_x) *
-                   (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                    math::pow(-pel_ex_z, 2)) +
-                 kl_RF_y * (-pel_ex_x) * (-pel_ex_y) * (-1 + gamma_ex) +
-                 (-pel_ex_x) * (kl_RF_x * (-pel_ex_x) + kl_RF_z * (-pel_ex_z)) *
-                   gamma_ex) /
-                (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                 math::pow(-pel_ex_z, 2));
-              auto kl_EX_y =
-                (-((-pel_ex_y) *
-                   (kl_RF_x * (-pel_ex_x) + kl_RF_z * (-pel_ex_z) +
-                    el_RF * (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                             math::pow(-pel_ex_z, 2)))) +
-                 (-pel_ex_y) * (kl_RF_x * (-pel_ex_x) + kl_RF_z * (-pel_ex_z)) *
-                   gamma_ex +
-                 kl_RF_y * (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_z, 2) +
-                            math::pow(-pel_ex_y, 2) * gamma_ex)) /
-                (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                 math::pow(-pel_ex_z, 2));
-              auto kl_EX_z =
-                (-((-pel_ex_z) *
-                   (kl_RF_x * (-pel_ex_x) + kl_RF_y * (-pel_ex_y) +
-                    el_RF * (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                             math::pow(-pel_ex_z, 2)))) +
-                 (kl_RF_x * (-pel_ex_x) + kl_RF_y * (-pel_ex_y)) * (-pel_ex_z) *
-                   gamma_ex +
-                 kl_RF_z * (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                            math::pow(-pel_ex_z, 2) * gamma_ex)) /
-                (math::pow(-pel_ex_x, 2) + math::pow(-pel_ex_y, 2) +
-                 math::pow(-pel_ex_z, 2));
+              real_t el_EX, kl_EX_x, kl_EX_y, kl_EX_z;
+              boost_lepton(el_RF,
+                           kl_RF_x,
+                           kl_RF_y,
+                           kl_RF_z,
+                           gamma_ex,
+                           -pel_ex_x,
+                           -pel_ex_y,
+                           -pel_ex_z,
+                           el_EX,
+                           kl_EX_x,
+                           kl_EX_y,
+                           kl_EX_z);
 
-              // Boost lepton momentum to lab frame
-              auto gamma_el_new = -(-px) * kl_EX_x - (-py) * kl_EX_y -
-                                  (-pz) * kl_EX_z + el_EX * gamma;
-              auto u_el_new =
-                (-(kl_EX_z * (-px) * (-pz)) +
-                 kl_EX_x * (math::pow(-py, 2) + math::pow(-pz, 2)) -
-                 el_EX * (-px) *
-                   (math::pow(-px, 2) + math::pow(-py, 2) + math::pow(-pz, 2)) +
-                 kl_EX_y * (-px) * (-py) * (-1 + gamma) +
-                 (-px) * (kl_EX_x * (-px) + kl_EX_z * (-pz)) * gamma) /
-                (math::pow(-px, 2) + math::pow(-py, 2) + math::pow(-pz, 2));
-              auto v_el_new =
-                (-((-py) * (kl_EX_x * (-px) + kl_EX_z * (-pz) +
-                            el_EX * (math::pow(-px, 2) + math::pow(-py, 2) +
-                                     math::pow(-pz, 2)))) +
-                 (-py) * (kl_EX_x * (-px) + kl_EX_z * (-pz)) * gamma +
-                 kl_EX_y * (math::pow(-px, 2) + math::pow(-pz, 2) +
-                            math::pow(-py, 2) * gamma)) /
-                (math::pow(-px, 2) + math::pow(-py, 2) + math::pow(-pz, 2));
-              auto w_el_new =
-                (-((-pz) * (kl_EX_x * (-px) + kl_EX_y * (-py) +
-                            el_EX * (math::pow(-px, 2) + math::pow(-py, 2) +
-                                     math::pow(-pz, 2)))) +
-                 (kl_EX_x * (-px) + kl_EX_y * (-py)) * (-pz) * gamma +
-                 kl_EX_z * (math::pow(-px, 2) + math::pow(-py, 2) +
-                            math::pow(-pz, 2) * gamma)) /
-                (math::pow(-px, 2) + math::pow(-py, 2) + math::pow(-pz, 2));
+              real_t gamma_el_new, u_el_new, v_el_new, w_el_new;
+              boost_lepton(el_EX,
+                           kl_EX_x,
+                           kl_EX_y,
+                           kl_EX_z,
+                           gamma,
+                           -px,
+                           -py,
+                           -pz,
+                           gamma_el_new,
+                           u_el_new,
+                           v_el_new,
+                           w_el_new);
 
               species.ux1(p) = u_el_new;
               species.ux2(p) = v_el_new;
               species.ux3(p) = w_el_new;
 
-              // Boost photon momentum to the excitation frame
-              auto pdotk = kph_RF_x * (-pel_ex_x) + kph_RF_y * (-pel_ex_y) +
-                           kph_RF_z * (-pel_ex_z);
-              auto eph_EX   = gamma_ex * eph_RF - pdotk;
-              auto kph_EX_x = kph_RF_x +
-                              (pdotk / (1.0 + gamma_ex) - eph_RF) * (-pel_ex_x);
-              auto kph_EX_y = kph_RF_y +
-                              (pdotk / (1.0 + gamma_ex) - eph_RF) * (-pel_ex_y);
-              auto kph_EX_z = kph_RF_z +
-                              (pdotk / (1.0 + gamma_ex) - eph_RF) * (-pel_ex_z);
+              real_t eph_EX, kph_EX_x, kph_EX_y, kph_EX_z;
+              boost_photon(eph_RFS,
+                           kph_RFS_x,
+                           kph_RFS_y,
+                           kph_RFS_z,
+                           gamma_ex,
+                           -pel_ex_x,
+                           -pel_ex_y,
+                           -pel_ex_z,
+                           eph_EX,
+                           kph_EX_x,
+                           kph_EX_y,
+                           kph_EX_z);
 
-              // Boost photon momentum to the lab frame
-              pdotk    = kph_EX_x * (-px) + kph_EX_y * (-py) + kph_EX_z * (-pz);
-              auto eph = gamma * eph_EX - pdotk;
-              auto kph_x = kph_EX_x + (pdotk / (1.0 + gamma) - eph_EX) * (-px);
-              auto kph_y = kph_EX_y + (pdotk / (1.0 + gamma) - eph_EX) * (-py);
-              auto kph_z = kph_EX_z + (pdotk / (1.0 + gamma) - eph_EX) * (-pz);
-
-              const vec_t<Dim3> xi { i_di_to_Xi(species.i1(p), species.dx1(p)),
-                                     i_di_to_Xi(species.i2(p), species.dx2(p)),
-                                     species.phi(p) };
-              coord_t<Dim3>     x_ph { ZERO };
-              m_mblock.metric.x_Code2Sph(xi, x_ph);
+              real_t eph, kph_x, kph_y, kph_z;
+              boost_photon(eph_EX,
+                           kph_EX_x,
+                           kph_EX_y,
+                           kph_EX_z,
+                           gamma,
+                           -px,
+                           -py,
+                           -pz,
+                           eph,
+                           kph_x,
+                           kph_y,
+                           kph_z);
 
               // Inject the scattered photon
-              if ((eph > 2.1) && (x_ph[1] > angThres) && (x_ph[1] < (constant::PI - angThres))) {
-                if (pol_par) {
-                  auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
-                  init_prtl_2d_i_di(photons_par,
-                                    ph_offset_par + ph_p,
-                                    species.i1(p),
-                                    species.i2(p),
-                                    species.dx1(p),
-                                    species.dx2(p),
-                                    kph_x,
-                                    kph_y,
-                                    kph_z,
-                                    species.weight(p));
-                } else {
-                  auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_perp(), 1);
-                  init_prtl_2d_i_di(photons_perp,
-                                    ph_offset_perp + ph_p,
-                                    species.i1(p),
-                                    species.i2(p),
-                                    species.dx1(p),
-                                    species.dx2(p),
-                                    kph_x,
-                                    kph_y,
-                                    kph_z,
-                                    species.weight(p));
-                }
+              if ((eph > 2.0)) {
+              if (pol_par) {
+                auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
+                init_prtl_2d_i_di(photons_par,
+                                  ph_offset_par + ph_p,
+                                  species.i1(p),
+                                  species.i2(p),
+                                  species.dx1(p),
+                                  species.dx2(p),
+                                  kph_x,
+                                  kph_y,
+                                  kph_z,
+                                  species.weight(p));
+              } else {
+                auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_perp(), 1);
+                init_prtl_2d_i_di(photons_perp,
+                                  ph_offset_perp + ph_p,
+                                  species.i1(p),
+                                  species.i2(p),
+                                  species.dx1(p),
+                                  species.dx2(p),
+                                  kph_x,
+                                  kph_y,
+                                  kph_z,
+                                  species.weight(p));
+              }
               }
             }
 
@@ -882,50 +990,32 @@ namespace ntt {
 
     // Gamma-B pair production
     {
-      const auto angThres { params.get<real_t>("problem", "angThres") };
       const auto bsurf { params.get<real_t>("problem", "psr_Bsurf", ONE) };
-      const auto gamma_curv { params.get<real_t>("problem", "gamma_curv") };
-      const auto gamma_curv_ph { params.get<real_t>("problem", "gamma_curv_ph") };
-      const auto m_psr_omega { params.get<real_t>("problem", "psr_omega") };
-      const auto           bq { params.get<real_t>("problem", "bq") };
-      const auto           AbsCoeff { 0.23 * (27.0 / 8.0) * bsurf / bq *
-                            (m_mblock.timestep() / params.skindepth0()) *
-                            (m_psr_omega * 0.1) * math::sqrt(params.sigma0()) 
-                            * SQR(CUBE(gamma_curv_ph)) / SQR(SQR(gamma_curv)) };
-      auto&                electrons = m_mblock.particles[4];
-      auto&                positrons = m_mblock.particles[5];
-      const auto           minRad    = m_psr_Rstar + m_atm_h;
-
-      const short buff_idx = 0;
-      const short smooth   = 0;
-      m_mblock.ComputeMoments(params, FieldID::N, {}, { 1, 2, 5, 6 }, buff_idx, smooth);
+      const auto bq { params.get<real_t>("problem", "bq") };
+      const auto AbsCoeff { 0.23 * m_mblock.timestep() * 3.00838 * 1.0 / 1000.0 *
+                            pow(10, 15) / bq };
+      auto&      electrons = m_mblock.particles[4];
+      auto&      positrons = m_mblock.particles[5];
 
       for (std::size_t s { 0 }; s < 6; ++s) {
-        if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
+        if ((s == 0) ||(s == 1) || (s == 4) || (s == 5)) {
           continue;
         }
         array_t<std::size_t> elec_ind("elec_ind");
         array_t<std::size_t> pos_ind("pos_ind");
-        auto&      photons     = m_mblock.particles[s];
-        auto&      payload1    = photons.pld[0];
-        const auto elec_offset = electrons.npart();
-        const auto pos_offset  = positrons.npart();
+        auto&                photons     = m_mblock.particles[s];
+        auto&                payload1    = photons.pld[0];
+        const auto           elec_offset = electrons.npart();
+        const auto           pos_offset  = positrons.npart();
+        const auto dt           = m_mblock.timestep();
 
         Kokkos::parallel_for(
           "Photons",
           photons.rangeActiveParticles(),
           Lambda(index_t p) {
             if (photons.tag(p) == ParticleTag::alive) {
-              const vec_t<Dim3> xi { i_di_to_Xi(photons.i1(p), photons.dx1(p)),
-                                     i_di_to_Xi(photons.i2(p), photons.dx2(p)),
-                                     photons.phi(p) };
-              coord_t<Dim3>     x_ph { ZERO };
-              m_mblock.metric.x_Code2Sph(xi, x_ph);
-              if (x_ph[0] < minRad) {
-                photons.tag(p) = ParticleTag::dead;
-              } else if (photons.tag(p) != ParticleTag::dead) {
-                // Interpolate magnetic field to the photon position
-                vec_t<Dim3> b_int_Cart;
+              // Interpolate magnetic field to the photon position
+               vec_t<Dim3> b_int_Cart;
                 {
                   vec_t<Dim3> b_int;
                   real_t      c000, c100, c010, c110, c00, c10;
@@ -971,68 +1061,68 @@ namespace ntt {
                   m_mblock.metric.v3_Cntrv2Cart(xp, b_int, b_int_Cart);
                 }
 
-                //  Check for the angle of photon propagation with magnetic field
-                auto babs { NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2]) };
-                b_int_Cart[0] /= (babs + 1e-12);
-                b_int_Cart[1] /= (babs + 1e-12);
-                b_int_Cart[2] /= (babs + 1e-12);
-                auto ePh { NORM(photons.ux1(p), photons.ux2(p), photons.ux3(p)) };
-                auto       cosAngle { DOT(b_int_Cart[0],
-                                    b_int_Cart[1],
-                                    b_int_Cart[2],
-                                    photons.ux1(p),
-                                    photons.ux2(p),
-                                    photons.ux3(p)) /
-                                ePh };
+              //  Check for the angle of photon propagation with magnetic field
+              auto babs { NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2]) };
+              b_int_Cart[0] /= (babs + 1e-12);
+              b_int_Cart[1] /= (babs + 1e-12);
+              b_int_Cart[2] /= (babs + 1e-12);
+              auto ePh { NORM(photons.ux1(p), photons.ux2(p), photons.ux3(p)) };
+              auto cosAngle { DOT(b_int_Cart[0],
+                                  b_int_Cart[1],
+                                  b_int_Cart[2],
+                                  photons.ux1(p),
+                                  photons.ux2(p),
+                                  photons.ux3(p)) /
+                              ePh };
 
-                if (ePh <= 2){
-                printf("ePh = %e\n", ePh);
-                }
+              // if (ePh <= 2) {
+              //   printf("ePh = %e\n", ePh);
+              // }
 
-                auto       sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
-                const auto increment { AbsCoeff * babs / bq * sinAngle *
-                                       math::exp(-8.0 / (3.0 * babs / bq *
-                                                         sinAngle * ePh)) };
-                payload1(p) += increment;
+              auto       sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
+    //           const auto increment { AbsCoeff * babs * sinAngle *
+    //                                  math::exp(-8.0 / (3.0 * babs / bq *
+    //                                                    sinAngle * ePh)) };
+    //           payload1(p) += increment;
 
-                // Check for pair production trigger
-                if (payload1(p) >= ONE) {
-                  photons.tag(p) = ParticleTag::dead;
-                  const auto actual_ndens = m_mblock.buff(photons.i1(p) + N_GHOSTS,
-                                                          photons.i2(p) + N_GHOSTS,
-                                                          buff_idx);
-                  auto upar {
-                    math::abs(cosAngle) * math::sqrt(SQR(ePh) - FOUR) /
-                    math::sqrt(SQR(ePh * sinAngle) + FOUR * SQR(cosAngle))
-                  };
-                  // const auto upar { 5.0 };
+              auto ethres { 0.0 };
+              if ( s == 2 ) {
+                  ethres = 2.0 / (sinAngle + 1e-12);
+              } else if ( s == 3 ) {
+                  ethres = 2.0 / (sinAngle + 1e-12) * math::sqrt(1.0 + 2.0 * babs / bq);
+              }
 
-                  if((x_ph[1] > angThres) && (x_ph[1] < (constant::PI - angThres)) && actual_ndens < 0.1) {
-                    auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-                    auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-                    init_prtl_2d_i_di(electrons,
-                                      elec_offset + elec_p,
-                                      photons.i1(p),
-                                      photons.i2(p),
-                                      photons.dx1(p),
-                                      photons.dx2(p),
-                                      SIGN(cosAngle) * upar * b_int_Cart[0],
-                                      SIGN(cosAngle) * upar * b_int_Cart[1],
-                                      SIGN(cosAngle) * upar * b_int_Cart[2],
-                                      photons.weight(p));
+              // Check for pair production trigger
+              if (ePh >= ethres) {
+              // if (payload1(p) >= ONE) {
+                photons.tag(p) = ParticleTag::dead;
+                auto upar { math::abs(cosAngle) * math::sqrt(SQR(ePh) - FOUR) /
+                            math::sqrt(SQR(ePh * sinAngle) + FOUR * SQR(cosAngle)) };
+                // const auto upar { 5.0 };
 
-                    init_prtl_2d_i_di(positrons,
-                                      pos_offset + pos_p,
-                                      photons.i1(p),
-                                      photons.i2(p),
-                                      photons.dx1(p),
-                                      photons.dx2(p),
-                                      SIGN(cosAngle) * upar * b_int_Cart[0],
-                                      SIGN(cosAngle) * upar * b_int_Cart[1],
-                                      SIGN(cosAngle) * upar * b_int_Cart[2],
-                                      photons.weight(p));
-                  }
-                }
+                auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+                auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+                init_prtl_2d_i_di(electrons,
+                                  elec_offset + elec_p,
+                                  photons.i1(p),
+                                  photons.i2(p),
+                                  photons.dx1(p),
+                                  photons.dx2(p),
+                                  SIGN(cosAngle) * upar * b_int_Cart[0],
+                                  SIGN(cosAngle) * upar * b_int_Cart[1],
+                                  SIGN(cosAngle) * upar * b_int_Cart[2],
+                                  photons.weight(p));
+
+                init_prtl_2d_i_di(positrons,
+                                  pos_offset + pos_p,
+                                  photons.i1(p),
+                                  photons.i2(p),
+                                  photons.dx1(p),
+                                  photons.dx2(p),
+                                  SIGN(cosAngle) * upar * b_int_Cart[0],
+                                  SIGN(cosAngle) * upar * b_int_Cart[1],
+                                  SIGN(cosAngle) * upar * b_int_Cart[2],
+                                  photons.weight(p));
               }
             }
           });

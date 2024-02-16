@@ -1,5 +1,5 @@
 [simulation]
-title   = "Magnetosphere"
+title   = "Magnetosphere1"
 runtime = 50.0
 
 [domain]
@@ -68,21 +68,18 @@ pusher   = "Boris,GCA"
 [problem]
 atm_T           = 0.1
 atm_contrast    = 4.0
-atm_h           = 0.05
+atm_h           = 0.1
 atm_buff        = 0.1
 psr_Bsurf       = 1.0
-psr_omega       = 0.005
+psr_omega       = 0.01
 psr_spinup_time = 5.0
 psr_field_mode  = 2
-fid_freq = 0.002
+fid_freq = 0.005
 bq = 0.1
-angThres = 0.1
-gamma_curv_ph = 260000.0
-gamma_curv = 26000000.0
 
 [output]
 fields        = ["N_1", "N_2","N_3", "N_4","N_5", "N_6","B"]
 format        = "HDF5"
 fields_stride = 2
 mom_smooth    = 2
-interval_time = 0.1
+interval_time = 0.2
