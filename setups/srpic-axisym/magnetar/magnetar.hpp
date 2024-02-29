@@ -434,8 +434,8 @@ namespace ntt {
                                                              m_ppc_per_spec);
       }
 
-      const auto pp_thres = 20.0;
-      const auto gamma_pairs = 3.5;
+      const auto pp_thres = 10.0;
+      const auto gamma_pairs = 0.5*3.5;
 
         auto&      electrons = m_mblock.particles[4];
         auto&      positrons = m_mblock.particles[5];
