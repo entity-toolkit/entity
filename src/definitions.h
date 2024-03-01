@@ -150,14 +150,22 @@ namespace ntt {
     PIC,
     GRPIC
   };
-  enum class BoundaryCondition {
+  enum class FieldsBC {
     UNDEFINED,
     PERIODIC,
     ABSORB,
-    CUSTOM,
-    OPEN,
+    ATMOSPHERE,
     COMM,
     AXIS
+  };
+  enum class ParticleBC {
+    UNDEFINED,
+    PERIODIC,
+    ABSORB,
+    ATMOSPHERE,
+    COMM,
+    AXIS,
+    REFLECT
   };
   enum class ParticlePusher {
     UNDEFINED,
@@ -184,7 +192,8 @@ namespace ntt {
   inline constexpr auto PICEngine     = SimulationEngine::PIC;
   inline constexpr auto GRPICEngine   = SimulationEngine::GRPIC;
 
-  inline auto stringizeSimulationEngine(const SimulationEngine& sim) -> std::string {
+  inline auto stringizeSimulationEngine(const SimulationEngine& sim)
+    -> std::string {
     switch (sim) {
       case SANDBOXEngine:
         return "Sandbox";
@@ -197,19 +206,36 @@ namespace ntt {
     }
   }
 
-  inline auto stringizeBoundaryCondition(const BoundaryCondition& bc) -> std::string {
+  inline auto stringizePrtlBC(const ParticleBC& bc) -> std::string {
     switch (bc) {
-      case BoundaryCondition::PERIODIC:
+      case ParticleBC::PERIODIC:
         return "Periodic";
-      case BoundaryCondition::ABSORB:
+      case ParticleBC::ABSORB:
         return "Absorb";
-      case BoundaryCondition::OPEN:
-        return "Open";
-      case BoundaryCondition::CUSTOM:
-        return "Custom";
-      case BoundaryCondition::AXIS:
+      case ParticleBC::ATMOSPHERE:
+        return "Atmosphere";
+      case ParticleBC::AXIS:
         return "Axis";
-      case BoundaryCondition::COMM:
+      case ParticleBC::COMM:
+        return "Comm";
+      case ParticleBC::REFLECT:
+        return "Reflect";
+      default:
+        return "N/A";
+    }
+  }
+
+  inline auto stringizeFldsBC(const FieldsBC& bc) -> std::string {
+    switch (bc) {
+      case FieldsBC::PERIODIC:
+        return "Periodic";
+      case FieldsBC::ABSORB:
+        return "Absorb";
+      case FieldsBC::ATMOSPHERE:
+        return "Atmosphere";
+      case FieldsBC::AXIS:
+        return "Axis";
+      case FieldsBC::COMM:
         return "Comm";
       default:
         return "N/A";
@@ -339,7 +365,7 @@ namespace ntt {
     namespace gca {
       const real_t EovrB_max = 0.9;
     } // namespace gca
-  } // namespace defaults
+  }   // namespace defaults
 } // namespace ntt
 
 /* -------------------------------------------------------------------------- */
