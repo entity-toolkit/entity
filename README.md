@@ -38,10 +38,12 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
     - [ ]  Particle tracking (SR/GR)
   - [ ]  Extra physics
     - [ ]  Radiation (synchrotron/IC)
+    - [ ]  gamma+B pair production
     - [ ]  QED
-  - [ ]  MPI
+  - [x]  MPI
     - [x]  restructure meshblocks
     - [x]  rewrite fieldsolvers (addressing + ranges)
+    - [ ]  improve performance
 
 
 * SR (minkowski)

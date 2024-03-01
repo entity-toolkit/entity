@@ -91,9 +91,7 @@ namespace ntt {
       ParticlesPush();
       timers.stop("ParticlePusher");
 
-      {
-        mblock.CheckNaNs("After Push", CheckNaN_Particles);
-      }
+      { mblock.CheckNaNs("After Push", CheckNaN_Particles); }
 
       if (params.depositEnabled()) {
         timers.start("CurrentDeposit");

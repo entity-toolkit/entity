@@ -2,8 +2,8 @@
 
 - [x] thick layer boundary for the monopole
 - [x] test with filters
-- [ ] add diagnostics for nans in fields and particles
-- [ ] add gravitationally bound atmosphere
+- [x] add diagnostics for nans in fields and particles
+- [x] add gravitationally bound atmosphere
 - [x] rewrite UniformInjector with global random pool
 - [x] add particle deletion routine
 - [x] make more user-friendly and understandable boundary conditions
@@ -28,14 +28,14 @@
 
 - [x] MPI configuration in cmake
 - [x] MPI domain decomposition
-- [ ] MPI communications
+- [x] MPI communications
   - [x] fields
-  - [ ] particles
+  - [x] particles
   - [x] currents
 - [x] MPI-aware output
-- [ ] MPI-aware diagnostics
+- [x] MPI-aware diagnostics
 - [ ] custom boundary conditions for particles and fields
-- [ ] better organization of problem generators
+- [x] better organization of problem generators
 
 ### Short term things to do/fix
 
@@ -57,7 +57,7 @@
 
 ### Readability/modulability improvements
 
-  - [ ] make kernels accept views instead of meshblocks
+  - [x] make kernels accept views instead of meshblocks
 
 ### Performance improvements to try
 
