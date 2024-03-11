@@ -81,8 +81,10 @@ namespace ntt {
 
     Inline auto ext_force_x1(const real_t&, const coord_t<PrtlCoordD>& x_ph) const
       -> real_t override {
-      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) *
-             (x_ph[0] < m_psr_Rstar + m_atm_h * 8.5);
+      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]);
+      //  *
+              // 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));
+            //  (x_ph[0] < m_psr_Rstar + m_atm_h * 8.5);
     }
 
     Inline auto ext_force_x2(const real_t&, const coord_t<PrtlCoordD>&) const
@@ -387,7 +389,7 @@ namespace ntt {
 
     template <>
     inline void ProblemGenerator<Dim2, PICEngine>::UserDriveParticles(
-      const real_t&,
+      const real_t& time,
       const SimulationParams&     params,
       Meshblock<Dim2, PICEngine>& m_mblock) {
       constexpr short buff_idx = 0;
@@ -416,6 +418,7 @@ namespace ntt {
             m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) *
                                        (r > rstar) *
                                        (r < rstar + static_cast<real_t>(8) * h);
+                                        // * (time < 40.0);
 
             const auto actual_ndens = m_mblock.buff(i1, i2, buff_idx);
             if (frac * m_ppc_per_spec(i1_, i2_) > actual_ndens) {
@@ -434,8 +437,8 @@ namespace ntt {
                                                              m_ppc_per_spec);
       }
 
-      const auto pp_thres = 10.0;
-      const auto gamma_pairs = 0.5*3.5;
+      const auto pp_thres = 40.0;
+      const auto gamma_pairs = 4*0.5*3.5;
 
         auto&      electrons = m_mblock.particles[4];
         auto&      positrons = m_mblock.particles[5];
