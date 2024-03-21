@@ -1,0 +1,31 @@
+[types]
+
+    [types.dnsType]
+    type = "string"
+    pattern = "<ip-regex-pattern>"
+
+    [types.hostnameType]
+    type = "string"
+    pattern = "<valid-hostname-regex-pattern>"
+
+    [types.serverType]
+    type = "table"
+
+        [types.serverType.name]
+        type = "string"
+
+        [types.serverType.address]
+        type = "string"
+
+        [types.serverType.dnstable]
+        type = "collection"
+        anyof = [ "types.dnsType", "types.hostnameType" ]
+
+[elements]
+
+    [elements.servers]
+    type = "collection"
+    typeof = "types.serverType"
+
+        [elements.servers.group]
+        type = "string"

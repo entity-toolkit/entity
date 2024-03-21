@@ -1,66 +1,66 @@
 [simulation]
-  title = ""   # <string>
+  title   = "" # <string>
   runtime = "" # <float>
 
 [domain]
-  sph_rabsorb = ""      # <float: > r_min>
-  absorb_coeff = ""     # <float: -infinity < ... < infinity, != 0>
-  qsph_r0 = ""          # <float: -infinity < ... < r_min>
-  qsph_h = ""           # <float: -1 < ... < 1>
-  resolution = ""       # <array of int of size 1, 2 or 3>
-  extent = ""           # <array of float of size 2, 4 or 6>, ex. [x1min, x1max, x2min, x2max, x3min, x3max]
+  sph_rabsorb      = "" # <float: > r_min>
+  absorb_coeff     = "" # <float: -infinity < ... < infinity, != 0>
+  qsph_r0          = "" # <float: -infinity < ... < r_min>
+  qsph_h           = "" # <float: -1 < ... < 1>
+  resolution       = "" # <array of int of size 1, 2 or 3>
+  extent           = "" # <array of float of size 2, 4 or 6>, ex. [x1min, x1max, x2min, x2max, x3min, x3max]
   field_boundaries = "" # <2xD array of strings: { "PERIODIC" | "ABSORB" | "OPEN" | "CUSTOM" }>
   #   ex. [["CUSTOM", "ABSORB"], ["AXIS"]], [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
 
 [algorithm]
-  CFL = ""             # <float: 0.0 < ... < 1.0>
-  correction = ""      # <float: ~1>
-  fieldsolver_ON = ""  # <bool>
-  deposit_ON = ""      # <bool>
-  extforce_ON = ""     # <bool>
+  CFL             = "" # <float: 0.0 < ... < 1.0>
+  correction      = "" # <float: ~1>
+  fieldsolver_ON  = "" # <bool>
+  deposit_ON      = "" # <bool>
+  extforce_ON     = "" # <bool>
   current_filters = "" # <int>
 
 [GCA]
-  EovrB_max = ""  # <float: 0.0 < ... < 1.0>
+  EovrB_max  = "" # <float: 0.0 < ... < 1.0>
   larmor_max = "" # <float>
 
 [synchrotron]
   gamma_rad = "" # <float>
 
 [units]
-  ppc0 = ""       # <float>
-  larmor0 = ""    # <float>
+  ppc0       = "" # <float>
+  larmor0    = "" # <float>
   skindepth0 = "" # <float>
 
 [particles]
-  n_species = ""     # <int>
-  use_weights = ""   # <bool>
+  n_species     = "" # <int>
+  use_weights   = "" # <bool>
   sort_interval = "" # <int>
 
 [species_0]
-  label = ""      # <string>
-  mass = ""       # <float>
-  charge = ""     # <float>
-  maxnpart = ""   # <int>
-  pusher = ""     # <string: { "Boris" | "Photon" | "Vay" | "Boris,GCA" | "Vay,GCA" | "None" }>
+  label      = "" # <string>
+  mass       = "" # <float>
+  charge     = "" # <float>
+  maxnpart   = "" # <int>
+  pusher     = "" # <string: { "Boris" | "Photon" | "Vay" | "Boris,GCA" | "Vay,GCA" | "None" }>
   n_payloads = "" # <short>
-  cooling = ""    # <string: { "None" | "Synchrotron" }>
+  cooling    = "" # <string: { "None" | "Synchrotron" }>
 
 [problem]
 
 [output]
-  fields = ""        # <array of strings, ex. ["E", "B", "Rho", "T0i", ...], see wiki>
-  particles = ""     # <array of strings, ex. ["X_1_2", "U_3_4", "W"], see wiki>
-  format = ""        # <string: { "disabled", "hdf5" }>
-  mom_smooth = ""    # <int>
+  fields        = "" # <array of strings, ex. ["E", "B", "Rho", "T0i", ...], see wiki>
+  particles     = "" # <array of strings, ex. ["X_1_2", "U_3_4", "W"], see wiki>
+  format        = "" # <string: { "disabled", "hdf5" }>
+  mom_smooth    = "" # <int>
   fields_stride = "" # <int>
-  prtl_stride = ""   # <int>
-  interval = ""      # <int>
+  prtl_stride   = "" # <int>
+  interval      = "" # <int>
   interval_time = "" # <float>
-  as_is = ""         # <bool>
-  ghosts = ""        # <bool>
+  as_is         = "" # <bool>
+  ghosts        = "" # <bool>
 
 [diagnostics]
-  interval = ""        # <int>
-  log_level = ""       # <string: {"DEBUG" | "INFO" | "WARNING" | "ERROR"}>
+  interval        = "" # <int>
+  log_level       = "" # <string: {"DEBUG" | "INFO" | "WARNING" | "ERROR"}>
   blocking_timers = "" # <bool>
