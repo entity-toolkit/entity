@@ -344,7 +344,7 @@ namespace ntt {
             const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
             const auto rL {
               math::sqrt(ONE + NORM_SQR(this->ux1(p), this->ux2(p), this->ux3(p))) *
-              this->dt / (TWO * this->coeff * math::sqrt(B2))
+              this->dt / math::abs(TWO * this->coeff * math::sqrt(B2))
             };
             if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
               is_gca = true;
