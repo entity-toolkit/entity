@@ -79,9 +79,12 @@ namespace ntt {
                                 const SimulationParams&,
                                 Meshblock<D, S>&) override {}
 
-    Inline auto ext_force_x1(const real_t&, const coord_t<PrtlCoordD>& x_ph) const
+    Inline auto ext_force_x1(const real_t& time, const coord_t<PrtlCoordD>& x_ph) const
       -> real_t override {
-      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]);
+      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) * 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));;
+      // * ((time > 100.0)
+      //                                       ? ONE
+      //                                       : 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar))));
       //  *
               // 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));
             //  (x_ph[0] < m_psr_Rstar + m_atm_h * 8.5);
@@ -103,6 +106,7 @@ namespace ntt {
     const real_t    m_gravity;
     const FieldMode m_psr_field_mode;
     ndarray_t<(short)(D)> m_ppc_per_spec;
+    ndarray_t<(short)(D)> m_ppc_per_ph;
   };
 
   template <Dimension D>
@@ -132,6 +136,8 @@ namespace ntt {
                                    int               _mode,
                                    real_t            _omega) {
     mainBField<D>(x_ph, e_out, b_out, _rstar, _bsurf, _mode);
+    // _omega   *= (0.5*math::tanh(122.17304763960306 - 50.*x_ph[1])*math::tanh(130.8996938995747 - 50.*x_ph[1]) - 
+    //                 0.5*math::tanh(50*(-0.6981317007977319 + x_ph[1]))*math::tanh(50*(-0.5235987755982989 + x_ph[1])));
     // _omega   *= -0.5 * (math::tanh(50 * (-0.6108652381980153 + x_ph[1])) *
     //                   (-1 + math::tanh(50 * (-0.6981317007977319 + x_ph[1])) *
     //                           math::tanh(50 * (-0.5235987755982989 + x_ph[1]))));
@@ -141,7 +147,8 @@ namespace ntt {
     auto pival = 3.141592653589793;
     // if (x_ph[1] < 0.5 * pival) {
       auto sigma  = (x_ph[1] - 0.5 * pival) / (0.25 * pival);
-      _omega     *= sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0);
+      _omega     *= sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0) * (-0.25*(-1. + math::tanh(19.634954084936208 - 50.*x_ph[1]))*(1. + 1.*math::tanh(137.44467859455344 - 50.*x_ph[1])));
+      // _omega *= sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0) * (0.5 + 0.5*math::tanh(58.90486225480862 - 50.*x_ph[1])*math::tanh(98.17477042468103 - 50.*x_ph[1]));
       e_out[0]  = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
       e_out[1]  = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
 
@@ -271,6 +278,7 @@ namespace ntt {
       Meshblock<Dim2, PICEngine>& mblock) {
       // initialize buffer array
       m_ppc_per_spec = ndarray_t<2>("ppc_per_spec", mblock.Ni1(), mblock.Ni2());
+      m_ppc_per_ph   = ndarray_t<2>("ppc_per_ph", mblock.Ni1(), mblock.Ni2());
 
       // inject particles in the atmosphere
       {
@@ -297,6 +305,24 @@ namespace ntt {
                                                              mblock,
                                                              { 1, 2 },
                                                              m_ppc_per_spec);
+
+
+    Kokkos::parallel_for(
+      "ComputeDeltaNdens",
+      mblock.rangeActiveCells(),
+      ClassLambda(index_t i1, index_t i2) {
+        const auto     i1_ = static_cast<int>(i1) - N_GHOSTS;
+        const auto     i2_ = static_cast<int>(i2) - N_GHOSTS;
+        if (i1_ >= 1 && i1_ < 2 && i2_ >= 1 && i2_ < 2) {
+        m_ppc_per_ph(i1_, i2_) = 1.0;
+        }
+      });
+
+      InjectNonUniform<Dim2, PICEngine, ThermalBackground>(params,
+                                mblock,
+                                { 5, 6 },
+                                m_ppc_per_ph);
+    
       }
     }
 
@@ -345,8 +371,10 @@ namespace ntt {
         //                                     : ONE);
         const auto omega = m_psr_omega *
                            ((1 - math::tanh(2.5 - time)) *
-                            (1 + (-1 + math::tanh(37.5 - time)) / 2.)) /
+                            (1 + (-1 + math::tanh((37.5 - time)/10.0)) / 2.)) /
                            2.;
+
+// 37.5 72.5
 
         Kokkos::parallel_for(
           "UserDriveFields_rmin",
@@ -437,8 +465,8 @@ namespace ntt {
                                                              m_ppc_per_spec);
       }
 
-      const auto pp_thres = 40.0;
-      const auto gamma_pairs = 4*0.5*3.5;
+      const auto pp_thres = 10.0;
+      const auto gamma_pairs = 0.5*3.5;
 
         auto&      electrons = m_mblock.particles[4];
         auto&      positrons = m_mblock.particles[5];
@@ -449,80 +477,80 @@ namespace ntt {
         m_mblock.ComputeMoments(params, FieldID::N, {}, { 1, 2, 5, 6 }, buff_idx, smooth);
       }
 
-      // Ad-hoc pair production kernel 
-        for (std::size_t s { 0 }; s < 6; ++s) {
-          if ((s == 1) || (s == 2) || (s == 3)) {
-            continue;
-          }
-          auto&                species = m_mblock.particles[s];
-          array_t<std::size_t> elec_ind("elec_ind");
-          array_t<std::size_t> pos_ind("pos_ind");
-          const auto           elec_offset = electrons.npart();
-          const auto           pos_offset  = positrons.npart();
+      // // Ad-hoc pair production kernel 
+      //   for (std::size_t s { 0 }; s < 6; ++s) {
+      //     if ((s == 1) || (s == 2) || (s == 3)) {
+      //       continue;
+      //     }
+      //     auto&                species = m_mblock.particles[s];
+      //     array_t<std::size_t> elec_ind("elec_ind");
+      //     array_t<std::size_t> pos_ind("pos_ind");
+      //     const auto           elec_offset = electrons.npart();
+      //     const auto           pos_offset  = positrons.npart();
 
-          Kokkos::parallel_for(
-            "ResonantScattering",
-            species.rangeActiveParticles(),
-            Lambda(index_t p) {
-              if (species.tag(p) != ParticleTag::alive) {
-                return;
-              }
+      //     Kokkos::parallel_for(
+      //       "ResonantScattering",
+      //       species.rangeActiveParticles(),
+      //       Lambda(index_t p) {
+      //         if (species.tag(p) != ParticleTag::alive) {
+      //           return;
+      //         }
 
-              auto px      = species.ux1(p);
-              auto py      = species.ux2(p);
-              auto pz      = species.ux3(p);
-              auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
-              const auto actual_ndens = m_mblock.buff(species.i1(p), species.i2(p), buff_idx);
+      //         auto px      = species.ux1(p);
+      //         auto py      = species.ux2(p);
+      //         auto pz      = species.ux3(p);
+      //         auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
+      //         const auto actual_ndens = m_mblock.buff(species.i1(p), species.i2(p), buff_idx);
 
-              if ((gamma > pp_thres) && (actual_ndens < 100.0)) {
+      //         if ((gamma > pp_thres) && (actual_ndens < 100.0)) {
 
-                auto new_gamma = gamma - 2.0 * gamma_pairs;
-                auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
-                auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+      //           auto new_gamma = gamma - 2.0 * gamma_pairs;
+      //           auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+      //           auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
 
-                auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-                auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-                init_prtl_2d_i_di(electrons,
-                                  elec_offset + elec_p,
-                                  species.i1(p),
-                                  species.i2(p),
-                                  species.dx1(p),
-                                  species.dx2(p),
-                                  px * pair_fac,
-                                  py * pair_fac,
-                                  pz * pair_fac,
-                                  species.weight(p));
+      //           auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+      //           auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+      //           init_prtl_2d_i_di(electrons,
+      //                             elec_offset + elec_p,
+      //                             species.i1(p),
+      //                             species.i2(p),
+      //                             species.dx1(p),
+      //                             species.dx2(p),
+      //                             px * pair_fac,
+      //                             py * pair_fac,
+      //                             pz * pair_fac,
+      //                             species.weight(p));
 
-                init_prtl_2d_i_di(positrons,
-                                  pos_offset + pos_p,
-                                  species.i1(p),
-                                  species.i2(p),
-                                  species.dx1(p),
-                                  species.dx2(p),
-                                  px * pair_fac,
-                                  py * pair_fac,
-                                  pz * pair_fac,
-                                  species.weight(p));
-
-
-                species.ux1(p) *= new_fac;
-                species.ux2(p) *= new_fac;
-                species.ux3(p) *= new_fac;
-
-              }
+      //           init_prtl_2d_i_di(positrons,
+      //                             pos_offset + pos_p,
+      //                             species.i1(p),
+      //                             species.i2(p),
+      //                             species.dx1(p),
+      //                             species.dx2(p),
+      //                             px * pair_fac,
+      //                             py * pair_fac,
+      //                             pz * pair_fac,
+      //                             species.weight(p));
 
 
-            });
+      //           species.ux1(p) *= new_fac;
+      //           species.ux2(p) *= new_fac;
+      //           species.ux3(p) *= new_fac;
 
-          auto elec_ind_h = Kokkos::create_mirror(elec_ind);
-          Kokkos::deep_copy(elec_ind_h, elec_ind);
-          electrons.setNpart(electrons.npart() + elec_ind_h());
+      //         }
 
-          auto pos_ind_h = Kokkos::create_mirror(pos_ind);
-          Kokkos::deep_copy(pos_ind_h, pos_ind);
-          positrons.setNpart(positrons.npart() + pos_ind_h());
 
-        }
+      //       });
+
+      //     auto elec_ind_h = Kokkos::create_mirror(elec_ind);
+      //     Kokkos::deep_copy(elec_ind_h, elec_ind);
+      //     electrons.setNpart(electrons.npart() + elec_ind_h());
+
+      //     auto pos_ind_h = Kokkos::create_mirror(pos_ind);
+      //     Kokkos::deep_copy(pos_ind_h, pos_ind);
+      //     positrons.setNpart(positrons.npart() + pos_ind_h());
+
+      //   }
 
       // Resonant scattering kernel
       // {
