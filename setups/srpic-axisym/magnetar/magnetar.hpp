@@ -81,7 +81,9 @@ namespace ntt {
 
     Inline auto ext_force_x1(const real_t&, const coord_t<PrtlCoordD>& x_ph) const
       -> real_t override {
-      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]);
+      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) * 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));;
+    
+      // return -m_gravity * SQR(m_psr_Rstar / x_ph[0]);
       //  *
               // 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));
             //  (x_ph[0] < m_psr_Rstar + m_atm_h * 8.5);
@@ -103,6 +105,7 @@ namespace ntt {
     const real_t    m_gravity;
     const FieldMode m_psr_field_mode;
     ndarray_t<(short)(D)> m_ppc_per_spec;
+    ndarray_t<(short)(D)> m_ppc_per_ph;
   };
 
   template <Dimension D>
@@ -271,6 +274,7 @@ namespace ntt {
       Meshblock<Dim2, PICEngine>& mblock) {
       // initialize buffer array
       m_ppc_per_spec = ndarray_t<2>("ppc_per_spec", mblock.Ni1(), mblock.Ni2());
+      m_ppc_per_ph   = ndarray_t<2>("ppc_per_ph", mblock.Ni1(), mblock.Ni2());
 
       // inject particles in the atmosphere
       {
@@ -297,6 +301,24 @@ namespace ntt {
                                                              mblock,
                                                              { 1, 2 },
                                                              m_ppc_per_spec);
+
+
+    Kokkos::parallel_for(
+      "ComputeDeltaNdens",
+      mblock.rangeActiveCells(),
+      ClassLambda(index_t i1, index_t i2) {
+        const auto     i1_ = static_cast<int>(i1) - N_GHOSTS;
+        const auto     i2_ = static_cast<int>(i2) - N_GHOSTS;
+        if (i1_ >= 1 && i1_ < 2 && i2_ >= 1 && i2_ < 2) {
+        m_ppc_per_ph(i1_, i2_) = 1.0;
+        }
+      });
+
+      InjectNonUniform<Dim2, PICEngine, ThermalBackground>(params,
+                                mblock,
+                                { 5, 6 },
+                                m_ppc_per_ph);
+    
       }
     }
 
@@ -437,8 +459,8 @@ namespace ntt {
                                                              m_ppc_per_spec);
       }
 
-      const auto pp_thres = 40.0;
-      const auto gamma_pairs = 4*0.5*3.5;
+      const auto pp_thres = 10.0;
+      const auto gamma_pairs = 0.5*3.5;
 
         auto&      electrons = m_mblock.particles[4];
         auto&      positrons = m_mblock.particles[5];
