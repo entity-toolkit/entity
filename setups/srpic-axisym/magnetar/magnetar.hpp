@@ -82,9 +82,14 @@ namespace ntt {
     Inline auto ext_force_x1(const real_t& time, const coord_t<PrtlCoordD>& x_ph) const
       -> real_t override {
       return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) * 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));;
+<<<<<<< HEAD
       // * ((time > 100.0)
       //                                       ? ONE
       //                                       : 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar))));
+=======
+    
+      // return -m_gravity * SQR(m_psr_Rstar / x_ph[0]);
+>>>>>>> refs/remotes/origin/user/magnetar
       //  *
               // 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));
             //  (x_ph[0] < m_psr_Rstar + m_atm_h * 8.5);
