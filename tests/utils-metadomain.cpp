@@ -2,7 +2,7 @@
 
 #include "communications/decomposition.h"
 #include "communications/metadomain.h"
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
 #include <cstdio>
 #include <iomanip>

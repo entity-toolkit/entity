@@ -6,7 +6,7 @@
 
 #include "io/input.h"
 #include "meshblock/meshblock.h"
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
 #include <plog/Appenders/RollingFileAppender.h>
 #include <plog/Formatters/TxtFormatter.h>
@@ -133,7 +133,7 @@ auto main(int argc, char* argv[]) -> int {
             maxdist = dist;
           }
           if (n == nmax) {
-            !(ntt::CloseToZero(SQR(dist), (real_t)1e-4))
+            !(ntt::AlmostZero(SQR(dist), (real_t)1e-4))
               ? throw std::logic_error(fmt::format(
                   "particle not in init position: %.6e != 0.0, L2 = %.6e",
                   dist,
@@ -145,14 +145,14 @@ auto main(int argc, char* argv[]) -> int {
                               maxdist,
                               TWO * larmor))
               : (void)0;
-            !(ntt::CloseToZero(maxupar))
+            !(ntt::AlmostZero(maxupar))
               ? throw std::logic_error(
                   fmt::format("maxupar is nonzero: %f", maxupar))
               : (void)0;
             const auto L2_u = SQR(positrons.ux1_h(0) - ux1) +
                               SQR(positrons.ux2_h(0) - ux2) +
                               SQR(positrons.ux3_h(0) - ux3);
-            !(ntt::CloseToZero(L2_u, (real_t)1e-4))
+            !(ntt::AlmostZero(L2_u, (real_t)1e-4))
               ? throw std::logic_error(
                   fmt::format("u_init != u_final: L2 = %.2e", L2_u))
               : (void)0;
@@ -164,11 +164,11 @@ auto main(int argc, char* argv[]) -> int {
                                         SQR(positrons.ux2_h(0)) +
                                         SQR(positrons.ux3_h(0)));
           !(ntt::AlmostEqual(u_mag, u_part))
-            ? throw std::logic_error(fmt::format(
-                "u_mag is incorrect after %d pushes: %.6f != %.6f",
-                n,
-                u_mag,
-                u_part))
+            ? throw std::logic_error(
+                fmt::format("u_mag is incorrect after %d pushes: %.6f != %.6f",
+                            n,
+                            u_mag,
+                            u_part))
             : (void)0;
           const auto upar = (positrons.ux1_h(0) * bx1 + positrons.ux2_h(0) * bx2 +
                              positrons.ux3_h(0) * bx3) /
@@ -176,7 +176,7 @@ auto main(int argc, char* argv[]) -> int {
           if (math::abs(upar) > maxupar) {
             maxupar = math::abs(upar);
           }
-          !(ntt::CloseToZero(upar))
+          !(ntt::AlmostZero(upar))
             ? throw std::logic_error(
                 fmt::format("u_|| is nonzero after %d pushes: %.2e", n, upar))
             : (void)0;

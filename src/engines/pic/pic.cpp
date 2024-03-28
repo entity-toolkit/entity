@@ -6,7 +6,7 @@
 #include "simulation.h"
 
 #include "io/output.h"
-#include "utils/timer.h"
+#include "utilities/timer.h"
 
 #include <plog/Log.h>
 

@@ -7,7 +7,7 @@
 #include "pic.h"
 #include "sim_params.h"
 
-#include "utils/archetypes.hpp"
+#include "utilities/archetypes.hpp"
 #include PGEN_HEADER
 
 namespace ntt {

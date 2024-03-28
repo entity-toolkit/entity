@@ -10,10 +10,6 @@
 #include <string>
 
 namespace ntt {
-  enum ParticleTag : short {
-    dead = 0,
-    alive
-  };
 
   /**
    * @brief Container class to carry particle information for a specific species.

@@ -19,7 +19,7 @@
 template <typename T>
 void put_value(ntt::array_t<T*> arr, T value, int i) {
   auto arr_h = Kokkos::create_mirror_view(arr);
-  arr_h(i) = value;
+  arr_h(i)   = value;
   Kokkos::deep_copy(arr, arr_h);
 }
 
@@ -228,9 +228,7 @@ auto main(int argc, char* argv[]) -> int {
         throw std::logic_error("DigitalFilter_kernel::SumJx3 != 1");
       }
     }
-  }
-
-  catch (std::exception& err) {
+  } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     ntt::GlobalFinalize();
     return -1;

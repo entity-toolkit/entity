@@ -8,7 +8,7 @@
 #include "communications/metadomain.h"
 #include "io/output.h"
 #include "meshblock/meshblock.h"
-#include "utils/utils.h"
+#include "utilities/utils.h"
 
 #ifdef OUTPUT_ENABLED
   #include <adios2.h>
@@ -49,7 +49,7 @@ namespace ntt {
     m_io.DefineVariable<int>("Step");
     m_io.DefineVariable<real_t>("Time");
 
-    m_io.DefineAttribute("Title", params.title());
+    m_io.DefineAttribute("Name", params.name());
     m_io.DefineAttribute("Metric", global_metric.label);
     m_io.DefineAttribute("Coordinates", params.coordinates());
     m_io.DefineAttribute("Engine", stringizeSimulationEngine(S));
@@ -276,7 +276,7 @@ namespace ntt {
     if (do_output) {
       m_adios.ExitComputationBlock();
       m_writer = m_io.Open(
-        params.title() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
+        params.name() + (params.outputFormat() == "HDF5" ? ".h5" : ".bp"),
         m_mode);
       m_mode = adios2::Mode::Append;
       WaitAndSynchronize();

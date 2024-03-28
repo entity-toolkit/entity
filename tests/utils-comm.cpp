@@ -26,9 +26,9 @@ using SimEngine = ntt::GRPIC<D>;
   #include "communications/decomposition.h"
   #include "communications/metadomain.h"
   #include "meshblock/meshblock.h"
-  #include "utils/qmath.h"
+  #include "utilities/qmath.h"
 
-  #include "utils/injector.hpp"
+  #include "utilities/injector.hpp"
 
   #include <adios2.h>
   #include <adios2/cxx11/KokkosView.h>

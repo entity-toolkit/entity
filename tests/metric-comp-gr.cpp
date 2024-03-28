@@ -1,7 +1,7 @@
 #include "wrapper.h"
 
 #include METRIC_HEADER
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
 #include <cstdio>
 #include <iostream>

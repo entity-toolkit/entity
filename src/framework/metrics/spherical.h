@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <map>
 
 namespace ntt {
   /**
@@ -26,8 +27,8 @@ namespace ntt {
 
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*) :
-      MetricBase<D> { "spherical", resolution, extent },
+           const std::map<std::string, real_t>&) :
+      MetricBase<D> { "spherical", CoordinateSystem::Sph, resolution, extent },
       dr((this->x1_max - this->x1_min) / this->nx1),
       dtheta((this->x2_max - this->x2_min) / this->nx2),
       dphi((this->x3_max - this->x3_min) / this->nx3),

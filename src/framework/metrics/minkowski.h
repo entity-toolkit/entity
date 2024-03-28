@@ -5,9 +5,10 @@
 
 #include "metric_base.h"
 
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
 #include <cmath>
+#include <map>
 
 namespace ntt {
   /**
@@ -26,8 +27,8 @@ namespace ntt {
 
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*) :
-      MetricBase<D> { "minkowski", resolution, extent },
+           const std::map<std::string, real_t>&) :
+      MetricBase<D> { "minkowski", CoordinateSystem::Cart, resolution, extent },
       dx((this->x1_max - this->x1_min) / this->nx1),
       dx_sqr(dx * dx),
       dx_inv(ONE / dx) {

@@ -8,26 +8,6 @@
 namespace ntt {
   using resolution_t = std::vector<unsigned int>;
 
-  enum em {
-    ex1 = 0,
-    ex2 = 1,
-    ex3 = 2,
-    dx1 = 0,
-    dx2 = 1,
-    dx3 = 2,
-    bx1 = 3,
-    bx2 = 4,
-    bx3 = 5,
-    hx1 = 3,
-    hx2 = 4,
-    hx3 = 5
-  };
-
-  enum cur {
-    jx1 = 0,
-    jx2 = 1,
-    jx3 = 2
-  };
 
   /**
    * @brief Container for the fields. Used a parent class for the Meshblock.

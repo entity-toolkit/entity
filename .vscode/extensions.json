@@ -2,6 +2,8 @@
   "recommendations": [
     "ms-vscode.cpptools",
     "ms-python.python",
-    "kevinrose.vsc-python-indent"
+    "xaver.clang-format",
+    "ms-vscode.cmake-tools",
+    "tamasfe.even-better-toml",
   ]
 }

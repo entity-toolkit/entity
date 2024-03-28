@@ -47,3 +47,5 @@ venv/
 
 # CMake testing files
 Testing/
+
+.schema.json

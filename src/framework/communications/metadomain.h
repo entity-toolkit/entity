@@ -4,12 +4,13 @@
 #include "wrapper.h"
 
 #include "communications/decomposition.h"
-#include "utils/qmath.h"
-#include "utils/utils.h"
+#include "utilities/qmath.h"
+#include "utilities/utils.h"
 
 #include METRIC_HEADER
 
 #include <iomanip>
+#include <vector>
 
 /**
  *
@@ -39,6 +40,29 @@
  */
 
 namespace ntt {
+  namespace {
+    /**
+     * @brief Compute a tensor product of a list of vectors
+     * @param list List of vectors
+     * @return Tensor product of list
+     */
+    template <typename T>
+    inline auto TensorProduct(const std::vector<std::vector<T>> list)
+      -> std::vector<std::vector<T>> {
+      std::vector<std::vector<unsigned int>> result = { {} };
+      for (const auto& sublist : list) {
+        std::vector<std::vector<unsigned int>> temp;
+        for (const auto& element : sublist) {
+          for (const auto& r : result) {
+            temp.push_back(r);
+            temp.back().push_back(element);
+          }
+        }
+        result = temp;
+      }
+      return result;
+    }
+  } // namespace
 
   template <Dimension D>
   class Domain {
@@ -127,7 +151,9 @@ namespace ntt {
         if (neighbor != nullptr) {
           std::cout << " -> " << neighbor->index() << "\n";
         } else {
-          std::cout << " -> " << "N/A" << "\n";
+          std::cout << " -> "
+                    << "N/A"
+                    << "\n";
         }
       }
       std::cout << "\n";
@@ -394,8 +420,8 @@ namespace ntt {
       return &(domains[index]);
     }
 
-    auto domainByOffset(
-      const std::vector<unsigned int>& d) const -> const Domain<D>* {
+    auto domainByOffset(const std::vector<unsigned int>& d) const
+      -> const Domain<D>* {
       return domainByIndex(offset2index(d));
     }
 

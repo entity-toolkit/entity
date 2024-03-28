@@ -1,66 +1,318 @@
 [simulation]
-  title   = "" # <string>
-  runtime = "" # <float>
+  # Name of the simulation:
+  #   @required
+  #   @type: string
+  #   @example: "MySim"
+  #   @note: The name is used for the output files.
+  name = ""
+  # Simulation engine to use
+  #   @required
+  #   @type: string
+  #   @valid: "SRPIC", "GRPIC"
+  engine = ""
+  # Max runtime in physical (code) units:
+  #   @required
+  #   @type: float: > 0
+  #   @example: 1e5
+  runtime = ""
 
-[domain]
-  sph_rabsorb      = "" # <float: > r_min>
-  absorb_coeff     = "" # <float: -infinity < ... < infinity, != 0>
-  qsph_r0          = "" # <float: -infinity < ... < r_min>
-  qsph_h           = "" # <float: -1 < ... < 1>
-  resolution       = "" # <array of int of size 1, 2 or 3>
-  extent           = "" # <array of float of size 2, 4 or 6>, ex. [x1min, x1max, x2min, x2max, x3min, x3max]
-  field_boundaries = "" # <2xD array of strings: { "PERIODIC" | "ABSORB" | "OPEN" | "CUSTOM" }>
-  #   ex. [["CUSTOM", "ABSORB"], ["AXIS"]], [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+[grid]
+  # Spatial resolution of the grid:
+  #   @required
+  #   @type: array of uint of size 1, 2 or 3
+  #   @example: [1024, 1024, 1024]
+  #   @note: Dimensionality is inferred from the size of this array
+  resolution = ""
+  # Physical extent of the grid:
+  #   @required
+  #   @type: 1/2/3-size array of float tuples, each of size 2
+  #   @example: [[0.0, 1.0], [-1.0, 1.0]]
+  #   @note: For spherical geometry, only specify [[rmin, rmax]], other values are set automatically
+  #   @note: For cartesian geometry, cell aspect ratio has to be 1, i.e., dx=dy=dz
+  extent = ""
 
-[algorithm]
-  CFL             = "" # <float: 0.0 < ... < 1.0>
-  correction      = "" # <float: ~1>
-  fieldsolver_ON  = "" # <bool>
-  deposit_ON      = "" # <bool>
-  extforce_ON     = "" # <bool>
-  current_filters = "" # <int>
+  # @inferred:
+  # - dim
+  #     @brief: Dimensionality of the grid
+  #     @type: short (1, 2, 3)
+  #     @from: `grid.resolution`
 
-[GCA]
-  EovrB_max  = "" # <float: 0.0 < ... < 1.0>
-  larmor_max = "" # <float>
+  [grid.metric]
+    # Metric on the grid
+    #   @required
+    #   @type: string
+    #   @valid: "Minkowski", "Spherical", "QSpherical", "Kerr_Schild", "QKerr_Schild", "Kerr_Schild_0"
+    metric = ""
+    # r0 paramter for the QSpherical metric, x1 = log(r-r0):
+    #   @type: float: -inf < ... < rmin
+    #   @default: 0.0 (e.g., x1 = log(r))
+    #   @note: negative values produce almost uniform grid in r
+    qsph_r0 = ""
+    # h paramter for the QSpherical metric, th = x2 + 2*h x2 (pi-2*x2)*(pi-x2)/pi^2:
+    #   @type: float: -1 < ... < 1
+    #   @default: 0.0 (e.g., x2 = th)
+    qsph_h = ""
+    # Spin parameter for the Kerr Schild metric:
+    #   @type: float: 0 < ... < 1
+    #   @default: 0.0
+    ks_a = ""
 
-[synchrotron]
-  gamma_rad = "" # <float>
+    # @inferred:
+    # - coord
+    #     @brief: Coordinate system on the grid
+    #     @type: string
+    #     @valid: "cartesian", "spherical", "qspherical"
+    #     @from: `grid.metric.metric`
+    # - ks_rh
+    #     @brief: Size of the horizon for GR Kerr Schild
+    #     @type: float
+    #     @from: `grid.metric.ks_a`
 
-[units]
-  ppc0       = "" # <float>
-  larmor0    = "" # <float>
-  skindepth0 = "" # <float>
+  [grid.boundaries]
+    # Boundary conditions for fields:
+    #   @required
+    #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
+    #   @valid: "PERIODIC", "ABSORB", "ATMOSPHERE", "CUSTOM", "HORIZON"
+    #   @example: [["CUSTOM", "ABSORB"]] (for 2D spherical [[rmin, rmax]])
+    #   @note: You can set one boundary per dimension, e.g., [["PERIODIC"]]
+    #   @note: In 2D spherical, bondaries in theta are set automatically
+    #   @note: In GR, the horizon boundary is set automatically
+    fields = ""
+    # Boundary conditions for fields:
+    #   @required
+    #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
+    #   @valid: "PERIODIC", "ABSORB", "ATMOSPHERE", "CUSTOM", "REFLECT", "HORIZON"
+    #   @example: [["PERIODIC"], ["PERIODIC"]]
+    #   @note: In 2D spherical, bondaries in theta are set automatically
+    #   @note: In GR, the horizon boundary is set automatically
+    particles = ""
+    # Size of the absorption layer in physical (code) units:
+    #   @type: float
+    #   @default: 1% of the domain size (in shortest dimension)
+    #   @note: In spherical, this is the size of the layer in r from the outer wall
+    #   @note: In cartesian, this is the same for all dimensions where applicable
+    absorb_d = ""
+    # Absorption coefficient for fields:
+    #   @type: float: -inf < ... < inf, != 0
+    #   @default: 1.0
+    absorb_coeff = ""
+
+[scales]
+  # Fiducial larmor radius:
+  #   @required
+  #   @type: float: > 0.0
+  larmor0 = ""
+  # Fiducial plasma skin depth:
+  #   @required
+  #   @type: float: > 0.0
+  skindepth0 = ""
+
+  # @inferred:
+  # - V0
+  #     @brief: fiducial elementary volume
+  #     @type: float
+  #     @from: `grid`
+  # - n0 [= ppc0 / V0]
+  #     @brief: Fiducial number density
+  #     @type: float
+  #     @from: `particles.ppc0`, `grid`
+  # - q0 [= 1 / (n0 * skindepth0^2)]
+  #     @brief: Fiducial elementary charge
+  #     @type: float
+  #     @from: `scales.skindepth0`, `scales.n0`
+  # - sigma0 [= (skindepth0 / larmor0)^2]
+  #     @brief: Fiducial magnetization parameter
+  #     @type: float
+  #     @from: `scales.larmor0`, `scales.skindepth0`
+  # - B0 [= 1 / larmor0]
+  #     @brief: Fiducial magnetic field
+  #     @type: float
+  #     @from: `scales.larmor0`
+  # - omegaB0 [= 1 / larmor0]
+  #     @brief: Fiducial cyclotron frequency
+  #     @type: float
+  #     @from: `scales.larmor0`
+
+[algorithms]
+  # Number of current smoothing passes:
+  #   @type: int: >= 0
+  #   @default: 0
+  current_filters = ""
+
+  [algorithms.toggles]
+    # Toggle for the field solver:
+    #   @type bool
+    #   @default: true
+    fieldsolver = ""
+    # Toggle for the current deposition:
+    #   @type bool
+    #   @default: true
+    deposit = ""
+    # Toggle for the use of external user-defined force:
+    #   @type bool
+    #   @default: false
+    extforce = ""
+
+  [algorithms.timestep]
+    # Courant-Friedrichs-Lewy number:
+    #   @type: float: 0.0 < ... < 1.0
+    #   @default: 0.95
+    #   @note: CFL number determines the timestep duration.
+    CFL = ""
+    # Correction factor for the speed of light used in field solver:
+    #   @type: float: ~1
+    #   @default: 1.0
+    correction = ""
+
+  [algorithms.gr]
+    # Stepsize for numerical differentiation in GR pusher:
+    #   @type: float: > 0
+    #   @default: 1e-6
+    pusher_eps = ""
+    # Number of iterations for the Newton-Raphson method in GR pusher:
+    #   @type: int: > 0
+    #   @default: 10
+    pusher_niter = ""
+
+  [algorithms.gca]
+    # Maximum value for E/B allowed for GCA particles:
+    #   @type: float: 0.0 < ... < 1.0
+    #   @default: 0.9
+    e_ovr_b_max = ""
+    # Maximum Larmor radius allowed for GCA particles (in physical units):
+    #   @type: float: > 0
+    #   @default: 0.0
+    larmor_max = ""
+
+  [algorithms.synchrotron]
+    # Radiation reaction limit gamma-factor for synchrotron:
+    #   @required [if one of the species has cooling="Synchrotron"]
+    #   @type: float: > 0
+    gamma_rad = ""
 
 [particles]
-  n_species     = "" # <int>
-  use_weights   = "" # <bool>
-  sort_interval = "" # <int>
+  # Fiducial number of particles per cell:
+  #   @required
+  #   @type: float: > 0
+  ppc0 = ""
+  # Toggle for using particle weights:
+  #   @type: bool
+  #   @default: false
+  use_weights = ""
+  # Timesteps between particle re-sorting:
+  #   @type: int: > 0
+  #   @default: 100
+  #   @note: When MPI is enable, particles are sorted every step.
+  sort_interval = ""
 
-[species_0]
-  label      = "" # <string>
-  mass       = "" # <float>
-  charge     = "" # <float>
-  maxnpart   = "" # <int>
-  pusher     = "" # <string: { "Boris" | "Photon" | "Vay" | "Boris,GCA" | "Vay,GCA" | "None" }>
-  n_payloads = "" # <short>
-  cooling    = "" # <string: { "None" | "Synchrotron" }>
+  # @inferred:
+  # - nspec
+  #     @brief: Number of particle species
+  #     @type: int
+  #     @from: `particles.species`
 
-[problem]
+  [[particles.species]]
+    # Label of the species:
+    #   @type: string
+    #   @default: "s*" (where "*" is the species index starting at 1)
+    #   @example: "e-"
+    label = ""
+    # Mass of the species (in units of fiducial mass):
+    #   @required
+    #   @type: float
+    mass = ""
+    # Charge of the species (in units of fiducial charge):
+    #   @required
+    #   @type: float
+    charge = "" # <float>
+    # Maximum number of particles per task:
+    #   @required
+    #   @type: int: > 0
+    maxnpart = ""
+    # Pusher algorithm for the species:
+    #   @type: string
+    #   @default: "Boris" for massive and "Photon" for massless
+    #   @valid: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
+    pusher = ""
+    # Number of additional (payload) variables for each particle of the given species:
+    #   @type: int: >= 0
+    #   @default: 0
+    n_payloads = ""
+    # Radiation reaction to use for the species:
+    #   @type: string
+    #   @default: "None"
+    #   @valid: "None", "Synchrotron"
+    cooling = ""
+
+# Parameters for specific problem generators and setups:
+[setup]
+
 
 [output]
-  fields        = "" # <array of strings, ex. ["E", "B", "Rho", "T0i", ...], see wiki>
-  particles     = "" # <array of strings, ex. ["X_1_2", "U_3_4", "W"], see wiki>
-  format        = "" # <string: { "disabled", "hdf5" }>
-  mom_smooth    = "" # <int>
-  fields_stride = "" # <int>
-  prtl_stride   = "" # <int>
-  interval      = "" # <int>
+  # Field quantities to output:
+  #   @type: array of strings
+  #   @valid: fields: "E", "B", "J", "divE"
+  #   @valid: moments: "Rho", "Charge", "N", "Nppc", "T0i", "Tij"
+  #   @valid: for GR: "D", "H", "divD", "A"
+  #   @default: []
+  #   @note: For T, you can use unspecified indices, e.g., Tij, T0i, or specific ones, e.g., Ttt, T00, T02, T23
+  #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
+  #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
+  fields = ""
+  # Particle quantities to output:
+  #   @type: array of strings
+  #   @valid: "X", "U", "W"
+  #   @default: []
+  #   @note: The code will output all species by default. If necessary, only specific species can be requested: X_1_2, U_3_4
+  particles = ""
+  # Output format:
+  #   @type: string
+  #   @valid: "disabled", "hdf5", "bp5"
+  #   @default: "hdf5"
+  format = ""
+  # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
+  #   @type: int: >= 0
+  #   @default: 1
+  mom_smooth = ""
+  # @NOT_IMPLEMENTED: Stride for the output of fields:
+  #   @type: int: > 1
+  #   @default: 1
+  fields_stride = ""
+  # Stride for the output of particles:
+  #   @type: int: > 1
+  #   @default: 100
+  prtl_stride = ""
+  # Number of timesteps between outputs:
+  #   @type: int: > 0
+  #   @default: 1
+  interval = ""
+  # Physical (code) time interval between outputs:
+  #   @type: float: > 0
+  #   @default: -1.0 (disabled)
+  #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
   interval_time = "" # <float>
-  as_is         = "" # <bool>
-  ghosts        = "" # <bool>
+
+  [output.debug]
+    # Output fields "as is" without conversions:
+    #   @type: bool
+    #   @default: false
+    as_is = ""
+    # Output fields with values in ghost cells:
+    #   @type: bool
+    #   @default: false
+    ghosts = ""
 
 [diagnostics]
-  interval        = "" # <int>
-  log_level       = "" # <string: {"DEBUG" | "INFO" | "WARNING" | "ERROR"}>
-  blocking_timers = "" # <bool>
+  # Number of timesteps between diagnostic logs:
+  #   @type: int: > 0
+  #   @default: 1
+  interval = ""
+  # Verbosity level of the diagnostic logs:
+  #   @type: string: 
+  #   @valid: "DEBUG", "INFO", "WARNING", "ERROR"
+  #   @default: "INFO"
+  log_level = ""
+  # Blocking timers between successive algorithms:
+  #   @type: bool
+  #   @default: false
+  blocking_timers = ""

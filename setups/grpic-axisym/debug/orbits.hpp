@@ -7,10 +7,10 @@
 #include "sim_params.h"
 
 #include "meshblock/meshblock.h"
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
-#include "utils/archetypes.hpp"
-#include "utils/generate_fields.hpp"
+#include "utilities/archetypes.hpp"
+#include "utilities/generate_fields.hpp"
 
 namespace ntt {
 

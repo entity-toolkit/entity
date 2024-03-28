@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <map>
 
 namespace ntt {
   /**
@@ -29,11 +30,11 @@ namespace ntt {
 
   public:
     constexpr static Dimension PrtlD = D;
-    
+
     Metric(std::vector<unsigned int> resolution,
            std::vector<real_t>       extent,
-           const real_t*) :
-      MetricBase<D> { "kerr_schild_0", resolution, extent },
+           const std::map<std::string, real_t>&) :
+      MetricBase<D> { "kerr_schild_0", CoordinateSystem::Sph, resolution, extent },
       rh_ { ZERO },
       rg_ { ZERO },
       a { ZERO },

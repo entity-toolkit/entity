@@ -55,20 +55,24 @@ namespace ntt {
   template <Dimension D>
   struct MetricBase {
     // text label of the metric
-    const std::string label;
+    const std::string      label;
+    // coordinate system to use
+    const CoordinateSystem coord;
     // max of coordinates in code units
-    const real_t      nx1, nx2, nx3;
+    const real_t           nx1, nx2, nx3;
     // extent in `x1` in physical units
-    const real_t      x1_min, x1_max;
+    const real_t           x1_min, x1_max;
     // extent in `x2` in physical units
-    const real_t      x2_min, x2_max;
+    const real_t           x2_min, x2_max;
     // extent in `x3` in physical units
-    const real_t      x3_min, x3_max;
+    const real_t           x3_min, x3_max;
 
-    MetricBase(const std::string&        label_,
+    MetricBase(const std::string&        label,
+               const CoordinateSystem&   coord,
                std::vector<unsigned int> resolution,
                std::vector<real_t>       extent) :
-      label { label_ },
+      label { label },
+      coord { coord },
       nx1 { resolution.size() > 0 ? (real_t)(resolution[0]) : ONE },
       nx2 { resolution.size() > 1 ? (real_t)(resolution[1]) : ONE },
       nx3 { resolution.size() > 2 ? (real_t)(resolution[2]) : ONE },

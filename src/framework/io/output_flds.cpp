@@ -5,7 +5,7 @@
 #include "io/output.h"
 #include "meshblock/fields.h"
 #include "meshblock/meshblock.h"
-#include "utils/utils.h"
+#include "utilities/utils.h"
 
 #ifdef OUTPUT_ENABLED
   #include <adios2.h>

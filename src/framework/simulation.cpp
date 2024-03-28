@@ -3,9 +3,9 @@
 #include "wrapper.h"
 
 #include "io/output.h"
-#include "utils/progressbar.h"
-#include "utils/timer.h"
-#include "utils/utils.h"
+#include "utilities/progressbar.h"
+#include "utilities/timer.h"
+#include "utilities/utils.h"
 
 #include <plog/Log.h>
 #include <toml.hpp>

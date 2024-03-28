@@ -5,7 +5,9 @@
 
 #include "metric_base.h"
 
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
+
+#include <map>
 
 namespace ntt {
   /**
@@ -26,12 +28,12 @@ namespace ntt {
   public:
     constexpr static Dimension PrtlD = Dim3;
 
-    Metric(std::vector<unsigned int> resolution,
-           std::vector<real_t>       extent,
-           const real_t*             params) :
-      MetricBase<D> { "qspherical", resolution, extent },
-      r0 { params[0] },
-      h { params[1] },
+    Metric(std::vector<unsigned int>            resolution,
+           std::vector<real_t>                  extent,
+           const std::map<std::string, real_t>& params) :
+      MetricBase<D> { "qspherical", CoordinateSystem::Qsph, resolution, extent },
+      r0 { params.at("r0") },
+      h { params.at("h") },
       chi_min { math::log(this->x1_min - r0) },
       eta_min { theta2eta(this->x2_min) },
       phi_min { this->x3_min },

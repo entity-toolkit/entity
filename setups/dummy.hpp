@@ -7,7 +7,7 @@
 
 #include "meshblock/meshblock.h"
 
-#include "utils/archetypes.hpp"
+#include "utilities/archetypes.hpp"
 
 namespace ntt {
 

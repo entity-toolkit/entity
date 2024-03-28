@@ -1,3 +1,8 @@
+/**
+ * @class Simulation (metaclass)
+ * @depends: SimulationParams, Metadomain, Meshblock, Writer
+ */
+
 #ifndef FRAMEWORK_SIMULATION_H
 #define FRAMEWORK_SIMULATION_H
 
@@ -9,7 +14,7 @@
 #include "io/output.h"
 #include "io/writer.h"
 #include "meshblock/meshblock.h"
-#include "utils/timer.h"
+#include "utilities/timer.h"
 
 #include <toml.hpp>
 
@@ -44,12 +49,6 @@ namespace ntt {
 
   typedef int CommTags;
 
-  /**
-   * @brief Main class of the simulation containing all the necessary methods
-   * and configurations.
-   * @tparam D dimension.
-   * @tparam S simulation engine.
-   */
   template <Dimension D, SimulationEngine S>
   class Simulation {
   protected:
@@ -64,23 +63,15 @@ namespace ntt {
 
   public:
     static inline constexpr SimulationEngine engine { S };
-    // meshblock with all the fields / metric / and particles
     Meshblock<D, S>                          meshblock;
-    // writer
     Writer<D, S>                             writer;
-    // random number pool
     RandomNumberPool_t                       random_pool;
 
     /**
-     * @brief Constructor for simulation class.
-     * @param inputdata toml-object with parsed toml parameters.
+     * @param inputdata toml-object with parsed toml parameters
      */
     Simulation(const toml::value& inputdata);
     ~Simulation();
-
-    /* -------------------------------------------------------------------------- */
-    /*                                Main routines */
-    /* -------------------------------------------------------------------------- */
 
     /**
      * @brief Verify that all the specified parameters are compatible before
@@ -93,10 +84,6 @@ namespace ntt {
      */
     void PrintDetails();
 
-    /**
-     * @brief Diagnostic logging.
-     * @param os output stream.
-     */
     void PrintDiagnostics(const std::size_t&        step,
                           const real_t&             time,
                           const timer::Timers&      timer,
@@ -104,9 +91,9 @@ namespace ntt {
                           const DiagFlags           diag_flags,
                           std::ostream&             os = std::cout);
 
-    /* -------------------------------------------------------------------------- */
-    /*                       Inter-meshblock communications */
-    /* -------------------------------------------------------------------------- */
+    /* ---------------------------------------------------------------------- */
+    /* Inter-meshblock communications                                         */
+    /* ---------------------------------------------------------------------- */
 
     /**
      * @brief Synchronize ghost zones between the meshblocks.
@@ -118,12 +105,9 @@ namespace ntt {
      */
     void CurrentsSynchronize();
 
-    /* -------------------------------------------------------------------------- */
-    /*                                   Getters */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @brief Get pointer to `m_params`.
-     */
+    /* ---------------------------------------------------------------------- */
+    /* Getters                                                                */
+    /* ---------------------------------------------------------------------- */
     [[nodiscard]]
     auto params() -> SimulationParams* {
       return &m_params;
@@ -134,17 +118,11 @@ namespace ntt {
       return &m_metadomain;
     }
 
-    /**
-     * @brief Get the physical time
-     */
     [[nodiscard]]
     auto time() const -> real_t {
       return m_time;
     }
 
-    /**
-     * @brief Get the current timestep
-     */
     [[nodiscard]]
     auto tstep() const -> std::size_t {
       return m_tstep;

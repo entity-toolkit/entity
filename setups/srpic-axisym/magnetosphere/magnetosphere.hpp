@@ -9,8 +9,8 @@
 
 #include "meshblock/meshblock.h"
 
-#include "utils/archetypes.hpp"
-#include "utils/injector.hpp"
+#include "utilities/archetypes.hpp"
+#include "utilities/injector.hpp"
 
 #ifdef GUI_ENABLED
   #include "nttiny/api.h"

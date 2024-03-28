@@ -114,7 +114,8 @@ namespace ntt {
     ~Mesh() = default;
 
     // Boundary conditions.
-    std::vector<std::vector<BoundaryCondition>> boundaries;
+    std::vector<std::vector<FieldsBC>>   flds_bcs;
+    std::vector<std::vector<ParticleBC>> prtl_bcs;
 
     /* -------------------------------------------------------------------------- */
     /*                    Ranges in the device execution space */

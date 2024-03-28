@@ -48,7 +48,15 @@ namespace ntt {
                     const std::size_t&    maxnpart,
                     const ParticlePusher& pusher,
                     const Cooling&        cooling,
-                    const unsigned short& npld = 0);
+                    const unsigned short& npld = 0) :
+      m_index { index },
+      m_label { std::move(label) },
+      m_mass { m },
+      m_charge { ch },
+      m_maxnpart { maxnpart },
+      m_pusher { pusher },
+      m_cooling { cooling },
+      m_npld { npld } {}
 
     /**
      * @brief Copy constructor for the particle species container.

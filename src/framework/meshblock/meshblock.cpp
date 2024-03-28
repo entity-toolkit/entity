@@ -7,7 +7,7 @@
 #include "species.h"
 
 #include "meshblock/particles.h"
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
 namespace ntt {
   template <Dimension D, SimulationEngine S>

@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <map>
 
 namespace ntt {
   /**
@@ -46,13 +47,13 @@ namespace ntt {
   public:
     constexpr static Dimension PrtlD = D;
 
-    Metric(std::vector<unsigned int> resolution,
-           std::vector<real_t>       extent,
-           const real_t*             params) :
-      MetricBase<D> { "kerr_schild", resolution, extent },
-      rh_ { params[5] },
+    Metric(std::vector<unsigned int>            resolution,
+           std::vector<real_t>                  extent,
+           const std::map<std::string, real_t>& params) :
+      MetricBase<D> { "kerr_schild", CoordinateSystem::Sph, resolution, extent },
+      rh_ { params.at("rh") },
       rg_ { ONE },
-      a { params[4] },
+      a { params.at("a") },
       a_sqr { SQR(a) },
       dr { (this->x1_max - this->x1_min) / this->nx1 },
       dtheta { (this->x2_max - this->x2_min) / this->nx2 },

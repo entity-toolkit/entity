@@ -4,7 +4,7 @@
 
 #include "sim_params.h"
 
-#include "utils/timer.h"
+#include "utilities/timer.h"
 
 #include <plog/Log.h>
 

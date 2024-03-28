@@ -7,9 +7,9 @@
 #include "sim_params.h"
 
 #include "meshblock/meshblock.h"
-#include "utils/qmath.h"
+#include "utilities/qmath.h"
 
-#include "utils/archetypes.hpp"
+#include "utilities/archetypes.hpp"
 
 namespace ntt {
 

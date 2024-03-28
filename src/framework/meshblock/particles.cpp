@@ -4,7 +4,7 @@
 
 #include "species.h"
 
-#include "utils/utils.h"
+#include "utilities/utils.h"
 
 #include <cstddef>
 #include <numeric>

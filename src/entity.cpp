@@ -61,12 +61,12 @@ auto main(int argc, char* argv[]) -> int {
       log_level_enum = plog::error;
     }
 
-    auto sim_title     = ntt::readFromInput<std::string>(inputdata,
-                                                     "simulation",
-                                                     "title",
-                                                     ntt::defaults::title);
-    auto logfile_name  = sim_title + ".log";
-    auto infofile_name = sim_title + ".info";
+    auto sim_name      = ntt::readFromInput<std::string>(inputdata,
+                                                    "simulation",
+                                                    "name",
+                                                    ntt::defaults::name);
+    auto logfile_name  = sim_name + ".log";
+    auto infofile_name = sim_name + ".info";
     std::remove(logfile_name.c_str());
     std::remove(infofile_name.c_str());
     plog::RollingFileAppender<plog::TxtFormatter> logfileAppender(
