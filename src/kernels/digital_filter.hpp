@@ -6,7 +6,6 @@
  * @depends:
  *   - enums.h
  *   - global.h
- *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
  *   - utils/log.h
@@ -23,7 +22,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "global.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/log.h"
@@ -139,7 +137,7 @@ namespace ntt {
 
 #define FILTER_IN_I1(ARR, COMP, I, J)                                          \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+    INV_4*((ARR)((I) - 1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
   template <Dimension D, Coord::type C>
   class DigitalFilter_kernel<D, C, if_noncart<C>>

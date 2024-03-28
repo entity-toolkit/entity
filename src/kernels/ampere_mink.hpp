@@ -18,8 +18,8 @@
 #define KERNELS_AMPERE_MINK_H
 
 #include "enums.h"
-
 #include "global.h"
+
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/log.h"

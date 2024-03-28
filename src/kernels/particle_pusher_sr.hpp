@@ -6,7 +6,6 @@
  * @depends:
  *   - enums.h
  *   - global.h
- *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
  *   - utils/log.h
@@ -21,7 +20,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "global.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/log.h"
@@ -664,14 +662,14 @@ namespace ntt {
   }
 
   template <Dimension D, class M, class PG>
-  Inline auto PusherBase_kernel<D, M, PG>::getEnergy(Massive_t, index_t& p) const
-    -> real_t {
+  Inline auto PusherBase_kernel<D, M, PG>::getEnergy(Massive_t,
+                                                     index_t& p) const -> real_t {
     return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
   template <Dimension D, class M, class PG>
-  Inline auto PusherBase_kernel<D, M, PG>::getEnergy(Massless_t, index_t& p) const
-    -> real_t {
+  Inline auto PusherBase_kernel<D, M, PG>::getEnergy(Massless_t,
+                                                     index_t& p) const -> real_t {
     return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 

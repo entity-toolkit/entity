@@ -7,7 +7,6 @@
  * @depends:
  *   - enums.h
  *   - global.h
- *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
  *   - utils/log.h
@@ -24,7 +23,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "global.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/log.h"

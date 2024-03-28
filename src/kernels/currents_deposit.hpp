@@ -6,7 +6,6 @@
  * @depends:
  *   - enums.h
  *   - global.h
- *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/numeric.h
  * @namespaces:
@@ -19,7 +18,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "global.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
 
