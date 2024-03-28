@@ -107,8 +107,9 @@ namespace ntt {
     };
 
     template <typename T>
-    auto baseContains(T* const arr, const std::size_t n, const std::string& elem)
-      -> bool {
+    auto baseContains(T* const           arr,
+                      const std::size_t  n,
+                      const std::string& elem) -> bool {
       for (std::size_t i = 0; i < n; ++i) {
         if (arr[i] == elem) {
           return true;

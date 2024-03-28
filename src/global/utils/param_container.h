@@ -68,9 +68,16 @@ namespace prm {
             HERE);
           return def.value();
         }
-        raise::Error(fmt::format("Key %s not found", key), HERE);
+        raise::Error(fmt::format("Key %s not found", key.c_str()), HERE);
+        throw;
       } catch (const std::bad_any_cast&) {
-        raise::Error(fmt::format("Bad any_cast for %s", key), HERE);
+        raise::Error(fmt::format("Bad any_cast for %s", key.c_str()), HERE);
+        throw;
+      } catch (const std::exception& e) {
+        raise::Error(
+          fmt::format("Unknown error for %s : %s", key.c_str(), e.what()),
+          HERE);
+        throw;
       }
     }
 
@@ -85,7 +92,8 @@ namespace prm {
         ss << temp;
       };
       auto stringize_key = [](std::ostringstream& ss, std::any v) {
-        if constexpr (std::is_object_v<T>) {
+        if constexpr (std::is_class_v<T> &&
+                      not std::is_same_v<std::string, std::decay_t<T>>) {
           statc_assert(std::is_member_function_pointer_v<decltype(&T::stringize)>);
           ss << T::stringize(std::any_cast<std::string_view>(v));
         } else {
@@ -97,8 +105,9 @@ namespace prm {
         using vecT    = std::vector<T>;
         using vecvecT = std::vector<vecT>;
         if (vars.at(key).type() == typeid(vecvecT)) {
+          const auto vecvec = get<vecvecT>(key);
           result << "[";
-          for (const auto& v : std::any_cast<vecvecT>(vars.at(key))) {
+          for (const auto& v : vecvec) {
             result << "{";
             for (const auto& i : v) {
               stringize_key(result, i);
@@ -110,22 +119,26 @@ namespace prm {
           remove_last_n(result, 2);
           result << "]";
         } else if (vars.at(key).type() == typeid(vecT)) {
+          const auto vec = get<vecT>(key);
           result << "[";
-          for (const auto& i : std::any_cast<vecT>(vars.at(key))) {
+          for (const auto& i : vec) {
             stringize_key(result, i);
             result << ", ";
           }
           remove_last_n(result, 2);
           result << "]";
         } else if (vars.at(key).type() == typeid(T)) {
-          stringize_key(result, vars.at(key));
+          const auto v = get<T>(key);
+          stringize_key(result, v);
         }
       } catch (const std::out_of_range&) {
-        raise::Error(fmt::format("Key %s not found", key), HERE);
+        raise::Error(fmt::format("Key %s not found", key.c_str()), HERE);
       } catch (const std::bad_any_cast&) {
-        raise::Error(fmt::format("Bad any_cast for %s", key), HERE);
+        raise::Error(fmt::format("Bad any_cast for %s", key.c_str()), HERE);
       } catch (const std::exception& e) {
-        raise::Error(fmt::format("Unknown error for %s : %s", key, e.what()), HERE);
+        raise::Error(
+          fmt::format("Unknown error for %s : %s", key.c_str(), e.what()),
+          HERE);
       }
       return result.str();
     }

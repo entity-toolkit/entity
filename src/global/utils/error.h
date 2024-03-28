@@ -66,8 +66,7 @@ namespace raise {
 #if defined(MPI_ENABLED)
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 #endif
-    Kokkos::abort(msg.c_str());
-    std::abort();
+    throw std::logic_error(msg.c_str());
   }
 
   inline void Fatal(const std::string& msg,
@@ -84,8 +83,7 @@ namespace raise {
 #if defined(MPI_ENABLED)
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 #endif
-    Kokkos::abort(msg.c_str());
-    std::abort();
+    throw std::runtime_error(msg.c_str());
   }
 
   inline void ErrorIf(bool               condition,
@@ -95,6 +93,16 @@ namespace raise {
                       int                line) {
     if (condition) {
       Error(msg, file, func, line);
+    }
+  }
+
+  inline void FatalIf(bool               condition,
+                      const std::string& msg,
+                      const std::string& file,
+                      const std::string& func,
+                      int                line) {
+    if (condition) {
+      Fatal(msg, file, func, line);
     }
   }
 
