@@ -364,11 +364,11 @@ namespace ntt {
     }
 
     // Getters
-    Inline void getPrtlPos(index_t& p, coord_t<M::PrtlD>& xp) const {
+    Inline void getPrtlPos(index_t& p, coord_t<M::PrtlDim>& xp) const {
       if constexpr (D == Dim::_1D) {
         xp[0] = i_di_to_Xi(i1(p), dx1(p));
       } else if constexpr (D == Dim::_2D) {
-        if constexpr (M::PrtlD == Dim::_3D) {
+        if constexpr (M::PrtlDim == Dim::_3D) {
           xp[0] = i_di_to_Xi(i1(p), dx1(p));
           xp[1] = i_di_to_Xi(i2(p), dx2(p));
           xp[2] = phi(p);
@@ -384,7 +384,7 @@ namespace ntt {
     }
 
     Inline void getPrtl3Vel(index_t& p, vec_t<Dim::_3D>& vp) const {
-      coord_t<M::PrtlD> xp { ZERO };
+      coord_t<M::PrtlDim> xp { ZERO };
       getPrtlPos(p, xp);
       auto inv_energy { ZERO };
       if constexpr (S == PICEngine) {

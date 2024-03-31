@@ -20,18 +20,24 @@
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
- * @note Comparison with strings is case-insensitive
- * @note    example: "srpIC" == SimulationEngine::SRPIC
- * @note To convert an enum to a string, use its stringize() method
- * @note    example: SimulationEngine::SRPIC.stringize() == "srpic"
- * @note To check if a string is a valid option, use the contains() function
- * @note    example: ParticlePusher::contains("Vay") == true
- * @note To get the proper enum instance from a string, use the pick() function
- * @note    example: ParticlePusher::pick("Vay") == ParticlePusher::VAY
- * @note To get the total number of enum instances, use the total variable
- * @note    example: Cooling::total == 2
- * @note To iterate over all enum instances, use the variants array
- * @note    example: for (const auto& cooling : Cooling::variants) { ... }
+ * @note
+ * Comparison with strings is case-insensitive
+ * example: "srpIC" == SimulationEngine::SRPIC
+ * @note
+ * To convert an enum to a string, use its stringize() method
+ * example: SimulationEngine::SRPIC.stringize() == "srpic"
+ * @note
+ * To check if a string is a valid option, use the contains() function
+ * example: ParticlePusher::contains("Vay") == true
+ * @note
+ * To get the proper enum instance from a string, use the pick() function
+ * example: ParticlePusher::pick("Vay") == ParticlePusher::VAY
+ * @note
+ * To get the total number of enum instances, use the total variable
+ * example: Cooling::total == 2
+ * @note
+ * To iterate over all enum instances, use the variants array
+ * example: for (const auto& cooling : Cooling::variants) { ... }
  */
 
 #ifndef GLOBAL_ENUMS_H

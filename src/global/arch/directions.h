@@ -10,10 +10,12 @@
  *   - utils/log.h
  * @namespaces:
  *   - dir::Directions
- * @note dir::Directions<D>::all contains all possible directions in D
- * @note ... dimensions with increments in each direction
- * @note dir::Directions<D>::unique is similar to ::all,
- * @note ... but contains only unique directions (i.e. no +1/-1)
+ * @note 
+ * dir::Directions<D>::all contains all possible directions in D
+ * dimensions with increments in each direction
+ * @note 
+ * dir::Directions<D>::unique is similar to ::all,
+ * but contains only unique directions (i.e. no +1/-1)
  */
 
 #ifndef GLOBAL_ARCH_DIRECTIONS_H

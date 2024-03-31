@@ -1,5 +1,5 @@
 # ------------------------------
-# @brief: Generates tests for the `global` module
+# @brief: Generates tests for the `ntt_global` module
 # @uses:
 # - kokkos [required]
 # - plog [required]

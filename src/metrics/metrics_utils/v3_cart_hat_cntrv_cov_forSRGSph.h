@@ -1,6 +1,3 @@
-#ifndef FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
-#define FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H
-
 /**
  * @brief Vector transformations for generalized spherical.
  * @implements v3: Cntrv -> Cart
@@ -18,13 +15,11 @@
  * @param vi_cntrv vector in contravariant basis
  * @param vi_cart vector in global Cartesian basis
  */
-Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
-                          const vec_t<Dim3>&   vi_cntrv,
-                          vec_t<Dim3>&         vi_cart) const {
-  vec_t<Dim3> vi_hat { ZERO };
-  if constexpr (D == Dim1) {
-    this->v3_Cntrv2Hat({ xi[0] }, vi_cntrv, vi_hat);
-  } else if constexpr (D == Dim2) {
+Inline void v3_Cntrv2Cart(const coord_t<PrtlDim>& xi,
+                          const vec_t<Dim::_3D>&  vi_cntrv,
+                          vec_t<Dim::_3D>&        vi_cart) const {
+  vec_t<Dim::_3D> vi_hat { ZERO };
+  if constexpr (D == Dim::_2D) {
     this->v3_Cntrv2Hat({ xi[0], xi[1] }, vi_cntrv, vi_hat);
   } else {
     this->v3_Cntrv2Hat(xi, vi_cntrv, vi_hat);
@@ -39,14 +34,12 @@ Inline void v3_Cntrv2Cart(const coord_t<Dim3>& xi,
  * @param vi_cart vector in global Cartesian basis
  * @param vi_cntrv vector in contravariant basis
  */
-Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
-                          const vec_t<Dim3>&   vi_cart,
-                          vec_t<Dim3>&         vi_cntrv) const {
-  vec_t<Dim3> vi_hat { ZERO };
+Inline void v3_Cart2Cntrv(const coord_t<PrtlDim>& xi,
+                          const vec_t<Dim::_3D>&  vi_cart,
+                          vec_t<Dim::_3D>&        vi_cntrv) const {
+  vec_t<Dim::_3D> vi_hat { ZERO };
   this->v3_Cart2Hat(xi, vi_cart, vi_hat);
-  if constexpr (D == Dim1) {
-    this->v3_Hat2Cntrv({ xi[0] }, vi_hat, vi_cntrv);
-  } else if constexpr (D == Dim2) {
+  if constexpr (D == Dim::_2D) {
     this->v3_Hat2Cntrv({ xi[0], xi[1] }, vi_hat, vi_cntrv);
   } else {
     this->v3_Hat2Cntrv(xi, vi_hat, vi_cntrv);
@@ -60,13 +53,11 @@ Inline void v3_Cart2Cntrv(const coord_t<Dim3>& xi,
  * @param vi_cov vector in covariant basis
  * @param vi_cart vector in global Cartesian basis
  */
-Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_cov,
-                        vec_t<Dim3>&         vi_cart) const {
-  vec_t<Dim3> vi_hat { ZERO };
-  if constexpr (D == Dim1) {
-    this->v3_Cov2Hat({ xi[0] }, vi_cov, vi_hat);
-  } else if constexpr (D == Dim2) {
+Inline void v3_Cov2Cart(const coord_t<PrtlDim>& xi,
+                        const vec_t<Dim::_3D>&  vi_cov,
+                        vec_t<Dim::_3D>&        vi_cart) const {
+  vec_t<Dim::_3D> vi_hat { ZERO };
+  if constexpr (D == Dim::_2D) {
     this->v3_Cov2Hat({ xi[0], xi[1] }, vi_cov, vi_hat);
   } else {
     this->v3_Cov2Hat(xi, vi_cov, vi_hat);
@@ -81,14 +72,12 @@ Inline void v3_Cov2Cart(const coord_t<Dim3>& xi,
  * @param vi_cart vector in global Cartesian basis
  * @param vi_cov vector in covariant basis
  */
-Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_cart,
-                        vec_t<Dim3>&         vi_cov) const {
-  vec_t<Dim3> vi_hat { ZERO };
+Inline void v3_Cart2Cov(const coord_t<PrtlDim>& xi,
+                        const vec_t<Dim::_3D>&  vi_cart,
+                        vec_t<Dim::_3D>&        vi_cov) const {
+  vec_t<Dim::_3D> vi_hat { ZERO };
   this->v3_Cart2Hat(xi, vi_cart, vi_hat);
-  if constexpr (D == Dim1) {
-    this->v3_Hat2Cov({ xi[0] }, vi_cov, vi_hat);
-  } else if constexpr (D == Dim2) {
+  if constexpr (D == Dim::_2D) {
     this->v3_Hat2Cov({ xi[0], xi[1] }, vi_hat, vi_cov);
   } else {
     this->v3_Hat2Cov(xi, vi_hat, vi_cov);
@@ -108,10 +97,10 @@ Inline void v3_Cart2Cov(const coord_t<Dim3>& xi,
  * @param vi_hat vector in hatted (spherical) basis
  * @param vi_cart vector in global Cartesian basis
  */
-Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_hat,
-                        vec_t<Dim3>&         vi_cart) const {
-  coord_t<Dim3> x_sph { ZERO };
+Inline void v3_Hat2Cart(const coord_t<PrtlDim>& xi,
+                        const vec_t<Dim::_3D>&  vi_hat,
+                        vec_t<Dim::_3D>&        vi_cart) const {
+  coord_t<PrtlDim> x_sph { ZERO };
   x_sph[0]   = this->x1_Code2Sph(xi[0]);
   x_sph[1]   = this->x2_Code2Sph(xi[1]);
   x_sph[2]   = this->x3_Code2Sph(xi[2]);
@@ -131,10 +120,10 @@ Inline void v3_Hat2Cart(const coord_t<Dim3>& xi,
  * @param vi_cart vector in global Cartesian basis
  * @param vi_hat vector in hatted (spherical) basis
  */
-Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
-                        const vec_t<Dim3>&   vi_cart,
-                        vec_t<Dim3>&         vi_hat) const {
-  coord_t<Dim3> x_sph { ZERO };
+Inline void v3_Cart2Hat(const coord_t<PrtlDim>& xi,
+                        const vec_t<Dim::_3D>&  vi_cart,
+                        vec_t<Dim::_3D>&        vi_hat) const {
+  coord_t<PrtlDim> x_sph { ZERO };
   x_sph[0]  = this->x1_Code2Sph(xi[0]);
   x_sph[1]  = this->x2_Code2Sph(xi[1]);
   x_sph[2]  = this->x3_Code2Sph(xi[2]);
@@ -146,5 +135,3 @@ Inline void v3_Cart2Hat(const coord_t<Dim3>& xi,
               vi_cart[2] * math::sin(x_sph[1]);
   vi_hat[2] = -vi_cart[0] * math::sin(x_sph[2]) + vi_cart[1] * math::cos(x_sph[2]);
 }
-
-#endif // FRAMEWORK_METRICS_UTILS_V3_CART_HAT_CNTRV_COV_FORGSPH_H

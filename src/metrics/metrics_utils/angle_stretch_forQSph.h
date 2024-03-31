@@ -1,6 +1,3 @@
-#ifndef FRAMEWORK_METRICS_UTILS_ANGLE_STRETCH_FORQSPH_H
-#define FRAMEWORK_METRICS_UTILS_ANGLE_STRETCH_FORQSPH_H
-
 /**
  * @brief Angle stretching for stretched spherical.
  * @implements dtheta_deta
@@ -13,7 +10,7 @@
  *
  */
 Inline auto dtheta_deta(const real_t& eta) const -> real_t {
-  if (AlmostEqual(h, ZERO)) {
+  if (cmp::AlmostZero(h)) {
     return ONE;
   } else {
     return (ONE + TWO * h +
@@ -27,7 +24,7 @@ Inline auto dtheta_deta(const real_t& eta) const -> real_t {
  *
  */
 Inline auto eta2theta(const real_t& eta) const -> real_t {
-  if (AlmostEqual(h, ZERO)) {
+  if (cmp::AlmostZero(h)) {
     return eta;
   } else {
     return eta + TWO * h * eta * (constant::PI - TWO * eta) *
@@ -40,7 +37,7 @@ Inline auto eta2theta(const real_t& eta) const -> real_t {
  *
  */
 Inline auto theta2eta(const real_t& theta) const -> real_t {
-  if (AlmostEqual(h, ZERO)) {
+  if (cmp::AlmostZero(h)) {
     return theta;
   } else {
     using namespace constant;
@@ -67,5 +64,3 @@ Inline auto theta2eta(const real_t& theta) const -> real_t {
       12.0);
   }
 }
-
-#endif // FRAMEWORK_METRICS_UTILS_ANGLE_STRETCH_FORQSPH_H

@@ -200,14 +200,14 @@ namespace ntt {
                        vec_t<Dim::_3D>&) const;
 
     // Getters
-    Inline void getPrtlPos(index_t&, coord_t<M::PrtlD>&) const;
+    Inline void getPrtlPos(index_t&, coord_t<M::PrtlDim>&) const;
     Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
     Inline auto getEnergy(Massless_t, index_t& p) const -> real_t;
     Inline void getInterpFlds(index_t&, vec_t<Dim::_3D>&, vec_t<Dim::_3D>&) const;
 
     // Extra
     Inline void boundaryConditions(index_t&) const;
-    Inline void initForce(coord_t<M::PrtlD>&, vec_t<Dim::_3D>&) const;
+    Inline void initForce(coord_t<M::PrtlDim>&, vec_t<Dim::_3D>&) const;
   };
 
   /**
@@ -344,7 +344,7 @@ namespace ntt {
 
     Inline void operator()(P, index_t p) const {
       if (this->tag(p) == ParticleTag::alive) {
-        coord_t<M::PrtlD> xp { ZERO };
+        coord_t<M::PrtlDim> xp { ZERO };
         this->getPrtlPos(p, xp);
         // update cartesian velocity
         if constexpr (!std::is_same_v<P, Photon_t>) {
@@ -436,10 +436,10 @@ namespace ntt {
                                     this->ux2(p) * inv_energy,
                                     this->ux3(p) * inv_energy };
           // get cartesian position
-          coord_t<M::PrtlD> xp_Cart { ZERO };
+          coord_t<M::PrtlDim> xp_Cart { ZERO };
           this->metric.x_Code2Cart(xp, xp_Cart);
           // update cartesian position
-          for (auto d = 0u; d < M::PrtlD; ++d) {
+          for (auto d = 0u; d < M::PrtlDim; ++d) {
             xp_Cart[d] += vp_Cart[d] * this->dt;
           }
           // transform back to code
@@ -457,7 +457,7 @@ namespace ntt {
             this->i2_prev(p)  = this->i2(p);
             this->dx2_prev(p) = this->dx2(p);
             from_Xi_to_i_di(xp[1], this->i2(p), this->dx2(p));
-            if constexpr (D == Dim::_2D && M::PrtlD == Dim::_3D) {
+            if constexpr (D == Dim::_2D && M::PrtlDim == Dim::_3D) {
               this->phi(p) = xp[2];
             }
           }
@@ -645,13 +645,13 @@ namespace ntt {
 
   template <Dimension D, class M, class PG>
   Inline void PusherBase_kernel<D, M, PG>::getPrtlPos(index_t& p,
-                                                      coord_t<M::PrtlD>& xp) const {
+                                                      coord_t<M::PrtlDim>& xp) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
     }
     if constexpr (D == Dim::_2D) {
       xp[1] = i_di_to_Xi(i2(p), dx2(p));
-      if constexpr (M::PrtlD == Dim::_3D) {
+      if constexpr (M::PrtlDim == Dim::_3D) {
         xp[2] = phi(p);
       }
     }
@@ -1004,14 +1004,14 @@ namespace ntt {
 
   template <Dimension D, class M, class PG>
   Inline void PusherBase_kernel<D, M, PG>::initForce(
-    coord_t<M::PrtlD>& xp,
+    coord_t<M::PrtlDim>& xp,
     vec_t<Dim::_3D>&   force_Cart) const {
-    coord_t<M::PrtlD> xp_Ph { ZERO };
+    coord_t<M::PrtlDim> xp_Ph { ZERO };
     xp_Ph[0] = metric.x1_Code2Phys(xp[0]);
-    if constexpr (M::PrtlD != Dim::_1D) {
+    if constexpr (M::PrtlDim != Dim::_1D) {
       xp_Ph[1] = metric.x2_Code2Phys(xp[1]);
     }
-    if constexpr (M::PrtlD == Dim::_3D) {
+    if constexpr (M::PrtlDim == Dim::_3D) {
       xp_Ph[2] = metric.x3_Code2Phys(xp[2]);
     }
     const vec_t<Dim::_3D> force_Hat { pgen.ext_force_x1(time, xp_Ph),

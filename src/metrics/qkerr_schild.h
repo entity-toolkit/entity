@@ -1,25 +1,38 @@
-#ifndef FRAMEWORK_METRICS_QKERR_SCHILD_H
-#define FRAMEWORK_METRICS_QKERR_SCHILD_H
+/**
+ * @file qkerr_schild.h
+ * @brief
+ * Kerr metric in qspherical Kerr-Schild coordinates (rg=c=1)
+ * @implements
+ *   - ntt::QKerrSchild<>
+ * @depends:
+ *   - enums.h
+ *   - global.h
+ *   - metric_base.h
+ *   - arch/kokkos_aliases.h
+ *   - utils/comparators.h
+ *   - utils/numeric.h
+ * @includes:
+ *   - metrics_utils/angle_stretch_forQSph.h
+ *   - metrics_utils/x_code_phys_forGSph.h
+ *   - metrics_utils/x_code_sph_forQSph.h
+ *   - metrics_utils/v3_hat_cntrv_cov_forGR.h
+ *   - metrics_utils/v3_phys_cov_cntrv_forQSph.h
+ * @namespaces:
+ *   - ntt::
+ * !TODO
+ *   - 3D version of find_dxMin
+ */
 
-#include "wrapper.h"
-
-#include "metric_base.h"
-
-#include "utilities/qmath.h"
-
-#include <cassert>
-#include <cmath>
-#include <map>
+#ifndef METRICS_QKERR_SCHILD_H
+#define METRICS_QKERR_SCHILD_H
 
 namespace ntt {
-  /**
-   * Kerr metric in Kerr-Schild coordinates
-   * Units: c = rg = 1
-   *
-   * @tparam D dimension.
-   */
+
   template <Dimension D>
-  class Metric : public MetricBase<D> {
+  class QKerrSchild : public MetricBase<D, QKerrSchild<D>> {
+    static_assert(D != Dim::_1D, "1D qkerr_schild not available");
+    static_assert(D != Dim::_3D, "3D qkerr_schild not fully implemented");
+
   private:
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
@@ -49,34 +62,44 @@ namespace ntt {
     }
 
   public:
-    constexpr static Dimension PrtlD = D;
+    static constexpr Dimension PrtlDim { D };
+    using MetricBase<D, QKerrSchild<D>>::x1_min;
+    using MetricBase<D, QKerrSchild<D>>::x1_max;
+    using MetricBase<D, QKerrSchild<D>>::x2_min;
+    using MetricBase<D, QKerrSchild<D>>::x2_max;
+    using MetricBase<D, QKerrSchild<D>>::x3_min;
+    using MetricBase<D, QKerrSchild<D>>::x3_max;
+    using MetricBase<D, QKerrSchild<D>>::nx1;
+    using MetricBase<D, QKerrSchild<D>>::nx2;
+    using MetricBase<D, QKerrSchild<D>>::nx3;
+    using MetricBase<D, QKerrSchild<D>>::set_dxMin;
 
-    Metric(std::vector<unsigned int>            resolution,
-           std::vector<real_t>                  extent,
-           const std::map<std::string, real_t>& params) :
-      MetricBase<D> { "qkerr_schild", CoordinateSystem::Qsph, resolution, extent },
-      rh_ { params.at("rh") },
+    QKerrSchild(std::vector<unsigned int>              res,
+                std::vector<std::pair<real_t, real_t>> ext,
+                const std::map<std::string, real_t>&   params) :
+      MetricBase<D, QKerrSchild<D>> { "qkerr_schild", Coord::QSPH, res, ext },
+      rh_ { ONE + math::sqrt(ONE - SQR(params.at("a"))) },
       rg_ { ONE },
       a { params.at("a") },
       a_sqr { SQR(a) },
       r0 { params.at("r0") },
       h { params.at("h") },
-      chi_min { math::log(this->x1_min - r0) },
-      eta_min { theta2eta(this->x2_min) },
-      phi_min { this->x3_min },
-      dchi { (math::log(this->x1_max - r0) - chi_min) / this->nx1 },
-      deta { (theta2eta(this->x2_max) - eta_min) / this->nx2 },
-      dphi { (this->x3_max - phi_min) / this->nx3 },
+      chi_min { math::log(x1_min - r0) },
+      eta_min { theta2eta(x2_min) },
+      phi_min { x3_min },
+      dchi { (math::log(x1_max - r0) - chi_min) / nx1 },
+      deta { (theta2eta(x2_max) - eta_min) / nx2 },
+      dphi { (x3_max - phi_min) / nx3 },
       dchi_inv { ONE / dchi },
       deta_inv { ONE / deta },
       dphi_inv { ONE / dphi },
       dchi_sqr { SQR(dchi) },
       deta_sqr { SQR(deta) },
       dphi_sqr { SQR(dphi) } {
-      this->set_dxMin(find_dxMin());
+      set_dxMin(find_dxMin());
     }
 
-    ~Metric() = default;
+    ~QKerrSchild() = default;
 
     [[nodiscard]]
     Inline auto spin() const -> const real_t& {
@@ -91,34 +114,6 @@ namespace ntt {
     [[nodiscard]]
     Inline auto rg() const -> const real_t& {
       return rg_;
-    }
-
-    /**
-     * Minimum effective cell size for a given metric (in physical units).
-     * @returns Minimum cell size of the grid [physical units].
-     */
-    [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
-      if constexpr (D == Dim2) {
-        real_t min_dx { -ONE };
-        for (int i { 0 }; i < this->nx1; ++i) {
-          for (int j { 0 }; j < this->nx2; ++j) {
-            real_t        i_ { static_cast<real_t>(i) + HALF };
-            real_t        j_ { static_cast<real_t>(j) + HALF };
-            coord_t<Dim2> ij { i_, j_ };
-            real_t        dx = ONE / (this->alpha(ij) *
-                                 std::sqrt(this->h11(ij) + this->h22(ij)) +
-                               this->beta1(ij));
-            if ((min_dx > dx) || (min_dx < 0.0)) {
-              min_dx = dx;
-            }
-          }
-        }
-        return min_dx;
-      } else {
-        NTTHostError("min cell finding not implemented for 3D");
-        return ZERO;
-      }
     }
 
     /**
@@ -156,7 +151,7 @@ namespace ntt {
     Inline auto h_33(const coord_t<D>& xi) const -> real_t {
       const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
       const real_t theta { eta2theta(xi[1] * deta + eta_min) };
-      if constexpr (D == Dim2) {
+      if constexpr (D == Dim::_2D) {
         return A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
       } else {
         return dphi_sqr * A(r, theta) * SQR(math::sin(theta)) / Sigma(r, theta);
@@ -173,7 +168,7 @@ namespace ntt {
       const real_t chi { xi[0] * dchi + chi_min };
       const real_t r { r0 + math::exp(chi) };
       const real_t theta { eta2theta(xi[1] * deta + eta_min) };
-      if constexpr (D == Dim2) {
+      if constexpr (D == Dim::_2D) {
         return -dchi * math::exp(chi) * a * (ONE + z(r, theta)) *
                SQR(math::sin(theta));
       } else {
@@ -219,7 +214,7 @@ namespace ntt {
     Inline auto h33(const coord_t<D>& xi) const -> real_t {
       const real_t r { r0 + math::exp(xi[0] * dchi + chi_min) };
       const real_t theta { eta2theta(xi[1] * deta + eta_min) };
-      if constexpr (D == Dim2) {
+      if constexpr (D == Dim::_2D) {
         return ONE / (Sigma(r, theta) * SQR(math::sin(theta)));
       } else {
         return SQR(dphi_inv) / (Sigma(r, theta) * SQR(math::sin(theta)));
@@ -236,7 +231,7 @@ namespace ntt {
       const real_t chi { xi[0] * dchi + chi_min };
       const real_t r { r0 + math::exp(chi) };
       const real_t theta { eta2theta(xi[1] * deta + eta_min) };
-      if constexpr (D == Dim2) {
+      if constexpr (D == Dim::_2D) {
         return (math::exp(-chi) * dchi_inv) * a / Sigma(r, theta);
       } else {
         return (math::exp(-chi) * dchi_inv) * dphi_inv * a / Sigma(r, theta);
@@ -280,7 +275,7 @@ namespace ntt {
       const real_t r { r0 + math::exp(chi) };
       const real_t eta { xi[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      if constexpr (D == Dim2) {
+      if constexpr (D == Dim::_2D) {
         return dchi * math::exp(chi) * dtheta_deta(eta) * deta * Sigma(r, theta) *
                math::sin(theta) * math::sqrt(ONE + z(r, theta));
       } else {
@@ -300,7 +295,7 @@ namespace ntt {
       const real_t r { r0 + math::exp(chi) };
       const real_t eta { xi[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      if constexpr (D == Dim2) {
+      if constexpr (D == Dim::_2D) {
         return dchi * math::exp(chi) * dtheta_deta(eta) * deta *
                Sigma(r, theta) * math::sqrt(ONE + z(r, theta));
       } else {
@@ -331,16 +326,35 @@ namespace ntt {
  *       (and not in the base class).
  */
 #include "metrics_utils/angle_stretch_forQSph.h"
-#include "metrics_utils/param_forGR.h"
-#include "metrics_utils/x_code_cart_forGSph.h"
 #include "metrics_utils/x_code_phys_forGSph.h"
 #include "metrics_utils/x_code_sph_forQSph.h"
 
-#include "metrics_utils/v3_cart_hat_cntrv_cov_forGSph.h"
 #include "metrics_utils/v3_hat_cntrv_cov_forGR.h"
 #include "metrics_utils/v3_phys_cov_cntrv_forQSph.h"
+
+    /**
+     * Minimum effective cell size for a given metric (in physical units).
+     * @returns Minimum cell size of the grid [physical units].
+     */
+    [[nodiscard]]
+    auto find_dxMin() const -> real_t override {
+      // for 2D
+      real_t min_dx { -ONE };
+      for (int i { 0 }; i < nx1; ++i) {
+        for (int j { 0 }; j < nx2; ++j) {
+          real_t            i_ { static_cast<real_t>(i) + HALF };
+          real_t            j_ { static_cast<real_t>(j) + HALF };
+          coord_t<Dim::_2D> ij { i_, j_ };
+          real_t dx = ONE / (alpha(ij) * std::sqrt(h11(ij) + h22(ij)) + beta1(ij));
+          if ((min_dx > dx) || (min_dx < 0.0)) {
+            min_dx = dx;
+          }
+        }
+      }
+      return min_dx;
+    }
   };
 
 } // namespace ntt
 
-#endif
+#endif // METRICS_QKERR_SCHILD_H
