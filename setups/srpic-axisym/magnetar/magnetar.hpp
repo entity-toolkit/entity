@@ -565,7 +565,7 @@ namespace ntt {
                                  params.extent()[0] };
 
         for (std::size_t s { 0 }; s < 6; ++s) {
-          if ((s == 2) || (s == 3)) {
+          if ((s == 1) || (s == 2) || (s == 3)) {
             continue;
           }
           auto&                species = m_mblock.particles[s];
