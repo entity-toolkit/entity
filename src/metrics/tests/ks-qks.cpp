@@ -1,0 +1,173 @@
+#include "global.h"
+
+#include "arch/kokkos_aliases.h"
+#include "metrics/kerr_schild.h"
+#include "metrics/qkerr_schild.h"
+#include "utils/comparators.h"
+
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+
+void errorIf(bool condition, const std::string& message) {
+  if (condition) {
+    throw std::runtime_error(message);
+  }
+}
+
+inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
+
+template <Dimension D>
+Inline auto equal(const vec_t<D>& a,
+                  const vec_t<D>& b,
+                  const char*     msg,
+                  const real_t    acc = ONE) -> bool {
+  const auto eps = epsilon * acc;
+  for (unsigned short d = 0; d < D; ++d) {
+    if (not cmp::AlmostEqual(a[d], b[d], eps)) {
+      printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
+      return false;
+    }
+  }
+  return true;
+}
+
+template <Dimension D>
+Inline void unravel(std::size_t                    idx,
+                    tuple_t<std::size_t, D>&       ijk,
+                    const tuple_t<std::size_t, D>& res) {
+  for (unsigned short d = 0; d < D; ++d) {
+    ijk[d]  = idx % res[d];
+    idx    /= res[d];
+  }
+}
+
+template <class M>
+void testMetric(const std::vector<unsigned int>&              res,
+                const std::vector<std::pair<real_t, real_t>>& ext,
+                const real_t                                  acc    = ONE,
+                const std::map<std::string, real_t>&          params = {}) {
+  static_assert(M::Dim == 2, "Dim != 2");
+  errorIf(res.size() != (std::size_t)(M::Dim), "res.size() != M.dim");
+  errorIf(ext.size() != (std::size_t)(M::Dim), "ext.size() != M.dim");
+  for (const auto& e : ext) {
+    errorIf(e.first >= e.second, "e.first >= e.second");
+  }
+
+  M                            metric(res, ext, params);
+  tuple_t<std::size_t, M::Dim> res_tup;
+  std::size_t                  npts = 1;
+  for (auto d = 0; d < M::Dim; ++d) {
+    res_tup[d]  = res[d];
+    npts       *= res[d];
+  }
+
+  unsigned long all_wrongs = 0;
+  const auto    rg         = metric.rg();
+  const auto    a          = metric.spin();
+  Kokkos::parallel_reduce(
+    "h_ij/hij",
+    npts,
+    Lambda(index_t n, unsigned long& wrongs) {
+      tuple_t<std::size_t, M::Dim> idx;
+      unravel<M::Dim>(n, idx, res_tup);
+      coord_t<M::Dim> x_Code { ZERO };
+      coord_t<M::Dim> x_Phys { ZERO };
+
+      for (unsigned short d = 0; d < M::Dim; ++d) {
+        x_Code[d] = (real_t)(idx[d]) + HALF;
+      }
+
+      const auto h11  = metric.h11(x_Code);
+      const auto h22  = metric.h22(x_Code);
+      const auto h33  = metric.h33(x_Code);
+      const auto h13  = metric.h13(x_Code);
+      const auto h_11 = metric.h_11(x_Code);
+      const auto h_22 = metric.h_22(x_Code);
+      const auto h_33 = metric.h_33(x_Code);
+      const auto h_13 = metric.h_13(x_Code);
+
+      metric.x_Code2Sph(x_Code, x_Phys);
+      const auto r  = x_Phys[0];
+      const auto th = x_Phys[1];
+
+      const auto Sigma = SQR(r) + SQR(a * math::cos(th));
+      const auto z     = TWO * r * rg / Sigma;
+      const auto Delta = SQR(r) - TWO * rg * r + SQR(a);
+      const auto A     = SQR(SQR(r) + SQR(a)) - SQR(a * math::sin(th)) * Delta;
+
+      const auto h11_expect  = A / (Sigma * (Sigma + TWO * r * rg));
+      const auto h22_expect  = ONE / Sigma;
+      const auto h33_expect  = ONE / (Sigma * SQR(math::sin(th)));
+      const auto h13_expect  = a / Sigma;
+      const auto h_11_expect = ONE + z;
+      const auto h_22_expect = Sigma;
+      const auto h_33_expect = A * SQR(math::sin(th)) / Sigma;
+      const auto h_13_expect = -a * (ONE + z) * SQR(math::sin(th));
+
+      vec_t<Dim::_3D> hij_temp { ZERO }, hij_predict { ZERO };
+      metric.v3_Cntrv2PhysCntrv(x_Code, { h11, h22, h33 }, hij_temp);
+      metric.v3_Cntrv2PhysCntrv(x_Code, hij_temp, hij_predict);
+
+      vec_t<Dim::_3D> h13_predict_temp { ZERO };
+      metric.v3_Cntrv2PhysCntrv(x_Code, { h13, ZERO, ZERO }, hij_temp);
+      metric.v3_Cntrv2PhysCntrv(x_Code, { ZERO, ZERO, hij_temp[0] }, h13_predict_temp);
+      const vec_t<Dim::_1D> h13_predict { h13_predict_temp[2] };
+
+      vec_t<Dim::_3D> h_ij_temp { ZERO }, h_ij_predict { ZERO };
+      metric.v3_Cov2PhysCov(x_Code, { h_11, h_22, h_33 }, h_ij_temp);
+      metric.v3_Cov2PhysCov(x_Code, h_ij_temp, h_ij_predict);
+
+      vec_t<Dim::_3D> h_13_predict_temp { ZERO };
+      metric.v3_Cov2PhysCov(x_Code, { h_13, ZERO, ZERO }, h_ij_temp);
+      metric.v3_Cov2PhysCov(x_Code, { ZERO, ZERO, h_ij_temp[0] }, h_13_predict_temp);
+      const vec_t<Dim::_1D> h_13_predict { h_13_predict_temp[2] };
+
+      vec_t<Dim::_3D> hij_expect { h11_expect, h22_expect, h33_expect };
+      vec_t<Dim::_3D> h_ij_expect { h_11_expect, h_22_expect, h_33_expect };
+
+      wrongs += not equal<Dim::_3D>(h_ij_predict, h_ij_expect, "h_ij", acc);
+      wrongs += not equal<Dim::_1D>(h_13_predict, { h_13_expect }, "h_13", acc);
+      wrongs += not equal<Dim::_3D>(hij_predict, hij_expect, "hij", acc);
+      wrongs += not equal<Dim::_1D>(h13_predict, { h13_expect }, "h13", acc);
+    },
+    all_wrongs);
+
+  errorIf(all_wrongs != 0,
+          "wrong h_ij/hij for " + std::to_string(M::Dim) + "D " +
+            std::string(metric.Label) + " with " + std::to_string(all_wrongs) +
+            " errors");
+}
+
+auto main(int argc, char* argv[]) -> int {
+  Kokkos::initialize(argc, argv);
+
+  try {
+    using namespace ntt;
+    testMetric<KerrSchild<Dim::_2D>>(
+      {
+        64,
+        54
+    },
+      { { 0.8, 50.0 }, { 0.0, constant::PI } },
+      10,
+      { { "a", (real_t)0.95 } });
+
+    testMetric<QKerrSchild<Dim::_2D>>(
+      {
+        64,
+        42
+    },
+      { { 0.8, 10.0 }, { 0.0, constant::PI } },
+      10,
+      { { "r0", -TWO }, { "h", ZERO }, { "a", (real_t)0.8 } });
+
+  } catch (std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    Kokkos::finalize();
+    return 1;
+  }
+  Kokkos::finalize();
+  return 0;
+}

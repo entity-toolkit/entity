@@ -28,10 +28,10 @@ void errorIf(bool condition, const std::string& message) {
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
 template <Dimension D>
-Inline auto equal(const vec_t<D>& a,
-                  const vec_t<D>& b,
-                  const char*     msg,
-                  const real_t    acc = ONE) -> bool {
+Inline auto equal(const coord_t<D>& a,
+                  const coord_t<D>& b,
+                  const char*       msg,
+                  const real_t      acc = ONE) -> bool {
   const auto eps = epsilon * acc;
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
@@ -75,98 +75,42 @@ void testMetric(const std::vector<unsigned int>&              res,
   // !ACC: had to reduce accuracy on some of the tests
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
-    "hat-cntrv-cov",
+    "code-sph-phys",
     npts,
     Lambda(index_t n, unsigned long& wrongs) {
       tuple_t<std::size_t, M::Dim> idx;
       unravel<M::Dim>(n, idx, res_tup);
-      coord_t<M::Dim> x_Code { ZERO };
+      coord_t<M::Dim> x_Code_1 { ZERO };
+      coord_t<M::Dim> x_Code_2 { ZERO };
+      coord_t<M::Dim> x_Phys_1 { ZERO };
+      coord_t<M::Dim> x_Sph_1 { ZERO };
       for (unsigned short d = 0; d < M::Dim; ++d) {
-        x_Code[d] = (real_t)(idx[d]) + HALF;
+        x_Code_1[d] = (real_t)(idx[d]) + HALF;
       }
-      vec_t<Dim::_3D> v_Hat_1 { ZERO };
-      vec_t<Dim::_3D> v_Hat_2 { ZERO };
-      vec_t<Dim::_3D> v_Cntrv_1 { ZERO };
-      vec_t<Dim::_3D> v_Cntrv_2 { ZERO };
-      vec_t<Dim::_3D> v_Cov_1 { ZERO };
-      vec_t<Dim::_3D> v_Cov_2 { ZERO };
-      vec_t<Dim::_3D> v_PhysCntrv_1 { ZERO };
-      vec_t<Dim::_3D> v_PhysCntrv_2 { ZERO };
-      vec_t<Dim::_3D> v_PhysCov_1 { ZERO };
-      vec_t<Dim::_3D> v_PhysCov_2 { ZERO };
-
-      // init
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
-        v_Hat_1[d]       += ONE;
-        v_PhysCntrv_1[d] += ONE;
-        v_PhysCov_1[d]   += ONE;
+      metric.x_Code2Phys(x_Code_1, x_Phys_1);
+      metric.x_Phys2Code(x_Phys_1, x_Code_2);
+      wrongs += not equal<M::Dim>(x_Code_1, x_Code_2, "code->phys not invertible", acc);
+      metric.x_Code2Sph(x_Code_1, x_Sph_1);
+      metric.x_Sph2Code(x_Sph_1, x_Code_2);
+      wrongs += not equal<M::Dim>(x_Code_1, x_Code_2, "code->sph not invertible", acc);
+      // 1D/2D/3D
+      wrongs += (x_Phys_1[0] >= metric.x1_max);
+      wrongs += (x_Phys_1[0] < metric.x1_min);
+      // 2D/3D
+      if constexpr (M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
+        wrongs += (x_Phys_1[1] >= metric.x2_max);
+        wrongs += (x_Phys_1[1] < metric.x2_min);
       }
-
-      // hat <-> cntrv
-      metric.v3_Hat2Cntrv(x_Code, v_Hat_1, v_Cntrv_1);
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
-        vec_t<Dim::_3D> e_d { ZERO };
-        vec_t<Dim::_3D> v_Cntrv_temp { ZERO };
-        e_d[d] = ONE;
-        metric.v3_Hat2Cntrv(x_Code, e_d, v_Cntrv_temp);
-        for (unsigned short d = 0; d < Dim::_3D; ++d) {
-          v_Cntrv_2[d] += v_Cntrv_temp[d];
-        }
+      // 3D
+      if constexpr (M::Dim == Dim::_3D) {
+        wrongs += (x_Phys_1[2] >= metric.x3_max);
+        wrongs += (x_Phys_1[2] < metric.x3_min);
       }
-      wrongs += not equal<Dim::_3D>(v_Cntrv_1, v_Cntrv_2, "hat->cntrv is linear", acc);
-
-      metric.v3_Cntrv2Hat(x_Code, v_Cntrv_1, v_Hat_2);
-      wrongs += not equal<Dim::_3D>(v_Hat_1, v_Hat_2, "hat->cntrv is invertible", acc);
-
-      // cntrv <-> cov & hat <-> cov
-      metric.v3_Cntrv2Cov(x_Code, v_Cntrv_1, v_Cov_1);
-      metric.v3_Hat2Cov(x_Code, v_Hat_1, v_Cov_2);
-      wrongs += not equal<Dim::_3D>(v_Cov_1,
-                                    v_Cov_2,
-                                    "cntrv->cov is equal to hat->cov",
-                                    acc);
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
-        v_Cov_2[d] = ZERO;
-      }
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
-        vec_t<Dim::_3D> e_d { ZERO };
-        vec_t<Dim::_3D> v_Cov_temp { ZERO };
-        e_d[d] = ONE;
-        metric.v3_Hat2Cov(x_Code, e_d, v_Cov_temp);
-        for (unsigned short d = 0; d < Dim::_3D; ++d) {
-          v_Cov_2[d] += v_Cov_temp[d];
-        }
-      }
-      wrongs += not equal<Dim::_3D>(v_Cov_1, v_Cov_2, "hat->cov is linear", acc);
-
-      metric.v3_Cov2Cntrv(x_Code, v_Cov_1, v_Cntrv_2);
-      wrongs += not equal<Dim::_3D>(v_Cntrv_1,
-                                    v_Cntrv_2,
-                                    "cntrv->cov is invertible",
-                                    acc);
-
-      metric.v3_Cov2Hat(x_Code, v_Cov_1, v_Hat_2);
-      wrongs += not equal<Dim::_3D>(v_Hat_1, v_Hat_2, "hat->cov is invertible", acc);
-
-      // phys <-> cntrv & phys <-> cov
-      metric.v3_PhysCntrv2Cntrv(x_Code, v_PhysCntrv_1, v_Cntrv_1);
-      metric.v3_Cntrv2PhysCntrv(x_Code, v_Cntrv_1, v_PhysCntrv_2);
-      wrongs += not equal<Dim::_3D>(v_PhysCntrv_1,
-                                    v_PhysCntrv_2,
-                                    "phys->cntrv is invertible",
-                                    acc);
-
-      metric.v3_PhysCov2Cov(x_Code, v_PhysCov_1, v_Cov_1);
-      metric.v3_Cov2PhysCov(x_Code, v_Cov_1, v_PhysCov_2);
-      wrongs += not equal<Dim::_3D>(v_PhysCov_1,
-                                    v_PhysCov_2,
-                                    "phys->cov is invertible",
-                                    acc);
     },
     all_wrongs);
 
   errorIf(all_wrongs != 0,
-          "hat-cntrv-cov for " + std::to_string(M::Dim) + "D " +
+          "code-sph-phys for " + std::to_string(M::Dim) + "D " +
             std::string(metric.Label) + " failed with " +
             std::to_string(all_wrongs) + " errors");
 }
@@ -188,7 +132,8 @@ auto main(int argc, char* argv[]) -> int {
         64,
         32
     },
-      { { 0.0, 20.0 }, { 0.0, 10.0 } });
+      { { 0.0, 20.0 }, { 0.0, 10.0 } },
+      200);
 
     testMetric<Minkowski<Dim::_3D>>(
       {
@@ -196,7 +141,8 @@ auto main(int argc, char* argv[]) -> int {
         32,
         16
     },
-      { { -2.0, 2.0 }, { -1.0, 1.0 }, { -0.5, 0.5 } });
+      { { -2.0, 2.0 }, { -1.0, 1.0 }, { -0.5, 0.5 } },
+      200);
 
     testMetric<Spherical<Dim::_2D>>(
       {
@@ -212,7 +158,7 @@ auto main(int argc, char* argv[]) -> int {
         32
     },
       { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      10,
+      100,
       { { "r0", -ONE }, { "h", (real_t)0.25 } });
 
     testMetric<KerrSchild<Dim::_2D>>(

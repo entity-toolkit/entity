@@ -22,3 +22,7 @@ endfunction()
 
 gen_test(minkowski)
 gen_test(vec_trans)
+gen_test(coord_trans)
+gen_test(sph-qsph)
+gen_test(ks-qks)
+gen_test(sr-cart-sph)

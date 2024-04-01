@@ -42,7 +42,7 @@ auto main() -> int {
 
   enum_str_t all_coords  = { "cart", "sph", "qsph" };
   enum_str_t all_metrics = { "minkowski",   "spherical",    "qspherical",
-                             "kerr_Schild", "qkerr_Schild", "kerr_Schild_0" };
+                             "kerr_schild", "qkerr_schild", "kerr_schild_0" };
   enum_str_t all_simulation_engines = { "srpic", "grpic" };
   enum_str_t all_particle_bcs = { "periodic", "absorb",  "atmosphere", "custom",
                                   "reflect",  "horizon", "axis",       "send" };
@@ -55,7 +55,7 @@ auto main() -> int {
 
   // check Coord::
   for (const auto& c : Coord::variants) {
-    auto c_str = c.stringize();
+    auto c_str = std::string(c);
     errorIf(not Coord::contains(c_str), "Coord does not contain " + c_str);
   }
   for (const auto& c : all_coords) {
@@ -67,7 +67,7 @@ auto main() -> int {
 
   // check Metric::
   for (const auto& m : Metric::variants) {
-    auto m_str = m.stringize();
+    auto m_str = std::string(m);
     errorIf(not Metric::contains(m_str), "Metric does not contain " + m_str);
   }
   for (const auto& m : all_metrics) {
@@ -79,7 +79,7 @@ auto main() -> int {
 
   // check SimulationEngine::
   for (const auto& s : SimulationEngine::variants) {
-    auto s_str = s.stringize();
+    auto s_str = std::string(s);
     errorIf(not SimulationEngine::contains(s_str),
             "SimulationEngine does not contain " + s_str);
   }
@@ -94,7 +94,7 @@ auto main() -> int {
 
   // check ParticleBC::
   for (const auto& p : ParticleBC::variants) {
-    auto p_str = p.stringize();
+    auto p_str = std::string(p);
     errorIf(not ParticleBC::contains(p_str),
             "ParticleBC does not contain " + p_str);
   }
@@ -108,7 +108,7 @@ auto main() -> int {
 
   // check FieldsBC::
   for (const auto& f : FieldsBC::variants) {
-    auto f_str = f.stringize();
+    auto f_str = std::string(f);
     errorIf(not FieldsBC::contains(f_str), "FieldsBC does not contain " + f_str);
   }
   for (const auto& f : all_fields_bcs) {
@@ -120,7 +120,7 @@ auto main() -> int {
 
   // check CommBC::
   for (const auto& c : CommBC::variants) {
-    auto c_str = c.stringize();
+    auto c_str = std::string(c);
     errorIf(not CommBC::contains(c_str), "CommBC does not contain " + c_str);
   }
   for (const auto& c : all_comm_bcs) {
@@ -132,7 +132,7 @@ auto main() -> int {
 
   // check ParticlePusher::
   for (const auto& p : ParticlePusher::variants) {
-    auto p_str = p.stringize();
+    auto p_str = std::string(p);
     errorIf(not ParticlePusher::contains(p_str),
             "ParticlePusher does not contain " + p_str);
   }
@@ -147,7 +147,7 @@ auto main() -> int {
 
   // check Cooling::
   for (const auto& c : Cooling::variants) {
-    auto c_str = c.stringize();
+    auto c_str = std::string(c);
     errorIf(not Cooling::contains(c_str), "Cooling does not contain " + c_str);
   }
   for (const auto& c : all_coolings) {

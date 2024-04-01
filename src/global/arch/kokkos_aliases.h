@@ -26,6 +26,7 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <Kokkos_Sort.hpp>
 
 #define ClassLambda KOKKOS_CLASS_LAMBDA
 #define Lambda      KOKKOS_LAMBDA

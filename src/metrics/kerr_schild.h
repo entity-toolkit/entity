@@ -1,5 +1,5 @@
 /**
- * @file kerr_schild.h
+ * @file metrics/kerr_schild.h
  * @brief Kerr metric in Kerr-Schild coordinates (rg=c=1)
  * @implements
  *   - ntt::KerrSchild<>
@@ -46,7 +46,7 @@ namespace ntt {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t rh_, rg_, a, a_sqr;
+    const real_t a, a_sqr, rg_, rh_;
 
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
@@ -69,7 +69,9 @@ namespace ntt {
     }
 
   public:
-    static constexpr Dimension PrtlDim { D };
+    static constexpr std::string_view Label { "kerr_schild" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr Coord::type      CoordType { Coord::SPH };
     using MetricBase<D, KerrSchild<D>>::x1_min;
     using MetricBase<D, KerrSchild<D>>::x1_max;
     using MetricBase<D, KerrSchild<D>>::x2_min;
@@ -84,11 +86,11 @@ namespace ntt {
     KerrSchild(std::vector<unsigned int>              res,
                std::vector<std::pair<real_t, real_t>> ext,
                const std::map<std::string, real_t>&   params) :
-      MetricBase<D, KerrSchild<D>> { "kerr_schild", Coord::SPH, res, ext },
-      rh_ { ONE + math::sqrt(ONE - SQR(params.at("a"))) },
-      rg_ { ONE },
+      MetricBase<D, KerrSchild<D>> { res, ext },
       a { params.at("a") },
       a_sqr { SQR(a) },
+      rg_ { ONE },
+      rh_ { ONE + math::sqrt(ONE - a_sqr) },
       dr { (x1_max - x1_min) / nx1 },
       dtheta { (x2_max - x2_min) / nx2 },
       dphi { (x3_max - x3_min) / nx3 },

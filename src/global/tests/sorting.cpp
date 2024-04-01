@@ -10,12 +10,6 @@
 #include <stdexcept>
 #include <string>
 
-void errorIf(bool condition, const std::string& message) {
-  if (condition) {
-    throw std::runtime_error(message);
-  }
-}
-
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
@@ -110,7 +104,6 @@ auto main(int argc, char* argv[]) -> int {
           raise::KernelError(HERE, "Short sort failed at index %d", i);
         }
       });
-
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
     Kokkos::finalize();

@@ -1,5 +1,5 @@
 /**
- * @file qspherical.h
+ * @file metrics/qspherical.h
  * @brief
  * Flat space-time qspherical metric class xi = log (r - r0), and eta,
  * where: theta = eta + 2h*eta * (PI - 2eta) * (PI - eta) / PI^2
@@ -57,7 +57,9 @@ namespace ntt {
     const real_t dchi_sqr, deta_sqr, dphi_sqr;
 
   public:
-    static constexpr Dimension PrtlDim = Dim::_3D;
+    static constexpr std::string_view Label { "qspherical" };
+    static constexpr Dimension        PrtlDim = Dim::_3D;
+    static constexpr Coord::type   CoordType { Coord::QSPH };
     using MetricBase<D, QSpherical<D>>::x1_min;
     using MetricBase<D, QSpherical<D>>::x1_max;
     using MetricBase<D, QSpherical<D>>::x2_min;
@@ -72,7 +74,7 @@ namespace ntt {
     QSpherical(std::vector<unsigned int>              res,
                std::vector<std::pair<real_t, real_t>> ext,
                const std::map<std::string, real_t>&   params) :
-      MetricBase<D, QSpherical<D>> { "qspherical", Coord::QSPH, res, ext },
+      MetricBase<D, QSpherical<D>> { res, ext },
       r0 { params.at("r0") },
       h { params.at("h") },
       chi_min { math::log(x1_min - r0) },

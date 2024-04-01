@@ -1,5 +1,5 @@
 /**
- * @file faraday_mink.hpp
+ * @file kernels/faraday_mink.hpp
  * @brief Algorithms for Faraday's law in cartesian Minkowski space
  * @implements
  *   - ntt::Faraday_kernel<>
@@ -27,7 +27,6 @@ namespace ntt {
 
   /**
    * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Minkowski space.
-   * @tparam D Dimension.
    */
   template <Dimension D>
   class Faraday_kernel {
@@ -42,7 +41,7 @@ namespace ntt {
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
         EB(i1, em::bx2) += coeff * (EB(i1 + 1, em::ex3) - EB(i1, em::ex3));
-        EB(i1, em::bx3) += coeff * (EB(i1, em::ex3) - EB(i1 + 1, em::ex3));
+        EB(i1, em::bx3) += coeff * (EB(i1, em::ex2) - EB(i1 + 1, em::ex2));
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 1D implementation called for D != 1");
       }

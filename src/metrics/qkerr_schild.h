@@ -1,5 +1,5 @@
 /**
- * @file qkerr_schild.h
+ * @file metrics/qkerr_schild.h
  * @brief
  * Kerr metric in qspherical Kerr-Schild coordinates (rg=c=1)
  * @implements
@@ -26,6 +26,14 @@
 #ifndef METRICS_QKERR_SCHILD_H
 #define METRICS_QKERR_SCHILD_H
 
+#include "enums.h"
+#include "global.h"
+#include "metric_base.h"
+
+#include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
+#include "utils/numeric.h"
+
 namespace ntt {
 
   template <Dimension D>
@@ -37,7 +45,7 @@ namespace ntt {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t rh_, rg_, a, a_sqr;
+    const real_t a, a_sqr, rg_, rh_;
 
     const real_t r0, h;
     const real_t chi_min, eta_min, phi_min;
@@ -62,7 +70,9 @@ namespace ntt {
     }
 
   public:
-    static constexpr Dimension PrtlDim { D };
+    static constexpr std::string_view Label { "qkerr_schild" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr Coord::type      CoordType { Coord::QSPH };
     using MetricBase<D, QKerrSchild<D>>::x1_min;
     using MetricBase<D, QKerrSchild<D>>::x1_max;
     using MetricBase<D, QKerrSchild<D>>::x2_min;
@@ -77,11 +87,11 @@ namespace ntt {
     QKerrSchild(std::vector<unsigned int>              res,
                 std::vector<std::pair<real_t, real_t>> ext,
                 const std::map<std::string, real_t>&   params) :
-      MetricBase<D, QKerrSchild<D>> { "qkerr_schild", Coord::QSPH, res, ext },
-      rh_ { ONE + math::sqrt(ONE - SQR(params.at("a"))) },
-      rg_ { ONE },
+      MetricBase<D, QKerrSchild<D>> { res, ext },
       a { params.at("a") },
       a_sqr { SQR(a) },
+      rg_ { ONE },
+      rh_ { ONE + math::sqrt(ONE - a_sqr) },
       r0 { params.at("r0") },
       h { params.at("h") },
       chi_min { math::log(x1_min - r0) },

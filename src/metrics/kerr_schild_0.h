@@ -1,5 +1,5 @@
 /**
- * @file kerr_schild_0.h
+ * @file metrics/kerr_schild_0.h
  * @brief
  * Kerr metric with zero spin and zero mass
  * in Kerr-Schild coordinates (rg=c=1)
@@ -50,7 +50,9 @@ namespace ntt {
     const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
-    static constexpr Dimension PrtlDim { D };
+    static constexpr std::string_view Label { "kerr_schild_0" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr Coord::type      CoordType { Coord::SPH };
     using MetricBase<D, KerrSchild0<D>>::x1_min;
     using MetricBase<D, KerrSchild0<D>>::x1_max;
     using MetricBase<D, KerrSchild0<D>>::x2_min;
@@ -65,7 +67,7 @@ namespace ntt {
     KerrSchild0(std::vector<unsigned int>              res,
                 std::vector<std::pair<real_t, real_t>> ext,
                 const std::map<std::string, real_t>& = {}) :
-      MetricBase<D, KerrSchild0<D>> { "kerr_schild_0", Coord::SPH, res, ext },
+      MetricBase<D, KerrSchild0<D>> { res, ext },
       dr { (x1_max - x1_min) / nx1 },
       dtheta { (x2_max - x2_min) / nx2 },
       dphi { (x3_max - x3_min) / nx3 },

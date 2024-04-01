@@ -1,5 +1,5 @@
 /**
- * @file minkowski.h
+ * @file metrics/minkowski.h
  * @brief Minkowski metric class: diag(-1, 1, 1, 1)
  * @implements
  *   - ntt::Minkowski<>
@@ -48,7 +48,9 @@ namespace ntt {
     const real_t dx, dx_sqr, dx_inv;
 
   public:
-    static constexpr Dimension PrtlDim { D };
+    static constexpr std::string_view Label { "minkowski" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr Coord::type      CoordType { Coord::CART };
     using MetricBase<D, Minkowski<D>>::x1_min;
     using MetricBase<D, Minkowski<D>>::x1_max;
     using MetricBase<D, Minkowski<D>>::x2_min;
@@ -63,7 +65,7 @@ namespace ntt {
     Minkowski(std::vector<unsigned int>              res,
               std::vector<std::pair<real_t, real_t>> ext,
               const std::map<std::string, real_t>& = {}) :
-      MetricBase<D, Minkowski<D>> { "minkowski", Coord::CART, res, ext },
+      MetricBase<D, Minkowski<D>> { res, ext },
       dx { (x1_max - x1_min) / nx1 },
       dx_sqr { dx * dx },
       dx_inv { ONE / dx } {

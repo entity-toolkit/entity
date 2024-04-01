@@ -20,6 +20,8 @@
 #ifndef GLOBAL_GLOBAL_H
 #define GLOBAL_GLOBAL_H
 
+#pragma nv_diag_suppress 20011
+
 inline constexpr unsigned int N_GHOSTS = 2;
 
 // Coordinate shift to account for ghost cells
