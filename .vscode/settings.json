@@ -1,0 +1,17 @@
+{
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.inactiveRegionOpacity": 1,
+  "files.associations": {
+    "*.cmake": "cmake",
+    "*.h.in": "cpp",
+  },
+  "comment-divider.languagesMap": {
+    "cpp": [
+      "//"
+    ],
+  },
+  "comment-divider.mainHeaderAlign": "left",
+  "comment-divider.shouldLengthIncludeIndent": true,
+  "comment-divider.subheaderAlign": "left",
+  "evenBetterToml.taplo.configFile.path": "${workspaceFolder}/.vscode/.taplo.toml",
+}

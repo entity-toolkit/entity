@@ -43,7 +43,6 @@ venv/
 
 # VSCode files
 .vscode/c_cpp_properties.json
-.vscode/settings.json
 
 # CMake testing files
 Testing/
