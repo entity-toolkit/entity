@@ -2,8 +2,8 @@
  * @file utils/comparators.h
  * @brief Architecture-agnostic functions for comparing real-valued numbers
  * @implements
- *   - cmp::AlmostEqual: float vs float, double vs double
- *   - cmp::AlmostZero: float/double
+ *   - cmp::AlmostEqual<> -> bool // float vs float, double vs double
+ *   - cmp::AlmostZero<> -> bool  // float/double
  * @depends:
  *   - arch/kokkos_aliases.h
  * @namespaces:

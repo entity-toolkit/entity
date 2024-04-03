@@ -19,6 +19,12 @@
   * `@file` **[required]** the name of the file (as it should be imported)
   * `@brief` **[required]** brief description of what the file contains
   * `@implements` list of class/function/macros implementations
+    * structs/classes in this section have no prefix (templates are marked with `<>`)
+    * functions are marked with their return type, e.g. ` -> void`
+    * type aliases have a prefix `type`
+    * enums or enum-like objects are marked with `enum`
+    * macros have a prefix `macro`
+    * all of the above are also marked with their respective namespaces (if any): `namespace::`
   * `@depends:` internal header dependencies (not including std or other external libraries)
   * `@cpp:` list of cpp files that implement the header
   * `@namespaces:` list of namespaces defined in the file
@@ -31,9 +37,9 @@
    * @file utils/formatting.h
    * @brief String formatting utilities
    * @implements
-   *   - fmt::format
-   *   - fmt::toLower
-   *   - fmt::splitString
+   *   - fmt::format<> -> std::string
+   *   - fmt::toLower -> std::string
+   *   - fmt::splitString -> std::vector<std::string>
    * @namespaces:
    *   - fmt::
    */

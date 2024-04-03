@@ -2,7 +2,7 @@
  * @file metrics/kerr_schild.h
  * @brief Kerr metric in Kerr-Schild coordinates (rg=c=1)
  * @implements
- *   - ntt::KerrSchild<>
+ *   - ntt::KerrSchild<> : ntt::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h

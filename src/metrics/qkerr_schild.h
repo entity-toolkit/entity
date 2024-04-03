@@ -3,7 +3,7 @@
  * @brief
  * Kerr metric in qspherical Kerr-Schild coordinates (rg=c=1)
  * @implements
- *   - ntt::QKerrSchild<>
+ *   - ntt::QKerrSchild<> : ntt::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h

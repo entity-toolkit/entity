@@ -2,7 +2,8 @@
  * @file utils/sorting.h
  * @brief Comparator structs for Kokkos bin-sorting
  * @implements
- *   - sort::BinBool, sort::BinTag
+ *   - sort::BinBool<>
+ *   - sort::BinTag<>
  * @depends:
  *   - arch/kokkos_aliases.h
  * @namespaces:

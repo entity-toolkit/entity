@@ -2,8 +2,8 @@
  * @file utils/log.h
  * @brief Global logging utilities with proper fences and MPI blockings
  * @implements
- *   - HERE
- *   - logger::Checkpoint
+ *   - macro HERE
+ *   - logger::Checkpoint -> void
  * @depends:
  *   - arch/mpi_aliases.h
  * @namespaces:

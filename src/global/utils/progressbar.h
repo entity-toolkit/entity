@@ -2,7 +2,7 @@
  * @file utils/progressbar.h
  * @brief Progress bar for logging the simulation progress
  * @implements
- *   - pbar::ProgressBar
+ *   - pbar::ProgressBar -> void
  * @namespaces:
  *   - pbar::
  * @macros:

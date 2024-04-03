@@ -2,7 +2,7 @@
  * @file metrics/minkowski.h
  * @brief Minkowski metric class: diag(-1, 1, 1, 1)
  * @implements
- *   - ntt::Minkowski<>
+ *   - ntt::Minkowski<> : ntt::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h

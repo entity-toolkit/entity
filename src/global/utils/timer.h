@@ -3,7 +3,7 @@
  * @brief Basic timekeeping functionality with fancy printing
  * @implements
  *   - timer::Timers
- *   - timer::TimerFlags
+ *   - enum timer::TimerFlags
  * @depends:
  *   - utils/log.h
  *   - utils/error.h
@@ -34,37 +34,35 @@
 namespace timer {
   using timestamp = std::chrono::time_point<std::chrono::system_clock>;
 
-  namespace {
-    enum TimerFlags_ {
-      TimerFlags_None          = 0,
-      TimerFlags_PrintRelative = 1 << 0,
-      TimerFlags_PrintUnits    = 1 << 1,
-      TimerFlags_PrintIndents  = 1 << 2,
-      TimerFlags_PrintTotal    = 1 << 3,
-      TimerFlags_PrintTitle    = 1 << 4,
-      TimerFlags_AutoConvert   = 1 << 5,
-      TimerFlags_All = TimerFlags_PrintRelative | TimerFlags_PrintUnits |
-                       TimerFlags_PrintIndents | TimerFlags_PrintTotal |
-                       TimerFlags_PrintTitle | TimerFlags_AutoConvert,
-      TimerFlags_Default = TimerFlags_All,
-      // TimerFlags_... = 1 << 5,
-      // TimerFlags_... = 1 << 6,
-      // TimerFlags_... = 1 << 7,
-    };
+  enum TimerFlags_ {
+    TimerFlags_None          = 0,
+    TimerFlags_PrintRelative = 1 << 0,
+    TimerFlags_PrintUnits    = 1 << 1,
+    TimerFlags_PrintIndents  = 1 << 2,
+    TimerFlags_PrintTotal    = 1 << 3,
+    TimerFlags_PrintTitle    = 1 << 4,
+    TimerFlags_AutoConvert   = 1 << 5,
+    TimerFlags_All = TimerFlags_PrintRelative | TimerFlags_PrintUnits |
+                     TimerFlags_PrintIndents | TimerFlags_PrintTotal |
+                     TimerFlags_PrintTitle | TimerFlags_AutoConvert,
+    TimerFlags_Default = TimerFlags_All,
+    // TimerFlags_... = 1 << 5,
+    // TimerFlags_... = 1 << 6,
+    // TimerFlags_... = 1 << 7,
+  };
 
-    void convertTime(long double& value, std::string& units) {
-      if (value > 1e6) {
-        value /= 1e6;
-        units  = " s";
-      } else if (value > 1e3) {
-        value /= 1e3;
-        units  = "ms";
-      } else if (value < 1e-2) {
-        value *= 1e3;
-        units  = "ns";
-      }
+  void convertTime(long double& value, std::string& units) {
+    if (value > 1e6) {
+      value /= 1e6;
+      units  = " s";
+    } else if (value > 1e3) {
+      value /= 1e3;
+      units  = "ms";
+    } else if (value < 1e-2) {
+      value *= 1e3;
+      units  = "ns";
     }
-  } // namespace
+  }
 
   typedef int TimerFlags;
 

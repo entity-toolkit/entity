@@ -2,13 +2,19 @@
  * @file global.h
  * @brief Global constants, macros, and aliases
  * @implements
- *   - N_GHOSTS
- *   - COORD
- *   - Dimension, Dim, DimensionTag
- *   - prtldx_t, real_t
- *   - tuple_t, list_t, coord_t, vec_t
- *   - index_t, range_tuple_t
- *   - ntt::GlobalInitialize, ntt::GlobalFinalize
+ *   - macro N_GHOSTS
+ *   - macro COORD
+ *   - enum Dimension // also Dim, DimensionTag
+ *   - type prtldx_t
+ *   - type real_t
+ *   - type tuple_t
+ *   - type list_t
+ *   - type coord_t
+ *   - type vec_t
+ *   - type index_t
+ *   - type range_tuple_t
+ *   - ntt::GlobalInitialize -> void
+ *   - ntt::GlobalFinalize -> void
  * @cpp:
  *   - global.cpp
  * @namespaces:
@@ -20,6 +26,8 @@
 #ifndef GLOBAL_GLOBAL_H
 #define GLOBAL_GLOBAL_H
 
+#include <utility>
+
 #pragma nv_diag_suppress 20011
 
 inline constexpr unsigned int N_GHOSTS = 2;
@@ -27,8 +35,6 @@ inline constexpr unsigned int N_GHOSTS = 2;
 // Coordinate shift to account for ghost cells
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
-
-#include <utility>
 
 enum Dimension : unsigned short {
   _1D = 1,

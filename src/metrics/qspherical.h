@@ -4,7 +4,7 @@
  * Flat space-time qspherical metric class xi = log (r - r0), and eta,
  * where: theta = eta + 2h*eta * (PI - 2eta) * (PI - eta) / PI^2
  * @implements
- *   - ntt::QSpherical<>
+ *   - ntt::QSpherical<> : ntt::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h

@@ -2,9 +2,9 @@
  * @file utils/formatting.h
  * @brief String formatting utilities
  * @implements
- *   - fmt::format
- *   - fmt::toLower
- *   - fmt::splitString
+ *   - fmt::format<> -> std::string
+ *   - fmt::toLower -> std::string
+ *   - fmt::splitString -> std::vector<std::string>
  * @namespaces:
  *   - fmt::
  */

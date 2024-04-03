@@ -2,9 +2,19 @@
  * @file utils/numeric.h
  * @brief Basic numerical constants and utilities
  * @implements
+ *   - macro IMIN
+ *   - macro IMAX
+ *   - macro SIGN
+ *   - macro HEAVISIDE
+ *   - macro SQR
+ *   - macro CUBE
+ *   - macro DOT
+ *   - macro NORM_SQR
+ *   - macro NORM
+ *   - macro CROSS_x1
+ *   - macro CROSS_x2
+ *   - macro CROSS_x3
  *   - literal real-valued numbers
- *   - basic numerical operations
- *   - vector operations
  * @depends:
  *   - arch/kokkos_aliases.h
  * @namespaces:

@@ -2,12 +2,12 @@
  * @file utils/error.h
  * @brief Error handling utilities
  * @implements
- *   - raise::Warning
- *   - raise::Error
- *   - raise::Fatal
- *   - raise::ErrorIf
- *   - raise::KernelError
- *   - raise::KernelNotImplementedError
+ *   - raise::Warning -> void
+ *   - raise::Error -> void
+ *   - raise::Fatal -> void
+ *   - raise::ErrorIf -> void
+ *   - raise::KernelError<> -> void
+ *   - raise::KernelNotImplementedError -> void
  * @depends:
  *   - arch/kokkos_aliases.h
  *   - utils/formatting.h

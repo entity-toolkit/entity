@@ -2,7 +2,7 @@
  * @file metrics/spherical.h
  * @brief Flat space-time spherical metric class diag(-1, 1, r^2, r^2, sin(th)^2)
  * @implements
- *   - ntt::Spherical<>
+ *   - ntt::Spherical<> : ntt::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h

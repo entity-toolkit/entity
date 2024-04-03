@@ -4,7 +4,7 @@
  * Kerr metric with zero spin and zero mass
  * in Kerr-Schild coordinates (rg=c=1)
  * @implements
- *   - ntt::KerrSchild0<>
+ *   - ntt::KerrSchild0<> : ntt::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h

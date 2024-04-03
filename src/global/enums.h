@@ -2,17 +2,19 @@
  * @file enums.h
  * @brief Global enum variables describing the simulation
  * @implements
- *   - ntt::em, ntt::cur
- *   - ntt::ParticleTag: dead, alive
- *   - ntt::Coord: Cart, Sph, Qsph
- *   - ntt::Metric: Minkowski, Spherical, QSpherical, Kerr_Schild, QKerr_Schild,
- * Kerr_Schild_0
- *   - ntt::SimulationEngine: SRPIC, GRPIC
- *   - ntt::ParticleBC: periodic, absorb, atmosphere, custom, reflect, horizon, axis, send
- *   - ntt::FieldsBC: periodic, absorb, atmosphere, custom, horizon, axis
- *   - ntt::CommBC: physical, comm
- *   - ntt::ParticlePusher: boris, vay, boris,gca, vay,gca, photon, none
- *   - ntt::Cooling: synchrotron, none
+ *   - enum ntt::em
+ *   - enum ntt::cur
+ *   - enum ntt::ParticleTag       // dead, alive
+ *   - enum ntt::Coord             // Cart, Sph, Qsph
+ *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
+ *                                Kerr_Schild, QKerr_Schild, Kerr_Schild_0
+ *   - enum ntt::SimulationEngine  // SRPIC, GRPIC
+ *   - enum ntt::ParticleBC        // periodic, absorb, atmosphere, custom,
+ *                                reflect, horizon, axis, send
+ *   - enum ntt::FieldsBC          // periodic, absorb, atmosphere, custom, horizon, axis
+ *   - enum ntt::CommBC            // physical, comm
+ *   - enum ntt::ParticlePusher    // boris, vay, boris,gca, vay,gca, photon, none
+ *   - enum ntt::Cooling           // synchrotron, none
  * @depends:
  *   - utils/error.h
  *   - utils/formatting.h
@@ -21,8 +23,8 @@
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
  * @note
- * Comparison with strings is case-sensitive(!) since the latter are defined as string literals
- * example: "srpIC" != SimulationEngine::SRPIC
+ * Comparison with strings is case-sensitive(!) since the latter are defined as
+ * string literals example: "srpIC" != SimulationEngine::SRPIC
  * @note
  * To convert an enum to a string, use its std::string()
  * example: std::string(SimulationEngine::SRPIC) == "srpic"
