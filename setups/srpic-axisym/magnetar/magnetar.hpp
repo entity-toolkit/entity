@@ -696,6 +696,10 @@ namespace ntt {
               auto betaz   = pz / gamma;
               auto beta_sq = SQR(betax) + SQR(betay) + SQR(betaz);
 
+              if (gamma < TWO) {
+                return;
+              }
+
               // Boost magnetic fields to the rest frame
               auto bx0_rest = gamma * (b_int_Cart[0] - betay * e_int_Cart[2] +
                                        betaz * e_int_Cart[1]) -
