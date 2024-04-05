@@ -22,3 +22,4 @@ endfunction()
 
 gen_test(faraday-mink)
 gen_test(ampere-mink)
+gen_test(deposit)

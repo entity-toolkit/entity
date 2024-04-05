@@ -23,13 +23,15 @@
 
 #include <Kokkos_Core.hpp>
 
+#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+
 namespace ntt {
 
   /**
    * @brief Algorithm for the current deposition.
    * @tparam D Dimension.
    */
-  template <Dimension D, SimulationEngine S, class M>
+  template <Dimension D, SimEngine::type S, class M>
   class DepositCurrents_kernel {
     scatter_ndfield_t<D, 3> J;
     array_t<int*>           i1, i2, i3;
@@ -387,7 +389,7 @@ namespace ntt {
       coord_t<M::PrtlDim> xp { ZERO };
       getPrtlPos(p, xp);
       auto inv_energy { ZERO };
-      if constexpr (S == PICEngine) {
+      if constexpr (S == SimEngine::SRPIC) {
         metric.v3_Cart2Cntrv(xp, { ux1(p), ux2(p), ux3(p) }, vp);
         inv_energy = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
       } else {
@@ -405,5 +407,7 @@ namespace ntt {
   };
 
 } // namespace ntt
+
+#undef i_di_to_Xi
 
 #endif // KERNELS_CURRENTS_DEPOSIT_H
