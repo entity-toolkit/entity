@@ -72,7 +72,7 @@ namespace ntt {
   public:
     static constexpr std::string_view Label { "qkerr_schild" };
     static constexpr Dimension        PrtlDim { D };
-    static constexpr Coord::type      CoordType { Coord::QSPH };
+    static constexpr Coord            CoordType { Coord::Qsph };
     using MetricBase<D, QKerrSchild<D>>::x1_min;
     using MetricBase<D, QKerrSchild<D>>::x1_max;
     using MetricBase<D, QKerrSchild<D>>::x2_min;

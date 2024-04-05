@@ -50,7 +50,7 @@ namespace ntt {
   public:
     static constexpr std::string_view Label { "minkowski" };
     static constexpr Dimension        PrtlDim { D };
-    static constexpr Coord::type      CoordType { Coord::CART };
+    static constexpr Coord            CoordType { Coord::Cart };
     using MetricBase<D, Minkowski<D>>::x1_min;
     using MetricBase<D, Minkowski<D>>::x1_max;
     using MetricBase<D, Minkowski<D>>::x2_min;

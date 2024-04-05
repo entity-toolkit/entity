@@ -71,7 +71,7 @@ namespace ntt {
   public:
     static constexpr std::string_view Label { "kerr_schild" };
     static constexpr Dimension        PrtlDim { D };
-    static constexpr Coord::type      CoordType { Coord::SPH };
+    static constexpr Coord            CoordType { Coord::Sph };
     using MetricBase<D, KerrSchild<D>>::x1_min;
     using MetricBase<D, KerrSchild<D>>::x1_max;
     using MetricBase<D, KerrSchild<D>>::x2_min;
