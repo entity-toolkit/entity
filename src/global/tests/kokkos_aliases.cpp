@@ -25,13 +25,13 @@ auto main(int argc, char* argv[]) -> int {
       array_t<float*> a { "a", 100 };
       errorIf(a.extent(0) != 100, "a.extent(0) must be 100");
       Kokkos::parallel_for(
-        range_t<Dim::_1D>({ 0 }, { 100 }),
+        range_t<Dim::_1D>(0, 100),
         Lambda(const int i) { a(i) = static_cast<float>(i); });
 
       array_mirror_t<float*> b = Kokkos::create_mirror(a);
       Kokkos::deep_copy(b, a);
 
-      Kokkos::parallel_for(range_h_t<Dim::_1D>({ 0 }, { 100 }), [&](const int i) {
+      Kokkos::parallel_for(range_h_t<Dim::_1D>(0, 100), [&](const int i) {
         errorIf(b(i) != static_cast<float>(i),
                 "b(" + std::to_string(i) + ") must be = " + std::to_string(i));
       });

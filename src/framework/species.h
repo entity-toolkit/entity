@@ -1,34 +1,32 @@
 #ifndef FRAMEWORK_SPECIES_H
 #define FRAMEWORK_SPECIES_H
 
-#include "wrapper.h"
+#include "enums.h"
 
 #include <string>
 
 namespace ntt {
-  /**
-   * @brief Container for the information about the particle species.
-   */
+
   class ParticleSpecies {
   protected:
     // Species index.
-    const int   m_index;
+    const int         m_index;
     // Species label.
-    std::string m_label;
+    const std::string m_label;
     // Species mass in units of m0.
-    float       m_mass;
+    const float       m_mass;
     // Species charge in units of q0.
-    float       m_charge;
+    const float       m_charge;
     // Max number of allocated particles for the species.
-    std::size_t m_maxnpart;
+    std::size_t       m_maxnpart;
 
     // Pusher assigned for the species.
-    ParticlePusher m_pusher;
+    const PrtlPusher m_pusher;
 
     // Cooling drag mechanism assigned for the species.
-    Cooling m_cooling;
+    const Cooling m_cooling;
 
-    unsigned short m_npld;
+    const unsigned short m_npld;
 
   public:
     /**
@@ -46,7 +44,7 @@ namespace ntt {
                     const float&          m,
                     const float&          ch,
                     const std::size_t&    maxnpart,
-                    const ParticlePusher& pusher,
+                    const PrtlPusher&     pusher,
                     const Cooling&        cooling,
                     const unsigned short& npld = 0) :
       m_index { index },
@@ -92,7 +90,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto pusher() const -> ParticlePusher {
+    auto pusher() const -> PrtlPusher {
       return m_pusher;
     }
 

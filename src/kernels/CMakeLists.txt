@@ -1,7 +1,7 @@
 # ------------------------------
 # @defines: ntt_kernels [INTERFACE]
 # @includes:
-# - ./
+# - ../
 # @depends:
 # - ntt_global [required]
 # @uses:

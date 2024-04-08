@@ -47,13 +47,13 @@ namespace ntt {
     bool              is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    Ampere_kernel(const ndfield_t<D, 6>&                          Din,
-                  const ndfield_t<D, 6>&                          Dout,
-                  const ndfield_t<D, 6>&                          H,
-                  const M&                                        metric,
-                  real_t                                          coeff,
-                  std::size_t                                     ni2,
-                  const std::vector<std::vector<FieldsBC::type>>& boundaries) :
+    Ampere_kernel(const ndfield_t<D, 6>&                        Din,
+                  const ndfield_t<D, 6>&                        Dout,
+                  const ndfield_t<D, 6>&                        H,
+                  const M&                                      metric,
+                  real_t                                        coeff,
+                  std::size_t                                   ni2,
+                  const std::vector<std::vector<FldsBC::type>>& boundaries) :
       Din { Din },
       Dout { Dout },
       H { H },
@@ -62,8 +62,8 @@ namespace ntt {
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FieldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FieldsBC::AXIS);
+        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
       }
     }
 
@@ -129,13 +129,12 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(
-      const ndfield_t<D, 6>&                          Df,
-      const ndfield_t<D, 3>&                          J,
-      const M&                                        metric,
-      real_t                                          coeff,
-      std::size_t                                     ni2,
-      const std::vector<std::vector<FieldsBC::type>>& boundaries) :
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>& Df,
+                          const ndfield_t<D, 3>& J,
+                          const M&               metric,
+                          real_t                 coeff,
+                          std::size_t            ni2,
+                          const std::vector<std::vector<FldsBC::type>>& boundaries) :
       Df { Df },
       J { J },
       metric { metric },
@@ -143,8 +142,8 @@ namespace ntt {
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FieldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FieldsBC::AXIS);
+        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
       }
     }
 

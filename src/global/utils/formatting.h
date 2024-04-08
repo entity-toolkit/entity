@@ -26,22 +26,22 @@ namespace fmt {
    * @note Implements minimal C-style formatting
    */
   template <typename... Args>
-  auto format(const std::string& format, Args... args) -> std::string {
-    auto size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
+  inline auto format(const char* format, Args... args) -> std::string {
+    auto size_s = std::snprintf(nullptr, 0, format, args...) + 1;
     if (size_s <= 0) {
       throw std::runtime_error("Error during formatting.");
     }
     auto                    size { static_cast<std::size_t>(size_s) };
     std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
+    std::snprintf(buf.get(), size, format, args...);
     return std::string(buf.get(), buf.get() + size - 1);
   }
 
   /**
    * @brief Convert a string to lowercase
    */
-  auto toLower(const std::string& str) -> std::string {
-    std::string result = str;
+  inline auto toLower(const std::string& str) -> std::string {
+    std::string result { str };
     std::transform(result.begin(), result.end(), result.begin(), ::tolower);
     return result;
   }
@@ -52,8 +52,8 @@ namespace fmt {
    * @param delim Delimiter
    * @return Vector of strings
    */
-  inline auto splitString(const std::string& str, const std::string& delim)
-    -> std::vector<std::string> {
+  inline auto splitString(const std::string& str,
+                          const std::string& delim) -> std::vector<std::string> {
     std::regex regexz(delim);
     return { std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
              std::sregex_token_iterator() };

@@ -42,16 +42,16 @@ namespace ntt {
     bool            is_axis_i2min { false };
 
   public:
-    Faraday_kernel(const ndfield_t<D, 6>&                          EB,
-                   const M&                                        metric,
-                   real_t                                          coeff,
-                   const std::vector<std::vector<FieldsBC::type>>& boundaries) :
+    Faraday_kernel(const ndfield_t<D, 6>&                        EB,
+                   const M&                                      metric,
+                   real_t                                        coeff,
+                   const std::vector<std::vector<FldsBC::type>>& boundaries) :
       EB { EB },
       metric { metric },
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FieldsBC::AXIS);
+        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
       }
     }
 

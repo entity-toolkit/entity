@@ -35,10 +35,10 @@ namespace pbar {
     constexpr std::string_view end { "]" };
   } // namespace params
 
-  void ProgressBar(const std::vector<long double>& durations,
-                   const real_t&                   time,
-                   const real_t&                   runtime,
-                   std::ostream&                   os = std::cout) {
+  inline void ProgressBar(const std::vector<long double>& durations,
+                          const real_t&                   time,
+                          const real_t&                   runtime,
+                          std::ostream&                   os = std::cout) {
     // durations are in us (microseconds)
     const auto window = IMIN(
       IMAX((int)(durations.size() * params::average_last_pct / 100), 10),

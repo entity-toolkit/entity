@@ -43,7 +43,13 @@ namespace prm {
     }
 
     auto promiseToDefine(key_t key) -> void {
-      promises.push_back(key);
+      if (std::find(promises.begin(), promises.end(), key) == promises.end()) {
+        promises.push_back(key);
+      }
+    }
+
+    auto isPromised(key_t key) const -> bool {
+      return std::find(promises.begin(), promises.end(), key) != promises.end();
     }
 
     auto promisesFulfilled() const -> bool {
@@ -64,7 +70,7 @@ namespace prm {
       } catch (const std::out_of_range&) {
         if (def.has_value()) {
           raise::Warning(
-            fmt::format("Key %s not found, falling back to default", key),
+            fmt::format("Key %s not found, falling back to default", key.c_str()),
             HERE);
           return def.value();
         }
@@ -94,8 +100,8 @@ namespace prm {
       auto stringize_key = [](std::ostringstream& ss, std::any v) {
         if constexpr (std::is_class_v<T> &&
                       not std::is_same_v<std::string, std::decay_t<T>>) {
-          statc_assert(std::is_member_function_pointer_v<decltype(&T::stringize)>);
-          ss << T::stringize(std::any_cast<std::string_view>(v));
+          static_assert(std::is_member_function_pointer_v<decltype(&T::to_string)>);
+          ss << std::any_cast<T>(v).to_string();
         } else {
           ss << std::any_cast<T>(v);
         }

@@ -74,17 +74,18 @@
     #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
     #   @valid: "PERIODIC", "ABSORB", "ATMOSPHERE", "CUSTOM", "HORIZON"
     #   @example: [["CUSTOM", "ABSORB"]] (for 2D spherical [[rmin, rmax]])
-    #   @note: You can set one boundary per dimension, e.g., [["PERIODIC"]]
-    #   @note: In 2D spherical, bondaries in theta are set automatically
-    #   @note: In GR, the horizon boundary is set automatically
+    #   @note: When periodic in any of the directions, you should only set one value [..., ["PERIODIC"], ...]
+    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]) [["ATMOSPHERE", "ABSORB"]]
+    #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["ABSORB"]]
     fields = ""
     # Boundary conditions for fields:
     #   @required
     #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
     #   @valid: "PERIODIC", "ABSORB", "ATMOSPHERE", "CUSTOM", "REFLECT", "HORIZON"
     #   @example: [["PERIODIC"], ["PERIODIC"]]
-    #   @note: In 2D spherical, bondaries in theta are set automatically
-    #   @note: In GR, the horizon boundary is set automatically
+    #   @note: When periodic in any of the directions, you should only set one value [..., ["PERIODIC"], ...]
+    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]) [["ATMOSPHERE", "ABSORB"]]
+    #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["ABSORB"]]
     particles = ""
     # Size of the absorption layer in physical (code) units:
     #   @type: float
@@ -108,6 +109,10 @@
   skindepth0 = ""
 
   # @inferred:
+  # - dx0
+  #     @brief: fiducial minimum size of the cell
+  #     @type: float
+  #     @from: `grid`
   # - V0
   #     @brief: fiducial elementary volume
   #     @type: float
@@ -135,7 +140,7 @@
 
 [algorithms]
   # Number of current smoothing passes:
-  #   @type: int: >= 0
+  #   @type: unsigned short: >= 0
   #   @default: 0
   current_filters = ""
 
@@ -170,7 +175,7 @@
     #   @default: 1e-6
     pusher_eps = ""
     # Number of iterations for the Newton-Raphson method in GR pusher:
-    #   @type: int: > 0
+    #   @type: unsigned short: > 0
     #   @default: 10
     pusher_niter = ""
 
@@ -182,11 +187,12 @@
     # Maximum Larmor radius allowed for GCA particles (in physical units):
     #   @type: float: > 0
     #   @default: 0.0
+    #   @note: When `larmor_max` == 0, the limit is disabled
     larmor_max = ""
 
   [algorithms.synchrotron]
     # Radiation reaction limit gamma-factor for synchrotron:
-    #   @required [if one of the species has cooling="Synchrotron"]
+    #   @required [if one of the species has `cooling = "synchrotron"`]
     #   @type: float: > 0
     gamma_rad = ""
 
@@ -200,15 +206,16 @@
   #   @default: false
   use_weights = ""
   # Timesteps between particle re-sorting:
-  #   @type: int: > 0
+  #   @type: unsigned int: >= 0
   #   @default: 100
   #   @note: When MPI is enable, particles are sorted every step.
+  #   @note: When `sort_interval` == 0, the sorting is disabled.
   sort_interval = ""
 
   # @inferred:
   # - nspec
   #     @brief: Number of particle species
-  #     @type: int
+  #     @type: unsigned int
   #     @from: `particles.species`
 
   [[particles.species]]
@@ -224,10 +231,10 @@
     # Charge of the species (in units of fiducial charge):
     #   @required
     #   @type: float
-    charge = "" # <float>
+    charge = ""
     # Maximum number of particles per task:
     #   @required
-    #   @type: int: > 0
+    #   @type: unsigned int: > 0
     maxnpart = ""
     # Pusher algorithm for the species:
     #   @type: string
@@ -235,7 +242,7 @@
     #   @valid: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
     pusher = ""
     # Number of additional (payload) variables for each particle of the given species:
-    #   @type: int: >= 0
+    #   @type: unsigned short: >= 0
     #   @default: 0
     n_payloads = ""
     # Radiation reaction to use for the species:
@@ -271,26 +278,26 @@
   #   @default: "hdf5"
   format = ""
   # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
-  #   @type: int: >= 0
-  #   @default: 1
+  #   @type: unsigned short: >= 0
+  #   @default: 0
   mom_smooth = ""
   # @NOT_IMPLEMENTED: Stride for the output of fields:
-  #   @type: int: > 1
+  #   @type: unsigned short: > 1
   #   @default: 1
   fields_stride = ""
   # Stride for the output of particles:
-  #   @type: int: > 1
+  #   @type: unsigned int: > 1
   #   @default: 100
   prtl_stride = ""
   # Number of timesteps between outputs:
-  #   @type: int: > 0
+  #   @type: unsigned int: > 0
   #   @default: 1
   interval = ""
   # Physical (code) time interval between outputs:
   #   @type: float: > 0
   #   @default: -1.0 (disabled)
   #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
-  interval_time = "" # <float>
+  interval_time = ""
 
   [output.debug]
     # Output fields "as is" without conversions:

@@ -57,7 +57,7 @@ namespace ntt {
   public:
     static constexpr std::string_view Label { "spherical" };
     static constexpr Dimension        PrtlDim = Dim::_3D;
-    static constexpr Coord            CoordType { Coord::Sph };
+    static constexpr Coord::type      CoordType { Coord::Sph };
     using MetricBase<D, Spherical<D>>::x1_min;
     using MetricBase<D, Spherical<D>>::x1_max;
     using MetricBase<D, Spherical<D>>::x2_min;

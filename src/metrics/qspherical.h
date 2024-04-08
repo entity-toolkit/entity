@@ -59,7 +59,7 @@ namespace ntt {
   public:
     static constexpr std::string_view Label { "qspherical" };
     static constexpr Dimension        PrtlDim = Dim::_3D;
-    static constexpr Coord            CoordType { Coord::Qsph };
+    static constexpr Coord::type      CoordType { Coord::Qsph };
     using MetricBase<D, QSpherical<D>>::x1_min;
     using MetricBase<D, QSpherical<D>>::x1_max;
     using MetricBase<D, QSpherical<D>>::x2_min;

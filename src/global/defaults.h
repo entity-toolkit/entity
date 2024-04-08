@@ -41,8 +41,8 @@ namespace ntt::defaults {
   } // namespace ks
 
   namespace gr {
-    const real_t pusher_eps   = 1e-6;
-    const int    pusher_niter = 10;
+    const real_t         pusher_eps   = 1e-6;
+    const unsigned short pusher_niter = 10;
   } // namespace gr
 
   namespace bc {
@@ -51,19 +51,26 @@ namespace ntt::defaults {
   } // namespace bc
 
   namespace output {
-    const std::string format      = "hdf5";
-    const int         interval    = 1;
-    const int         mom_smooth  = 1;
-    const std::size_t prtl_stride = 100;
+    const std::string    format      = "hdf5";
+    const unsigned int   interval    = 1;
+    const unsigned short mom_smooth  = 0;
+    const unsigned short flds_stride = 1;
+    const std::size_t    prtl_stride = 100;
   } // namespace output
 
-  const std::string log_level       = "info";
-  const int         diag_interval   = 1;
-  const bool        blocking_timers = false;
+  namespace diag {
+    const std::string  log_level = "info";
+    const unsigned int interval  = 1;
+  } // namespace diag
 
   namespace gca {
     const real_t EovrB_max = 0.9;
   } // namespace gca
+
+  namespace synchrotron {
+    const real_t gamma_rad = 1.0;
+  } // namespace synchrotron
+
 } // namespace ntt::defaults
 
 #endif // GLOBAL_DEFAULTS_H

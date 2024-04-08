@@ -1,7 +1,7 @@
 # ------------------------------
 # @defines: ntt_metrics [INTERFACE]
 # @includes:
-# - ./
+# - ../
 # @depends:
 # - ntt_global [required]
 # @uses:

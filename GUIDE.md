@@ -3,7 +3,7 @@
 ## General
 
 * Use `const` and `auto` declarations where possible.
-* For real-valued literals, use `ONE`, `ZERO`, `HALF` etc. instead of `1.0`, `0.0`, `0.5` to ensure the compiler will not need to cast. If the value is not defined as a macros, use `static_cast<real_t>(123.4)`.
+* For real-valued literals, use `ONE`, `ZERO`, `HALF` etc. instead of `1.0`, `0.0`, `0.5` to ensure the compiler will not need to cast. If the value is not defined as a macro, use `static_cast<real_t>(123.4)`.
 
 ## Users
 
@@ -44,10 +44,10 @@
    *   - fmt::
    */
 
-* `#ifdef` macros should be avoided. Use C++17 type traits or `if constexpr ()` expressions to specialize functions and classes instead. `#ifdef`-s are only acceptable in platform/library-specific parts of the code (e.g., `MPI_ENABLED`, `GPU_ENABLED`, `DEBUG`, etc.).
+* `#ifdef` macros should be avoided. Use C++17 type traits or `if constexpr ()` expressions to specialize functions and classes instead (ideally, specialize them explicitly). `#ifdef`-s are only acceptable in platform/library-specific parts of the code (e.g., `MPI_ENABLED`, `GPU_ENABLED`, `DEBUG`, etc.).
 
 * Header files should start with `#ifndef ... #define ...` and end with `#endif`; do not use `#pragma` guards. The name of the macro should be the same as the name of the file in uppercase, with underscores instead of dots and slashes. For example, for `global/utils/formatting.h`, the macro should be `GLOBAL_UTILS_FORMATTING_H`.
 
 # Recommendations
 
-* Do assertions on parameters and quantities whenever possible. Outside the kernels, use `NTTHostError(message)` and `NTTHostErrorIf(condition, message)` to throw exceptions. Inside the kernels, use `NTTError(message)` and `NTTErrorIf(condition, message)`.
+* Do assertions on parameters and quantities whenever possible. Outside the kernels, use `raise::Error(message, HERE)` and `raise::ErrorIf(condition, message, HERE)` to throw exceptions. Inside the kernels, use `raise::KernelError(HERE, message, **args)`.

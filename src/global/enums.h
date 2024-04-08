@@ -94,7 +94,8 @@ namespace ntt {
           return (T)(arr[i]);
         }
       }
-      raise::Error("Invalid enum value: " + std::string(elem), HERE);
+      raise::Error(fmt::format("Invalid enum value: %s for %s", elem, T::label),
+                   HERE);
       return T::INVALID;
     }
 
@@ -138,7 +139,7 @@ namespace ntt {
       }
 
       static constexpr auto pick(const char* c) -> T {
-        return basePick<T>(T::variants, T::lookup, T::total, c);
+        return basePick<T>(T::variants, T::lookup, T::total, fmt::toLower(c).c_str());
       }
 
       static constexpr auto contains(const char* c) -> bool {
@@ -158,8 +159,9 @@ namespace ntt {
     };
   } // namespace enums_hidden
 
-  class Coord : public enums_hidden::BaseEnum<Coord> {
-  public:
+  struct Coord : public enums_hidden::BaseEnum<Coord> {
+    static constexpr const char* label = "coord";
+
     enum type : uint8_t {
       INVALID = 0,
       Cart    = 1,
@@ -174,8 +176,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class Metric : public enums_hidden::BaseEnum<Metric> {
-  public:
+  struct Metric : public enums_hidden::BaseEnum<Metric> {
+    static constexpr const char* label = "metric";
+
     enum type : uint8_t {
       INVALID       = 0,
       Minkowski     = 1,
@@ -197,8 +200,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class SimEngine : public enums_hidden::BaseEnum<SimEngine> {
-  public:
+  struct SimEngine : public enums_hidden::BaseEnum<SimEngine> {
+    static constexpr const char* label = "sim_engine";
+
     enum type : uint8_t {
       INVALID = 0,
       SRPIC   = 1,
@@ -212,8 +216,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class PrtlBC : public enums_hidden::BaseEnum<PrtlBC> {
-  public:
+  struct PrtlBC : public enums_hidden::BaseEnum<PrtlBC> {
+    static constexpr const char* label = "prtl_bc";
+
     enum type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
@@ -237,8 +242,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class FldsBC : public enums_hidden::BaseEnum<FldsBC> {
-  public:
+  struct FldsBC : public enums_hidden::BaseEnum<FldsBC> {
+    static constexpr const char* label = "flds_bc";
+
     enum type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
@@ -259,8 +265,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class CommBC : public enums_hidden::BaseEnum<CommBC> {
-  public:
+  struct CommBC : public enums_hidden::BaseEnum<CommBC> {
+    static constexpr const char* label = "comm_bc";
+
     enum type : uint8_t {
       INVALID  = 0,
       PHYSICAL = 1,
@@ -274,8 +281,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class PrtlPusher : public enums_hidden::BaseEnum<PrtlPusher> {
-  public:
+  struct PrtlPusher : public enums_hidden::BaseEnum<PrtlPusher> {
+    static constexpr const char* label = "prtl_pusher";
+
     enum type : uint8_t {
       INVALID   = 0,
       BORIS     = 1,
@@ -296,8 +304,9 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  class Cooling : public enums_hidden::BaseEnum<Cooling> {
-  public:
+  struct Cooling : public enums_hidden::BaseEnum<Cooling> {
+    static constexpr const char* label = "cooling";
+
     enum type : uint8_t {
       INVALID     = 0,
       SYNCHROTRON = 1,
@@ -310,239 +319,6 @@ namespace ntt {
     static constexpr const char* lookup[]   = { "synchrotron", "none" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
-
-  // namespace Coord {
-  //   using type = std::string_view;
-  //   constexpr type INVALID { "invalid" };
-  //   constexpr type CART { "cart" };
-  //   constexpr type SPH { "sph" };
-  //   constexpr type QSPH { "qsph" };
-  //   constexpr type variants[] = { CART, SPH, QSPH };
-  // } // namespace Coord
-
-  // namespace Metric {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type MINKOWSKI { "minkowski" };
-  //   const type SPHERICAL { "spherical" };
-  //   const type QSPHERICAL { "qspherical" };
-  //   const type KERR_SCHILD { "kerr_schild" };
-  //   const type QKERR_SCHILD { "qkerr_schild" };
-  //   const type KERR_SCHILD_0 { "kerr_schild_0" };
-  //   const type variants[] = { MINKOWSKI,   SPHERICAL,    QSPHERICAL,
-  //                             KERR_SCHILD, QKERR_SCHILD, KERR_SCHILD_0 };
-  // } // namespace Metric
-
-  // // namespace SimEngine {
-  // //   // using type = std::string_view;
-
-  // //   // struct INVALID {
-  // //   //   static constexpr operator()() const -> std::string_view {
-  // //   //     return "invalid";
-  // //   //   }
-  // //   //   INVALID() = delete;
-  // //   //   ~INVALID() = delete;
-  // //   // };
-
-  // //   // enum : std::string {
-  // //   //
-
-  // namespace Coord {
-  //   using type = std::string_view;
-  //   constexpr type INVALID { "invalid" };
-  //   constexpr type CART { "cart" };
-  //   constexpr type SPH { "sph" };
-  //   constexpr type QSPH { "qsph" };
-  //   constexpr type variants[] = { CART, SPH, QSPH };
-  // } // namespace Coord
-
-  // namespace Metric {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type MINKOWSKI { "minkowski" };
-  //   const type SPHERICAL { "spherical" };
-  //   const type QSPHERICAL { "qspherical" };
-  //   const type KERR_SCHILD { "kerr_schild" };
-  //   const type QKERR_SCHILD { "qkerr_schild" };
-  //   const type KERR_SCHILD_0 { "kerr_schild_0" };
-  //   const type variants[] = { MINKOWSKI,   SPHERICAL,    QSPHERICAL,
-  //                             KERR_SCHILD, QKERR_SCHILD, KERR_SCHILD_0 };
-  // } // namespace Metric
-
-  // // namespace SimEngine {
-  // //   // using type = std::string_view;
-
-  // //   // struct INVALID {
-  // //   //   static constexpr operator()() const -> std::string_view {
-  // //   //     return "invalid";
-  // //   //   }
-  // //   //   INVALID() = delete;
-  // //   //   ~INVALID() = delete;
-  // //   // };
-
-  // //   // enum : std::string {
-  // //   //   INVALID = "invalid",
-  // //   //   SRPIC   = "srpic",
-  // //   //   GRPIC   = "grpic",
-  // //   // };
-
-  // //   // const type INVALID { "invalid" };
-  // //   // const type SRPIC { "srpic" };
-  // //   // const type GRPIC { "grpic" };
-  // //   const type variants[] = { SRPIC, GRPIC };
-  // // } // namespace SimEngine
-
-  // namespace PrtlBC {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type PERIODIC { "periodic" };
-  //   const type ABSORB { "absorb" };
-  //   const type ATMOSPHERE { "atmosphere" };
-  //   const type CUSTOM { "custom" };
-  //   const type REFLECT { "reflect" };
-  //   const type HORIZON { "horizon" };
-  //   const type AXIS { "axis" };
-  //   const type SEND { "send" };
-  //   const type variants[] = { PERIODIC, ABSORB,  ATMOSPHERE, CUSTOM,
-  //                             REFLECT,  HORIZON, AXIS,       SEND };
-  // } // namespace PrtlBC
-
-  // namespace FldsBC {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type PERIODIC { "periodic" };
-  //   const type ABSORB { "absorb" };
-  //   const type ATMOSPHERE { "atmosphere" };
-  //   const type CUSTOM { "custom" };
-  //   const type HORIZON { "horizon" };
-  //   const type AXIS { "axis" };
-  //   const type variants[] = { PERIODIC, ABSORB,  ATMOSPHERE,
-  //                             CUSTOM,   HORIZON, AXIS };
-  // } // namespace FldsBC
-
-  // namespace CommBC {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type PHYSICAL { "physical" };
-  //   const type COMM { "comm" };
-  //   const type variants[] = { PHYSICAL, COMM };
-  // } // namespace CommBC
-
-  // namespace PrtlPusher {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type BORIS { "boris" };
-  //   const type VAY { "vay" };
-  //   const type BORIS_GCA { "boris,gca" };
-  //   const type VAY_GCA { "vay,gca" };
-  //   const type PHOTON { "photon" };
-  //   const type NONE { "none" };
-  //   const type variants[] = { BORIS, VAY, BORIS_GCA, VAY_GCA, PHOTON, NONE };
-  // } // namespace PrtlPusher
-
-  // namespace Cooling {
-  //   using type = std::string_view;
-  //   const type INVALID { "invalid" };
-  //   const type SYNCHROTRON { "synchrotron" };
-  //   const type NONE { "none" };
-  //   const type variants[] = { SYNCHROTRON, NONE };
-  // } // namespace Cooling
-
-  // namespace Coord {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace Coord
-
-  // namespace Metric {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace Metric
-
-  // namespace SimEngine {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace SimEngine
-
-  // namespace PrtlBC {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace PrtlBC
-
-  // namespace FldsBC {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace FldsBC
-
-  // namespace CommBC {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace CommBC
-
-  // namespace PrtlPusher {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace PrtlPusher
-
-  // namespace Cooling {
-  //   const std::size_t total { sizeof(variants) / sizeof(variants[0]) };
-
-  //   auto pick = [](const std::string& key) -> type {
-  //     return enums_hidden::basePick(variants, total, key, INVALID);
-  //   };
-
-  //   auto contains = [](const std::string& key) -> bool {
-  //     return enums_hidden::baseContains(variants, total, key);
-  //   };
-  // } // namespace Cooling
 
 } // namespace ntt
 
