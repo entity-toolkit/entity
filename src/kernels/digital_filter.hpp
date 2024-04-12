@@ -1,5 +1,5 @@
 /**
- * @file digital_filter.hpp
+ * @file kernels/digital_filter.hpp
  * @brief Algorithms for covariant digital filtering
  * @implements
  *   - ntt::DigitalFilter_kernel<>
@@ -8,51 +8,49 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
  */
 
-#ifndef KERNELS_DIGITAL_FILTER_H
-#define KERNELS_DIGITAL_FILTER_H
+#ifndef KERNELS_DIGITAL_FILTER_HPP
+#define KERNELS_DIGITAL_FILTER_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 #include <type_traits>
 
 #define FILTER_IN_I1(ARR, COMP, I, J)                                          \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I) - 1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+    INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
 namespace ntt {
 
   template <Dimension D, Coord::type C>
   class DigitalFilter_kernel {
-  protected:
-    ndfield_t<D, 3>    array;
-    ndfield_t<D, 3>    buffer;
-    const std::size_t* size;
-    bool               is_axis_i2min { false }, is_axis_i2max { false };
+    ndfield_t<D, 3>       array;
+    const ndfield_t<D, 3> buffer;
+    bool                  is_axis_i2min { false }, is_axis_i2max { false };
+    static constexpr auto i2_min = N_GHOSTS;
+    const std::size_t     i2_max;
 
   public:
-    DigitalFilter_kernel(ndfield_t<D, 3>& array,
-                         ndfield_t<D, 3>& buffer,
+    DigitalFilter_kernel(const ndfield_t<D, 3>& array,
+                         const ndfield_t<D, 3>& buffer,
                          const std::size_t (&size_)[D],
-                         const std::vector<std::vector<FldsBC::type>>& boundaries) :
+                         const boundaries_t<FldsBC>& boundaries) :
       array { array },
       buffer { buffer },
-      size { size_ } {
+      i2_max { (short)D > 1 ? size_[1] + N_GHOSTS : 0 } {
       if constexpr ((C != Coord::Cart) && (D != Dim::_1D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
     }
 
@@ -72,7 +70,7 @@ namespace ntt {
       if constexpr (D == Dim::_2D) {
         if constexpr (C == Coord::Cart) {
 #pragma unroll
-          for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+          for (const auto comp : { cur::jx1, cur::jx2, cur::jx3 }) {
             array(i1, i2, comp) = INV_4 * buffer(i1, i2, comp) +
                                   INV_8 * (buffer(i1 - 1, i2, comp) +
                                            buffer(i1 + 1, i2, comp) +
@@ -84,9 +82,7 @@ namespace ntt {
                                             buffer(i1 + 1, i2 - 1, comp));
           }
         } else { // spherical
-          const std::size_t i2_min = N_GHOSTS, i2_min_p1 = i2_min + 1;
-          const std::size_t i2_max = size[1] + N_GHOSTS, i2_max_m1 = i2_max - 1;
-          real_t            cur_00, cur_0p1, cur_0m1;
+          real_t cur_00, cur_0p1, cur_0m1;
           if (is_axis_i2min && (i2 == i2_min)) {
             /* --------------------------------- r, phi --------------------------------- */
             // ... filter in r
@@ -103,7 +99,7 @@ namespace ntt {
             cur_0p1 = FILTER_IN_I1(buffer, cur::jx2, i1, i2 + 1);
             // ... filter in theta
             array(i1, i2, cur::jx2) = INV_4 * (cur_00 + cur_0p1);
-          } else if (is_axis_i2min && (i2 == i2_min_p1)) {
+          } else if (is_axis_i2min && (i2 == i2_min + 1)) {
             /* --------------------------------- r, phi --------------------------------- */
             // ... filter in r
             cur_00  = FILTER_IN_I1(buffer, cur::jx1, i1, i2);
@@ -125,7 +121,7 @@ namespace ntt {
             cur_0m1 = FILTER_IN_I1(buffer, cur::jx2, i1, i2 - 1);
             // ... filter in theta
             array(i1, i2, cur::jx2) = INV_2 * cur_00 + INV_4 * (cur_0m1 + cur_0p1);
-          } else if (is_axis_i2max && (i2 == i2_max_m1)) {
+          } else if (is_axis_i2max && (i2 == i2_max - 1)) {
             /* --------------------------------- r, phi --------------------------------- */
             // ... filter in r
             cur_00  = FILTER_IN_I1(buffer, cur::jx1, i1, i2);
@@ -157,7 +153,7 @@ namespace ntt {
             array(i1, i2, cur::jx3) = ZERO;
           } else {
 #pragma unroll
-            for (auto& comp : { cur::jx1, cur::jx2, cur::jx3 }) {
+            for (const auto comp : { cur::jx1, cur::jx2, cur::jx3 }) {
               array(i1, i2, comp) = INV_4 * buffer(i1, i2, comp) +
                                     INV_8 * (buffer(i1 - 1, i2, comp) +
                                              buffer(i1 + 1, i2, comp) +
@@ -223,4 +219,4 @@ namespace ntt {
 
 #undef FILTER_IN_I1
 
-#endif // DIGITAL_FILTER_H
+#endif // DIGITAL_FILTER_HPP

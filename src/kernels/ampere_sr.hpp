@@ -1,5 +1,5 @@
 /**
- * @file ampere_gr.hpp
+ * @file kernels/ampere_gr.hpp
  * @brief Algorithms for Ampere's law in curvilinear SR
  * @implements
  *   - ntt::Ampere_kernel<>
@@ -9,7 +9,6 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
@@ -17,25 +16,26 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_AMPERE_SR_H
-#define KERNELS_AMPERE_SR_H
+#ifndef KERNELS_AMPERE_SR_HPP
+#define KERNELS_AMPERE_SR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 namespace ntt {
   /**
-   * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space.
-   * @tparam D Dimension.
-   * @tparam M Metric.
+   * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space
+   * @tparam M Metric
    */
-  template <Dimension D, class M>
+  template <class M>
   class Ampere_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
     ndfield_t<D, 6>   EB;
     const M           metric;
     const std::size_t i2max;
@@ -43,19 +43,22 @@ namespace ntt {
     bool              is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    Ampere_kernel(const ndfield_t<D, 6>&                        EB,
-                  const M&                                      metric,
-                  real_t                                        coeff,
-                  std::size_t                                   ni2,
-                  const std::vector<std::vector<FldsBC::type>>& boundaries) :
+    Ampere_kernel(const ndfield_t<D, 6>&      EB,
+                  const M&                    metric,
+                  real_t                      coeff,
+                  std::size_t                 ni2,
+                  const boundaries_t<FldsBC>& boundaries) :
       EB { EB },
       metric { metric },
       i2max { ni2 + N_GHOSTS },
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
+        raise::ErrorIf(boundaries[1].size() < 2,
+                       "boundaries defined incorrectly",
+                       HERE);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
     }
 
@@ -67,8 +70,8 @@ namespace ntt {
 
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
-        const real_t h3_mHpH { metric.h_33({ i1_ - HALF, i2_ + HALF }) };
-        const real_t h3_pHpH { metric.h_33({ i1_ + HALF, i2_ + HALF }) };
+        const real_t h3_mHpH { metric.template h_<3, 3>({ i1_ - HALF, i2_ + HALF }) };
+        const real_t h3_pHpH { metric.template h_<3, 3>({ i1_ + HALF, i2_ + HALF }) };
 
         if ((i2 == i2min) && is_axis_i2min) {
           // theta = 0
@@ -81,18 +84,20 @@ namespace ntt {
         } else if ((i2 == i2max) && is_axis_i2max) {
           // theta = pi
           const real_t inv_polar_area_pH0 { ONE / metric.polar_area(i1_ + HALF) };
-          const real_t h3_pHmH { metric.h_33({ i1_ + HALF, i2_ - HALF }) };
+          const real_t h3_pHmH { metric.template h_<3, 3>(
+            { i1_ + HALF, i2_ - HALF }) };
           EB(i1, i2, em::ex1) -= inv_polar_area_pH0 * coeff *
                                  (h3_pHmH * EB(i1, i2, em::bx3));
         } else {
           const real_t inv_sqrt_detH_00 { ONE / metric.sqrt_det_h({ i1_, i2_ }) };
           const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
                                                    { i1_ + HALF, i2_ }) };
-          const real_t h1_0mH { metric.h_11({ i1_, i2_ - HALF }) };
-          const real_t h1_0pH { metric.h_11({ i1_, i2_ + HALF }) };
-          const real_t h2_pH0 { metric.h_22({ i1_ + HALF, i2_ }) };
-          const real_t h2_mH0 { metric.h_22({ i1_ - HALF, i2_ }) };
-          const real_t h3_pHmH { metric.h_33({ i1_ + HALF, i2_ - HALF }) };
+          const real_t h1_0mH { metric.template h_<1, 1>({ i1_, i2_ - HALF }) };
+          const real_t h1_0pH { metric.template h_<1, 1>({ i1_, i2_ + HALF }) };
+          const real_t h2_pH0 { metric.template h_<2, 2>({ i1_ + HALF, i2_ }) };
+          const real_t h2_mH0 { metric.template h_<2, 2>({ i1_ - HALF, i2_ }) };
+          const real_t h3_pHmH { metric.template h_<3, 3>(
+            { i1_ + HALF, i2_ - HALF }) };
           EB(i1, i2, em::ex1) += coeff * inv_sqrt_detH_pH0 *
                                  (h3_pHpH * EB(i1, i2, em::bx3) -
                                   h3_pHmH * EB(i1, i2 - 1, em::bx3));
@@ -120,11 +125,12 @@ namespace ntt {
   };
 
   /**
-   * @brief Add the currents to the E field with the appropriate conversion.
-   * @tparam D Dimension.
+   * @brief Add the currents to the E field with the appropriate conversion
    */
-  template <Dimension D, class M>
+  template <class M>
   class CurrentsAmpere_kernel {
+    static constexpr auto D = M::Dim;
+
     ndfield_t<D, 6>   E;
     ndfield_t<D, 3>   J;
     const M           metric;
@@ -139,13 +145,13 @@ namespace ntt {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
-                          const ndfield_t<D, 3>& J,
-                          const M&               metric,
-                          real_t                 coeff,
-                          real_t                 inv_n0,
-                          std::size_t            ni2,
-                          const std::vector<std::vector<FldsBC::type>>& boundaries) :
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>&      E,
+                          const ndfield_t<D, 3>&      J,
+                          const M&                    metric,
+                          real_t                      coeff,
+                          real_t                      inv_n0,
+                          std::size_t                 ni2,
+                          const boundaries_t<FldsBC>& boundaries) :
       E { E },
       J { J },
       metric { metric },
@@ -154,8 +160,8 @@ namespace ntt {
       inv_n0 { inv_n0 } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
     }
 
@@ -221,4 +227,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // KERNELS_AMPERE_SR_H
+#endif // KERNELS_AMPERE_SR_HPP

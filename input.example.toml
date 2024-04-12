@@ -16,6 +16,20 @@
   #   @example: 1e5
   runtime = ""
 
+  [simulation.domain]
+    # Number of domains
+    #   @type int
+    #   @default: 1 (no MPI)
+    #   @default: MPI_SIZE (MPI)
+    number = ""
+    # Decomposition of the domain (e.g., for MPI) in each of the directions
+    #   @type array of int of size 1, 2 or 3
+    #   @example: [2, 2, 2] (for a total of 8 domains)
+    #   @default: [-1, -1, -1]
+    #   @note: -1 means the code will determine the decomposition in the specific direction automatically
+    #   @note: automatic detection is either done by inference from # of MPI tasks, or by balancing the grid size on each domain
+    decomposition = ""
+
 [grid]
   # Spatial resolution of the grid:
   #   @required
@@ -168,6 +182,11 @@
     #   @type: float: ~1
     #   @default: 1.0
     correction = ""
+    
+    # @inferred:
+    # - dt [= CFL * dx0]
+    #     @brief: timestep duration
+    #     @type: float
 
   [algorithms.gr]
     # Stepsize for numerical differentiation in GR pusher:
@@ -266,11 +285,9 @@
   #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
   #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
   fields = ""
-  # Particle quantities to output:
-  #   @type: array of strings
-  #   @valid: "X", "U", "W"
-  #   @default: []
-  #   @note: The code will output all species by default. If necessary, only specific species can be requested: X_1_2, U_3_4
+  # Particle species indices to output:
+  #   @type: array of ints
+  #   @default: [] = all species
   particles = ""
   # Output format:
   #   @type: string
@@ -314,11 +331,6 @@
   #   @type: int: > 0
   #   @default: 1
   interval = ""
-  # Verbosity level of the diagnostic logs:
-  #   @type: string: 
-  #   @valid: "DEBUG", "INFO", "WARNING", "ERROR"
-  #   @default: "INFO"
-  log_level = ""
   # Blocking timers between successive algorithms:
   #   @type: bool
   #   @default: false

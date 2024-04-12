@@ -1,7 +1,8 @@
 #include "utils/sorting.h"
 
+#include "global.h"
+
 #include "utils/error.h"
-#include "utils/log.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Sort.hpp>
@@ -77,7 +78,7 @@ auto main(int argc, char* argv[]) -> int {
           should_raise = should_raise || (keys_short(i) != 5);
         }
         if (should_raise) {
-          raise::KernelError(HERE, "Short sort failed at index %d", i);
+          raise::KernelError(HERE, "Short sort failed");
         }
       });
 
@@ -101,7 +102,7 @@ auto main(int argc, char* argv[]) -> int {
           should_raise = should_raise || (keys_short(i) % 2 != 1);
         }
         if (should_raise) {
-          raise::KernelError(HERE, "Short sort failed at index %d", i);
+          raise::KernelError(HERE, "Short sort failed");
         }
       });
   } catch (const std::exception& e) {

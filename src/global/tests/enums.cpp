@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 #include <string>
-
 #include <type_traits>
 
 void errorIf(bool condition, const std::string& message) {
@@ -61,13 +60,16 @@ auto main() -> int {
                              "kerr_schild", "qkerr_schild", "kerr_schild_0" };
   enum_str_t all_simulation_engines = { "srpic", "grpic" };
   enum_str_t all_particle_bcs = { "periodic", "absorb",  "atmosphere", "custom",
-                                  "reflect",  "horizon", "axis",       "send" };
-  enum_str_t all_fields_bcs   = { "periodic", "absorb",  "atmosphere",
-                                  "custom",   "horizon", "axis" };
-  enum_str_t all_comm_bcs     = { "physical", "comm" };
+                                  "reflect",  "horizon", "axis",       "sync" };
+  enum_str_t all_fields_bcs   = { "periodic", "absorb", "atmosphere", "custom",
+                                  "horizon",  "axis",   "sync" };
+  enum_str_t all_comm_bcs     = { "physical", "sync" };
   enum_str_t all_particle_pushers = { "boris",   "vay",    "boris,gca",
                                       "vay,gca", "photon", "none" };
   enum_str_t all_coolings         = { "synchrotron", "none" };
+
+  enum_str_t all_out_flds = { "e", "dive", "d",   "divd",   "b", "h",   "j",
+                              "a", "t",    "rho", "charge", "n", "nppc" };
 
   checkEnum<Coord>(all_coords);
   checkEnum<Metric>(all_metrics);
@@ -77,6 +79,7 @@ auto main() -> int {
   checkEnum<CommBC>(all_comm_bcs);
   checkEnum<PrtlPusher>(all_particle_pushers);
   checkEnum<Cooling>(all_coolings);
+  checkEnum<FldsID>(all_out_flds);
 
   return 0;
 }

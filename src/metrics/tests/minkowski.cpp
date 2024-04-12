@@ -19,9 +19,8 @@ void errorIf(bool condition, const std::string& message) {
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
 template <Dimension D>
-Inline auto equal(const coord_t<D>& a,
-                  const coord_t<D>& b,
-                  const real_t      acc = ONE) -> bool {
+Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, const real_t acc = ONE)
+  -> bool {
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], epsilon * acc)) {
       printf("%d : %.12f != %.12f\n", d, a[d], b[d]);
@@ -66,9 +65,12 @@ auto main(int argc, char* argv[]) -> int {
     coord_t<Dim::_3D> dummy { ZERO, ZERO, ZERO };
     errorIf(not cmp::AlmostEqual(M.dxMin(), dx / (real_t)math::sqrt(3.0)),
             "dxMin not set correctly");
-    errorIf(not cmp::AlmostEqual(M.h_11(dummy), SQR(dx)), "h_11 not set correctly");
-    errorIf(not cmp::AlmostEqual(M.h_22(dummy), SQR(dx)), "h_22 not set correctly");
-    errorIf(not cmp::AlmostEqual(M.h_33(dummy), SQR(dx)), "h_33 not set correctly");
+    errorIf(not cmp::AlmostEqual(M.h_<1, 1>(dummy), SQR(dx)),
+            "h_11 not set correctly");
+    errorIf(not cmp::AlmostEqual(M.h_<2, 2>(dummy), SQR(dx)),
+            "h_22 not set correctly");
+    errorIf(not cmp::AlmostEqual(M.h_<3, 3>(dummy), SQR(dx)),
+            "h_33 not set correctly");
     errorIf(not cmp::AlmostEqual(M.sqrt_det_h(dummy), CUBE(dx)),
             "sqrt_det_h not set correctly");
 
@@ -84,12 +86,12 @@ auto main(int argc, char* argv[]) -> int {
         coord_t<Dim::_3D>       x_Sph { ZERO, ZERO, ZERO };
         coord_t<Dim::_3D>       x_Phys { ZERO, ZERO, ZERO };
 
-        M.x_Code2Cart(x_Code, x_Phys);
+        M.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
         wrongs += not equal<Dim::_3D>(
           x_Phys,
           { -TWO + dx * x_Code[0], -ONE + dx * x_Code[1], -HALF + dx * x_Code[2] });
 
-        M.x_Code2Sph(x_Code, x_Sph);
+        M.template convert<Crd::Cd, Crd::Sph>(x_Code, x_Sph);
         wrongs += not equal<Dim::_3D>(
           x_Sph,
           { math::sqrt(SQR(x_Phys[0]) + SQR(x_Phys[1]) + SQR(x_Phys[2])),

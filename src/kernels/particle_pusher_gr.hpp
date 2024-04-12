@@ -1,5 +1,5 @@
 /**
- * @file particle_pusher_gr.h
+ * @file kernels/particle_pusher_gr.h
  * @brief Implementation of the particle pusher for GR
  * @implements
  *   - ntt::Pusher_kernel<>
@@ -8,7 +8,6 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
@@ -16,15 +15,14 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_PARTICLE_PUSHER_GR_H
-#define KERNELS_PARTICLE_PUSHER_GR_H
+#ifndef KERNELS_PARTICLE_PUSHER_GR_HPP
+#define KERNELS_PARTICLE_PUSHER_GR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 /* -------------------------------------------------------------------------- */
@@ -58,22 +56,24 @@ namespace ntt {
   struct Massless_t {};
 
   /**
-   * @brief Algorithm for the Particle pusher.
-   * @tparam D Dimension.
-   * @tparam M Metric.
+   * @brief Algorithm for the Particle pusher
+   * @tparam M Metric
    */
-  template <Dimension D, class M>
+  template <class M>
   class Pusher_kernel {
-    ndfield_t<D, 6>    DB;
-    ndfield_t<D, 6>    DB0;
-    array_t<int*>      i1, i2, i3;
-    array_t<int*>      i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*> dx1, dx2, dx3;
-    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>   ux1, ux2, ux3;
-    array_t<real_t*>   phi;
-    array_t<short*>    tag;
-    const M            metric;
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const ndfield_t<D, 6> DB;
+    const ndfield_t<D, 6> DB0;
+    array_t<int*>         i1, i2, i3;
+    array_t<int*>         i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*>    dx1, dx2, dx3;
+    array_t<prtldx_t*>    dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>      ux1, ux2, ux3;
+    array_t<real_t*>      phi;
+    array_t<short*>       tag;
+    const M               metric;
 
     const real_t coeff, dt;
     const int    ni1, ni2, ni3;
@@ -85,34 +85,34 @@ namespace ntt {
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
 
   public:
-    Pusher_kernel(const ndfield_t<D, 6>&    DB,
-                  const ndfield_t<D, 6>&    DB0,
-                  const array_t<int*>&      i1,
-                  const array_t<int*>&      i2,
-                  const array_t<int*>&      i3,
-                  const array_t<int*>&      i1_prev,
-                  const array_t<int*>&      i2_prev,
-                  const array_t<int*>&      i3_prev,
-                  const array_t<prtldx_t*>& dx1,
-                  const array_t<prtldx_t*>& dx2,
-                  const array_t<prtldx_t*>& dx3,
-                  const array_t<prtldx_t*>& dx1_prev,
-                  const array_t<prtldx_t*>& dx2_prev,
-                  const array_t<prtldx_t*>& dx3_prev,
-                  const array_t<real_t*>&   ux1,
-                  const array_t<real_t*>&   ux2,
-                  const array_t<real_t*>&   ux3,
-                  const array_t<real_t*>&   phi,
-                  const array_t<short*>&    tag,
-                  const M&                  metric,
-                  const real_t&             coeff,
-                  const real_t&             dt,
-                  const int&                ni1,
-                  const int&                ni2,
-                  const int&                ni3,
-                  const real_t&             epsilon,
-                  const int&                niter,
-                  const std::vector<std::vector<ParticleBC::type>>& boundaries) :
+    Pusher_kernel(const ndfield_t<D, 6>&                DB,
+                  const ndfield_t<D, 6>&                DB0,
+                  const array_t<int*>&                  i1,
+                  const array_t<int*>&                  i2,
+                  const array_t<int*>&                  i3,
+                  const array_t<int*>&                  i1_prev,
+                  const array_t<int*>&                  i2_prev,
+                  const array_t<int*>&                  i3_prev,
+                  const array_t<prtldx_t*>&             dx1,
+                  const array_t<prtldx_t*>&             dx2,
+                  const array_t<prtldx_t*>&             dx3,
+                  const array_t<prtldx_t*>&             dx1_prev,
+                  const array_t<prtldx_t*>&             dx2_prev,
+                  const array_t<prtldx_t*>&             dx3_prev,
+                  const array_t<real_t*>&               ux1,
+                  const array_t<real_t*>&               ux2,
+                  const array_t<real_t*>&               ux3,
+                  const array_t<real_t*>&               phi,
+                  const array_t<short*>&                tag,
+                  const M&                              metric,
+                  const real_t&                         coeff,
+                  const real_t&                         dt,
+                  const int&                            ni1,
+                  const int&                            ni2,
+                  const int&                            ni3,
+                  const real_t&                         epsilon,
+                  const int&                            niter,
+                  const boundaries_t<ParticleBC::type>& boundaries) :
       DB { DB },
       DB0 { DB0 },
       i1 { i1 },
@@ -140,15 +140,17 @@ namespace ntt {
       ni3 { ni3 },
       epsilon { epsilon },
       niter { niter },
-      i1_absorb { static_cast<int>(metric.x1_Phys2Code(metric.rhorizon())) - 5 } {
+      i1_absorb { static_cast<int>(metric.template convert<1, Crd::Ph, Crd::Cd>(
+                    metric.rhorizon())) -
+                  5 } {
 
       NTTHostErrorIf(boundaries.size() < 2, "boundaries defined incorrectly");
-      is_absorb_i1min = (boundaries[0][0] == ParticleBC::ABSORB) ||
-                        (boundaries[0][0] == ParticleBC::HORIZON);
-      is_absorb_i1max = (boundaries[0][1] == ParticleBC::ABSORB) ||
-                        (boundaries[0][1] == ParticleBC::HORIZON);
-      is_axis_i2min = (boundaries[1][0] == ParticleBC::AXIS);
-      is_axis_i2max = (boundaries[1][1] == ParticleBC::AXIS);
+      is_absorb_i1min = (boundaries[0].first == ParticleBC::ABSORB) ||
+                        (boundaries[0].first == ParticleBC::HORIZON);
+      is_absorb_i1max = (boundaries[0].second == ParticleBC::ABSORB) ||
+                        (boundaries[0].second == ParticleBC::HORIZON);
+      is_axis_i2min = (boundaries[1].first == ParticleBC::AXIS);
+      is_axis_i2max = (boundaries[1].second == ParticleBC::AXIS);
     }
 
     /**
@@ -231,7 +233,7 @@ namespace ntt {
       vec_t<Dim::_3D> D0 { Dp_hat[0], Dp_hat[1], Dp_hat[2] };
       vec_t<Dim::_3D> B0 { Bp_hat[0], Bp_hat[1], Bp_hat[2] };
       vec_t<Dim::_3D> vp_hat { ZERO }, vp_upd_hat { ZERO };
-      metric.v3_Cov2Hat(xp, vp, vp_upd_hat);
+      metric.template transform<Idx::D, Idx::T>(xp, vp, vp_upd_hat);
 
       // this is a half-push
       real_t COEFF { coeff * HALF * metric.alpha(xp) };
@@ -262,7 +264,7 @@ namespace ntt {
       vp_upd_hat[1] += vp_hat[2] * B0[0] - vp_hat[0] * B0[2] + D0[1];
       vp_upd_hat[2] += vp_hat[0] * B0[1] - vp_hat[1] * B0[0] + D0[2];
 
-      metric.v3_Hat2Cov(xp, vp_upd_hat, vp_upd);
+      metric.template transform<Idx::T, Idx::D>(xp, vp_upd_hat, vp_upd);
     }
 
     // Helper functions
@@ -305,13 +307,12 @@ namespace ntt {
   /*                               Geodesic pusher */
   /* -------------------------------------------------------------------------- */
 
-  template <Dimension D, class M>
+  template <class M>
   template <typename T>
-  Inline void Pusher_kernel<D, M>::GeodesicMomentumPush(
-    T,
-    const coord_t<D>&      xp,
-    const vec_t<Dim::_3D>& vp,
-    vec_t<Dim::_3D>&       vp_upd) const {
+  Inline void Pusher_kernel<M>::GeodesicMomentumPush(T,
+                                                     const coord_t<D>&      xp,
+                                                     const vec_t<Dim::_3D>& vp,
+                                                     vec_t<Dim::_3D>& vp_upd) const {
     if constexpr (D == Dim::_1D) {
       NTTError("not applicable");
     } else if constexpr (D == Dim::_2D) {
@@ -329,7 +330,7 @@ namespace ntt {
         vp_mid[2] = vp[2];
 
         // find contravariant midpoint velocity
-        metric.v3_Cov2Cntrv(xp, vp_mid, vp_mid_cntrv);
+        metric.template transform<Idx::D, Idx::U>(xp, vp_mid, vp_mid_cntrv);
 
         // find Gamma / alpha at midpoint
         real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / metric.alpha(xp) };
@@ -340,32 +341,33 @@ namespace ntt {
                       (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(alpha, xp) +
                        vp_mid[0] * DERIVATIVE_IN_R(beta1, xp) -
                        (HALF / u0) *
-                         (DERIVATIVE_IN_R(h11, xp) * SQR(vp_mid[0]) +
-                          DERIVATIVE_IN_R(h22, xp) * SQR(vp_mid[1]) +
-                          DERIVATIVE_IN_R(h33, xp) * SQR(vp_mid[2]) +
-                          TWO * DERIVATIVE_IN_R(h13, xp) * vp_mid[0] * vp_mid[2]));
-        vp_upd[1] = vp[1] +
-                    dt * (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
-                          vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
-                          (HALF / u0) *
-                            (DERIVATIVE_IN_TH(h11, xp) * SQR(vp_mid[0]) +
-                             DERIVATIVE_IN_TH(h22, xp) * SQR(vp_mid[1]) +
-                             DERIVATIVE_IN_TH(h33, xp) * SQR(vp_mid[2]) +
-                             TWO * DERIVATIVE_IN_TH(h13, xp) * vp_mid[0] *
-                               vp_mid[2]));
+                         (DERIVATIVE_IN_R((template h<1, 1>), xp) * SQR(vp_mid[0]) +
+                          DERIVATIVE_IN_R((template h<2, 2>), xp) * SQR(vp_mid[1]) +
+                          DERIVATIVE_IN_R((template h<3, 3>), xp) * SQR(vp_mid[2]) +
+                          TWO * DERIVATIVE_IN_R((template h<1, 3>), xp) *
+                            vp_mid[0] * vp_mid[2]));
+        vp_upd[1] =
+          vp[1] +
+          dt * (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
+                vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
+                (HALF / u0) *
+                  (DERIVATIVE_IN_TH((template h<1, 1>), xp) * SQR(vp_mid[0]) +
+                   DERIVATIVE_IN_TH((template h<2, 2>), xp) * SQR(vp_mid[1]) +
+                   DERIVATIVE_IN_TH((template h<3, 3>), xp) * SQR(vp_mid[2]) +
+                   TWO * DERIVATIVE_IN_TH((template h<1, 3>), xp) * vp_mid[0] *
+                     vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
     }
   }
 
-  template <Dimension D, class M>
+  template <class M>
   template <typename T>
-  Inline void Pusher_kernel<D, M>::GeodesicCoordinatePush(
-    T,
-    const coord_t<D>&      xp,
-    const vec_t<Dim::_3D>& vp,
-    coord_t<D>&            xp_upd) const {
+  Inline void Pusher_kernel<M>::GeodesicCoordinatePush(T,
+                                                       const coord_t<D>& xp,
+                                                       const vec_t<Dim::_3D>& vp,
+                                                       coord_t<D>& xp_upd) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "GeodesicCoordinatePush: 1D implementation called")
     } else if constexpr (D == Dim::_2D) {
@@ -380,7 +382,7 @@ namespace ntt {
         xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
 
         // find contravariant midpoint velocity
-        metric.v3_Cov2Cntrv(xp_mid, vp, vp_cntrv);
+        metric.template transform<Idx::D, Idx::U>(xp_mid, vp, vp_cntrv);
         real_t gamma = computeGamma(T {}, vp, vp_cntrv);
 
         // find midpoint coefficients
@@ -395,13 +397,13 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, class M>
+  template <class M>
   template <typename T>
-  Inline void Pusher_kernel<D, M>::GeodesicFullPush(T,
-                                                    const coord_t<D>&      xp,
-                                                    const vec_t<Dim::_3D>& vp,
-                                                    coord_t<D>& xp_upd,
-                                                    vec_t<Dim::_3D>& vp_upd) const {
+  Inline void Pusher_kernel<M>::GeodesicFullPush(T,
+                                                 const coord_t<D>&      xp,
+                                                 const vec_t<Dim::_3D>& vp,
+                                                 coord_t<D>&            xp_upd,
+                                                 vec_t<Dim::_3D>& vp_upd) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "GeodesicFullPush: 1D implementation called")
     } else if constexpr (D == Dim::_2D) {
@@ -424,7 +426,7 @@ namespace ntt {
         vp_mid[2] = vp[2];
 
         // find contravariant midpoint velocity
-        metric.v3_Cov2Cntrv(xp_mid, vp_mid, vp_mid_cntrv);
+        metric.template transform<Idx::D, Idx::U>(xp_mid, vp_mid, vp_mid_cntrv);
 
         // find Gamma / alpha at midpoint
         real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) /
@@ -435,26 +437,26 @@ namespace ntt {
         xp_upd[1] = xp[1] + dt * (vp_mid_cntrv[1] / u0);
 
         // find updated velocity
-        vp_upd[0] = vp[0] +
-                    dt * (-metric.alpha(xp_mid) * u0 *
-                            DERIVATIVE_IN_R(alpha, xp_mid) +
-                          vp_mid[0] * DERIVATIVE_IN_R(beta1, xp_mid) -
-                          (HALF / u0) *
-                            (DERIVATIVE_IN_R(h11, xp_mid) * SQR(vp_mid[0]) +
-                             DERIVATIVE_IN_R(h22, xp_mid) * SQR(vp_mid[1]) +
-                             DERIVATIVE_IN_R(h33, xp_mid) * SQR(vp_mid[2]) +
-                             TWO * DERIVATIVE_IN_R(h13, xp_mid) * vp_mid[0] *
-                               vp_mid[2]));
-        vp_upd[1] = vp[1] +
-                    dt * (-metric.alpha(xp_mid) * u0 *
-                            DERIVATIVE_IN_TH(alpha, xp_mid) +
-                          vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid) -
-                          (HALF / u0) *
-                            (DERIVATIVE_IN_TH(h11, xp_mid) * SQR(vp_mid[0]) +
-                             DERIVATIVE_IN_TH(h22, xp_mid) * SQR(vp_mid[1]) +
-                             DERIVATIVE_IN_TH(h33, xp_mid) * SQR(vp_mid[2]) +
-                             TWO * DERIVATIVE_IN_TH(h13, xp_mid) * vp_mid[0] *
-                               vp_mid[2]));
+        vp_upd[0] =
+          vp[0] +
+          dt * (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_R(alpha, xp_mid) +
+                vp_mid[0] * DERIVATIVE_IN_R(beta1, xp_mid) -
+                (HALF / u0) *
+                  (DERIVATIVE_IN_R((template h<1, 1>), xp_mid) * SQR(vp_mid[0]) +
+                   DERIVATIVE_IN_R((template h<2, 2>), xp_mid) * SQR(vp_mid[1]) +
+                   DERIVATIVE_IN_R((template h<3, 3>), xp_mid) * SQR(vp_mid[2]) +
+                   TWO * DERIVATIVE_IN_R((template h<1, 3>), xp_mid) *
+                     vp_mid[0] * vp_mid[2]));
+        vp_upd[1] =
+          vp[1] +
+          dt * (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_TH(alpha, xp_mid) +
+                vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid) -
+                (HALF / u0) *
+                  (DERIVATIVE_IN_TH((template h<1, 1>), xp_mid) * SQR(vp_mid[0]) +
+                   DERIVATIVE_IN_TH((template h<2, 2>), xp_mid) * SQR(vp_mid[1]) +
+                   DERIVATIVE_IN_TH((template h<3, 3>), xp_mid) * SQR(vp_mid[2]) +
+                   TWO * DERIVATIVE_IN_TH((template h<1, 3>), xp_mid) *
+                     vp_mid[0] * vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
@@ -464,17 +466,17 @@ namespace ntt {
   /* -------------------------------------------------------------------------- */
   /*                                 Phi pusher */
   /* -------------------------------------------------------------------------- */
-  template <Dimension D, class M>
+  template <class M>
   template <typename T>
-  Inline void Pusher_kernel<D, M>::UpdatePhi(T,
-                                             const coord_t<D>&      xp,
-                                             const vec_t<Dim::_3D>& vp,
-                                             real_t&                phi) const {
+  Inline void Pusher_kernel<M>::UpdatePhi(T,
+                                          const coord_t<D>&      xp,
+                                          const vec_t<Dim::_3D>& vp,
+                                          real_t&                phi) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "UpdatePhi: 1D implementation called")
     } else if constexpr (D == Dim::_2D) {
       vec_t<Dim::_3D> vp_cntrv { ZERO };
-      metric.v3_Cov2Cntrv(xp, vp, vp_cntrv);
+      metric.template transform<Idx::D, Idx::U>(xp, vp, vp_cntrv);
       real_t u0 { computeGamma(T {}, vp, vp_cntrv) / metric.alpha(xp) };
       phi += dt * vp_cntrv[2] / u0;
       if (phi >= constant::TWO_PI) {
@@ -487,10 +489,10 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, class M>
-  Inline void Pusher_kernel<D, M>::interpolateFields(index_t&         p,
-                                                     vec_t<Dim::_3D>& e0,
-                                                     vec_t<Dim::_3D>& b0) const {
+  template <class M>
+  Inline void Pusher_kernel<M>::interpolateFields(index_t&         p,
+                                                  vec_t<Dim::_3D>& e0,
+                                                  vec_t<Dim::_3D>& b0) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "interpolateFields: 1D implementation called")
     } else if constexpr (D == Dim::_2D) {
@@ -567,8 +569,8 @@ namespace ntt {
 
   /* ------------------------------ Photon pusher ----------------------------- */
 
-  template <Dimension D, class M>
-  Inline void Pusher_kernel<D, M>::operator()(Massless_t, index_t p) const {
+  template <class M>
+  Inline void Pusher_kernel<M>::operator()(Massless_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Photon pusher not implemented for 1D")
     } else if constexpr (D == Dim::_2D) {
@@ -623,8 +625,8 @@ namespace ntt {
 
   /* ------------------------- Massive particle pusher ------------------------ */
 
-  template <Dimension D, class M>
-  Inline void Pusher_kernel<D, M>::operator()(Massive_t, index_t p) const {
+  template <class M>
+  Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Massive pusher not implemented for 1D")
     } else if constexpr (D == Dim::_2D) {
@@ -643,8 +645,8 @@ namespace ntt {
         vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
           Bp_hat { ZERO };
         interpolateFields(p, Dp_cntrv, Bp_cntrv);
-        metric.v3_Cntrv2Hat(xp, Dp_cntrv, Dp_hat);
-        metric.v3_Cntrv2Hat(xp, Bp_cntrv, Bp_hat);
+        metric.template transform<Idx::U, Idx::T>(xp, Dp_cntrv, Dp_hat);
+        metric.template transform<Idx::U, Idx::T>(xp, Bp_cntrv, Bp_hat);
 
         vec_t<Dim::_3D> vp { ux1(p), ux2(p), ux3(p) };
 
@@ -697,8 +699,8 @@ namespace ntt {
 
   // Boundary conditions
 
-  template <Dimension D, class M>
-  Inline void Pusher_kernel<D, M>::boundaryConditions(index_t& p) const {
+  template <class M>
+  Inline void Pusher_kernel<M>::boundaryConditions(index_t& p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if (i1(p) < i1_absorb && is_absorb_i1min) {
         tag(p) = ParticleTag::dead;
@@ -731,4 +733,4 @@ namespace ntt {
 #undef from_Xi_to_i_di
 #undef from_Xi_to_i
 
-#endif // KERNELS_PARTICLE_PUSHER_GR_H
+#endif // KERNELS_PARTICLE_PUSHER_GR_HPP

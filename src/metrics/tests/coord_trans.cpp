@@ -1,16 +1,14 @@
 #include "global.h"
-// metrics >
+
+#include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
+
 #include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
-
-#include "metrics/kerr_schild_0.h"
-// < metrics
-
-#include "arch/kokkos_aliases.h"
-#include "utils/comparators.h"
 
 #include <iostream>
 #include <limits>
@@ -53,10 +51,10 @@ Inline void unravel(std::size_t                    idx,
 }
 
 template <class M>
-void testMetric(const std::vector<unsigned int>&              res,
-                const std::vector<std::pair<real_t, real_t>>& ext,
-                const real_t                                  acc    = ONE,
-                const std::map<std::string, real_t>&          params = {}) {
+void testMetric(const std::vector<std::size_t>&      res,
+                const boundaries_t<real_t>&          ext,
+                const real_t                         acc    = ONE,
+                const std::map<std::string, real_t>& params = {}) {
   errorIf(res.size() != (std::size_t)(M::Dim), "res.size() != M.dim");
   errorIf(ext.size() != (std::size_t)(M::Dim), "ext.size() != M.dim");
   for (const auto& e : ext) {
@@ -87,12 +85,17 @@ void testMetric(const std::vector<unsigned int>&              res,
       for (unsigned short d = 0; d < M::Dim; ++d) {
         x_Code_1[d] = (real_t)(idx[d]) + HALF;
       }
-      metric.x_Code2Phys(x_Code_1, x_Phys_1);
-      metric.x_Phys2Code(x_Phys_1, x_Code_2);
+      metric.template convert<Crd::Cd, Crd::Ph>(x_Code_1, x_Phys_1);
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Phys_1, x_Code_2);
       wrongs += not equal<M::Dim>(x_Code_1, x_Code_2, "code->phys not invertible", acc);
-      metric.x_Code2Sph(x_Code_1, x_Sph_1);
-      metric.x_Sph2Code(x_Sph_1, x_Code_2);
-      wrongs += not equal<M::Dim>(x_Code_1, x_Code_2, "code->sph not invertible", acc);
+      if constexpr (M::Dim != Dim::_1D) {
+        metric.template convert<Crd::Cd, Crd::Sph>(x_Code_1, x_Sph_1);
+        metric.template convert<Crd::Sph, Crd::Cd>(x_Sph_1, x_Code_2);
+        wrongs += not equal<M::Dim>(x_Code_1,
+                                    x_Code_2,
+                                    "code->sph not invertible",
+                                    acc);
+      }
       // 1D/2D/3D
       wrongs += (x_Phys_1[0] >= metric.x1_max);
       wrongs += (x_Phys_1[0] < metric.x1_min);
@@ -120,72 +123,63 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    const auto res2d     = std::vector<std::size_t> { 64, 32 };
+    const auto res3d     = std::vector<std::size_t> { 64, 32, 16 };
+    const auto ext1dcart = boundaries_t<real_t> {
+      {10.0, 20.0}
+    };
+    const auto ext2dcart = boundaries_t<real_t> {
+      {0.0, 20.0},
+      {0.0, 10.0}
+    };
+    const auto ext3dcart = boundaries_t<real_t> {
+      {-2.0, 2.0},
+      {-1.0, 1.0},
+      {-0.5, 0.5}
+    };
+    const auto extsph = boundaries_t<real_t> {
+      {1.0,         10.0},
+      {0.0, constant::PI}
+    };
+    const auto params = std::map<std::string, real_t> {
+      {"r0",         -ONE},
+      { "h", (real_t)0.25}
+    };
 
-    testMetric<Minkowski<Dim::_1D>>(
-      {
-        128,
-    },
-      { { 10.0, 20.0 } });
+    testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
+    testMetric<Minkowski<Dim::_2D>>(res2d, ext2dcart, 200);
+    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 200);
+    testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
+    testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 100, params);
 
-    testMetric<Minkowski<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 0.0, 20.0 }, { 0.0, 10.0 } },
-      200);
+    const auto resks  = std::vector<std::size_t> { 64, 54 };
+    const auto extsks = boundaries_t<real_t> {
+      {0.8,         50.0},
+      {0.0, constant::PI}
+    };
+    const auto paramsks = std::map<std::string, real_t> {
+      {"a", (real_t)0.95}
+    };
+    testMetric<KerrSchild<Dim::_2D>>(resks, extsks, 150, paramsks);
 
-    testMetric<Minkowski<Dim::_3D>>(
-      {
-        64,
-        32,
-        16
-    },
-      { { -2.0, 2.0 }, { -1.0, 1.0 }, { -0.5, 0.5 } },
-      200);
+    const auto resqks = std::vector<std::size_t> { 64, 42 };
+    const auto extqks = boundaries_t<real_t> {
+      {0.8,         10.0},
+      {0.0, constant::PI}
+    };
+    const auto paramsqks = std::map<std::string, real_t> {
+      {"r0",        -TWO},
+      { "h",        ZERO},
+      { "a", (real_t)0.8}
+    };
+    testMetric<QKerrSchild<Dim::_2D>>(resqks, extqks, 500, paramsqks);
 
-    testMetric<Spherical<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      10);
-
-    testMetric<QSpherical<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      100,
-      { { "r0", -ONE }, { "h", (real_t)0.25 } });
-
-    testMetric<KerrSchild<Dim::_2D>>(
-      {
-        64,
-        54
-    },
-      { { 0.8, 50.0 }, { 0.0, constant::PI } },
-      150,
-      { { "a", (real_t)0.95 } });
-
-    testMetric<QKerrSchild<Dim::_2D>>(
-      {
-        64,
-        42
-    },
-      { { 0.8, 10.0 }, { 0.0, constant::PI } },
-      500,
-      { { "r0", -TWO }, { "h", ZERO }, { "a", (real_t)0.8 } });
-
-    testMetric<KerrSchild0<Dim::_2D>>(
-      {
-        64,
-        54
-    },
-      { { 0.5, 20.0 }, { 0.0, constant::PI } },
-      10);
+    const auto resks0 = std::vector<std::size_t> { 64, 54 };
+    const auto extks0 = boundaries_t<real_t> {
+      {0.5,         20.0},
+      {0.0, constant::PI}
+    };
+    testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 150);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

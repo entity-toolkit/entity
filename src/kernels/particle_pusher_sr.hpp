@@ -1,5 +1,5 @@
 /**
- * @file particle_pusher_sr.h
+ * @file kernels/particle_pusher_sr.h
  * @brief Particle pusher for the SR
  * @implements
  *   - ntt::PusherBase_kernel<>
@@ -8,21 +8,19 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
  */
 
-#ifndef KERNELS_PARTICLE_PUSHER_SR_H
-#define KERNELS_PARTICLE_PUSHER_SR_H
+#ifndef KERNELS_PARTICLE_PUSHER_SR_HPP
+#define KERNELS_PARTICLE_PUSHER_SR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 #include <type_traits>
@@ -71,24 +69,27 @@ namespace ntt {
   struct Synchrotron_t {};
 
   /**
-   * @brief Algorithm for the Particle pusher.
-   * @tparam D Dimension.
-   * @tparam M Metric.
-   * @tparam PG Problem generator.
+   * @brief Algorithm for the Particle pusher
+   * @tparam M Metric
+   * @tparam PG Problem generator
    */
-  template <Dimension D, class M, class PG>
+  template <class M, class PG>
   class PusherBase_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static_assert(PG::is_pgen, "PG must be a problem generator class");
+    static constexpr auto D = M::Dim;
+
   protected:
-    ndfield_t<D, 6>    EB;
-    array_t<int*>      i1, i2, i3;
-    array_t<int*>      i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*> dx1, dx2, dx3;
-    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>   ux1, ux2, ux3;
-    array_t<real_t*>   phi;
-    array_t<short*>    tag;
-    const M            metric;
-    const PG           pgen;
+    const ndfield_t<D, 6> EB;
+    array_t<int*>         i1, i2, i3;
+    array_t<int*>         i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*>    dx1, dx2, dx3;
+    array_t<prtldx_t*>    dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>      ux1, ux2, ux3;
+    array_t<real_t*>      phi;
+    array_t<short*>       tag;
+    const M               metric;
+    const PG              pgen;
 
     const real_t time, coeff, dt;
     const int    ni1, ni2, ni3;
@@ -101,33 +102,33 @@ namespace ntt {
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    PusherBase_kernel(const ndfield_t<D, 6>&    EB,
-                      const array_t<int*>&      i1,
-                      const array_t<int*>&      i2,
-                      const array_t<int*>&      i3,
-                      const array_t<int*>&      i1_prev,
-                      const array_t<int*>&      i2_prev,
-                      const array_t<int*>&      i3_prev,
-                      const array_t<prtldx_t*>& dx1,
-                      const array_t<prtldx_t*>& dx2,
-                      const array_t<prtldx_t*>& dx3,
-                      const array_t<prtldx_t*>& dx1_prev,
-                      const array_t<prtldx_t*>& dx2_prev,
-                      const array_t<prtldx_t*>& dx3_prev,
-                      const array_t<real_t*>&   ux1,
-                      const array_t<real_t*>&   ux2,
-                      const array_t<real_t*>&   ux3,
-                      const array_t<real_t*>&   phi,
-                      const array_t<short*>&    tag,
-                      const M&                  metric,
-                      const PG&                 pgen,
-                      real_t                    time,
-                      real_t                    coeff,
-                      real_t                    dt,
-                      int                       ni1,
-                      int                       ni2,
-                      int                       ni3,
-                      const std::vector<std::vector<ParticleBC::type>>& boundaries) :
+    PusherBase_kernel(const ndfield_t<D, 6>&                EB,
+                      const array_t<int*>&                  i1,
+                      const array_t<int*>&                  i2,
+                      const array_t<int*>&                  i3,
+                      const array_t<int*>&                  i1_prev,
+                      const array_t<int*>&                  i2_prev,
+                      const array_t<int*>&                  i3_prev,
+                      const array_t<prtldx_t*>&             dx1,
+                      const array_t<prtldx_t*>&             dx2,
+                      const array_t<prtldx_t*>&             dx3,
+                      const array_t<prtldx_t*>&             dx1_prev,
+                      const array_t<prtldx_t*>&             dx2_prev,
+                      const array_t<prtldx_t*>&             dx3_prev,
+                      const array_t<real_t*>&               ux1,
+                      const array_t<real_t*>&               ux2,
+                      const array_t<real_t*>&               ux3,
+                      const array_t<real_t*>&               phi,
+                      const array_t<short*>&                tag,
+                      const M&                              metric,
+                      const PG&                             pgen,
+                      real_t                                time,
+                      real_t                                coeff,
+                      real_t                                dt,
+                      int                                   ni1,
+                      int                                   ni2,
+                      int                                   ni3,
+                      const boundaries_t<ParticleBC::type>& boundaries) :
       EB { EB },
       i1 { i1 },
       i2 { i2 },
@@ -155,22 +156,22 @@ namespace ntt {
       ni2 { ni2 },
       ni3 { ni3 } {
       NTTHostErrorIf(boundaries.size() < 1, "boundaries defined incorrectly");
-      is_absorb_i1min = (boundaries[0][0] == ParticleBC::ATMOSPHERE) ||
-                        (boundaries[0][0] == ParticleBC::ABSORB);
-      is_absorb_i1max = (boundaries[0][1] == ParticleBC::ATMOSPHERE) ||
-                        (boundaries[0][1] == ParticleBC::ABSORB);
-      is_periodic_i1min = (boundaries[0][0] == ParticleBC::PERIODIC);
-      is_periodic_i1max = (boundaries[0][1] == ParticleBC::PERIODIC);
+      is_absorb_i1min = (boundaries[0].first == ParticleBC::ATMOSPHERE) ||
+                        (boundaries[0].first == ParticleBC::ABSORB);
+      is_absorb_i1max = (boundaries[0].second == ParticleBC::ATMOSPHERE) ||
+                        (boundaries[0].second == ParticleBC::ABSORB);
+      is_periodic_i1min = (boundaries[0].first == ParticleBC::PERIODIC);
+      is_periodic_i1max = (boundaries[0].second == ParticleBC::PERIODIC);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         NTTHostErrorIf(boundaries.size() < 2, "boundaries defined incorrectly");
-        is_absorb_i2min = (boundaries[1][0] == ParticleBC::ATMOSPHERE) ||
-                          (boundaries[1][0] == ParticleBC::ABSORB);
-        is_absorb_i2max = (boundaries[1][1] == ParticleBC::ATMOSPHERE) ||
-                          (boundaries[1][1] == ParticleBC::ABSORB);
-        is_periodic_i2min = (boundaries[1][0] == ParticleBC::PERIODIC);
-        is_periodic_i2max = (boundaries[1][1] == ParticleBC::PERIODIC);
-        is_axis_i2min     = (boundaries[1][0] == ParticleBC::AXIS);
-        is_axis_i2max     = (boundaries[1][1] == ParticleBC::AXIS);
+        is_absorb_i2min = (boundaries[1].first == ParticleBC::ATMOSPHERE) ||
+                          (boundaries[1].first == ParticleBC::ABSORB);
+        is_absorb_i2max = (boundaries[1].second == ParticleBC::ATMOSPHERE) ||
+                          (boundaries[1].second == ParticleBC::ABSORB);
+        is_periodic_i2min = (boundaries[1].first == ParticleBC::PERIODIC);
+        is_periodic_i2max = (boundaries[1].second == ParticleBC::PERIODIC);
+        is_axis_i2min     = (boundaries[1].first == ParticleBC::AXIS);
+        is_axis_i2max     = (boundaries[1].second == ParticleBC::AXIS);
       }
       if constexpr (D == Dim::_3D) {
         NTTHostErrorIf(boundaries.size() < 3, "boundaries defined incorrectly");
@@ -211,15 +212,18 @@ namespace ntt {
   };
 
   /**
-   * @tparam D Dimension
    * @tparam M Metric
    * @tparam PG Problem generator
    * @tparam P Particle pusher
    * @tparam ExtForce External force toggle
    * @tparam Cs Cooling algorithms
    */
-  template <Dimension D, class M, class PG, typename P, bool ExtForce, typename... Cs>
-  struct Pusher_kernel : public PusherBase_kernel<D, M, PG> {
+  template <class M, class PG, typename P, bool ExtForce, typename... Cs>
+  struct Pusher_kernel : public PusherBase_kernel<M, PG> {
+    static_assert(M::is_metric, "M must be a metric class");
+    static_assert(PG::is_pgen, "PG must be a problem generator class");
+    static constexpr auto D = M::Dim;
+
   private:
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
@@ -227,63 +231,63 @@ namespace ntt {
     const real_t coeff_sync;
 
   public:
-    Pusher_kernel(const ndfield_t<D, 6>&                             EB,
-                  const array_t<int*>&                               i1,
-                  const array_t<int*>&                               i2,
-                  const array_t<int*>&                               i3,
-                  const array_t<int*>&                               i1_prev,
-                  const array_t<int*>&                               i2_prev,
-                  const array_t<int*>&                               i3_prev,
-                  const array_t<prtldx_t*>&                          dx1,
-                  const array_t<prtldx_t*>&                          dx2,
-                  const array_t<prtldx_t*>&                          dx3,
-                  const array_t<prtldx_t*>&                          dx1_prev,
-                  const array_t<prtldx_t*>&                          dx2_prev,
-                  const array_t<prtldx_t*>&                          dx3_prev,
-                  const array_t<real_t*>&                            ux1,
-                  const array_t<real_t*>&                            ux2,
-                  const array_t<real_t*>&                            ux3,
-                  const array_t<real_t*>&                            phi,
-                  const array_t<short*>&                             tag,
-                  const M&                                           metric,
-                  const PG&                                          pgen,
-                  real_t                                             time,
-                  real_t                                             coeff,
-                  real_t                                             dt,
-                  int                                                ni1,
-                  int                                                ni2,
-                  int                                                ni3,
-                  const std::vector<std::vector<BoundaryCondition>>& boundaries,
-                  real_t gca_larmor_max,
-                  real_t gca_eovrb_max,
-                  real_t coeff_sync) :
-      PusherBase_kernel<D, M, PG>(EB,
-                                  i1,
-                                  i2,
-                                  i3,
-                                  i1_prev,
-                                  i2_prev,
-                                  i3_prev,
-                                  dx1,
-                                  dx2,
-                                  dx3,
-                                  dx1_prev,
-                                  dx2_prev,
-                                  dx3_prev,
-                                  ux1,
-                                  ux2,
-                                  ux3,
-                                  phi,
-                                  tag,
-                                  metric,
-                                  pgen,
-                                  time,
-                                  coeff,
-                                  dt,
-                                  ni1,
-                                  ni2,
-                                  ni3,
-                                  boundaries),
+    Pusher_kernel(const ndfield_t<D, 6>&                 EB,
+                  const array_t<int*>&                   i1,
+                  const array_t<int*>&                   i2,
+                  const array_t<int*>&                   i3,
+                  const array_t<int*>&                   i1_prev,
+                  const array_t<int*>&                   i2_prev,
+                  const array_t<int*>&                   i3_prev,
+                  const array_t<prtldx_t*>&              dx1,
+                  const array_t<prtldx_t*>&              dx2,
+                  const array_t<prtldx_t*>&              dx3,
+                  const array_t<prtldx_t*>&              dx1_prev,
+                  const array_t<prtldx_t*>&              dx2_prev,
+                  const array_t<prtldx_t*>&              dx3_prev,
+                  const array_t<real_t*>&                ux1,
+                  const array_t<real_t*>&                ux2,
+                  const array_t<real_t*>&                ux3,
+                  const array_t<real_t*>&                phi,
+                  const array_t<short*>&                 tag,
+                  const M&                               metric,
+                  const PG&                              pgen,
+                  real_t                                 time,
+                  real_t                                 coeff,
+                  real_t                                 dt,
+                  int                                    ni1,
+                  int                                    ni2,
+                  int                                    ni3,
+                  const boundaries_t<BoundaryCondition>& boundaries,
+                  real_t                                 gca_larmor_max,
+                  real_t                                 gca_eovrb_max,
+                  real_t                                 coeff_sync) :
+      PusherBase_kernel<M, PG>(EB,
+                               i1,
+                               i2,
+                               i3,
+                               i1_prev,
+                               i2_prev,
+                               i3_prev,
+                               dx1,
+                               dx2,
+                               dx3,
+                               dx1_prev,
+                               dx2_prev,
+                               dx3_prev,
+                               ux1,
+                               ux2,
+                               ux3,
+                               phi,
+                               tag,
+                               metric,
+                               pgen,
+                               time,
+                               coeff,
+                               dt,
+                               ni1,
+                               ni2,
+                               ni3,
+                               boundaries),
       gca_larmor { gca_larmor_max },
       gca_EovrB_sqr { SQR(gca_eovrb_max) },
       coeff_sync { coeff_sync } {}
@@ -357,8 +361,8 @@ namespace ntt {
           bool            is_gca { false };
 
           this->getInterpFlds(p, ei, bi);
-          this->metric.v3_Cntrv2Cart(xp, ei, ei_Cart);
-          this->metric.v3_Cntrv2Cart(xp, bi, bi_Cart);
+          this->metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, ei, ei_Cart);
+          this->metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, bi, bi_Cart);
           if constexpr (!std::disjunction_v<std::is_same<NoCooling_t, Cs>...>) {
             // backup fields & velocities to use later in cooling
             ei_Cart_rad[0] = ei_Cart[0];
@@ -437,13 +441,13 @@ namespace ntt {
                                     this->ux3(p) * inv_energy };
           // get cartesian position
           coord_t<M::PrtlDim> xp_Cart { ZERO };
-          this->metric.x_Code2Cart(xp, xp_Cart);
+          this->metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xp, xp_Cart);
           // update cartesian position
           for (auto d = 0u; d < M::PrtlDim; ++d) {
             xp_Cart[d] += vp_Cart[d] * this->dt;
           }
           // transform back to code
-          this->metric.x_Cart2Code(xp_Cart, xp);
+          this->metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xp_Cart, xp);
 
           // update x1
           if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
@@ -476,11 +480,11 @@ namespace ntt {
 
   // Velocity update
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::velUpd(Boris_t,
-                                                  index_t&         p,
-                                                  vec_t<Dim::_3D>& e0,
-                                                  vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::velUpd(Boris_t,
+                                               index_t&         p,
+                                               vec_t<Dim::_3D>& e0,
+                                               vec_t<Dim::_3D>& b0) const {
     real_t COEFF { coeff };
 
     e0[0] *= COEFF;
@@ -509,11 +513,11 @@ namespace ntt {
     ux3(p) = u0[2];
   }
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::velUpd(Vay_t,
-                                                  index_t&         p,
-                                                  vec_t<Dim::_3D>& e0,
-                                                  vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::velUpd(Vay_t,
+                                               index_t&         p,
+                                               vec_t<Dim::_3D>& e0,
+                                               vec_t<Dim::_3D>& b0) const {
     auto COEFF { coeff };
     e0[0] *= COEFF;
     e0[1] *= COEFF;
@@ -559,12 +563,12 @@ namespace ntt {
                        u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
   }
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::velUpd(GCA_t,
-                                                  index_t&         p,
-                                                  vec_t<Dim::_3D>& f0,
-                                                  vec_t<Dim::_3D>& e0,
-                                                  vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::velUpd(GCA_t,
+                                               index_t&         p,
+                                               vec_t<Dim::_3D>& f0,
+                                               vec_t<Dim::_3D>& e0,
+                                               vec_t<Dim::_3D>& b0) const {
     const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
                         NORM_SQR(b0[0], b0[1], b0[2]) };
 
@@ -602,11 +606,11 @@ namespace ntt {
     ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
   }
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::velUpd(GCA_t,
-                                                  index_t&         p,
-                                                  vec_t<Dim::_3D>& e0,
-                                                  vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::velUpd(GCA_t,
+                                               index_t&         p,
+                                               vec_t<Dim::_3D>& e0,
+                                               vec_t<Dim::_3D>& b0) const {
     const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
                         NORM_SQR(b0[0], b0[1], b0[2]) };
 
@@ -643,9 +647,9 @@ namespace ntt {
     ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
   }
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::getPrtlPos(index_t& p,
-                                                      coord_t<M::PrtlDim>& xp) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::getPrtlPos(index_t& p,
+                                                   coord_t<M::PrtlDim>& xp) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
     }
@@ -661,22 +665,22 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, class M, class PG>
-  Inline auto PusherBase_kernel<D, M, PG>::getEnergy(Massive_t,
-                                                     index_t& p) const -> real_t {
+  template <class M, class PG>
+  Inline auto PusherBase_kernel<M, PG>::getEnergy(Massive_t, index_t& p) const
+    -> real_t {
     return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
-  template <Dimension D, class M, class PG>
-  Inline auto PusherBase_kernel<D, M, PG>::getEnergy(Massless_t,
-                                                     index_t& p) const -> real_t {
+  template <class M, class PG>
+  Inline auto PusherBase_kernel<M, PG>::getEnergy(Massless_t, index_t& p) const
+    -> real_t {
     return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::getInterpFlds(index_t&         p,
-                                                         vec_t<Dim::_3D>& e0,
-                                                         vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::getInterpFlds(index_t&         p,
+                                                      vec_t<Dim::_3D>& e0,
+                                                      vec_t<Dim::_3D>& b0) const {
     if constexpr (D == Dim::_1D) {
       const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
       const auto dx1_ { static_cast<real_t>(dx1(p)) };
@@ -939,8 +943,8 @@ namespace ntt {
 
   // Boundary conditions
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::boundaryConditions(index_t& p) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::boundaryConditions(index_t& p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if (i1(p) < 0) {
         if (is_periodic_i1min) {
@@ -1002,22 +1006,21 @@ namespace ntt {
 
   // External force
 
-  template <Dimension D, class M, class PG>
-  Inline void PusherBase_kernel<D, M, PG>::initForce(
-    coord_t<M::PrtlDim>& xp,
-    vec_t<Dim::_3D>&   force_Cart) const {
+  template <class M, class PG>
+  Inline void PusherBase_kernel<M, PG>::initForce(coord_t<M::PrtlDim>& xp,
+                                                  vec_t<Dim::_3D>& force_Cart) const {
     coord_t<M::PrtlDim> xp_Ph { ZERO };
-    xp_Ph[0] = metric.x1_Code2Phys(xp[0]);
+    xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp[0]);
     if constexpr (M::PrtlDim != Dim::_1D) {
-      xp_Ph[1] = metric.x2_Code2Phys(xp[1]);
+      xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp[1]);
     }
     if constexpr (M::PrtlDim == Dim::_3D) {
-      xp_Ph[2] = metric.x3_Code2Phys(xp[2]);
+      xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp[2]);
     }
     const vec_t<Dim::_3D> force_Hat { pgen.ext_force_x1(time, xp_Ph),
                                       pgen.ext_force_x2(time, xp_Ph),
                                       pgen.ext_force_x3(time, xp_Ph) };
-    metric.v3_Hat2Cart(xp, force_Hat, force_Cart);
+    metric.template transform_xyz<Idx::T, Idx::XYZ>(xp, force_Hat, force_Cart);
   }
 
 } // namespace ntt
@@ -1025,4 +1028,4 @@ namespace ntt {
 #undef from_Xi_to_i_di
 #undef from_Xi_to_i
 
-#endif // KERNELS_PARTICLE_PUSHER_SR_H
+#endif // KERNELS_PARTICLE_PUSHER_SR_HPP

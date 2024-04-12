@@ -1,12 +1,11 @@
 #include "global.h"
-// metrics >
-#include "metrics/minkowski.h"
-#include "metrics/qspherical.h"
-#include "metrics/spherical.h"
-// < metrics
 
 #include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
+
+#include "metrics/minkowski.h"
+#include "metrics/qspherical.h"
+#include "metrics/spherical.h"
 
 #include <iostream>
 #include <limits>
@@ -49,10 +48,10 @@ Inline void unravel(std::size_t                    idx,
 }
 
 template <class M>
-void testMetric(const std::vector<unsigned int>&              res,
-                const std::vector<std::pair<real_t, real_t>>& ext,
-                const real_t                                  acc    = ONE,
-                const std::map<std::string, real_t>&          params = {}) {
+void testMetric(const std::vector<std::size_t>&      res,
+                const boundaries_t<real_t>&          ext,
+                const real_t                         acc    = ONE,
+                const std::map<std::string, real_t>& params = {}) {
   errorIf(res.size() != (std::size_t)(M::Dim), "res.size() != M.dim");
   errorIf(ext.size() != (std::size_t)(M::Dim), "ext.size() != M.dim");
   for (const auto& e : ext) {
@@ -85,8 +84,8 @@ void testMetric(const std::vector<unsigned int>&              res,
       for (unsigned short d = 0; d < M::Dim; ++d) {
         x_Code_1[d] = (real_t)(idx[d]) + HALF;
       }
-      metric.x_Code2Cart(x_Code_1, x_Cart);
-      metric.x_Cart2Code(x_Cart, x_Code_2);
+      metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code_1, x_Cart);
+      metric.template convert_xyz<Crd::XYZ, Crd::Cd>(x_Cart, x_Code_2);
       wrongs += not equal<M::PrtlDim>(x_Code_1,
                                       x_Code_2,
                                       "code->cart not invertible",
@@ -99,8 +98,8 @@ void testMetric(const std::vector<unsigned int>&              res,
         for (unsigned short d = 0; d < M::Dim; ++d) {
           x_Code_r1[d] = x_Code_1[d];
         }
-        metric.x_Code2Sph(x_Code_r1, x_Sph);
-        metric.x_Sph2Code(x_Sph, x_Code_r2);
+        metric.template convert<Crd::Cd, Crd::Sph>(x_Code_r1, x_Sph);
+        metric.template convert<Crd::Sph, Crd::Cd>(x_Sph, x_Code_r2);
         wrongs += not equal<M::Dim>(x_Code_r1,
                                     x_Code_r2,
                                     "code->sph not invertible",
@@ -110,8 +109,9 @@ void testMetric(const std::vector<unsigned int>&              res,
     all_wrongs);
 
   errorIf(all_wrongs != 0,
-          "code-cart-sph for " + std::to_string(M::Dim) + "D " + std::string(metric.Label) +
-            " failed with " + std::to_string(all_wrongs) + " errors");
+          "code-cart-sph for " + std::to_string(M::Dim) + "D " +
+            std::string(metric.Label) + " failed with " +
+            std::to_string(all_wrongs) + " errors");
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -119,46 +119,34 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    const auto res2d     = std::vector<std::size_t> { 64, 32 };
+    const auto res3d     = std::vector<std::size_t> { 64, 32, 16 };
+    const auto ext1dcart = boundaries_t<real_t> {
+      {10.0, 20.0}
+    };
+    const auto ext2dcart = boundaries_t<real_t> {
+      {0.0, 20.0},
+      {0.0, 10.0}
+    };
+    const auto ext3dcart = boundaries_t<real_t> {
+      {-2.0, 2.0},
+      {-1.0, 1.0},
+      {-0.5, 0.5}
+    };
+    const auto extsph = boundaries_t<real_t> {
+      {1.0,         10.0},
+      {0.0, constant::PI}
+    };
+    const auto params = std::map<std::string, real_t> {
+      {"r0",         -ONE},
+      { "h", (real_t)0.25}
+    };
 
-    testMetric<Minkowski<Dim::_1D>>(
-      {
-        128,
-    },
-      { { 10.0, 20.0 } });
-
-    testMetric<Minkowski<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 0.0, 20.0 }, { 0.0, 10.0 } },
-      200);
-
-    testMetric<Minkowski<Dim::_3D>>(
-      {
-        64,
-        32,
-        16
-    },
-      { { -2.0, 2.0 }, { -1.0, 1.0 }, { -0.5, 0.5 } },
-      200);
-
-    testMetric<Spherical<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      10);
-
-    testMetric<QSpherical<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      200,
-      { { "r0", -ONE }, { "h", (real_t)0.25 } });
+    testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
+    testMetric<Minkowski<Dim::_2D>>(res2d, ext2dcart, 200);
+    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 200);
+    testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
+    testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 200, params);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

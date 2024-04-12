@@ -1,5 +1,5 @@
 /**
- * @file ampere_mink.hpp
+ * @file kernels/ampere_mink.hpp
  * @brief Algorithms for Ampere's law in cartesian Minkowski space
  * @implements
  *   - ntt::Ampere_kernel<>
@@ -9,20 +9,18 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  * @namespaces:
  *   - ntt::
  */
 
-#ifndef KERNELS_AMPERE_MINK_H
-#define KERNELS_AMPERE_MINK_H
+#ifndef KERNELS_AMPERE_MINK_HPP
+#define KERNELS_AMPERE_MINK_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 
 namespace ntt {
   /**
@@ -32,7 +30,7 @@ namespace ntt {
   template <Dimension D>
   class Ampere_kernel {
     ndfield_t<D, 6> EB;
-    real_t          coeff;
+    const real_t    coeff;
 
   public:
     Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff) :
@@ -156,4 +154,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // KERNELS_AMPERE_MINK_H
+#endif // KERNELS_AMPERE_MINK_HPP

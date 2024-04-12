@@ -11,13 +11,13 @@
  * @depends:
  *   - arch/kokkos_aliases.h
  *   - utils/formatting.h
- *   - utils/log.h
  * @namespaces:
  *   - raise::
  * @macros:
  *   - MPI_ENABLED
  * !TODO:
  *   - migrate to Kokkos::printf (4.2)
+ *   - replace KernelErrors with static asserts
  */
 
 #ifndef GLOBAL_UTILS_ERROR_H
@@ -25,7 +25,6 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 
 #include <Kokkos_Core.hpp>
 #include <plog/Log.h>
@@ -38,6 +37,7 @@
 #endif
 
 namespace raise {
+  using namespace files;
 
   inline void Warning(const std::string& msg,
                       const std::string& file,
@@ -50,6 +50,8 @@ namespace raise {
     PLOGW_(ErrFile) << ": rank : " << rank;
 #endif
     PLOGW_(ErrFile) << ": message : " << msg;
+    PLOGW << msg;
+    PLOGW << "see the `*.err` file for more details";
   }
 
   inline void Error(const std::string& msg,
@@ -63,6 +65,8 @@ namespace raise {
     PLOGE_(ErrFile) << ": rank : " << rank;
 #endif
     PLOGE_(ErrFile) << ": message : " << msg;
+    PLOGE << msg;
+    PLOGE << "see the `*.err` file for more details";
 #if defined(MPI_ENABLED)
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 #endif
@@ -80,6 +84,8 @@ namespace raise {
     PLOGF_(ErrFile) << ": rank : " << rank;
 #endif
     PLOGF_(ErrFile) << ": message : " << msg;
+    PLOGF << msg;
+    PLOGF << "see the `*.err` file for more details";
 #if defined(MPI_ENABLED)
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 #endif
@@ -106,14 +112,11 @@ namespace raise {
     }
   }
 
-  template <typename... Args>
   Inline void KernelError(const char* file,
                           const char* func,
                           int         line,
-                          const char* fmt,
-                          Args... args) {
-    printf("\n%s : %s @ %d\n", file, func, line);
-    printf(fmt, args...);
+                          const char* msg) {
+    printf("\n%s : %s @ %d\nError: %s", file, func, line, msg);
     Kokkos::abort("kernel error");
   }
 

@@ -62,21 +62,12 @@ namespace ntt {
    * Virtual parent metric class template: h_ij
    * Coordinates vary from `0` to `nx1` ... (code units)
    */
-  template <Dimension D, class M>
+  template <Dimension D>
   struct MetricBase {
+    static constexpr bool      is_metric { true };
     static constexpr Dimension Dim { D };
 
-    // max of coordinates in code units
-    const real_t nx1, nx2, nx3;
-    // extent in `x1` in physical units
-    const real_t x1_min, x1_max;
-    // extent in `x2` in physical units
-    const real_t x2_min, x2_max;
-    // extent in `x3` in physical units
-    const real_t x3_min, x3_max;
-
-    MetricBase(std::vector<unsigned int>              res,
-               std::vector<std::pair<real_t, real_t>> ext) :
+    MetricBase(std::vector<std::size_t> res, boundaries_t<real_t> ext) :
       nx1 { res.size() > 0 ? (real_t)(res[0]) : ONE },
       nx2 { res.size() > 1 ? (real_t)(res[1]) : ONE },
       nx3 { res.size() > 2 ? (real_t)(res[2]) : ONE },
@@ -103,6 +94,15 @@ namespace ntt {
 
   protected:
     real_t dx_min;
+
+    // max of coordinates in code units
+    const real_t nx1, nx2, nx3;
+    // extent in `x1` in physical units
+    const real_t x1_min, x1_max;
+    // extent in `x2` in physical units
+    const real_t x2_min, x2_max;
+    // extent in `x3` in physical units
+    const real_t x3_min, x3_max;
   };
 
 } // namespace ntt

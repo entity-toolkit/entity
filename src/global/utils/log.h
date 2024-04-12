@@ -16,6 +16,8 @@
 #ifndef GLOBAL_LOG_H
 #define GLOBAL_LOG_H
 
+#include "global.h"
+
 #include "arch/mpi_aliases.h"
 
 #include <Kokkos_Core.hpp>
@@ -27,15 +29,8 @@
   #include <mpi.h>
 #endif
 
-#define HERE __FILE__, __func__, __LINE__
-
-enum {
-  LogFile = 1,
-  ErrFile,
-  InfoFile
-};
-
 namespace logger {
+  using namespace files;
 
   inline void Checkpoint(const std::string& file, const std::string& func, int line) {
 #if defined(DEBUG)

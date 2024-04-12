@@ -1,24 +1,23 @@
 /**
  * @file enums.h
- * @brief Global enum variables describing the simulation
+ * @brief Special enum variables describing the simulation
  * @implements
- *   - enum ntt::em
- *   - enum ntt::cur
- *   - enum ntt::ParticleTag       // dead, alive
  *   - enum ntt::Coord             // Cart, Sph, Qsph
  *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
  *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
- *                                    reflect, horizon, axis, send
- *   - enum ntt::FldsBC            // periodic, absorb, atmosphere, custom, horizon, axis
- *   - enum ntt::CommBC            // physical, comm
+ *                                    reflect, horizon, axis, sync
+ *   - enum ntt::FldsBC            // periodic, absorb, atmosphere, custom,
+ *                                    horizon, axis, sync
+ *   - enum ntt::CommBC            // physical, sync
  *   - enum ntt::PrtlPusher        // boris, vay, boris,gca, vay,gca, photon, none
  *   - enum ntt::Cooling           // synchrotron, none
+ *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
+ *                                    a, t, rho, charge, n, nppc
  * @depends:
  *   - utils/error.h
  *   - utils/formatting.h
- *   - utils/log.h
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -45,43 +44,17 @@
 #ifndef GLOBAL_ENUMS_H
 #define GLOBAL_ENUMS_H
 
+#include "global.h"
+
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 
 #include <algorithm>
 #include <cstring>
 #include <string>
-
 #include <string_view>
 
 namespace ntt {
-
-  enum em {
-    ex1 = 0,
-    ex2 = 1,
-    ex3 = 2,
-    dx1 = 0,
-    dx2 = 1,
-    dx3 = 2,
-    bx1 = 3,
-    bx2 = 4,
-    bx3 = 5,
-    hx1 = 3,
-    hx2 = 4,
-    hx3 = 5
-  };
-
-  enum cur {
-    jx1 = 0,
-    jx2 = 1,
-    jx3 = 2
-  };
-
-  enum ParticleTag : short {
-    dead = 0,
-    alive
-  };
 
   namespace enums_hidden {
     template <typename T>
@@ -155,7 +128,7 @@ namespace ntt {
       constexpr BaseEnum(uint8_t v) : value(v) {}
 
     protected:
-      const uint8_t value;
+      uint8_t value;
     };
   } // namespace enums_hidden
 
@@ -228,17 +201,17 @@ namespace ntt {
       REFLECT    = 5,
       HORIZON    = 6,
       AXIS       = 7,
-      SEND       = 8,
+      SYNC       = 8,
     };
 
     constexpr PrtlBC(uint8_t c) : enums_hidden::BaseEnum<PrtlBC> { c } {}
 
     static constexpr type variants[] = { PERIODIC, ABSORB,  ATMOSPHERE, CUSTOM,
-                                         REFLECT,  HORIZON, AXIS,       SEND };
+                                         REFLECT,  HORIZON, AXIS,       SYNC };
     static constexpr const char* lookup[] = { "periodic",   "absorb",
                                               "atmosphere", "custom",
                                               "reflect",    "horizon",
-                                              "axis",       "send" };
+                                              "axis",       "sync" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -253,15 +226,16 @@ namespace ntt {
       CUSTOM     = 4,
       HORIZON    = 5,
       AXIS       = 6,
+      SYNC       = 7, // <- SYNC means synchronization with other domains
     };
 
     constexpr FldsBC(uint8_t c) : enums_hidden::BaseEnum<FldsBC> { c } {}
 
-    static constexpr type        variants[] = { PERIODIC, ABSORB,  ATMOSPHERE,
-                                                CUSTOM,   HORIZON, AXIS };
-    static constexpr const char* lookup[]   = { "periodic",   "absorb",
-                                                "atmosphere", "custom",
-                                                "horizon",    "axis" };
+    static constexpr type variants[] = { PERIODIC, ABSORB, ATMOSPHERE, CUSTOM,
+                                         HORIZON,  AXIS,   SYNC };
+    static constexpr const char* lookup[] = {
+      "periodic", "absorb", "atmosphere", "custom", "horizon", "axis", "sync"
+    };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -271,13 +245,13 @@ namespace ntt {
     enum type : uint8_t {
       INVALID  = 0,
       PHYSICAL = 1,
-      COMM     = 2,
+      SYNC     = 2,
     };
 
     constexpr CommBC(uint8_t c) : enums_hidden::BaseEnum<CommBC> { c } {}
 
-    static constexpr type        variants[] = { PHYSICAL, COMM };
-    static constexpr const char* lookup[]   = { "physical", "comm" };
+    static constexpr type        variants[] = { PHYSICAL, SYNC };
+    static constexpr const char* lookup[]   = { "physical", "sync" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -317,6 +291,37 @@ namespace ntt {
 
     static constexpr type        variants[] = { SYNCHROTRON, NONE };
     static constexpr const char* lookup[]   = { "synchrotron", "none" };
+    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+  };
+
+  struct FldsID : public enums_hidden::BaseEnum<FldsID> {
+    static constexpr const char* label = "out_flds";
+
+    enum type : uint8_t {
+      INVALID = 0,
+      E       = 1,
+      divE    = 2,
+      D       = 3,
+      divD    = 4,
+      B       = 5,
+      H       = 6,
+      J       = 7,
+      A       = 8,
+      T       = 9,
+      Rho     = 10,
+      Charge  = 11,
+      N       = 12,
+      Nppc    = 13,
+    };
+
+    constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
+
+    static constexpr type        variants[] = { E, divE, D,   divD,   B, H,   J,
+                                                A, T,    Rho, Charge, N, Nppc };
+    static constexpr const char* lookup[]   = { "e",   "dive", "d",      "divd",
+                                                "b",   "h",    "j",      "a",
+                                                "t",   "rho",  "charge", "n",
+                                                "nppc" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

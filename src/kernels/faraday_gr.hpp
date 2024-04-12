@@ -1,5 +1,5 @@
 /**
- * @file faraday_gr.hpp
+ * @file kernels/faraday_gr.hpp
  * @brief Algorithms for Faraday's law in GR
  * @implements
  *   - ntt::Faraday_kernel<>
@@ -8,7 +8,6 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
@@ -16,43 +15,44 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_FARADAY_GR_H
-#define KERNELS_FARADAY_GR_H
+#ifndef KERNELS_FARADAY_GR_HPP
+#define KERNELS_FARADAY_GR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 namespace ntt {
 
   /**
-   * @brief Algorithms for Faraday's law:
-   * @brief `d(Bin)^i / dt = -curl E_j`, `Bout += dt * d(Bin)/dt`.
-   * @tparam D Dimension.
-   * @tparam M Metric.
+   * @brief Algorithms for Faraday's law
+   * @brief `d(Bin)^i / dt = -curl E_j`, `Bout += dt * d(Bin)/dt`
+   * @tparam M Metric
    */
-  template <Dimension D, class M>
+  template <class M>
   class Faraday_kernel {
-    ndfield_t<D, 6>   Bin;
-    ndfield_t<D, 6>   Bout;
-    ndfield_t<D, 6>   E;
-    const M           metric;
-    const std::size_t i2max;
-    const real_t      coeff;
-    bool              is_axis_i2min { false };
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const ndfield_t<D, 6> Bin;
+    ndfield_t<D, 6>       Bout;
+    const ndfield_t<D, 6> E;
+    const M               metric;
+    const std::size_t     i2max;
+    const real_t          coeff;
+    bool                  is_axis_i2min { false };
 
   public:
-    Faraday_kernel(const ndfield_t<D, 6>&                        Bin,
-                   const ndfield_t<D, 6>&                        Bout,
-                   const ndfield_t<D, 6>&                        E,
-                   const M&                                      metric,
-                   real_t                                        coeff,
-                   std::size_t                                   ni2,
-                   const std::vector<std::vector<FldsBC::type>>& boundaries) :
+    Faraday_kernel(const ndfield_t<D, 6>&      Bin,
+                   const ndfield_t<D, 6>&      Bout,
+                   const ndfield_t<D, 6>&      E,
+                   const M&                    metric,
+                   real_t                      coeff,
+                   std::size_t                 ni2,
+                   const boundaries_t<FldsBC>& boundaries) :
       Bin { Bin },
       Bout { Bout },
       E { E },
@@ -61,7 +61,7 @@ namespace ntt {
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
       }
     }
 
@@ -106,4 +106,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // KERNELS_FARADAY_GR_H
+#endif // KERNELS_FARADAY_GR_HPP

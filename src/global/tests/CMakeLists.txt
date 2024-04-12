@@ -13,7 +13,7 @@ set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
 add_subdirectory(${SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/global)
 
 function(gen_test title)
-  set(exec test-${title}.xc)
+  set(exec test-global-${title}.xc)
   set(src ${title}.cpp)
   add_executable(${exec} ${src})
 

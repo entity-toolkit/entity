@@ -4,13 +4,15 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
+#include "utils/formatting.h"
+
 #include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
-#include "utils/comparators.h"
-#include "utils/formatting.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -21,8 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "metrics/kerr_schild_0.h"
-
 void errorIf(bool condition, const std::string& message) {
   if (condition) {
     throw std::runtime_error(message);
@@ -30,17 +30,19 @@ void errorIf(bool condition, const std::string& message) {
 }
 
 template <typename M>
-void testFilter(const std::vector<unsigned int>&              res,
-                const std::vector<std::pair<real_t, real_t>>& ext,
+void testFilter(const std::vector<std::size_t>&               res,
+                const boundaries_t<real_t>& ext,
                 const std::map<std::string, real_t>&          params = {}) {
   static_assert(M::Dim == 2);
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   using namespace ntt;
 
-  auto boundaries = std::vector<std::vector<FldsBC::type>> {};
+  auto boundaries = boundaries_t<FldsBC> {};
   if constexpr (M::CoordType != Coord::Cart) {
-    boundaries.push_back({});
-    boundaries.push_back({ FldsBC::AXIS, FldsBC::AXIS });
+    boundaries = {
+      {FldsBC::CUSTOM, FldsBC::CUSTOM},
+      {  FldsBC::AXIS,   FldsBC::AXIS}
+    };
   }
 
   M metric { res, ext, params };
@@ -52,12 +54,12 @@ void testFilter(const std::vector<unsigned int>&              res,
   ndfield_t<Dim::_2D, 3> Jbuff { "Jbuff", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
 
   tuple_t<std::size_t, Dim::_2D> size;
-  size[0]             = nx1;
-  size[1]             = nx2;
-  auto J_h            = Kokkos::create_mirror_view(J);
-  J_h(5, 5, cur::jx1) = 1.0;
-  J_h(4, 5, cur::jx2) = 1.0;
-  J_h(5, 4, cur::jx3) = 1.0;
+  size[0]                                   = nx1;
+  size[1]                                   = nx2;
+  auto J_h                                  = Kokkos::create_mirror_view(J);
+  J_h(5 + N_GHOSTS, 5 + N_GHOSTS, cur::jx1) = 1.0;
+  J_h(4 + N_GHOSTS, 5 + N_GHOSTS, cur::jx2) = 1.0;
+  J_h(5 + N_GHOSTS, 4 + N_GHOSTS, cur::jx3) = 1.0;
   Kokkos::deep_copy(J, J_h);
   const auto range = CreateRangePolicy<Dim::_2D>(
     { N_GHOSTS, N_GHOSTS },
@@ -94,23 +96,26 @@ void testFilter(const std::vector<unsigned int>&              res,
     for (auto i2 = 4; i2 < 7; ++i2) {
       const real_t expect = math::pow(0.5, math::abs(i1 - 5) + 1) *
                             math::pow(0.5, math::abs(i2 - 5) + 1);
-      errorIf(not cmp::AlmostEqual(J_h(i1, i2, cur::jx1), expect),
+      errorIf(not cmp::AlmostEqual(J_h(i1 + N_GHOSTS, i2 + N_GHOSTS, cur::jx1),
+                                   expect),
               fmt::format("J_h(%d, %d, cur::jx1) == %f != %f",
-                          i1,
-                          i2,
-                          J_h(i1, i2, cur::jx1),
+                          i1 + N_GHOSTS,
+                          i2 + N_GHOSTS,
+                          J_h(i1 + N_GHOSTS, i2 + N_GHOSTS, cur::jx1),
                           expect));
-      errorIf(not cmp::AlmostEqual(J_h(i1 - 1, i2, cur::jx2), expect),
+      errorIf(not cmp::AlmostEqual(J_h(i1 + N_GHOSTS - 1, i2 + N_GHOSTS, cur::jx2),
+                                   expect),
               fmt::format("J_h(%d, %d, cur::jx1) == %f != %f",
-                          i1 - 1,
-                          i2,
-                          J_h(i1 - 1, i2, cur::jx2),
+                          i1 + N_GHOSTS - 1,
+                          i2 + N_GHOSTS,
+                          J_h(i1 + N_GHOSTS - 1, i2, cur::jx2),
                           expect));
-      errorIf(not cmp::AlmostEqual(J_h(i1, i2 - 1, cur::jx3), expect),
+      errorIf(not cmp::AlmostEqual(J_h(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, cur::jx3),
+                                   expect),
               fmt::format("J_h(%d, %d, cur::jx1) == %f != %f",
-                          i1,
-                          i2 - 1,
-                          J_h(i1, i2 - 1, cur::jx3),
+                          i1 + N_GHOSTS,
+                          i2 + N_GHOSTS - 1,
+                          J_h(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, cur::jx3),
                           expect));
     }
   }

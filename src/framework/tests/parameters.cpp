@@ -3,10 +3,10 @@
 #include "defaults.h"
 #include "enums.h"
 
-#include "framework/species.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
-#include "utils/log.h"
+
+#include "framework/containers/species.h"
 
 #include <stdio.h>
 #include <toml.hpp>
@@ -15,7 +15,7 @@
 #include <stdexcept>
 
 using namespace toml::literals::toml_literals;
-const auto mink_1d = R"(
+const auto mink_1d = u8R"(
 [simulation]
   name = "mink1d"
   engine = "srpic"
@@ -64,7 +64,11 @@ const auto mink_1d = R"(
     pusher = "vay"
 
 [setup]
-
+  myfloat = 1e-2
+  myint   = 123
+  mybool  = true
+  myarr   = [1.0, 2.0, 3.0]
+  mystr   = "hi"
 
 [output]
   fields = ["Rho", "J", "B"]
@@ -76,7 +80,7 @@ const auto mink_1d = R"(
   interval_time = 0.01
 )"_toml;
 
-const auto sph_2d = R"(
+const auto sph_2d = u8R"(
 [simulation]
   name = "sph2d"
   engine = "srpic"
@@ -147,7 +151,7 @@ const auto sph_2d = R"(
 
 )"_toml;
 
-const auto qks_2d = R"(
+const auto qks_2d = u8R"(
 [simulation]
   name = "qks2d"
   engine = "grpic"
@@ -228,6 +232,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+
     {
       const auto params_mink_1d = SimulationParams(mink_1d);
 
@@ -246,21 +251,19 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(params_mink_1d.get<real_t>("scales.V0"),
                    (real_t)0.0078125,
                    "scales.V0");
-      std::vector<std::vector<FldsBC>> fbc = {
-        { FldsBC::PERIODIC, FldsBC::PERIODIC }
+      boundaries_t<FldsBC> fbc = {
+        {FldsBC::PERIODIC, FldsBC::PERIODIC}
       };
-      assert_equal<FldsBC>(params_mink_1d.get<std::vector<std::vector<FldsBC>>>(
-                             "grid.boundaries.fields")[0][0],
-                           fbc[0][0],
-                           "grid.boundaries.fields[0][0]");
-      assert_equal<FldsBC>(params_mink_1d.get<std::vector<std::vector<FldsBC>>>(
-                             "grid.boundaries.fields")[0][1],
-                           fbc[0][1],
-                           "grid.boundaries.fields[0][1]");
+      assert_equal<FldsBC>(
+        params_mink_1d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[0].first,
+        fbc[0].first,
+        "grid.boundaries.fields[0].first");
+      assert_equal<FldsBC>(
+        params_mink_1d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[0].second,
+        fbc[0].second,
+        "grid.boundaries.fields[0].second");
       assert_equal(
-        params_mink_1d
-          .get<std::vector<std::vector<FldsBC>>>("grid.boundaries.fields")
-          .size(),
+        params_mink_1d.get<boundaries_t<FldsBC>>("grid.boundaries.fields").size(),
         fbc.size(),
         "grid.boundaries.fields.size()");
 
@@ -287,6 +290,23 @@ auto main(int argc, char* argv[]) -> int {
                                PrtlPusher::VAY,
                                "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld(), 0, "species[1].npld");
+
+      assert_equal<real_t>(params_mink_1d.get<real_t>("setup.myfloat"),
+                           (real_t)(1e-2),
+                           "setup.myfloat");
+      assert_equal<int>(params_mink_1d.get<int>("setup.myint"),
+                        (int)(123),
+                        "setup.myint");
+      assert_equal<bool>(params_mink_1d.get<bool>("setup.mybool"),
+                         true,
+                         "setup.mybool");
+      const auto myarr = params_mink_1d.get<std::vector<real_t>>("setup.myarr");
+      assert_equal<real_t>(myarr[0], 1.0, "setup.myarr[0]");
+      assert_equal<real_t>(myarr[1], 2.0, "setup.myarr[1]");
+      assert_equal<real_t>(myarr[2], 3.0, "setup.myarr[2]");
+      assert_equal<std::string>(params_mink_1d.get<std::string>("setup.mystr"),
+                                "hi",
+                                "setup.mystr");
     }
 
     {
@@ -300,9 +320,9 @@ auto main(int argc, char* argv[]) -> int {
                               SimEngine::SRPIC,
                               "simulation.engine");
 
-      std::vector<std::vector<FldsBC>> fbc = {
-        { FldsBC::ATMOSPHERE, FldsBC::ABSORB },
-        {       FldsBC::AXIS,   FldsBC::AXIS }
+      boundaries_t<FldsBC> fbc = {
+        {FldsBC::ATMOSPHERE, FldsBC::ABSORB},
+        {      FldsBC::AXIS,   FldsBC::AXIS}
       };
 
       assert_equal<real_t>(params_sph_2d.get<real_t>("scales.B0"),
@@ -315,27 +335,25 @@ auto main(int argc, char* argv[]) -> int {
                            (real_t)(100.0),
                            "scales.omegaB0");
 
-      assert_equal<FldsBC>(params_sph_2d.get<std::vector<std::vector<FldsBC>>>(
-                             "grid.boundaries.fields")[0][0],
-                           fbc[0][0],
-                           "grid.boundaries.fields[0][0]");
-      assert_equal<FldsBC>(params_sph_2d.get<std::vector<std::vector<FldsBC>>>(
-                             "grid.boundaries.fields")[0][1],
-                           fbc[0][1],
-                           "grid.boundaries.fields[0][1]");
+      assert_equal<FldsBC>(
+        params_sph_2d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[0].first,
+        fbc[0].first,
+        "grid.boundaries.fields[0].first");
+      assert_equal<FldsBC>(
+        params_sph_2d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[0].second,
+        fbc[0].second,
+        "grid.boundaries.fields[0].second");
 
-      assert_equal<FldsBC>(params_sph_2d.get<std::vector<std::vector<FldsBC>>>(
-                             "grid.boundaries.fields")[1][0],
-                           fbc[1][0],
-                           "grid.boundaries.fields[0][0]");
-      assert_equal<FldsBC>(params_sph_2d.get<std::vector<std::vector<FldsBC>>>(
-                             "grid.boundaries.fields")[1][1],
-                           fbc[1][1],
-                           "grid.boundaries.fields[0][1]");
+      assert_equal<FldsBC>(
+        params_sph_2d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[1].first,
+        fbc[1].first,
+        "grid.boundaries.fields[0].first");
+      assert_equal<FldsBC>(
+        params_sph_2d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[1].second,
+        fbc[1].second,
+        "grid.boundaries.fields[0].second");
       assert_equal(
-        params_sph_2d
-          .get<std::vector<std::vector<FldsBC>>>("grid.boundaries.fields")
-          .size(),
+        params_sph_2d.get<boundaries_t<FldsBC>>("grid.boundaries.fields").size(),
         fbc.size(),
         "grid.boundaries.fields.size()");
 
@@ -445,9 +463,9 @@ auto main(int argc, char* argv[]) -> int {
         (unsigned short)(5),
         "algorithms.gr.pusher_niter");
 
-      std::vector<std::vector<PrtlBC>> pbc = {
-        { PrtlBC::HORIZON, PrtlBC::ABSORB },
-        {    PrtlBC::AXIS,   PrtlBC::AXIS }
+      boundaries_t<PrtlBC> pbc = {
+        {PrtlBC::HORIZON, PrtlBC::ABSORB},
+        {   PrtlBC::AXIS,   PrtlBC::AXIS}
       };
 
       assert_equal<real_t>(params_qks_2d.get<real_t>("scales.B0"),
@@ -460,27 +478,25 @@ auto main(int argc, char* argv[]) -> int {
                            (real_t)(1000.0),
                            "scales.omegaB0");
 
-      assert_equal<PrtlBC>(params_qks_2d.get<std::vector<std::vector<PrtlBC>>>(
-                             "grid.boundaries.particles")[0][0],
-                           pbc[0][0],
-                           "grid.boundaries.fields[0][0]");
-      assert_equal<PrtlBC>(params_qks_2d.get<std::vector<std::vector<PrtlBC>>>(
-                             "grid.boundaries.particles")[0][1],
-                           pbc[0][1],
-                           "grid.boundaries.particles[0][1]");
+      assert_equal<PrtlBC>(
+        params_qks_2d.get<boundaries_t<PrtlBC>>("grid.boundaries.particles")[0].first,
+        pbc[0].first,
+        "grid.boundaries.fields[0].first");
+      assert_equal<PrtlBC>(
+        params_qks_2d.get<boundaries_t<PrtlBC>>("grid.boundaries.particles")[0].second,
+        pbc[0].second,
+        "grid.boundaries.particles[0].second");
 
-      assert_equal<PrtlBC>(params_qks_2d.get<std::vector<std::vector<PrtlBC>>>(
-                             "grid.boundaries.particles")[1][0],
-                           pbc[1][0],
-                           "grid.boundaries.particles[0][0]");
-      assert_equal<PrtlBC>(params_qks_2d.get<std::vector<std::vector<PrtlBC>>>(
-                             "grid.boundaries.particles")[1][1],
-                           pbc[1][1],
-                           "grid.boundaries.particles[0][1]");
+      assert_equal<PrtlBC>(
+        params_qks_2d.get<boundaries_t<PrtlBC>>("grid.boundaries.particles")[1].first,
+        pbc[1].first,
+        "grid.boundaries.particles[0].first");
+      assert_equal<PrtlBC>(
+        params_qks_2d.get<boundaries_t<PrtlBC>>("grid.boundaries.particles")[1].second,
+        pbc[1].second,
+        "grid.boundaries.particles[0].second");
       assert_equal(
-        params_qks_2d
-          .get<std::vector<std::vector<PrtlBC>>>("grid.boundaries.particles")
-          .size(),
+        params_qks_2d.get<boundaries_t<PrtlBC>>("grid.boundaries.particles").size(),
         pbc.size(),
         "grid.boundaries.particles.size()");
 

@@ -8,14 +8,9 @@
  * @depends:
  *   - enums.h
  *   - global.h
- *   - metric_base.h
+ *   - metrics/metric_base.h
  *   - arch/kokkos_aliases.h
  *   - utils/numeric.h
- * @includes:
- *   - metrics_utils/x_code_phys_forGSph.h
- *   - metrics_utils/x_code_sph_forSph.h
- *   - metrics_utils/v3_hat_cntrv_cov_forGR.h
- *   - metrics_utils/v3_phys_cov_cntrv_forSph.h
  * @namespaces:
  *   - ntt::
  * !TODO
@@ -27,10 +22,11 @@
 
 #include "enums.h"
 #include "global.h"
-#include "metric_base.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
+
+#include "metrics/metric_base.h"
 
 #include <map>
 #include <string>
@@ -40,43 +36,39 @@
 namespace ntt {
 
   template <Dimension D>
-  class KerrSchild0 : public MetricBase<D, KerrSchild0<D>> {
+  class KerrSchild0 : public MetricBase<D> {
     static_assert(D != Dim::_1D, "1D kerr_schild_0 not available");
     static_assert(D != Dim::_3D, "3D kerr_schild_0 not fully implemented");
 
   private:
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const real_t dr_sqr, dtheta_sqr, dphi_sqr;
 
   public:
     static constexpr std::string_view Label { "kerr_schild_0" };
     static constexpr Dimension        PrtlDim { D };
     static constexpr Coord::type      CoordType { Coord::Sph };
-    using MetricBase<D, KerrSchild0<D>>::x1_min;
-    using MetricBase<D, KerrSchild0<D>>::x1_max;
-    using MetricBase<D, KerrSchild0<D>>::x2_min;
-    using MetricBase<D, KerrSchild0<D>>::x2_max;
-    using MetricBase<D, KerrSchild0<D>>::x3_min;
-    using MetricBase<D, KerrSchild0<D>>::x3_max;
-    using MetricBase<D, KerrSchild0<D>>::nx1;
-    using MetricBase<D, KerrSchild0<D>>::nx2;
-    using MetricBase<D, KerrSchild0<D>>::nx3;
-    using MetricBase<D, KerrSchild0<D>>::set_dxMin;
+    using MetricBase<D>::x1_min;
+    using MetricBase<D>::x1_max;
+    using MetricBase<D>::x2_min;
+    using MetricBase<D>::x2_max;
+    using MetricBase<D>::x3_min;
+    using MetricBase<D>::x3_max;
+    using MetricBase<D>::nx1;
+    using MetricBase<D>::nx2;
+    using MetricBase<D>::nx3;
+    using MetricBase<D>::set_dxMin;
 
-    KerrSchild0(std::vector<unsigned int>              res,
-                std::vector<std::pair<real_t, real_t>> ext,
+    KerrSchild0(std::vector<std::size_t> res,
+                boundaries_t<real_t>     ext,
                 const std::map<std::string, real_t>& = {}) :
-      MetricBase<D, KerrSchild0<D>> { res, ext },
+      MetricBase<D> { res, ext },
       dr { (x1_max - x1_min) / nx1 },
       dtheta { (x2_max - x2_min) / nx2 },
       dphi { (x3_max - x3_min) / nx3 },
       dr_inv { ONE / dr },
       dtheta_inv { ONE / dtheta },
-      dphi_inv { ONE / dphi },
-      dr_sqr { dr * dr },
-      dtheta_sqr { dtheta * dtheta },
-      dphi_sqr { dphi * dphi } {
+      dphi_inv { ONE / dphi } {
       set_dxMin(find_dxMin());
     }
 
@@ -98,171 +90,7 @@ namespace ntt {
     }
 
     /**
-     * Metric component 11.
-     *
-     * @param xi coordinate array in code units
-     * @returns h_11 (covariant, lower index) metric component.
-     */
-    Inline auto h_11(const coord_t<D>&) const -> real_t {
-      return dr_sqr;
-    }
-
-    /**
-     * Metric component 22.
-     *
-     * @param xi coordinate array in code units
-     * @returns h_22 (covariant, lower index) metric component.
-     */
-    Inline auto h_22(const coord_t<D>& xi) const -> real_t {
-      return dtheta_sqr * SQR(xi[0] * dr + x1_min);
-    }
-
-    /**
-     * Metric component 33.
-     *
-     * @param xi coordinate array in code units
-     * @returns h_33 (covariant, lower index) metric component.
-     */
-    Inline auto h_33(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim::_2D) {
-        return SQR((xi[0] * dr + x1_min) * math::sin(xi[1] * dtheta + x2_min));
-      } else {
-        return dphi_sqr *
-               SQR((xi[0] * dr + x1_min) * math::sin(xi[1] * dtheta + x2_min));
-      }
-    }
-
-    /**
-     * Metric component 13.
-     *
-     * @param xi coordinate array in code units
-     * @returns h_13 (covariant, lower index) metric component.
-     */
-    Inline auto h_13(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    /**
-     * Inverse metric component 11 from h_ij.
-     *
-     * @param xi coordinate array in code units
-     * @returns h^11 (contravariant, upper index) metric component.
-     */
-    Inline auto h11(const coord_t<D>&) const -> real_t {
-      return SQR(dr_inv);
-    }
-
-    /**
-     * Inverse metric component 22 from h_ij.
-     *
-     * @param xi coordinate array in code units
-     * @returns h^22 (contravariant, upper index) metric component.
-     */
-    Inline auto h22(const coord_t<D>& xi) const -> real_t {
-      return SQR(dtheta_inv / (xi[0] * dr + x1_min));
-    }
-
-    /**
-     * Inverse metric component 33 from h_ij.
-     *
-     * @param xi coordinate array in code units
-     * @returns h^33 (contravariant, upper index) metric component.
-     */
-    Inline auto h33(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim::_2D) {
-        return ONE /
-               SQR((xi[0] * dr + x1_min) * math::sin(xi[1] * dtheta + x2_min));
-      } else {
-        return SQR(dphi_inv) /
-               SQR((xi[0] * dr + x1_min) * math::sin(xi[1] * dtheta + x2_min));
-      }
-    }
-
-    /**
-     * Inverse metric component 13 from h_ij.
-     *
-     * @param xi coordinate array in code units
-     * @returns h^13 (contravariant, upper index) metric component.
-     */
-    Inline auto h13(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    /**
-     * Lapse function.
-     *
-     * @param xi coordinate array in code units
-     * @returns alpha.
-     */
-    Inline auto alpha(const coord_t<D>&) const -> real_t {
-      return ONE;
-    }
-
-    /**
-     * Radial component of shift vector.
-     *
-     * @param xi coordinate array in code units
-     * @returns beta^1 (contravariant).
-     */
-    Inline auto beta1(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    /**
-     * Square root of the determinant of h-matrix.
-     *
-     * @param xi coordinate array in code units
-     * @returns sqrt(det(h)).
-     */
-    Inline auto sqrt_det_h(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim::_2D) {
-        return dr * dtheta * SQR(xi[0] * dr + x1_min) *
-               math::sin(xi[1] * dtheta + x2_min);
-      } else {
-        return dr * dtheta * dphi * SQR(xi[0] * dr + x1_min) *
-               math::sin(xi[1] * dtheta + x2_min);
-      }
-    }
-
-    /**
-     * Square root of the determinant of h-matrix divided by sin(theta).
-     *
-     * @param xi coordinate array in code units
-     * @returns sqrt(det(h))/sin(theta).
-     */
-    Inline auto sqrt_det_h_tilde(const coord_t<D>& xi) const -> real_t {
-      if constexpr (D == Dim::_2D) {
-        return dr * dtheta * SQR(xi[0] * dr + x1_min);
-      } else {
-        return dr * dtheta * dphi * SQR(xi[0] * dr + x1_min);
-      }
-    }
-
-    /**
-     * Compute the area at the pole (used in axisymmetric solvers).
-     * Approximate solution for the polar area.
-     *
-     * @param x1 coordinate in code units
-     * @returns Area at the pole.
-     */
-    Inline auto polar_area(const real_t& x1) const -> real_t {
-      return dr * SQR(x1 * dr + x1_min) * (ONE - math::cos(HALF * dtheta));
-    }
-
-/**
- * @note Since kokkos disallows virtual inheritance, we have to
- *       include vector transformations for a non-diagonal metric here
- *       (and not in the base class).
- */
-#include "metrics_utils/x_code_phys_forGSph.h"
-#include "metrics_utils/x_code_sph_forSph.h"
-
-#include "metrics_utils/v3_hat_cntrv_cov_forGR.h"
-#include "metrics_utils/v3_phys_cov_cntrv_forSph.h"
-
-    /**
-     * Compute minimum effective cell size for a given metric (in physical units).
-     * @returns Minimum cell size of the grid [physical units].
+     * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
     auto find_dxMin() const -> real_t override {
@@ -273,13 +101,247 @@ namespace ntt {
           real_t            i_ { static_cast<real_t>(i) + HALF };
           real_t            j_ { static_cast<real_t>(j) + HALF };
           coord_t<Dim::_2D> ij { i_, j_ };
-          real_t dx = ONE / (alpha(ij) * std::sqrt(h11(ij) + h22(ij)) + beta1(ij));
+          real_t            dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
           }
         }
       }
       return min_dx;
+    }
+
+    /**
+     * metric component with lower indices: h_ij
+     * @param x coordinate array in code units
+     */
+    template <idx_t i, idx_t j>
+    Inline auto h_(const coord_t<D>& x) const -> real_t {
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert(j > 0 && j <= 3, "Invalid index j");
+      if constexpr (i == 1 && j == 1) {
+        // h_11
+        return SQR(dr);
+      } else if constexpr (i == 2 && j == 2) {
+        // h_22
+        return SQR(dtheta) * SQR(x[0] * dr + x1_min);
+      } else if constexpr (i == 3 && j == 3) {
+        // h_33
+        if constexpr (D == Dim::_2D) {
+          return SQR((x[0] * dr + x1_min) * math::sin(x[1] * dtheta + x2_min));
+        } else {
+          return SQR(dphi) *
+                 SQR((x[0] * dr + x1_min) * math::sin(x[1] * dtheta + x2_min));
+        }
+      } else {
+        return ZERO;
+      }
+    }
+
+    /**
+     * metric component with upper indices: h^ij
+     * @param x coordinate array in code units
+     */
+    template <idx_t i, idx_t j>
+    Inline auto h(const coord_t<D>& x) const -> real_t {
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert(j > 0 && j <= 3, "Invalid index j");
+      if constexpr (i == 1 && j == 1) {
+        // h^11
+        return SQR(dr_inv);
+      } else if constexpr (i == 2 && j == 2) {
+        // h^22
+        return SQR(dtheta_inv / (x[0] * dr + x1_min));
+      } else if constexpr (i == 3 && j == 3) {
+        // h^33
+        if constexpr (D == Dim::_2D) {
+          return ONE /
+                 SQR((x[0] * dr + x1_min) * math::sin(x[1] * dtheta + x2_min));
+        } else {
+          return SQR(dphi_inv) /
+                 SQR((x[0] * dr + x1_min) * math::sin(x[1] * dtheta + x2_min));
+        }
+      } else {
+        return ZERO;
+      }
+    }
+
+    /**
+     * lapse function
+     * @param x coordinate array in code units
+     */
+    Inline auto alpha(const coord_t<D>&) const -> real_t {
+      return ONE;
+    }
+
+    /**
+     * radial component of shift vector
+     * @param x coordinate array in code units
+     */
+    Inline auto beta1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    /**
+     * sqrt(det(h_ij))
+     * @param x coordinate array in code units
+     */
+    Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
+      if constexpr (D == Dim::_2D) {
+        return dr * dtheta * SQR(x[0] * dr + x1_min) *
+               math::sin(x[1] * dtheta + x2_min);
+      } else {
+        return dr * dtheta * dphi * SQR(x[0] * dr + x1_min) *
+               math::sin(x[1] * dtheta + x2_min);
+      }
+    }
+
+    /**
+     * sqrt(det(h_ij)) / sin(theta)
+     * @param x coordinate array in code units
+     */
+    Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
+      if constexpr (D == Dim::_2D) {
+        return dr * dtheta * SQR(x[0] * dr + x1_min);
+      } else {
+        return dr * dtheta * dphi * SQR(x[0] * dr + x1_min);
+      }
+    }
+
+    /**
+     * differential area at the pole (used in axisymmetric solvers)
+     * @param x1 radial coordinate along the axis (code units)
+     */
+    Inline auto polar_area(const real_t& x1) const -> real_t {
+      return dr * SQR(x1 * dr + x1_min) * (ONE - math::cos(HALF * dtheta));
+    }
+
+    /**
+     * component-wise coordinate conversions
+     */
+    template <idx_t i, Crd in, Crd out>
+    Inline auto convert(const real_t& x_in) const -> real_t {
+      static_assert(in != out, "Invalid coordinate conversion");
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert((in == Crd::Cd && (out == Crd::Sph || out == Crd::Ph)) ||
+                      ((in == Crd::Sph || in == Crd::Ph) && out == Crd::Cd),
+                    "Invalid coordinate conversion");
+      if constexpr (in == Crd::Cd && (out == Crd::Sph || out == Crd::Ph)) {
+        // code -> sph/phys
+        if constexpr (i == 1) {
+          return x_in * dr + x1_min;
+        } else if constexpr (i == 2) {
+          return x_in * dtheta + x2_min;
+        } else {
+          if constexpr (D != Dim::_3D) {
+            return x_in;
+          } else {
+            return x_in * dphi + x3_min;
+          }
+        }
+      } else {
+        // sph/phys -> code
+        if constexpr (i == 1) {
+          return (x_in - x1_min) * dr_inv;
+        } else if constexpr (i == 2) {
+          return (x_in - x2_min) * dtheta_inv;
+        } else {
+          if constexpr (D != Dim::_3D) {
+            return x_in;
+          } else {
+            return (x_in - x3_min) * dphi_inv;
+          }
+        }
+      }
+    }
+
+    /**
+     * full coordinate conversions
+     */
+    template <Crd in, Crd out>
+    Inline void convert(const coord_t<D>& x_in, coord_t<D>& x_out) const {
+      static_assert(in != out, "Invalid coordinate conversion");
+      static_assert(in != Crd::XYZ && out != Crd::XYZ,
+                    "Invalid coordinate conversion: XYZ not allowed in GR");
+      // code <-> sph/phys
+      if constexpr (D == Dim::_2D) {
+        x_out[0] = convert<1, in, out>(x_in[0]);
+        x_out[1] = convert<2, in, out>(x_in[1]);
+      } else {
+        x_out[0] = convert<1, in, out>(x_in[0]);
+        x_out[1] = convert<2, in, out>(x_in[1]);
+        x_out[2] = convert<3, in, out>(x_in[2]);
+      }
+    }
+
+    /**
+     * full vector transformations
+     */
+    template <Idx in, Idx out>
+    Inline void transform(const coord_t<D>&      xi,
+                          const vec_t<Dim::_3D>& v_in,
+                          vec_t<Dim::_3D>&       v_out) const {
+      static_assert(in != out, "Invalid vector transformation");
+      static_assert(in != Idx::XYZ && out != Idx::XYZ,
+                    "Invalid vector transformation: XYZ not allowed in GR");
+      if constexpr ((in == Idx::T && out == Idx::Sph) ||
+                    (in == Idx::Sph && out == Idx::T)) {
+        // tetrad <-> sph
+        v_out[0] = v_in[0];
+        v_out[1] = v_in[1];
+        v_out[2] = v_in[2];
+      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
+        // tetrad/sph -> cntrv
+        v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
+        v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
+        v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
+      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
+        // cntrv -> tetrad/sph
+        v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
+        v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
+        v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
+      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
+        // tetrad/sph -> cov
+        v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
+        v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
+        v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
+      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
+        // cov -> tetrad/sph
+        v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
+        v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
+        v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
+      } else if constexpr (in == Idx::U && out == Idx::D) {
+        // cntrv -> cov
+        v_out[0] = v_in[0] * h_<1, 1>(xi);
+        v_out[1] = v_in[1] * h_<2, 2>(xi);
+        v_out[2] = v_in[2] * h_<3, 3>(xi);
+      } else if constexpr (in == Idx::D && out == Idx::U) {
+        // cov -> cntrv
+        v_out[0] = v_in[0] * h<1, 1>(xi);
+        v_out[1] = v_in[1] * h<2, 2>(xi);
+        v_out[2] = v_in[2] * h<3, 3>(xi);
+      } else if constexpr ((in == Idx::U && out == Idx::PU) ||
+                           (in == Idx::PD && out == Idx::D)) {
+        // cntrv -> phys cntrv || phys cov -> cov
+        v_out[0] = v_in[0] * dr;
+        v_out[1] = v_in[1] * dtheta;
+        if constexpr (D == Dim::_2D) {
+          v_out[2] = v_in[2];
+        } else {
+          v_out[2] = v_in[2] * dphi;
+        }
+      } else if constexpr ((in == Idx::PU && out == Idx::U) ||
+                           (in == Idx::D && out == Idx::PD)) {
+        // phys cntrv -> cntrv || cov -> phys cov
+        v_out[0] = v_in[0] * dr_inv;
+        v_out[1] = v_in[1] * dtheta_inv;
+        if constexpr (D == Dim::_2D) {
+          v_out[2] = v_in[2];
+        } else {
+          v_out[2] = v_in[2] * dphi_inv;
+        }
+      } else {
+        raise::KernelError(HERE, "Invalid transformation");
+      }
     }
   };
 } // namespace ntt

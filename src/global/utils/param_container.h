@@ -6,7 +6,6 @@
  * @namespaces:
  *   - prm::
  * @depends:
- *   - utils/log.h
  *   - utils/error.h
  *   - utils/formatting.h
  */
@@ -14,9 +13,10 @@
 #ifndef GLOBAL_UTILS_PARAM_CONTAINER_H
 #define GLOBAL_UTILS_PARAM_CONTAINER_H
 
+#include "global.h"
+
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 
 #include <any>
 #include <ios>
@@ -24,9 +24,8 @@
 #include <optional>
 #include <sstream>
 #include <string>
-#include <vector>
-
 #include <type_traits>
+#include <vector>
 
 namespace prm {
 
@@ -108,8 +107,10 @@ namespace prm {
       };
       result << std::boolalpha;
       try {
-        using vecT    = std::vector<T>;
-        using vecvecT = std::vector<vecT>;
+        using vecT     = std::vector<T>;
+        using vecvecT  = std::vector<vecT>;
+        using pairT    = std::pair<T, T>;
+        using vecpairT = std::vector<std::pair<T, T>>;
         if (vars.at(key).type() == typeid(vecvecT)) {
           const auto vecvec = get<vecvecT>(key);
           result << "[";
@@ -133,9 +134,30 @@ namespace prm {
           }
           remove_last_n(result, 2);
           result << "]";
+        } else if (vars.at(key).type() == typeid(pairT)) {
+          const auto pair = get<pairT>(key);
+          result << "[";
+          stringize_key(result, pair.first);
+          result << ", ";
+          stringize_key(result, pair.second);
+          result << "]";
+        } else if (vars.at(key).type() == typeid(vecpairT)) {
+          const auto vecpair = get<vecpairT>(key);
+          result << "[";
+          for (const auto& p : vecpair) {
+            result << "{";
+            stringize_key(result, p.first);
+            result << ", ";
+            stringize_key(result, p.second);
+            result << "}, ";
+          }
+          remove_last_n(result, 2);
+          result << "]";
         } else if (vars.at(key).type() == typeid(T)) {
           const auto v = get<T>(key);
           stringize_key(result, v);
+        } else {
+          raise::Error("Unsupported type for stringize", HERE);
         }
       } catch (const std::out_of_range&) {
         raise::Error(fmt::format("Key %s not found", key.c_str()), HERE);

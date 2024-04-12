@@ -2,24 +2,27 @@
 
 #include "defaults.h"
 #include "enums.h"
+#include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "framework/species.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
-// metrics
+
 #include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "metrics/kerr_schild_0.h"
-// < metrics
+#include "framework/containers/species.h"
 
 #include <toml.hpp>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
 
 #include <map>
 #include <string>
@@ -29,10 +32,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(
-    const std::vector<unsigned int>&              resolution,
-    const std::vector<std::pair<real_t, real_t>>& extent,
-    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(const std::vector<std::size_t>&      resolution,
+                  const boundaries_t<real_t>&          extent,
+                  const std::map<std::string, real_t>& params)
+    -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -43,8 +46,7 @@ namespace ntt {
     return { dx0, V0 };
   }
 
-  SimulationParams::SimulationParams(const toml::value& data) :
-    raw_data { data } {
+  SimulationParams::SimulationParams(const toml::value& raw_data) {
     /* [simulation] --------------------------------------------------------- */
     set("simulation.name", toml::find<std::string>(raw_data, "simulation", "name"));
     set("simulation.runtime",
@@ -55,16 +57,42 @@ namespace ntt {
     const auto engine_enum = SimEngine::pick(engine.c_str());
     set("simulation.engine", engine_enum);
 
+    int default_ndomains { 1 };
+#if defined(MPI_ENABLED)
+    raise::ErrorIf(MPI_Comm_size(MPI_COMM_WORLD, &default_ndomains) != MPI_SUCCESS,
+                   "MPI_Comm_size failed",
+                   HERE);
+#endif
+    set("simulation.domain.number",
+        toml::find_or(raw_data, "simulation", "domain", "number", default_ndomains));
+
+    auto decomposition = toml::find_or<std::vector<int>>(
+      raw_data,
+      "simulation",
+      "domain",
+      "decomposition",
+      std::vector<int> { -1, -1, -1 });
+    promiseToDefine("simulation.domain.decomposition");
+
     /* [grid] --------------------------------------------------------------- */
-    const auto res = toml::find<std::vector<unsigned int>>(raw_data,
-                                                           "grid",
-                                                           "resolution");
+    const auto res = toml::find<std::vector<std::size_t>>(raw_data,
+                                                          "grid",
+                                                          "resolution");
     raise::ErrorIf(res.size() < 1 || res.size() > 3,
                    "invalid `grid.resolution`",
                    HERE);
     set("grid.resolution", res);
     const auto dim = static_cast<Dimension>(res.size());
     set("grid.dim", dim);
+
+    if (decomposition.size() > dim) {
+      decomposition.erase(decomposition.begin() + (std::size_t)(dim),
+                          decomposition.end());
+    }
+    raise::ErrorIf(decomposition.size() != dim,
+                   "invalid `simulation.domain.decomposition`",
+                   HERE);
+    set("simulation.domain.decomposition", decomposition);
 
     auto extent = toml::find<std::vector<std::vector<real_t>>>(raw_data,
                                                                "grid",
@@ -192,6 +220,7 @@ namespace ntt {
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",
         toml::find_or(raw_data, "algorithms", "timestep", "CFL", defaults::cfl));
+    promiseToDefine("algorithms.timestep.dt");
     set("algorithms.timestep.correction",
         toml::find_or(raw_data,
                       "algorithms",
@@ -292,12 +321,9 @@ namespace ntt {
     const auto prtl_out = toml::find_or(raw_data,
                                         "output",
                                         "particles",
-                                        std::vector<std::string> {});
+                                        std::vector<unsigned short> {});
     if (flds_out.size() == 0) {
       raise::Warning("No fields output specified", HERE);
-    }
-    if (prtl_out.size() == 0) {
-      raise::Warning("No particle output specified", HERE);
     }
     set("output.fields", flds_out);
     set("output.particles", prtl_out);
@@ -324,8 +350,6 @@ namespace ntt {
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",
         toml::find_or(raw_data, "diagnostics", "interval", defaults::diag::interval));
-    set("diagnostics.log_level",
-        toml::find_or(raw_data, "diagnostics", "log_level", defaults::diag::log_level));
     set("diagnostics.blocking_timers",
         toml::find_or(raw_data, "diagnostics", "blocking_timers", false));
 
@@ -345,7 +369,14 @@ namespace ntt {
       }
     }
     raise::ErrorIf(extent.size() != dim, "invalid inferred `grid.extent`", HERE);
-    set("grid.extent", extent);
+    boundaries_t<real_t> extent_parwise;
+    for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+      raise::ErrorIf(extent[d].size() != 2,
+                     fmt::format("invalid inferred `grid.extent[%d]`", d),
+                     HERE);
+      extent_parwise.push_back({ extent[d][0], extent[d][1] });
+    }
+    set("grid.extent", extent_parwise);
 
     // fields/particle boundaries
     std::vector<std::vector<FldsBC>> flds_bc_enum;
@@ -457,6 +488,8 @@ namespace ntt {
     raise::ErrorIf(prtl_bc_enum.size() != (std::size_t)dim,
                    "invalid inferred `grid.boundaries.particles`",
                    HERE);
+    boundaries_t<FldsBC> flds_bc_pairwise;
+    boundaries_t<PrtlBC> prtl_bc_pairwise;
     for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
       raise::ErrorIf(
         flds_bc_enum[d].size() != 2,
@@ -466,9 +499,11 @@ namespace ntt {
         prtl_bc_enum[d].size() != 2,
         fmt::format("invalid inferred `grid.boundaries.particles[%d]`", d),
         HERE);
+      flds_bc_pairwise.push_back({ flds_bc_enum[d][0], flds_bc_enum[d][1] });
+      prtl_bc_pairwise.push_back({ prtl_bc_enum[d][0], prtl_bc_enum[d][1] });
     }
-    set("grid.boundaries.fields", flds_bc_enum);
-    set("grid.boundaries.particles", prtl_bc_enum);
+    set("grid.boundaries.fields", flds_bc_pairwise);
+    set("grid.boundaries.particles", prtl_bc_pairwise);
 
     if (isPromised("grid.boundaries.absorb_d")) {
       if (coord_enum == Coord::Cart) {
@@ -523,7 +558,7 @@ namespace ntt {
 
     // metric, dx0, V0, n0, q0
     {
-      std::vector<std::pair<real_t, real_t>> ext;
+      boundaries_t<real_t> ext;
       for (const auto& e : extent) {
         ext.push_back({ e[0], e[1] });
       }
@@ -563,10 +598,60 @@ namespace ntt {
       set("scales.q0", V0 / (ppc0 * SQR(skindepth0)));
 
       set("grid.metric.metric", metric_enum);
+      set("algorithms.timestep.dt", get<real_t>("algorithms.timestep.CFL") * dx0);
     }
 
     raise::ErrorIf(!promisesFulfilled(),
                    "Have not defined all the necessary variables",
                    HERE);
+
+    /* [setup] -------------------------------------------------------------- */
+    const auto& setup = toml::find_or(raw_data, "setup", toml::table {});
+    for (const auto& [key, val] : setup) {
+      if (val.is_boolean()) {
+        set("setup." + key, (bool)(val.as_boolean()));
+      } else if (val.is_integer()) {
+        set("setup." + key, (int)(val.as_integer()));
+      } else if (val.is_floating()) {
+        set("setup." + key, (real_t)(val.as_floating()));
+      } else if (val.is_string()) {
+        set("setup." + key, (std::string)(val.as_string()));
+      } else if (val.is_array()) {
+        const auto val_arr = val.as_array();
+        if (val_arr.size() == 0) {
+          continue;
+        } else {
+          if (val_arr[0].is_integer()) {
+            std::vector<int> vec;
+            for (const auto& v : val_arr) {
+              vec.push_back(v.as_integer());
+            }
+            set("setup." + key, vec);
+          } else if (val_arr[0].is_floating()) {
+            std::vector<real_t> vec;
+            for (const auto& v : val_arr) {
+              vec.push_back(v.as_floating());
+            }
+            set("setup." + key, vec);
+          } else if (val_arr[0].is_boolean()) {
+            std::vector<bool> vec;
+            for (const auto& v : val_arr) {
+              vec.push_back(v.as_boolean());
+            }
+            set("setup." + key, vec);
+          } else if (val_arr[0].is_string()) {
+            std::vector<std::string> vec;
+            for (const auto& v : val_arr) {
+              vec.push_back(v.as_string());
+            }
+            set("setup." + key, vec);
+          } else if (val_arr[0].is_array()) {
+            raise::Error("only 1D arrays allowed in [setup]", HERE);
+          } else {
+            raise::Error("invalid setup variable type", HERE);
+          }
+        }
+      }
+    }
   }
 } // namespace ntt

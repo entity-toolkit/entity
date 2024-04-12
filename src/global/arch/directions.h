@@ -4,18 +4,21 @@
  * @implements
  *   - dir::Directions
  *   - dir::direction_t
+ *   - dir::map_t
+ *   - dir::dirs_t
  * @depends:
  *   - global.h
  *   - utils/error.h
- *   - utils/log.h
  * @namespaces:
  *   - dir::Directions
- * @note 
+ * @note
  * dir::Directions<D>::all contains all possible directions in D
  * dimensions with increments in each direction
- * @note 
+ * @note
+ * dir::Directions<D>::orth contains only orthogonal directions
+ * @note
  * dir::Directions<D>::unique is similar to ::all,
- * but contains only unique directions (i.e. no +1/-1)
+ * but contains only unique directions (i.e., no difference between +1/-1)
  */
 
 #ifndef GLOBAL_ARCH_DIRECTIONS_H
@@ -24,12 +27,12 @@
 #include "global.h"
 
 #include "utils/error.h"
-#include "utils/log.h"
-
-#include <ostream>
-#include <vector>
 
 #include <initializer_list>
+#include <iomanip>
+#include <map>
+#include <ostream>
+#include <vector>
 
 namespace dir {
 
@@ -45,6 +48,8 @@ namespace dir {
                      "Wrong number of elements in direction_t initializer list",
                      HERE);
     }
+
+    auto hash() const -> short;
 
     auto operator-() const -> direction_t<D> {
       auto result = direction_t<D> {};
@@ -64,24 +69,56 @@ namespace dir {
     }
   };
 
+  template <Dimension D, typename T>
+  using map_t = std::map<direction_t<D>, T>;
+
+  template <Dimension D>
+  using dirs_t = std::vector<direction_t<D>>;
+
   template <Dimension D>
   inline auto operator<<(std::ostream& os, const direction_t<D>& dir)
     -> std::ostream& {
     for (auto& d : dir) {
-      os << d << " ";
+      os << std::setw(2) << std::right;
+      if (d > 0) {
+        os << "+";
+      } else if (d < 0) {
+        os << "-";
+      } else {
+        os << "0";
+      }
     }
     return os;
   }
 
   template <>
+  inline auto direction_t<Dim::_1D>::hash() const -> short {
+    return (*this)[0];
+  }
+
+  template <>
+  inline auto direction_t<Dim::_2D>::hash() const -> short {
+    return (2 + (*this)[0] + (*this)[1]) * (3 + (*this)[0] + (*this)[1]) / 2 +
+           (*this)[1];
+  }
+
+  template <>
+  inline auto direction_t<Dim::_3D>::hash() const -> short {
+    short k1 = (2 + (*this)[0] + (*this)[1]) * (3 + (*this)[0] + (*this)[1]) / 2 +
+               (*this)[1];
+    return (2 + k1 + (*this)[2]) * (3 + k1 + (*this)[2]) / 2 + (*this)[2];
+  }
+
+  template <>
   struct Directions<Dim::_1D> {
-    inline static const std::vector<direction_t<Dim::_1D>> all = { { -1 }, { 1 } };
-    inline static const std::vector<direction_t<Dim::_1D>> unique = { { 1 } };
+    inline static const dirs_t<Dim::_1D> all    = { { -1 }, { 1 } };
+    inline static const dirs_t<Dim::_1D> orth   = { { -1 }, { 1 } };
+    inline static const dirs_t<Dim::_1D> unique = { { 1 } };
   };
 
   template <>
   struct Directions<Dim::_2D> {
-    inline static const std::vector<direction_t<Dim::_2D>> all = {
+    inline static const dirs_t<Dim::_2D> all = {
       {-1, -1},
       {-1,  0},
       {-1,  1},
@@ -91,7 +128,13 @@ namespace dir {
       { 1,  0},
       { 1,  1}
     };
-    inline static const std::vector<direction_t<Dim::_2D>> unique = {
+    inline static const dirs_t<Dim::_2D> orth = {
+      {-1,  0},
+      { 0, -1},
+      { 0,  1},
+      { 1,  0}
+    };
+    inline static const dirs_t<Dim::_2D> unique = {
       { 0, 1},
       { 1, 1},
       { 1, 0},
@@ -101,7 +144,7 @@ namespace dir {
 
   template <>
   struct Directions<Dim::_3D> {
-    inline static const std::vector<direction_t<Dim::_3D>> all = {
+    inline static const dirs_t<Dim::_3D> all = {
       {-1, -1, -1},
       {-1, -1,  0},
       {-1, -1,  1},
@@ -129,7 +172,15 @@ namespace dir {
       { 1,  1,  0},
       { 1,  1,  1}
     };
-    inline static const std::vector<direction_t<Dim::_3D>> unique = {
+    inline static const dirs_t<Dim::_3D> orth = {
+      {-1,  0,  0},
+      { 0, -1,  0},
+      { 0,  0, -1},
+      { 0,  0,  1},
+      { 0,  1,  0},
+      { 1,  0,  0}
+    };
+    inline static const dirs_t<Dim::_3D> unique = {
       { 0,  0,  1},
       { 0,  1,  0},
       { 1,  0,  0},

@@ -1,5 +1,5 @@
 /**
- * @file ampere_gr.hpp
+ * @file kernels/ampere_gr.hpp
  * @brief Algorithms for Ampere's law in GR
  * @implements
  *   - ntt::Ampere_kernel<>
@@ -9,7 +9,6 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
@@ -17,15 +16,14 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_AMPERE_GR_H
-#define KERNELS_AMPERE_GR_H
+#ifndef KERNELS_AMPERE_GR_HPP
+#define KERNELS_AMPERE_GR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 namespace ntt {
@@ -33,27 +31,29 @@ namespace ntt {
   /**
    * @brief Algorithms for Ampere's law:
    * @brief `d(Din)^i / dt = curl H_j`, `Dout += dt * d(Din)/dt`.
-   * @tparam D Dimension.
    * @tparam M Metric.
    */
-  template <Dimension D, class M>
+  template <class M>
   class Ampere_kernel {
-    ndfield_t<D, 6>   Din;
-    ndfield_t<D, 6>   Dout;
-    ndfield_t<D, 6>   H;
-    const M           metric;
-    const std::size_t i2max;
-    const real_t      coeff;
-    bool              is_axis_i2min { false }, is_axis_i2max { false };
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const ndfield_t<D, 6> Din;
+    ndfield_t<D, 6>       Dout;
+    const ndfield_t<D, 6> H;
+    const M               metric;
+    const std::size_t     i2max;
+    const real_t          coeff;
+    bool                  is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    Ampere_kernel(const ndfield_t<D, 6>&                        Din,
-                  const ndfield_t<D, 6>&                        Dout,
-                  const ndfield_t<D, 6>&                        H,
-                  const M&                                      metric,
-                  real_t                                        coeff,
-                  std::size_t                                   ni2,
-                  const std::vector<std::vector<FldsBC::type>>& boundaries) :
+    Ampere_kernel(const ndfield_t<D, 6>&      Din,
+                  const ndfield_t<D, 6>&      Dout,
+                  const ndfield_t<D, 6>&      H,
+                  const M&                    metric,
+                  real_t                      coeff,
+                  std::size_t                 ni2,
+                  const boundaries_t<FldsBC>& boundaries) :
       Din { Din },
       Dout { Dout },
       H { H },
@@ -62,8 +62,11 @@ namespace ntt {
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
+        raise::ErrorIf(boundaries[1].size() < 2,
+                       "boundaries defined incorrectly",
+                       HERE);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
     }
 
@@ -112,29 +115,30 @@ namespace ntt {
 
   /**
    * @brief Add the currents to the D field with the appropriate conversion.
-   * @tparam D Dimension.
    */
-  template <Dimension D, class M>
+  template <class M>
   class CurrentsAmpere_kernel {
-    ndfield_t<D, 6>   Df;
-    ndfield_t<D, 3>   J;
-    const M           metric;
-    const std::size_t i2max;
-    const real_t      coeff;
-    bool              is_axis_i2min { false };
-    bool              is_axis_i2max { false };
+    static constexpr auto D = M::Dim;
+
+    ndfield_t<D, 6>       Df;
+    const ndfield_t<D, 3> J;
+    const M               metric;
+    const std::size_t     i2max;
+    const real_t          coeff;
+    bool                  is_axis_i2min { false };
+    bool                  is_axis_i2max { false };
 
   public:
     /**
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>& Df,
-                          const ndfield_t<D, 3>& J,
-                          const M&               metric,
-                          real_t                 coeff,
-                          std::size_t            ni2,
-                          const std::vector<std::vector<FldsBC::type>>& boundaries) :
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>&      Df,
+                          const ndfield_t<D, 3>&      J,
+                          const M&                    metric,
+                          real_t                      coeff,
+                          std::size_t                 ni2,
+                          const boundaries_t<FldsBC>& boundaries) :
       Df { Df },
       J { J },
       metric { metric },
@@ -142,8 +146,8 @@ namespace ntt {
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
-        is_axis_i2max = (boundaries[1][1] == FldsBC::AXIS);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
     }
 
@@ -185,4 +189,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // KERNELS_AMPERE_GR_H
+#endif // KERNELS_AMPERE_GR_HPP

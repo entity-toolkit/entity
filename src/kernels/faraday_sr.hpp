@@ -1,5 +1,5 @@
 /**
- * @file faraday_sr.hpp
+ * @file kernels/faraday_sr.hpp
  * @brief Algorithms for Faraday's law in curvilinear SR
  * @implements
  *   - ntt::Faraday_kernel<>
@@ -8,7 +8,6 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
@@ -16,42 +15,43 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_FARADAY_SR_H
-#define KERNELS_FARADAY_SR_H
+#ifndef KERNELS_FARADAY_SR_HPP
+#define KERNELS_FARADAY_SR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 namespace ntt {
 
   /**
    * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
-   * space (diagonal metric).
-   * @tparam D Dimension.
+   * space (diagonal metric)
    */
-  template <Dimension D, class M>
+  template <class M>
   class Faraday_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
     ndfield_t<D, 6> EB;
     const M         metric;
     const real_t    coeff;
     bool            is_axis_i2min { false };
 
   public:
-    Faraday_kernel(const ndfield_t<D, 6>&                        EB,
-                   const M&                                      metric,
-                   real_t                                        coeff,
-                   const std::vector<std::vector<FldsBC::type>>& boundaries) :
+    Faraday_kernel(const ndfield_t<D, 6>&      EB,
+                   const M&                    metric,
+                   real_t                      coeff,
+                   const boundaries_t<FldsBC>& boundaries) :
       EB { EB },
       metric { metric },
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_axis_i2min = (boundaries[1][0] == FldsBC::AXIS);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
       }
     }
 
@@ -65,12 +65,12 @@ namespace ntt {
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
         const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h(
                                                   { i1_ + HALF, i2_ + HALF }) };
-        const real_t h1_pHp1 { metric.h_11({ i1_ + HALF, i2_ + ONE }) };
-        const real_t h1_pH0 { metric.h_11({ i1_ + HALF, i2_ }) };
-        const real_t h2_p1pH { metric.h_22({ i1_ + ONE, i2_ + HALF }) };
-        const real_t h2_0pH { metric.h_22({ i1_, i2_ + HALF }) };
-        const real_t h3_00 { metric.h_33({ i1_, i2_ }) };
-        const real_t h3_0p1 { metric.h_33({ i1_, i2_ + ONE }) };
+        const real_t h1_pHp1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + ONE }) };
+        const real_t h1_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
+        const real_t h2_p1pH { metric.template h_<2, 2>({ i1_ + ONE, i2_ + HALF }) };
+        const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
+        const real_t h3_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
+        const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
 
         EB(i1, i2, em::bx1) += coeff * inv_sqrt_detH_0pH *
                                (h3_00 * EB(i1, i2, em::ex3) -
@@ -78,7 +78,7 @@ namespace ntt {
         if ((i2 != i2min) || !is_axis_i2min) {
           const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
                                                    { i1_ + HALF, i2_ }) };
-          const real_t h3_p10 { metric.h_33({ i1_ + ONE, i2_ }) };
+          const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
           EB(i1, i2, em::bx2) += coeff * inv_sqrt_detH_pH0 *
                                  (h3_p10 * EB(i1 + 1, i2, em::ex3) -
                                   h3_00 * EB(i1, i2, em::ex3));
@@ -104,4 +104,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // KERNELS_FARADAY_SR_H
+#endif // KERNELS_FARADAY_SR_HPP

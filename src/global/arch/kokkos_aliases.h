@@ -8,7 +8,7 @@
  *   - ndfield_mirror_t, scatter_ndfield_t
  *   - range_t, range_h_t
  *   - CreateRangePolicy, CreateRangePolicyOnHost
- *   - RandomNumberPool_t, RandomGenerator_t
+ *   - random_number_pool_t, random_generator_t
  *   - Random function
  * @cpp:
  *   - arch/kokkos_aliases.cpp
@@ -209,20 +209,20 @@ auto CreateRangePolicyOnHost(const tuple_t<std::size_t, D>&,
                              const tuple_t<std::size_t, D>&) -> range_h_t<D>;
 
 // Random number pool/generator type alias
-using RandomNumberPool_t = Kokkos::Random_XorShift1024_Pool<AccelExeSpace>;
-using RandomGenerator_t  = typename RandomNumberPool_t::generator_type;
+using random_number_pool_t = Kokkos::Random_XorShift1024_Pool<AccelExeSpace>;
+using random_generator_t   = typename random_number_pool_t::generator_type;
 
 // Random number generator functions
 template <typename T>
-Inline auto Random(RandomGenerator_t&) -> T;
+Inline auto Random(random_generator_t&) -> T;
 
 template <>
-Inline auto Random<float>(RandomGenerator_t& gen) -> float {
+Inline auto Random<float>(random_generator_t& gen) -> float {
   return gen.frand();
 }
 
 template <>
-Inline auto Random<double>(RandomGenerator_t& gen) -> double {
+Inline auto Random<double>(random_generator_t& gen) -> double {
   return gen.drand();
 }
 

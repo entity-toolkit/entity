@@ -24,9 +24,9 @@ auto main() -> int {
   };
   const auto nonexist_vec = std::vector<int> { 1, 2, 3 };
   const auto flds_bc_vec = std::vector<FldsBC> { FldsBC::AXIS, FldsBC::PERIODIC };
-  const auto prtl_bc_vec = std::vector<std::vector<PrtlBC>> {
-    { PrtlBC::REFLECT, PrtlBC::PERIODIC },
-    { PrtlBC::REFLECT,  PrtlBC::REFLECT }
+  const auto prtl_bc_vec = boundaries_t<PrtlBC> {
+    {PrtlBC::REFLECT, PrtlBC::PERIODIC},
+    {PrtlBC::REFLECT,  PrtlBC::REFLECT}
   };
 
   p.set("a", 1);
@@ -51,9 +51,8 @@ auto main() -> int {
     errorIf(p.get<Coord>("enum1") != Coord::Cart, "Failed to get Coord::");
     errorIf(p.get<std::vector<FldsBC>>("enum2") != flds_bc_vec,
             "Failed to get std::vector<FldsBC>::");
-    errorIf(p.get<std::vector<std::vector<PrtlBC>>>("enum3", prtl_bc_vec) !=
-              prtl_bc_vec,
-            "Failed to get std::vector<std::vector<PrtlBC>>::");
+    errorIf(p.get<boundaries_t<PrtlBC>>("enum3", prtl_bc_vec) != prtl_bc_vec,
+            "Failed to get boundaries_t<PrtlBC>::");
 
     errorIf(p.stringize<int>("a") != "1", "Wrong stringize for int");
     errorIf(p.stringize<std::string>("b") != "hello world",
@@ -70,7 +69,7 @@ auto main() -> int {
             "Wrong stringize for std::vector<FldsBC>::");
     errorIf(p.stringize<PrtlBC>("enum3") !=
               "[{reflect, periodic}, {reflect, reflect}]",
-            "Wrong stringize for std::vector<std::vector<PrtlBC>>::");
+            "Wrong stringize for boundaries_t<PrtlBC>::");
 
     p.promiseToDefine("f");
     errorIf(p.promisesFulfilled(), "Promises fulfilled too early");

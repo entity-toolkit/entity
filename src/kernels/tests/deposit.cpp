@@ -2,12 +2,14 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
+
 #include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
-#include "utils/comparators.h"
 
 #include "kernels/currents_deposit.hpp"
 
@@ -19,8 +21,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-
-#include "metrics/kerr_schild_0.h"
 
 void errorIf(bool condition, const std::string& message) {
   if (condition) {
@@ -50,8 +50,8 @@ void put_value(array_t<T*> arr, T value, int i) {
 }
 
 template <typename M, ntt::SimEngine::type S>
-void testDeposit(const std::vector<unsigned int>&              res,
-                 const std::vector<std::pair<real_t, real_t>>& ext,
+void testDeposit(const std::vector<std::size_t>&               res,
+                 const boundaries_t<real_t>& ext,
                  const std::map<std::string, real_t>&          params = {},
                  const real_t                                  acc    = ONE) {
   static_assert(M::Dim == 2);
@@ -125,28 +125,28 @@ void testDeposit(const std::vector<unsigned int>&              res,
 
   Kokkos::parallel_for("CurrentsDeposit",
                        10,
-                       DepositCurrents_kernel<Dim::_2D, S, M>(J_scat,
-                                                              i1,
-                                                              i2,
-                                                              i3,
-                                                              i1_prev,
-                                                              i2_prev,
-                                                              i3_prev,
-                                                              dx1,
-                                                              dx2,
-                                                              dx3,
-                                                              dx1_prev,
-                                                              dx2_prev,
-                                                              dx3_prev,
-                                                              ux1,
-                                                              ux2,
-                                                              ux3,
-                                                              phi,
-                                                              weight,
-                                                              tag,
-                                                              metric,
-                                                              charge,
-                                                              inv_dt));
+                       DepositCurrents_kernel<S, M>(J_scat,
+                                                    i1,
+                                                    i2,
+                                                    i3,
+                                                    i1_prev,
+                                                    i2_prev,
+                                                    i3_prev,
+                                                    dx1,
+                                                    dx2,
+                                                    dx3,
+                                                    dx1_prev,
+                                                    dx2_prev,
+                                                    dx3_prev,
+                                                    ux1,
+                                                    ux2,
+                                                    ux3,
+                                                    phi,
+                                                    weight,
+                                                    tag,
+                                                    metric,
+                                                    charge,
+                                                    inv_dt));
 
   Kokkos::Experimental::contribute(J, J_scat);
 

@@ -2,11 +2,18 @@
 # @defines: ntt_framework [STATIC/SHARED]
 # @sources:
 # - parameters.cpp
+# - simulation.cpp
+# - logistics/grid.cpp
+# - logistics/metadomain.cpp
+# - containers/particles.cpp
+# - containers/fields.cpp
 # @includes:
 # - ../
 # @depends:
 # - ntt_global [required]
 # - ntt_metrics [required]
+# - ntt_kernels [required]
+# - ntt_output [optional]
 # @uses:
 # - kokkos [required]
 # - plog [required]
@@ -16,9 +23,24 @@
 # ------------------------------
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(SOURCES ${SRC_DIR}/parameters.cpp)
+set(SOURCES 
+  ${SRC_DIR}/parameters.cpp 
+  ${SRC_DIR}/simulation.cpp
+  ${SRC_DIR}/logistics/grid.cpp
+  ${SRC_DIR}/logistics/metadomain.cpp
+  ${SRC_DIR}/containers/particles.cpp
+  ${SRC_DIR}/containers/fields.cpp
+)
 add_library(ntt_framework ${SOURCES})
-target_link_libraries(ntt_framework PUBLIC ntt_global ntt_metrics)
+
+# set(libs ntt_global ntt_metrics ntt_kernels)
+set(libs ntt_global ntt_metrics )
+
+if(${output})
+  list(APPEND libs ntt_output)
+endif()
+
+target_link_libraries(ntt_framework PUBLIC ${libs})
 target_include_directories(ntt_framework
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../

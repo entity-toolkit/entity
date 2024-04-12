@@ -59,7 +59,6 @@ namespace ntt::defaults {
   } // namespace output
 
   namespace diag {
-    const std::string  log_level = "info";
     const unsigned int interval  = 1;
   } // namespace diag
 

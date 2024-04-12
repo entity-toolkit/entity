@@ -1,5 +1,5 @@
 /**
- * @file aux_fields_gr.hpp
+ * @file kernels/aux_fields_gr.hpp
  * @brief Algorithms for computing the auxiliary fields in GR
  * @implements
  *   - ntt::ComputeAuxE_kernel<>
@@ -9,7 +9,6 @@
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
- *   - utils/log.h
  *   - utils/numeric.h
  * @namespaces:
  *   - ntt::
@@ -17,30 +16,31 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_AUX_FIELDS_GR_H
-#define KERNELS_AUX_FIELDS_GR_H
+#ifndef KERNELS_AUX_FIELDS_GR_HPP
+#define KERNELS_AUX_FIELDS_GR_HPP
 
 #include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 namespace ntt {
 
   /**
-   * @brief Kernel for computing E.
-   * @tparam D Dimension.
-   * @tparam M Metric.
+   * @brief Kernel for computing E
+   * @tparam M Metric
    */
-  template <Dimension D, class M>
+  template <class M>
   class ComputeAuxE_kernel {
-    ndfield_t<D, 6> Df;
-    ndfield_t<D, 6> Bf;
-    ndfield_t<D, 6> Ef;
-    const M         metric;
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const ndfield_t<D, 6> Df;
+    const ndfield_t<D, 6> Bf;
+    ndfield_t<D, 6>       Ef;
+    const M               metric;
 
   public:
     ComputeAuxE_kernel(const ndfield_t<D, 6>& Df,
@@ -57,9 +57,9 @@ namespace ntt {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
 
-        const real_t h_11_pH0 { metric.h_11({ i1_ + HALF, i2_ }) };
-        const real_t h_22_0pH { metric.h_22({ i1_, i2_ + HALF }) };
-        const real_t h_33_00 { metric.h_33({ i1_, i2_ }) };
+        const real_t h_11_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
+        const real_t h_22_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
+        const real_t h_33_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
         const real_t alpha_00 { metric.alpha({ i1_, i2_ }) };
         const real_t alpha_pH0 { metric.alpha({ i1_ + HALF, i2_ }) };
         const real_t alpha_0pH { metric.alpha({ i1_, i2_ + HALF }) };
@@ -71,8 +71,8 @@ namespace ntt {
 
         w1       = metric.sqrt_det_h_tilde({ i1_ - HALF, i2_ });
         w2       = metric.sqrt_det_h_tilde({ i1_ + HALF, i2_ });
-        h_13_ij1 = metric.h_13({ i1_ - HALF, i2_ });
-        h_13_ij2 = metric.h_13({ i1_ + HALF, i2_ });
+        h_13_ij1 = metric.template h_<1, 3>({ i1_ - HALF, i2_ });
+        h_13_ij2 = metric.template h_<1, 3>({ i1_ + HALF, i2_ });
         const real_t D1_half { (w1 * h_13_ij1 * Df(i1 - 1, i2, em::dx1) +
                                 w2 * h_13_ij2 * Df(i1, i2, em::dx1)) /
                                (w1 + w2) };
@@ -101,8 +101,8 @@ namespace ntt {
 
         w1       = metric.sqrt_det_h_tilde({ i1_, i2_ });
         w2       = metric.sqrt_det_h_tilde({ i1_ + ONE, i2_ });
-        h_13_ij1 = metric.h_13({ i1_, i2_ });
-        h_13_ij2 = metric.h_13({ i1_ + ONE, i2_ });
+        h_13_ij1 = metric.template h_<1, 3>({ i1_, i2_ });
+        h_13_ij2 = metric.template h_<1, 3>({ i1_ + ONE, i2_ });
         const real_t D3_half { (w1 * h_13_ij1 * Df(i1, i2, em::dx3) +
                                 w2 * h_13_ij2 * Df(i1 + 1, i2, em::dx3)) /
                                (w1 + w2) };
@@ -133,16 +133,18 @@ namespace ntt {
   };
 
   /**
-   * @brief Kernel for computing H.
-   * @tparam D Dimension.
-   * @tparam M Metric.
+   * @brief Kernel for computing H
+   * @tparam M Metric
    */
-  template <Dimension D, class M>
+  template <class M>
   class ComputeAuxH_kernel {
-    ndfield_t<D, 6> Df;
-    ndfield_t<D, 6> Bf;
-    ndfield_t<D, 6> Hf;
-    const M         metric;
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const ndfield_t<D, 6> Df;
+    const ndfield_t<D, 6> Bf;
+    ndfield_t<D, 6>       Hf;
+    const M               metric;
 
   public:
     ComputeAuxH_kernel(const ndfield_t<D, 6>& Df,
@@ -159,9 +161,10 @@ namespace ntt {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
 
-        const real_t h_11_0pH { metric.h_11({ i1_, i2_ + HALF }) };
-        const real_t h_22_pH0 { metric.h_22({ i1_ + HALF, i2_ }) };
-        const real_t h_33_pHpH { metric.h_33({ i1_ + HALF, i2_ + HALF }) };
+        const real_t h_11_0pH { metric.template h_<1, 1>({ i1_, i2_ + HALF }) };
+        const real_t h_22_pH0 { metric.template h_<2, 2>({ i1_ + HALF, i2_ }) };
+        const real_t h_33_pHpH { metric.template h_<3, 3>(
+          { i1_ + HALF, i2_ + HALF }) };
         const real_t alpha_0pH { metric.alpha({ i1_, i2_ + HALF }) };
         const real_t alpha_pH0 { metric.alpha({ i1_ + HALF, i2_ }) };
         const real_t alpha_pHpH { metric.alpha({ i1_ + HALF, i2_ + HALF }) };
@@ -173,8 +176,8 @@ namespace ntt {
 
         w1       = metric.sqrt_det_h_tilde({ i1_, i2_ + HALF });
         w2       = metric.sqrt_det_h_tilde({ i1_ + ONE, i2_ + HALF });
-        h_13_ij1 = metric.h_13({ i1_, i2_ + HALF });
-        h_13_ij2 = metric.h_13({ i1_ + ONE, i2_ + HALF });
+        h_13_ij1 = metric.template h_<1, 3>({ i1_, i2_ + HALF });
+        h_13_ij2 = metric.template h_<1, 3>({ i1_ + ONE, i2_ + HALF });
         const real_t B1_half { (w1 * h_13_ij1 * Bf(i1, i2, em::bx1) +
                                 w2 * h_13_ij2 * Bf(i1 + 1, i2, em::bx1)) /
                                (w1 + w2) };
@@ -203,8 +206,8 @@ namespace ntt {
 
         w1       = metric.sqrt_det_h_tilde({ i1_ - HALF, i2_ + HALF });
         w2       = metric.sqrt_det_h_tilde({ i1_ + HALF, i2_ + HALF });
-        h_13_ij1 = metric.h_13({ i1_ - HALF, i2_ + HALF });
-        h_13_ij2 = metric.h_13({ i1_ + HALF, i2_ + HALF });
+        h_13_ij1 = metric.template h_<1, 3>({ i1_ - HALF, i2_ + HALF });
+        h_13_ij2 = metric.template h_<1, 3>({ i1_ + HALF, i2_ + HALF });
         const real_t B3_half { (w1 * h_13_ij1 * Bf(i1 - 1, i2, em::bx3) +
                                 w2 * h_13_ij2 * Bf(i1, i2, em::bx3)) /
                                (w1 + w2) };
@@ -235,4 +238,4 @@ namespace ntt {
   };
 } // namespace ntt
 
-#endif // KERNELS_AUX_FIELDS_GR_H
+#endif // KERNELS_AUX_FIELDS_GR_HPP

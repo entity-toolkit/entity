@@ -3,6 +3,7 @@
 # @sources:
 # - global.cpp
 # - arch/kokkos_aliases.cpp
+# - utils/cargs.cpp
 # @includes:
 # - ./
 # @uses:
@@ -12,7 +13,11 @@
 # ------------------------------
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(SOURCES ${SRC_DIR}/global.cpp ${SRC_DIR}/arch/kokkos_aliases.cpp)
+set(SOURCES 
+  ${SRC_DIR}/global.cpp 
+  ${SRC_DIR}/arch/kokkos_aliases.cpp 
+  ${SRC_DIR}/utils/cargs.cpp
+)
 add_library(ntt_global ${SOURCES})
 target_include_directories(ntt_global
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

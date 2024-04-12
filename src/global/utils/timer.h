@@ -5,7 +5,6 @@
  *   - timer::Timers
  *   - enum timer::TimerFlags
  * @depends:
- *   - utils/log.h
  *   - utils/error.h
  *   - utils/mpi_aliases.h
  * @namespces:
@@ -18,7 +17,6 @@
 #define GLOBAL_UTILS_TIMER_H
 
 #include "utils/errors.h"
-#include "utils/log.h"
 #include "utils/mpi_aliases.h"
 
 #include <chrono>

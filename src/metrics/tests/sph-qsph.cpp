@@ -1,9 +1,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
+
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
-#include "utils/comparators.h"
 
 #include <iostream>
 #include <limits>
@@ -44,10 +45,10 @@ Inline void unravel(std::size_t                    idx,
 }
 
 template <class M>
-void testMetric(const std::vector<unsigned int>&              res,
-                const std::vector<std::pair<real_t, real_t>>& ext,
-                const real_t                                  acc    = ONE,
-                const std::map<std::string, real_t>&          params = {}) {
+void testMetric(const std::vector<std::size_t>&      res,
+                const boundaries_t<real_t>&          ext,
+                const real_t                         acc    = ONE,
+                const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 2, "Dim != 2");
   errorIf(res.size() != (std::size_t)(M::Dim), "res.size() != M.dim");
   errorIf(ext.size() != (std::size_t)(M::Dim), "ext.size() != M.dim");
@@ -77,11 +78,11 @@ void testMetric(const std::vector<unsigned int>&              res,
         x_Code[d] = (real_t)(idx[d]) + HALF;
       }
 
-      const auto h_11 = metric.h_11(x_Code);
-      const auto h_22 = metric.h_22(x_Code);
-      const auto h_33 = metric.h_33(x_Code);
+      const auto h_11 = metric.template h_<1, 1>(x_Code);
+      const auto h_22 = metric.template h_<2, 2>(x_Code);
+      const auto h_33 = metric.template h_<3, 3>(x_Code);
 
-      metric.x_Code2Sph(x_Code, x_Phys);
+      metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
       const auto r  = x_Phys[0];
       const auto th = x_Phys[1];
 
@@ -91,16 +92,19 @@ void testMetric(const std::vector<unsigned int>&              res,
       vec_t<Dim::_3D> h_ij_expect { h_11_expect, h_22_expect, h_33_expect };
 
       vec_t<Dim::_3D> h_ij_temp { ZERO }, h_ij_predict { ZERO };
-      metric.v3_Cov2PhysCov(x_Code, { h_11, h_22, h_33 }, h_ij_temp);
-      metric.v3_Cov2PhysCov(x_Code, h_ij_temp, h_ij_predict);
+      metric.template transform<Idx::D, Idx::PD>(x_Code,
+                                                 { h_11, h_22, h_33 },
+                                                 h_ij_temp);
+      metric.template transform<Idx::D, Idx::PD>(x_Code, h_ij_temp, h_ij_predict);
 
       wrongs += not equal<Dim::_3D>(h_ij_predict, h_ij_expect, "h_ij", acc);
     },
     all_wrongs);
 
   errorIf(all_wrongs != 0,
-          "wrong h_ij for " + std::to_string(M::Dim) + "D " + std::string(metric.Label) +
-            " with " + std::to_string(all_wrongs) + " errors");
+          "wrong h_ij for " + std::to_string(M::Dim) + "D " +
+            std::string(metric.Label) + " with " + std::to_string(all_wrongs) +
+            " errors");
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -108,22 +112,19 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
-    testMetric<Spherical<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      10);
+    const auto res = std::vector<std::size_t> { 64, 32 };
+    const auto ext = boundaries_t<real_t> {
+      {1.0,         10.0},
+      {0.0, constant::PI}
+    };
+    const auto params = std::map<std::string, real_t> {
+      {"r0",         -ONE},
+      { "h", (real_t)0.25}
+    };
 
-    testMetric<QSpherical<Dim::_2D>>(
-      {
-        64,
-        32
-    },
-      { { 1.0, 10.0 }, { 0.0, constant::PI } },
-      10,
-      { { "r0", -ONE }, { "h", (real_t)0.25 } });
+    testMetric<Spherical<Dim::_2D>>(res, ext, 10);
+    testMetric<QSpherical<Dim::_2D>>(res, ext, 10, params);
+
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     Kokkos::finalize();

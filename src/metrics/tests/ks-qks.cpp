@@ -1,9 +1,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
+
 #include "metrics/kerr_schild.h"
 #include "metrics/qkerr_schild.h"
-#include "utils/comparators.h"
 
 #include <iostream>
 #include <limits>
@@ -44,10 +45,10 @@ Inline void unravel(std::size_t                    idx,
 }
 
 template <class M>
-void testMetric(const std::vector<unsigned int>&              res,
-                const std::vector<std::pair<real_t, real_t>>& ext,
-                const real_t                                  acc    = ONE,
-                const std::map<std::string, real_t>&          params = {}) {
+void testMetric(const std::vector<std::size_t>&      res,
+                const boundaries_t<real_t>&          ext,
+                const real_t                         acc    = ONE,
+                const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 2, "Dim != 2");
   errorIf(res.size() != (std::size_t)(M::Dim), "res.size() != M.dim");
   errorIf(ext.size() != (std::size_t)(M::Dim), "ext.size() != M.dim");
@@ -79,16 +80,16 @@ void testMetric(const std::vector<unsigned int>&              res,
         x_Code[d] = (real_t)(idx[d]) + HALF;
       }
 
-      const auto h11  = metric.h11(x_Code);
-      const auto h22  = metric.h22(x_Code);
-      const auto h33  = metric.h33(x_Code);
-      const auto h13  = metric.h13(x_Code);
-      const auto h_11 = metric.h_11(x_Code);
-      const auto h_22 = metric.h_22(x_Code);
-      const auto h_33 = metric.h_33(x_Code);
-      const auto h_13 = metric.h_13(x_Code);
+      const auto h11  = metric.template h<1, 1>(x_Code);
+      const auto h22  = metric.template h<2, 2>(x_Code);
+      const auto h33  = metric.template h<3, 3>(x_Code);
+      const auto h13  = metric.template h<1, 3>(x_Code);
+      const auto h_11 = metric.template h_<1, 1>(x_Code);
+      const auto h_22 = metric.template h_<2, 2>(x_Code);
+      const auto h_33 = metric.template h_<3, 3>(x_Code);
+      const auto h_13 = metric.template h_<1, 3>(x_Code);
 
-      metric.x_Code2Sph(x_Code, x_Phys);
+      metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
       const auto r  = x_Phys[0];
       const auto th = x_Phys[1];
 
@@ -107,21 +108,31 @@ void testMetric(const std::vector<unsigned int>&              res,
       const auto h_13_expect = -a * (ONE + z) * SQR(math::sin(th));
 
       vec_t<Dim::_3D> hij_temp { ZERO }, hij_predict { ZERO };
-      metric.v3_Cntrv2PhysCntrv(x_Code, { h11, h22, h33 }, hij_temp);
-      metric.v3_Cntrv2PhysCntrv(x_Code, hij_temp, hij_predict);
+      metric.template transform<Idx::U, Idx::PU>(x_Code, { h11, h22, h33 }, hij_temp);
+      metric.template transform<Idx::U, Idx::PU>(x_Code, hij_temp, hij_predict);
 
       vec_t<Dim::_3D> h13_predict_temp { ZERO };
-      metric.v3_Cntrv2PhysCntrv(x_Code, { h13, ZERO, ZERO }, hij_temp);
-      metric.v3_Cntrv2PhysCntrv(x_Code, { ZERO, ZERO, hij_temp[0] }, h13_predict_temp);
+      metric.template transform<Idx::U, Idx::PU>(x_Code,
+                                                 { h13, ZERO, ZERO },
+                                                 hij_temp);
+      metric.template transform<Idx::U, Idx::PU>(x_Code,
+                                                 { ZERO, ZERO, hij_temp[0] },
+                                                 h13_predict_temp);
       const vec_t<Dim::_1D> h13_predict { h13_predict_temp[2] };
 
       vec_t<Dim::_3D> h_ij_temp { ZERO }, h_ij_predict { ZERO };
-      metric.v3_Cov2PhysCov(x_Code, { h_11, h_22, h_33 }, h_ij_temp);
-      metric.v3_Cov2PhysCov(x_Code, h_ij_temp, h_ij_predict);
+      metric.template transform<Idx::D, Idx::PD>(x_Code,
+                                                 { h_11, h_22, h_33 },
+                                                 h_ij_temp);
+      metric.template transform<Idx::D, Idx::PD>(x_Code, h_ij_temp, h_ij_predict);
 
       vec_t<Dim::_3D> h_13_predict_temp { ZERO };
-      metric.v3_Cov2PhysCov(x_Code, { h_13, ZERO, ZERO }, h_ij_temp);
-      metric.v3_Cov2PhysCov(x_Code, { ZERO, ZERO, h_ij_temp[0] }, h_13_predict_temp);
+      metric.template transform<Idx::D, Idx::PD>(x_Code,
+                                                 { h_13, ZERO, ZERO },
+                                                 h_ij_temp);
+      metric.template transform<Idx::D, Idx::PD>(x_Code,
+                                                 { ZERO, ZERO, h_ij_temp[0] },
+                                                 h_13_predict_temp);
       const vec_t<Dim::_1D> h_13_predict { h_13_predict_temp[2] };
 
       vec_t<Dim::_3D> hij_expect { h11_expect, h22_expect, h33_expect };

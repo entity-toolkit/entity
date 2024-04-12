@@ -15,7 +15,7 @@
   auto b = -1; // <- value of `b` is known at the time of declaration (but may change later)
   const auto b = -1; // <- value of `b` is not expected to change later
   ```
-* Each header file needs to have a description at the top, consisting of the following fields:
+* Each header file has to have a description at the top, consisting of the following fields:
   * `@file` **[required]** the name of the file (as it should be imported)
   * `@brief` **[required]** brief description of what the file contains
   * `@implements` list of class/function/macros implementations
@@ -51,3 +51,18 @@
 # Recommendations
 
 * Do assertions on parameters and quantities whenever possible. Outside the kernels, use `raise::Error(message, HERE)` and `raise::ErrorIf(condition, message, HERE)` to throw exceptions. Inside the kernels, use `raise::KernelError(HERE, message, **args)`.
+
+* When writing class or function templates, it is always a good practice to ensure the template argument is valid (depending on the context). When doing that, use SFINAE (see, e.g., `arch/traits.h`) to test whether the type is valid. For example:
+  ```cpp
+  template <typename T, typename = void>
+  struct has_Foo : std::false_type {};
+
+  template <typename T>
+  struct has_Foo<T, std::void_t<decltype(&T::Foo)>>
+    : std::true_type {};
+
+  template <class B>
+  class A {
+    static_assert(has_Foo<B>::value, "B must have a Foo method");
+  };
+  ```

@@ -8,10 +8,9 @@
  *   - defaults.h
  *   - enums.h
  *   - arch/kokkos_aliases.h
- *   - framework/species.h
+ *   - framework/containers/species.h
  *   - utils/error.h
  *   - utils/formatting.h
- *   - utils/log.h
  *   - utils/numeric.h
  *   - metrics/kerr_schild.h
  *   - metrics/minkowski.h
@@ -23,6 +22,8 @@
  *   - parameters.cpp
  * @namespaces:
  *   - ntt::
+ * @macros:
+ *   - MPI_ENABLED
  * @note The parameters are read from the toml file and stored in a container
  * @note Some of the parameters are inferred from the context (see input.example.toml)
  * @note A proper metric is used to infer the minimum cell size/volume etc.
@@ -38,11 +39,16 @@
 namespace ntt {
 
   struct SimulationParams : public prm::Parameters {
+    SimulationParams() = default;
     SimulationParams(const toml::value&);
-    ~SimulationParams() = default;
 
-  private:
-    const toml::value raw_data;
+    SimulationParams& operator=(const SimulationParams& other) {
+      vars     = std::move(other.vars);
+      promises = std::move(other.promises);
+      return *this;
+    }
+
+    ~SimulationParams() = default;
   };
 
 } // namespace ntt

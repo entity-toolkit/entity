@@ -1,5 +1,5 @@
 /**
- * @file current_deposit.hpp
+ * @file kernels/current_deposit.hpp
  * @brief Covariant algorithms for the current deposition
  * @implements
  *   - ntt::DepositCurrents_kernel<>
@@ -12,8 +12,8 @@
  *   - ntt::
  */
 
-#ifndef KERNELS_CURRENTS_DEPOSIT_H
-#define KERNELS_CURRENTS_DEPOSIT_H
+#ifndef KERNELS_CURRENTS_DEPOSIT_HPP
+#define KERNELS_CURRENTS_DEPOSIT_HPP
 
 #include "enums.h"
 #include "global.h"
@@ -28,22 +28,24 @@
 namespace ntt {
 
   /**
-   * @brief Algorithm for the current deposition.
-   * @tparam D Dimension.
+   * @brief Algorithm for the current deposition
    */
-  template <Dimension D, SimEngine::type S, class M>
+  template <SimEngine::type S, class M>
   class DepositCurrents_kernel {
-    scatter_ndfield_t<D, 3> J;
-    array_t<int*>           i1, i2, i3;
-    array_t<int*>           i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*>      dx1, dx2, dx3;
-    array_t<prtldx_t*>      dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>        ux1, ux2, ux3;
-    array_t<real_t*>        phi;
-    array_t<real_t*>        weight;
-    array_t<short*>         tag;
-    const M                 metric;
-    const real_t            charge, inv_dt;
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    scatter_ndfield_t<D, 3>  J;
+    const array_t<int*>      i1, i2, i3;
+    const array_t<int*>      i1_prev, i2_prev, i3_prev;
+    const array_t<prtldx_t*> dx1, dx2, dx3;
+    const array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
+    const array_t<real_t*>   ux1, ux2, ux3;
+    const array_t<real_t*>   phi;
+    const array_t<real_t*>   weight;
+    const array_t<short*>    tag;
+    const M                  metric;
+    const real_t             charge, inv_dt;
 
   public:
     /**
@@ -390,10 +392,12 @@ namespace ntt {
       getPrtlPos(p, xp);
       auto inv_energy { ZERO };
       if constexpr (S == SimEngine::SRPIC) {
-        metric.v3_Cart2Cntrv(xp, { ux1(p), ux2(p), ux3(p) }, vp);
+        metric.template transform_xyz<Idx::XYZ, Idx::U>(xp,
+                                                        { ux1(p), ux2(p), ux3(p) },
+                                                        vp);
         inv_energy = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
       } else {
-        metric.v3_Cov2Cntrv(xp, { ux1(p), ux2(p), ux3(p) }, vp);
+        metric.template transform<Idx::D, Idx::U>(xp, { ux1(p), ux2(p), ux3(p) }, vp);
         inv_energy = ONE / math::sqrt(ONE + ux1(p) * vp[0] + ux2(p) * vp[1] +
                                       ux3(p) * vp[2]);
       }
@@ -410,4 +414,4 @@ namespace ntt {
 
 #undef i_di_to_Xi
 
-#endif // KERNELS_CURRENTS_DEPOSIT_H
+#endif // KERNELS_CURRENTS_DEPOSIT_HPP
