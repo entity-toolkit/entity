@@ -574,22 +574,22 @@ namespace ntt {
       std::pair<real_t, real_t> dx0_V0;
       if (metric_enum == Metric::Minkowski) {
         if (dim == Dim::_1D) {
-          dx0_V0 = get_dx0_V0<Minkowski<Dim::_1D>>(res, ext, params);
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_1D>>(res, ext, params);
         } else if (dim == Dim::_2D) {
-          dx0_V0 = get_dx0_V0<Minkowski<Dim::_2D>>(res, ext, params);
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_2D>>(res, ext, params);
         } else {
-          dx0_V0 = get_dx0_V0<Minkowski<Dim::_3D>>(res, ext, params);
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_3D>>(res, ext, params);
         }
       } else if (metric_enum == Metric::Spherical) {
-        dx0_V0 = get_dx0_V0<Spherical<Dim::_2D>>(res, ext, params);
+        dx0_V0 = get_dx0_V0<metric::Spherical<Dim::_2D>>(res, ext, params);
       } else if (metric_enum == Metric::QSpherical) {
-        dx0_V0 = get_dx0_V0<QSpherical<Dim::_2D>>(res, ext, params);
+        dx0_V0 = get_dx0_V0<metric::QSpherical<Dim::_2D>>(res, ext, params);
       } else if (metric_enum == Metric::Kerr_Schild) {
-        dx0_V0 = get_dx0_V0<KerrSchild<Dim::_2D>>(res, ext, params);
+        dx0_V0 = get_dx0_V0<metric::KerrSchild<Dim::_2D>>(res, ext, params);
       } else if (metric_enum == Metric::Kerr_Schild_0) {
-        dx0_V0 = get_dx0_V0<KerrSchild0<Dim::_2D>>(res, ext, params);
+        dx0_V0 = get_dx0_V0<metric::KerrSchild0<Dim::_2D>>(res, ext, params);
       } else if (metric_enum == Metric::QKerr_Schild) {
-        dx0_V0 = get_dx0_V0<QKerrSchild<Dim::_2D>>(res, ext, params);
+        dx0_V0 = get_dx0_V0<metric::QKerrSchild<Dim::_2D>>(res, ext, params);
       }
       auto [dx0, V0] = dx0_V0;
       set("scales.dx0", dx0);

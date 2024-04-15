@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 using namespace ntt;
+using namespace metric;
 
 template <class SpDist, class M>
 struct Caller {

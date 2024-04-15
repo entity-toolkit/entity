@@ -13,6 +13,9 @@
 #include <stdexcept>
 #include <string>
 
+using namespace ntt;
+using namespace metric;
+
 void errorIf(bool condition, const std::string& message) {
   if (condition) {
     throw std::runtime_error(message);
@@ -36,6 +39,7 @@ void testFaraday<Dim::_1D>(const std::vector<std::size_t>& res) {
   errorIf(res.size() != 1, "res.size() != 1");
 
   using namespace ntt;
+  using namespace metric;
   const real_t sx     = constant::TWO_PI;
   const auto   metric = Minkowski<Dim::_1D> { res, { { ZERO, sx } } };
   auto emfield = ndfield_t<Dim::_1D, 6> { "emfield", res[0] + 2 * N_GHOSTS };
@@ -90,7 +94,6 @@ template <>
 void testFaraday<Dim::_2D>(const std::vector<std::size_t>& res) {
   errorIf(res.size() != 2, "res.size() != 2");
 
-  using namespace ntt;
   const real_t sx = constant::TWO_PI, sy = 4.0 * constant::PI;
   const auto   metric = Minkowski<Dim::_2D> {
     res,
@@ -297,8 +300,6 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
 
   try {
-    using namespace ntt;
-
     testFaraday<Dim::_1D>({ 128 });
     testFaraday<Dim::_2D>({ 64, 128 });
     testFaraday<Dim::_3D>({ 32, 64, 32 });

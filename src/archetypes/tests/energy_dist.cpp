@@ -17,6 +17,7 @@
 #include <iostream>
 
 using namespace ntt;
+using namespace metric;
 
 template <class EnrgDist, Dimension PrtlDim>
 struct Caller {

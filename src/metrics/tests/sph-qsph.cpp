@@ -112,6 +112,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    using namespace metric;
     const auto res = std::vector<std::size_t> { 64, 32 };
     const auto ext = boundaries_t<real_t> {
       {1.0,         10.0},

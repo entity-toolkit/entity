@@ -156,6 +156,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    using namespace metric;
     testMetric<KerrSchild<Dim::_2D>>(
       {
         64,

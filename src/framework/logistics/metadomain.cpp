@@ -295,13 +295,13 @@ namespace ntt {
 #endif
   }
 
-  template struct Metadomain<Minkowski<Dim::_1D>>;
-  template struct Metadomain<Minkowski<Dim::_2D>>;
-  template struct Metadomain<Minkowski<Dim::_3D>>;
-  template struct Metadomain<Spherical<Dim::_2D>>;
-  template struct Metadomain<QSpherical<Dim::_2D>>;
-  template struct Metadomain<KerrSchild<Dim::_2D>>;
-  template struct Metadomain<QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<KerrSchild0<Dim::_2D>>;
+  template struct Metadomain<metric::Minkowski<Dim::_1D>>;
+  template struct Metadomain<metric::Minkowski<Dim::_2D>>;
+  template struct Metadomain<metric::Minkowski<Dim::_3D>>;
+  template struct Metadomain<metric::Spherical<Dim::_2D>>;
+  template struct Metadomain<metric::QSpherical<Dim::_2D>>;
+  template struct Metadomain<metric::KerrSchild<Dim::_2D>>;
+  template struct Metadomain<metric::QKerrSchild<Dim::_2D>>;
+  template struct Metadomain<metric::KerrSchild0<Dim::_2D>>;
 
 } // namespace ntt

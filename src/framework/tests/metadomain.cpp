@@ -5,7 +5,6 @@
 
 #include "arch/directions.h"
 #include "utils/error.h"
-// #include "utils/plog.h"
 
 #include "metrics/minkowski.h"
 #include "metrics/qspherical.h"
@@ -17,11 +16,11 @@
 #include <stdexcept>
 #include <vector>
 
-using namespace ntt;
-
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
+    using namespace ntt;
+    using namespace metric;
     {
       const std::vector<std::size_t> res { 64, 32 };
       const boundaries_t<real_t>     extent {

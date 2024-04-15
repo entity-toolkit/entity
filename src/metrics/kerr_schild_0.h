@@ -4,7 +4,7 @@
  * Kerr metric with zero spin and zero mass
  * in Kerr-Schild coordinates (rg=c=1)
  * @implements
- *   - ntt::KerrSchild0<> : ntt::MetricBase<>
+ *   - metric::KerrSchild0<> : metric::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -12,7 +12,7 @@
  *   - arch/kokkos_aliases.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * !TODO
  *   - 3D version of find_dxMin
  */
@@ -33,7 +33,7 @@
 #include <utility>
 #include <vector>
 
-namespace ntt {
+namespace metric {
 
   template <Dimension D>
   class KerrSchild0 : public MetricBase<D> {
@@ -45,9 +45,9 @@ namespace ntt {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr const char* Label { "kerr_schild_0" };
+    static constexpr const char*      Label { "kerr_schild_0" };
     static constexpr Dimension        PrtlDim { D };
-    static constexpr Coord::type      CoordType { Coord::Sph };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -344,6 +344,6 @@ namespace ntt {
       }
     }
   };
-} // namespace ntt
+} // namespace metric
 
 #endif // METRICS_KERR_SCHILD_0_H

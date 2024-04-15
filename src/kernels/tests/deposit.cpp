@@ -50,10 +50,10 @@ void put_value(array_t<T*> arr, T value, int i) {
 }
 
 template <typename M, ntt::SimEngine::type S>
-void testDeposit(const std::vector<std::size_t>&               res,
-                 const boundaries_t<real_t>& ext,
-                 const std::map<std::string, real_t>&          params = {},
-                 const real_t                                  acc    = ONE) {
+void testDeposit(const std::vector<std::size_t>&      res,
+                 const boundaries_t<real_t>&          ext,
+                 const std::map<std::string, real_t>& params = {},
+                 const real_t                         acc    = ONE) {
   static_assert(M::Dim == 2);
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   using namespace ntt;
@@ -182,6 +182,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    using namespace metric;
 
     testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC>(
       {

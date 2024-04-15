@@ -94,9 +94,9 @@ void testParticles(const int&             index,
 }
 
 auto main(int argc, char** argv) -> int {
-  using namespace ntt;
-  GlobalInitialize(argc, argv);
+  Kokkos::initialize(argc, argv);
   try {
+    using namespace ntt;
     testParticles<Dim::_1D, Coord::Cart>(1,
                                          "e-",
                                          1.0,
@@ -134,9 +134,9 @@ auto main(int argc, char** argv) -> int {
                                          Cooling::NONE);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
-    GlobalFinalize();
+    Kokkos::finalize();
     return 1;
   }
-  GlobalFinalize();
+  Kokkos::finalize();
   return 0;
 }

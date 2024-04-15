@@ -2,7 +2,7 @@
  * @file metrics/spherical.h
  * @brief Flat space-time spherical metric class diag(-1, 1, r^2, r^2, sin(th)^2)
  * @implements
- *   - ntt::Spherical<> : ntt::MetricBase<>
+ *   - metric::Spherical<> : metric::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -11,7 +11,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * !TODO
  *   - 3D version of find_dxMin
  */
@@ -32,7 +32,7 @@
 #include <string_view>
 #include <vector>
 
-namespace ntt {
+namespace metric {
 
   template <Dimension D>
   class Spherical : public MetricBase<D> {
@@ -43,9 +43,9 @@ namespace ntt {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr const char* Label { "spherical" };
-    static constexpr Dimension   PrtlDim { Dim::_3D };
-    static constexpr Coord::type CoordType { Coord::Sph };
+    static constexpr const char*      Label { "spherical" };
+    static constexpr Dimension        PrtlDim { Dim::_3D };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -259,7 +259,8 @@ namespace ntt {
      * @note tetrad/sph <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
+      -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {
@@ -386,6 +387,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace metric
 
 #endif // METRICS_SPHERICAL_H

@@ -81,9 +81,10 @@ struct Checker {
       raise::KernelError(HERE, "phi != buff_x3");
     }
     vec_t<Dim::_3D> u_Phys { ZERO };
-    metric.template transform_xyz<Idx::XYZ, Idx::T>({ x1, x2, phi(pold) },
-                      { ux1(pold), ux2(pold), ux3(pold) },
-                      u_Phys);
+    metric.template transform_xyz<Idx::XYZ, Idx::T>(
+      { x1, x2, phi(pold) },
+      { ux1(pold), ux2(pold), ux3(pold) },
+      u_Phys);
     if (not cmp::AlmostEqual(u_Phys[0], buff_ux1(p))) {
       raise::KernelError(HERE, "u_Phys[0] != buff_ux1");
     }
@@ -136,8 +137,6 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
 
   const M metric { res, extent, params };
 
-  const auto        nx1   = res[0];
-  const auto        nx2   = res[1];
   const std::size_t nprtl = 100;
 
   array_t<int*>      i1 { "i1", nprtl };
@@ -158,8 +157,8 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
     nprtl,
     Lambda(index_t p) {
       // init "random" values
-      i1(p)     = p % 20;
-      i2(p)     = (p + nprtl) % 32;
+      i1(p)     = p % 10;
+      i2(p)     = (p + nprtl) % 10;
       dx1(p)    = (prtldx_t)(p) / (prtldx_t)(2 * nprtl);
       dx2(p)    = (prtldx_t)(1.0) - (prtldx_t)(p) / (prtldx_t)(2 * nprtl);
       phi(p)    = constant::TWO_PI * (real_t)(p) / (real_t)(nprtl);
@@ -227,7 +226,7 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
 
   try {
-    using namespace ntt;
+    using namespace metric;
 
     testPrtl2PhysSR<Spherical<Dim::_2D>>(
       {

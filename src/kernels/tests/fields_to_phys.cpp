@@ -30,6 +30,7 @@ void errorIf(bool condition, const std::string& message) {
 }
 
 using namespace ntt;
+using namespace metric;
 
 template <typename M>
 void testFlds2Phys(const std::vector<std::size_t>&      res,

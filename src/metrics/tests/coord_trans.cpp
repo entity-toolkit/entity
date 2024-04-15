@@ -123,6 +123,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    using namespace metric;
     const auto res2d     = std::vector<std::size_t> { 64, 32 };
     const auto res3d     = std::vector<std::size_t> { 64, 32, 16 };
     const auto ext1dcart = boundaries_t<real_t> {

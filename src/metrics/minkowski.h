@@ -2,7 +2,7 @@
  * @file metrics/minkowski.h
  * @brief Minkowski metric class: diag(-1, 1, 1, 1)
  * @implements
- *   - ntt::Minkowski<> : ntt::MetricBase<>
+ *   - metric::Minkowski<> : metric::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -12,7 +12,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * @note Cell sizes in each direction dx1 = dx2 = dx3 are assumed equal
  */
 
@@ -35,16 +35,16 @@
 #include <utility>
 #include <vector>
 
-namespace ntt {
+namespace metric {
 
   template <Dimension D>
   class Minkowski : public MetricBase<D> {
     const real_t dx, dx_inv;
 
   public:
-    static constexpr const char* Label { "minkowski" };
-    static constexpr Dimension   PrtlDim { D };
-    static constexpr Coord::type CoordType { Coord::Cart };
+    static constexpr const char*      Label { "minkowski" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::Cart };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -241,7 +241,8 @@ namespace ntt {
      * @note tetrad/cart <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
+      -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {
@@ -308,6 +309,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace metric
 
 #endif

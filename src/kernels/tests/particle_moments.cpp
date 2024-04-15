@@ -23,6 +23,9 @@
 #include <utility>
 #include <vector>
 
+using namespace ntt;
+using namespace metric;
+
 void errorIf(bool condition, const std::string& message) {
   if (condition) {
     throw std::runtime_error(message);
@@ -39,8 +42,6 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
-using namespace ntt;
-
 template <SimEngine::type S, typename M>
 void testParticleMoments(const std::vector<std::size_t>&      res,
                          const boundaries_t<real_t>&          ext,
@@ -55,7 +56,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   } else {
     extent = {
       ext[0],
-      { ZERO, constant::PI }
+      {ZERO, constant::PI}
     };
   }
 
@@ -103,8 +104,8 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   auto boundaries = boundaries_t<FldsBC> {};
   if constexpr (M::CoordType != Coord::Cart) {
     boundaries = {
-      { FldsBC::CUSTOM, FldsBC::CUSTOM },
-      {   FldsBC::AXIS,   FldsBC::AXIS }
+      {FldsBC::CUSTOM, FldsBC::CUSTOM},
+      {  FldsBC::AXIS,   FldsBC::AXIS}
     };
   }
 

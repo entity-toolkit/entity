@@ -2,7 +2,7 @@
  * @file metrics/kerr_schild.h
  * @brief Kerr metric in Kerr-Schild coordinates (rg=c=1)
  * @implements
- *   - ntt::KerrSchild<> : ntt::MetricBase<>
+ *   - metric::KerrSchild<> : metric::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - arch/kokkos_aliases.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * !TODO
  *   - 3D version of find_dxMin
  */
@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-namespace ntt {
+namespace metric {
 
   template <Dimension D>
   class KerrSchild : public MetricBase<D> {
@@ -64,9 +64,9 @@ namespace ntt {
     }
 
   public:
-    static constexpr const char* Label { "kerr_schild" };
-    static constexpr Dimension   PrtlDim { D };
-    static constexpr Coord::type CoordType { Coord::Sph };
+    static constexpr const char*      Label { "kerr_schild" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -408,6 +408,6 @@ namespace ntt {
       }
     }
   };
-} // namespace ntt
+} // namespace metric
 
 #endif // METRICS_KERR_SCHILD_H

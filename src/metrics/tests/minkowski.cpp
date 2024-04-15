@@ -35,6 +35,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    using namespace metric;
     {
       // catch unequal dx error
       try {

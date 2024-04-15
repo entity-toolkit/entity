@@ -1,6 +1,5 @@
-
 /**
- * @file framework/logistics/mesh.h
+ * @file framework/logistics/grid.h
  * @brief Grid class containing information about the discretization
  * @implements
  *   - ntt::Grid<>

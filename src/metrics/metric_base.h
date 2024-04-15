@@ -2,12 +2,12 @@
  * @file metrics/metric_base.h
  * @brief Base class for all the metrics
  * @implements
- *   - ntt::MetricBase
+ *   - metric::MetricBase
  * @depends:
  *   - enums.h
  *   - global.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * @note
  * Other metrics inherit from this class using the CRTP pattern
  * see: https://en.cppreference.com/w/cpp/language/crtp
@@ -56,7 +56,7 @@
 #include <utility>
 #include <vector>
 
-namespace ntt {
+namespace metric {
 
   /**
    * Virtual parent metric class template: h_ij
@@ -105,6 +105,6 @@ namespace ntt {
     const real_t x3_min, x3_max;
   };
 
-} // namespace ntt
+} // namespace metric
 
 #endif // METRICS_METRIC_BASE_H

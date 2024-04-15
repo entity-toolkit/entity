@@ -3,7 +3,7 @@
  * @brief
  * Kerr metric in qspherical Kerr-Schild coordinates (rg=c=1)
  * @implements
- *   - ntt::QKerrSchild<> : ntt::MetricBase<>
+ *   - metric::QKerrSchild<> : metric::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -12,7 +12,7 @@
  *   - utils/comparators.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * !TODO
  *   - 3D version of find_dxMin
  */
@@ -29,7 +29,7 @@
 
 #include "metrics/metric_base.h"
 
-namespace ntt {
+namespace metric {
 
   template <Dimension D>
   class QKerrSchild : public MetricBase<D> {
@@ -64,9 +64,9 @@ namespace ntt {
     }
 
   public:
-    static constexpr const char* Label { "qkerr_schild" };
-    static constexpr Dimension   PrtlDim { D };
-    static constexpr Coord::type CoordType { Coord::Qsph };
+    static constexpr const char*      Label { "qkerr_schild" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::Qsph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -495,6 +495,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace metric
 
 #endif // METRICS_QKERR_SCHILD_H

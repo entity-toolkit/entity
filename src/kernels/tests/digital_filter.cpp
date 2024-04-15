@@ -30,9 +30,9 @@ void errorIf(bool condition, const std::string& message) {
 }
 
 template <typename M>
-void testFilter(const std::vector<std::size_t>&               res,
-                const boundaries_t<real_t>& ext,
-                const std::map<std::string, real_t>&          params = {}) {
+void testFilter(const std::vector<std::size_t>&      res,
+                const boundaries_t<real_t>&          ext,
+                const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 2);
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   using namespace ntt;
@@ -126,6 +126,7 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
+    using namespace metric;
 
     testFilter<Minkowski<Dim::_2D>>(
       {

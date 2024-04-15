@@ -13,6 +13,9 @@
 #include <stdexcept>
 #include <string>
 
+using namespace ntt;
+using namespace metric;
+
 void errorIf(bool condition, const std::string& message) {
   if (condition) {
     throw std::runtime_error(message);
@@ -35,7 +38,6 @@ template <>
 void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
   errorIf(res.size() != 1, "res.size() != 1");
 
-  using namespace ntt;
   const real_t sx     = constant::TWO_PI;
   const auto   metric = Minkowski<Dim::_1D> { res, { { ZERO, sx } } };
   auto emfield = ndfield_t<Dim::_1D, 6> { "emfield", res[0] + 2 * N_GHOSTS };
@@ -89,6 +91,7 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
   errorIf(res.size() != 2, "res.size() != 2");
 
   using namespace ntt;
+  using namespace metric;
   const real_t sx = constant::TWO_PI, sy = 4.0 * constant::PI;
   const auto   metric = Minkowski<Dim::_2D> {
     res,

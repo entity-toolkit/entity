@@ -11,6 +11,7 @@
 #include <stdexcept>
 
 using namespace ntt;
+using namespace metric;
 
 template <Dimension D>
 struct ConstantFiller {

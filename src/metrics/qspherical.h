@@ -4,7 +4,7 @@
  * Flat space-time qspherical metric class xi = log (r - r0), and eta,
  * where: theta = eta + 2h*eta * (PI - 2eta) * (PI - eta) / PI^2
  * @implements
- *   - ntt::QSpherical<> : ntt::MetricBase<>
+ *   - metric::QSpherical<> : metric::MetricBase<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -13,7 +13,7 @@
  *   - utils/comparators.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - metric::
  * !TODO
  *   - 3D version of find_dxMin
  */
@@ -35,7 +35,7 @@
 #include <utility>
 #include <vector>
 
-namespace ntt {
+namespace metric {
 
   template <Dimension D>
   class QSpherical : public MetricBase<D> {
@@ -48,9 +48,9 @@ namespace ntt {
     const real_t dchi_inv, deta_inv, dphi_inv;
 
   public:
-    static constexpr const char* Label { "qspherical" };
-    static constexpr Dimension   PrtlDim = Dim::_3D;
-    static constexpr Coord::type CoordType { Coord::Qsph };
+    static constexpr const char*      Label { "qspherical" };
+    static constexpr Dimension        PrtlDim = Dim::_3D;
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::Qsph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -291,7 +291,8 @@ namespace ntt {
      * @note tetrad/sph <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
+      -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {
@@ -477,6 +478,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace metric
 
 #endif // METRICS_QSPHERICAL_H

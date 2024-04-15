@@ -12,11 +12,11 @@
 #include <utility>
 #include <vector>
 
-using namespace ntt;
-
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
+    using namespace ntt;
+    using namespace metric;
     const auto res = std::vector<std::size_t> { 10, 10, 10 };
     const auto ext = boundaries_t<real_t> {
       {-1.0, 1.0},
