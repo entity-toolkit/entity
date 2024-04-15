@@ -42,9 +42,9 @@ namespace ntt {
     const real_t dx, dx_inv;
 
   public:
-    static constexpr std::string_view Label { "minkowski" };
-    static constexpr Dimension        PrtlDim { D };
-    static constexpr Coord::type      CoordType { Coord::Cart };
+    static constexpr const char* Label { "minkowski" };
+    static constexpr Dimension   PrtlDim { D };
+    static constexpr Coord::type CoordType { Coord::Cart };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -227,7 +227,8 @@ namespace ntt {
      * @note for compatibility purposes
      */
     template <Crd in, Crd out>
-    Inline void convert_xyz(const coord_t<D>& x_in, coord_t<D>& x_out) const {
+    Inline void convert_xyz(const coord_t<PrtlDim>& x_in,
+                            coord_t<PrtlDim>&       x_out) const {
       static_assert((in == Crd::Cd && out == Crd::XYZ) ||
                       (in == Crd::XYZ && out == Crd::Cd),
                     "Invalid coordinate conversion");
@@ -240,8 +241,7 @@ namespace ntt {
      * @note tetrad/cart <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
-      -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {

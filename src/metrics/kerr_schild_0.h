@@ -45,7 +45,7 @@ namespace ntt {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr std::string_view Label { "kerr_schild_0" };
+    static constexpr const char* Label { "kerr_schild_0" };
     static constexpr Dimension        PrtlDim { D };
     static constexpr Coord::type      CoordType { Coord::Sph };
     using MetricBase<D>::x1_min;

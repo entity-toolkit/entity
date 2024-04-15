@@ -5,6 +5,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
+#include "utils/formatting.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
@@ -41,8 +42,8 @@ inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 using namespace ntt;
 
 template <SimEngine::type S, typename M>
-void testParticleMoments(const std::vector<std::size_t>&               res,
-                         const boundaries_t<real_t>& ext,
+void testParticleMoments(const std::vector<std::size_t>&      res,
+                         const boundaries_t<real_t>&          ext,
                          const std::map<std::string, real_t>& params = {},
                          const real_t                         acc    = ONE) {
   static_assert(M::Dim == 2);
@@ -54,7 +55,7 @@ void testParticleMoments(const std::vector<std::size_t>&               res,
   } else {
     extent = {
       ext[0],
-      {ZERO, constant::PI}
+      { ZERO, constant::PI }
     };
   }
 
@@ -102,8 +103,8 @@ void testParticleMoments(const std::vector<std::size_t>&               res,
   auto boundaries = boundaries_t<FldsBC> {};
   if constexpr (M::CoordType != Coord::Cart) {
     boundaries = {
-      {FldsBC::CUSTOM, FldsBC::CUSTOM},
-      {  FldsBC::AXIS,   FldsBC::AXIS}
+      { FldsBC::CUSTOM, FldsBC::CUSTOM },
+      {   FldsBC::AXIS,   FldsBC::AXIS }
     };
   }
 
@@ -227,9 +228,17 @@ void testParticleMoments(const std::vector<std::size_t>&               res,
     const real_t gamma_2_expect = math::sqrt(1.0 + 9.0 + 4.0 + 1.0);
 
     errorIf(not cmp::AlmostEqual(gamma_1, gamma_1_expect, epsilon * acc),
-            "wrong gamma_1");
+            fmt::format("wrong gamma_1 %.8e %.8e for %dD %s",
+                        gamma_1,
+                        gamma_1_expect,
+                        metric.Dim,
+                        metric.Label));
     errorIf(not cmp::AlmostEqual(gamma_2, gamma_2_expect, epsilon * acc),
-            "wrong gamma_2");
+            fmt::format("wrong gamma_2 %.8e %.8e for %dD %s",
+                        gamma_2,
+                        gamma_2_expect,
+                        metric.Dim,
+                        metric.Label));
   }
 }
 
@@ -253,7 +262,8 @@ auto main(int argc, char* argv[]) -> int {
         10
     },
       { { 1.0, 2.0 } },
-      {});
+      {},
+      10);
 
     testParticleMoments<SimEngine::SRPIC, QSpherical<Dim::_2D>>(
       {

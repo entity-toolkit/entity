@@ -64,9 +64,9 @@ namespace ntt {
     }
 
   public:
-    static constexpr std::string_view Label { "qkerr_schild" };
-    static constexpr Dimension        PrtlDim { D };
-    static constexpr Coord::type      CoordType { Coord::Qsph };
+    static constexpr const char* Label { "qkerr_schild" };
+    static constexpr Dimension   PrtlDim { D };
+    static constexpr Coord::type CoordType { Coord::Qsph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
