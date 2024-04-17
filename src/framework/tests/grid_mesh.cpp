@@ -1,3 +1,5 @@
+#include "global.h"
+
 #include "utils/comparators.h"
 #include "utils/error.h"
 
@@ -24,16 +26,16 @@ auto main(int argc, char* argv[]) -> int {
       {-1.0, 1.0}
     };
     auto mesh = Mesh<Minkowski<Dim::_3D>>(res, ext, {});
-    for (auto d = 0; d < 3; ++d) {
+    for (const auto& d : { in::x1, in::x2, in::x3 }) {
       raise::ErrorIf(mesh.i_min(d) != N_GHOSTS, "i_min != N_GHOSTS", HERE);
-      raise::ErrorIf(mesh.i_max(d) != res[d] + N_GHOSTS,
+      raise::ErrorIf(mesh.i_max(d) != res[(unsigned short)d] + N_GHOSTS,
                      "i_max != res+N_GHOSTS",
                      HERE);
-      raise::ErrorIf(mesh.n_active(d) != res[d], "n_active != res", HERE);
-      raise::ErrorIf(mesh.n_all(d) != res[d] + 2 * N_GHOSTS,
+      raise::ErrorIf(mesh.n_active(d) != res[(unsigned short)d], "n_active != res", HERE);
+      raise::ErrorIf(mesh.n_all(d) != res[(unsigned short)d] + 2 * N_GHOSTS,
                      "n_all != res+2*N_GHOSTS",
                      HERE);
-      raise::ErrorIf(mesh.extent(d) != ext[d], "extent != ext", HERE);
+      raise::ErrorIf(mesh.extent(d) != ext[(unsigned short)d], "extent != ext", HERE);
     }
     raise::ErrorIf(not cmp::AlmostEqual(mesh.metric.dxMin(), (real_t)0.1154700538),
                    "dxMin wrong",

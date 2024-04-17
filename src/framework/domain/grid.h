@@ -85,13 +85,13 @@ namespace ntt {
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
-    auto i_min(unsigned short i) const -> std::size_t {
+    auto i_min(in i) const -> std::size_t {
       switch (i) {
-        case 0:
+        case in::x1:
           return (m_resolution.size() > 0) ? N_GHOSTS : 0;
-        case 1:
+        case in::x2:
           return (m_resolution.size() > 1) ? N_GHOSTS : 0;
-        case 2:
+        case in::x3:
           return (m_resolution.size() > 2) ? N_GHOSTS : 0;
         default:
           raise::Error("invalid dimension", HERE);
@@ -100,13 +100,13 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto i_max(unsigned short i) const -> std::size_t {
+    auto i_max(in i) const -> std::size_t {
       switch (i) {
-        case 0:
+        case in::x1:
           return (m_resolution.size() > 0) ? (m_resolution[0] + N_GHOSTS) : 1;
-        case 1:
+        case in::x2:
           return (m_resolution.size() > 1) ? (m_resolution[1] + N_GHOSTS) : 1;
-        case 2:
+        case in::x3:
           return (m_resolution.size() > 2) ? (m_resolution[2] + N_GHOSTS) : 1;
         default:
           raise::Error("invalid dimension", HERE);
@@ -115,13 +115,13 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto n_active(unsigned short i) const -> std::size_t {
+    auto n_active(in i) const -> std::size_t {
       switch (i) {
-        case 0:
+        case in::x1:
           return (m_resolution.size() > 0) ? m_resolution[0] : 1;
-        case 1:
+        case in::x2:
           return (m_resolution.size() > 1) ? m_resolution[1] : 1;
-        case 2:
+        case in::x3:
           return (m_resolution.size() > 2) ? m_resolution[2] : 1;
         default:
           raise::Error("invalid dimension", HERE);
@@ -135,13 +135,13 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto n_all(unsigned short i) const -> std::size_t {
+    auto n_all(in i) const -> std::size_t {
       switch (i) {
-        case 0:
+        case in::x1:
           return (m_resolution.size() > 0) ? (m_resolution[0] + 2 * N_GHOSTS) : 1;
-        case 1:
+        case in::x2:
           return (m_resolution.size() > 1) ? (m_resolution[1] + 2 * N_GHOSTS) : 1;
-        case 2:
+        case in::x3:
           return (m_resolution.size() > 2) ? (m_resolution[2] + 2 * N_GHOSTS) : 1;
         default:
           raise::Error("invalid dimension", HERE);

@@ -71,15 +71,15 @@ namespace ntt {
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
-    auto extent(unsigned short i) const -> std::pair<real_t, real_t> {
+    auto extent(in i) const -> std::pair<real_t, real_t> {
       switch (i) {
-        case 0:
+        case in::x1:
           return (m_extent.size() > 0) ? m_extent[0]
                                        : std::pair<real_t, real_t> { ZERO, ZERO };
-        case 1:
+        case in::x2:
           return (m_extent.size() > 1) ? m_extent[1]
                                        : std::pair<real_t, real_t> { ZERO, ZERO };
-        case 2:
+        case in::x3:
           return (m_extent.size() > 2) ? m_extent[2]
                                        : std::pair<real_t, real_t> { ZERO, ZERO };
         default:

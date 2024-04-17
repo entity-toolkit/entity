@@ -55,27 +55,27 @@ namespace ntt {
       switch (region[i]) {
         case CellLayer::allLayer:
           imin[i] = 0;
-          imax[i] = n_all(i);
+          imax[i] = n_all((in)i);
           break;
         case CellLayer::activeLayer:
-          imin[i] = i_min(i);
-          imax[i] = i_max(i);
+          imin[i] = i_min((in)i);
+          imax[i] = i_max((in)i);
           break;
         case CellLayer::minGhostLayer:
           imin[i] = 0;
-          imax[i] = i_min(i);
+          imax[i] = i_min((in)i);
           break;
         case CellLayer::minActiveLayer:
-          imin[i] = i_min(i);
-          imax[i] = i_min(i) + N_GHOSTS;
+          imin[i] = i_min((in)i);
+          imax[i] = i_min((in)i) + N_GHOSTS;
           break;
         case CellLayer::maxActiveLayer:
-          imin[i] = i_max(i) - N_GHOSTS;
-          imax[i] = i_max(i);
+          imin[i] = i_max((in)i) - N_GHOSTS;
+          imax[i] = i_max((in)i);
           break;
         case CellLayer::maxGhostLayer:
-          imin[i] = i_max(i);
-          imax[i] = n_all(i);
+          imin[i] = i_max((in)i);
+          imax[i] = n_all((in)i);
           break;
         default:
           raise::Error("Invalid cell layer", HERE);
@@ -93,27 +93,27 @@ namespace ntt {
       switch (region[i]) {
         case CellLayer::allLayer:
           imin[i] = 0;
-          imax[i] = n_all(i);
+          imax[i] = n_all((in)i);
           break;
         case CellLayer::activeLayer:
-          imin[i] = i_min(i);
-          imax[i] = i_max(i);
+          imin[i] = i_min((in)i);
+          imax[i] = i_max((in)i);
           break;
         case CellLayer::minGhostLayer:
           imin[i] = 0;
-          imax[i] = i_min(i);
+          imax[i] = i_min((in)i);
           break;
         case CellLayer::minActiveLayer:
-          imin[i] = i_min(i);
-          imax[i] = i_min(i) + N_GHOSTS;
+          imin[i] = i_min((in)i);
+          imax[i] = i_min((in)i) + N_GHOSTS;
           break;
         case CellLayer::maxActiveLayer:
-          imin[i] = i_max(i) - N_GHOSTS;
-          imax[i] = i_max(i);
+          imin[i] = i_max((in)i) - N_GHOSTS;
+          imax[i] = i_max((in)i);
           break;
         case CellLayer::maxGhostLayer:
-          imin[i] = i_max(i);
-          imax[i] = n_all(i);
+          imin[i] = i_max((in)i);
+          imax[i] = n_all((in)i);
           break;
         default:
           raise::Error("Invalid cell layer", HERE);
@@ -171,8 +171,8 @@ namespace ntt {
                        (ranges[i][1] > (int)N_GHOSTS),
                      "Invalid cell layer picked",
                      HERE);
-      imin[i] = i_min(i) + ranges[i][0];
-      imax[i] = i_max(i) + ranges[i][1];
+      imin[i] = i_min((in)i) + ranges[i][0];
+      imax[i] = i_max((in)i) + ranges[i][1];
       raise::ErrorIf(imin[i] >= imax[i], "Invalid cell layer picked", HERE);
     }
     return CreateRangePolicy<D>(imin, imax);

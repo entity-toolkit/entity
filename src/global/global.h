@@ -175,6 +175,12 @@ enum class Crd {
   Sph, // spherical
 };
 
+enum class in : unsigned short {
+  x1 = 0,
+  x2 = 1,
+  x3 = 2,
+};
+
 template <Dimension D>
 using box_region_t = CellLayer[D];
 

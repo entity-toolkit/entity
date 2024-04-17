@@ -58,15 +58,15 @@ auto main(int argc, char* argv[]) -> int {
                      HERE);
       for (unsigned int idx = 0; idx < 4; ++idx) {
         auto self  = metadomain.idx2subdomain(idx);
-        nx1       += self.mesh.n_active(0);
-        nx2       += self.mesh.n_active(1);
+        nx1       += self.mesh.n_active(in::x1);
+        nx2       += self.mesh.n_active(in::x2);
         raise::ErrorIf(self.index() != idx, "Domain::index() failed", HERE);
 
         // check field allocations
-        raise::ErrorIf(self.fields.em.extent(0) != self.mesh.n_all(0),
+        raise::ErrorIf(self.fields.em.extent(0) != self.mesh.n_all(in::x1),
                        "Domain::fields.em(0) failed",
                        HERE);
-        raise::ErrorIf(self.fields.em.extent(1) != self.mesh.n_all(1),
+        raise::ErrorIf(self.fields.em.extent(1) != self.mesh.n_all(in::x2),
                        "Domain::fields.em(1) failed",
                        HERE);
         raise::ErrorIf(self.fields.em.extent(2) != 6,
@@ -74,10 +74,10 @@ auto main(int argc, char* argv[]) -> int {
                        HERE);
 
         // check current allocations
-        raise::ErrorIf(self.fields.cur.extent(0) != self.mesh.n_all(0),
+        raise::ErrorIf(self.fields.cur.extent(0) != self.mesh.n_all(in::x1),
                        "Domain::fields.cur(0) failed",
                        HERE);
-        raise::ErrorIf(self.fields.cur.extent(1) != self.mesh.n_all(1),
+        raise::ErrorIf(self.fields.cur.extent(1) != self.mesh.n_all(in::x2),
                        "Domain::fields.cur(1) failed",
                        HERE);
         raise::ErrorIf(self.fields.cur.extent(2) != 3,
