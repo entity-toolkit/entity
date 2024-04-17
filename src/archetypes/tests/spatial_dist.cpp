@@ -1,4 +1,4 @@
-#include "archetypes/spatial_dist.hpp"
+#include "archetypes/spatial_dist.h"
 
 #include "enums.h"
 #include "global.h"

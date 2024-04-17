@@ -1,4 +1,4 @@
-#include "archetypes/energy_dist.hpp"
+#include "archetypes/energy_dist.h"
 
 #include "enums.h"
 #include "global.h"
