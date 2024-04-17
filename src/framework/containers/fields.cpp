@@ -8,7 +8,7 @@
 namespace ntt {
 
   template <Dimension D, SimEngine::type S>
-  Fields<D, S>::Fields(const std::vector<unsigned int>& res) {
+  Fields<D, S>::Fields(const std::vector<std::size_t>& res) {
     std::size_t nx1, nx2, nx3;
     nx1 = res[0] + 2 * N_GHOSTS;
     if constexpr ((D == Dim::_3D) || (D == Dim::_2D)) {

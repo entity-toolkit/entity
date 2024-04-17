@@ -33,14 +33,13 @@ set(SOURCES
 )
 add_library(ntt_framework ${SOURCES})
 
-# set(libs ntt_global ntt_metrics ntt_kernels)
-set(libs ntt_global ntt_metrics )
-
+set(libs ntt_global ntt_metrics ntt_kernels)
 if(${output})
   list(APPEND libs ntt_output)
 endif()
-
+add_dependencies(ntt_framework ${libs})
 target_link_libraries(ntt_framework PUBLIC ${libs})
+
 target_include_directories(ntt_framework
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../

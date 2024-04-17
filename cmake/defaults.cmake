@@ -9,7 +9,7 @@ set_property(CACHE default_debug PROPERTY TYPE BOOL)
 
 set(default_engine "pic" CACHE INTERNAL "Default engine")
 set(default_precision "single" CACHE INTERNAL "Default precision")
-set(default_pgen "dummy" CACHE INTERNAL "Default problem generator")
+set(default_pgen "." CACHE INTERNAL "Default problem generator")
 set(default_sr_metric "minkowski" CACHE INTERNAL "Default SR metric")
 set(default_gr_metric "kerr_schild" CACHE INTERNAL "Default GR metric")
 

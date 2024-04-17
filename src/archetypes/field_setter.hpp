@@ -39,16 +39,16 @@ namespace ntt {
 
   template <class I, SimEngine::type S, class M>
   class SetEMFields {
-    static constexpr Dimension D           = M::Dim;
-    static constexpr bool      defines_ex1 = traits::has_ex1<I>::value;
-    static constexpr bool      defines_ex2 = traits::has_ex2<I>::value;
-    static constexpr bool      defines_ex3 = traits::has_ex3<I>::value;
-    static constexpr bool      defines_bx1 = traits::has_bx1<I>::value;
-    static constexpr bool      defines_bx2 = traits::has_bx2<I>::value;
-    static constexpr bool      defines_bx3 = traits::has_bx3<I>::value;
-    static constexpr bool      defines_dx1 = traits::has_dx1<I>::value;
-    static constexpr bool      defines_dx2 = traits::has_dx2<I>::value;
-    static constexpr bool      defines_dx3 = traits::has_dx3<I>::value;
+    static constexpr Dimension D = M::Dim;
+    static constexpr bool defines_ex1 = traits::has_method<traits::ex1_t, I>::value;
+    static constexpr bool defines_ex2 = traits::has_method<traits::ex2_t, I>::value;
+    static constexpr bool defines_ex3 = traits::has_method<traits::ex3_t, I>::value;
+    static constexpr bool defines_bx1 = traits::has_method<traits::bx1_t, I>::value;
+    static constexpr bool defines_bx2 = traits::has_method<traits::bx2_t, I>::value;
+    static constexpr bool defines_bx3 = traits::has_method<traits::bx3_t, I>::value;
+    static constexpr bool defines_dx1 = traits::has_method<traits::dx1_t, I>::value;
+    static constexpr bool defines_dx2 = traits::has_method<traits::dx2_t, I>::value;
+    static constexpr bool defines_dx3 = traits::has_method<traits::dx3_t, I>::value;
 
     static_assert(defines_ex1 || defines_ex2 || defines_ex3 || defines_bx1 ||
                     defines_bx2 || defines_bx3 || defines_dx1 || defines_dx2 ||

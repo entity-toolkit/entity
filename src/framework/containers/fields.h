@@ -110,7 +110,7 @@ namespace ntt {
      * @brief Constructor for the fields container. Also sets the active cell sizes and ranges
      * @param res resolution vector of size D (dimension)
      */
-    Fields(const std::vector<unsigned int>& res);
+    Fields(const std::vector<std::size_t>& res);
     ~Fields() = default;
   };
 

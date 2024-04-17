@@ -453,6 +453,17 @@ auto main(int argc, char* argv[]) -> int {
                            (real_t)(1.1410673598),
                            "grid.metric.ks_rh");
 
+      const auto expect = std::map<std::string, real_t> {
+        {"r0",  0.0},
+        { "h", 0.25},
+        { "a", 0.99}
+      };
+      auto read = params_qks_2d.get<std::map<std::string, real_t>>(
+        "grid.metric.params");
+      for (const auto& [key, val] : expect) {
+        assert_equal<real_t>(read.at(key), val, "grid.metric.params");
+      }
+
       // algorithms gr
       assert_equal<real_t>(
         params_qks_2d.get<real_t>("algorithms.gr.pusher_eps"),

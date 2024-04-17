@@ -23,7 +23,11 @@ set(SOURCES
   ${SRC_DIR}/utils/interpret_prompt.cpp
 )
 add_library(ntt_output ${SOURCES})
-target_link_libraries(ntt_output PUBLIC ntt_global)
+
+set(libs ntt_global)
+add_dependencies(ntt_output ${libs})
+target_link_libraries(ntt_output PUBLIC ${libs})
+
 target_include_directories(ntt_output
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../

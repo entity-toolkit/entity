@@ -10,7 +10,11 @@
 # ------------------------------
 
 add_library(ntt_archetypes INTERFACE)
-target_link_libraries(ntt_archetypes INTERFACE ntt_global)
+
+set(libs ntt_global)
+add_dependencies(ntt_archetypes ${libs})
+target_link_libraries(ntt_archetypes INTERFACE ${libs})
+
 target_include_directories(ntt_archetypes
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../
 )

@@ -43,9 +43,10 @@ namespace metric {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr const char*      Label { "spherical" };
-    static constexpr Dimension        PrtlDim { Dim::_3D };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
+    static constexpr const char*       Label { "spherical" };
+    static constexpr Dimension         PrtlDim { Dim::_3D };
+    static constexpr ntt::Metric::type MetricType { ntt::Metric::Spherical };
+    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Sph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

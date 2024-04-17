@@ -9,7 +9,11 @@
 # ------------------------------
 
 add_library(ntt_metrics INTERFACE)
-target_link_libraries(ntt_metrics INTERFACE ntt_global)
+
+set(libs ntt_global)
+add_dependencies(ntt_metrics ${libs})
+target_link_libraries(ntt_metrics INTERFACE ${libs})
+
 target_include_directories(ntt_metrics
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../
 )

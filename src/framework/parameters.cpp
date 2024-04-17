@@ -57,14 +57,18 @@ namespace ntt {
     const auto engine_enum = SimEngine::pick(engine.c_str());
     set("simulation.engine", engine_enum);
 
-    int default_ndomains { 1 };
+    int default_ndomains = 1;
 #if defined(MPI_ENABLED)
     raise::ErrorIf(MPI_Comm_size(MPI_COMM_WORLD, &default_ndomains) != MPI_SUCCESS,
                    "MPI_Comm_size failed",
                    HERE);
 #endif
-    set("simulation.domain.number",
-        toml::find_or(raw_data, "simulation", "domain", "number", default_ndomains));
+    const auto ndoms = toml::find_or(raw_data,
+                                     "simulation",
+                                     "domain",
+                                     "number",
+                                     default_ndomains);
+    set("simulation.domain.number", (unsigned int)ndoms);
 
     auto decomposition = toml::find_or<std::vector<int>>(
       raw_data,
@@ -571,6 +575,8 @@ namespace ntt {
           (metric_enum != Metric::Kerr_Schild_0)) {
         params["a"] = get<real_t>("grid.metric.ks_a");
       }
+      set("grid.metric.params", params);
+
       std::pair<real_t, real_t> dx0_V0;
       if (metric_enum == Metric::Minkowski) {
         if (dim == Dim::_1D) {

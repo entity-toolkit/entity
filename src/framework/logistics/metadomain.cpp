@@ -25,14 +25,15 @@
 
 namespace ntt {
 
-  template <class M>
-  Metadomain<M>::Metadomain(unsigned int            global_ndomains,
-                            const std::vector<int>& global_decomposition,
-                            const std::vector<std::size_t>& global_ncells,
-                            const boundaries_t<real_t>&     global_extent,
-                            const boundaries_t<FldsBC>&     global_flds_bc,
-                            const boundaries_t<PrtlBC>&     global_prtl_bc,
-                            const std::map<std::string, real_t>& metric_params) :
+  template <SimEngine::type S, class M>
+  Metadomain<S, M>::Metadomain(unsigned int            global_ndomains,
+                               const std::vector<int>& global_decomposition,
+                               const std::vector<std::size_t>& global_ncells,
+                               const boundaries_t<real_t>&     global_extent,
+                               const boundaries_t<FldsBC>&     global_flds_bc,
+                               const boundaries_t<PrtlBC>&     global_prtl_bc,
+                               const std::map<std::string, real_t>& metric_params,
+                               const std::vector<ParticleSpecies>& species_params) :
     g_ndomains { global_ndomains },
     g_decomposition { global_decomposition },
     g_ncells { global_ncells },
@@ -40,7 +41,8 @@ namespace ntt {
     g_flds_bc { global_flds_bc },
     g_prtl_bc { global_prtl_bc },
     g_metric { g_ncells, g_extent, metric_params },
-    g_metric_params { metric_params } {
+    g_metric_params { metric_params },
+    g_species_params { species_params } {
 
     initialValidityCheck();
 
@@ -52,8 +54,8 @@ namespace ntt {
     // metricCompatibilityCheck();
   }
 
-  template <class M>
-  void Metadomain<M>::initialValidityCheck() const {
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::initialValidityCheck() const {
     // ensure everything has the correct shape
     raise::ErrorIf(g_decomposition.size() != (std::size_t)D,
                    "Invalid number of dimensions in g_decomposition",
@@ -92,8 +94,8 @@ namespace ntt {
 #endif // MPI_ENABLED
   }
 
-  template <class M>
-  void Metadomain<M>::createEmptyDomains() {
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::createEmptyDomains() {
     /* decompose and compute cell & domain offsets ------------------------ */
     auto d_ncells = tools::Decompose(g_ndomains, g_ncells, g_decomposition);
     raise::ErrorIf(d_ncells.size() != (std::size_t)D,
@@ -149,13 +151,14 @@ namespace ntt {
                                 l_offset_ncells,
                                 l_ncells,
                                 l_extent,
-                                g_metric_params);
+                                g_metric_params,
+                                g_species_params);
       g_domain_offset2index[l_offset_ndomains] = idx;
     }
   }
 
-  template <class M>
-  void Metadomain<M>::redefineNeighbors() {
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::redefineNeighbors() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
       auto       current_domain = &g_subdomains[idx];
@@ -190,8 +193,8 @@ namespace ntt {
     }
   }
 
-  template <class M>
-  void Metadomain<M>::redefineBoundaries() {
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::redefineBoundaries() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
       auto       current_domain = &g_subdomains[idx];
@@ -241,8 +244,8 @@ namespace ntt {
     }
   }
 
-  template <class M>
-  void Metadomain<M>::finalValidityCheck() const {
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::finalValidityCheck() const {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto current_domain = &g_subdomains[idx];
       // check that all neighbors are set properly
@@ -267,8 +270,8 @@ namespace ntt {
     }
   }
 
-  template <class M>
-  void Metadomain<M>::metricCompatibilityCheck() const {
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::metricCompatibilityCheck() const {
     const auto dx_min = g_metric.dxMin();
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto current_domain = &g_subdomains[idx];
@@ -295,13 +298,13 @@ namespace ntt {
 #endif
   }
 
-  template struct Metadomain<metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<metric::KerrSchild0<Dim::_2D>>;
+  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
+  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
+  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
+  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
+  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
+  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
+  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
+  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
 
 } // namespace ntt

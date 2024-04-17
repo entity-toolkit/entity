@@ -2,7 +2,8 @@
  * @file framework/logistics/domain.h
  * @brief
  * Domain class containing information about the local meshblock
- * including the Mesh object itself, as well as pointers to neighboring domains.
+ * including the Mesh object itself, fields, particle species,
+ * as well as pointers to neighboring domains.
  * @implements
  *   - ntt::Domain<>
  * @depends:
@@ -11,6 +12,9 @@
  *   - arch/directions.h
  *   - utils/formatting.h
  *   - framework/logistics/mesh.h
+ *   - framework/containers/fields.h
+ *   - framework/containers/particles.h
+ *   - framework/containers/species.h
  * @macros:
  *   - MPI_ENABLED
  * @note
@@ -50,6 +54,9 @@
 #include "arch/directions.h"
 #include "utils/formatting.h"
 
+#include "framework/containers/fields.h"
+#include "framework/containers/particles.h"
+#include "framework/containers/species.h"
 #include "framework/logistics/mesh.h"
 
 #include <iomanip>
@@ -59,20 +66,25 @@
 #include <vector>
 
 namespace ntt {
-  template <class M>
+  template <SimEngine::type S, class M>
   struct Domain {
     static_assert(M::is_metric, "template arg for Mesh class has to be a metric");
     static constexpr Dimension D { M::Dim };
 
-    Mesh<M> mesh;
+    Mesh<M>                                 mesh;
+    Fields<D, S>                            fields;
+    std::vector<Particles<D, M::CoordType>> species;
 
     Domain(unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
            const std::vector<std::size_t>&      offset_ncells,
            const std::vector<std::size_t>&      ncells,
            const boundaries_t<real_t>&          extent,
-           const std::map<std::string, real_t>& metric_params) :
+           const std::map<std::string, real_t>& metric_params,
+           const std::vector<ParticleSpecies>&  species_params) :
       mesh { ncells, extent, metric_params },
+      fields { ncells },
+      species { species_params.begin(), species_params.end() },
       m_index { index },
       m_offset_ndomains { offset_ndomains },
       m_offset_ncells { offset_ncells } {}
@@ -105,7 +117,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto neighbor_in(const dir::direction_t<D>& dir) const -> Domain<M>* {
+    auto neighbor_in(const dir::direction_t<D>& dir) const -> Domain<S, M>* {
       return m_neighbors.at(dir);
     }
 
@@ -119,33 +131,36 @@ namespace ntt {
       m_comm_bc[dir] = bc;
     }
 
-    auto setNeighbor(const dir::direction_t<D>& dir, Domain<M>* neighbor) -> void {
+    auto setNeighbor(const dir::direction_t<D>& dir, Domain<S, M>* neighbor)
+      -> void {
       m_neighbors[dir] = neighbor;
     }
 
   private:
     // index of the domain in the metadomain
-    unsigned int              m_index;
+    unsigned int                 m_index;
     // offset of the domain in # of domains
-    std::vector<unsigned int> m_offset_ndomains;
+    std::vector<unsigned int>    m_offset_ndomains;
     // offset of the domain in cells (# of cells in each dimension)
-    std::vector<std::size_t>  m_offset_ncells;
+    std::vector<std::size_t>     m_offset_ncells;
     // boundary conditions of the domain
-    dir::map_t<D, CommBC>     m_comm_bc;
+    dir::map_t<D, CommBC>        m_comm_bc;
     // references to the neighboring domains
-    dir::map_t<D, Domain<M>*> m_neighbors;
+    dir::map_t<D, Domain<S, M>*> m_neighbors;
     // MPI rank of the domain (used only when MPI enabled)
-    int                       m_mpi_rank;
+    int                          m_mpi_rank;
   };
 
-  template <class M>
-  inline auto operator<<(std::ostream& os, const Domain<M>& domain)
+  template <SimEngine::type S, class M>
+  inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
     -> std::ostream& {
     os << "Domain #" << domain.index();
 #if defined(MPI_ENABLED)
     os << " [MPI rank: " << domain.mpi_rank() << "]";
 #endif
     os << ":\n";
+    os << std::setw(19) << std::left << "  engine: " << SimEngine(S).to_string()
+       << "\n";
     os << std::setw(19) << std::left << "  global offset: ";
     for (auto& off_nd : domain.offset_ndomains()) {
       os << std::setw(15) << std::left << off_nd;

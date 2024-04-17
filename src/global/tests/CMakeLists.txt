@@ -10,14 +10,14 @@
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
 
-add_subdirectory(${SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/global)
-
 function(gen_test title)
   set(exec test-global-${title}.xc)
   set(src ${title}.cpp)
   add_executable(${exec} ${src})
 
-  target_link_libraries(${exec} PRIVATE ntt_global)
+  set(libs ntt_global)
+  add_dependencies(${exec} ${libs})
+  target_link_libraries(${exec} PRIVATE ${libs})
 
   add_test(NAME "GLOBAL::${title}" COMMAND "${exec}")
 endfunction()

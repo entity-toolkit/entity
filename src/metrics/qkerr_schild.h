@@ -64,9 +64,10 @@ namespace metric {
     }
 
   public:
-    static constexpr const char*      Label { "qkerr_schild" };
-    static constexpr Dimension        PrtlDim { D };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::Qsph };
+    static constexpr const char*       Label { "qkerr_schild" };
+    static constexpr Dimension         PrtlDim { D };
+    static constexpr ntt::Metric::type MetricType { ntt::Metric::QKerr_Schild };
+    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Qsph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

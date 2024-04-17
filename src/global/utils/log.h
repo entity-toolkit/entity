@@ -4,10 +4,12 @@
  * @implements
  *   - macro HERE
  *   - logger::Checkpoint -> void
+ *   - info::Print -> void
  * @depends:
  *   - arch/mpi_aliases.h
  * @namespaces:
  *   - logger::
+ *   - info::
  * @macros:
  *   - MPI_ENABLED
  *   - DEBUG
@@ -23,6 +25,7 @@
 #include <Kokkos_Core.hpp>
 #include <plog/Log.h>
 
+#include <iostream>
 #include <string>
 
 #if defined(MPI_ENABLED)
@@ -73,5 +76,29 @@ namespace logger {
   }
 
 } // namespace logger
+
+namespace info {
+  using namespace files;
+
+  inline void Print(const std::string& msg, bool stdout = true, bool once = true) {
+    if (once) {
+      CallOnce(
+        [](const std::string& msg, bool stdout) {
+          PLOGN_(InfoFile) << msg;
+          if (stdout) {
+            std::cout << msg << std::endl;
+          }
+        },
+        msg,
+        stdout);
+    } else {
+      PLOGN_(InfoFile) << msg;
+      if (stdout) {
+        std::cout << msg << std::endl;
+      }
+    }
+  }
+
+} // namespace info
 
 #endif // GLOBAL_LOG_H

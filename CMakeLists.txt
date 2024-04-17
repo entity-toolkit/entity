@@ -8,6 +8,15 @@ project(
   VERSION 1.0.0
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
+execute_process(COMMAND
+  bash -c "git diff --quiet src/ && echo $(git rev-parse HEAD) || echo $(git rev-parse HEAD)-mod"
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_HASH
+  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message(STATUS "Git hash: ${GIT_HASH}")
+add_compile_options("-D ENTITY_GIT_HASH=\"${GIT_HASH}\"")
+
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/styling.cmake)
 
@@ -19,9 +28,6 @@ set(DEBUG
   ${default_debug}
   CACHE BOOL "Debug mode")
 
-# set(engine
-# ${default_engine}
-# CACHE STRING "Simulation engine")
 set(precision
   ${default_precision}
   CACHE STRING "Precision")
@@ -59,18 +65,9 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
 
 # options
-# set(simulation_engines
-# "sandbox" "pic" "grpic"
-# CACHE STRING "Simulation engines")
 set(precisions
   "single" "double"
   CACHE STRING "Precisions")
-set(sr_metrics
-  "minkowski" "spherical" "qspherical"
-  CACHE STRING "SR metrics")
-set(gr_metrics
-  "kerr_schild" "qkerr_schild" "kerr_schild_0"
-  CACHE STRING "GR metrics")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
@@ -79,7 +76,7 @@ set(BUILD_TESTING
   OFF
   CACHE BOOL "Build tests")
 
-# ------------------------------ Dependencies ------------------------------ #
+# ------------------------ Third-party dependencies ------------------------ #
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
@@ -116,9 +113,6 @@ link_libraries(${DEPENDENCIES})
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
-elseif(BENCHMARKS)
-  # ------------------------------- Benchmarks ------------------------------- #
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks benchmarks)
 else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})
@@ -126,12 +120,7 @@ else()
   endif()
 
   # ------------------------------- Main source ------------------------------ #
-  set_engine(${engine})
-  set(metric
-    ${default_metric}
-    CACHE STRING "Metric")
-  set_metric(${metric} ${engine})
-  set_problem_generator(${pgen} ${engine})
+  set_problem_generator(${pgen})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
+  # include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
 endif()

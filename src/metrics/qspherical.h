@@ -48,9 +48,10 @@ namespace metric {
     const real_t dchi_inv, deta_inv, dphi_inv;
 
   public:
-    static constexpr const char*      Label { "qspherical" };
-    static constexpr Dimension        PrtlDim = Dim::_3D;
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::Qsph };
+    static constexpr const char*       Label { "qspherical" };
+    static constexpr Dimension         PrtlDim = Dim::_3D;
+    static constexpr ntt::Metric::type MetricType { ntt::Metric::QSpherical };
+    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Qsph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

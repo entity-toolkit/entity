@@ -104,6 +104,8 @@ IncludeCategories:
     Priority: 3
   - Regex: '^"framework\/.*\.h"'
     Priority: 4
+  - Regex: '^"engines\/.*\.h"'
+    Priority: 4
   - Regex: '^"output\/.*\.h"'
     Priority: 4
   - Regex: '^".*\.hpp"'

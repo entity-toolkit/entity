@@ -81,6 +81,10 @@
     #     @brief: Size of the horizon for GR Kerr Schild
     #     @type: float
     #     @from: `grid.metric.ks_a`
+    # - params
+    #     @brief: A map of all metric-specific parameters together (for easy access)
+    #     @type: map<string, float>
+    #     @from: `grid.metric`
 
   [grid.boundaries]
     # Boundary conditions for fields:
@@ -235,6 +239,10 @@
   # - nspec
   #     @brief: Number of particle species
   #     @type: unsigned int
+  #     @from: `particles.species`
+  # - species
+  #     @brief: An object containing information about all the species
+  #     @type: vector of ParticleSpecies
   #     @from: `particles.species`
 
   [[particles.species]]

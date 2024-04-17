@@ -27,10 +27,10 @@ namespace ntt {
       cl_args.getArgument("-output", defaults::output_path));
 
     const auto inputdata = toml::parse(inputfname);
-    params               = SimulationParams(inputdata);
-
-    const auto sim_name = params.get<std::string>("simulation.name");
+    const auto sim_name = toml::find<std::string>(inputdata, "simulation", "name");
     logger::initPlog<files::LogFile, files::InfoFile, files::ErrFile>(sim_name);
+
+    params = SimulationParams(inputdata);
   }
 
   Simulation::~Simulation() {

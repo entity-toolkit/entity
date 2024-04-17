@@ -45,8 +45,9 @@ namespace metric {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr const char*      Label { "kerr_schild_0" };
-    static constexpr Dimension        PrtlDim { D };
+    static constexpr const char* Label { "kerr_schild_0" };
+    static constexpr Dimension   PrtlDim { D };
+    static constexpr ntt::Metric::type MetricType { ntt::Metric::Kerr_Schild_0 };
     static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;

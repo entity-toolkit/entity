@@ -11,6 +11,15 @@
  *   - utils/comparators.h
  *   - arch/mpi_aliases.h
  *   - framework/logistics/domain.h
+ *   - framework/containers/species.h
+ *   - metrics/kerr_schild.h
+ *   - metrics/kerr_schild_0.h
+ *   - metrics/minkowski.h
+ *   - metrics/qkerr_schild.h
+ *   - metrics/qspherical.h
+ *   - metrics/spherical.h
+ * @cpp:
+ *   - metadomain.cpp
  * @namespaces:
  *   - ntt::
  */
@@ -21,6 +30,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "framework/containers/species.h"
 #include "framework/logistics/domain.h"
 
 #if defined(MPI_ENABLED)
@@ -33,7 +43,7 @@
 
 namespace ntt {
 
-  template <class M>
+  template <SimEngine::type S, class M>
   struct Metadomain {
     static_assert(M::is_metric,
                   "template arg for Metadomain class has to be a metric");
@@ -67,6 +77,7 @@ namespace ntt {
      * @param global_flds_bc boundary conditions for fields
      * @param global_prtl_bc boundary conditions for particles
      * @param metric_params parameters for the metric
+     * @param species_params parameters for the particle species
      */
     Metadomain(unsigned int,
                const std::vector<int>&,
@@ -74,13 +85,14 @@ namespace ntt {
                const boundaries_t<real_t>&,
                const boundaries_t<FldsBC>&,
                const boundaries_t<PrtlBC>&,
-               const std::map<std::string, real_t>&);
+               const std::map<std::string, real_t>&,
+               const std::vector<ParticleSpecies>&);
 
     ~Metadomain() = default;
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
-    auto idx2subdomain(unsigned int idx) const -> const Domain<M>&{
+    auto idx2subdomain(unsigned int idx) const -> const Domain<S, M>& {
       return g_subdomains.at(idx);
     }
 
@@ -93,7 +105,7 @@ namespace ntt {
     std::vector<std::vector<unsigned int>>            g_domain_offsets;
     std::map<std::vector<unsigned int>, unsigned int> g_domain_offset2index;
 
-    std::vector<Domain<M>> g_subdomains;
+    std::vector<Domain<S, M>> g_subdomains;
 
     // grid information
     std::vector<std::size_t> g_ncells;
@@ -105,6 +117,7 @@ namespace ntt {
 
     M                                   g_metric;
     const std::map<std::string, real_t> g_metric_params;
+    const std::vector<ParticleSpecies>  g_species_params;
   };
 
 } // namespace ntt

@@ -4,6 +4,7 @@
  * @implements
  *   - ntt::Simulation
  * @depends:
+ *   - enums.h
  *   - defaults.h
  *   - global.h
  *   - utils/error.h
@@ -22,6 +23,9 @@
 #ifndef FRAMEWORK_SIMULATION_H
 #define FRAMEWORK_SIMULATION_H
 
+#include "enums.h"
+
+#include "arch/traits.h"
 #include "utils/error.h"
 
 #include "framework/parameters.h"
@@ -38,16 +42,33 @@ namespace ntt {
     Simulation(int argc, char* argv[]);
     ~Simulation();
 
-    template <typename E>
-    void run() {
-      static_assert(std::is_member_function_pointer<decltype(&E::run)>::value,
+    template <class E>
+    inline void run() {
+      static_assert(E::is_engine,
+                    "template arg for Simulation::run has to be an engine");
+      static_assert(traits::has_method<traits::run_t, E>::value,
                     "Engine must contain a ::run() method");
       try {
-        const E engine { params };
+        E engine { params };
         engine.run();
       } catch (const std::exception& e) {
         raise::Fatal(e.what(), HERE);
       }
+    }
+
+    [[nodiscard]]
+    inline auto requested_dimension() const -> Dimension {
+      return params.get<Dimension>("grid.dim");
+    }
+
+    [[nodiscard]]
+    inline auto requested_engine() const -> SimEngine {
+      return params.get<SimEngine>("simulation.engine");
+    }
+
+    [[nodiscard]]
+    inline auto requested_metric() const -> Metric {
+      return params.get<Metric>("grid.metric.metric");
     }
   };
 

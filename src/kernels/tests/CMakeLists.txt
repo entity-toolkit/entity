@@ -8,14 +8,14 @@
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
 
-add_subdirectory(${SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/kernels)
-
 function(gen_test title)
   set(exec test-kernels-${title}.xc)
   set(src ${title}.cpp)
   add_executable(${exec} ${src})
 
-  target_link_libraries(${exec} PRIVATE ntt_kernels ntt_metrics)
+  set(libs ntt_kernels ntt_metrics)
+  add_dependencies(${exec} ${libs})
+  target_link_libraries(${exec} PRIVATE ${libs})
 
   add_test(NAME "KERNELS::${title}" COMMAND "${exec}")
 endfunction()

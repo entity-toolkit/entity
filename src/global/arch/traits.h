@@ -2,78 +2,76 @@
  * @file arch/traits.h
  * @brief Defines a set of traits to check if a class satisfies certain conditions
  * @implements
- *   - traits::has_ex1
- *   - traits::has_ex2
- *   - traits::has_ex3
- *   - traits::has_bx1
- *   - traits::has_bx2
- *   - traits::has_bx3
- *   - traits::has_dx1
- *   - traits::has_dx2
- *   - traits::has_dx3
- *   - traits::has_x_Code2Phys
+ *   - traits::has_method<>
+ *   - traits::ex1_t, ::ex2_t, ::ex3_t
+ *   - traits::bx1_t, ::bx2_t, ::bx3_t
+ *   - traits::dx1_t, ::dx2_t, ::dx3_t
+ *   - traits::run_t
+ *   - traits::check_compatibility<>
+ *   - traits::compatibility<>
  * @namespaces:
  *   - traits::
  * @note realized with SFINAE technique
  */
 
+#ifndef GLOBAL_ARCH_TRAITS_H
+#define GLOBAL_ARCH_TRAITS_H
+
 #include <type_traits>
+#include <utility>
 
 namespace traits {
 
   // special ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
-  template <typename T, typename = void>
-  struct has_ex1 : std::false_type {};
+  template <template <typename> class Trait, typename T, typename = void>
+  struct has_method : std::false_type {};
+
+  template <template <typename> class Trait, typename T>
+  struct has_method<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
 
   template <typename T>
-  struct has_ex1<T, std::void_t<decltype(&T::ex1)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_ex2 : std::false_type {};
+  using ex1_t = decltype(&T::ex1);
 
   template <typename T>
-  struct has_ex2<T, std::void_t<decltype(&T::ex2)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_ex3 : std::false_type {};
+  using ex2_t = decltype(&T::ex2);
 
   template <typename T>
-  struct has_ex3<T, std::void_t<decltype(&T::ex3)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_bx1 : std::false_type {};
+  using ex3_t = decltype(&T::ex3);
 
   template <typename T>
-  struct has_bx1<T, std::void_t<decltype(&T::bx1)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_bx2 : std::false_type {};
+  using bx1_t = decltype(&T::bx1);
 
   template <typename T>
-  struct has_bx2<T, std::void_t<decltype(&T::bx2)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_bx3 : std::false_type {};
+  using bx2_t = decltype(&T::bx2);
 
   template <typename T>
-  struct has_bx3<T, std::void_t<decltype(&T::bx3)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_dx1 : std::false_type {};
+  using bx3_t = decltype(&T::bx3);
 
   template <typename T>
-  struct has_dx1<T, std::void_t<decltype(&T::dx1)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_dx2 : std::false_type {};
+  using dx1_t = decltype(&T::dx1);
 
   template <typename T>
-  struct has_dx2<T, std::void_t<decltype(&T::dx2)>> : std::true_type {};
-
-  template <typename T, typename = void>
-  struct has_dx3 : std::false_type {};
+  using dx2_t = decltype(&T::dx2);
 
   template <typename T>
-  struct has_dx3<T, std::void_t<decltype(&T::dx3)>> : std::true_type {};
+  using dx3_t = decltype(&T::dx3);
+
+  template <typename T>
+  using run_t = decltype(&T::run);
+
+  template <int N>
+  struct check_compatibility {
+    template <int... Is>
+    static constexpr bool value(std::integer_sequence<int, Is...>) {
+      return ((Is == N) || ...);
+    }
+  };
+
+  template <int... Is>
+  struct compatible_with {
+    static constexpr auto value = std::integer_sequence<int, Is...> {};
+  };
 
 } // namespace traits
+
+#endif // GLOBAL_ARCH_TRAITS_H

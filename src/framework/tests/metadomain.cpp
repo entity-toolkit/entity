@@ -39,9 +39,9 @@ auto main(int argc, char* argv[]) -> int {
         {"r0",         -ONE},
         { "h", (real_t)0.25}
       };
-      Metadomain<QSpherical<Dim::_2D>> metadomain {
-        4, {-1, -1},
-         res, extent, fldsbc, prtlbc, params
+      Metadomain<SimEngine::SRPIC, QSpherical<Dim::_2D>> metadomain {
+        4, { -1, -1 },
+         res, extent, fldsbc, prtlbc, params, {}
       };
       std::size_t nx1 { 0 }, nx2 { 0 };
       for (unsigned int idx = 0; idx < 4; ++idx) {
@@ -49,6 +49,50 @@ auto main(int argc, char* argv[]) -> int {
         nx1       += self.mesh.n_active(0);
         nx2       += self.mesh.n_active(1);
         raise::ErrorIf(self.index() != idx, "Domain::index() failed", HERE);
+
+        // check field allocations
+        raise::ErrorIf(self.fields.em.extent(0) != self.mesh.n_all(0),
+                       "Domain::fields.em(0) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.em.extent(1) != self.mesh.n_all(1),
+                       "Domain::fields.em(1) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.em.extent(2) != 6,
+                       "Domain::fields.em(2) failed",
+                       HERE);
+
+        // check current allocations
+        raise::ErrorIf(self.fields.cur.extent(0) != self.mesh.n_all(0),
+                       "Domain::fields.cur(0) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.cur.extent(1) != self.mesh.n_all(1),
+                       "Domain::fields.cur(1) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.cur.extent(2) != 3,
+                       "Domain::fields.cur(2) failed",
+                       HERE);
+
+        // check em0 allocations (should be unallocated)
+        raise::ErrorIf(self.fields.em0.extent(0) != 0,
+                       "Domain::fields.em0(0) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.em0.extent(1) != 0,
+                       "Domain::fields.em0(1) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.aux.extent(0) != 0,
+                       "Domain::fields.aux(0) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.aux.extent(1) != 0,
+                       "Domain::fields.aux(1) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.cur0.extent(0) != 0,
+                       "Domain::fields.cur0(0) failed",
+                       HERE);
+        raise::ErrorIf(self.fields.cur0.extent(1) != 0,
+                       "Domain::fields.cur0(1) failed",
+                       HERE);
+
+        // check boundaries and offsets
         if (idx % 2 == 0) {
           raise::ErrorIf(self.offset_ndomains()[0] != 0,
                          "Domain::offset_ndomains() failed",

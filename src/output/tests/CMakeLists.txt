@@ -10,14 +10,14 @@
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
 
-add_subdirectory(${SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/output)
-
 function(gen_test title)
   set(exec test-output-${title}.xc)
   set(src ${title}.cpp)
   add_executable(${exec} ${src})
 
-  target_link_libraries(${exec} PRIVATE ntt_output ntt_global ntt_metrics ntt_framework)
+  set (libs ntt_output ntt_global ntt_metrics ntt_framework)
+  add_dependencies(${exec} ${libs})
+  target_link_libraries(${exec} PRIVATE ${libs})
 
   add_test(NAME "OUTPUT::${title}" COMMAND "${exec}")
 endfunction()
