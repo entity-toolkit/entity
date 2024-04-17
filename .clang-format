@@ -108,6 +108,8 @@ IncludeCategories:
     Priority: 4
   - Regex: '^"output\/.*\.h"'
     Priority: 4
+  - Regex: '^"archetypes\/.*\.h"'
+    Priority: 4
   - Regex: '^".*\.hpp"'
     Priority: 6
   - Regex: '^\<.*\.h'

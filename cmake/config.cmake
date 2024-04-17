@@ -13,7 +13,7 @@ endfunction()
 
 # ---------------------------- Problem generator --------------------------- #
 function(set_problem_generator pgen_name)
-  file(GLOB_RECURSE PGENS ${CMAKE_CURRENT_SOURCE_DIR}/setups/pgen.hpp)
+  file(GLOB_RECURSE PGENS "${CMAKE_CURRENT_SOURCE_DIR}/setups/**/pgen.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/setups/pgen.hpp")
   foreach(PGEN ${PGENS})
     get_filename_component(PGEN_NAME ${PGEN} DIRECTORY)
     string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/setups/" "" PGEN_NAME ${PGEN_NAME})

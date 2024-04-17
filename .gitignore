@@ -48,4 +48,4 @@ venv/
 Testing/
 
 .schema.json
-src_old/
+*_old/
