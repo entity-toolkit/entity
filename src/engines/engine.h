@@ -8,8 +8,10 @@
  *   - global.h
  *   - pgen.hpp
  *   - arch/traits.h
+ *   - arch/directions.h
  *   - utils/error.h
  *   - utils/log.h
+ *   - utils/formatting.h
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
  *   - framework/containers/species.h

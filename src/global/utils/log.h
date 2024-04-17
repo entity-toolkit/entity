@@ -6,7 +6,9 @@
  *   - logger::Checkpoint -> void
  *   - info::Print -> void
  * @depends:
+ *   - global.h
  *   - arch/mpi_aliases.h
+ *   - utils/formatting.h
  * @namespaces:
  *   - logger::
  *   - info::
@@ -21,6 +23,7 @@
 #include "global.h"
 
 #include "arch/mpi_aliases.h"
+#include "utils/formatting.h"
 
 #include <Kokkos_Core.hpp>
 #include <plog/Log.h>
@@ -81,18 +84,20 @@ namespace info {
   using namespace files;
 
   inline void Print(const std::string& msg, bool stdout = true, bool once = true) {
+    auto msg_nocol = color::strip(msg);
     if (once) {
       CallOnce(
-        [](const std::string& msg, bool stdout) {
-          PLOGN_(InfoFile) << msg;
+        [](const std::string& msg, const std::string& msg_nocol, bool stdout) {
+          PLOGN_(InfoFile) << msg_nocol;
           if (stdout) {
             std::cout << msg << std::endl;
           }
         },
         msg,
+        msg_nocol,
         stdout);
     } else {
-      PLOGN_(InfoFile) << msg;
+      PLOGN_(InfoFile) << msg_nocol;
       if (stdout) {
         std::cout << msg << std::endl;
       }

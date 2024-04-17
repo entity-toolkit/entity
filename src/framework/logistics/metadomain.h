@@ -38,6 +38,7 @@
 #endif // MPI_ENABLED
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -92,8 +93,23 @@ namespace ntt {
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
+    auto ndomains() const -> unsigned int {
+      return g_ndomains;
+    }
+
+    [[nodiscard]]
+    auto ndomains_per_dim() const -> const std::vector<unsigned int>& {
+      return g_ndomains_per_dim;
+    }
+
+    [[nodiscard]]
     auto idx2subdomain(unsigned int idx) const -> const Domain<S, M>& {
       return g_subdomains.at(idx);
+    }
+
+    [[nodiscard]]
+    auto species_params() const -> const std::vector<ParticleSpecies>& {
+      return g_species_params;
     }
 
   private:
@@ -105,7 +121,8 @@ namespace ntt {
     std::vector<std::vector<unsigned int>>            g_domain_offsets;
     std::map<std::vector<unsigned int>, unsigned int> g_domain_offset2index;
 
-    std::vector<Domain<S, M>> g_subdomains;
+    std::vector<Domain<S, M>>                  g_subdomains;
+    std::vector<std::shared_ptr<Domain<S, M>>> g_local_subdomains;
 
     // grid information
     std::vector<std::size_t> g_ncells;
@@ -118,6 +135,10 @@ namespace ntt {
     M                                   g_metric;
     const std::map<std::string, real_t> g_metric_params;
     const std::vector<ParticleSpecies>  g_species_params;
+
+#if defined(MPI_ENABLED)
+    int g_mpi_rank, g_mpi_size;
+#endif
   };
 
 } // namespace ntt

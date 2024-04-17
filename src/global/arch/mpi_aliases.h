@@ -92,8 +92,6 @@ namespace mpi {
       return MPI_UINT64_T;
     } else if constexpr (std::is_same<T, bool>::value) {
       return MPI_C_BOOL;
-    } else {
-      static_assert(false, "Unsupported type for MPI");
     }
   }
 

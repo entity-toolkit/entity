@@ -67,6 +67,12 @@ namespace dir {
       }
       return true;
     }
+
+    auto to_string() const -> std::string {
+      std::stringstream ss;
+      ss << *this;
+      return ss.str();
+    }
   };
 
   template <Dimension D, typename T>
@@ -79,7 +85,7 @@ namespace dir {
   inline auto operator<<(std::ostream& os, const direction_t<D>& dir)
     -> std::ostream& {
     for (auto& d : dir) {
-      os << std::setw(2) << std::right;
+      os << std::setw(2) << std::left;
       if (d > 0) {
         os << "+";
       } else if (d < 0) {

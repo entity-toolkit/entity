@@ -5,6 +5,8 @@
 #include "global.h"
 
 #include "arch/traits.h"
+#include "utils/formatting.h"
+#include "utils/log.h"
 
 #include "archetypes/problem_generator.hpp"
 
@@ -34,7 +36,14 @@ namespace user {
     using ProblemGenerator<S, M>::C;
     using ProblemGenerator<S, M>::params;
 
-    inline PGen(SimulationParams& p) : ProblemGenerator<S, M>(p) {}
+    inline PGen(SimulationParams& p) : ProblemGenerator<S, M>(p) {
+      const auto message = fmt::format(
+        "Problem generator initialized with `%s` engine and `%dD %s` metric",
+        SimEngine(S).to_string(),
+        D,
+        Metric(M::MetricType).to_string());
+      info::Print(message);
+    }
 
     inline PGen() {}
   };

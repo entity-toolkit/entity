@@ -73,6 +73,11 @@ namespace ntt {
     }
 
     [[nodiscard]]
+    auto extent() const -> boundaries_t<real_t> {
+      return m_extent;
+    }
+
+    [[nodiscard]]
     auto flds_bc_in(const dir::direction_t<D>& direction) const -> FldsBC {
       return m_flds_bc.at(direction);
     }

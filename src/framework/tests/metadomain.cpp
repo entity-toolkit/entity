@@ -45,9 +45,9 @@ auto main(int argc, char* argv[]) -> int {
       };
       std::size_t nx1 { 0 }, nx2 { 0 };
       for (unsigned int idx = 0; idx < 4; ++idx) {
-        auto self  = metadomain.idx2subdomain(idx);
-        nx1       += self.mesh.n_active(0);
-        nx2       += self.mesh.n_active(1);
+        auto self = metadomain.idx2subdomain(idx);
+        nx1 += self.mesh.n_active(0);
+        nx2 += self.mesh.n_active(1);
         raise::ErrorIf(self.index() != idx, "Domain::index() failed", HERE);
 
         // check field allocations
@@ -172,7 +172,8 @@ auto main(int argc, char* argv[]) -> int {
       raise::ErrorIf(nx1 != 2 * res[0], "Mesh::n_active() failed", HERE);
       raise::ErrorIf(nx2 != 2 * res[1], "Mesh::n_active() failed", HERE);
     }
-  } catch (const std::exception&) {
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << std::endl;
     Kokkos::finalize();
     return -1;
   }

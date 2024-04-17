@@ -1,28 +1,75 @@
 /**
  * @file utils/formatting.h
  * @brief String formatting utilities
+ * @depends:
+ *   - arch/traits.h
  * @implements
  *   - fmt::format<> -> std::string
  *   - fmt::pad -> std::string
  *   - fmt::toLower -> std::string
  *   - fmt::splitString -> std::vector<std::string>
  *   - fmt::repeat -> std::string
+ *   - fmt::formatVector -> std::string
+ *   - color:: instances
  * @namespaces:
+ *   - color::
  *   - fmt::
  */
 
 #ifndef GLOBAL_UTILS_FORMATTING_H
 #define GLOBAL_UTILS_FORMATTING_H
 
+#include "arch/traits.h"
+
 #include <algorithm>
 #include <cctype>
 #include <memory>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+namespace color {
+  static constexpr const char* RESET { "\033[0m" };
+  static constexpr const char* BLACK { "\033[30m" };         /* Black */
+  static constexpr const char* RED { "\033[31m" };           /* Red */
+  static constexpr const char* GREEN { "\033[32m" };         /* Green */
+  static constexpr const char* YELLOW { "\033[33m" };        /* Yellow */
+  static constexpr const char* BLUE { "\033[34m" };          /* Blue */
+  static constexpr const char* MAGENTA { "\033[35m" };       /* Magenta */
+  static constexpr const char* CYAN { "\033[36m" };          /* Cyan */
+  static constexpr const char* WHITE { "\033[37m" };         /* White */
+  static constexpr const char* BRIGHT_BLACK { "\033[90m" };  /* Bright Black */
+  static constexpr const char* BRIGHT_RED { "\033[91m" };    /* Bright Red */
+  static constexpr const char* BRIGHT_GREEN { "\033[92m" };  /* Bright Green */
+  static constexpr const char* BRIGHT_YELLOW { "\033[93m" }; /* Bright Yellow */
+  static constexpr const char* BRIGHT_BLUE { "\033[94m" };   /* Bright Blue */
+  static constexpr const char* BRIGHT_MAGENTA { "\033[95m" }; /* Bright Magenta */
+  static constexpr const char* BRIGHT_CYAN { "\033[96m" };    /* Bright Cyan */
+  static constexpr const char* BRIGHT_WHITE { "\033[97m" };   /* Bright White */
+  static constexpr const char* all[] = {
+    RESET,       BLACK,        RED,           GREEN,       YELLOW,
+    BLUE,        MAGENTA,      CYAN,          WHITE,       BRIGHT_BLACK,
+    BRIGHT_RED,  BRIGHT_GREEN, BRIGHT_YELLOW, BRIGHT_BLUE, BRIGHT_MAGENTA,
+    BRIGHT_CYAN, BRIGHT_WHITE
+  };
+
+  inline auto strip(const std::string& msg) -> std::string {
+    auto msg_nocol = msg;
+    for (const auto c : all) {
+      std::size_t pos = 0;
+      while ((pos = msg_nocol.find(c, pos)) != std::string::npos) {
+        msg_nocol.replace(pos, strlen(c), "");
+        pos += strlen("");
+      }
+    }
+    return msg_nocol;
+  }
+} // namespace color
+
 namespace fmt {
+
   /**
    * @brief Format a string with arguments
    * @note Implements minimal C-style formatting
@@ -55,6 +102,40 @@ namespace fmt {
       return str + std::string(n - str.size(), c);
     }
     return std::string(n - str.size(), c) + str;
+  }
+
+  /**
+   * @brief formats a vector of arbitrary type: [a, b, c, ...]
+   */
+  template <typename T>
+  auto formatVector(const std::vector<T>& vec) -> std::string {
+    std::ostringstream oss;
+    oss << "[";
+    if (!vec.empty()) {
+      if constexpr (traits::is_pair<T>::value) {
+        if constexpr (
+          traits::has_method<traits::to_string_t, typename T::first_type>::value) {
+          oss << "{" << vec[0].first.to_string() << ", "
+              << vec[0].second.to_string() << "}";
+          for (size_t i = 1; i < vec.size(); ++i) {
+            oss << ", {" << vec[i].first.to_string() << ", "
+                << vec[i].second.to_string() << "}";
+          }
+        } else {
+          oss << "{" << vec[0].first << ", " << vec[0].second << "}";
+          for (size_t i = 1; i < vec.size(); ++i) {
+            oss << ", {" << vec[i].first << ", " << vec[i].second << "}";
+          }
+        }
+      } else {
+        oss << vec[0];
+        for (size_t i = 1; i < vec.size(); ++i) {
+          oss << ", " << vec[i];
+        }
+      }
+    }
+    oss << "]";
+    return oss.str();
   }
 
   /**

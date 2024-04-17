@@ -95,7 +95,7 @@ namespace ntt {
       return m_mpi_rank;
     }
 
-    void setMpiRank(int rank) {
+    void set_mpi_rank(int rank) {
       m_mpi_rank = rank;
     }
 #endif // MPI_ENABLED

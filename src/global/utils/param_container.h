@@ -6,6 +6,7 @@
  * @namespaces:
  *   - prm::
  * @depends:
+ *   - global.h
  *   - utils/error.h
  *   - utils/formatting.h
  */

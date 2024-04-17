@@ -28,6 +28,7 @@ add_library(ntt_engines ${SOURCES})
 set(libs ntt_global ntt_framework ntt_metrics ntt_kernels ntt_pgen)
 add_dependencies(ntt_engines ${libs})
 target_link_libraries(ntt_engines PUBLIC ${libs})
+target_compile_definitions(ntt_engines PRIVATE PGEN=\"${PGEN}\")
 
 target_include_directories(ntt_engines
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../

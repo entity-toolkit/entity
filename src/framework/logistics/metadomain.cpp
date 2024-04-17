@@ -15,11 +15,14 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include "framework/logistics/domain.h"
+
 #if defined(MPI_ENABLED)
   #include <mpi.h>
 #endif
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -43,6 +46,10 @@ namespace ntt {
     g_metric { g_ncells, g_extent, metric_params },
     g_metric_params { metric_params },
     g_species_params { species_params } {
+#if defined(MPI_ENABLED)
+    MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
+#endif
 
     initialValidityCheck();
 
@@ -51,7 +58,7 @@ namespace ntt {
     redefineBoundaries();
 
     finalValidityCheck();
-    // metricCompatibilityCheck();
+    metricCompatibilityCheck();
   }
 
   template <SimEngine::type S, class M>
@@ -74,15 +81,12 @@ namespace ntt {
                    HERE);
 #if defined(MPI_ENABLED)
     int init_flag;
-    int status = MPI_Initialized(init_flag);
+    int status = MPI_Initialized(&init_flag);
     raise::ErrorIf((status != MPI_SUCCESS) || (init_flag != 1),
                    "MPI not initialized",
                    HERE);
-    int mpisize, mpirank;
-    MPI_Comm_size(MPI_COMM_WORLD, &mpisize);
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
-    raise::ErrorIf(mpisize != g_ndomains,
-                   "ndomains != mpisize is not implemented with MPI",
+    raise::ErrorIf((unsigned int)g_mpi_size != g_ndomains,
+                   "ndomains != g_mpi_size is not implemented with MPI",
                    HERE);
 
 #else // not MPI_ENABLED
@@ -130,7 +134,7 @@ namespace ntt {
     if (not g_subdomains.empty()) {
       g_subdomains.clear();
     }
-    for (std::size_t idx { 0 }; idx < g_ndomains; ++idx) {
+    for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       auto                 l_offset_ndomains = domain_offset_ndoms[idx];
       auto                 l_ncells          = domain_ncells[idx];
       auto                 l_offset_ncells   = domain_offset_ncells[idx];
@@ -154,6 +158,16 @@ namespace ntt {
                                 g_metric_params,
                                 g_species_params);
       g_domain_offset2index[l_offset_ndomains] = idx;
+#if defined(MPI_ENABLED)
+      g_subdomains.back().set_mpi_rank(idx);
+      if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
+        g_local_subdomains.push_back(
+          std::make_shared<Domain<S, M>>(g_subdomains.back()));
+      }
+#else  // not MPI_ENABLED
+      g_local_subdomains.push_back(
+        std::make_shared<Domain<S, M>>(g_subdomains.back()));
+#endif // MPI_ENABLED
     }
   }
 
@@ -267,23 +281,41 @@ namespace ntt {
                        "Invalid boundary condition for particles",
                        HERE);
       }
+      auto contained_in_local = false;
+      for (const auto& g : g_local_subdomains) {
+        contained_in_local |= (idx == g->index());
+      }
+#if defined(MPI_ENABLED)
+      const auto is_same_rank = current_domain->mpi_rank() == g_mpi_rank;
+      raise::ErrorIf(is_same_rank != contained_in_local,
+                     "local subdomains not set properly",
+                     HERE);
+#else  // not MPI_ENABLED
+      raise::ErrorIf(not contained_in_local,
+                     "local subdomains not set properly",
+                     HERE);
+#endif // MPI_ENABLED
     }
   }
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
-    const auto dx_min = g_metric.dxMin();
+    const auto dx_min              = g_metric.dxMin();
+    auto       dx_min_from_domains = INFINITY;
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto current_domain = &g_subdomains[idx];
       const auto current_dx_min = current_domain->mesh.metric.dxMin();
-      raise::ErrorIf(!cmp::AlmostEqual(dx_min, current_dx_min),
-                     "dx_min is not the same across all domains",
-                     HERE);
+      dx_min_from_domains       = std::min(dx_min_from_domains, current_dx_min);
     }
+    raise::ErrorIf(
+      not cmp::AlmostEqual(dx_min, dx_min_from_domains),
+      "dx_min is not the same across all domains: " + std::to_string(dx_min) +
+        " " + std::to_string(dx_min_from_domains),
+      HERE);
 #if defined(MPI_ENABLED)
-    auto dx_mins       = std::vector<real_t>(g_ndomains);
-    dx_mins[m_mpirank] = dx_min;
-    MPI_Allgather(&dx_mins[m_mpirank],
+    auto dx_mins        = std::vector<real_t>(g_ndomains);
+    dx_mins[g_mpi_rank] = dx_min;
+    MPI_Allgather(&dx_mins[g_mpi_rank],
                   1,
                   mpi::get_type<real_t>(),
                   dx_mins.data(),

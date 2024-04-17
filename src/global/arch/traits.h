@@ -6,9 +6,10 @@
  *   - traits::ex1_t, ::ex2_t, ::ex3_t
  *   - traits::bx1_t, ::bx2_t, ::bx3_t
  *   - traits::dx1_t, ::dx2_t, ::dx3_t
- *   - traits::run_t
+ *   - traits::run_t, traits::to_string_t
  *   - traits::check_compatibility<>
  *   - traits::compatibility<>
+ *   - traits::is_pair<>
  * @namespaces:
  *   - traits::
  * @note realized with SFINAE technique
@@ -59,6 +60,9 @@ namespace traits {
   template <typename T>
   using run_t = decltype(&T::run);
 
+  template <typename T>
+  using to_string_t = decltype(&T::to_string);
+
   template <int N>
   struct check_compatibility {
     template <int... Is>
@@ -71,6 +75,12 @@ namespace traits {
   struct compatible_with {
     static constexpr auto value = std::integer_sequence<int, Is...> {};
   };
+
+  template <typename T>
+  struct is_pair : std::false_type {};
+
+  template <typename T, typename U>
+  struct is_pair<std::pair<T, U>> : std::true_type {};
 
 } // namespace traits
 

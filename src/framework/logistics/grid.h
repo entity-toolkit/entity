@@ -130,6 +130,11 @@ namespace ntt {
     }
 
     [[nodiscard]]
+    auto n_active() const -> std::vector<std::size_t> {
+      return m_resolution;
+    }
+
+    [[nodiscard]]
     auto n_all(unsigned short i) const -> std::size_t {
       switch (i) {
         case 0:
