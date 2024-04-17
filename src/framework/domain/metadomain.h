@@ -1,5 +1,5 @@
 /**
- * @file framework/logistics/metadomain.h
+ * @file framework/domain/metadomain.h
  * @brief ...
  * @implements
  *   - ntt::Metadomain<>
@@ -10,8 +10,9 @@
  *   - utils/tools.h
  *   - utils/comparators.h
  *   - arch/mpi_aliases.h
- *   - framework/logistics/domain.h
+ *   - framework/domain/domain.h
  *   - framework/containers/species.h
+ *   - framework/domain/mesh.h
  *   - metrics/kerr_schild.h
  *   - metrics/kerr_schild_0.h
  *   - metrics/minkowski.h
@@ -24,14 +25,15 @@
  *   - ntt::
  */
 
-#ifndef FRAMEWORK_LOGISTICS_METADOMAIN_H
-#define FRAMEWORK_LOGISTICS_METADOMAIN_H
+#ifndef FRAMEWORK_DOMAIN_METADOMAIN_H
+#define FRAMEWORK_DOMAIN_METADOMAIN_H
 
 #include "enums.h"
 #include "global.h"
 
 #include "framework/containers/species.h"
-#include "framework/logistics/domain.h"
+#include "framework/domain/domain.h"
+#include "framework/domain/mesh.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -108,6 +110,11 @@ namespace ntt {
     }
 
     [[nodiscard]]
+    auto mesh() const -> const Mesh<M>& {
+      return g_mesh;
+    }
+
+    [[nodiscard]]
     auto species_params() const -> const std::vector<ParticleSpecies>& {
       return g_species_params;
     }
@@ -124,15 +131,7 @@ namespace ntt {
     std::vector<Domain<S, M>>                  g_subdomains;
     std::vector<std::shared_ptr<Domain<S, M>>> g_local_subdomains;
 
-    // grid information
-    std::vector<std::size_t> g_ncells;
-
-    // physical domain information
-    boundaries_t<real_t> g_extent;
-    boundaries_t<FldsBC> g_flds_bc;
-    boundaries_t<PrtlBC> g_prtl_bc;
-
-    M                                   g_metric;
+    Mesh<M>                             g_mesh;
     const std::map<std::string, real_t> g_metric_params;
     const std::vector<ParticleSpecies>  g_species_params;
 
@@ -143,4 +142,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // FRAMEWORK_LOGISTICS_METADOMAIN_H
+#endif // FRAMEWORK_DOMAIN_METADOMAIN_H

@@ -1,4 +1,4 @@
-#include "framework/logistics/metadomain.h"
+#include "framework/domain/metadomain.h"
 
 #include "enums.h"
 #include "global.h"
@@ -15,7 +15,7 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "framework/logistics/domain.h"
+#include "framework/domain/domain.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -39,11 +39,7 @@ namespace ntt {
                                const std::vector<ParticleSpecies>& species_params) :
     g_ndomains { global_ndomains },
     g_decomposition { global_decomposition },
-    g_ncells { global_ncells },
-    g_extent { global_extent },
-    g_flds_bc { global_flds_bc },
-    g_prtl_bc { global_prtl_bc },
-    g_metric { g_ncells, g_extent, metric_params },
+    g_mesh { global_ncells, global_extent, metric_params, global_flds_bc, global_prtl_bc },
     g_metric_params { metric_params },
     g_species_params { species_params } {
 #if defined(MPI_ENABLED)
@@ -67,17 +63,17 @@ namespace ntt {
     raise::ErrorIf(g_decomposition.size() != (std::size_t)D,
                    "Invalid number of dimensions in g_decomposition",
                    HERE);
-    raise::ErrorIf(g_ncells.size() != (std::size_t)D,
-                   "Invalid number of dimensions in g_ncells",
+    raise::ErrorIf(g_mesh.n_active().size() != (std::size_t)D,
+                   "Invalid number of dimensions in g_mesh.n_all()",
                    HERE);
-    raise::ErrorIf(g_extent.size() != (std::size_t)D,
-                   "Invalid number of dimensions in g_extent",
+    raise::ErrorIf(g_mesh.extent().size() != (std::size_t)D,
+                   "Invalid number of dimensions in g_mesh.extent()",
                    HERE);
-    raise::ErrorIf(g_flds_bc.size() != (std::size_t)D,
-                   "Invalid number of dimensions in g_flds_bc",
+    raise::ErrorIf(g_mesh.flds_bc().size() != (std::size_t)D,
+                   "Invalid number of dimensions in g_mesh.flds_bc()",
                    HERE);
-    raise::ErrorIf(g_prtl_bc.size() != (std::size_t)D,
-                   "Invalid number of dimensions in g_prtl_bc",
+    raise::ErrorIf(g_mesh.prtl_bc().size() != (std::size_t)D,
+                   "Invalid number of dimensions in g_mesh.prtl_bc()",
                    HERE);
 #if defined(MPI_ENABLED)
     int init_flag;
@@ -101,7 +97,7 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::createEmptyDomains() {
     /* decompose and compute cell & domain offsets ------------------------ */
-    auto d_ncells = tools::Decompose(g_ndomains, g_ncells, g_decomposition);
+    auto d_ncells = tools::Decompose(g_ndomains, g_mesh.n_active(), g_decomposition);
     raise::ErrorIf(d_ncells.size() != (std::size_t)D,
                    "Invalid number of dimensions received",
                    HERE);
@@ -145,8 +141,10 @@ namespace ntt {
         low_corner_Code[d] = (real_t)l_offset_ncells[d];
         up_corner_Code[d]  = (real_t)(l_offset_ncells[d] + l_ncells[d]);
       }
-      g_metric.template convert<Crd::Cd, Crd::Ph>(low_corner_Code, low_corner_Phys);
-      g_metric.template convert<Crd::Cd, Crd::Ph>(up_corner_Code, up_corner_Phys);
+      g_mesh.metric.template convert<Crd::Cd, Crd::Ph>(low_corner_Code,
+                                                       low_corner_Phys);
+      g_mesh.metric.template convert<Crd::Cd, Crd::Ph>(up_corner_Code,
+                                                       up_corner_Phys);
       for (auto d { 0 }; d < (short)D; ++d) {
         l_extent.push_back({ low_corner_Phys[d], up_corner_Phys[d] });
       }
@@ -222,8 +220,8 @@ namespace ntt {
           if (dir == -1) {
             if (current_offset[d] == 0) {
               // left edge
-              flds_bc = g_flds_bc[d].first;
-              prtl_bc = g_prtl_bc[d].first;
+              flds_bc = g_mesh.flds_bc()[d].first;
+              prtl_bc = g_mesh.prtl_bc()[d].first;
             } else {
               // not left edge
               flds_bc = FldsBC::SYNC;
@@ -233,8 +231,8 @@ namespace ntt {
           } else if (dir == 1) {
             if (current_offset[d] == g_ndomains_per_dim[d] - 1) {
               // right edge
-              flds_bc = g_flds_bc[d].second;
-              prtl_bc = g_prtl_bc[d].second;
+              flds_bc = g_mesh.flds_bc()[d].second;
+              prtl_bc = g_mesh.prtl_bc()[d].second;
             } else {
               // not right edge
               flds_bc = FldsBC::SYNC;
@@ -300,7 +298,7 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
-    const auto dx_min              = g_metric.dxMin();
+    const auto dx_min              = g_mesh.metric.dxMin();
     auto       dx_min_from_domains = INFINITY;
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto current_domain = &g_subdomains[idx];

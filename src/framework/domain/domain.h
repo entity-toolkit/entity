@@ -1,5 +1,5 @@
 /**
- * @file framework/logistics/domain.h
+ * @file framework/domain/domain.h
  * @brief
  * Domain class containing information about the local meshblock
  * including the Mesh object itself, fields, particle species,
@@ -11,7 +11,7 @@
  *   - global.h
  *   - arch/directions.h
  *   - utils/formatting.h
- *   - framework/logistics/mesh.h
+ *   - framework/domain/mesh.h
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
  *   - framework/containers/species.h
@@ -45,8 +45,8 @@
  * |--offsetNdomains--|
  */
 
-#ifndef FRAMEWORK_LOGISTICS_DOMAIN_H
-#define FRAMEWORK_LOGISTICS_DOMAIN_H
+#ifndef FRAMEWORK_DOMAIN_DOMAIN_H
+#define FRAMEWORK_DOMAIN_DOMAIN_H
 
 #include "enums.h"
 #include "global.h"
@@ -57,7 +57,7 @@
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
 #include "framework/containers/species.h"
-#include "framework/logistics/mesh.h"
+#include "framework/domain/mesh.h"
 
 #include <iomanip>
 #include <map>
@@ -205,4 +205,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // FRAMEWORK_LOGISTICS_DOMAIN_H
+#endif // FRAMEWORK_DOMAIN_DOMAIN_H

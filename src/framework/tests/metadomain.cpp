@@ -1,4 +1,4 @@
-#include "framework/logistics/metadomain.h"
+#include "framework/domain/metadomain.h"
 
 #include "enums.h"
 #include "global.h"
@@ -44,10 +44,22 @@ auto main(int argc, char* argv[]) -> int {
          res, extent, fldsbc, prtlbc, params, {}
       };
       std::size_t nx1 { 0 }, nx2 { 0 };
+      raise::ErrorIf(metadomain.mesh().n_active() != res,
+                     "Mesh::n_active() failed",
+                     HERE);
+      raise::ErrorIf(metadomain.mesh().extent() != extent,
+                     "Mesh::extent() failed",
+                     HERE);
+      raise::ErrorIf(metadomain.mesh().flds_bc() != fldsbc,
+                     "Mesh::flds_bc() failed",
+                     HERE);
+      raise::ErrorIf(metadomain.mesh().prtl_bc() != prtlbc,
+                     "Mesh::prtl_bc() failed",
+                     HERE);
       for (unsigned int idx = 0; idx < 4; ++idx) {
-        auto self = metadomain.idx2subdomain(idx);
-        nx1 += self.mesh.n_active(0);
-        nx2 += self.mesh.n_active(1);
+        auto self  = metadomain.idx2subdomain(idx);
+        nx1       += self.mesh.n_active(0);
+        nx2       += self.mesh.n_active(1);
         raise::ErrorIf(self.index() != idx, "Domain::index() failed", HERE);
 
         // check field allocations

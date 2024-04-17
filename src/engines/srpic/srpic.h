@@ -28,6 +28,7 @@ namespace ntt {
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
     using Engine<SimEngine::SRPIC, M>::m_params;
     using Engine<SimEngine::SRPIC, M>::m_metadomain;
+    using Engine<SimEngine::SRPIC, M>::m_pgen;
 
   public:
     SRPICEngine(SimulationParams& params) :

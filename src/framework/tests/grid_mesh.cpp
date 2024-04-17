@@ -3,7 +3,7 @@
 
 #include "metrics/minkowski.h"
 
-#include "framework/logistics/mesh.h"
+#include "framework/domain/mesh.h"
 
 #include <Kokkos_Core.hpp>
 

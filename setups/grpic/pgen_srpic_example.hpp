@@ -6,7 +6,7 @@
 
 #include "arch/traits.h"
 
-#include "archetypes/problem_generator.hpp"
+#include "archetypes/problem_generator.h"
 
 namespace user {
   using namespace ntt;

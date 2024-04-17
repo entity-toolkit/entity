@@ -1,4 +1,4 @@
-#include "framework/logistics/grid.h"
+#include "framework/domain/grid.h"
 
 #include "enums.h"
 #include "global.h"

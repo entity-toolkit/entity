@@ -1,5 +1,5 @@
 /**
- * @file framework/logistics/grid.h
+ * @file framework/domain/grid.h
  * @brief Grid class containing information about the discretization
  * @implements
  *   - ntt::Grid<>
@@ -63,8 +63,8 @@
  *
  */
 
-#ifndef FRAMEWORK_LOGISTICS_GRID_H
-#define FRAMEWORK_LOGISTICS_GRID_H
+#ifndef FRAMEWORK_DOMAIN_GRID_H
+#define FRAMEWORK_DOMAIN_GRID_H
 
 #include "global.h"
 
@@ -204,4 +204,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // FRAMEWORK_LOGISTICS_GRID_H
+#endif // FRAMEWORK_DOMAIN_GRID_H

@@ -15,7 +15,7 @@
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
  *   - framework/containers/species.h
- *   - framework/logistics/metadomain.h
+ *   - framework/domain/metadomain.h
  *   - framework/parameters.h
  *   - metrics/kerr_schild.h
  *   - metrics/kerr_schild_0.h
@@ -42,7 +42,7 @@
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
 #include "framework/containers/species.h"
-#include "framework/logistics/metadomain.h"
+#include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
 #include "pgen.hpp"

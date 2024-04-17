@@ -3,8 +3,8 @@
 # @sources:
 # - parameters.cpp
 # - simulation.cpp
-# - logistics/grid.cpp
-# - logistics/metadomain.cpp
+# - domain/grid.cpp
+# - domain/metadomain.cpp
 # - containers/particles.cpp
 # - containers/fields.cpp
 # @includes:
@@ -26,8 +26,8 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/parameters.cpp 
   ${SRC_DIR}/simulation.cpp
-  ${SRC_DIR}/logistics/grid.cpp
-  ${SRC_DIR}/logistics/metadomain.cpp
+  ${SRC_DIR}/domain/grid.cpp
+  ${SRC_DIR}/domain/metadomain.cpp
   ${SRC_DIR}/containers/particles.cpp
   ${SRC_DIR}/containers/fields.cpp
 )
