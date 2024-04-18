@@ -107,48 +107,54 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto offset_ndomains() const -> const std::vector<unsigned int>& {
+    auto offset_ndomains() const -> std::vector<unsigned int> {
       return m_offset_ndomains;
     }
 
     [[nodiscard]]
-    auto offset_ncells() const -> const std::vector<std::size_t>& {
+    auto offset_ncells() const -> std::vector<std::size_t> {
       return m_offset_ncells;
     }
 
     [[nodiscard]]
-    auto neighbor_in(const dir::direction_t<D>& dir) const -> Domain<S, M>* {
-      return m_neighbors.at(dir);
+    auto neighbor_idx_in(const dir::direction_t<D>& dir) const -> unsigned int {
+      raise::ErrorIf(m_neighbor_idx.find(dir) == m_neighbor_idx.end(),
+                     "neighbor_in() failed",
+                     HERE);
+      return m_neighbor_idx.at(dir);
     }
 
     [[nodiscard]]
     auto comm_bc_in(const dir::direction_t<D>& dir) const -> CommBC {
+      raise::ErrorIf(m_comm_bc.find(dir) == m_comm_bc.end(),
+                     "comm_bc_in() failed",
+                     HERE);
       return m_comm_bc.at(dir);
     }
 
     /* setters -------------------------------------------------------------- */
-    void setCommBc(const dir::direction_t<D>& dir, const CommBC& bc) {
+    void set_comm_bc(const dir::direction_t<D>& dir, const CommBC& bc) {
       m_comm_bc[dir] = bc;
     }
 
-    auto setNeighbor(const dir::direction_t<D>& dir, Domain<S, M>* neighbor)
+    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
       -> void {
-      m_neighbors[dir] = neighbor;
+      m_neighbor_idx[dir] = idx;
     }
 
   private:
     // index of the domain in the metadomain
-    unsigned int                 m_index;
+    unsigned int                m_index;
     // offset of the domain in # of domains
-    std::vector<unsigned int>    m_offset_ndomains;
+    std::vector<unsigned int>   m_offset_ndomains;
     // offset of the domain in cells (# of cells in each dimension)
-    std::vector<std::size_t>     m_offset_ncells;
+    std::vector<std::size_t>    m_offset_ncells;
     // boundary conditions of the domain
-    dir::map_t<D, CommBC>        m_comm_bc;
-    // references to the neighboring domains
-    dir::map_t<D, Domain<S, M>*> m_neighbors;
+    dir::map_t<D, CommBC>       m_comm_bc;
+    // neighboring domain indices
+    dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
-    int                          m_mpi_rank;
+    int                         m_mpi_rank;
   };
 
   template <SimEngine::type S, class M>

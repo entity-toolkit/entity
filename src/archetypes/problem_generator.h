@@ -38,9 +38,9 @@ namespace ntt {
     static constexpr Dimension D { M::Dim };
     static constexpr Coord     C { M::CoordType };
 
-    SimulationParams& params;
+    const SimulationParams& params;
 
-    ProblemGenerator(SimulationParams& p) : params { p } {}
+    ProblemGenerator(const SimulationParams& p) : params { p } {}
 
     ~ProblemGenerator() = default;
   };

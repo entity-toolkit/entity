@@ -68,12 +68,6 @@ namespace ntt {
       m_cooling { cooling },
       m_npld { npld } {}
 
-    /**
-     * @brief Copy constructor for the particle species container.
-     *
-     * @overload
-     * @param spec The particle species to copy from.
-     */
     ParticleSpecies(const ParticleSpecies&) = default;
 
     /**

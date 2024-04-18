@@ -28,8 +28,8 @@ namespace user {
     using ProblemGenerator<S, M>::params;
     using ProblemGenerator<S, M>::domain;
 
-    inline PGen(SimulationParams& p, Domain<S, M>& d) :
-      ProblemGenerator<S, M>(p, d) {}
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>&) :
+      ProblemGenerator<S, M>(p) {}
 
     inline PGen() {}
   };

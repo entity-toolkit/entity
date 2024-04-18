@@ -12,6 +12,7 @@
  *   - utils/error.h
  *   - utils/log.h
  *   - utils/formatting.h
+ *   - archetypes/field_setter.h
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
  *   - framework/containers/species.h
@@ -62,12 +63,27 @@ namespace ntt {
     Metadomain<S, M>  m_metadomain;
     user::PGen<S, M>  m_pgen;
 
+    const long double runtime;
+    const real_t      dt;
+    const std::size_t max_steps;
+    long double       time { 0.0 };
+    std::size_t       step { 0 };
+
   public:
+    static constexpr bool pgen_is_ok {
+      traits::check_compatibility<S>::value(user::PGen<S, M>::engines) &&
+      traits::check_compatibility<M::MetricType>::value(user::PGen<S, M>::metrics) &&
+      traits::check_compatibility<M::Dim>::value(user::PGen<S, M>::dimensions)
+    };
+
     static constexpr Dimension D { M::Dim };
     static constexpr bool      is_engine { true };
 
     Engine(SimulationParams& params) :
       m_params { params },
+      runtime { params.get<long double>("simulation.runtime") },
+      dt { params.get<real_t>("algorithms.timestep.dt") },
+      max_steps { static_cast<std::size_t>(runtime / dt) },
       m_metadomain {
         params.get<unsigned int>("simulation.domain.number"),
         params.get<std::vector<int>>("simulation.domain.decomposition"),
@@ -79,23 +95,13 @@ namespace ntt {
         params.get<std::vector<ParticleSpecies>>("particles.species")
       },
       m_pgen { m_params, m_metadomain } {
-      raise::ErrorIf(
-        not traits::check_compatibility<S>::value(m_pgen.engines),
-        "Problem generator is not compatible with the picked engine",
-        HERE);
-      raise::ErrorIf(
-        not traits::check_compatibility<M::MetricType>::value(m_pgen.metrics),
-        "Problem generator is not compatible with the metric picked",
-        HERE);
-      raise::ErrorIf(
-        not traits::check_compatibility<M::Dim>::value(m_pgen.dimensions),
-        "Problem generator is not compatible with the dimension picked",
-        HERE);
+      raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
       print_report();
     }
 
     ~Engine() = default;
 
+    void init();
     void print_report() const;
   };
 

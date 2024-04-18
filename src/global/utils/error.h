@@ -70,7 +70,8 @@ namespace raise {
 #if defined(MPI_ENABLED)
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 #endif
-    throw std::logic_error(msg.c_str());
+    throw std::logic_error(
+      (msg + " " + file + " : " + func + " @ " + std::to_string(line)).c_str());
   }
 
   inline void Fatal(const std::string& msg,
@@ -89,7 +90,8 @@ namespace raise {
 #if defined(MPI_ENABLED)
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 #endif
-    throw std::runtime_error(msg.c_str());
+    throw std::runtime_error(
+      (msg + " " + file + " : " + func + " @ " + std::to_string(line)).c_str());
   }
 
   inline void ErrorIf(bool               condition,

@@ -1,5 +1,3 @@
-#include "engines/engine.h"
-
 #include "enums.h"
 #include "global.h"
 
@@ -13,83 +11,87 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include "engines/engine.h"
+
 #include <string>
 
 namespace ntt {
 
-  void add_header(std::string&                    report,
-                  const std::vector<std::string>& lines,
-                  const std::vector<const char*>& colors) {
-    report += fmt::format("%s╔%s╗%s\n",
-                          color::BRIGHT_BLACK,
-                          fmt::repeat("═", 58).c_str(),
-                          color::RESET);
-    for (std::size_t i { 0 }; i < lines.size(); ++i) {
-      report += fmt::format("%s║%s %s%s%s%s%s║%s\n",
+  namespace {
+    void add_header(std::string&                    report,
+                    const std::vector<std::string>& lines,
+                    const std::vector<const char*>& colors) {
+      report += fmt::format("%s╔%s╗%s\n",
                             color::BRIGHT_BLACK,
-                            color::RESET,
-                            colors[i],
-                            lines[i].c_str(),
-                            color::RESET,
-                            fmt::repeat(" ", 57 - lines[i].size()).c_str(),
+                            fmt::repeat("═", 58).c_str(),
+                            color::RESET);
+      for (std::size_t i { 0 }; i < lines.size(); ++i) {
+        report += fmt::format("%s║%s %s%s%s%s%s║%s\n",
+                              color::BRIGHT_BLACK,
+                              color::RESET,
+                              colors[i],
+                              lines[i].c_str(),
+                              color::RESET,
+                              fmt::repeat(" ", 57 - lines[i].size()).c_str(),
+                              color::BRIGHT_BLACK,
+                              color::RESET);
+      }
+      report += fmt::format("%s╚%s╝%s\n",
                             color::BRIGHT_BLACK,
+                            fmt::repeat("═", 58).c_str(),
                             color::RESET);
     }
-    report += fmt::format("%s╚%s╝%s\n",
-                          color::BRIGHT_BLACK,
-                          fmt::repeat("═", 58).c_str(),
-                          color::RESET);
-  }
 
-  void add_category(std::string& report, unsigned short indent, const char* name) {
-    report += fmt::format("%s%s%s%s\n",
-                          std::string(indent, ' ').c_str(),
-                          color::BLUE,
-                          name,
-                          color::RESET);
-  }
+    void add_category(std::string& report, unsigned short indent, const char* name) {
+      report += fmt::format("%s%s%s%s\n",
+                            std::string(indent, ' ').c_str(),
+                            color::BLUE,
+                            name,
+                            color::RESET);
+    }
 
-  void add_subcategory(std::string& report, unsigned short indent, const char* name) {
-    report += fmt::format("%s%s-%s %s:\n",
-                          std::string(indent, ' ').c_str(),
-                          color::BRIGHT_BLACK,
-                          color::RESET,
-                          name);
-  }
+    void add_subcategory(std::string& report, unsigned short indent, const char* name) {
+      report += fmt::format("%s%s-%s %s:\n",
+                            std::string(indent, ' ').c_str(),
+                            color::BRIGHT_BLACK,
+                            color::RESET,
+                            name);
+    }
 
-  void add_label(std::string& report, unsigned short indent, const char* label) {
-    report += fmt::format("%s%s\n", std::string(indent, ' ').c_str(), label);
-  }
+    void add_label(std::string& report, unsigned short indent, const char* label) {
+      report += fmt::format("%s%s\n", std::string(indent, ' ').c_str(), label);
+    }
 
-  template <typename... Args>
-  void add_param(std::string&   report,
-                 unsigned short indent,
-                 const char*    name,
-                 const char*    format,
-                 Args... args) {
-    report += fmt::format("%s%s-%s %s: %s%s%s\n",
-                          std::string(indent, ' ').c_str(),
-                          color::BRIGHT_BLACK,
-                          color::RESET,
-                          name,
-                          color::BRIGHT_YELLOW,
-                          fmt::format(format, args...).c_str(),
-                          color::RESET);
-  }
+    template <typename... Args>
+    void add_param(std::string&   report,
+                   unsigned short indent,
+                   const char*    name,
+                   const char*    format,
+                   Args... args) {
+      report += fmt::format("%s%s-%s %s: %s%s%s\n",
+                            std::string(indent, ' ').c_str(),
+                            color::BRIGHT_BLACK,
+                            color::RESET,
+                            name,
+                            color::BRIGHT_YELLOW,
+                            fmt::format(format, args...).c_str(),
+                            color::RESET);
+    }
 
-  template <typename... Args>
-  void add_directional_param(std::string&   report,
-                             unsigned short indent,
-                             const char*    name,
-                             const char*    format,
-                             Args... args) {
-    report += fmt::format("%s%s: %s%s%s\n",
-                          std::string(indent, ' ').c_str(),
-                          name,
-                          color::BRIGHT_YELLOW,
-                          fmt::format(format, args...).c_str(),
-                          color::RESET);
-  }
+    template <typename... Args>
+    void add_directional_param(std::string&   report,
+                               unsigned short indent,
+                               const char*    name,
+                               const char*    format,
+                               Args... args) {
+      report += fmt::format("%s%s: %s%s%s\n",
+                            std::string(indent, ' ').c_str(),
+                            name,
+                            color::BRIGHT_YELLOW,
+                            fmt::format(format, args...).c_str(),
+                            color::RESET);
+    }
+  } // namespace
 
   template <SimEngine::type S, class M>
   void Engine<S, M>::print_report() const {
@@ -116,7 +118,8 @@ namespace ntt {
     add_param(report, 4, "Problem generator", "%s", pgen.c_str());
     add_param(report, 4, "Engine", "%s", SimEngine(S).to_string());
     add_param(report, 4, "Metric", "%s", Metric(M::MetricType).to_string());
-    add_param(report, 4, "Timestep [dt]", "%.3e", m_params.get<real_t>("algorithms.timestep.dt"));
+    add_param(report, 4, "Timestep [dt]", "%.3e", dt);
+    add_param(report, 4, "Runtime", "%.3Le [%d steps]", runtime, max_steps);
     report += "\n";
     add_category(report, 4, "Global domain");
     add_param(report, 4, "Resolution", "%s", m_params.stringize<std::size_t>("grid.resolution").c_str());

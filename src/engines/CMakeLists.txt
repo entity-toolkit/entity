@@ -1,7 +1,8 @@
 # ------------------------------
 # @defines: ntt_engines [STATIC/SHARED]
 # @sources:
-# - engine.cpp
+# - engine_printer.cpp
+# - engine_init.cpp
 # - srpic/srpic.cpp
 # - grpic/grpic.cpp
 # @includes:
@@ -19,7 +20,8 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
-  ${SRC_DIR}/engine.cpp
+  ${SRC_DIR}/engine_printer.cpp
+  ${SRC_DIR}/engine_init.cpp
   ${SRC_DIR}/srpic/srpic.cpp
   ${SRC_DIR}/grpic/grpic.cpp
 )

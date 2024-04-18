@@ -1,42 +1,27 @@
 #include "engines/srpic/srpic.h"
 
 #include "arch/traits.h"
+#include "utils/log.h"
 
 #include "metrics/minkowski.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "archetypes/field_setter.h"
-
-#include "pgen.hpp"
-
-#include <Kokkos_Core.hpp>
-#include <plog/Log.h>
 
 namespace ntt {
 
   template <class M>
-  void SRPICEngine<M>::init() {
-    PLOGI << "Initializing SRPIC engine";
-    // if constexpr (
-    //   traits::has_member<traits::init_flds_t, user::PGen<SimEngine::SRPIC, M>>::value) {
-    //   PLOGI << "Initializing fields";
-    //   // Kokkos::parallel_for(
-    //   //  "InitFields",
-    //   //,
-    //   // finitializer);
-    // }
-  }
-
-  template <class M>
   void SRPICEngine<M>::step_forward() {
-    PLOGI << "Stepping forward";
   }
 
   template <class M>
   void SRPICEngine<M>::run() {
     init();
-    step_forward();
+    while (step < max_steps) {
+      step_forward();
+      ++step;
+      time += dt;
+    }
   }
 
   template class SRPICEngine<metric::Minkowski<Dim::_1D>>;

@@ -8,32 +8,12 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
-#include "archetypes/field_setter.h"
 #include "archetypes/problem_generator.h"
+
+#include <plog/Log.h>
 
 namespace user {
   using namespace ntt;
-
-  // template <Dimension D>
-  // struct InitFields {
-
-  //   InitFields(real_t a) : amplitude { a } {}
-
-  //   // only set ex2 and bx3
-
-  //   Inline auto ex2(const coord_t<D>&) const -> real_t {
-  //     return value;
-  //   }
-
-  //   Inline auto bx3(const coord_t<D>&) const -> real_t {
-  //     return -value;
-  //   }
-
-  // private:
-  //   const real_t amplitude;
-  //   const real_t sx2;
-  //   const int    kx2;
-  // };
 
   template <SimEngine::type S, class M>
   struct PGen : public ProblemGenerator<S, M> {
@@ -58,13 +38,14 @@ namespace user {
     using ProblemGenerator<S, M>::C;
     using ProblemGenerator<S, M>::params;
 
-    inline PGen(SimulationParams& p) : ProblemGenerator<S, M>(p) {
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>&) :
+      ProblemGenerator<S, M> { p } {
       const auto message = fmt::format(
         "Problem generator initialized with `%s` engine and `%dD %s` metric",
         SimEngine(S).to_string(),
         D,
         Metric(M::MetricType).to_string());
-      info::Print(message);
+      PLOGI << message;
     }
   };
 

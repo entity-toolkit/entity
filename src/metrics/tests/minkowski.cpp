@@ -47,7 +47,8 @@ auto main(int argc, char* argv[]) -> int {
         },
           { { -2.0, 2.0 }, { -1.0, 1.0 }, { -1.0, 1.0 } });
       } catch (const std::exception& e) {
-        errorIf(std::string(e.what()) != "dx3 must be equal to dx1 in 3D",
+        errorIf(std::string(e.what()).find("dx3 must be equal to dx1 in 3D") ==
+                  std::string::npos,
                 "unequal dx error not caught");
       }
     }

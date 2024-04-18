@@ -15,17 +15,15 @@
 
 #include "arch/kokkos_aliases.h"
 
-#include <limits>
+#include <Kokkos_Core.hpp>
 
 #include <type_traits>
 
 namespace cmp {
 
-  template <typename T>
-  inline constexpr auto epsilon = std::numeric_limits<T>::epsilon();
-
   template <class T>
-  Inline auto AlmostEqual(T a, T b, T eps = epsilon<T>) -> bool {
+  Inline auto AlmostEqual(T a, T b, T eps = Kokkos::Experimental::epsilon<T>::value)
+    -> bool {
     static_assert(std::is_floating_point_v<T>, "T must be a floating point type");
     return (a == b) ||
            (math::abs(a - b) <= math::min(math::abs(a), math::abs(b)) * eps);
@@ -39,7 +37,8 @@ namespace cmp {
    * @returns true/false.
    */
   template <class T>
-  Inline auto AlmostZero(T a, T eps = epsilon<T>) -> bool {
+  Inline auto AlmostZero(T a, T eps = Kokkos::Experimental::epsilon<T>::value)
+    -> bool {
     static_assert(std::is_floating_point_v<T>, "T must be a floating point type");
     return math::abs(a) <= eps;
   }

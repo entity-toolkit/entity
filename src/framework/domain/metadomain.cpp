@@ -159,12 +159,10 @@ namespace ntt {
 #if defined(MPI_ENABLED)
       g_subdomains.back().set_mpi_rank(idx);
       if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
-        g_local_subdomains.push_back(
-          std::make_shared<Domain<S, M>>(g_subdomains.back()));
+        g_local_subdomain_indices.push_back(idx);
       }
 #else  // not MPI_ENABLED
-      g_local_subdomains.push_back(
-        std::make_shared<Domain<S, M>>(g_subdomains.back()));
+      g_local_subdomain_indices.push_back(idx);
 #endif // MPI_ENABLED
     }
   }
@@ -173,8 +171,8 @@ namespace ntt {
   void Metadomain<S, M>::redefineNeighbors() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
-      auto       current_domain = &g_subdomains[idx];
-      const auto current_offset = current_domain->offset_ndomains();
+      auto&      current_domain = g_subdomains[idx];
+      const auto current_offset = current_domain.offset_ndomains();
       for (const auto& direction : dir::Directions<D>::all) {
         // find the neighbor by its offset in specific direction
         auto nghbr_offset = current_offset;
@@ -196,11 +194,15 @@ namespace ntt {
           }
         }
         // pointer to the neighbor candidate
-        auto nghbr_candidate = &g_subdomains[g_domain_offset2index.at(nghbr_offset)];
-        raise::ErrorIf(nghbr_candidate == nullptr,
-                       "Neighbor candidate is nullptr",
+        raise::ErrorIf(g_domain_offset2index.find(nghbr_offset) ==
+                         g_domain_offset2index.end(),
+                       "Neighbor candidate not found",
                        HERE);
-        current_domain->setNeighbor(direction, nghbr_candidate);
+        const auto idx = g_domain_offset2index.at(nghbr_offset);
+        raise::ErrorIf(idx >= g_subdomains.size(),
+                       "Neighbor candidate not found",
+                       HERE);
+        current_domain.set_neighbor_idx(direction, idx);
       }
     }
   }
@@ -209,8 +211,8 @@ namespace ntt {
   void Metadomain<S, M>::redefineBoundaries() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
-      auto       current_domain = &g_subdomains[idx];
-      const auto current_offset = current_domain->offset_ndomains();
+      auto&      current_domain = g_subdomains[idx];
+      const auto current_offset = current_domain.offset_ndomains();
       for (auto direction : dir::Directions<D>::orth) {
         FldsBC flds_bc { FldsBC::INVALID };
         PrtlBC prtl_bc { PrtlBC::INVALID };
@@ -242,7 +244,8 @@ namespace ntt {
           }
         }
         // if sending to a different domain & periodic, then sync
-        if (current_domain->neighbor_in(direction)->index() != idx) {
+        const auto& neighbor = g_subdomains[current_domain.neighbor_idx_in(direction)];
+        if (neighbor.index() != idx) {
           if (flds_bc == FldsBC::PERIODIC) {
             flds_bc = FldsBC::SYNC;
           }
@@ -250,8 +253,8 @@ namespace ntt {
             prtl_bc = PrtlBC::SYNC;
           }
         }
-        current_domain->mesh.setFldsBc(direction, flds_bc);
-        current_domain->mesh.setPrtlBc(direction, prtl_bc);
+        current_domain.mesh.set_flds_bc(direction, flds_bc);
+        current_domain.mesh.set_frtl_bc(direction, prtl_bc);
       }
     }
   }
@@ -259,29 +262,28 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::finalValidityCheck() const {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
-      const auto current_domain = &g_subdomains[idx];
+      const auto& current_domain = g_subdomains[idx];
       // check that all neighbors are set properly
       for (const auto& direction : dir::Directions<D>::all) {
-        raise::ErrorIf(current_domain->neighbor_in(direction) == nullptr,
-                       "Neighbor not set properly",
-                       HERE);
-        raise::ErrorIf(current_domain->neighbor_in(direction)->neighbor_in(
-                         -direction) != current_domain,
+        const auto  neighbor_idx = current_domain.neighbor_idx_in(direction);
+        const auto& neighbor     = g_subdomains[neighbor_idx];
+        const auto self_idx = neighbor.neighbor_idx_in(-direction);
+        raise::ErrorIf(self_idx != idx,
                        "Neighbor not set properly",
                        HERE);
       }
       // check that all boundaries are set properly
       for (const auto& direction : dir::Directions<D>::orth) {
-        raise::ErrorIf(current_domain->mesh.flds_bc_in(direction) == FldsBC::INVALID,
+        raise::ErrorIf(current_domain.mesh.flds_bc_in(direction) == FldsBC::INVALID,
                        "Invalid boundary condition for fields",
                        HERE);
-        raise::ErrorIf(current_domain->mesh.prtl_bc_in(direction) == PrtlBC::INVALID,
+        raise::ErrorIf(current_domain.mesh.prtl_bc_in(direction) == PrtlBC::INVALID,
                        "Invalid boundary condition for particles",
                        HERE);
       }
       auto contained_in_local = false;
-      for (const auto& g : g_local_subdomains) {
-        contained_in_local |= (idx == g->index());
+      for (const auto& gidx : g_local_subdomain_indices) {
+        contained_in_local |= (idx == gidx);
       }
 #if defined(MPI_ENABLED)
       const auto is_same_rank = current_domain->mpi_rank() == g_mpi_rank;
@@ -301,9 +303,9 @@ namespace ntt {
     const auto dx_min              = g_mesh.metric.dxMin();
     auto       dx_min_from_domains = INFINITY;
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
-      const auto current_domain = &g_subdomains[idx];
-      const auto current_dx_min = current_domain->mesh.metric.dxMin();
-      dx_min_from_domains       = std::min(dx_min_from_domains, current_dx_min);
+      const auto& current_domain = g_subdomains[idx];
+      const auto  current_dx_min = current_domain.mesh.metric.dxMin();
+      dx_min_from_domains = std::min(dx_min_from_domains, current_dx_min);
     }
     raise::ErrorIf(
       not cmp::AlmostEqual(dx_min, dx_min_from_domains),

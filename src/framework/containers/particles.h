@@ -118,6 +118,9 @@ namespace ntt {
                 spec.cooling(),
                 spec.npld()) {}
 
+    Particles(const Particles&)            = delete;
+    Particles& operator=(const Particles&) = delete;
+
     ~Particles() = default;
 
     /**

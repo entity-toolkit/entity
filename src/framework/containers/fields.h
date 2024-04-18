@@ -111,6 +111,32 @@ namespace ntt {
      * @param res resolution vector of size D (dimension)
      */
     Fields(const std::vector<std::size_t>& res);
+
+    Fields(Fields&& other) noexcept :
+      em { std::move(other.em) },
+      bckp { std::move(other.bckp) },
+      cur { std::move(other.cur) },
+      buff { std::move(other.buff) },
+      aux { std::move(other.aux) },
+      em0 { std::move(other.em0) },
+      cur0 { std::move(other.cur0) } {}
+
+    Fields& operator=(Fields&& other) noexcept {
+      if (this != &other) {
+        em   = std::move(other.em);
+        bckp = std::move(other.bckp);
+        cur  = std::move(other.cur);
+        buff = std::move(other.buff);
+        aux  = std::move(other.aux);
+        em0  = std::move(other.em0);
+        cur0 = std::move(other.cur0);
+      }
+      return *this;
+    }
+
+    Fields(const Fields&)            = delete;
+    Fields& operator=(const Fields&) = delete;
+
     ~Fields() = default;
   };
 

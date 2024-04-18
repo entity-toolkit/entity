@@ -6,7 +6,7 @@
  *   - enum timer::TimerFlags
  * @depends:
  *   - utils/error.h
- *   - utils/mpi_aliases.h
+ *   - arch/mpi_aliases.h
  * @namespces:
  *   - timer::
  * @macros:
@@ -16,18 +16,17 @@
 #ifndef GLOBAL_UTILS_TIMER_H
 #define GLOBAL_UTILS_TIMER_H
 
-#include "utils/errors.h"
-#include "utils/mpi_aliases.h"
+#include "utils/error.h"
+#include "arch/mpi_aliases.h"
 
 #include <chrono>
 #include <functional>
 #include <iomanip>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <unordered_map>
 
 namespace timer {
   using timestamp = std::chrono::time_point<std::chrono::system_clock>;
@@ -122,6 +121,7 @@ namespace timer {
         }
         return total;
       } else {
+        raise::ErrorIf(m_timers.find(name) == m_timers.end(), "Timer not found", HERE);
         return m_timers.at(name).second;
       }
     }
@@ -220,6 +220,9 @@ namespace timer {
         total += timer.second.second;
       }
       for (std::size_t t { 0 }; t < m_names.size(); ++t) {
+        raise::ErrorIf(m_timers.find(m_names[t]) == m_timers.end(),
+                       "Timer not found",
+                       HERE);
         auto&       timer = m_timers.at(m_names[t]);
         std::string units = "us";
         auto        value = timer.second;

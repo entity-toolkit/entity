@@ -144,7 +144,7 @@ namespace ntt {
     }
 
     /* setters -------------------------------------------------------------- */
-    inline void setFldsBc(const dir::direction_t<D>& direction, const FldsBC& bc) {
+    inline void set_flds_bc(const dir::direction_t<D>& direction, const FldsBC& bc) {
       unsigned short nonzero = 0;
       for (unsigned short d = 0; d < D; ++d) {
         const auto dir = direction[d];
@@ -161,7 +161,7 @@ namespace ntt {
       raise::ErrorIf(nonzero != 1, "invalid direction", HERE);
     }
 
-    inline void setPrtlBc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
+    inline void set_frtl_bc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
       unsigned short nonzero = 0;
       for (unsigned short d = 0; d < D; ++d) {
         const auto dir = direction[d];

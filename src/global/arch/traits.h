@@ -3,10 +3,12 @@
  * @brief Defines a set of traits to check if a class satisfies certain conditions
  * @implements
  *   - traits::has_method<>
+ *   - traits::has_member<>
  *   - traits::ex1_t, ::ex2_t, ::ex3_t
  *   - traits::bx1_t, ::bx2_t, ::bx3_t
  *   - traits::dx1_t, ::dx2_t, ::dx3_t
  *   - traits::run_t, traits::to_string_t
+ *   - traits::init_flds_t
  *   - traits::check_compatibility<>
  *   - traits::compatibility<>
  *   - traits::is_pair<>
@@ -23,13 +25,21 @@
 
 namespace traits {
 
-  // special ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
   template <template <typename> class Trait, typename T, typename = void>
   struct has_method : std::false_type {};
 
   template <template <typename> class Trait, typename T>
   struct has_method<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
 
+  // trivial overload of `has_method` for readability
+  template <template <typename> class Trait, typename T, typename = void>
+  struct has_member : std::false_type {};
+
+  template <template <typename> class Trait, typename T>
+  struct has_member<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
+
+  // for fieldsetter
+  // special ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
   template <typename T>
   using ex1_t = decltype(&T::ex1);
 
@@ -57,12 +67,19 @@ namespace traits {
   template <typename T>
   using dx3_t = decltype(&T::dx3);
 
+  // for simengine
   template <typename T>
   using run_t = decltype(&T::run);
 
+  // for params
   template <typename T>
   using to_string_t = decltype(&T::to_string);
 
+  // for pgen
+  template <typename T>
+  using init_flds_t = decltype(&T::init_flds);
+
+  // checking compat for the problem generator + engine
   template <int N>
   struct check_compatibility {
     template <int... Is>

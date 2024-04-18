@@ -42,6 +42,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ntt {
@@ -72,6 +73,13 @@ namespace ntt {
      */
     void redefineBoundaries();
 
+    template <typename Func, typename... Args>
+    void runOnLocalDomains(Func func, Args&&... args) {
+      for (auto& ld : g_subdomains) {
+        func(ld, std::forward<Args>(args)...);
+      }
+    }
+
     /**
      * @param global_ndomains total number of domains
      * @param global_decomposition decomposition of the global domain
@@ -91,7 +99,12 @@ namespace ntt {
                const std::map<std::string, real_t>&,
                const std::vector<ParticleSpecies>&);
 
+    Metadomain(const Metadomain&)            = delete;
+    Metadomain& operator=(const Metadomain&) = delete;
+
     ~Metadomain() = default;
+
+    /* setters -------------------------------------------------------------- */
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
@@ -100,13 +113,14 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto ndomains_per_dim() const -> const std::vector<unsigned int>& {
+    auto ndomains_per_dim() const -> std::vector<unsigned int> {
       return g_ndomains_per_dim;
     }
 
     [[nodiscard]]
     auto idx2subdomain(unsigned int idx) const -> const Domain<S, M>& {
-      return g_subdomains.at(idx);
+      raise::ErrorIf(idx >= g_subdomains.size(), "idx2subdomain() failed", HERE);
+      return g_subdomains[idx];
     }
 
     [[nodiscard]]
@@ -119,6 +133,16 @@ namespace ntt {
       return g_species_params;
     }
 
+    [[nodiscard]]
+    auto local_subdomain_indices() const -> std::vector<unsigned int> {
+      return g_local_subdomain_indices;
+    }
+
+    // [[nodiscard]]
+    // auto local_subdomain() -> std::vector<std::shared_ptr<Domain<S, M>>>& {
+    //   return g_local_subdomains;
+    // }
+
   private:
     // domain information
     unsigned int g_ndomains;
@@ -128,8 +152,8 @@ namespace ntt {
     std::vector<std::vector<unsigned int>>            g_domain_offsets;
     std::map<std::vector<unsigned int>, unsigned int> g_domain_offset2index;
 
-    std::vector<Domain<S, M>>                  g_subdomains;
-    std::vector<std::shared_ptr<Domain<S, M>>> g_local_subdomains;
+    std::vector<Domain<S, M>> g_subdomains;
+    std::vector<unsigned int> g_local_subdomain_indices;
 
     Mesh<M>                             g_mesh;
     const std::map<std::string, real_t> g_metric_params;

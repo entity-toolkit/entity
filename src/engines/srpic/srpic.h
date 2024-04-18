@@ -6,11 +6,11 @@
  * @depends:
  *   - enums.h
  *   - arch/traits.h
+ *   - utils/log.h
  *   - engines/engine.h
  *   - metrics/minkowski.h
  *   - metrics/qspherical.h
  *   - metrics/spherical.h
- *   - archetypes/field_setter.h
  *   - pgen.hpp
  * @cpp:
  *   - srpic.cpp
@@ -31,9 +31,20 @@ namespace ntt {
 
   template <class M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
+    // constexprs
+    using Engine<SimEngine::SRPIC, M>::pgen_is_ok;
+    // contents
     using Engine<SimEngine::SRPIC, M>::m_params;
     using Engine<SimEngine::SRPIC, M>::m_metadomain;
     using Engine<SimEngine::SRPIC, M>::m_pgen;
+    // methods
+    using Engine<SimEngine::SRPIC, M>::init;
+    // variables
+    using Engine<SimEngine::SRPIC, M>::runtime;
+    using Engine<SimEngine::SRPIC, M>::dt;
+    using Engine<SimEngine::SRPIC, M>::max_steps;
+    using Engine<SimEngine::SRPIC, M>::time;
+    using Engine<SimEngine::SRPIC, M>::step;
 
   public:
     SRPICEngine(SimulationParams& params) :
@@ -41,17 +52,9 @@ namespace ntt {
 
     ~SRPICEngine() = default;
 
-    void init();
     void step_forward();
 
     void run();
-
-    //  template <typename Func, typename... Args>
-    // void run_on_local_domains(Func func, Args&&... args) {
-    //  for (auto& ld : m_metadomain.local_domains()) {
-    //     func(std::forward<Args>(args)...);
-    //   }
-    //  }
   };
 
 } // namespace ntt

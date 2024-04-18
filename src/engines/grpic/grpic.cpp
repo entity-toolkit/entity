@@ -6,8 +6,8 @@
 
 namespace ntt {
 
-  template <class M>
-  void GRPICEngine<M>::init() {}
+  // template <class M>
+  // void GRPICEngine<M>::init() {}
 
   template <class M>
   void GRPICEngine<M>::step_forward() {}

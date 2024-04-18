@@ -50,7 +50,7 @@ namespace ntt {
     /* [simulation] --------------------------------------------------------- */
     set("simulation.name", toml::find<std::string>(raw_data, "simulation", "name"));
     set("simulation.runtime",
-        toml::find<real_t>(raw_data, "simulation", "runtime"));
+        toml::find<long double>(raw_data, "simulation", "runtime"));
 
     const auto engine = fmt::toLower(
       toml::find<std::string>(raw_data, "simulation", "engine"));

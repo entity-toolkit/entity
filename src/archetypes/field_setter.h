@@ -1,8 +1,8 @@
 /**
  * @file archetypes/field_setter.hpp
- * @brief Defines a class which populates the EM fields with user-defined values
+ * @brief Defines a kernel which populates the EM fields with user-defined values
  * @implements
- *   - ntt::SetEMFields
+ *   - ntt::SetEMFields_kernel
  * @depends:
  *   - enums.h
  *   - global.h
@@ -14,9 +14,9 @@
  * @note
  * The functor accepts a class I as a template argument, which must contain
  * one of the ex1, ex2, ex3, bx1, bx2, bx3 methods (dx1, dx2, dx3 for GR).
- * * `coord_t<D>` --> [ I ] --> `real_t` --> [ SetEMFields ] --> ...
- * *      ^                        ^                              ^
- * *  (physical)           (SR: hatted basis )            (SR & GR: cntrv)
+ * * `coord_t<D>` --> [ I ] --> `real_t` --> [ SetEMFields_kernel ] --> ...
+ * *      ^                        ^                                     ^
+ * *  (physical)           (SR: hatted basis )                  (SR & GR: cntrv)
  * *                       (GR: phys. cntrv  )
  * @note
  * The functor automatically takes care of the staggering, ghost cells and
@@ -38,7 +38,7 @@
 namespace ntt {
 
   template <class I, SimEngine::type S, class M>
-  class SetEMFields {
+  class SetEMFields_kernel {
     static constexpr Dimension D = M::Dim;
     static constexpr bool defines_ex1 = traits::has_method<traits::ex1_t, I>::value;
     static constexpr bool defines_ex2 = traits::has_method<traits::ex2_t, I>::value;
@@ -61,12 +61,12 @@ namespace ntt {
     const M              metric;
 
   public:
-    SetEMFields(ndfield_t<M::Dim, 6>& EM, const I& finit, const M& metric) :
+    SetEMFields_kernel(ndfield_t<M::Dim, 6>& EM, const I& finit, const M& metric) :
       EM { EM },
       finit { finit },
       metric { metric } {}
 
-    ~SetEMFields() = default;
+    ~SetEMFields_kernel() = default;
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
