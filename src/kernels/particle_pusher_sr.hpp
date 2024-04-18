@@ -38,6 +38,8 @@
     DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
   }
 
+#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+
 /* -------------------------------------------------------------------------- */
 
 namespace ntt {
@@ -129,7 +131,7 @@ namespace ntt {
                       int                               ni1,
                       int                               ni2,
                       int                               ni3,
-                      const boundaries_t<PrtlBC::type>& boundaries) :
+                      const boundaries_t<PrtlBC>& boundaries) :
       EB { EB },
       i1 { i1 },
       i2 { i2 },
@@ -176,12 +178,12 @@ namespace ntt {
       }
       if constexpr (D == Dim::_3D) {
         raise::ErrorIf(boundaries.size() < 3, "boundaries defined incorrectly", HERE);
-        is_absorb_i3min = (boundaries[2][0] == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[2][0] == PrtlBC::ABSORB);
-        is_absorb_i3max = (boundaries[2][1] == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[2][1] == PrtlBC::ABSORB);
-        is_periodic_i3min = (boundaries[2][0] == PrtlBC::PERIODIC);
-        is_periodic_i3max = (boundaries[2][1] == PrtlBC::PERIODIC);
+        is_absorb_i3min = (boundaries[2].first == PrtlBC::ATMOSPHERE) ||
+                          (boundaries[2].first == PrtlBC::ABSORB);
+        is_absorb_i3max = (boundaries[2].second == PrtlBC::ATMOSPHERE) ||
+                          (boundaries[2].second == PrtlBC::ABSORB);
+        is_periodic_i3min = (boundaries[2].first == PrtlBC::PERIODIC);
+        is_periodic_i3max = (boundaries[2].second == PrtlBC::PERIODIC);
       }
     }
 
@@ -1028,5 +1030,6 @@ namespace ntt {
 
 #undef from_Xi_to_i_di
 #undef from_Xi_to_i
+#undef i_di_to_Xi
 
 #endif // KERNELS_PARTICLE_PUSHER_SR_HPP

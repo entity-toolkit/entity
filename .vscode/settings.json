@@ -78,7 +78,8 @@
     "variant": "cpp",
     "future": "cpp",
     "valarray": "cpp",
-    "ranges": "cpp"
+    "ranges": "cpp",
+    "*.ipp": "cpp"
   },
   "comment-divider.languagesMap": {
     "cpp": [

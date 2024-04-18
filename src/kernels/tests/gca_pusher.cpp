@@ -1,5 +1,4 @@
 #include "kernels/particle_pusher_sr.hpp"
-
 #include "enums.h"
 #include "global.h"
 
@@ -66,9 +65,9 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
 
   M metric { res, extent, params };
 
-  const auto nx1 = res[0];
-  const auto nx2 = res[1];
-  const auto nx3 = res[2];
+  const int nx1 = res[0];
+  const int nx2 = res[1];
+  const int nx3 = res[2];
 
   auto coeff = real_t { 1.0 };
   auto dt    = real_t { 1.0 };
@@ -133,19 +132,19 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   put_value<real_t>(ux3, (real_t)(3.0), 1);
   put_value<short>(tag, ParticleTag::alive, 1);
 
-  auto boundaries = boundaries_t<FldsBC> {};
-  if constexpr (M::CoordType != Coord::Cart) {
+// Particle boundaries
+  auto boundaries = boundaries_t<PrtlBC> {};
     boundaries = {
-      {FldsBC::PERIODIC, FldsBC::PERIODIC},
-      {FldsBC::PERIODIC, FldsBC::PERIODIC},
-      {FldsBC::PERIODIC, FldsBC::PERIODIC}
+      { PrtlBC::PERIODIC, PrtlBC::PERIODIC},
+      { PrtlBC::PERIODIC, PrtlBC::PERIODIC},
+      { PrtlBC::PERIODIC, PrtlBC::PERIODIC}
     };
-  }
+  
+  auto pgen = Pgen{};
 
-        Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(emfield, i1, i2, i3, i1, i2, i3, dx1, dx2, dx3,
-                  dx1, dx2, dx3, ux1, ux2, ux3, phi, tag, metric, Pgen,
-                  time, coeff, dt, nx1, nx2, nx3, boundaries, 10.0,
-                  1.0, 1.0);
+      auto pusher = Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(emfield, i1, i2, i3, i1, i2, i3, dx1, dx2, dx3,
+                  dx1, dx2, dx3, ux1, ux2, ux3, phi, tag, metric, pgen,
+                  (real_t)0.0, coeff, dt, nx1, nx2, nx3, boundaries, (real_t)10.0, (real_t)1.0, (real_t)1.0);
 
 }
 
