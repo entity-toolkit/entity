@@ -286,7 +286,7 @@ namespace ntt {
         contained_in_local |= (idx == gidx);
       }
 #if defined(MPI_ENABLED)
-      const auto is_same_rank = current_domain->mpi_rank() == g_mpi_rank;
+      const auto is_same_rank = current_domain.mpi_rank() == g_mpi_rank;
       raise::ErrorIf(is_same_rank != contained_in_local,
                      "local subdomains not set properly",
                      HERE);
