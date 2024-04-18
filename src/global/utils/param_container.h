@@ -9,6 +9,7 @@
  *   - global.h
  *   - utils/error.h
  *   - utils/formatting.h
+ *   - utils/log.h
  */
 
 #ifndef GLOBAL_UTILS_PARAM_CONTAINER_H
@@ -18,6 +19,7 @@
 
 #include "utils/error.h"
 #include "utils/formatting.h"
+#include "utils/log.h"
 
 #include <any>
 #include <ios>

@@ -7,6 +7,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
+#include "utils/log.h"
 #include "utils/numeric.h"
 
 #include "metrics/kerr_schild.h"

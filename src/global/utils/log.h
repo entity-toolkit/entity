@@ -3,6 +3,7 @@
  * @brief Global logging utilities with proper fences and MPI blockings
  * @implements
  *   - macro HERE
+ *   - raise::Warning -> void
  *   - logger::Checkpoint -> void
  *   - info::Print -> void
  * @depends:
@@ -12,6 +13,7 @@
  * @namespaces:
  *   - logger::
  *   - info::
+ *   - raise::
  * @macros:
  *   - MPI_ENABLED
  *   - DEBUG
@@ -35,6 +37,46 @@
   #include <mpi.h>
 #endif
 
+namespace raise {
+  inline void Warning(const std::string& msg,
+                      const std::string& file,
+                      const std::string& func,
+                      int                line,
+                      bool               once = true) {
+    if (once) {
+
+      CallOnce(
+        [](auto& msg, auto& file, auto& func, auto& line) {
+          PLOGV_(LogFile) << "Warning: " << file << " : " << func << " @ " << line;
+          PLOGW_(ErrFile) << "Warning: " << file << " : " << func << " @ " << line;
+#if defined(MPI_ENABLED)
+          int rank;
+          MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+          PLOGW_(ErrFile) << ": rank : " << rank;
+#endif
+          PLOGW_(ErrFile) << ": message : " << msg;
+          PLOGW << msg;
+          PLOGW << "see the `*.err` file for more details";
+        },
+        msg,
+        file,
+        func,
+        line);
+    } else {
+      PLOGV_(LogFile) << "Warning: " << file << " : " << func << " @ " << line;
+      PLOGW_(ErrFile) << "Warning: " << file << " : " << func << " @ " << line;
+#if defined(MPI_ENABLED)
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      PLOGW_(ErrFile) << ": rank : " << rank;
+#endif
+      PLOGW_(ErrFile) << ": message : " << msg;
+      PLOGW << msg;
+      PLOGW << "see the `*.err` file for more details";
+    }
+  }
+} // namespace raise
+
 namespace logger {
   using namespace files;
 
@@ -46,7 +88,7 @@ namespace logger {
   #endif
 #endif
     CallOnce(
-      [](const std::string& file, const std::string& func, int line) {
+      [](auto& file, auto& func, auto& line) {
         PLOGV_(LogFile) << "Checkpoint: " << file << " : " << func << " @ " << line;
       },
       file,
@@ -65,10 +107,7 @@ namespace logger {
   #endif
 #endif
     CallOnce(
-      [](const std::string& msg,
-         const std::string& file,
-         const std::string& func,
-         int                line) {
+      [](auto& msg, auto& file, auto& func, auto& line) {
         PLOGV_(LogFile) << "Checkpoint: " << file << " : " << func << " @ " << line;
         PLOGV_(LogFile) << " : message : " << msg;
       },
@@ -87,7 +126,7 @@ namespace info {
     auto msg_nocol = color::strip(msg);
     if (once) {
       CallOnce(
-        [](const std::string& msg, const std::string& msg_nocol, bool stdout) {
+        [](auto& msg, auto& msg_nocol, auto& stdout) {
           PLOGN_(InfoFile) << msg_nocol;
           if (stdout) {
             std::cout << msg << std::endl;

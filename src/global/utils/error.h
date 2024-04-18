@@ -2,7 +2,6 @@
  * @file utils/error.h
  * @brief Error handling utilities
  * @implements
- *   - raise::Warning -> void
  *   - raise::Error -> void
  *   - raise::Fatal -> void
  *   - raise::ErrorIf -> void
@@ -38,21 +37,6 @@
 
 namespace raise {
   using namespace files;
-
-  inline void Warning(const std::string& msg,
-                      const std::string& file,
-                      const std::string& func,
-                      int                line) {
-    PLOGW_(ErrFile) << "Warning: " << file << " : " << func << " @ " << line;
-#if defined(MPI_ENABLED)
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    PLOGW_(ErrFile) << ": rank : " << rank;
-#endif
-    PLOGW_(ErrFile) << ": message : " << msg;
-    PLOGW << msg;
-    PLOGW << "see the `*.err` file for more details";
-  }
 
   inline void Error(const std::string& msg,
                     const std::string& file,

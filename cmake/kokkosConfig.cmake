@@ -16,7 +16,7 @@ set(Kokkos_ENABLE_OPENMP ${default_KOKKOS_ENABLE_OPENMP} CACHE BOOL "Enable Open
 
 # set memory space
 if(${Kokkos_ENABLE_CUDA})
-  add_definitions(-DGPU_ENABLED)
+  add_compile_definitions(GPU_ENABLED)
   set(ACC_MEM_SPACE Kokkos::CudaSpace)
 else()
   set(ACC_MEM_SPACE Kokkos::HostSpace)
