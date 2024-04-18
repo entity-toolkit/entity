@@ -49,3 +49,4 @@ Testing/
 
 .schema.json
 *_old/
+.vscode/settings.json
