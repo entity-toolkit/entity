@@ -78,7 +78,7 @@ namespace ntt {
         params.get<std::map<std::string, real_t>>("grid.metric.params"),
         params.get<std::vector<ParticleSpecies>>("particles.species")
       },
-      m_pgen { m_params } {
+      m_pgen { m_params, m_metadomain } {
       raise::ErrorIf(
         not traits::check_compatibility<S>::value(m_pgen.engines),
         "Problem generator is not compatible with the picked engine",

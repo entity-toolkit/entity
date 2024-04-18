@@ -5,10 +5,13 @@
  *   - ntt::SRPICEngine<> : ntt::Engine<>
  * @depends:
  *   - enums.h
+ *   - arch/traits.h
  *   - engines/engine.h
  *   - metrics/minkowski.h
  *   - metrics/qspherical.h
  *   - metrics/spherical.h
+ *   - archetypes/field_setter.h
+ *   - pgen.hpp
  * @cpp:
  *   - srpic.cpp
  * @namespaces:
@@ -21,6 +24,8 @@
 #include "enums.h"
 
 #include "engines/engine.h"
+
+#include <utility>
 
 namespace ntt {
 
@@ -40,6 +45,13 @@ namespace ntt {
     void step_forward();
 
     void run();
+
+    //  template <typename Func, typename... Args>
+    // void run_on_local_domains(Func func, Args&&... args) {
+    //  for (auto& ld : m_metadomain.local_domains()) {
+    //     func(std::forward<Args>(args)...);
+    //   }
+    //  }
   };
 
 } // namespace ntt
