@@ -52,9 +52,7 @@ namespace ntt {
 
     ~SRPICEngine() = default;
 
-    void step_forward();
-
-    void run();
+    void step_forward() override;
   };
 
 } // namespace ntt

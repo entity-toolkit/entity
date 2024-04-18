@@ -2,6 +2,7 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "arch/mpi_aliases.h"
 #include "utils/formatting.h"
 
 #include "metrics/kerr_schild.h"
@@ -12,6 +13,15 @@
 #include "metrics/spherical.h"
 
 #include "engines/engine.h"
+
+#if defined(GPU_ENABLED)
+  #include <cuda_runtime.h>
+#endif
+
+#if defined(OUTPUT_ENABLED)
+  #include <H5public.h>
+  #include <adios2.h>
+#endif
 
 #include <string>
 
@@ -58,9 +68,11 @@ namespace ntt {
                             name);
     }
 
+#if defined(MPI_ENABLED)
     void add_label(std::string& report, unsigned short indent, const char* label) {
       report += fmt::format("%s%s\n", std::string(indent, ' ').c_str(), label);
     }
+#endif // MPI_ENABLED
 
     template <typename... Args>
     void add_param(std::string&   report,
@@ -102,16 +114,100 @@ namespace ntt {
     if (rank != MPI_ROOT_RANK) {
       return;
     }
+    int mpi_v, mpi_subv;
+    MPI_Get_version(&mpi_v, &mpi_subv);
+    const std::string mpi_version = fmt::format("%d.%d", mpi_v, mpi_subv);
+#else  // not MPI_ENABLED
+    const std::string mpi_version = "OFF";
 #endif // MPI_ENABLED
 
-    const auto version = "Entity v" + std::string(ENTITY_VERSION);
-    const auto hash    = std::string(ENTITY_GIT_HASH);
-    const auto pgen    = std::string(PGEN);
-    const auto nspec   = m_metadomain.species_params().size();
+    const auto entity_version = "Entity v" + std::string(ENTITY_VERSION);
+    const auto hash           = std::string(ENTITY_GIT_HASH);
+    const auto pgen           = std::string(PGEN);
+    const auto nspec          = m_metadomain.species_params().size();
+
+#if defined(__clang__)
+    const std::string ccx = "Clang/LLVM " __clang_version__;
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+    const std::string ccx = "Intel ICC/ICPC " __VERSION__;
+#elif defined(__GNUC__) || defined(__GNUG__)
+    const std::string ccx = "GNU GCC/G++ " __VERSION__;
+#elif defined(__HP_cc) || defined(__HP_aCC)
+    const std::string ccx = "Hewlett-Packard C/aC++ " __HP_aCC;
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+    const std::string ccx = "IBM XL C/C++ " __IBMCPP__;
+#elif defined(_MSC_VER)
+    const std::string ccx = "Microsoft Visual Studio " _MSC_VER;
+#else
+    const std::string ccx = "Unknown compiler";
+#endif
+    std::string cpp_standard;
+    if (__cplusplus == 202101L) {
+      cpp_standard = "C++23";
+    } else if (__cplusplus == 202002L) {
+      cpp_standard = "C++20";
+    } else if (__cplusplus == 201703L) {
+      cpp_standard = "C++17";
+    } else if (__cplusplus == 201402L) {
+      cpp_standard = "C++14";
+    } else if (__cplusplus == 201103L) {
+      cpp_standard = "C++11";
+    } else if (__cplusplus == 199711L) {
+      cpp_standard = "C++98";
+    } else {
+      cpp_standard = "pre-standard " + std::to_string(__cplusplus);
+    }
+
+#if defined(GPU_ENABLED)
+    int cuda_v;
+    cudaRuntimeGetVersion(&cuda_v);
+    const auto major { cuda_v / 1000 };
+    const auto minor { cuda_v % 1000 / 10 };
+    const auto patch { cuda_v % 10 };
+    const auto cuda_version = fmt::format("%d.%d.%d", major, minor, patch);
+#else // not GPU_ENABLED
+    const std::string cuda_version = "OFF";
+#endif
+
+    const auto kokkos_version = fmt::format("%d.%d.%d",
+                                            KOKKOS_VERSION / 10000,
+                                            KOKKOS_VERSION / 100 % 100,
+                                            KOKKOS_VERSION % 100);
+
+#if defined(OUTPUT_ENABLED)
+    unsigned h5_major, h5_minor, h5_release;
+    H5get_libversion(&h5_major, &h5_minor, &h5_release);
+    const std::string hdf5_version   = fmt::format("%d.%d.%d",
+                                                 h5_major,
+                                                 h5_minor,
+                                                 h5_release);
+    const std::string adios2_version = fmt::format("%d.%d.%d",
+                                                   ADIOS2_VERSION / 10000,
+                                                   ADIOS2_VERSION / 100 % 100,
+                                                   ADIOS2_VERSION % 100);
+#else // not OUTPUT_ENABLED
+    const std::string adios2_version = "OFF";
+#endif
+
+#if defined(DEBUG)
+    const std::string dbg = "ON";
+#else // not DEBUG
+    const std::string dbg = "OFF";
+#endif
 
     // clang-format off
-    std::string report {""};
-    add_header(report, {version, "hash: " + hash}, {color::BRIGHT_GREEN, color::BRIGHT_BLACK});
+    std::string report {"\n\n"};
+    add_header(report, {entity_version}, {color::BRIGHT_GREEN});
+    report += "\n";
+    add_category(report, 4, "Backend");
+    add_param(report, 4, "Build hash", "%s", hash.c_str());
+    add_param(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
+    add_param(report, 4, "CUDA", "%s", cuda_version.c_str());
+    add_param(report, 4, "MPI", "%s", mpi_version.c_str());
+    add_param(report, 4, "HDF5", "%s", hdf5_version.c_str());
+    add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
+    add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
+    add_param(report, 4, "Debug", "%s", dbg.c_str());
     report += "\n";
     add_category(report, 4, "Configuration");
     add_param(report, 4, "Name", "%s", m_params.get<std::string>("simulation.name").c_str());
@@ -178,24 +274,25 @@ namespace ntt {
         8 + 2 + 2 * M::Dim,
         fmt::format("%-10s  %-10s  %-10s", "[flds]", "[prtl]", "[neighbor]").c_str());
       for (auto& direction : dir::Directions<M::Dim>::orth) {
-        const auto flds_bc  = domain.mesh.flds_bc_in(direction);
-        const auto prtl_bc  = domain.mesh.prtl_bc_in(direction);
-        bool       has_sync = false;
-        auto       neighbor = domain.neighbor_in(direction);
+        const auto flds_bc      = domain.mesh.flds_bc_in(direction);
+        const auto prtl_bc      = domain.mesh.prtl_bc_in(direction);
+        bool       has_sync     = false;
+        auto       neighbor_idx = domain.neighbor_idx_in(direction);
         if (flds_bc == FldsBC::SYNC || prtl_bc == PrtlBC::SYNC) {
           has_sync = true;
         }
-        add_directional_param(
-          report,
-          8,
-          direction.to_string().c_str(),
-          "%-10s  %-10s  %-10s",
-          flds_bc.to_string(),
-          prtl_bc.to_string(),
-          has_sync ? std::to_string(neighbor->index()).c_str() : ".");
+        add_directional_param(report,
+                              8,
+                              direction.to_string().c_str(),
+                              "%-10s  %-10s  %-10s",
+                              flds_bc.to_string(),
+                              prtl_bc.to_string(),
+                              has_sync ? std::to_string(neighbor_idx).c_str()
+                                       : ".");
       }
     }
 #endif // MPI_ENABLED
+    report += "\n\n";
     info::Print(report);
   }
 

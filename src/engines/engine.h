@@ -9,6 +9,7 @@
  *   - pgen.hpp
  *   - arch/traits.h
  *   - arch/directions.h
+ *   - arch/mpi_aliases.h
  *   - utils/error.h
  *   - utils/log.h
  *   - utils/formatting.h
@@ -25,9 +26,14 @@
  *   - metrics/qspherical.h
  *   - metrics/spherical.h
  * @cpp:
- *   - engine.cpp
+ *   - engine_init.cpp
+ *   - engine_printer.cpp
  * @namespaces:
  *   - ntt::
+ * @macros:
+ *   - MPI
+ *   - DEBUG
+ *   - OUTPUT_ENABLED
  */
 
 #ifndef ENGINES_ENGINE_H
@@ -81,9 +87,6 @@ namespace ntt {
 
     Engine(SimulationParams& params) :
       m_params { params },
-      runtime { params.get<long double>("simulation.runtime") },
-      dt { params.get<real_t>("algorithms.timestep.dt") },
-      max_steps { static_cast<std::size_t>(runtime / dt) },
       m_metadomain {
         params.get<unsigned int>("simulation.domain.number"),
         params.get<std::vector<int>>("simulation.domain.decomposition"),
@@ -94,7 +97,10 @@ namespace ntt {
         params.get<std::map<std::string, real_t>>("grid.metric.params"),
         params.get<std::vector<ParticleSpecies>>("particles.species")
       },
-      m_pgen { m_params, m_metadomain } {
+      m_pgen { m_params, m_metadomain },
+      runtime { params.get<long double>("simulation.runtime") },
+      dt { params.get<real_t>("algorithms.timestep.dt") },
+      max_steps { static_cast<std::size_t>(runtime / dt) } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
       print_report();
     }
@@ -103,6 +109,17 @@ namespace ntt {
 
     void init();
     void print_report() const;
+
+    virtual void step_forward() = 0;
+
+    void run() {
+      init();
+      while (step < max_steps) {
+        step_forward();
+        ++step;
+        time += dt;
+      }
+    }
   };
 
 } // namespace ntt

@@ -12,9 +12,6 @@ namespace ntt {
   template <class M>
   void GRPICEngine<M>::step_forward() {}
 
-  template <class M>
-  void GRPICEngine<M>::run() {}
-
   template class GRPICEngine<metric::KerrSchild<Dim::_2D>>;
   template class GRPICEngine<metric::QKerrSchild<Dim::_2D>>;
   template class GRPICEngine<metric::KerrSchild0<Dim::_2D>>;

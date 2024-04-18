@@ -35,10 +35,7 @@ namespace ntt {
 
     ~GRPICEngine() = default;
 
-    // void init();
-    void step_forward();
-
-    void run();
+    void step_forward() override;
   };
 
 } // namespace ntt

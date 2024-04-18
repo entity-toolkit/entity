@@ -16,6 +16,8 @@
 # @uses:
 # - kokkos [required]
 # - plog [required]
+# - adios2 [optional]
+# - mpi [optional]
 # ------------------------------
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})

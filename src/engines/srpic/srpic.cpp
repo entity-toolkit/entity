@@ -7,21 +7,13 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include <string>
 
 namespace ntt {
 
   template <class M>
   void SRPICEngine<M>::step_forward() {
-  }
-
-  template <class M>
-  void SRPICEngine<M>::run() {
-    init();
-    while (step < max_steps) {
-      step_forward();
-      ++step;
-      time += dt;
-    }
+    info::Print("srpic step " + std::to_string(step));
   }
 
   template class SRPICEngine<metric::Minkowski<Dim::_1D>>;
