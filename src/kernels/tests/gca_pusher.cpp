@@ -71,7 +71,7 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   const int nx3 = res[2];
 
   auto coeff = real_t { 1.0 };
-  auto dt    = real_t { 1.0 };
+  auto dt    = real_t { 0.01 };
 
   const auto range_ext = CreateRangePolicy<Dim::_3D>(
     { 0, 0, 0 },
@@ -97,9 +97,15 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   array_t<int*>      i1 { "i1", 2 };
   array_t<int*>      i2 { "i2", 2 };
   array_t<int*>      i3 { "i3", 2 };
+  array_t<int*>      i1_prev { "i1_prev", 2 };
+  array_t<int*>      i2_prev { "i2_prev", 2 };
+  array_t<int*>      i3_prev { "i3_prev", 2 };
   array_t<prtldx_t*> dx1 { "dx1", 2 };
   array_t<prtldx_t*> dx2 { "dx2", 2 };
   array_t<prtldx_t*> dx3 { "dx3", 2 };
+  array_t<prtldx_t*> dx1_prev { "dx1_prev", 2 };
+  array_t<prtldx_t*> dx2_prev { "dx2_prev", 2 };
+  array_t<prtldx_t*> dx3_prev { "dx3_prev", 2 };
   array_t<real_t*>   ux1 { "ux1", 2 };
   array_t<real_t*>   ux2 { "ux2", 2 };
   array_t<real_t*>   ux3 { "ux3", 2 };
@@ -143,12 +149,19 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
 
   auto pgen = Pgen {};
   // clang-format off
+
   auto pusher = Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(
-                              emfield, i1, i2, i3, i1, i2, i3, dx1, dx2, dx3,
-                                       dx1, dx2, dx3, ux1, ux2, ux3, phi, tag, 
+                              emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, dx1, dx2, dx3,
+                                       dx1_prev, dx2_prev, dx3_prev, ux1, ux2, ux3, phi, tag, 
                                        metric, pgen,
                                        (real_t)0.0, coeff, dt, nx1, nx2, nx3, boundaries, 
-                                       (real_t)10.0, (real_t)1.0, (real_t)1.0);
+                                       (real_t)100000.0, (real_t)1.0, (real_t)0.0);
+
+  Kokkos::parallel_for("pusher", 
+    1000,
+  pusher
+  );
+
   // clang-format on
 }
 
