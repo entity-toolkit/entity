@@ -2,6 +2,7 @@
  * @file kernels/particle_pusher_sr.h
  * @brief Particle pusher for the SR
  * @implements
+ *   - ntt::Pusher_kernel<>
  *   - ntt::PusherBase_kernel<>
  * @depends:
  *   - enums.h
@@ -102,33 +103,33 @@ namespace ntt {
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    PusherBase_kernel(const ndfield_t<D, 6>&                EB,
-                      const array_t<int*>&                  i1,
-                      const array_t<int*>&                  i2,
-                      const array_t<int*>&                  i3,
-                      const array_t<int*>&                  i1_prev,
-                      const array_t<int*>&                  i2_prev,
-                      const array_t<int*>&                  i3_prev,
-                      const array_t<prtldx_t*>&             dx1,
-                      const array_t<prtldx_t*>&             dx2,
-                      const array_t<prtldx_t*>&             dx3,
-                      const array_t<prtldx_t*>&             dx1_prev,
-                      const array_t<prtldx_t*>&             dx2_prev,
-                      const array_t<prtldx_t*>&             dx3_prev,
-                      const array_t<real_t*>&               ux1,
-                      const array_t<real_t*>&               ux2,
-                      const array_t<real_t*>&               ux3,
-                      const array_t<real_t*>&               phi,
-                      const array_t<short*>&                tag,
-                      const M&                              metric,
-                      const PG&                             pgen,
-                      real_t                                time,
-                      real_t                                coeff,
-                      real_t                                dt,
-                      int                                   ni1,
-                      int                                   ni2,
-                      int                                   ni3,
-                      const boundaries_t<ParticleBC::type>& boundaries) :
+    PusherBase_kernel(const ndfield_t<D, 6>&            EB,
+                      const array_t<int*>&              i1,
+                      const array_t<int*>&              i2,
+                      const array_t<int*>&              i3,
+                      const array_t<int*>&              i1_prev,
+                      const array_t<int*>&              i2_prev,
+                      const array_t<int*>&              i3_prev,
+                      const array_t<prtldx_t*>&         dx1,
+                      const array_t<prtldx_t*>&         dx2,
+                      const array_t<prtldx_t*>&         dx3,
+                      const array_t<prtldx_t*>&         dx1_prev,
+                      const array_t<prtldx_t*>&         dx2_prev,
+                      const array_t<prtldx_t*>&         dx3_prev,
+                      const array_t<real_t*>&           ux1,
+                      const array_t<real_t*>&           ux2,
+                      const array_t<real_t*>&           ux3,
+                      const array_t<real_t*>&           phi,
+                      const array_t<short*>&            tag,
+                      const M&                          metric,
+                      const PG&                         pgen,
+                      real_t                            time,
+                      real_t                            coeff,
+                      real_t                            dt,
+                      int                               ni1,
+                      int                               ni2,
+                      int                               ni3,
+                      const boundaries_t<PrtlBC::type>& boundaries) :
       EB { EB },
       i1 { i1 },
       i2 { i2 },
@@ -155,32 +156,32 @@ namespace ntt {
       ni1 { ni1 },
       ni2 { ni2 },
       ni3 { ni3 } {
-      NTTHostErrorIf(boundaries.size() < 1, "boundaries defined incorrectly");
-      is_absorb_i1min = (boundaries[0].first == ParticleBC::ATMOSPHERE) ||
-                        (boundaries[0].first == ParticleBC::ABSORB);
-      is_absorb_i1max = (boundaries[0].second == ParticleBC::ATMOSPHERE) ||
-                        (boundaries[0].second == ParticleBC::ABSORB);
-      is_periodic_i1min = (boundaries[0].first == ParticleBC::PERIODIC);
-      is_periodic_i1max = (boundaries[0].second == ParticleBC::PERIODIC);
+      raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
+      is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
+                        (boundaries[0].first == PrtlBC::ABSORB);
+      is_absorb_i1max = (boundaries[0].second == PrtlBC::ATMOSPHERE) ||
+                        (boundaries[0].second == PrtlBC::ABSORB);
+      is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
+      is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-        NTTHostErrorIf(boundaries.size() < 2, "boundaries defined incorrectly");
-        is_absorb_i2min = (boundaries[1].first == ParticleBC::ATMOSPHERE) ||
-                          (boundaries[1].first == ParticleBC::ABSORB);
-        is_absorb_i2max = (boundaries[1].second == ParticleBC::ATMOSPHERE) ||
-                          (boundaries[1].second == ParticleBC::ABSORB);
-        is_periodic_i2min = (boundaries[1].first == ParticleBC::PERIODIC);
-        is_periodic_i2max = (boundaries[1].second == ParticleBC::PERIODIC);
-        is_axis_i2min     = (boundaries[1].first == ParticleBC::AXIS);
-        is_axis_i2max     = (boundaries[1].second == ParticleBC::AXIS);
+        raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
+        is_absorb_i2min = (boundaries[1].first == PrtlBC::ATMOSPHERE) ||
+                          (boundaries[1].first == PrtlBC::ABSORB);
+        is_absorb_i2max = (boundaries[1].second == PrtlBC::ATMOSPHERE) ||
+                          (boundaries[1].second == PrtlBC::ABSORB);
+        is_periodic_i2min = (boundaries[1].first == PrtlBC::PERIODIC);
+        is_periodic_i2max = (boundaries[1].second == PrtlBC::PERIODIC);
+        is_axis_i2min     = (boundaries[1].first == PrtlBC::AXIS);
+        is_axis_i2max     = (boundaries[1].second == PrtlBC::AXIS);
       }
       if constexpr (D == Dim::_3D) {
-        NTTHostErrorIf(boundaries.size() < 3, "boundaries defined incorrectly");
-        is_absorb_i3min = (boundaries[2][0] == ParticleBC::ATMOSPHERE) ||
-                          (boundaries[2][0] == ParticleBC::ABSORB);
-        is_absorb_i3max = (boundaries[2][1] == ParticleBC::ATMOSPHERE) ||
-                          (boundaries[2][1] == ParticleBC::ABSORB);
-        is_periodic_i3min = (boundaries[2][0] == ParticleBC::PERIODIC);
-        is_periodic_i3max = (boundaries[2][1] == ParticleBC::PERIODIC);
+        raise::ErrorIf(boundaries.size() < 3, "boundaries defined incorrectly", HERE);
+        is_absorb_i3min = (boundaries[2][0] == PrtlBC::ATMOSPHERE) ||
+                          (boundaries[2][0] == PrtlBC::ABSORB);
+        is_absorb_i3max = (boundaries[2][1] == PrtlBC::ATMOSPHERE) ||
+                          (boundaries[2][1] == PrtlBC::ABSORB);
+        is_periodic_i3min = (boundaries[2][0] == PrtlBC::PERIODIC);
+        is_periodic_i3max = (boundaries[2][1] == PrtlBC::PERIODIC);
       }
     }
 
