@@ -186,6 +186,7 @@ namespace ntt {
                                                    ADIOS2_VERSION / 100 % 100,
                                                    ADIOS2_VERSION % 100);
 #else // not OUTPUT_ENABLED
+    const std::string hdf5_version   = "OFF";
     const std::string adios2_version = "OFF";
 #endif
 
