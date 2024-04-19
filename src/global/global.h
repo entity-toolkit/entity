@@ -25,6 +25,7 @@
  *   - type range_tuple_t
  *   - ntt::GlobalInitialize -> void
  *   - ntt::GlobalFinalize -> void
+ *   - enum ntt::DiagFlags
  * @cpp:
  *   - global.cpp
  * @namespaces:
@@ -184,6 +185,8 @@ enum class in : unsigned short {
 template <Dimension D>
 using box_region_t = CellLayer[D];
 
+/* config flags ------------------------------------------------------------- */
+
 namespace PrepareOutput {
   enum PrepareOutputFlags_ {
     None                        = 0,
@@ -196,6 +199,40 @@ namespace PrepareOutput {
 } // namespace PrepareOutput
 
 typedef int PrepareOutputFlags;
+
+namespace Timer {
+  enum TimerFlags_ {
+    None          = 0,
+    PrintRelative = 1 << 0,
+    PrintUnits    = 1 << 1,
+    PrintIndents  = 1 << 2,
+    PrintTotal    = 1 << 3,
+    PrintTitle    = 1 << 4,
+    AutoConvert   = 1 << 5,
+    Colorful      = 1 << 6,
+    All = PrintRelative | PrintUnits | PrintIndents | PrintTotal | PrintTitle |
+          AutoConvert | Colorful,
+    Default = All,
+  };
+} // namespace Timer
+
+typedef int TimerFlags;
+
+namespace Diag {
+  enum DiagFlags_ {
+    None     = 0,
+    Progress = 1 << 0,
+    Timers   = 1 << 1,
+    Species  = 1 << 2,
+    Colorful = 1 << 3,
+    Default  = Progress | Timers | Species | Colorful,
+  };
+
+} // namespace Diag
+
+typedef int DiagFlags;
+
+/* aliases ------------------------------------------------------------------ */
 
 using Dim = Dimension;
 

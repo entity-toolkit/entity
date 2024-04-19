@@ -1,5 +1,7 @@
 #include "engines/grpic/grpic.h"
 
+#include "utils/timer.h"
+
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
 #include "metrics/qkerr_schild.h"
@@ -10,7 +12,7 @@ namespace ntt {
   // void GRPICEngine<M>::init() {}
 
   template <class M>
-  void GRPICEngine<M>::step_forward() {}
+  void GRPICEngine<M>::step_forward(timer::Timers&) {}
 
   template class GRPICEngine<metric::KerrSchild<Dim::_2D>>;
   template class GRPICEngine<metric::QKerrSchild<Dim::_2D>>;

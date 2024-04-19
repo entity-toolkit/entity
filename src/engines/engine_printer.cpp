@@ -3,6 +3,7 @@
 
 #include "arch/directions.h"
 #include "arch/mpi_aliases.h"
+#include "utils/colors.h"
 #include "utils/formatting.h"
 
 #include "metrics/kerr_schild.h"

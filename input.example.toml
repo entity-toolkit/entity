@@ -343,3 +343,7 @@
   #   @type: bool
   #   @default: false
   blocking_timers = ""
+  # Enable colored stdout
+  #   @type: bool
+  #   @default: true
+  colored_stdout = ""

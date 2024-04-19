@@ -7,6 +7,7 @@
  *   - enums.h
  *   - arch/traits.h
  *   - utils/log.h
+ *   - utils/timer.h
  *   - engines/engine.h
  *   - metrics/minkowski.h
  *   - metrics/qspherical.h
@@ -22,6 +23,8 @@
 #define ENGINES_SRPIC_SRPIC_H
 
 #include "enums.h"
+
+#include "utils/timer.h"
 
 #include "engines/engine.h"
 
@@ -52,7 +55,7 @@ namespace ntt {
 
     ~SRPICEngine() = default;
 
-    void step_forward() override;
+    void step_forward(timer::Timers&) override;
   };
 
 } // namespace ntt

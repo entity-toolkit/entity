@@ -139,6 +139,7 @@ namespace ntt {
       return CreateRangePolicy<Dim::_1D>({ 0 }, { maxnpart() });
     }
 
+    /* getters -------------------------------------------------------------- */
     /**
      * @brief Get the number of active particles
      */
@@ -155,19 +156,20 @@ namespace ntt {
       return m_ntags;
     }
 
+    /* setters -------------------------------------------------------------- */
     /**
      * @brief Set the number of particles
      * @param npart The number of particles as a std::size_t
      */
-    void setNpart(const std::size_t& npart) {
+    void set_npart(std::size_t n) {
       raise::ErrorIf(
-        npart > maxnpart(),
+        n > maxnpart(),
         fmt::format(
           "Trying to set npart to %d which is larger than maxnpart %d",
-          npart,
+          n,
           maxnpart()),
         HERE);
-      m_npart = npart;
+      m_npart = n;
     }
 
     /**
@@ -175,7 +177,7 @@ namespace ntt {
      * @return The vector of counts for each tag.
      */
     [[nodiscard]]
-    auto ComputeNpartPerTag() const -> std::vector<std::size_t>;
+    auto npart_per_tag() const -> std::vector<std::size_t>;
 
     /**
      * @brief Sort particles by their tags.
@@ -187,11 +189,6 @@ namespace ntt {
      * @brief Copy particle data from device to host.
      */
     void SyncHostDevice();
-
-    /**
-     * @brief Print particle counts.
-     */
-    // void PrintParticleCounts(std::ostream& os = std::cout) const;
   };
 
 } // namespace ntt

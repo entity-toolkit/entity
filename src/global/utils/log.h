@@ -10,6 +10,7 @@
  *   - global.h
  *   - arch/mpi_aliases.h
  *   - utils/formatting.h
+ *   - utils/colors.h
  * @namespaces:
  *   - logger::
  *   - info::
@@ -25,6 +26,7 @@
 #include "global.h"
 
 #include "arch/mpi_aliases.h"
+#include "utils/colors.h"
 #include "utils/formatting.h"
 
 #include <Kokkos_Core.hpp>

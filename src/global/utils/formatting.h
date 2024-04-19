@@ -10,9 +10,7 @@
  *   - fmt::splitString -> std::vector<std::string>
  *   - fmt::repeat -> std::string
  *   - fmt::formatVector -> std::string
- *   - color:: instances
  * @namespaces:
- *   - color::
  *   - fmt::
  */
 
@@ -23,50 +21,13 @@
 
 #include <algorithm>
 #include <cctype>
+#include <map>
 #include <memory>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-namespace color {
-  static constexpr const char* RESET { "\033[0m" };
-  static constexpr const char* BLACK { "\033[30m" };         /* Black */
-  static constexpr const char* RED { "\033[31m" };           /* Red */
-  static constexpr const char* GREEN { "\033[32m" };         /* Green */
-  static constexpr const char* YELLOW { "\033[33m" };        /* Yellow */
-  static constexpr const char* BLUE { "\033[34m" };          /* Blue */
-  static constexpr const char* MAGENTA { "\033[35m" };       /* Magenta */
-  static constexpr const char* CYAN { "\033[36m" };          /* Cyan */
-  static constexpr const char* WHITE { "\033[37m" };         /* White */
-  static constexpr const char* BRIGHT_BLACK { "\033[90m" };  /* Bright Black */
-  static constexpr const char* BRIGHT_RED { "\033[91m" };    /* Bright Red */
-  static constexpr const char* BRIGHT_GREEN { "\033[92m" };  /* Bright Green */
-  static constexpr const char* BRIGHT_YELLOW { "\033[93m" }; /* Bright Yellow */
-  static constexpr const char* BRIGHT_BLUE { "\033[94m" };   /* Bright Blue */
-  static constexpr const char* BRIGHT_MAGENTA { "\033[95m" }; /* Bright Magenta */
-  static constexpr const char* BRIGHT_CYAN { "\033[96m" };    /* Bright Cyan */
-  static constexpr const char* BRIGHT_WHITE { "\033[97m" };   /* Bright White */
-  static constexpr const char* all[] = {
-    RESET,       BLACK,        RED,           GREEN,       YELLOW,
-    BLUE,        MAGENTA,      CYAN,          WHITE,       BRIGHT_BLACK,
-    BRIGHT_RED,  BRIGHT_GREEN, BRIGHT_YELLOW, BRIGHT_BLUE, BRIGHT_MAGENTA,
-    BRIGHT_CYAN, BRIGHT_WHITE
-  };
-
-  inline auto strip(const std::string& msg) -> std::string {
-    auto msg_nocol = msg;
-    for (const auto c : all) {
-      std::size_t pos = 0;
-      while ((pos = msg_nocol.find(c, pos)) != std::string::npos) {
-        msg_nocol.replace(pos, strlen(c), "");
-        pos += strlen("");
-      }
-    }
-    return msg_nocol;
-  }
-} // namespace color
 
 namespace fmt {
 

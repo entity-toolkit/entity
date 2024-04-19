@@ -6,6 +6,7 @@
  * @depends:
  *   - enums.h
  *   - engines/engine.h
+ *   - utils/timer.h
  *   - metrics/kerr_schild.h
  *   - metrics/kerr_schild_0.h
  *   - metrics/qkerr_schild.h
@@ -19,6 +20,8 @@
 #define ENGINES_GRPIC_GRPIC_H
 
 #include "enums.h"
+
+#include "utils/timer.h"
 
 #include "engines/engine.h"
 
@@ -35,7 +38,7 @@ namespace ntt {
 
     ~GRPICEngine() = default;
 
-    void step_forward() override;
+    void step_forward(timer::Timers&) override;
   };
 
 } // namespace ntt

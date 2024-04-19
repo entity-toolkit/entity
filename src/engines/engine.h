@@ -13,6 +13,9 @@
  *   - utils/error.h
  *   - utils/log.h
  *   - utils/formatting.h
+ *   - utils/progressbar.h
+ *   - utils/colors.h
+ *   - utils/timer.h
  *   - archetypes/field_setter.h
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
@@ -45,6 +48,8 @@
 #include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/log.h"
+#include "utils/progressbar.h"
+#include "utils/timer.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -53,6 +58,8 @@
 #include "framework/parameters.h"
 
 #include "pgen.hpp"
+
+#include <Kokkos_Core.hpp>
 
 #include <map>
 #include <vector>
@@ -109,15 +116,30 @@ namespace ntt {
 
     void init();
     void print_report() const;
+    void print_step_report(timer::Timers&, pbar::DurationHistory&) const;
 
-    virtual void step_forward() = 0;
+    virtual void step_forward(timer::Timers&) = 0;
 
     void run() {
       init();
+      auto timers = timer::Timers {
+        { "FieldSolver",
+         "CurrentFiltering", "CurrentDeposit",
+         "ParticlePusher", "FieldBoundaries",
+         "ParticleBoundaries", "Communications",
+         "UserSpecific", "Output" },
+        []() {
+          Kokkos::fence();
+         },
+        m_params.get<bool>("diagnostics.blocking_timers")
+      };
+      auto time_history = pbar::DurationHistory { 1000 };
       while (step < max_steps) {
-        step_forward();
+        step_forward(timers);
         ++step;
         time += dt;
+        time_history.tick();
+        print_step_report(timers, time_history);
       }
     }
   };

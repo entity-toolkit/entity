@@ -80,6 +80,13 @@ namespace ntt {
       }
     }
 
+    template <typename Func, typename... Args>
+    void runOnLocalDomainsConst(Func func, Args&&... args) const {
+      for (auto& ld : g_subdomains) {
+        func(ld, std::forward<Args>(args)...);
+      }
+    }
+
     /**
      * @param global_ndomains total number of domains
      * @param global_decomposition decomposition of the global domain

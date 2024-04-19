@@ -2,6 +2,7 @@
 
 #include "arch/traits.h"
 #include "utils/log.h"
+#include "utils/timer.h"
 
 #include "metrics/minkowski.h"
 #include "metrics/qspherical.h"
@@ -12,8 +13,14 @@
 namespace ntt {
 
   template <class M>
-  void SRPICEngine<M>::step_forward() {
-    info::Print("srpic step " + std::to_string(step));
+  void SRPICEngine<M>::step_forward(timer::Timers& timers) {
+    timers.start("Output");
+    long double a { 0.0 };
+    for (std::size_t p { 0 }; p < 100000000; p++) {
+      a += 1.0;
+    }
+    (void)a;
+    timers.stop("Output");
   }
 
   template class SRPICEngine<metric::Minkowski<Dim::_1D>>;

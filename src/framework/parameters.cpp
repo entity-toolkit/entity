@@ -357,6 +357,8 @@ namespace ntt {
         toml::find_or(raw_data, "diagnostics", "interval", defaults::diag::interval));
     set("diagnostics.blocking_timers",
         toml::find_or(raw_data, "diagnostics", "blocking_timers", false));
+    set("diagnostics.colored_stdout",
+        toml::find_or(raw_data, "diagnostics", "colored_stdout", true));
 
     /* inferred variables --------------------------------------------------- */
     // extent
