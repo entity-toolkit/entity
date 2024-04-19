@@ -141,7 +141,7 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   };
 
   auto pgen = Pgen {};
-  Kokkos::parallel_for("pusher", Kokkos::RangePolicy<Boris_GCA_t>(0, 2),Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, dx1, dx2, dx3,
+  Kokkos::parallel_for("pusher", Kokkos::RangePolicy<ntt::Massive_t>(0, 1),Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, dx1, dx2, dx3,
                                        dx1_prev, dx2_prev, dx3_prev, ux1, ux2, ux3, phi, tag, metric, pgen, (real_t)0.0, coeff, dt, nx1, nx2, nx3, boundaries, 
                                        (real_t)100000.0, (real_t)1.0, (real_t)0.0));
 
