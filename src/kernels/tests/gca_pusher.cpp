@@ -141,17 +141,26 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   };
 
   auto pgen = Pgen {};
-  Kokkos::parallel_for("pusher", Kokkos::RangePolicy<ntt::Massive_t>(0, 1),Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, dx1, dx2, dx3,
-                                       dx1_prev, dx2_prev, dx3_prev, ux1, ux2, ux3, phi, tag, metric, pgen, (real_t)0.0, coeff, dt, nx1, nx2, nx3, boundaries, 
-                                       (real_t)100000.0, (real_t)1.0, (real_t)0.0));
+  // clang-format off
+  Kokkos::parallel_for(
+    "pusher",
+    Kokkos::RangePolicy<AccelExeSpace, Boris_GCA_t>(0, 1),
+    Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(
+      emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, 
+      dx1, dx2, dx3, dx1_prev, dx2_prev, dx3_prev, 
+      ux1, ux2, ux3, phi, tag,
+      metric, pgen,
+      (real_t)0.0,
+      coeff, dt, nx1, nx2, nx3,
+      boundaries, (real_t)100000.0, (real_t)1.0, (real_t)0.0));
+  // clang-format on
 
-  
   auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
   auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
   auto i3_prev_ = Kokkos::create_mirror_view(i3_prev);
-  auto i1_ = Kokkos::create_mirror_view(i1);
-  auto i2_ = Kokkos::create_mirror_view(i2);
-  auto i3_ = Kokkos::create_mirror_view(i3);
+  auto i1_      = Kokkos::create_mirror_view(i1);
+  auto i2_      = Kokkos::create_mirror_view(i2);
+  auto i3_      = Kokkos::create_mirror_view(i3);
   Kokkos::deep_copy(i1_prev_, i1_prev);
   Kokkos::deep_copy(i2_prev_, i2_prev);
   Kokkos::deep_copy(i3_prev_, i3_prev);
@@ -162,9 +171,9 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   auto dx1_prev_ = Kokkos::create_mirror_view(dx1_prev);
   auto dx2_prev_ = Kokkos::create_mirror_view(dx2_prev);
   auto dx3_prev_ = Kokkos::create_mirror_view(dx3_prev);
-  auto dx1_ = Kokkos::create_mirror_view(dx1);
-  auto dx2_ = Kokkos::create_mirror_view(dx2);
-  auto dx3_ = Kokkos::create_mirror_view(dx3);
+  auto dx1_      = Kokkos::create_mirror_view(dx1);
+  auto dx2_      = Kokkos::create_mirror_view(dx2);
+  auto dx3_      = Kokkos::create_mirror_view(dx3);
   Kokkos::deep_copy(dx1_prev_, dx1_prev);
   Kokkos::deep_copy(dx2_prev_, dx2_prev);
   Kokkos::deep_copy(dx3_prev_, dx3_prev);
@@ -172,9 +181,14 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   Kokkos::deep_copy(dx2_, dx2);
   Kokkos::deep_copy(dx3_, dx3);
 
-  printf("%.12e  %.12e  %.12e \n" ,i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0], i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0], i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0]);
-  printf("%.12e \n", (i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0]) * 0.22 + (i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0]) * 0.44 + (i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0]) * 0.66);
-
+  printf("%.12e  %.12e  %.12e \n",
+         i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0],
+         i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0],
+         i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0]);
+  printf("%.12e \n",
+         (i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0]) * 0.22 +
+           (i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0]) * 0.44 +
+           (i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0]) * 0.66);
 }
 
 auto main(int argc, char* argv[]) -> int {
