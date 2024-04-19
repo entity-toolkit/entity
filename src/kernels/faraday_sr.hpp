@@ -2,7 +2,7 @@
  * @file kernels/faraday_sr.hpp
  * @brief Algorithms for Faraday's law in curvilinear SR
  * @implements
- *   - ntt::Faraday_kernel<>
+ *   - kernel::sr::Faraday_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::sr::
  * !TODO:
  *   - 3D implementation
  */
@@ -25,7 +25,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel::sr {
+  using namespace ntt;
 
   /**
    * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
@@ -101,7 +102,6 @@ namespace ntt {
       }
     }
   };
-
-} // namespace ntt
+} // namespace kernel::sr
 
 #endif // KERNELS_FARADAY_SR_HPP

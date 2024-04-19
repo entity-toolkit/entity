@@ -2,8 +2,8 @@
  * @file kernels/ampere_gr.hpp
  * @brief Algorithms for Ampere's law in curvilinear SR
  * @implements
- *   - ntt::Ampere_kernel<>
- *   - ntt::CurrentsAmpere_kernel<>
+ *   - kernel::sr::Ampere_kernel<>
+ *   - kernel::sr::CurrentsAmpere_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -11,7 +11,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::sr::
  * !TODO:
  *   - 3D implementation
  */
@@ -26,7 +26,9 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel::sr {
+  using namespace ntt;
+
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space
    * @tparam M Metric
@@ -54,9 +56,6 @@ namespace ntt {
       coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        raise::ErrorIf(boundaries[1].size() < 2,
-                       "boundaries defined incorrectly",
-                       HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
         is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
@@ -225,6 +224,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace kernel::sr
 
 #endif // KERNELS_AMPERE_SR_HPP

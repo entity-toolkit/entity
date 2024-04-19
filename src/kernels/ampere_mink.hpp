@@ -2,15 +2,15 @@
  * @file kernels/ampere_mink.hpp
  * @brief Algorithms for Ampere's law in cartesian Minkowski space
  * @implements
- *   - ntt::Ampere_kernel<>
- *   - ntt::CurrentsAmpere_kernel<>
+ *   - kernel::mink::Ampere_kernel<>
+ *   - kernel::mink::CurrentsAmpere_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::mink::
  */
 
 #ifndef KERNELS_AMPERE_MINK_HPP
@@ -22,7 +22,9 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 
-namespace ntt {
+namespace kernel::mink {
+  using namespace ntt;
+
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in Minkowski space.
    * @tparam D Dimension.
@@ -30,17 +32,24 @@ namespace ntt {
   template <Dimension D>
   class Ampere_kernel {
     ndfield_t<D, 6> EB;
-    const real_t    coeff;
+    const real_t    coeff1;
+    const real_t    coeff2;
 
   public:
-    Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff) :
+    /**
+     * ! 1D: coeff1 = dt / dx
+     * ! 2D: coeff1 = dt / dx^2, coeff2 = dt
+     * ! 3D: coeff1 = dt / dx
+     */
+    Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2) :
       EB { EB },
-      coeff { coeff } {}
+      coeff1 { coeff1 },
+      coeff2 { coeff2 } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
-        EB(i1, em::ex2) += coeff * (EB(i1 - 1, em::bx3) - EB(i1, em::bx3));
-        EB(i1, em::ex3) += coeff * (EB(i1, em::bx2) - EB(i1 - 1, em::bx2));
+        EB(i1, em::ex2) += coeff1 * (EB(i1 - 1, em::bx3) - EB(i1, em::bx3));
+        EB(i1, em::ex3) += coeff1 * (EB(i1, em::bx2) - EB(i1 - 1, em::bx2));
       } else {
         raise::KernelError(HERE, "Ampere_kernel: 1D implementation called for D != 1");
       }
@@ -48,11 +57,11 @@ namespace ntt {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        EB(i1, i2, em::ex1) += coeff *
+        EB(i1, i2, em::ex1) += coeff1 *
                                (EB(i1, i2, em::bx3) - EB(i1, i2 - 1, em::bx3));
-        EB(i1, i2, em::ex2) += coeff *
+        EB(i1, i2, em::ex2) += coeff1 *
                                (EB(i1 - 1, i2, em::bx3) - EB(i1, i2, em::bx3));
-        EB(i1, i2, em::ex3) += coeff *
+        EB(i1, i2, em::ex3) += coeff2 *
                                (EB(i1, i2 - 1, em::bx1) - EB(i1, i2, em::bx1) +
                                 EB(i1, i2, em::bx2) - EB(i1 - 1, i2, em::bx2));
       } else {
@@ -62,18 +71,18 @@ namespace ntt {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim::_3D) {
-        EB(i1, i2, i3, em::ex1) += coeff * (EB(i1, i2, i3 - 1, em::bx2) -
-                                            EB(i1, i2, i3, em::bx2) +
-                                            EB(i1, i2, i3, em::bx3) -
-                                            EB(i1, i2 - 1, i3, em::bx3));
-        EB(i1, i2, i3, em::ex2) += coeff * (EB(i1 - 1, i2, i3, em::bx3) -
-                                            EB(i1, i2, i3, em::bx3) +
-                                            EB(i1, i2, i3, em::bx1) -
-                                            EB(i1, i2, i3 - 1, em::bx1));
-        EB(i1, i2, i3, em::ex3) += coeff * (EB(i1, i2 - 1, i3, em::bx1) -
-                                            EB(i1, i2, i3, em::bx1) +
-                                            EB(i1, i2, i3, em::bx2) -
-                                            EB(i1 - 1, i2, i3, em::bx2));
+        EB(i1, i2, i3, em::ex1) += coeff1 * (EB(i1, i2, i3 - 1, em::bx2) -
+                                             EB(i1, i2, i3, em::bx2) +
+                                             EB(i1, i2, i3, em::bx3) -
+                                             EB(i1, i2 - 1, i3, em::bx3));
+        EB(i1, i2, i3, em::ex2) += coeff1 * (EB(i1 - 1, i2, i3, em::bx3) -
+                                             EB(i1, i2, i3, em::bx3) +
+                                             EB(i1, i2, i3, em::bx1) -
+                                             EB(i1, i2, i3 - 1, em::bx1));
+        EB(i1, i2, i3, em::ex3) += coeff1 * (EB(i1, i2 - 1, i3, em::bx1) -
+                                             EB(i1, i2, i3, em::bx1) +
+                                             EB(i1, i2, i3, em::bx2) -
+                                             EB(i1 - 1, i2, i3, em::bx2));
       } else {
         raise::KernelError(HERE, "Ampere_kernel: 3D implementation called for D != 3");
       }
@@ -152,6 +161,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace kernel::mink
 
 #endif // KERNELS_AMPERE_MINK_HPP

@@ -14,6 +14,7 @@
 #include <string>
 
 using namespace ntt;
+using namespace kernel::mink;
 using namespace metric;
 
 void errorIf(bool condition, const std::string& message) {
@@ -60,11 +61,17 @@ void testFaraday<Dim::_1D>(const std::vector<std::size_t>& res) {
       metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code, x_Cart);
       emfield(i1, em::ex2) = math::cos(TWO * x_Cart[0]);
       emfield(i1, em::ex3) = math::sin(TWO * x_Cart[0]);
+      emfield(i1, em::ex2) = metric.template transform<2, Idx::T, Idx::U>(
+        x_Code,
+        emfield(i1, em::ex2));
+      emfield(i1, em::ex3) = metric.template transform<3, Idx::T, Idx::U>(
+        x_Code,
+        emfield(i1, em::ex3));
     });
 
   Kokkos::parallel_for("faraday 1D",
                        range,
-                       Faraday_kernel<Dim::_1D>(emfield, HALF / dx));
+                       Faraday_kernel<Dim::_1D>(emfield, HALF / dx, ONE));
 
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
@@ -74,14 +81,19 @@ void testFaraday<Dim::_1D>(const std::vector<std::size_t>& res) {
       const coord_t<Dim::_1D> x_Code { COORD(i1) + HALF };
       coord_t<Dim::_1D>       x_Cart { ZERO };
       metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code, x_Cart);
-      wrongs += not equal(emfield(i1, em::bx2),
-                          math::cos(TWO * x_Cart[0]),
-                          "faraday 1D bx2",
-                          max_err);
-      wrongs += not equal(emfield(i1, em::bx3),
-                          math::sin(TWO * x_Cart[0]),
-                          "faraday 1D bx3",
-                          max_err);
+
+      const auto bx2_expect = math::cos(TWO * x_Cart[0]);
+      const auto bx3_expect = math::sin(TWO * x_Cart[0]);
+
+      const auto bx2_got = metric.template transform<2, Idx::U, Idx::T>(
+        x_Cart,
+        emfield(i1, em::bx2));
+      const auto bx3_got = metric.template transform<3, Idx::U, Idx::T>(
+        x_Cart,
+        emfield(i1, em::bx3));
+
+      wrongs += not equal(bx2_got, bx2_expect, "faraday 1D bx2", max_err);
+      wrongs += not equal(bx3_got, bx3_expect, "faraday 1D bx3", max_err);
     },
     all_wrongs);
 
@@ -131,11 +143,20 @@ void testFaraday<Dim::_2D>(const std::vector<std::size_t>& res) {
                                  math::cos(x_Cart_0p[1]);
       emfield(i1, i2, em::ex3) = math::cos(TWO * x_Cart_00[0]) *
                                  math::sin(x_Cart_00[1]);
+      emfield(i1, i2, em::ex1) = metric.template transform<1, Idx::T, Idx::U>(
+        x_Cart_p0,
+        emfield(i1, i2, em::ex1));
+      emfield(i1, i2, em::ex2) = metric.template transform<2, Idx::T, Idx::U>(
+        x_Cart_0p,
+        emfield(i1, i2, em::ex2));
+      emfield(i1, i2, em::ex3) = metric.template transform<3, Idx::T, Idx::U>(
+        x_Cart_00,
+        emfield(i1, i2, em::ex3));
     });
 
   Kokkos::parallel_for("faraday 2D",
                        range,
-                       Faraday_kernel<Dim::_2D>(emfield, ONE / dx));
+                       Faraday_kernel<Dim::_2D>(emfield, ONE / SQR(dx), ONE));
 
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
@@ -161,19 +182,20 @@ void testFaraday<Dim::_2D>(const std::vector<std::size_t>& res) {
                               TWO * math::cos(x_Cart_pp[0]) *
                                 math::sin(x_Cart_pp[0]) * math::sin(x_Cart_pp[1]);
 
-      wrongs += not equal(emfield(i1, i2, em::bx1),
-                          bx1_expect,
-                          "faraday 2D bx1",
-                          max_err);
-      wrongs += not equal(emfield(i1, i2, em::bx2),
-                          bx2_expect,
-                          "faraday 2D bx2",
-                          max_err);
+      const auto bx1_got = metric.template transform<1, Idx::U, Idx::T>(
+        x_Cart_0p,
+        emfield(i1, i2, em::bx1));
+      const auto bx2_got = metric.template transform<2, Idx::U, Idx::T>(
+        x_Cart_p0,
+        emfield(i1, i2, em::bx2));
+      const auto bx3_got = metric.template transform<3, Idx::U, Idx::T>(
+        x_Cart_pp,
+        emfield(i1, i2, em::bx3));
+
+      wrongs += not equal(bx1_got, bx1_expect, "faraday 2D bx1", max_err);
+      wrongs += not equal(bx2_got, bx2_expect, "faraday 2D bx2", max_err);
       // !ACC: somehow this is a bit less accurate
-      wrongs += not equal(emfield(i1, i2, em::bx3),
-                          bx3_expect,
-                          "faraday 2D bx3",
-                          3 * max_err);
+      wrongs += not equal(bx3_got, bx3_expect, "faraday 2D bx3", 3 * max_err);
     },
     all_wrongs);
 
@@ -230,11 +252,21 @@ void testFaraday<Dim::_3D>(const std::vector<std::size_t>& res) {
       emfield(i1, i2, i3, em::ex3) = math::cos(TWO * x_Cart_00p[0]) *
                                      math::sin(x_Cart_00p[1]) *
                                      math::cos(TWO * x_Cart_00p[2]);
+
+      emfield(i1, i2, i3, em::ex1) = metric.template transform<1, Idx::T, Idx::U>(
+        x_Cart_p00,
+        emfield(i1, i2, i3, em::ex1));
+      emfield(i1, i2, i3, em::ex2) = metric.template transform<2, Idx::T, Idx::U>(
+        x_Cart_0p0,
+        emfield(i1, i2, i3, em::ex2));
+      emfield(i1, i2, i3, em::ex3) = metric.template transform<3, Idx::T, Idx::U>(
+        x_Cart_00p,
+        emfield(i1, i2, i3, em::ex3));
     });
 
   Kokkos::parallel_for("faraday 3D",
                        range,
-                       Faraday_kernel<Dim::_3D>(emfield, ONE / dx));
+                       Faraday_kernel<Dim::_3D>(emfield, ONE / dx, ZERO));
 
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
@@ -276,18 +308,19 @@ void testFaraday<Dim::_3D>(const std::vector<std::size_t>& res) {
                               FOUR * cos_x * cos_y * sin_x * SQR(sin_z) +
                               TWO * cos_x * sin_x * sin_y * SQR(sin_z);
 
-      wrongs += not equal(emfield(i1, i2, i3, em::bx1),
-                          bx1_expect,
-                          "faraday 3D bx1",
-                          max_err);
-      wrongs += not equal(emfield(i1, i2, i3, em::bx2),
-                          bx2_expect,
-                          "faraday 3D bx2",
-                          max_err);
-      wrongs += not equal(emfield(i1, i2, i3, em::bx3),
-                          bx3_expect,
-                          "faraday 3D bx3",
-                          max_err);
+      const auto bx1_got = metric.template transform<1, Idx::U, Idx::T>(
+        x_Cart_0pp,
+        emfield(i1, i2, i3, em::bx1));
+      const auto bx2_got = metric.template transform<2, Idx::U, Idx::T>(
+        x_Cart_p0p,
+        emfield(i1, i2, i3, em::bx2));
+      const auto bx3_got = metric.template transform<3, Idx::U, Idx::T>(
+        x_Cart_pp0,
+        emfield(i1, i2, i3, em::bx3));
+
+      wrongs += not equal(bx1_got, bx1_expect, "faraday 3D bx1", max_err);
+      wrongs += not equal(bx2_got, bx2_expect, "faraday 3D bx2", max_err);
+      wrongs += not equal(bx3_got, bx3_expect, "faraday 3D bx3", max_err);
     },
     all_wrongs);
 

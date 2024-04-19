@@ -95,7 +95,11 @@ namespace metric {
       static_assert(i > 0 && i <= static_cast<idx_t>(D), "Invalid index i");
       static_assert(j > 0 && j <= static_cast<idx_t>(D), "Invalid index j");
       if constexpr (i == j) {
-        return SQR(dx);
+        if constexpr (i <= static_cast<idx_t>(D)) {
+          return SQR(dx);
+        } else {
+          return ONE;
+        }
       } else {
         return ZERO;
       }
@@ -112,7 +116,11 @@ namespace metric {
       static_assert(j > 0 && j <= static_cast<idx_t>(D),
                     "Invalid coordinate index");
       if constexpr (i == j) {
-        return dx;
+        if constexpr (i <= static_cast<idx_t>(D)) {
+          return dx;
+        } else {
+          return ONE;
+        }
       } else {
         return ZERO;
       }

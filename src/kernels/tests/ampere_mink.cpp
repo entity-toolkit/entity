@@ -14,6 +14,7 @@
 #include <string>
 
 using namespace ntt;
+using namespace kernel::mink;
 using namespace metric;
 
 void errorIf(bool condition, const std::string& message) {
@@ -58,11 +59,17 @@ void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
       metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code, x_Cart);
       emfield(i1, em::bx2) = -TWO * math::cos(TWO * x_Cart[0]);
       emfield(i1, em::bx3) = -TWO * math::sin(TWO * x_Cart[0]);
+      emfield(i1, em::bx2) = metric.template transform<2, Idx::T, Idx::U>(
+        x_Code,
+        emfield(i1, em::bx2));
+      emfield(i1, em::bx3) = metric.template transform<3, Idx::T, Idx::U>(
+        x_Code,
+        emfield(i1, em::bx3));
     });
 
   Kokkos::parallel_for("ampere 1D",
                        range,
-                       Ampere_kernel<Dim::_1D>(emfield, ONE / dx));
+                       Ampere_kernel<Dim::_1D>(emfield, ONE / dx, ZERO));
 
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
@@ -76,8 +83,15 @@ void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
       const auto ex2_expect = FOUR * math::cos(TWO * x_Cart[0]);
       const auto ex3_expect = FOUR * math::sin(TWO * x_Cart[0]);
 
-      wrongs += not equal(emfield(i1, em::ex2), ex2_expect, "ampere 1D ex2", max_err);
-      wrongs += not equal(emfield(i1, em::ex3), ex3_expect, "ampere 1D ex3", max_err);
+      const auto ex2_got = metric.template transform<2, Idx::U, Idx::T>(
+        x_Cart,
+        emfield(i1, em::ex2));
+      const auto ex3_got = metric.template transform<3, Idx::U, Idx::T>(
+        x_Cart,
+        emfield(i1, em::ex3));
+
+      wrongs += not equal(ex2_got, ex2_expect, "ampere 1D ex2", max_err);
+      wrongs += not equal(ex3_got, ex3_expect, "ampere 1D ex3", max_err);
     },
     all_wrongs);
 
@@ -131,11 +145,20 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
                                    math::sin(x_Cart_p0[1]);
       emfield(i1, i2, em::bx3) = -TWO * math::cos(x_Cart_pp[1]) *
                                  math::sin(TWO * x_Cart_pp[0]);
+      emfield(i1, i2, em::bx1) = metric.template transform<1, Idx::T, Idx::U>(
+        x_Cart_0p,
+        emfield(i1, i2, em::bx1));
+      emfield(i1, i2, em::bx2) = metric.template transform<2, Idx::T, Idx::U>(
+        x_Cart_p0,
+        emfield(i1, i2, em::bx2));
+      emfield(i1, i2, em::bx3) = metric.template transform<3, Idx::T, Idx::U>(
+        x_Cart_pp,
+        emfield(i1, i2, em::bx3));
     });
 
   Kokkos::parallel_for("ampere 2D",
                        range,
-                       Ampere_kernel<Dim::_2D>(emfield, ONE / dx));
+                       Ampere_kernel<Dim::_2D>(emfield, ONE / SQR(dx), ONE));
 
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
@@ -161,9 +184,19 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
                               FOUR * math::cos(TWO * x_Cart_00[0]) *
                                 math::sin(x_Cart_00[1]);
 
-      wrongs += not equal(emfield(i1, i2, em::ex1), ex1_expect, "ampere 2D ex1", max_err);
-      wrongs += not equal(emfield(i1, i2, em::ex2), ex2_expect, "ampere 2D ex2", max_err);
-      wrongs += not equal(emfield(i1, i2, em::ex3), ex3_expect, "ampere 2D ex3", max_err);
+      const auto ex1_got = metric.template transform<1, Idx::U, Idx::T>(
+        x_Cart_p0,
+        emfield(i1, i2, em::ex1));
+      const auto ex2_got = metric.template transform<2, Idx::U, Idx::T>(
+        x_Cart_0p,
+        emfield(i1, i2, em::ex2));
+      const auto ex3_got = metric.template transform<3, Idx::U, Idx::T>(
+        x_Cart_00,
+        emfield(i1, i2, em::ex3));
+
+      wrongs += not equal(ex1_got, ex1_expect, "ampere 2D ex1", max_err);
+      wrongs += not equal(ex2_got, ex2_expect, "ampere 2D ex2", max_err);
+      wrongs += not equal(ex3_got, ex3_expect, "ampere 2D ex3", max_err);
     },
     all_wrongs);
 
@@ -235,11 +268,21 @@ void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
                                      math::cos(x_Cart_pp0[1]) *
                                        math::sin(TWO * x_Cart_pp0[0]) *
                                        math::sin(TWO * x_Cart_pp0[2]);
+
+      emfield(i1, i2, i3, em::bx1) = metric.template transform<1, Idx::T, Idx::U>(
+        x_Cart_0pp,
+        emfield(i1, i2, i3, em::bx1));
+      emfield(i1, i2, i3, em::bx2) = metric.template transform<2, Idx::T, Idx::U>(
+        x_Cart_p0p,
+        emfield(i1, i2, i3, em::bx2));
+      emfield(i1, i2, i3, em::bx3) = metric.template transform<3, Idx::T, Idx::U>(
+        x_Cart_pp0,
+        emfield(i1, i2, i3, em::bx3));
     });
 
   Kokkos::parallel_for("ampere 3D",
                        range,
-                       Ampere_kernel<Dim::_3D>(emfield, ONE / dx));
+                       Ampere_kernel<Dim::_3D>(emfield, ONE / dx, ZERO));
 
   unsigned long all_wrongs = 0;
   Kokkos::parallel_reduce(
@@ -287,18 +330,19 @@ void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
                                 math::sin(x_Cart_00p[1]) *
                                 math::sin(TWO * x_Cart_00p[2]);
 
-      wrongs += not equal(emfield(i1, i2, i3, em::ex1),
-                          ex1_expect,
-                          "ampere 3D ex1",
-                          max_err);
-      wrongs += not equal(emfield(i1, i2, i3, em::ex2),
-                          ex2_expect,
-                          "ampere 3D ex2",
-                          max_err);
-      wrongs += not equal(emfield(i1, i2, i3, em::ex3),
-                          ex3_expect,
-                          "ampere 3D ex3",
-                          max_err);
+      const auto ex1_got = metric.template transform<1, Idx::U, Idx::T>(
+        x_Cart_p00,
+        emfield(i1, i2, i3, em::ex1));
+      const auto ex2_got = metric.template transform<2, Idx::U, Idx::T>(
+        x_Cart_0p0,
+        emfield(i1, i2, i3, em::ex2));
+      const auto ex3_got = metric.template transform<3, Idx::U, Idx::T>(
+        x_Cart_00p,
+        emfield(i1, i2, i3, em::ex3));
+
+      wrongs += not equal(ex1_got, ex1_expect, "ampere 3D ex1", max_err);
+      wrongs += not equal(ex2_got, ex2_expect, "ampere 3D ex2", max_err);
+      wrongs += not equal(ex3_got, ex3_expect, "ampere 3D ex3", max_err);
     },
     all_wrongs);
 
