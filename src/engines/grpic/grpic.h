@@ -7,6 +7,7 @@
  *   - enums.h
  *   - engines/engine.h
  *   - utils/timer.h
+ *   - framework/domain/domain.h
  *   - metrics/kerr_schild.h
  *   - metrics/kerr_schild_0.h
  *   - metrics/qkerr_schild.h
@@ -24,6 +25,7 @@
 #include "utils/timer.h"
 
 #include "engines/engine.h"
+#include "framework/domain/domain.h"
 
 namespace ntt {
 
@@ -38,7 +40,7 @@ namespace ntt {
 
     ~GRPICEngine() = default;
 
-    void step_forward(timer::Timers&) override;
+    void step_forward(timer::Timers&, Domain<SimEngine::GRPIC, M>&) override;
   };
 
 } // namespace ntt

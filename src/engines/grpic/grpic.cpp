@@ -6,13 +6,16 @@
 #include "metrics/kerr_schild_0.h"
 #include "metrics/qkerr_schild.h"
 
+#include "framework/domain/domain.h"
+
 namespace ntt {
 
   // template <class M>
   // void GRPICEngine<M>::init() {}
 
   template <class M>
-  void GRPICEngine<M>::step_forward(timer::Timers&) {}
+  void GRPICEngine<M>::step_forward(timer::Timers&, Domain<SimEngine::GRPIC, M>&) {
+  }
 
   template class GRPICEngine<metric::KerrSchild<Dim::_2D>>;
   template class GRPICEngine<metric::QKerrSchild<Dim::_2D>>;

@@ -1,5 +1,7 @@
 #include "engines/srpic/srpic.h"
 
+#include "enums.h"
+
 #include "arch/traits.h"
 #include "utils/log.h"
 #include "utils/timer.h"
@@ -8,12 +10,15 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include "framework/domain/domain.h"
+
 #include <string>
 
 namespace ntt {
 
   template <class M>
-  void SRPICEngine<M>::step_forward(timer::Timers& timers) {
+  void SRPICEngine<M>::step_forward(timer::Timers& timers,
+                                    Domain<SimEngine::SRPIC, M>& dom) {
     timers.start("Output");
     long double a { 0.0 };
     for (std::size_t p { 0 }; p < 100000000; p++) {

@@ -118,7 +118,7 @@ namespace ntt {
     void print_report() const;
     void print_step_report(timer::Timers&, pbar::DurationHistory&) const;
 
-    virtual void step_forward(timer::Timers&) = 0;
+    virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 
     void run() {
       init();
@@ -135,7 +135,9 @@ namespace ntt {
       };
       auto time_history = pbar::DurationHistory { 1000 };
       while (step < max_steps) {
-        step_forward(timers);
+        m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
+          step_forward(timers, dom);
+        });
         ++step;
         time += dt;
         time_history.tick();

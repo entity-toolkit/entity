@@ -6,13 +6,21 @@
  * @depends:
  *   - enums.h
  *   - arch/traits.h
+ *   - arch/kokkos_aliases.h
  *   - utils/log.h
  *   - utils/timer.h
+ *   - utils/numeric.h
  *   - engines/engine.h
+ *   - framework/domain/domain.h
  *   - metrics/minkowski.h
  *   - metrics/qspherical.h
  *   - metrics/spherical.h
  *   - pgen.hpp
+ *   - kernels/particle_pusher_sr.hpp
+ *   - kernels/faraday_mink.hpp
+ *   - kernels/faraday_sr.hpp
+ *   - kernels/ampere_mink.hpp
+ *   - kernels/ampere_sr.hpp
  * @cpp:
  *   - srpic.cpp
  * @namespaces:
@@ -27,6 +35,7 @@
 #include "utils/timer.h"
 
 #include "engines/engine.h"
+#include "framework/domain/domain.h"
 
 #include <utility>
 
@@ -38,7 +47,6 @@ namespace ntt {
     using Engine<SimEngine::SRPIC, M>::pgen_is_ok;
     // contents
     using Engine<SimEngine::SRPIC, M>::m_params;
-    using Engine<SimEngine::SRPIC, M>::m_metadomain;
     using Engine<SimEngine::SRPIC, M>::m_pgen;
     // methods
     using Engine<SimEngine::SRPIC, M>::init;
@@ -55,7 +63,12 @@ namespace ntt {
 
     ~SRPICEngine() = default;
 
-    void step_forward(timer::Timers&) override;
+    void step_forward(timer::Timers&, Domain<SimEngine::SRPIC, M>&) override;
+
+    /* algorithm substeps --------------------------------------------------- */
+    void Faraday(Domain<SimEngine::SRPIC, M>&, real_t = ONE);
+    void Ampere(Domain<SimEngine::SRPIC, M>&, real_t = ONE);
+    void ParticlePush(Domain<SimEngine::SRPIC, M>&);
   };
 
 } // namespace ntt

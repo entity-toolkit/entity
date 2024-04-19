@@ -2,8 +2,8 @@
  * @file kernels/particle_pusher_sr.h
  * @brief Particle pusher for the SR
  * @implements
- *   - ntt::Pusher_kernel<>
- *   - ntt::PusherBase_kernel<>
+ *   - kernel::sr::Pusher_kernel<>
+ *   - kernel::sr::PusherBase_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -11,7 +11,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::sr::
  */
 
 #ifndef KERNELS_PARTICLE_PUSHER_SR_HPP
@@ -42,7 +42,9 @@
 
 /* -------------------------------------------------------------------------- */
 
-namespace ntt {
+namespace kernel::sr {
+  using namespace ntt;
+
   // Pushers
   struct Boris_t {};
 
@@ -105,32 +107,32 @@ namespace ntt {
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    PusherBase_kernel(const ndfield_t<D, 6>&            EB,
-                      const array_t<int*>&              i1,
-                      const array_t<int*>&              i2,
-                      const array_t<int*>&              i3,
-                      const array_t<int*>&              i1_prev,
-                      const array_t<int*>&              i2_prev,
-                      const array_t<int*>&              i3_prev,
-                      const array_t<prtldx_t*>&         dx1,
-                      const array_t<prtldx_t*>&         dx2,
-                      const array_t<prtldx_t*>&         dx3,
-                      const array_t<prtldx_t*>&         dx1_prev,
-                      const array_t<prtldx_t*>&         dx2_prev,
-                      const array_t<prtldx_t*>&         dx3_prev,
-                      const array_t<real_t*>&           ux1,
-                      const array_t<real_t*>&           ux2,
-                      const array_t<real_t*>&           ux3,
-                      const array_t<real_t*>&           phi,
-                      const array_t<short*>&            tag,
-                      const M&                          metric,
-                      const PG&                         pgen,
-                      real_t                            time,
-                      real_t                            coeff,
-                      real_t                            dt,
-                      int                               ni1,
-                      int                               ni2,
-                      int                               ni3,
+    PusherBase_kernel(const ndfield_t<D, 6>&      EB,
+                      array_t<int*>&              i1,
+                      array_t<int*>&              i2,
+                      array_t<int*>&              i3,
+                      array_t<int*>&              i1_prev,
+                      array_t<int*>&              i2_prev,
+                      array_t<int*>&              i3_prev,
+                      array_t<prtldx_t*>&         dx1,
+                      array_t<prtldx_t*>&         dx2,
+                      array_t<prtldx_t*>&         dx3,
+                      array_t<prtldx_t*>&         dx1_prev,
+                      array_t<prtldx_t*>&         dx2_prev,
+                      array_t<prtldx_t*>&         dx3_prev,
+                      array_t<real_t*>&           ux1,
+                      array_t<real_t*>&           ux2,
+                      array_t<real_t*>&           ux3,
+                      array_t<real_t*>&           phi,
+                      array_t<short*>&            tag,
+                      const M&                    metric,
+                      const PG&                   pgen,
+                      real_t                      time,
+                      real_t                      coeff,
+                      real_t                      dt,
+                      int                         ni1,
+                      int                         ni2,
+                      int                         ni3,
                       const boundaries_t<PrtlBC>& boundaries) :
       EB { EB },
       i1 { i1 },
@@ -234,24 +236,35 @@ namespace ntt {
     const real_t coeff_sync;
 
   public:
+    Pusher_kernel(PusherBase_kernel<M, PG>& base,
+                  real_t                    gca_larmor_max,
+                  real_t                    gca_eovrb_max,
+                  real_t                    coeff_sync) :
+      PusherBase_kernel<M, PG> { base },
+      gca_larmor { gca_larmor_max },
+      gca_EovrB_sqr { SQR(gca_eovrb_max) },
+      coeff_sync { coeff_sync } {}
+
+    using fld_t = const ndfield_t<D, 6>;
+
     Pusher_kernel(const ndfield_t<D, 6>&      EB,
-                  const array_t<int*>&        i1,
-                  const array_t<int*>&        i2,
-                  const array_t<int*>&        i3,
-                  const array_t<int*>&        i1_prev,
-                  const array_t<int*>&        i2_prev,
-                  const array_t<int*>&        i3_prev,
-                  const array_t<prtldx_t*>&   dx1,
-                  const array_t<prtldx_t*>&   dx2,
-                  const array_t<prtldx_t*>&   dx3,
-                  const array_t<prtldx_t*>&   dx1_prev,
-                  const array_t<prtldx_t*>&   dx2_prev,
-                  const array_t<prtldx_t*>&   dx3_prev,
-                  const array_t<real_t*>&     ux1,
-                  const array_t<real_t*>&     ux2,
-                  const array_t<real_t*>&     ux3,
-                  const array_t<real_t*>&     phi,
-                  const array_t<short*>&      tag,
+                  array_t<int*>&              i1,
+                  array_t<int*>&              i2,
+                  array_t<int*>&              i3,
+                  array_t<int*>&              i1_prev,
+                  array_t<int*>&              i2_prev,
+                  array_t<int*>&              i3_prev,
+                  array_t<prtldx_t*>&         dx1,
+                  array_t<prtldx_t*>&         dx2,
+                  array_t<prtldx_t*>&         dx3,
+                  array_t<prtldx_t*>&         dx1_prev,
+                  array_t<prtldx_t*>&         dx2_prev,
+                  array_t<prtldx_t*>&         dx3_prev,
+                  array_t<real_t*>&           ux1,
+                  array_t<real_t*>&           ux2,
+                  array_t<real_t*>&           ux3,
+                  array_t<real_t*>&           phi,
+                  array_t<short*>&            tag,
                   const M&                    metric,
                   const PG&                   pgen,
                   real_t                      time,
@@ -264,33 +277,12 @@ namespace ntt {
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
                   real_t                      coeff_sync) :
-      PusherBase_kernel<M, PG>(EB,
-                               i1,
-                               i2,
-                               i3,
-                               i1_prev,
-                               i2_prev,
-                               i3_prev,
-                               dx1,
-                               dx2,
-                               dx3,
-                               dx1_prev,
-                               dx2_prev,
-                               dx3_prev,
-                               ux1,
-                               ux2,
-                               ux3,
-                               phi,
-                               tag,
-                               metric,
-                               pgen,
-                               time,
-                               coeff,
-                               dt,
-                               ni1,
-                               ni2,
-                               ni3,
-                               boundaries),
+      PusherBase_kernel<M, PG> { EB,       i1,        i2,       i3,     i1_prev,
+                                 i2_prev,  i3_prev,   dx1,      dx2,    dx3,
+                                 dx1_prev, dx2_prev,  dx3_prev, ux1,    ux2,
+                                 ux3,      phi,       tag,      metric, pgen,
+                                 time,     coeff,     dt,       ni1,    ni2,
+                                 ni3,      boundaries },
       gca_larmor { gca_larmor_max },
       gca_EovrB_sqr { SQR(gca_eovrb_max) },
       coeff_sync { coeff_sync } {}
@@ -1026,7 +1018,7 @@ namespace ntt {
     metric.template transform_xyz<Idx::T, Idx::XYZ>(xp, force_Hat, force_Cart);
   }
 
-} // namespace ntt
+} // namespace kernel::sr
 
 #undef from_Xi_to_i_di
 #undef from_Xi_to_i
