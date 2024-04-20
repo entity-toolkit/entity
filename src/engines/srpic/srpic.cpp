@@ -17,15 +17,16 @@
 namespace ntt {
 
   template <class M>
-  void SRPICEngine<M>::step_forward(timer::Timers& timers,
+  void SRPICEngine<M>::step_forward(timer::Timers&               timers,
                                     Domain<SimEngine::SRPIC, M>& dom) {
-    timers.start("Output");
-    long double a { 0.0 };
-    for (std::size_t p { 0 }; p < 100000000; p++) {
-      a += 1.0;
-    }
-    (void)a;
-    timers.stop("Output");
+    timers.start("ParticlePusher");
+    ParticlePush(dom);
+    // long double a { 0.0 };
+    // for (std::size_t p { 0 }; p < 100000000; p++) {
+    //   a += 1.0;
+    // }
+    // (void)a;
+    timers.stop("ParticlePusher");
   }
 
   template class SRPICEngine<metric::Minkowski<Dim::_1D>>;

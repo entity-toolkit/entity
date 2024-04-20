@@ -22,7 +22,7 @@ namespace ntt {
     if constexpr (pgen_is_ok) {
       logger::Checkpoint("Initializing Engine", HERE);
       if constexpr (
-        traits::has_member<traits::init_flds_t, user::PGen<S, M>>::value) {
+        traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
         logger::Checkpoint("Initializing fields from problem generator", HERE);
         m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
           Kokkos::parallel_for("InitFields",

@@ -8,6 +8,7 @@
  *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
+ *   - arch/traits.h
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
@@ -21,6 +22,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -77,15 +79,24 @@ namespace kernel::sr {
    * @brief Algorithm for the Particle pusher
    * @tparam M Metric
    * @tparam PG Problem generator
+   * @tparam ExtForce Toggle to indicate whether the external force is applied
    */
-  template <class M, class PG>
+  template <class M, class PG, bool ExtForce>
   class PusherBase_kernel {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(PG::is_pgen, "PG must be a problem generator class");
-    static constexpr auto D = M::Dim;
 
   protected:
+    static constexpr auto D           = M::Dim;
+    static constexpr bool defines_fx1 = ExtForce &&
+                                        traits::pgen::fx1_defined<PG>::value;
+    static constexpr bool defines_fx2 = ExtForce &&
+                                        traits::pgen::fx2_defined<PG>::value;
+    static constexpr bool defines_fx3 = ExtForce &&
+                                        traits::pgen::fx3_defined<PG>::value;
+
     const ndfield_t<D, 6> EB;
+    const unsigned short  sp;
     array_t<int*>         i1, i2, i3;
     array_t<int*>         i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*>    dx1, dx2, dx3;
@@ -108,6 +119,7 @@ namespace kernel::sr {
 
   public:
     PusherBase_kernel(const ndfield_t<D, 6>&      EB,
+                      unsigned short              sp,
                       array_t<int*>&              i1,
                       array_t<int*>&              i2,
                       array_t<int*>&              i3,
@@ -135,6 +147,7 @@ namespace kernel::sr {
                       int                         ni3,
                       const boundaries_t<PrtlBC>& boundaries) :
       EB { EB },
+      sp { sp },
       i1 { i1 },
       i2 { i2 },
       i3 { i3 },
@@ -220,14 +233,17 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam PG Problem generator
    * @tparam P Particle pusher
-   * @tparam ExtForce External force toggle
    * @tparam Cs Cooling algorithms
    */
-  template <class M, class PG, typename P, bool ExtForce, typename... Cs>
-  struct Pusher_kernel : public PusherBase_kernel<M, PG> {
+  template <class M, class PG, bool ExtForce, typename P, typename... Cs>
+  struct Pusher_kernel : public PusherBase_kernel<M, PG, ExtForce> {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(PG::is_pgen, "PG must be a problem generator class");
     static constexpr auto D = M::Dim;
+    using base_t            = PusherBase_kernel<M, PG, ExtForce>;
+    using base_t::defines_fx1;
+    using base_t::defines_fx2;
+    using base_t::defines_fx3;
 
   private:
     // gca parameters
@@ -236,18 +252,17 @@ namespace kernel::sr {
     const real_t coeff_sync;
 
   public:
-    Pusher_kernel(PusherBase_kernel<M, PG>& base,
-                  real_t                    gca_larmor_max,
-                  real_t                    gca_eovrb_max,
-                  real_t                    coeff_sync) :
-      PusherBase_kernel<M, PG> { base },
+    Pusher_kernel(PusherBase_kernel<M, PG, ExtForce>& base,
+                  real_t                              gca_larmor_max,
+                  real_t                              gca_eovrb_max,
+                  real_t                              coeff_sync) :
+      PusherBase_kernel<M, PG, ExtForce> { base },
       gca_larmor { gca_larmor_max },
       gca_EovrB_sqr { SQR(gca_eovrb_max) },
       coeff_sync { coeff_sync } {}
 
-    using fld_t = const ndfield_t<D, 6>;
-
     Pusher_kernel(const ndfield_t<D, 6>&      EB,
+                  unsigned short              sp,
                   array_t<int*>&              i1,
                   array_t<int*>&              i2,
                   array_t<int*>&              i3,
@@ -277,12 +292,12 @@ namespace kernel::sr {
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
                   real_t                      coeff_sync) :
-      PusherBase_kernel<M, PG> { EB,       i1,        i2,       i3,     i1_prev,
-                                 i2_prev,  i3_prev,   dx1,      dx2,    dx3,
-                                 dx1_prev, dx2_prev,  dx3_prev, ux1,    ux2,
-                                 ux3,      phi,       tag,      metric, pgen,
-                                 time,     coeff,     dt,       ni1,    ni2,
-                                 ni3,      boundaries },
+      PusherBase_kernel<M, PG, ExtForce> {
+        EB,      sp,    i1,  i2,  i3,       i1_prev,  i2_prev,
+        i3_prev, dx1,   dx2, dx3, dx1_prev, dx2_prev, dx3_prev,
+        ux1,     ux2,   ux3, phi, tag,      metric,   pgen,
+        time,    coeff, dt,  ni1, ni2,      ni3,      boundaries
+      },
       gca_larmor { gca_larmor_max },
       gca_EovrB_sqr { SQR(gca_eovrb_max) },
       coeff_sync { coeff_sync } {}
@@ -375,6 +390,7 @@ namespace kernel::sr {
           }
           if constexpr (std::is_same_v<P, Boris_GCA_t> ||
                         std::is_same_v<P, Vay_GCA_t>) {
+            /* hybrid GCA/conventional mode --------------------------------- */
             const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
             const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
             const auto rL {
@@ -392,29 +408,54 @@ namespace kernel::sr {
             } else {
               // update with conventional pusher
               if constexpr (ExtForce) {
-                this->ux1(p) += HALF * this->dt * force_Cart[0];
-                this->ux2(p) += HALF * this->dt * force_Cart[1];
-                this->ux3(p) += HALF * this->dt * force_Cart[2];
+                if constexpr (defines_fx1) {
+                  this->ux1(p) += HALF * this->dt * force_Cart[0];
+                }
+                if constexpr (defines_fx2) {
+                  this->ux2(p) += HALF * this->dt * force_Cart[1];
+                }
+                if constexpr (defines_fx3) {
+                  this->ux3(p) += HALF * this->dt * force_Cart[2];
+                }
               }
               this->velUpd(Reduced_t<P> {}, p, ei_Cart, bi_Cart);
               if constexpr (ExtForce) {
-                this->ux1(p) += HALF * this->dt * force_Cart[0];
-                this->ux2(p) += HALF * this->dt * force_Cart[1];
-                this->ux3(p) += HALF * this->dt * force_Cart[2];
+                if constexpr (defines_fx1) {
+                  this->ux1(p) += HALF * this->dt * force_Cart[0];
+                }
+                if constexpr (defines_fx2) {
+                  this->ux2(p) += HALF * this->dt * force_Cart[1];
+                }
+                if constexpr (defines_fx3) {
+                  this->ux3(p) += HALF * this->dt * force_Cart[2];
+                }
               }
             }
           } else {
+            /* conventional pusher mode ------------------------------------- */
             // update with conventional pusher
             if constexpr (ExtForce) {
-              this->ux1(p) += HALF * this->dt * force_Cart[0];
-              this->ux2(p) += HALF * this->dt * force_Cart[1];
-              this->ux3(p) += HALF * this->dt * force_Cart[2];
+              if constexpr (defines_fx1) {
+                this->ux1(p) += HALF * this->dt * force_Cart[0];
+              }
+              if constexpr (defines_fx2) {
+                this->ux2(p) += HALF * this->dt * force_Cart[1];
+              }
+              if constexpr (defines_fx3) {
+                this->ux3(p) += HALF * this->dt * force_Cart[2];
+              }
             }
             this->velUpd(P {}, p, ei_Cart, bi_Cart);
             if constexpr (ExtForce) {
-              this->ux1(p) += HALF * this->dt * force_Cart[0];
-              this->ux2(p) += HALF * this->dt * force_Cart[1];
-              this->ux3(p) += HALF * this->dt * force_Cart[2];
+              if constexpr (defines_fx1) {
+                this->ux1(p) += HALF * this->dt * force_Cart[0];
+              }
+              if constexpr (defines_fx2) {
+                this->ux2(p) += HALF * this->dt * force_Cart[1];
+              }
+              if constexpr (defines_fx3) {
+                this->ux3(p) += HALF * this->dt * force_Cart[2];
+              }
             }
           }
           // cooling
@@ -475,11 +516,11 @@ namespace kernel::sr {
 
   // Velocity update
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::velUpd(Boris_t,
-                                               index_t&         p,
-                                               vec_t<Dim::_3D>& e0,
-                                               vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::velUpd(Boris_t,
+                                                         index_t&         p,
+                                                         vec_t<Dim::_3D>& e0,
+                                                         vec_t<Dim::_3D>& b0) const {
     real_t COEFF { coeff };
 
     e0[0] *= COEFF;
@@ -508,11 +549,11 @@ namespace kernel::sr {
     ux3(p) = u0[2];
   }
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::velUpd(Vay_t,
-                                               index_t&         p,
-                                               vec_t<Dim::_3D>& e0,
-                                               vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::velUpd(Vay_t,
+                                                         index_t&         p,
+                                                         vec_t<Dim::_3D>& e0,
+                                                         vec_t<Dim::_3D>& b0) const {
     auto COEFF { coeff };
     e0[0] *= COEFF;
     e0[1] *= COEFF;
@@ -558,12 +599,12 @@ namespace kernel::sr {
                        u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
   }
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::velUpd(GCA_t,
-                                               index_t&         p,
-                                               vec_t<Dim::_3D>& f0,
-                                               vec_t<Dim::_3D>& e0,
-                                               vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::velUpd(GCA_t,
+                                                         index_t&         p,
+                                                         vec_t<Dim::_3D>& f0,
+                                                         vec_t<Dim::_3D>& e0,
+                                                         vec_t<Dim::_3D>& b0) const {
     const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
                         NORM_SQR(b0[0], b0[1], b0[2]) };
 
@@ -601,11 +642,11 @@ namespace kernel::sr {
     ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
   }
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::velUpd(GCA_t,
-                                               index_t&         p,
-                                               vec_t<Dim::_3D>& e0,
-                                               vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::velUpd(GCA_t,
+                                                         index_t&         p,
+                                                         vec_t<Dim::_3D>& e0,
+                                                         vec_t<Dim::_3D>& b0) const {
     const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
                         NORM_SQR(b0[0], b0[1], b0[2]) };
 
@@ -642,9 +683,10 @@ namespace kernel::sr {
     ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
   }
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::getPrtlPos(index_t& p,
-                                                   coord_t<M::PrtlDim>& xp) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::getPrtlPos(
+    index_t&             p,
+    coord_t<M::PrtlDim>& xp) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
     }
@@ -660,22 +702,24 @@ namespace kernel::sr {
     }
   }
 
-  template <class M, class PG>
-  Inline auto PusherBase_kernel<M, PG>::getEnergy(Massive_t, index_t& p) const
+  template <class M, class PG, bool ExtForce>
+  Inline auto PusherBase_kernel<M, PG, ExtForce>::getEnergy(Massive_t, index_t& p) const
     -> real_t {
     return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
-  template <class M, class PG>
-  Inline auto PusherBase_kernel<M, PG>::getEnergy(Massless_t, index_t& p) const
+  template <class M, class PG, bool ExtForce>
+  Inline auto PusherBase_kernel<M, PG, ExtForce>::getEnergy(Massless_t,
+                                                            index_t& p) const
     -> real_t {
     return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
   }
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::getInterpFlds(index_t&         p,
-                                                      vec_t<Dim::_3D>& e0,
-                                                      vec_t<Dim::_3D>& b0) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::getInterpFlds(
+    index_t&         p,
+    vec_t<Dim::_3D>& e0,
+    vec_t<Dim::_3D>& b0) const {
     if constexpr (D == Dim::_1D) {
       const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
       const auto dx1_ { static_cast<real_t>(dx1(p)) };
@@ -938,8 +982,9 @@ namespace kernel::sr {
 
   // Boundary conditions
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::boundaryConditions(index_t& p) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::boundaryConditions(
+    index_t& p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if (i1(p) < 0) {
         if (is_periodic_i1min) {
@@ -1001,9 +1046,10 @@ namespace kernel::sr {
 
   // External force
 
-  template <class M, class PG>
-  Inline void PusherBase_kernel<M, PG>::initForce(coord_t<M::PrtlDim>& xp,
-                                                  vec_t<Dim::_3D>& force_Cart) const {
+  template <class M, class PG, bool ExtForce>
+  Inline void PusherBase_kernel<M, PG, ExtForce>::initForce(
+    coord_t<M::PrtlDim>& xp,
+    vec_t<Dim::_3D>&     force_Cart) const {
     coord_t<M::PrtlDim> xp_Ph { ZERO };
     xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp[0]);
     if constexpr (M::PrtlDim != Dim::_1D) {
@@ -1012,10 +1058,17 @@ namespace kernel::sr {
     if constexpr (M::PrtlDim == Dim::_3D) {
       xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp[2]);
     }
-    const vec_t<Dim::_3D> force_Hat { pgen.ext_force_x1(time, xp_Ph),
-                                      pgen.ext_force_x2(time, xp_Ph),
-                                      pgen.ext_force_x3(time, xp_Ph) };
-    metric.template transform_xyz<Idx::T, Idx::XYZ>(xp, force_Hat, force_Cart);
+    real_t fx1 { ZERO }, fx2 { ZERO }, fx3 { ZERO };
+    if constexpr (defines_fx1) {
+      fx1 = pgen.ext_force.fx1(sp, time, xp_Ph);
+    }
+    if constexpr (defines_fx2) {
+      fx2 = pgen.ext_force.fx2(sp, time, xp_Ph);
+    }
+    if constexpr (defines_fx3) {
+      fx3 = pgen.ext_force.fx3(sp, time, xp_Ph);
+    }
+    metric.template transform_xyz<Idx::T, Idx::XYZ>(xp, { fx1, fx2, fx3 }, force_Cart);
   }
 
 } // namespace kernel::sr

@@ -105,9 +105,6 @@ const auto sph_2d = u8R"(
 [algorithms]
   current_filters = 8
 
-  [algorithms.toggles]
-    extforce = true
-
   [algorithms.timestep]
     CFL = 0.9
 
@@ -590,7 +587,6 @@ auto main(int argc, char* argv[]) -> int {
 //   [algorithms.toggles]
 //     fieldsolver = ""
 //     deposit = ""
-//     extforce = ""
 
 //   [algorithms.timestep]
 //     CFL = ""

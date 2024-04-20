@@ -219,8 +219,6 @@ namespace ntt {
         toml::find_or(raw_data, "algorithms", "toggles", "fieldsolver", true));
     set("algorithms.toggles.deposit",
         toml::find_or(raw_data, "algorithms", "toggles", "deposit", true));
-    set("algorithms.toggles.extforce",
-        toml::find_or(raw_data, "algorithms", "toggles", "extforce", false));
 
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",

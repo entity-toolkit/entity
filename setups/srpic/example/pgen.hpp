@@ -12,6 +12,8 @@
 
 #include "archetypes/problem_generator.h"
 
+#include <vector>
+
 namespace user {
   using namespace ntt;
 
@@ -41,6 +43,24 @@ namespace user {
     const int    kx2;
   };
 
+  template <Dimension D>
+  struct ExtForce {
+    const std::vector<unsigned short> species { 1, 2 };
+
+    ExtForce() = default;
+
+    // apply only fx1 force on species #1 and #2
+
+    Inline auto fx1(const unsigned short& sp,
+                    const real_t&         time,
+                    const coord_t<D>&     x_Ph) const -> real_t {
+      (void)sp;
+      (void)time;
+      (void)x_Ph;
+      return ZERO;
+    }
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -53,14 +73,17 @@ namespace user {
     using ProblemGenerator<S, M>::C;
     using ProblemGenerator<S, M>::params;
 
-    InitFields<D> init_flds;
+    InitFields<D>        init_flds;
+    ExtForce<M::PrtlDim> ext_force;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain) :
       ProblemGenerator<S, M> { p },
       init_flds { params.template get<real_t>("setup.amplitude", 1.0),
                   global_domain.mesh().extent(in::x2).second -
                     global_domain.mesh().extent(in::x2).first,
-                  params.template get<int>("setup.kx2", 2) } {}
+                  params.template get<int>("setup.kx2", 2) },
+      ext_force {} 
+      {}
   };
 
 } // namespace user

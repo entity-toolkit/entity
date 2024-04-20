@@ -171,10 +171,6 @@
     #   @type bool
     #   @default: true
     deposit = ""
-    # Toggle for the use of external user-defined force:
-    #   @type bool
-    #   @default: false
-    extforce = ""
 
   [algorithms.timestep]
     # Courant-Friedrichs-Lewy number:
