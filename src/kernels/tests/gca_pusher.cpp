@@ -118,7 +118,7 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   put_value<prtldx_t>(dx3, (prtldx_t)(0.25), 0);
   put_value<real_t>(ux1, (real_t)(1.0), 0);
   put_value<real_t>(ux2, (real_t)(-2.0), 0);
-  put_value<real_t>(ux3, (real_t)(3.0), 0);
+  put_value<real_t>(ux3, (real_t)(0.1), 0);
   put_value<short>(tag, ParticleTag::alive, 0);
 
   put_value<int>(i1, 5, 1);
@@ -129,7 +129,7 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   put_value<prtldx_t>(dx3, (prtldx_t)(0.25), 1);
   put_value<real_t>(ux1, (real_t)(1.0), 1);
   put_value<real_t>(ux2, (real_t)(-2.0), 1);
-  put_value<real_t>(ux3, (real_t)(3.0), 1);
+  put_value<real_t>(ux3, (real_t)(0.1), 1);
   put_value<short>(tag, ParticleTag::alive, 1);
 
   // Particle boundaries
@@ -152,6 +152,18 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
       metric, pgen,
       (real_t)0.0,
       coeff, dt, nx1, nx2, nx3,
+      boundaries, (real_t)100000.0, (real_t)1.0, (real_t)0.0));
+
+    Kokkos::parallel_for(
+    "pusher",
+    Kokkos::RangePolicy<AccelExeSpace, Boris_GCA_t>(1, 2),
+    Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(
+      emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, 
+      dx1, dx2, dx3, dx1_prev, dx2_prev, dx3_prev, 
+      ux1, ux2, ux3, phi, tag,
+      metric, pgen,
+      (real_t)0.0,
+      -coeff, dt, nx1, nx2, nx3,
       boundaries, (real_t)100000.0, (real_t)1.0, (real_t)0.0));
   // clang-format on
 
@@ -181,14 +193,24 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   Kokkos::deep_copy(dx2_, dx2);
   Kokkos::deep_copy(dx3_, dx3);
 
-  printf("%.12e  %.12e  %.12e \n",
-         i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0],
-         i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0],
-         i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0]);
+  auto disx = i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0];
+  auto disy = i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0];
+  auto disz = i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0];
+
+  auto disdotB = (disx * 0.22 + disy * 0.44 + disz * 0.66) / (0.823165 * math::sqrt(SQR(disx)+SQR(disy)+SQR(disz)));
+
   printf("%.12e \n",
-         (i1_[0] + dx1_[0] - i1_prev_[0] - dx1_prev_[0]) * 0.22 +
-           (i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0]) * 0.44 +
-           (i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0]) * 0.66);
+         (1-math::abs(disdotB)));
+
+  disx = i1_[1] + dx1_[1] - i1_prev_[1] - dx1_prev_[1];
+  disy = i2_[1] + dx2_[1] - i2_prev_[1] - dx2_prev_[1];
+  disz = i3_[1] + dx3_[1] - i3_prev_[1] - dx3_prev_[1];
+
+  disdotB = (disx * 0.22 + disy * 0.44 + disz * 0.66) / (0.823165 * math::sqrt(SQR(disx)+SQR(disy)+SQR(disz)));
+
+  printf("%.12e \n",
+         (1-math::abs(disdotB)));
+
 }
 
 auto main(int argc, char* argv[]) -> int {
