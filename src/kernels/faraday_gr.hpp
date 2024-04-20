@@ -2,7 +2,7 @@
  * @file kernels/faraday_gr.hpp
  * @brief Algorithms for Faraday's law in GR
  * @implements
- *   - ntt::Faraday_kernel<>
+ *   - kernel::gr::Faraday_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::gr::
  * !TODO:
  *   - 3D implementation
  */
@@ -25,7 +25,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel::gr {
+  using namespace ntt;
 
   /**
    * @brief Algorithms for Faraday's law

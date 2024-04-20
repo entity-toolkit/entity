@@ -57,6 +57,7 @@ namespace ntt {
     using Engine<SimEngine::SRPIC, M>::max_steps;
     using Engine<SimEngine::SRPIC, M>::time;
     using Engine<SimEngine::SRPIC, M>::step;
+    using domain_t = Domain<SimEngine::SRPIC, M>;
 
   public:
     SRPICEngine(SimulationParams& params) :
@@ -64,12 +65,14 @@ namespace ntt {
 
     ~SRPICEngine() = default;
 
-    void step_forward(timer::Timers&, Domain<SimEngine::SRPIC, M>&) override;
+    void step_forward(timer::Timers&, domain_t&) override;
 
     /* algorithm substeps --------------------------------------------------- */
-    void Faraday(Domain<SimEngine::SRPIC, M>&, real_t = ONE);
-    void Ampere(Domain<SimEngine::SRPIC, M>&, real_t = ONE);
-    void ParticlePush(Domain<SimEngine::SRPIC, M>&);
+    void Faraday(domain_t&, real_t = ONE);
+    void Ampere(domain_t&, real_t = ONE);
+    void ParticlePush(domain_t&);
+    void CurrentsDeposit(domain_t&);
+    void CurrentsAmpere(domain_t&);
   };
 
 } // namespace ntt

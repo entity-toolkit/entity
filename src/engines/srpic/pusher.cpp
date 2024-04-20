@@ -3,6 +3,7 @@
 
 #include "arch/traits.h"
 #include "utils/error.h"
+#include "utils/formatting.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 
@@ -11,11 +12,11 @@
 #include "metrics/spherical.h"
 
 #include "engines/srpic/srpic.h"
-#include "framework/domain/domain.h"
-#include "framework/parameters.h"
 
 #include "kernels/particle_pusher_sr.hpp"
 #include "pgen.hpp"
+
+#include <Kokkos_Core.hpp>
 
 #include <map>
 #include <string>
@@ -24,67 +25,75 @@ namespace ntt {
   template <class M>
   using pgen_t = user::PGen<SimEngine::SRPIC, M>;
 
-  template <class M, bool ExtFSp>
-  using basekernel_t = kernel::sr::PusherBase_kernel<M, pgen_t<M>, ExtFSp>;
+  template <class M, bool ExtForce>
+  using basekernel_t = kernel::sr::PusherBase_kernel<M, pgen_t<M>, ExtForce>;
 
   namespace {
 
-    template <class M, bool ExtFSp, typename p, typename... cs>
+    template <class M, bool ExtForce, typename p, typename... cs>
     void dispatch_cooling(const std::map<std::string, real_t>& coeffs_map,
-                          basekernel_t<M, ExtFSp>&             base,
+                          basekernel_t<M, ExtForce>&           base,
                           std::size_t                          npart) {
-      Kokkos::parallel_for("ParticlePusher",
-                           Kokkos::RangePolicy<AccelExeSpace, p>(0, npart),
-                           kernel::sr::Pusher_kernel<M, pgen_t<M>, ExtFSp, p, cs...>(
-                             base,
-                             coeffs_map.at("gca_larmor_max"),
-                             coeffs_map.at("gca_eovrb_max"),
-                             coeffs_map.at("sync_coeff")));
+      logger::Checkpoint(fmt::format("Launching pusher with: ExtForce [%s]",
+                                     ExtForce ? "true" : "false")
+                           .c_str(),
+                         HERE);
+      Kokkos::parallel_for(
+        "ParticlePusher",
+        Kokkos::RangePolicy<AccelExeSpace, p>(0, npart),
+        kernel::sr::Pusher_kernel<M, pgen_t<M>, ExtForce, p, cs...>(
+          base,
+          coeffs_map.at("gca_larmor_max"),
+          coeffs_map.at("gca_eovrb_max"),
+          coeffs_map.at("sync_coeff")));
     }
 
-    template <class M, bool ExtFSp, typename p>
+    template <class M, bool ExtForce, typename p>
     void dispatch_pusher(const std::map<std::string, real_t>& coeffs_map,
-                         basekernel_t<M, ExtFSp>&             base,
+                         basekernel_t<M, ExtForce>&           base,
                          std::size_t                          npart,
                          Cooling                              cooling) {
       if (cooling == Cooling::SYNCHROTRON) {
-        dispatch_cooling<M, ExtFSp, p, kernel::sr::Synchrotron_t>(coeffs_map,
+        dispatch_cooling<M, ExtForce, p, kernel::sr::Synchrotron_t>(coeffs_map,
+                                                                    base,
+                                                                    npart);
+      } else if (cooling == Cooling::NONE) {
+        dispatch_cooling<M, ExtForce, p, kernel::sr::NoCooling_t>(coeffs_map,
                                                                   base,
                                                                   npart);
-      } else if (cooling == Cooling::NONE) {
-        dispatch_cooling<M, ExtFSp, p, kernel::sr::NoCooling_t>(coeffs_map,
-                                                                base,
-                                                                npart);
       } else {
         raise::Error("Unknown cooling model", HERE);
       }
     }
 
-    template <class M, bool ExtFSp>
+    template <class M, bool ExtForce>
     void dispatch(const std::map<std::string, real_t>& coeffs_map,
-                  basekernel_t<M, ExtFSp>&             base,
+                  basekernel_t<M, ExtForce>&           base,
                   std::size_t                          npart,
                   Cooling                              cooling,
                   PrtlPusher                           pusher) {
       if (pusher == PrtlPusher::BORIS) {
-        dispatch_pusher<M, ExtFSp, kernel::sr::Boris_t>(coeffs_map, base, npart, cooling);
-      } else if (pusher == PrtlPusher::VAY) {
-        dispatch_pusher<M, ExtFSp, kernel::sr::Vay_t>(coeffs_map, base, npart, cooling);
-      } else if (pusher == PrtlPusher::BORIS_GCA) {
-        dispatch_pusher<M, ExtFSp, kernel::sr::Boris_GCA_t>(coeffs_map,
-                                                            base,
-                                                            npart,
-                                                            cooling);
-      } else if (pusher == PrtlPusher::VAY_GCA) {
-        dispatch_pusher<M, ExtFSp, kernel::sr::Vay_GCA_t>(coeffs_map,
+        dispatch_pusher<M, ExtForce, kernel::sr::Boris_t>(coeffs_map,
                                                           base,
                                                           npart,
                                                           cooling);
+      } else if (pusher == PrtlPusher::VAY) {
+        dispatch_pusher<M, ExtForce, kernel::sr::Vay_t>(coeffs_map, base, npart, cooling);
+      } else if (pusher == PrtlPusher::BORIS_GCA) {
+        dispatch_pusher<M, ExtForce, kernel::sr::Boris_GCA_t>(coeffs_map,
+                                                              base,
+                                                              npart,
+                                                              cooling);
+      } else if (pusher == PrtlPusher::VAY_GCA) {
+        dispatch_pusher<M, ExtForce, kernel::sr::Vay_GCA_t>(coeffs_map,
+                                                            base,
+                                                            npart,
+                                                            cooling);
       } else if (pusher == PrtlPusher::PHOTON) {
-        dispatch_pusher<M, ExtFSp, kernel::sr::Photon_t>(coeffs_map,
-                                                         base,
-                                                         npart,
-                                                         cooling);
+        dispatch_pusher<M, ExtForce, kernel::sr::Photon_t>(coeffs_map,
+                                                           base,
+                                                           npart,
+                                                           cooling);
       } else {
         raise::Error("Unknown particle pusher", HERE);
       }
@@ -92,13 +101,13 @@ namespace ntt {
   } // namespace
 
   template <class M>
-  void SRPICEngine<M>::ParticlePush(Domain<SimEngine::SRPIC, M>& domain) {
-    logger::Checkpoint("Launching particle pusher kernel", HERE);
+  void SRPICEngine<M>::ParticlePush(domain_t& domain) {
+    logger::Checkpoint("Launching particle pushers", HERE);
     for (auto& species : domain.species) {
-      const auto npart   = species.npart();
-      // if (npart == 0) {
-      //   continue;
-      // }
+      const auto npart = species.npart();
+      if (npart == 0) {
+        continue;
+      }
       const auto q_ovr_m = species.mass() > ZERO
                              ? species.charge() / species.mass()
                              : ZERO;
@@ -135,14 +144,12 @@ namespace ntt {
         {    "sync_coeff",     sync_coeff}
       };
 
-      // bool apply_extforce = traits::has_member<traits::ext_force_t, pgen_t<M>>::value;
-      // toggle to indicate whether the ext force applies to current species
       // toggle to indicate whether pgen defines the external force
       bool apply_extforce = false;
       if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t<M>>::value) {
         apply_extforce = true;
+        // toggle to indicate whether the ext force applies to current species
         if (traits::has_member<traits::species_t, decltype(pgen_t<M>::ext_force)>::value) {
-          // species is a vector of unsigned int, check that species.index() is in that vector
           apply_extforce &= std::find(m_pgen.ext_force.species.begin(),
                                       m_pgen.ext_force.species.end(),
                                       species.index()) !=
@@ -151,7 +158,6 @@ namespace ntt {
       }
 
       if (apply_extforce) {
-        std::cout << "Applying external force for " << species.index() << std::endl;
         auto pusher_base = basekernel_t<M, true>(domain.fields.em,
                                                  species.index(),
                                                  species.i1,
@@ -182,8 +188,6 @@ namespace ntt {
                                                  domain.mesh.prtl_bc());
         dispatch(coeff_map, pusher_base, npart, cooling, pusher);
       } else {
-        std::cout << "Not applying external force for " << species.index()
-                  << std::endl;
         auto pusher_base = basekernel_t<M, false>(domain.fields.em,
                                                   species.index(),
                                                   species.i1,

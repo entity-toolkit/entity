@@ -2,14 +2,14 @@
  * @file kernels/current_deposit.hpp
  * @brief Covariant algorithms for the current deposition
  * @implements
- *   - ntt::DepositCurrents_kernel<>
+ *   - kernel::DepositCurrents_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::
  */
 
 #ifndef KERNELS_CURRENTS_DEPOSIT_HPP
@@ -25,7 +25,8 @@
 
 #define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
 
-namespace ntt {
+namespace kernel {
+  using namespace ntt;
 
   /**
    * @brief Algorithm for the current deposition
@@ -410,7 +411,7 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace kernel
 
 #undef i_di_to_Xi
 

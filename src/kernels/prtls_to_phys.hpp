@@ -2,7 +2,7 @@
  * @file kernels/prtls_to_phys.hpp
  * @brief Convert particle positions & velocities to physical units
  * @implements
- *   - ntt::PrtlToPhys_kernel<>
+ *   - kernel::PrtlToPhys_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::
  * @note
  * This is a kernel that converts particle positions
  * and velocities to physical units
@@ -28,7 +28,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel {
+  using namespace ntt;
 
   struct UseWeights_t {};
 
@@ -212,6 +213,6 @@ namespace ntt {
       buff_ux3(p) = u_Phys[2];
     }
   };
-} // namespace ntt
+} // namespace kernel
 
 #endif // KERNELS_PRTLS_TO_PHYS_HPP

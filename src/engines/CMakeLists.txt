@@ -8,6 +8,7 @@
 # - srpic/faraday.cpp
 # - srpic/ampere.cpp
 # - srpic/pusher.cpp
+# - srpic/currents_deposit.cpp
 # - grpic/grpic.cpp
 # @includes:
 # - ../
@@ -33,6 +34,7 @@ set(SOURCES
   ${SRC_DIR}/srpic/faraday.cpp
   ${SRC_DIR}/srpic/ampere.cpp
   ${SRC_DIR}/srpic/pusher.cpp
+  ${SRC_DIR}/srpic/currents_deposit.cpp
   ${SRC_DIR}/grpic/grpic.cpp
 )
 add_library(ntt_engines ${SOURCES})

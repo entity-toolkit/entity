@@ -71,12 +71,12 @@ void testFlds2Phys(const std::vector<std::size_t>&      res,
     "InterpFields",
     CreateRangePolicy<M::Dim>({ N_GHOSTS, N_GHOSTS },
                               { nx1 + N_GHOSTS, nx2 + N_GHOSTS }),
-    FieldsToPhys_kernel<M, 3, 6>(from,
-                                 to,
-                                 comp_from,
-                                 comp_to1,
-                                 PrepareOutput::InterpToCellCenterFromEdges,
-                                 metric));
+    kernel::FieldsToPhys_kernel<M, 3, 6>(from,
+                                         to,
+                                         comp_from,
+                                         comp_to1,
+                                         PrepareOutput::InterpToCellCenterFromEdges,
+                                         metric));
   auto to_h = Kokkos::create_mirror_view(to);
   Kokkos::deep_copy(to_h, to);
 
@@ -101,12 +101,12 @@ void testFlds2Phys(const std::vector<std::size_t>&      res,
     "InterpFields",
     CreateRangePolicy<M::Dim>({ N_GHOSTS, N_GHOSTS },
                               { nx1 + N_GHOSTS, nx2 + N_GHOSTS }),
-    FieldsToPhys_kernel<M, 3, 6>(from,
-                                 to,
-                                 comp_from,
-                                 comp_to2,
-                                 PrepareOutput::InterpToCellCenterFromFaces,
-                                 metric));
+    kernel::FieldsToPhys_kernel<M, 3, 6>(from,
+                                         to,
+                                         comp_from,
+                                         comp_to2,
+                                         PrepareOutput::InterpToCellCenterFromFaces,
+                                         metric));
   Kokkos::deep_copy(to_h, to);
   errorIf(to_h(2 + N_GHOSTS, 3 + N_GHOSTS, 0) != HALF,
           "wrong interpolation from faces");

@@ -68,7 +68,7 @@ void testFilter(const std::vector<std::size_t>&      res,
   Kokkos::parallel_for(
     "CurrentsFilter",
     range,
-    DigitalFilter_kernel<Dim::_2D, M::CoordType>(J, Jbuff, size, boundaries));
+    kernel::DigitalFilter_kernel<Dim::_2D, M::CoordType>(J, Jbuff, size, boundaries));
   real_t SumJx1 { 0.0 }, SumJx2 { 0.0 }, SumJx3 { 0.0 };
   Kokkos::parallel_reduce(
     "SumJx1",

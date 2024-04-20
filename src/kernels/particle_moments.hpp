@@ -2,7 +2,7 @@
  * @file kernels/particle_moments.hpp
  * @brief Algorithm for computing different moments from particle distribution
  * @implements
- *   - ntt::ParticleMoments_kernel<>
+ *   - kernel::ParticleMoments_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::
  */
 
 #ifndef KERNELS_PARTICLE_MOMENTS_HPP
@@ -27,7 +27,8 @@
 
 #include <vector>
 
-namespace ntt {
+namespace kernel {
+  using namespace ntt;
 
   template <FldsID::type F>
   auto get_contrib(float mass, float charge) -> real_t {

@@ -46,11 +46,10 @@ namespace raise {
                       int                line,
                       bool               once = true) {
     if (once) {
-
       CallOnce(
         [](auto& msg, auto& file, auto& func, auto& line) {
-          PLOGV_(LogFile) << "Warning: " << file << " : " << func << " @ " << line;
-          PLOGW_(ErrFile) << "Warning: " << file << " : " << func << " @ " << line;
+          PLOGW_(LogFile) << "Warning: " << file << ":" << line << " @ " << func;
+          PLOGW_(ErrFile) << "Warning: " << file << ":" << line << " @ " << func;
 #if defined(MPI_ENABLED)
           int rank;
           MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -65,8 +64,8 @@ namespace raise {
         func,
         line);
     } else {
-      PLOGV_(LogFile) << "Warning: " << file << " : " << func << " @ " << line;
-      PLOGW_(ErrFile) << "Warning: " << file << " : " << func << " @ " << line;
+      PLOGW_(LogFile) << "Warning: " << file << ":" << line << " @ " << func;
+      PLOGW_(ErrFile) << "Warning: " << file << ":" << line << " @ " << func;
 #if defined(MPI_ENABLED)
       int rank;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -91,7 +90,7 @@ namespace logger {
 #endif
     CallOnce(
       [](auto& file, auto& func, auto& line) {
-        PLOGV_(LogFile) << "Checkpoint: " << file << " : " << func << " @ " << line;
+        PLOGV_(LogFile) << "Checkpoint: " << file << ":" << line << " @ " << func;
       },
       file,
       func,
@@ -110,7 +109,7 @@ namespace logger {
 #endif
     CallOnce(
       [](auto& msg, auto& file, auto& func, auto& line) {
-        PLOGV_(LogFile) << "Checkpoint: " << file << " : " << func << " @ " << line;
+        PLOGV_(LogFile) << "Checkpoint: " << file << ":" << line << " @ " << func;
         PLOGV_(LogFile) << " : message : " << msg;
       },
       msg,

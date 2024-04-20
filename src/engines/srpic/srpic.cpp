@@ -17,16 +17,81 @@
 namespace ntt {
 
   template <class M>
-  void SRPICEngine<M>::step_forward(timer::Timers&               timers,
-                                    Domain<SimEngine::SRPIC, M>& dom) {
-    timers.start("ParticlePusher");
-    ParticlePush(dom);
-    // long double a { 0.0 };
-    // for (std::size_t p { 0 }; p < 100000000; p++) {
-    //   a += 1.0;
-    // }
-    // (void)a;
-    timers.stop("ParticlePusher");
+  void SRPICEngine<M>::step_forward(timer::Timers& timers, domain_t& dom) {
+    const auto fieldsolver_enabled = m_params.template get<bool>(
+      "algorithms.toggles.fieldsolver");
+    const auto deposit_enabled = m_params.template get<bool>(
+      "algorithms.toggles.deposit");
+
+    if (fieldsolver_enabled) {
+      timers.start("FieldSolver");
+      Faraday(dom, HALF);
+      timers.stop("FieldSolver");
+
+      timers.start("Communications");
+      // !TODO communicate B-field
+      timers.stop("Communications");
+
+      timers.start("FieldBoundaries");
+      // !TODO field boundaries
+      timers.stop("FieldBoundaries");
+    }
+
+    {
+      timers.start("ParticlePusher");
+      ParticlePush(dom);
+      timers.stop("ParticlePusher");
+
+      if (deposit_enabled) {
+        timers.start("CurrentDeposit");
+        CurrentsDeposit(dom);
+        timers.stop("CurrentDeposit");
+
+        timers.start("Communications");
+        // !TODO communicate currents
+        timers.stop("Communications");
+
+        timers.start("CurrentFiltering");
+        // !TODO filtering
+        timers.stop("CurrentFiltering");
+      }
+
+      timers.start("Communications");
+      // !TODO communicate particles
+      timers.stop("Communications");
+    }
+
+    if (fieldsolver_enabled) {
+      timers.start("FieldSolver");
+      Faraday(dom, HALF);
+      timers.stop("FieldSolver");
+
+      timers.start("Communications");
+      // !TODO communicate B-field
+      timers.stop("Communications");
+
+      timers.start("FieldBoundaries");
+      // !TODO field boundaries
+      timers.stop("FieldBoundaries");
+
+      timers.start("FieldSolver");
+      Ampere(dom, ONE);
+      timers.stop("FieldSolver");
+
+      if (deposit_enabled) {
+        timers.start("FieldSolver");
+        CurrentsAmpere(dom);
+        timers.stop("FieldSolver");
+      }
+
+      timers.start("Communications");
+      // !TODO communicate E-field
+      timers.stop("Communications");
+
+      timers.start("FieldBoundaries");
+      // !TODO field boundaries
+      timers.stop("FieldBoundaries");
+    }
   }
 
   template class SRPICEngine<metric::Minkowski<Dim::_1D>>;
@@ -34,24 +99,6 @@ namespace ntt {
   template class SRPICEngine<metric::Minkowski<Dim::_3D>>;
   template class SRPICEngine<metric::Spherical<Dim::_2D>>;
   template class SRPICEngine<metric::QSpherical<Dim::_2D>>;
-
-  // const auto params     = *(this->params());
-  // const auto metadomain = *(this->metadomain());
-  // auto&      mblock     = this->meshblock;
-  // auto&      wrtr       = this->writer;
-  // auto&      pgen       = this->problem_generator;
-
-  // timer::Timers                   timers({ "FieldSolver",
-  //                                          "CurrentFiltering",
-  //                                          "CurrentDeposit",
-  //                                          "ParticlePusher",
-  //                                          "FieldBoundaries",
-  //                                          "ParticleBoundaries",
-  //                                          "Communications",
-  //                                          "UserSpecific",
-  //                                          "Output" },
-  //                      params.blockingTimers());
-  // static std::vector<long double> tstep_durations = {};
 
   // if (params.fieldsolverEnabled()) {
   //   timers.start("FieldSolver");

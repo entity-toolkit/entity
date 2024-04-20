@@ -33,13 +33,6 @@ namespace plog {
 
     static auto format(const Record& record) -> util::nstring {
       util::nostringstream ss;
-      if (record.getSeverity() == plog::debug &&
-          plog::get()->getMaxSeverity() == plog::verbose) {
-        ss << std::setw(6) << std::left
-           << severityToString(record.getSeverity()) << PLOG_NSTR(": ");
-        ss << record.getFunc() << PLOG_NSTR(" @ ") << record.getLine()
-           << PLOG_NSTR("\n");
-      }
       ss << std::setw(6) << std::left << severityToString(record.getSeverity())
          << PLOG_NSTR(": ");
       ss << record.getMessage() << PLOG_NSTR("\n");

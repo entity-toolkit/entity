@@ -134,6 +134,7 @@ namespace kernel::sr {
     ndfield_t<D, 3>   J;
     const M           metric;
     const std::size_t i2max;
+    // coeff = -dt * q0 * n0 / B0
     const real_t      coeff;
     const real_t      inv_n0;
     bool              is_axis_i2min { false };

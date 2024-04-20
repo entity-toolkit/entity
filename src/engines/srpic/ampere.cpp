@@ -10,15 +10,16 @@
 #include "metrics/spherical.h"
 
 #include "engines/srpic/srpic.h"
-#include "framework/domain/domain.h"
 
 #include "kernels/ampere_mink.hpp"
 #include "kernels/ampere_sr.hpp"
 
+#include <Kokkos_Core.hpp>
+
 namespace ntt {
 
   template <class M>
-  void SRPICEngine<M>::Ampere(Domain<SimEngine::SRPIC, M>& domain, real_t fraction) {
+  void SRPICEngine<M>::Ampere(domain_t& domain, real_t fraction) {
     logger::Checkpoint("Launching Ampere kernel", HERE);
     const auto dT = fraction *
                     m_params.template get<real_t>(
@@ -55,6 +56,45 @@ namespace ntt {
                                                         dT,
                                                         ni2,
                                                         domain.mesh.flds_bc()));
+    }
+  }
+
+  template <class M>
+  void SRPICEngine<M>::CurrentsAmpere(domain_t& domain) {
+    logger::Checkpoint("Launching Ampere kernel for adding currents", HERE);
+    const auto q0    = m_params.template get<real_t>("scales.q0");
+    const auto n0    = m_params.template get<real_t>("scales.n0");
+    const auto B0    = m_params.template get<real_t>("scales.B0");
+    const auto coeff = -dt * q0 * n0 / B0;
+    if constexpr (M::CoordType == Coord::Cart) {
+      // minkowski case
+      const auto V0 = m_params.template get<real_t>("scales.V0");
+
+      Kokkos::parallel_for(
+        "Ampere",
+        domain.mesh.rangeActiveCells(),
+        kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
+                                                    domain.fields.cur,
+                                                    coeff / V0,
+                                                    ONE / n0));
+    } else {
+      range_t<M::Dim> range {};
+      if constexpr (M::Dim == Dim::_2D) {
+        range = CreateRangePolicy<Dim::_2D>(
+          { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+          { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+      }
+      const auto ni2 = domain.mesh.n_active(in::x2);
+      Kokkos::parallel_for(
+        "Ampere",
+        range,
+        kernel::sr::CurrentsAmpere_kernel<M>(domain.fields.em,
+                                             domain.fields.cur,
+                                             domain.mesh.metric,
+                                             coeff,
+                                             ONE / n0,
+                                             ni2,
+                                             domain.mesh.flds_bc()));
     }
   }
 

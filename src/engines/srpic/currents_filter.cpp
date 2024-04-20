@@ -9,6 +9,7 @@
 #include "metrics/spherical.h"
 
 #include "engines/srpic/srpic.h"
+#include "framework/domain/domain.h"
 
 #include "kernels/faraday_mink.hpp"
 #include "kernels/faraday_sr.hpp"

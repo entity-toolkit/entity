@@ -2,13 +2,13 @@
  * @file kernels/fields_to_phys.hpp
  * @brief Algorithms to interpolate staggered fields and convert to a different basis
  * @implements
- *   - ntt::FieldsToPhys_kernel<>
+ *   - kernel::FieldsToPhys_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::
  * @note
  * The field `from(*, cfi)` is manipulated and saved to the
  * corresponding `to(*, cti)` field
@@ -32,7 +32,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel {
+  using namespace ntt;
 
   template <class M, int N1, int N2>
   class FieldsToPhys_kernel {
@@ -241,6 +242,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace kernel
 
 #endif // KERNELS_FIELDS_TO_PHYS_HPP

@@ -98,6 +98,7 @@ namespace kernel::mink {
   class CurrentsAmpere_kernel {
     ndfield_t<D, 6> E;
     ndfield_t<D, 3> J;
+    // coeff = -dt * q0 * n0 / (B0 * V0)
     const real_t    coeff;
     const real_t    inv_n0;
 

@@ -2,8 +2,8 @@
  * @file kernels/aux_fields_gr.hpp
  * @brief Algorithms for computing the auxiliary fields in GR
  * @implements
- *   - ntt::ComputeAuxE_kernel<>
- *   - ntt::ComputeAuxH_kernel<>
+ *   - kernel::gr::ComputeAuxE_kernel<>
+ *   - kernel::gr::ComputeAuxH_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -11,7 +11,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::gr::
  * !TODO:
  *   - 3D implementation
  */
@@ -26,7 +26,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel::gr {
+  using namespace ntt;
 
   /**
    * @brief Kernel for computing E
@@ -236,6 +237,6 @@ namespace ntt {
       }
     }
   };
-} // namespace ntt
+} // namespace kernel::gr
 
 #endif // KERNELS_AUX_FIELDS_GR_HPP

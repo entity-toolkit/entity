@@ -2,8 +2,8 @@
  * @file kernels/ampere_gr.hpp
  * @brief Algorithms for Ampere's law in GR
  * @implements
- *   - ntt::Ampere_kernel<>
- *   - ntt::CurrentsAmpere_kernel<>
+ *   - kernel::gr::Ampere_kernel<>
+ *   - kernel::gr::CurrentsAmpere_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -11,7 +11,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::gr::
  * !TODO:
  *   - 3D implementation
  */
@@ -26,7 +26,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace kernel::gr {
+  using namespace ntt;
 
   /**
    * @brief Algorithms for Ampere's law:
@@ -187,6 +188,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace kernel::gr
 
 #endif // KERNELS_AMPERE_GR_HPP

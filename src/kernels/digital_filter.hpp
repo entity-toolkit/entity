@@ -2,7 +2,7 @@
  * @file kernels/digital_filter.hpp
  * @brief Algorithms for covariant digital filtering
  * @implements
- *   - ntt::DigitalFilter_kernel<>
+ *   - kernel::DigitalFilter_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::
  */
 
 #ifndef KERNELS_DIGITAL_FILTER_HPP
@@ -29,7 +29,8 @@
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
     INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
-namespace ntt {
+namespace kernel {
+  using namespace ntt;
 
   template <Dimension D, Coord::type C>
   class DigitalFilter_kernel {
@@ -215,7 +216,7 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace kernel
 
 #undef FILTER_IN_I1
 

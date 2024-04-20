@@ -2,7 +2,7 @@
  * @file kernels/particle_pusher_gr.h
  * @brief Implementation of the particle pusher for GR
  * @implements
- *   - ntt::Pusher_kernel<>
+ *   - kernel::gr::Pusher_kernel<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - utils/error.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - kernel::gr::
  * !TODO:
  *   - 3D implementation
  */
@@ -49,7 +49,8 @@
 
 /* -------------------------------------------------------------------------- */
 
-namespace ntt {
+namespace kernel::gr {
+  using namespace ntt;
 
   struct Massive_t {};
 
