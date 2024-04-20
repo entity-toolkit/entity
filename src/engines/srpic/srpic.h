@@ -12,6 +12,7 @@
  *   - utils/numeric.h
  *   - engines/engine.h
  *   - framework/domain/domain.h
+ *   - framework/parameters.h
  *   - metrics/minkowski.h
  *   - metrics/qspherical.h
  *   - metrics/spherical.h
