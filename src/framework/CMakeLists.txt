@@ -5,6 +5,7 @@
 # - simulation.cpp
 # - domain/grid.cpp
 # - domain/metadomain.cpp
+# - domain/communications.cpp
 # - containers/particles.cpp
 # - containers/fields.cpp
 # @includes:
@@ -28,6 +29,7 @@ set(SOURCES
   ${SRC_DIR}/simulation.cpp
   ${SRC_DIR}/domain/grid.cpp
   ${SRC_DIR}/domain/metadomain.cpp
+  ${SRC_DIR}/domain/communications.cpp
   ${SRC_DIR}/containers/particles.cpp
   ${SRC_DIR}/containers/fields.cpp
 )

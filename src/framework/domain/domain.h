@@ -75,6 +75,24 @@ namespace ntt {
     Fields<D, S>                            fields;
     std::vector<Particles<D, M::CoordType>> species;
 
+    /**
+     * @brief constructor for "empty" allocation of non-local domain placeholders
+     */
+    Domain(bool,
+           unsigned int                         index,
+           const std::vector<unsigned int>&     offset_ndomains,
+           const std::vector<std::size_t>&      offset_ncells,
+           const std::vector<std::size_t>&      ncells,
+           const boundaries_t<real_t>&          extent,
+           const std::map<std::string, real_t>& metric_params,
+           const std::vector<ParticleSpecies>&) :
+      mesh { ncells, extent, metric_params },
+      fields {},
+      species {},
+      m_index { index },
+      m_offset_ndomains { offset_ndomains },
+      m_offset_ncells { offset_ncells } {}
+
     Domain(unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
            const std::vector<std::size_t>&      offset_ncells,
@@ -124,19 +142,12 @@ namespace ntt {
       return m_neighbor_idx.at(dir);
     }
 
-    [[nodiscard]]
-    auto comm_bc_in(const dir::direction_t<D>& dir) const -> CommBC {
-      raise::ErrorIf(m_comm_bc.find(dir) == m_comm_bc.end(),
-                     "comm_bc_in() failed",
-                     HERE);
-      return m_comm_bc.at(dir);
-    }
+    // [[nodiscard]]
+    // auto is_placeholder() const -> bool {
+    //   return m_placeholder && fields.is_placeholder() && species.is_placeholder();
+    // }
 
     /* setters -------------------------------------------------------------- */
-    void set_comm_bc(const dir::direction_t<D>& dir, const CommBC& bc) {
-      m_comm_bc[dir] = bc;
-    }
-
     auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
       -> void {
       m_neighbor_idx[dir] = idx;
@@ -149,8 +160,6 @@ namespace ntt {
     std::vector<unsigned int>   m_offset_ndomains;
     // offset of the domain in cells (# of cells in each dimension)
     std::vector<std::size_t>    m_offset_ncells;
-    // boundary conditions of the domain
-    dir::map_t<D, CommBC>       m_comm_bc;
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)

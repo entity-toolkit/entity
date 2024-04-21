@@ -70,7 +70,7 @@ namespace ntt {
     if (diag_flags & Diag::Species) {
       CallOnce([diag_flags]() {
         std::cout << std::endl
-                  << color::get_color("black", diag_flags & Diag::Colorful);
+                  << color::get_color("bblack", diag_flags & Diag::Colorful);
 #if defined(MPI_ENABLED)
         std::cout << "Particle count:" << std::setw(22) << std::right << "[TOT]"
                   << std::setw(20) << std::right << "[MIN (%)]" << std::setw(20)
@@ -163,7 +163,7 @@ namespace ntt {
     os << "  species " << fmt::format("%2d", species_index) << " ("
        << species_label << ")";
 
-    const auto c_black   = color::get_color("black", flags & Diag::Colorful);
+    const auto c_bblack  = color::get_color("bblack", flags & Diag::Colorful);
     const auto c_red     = color::get_color("red", flags & Diag::Colorful);
     const auto c_yellow  = color::get_color("yellow", flags & Diag::Colorful);
     const auto c_green   = color::get_color("green", flags & Diag::Colorful);
@@ -174,7 +174,7 @@ namespace ntt {
                                            : ((load_max > 50) ? c_yellow : c_green);
     const auto raw1 = fmt::format("%s (%4.1f%%)", npart_min_str.c_str(), load_min);
     const auto raw2 = fmt::format("%s (%4.1f%%)", npart_max_str.c_str(), load_max);
-    os << c_black
+    os << c_bblack
        << fmt::pad(tot_npart_str, 20, '.', false).substr(0, 20 - tot_npart_str.size())
        << c_reset << tot_npart_str;
     os << fmt::pad(raw1, 20, ' ', false).substr(0, 20 - raw1.size())
@@ -190,11 +190,11 @@ namespace ntt {
                       load_max,
                       c_reset.c_str());
 #else // not MPI_ENABLED
-    auto load          = 100.0 * (double)(npart) / (double)(maxnpart);
-    auto npart_str     = npart > 9999 ? fmt::format("%.2Le", (long double)npart)
-                                      : std::to_string(npart);
-    const auto c_black = color::get_color("black", flags & Diag::Colorful);
-    const auto c_red   = color::get_color("red", flags & Diag::Colorful);
+    auto load      = 100.0 * (double)(npart) / (double)(maxnpart);
+    auto npart_str = npart > 9999 ? fmt::format("%.2Le", (long double)npart)
+                                  : std::to_string(npart);
+    const auto c_bblack = color::get_color("bblack", flags & Diag::Colorful);
+    const auto c_red    = color::get_color("red", flags & Diag::Colorful);
     const auto c_yellow = color::get_color("yellow", flags & Diag::Colorful);
     const auto c_green  = color::get_color("green", flags & Diag::Colorful);
     const auto c_reset  = color::get_color("reset", flags & Diag::Colorful);
@@ -203,7 +203,7 @@ namespace ntt {
                             : ((load > 50) ? c_yellow.c_str() : c_green.c_str());
     os << "  species " << species_index << " (" << species_label << ")";
     const auto raw = fmt::format("%s (%4.1f%%)", npart_str.c_str(), load);
-    os << c_black << fmt::pad(raw, 24, '.').substr(0, 24 - raw.size()) << c_reset;
+    os << c_bblack << fmt::pad(raw, 24, '.').substr(0, 24 - raw.size()) << c_reset;
     os << fmt::format("%s (%s%4.1f%%%s)",
                       npart_str.c_str(),
                       c_load,

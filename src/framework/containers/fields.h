@@ -106,10 +106,13 @@ namespace ntt {
      * @note Address : cur0(i, j, k, ***)
      */
     ndfield_t<D, 3> cur0;
+
     /**
      * @brief Constructor for the fields container. Also sets the active cell sizes and ranges
      * @param res resolution vector of size D (dimension)
      */
+    Fields() {}
+
     Fields(const std::vector<std::size_t>& res);
 
     Fields(Fields&& other) noexcept :
@@ -138,6 +141,30 @@ namespace ntt {
     Fields& operator=(const Fields&) = delete;
 
     ~Fields() = default;
+
+    /* getters -------------------------------------------------------------- */
+    [[nodiscard]]
+    auto memory_footprint() const -> std::size_t {
+      std::size_t em_footprint   = 6;
+      std::size_t bckp_footprint = 6;
+      std::size_t cur_footprint  = 3;
+      std::size_t buff_footprint = 3;
+      std::size_t aux_footprint  = 6;
+      std::size_t em0_footprint  = 6;
+      std::size_t cur0_footprint = 3;
+      for (auto d = 0; d < D; ++d) {
+        em_footprint   *= em.extent(d);
+        bckp_footprint *= bckp.extent(d);
+        cur_footprint  *= cur.extent(d);
+        buff_footprint *= buff.extent(d);
+        aux_footprint  *= aux.extent(d);
+        em0_footprint  *= em0.extent(d);
+        cur0_footprint *= cur0.extent(d);
+      }
+      return (std::size_t)(sizeof(real_t)) *
+             (em_footprint + bckp_footprint + cur_footprint + buff_footprint +
+              aux_footprint + em0_footprint + cur0_footprint);
+    }
   };
 
 } // namespace ntt

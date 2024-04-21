@@ -83,6 +83,9 @@ namespace ntt {
     array_mirror_t<short*>               tag_h;
     std::vector<array_mirror_t<real_t*>> pld_h;
 
+    // for empty allocation
+    Particles() {}
+
     /**
      * @brief Constructor for the particle container
      * @param index The index of the species (starts from 1)
@@ -156,6 +159,40 @@ namespace ntt {
       return m_ntags;
     }
 
+    [[nodiscard]]
+    auto memory_footprint() const -> std::size_t {
+      std::size_t footprint  = 0;
+      footprint             += sizeof(int) * i1.extent(0);
+      footprint             += sizeof(int) * i2.extent(0);
+      footprint             += sizeof(int) * i3.extent(0);
+      footprint             += sizeof(prtldx_t) * dx1.extent(0);
+      footprint             += sizeof(prtldx_t) * dx2.extent(0);
+      footprint             += sizeof(prtldx_t) * dx3.extent(0);
+      footprint             += sizeof(real_t) * ux1.extent(0);
+      footprint             += sizeof(real_t) * ux2.extent(0);
+      footprint             += sizeof(real_t) * ux3.extent(0);
+      footprint             += sizeof(real_t) * weight.extent(0);
+      footprint             += sizeof(int) * i1_prev.extent(0);
+      footprint             += sizeof(int) * i2_prev.extent(0);
+      footprint             += sizeof(int) * i3_prev.extent(0);
+      footprint             += sizeof(prtldx_t) * dx1_prev.extent(0);
+      footprint             += sizeof(prtldx_t) * dx2_prev.extent(0);
+      footprint             += sizeof(prtldx_t) * dx3_prev.extent(0);
+      footprint             += sizeof(short) * tag.extent(0);
+      for (auto& p : pld) {
+        footprint += sizeof(real_t) * p.extent(0);
+      }
+      footprint += sizeof(real_t) * phi.extent(0);
+      return footprint;
+    }
+
+    /**
+     * @brief Count the number of particles with a specific tag.
+     * @return The vector of counts for each tag.
+     */
+    [[nodiscard]]
+    auto npart_per_tag() const -> std::vector<std::size_t>;
+
     /* setters -------------------------------------------------------------- */
     /**
      * @brief Set the number of particles
@@ -171,13 +208,6 @@ namespace ntt {
         HERE);
       m_npart = n;
     }
-
-    /**
-     * @brief Count the number of particles with a specific tag.
-     * @return The vector of counts for each tag.
-     */
-    [[nodiscard]]
-    auto npart_per_tag() const -> std::vector<std::size_t>;
 
     /**
      * @brief Sort particles by their tags.

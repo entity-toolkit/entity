@@ -46,7 +46,6 @@ namespace ntt {
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
 #endif
-
     initialValidityCheck();
 
     createEmptyDomains();
@@ -148,6 +147,34 @@ namespace ntt {
       for (auto d { 0 }; d < (short)D; ++d) {
         l_extent.push_back({ low_corner_Phys[d], up_corner_Phys[d] });
       }
+
+#if defined(MPI_ENABLED)
+      // !TODO: need to change to support multiple domains per rank
+      // assuming ONE local subdomain
+      const auto local = ((int)idx == g_mpi_rank);
+      if (not local) {
+        g_subdomains.emplace_back(false,
+                                  idx,
+                                  l_offset_ndomains,
+                                  l_offset_ncells,
+                                  l_ncells,
+                                  l_extent,
+                                  g_metric_params,
+                                  g_species_params);
+      } else {
+        g_subdomains.emplace_back(idx,
+                                  l_offset_ndomains,
+                                  l_offset_ncells,
+                                  l_ncells,
+                                  l_extent,
+                                  g_metric_params,
+                                  g_species_params);
+      }
+      g_subdomains.back().set_mpi_rank(idx);
+      if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
+        g_local_subdomain_indices.push_back(idx);
+      }
+#else  // not MPI_ENABLED
       g_subdomains.emplace_back(idx,
                                 l_offset_ndomains,
                                 l_offset_ncells,
@@ -155,15 +182,9 @@ namespace ntt {
                                 l_extent,
                                 g_metric_params,
                                 g_species_params);
-      g_domain_offset2index[l_offset_ndomains] = idx;
-#if defined(MPI_ENABLED)
-      g_subdomains.back().set_mpi_rank(idx);
-      if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
-        g_local_subdomain_indices.push_back(idx);
-      }
-#else  // not MPI_ENABLED
       g_local_subdomain_indices.push_back(idx);
 #endif // MPI_ENABLED
+      g_domain_offset2index[l_offset_ndomains] = idx;
     }
   }
 
@@ -209,6 +230,7 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::redefineBoundaries() {
+    // !TODO: not setting CommBC for now
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
       auto&      current_domain = g_subdomains[idx];
@@ -217,7 +239,6 @@ namespace ntt {
         FldsBC flds_bc { FldsBC::INVALID };
         PrtlBC prtl_bc { PrtlBC::INVALID };
         for (auto d { 0 }; d < (short)D; ++d) {
-          // !TODO: not setting CommBC for now
           auto dir = direction[d];
           if (dir == -1) {
             if (current_offset[d] == 0) {
@@ -254,7 +275,55 @@ namespace ntt {
           }
         }
         current_domain.mesh.set_flds_bc(direction, flds_bc);
-        current_domain.mesh.set_frtl_bc(direction, prtl_bc);
+        current_domain.mesh.set_prtl_bc(direction, prtl_bc);
+      }
+      // setting boundaries in non-orthogonal (corner) directions
+      for (auto direction : dir::Directions<D>::all) {
+        auto assoc_orth = direction.get_assoc_orth();
+        if (assoc_orth.size() == 1) {
+          // skip the orthogonal directions
+          continue;
+        }
+        FldsBC flds_bc { FldsBC::INVALID };
+        for (auto dir : assoc_orth) {
+          const auto fldsbc_in_dir = current_domain.mesh.flds_bc_in(dir);
+          if ((fldsbc_in_dir != FldsBC::PERIODIC) and
+              (fldsbc_in_dir != FldsBC::SYNC)) {
+            flds_bc = fldsbc_in_dir;
+            break;
+          } else if ((fldsbc_in_dir == FldsBC::PERIODIC) and
+                     (flds_bc != FldsBC::SYNC)) {
+            flds_bc = FldsBC::PERIODIC;
+          } else if (fldsbc_in_dir == FldsBC::SYNC) {
+            flds_bc = FldsBC::SYNC;
+          } else {
+            raise::Error("Invalid boundary condition for fields", HERE);
+          }
+        }
+        PrtlBC prtl_bc { PrtlBC::INVALID };
+        for (auto dir : assoc_orth) {
+          const auto prtlbc_in_dir = current_domain.mesh.prtl_bc_in(dir);
+          if ((prtlbc_in_dir != PrtlBC::PERIODIC) and
+              (prtlbc_in_dir != PrtlBC::SYNC)) {
+            prtl_bc = prtlbc_in_dir;
+            break;
+          } else if ((prtlbc_in_dir == PrtlBC::PERIODIC) and
+                     (prtl_bc != PrtlBC::SYNC)) {
+            prtl_bc = PrtlBC::PERIODIC;
+          } else if (prtlbc_in_dir == PrtlBC::SYNC) {
+            prtl_bc = PrtlBC::SYNC;
+          } else {
+            raise::Error("Invalid boundary condition for particles", HERE);
+          }
+        }
+        raise::ErrorIf(flds_bc == FldsBC::INVALID,
+                       "Invalid boundary condition for fields",
+                       HERE);
+        raise::ErrorIf(prtl_bc == PrtlBC::INVALID,
+                       "Invalid boundary condition for particles",
+                       HERE);
+        current_domain.mesh.set_flds_bc(direction, flds_bc);
+        current_domain.mesh.set_prtl_bc(direction, prtl_bc);
       }
     }
   }
@@ -265,15 +334,14 @@ namespace ntt {
       const auto& current_domain = g_subdomains[idx];
       // check that all neighbors are set properly
       for (const auto& direction : dir::Directions<D>::all) {
+        // check neighbors
         const auto  neighbor_idx = current_domain.neighbor_idx_in(direction);
         const auto& neighbor     = g_subdomains[neighbor_idx];
-        const auto self_idx = neighbor.neighbor_idx_in(-direction);
-        raise::ErrorIf(self_idx != idx,
-                       "Neighbor not set properly",
-                       HERE);
+        const auto  self_idx     = neighbor.neighbor_idx_in(-direction);
+        raise::ErrorIf(self_idx != idx, "Neighbor not set properly", HERE);
       }
       // check that all boundaries are set properly
-      for (const auto& direction : dir::Directions<D>::orth) {
+      for (const auto& direction : dir::Directions<D>::all) {
         raise::ErrorIf(current_domain.mesh.flds_bc_in(direction) == FldsBC::INVALID,
                        "Invalid boundary condition for fields",
                        HERE);
@@ -281,6 +349,7 @@ namespace ntt {
                        "Invalid boundary condition for particles",
                        HERE);
       }
+      // check that local subdomains are contained in g_local_subdomain_indices
       auto contained_in_local = false;
       for (const auto& gidx : g_local_subdomain_indices) {
         contained_in_local |= (idx == gidx);
@@ -295,6 +364,10 @@ namespace ntt {
                      "local subdomains not set properly",
                      HERE);
 #endif // MPI_ENABLED
+      // check that non-local subdomains do not allocate memory
+      if (not contained_in_local) {
+        // !TODO
+      }
     }
   }
 

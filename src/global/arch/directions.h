@@ -73,6 +73,24 @@ namespace dir {
       ss << *this;
       return ss.str();
     }
+
+    /**
+     * @brief get the associated orthogonal directions
+     * @example {-1, 1} -> [{-1, 0}, {0, 1}]
+     * @example {1, 1, 0} -> [{1, 0, 0}, {0, 1, 0}]
+     * @example {-1, 1, -1} -> [{-1, 0, 0}, {0, 1, 0}, {0, 0, -1}]
+     */
+    auto get_assoc_orth() const -> std::vector<direction_t> {
+      auto result = std::vector<direction_t> {};
+      for (std::size_t i = 0; i < this->size(); ++i) {
+        if ((*this)[i] != 0) {
+          direction_t<D> dir;
+          dir[i] = (*this)[i];
+          result.push_back(dir);
+        }
+      }
+      return result;
+    }
   };
 
   template <Dimension D, typename T>

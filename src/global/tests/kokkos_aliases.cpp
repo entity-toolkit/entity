@@ -37,9 +37,9 @@ auto main(int argc, char* argv[]) -> int {
       });
     }
 
-    static_assert(std::is_same_v<ndarray_t<Dim::_1D>, array_t<real_t*>>);
-    static_assert(std::is_same_v<ndarray_t<Dim::_2D>, array_t<real_t**>>);
-    static_assert(std::is_same_v<ndarray_t<Dim::_3D>, array_t<real_t***>>);
+    static_assert(std::is_same_v<ndarray_t<1>, array_t<real_t*>>);
+    static_assert(std::is_same_v<ndarray_t<2>, array_t<real_t**>>);
+    static_assert(std::is_same_v<ndarray_t<3>, array_t<real_t***>>);
 
     {
       // scatter arrays & ranges

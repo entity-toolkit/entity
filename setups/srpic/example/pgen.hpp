@@ -11,6 +11,7 @@
 #include "utils/numeric.h"
 
 #include "archetypes/problem_generator.h"
+#include "framework/domain/metadomain.h"
 
 #include <vector>
 
@@ -82,8 +83,7 @@ namespace user {
                   global_domain.mesh().extent(in::x2).second -
                     global_domain.mesh().extent(in::x2).first,
                   params.template get<int>("setup.kx2", 2) },
-      ext_force {} 
-      {}
+      ext_force {} {}
   };
 
 } // namespace user

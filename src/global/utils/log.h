@@ -128,7 +128,7 @@ namespace info {
     if (once) {
       CallOnce(
         [](auto& msg, auto& msg_nocol, auto& stdout) {
-          PLOGN_(InfoFile) << msg_nocol;
+          PLOGN_(InfoFile) << msg_nocol << std::flush;
           if (stdout) {
             std::cout << msg << std::endl;
           }
@@ -137,7 +137,7 @@ namespace info {
         msg_nocol,
         stdout);
     } else {
-      PLOGN_(InfoFile) << msg_nocol;
+      PLOGN_(InfoFile) << msg_nocol << std::flush;
       if (stdout) {
         std::cout << msg << std::endl;
       }

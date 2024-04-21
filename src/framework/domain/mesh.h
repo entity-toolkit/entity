@@ -49,12 +49,7 @@ namespace ntt {
          const std::map<std::string, real_t>& metric_params) :
       Grid<D> { res },
       metric { res, ext, metric_params },
-      m_extent { ext } {
-      for (unsigned short d = 0; d < D; ++d) {
-        m_flds_bc.push_back({ FldsBC::INVALID, FldsBC::INVALID });
-        m_prtl_bc.push_back({ PrtlBC::INVALID, PrtlBC::INVALID });
-      }
-    }
+      m_extent { ext } {}
 
     Mesh(const std::vector<std::size_t>&      res,
          const boundaries_t<real_t>&          ext,
@@ -63,9 +58,18 @@ namespace ntt {
          const boundaries_t<PrtlBC>&          prtl_bc) :
       Grid<D> { res },
       metric { res, ext, metric_params },
-      m_extent { ext },
-      m_flds_bc { flds_bc },
-      m_prtl_bc { prtl_bc } {}
+      m_extent { ext } {
+      for (auto d { 0 }; d < D; ++d) {
+        dir::direction_t<D> dir_plus;
+        dir_plus[d] = +1;
+        dir::direction_t<D> dir_minus;
+        dir_minus[d] = -1;
+        set_flds_bc(dir_plus, flds_bc[d].second);
+        set_flds_bc(dir_minus, flds_bc[d].first);
+        set_prtl_bc(dir_plus, prtl_bc[d].second);
+        set_prtl_bc(dir_minus, prtl_bc[d].first);
+      }
+    }
 
     ~Mesh() = default;
 
@@ -95,93 +99,79 @@ namespace ntt {
 
     [[nodiscard]]
     auto flds_bc() const -> boundaries_t<FldsBC> {
-      return m_flds_bc;
+      if constexpr (D == Dim::_1D) {
+        return {
+          {flds_bc_in({ -1 }), flds_bc_in({ -1 })}
+        };
+      } else if constexpr (D == Dim::_2D) {
+        return {
+          {flds_bc_in({ -1, 0 }), flds_bc_in({ 1, 0 })},
+          {flds_bc_in({ 0, -1 }), flds_bc_in({ 0, 1 })}
+        };
+      } else if constexpr (D == Dim::_3D) {
+        return {
+          {flds_bc_in({ -1, 0, 0 }), flds_bc_in({ 1, 0, 0 })},
+          {flds_bc_in({ 0, -1, 0 }), flds_bc_in({ 0, 1, 0 })},
+          {flds_bc_in({ 0, 0, -1 }), flds_bc_in({ 0, 0, 1 })}
+        };
+      } else {
+        raise::Error("invalid dimension", HERE);
+        throw;
+      }
     }
 
     [[nodiscard]]
     auto prtl_bc() const -> boundaries_t<PrtlBC> {
-      return m_prtl_bc;
+      if constexpr (D == Dim::_1D) {
+        return {
+          {prtl_bc_in({ -1 }), prtl_bc_in({ -1 })}
+        };
+      } else if constexpr (D == Dim::_2D) {
+        return {
+          {prtl_bc_in({ -1, 0 }), prtl_bc_in({ 1, 0 })},
+          {prtl_bc_in({ 0, -1 }), prtl_bc_in({ 0, 1 })}
+        };
+      } else if constexpr (D == Dim::_3D) {
+        return {
+          {prtl_bc_in({ -1, 0, 0 }), prtl_bc_in({ 1, 0, 0 })},
+          {prtl_bc_in({ 0, -1, 0 }), prtl_bc_in({ 0, 1, 0 })},
+          {prtl_bc_in({ 0, 0, -1 }), prtl_bc_in({ 0, 0, 1 })}
+        };
+      } else {
+        raise::Error("invalid dimension", HERE);
+        throw;
+      }
     }
 
     [[nodiscard]]
     auto flds_bc_in(const dir::direction_t<D>& direction) const -> FldsBC {
-      unsigned short nonzero = 0;
-      FldsBC         bc      = FldsBC::INVALID;
-      for (unsigned short d = 0; d < D; ++d) {
-        const auto dir = direction[d];
-        if (dir == 0) {
-          continue;
-        } else if (dir == 1) {
-          bc = m_flds_bc[d].second;
-          ++nonzero;
-        } else if (dir == -1) {
-          bc = m_flds_bc[d].first;
-          ++nonzero;
-        }
-      }
-      raise::ErrorIf(nonzero != 1, "invalid direction", HERE);
-      return bc;
+      raise::ErrorIf(m_flds_bc.find(direction) == m_flds_bc.end(),
+                     "direction not found",
+                     HERE);
+      return m_flds_bc.at(direction);
     }
 
     [[nodiscard]]
     auto prtl_bc_in(const dir::direction_t<D>& direction) const -> PrtlBC {
-      unsigned short nonzero = 0;
-      PrtlBC         bc      = PrtlBC::INVALID;
-      for (unsigned short d = 0; d < D; ++d) {
-        const auto dir = direction[d];
-        if (dir == 0) {
-          continue;
-        } else if (dir == 1) {
-          bc = m_prtl_bc[d].second;
-          ++nonzero;
-        } else if (dir == -1) {
-          bc = m_prtl_bc[d].first;
-          ++nonzero;
-        }
-      }
-      raise::ErrorIf(nonzero != 1, "invalid direction", HERE);
-      return bc;
+      raise::ErrorIf(m_prtl_bc.find(direction) == m_prtl_bc.end(),
+                     "direction not found",
+                     HERE);
+      return m_prtl_bc.at(direction);
     }
 
     /* setters -------------------------------------------------------------- */
     inline void set_flds_bc(const dir::direction_t<D>& direction, const FldsBC& bc) {
-      unsigned short nonzero = 0;
-      for (unsigned short d = 0; d < D; ++d) {
-        const auto dir = direction[d];
-        if (dir == 0) {
-          continue;
-        } else if (dir == 1) {
-          m_flds_bc[d].second = bc;
-          ++nonzero;
-        } else if (dir == -1) {
-          m_flds_bc[d].first = bc;
-          ++nonzero;
-        }
-      }
-      raise::ErrorIf(nonzero != 1, "invalid direction", HERE);
+      m_flds_bc.insert_or_assign(direction, bc);
     }
 
-    inline void set_frtl_bc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
-      unsigned short nonzero = 0;
-      for (unsigned short d = 0; d < D; ++d) {
-        const auto dir = direction[d];
-        if (dir == 0) {
-          continue;
-        } else if (dir == 1) {
-          m_prtl_bc[d].second = bc;
-          ++nonzero;
-        } else if (dir == -1) {
-          m_prtl_bc[d].first = bc;
-          ++nonzero;
-        }
-      }
-      raise::ErrorIf(nonzero != 1, "invalid direction", HERE);
+    inline void set_prtl_bc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
+      m_prtl_bc.insert_or_assign(direction, bc);
     }
 
   private:
-    boundaries_t<real_t> m_extent;
-    boundaries_t<FldsBC> m_flds_bc;
-    boundaries_t<PrtlBC> m_prtl_bc;
+    boundaries_t<real_t>  m_extent;
+    dir::map_t<D, FldsBC> m_flds_bc;
+    dir::map_t<D, PrtlBC> m_prtl_bc;
   };
 } // namespace ntt
 

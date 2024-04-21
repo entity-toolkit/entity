@@ -122,8 +122,8 @@ namespace timer {
                   std::ostream&    os    = std::cout) const {
       std::string header = fmt::format("%s %27s", "[SUBSTEP]", "[DURATION]");
 
-      const auto c_black = color::get_color("black", flags & Timer::Colorful);
-      const auto c_reset = color::get_color("reset", flags & Timer::Colorful);
+      const auto c_bblack = color::get_color("bblack", flags & Timer::Colorful);
+      const auto c_reset  = color::get_color("reset", flags & Timer::Colorful);
       const auto c_byellow = color::get_color("byellow", flags & Timer::Colorful);
       const auto c_blue = color::get_color("blue", flags & Timer::Colorful);
 
@@ -133,7 +133,7 @@ namespace timer {
 #if defined(MPI_ENABLED)
       header += "   [MIN : MAX]";
 #endif
-      header = c_black + header + c_reset;
+      header = c_bblack + header + c_reset;
       CallOnce(
         [](std::ostream& os, std::string header) {
           os << header << std::endl;
@@ -160,15 +160,13 @@ namespace timer {
       if (rank != MPI_ROOT_RANK) {
         return;
       }
-      long double total             = 0.0;
-      long double total_with_output = 0.0;
+      long double total = 0.0;
       for (auto& [name, timer] : m_timers) {
         auto        timers = mpi_timers[name];
         long double tot    = std::accumulate(timers.begin(), timers.end(), 0.0);
         if (name != "Output") {
           total += tot;
         }
-        total_with_output += tot;
       }
       for (auto& [name, timers] : mpi_timers) {
         // compute min, max, mean
@@ -183,7 +181,7 @@ namespace timer {
         const auto  max_pct    = mean_time > ZERO
                                    ? (int)(((max_time - mean_time) / mean_time) * 100.0)
                                    : 0;
-        const auto  tot_pct    = (cmp::AlmostZero(total)
+        const auto  tot_pct    = (cmp::AlmostZero_host(total)
                                     ? 0
                                     : (mean_time * size / total) * 100.0);
         if (flags & Timer::AutoConvert) {
@@ -192,7 +190,7 @@ namespace timer {
         if (flags & Timer::PrintIndents) {
           os << "  ";
         }
-        os << name << c_black
+        os << name << c_bblack
            << fmt::pad(name, 20, '.', true).substr(name.size(), 20);
         os << std::setw(17) << std::right << std::setfill('.')
            << fmt::format("%s%.2Lf", c_byellow.c_str(), mean_time);
@@ -208,16 +206,13 @@ namespace timer {
                           fmt::format("+%d%%", max_pct).c_str());
         os << c_reset << std::endl;
       }
-      total             /= size;
-      total_with_output /= size;
+      total /= size;
 #else  // not MPI_ENABLED
-      long double total             = 0.0;
-      long double total_with_output = 0.0;
+      long double total = 0.0;
       for (auto& [name, timer] : m_timers) {
         if (name != "Output") {
           total += timer.second;
         }
-        total_with_output += timer.second;
       }
       for (auto& [name, timer] : m_timers) {
         std::string units = "µs";
@@ -228,7 +223,7 @@ namespace timer {
         if (flags & Timer::PrintIndents) {
           os << "  ";
         }
-        os << name << c_black
+        os << name << c_bblack
            << fmt::pad(name, 20, '.', true).substr(name.size(), 20);
         os << std::setw(17) << std::right << std::setfill('.')
            << fmt::format("%s%.2Lf", c_byellow.c_str(), value);
@@ -238,26 +233,20 @@ namespace timer {
         if (flags & Timer::PrintRelative) {
           os << "  " << std::setw(7) << std::right << std::setfill(' ')
              << std::fixed << std::setprecision(2)
-             << (cmp::AlmostZero(total) ? 0 : (timer.second / total) * 100.0);
+             << (cmp::AlmostZero_host(total) ? 0 : (timer.second / total) * 100.0);
         }
         os << c_reset << std::endl;
       }
 #endif // MPI_ENABLED
       if (flags & Timer::PrintTotal) {
-        std::string units             = "µs";
-        auto        value             = total;
-        auto        value_with_output = total_with_output;
+        std::string units = "µs";
+        auto        value = total;
         if (flags & Timer::AutoConvert) {
           convertTime(value, units);
-          convertTime(value_with_output, units);
         }
-        os << c_black << std::setw(22) << std::left << std::setfill(' ')
+        os << c_bblack << std::setw(22) << std::left << std::setfill(' ')
            << "Total" << c_reset;
         os << c_blue << std::setw(12) << std::right << std::setfill(' ') << value;
-        if (flags & Timer::PrintUnits) {
-          os << " " << units;
-        }
-        os << std::setw(8) << std::right << std::setfill(' ') << value_with_output;
         if (flags & Timer::PrintUnits) {
           os << " " << units;
         }

@@ -13,6 +13,8 @@
  *   - framework/domain/domain.h
  *   - framework/containers/species.h
  *   - framework/domain/mesh.h
+ *   - framework/domain/comm_mpi.hpp
+ *   - framework/domain/comm_nompi.hpp
  *   - metrics/kerr_schild.h
  *   - metrics/kerr_schild_0.h
  *   - metrics/minkowski.h
@@ -75,17 +77,19 @@ namespace ntt {
 
     template <typename Func, typename... Args>
     void runOnLocalDomains(Func func, Args&&... args) {
-      for (auto& ld : g_subdomains) {
-        func(ld, std::forward<Args>(args)...);
+      for (auto& ldidx : g_local_subdomain_indices) {
+        func(g_subdomains[ldidx], std::forward<Args>(args)...);
       }
     }
 
     template <typename Func, typename... Args>
     void runOnLocalDomainsConst(Func func, Args&&... args) const {
-      for (auto& ld : g_subdomains) {
-        func(ld, std::forward<Args>(args)...);
+      for (auto& ldidx : g_local_subdomain_indices) {
+        func(g_subdomains[ldidx], std::forward<Args>(args)...);
       }
     }
+
+    void Communicate(Domain<S, M>&, CommTags);
 
     /**
      * @param global_ndomains total number of domains
@@ -125,9 +129,15 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto idx2subdomain(unsigned int idx) const -> const Domain<S, M>& {
-      raise::ErrorIf(idx >= g_subdomains.size(), "idx2subdomain() failed", HERE);
+    auto subdomain(unsigned int idx) const -> const Domain<S, M>& {
+      raise::ErrorIf(idx >= g_subdomains.size(), "subdomain() failed", HERE);
       return g_subdomains[idx];
+    }
+
+    [[nodiscard]]
+    auto subdomain_ptr(unsigned int idx) -> Domain<S, M>* {
+      raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
+      return &g_subdomains[idx];
     }
 
     [[nodiscard]]

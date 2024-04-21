@@ -22,12 +22,6 @@
  *   - framework/containers/species.h
  *   - framework/domain/metadomain.h
  *   - framework/parameters.h
- *   - metrics/kerr_schild.h
- *   - metrics/kerr_schild_0.h
- *   - metrics/minkowski.h
- *   - metrics/qkerr_schild.h
- *   - metrics/qspherical.h
- *   - metrics/spherical.h
  * @cpp:
  *   - engine_init.cpp
  *   - engine_printer.cpp
@@ -37,6 +31,7 @@
  *   - MPI
  *   - DEBUG
  *   - OUTPUT_ENABLED
+ *   - GPU_ENABLED
  */
 
 #ifndef ENGINES_ENGINE_H

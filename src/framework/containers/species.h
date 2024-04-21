@@ -41,6 +41,16 @@ namespace ntt {
     const unsigned short m_npld;
 
   public:
+    ParticleSpecies() :
+      m_index { 0 },
+      m_label { "" },
+      m_mass { 0.0 },
+      m_charge { 0.0 },
+      m_maxnpart { 0 },
+      m_pusher { PrtlPusher::INVALID },
+      m_cooling { Cooling::INVALID },
+      m_npld { 0 } {}
+
     /**
      * @brief Constructor for the particle species container.
      *

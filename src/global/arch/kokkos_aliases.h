@@ -49,28 +49,33 @@ using scatter_array_t = Kokkos::Experimental::ScatterView<T>;
 // Array aliases of arbitrary type and dimensions (up to 3)
 namespace kokkos_aliases_hidden {
   // c++ magic
-  template <Dimension D>
+  template <unsigned short D>
   struct ndarray_impl {
     using type = void;
   };
 
   template <>
-  struct ndarray_impl<Dim::_1D> {
+  struct ndarray_impl<1> {
     using type = array_t<real_t*>;
   };
 
   template <>
-  struct ndarray_impl<Dim::_2D> {
+  struct ndarray_impl<2> {
     using type = array_t<real_t**>;
   };
 
   template <>
-  struct ndarray_impl<Dim::_3D> {
+  struct ndarray_impl<3> {
     using type = array_t<real_t***>;
+  };
+
+  template <>
+  struct ndarray_impl<4> {
+    using type = array_t<real_t****>;
   };
 } // namespace kokkos_aliases_hidden
 
-template <Dimension D>
+template <unsigned short D>
 using ndarray_t = typename kokkos_aliases_hidden::ndarray_impl<D>::type;
 
 namespace kokkos_aliases_hidden {

@@ -57,7 +57,7 @@ auto main(int argc, char* argv[]) -> int {
                      "Mesh::prtl_bc() failed",
                      HERE);
       for (unsigned int idx = 0; idx < 4; ++idx) {
-        auto& self  = metadomain.idx2subdomain(idx);
+        auto& self  = metadomain.subdomain(idx);
         nx1        += self.mesh.n_active(in::x1);
         nx2        += self.mesh.n_active(in::x2);
         raise::ErrorIf(self.index() != idx, "Domain::index() failed", HERE);
@@ -172,11 +172,11 @@ auto main(int argc, char* argv[]) -> int {
                          HERE);
         }
         for (auto& direction : dir::Directions<Dim::_2D>::all) {
-          const auto& neighbor1 = metadomain.idx2subdomain(
+          const auto& neighbor1 = metadomain.subdomain(
             self.neighbor_idx_in(direction));
-          const auto& neighbor2 = metadomain.idx2subdomain(
+          const auto& neighbor2 = metadomain.subdomain(
             neighbor1.neighbor_idx_in(direction));
-          const auto& neighbor3 = metadomain.idx2subdomain(
+          const auto& neighbor3 = metadomain.subdomain(
             neighbor1.neighbor_idx_in(-direction));
           raise::ErrorIf(neighbor2.index() != self.index(),
                          "Domain::neighbor_in() failed",
