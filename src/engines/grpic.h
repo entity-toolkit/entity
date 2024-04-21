@@ -32,6 +32,8 @@ namespace ntt {
     using Engine<SimEngine::GRPIC, M>::m_metadomain;
 
   public:
+    static constexpr auto S { SimEngine::SRPIC };
+
     GRPICEngine(SimulationParams& params) :
       Engine<SimEngine::GRPIC, M> { params } {}
 

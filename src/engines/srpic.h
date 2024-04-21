@@ -61,6 +61,7 @@ namespace ntt {
 
   template <class M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
+
     using base_t = Engine<SimEngine::SRPIC, M>;
     // constexprs
     using base_t::pgen_is_ok;
@@ -79,6 +80,8 @@ namespace ntt {
     using domain_t = Domain<SimEngine::SRPIC, M>;
 
   public:
+    static constexpr auto S { SimEngine::SRPIC };
+
     SRPICEngine(SimulationParams& params) : base_t { params } {}
 
     ~SRPICEngine() = default;

@@ -1,5 +1,6 @@
 #include "enums.h"
 
+#include "arch/traits.h"
 #include "utils/error.h"
 
 #include "metrics/kerr_schild.h"
@@ -13,7 +14,23 @@
 #include "engines/srpic.h"
 #include "framework/simulation.h"
 
+#include "pgen.hpp"
+
 #include <iostream>
+
+template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
+static constexpr bool should_compile {
+  traits::check_compatibility<S>::value(user::PGen<S, M<D>>::engines) &&
+  traits::check_compatibility<M<D>::MetricType>::value(user::PGen<S, M<D>>::metrics) &&
+  traits::check_compatibility<D>::value(user::PGen<S, M<D>>::dimensions)
+};
+
+template <template <class> class E, template <Dimension> class M, Dimension D>
+void shouldCompile(ntt::Simulation& sim) {
+  if constexpr (should_compile<E<M<D>>::S, M, D>) {
+    sim.run<E, M, D>();
+  }
+}
 
 auto main(int argc, char* argv[]) -> int {
   ntt::Simulation sim { argc, argv };
@@ -59,42 +76,42 @@ auto main(int argc, char* argv[]) -> int {
   }
 
   if (is_srpic and is_minkowski and is_1d) {
-    sim.run<ntt::SRPICEngine<metric::Minkowski<Dim::_1D>>>();
+    shouldCompile<ntt::SRPICEngine, metric::Minkowski, Dim::_1D>(sim);
     return 0;
   }
 
   if (is_srpic and is_minkowski and is_2d) {
-    sim.run<ntt::SRPICEngine<metric::Minkowski<Dim::_2D>>>();
+    shouldCompile<ntt::SRPICEngine, metric::Minkowski, Dim::_2D>(sim);
     return 0;
   }
 
   if (is_srpic and is_minkowski and is_3d) {
-    sim.run<ntt::SRPICEngine<metric::Minkowski<Dim::_3D>>>();
+    shouldCompile<ntt::SRPICEngine, metric::Minkowski, Dim::_3D>(sim);
     return 0;
   }
 
   if (is_srpic and is_spherical and is_2d) {
-    sim.run<ntt::SRPICEngine<metric::Spherical<Dim::_2D>>>();
+    shouldCompile<ntt::SRPICEngine, metric::Spherical, Dim::_2D>(sim);
     return 0;
   }
 
   if (is_srpic and is_qspherical and is_2d) {
-    sim.run<ntt::SRPICEngine<metric::QSpherical<Dim::_2D>>>();
+    shouldCompile<ntt::SRPICEngine, metric::QSpherical, Dim::_2D>(sim);
     return 0;
   }
 
   if (is_grpic and is_kerr_schild and is_2d) {
-    sim.run<ntt::GRPICEngine<metric::KerrSchild<Dim::_2D>>>();
+    shouldCompile<ntt::GRPICEngine, metric::KerrSchild, Dim::_2D>(sim);
     return 0;
   }
 
   if (is_grpic and is_qkerr_schild and is_2d) {
-    sim.run<ntt::GRPICEngine<metric::QKerrSchild<Dim::_2D>>>();
+    shouldCompile<ntt::GRPICEngine, metric::QKerrSchild, Dim::_2D>(sim);
     return 0;
   }
 
   if (is_grpic and is_kerr_schild_0 and is_2d) {
-    sim.run<ntt::GRPICEngine<metric::KerrSchild0<Dim::_2D>>>();
+    shouldCompile<ntt::GRPICEngine, metric::KerrSchild0, Dim::_2D>(sim);
     return 0;
   }
 

@@ -42,14 +42,15 @@ namespace ntt {
     Simulation(int argc, char* argv[]);
     ~Simulation();
 
-    template <class E>
+    template <template <class> class E, template <Dimension> class M, Dimension D>
     inline void run() {
-      static_assert(E::is_engine,
+      using engine_t = E<M<D>>;
+      static_assert(engine_t::is_engine,
                     "template arg for Simulation::run has to be an engine");
-      static_assert(traits::has_method<traits::run_t, E>::value,
+      static_assert(traits::has_method<traits::run_t, engine_t>::value,
                     "Engine must contain a ::run() method");
       try {
-        E engine { params };
+        engine_t engine { params };
         engine.run();
       } catch (const std::exception& e) {
         raise::Fatal(e.what(), HERE);
