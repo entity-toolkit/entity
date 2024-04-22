@@ -182,7 +182,7 @@ namespace ntt {
                               (is_last ? 1 : 0) };
       const auto       offset = (incl_ghosts ? N_GHOSTS : 0);
       const auto       ncells = local_domain->mesh.n_active()[dim];
-      const auto&      metric = g_mesh.metric;
+      const auto&      metric = local_domain->mesh.metric;
       Kokkos::parallel_for(
         "GenerateMesh",
         ncells,
