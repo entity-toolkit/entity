@@ -16,7 +16,6 @@
 #include <Kokkos_ScatterView.hpp>
 
 #include <iostream>
-#include <limits>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -40,8 +39,6 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
-inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
-
 struct Pgen {
   static constexpr auto is_pgen { true };
 };
@@ -49,8 +46,7 @@ struct Pgen {
 template <SimEngine::type S, typename M>
 void testGCAPusher(const std::vector<std::size_t>&      res,
                    const boundaries_t<real_t>&          ext,
-                   const std::map<std::string, real_t>& params = {},
-                   const real_t                         acc    = ONE) {
+                   const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 3);
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
 
@@ -105,10 +101,6 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   array_t<real_t*>   phi { "phi", 2 };
   array_t<real_t*>   weight { "weight", 2 };
   array_t<short*>    tag { "tag", 2 };
-  const float        mass        = 1.0;
-  const float        charge      = 1.0;
-  const bool         use_weights = false;
-  const real_t       inv_n0      = 1.0;
 
   put_value<int>(i1, 5, 0);
   put_value<int>(i2, 5, 0);
@@ -141,31 +133,83 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   };
 
   auto pgen = Pgen {};
-  // clang-format off
-  Kokkos::parallel_for(
-    "pusher",
-    Kokkos::RangePolicy<AccelExeSpace, Boris_GCA_t>(0, 1),
-    Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(
-      emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, 
-      dx1, dx2, dx3, dx1_prev, dx2_prev, dx3_prev, 
-      ux1, ux2, ux3, phi, tag,
-      metric, pgen,
-      (real_t)0.0,
-      coeff, dt, nx1, nx2, nx3,
-      boundaries, (real_t)100000.0, (real_t)1.0, (real_t)0.0));
+  Kokkos::parallel_for("pusher",
+                       Kokkos::RangePolicy(0, 1),
+                       kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, Pgen>(
+                         PrtlPusher::BORIS,
+                         true,
+                         false,
+                         kernel::sr::Cooling::None,
+                         emfield,
+                         1,
+                         i1,
+                         i2,
+                         i3,
+                         i1_prev,
+                         i2_prev,
+                         i3_prev,
+                         dx1,
+                         dx2,
+                         dx3,
+                         dx1_prev,
+                         dx2_prev,
+                         dx3_prev,
+                         ux1,
+                         ux2,
+                         ux3,
+                         phi,
+                         tag,
+                         metric,
+                         pgen,
+                         ZERO,
+                         coeff,
+                         dt,
+                         nx1,
+                         nx2,
+                         nx3,
+                         boundaries,
+                         (real_t)100000.0,
+                         (real_t)1.0,
+                         ZERO));
 
-    Kokkos::parallel_for(
-    "pusher",
-    Kokkos::RangePolicy<AccelExeSpace, Boris_GCA_t>(1, 2),
-    Pusher_kernel<Minkowski<Dim::_3D>, Pgen, Boris_GCA_t, false>(
-      emfield, i1, i2, i3, i1_prev, i2_prev, i3_prev, 
-      dx1, dx2, dx3, dx1_prev, dx2_prev, dx3_prev, 
-      ux1, ux2, ux3, phi, tag,
-      metric, pgen,
-      (real_t)0.0,
-      -coeff, dt, nx1, nx2, nx3,
-      boundaries, (real_t)100000.0, (real_t)1.0, (real_t)0.0));
-  // clang-format on
+  Kokkos::parallel_for("pusher",
+                       Kokkos::RangePolicy(1, 2),
+                       kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, Pgen>(
+                         PrtlPusher::BORIS,
+                         true,
+                         false,
+                         kernel::sr::Cooling::None,
+                         emfield,
+                         1,
+                         i1,
+                         i2,
+                         i3,
+                         i1_prev,
+                         i2_prev,
+                         i3_prev,
+                         dx1,
+                         dx2,
+                         dx3,
+                         dx1_prev,
+                         dx2_prev,
+                         dx3_prev,
+                         ux1,
+                         ux2,
+                         ux3,
+                         phi,
+                         tag,
+                         metric,
+                         pgen,
+                         ZERO,
+                         -coeff,
+                         dt,
+                         nx1,
+                         nx2,
+                         nx3,
+                         boundaries,
+                         (real_t)100000.0,
+                         (real_t)1.0,
+                         ZERO));
 
   auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
   auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
@@ -197,20 +241,19 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
   auto disy = i2_[0] + dx2_[0] - i2_prev_[0] - dx2_prev_[0];
   auto disz = i3_[0] + dx3_[0] - i3_prev_[0] - dx3_prev_[0];
 
-  auto disdotB = (disx * 0.22 + disy * 0.44 + disz * 0.66) / (0.823165 * math::sqrt(SQR(disx)+SQR(disy)+SQR(disz)));
+  auto disdotB = (disx * 0.22 + disy * 0.44 + disz * 0.66) /
+                 (0.823165 * math::sqrt(SQR(disx) + SQR(disy) + SQR(disz)));
 
-  printf("%.12e \n",
-         (1-math::abs(disdotB)));
+  printf("%.12e \n", (1 - math::abs(disdotB)));
 
   disx = i1_[1] + dx1_[1] - i1_prev_[1] - dx1_prev_[1];
   disy = i2_[1] + dx2_[1] - i2_prev_[1] - dx2_prev_[1];
   disz = i3_[1] + dx3_[1] - i3_prev_[1] - dx3_prev_[1];
 
-  disdotB = (disx * 0.22 + disy * 0.44 + disz * 0.66) / (0.823165 * math::sqrt(SQR(disx)+SQR(disy)+SQR(disz)));
+  disdotB = (disx * 0.22 + disy * 0.44 + disz * 0.66) /
+            (0.823165 * math::sqrt(SQR(disx) + SQR(disy) + SQR(disz)));
 
-  printf("%.12e \n",
-         (1-math::abs(disdotB)));
-
+  printf("%.12e \n", (1 - math::abs(disdotB)));
 }
 
 auto main(int argc, char* argv[]) -> int {
