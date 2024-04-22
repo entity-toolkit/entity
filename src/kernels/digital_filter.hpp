@@ -44,10 +44,10 @@ namespace kernel {
     DigitalFilter_kernel(const ndfield_t<D, 3>& array,
                          const ndfield_t<D, 3>& buffer,
                          const std::size_t (&size_)[D],
-                         const boundaries_t<FldsBC>& boundaries) :
-      array { array },
-      buffer { buffer },
-      i2_max { (short)D > 1 ? size_[1] + N_GHOSTS : 0 } {
+                         const boundaries_t<FldsBC>& boundaries)
+      : array { array }
+      , buffer { buffer }
+      , i2_max { (short)D > 1 ? size_[1] + N_GHOSTS : 0 } {
       if constexpr ((C != Coord::Cart) && (D != Dim::_1D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);

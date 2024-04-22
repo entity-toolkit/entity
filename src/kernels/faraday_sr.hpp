@@ -46,10 +46,10 @@ namespace kernel::sr {
     Faraday_kernel(const ndfield_t<D, 6>&      EB,
                    const M&                    metric,
                    real_t                      coeff,
-                   const boundaries_t<FldsBC>& boundaries) :
-      EB { EB },
-      metric { metric },
-      coeff { coeff } {
+                   const boundaries_t<FldsBC>& boundaries)
+      : EB { EB }
+      , metric { metric }
+      , coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);

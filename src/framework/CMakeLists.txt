@@ -3,12 +3,12 @@
 # @sources:
 # - parameters.cpp
 # - simulation.cpp
-# - domain/domain.cpp
 # - domain/grid.cpp
 # - domain/metadomain.cpp
 # - domain/communications.cpp
 # - containers/particles.cpp
 # - containers/fields.cpp
+# - domain/domain_output.cpp
 # @includes:
 # - ../
 # @depends:
@@ -28,13 +28,15 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/parameters.cpp 
   ${SRC_DIR}/simulation.cpp
-  ${SRC_DIR}/domain/domain.cpp
   ${SRC_DIR}/domain/grid.cpp
   ${SRC_DIR}/domain/metadomain.cpp
   ${SRC_DIR}/domain/communications.cpp
   ${SRC_DIR}/containers/particles.cpp
   ${SRC_DIR}/containers/fields.cpp
 )
+if (${output})
+  list(APPEND SOURCES ${SRC_DIR}/domain/domain_output.cpp)
+endif()
 add_library(ntt_framework ${SOURCES})
 
 set(libs ntt_global ntt_metrics ntt_kernels)

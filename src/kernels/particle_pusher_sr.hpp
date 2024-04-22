@@ -138,41 +138,41 @@ namespace kernel::sr {
                   const boundaries_t<PrtlBC>& boundaries,
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
-                  real_t                      coeff_sync) :
-      pusher { pusher },
-      GCA { GCA },
-      ext_force { ext_force },
-      cooling { cooling },
-      EB { EB },
-      sp { sp },
-      i1 { i1 },
-      i2 { i2 },
-      i3 { i3 },
-      i1_prev { i1_prev },
-      i2_prev { i2_prev },
-      i3_prev { i3_prev },
-      dx1 { dx1 },
-      dx2 { dx2 },
-      dx3 { dx3 },
-      dx1_prev { dx1_prev },
-      dx2_prev { dx2_prev },
-      dx3_prev { dx3_prev },
-      ux1 { ux1 },
-      ux2 { ux2 },
-      ux3 { ux3 },
-      phi { phi },
-      tag { tag },
-      metric { metric },
-      pgen { pgen },
-      time { time },
-      coeff { coeff },
-      dt { dt },
-      ni1 { ni1 },
-      ni2 { ni2 },
-      ni3 { ni3 },
-      gca_larmor { gca_larmor_max },
-      gca_EovrB_sqr { SQR(gca_eovrb_max) },
-      coeff_sync { coeff_sync } {
+                  real_t                      coeff_sync)
+      : pusher { pusher }
+      , GCA { GCA }
+      , ext_force { ext_force }
+      , cooling { cooling }
+      , EB { EB }
+      , sp { sp }
+      , i1 { i1 }
+      , i2 { i2 }
+      , i3 { i3 }
+      , i1_prev { i1_prev }
+      , i2_prev { i2_prev }
+      , i3_prev { i3_prev }
+      , dx1 { dx1 }
+      , dx2 { dx2 }
+      , dx3 { dx3 }
+      , dx1_prev { dx1_prev }
+      , dx2_prev { dx2_prev }
+      , dx3_prev { dx3_prev }
+      , ux1 { ux1 }
+      , ux2 { ux2 }
+      , ux3 { ux3 }
+      , phi { phi }
+      , tag { tag }
+      , metric { metric }
+      , pgen { pgen }
+      , time { time }
+      , coeff { coeff }
+      , dt { dt }
+      , ni1 { ni1 }
+      , ni2 { ni2 }
+      , ni3 { ni3 }
+      , gca_larmor { gca_larmor_max }
+      , gca_EovrB_sqr { SQR(gca_eovrb_max) }
+      , coeff_sync { coeff_sync } {
 
       raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||

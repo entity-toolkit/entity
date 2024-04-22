@@ -63,9 +63,14 @@ namespace out {
       if (c1 < 0) {
         for (int i { 0 }; i < 3; ++i) {
           if (c2 < 0) {
-            for (int j { i }; j < 3; ++j) {
+            if (c2 == c1) {
               comps_ints.push_back({ static_cast<unsigned short>(i + 1),
-                                     static_cast<unsigned short>(j + 1) });
+                                     static_cast<unsigned short>(i + 1) });
+            } else {
+              for (int j { i }; j < 3; ++j) {
+                comps_ints.push_back({ static_cast<unsigned short>(i + 1),
+                                       static_cast<unsigned short>(j + 1) });
+              }
             }
           } else {
             comps_ints.push_back({ static_cast<unsigned short>(i + 1),

@@ -41,7 +41,6 @@ namespace out {
 
     std::vector<std::vector<unsigned short>> comp {};
     std::vector<unsigned short>              species {};
-    std::vector<int>                         address {};
 
     OutputField(const SimEngine& S, const std::string&);
 

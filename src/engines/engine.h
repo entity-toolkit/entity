@@ -42,6 +42,7 @@
 
 #include "arch/traits.h"
 #include "utils/error.h"
+#include "utils/formatting.h"
 #include "utils/log.h"
 #include "utils/progressbar.h"
 #include "utils/timer.h"
@@ -146,6 +147,7 @@ namespace ntt {
 
     void run() {
       init();
+
       auto timers = timer::Timers {
         { "FieldSolver",
          "CurrentFiltering", "CurrentDeposit",
@@ -157,15 +159,51 @@ namespace ntt {
          },
         m_params.get<bool>("diagnostics.blocking_timers")
       };
+
+#if defined(OUTPUT_ENABLED)
+      const auto name = m_params.template get<std::string>("simulation.name");
+      const auto interval = m_params.template get<std::size_t>(
+        "output.interval");
+      const auto interval_time = m_params.template get<long double>(
+        "output.interval_time");
+      long double last_output_time = -interval_time - 1.0;
+      const auto  should_output =
+        [&interval, &interval_time, &last_output_time](auto step, auto time) {
+          return ((interval_time <= 0.0) and (step % interval == 0)) or
+                 ((time - last_output_time >= interval_time) and
+                  (interval_time > 0.0));
+        };
+#endif
+
       auto time_history = pbar::DurationHistory { 1000 };
+      // main algorithm loop
       while (step < max_steps) {
+        // run the engine-dependent algorithm step
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           step_forward(timers, dom);
         });
+
+        // advance time & timestep
         ++step;
         time += dt;
+
+#if defined(OUTPUT_ENABLED)
+        // write timestep if needed
+        if (should_output(step, time)) {
+          timers.start("Output");
+          m_metadomain.runOnLocalDomains([&name, this](auto& dom) {
+            dom.Write(m_params, name, step, time);
+          });
+          timers.stop("Output");
+          last_output_time = time;
+        }
+#endif
+
+        // advance time_history
         time_history.tick();
+        // print final timestep report
         print_step_report(timers, time_history);
+        timers.resetAll();
       }
     }
   };

@@ -74,27 +74,27 @@ namespace kernel {
                       const array_t<real_t*>&   ux3,
                       const array_t<real_t*>&   phi,
                       const array_t<real_t*>&   weight,
-                      const M&                  metric) :
-      stride { stride },
-      buff_x1 { buff_x1 },
-      buff_x2 { buff_x2 },
-      buff_x3 { buff_x3 },
-      buff_ux1 { buff_ux1 },
-      buff_ux2 { buff_ux2 },
-      buff_ux3 { buff_ux3 },
-      buff_wei { buff_wei },
-      i1 { i1 },
-      i2 { i2 },
-      i3 { i3 },
-      dx1 { dx1 },
-      dx2 { dx2 },
-      dx3 { dx3 },
-      ux1 { ux1 },
-      ux2 { ux2 },
-      ux3 { ux3 },
-      phi { phi },
-      weight { weight },
-      metric { metric } {
+                      const M&                  metric)
+      : stride { stride }
+      , buff_x1 { buff_x1 }
+      , buff_x2 { buff_x2 }
+      , buff_x3 { buff_x3 }
+      , buff_ux1 { buff_ux1 }
+      , buff_ux2 { buff_ux2 }
+      , buff_ux3 { buff_ux3 }
+      , buff_wei { buff_wei }
+      , i1 { i1 }
+      , i2 { i2 }
+      , i3 { i3 }
+      , dx1 { dx1 }
+      , dx2 { dx2 }
+      , dx3 { dx3 }
+      , ux1 { ux1 }
+      , ux2 { ux2 }
+      , ux3 { ux3 }
+      , phi { phi }
+      , weight { weight }
+      , metric { metric } {
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(buff_x1.extent(0) == 0, "Invalid buffer size", HERE);
       }

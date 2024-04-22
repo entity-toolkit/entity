@@ -261,7 +261,7 @@ namespace ntt {
     const auto species_tab = toml::find<toml::array>(raw_data, "particles", "species");
     set("particles.nspec", species_tab.size());
 
-    int idx = 1;
+    unsigned short idx = 1;
     for (const auto& sp : species_tab) {
       const auto label  = toml::find_or<std::string>(sp,
                                                     "label",
@@ -351,7 +351,7 @@ namespace ntt {
     set("output.interval",
         toml::find_or(raw_data, "output", "interval", defaults::output::interval));
     set("output.interval_time",
-        toml::find_or(raw_data, "output", "interval_time", -ONE));
+        toml::find_or<long double>(raw_data, "output", "interval_time", -1.0));
 
     /* [output.debug] ------------------------------------------------------- */
     set("output.debug.as_is",

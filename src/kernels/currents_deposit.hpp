@@ -73,29 +73,29 @@ namespace kernel {
                            const array_t<short*>&         tag,
                            const M&                       metric,
                            const real_t&                  charge,
-                           const real_t&                  dt) :
-      J { scatter_cur },
-      i1 { i1 },
-      i2 { i2 },
-      i3 { i3 },
-      i1_prev { i1_prev },
-      i2_prev { i2_prev },
-      i3_prev { i3_prev },
-      dx1 { dx1 },
-      dx2 { dx2 },
-      dx3 { dx3 },
-      dx1_prev { dx1_prev },
-      dx2_prev { dx2_prev },
-      dx3_prev { dx3_prev },
-      ux1 { ux1 },
-      ux2 { ux2 },
-      ux3 { ux3 },
-      phi { phi },
-      weight { weight },
-      tag { tag },
-      metric { metric },
-      charge { charge },
-      inv_dt { ONE / dt } {}
+                           const real_t&                  dt)
+      : J { scatter_cur }
+      , i1 { i1 }
+      , i2 { i2 }
+      , i3 { i3 }
+      , i1_prev { i1_prev }
+      , i2_prev { i2_prev }
+      , i3_prev { i3_prev }
+      , dx1 { dx1 }
+      , dx2 { dx2 }
+      , dx3 { dx3 }
+      , dx1_prev { dx1_prev }
+      , dx2_prev { dx2_prev }
+      , dx3_prev { dx3_prev }
+      , ux1 { ux1 }
+      , ux2 { ux2 }
+      , ux3 { ux3 }
+      , phi { phi }
+      , weight { weight }
+      , tag { tag }
+      , metric { metric }
+      , charge { charge }
+      , inv_dt { ONE / dt } {}
 
     /**
      * @brief Iteration of the loop over particles.

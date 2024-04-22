@@ -78,7 +78,7 @@ namespace out {
                     const ndfield_t<D, N>&,
                     const std::vector<std::size_t>&);
 
-    void beginWriting(const std::string&, std::size_t, real_t);
+    void beginWriting(const std::string&, std::size_t, long double);
     void endWriting();
 
     /* getters -------------------------------------------------------------- */

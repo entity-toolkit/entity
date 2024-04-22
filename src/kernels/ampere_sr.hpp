@@ -49,11 +49,11 @@ namespace kernel::sr {
                   const M&                    metric,
                   real_t                      coeff,
                   std::size_t                 ni2,
-                  const boundaries_t<FldsBC>& boundaries) :
-      EB { EB },
-      metric { metric },
-      i2max { ni2 + N_GHOSTS },
-      coeff { coeff } {
+                  const boundaries_t<FldsBC>& boundaries)
+      : EB { EB }
+      , metric { metric }
+      , i2max { ni2 + N_GHOSTS }
+      , coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
@@ -151,13 +151,13 @@ namespace kernel::sr {
                           real_t                      coeff,
                           real_t                      inv_n0,
                           std::size_t                 ni2,
-                          const boundaries_t<FldsBC>& boundaries) :
-      E { E },
-      J { J },
-      metric { metric },
-      i2max { ni2 + N_GHOSTS },
-      coeff { coeff },
-      inv_n0 { inv_n0 } {
+                          const boundaries_t<FldsBC>& boundaries)
+      : E { E }
+      , J { J }
+      , metric { metric }
+      , i2max { ni2 + N_GHOSTS }
+      , coeff { coeff }
+      , inv_n0 { inv_n0 } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);

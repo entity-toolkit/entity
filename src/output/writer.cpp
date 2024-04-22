@@ -20,7 +20,7 @@ namespace out {
     m_io.SetEngine(engine);
 
     m_io.DefineVariable<std::size_t>("Step");
-    m_io.DefineVariable<real_t>("Time");
+    m_io.DefineVariable<long double>("Time");
   }
 
   void Writer::writeAttrs(const prm::Parameters&) {
@@ -139,13 +139,14 @@ namespace out {
     }
   }
 
-  void Writer::beginWriting(const std::string& fname, std::size_t tstep, real_t time) {
+  void Writer::beginWriting(const std::string& fname,
+                            std::size_t        tstep,
+                            long double        time) {
     m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
     m_mode   = adios2::Mode::Append;
     m_writer.BeginStep();
-    std::size_t step = tstep;
-    m_writer.Put(m_io.InquireVariable<std::size_t>("Step"), &step);
-    m_writer.Put(m_io.InquireVariable<real_t>("Time"), &time);
+    m_writer.Put(m_io.InquireVariable<std::size_t>("Step"), &tstep);
+    m_writer.Put(m_io.InquireVariable<long double>("Time"), &time);
   }
 
   void Writer::endWriting() {

@@ -113,37 +113,37 @@ namespace kernel::gr {
                   const int&                            ni3,
                   const real_t&                         epsilon,
                   const int&                            niter,
-                  const boundaries_t<ParticleBC::type>& boundaries) :
-      DB { DB },
-      DB0 { DB0 },
-      i1 { i1 },
-      i2 { i2 },
-      i3 { i3 },
-      i1_prev { i1_prev },
-      i2_prev { i2_prev },
-      i3_prev { i3_prev },
-      dx1 { dx1 },
-      dx2 { dx2 },
-      dx3 { dx3 },
-      dx1_prev { dx1_prev },
-      dx2_prev { dx2_prev },
-      dx3_prev { dx3_prev },
-      ux1 { ux1 },
-      ux2 { ux2 },
-      ux3 { ux3 },
-      phi { phi },
-      tag { tag },
-      metric { metric },
-      coeff { coeff },
-      dt { dt },
-      ni1 { ni1 },
-      ni2 { ni2 },
-      ni3 { ni3 },
-      epsilon { epsilon },
-      niter { niter },
-      i1_absorb { static_cast<int>(metric.template convert<1, Crd::Ph, Crd::Cd>(
-                    metric.rhorizon())) -
-                  5 } {
+                  const boundaries_t<ParticleBC::type>& boundaries)
+      : DB { DB }
+      , DB0 { DB0 }
+      , i1 { i1 }
+      , i2 { i2 }
+      , i3 { i3 }
+      , i1_prev { i1_prev }
+      , i2_prev { i2_prev }
+      , i3_prev { i3_prev }
+      , dx1 { dx1 }
+      , dx2 { dx2 }
+      , dx3 { dx3 }
+      , dx1_prev { dx1_prev }
+      , dx2_prev { dx2_prev }
+      , dx3_prev { dx3_prev }
+      , ux1 { ux1 }
+      , ux2 { ux2 }
+      , ux3 { ux3 }
+      , phi { phi }
+      , tag { tag }
+      , metric { metric }
+      , coeff { coeff }
+      , dt { dt }
+      , ni1 { ni1 }
+      , ni2 { ni2 }
+      , ni3 { ni3 }
+      , epsilon { epsilon }
+      , niter { niter }
+      , i1_absorb { static_cast<int>(metric.template convert<1, Crd::Ph, Crd::Cd>(
+                      metric.rhorizon())) -
+                    5 } {
 
       NTTHostErrorIf(boundaries.size() < 2, "boundaries defined incorrectly");
       is_absorb_i1min = (boundaries[0].first == ParticleBC::ABSORB) ||
@@ -725,7 +725,7 @@ namespace kernel::gr {
     }
   }
 
-} // namespace ntt
+} // namespace kernel::gr
 
 #undef DERIVATIVE_IN_TH
 #undef DERIVATIVE_IN_R

@@ -16,7 +16,7 @@
 
 namespace ntt {
   template <Dimension D, Coord::type C>
-  Particles<D, C>::Particles(int                index,
+  Particles<D, C>::Particles(unsigned short     index,
                              const std::string& label,
                              float              m,
                              float              ch,

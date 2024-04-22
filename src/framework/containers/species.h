@@ -22,15 +22,15 @@ namespace ntt {
   class ParticleSpecies {
   protected:
     // Species index
-    const int         m_index;
+    const unsigned short m_index;
     // Species label
-    const std::string m_label;
+    const std::string    m_label;
     // Species mass in units of m0
-    const float       m_mass;
+    const float          m_mass;
     // Species charge in units of q0
-    const float       m_charge;
+    const float          m_charge;
     // Max number of allocated particles for the species
-    std::size_t       m_maxnpart;
+    std::size_t          m_maxnpart;
 
     // Pusher assigned for the species
     const PrtlPusher m_pusher;
@@ -66,7 +66,7 @@ namespace ntt {
      * @param maxnpart The maximum number of allocated particles for the species.
      * @param pusher The pusher assigned for the species.
      */
-    ParticleSpecies(int                index,
+    ParticleSpecies(unsigned short     index,
                     const std::string& label,
                     float              m,
                     float              ch,
@@ -93,7 +93,7 @@ namespace ntt {
     ~ParticleSpecies() = default;
 
     [[nodiscard]]
-    auto index() const -> int {
+    auto index() const -> unsigned short {
       return m_index;
     }
 

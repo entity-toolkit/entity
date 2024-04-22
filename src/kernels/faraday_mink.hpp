@@ -39,10 +39,10 @@ namespace kernel::mink {
      * ! 2D: coeff1 = dt / dx^2, coeff2 = dt
      * ! 3D: coeff1 = dt / dx
      */
-    Faraday_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2) :
-      EB { EB },
-      coeff1 { coeff1 },
-      coeff2 { coeff2 } {}
+    Faraday_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2)
+      : EB { EB }
+      , coeff1 { coeff1 }
+      , coeff2 { coeff2 } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {

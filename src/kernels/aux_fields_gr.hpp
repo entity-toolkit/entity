@@ -47,11 +47,11 @@ namespace kernel::gr {
     ComputeAuxE_kernel(const ndfield_t<D, 6>& Df,
                        const ndfield_t<D, 6>& Bf,
                        const ndfield_t<D, 6>& Ef,
-                       const M&               metric) :
-      Df { Df },
-      Bf { Bf },
-      Ef { Ef },
-      metric { metric } {}
+                       const M&               metric)
+      : Df { Df }
+      , Bf { Bf }
+      , Ef { Ef }
+      , metric { metric } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
@@ -151,11 +151,11 @@ namespace kernel::gr {
     ComputeAuxH_kernel(const ndfield_t<D, 6>& Df,
                        const ndfield_t<D, 6>& Bf,
                        const ndfield_t<D, 6>& Hf,
-                       const M&               metric) :
-      Df { Df },
-      Bf { Bf },
-      Hf { Hf },
-      metric { metric } {}
+                       const M&               metric)
+      : Df { Df }
+      , Bf { Bf }
+      , Hf { Hf }
+      , metric { metric } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {

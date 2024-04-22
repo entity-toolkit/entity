@@ -31,8 +31,8 @@ namespace out {
     } else {
       species = {};
     }
-    if (is_field()) {
-      // always write all the field components
+    if (is_field() || is_current()) {
+      // always write all the field/current components
       comp = { { 1 }, { 2 }, { 3 } };
     } else if (id() == FldsID::A) {
       // only write A3

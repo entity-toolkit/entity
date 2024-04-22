@@ -41,7 +41,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, FldsID::type F>
+  template <SimEngine::type S, class M, FldsID::type F, unsigned short N>
   class ParticleMoments_kernel {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
@@ -51,7 +51,7 @@ namespace kernel {
                   "Invalid field ID");
 
     const unsigned short     c1, c2;
-    scatter_ndfield_t<D, 3>  Buff;
+    scatter_ndfield_t<D, N>  Buff;
     const unsigned short     buff_idx;
     const array_t<int*>      i1, i2, i3;
     const array_t<prtldx_t*> dx1, dx2, dx3;
@@ -73,8 +73,8 @@ namespace kernel {
 
   public:
     ParticleMoments_kernel(const std::vector<unsigned short>& components,
-                           const scatter_ndfield_t<D, 3>&     scatter_buff,
-                           int                                buff_idx,
+                           const scatter_ndfield_t<D, N>&     scatter_buff,
+                           unsigned short                     buff_idx,
                            const array_t<int*>&               i1,
                            const array_t<int*>&               i2,
                            const array_t<int*>&               i3,
@@ -94,35 +94,36 @@ namespace kernel {
                            const boundaries_t<FldsBC>&        boundaries,
                            std::size_t                        ni2,
                            real_t                             inv_n0,
-                           unsigned short                     window) :
-      c1 { (components.size() == 2) ? components[0]
-                                    : static_cast<unsigned short>(0) },
-      c2 { (components.size() == 2) ? components[1]
-                                    : static_cast<unsigned short>(0) },
-      Buff { scatter_buff },
-      buff_idx { static_cast<unsigned short>(buff_idx) },
-      i1 { i1 },
-      i2 { i2 },
-      i3 { i3 },
-      dx1 { dx1 },
-      dx2 { dx2 },
-      dx3 { dx3 },
-      ux1 { ux1 },
-      ux2 { ux2 },
-      ux3 { ux3 },
-      phi { phi },
-      weight { weight },
-      tag { tag },
-      mass { mass },
-      charge { charge },
-      use_weights { use_weights },
-      metric { metric },
-      ni2 { ni2 },
-      inv_n0 { inv_n0 },
-      window { window },
-      contrib { get_contrib<F>(mass, charge) },
-      smooth { ONE / (real_t)(math::pow(TWO * (real_t)window + ONE,
-                                        static_cast<int>(D))) } {
+                           unsigned short                     window)
+      : c1 { (components.size() == 2) ? components[0]
+                                      : static_cast<unsigned short>(0) }
+      , c2 { (components.size() == 2) ? components[1]
+                                      : static_cast<unsigned short>(0) }
+      , Buff { scatter_buff }
+      , buff_idx { buff_idx }
+      , i1 { i1 }
+      , i2 { i2 }
+      , i3 { i3 }
+      , dx1 { dx1 }
+      , dx2 { dx2 }
+      , dx3 { dx3 }
+      , ux1 { ux1 }
+      , ux2 { ux2 }
+      , ux3 { ux3 }
+      , phi { phi }
+      , weight { weight }
+      , tag { tag }
+      , mass { mass }
+      , charge { charge }
+      , use_weights { use_weights }
+      , metric { metric }
+      , ni2 { ni2 }
+      , inv_n0 { inv_n0 }
+      , window { window }
+      , contrib { get_contrib<F>(mass, charge) }
+      , smooth { ONE / (real_t)(math::pow(TWO * (real_t)window + ONE,
+                                          static_cast<int>(D))) } {
+      raise::ErrorIf(buff_idx >= N, "Invalid buffer index", HERE);
       raise::ErrorIf(window > N_GHOSTS, "Window size too large", HERE);
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),
                      "Rho & Charge for massless particles not defined",
@@ -290,6 +291,6 @@ namespace kernel {
     }
   };
 
-} // namespace ntt
+} // namespace kernel
 
 #endif // KERNELS_PARTICLE_MOMENTS_HPP

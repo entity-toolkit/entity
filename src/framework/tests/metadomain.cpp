@@ -39,10 +39,17 @@ auto main(int argc, char* argv[]) -> int {
         {"r0",         -ONE},
         { "h", (real_t)0.25}
       };
+#if defined(OUTPUT_ENABLED)
+      Metadomain<SimEngine::SRPIC, QSpherical<Dim::_2D>> metadomain {
+        4, { -1, -1 },
+         res, extent, fldsbc, prtlbc, params, {}, "disabled"
+      };
+#else
       Metadomain<SimEngine::SRPIC, QSpherical<Dim::_2D>> metadomain {
         4, { -1, -1 },
          res, extent, fldsbc, prtlbc, params, {}
       };
+#endif
       std::size_t nx1 { 0 }, nx2 { 0 };
       raise::ErrorIf(metadomain.mesh().n_active() != res,
                      "Mesh::n_active() failed",

@@ -53,13 +53,13 @@ namespace kernel::gr {
                    const M&                    metric,
                    real_t                      coeff,
                    std::size_t                 ni2,
-                   const boundaries_t<FldsBC>& boundaries) :
-      Bin { Bin },
-      Bout { Bout },
-      E { E },
-      metric { metric },
-      i2max { ni2 + N_GHOSTS },
-      coeff { coeff } {
+                   const boundaries_t<FldsBC>& boundaries)
+      : Bin { Bin }
+      , Bout { Bout }
+      , E { E }
+      , metric { metric }
+      , i2max { ni2 + N_GHOSTS }
+      , coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
@@ -105,6 +105,6 @@ namespace kernel::gr {
     }
   };
 
-} // namespace ntt
+} // namespace kernel::gr
 
 #endif // KERNELS_FARADAY_GR_HPP

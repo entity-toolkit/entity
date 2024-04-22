@@ -27,18 +27,18 @@ namespace ntt {
                              const Particles<Dim1, S>& sp1,
                              const Particles<Dim1, S>& sp2,
                              const list_t<real_t, 2>&  box,
-                             const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      region { box[0], box[1] },
-      energy_dist { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                             const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , region { box[0], box[1] }
+      , energy_dist { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t p) const {
       typename random_number_pool_t::generator_type rand_gen = pool.get_state();
@@ -54,13 +54,13 @@ namespace ntt {
     }
 
   private:
-    SimulationParams   params;
-    Meshblock<Dim1, S> mblock;
-    Particles<Dim1, S> species1, species2;
-    const int          species_index1, species_index2;
-    const std::size_t  offset1, offset2;
-    EnDist<Dim1, S>    energy_dist;
-    list_t<real_t, 2>  region;
+    SimulationParams     params;
+    Meshblock<Dim1, S>   mblock;
+    Particles<Dim1, S>   species1, species2;
+    const int            species_index1, species_index2;
+    const std::size_t    offset1, offset2;
+    EnDist<Dim1, S>      energy_dist;
+    list_t<real_t, 2>    region;
     random_number_pool_t pool;
   };
 
@@ -74,18 +74,18 @@ namespace ntt {
                              const Particles<Dim2, S>& sp1,
                              const Particles<Dim2, S>& sp2,
                              const list_t<real_t, 4>&  box,
-                             const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      region { box[0], box[1], box[2], box[3] },
-      energy_dist { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                             const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , region { box[0], box[1], box[2], box[3] }
+      , energy_dist { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t p) const {
       typename random_number_pool_t::generator_type rand_gen = pool.get_state();
@@ -102,13 +102,13 @@ namespace ntt {
     }
 
   private:
-    SimulationParams   params;
-    Meshblock<Dim2, S> mblock;
-    Particles<Dim2, S> species1, species2;
-    const int          species_index1, species_index2;
-    const std::size_t  offset1, offset2;
-    EnDist<Dim2, S>    energy_dist;
-    list_t<real_t, 4>  region;
+    SimulationParams     params;
+    Meshblock<Dim2, S>   mblock;
+    Particles<Dim2, S>   species1, species2;
+    const int            species_index1, species_index2;
+    const std::size_t    offset1, offset2;
+    EnDist<Dim2, S>      energy_dist;
+    list_t<real_t, 4>    region;
     random_number_pool_t pool;
   };
 
@@ -122,18 +122,18 @@ namespace ntt {
                              const Particles<Dim3, S>& sp1,
                              const Particles<Dim3, S>& sp2,
                              const list_t<real_t, 6>&  box,
-                             const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      region { box[0], box[1], box[2], box[3], box[4], box[5] },
-      energy_dist { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                             const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , region { box[0], box[1], box[2], box[3], box[4], box[5] }
+      , energy_dist { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t p) const {
       typename random_number_pool_t::generator_type rand_gen = pool.get_state();
@@ -151,13 +151,13 @@ namespace ntt {
     }
 
   private:
-    SimulationParams   params;
-    Meshblock<Dim3, S> mblock;
-    Particles<Dim3, S> species1, species2;
-    const int          species_index1, species_index2;
-    const std::size_t  offset1, offset2;
-    EnDist<Dim3, S>    energy_dist;
-    list_t<real_t, 6>  region;
+    SimulationParams     params;
+    Meshblock<Dim3, S>   mblock;
+    Particles<Dim3, S>   species1, species2;
+    const int            species_index1, species_index2;
+    const std::size_t    offset1, offset2;
+    EnDist<Dim3, S>      energy_dist;
+    list_t<real_t, 6>    region;
     random_number_pool_t pool;
   };
 
@@ -266,23 +266,23 @@ namespace ntt {
                             const Particles<Dim1, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      index { ind },
-      nppc { ppc },
-      use_weights { params.useWeights() },
-      V0 { params.V0() },
-      energy_dist { params, mblock },
-      spatial_dist { params, mblock },
-      inj_criterion { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                            const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , index { ind }
+      , nppc { ppc }
+      , use_weights { params.useWeights() }
+      , V0 { params.V0() }
+      , energy_dist { params, mblock }
+      , spatial_dist { params, mblock }
+      , inj_criterion { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t i1) const {
       // cell node
@@ -292,11 +292,11 @@ namespace ntt {
                                : ONE };
 
       random_generator_t rand_gen { pool.get_state() };
-      real_t            n_inject { nppc };
-      coord_t<Dim1>     xc { ZERO };
-      coord_t<Dim1>     xph { ZERO };
-      prtldx_t          dx1;
-      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t             n_inject { nppc };
+      coord_t<Dim1>      xc { ZERO };
+      coord_t<Dim1>      xph { ZERO };
+      prtldx_t           dx1;
+      vec_t<Dim3>        v { ZERO }, v_cart { ZERO };
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -352,7 +352,7 @@ namespace ntt {
     EnDist<Dim1, S>      energy_dist;
     SpDist<Dim1, S>      spatial_dist;
     InjCrit<Dim1, S>     inj_criterion;
-    random_number_pool_t   pool;
+    random_number_pool_t pool;
   };
 
   template <SimulationEngine S,
@@ -369,23 +369,23 @@ namespace ntt {
                             const Particles<Dim2, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      index { ind },
-      nppc { ppc },
-      use_weights { params.useWeights() },
-      V0 { params.V0() },
-      energy_dist { params, mblock },
-      spatial_dist { params, mblock },
-      inj_criterion { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                            const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , index { ind }
+      , nppc { ppc }
+      , use_weights { params.useWeights() }
+      , V0 { params.V0() }
+      , energy_dist { params, mblock }
+      , spatial_dist { params, mblock }
+      , inj_criterion { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
@@ -397,11 +397,11 @@ namespace ntt {
       };
 
       random_generator_t rand_gen { pool.get_state() };
-      real_t            n_inject { nppc };
-      coord_t<Dim2>     xc { ZERO };
-      coord_t<Dim2>     xph { ZERO };
-      prtldx_t          dx1, dx2;
-      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t             n_inject { nppc };
+      coord_t<Dim2>      xc { ZERO };
+      coord_t<Dim2>      xph { ZERO };
+      prtldx_t           dx1, dx2;
+      vec_t<Dim3>        v { ZERO }, v_cart { ZERO };
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -475,7 +475,7 @@ namespace ntt {
     EnDist<Dim2, S>      energy_dist;
     SpDist<Dim2, S>      spatial_dist;
     InjCrit<Dim2, S>     inj_criterion;
-    random_number_pool_t   pool;
+    random_number_pool_t pool;
   };
 
   template <SimulationEngine S,
@@ -492,23 +492,23 @@ namespace ntt {
                             const Particles<Dim3, S>&   sp2,
                             const array_t<std::size_t>& ind,
                             const real_t&               ppc,
-                            const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      index { ind },
-      nppc { ppc },
-      use_weights { params.useWeights() },
-      V0 { params.V0() },
-      energy_dist { params, mblock },
-      spatial_dist { params, mblock },
-      inj_criterion { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                            const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , index { ind }
+      , nppc { ppc }
+      , use_weights { params.useWeights() }
+      , V0 { params.V0() }
+      , energy_dist { params, mblock }
+      , spatial_dist { params, mblock }
+      , inj_criterion { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       // cell node
@@ -522,11 +522,11 @@ namespace ntt {
                                : ONE };
 
       random_generator_t rand_gen { pool.get_state() };
-      real_t            n_inject { nppc };
-      coord_t<Dim3>     xc { ZERO };
-      coord_t<Dim3>     xph { ZERO };
-      prtldx_t          dx1, dx2, dx3;
-      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t             n_inject { nppc };
+      coord_t<Dim3>      xc { ZERO };
+      coord_t<Dim3>      xph { ZERO };
+      prtldx_t           dx1, dx2, dx3;
+      vec_t<Dim3>        v { ZERO }, v_cart { ZERO };
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -606,7 +606,7 @@ namespace ntt {
     EnDist<Dim3, S>      energy_dist;
     SpDist<Dim3, S>      spatial_dist;
     InjCrit<Dim3, S>     inj_criterion;
-    random_number_pool_t   pool;
+    random_number_pool_t pool;
   };
 
   /**
@@ -721,21 +721,21 @@ namespace ntt {
                                 const Particles<Dim1, S>&   sp2,
                                 const array_t<std::size_t>& ind,
                                 const ndarray_t<1>&         ppc,
-                                const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      index { ind },
-      ppc_per_spec { ppc },
-      use_weights { params.useWeights() },
-      energy_dist { params, mblock },
-      inj_criterion { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                                const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , index { ind }
+      , ppc_per_spec { ppc }
+      , use_weights { params.useWeights() }
+      , energy_dist { params, mblock }
+      , inj_criterion { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t i1) const {
       // cell node
@@ -743,11 +743,11 @@ namespace ntt {
       coord_t<Dim1> xi  = { static_cast<real_t>(i1_) };
 
       random_generator_t rand_gen { pool.get_state() };
-      real_t            n_inject { ppc_per_spec(i1_) };
-      coord_t<Dim1>     xc { ZERO };
-      coord_t<Dim1>     xph { ZERO };
-      prtldx_t          dx1;
-      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t             n_inject { ppc_per_spec(i1_) };
+      coord_t<Dim1>      xc { ZERO };
+      coord_t<Dim1>      xph { ZERO };
+      prtldx_t           dx1;
+      vec_t<Dim3>        v { ZERO }, v_cart { ZERO };
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -800,7 +800,7 @@ namespace ntt {
     const bool           use_weights;
     EnDist<Dim1, S>      energy_dist;
     InjCrit<Dim1, S>     inj_criterion;
-    random_number_pool_t   pool;
+    random_number_pool_t pool;
   };
 
   template <SimulationEngine S,
@@ -815,22 +815,22 @@ namespace ntt {
                                 const Particles<Dim2, S>&   sp2,
                                 const array_t<std::size_t>& ind,
                                 const ndarray_t<2>&         ppc,
-                                const real_t&) :
-      params { pr },
-      mblock { mb },
-      species1 { sp1 },
-      species2 { sp2 },
-      species_index1 { sp1.index() },
-      species_index2 { sp2.index() },
-      offset1 { sp1.npart() },
-      offset2 { sp2.npart() },
-      index { ind },
-      ppc_per_spec { ppc },
-      use_weights { params.useWeights() },
-      V0 { params.V0() },
-      energy_dist { params, mblock },
-      inj_criterion { params, mblock },
-      pool { *(mblock.random_pool_ptr) } {}
+                                const real_t&)
+      : params { pr }
+      , mblock { mb }
+      , species1 { sp1 }
+      , species2 { sp2 }
+      , species_index1 { sp1.index() }
+      , species_index2 { sp2.index() }
+      , offset1 { sp1.npart() }
+      , offset2 { sp2.npart() }
+      , index { ind }
+      , ppc_per_spec { ppc }
+      , use_weights { params.useWeights() }
+      , V0 { params.V0() }
+      , energy_dist { params, mblock }
+      , inj_criterion { params, mblock }
+      , pool { *(mblock.random_pool_ptr) } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       // cell node
@@ -844,11 +844,11 @@ namespace ntt {
       };
 
       random_generator_t rand_gen { pool.get_state() };
-      real_t            n_inject { ppc_per_spec(i1_, i2_) };
-      coord_t<Dim2>     xc { ZERO };
-      coord_t<Dim2>     xph { ZERO };
-      prtldx_t          dx1, dx2;
-      vec_t<Dim3>       v { ZERO }, v_cart { ZERO };
+      real_t             n_inject { ppc_per_spec(i1_, i2_) };
+      coord_t<Dim2>      xc { ZERO };
+      coord_t<Dim2>      xph { ZERO };
+      prtldx_t           dx1, dx2;
+      vec_t<Dim3>        v { ZERO }, v_cart { ZERO };
 
       while (n_inject > ZERO) {
         dx1   = Random<prtldx_t>(rand_gen);
@@ -920,7 +920,7 @@ namespace ntt {
     const real_t         V0;
     EnDist<Dim2, S>      energy_dist;
     InjCrit<Dim2, S>     inj_criterion;
-    random_number_pool_t   pool;
+    random_number_pool_t pool;
   };
 
   /**

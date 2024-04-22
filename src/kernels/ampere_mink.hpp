@@ -41,10 +41,10 @@ namespace kernel::mink {
      * ! 2D: coeff1 = dt / dx^2, coeff2 = dt
      * ! 3D: coeff1 = dt / dx
      */
-    Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2) :
-      EB { EB },
-      coeff1 { coeff1 },
-      coeff2 { coeff2 } {}
+    Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2)
+      : EB { EB }
+      , coeff1 { coeff1 }
+      , coeff2 { coeff2 } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -106,11 +106,11 @@ namespace kernel::mink {
     CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
                           const ndfield_t<D, 3>  J,
                           real_t                 coeff,
-                          real_t                 inv_n0) :
-      E { E },
-      J { J },
-      coeff { coeff },
-      inv_n0 { inv_n0 } {}
+                          real_t                 inv_n0)
+      : E { E }
+      , J { J }
+      , coeff { coeff }
+      , inv_n0 { inv_n0 } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {

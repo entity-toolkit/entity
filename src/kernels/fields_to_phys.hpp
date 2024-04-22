@@ -56,11 +56,11 @@ namespace kernel {
                         list_t<unsigned short, 3> comps_from,
                         list_t<unsigned short, 3> comps_to,
                         const PrepareOutputFlags& flags,
-                        const M&                  metric) :
-      Ffrom { from },
-      Fto { to },
-      flags { flags },
-      metric { metric } {
+                        const M&                  metric)
+      : Ffrom { from }
+      , Fto { to }
+      , flags { flags }
+      , metric { metric } {
       cf1 = comps_from[0];
       ct1 = comps_to[0];
       cf2 = comps_from[1];
