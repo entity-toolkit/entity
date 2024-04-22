@@ -10,8 +10,7 @@
  *                                    reflect, horizon, axis, sync
  *   - enum ntt::FldsBC            // periodic, absorb, atmosphere, custom,
  *                                    horizon, axis, sync
- *   - enum ntt::CommBC            // physical, sync
- *   - enum ntt::PrtlPusher        // boris, vay, boris,gca, vay,gca, photon, none
+ *   - enum ntt::PrtlPusher        // boris, vay, photon, none
  *   - enum ntt::Cooling           // synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc
@@ -239,42 +238,22 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct CommBC : public enums_hidden::BaseEnum<CommBC> {
-    static constexpr const char* label = "comm_bc";
-
-    enum type : uint8_t {
-      INVALID  = 0,
-      PHYSICAL = 1,
-      SYNC     = 2,
-    };
-
-    constexpr CommBC(uint8_t c) : enums_hidden::BaseEnum<CommBC> { c } {}
-
-    static constexpr type        variants[] = { PHYSICAL, SYNC };
-    static constexpr const char* lookup[]   = { "physical", "sync" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
-  };
-
   struct PrtlPusher : public enums_hidden::BaseEnum<PrtlPusher> {
     static constexpr const char* label = "prtl_pusher";
 
     enum type : uint8_t {
-      INVALID   = 0,
-      BORIS     = 1,
-      VAY       = 2,
-      BORIS_GCA = 3,
-      VAY_GCA   = 4,
-      PHOTON    = 5,
-      NONE      = 6,
+      INVALID = 0,
+      BORIS   = 1,
+      VAY     = 2,
+      PHOTON  = 3,
+      NONE    = 4,
     };
 
     constexpr PrtlPusher(uint8_t c) :
       enums_hidden::BaseEnum<PrtlPusher> { c } {}
 
-    static constexpr type        variants[] = { BORIS,   VAY,    BORIS_GCA,
-                                                VAY_GCA, PHOTON, NONE };
-    static constexpr const char* lookup[] = { "boris",   "vay",    "boris,gca",
-                                              "vay,gca", "photon", "none" };
+    static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
+    static constexpr const char* lookup[] = { "boris", "vay", "photon", "none" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

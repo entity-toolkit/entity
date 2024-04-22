@@ -94,17 +94,19 @@ namespace ntt {
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
      * @param pusher The pusher assigned for the species
+     * @param use_gca Use hybrid GCA pusher for the species
      * @param cooling The cooling mechanism assigned for the species
      * @param npld The number of payloads for the species
      */
-    Particles(const int&            index,
-              const std::string&    label,
-              const float&          m,
-              const float&          ch,
-              const std::size_t&    maxnpart,
-              const PrtlPusher&     pusher,
-              const Cooling&        cooling,
-              const unsigned short& npld = 0);
+    Particles(int                index,
+              const std::string& label,
+              float              m,
+              float              ch,
+              std::size_t        maxnpart,
+              const PrtlPusher&  pusher,
+              bool               use_gca,
+              const Cooling&     cooling,
+              unsigned short     npld = 0);
 
     /**
      * @brief Constructor for the particle container
@@ -118,6 +120,7 @@ namespace ntt {
                 spec.charge(),
                 spec.maxnpart(),
                 spec.pusher(),
+                spec.use_gca(),
                 spec.cooling(),
                 spec.npld()) {}
 

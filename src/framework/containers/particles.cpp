@@ -16,15 +16,16 @@
 
 namespace ntt {
   template <Dimension D, Coord::type C>
-  Particles<D, C>::Particles(const int&            index,
-                             const std::string&    label,
-                             const float&          m,
-                             const float&          ch,
-                             const std::size_t&    maxnpart,
-                             const PrtlPusher&     pusher,
-                             const Cooling&        cooling,
-                             const unsigned short& npld) :
-    ParticleSpecies(index, label, m, ch, maxnpart, pusher, cooling, npld) {
+  Particles<D, C>::Particles(int                index,
+                             const std::string& label,
+                             float              m,
+                             float              ch,
+                             std::size_t        maxnpart,
+                             const PrtlPusher&  pusher,
+                             bool               use_gca,
+                             const Cooling&     cooling,
+                             unsigned short     npld) :
+    ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
     i1    = array_t<int*> { label + "_i1", maxnpart };
     i1_h  = Kokkos::create_mirror_view(i1);
     dx1   = array_t<prtldx_t*> { label + "_dx1", maxnpart };

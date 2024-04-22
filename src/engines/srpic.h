@@ -236,9 +236,6 @@ namespace ntt {
       }
     }
 
-    template <typename T>
-    using range_pol = Kokkos::RangePolicy<AccelExeSpace, T>;
-
     void ParticlePush(domain_t& domain) {
       using pgen_t = user::PGen<SimEngine::SRPIC, M>;
       logger::Checkpoint("Launching particle pushers", HERE);
@@ -253,13 +250,22 @@ namespace ntt {
         //  coeff = q / m (dt / 2) omegaB0
         const auto coeff   = q_ovr_m * HALF * dt *
                            m_params.template get<real_t>("scales.omegaB0");
-        const auto pusher  = species.pusher();
+        // auto       pusher  = species.pusher();
+        PrtlPusher::type pusher;
+        if (species.pusher() == PrtlPusher::PHOTON) {
+          pusher = PrtlPusher::PHOTON;
+        } else if (species.pusher() == PrtlPusher::BORIS) {
+          pusher = PrtlPusher::BORIS;
+        } else if (species.pusher() == PrtlPusher::VAY) {
+          pusher = PrtlPusher::VAY;
+        } else {
+          raise::Fatal("Invalid particle pusher", HERE);
+        }
         const auto cooling = species.cooling();
 
         // coefficients to be forwarded to the dispatcher
         // gca
-        const auto has_gca = (pusher == PrtlPusher::VAY_GCA) ||
-                             (pusher == PrtlPusher::BORIS_GCA);
+        const auto has_gca         = species.use_gca();
         const auto gca_larmor_max  = has_gca ? m_params.template get<real_t>(
                                                 "algorithms.gca.larmor_max")
                                              : ZERO;
@@ -279,12 +285,6 @@ namespace ntt {
                                       (SQR(sync_grad) * species.mass())
                                        : ZERO;
 
-        const auto is_photon = (pusher == PrtlPusher::PHOTON);
-        const auto is_boris  = (pusher == PrtlPusher::BORIS) ||
-                              (pusher == PrtlPusher::BORIS_GCA);
-        const auto is_vay = (pusher == PrtlPusher::VAY) ||
-                            (pusher == PrtlPusher::VAY_GCA);
-
         // toggle to indicate whether pgen defines the external force
         bool has_extforce = false;
         if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
@@ -298,110 +298,53 @@ namespace ntt {
           }
         }
 
-        using namespace kernel::sr;
-        const auto pusher_kernel = Pusher_kernel<M, pgen_t>(
-          domain.fields.em,
-          species.index(),
-          species.i1,
-          species.i2,
-          species.i3,
-          species.i1_prev,
-          species.i2_prev,
-          species.i3_prev,
-          species.dx1,
-          species.dx2,
-          species.dx3,
-          species.dx1_prev,
-          species.dx2_prev,
-          species.dx3_prev,
-          species.ux1,
-          species.ux2,
-          species.ux3,
-          species.phi,
-          species.tag,
-          domain.mesh.metric,
-          m_pgen,
-          time,
-          coeff,
-          dt,
-          domain.mesh.n_active(in::x1),
-          domain.mesh.n_active(in::x2),
-          domain.mesh.n_active(in::x3),
-          domain.mesh.prtl_bc(),
-          gca_larmor_max,
-          gca_eovrb_max,
-          sync_coeff);
-
-        std::variant<range_pol<Photon_t>,
-                     range_pol<Boris_t>,
-                     range_pol<Vay_t>,
-                     range_pol<Union_t<Boris_t, GCA_t>>,
-                     range_pol<Union_t<Vay_t, GCA_t>>,
-                     range_pol<Union_t<Boris_t, Synchrotron_t>>,
-                     range_pol<Union_t<Vay_t, Synchrotron_t>>,
-                     range_pol<Union_t<Boris_t, GCA_t, Synchrotron_t>>,
-                     range_pol<Union_t<Vay_t, GCA_t, Synchrotron_t>>,
-                     range_pol<Union_t<Boris_t, Extforce_t>>,
-                     range_pol<Union_t<Vay_t, Extforce_t>>,
-                     range_pol<Union_t<Boris_t, GCA_t, Extforce_t>>,
-                     range_pol<Union_t<Vay_t, GCA_t, Extforce_t>>,
-                     range_pol<Union_t<Boris_t, Synchrotron_t, Extforce_t>>,
-                     range_pol<Union_t<Vay_t, Synchrotron_t, Extforce_t>>,
-                     range_pol<Union_t<Boris_t, GCA_t, Synchrotron_t, Extforce_t>>,
-                     range_pol<Union_t<Vay_t, GCA_t, Synchrotron_t, Extforce_t>>>
-          range;
-
-        if (not has_extforce and is_photon) {
-          range = range_pol<Photon_t>(0, npart);
-        } else if (not has_extforce and is_boris and not has_synchrotron and
-                   not has_gca) {
-          range = range_pol<Boris_t>(0, npart);
-        } else if (not has_extforce and is_vay and not has_synchrotron and
-                   not has_gca) {
-          range = range_pol<Vay_t>(0, npart);
-        } else if (not has_extforce and is_boris and has_synchrotron and
-                   not has_gca) {
-          range = range_pol<Union_t<Boris_t, Synchrotron_t>>(0, npart);
-        } else if (not has_extforce and is_vay and has_synchrotron and not has_gca) {
-          range = range_pol<Union_t<Vay_t, Synchrotron_t>>(0, npart);
-        } else if (not has_extforce and is_boris and not has_synchrotron and
-                   has_gca) {
-          range = range_pol<Union_t<Boris_t, GCA_t>>(0, npart);
-        } else if (not has_extforce and is_vay and not has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Vay_t, GCA_t>>(0, npart);
-        } else if (not has_extforce and is_boris and has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Boris_t, GCA_t, Synchrotron_t>>(0, npart);
-        } else if (not has_extforce and is_vay and has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Vay_t, GCA_t, Synchrotron_t>>(0, npart);
-        } else if (has_extforce and is_boris and not has_synchrotron and
-                   not has_gca) {
-          range = range_pol<Union_t<Boris_t, Extforce_t>>(0, npart);
-        } else if (has_extforce and is_vay and not has_synchrotron and not has_gca) {
-          range = range_pol<Union_t<Vay_t, Extforce_t>>(0, npart);
-        } else if (has_extforce and is_boris and has_synchrotron and not has_gca) {
-          range = range_pol<Union_t<Boris_t, Synchrotron_t, Extforce_t>>(0, npart);
-        } else if (has_extforce and is_vay and has_synchrotron and not has_gca) {
-          range = range_pol<Union_t<Vay_t, Synchrotron_t, Extforce_t>>(0, npart);
-        } else if (has_extforce and is_boris and not has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Boris_t, GCA_t, Extforce_t>>(0, npart);
-        } else if (has_extforce and is_vay and not has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Vay_t, GCA_t, Extforce_t>>(0, npart);
-        } else if (has_extforce and is_boris and has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Boris_t, GCA_t, Synchrotron_t, Extforce_t>>(
-            0,
-            npart);
-        } else if (not has_extforce and is_vay and has_synchrotron and has_gca) {
-          range = range_pol<Union_t<Vay_t, GCA_t, Synchrotron_t, Extforce_t>>(0, npart);
+        kernel::sr::CoolingTags cooling_tags = 0;
+        if (cooling == Cooling::SYNCHROTRON) {
+          cooling_tags = kernel::sr::Cooling::Synchrotron;
         }
-        std::visit(
-          [&](auto&& arg) {
-            Kokkos::parallel_for("ParticlePusher", arg, pusher_kernel);
-          },
-          range);
+        Kokkos::parallel_for(
+          "ParticlePusher",
+          species.rangeActiveParticles(),
+          kernel::sr::Pusher_kernel<M, pgen_t>(pusher,
+                                               has_gca,
+                                               false,
+                                               cooling_tags,
+                                               domain.fields.em,
+                                               species.index(),
+                                               species.i1,
+                                               species.i2,
+                                               species.i3,
+                                               species.i1_prev,
+                                               species.i2_prev,
+                                               species.i3_prev,
+                                               species.dx1,
+                                               species.dx2,
+                                               species.dx3,
+                                               species.dx1_prev,
+                                               species.dx2_prev,
+                                               species.dx3_prev,
+                                               species.ux1,
+                                               species.ux2,
+                                               species.ux3,
+                                               species.phi,
+                                               species.tag,
+                                               domain.mesh.metric,
+                                               m_pgen,
+                                               time,
+                                               coeff,
+                                               dt,
+                                               domain.mesh.n_active(in::x1),
+                                               domain.mesh.n_active(in::x2),
+                                               domain.mesh.n_active(in::x3),
+                                               domain.mesh.prtl_bc(),
+                                               gca_larmor_max,
+                                               gca_eovrb_max,
+                                               sync_coeff));
       }
     }
 
     void CurrentsDeposit(domain_t& domain) {
+
       logger::Checkpoint("Launching currents deposit kernel", HERE);
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);

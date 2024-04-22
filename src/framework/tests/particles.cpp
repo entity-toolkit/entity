@@ -21,7 +21,7 @@ void testParticles(const int&             index,
                    const ntt::Cooling&    cooling,
                    const unsigned short&  npld = 0) {
   using namespace ntt;
-  auto p = Particles<D, C>(index, label, m, ch, maxnpart, pusher, cooling, npld);
+  auto p = Particles<D, C>(index, label, m, ch, maxnpart, pusher, false, cooling, npld);
   raise::ErrorIf(p.index() != index, "Index mismatch", HERE);
   raise::ErrorIf(p.label() != label, "Label mismatch", HERE);
   raise::ErrorIf(p.mass() != m, "Mass mismatch", HERE);
@@ -102,14 +102,14 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          -1.0,
                                          100,
-                                         PrtlPusher::BORIS_GCA,
+                                         PrtlPusher::BORIS,
                                          Cooling::SYNCHROTRON);
     testParticles<Dim::_2D, Coord::Cart>(2,
                                          "p+",
                                          100.0,
                                          -1.0,
                                          1000,
-                                         PrtlPusher::VAY_GCA,
+                                         PrtlPusher::VAY,
                                          Cooling::SYNCHROTRON);
     testParticles<Dim::_3D, Coord::Cart>(3,
                                          "ph",

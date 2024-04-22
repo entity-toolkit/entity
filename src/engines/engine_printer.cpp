@@ -318,6 +318,9 @@ namespace ntt {
           add_param(report, 6, "Charge", "%.1f", species.charge());
           add_param(report, 6, "Max #", "%d [per domain]", species.maxnpart());
           add_param(report, 6, "Pusher", "%s", species.pusher().to_string());
+          if (species.mass() != 0.0) {
+            add_param(report, 6, "GCA", "%s", species.use_gca() ? "ON" : "OFF");
+          }
           add_param(report, 6, "Cooling", "%s", species.cooling().to_string());
           add_param(report, 6, "# of payloads", "%d", species.npld());
         }

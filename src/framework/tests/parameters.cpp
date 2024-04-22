@@ -392,8 +392,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
       assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS_GCA,
+                               PrtlPusher::BORIS,
                                "species[0].pusher");
+      assert_equal<PrtlPusher>(species[0].use_gca(), true, "species[0].use_gca");
       assert_equal<unsigned short>(species[0].npld(), 3, "species[0].npld");
       assert_equal<Cooling>(species[0].cooling(),
                             Cooling::SYNCHROTRON,
@@ -404,8 +405,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[1].charge(), 1.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
       assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::BORIS_GCA,
+                               PrtlPusher::BORIS,
                                "species[1].pusher");
+      assert_equal<PrtlPusher>(species[1].use_gca(), true, "species[1].use_gca");
       assert_equal<unsigned short>(species[1].npld(), 0, "species[1].npld");
       assert_equal<Cooling>(species[1].cooling(),
                             Cooling::SYNCHROTRON,

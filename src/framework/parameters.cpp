@@ -276,7 +276,7 @@ namespace ntt {
                                               : defaults::em_pusher);
       const auto maxnpart_real = toml::find<double>(sp, "maxnpart");
       const auto maxnpart      = static_cast<std::size_t>(maxnpart_real);
-      const auto pusher = toml::find_or(sp, "pusher", std::string(def_pusher));
+      auto       pusher = toml::find_or(sp, "pusher", std::string(def_pusher));
       const auto npayloads = toml::find_or(sp,
                                            "n_payloads",
                                            static_cast<unsigned short>(0));
@@ -287,10 +287,18 @@ namespace ntt {
       raise::ErrorIf((fmt::toLower(pusher) == "photon") && !is_massless,
                      "photon pusher is only applicable to massless particles",
                      HERE);
+      bool use_gca = false;
+      if (pusher.find(',') != std::string::npos) {
+        raise::ErrorIf(fmt::toLower(pusher.substr(pusher.find(',') + 1,
+                                                  pusher.size())) != "gca",
+                       "invalid pusher syntax",
+                       HERE);
+        use_gca = true;
+        pusher  = pusher.substr(0, pusher.find(','));
+      }
       const auto pusher_enum  = PrtlPusher::pick(pusher.c_str());
       const auto cooling_enum = Cooling::pick(cooling.c_str());
-      if ((pusher_enum == PrtlPusher::VAY_GCA) ||
-          (pusher_enum == PrtlPusher::BORIS_GCA)) {
+      if (use_gca) {
         raise::ErrorIf(engine_enum != SimEngine::SRPIC,
                        "GCA pushers are only supported for SRPIC",
                        HERE);
@@ -310,6 +318,7 @@ namespace ntt {
                                            charge,
                                            maxnpart,
                                            pusher_enum,
+                                           use_gca,
                                            cooling_enum,
                                            npayloads));
       idx += 1;

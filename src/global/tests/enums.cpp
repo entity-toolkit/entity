@@ -63,9 +63,7 @@ auto main() -> int {
                                   "reflect",  "horizon", "axis",       "sync" };
   enum_str_t all_fields_bcs   = { "periodic", "absorb", "atmosphere", "custom",
                                   "horizon",  "axis",   "sync" };
-  enum_str_t all_comm_bcs     = { "physical", "sync" };
-  enum_str_t all_particle_pushers = { "boris",   "vay",    "boris,gca",
-                                      "vay,gca", "photon", "none" };
+  enum_str_t all_particle_pushers = { "boris", "vay", "photon", "none" };
   enum_str_t all_coolings         = { "synchrotron", "none" };
 
   enum_str_t all_out_flds = { "e", "dive", "d",   "divd",   "b", "h",   "j",
@@ -76,7 +74,6 @@ auto main() -> int {
   checkEnum<SimEngine>(all_simulation_engines);
   checkEnum<PrtlBC>(all_particle_bcs);
   checkEnum<FldsBC>(all_fields_bcs);
-  checkEnum<CommBC>(all_comm_bcs);
   checkEnum<PrtlPusher>(all_particle_pushers);
   checkEnum<Cooling>(all_coolings);
   checkEnum<FldsID>(all_out_flds);
