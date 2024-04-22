@@ -258,7 +258,10 @@ namespace ntt {
 
     /* [particles.species] -------------------------------------------------- */
     std::vector<ParticleSpecies> species;
-    const auto species_tab = toml::find<toml::array>(raw_data, "particles", "species");
+    const auto species_tab = toml::find_or<toml::array>(raw_data,
+                                                        "particles",
+                                                        "species",
+                                                        toml::array {});
     set("particles.nspec", species_tab.size());
 
     unsigned short idx = 1;
@@ -436,8 +439,8 @@ namespace ntt {
           raise::ErrorIf(pbc_enum != PrtlBC::PERIODIC,
                          "invalid `grid.boundaries.particles`",
                          HERE);
-          prtl_bc_enum.push_back({ PrtlBC::PERIODIC, PrtlBC::PERIODIC });
-          prtl_bc_enum.push_back({ PrtlBC::PERIODIC, PrtlBC::PERIODIC });
+          prtl_bc_enum.back().push_back(PrtlBC(PrtlBC::PERIODIC));
+          prtl_bc_enum.back().push_back(PrtlBC(PrtlBC::PERIODIC));
         } else {
           raise::ErrorIf(pbc_enum == PrtlBC::PERIODIC,
                          "invalid `grid.boundaries.particles`",
