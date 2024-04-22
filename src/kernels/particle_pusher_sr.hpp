@@ -48,40 +48,14 @@
 namespace kernel::sr {
   using namespace ntt;
 
-  // Pushers
-  struct Boris_t {};
+  namespace Cooling {
+    enum CoolingTags_ {
+      None        = 0,
+      Synchrotron = 1 << 0,
+    };
+  } // namespace Cooling
 
-  struct Vay_t {};
-
-  struct Photon_t {};
-
-  struct Extforce_t {};
-
-  struct GCA_t {};
-
-  // Cooling
-  struct NoCooling_t {};
-
-  struct Synchrotron_t {};
-
-  template <typename... Tags>
-  struct Union_t {};
-
-  template <typename T, typename... Ts>
-  struct is_contained;
-
-  template <typename T, typename F, typename... Ts>
-  struct is_contained<T, F, Ts...> : is_contained<T, Ts...> {};
-
-  template <typename T, typename... Ts>
-  struct is_contained<T, T, Ts...> : std::true_type {};
-
-  template <typename T>
-  struct is_contained<T> : std::false_type {};
-
-  struct Massive_t {};
-
-  struct Massless_t {};
+  typedef int CoolingTags;
 
   /**
    * @tparam M Metric
@@ -94,11 +68,15 @@ namespace kernel::sr {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(PG::is_pgen, "PG must be a problem generator class");
     static constexpr auto D = M::Dim;
-    // using base_t::defines_fx1;
-    // using base_t::defines_fx2;
-    // using base_t::defines_fx3;
+    static constexpr auto ExtForce =
+      traits::has_member<traits::pgen::ext_force_t, PG>::value;
 
   private:
+    const PrtlPusher::type pusher;
+    const bool             GCA;
+    const bool             ext_force;
+    const CoolingTags      cooling;
+
     const ndfield_t<D, 6> EB;
     const unsigned short  sp;
     array_t<int*>         i1, i2, i3;
@@ -126,7 +104,11 @@ namespace kernel::sr {
     const real_t coeff_sync;
 
   public:
-    Pusher_kernel(const ndfield_t<D, 6>&      EB,
+    Pusher_kernel(const PrtlPusher::type&     pusher,
+                  bool                        GCA,
+                  bool                        ext_force,
+                  CoolingTags                 cooling,
+                  const ndfield_t<D, 6>&      EB,
                   unsigned short              sp,
                   array_t<int*>&              i1,
                   array_t<int*>&              i2,
@@ -157,6 +139,10 @@ namespace kernel::sr {
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
                   real_t                      coeff_sync) :
+      pusher { pusher },
+      GCA { GCA },
+      ext_force { ext_force },
+      cooling { cooling },
       EB { EB },
       sp { sp },
       i1 { i1 },
@@ -268,42 +254,16 @@ namespace kernel::sr {
       ux3(p) += coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
     }
 
-    /* photon --------------------------------------------------------------- */
-    Inline void operator()(Photon_t, index_t p) const {
+    Inline void operator()(index_t p) const {
       if (tag(p) != ParticleTag::alive) {
         return;
       }
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       getPrtlPos(p, xp_Cd);
-      posUpd<Massless_t>(p, xp_Cd);
-    }
-
-    /* Vay/Boris, no gca, no ext force, no cooling -------------------------- */
-    template <typename P>
-    Inline void operator()(P, index_t p) const {
-      if (tag(p) != ParticleTag::alive) {
+      if (pusher == PrtlPusher::PHOTON) {
+        posUpd(false, p, xp_Cd);
         return;
       }
-      coord_t<M::PrtlDim> xp_Cd { ZERO };
-      getPrtlPos(p, xp_Cd);
-      vec_t<Dim::_3D> ei { ZERO }, bi { ZERO };
-      vec_t<Dim::_3D> ei_Cart { ZERO }, bi_Cart { ZERO };
-
-      getInterpFlds(p, ei, bi);
-      metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
-      metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-      velUpd(P {}, p, ei_Cart, bi_Cart);
-      posUpd<Massive_t>(p, xp_Cd);
-    }
-
-    /* general case --------------------------------------------------------- */
-    template <typename P, typename... Args>
-    Inline void operator()(Union_t<P, Args...>, index_t p) const {
-      if (tag(p) != ParticleTag::alive) {
-        return;
-      }
-      coord_t<M::PrtlDim> xp_Cd { ZERO };
-      getPrtlPos(p, xp_Cd);
       // update cartesian velocity
       vec_t<Dim::_3D> ei { ZERO }, bi { ZERO };
       vec_t<Dim::_3D> ei_Cart { ZERO }, bi_Cart { ZERO };
@@ -315,7 +275,8 @@ namespace kernel::sr {
       getInterpFlds(p, ei, bi);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-      if constexpr (is_contained<Synchrotron_t, Union_t<Args...>>::value) {
+      // if constexpr (is_contained<Synchrotron_t, Union_t<Args...>>::value) {
+      if (cooling != 0) {
         // backup fields & velocities to use later in cooling
         ei_Cart_rad[0] = ei_Cart[0];
         ei_Cart_rad[1] = ei_Cart[1];
@@ -327,10 +288,25 @@ namespace kernel::sr {
         u_prime[1]     = ux2(p);
         u_prime[2]     = ux3(p);
       }
-      if constexpr (is_contained<Extforce_t, Union_t<Args...>>::value) {
-        initForce(xp_Cd, force_Cart);
+      if constexpr (ExtForce) {
+        if (ext_force) {
+          coord_t<M::PrtlDim> xp_Ph { ZERO };
+          xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
+          if constexpr (M::PrtlDim != Dim::_1D) {
+            xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
+          }
+          if constexpr (M::PrtlDim == Dim::_3D) {
+            xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
+          }
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(
+            xp_Cd,
+            { pgen.ext_force.fx1(sp, time, xp_Ph),
+              pgen.ext_force.fx2(sp, time, xp_Ph),
+              pgen.ext_force.fx3(sp, time, xp_Ph) },
+            force_Cart);
+        }
       }
-      if constexpr (is_contained<GCA_t, Union_t<Args...>>::value) {
+      if (GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
         const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
         const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
@@ -339,42 +315,52 @@ namespace kernel::sr {
         if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
           is_gca = true;
           // update with GCA
-          if constexpr (is_contained<Extforce_t, Union_t<Args...>>::value) {
-            velUpd(Union_t<GCA_t, Extforce_t> {}, p, force_Cart, ei_Cart, bi_Cart);
+          if constexpr (ExtForce) {
+            if (ext_force) {
+              velUpd(true, p, force_Cart, ei_Cart, bi_Cart);
+            }
           } else {
-            velUpd(GCA_t {}, p, ei_Cart, bi_Cart);
+            velUpd(true, p, ei_Cart, bi_Cart);
           }
         } else {
           // update with conventional pusher
-          if constexpr (is_contained<Extforce_t, Union_t<Args...>>::value) {
-            ux1(p) += HALF * dt * force_Cart[0];
-            ux2(p) += HALF * dt * force_Cart[1];
-            ux3(p) += HALF * dt * force_Cart[2];
+          if constexpr (ExtForce) {
+            if (ext_force) {
+              ux1(p) += HALF * dt * force_Cart[0];
+              ux2(p) += HALF * dt * force_Cart[1];
+              ux3(p) += HALF * dt * force_Cart[2];
+            }
           }
-          velUpd(P {}, p, ei_Cart, bi_Cart);
-          if constexpr (is_contained<Extforce_t, Union_t<Args...>>::value) {
-            ux1(p) += HALF * dt * force_Cart[0];
-            ux2(p) += HALF * dt * force_Cart[1];
-            ux3(p) += HALF * dt * force_Cart[2];
+          velUpd(false, p, ei_Cart, bi_Cart);
+          if constexpr (ExtForce) {
+            if (ext_force) {
+              ux1(p) += HALF * dt * force_Cart[0];
+              ux2(p) += HALF * dt * force_Cart[1];
+              ux3(p) += HALF * dt * force_Cart[2];
+            }
           }
         }
       } else {
         /* conventional pusher mode ------------------------------------- */
         // update with conventional pusher
-        if constexpr (is_contained<Extforce_t, Union_t<Args...>>::value) {
-          ux1(p) += HALF * dt * force_Cart[0];
-          ux2(p) += HALF * dt * force_Cart[1];
-          ux3(p) += HALF * dt * force_Cart[2];
+        if constexpr (ExtForce) {
+          if (ext_force) {
+            ux1(p) += HALF * dt * force_Cart[0];
+            ux2(p) += HALF * dt * force_Cart[1];
+            ux3(p) += HALF * dt * force_Cart[2];
+          }
         }
-        velUpd(P {}, p, ei_Cart, bi_Cart);
-        if constexpr (is_contained<Extforce_t, Union_t<Args...>>::value) {
-          ux1(p) += HALF * dt * force_Cart[0];
-          ux2(p) += HALF * dt * force_Cart[1];
-          ux3(p) += HALF * dt * force_Cart[2];
+        velUpd(false, p, ei_Cart, bi_Cart);
+        if constexpr (ExtForce) {
+          if (ext_force) {
+            ux1(p) += HALF * dt * force_Cart[0];
+            ux2(p) += HALF * dt * force_Cart[1];
+            ux3(p) += HALF * dt * force_Cart[2];
+          }
         }
       }
       // cooling
-      if constexpr (is_contained<Synchrotron_t, Union_t<Args...>>::value) {
+      if (cooling & Cooling::Synchrotron) {
         if (!is_gca) {
           u_prime[0] = HALF * (u_prime[0] + ux1(p));
           u_prime[1] = HALF * (u_prime[1] + ux2(p));
@@ -383,14 +369,15 @@ namespace kernel::sr {
         }
       }
       // update position
-      posUpd<Massive_t>(p, xp_Cd);
+      posUpd(true, p, xp_Cd);
     }
 
-    template <typename T>
-    Inline void posUpd(index_t& p, coord_t<M::PrtlDim>& xp) const {
-
+    Inline void posUpd(bool massive, index_t& p, coord_t<M::PrtlDim>& xp) const {
       // get cartesian velocity
-      const real_t        inv_energy { ONE / getEnergy(T {}, p) };
+      const real_t inv_energy {
+        massive ? ONE / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
+                : ONE / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
+      };
       vec_t<Dim::_3D>     vp_Cart { ux1(p) * inv_energy,
                                 ux2(p) * inv_energy,
                                 ux3(p) * inv_energy };
@@ -435,123 +422,122 @@ namespace kernel::sr {
      * @param P pusher algorithm
      * @param p, e0, b0 index & interpolated fields
      */
-    Inline void velUpd(Boris_t,
+    Inline void velUpd(bool             with_gca,
                        index_t&         p,
                        vec_t<Dim::_3D>& e0,
                        vec_t<Dim::_3D>& b0) const {
+      if (with_gca) {
+        const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
+                            NORM_SQR(b0[0], b0[1], b0[2]) };
 
-      real_t COEFF { coeff };
+        const vec_t<Dim::_3D> wE {
+          CROSS_x1(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+          CROSS_x2(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+          CROSS_x3(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr
+        };
 
-      e0[0] *= COEFF;
-      e0[1] *= COEFF;
-      e0[2] *= COEFF;
-      vec_t<Dim::_3D> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
+        {
+          const auto b_norm_inv { ONE / NORM(b0[0], b0[1], b0[2]) };
+          b0[0] *= b_norm_inv;
+          b0[1] *= b_norm_inv;
+          b0[2] *= b_norm_inv;
+        }
+        auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
+                    coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
 
-      COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
-      b0[0] *= COEFF;
-      b0[1] *= COEFF;
-      b0[2] *= COEFF;
-      COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
+        real_t factor;
+        {
+          const auto wE_sqr { NORM_SQR(wE[0], wE[1], wE[2]) };
+          if (wE_sqr < static_cast<real_t>(0.01)) {
+            factor = ONE + wE_sqr + TWO * SQR(wE_sqr) + FIVE * SQR(wE_sqr) * wE_sqr;
+          } else {
+            factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
+          }
+        }
+        const vec_t<Dim::_3D> vE_Cart { wE[0] * factor,
+                                        wE[1] * factor,
+                                        wE[2] * factor };
+        const auto            Gamma { math::sqrt(ONE + SQR(upar)) /
+                           math::sqrt(
+                             ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
+        ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
+        ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
+        ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+      } else if (pusher == PrtlPusher::BORIS) {
+        real_t COEFF { coeff };
 
-      vec_t<Dim::_3D> u1 {
-        (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
-        (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
-        (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
-      };
+        e0[0] *= COEFF;
+        e0[1] *= COEFF;
+        e0[2] *= COEFF;
+        vec_t<Dim::_3D> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
 
-      u0[0] += CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[0];
-      u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[1];
-      u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[2];
+        COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
+        b0[0] *= COEFF;
+        b0[1] *= COEFF;
+        b0[2] *= COEFF;
+        COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
 
-      ux1(p) = u0[0];
-      ux2(p) = u0[1];
-      ux3(p) = u0[2];
-    }
+        vec_t<Dim::_3D> u1 {
+          (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
+          (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
+          (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
+        };
 
-    Inline void velUpd(Vay_t, index_t& p, vec_t<Dim::_3D>& e0, vec_t<Dim::_3D>& b0) const {
-      auto COEFF { coeff };
-      e0[0] *= COEFF;
-      e0[1] *= COEFF;
-      e0[2] *= COEFF;
+        u0[0] += CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[0];
+        u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[1];
+        u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[2];
 
-      b0[0] *= COEFF;
-      b0[1] *= COEFF;
-      b0[2] *= COEFF;
+        ux1(p) = u0[0];
+        ux2(p) = u0[1];
+        ux3(p) = u0[2];
+      } else if (pusher == PrtlPusher::VAY) {
+        auto COEFF { coeff };
+        e0[0] *= COEFF;
+        e0[1] *= COEFF;
+        e0[2] *= COEFF;
 
-      COEFF = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
+        b0[0] *= COEFF;
+        b0[1] *= COEFF;
+        b0[2] *= COEFF;
 
-      vec_t<Dim::_3D> u1 {
-        (ux1(p) + TWO * e0[0] +
-         CROSS_x1(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
-        (ux2(p) + TWO * e0[1] +
-         CROSS_x2(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
-        (ux3(p) + TWO * e0[2] +
-         CROSS_x3(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF)
-      };
-      COEFF = DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
-      auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
-                    NORM_SQR(b0[0], b0[1], b0[2]) };
+        COEFF = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
 
-      COEFF = ONE /
-              math::sqrt(
-                INV_2 * (COEFF2 + math::sqrt(SQR(COEFF2) +
+        vec_t<Dim::_3D> u1 {
+          (ux1(p) + TWO * e0[0] +
+           CROSS_x1(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
+          (ux2(p) + TWO * e0[1] +
+           CROSS_x2(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
+          (ux3(p) + TWO * e0[2] +
+           CROSS_x3(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF)
+        };
+        COEFF = DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
+        auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
+                      NORM_SQR(b0[0], b0[1], b0[2]) };
+
+        COEFF = ONE / math::sqrt(
+                        INV_2 *
+                        (COEFF2 + math::sqrt(SQR(COEFF2) +
                                              FOUR * (SQR(b0[0]) + SQR(b0[1]) +
                                                      SQR(b0[2]) + SQR(COEFF)))));
-      COEFF2 = ONE / (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) +
-                      SQR(b0[2] * COEFF));
+        COEFF2 = ONE / (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) +
+                        SQR(b0[2] * COEFF));
 
-      ux1(p) = COEFF2 * (u1[0] +
-                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                           (b0[0] * COEFF) +
-                         u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
-      ux2(p) = COEFF2 * (u1[1] +
-                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                           (b0[1] * COEFF) +
-                         u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
-      ux3(p) = COEFF2 * (u1[2] +
-                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                           (b0[2] * COEFF) +
-                         u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
+        ux1(p) = COEFF2 * (u1[0] +
+                           COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                             (b0[0] * COEFF) +
+                           u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
+        ux2(p) = COEFF2 * (u1[1] +
+                           COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                             (b0[1] * COEFF) +
+                           u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
+        ux3(p) = COEFF2 * (u1[2] +
+                           COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                             (b0[2] * COEFF) +
+                           u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
+      }
     }
 
-    Inline void velUpd(GCA_t, index_t& p, vec_t<Dim::_3D>& e0, vec_t<Dim::_3D>& b0) const {
-      const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
-                          NORM_SQR(b0[0], b0[1], b0[2]) };
-
-      const vec_t<Dim::_3D> wE {
-        CROSS_x1(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
-        CROSS_x2(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
-        CROSS_x3(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr
-      };
-
-      {
-        const auto b_norm_inv { ONE / NORM(b0[0], b0[1], b0[2]) };
-        b0[0] *= b_norm_inv;
-        b0[1] *= b_norm_inv;
-        b0[2] *= b_norm_inv;
-      }
-      auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
-                  coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
-
-      real_t factor;
-      {
-        const auto wE_sqr { NORM_SQR(wE[0], wE[1], wE[2]) };
-        if (wE_sqr < static_cast<real_t>(0.01)) {
-          factor = ONE + wE_sqr + TWO * SQR(wE_sqr) + FIVE * SQR(wE_sqr) * wE_sqr;
-        } else {
-          factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
-        }
-      }
-      const vec_t<Dim::_3D> vE_Cart { wE[0] * factor, wE[1] * factor, wE[2] * factor };
-      const auto Gamma { math::sqrt(ONE + SQR(upar)) /
-                         math::sqrt(
-                           ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
-      ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
-      ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
-      ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
-    }
-
-    Inline void velUpd(Union_t<GCA_t, Extforce_t>,
+    Inline void velUpd(bool,
                        index_t&         p,
                        vec_t<Dim::_3D>& f0,
                        vec_t<Dim::_3D>& e0,
@@ -609,17 +595,6 @@ namespace kernel::sr {
         xp[2] = i_di_to_Xi(i3(p), dx3(p));
       }
     }
-
-    Inline auto getEnergy(Massive_t, index_t& p) const -> real_t {
-      return math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
-    }
-
-    Inline auto getEnergy(Massless_t, index_t& p) const -> real_t {
-      return math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)));
-    }
-
-    // Inline auto getEnergy(Massive_t, index_t& p) const -> real_t;
-    // Inline auto getEnergy(Massless_t, index_t& p) const -> real_t;
 
     Inline void getInterpFlds(index_t&         p,
                               vec_t<Dim::_3D>& e0,
@@ -943,31 +918,6 @@ namespace kernel::sr {
           }
         }
       }
-    }
-
-    Inline void initForce(coord_t<M::PrtlDim>& xp,
-                          vec_t<Dim::_3D>&     force_Cart) const {
-      coord_t<M::PrtlDim> xp_Ph { ZERO };
-      xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp[0]);
-      if constexpr (M::PrtlDim != Dim::_1D) {
-        xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp[1]);
-      }
-      if constexpr (M::PrtlDim == Dim::_3D) {
-        xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp[2]);
-      }
-      real_t fx1 { ZERO }, fx2 { ZERO }, fx3 { ZERO };
-      // if constexpr (defines_fx1) {
-      // fx1 = pgen.ext_force.fx1(sp, time, xp_Ph);
-      // }
-      // if constexpr (defines_fx2) {
-      // fx2 = pgen.ext_force.fx2(sp, time, xp_Ph);
-      // }
-      // if constexpr (defines_fx3) {
-      // fx3 = pgen.ext_force.fx3(sp, time, xp_Ph);
-      // }
-      metric.template transform_xyz<Idx::T, Idx::XYZ>(xp,
-                                                      { fx1, fx2, fx3 },
-                                                      force_Cart);
     }
   };
 
