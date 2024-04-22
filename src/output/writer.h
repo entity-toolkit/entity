@@ -66,12 +66,15 @@ namespace out {
 
     void writeAttrs(const prm::Parameters& params);
 
-    void defineFieldLayout(const std::vector<std::size_t>&,
-                           const std::vector<std::size_t>&,
-                           const std::vector<std::size_t>&,
-                           bool incl_ghosts);
+    void defineMeshLayout(const std::vector<std::size_t>&,
+                          const std::vector<std::size_t>&,
+                          const std::vector<std::size_t>&,
+                          bool incl_ghosts,
+                          Coord);
 
     void defineFieldOutputs(const SimEngine& S, const std::vector<std::string>&);
+
+    void writeMesh(unsigned short, const array_t<real_t*>&, const array_t<real_t*>&);
 
     template <Dimension D, int N>
     void writeField(const std::vector<std::string>&,

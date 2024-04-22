@@ -113,7 +113,7 @@ link_libraries(${DEPENDENCIES})
 
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests.cmake)
 else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})

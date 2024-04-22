@@ -27,16 +27,19 @@ namespace out {
     // todo!()
   }
 
-  void Writer::defineFieldLayout(const std::vector<std::size_t>& glob_shape,
-                                 const std::vector<std::size_t>& loc_corner,
-                                 const std::vector<std::size_t>& loc_shape,
-                                 bool                            incl_ghosts) {
+  void Writer::defineMeshLayout(const std::vector<std::size_t>& glob_shape,
+                                const std::vector<std::size_t>& loc_corner,
+                                const std::vector<std::size_t>& loc_shape,
+                                bool                            incl_ghosts,
+                                Coord                           coords) {
     m_flds_ghosts   = incl_ghosts;
     m_flds_g_shape  = glob_shape;
     m_flds_l_corner = loc_corner;
     m_flds_l_shape  = loc_shape;
 
     m_io.DefineAttribute("NGhosts", incl_ghosts ? N_GHOSTS : 0);
+    m_io.DefineAttribute("Dimension", m_flds_g_shape.size());
+    m_io.DefineAttribute("Coordinates", std::string(coords.to_string()));
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
                                Kokkos::LayoutRight>::value) {
@@ -47,6 +50,27 @@ namespace out {
       std::reverse(m_flds_l_shape.begin(), m_flds_l_shape.end());
       m_io.DefineAttribute("LayoutRight", 0);
     }
+    for (std::size_t i { 0 }; i < m_flds_g_shape.size(); ++i) {
+      // cell-centers
+      adios2::Dims g_shape  = { m_flds_g_shape[i] };
+      adios2::Dims l_corner = { m_flds_l_corner[i] };
+      adios2::Dims l_shape  = { m_flds_l_shape[i] };
+      m_io.DefineVariable<real_t>("X" + std::to_string(i + 1),
+                                  g_shape,
+                                  l_corner,
+                                  l_shape,
+                                  adios2::ConstantDims);
+      // cell-edges
+      const auto   is_last  = (m_flds_l_corner[i] + m_flds_l_shape[i] ==
+                            m_flds_g_shape[i]);
+      adios2::Dims g_shape1 = { m_flds_g_shape[i] + 1 };
+      adios2::Dims l_shape1 = { m_flds_l_shape[i] + (is_last ? 1 : 0) };
+      m_io.DefineVariable<real_t>("X" + std::to_string(i + 1) + "e",
+                                  g_shape1,
+                                  l_corner,
+                                  l_shape1,
+                                  adios2::ConstantDims);
+    }
   }
 
   void Writer::defineFieldOutputs(const SimEngine&                S,
@@ -54,7 +78,7 @@ namespace out {
     m_flds_writers.clear();
     raise::ErrorIf((m_flds_g_shape.size() == 0) || (m_flds_l_corner.size() == 0) ||
                      (m_flds_l_shape.size() == 0),
-                   "Fields layout must be defined before output fields",
+                   "Mesh layout must be defined before field output",
                    HERE);
     for (const auto& fld : flds_out) {
       m_flds_writers.emplace_back(S, fld);
@@ -138,12 +162,36 @@ namespace out {
     }
   }
 
+  void Writer::writeMesh(unsigned short          dim,
+                         const array_t<real_t*>& xc,
+                         const array_t<real_t*>& xe) {
+    raise::ErrorIf(dim >= m_flds_l_corner.size(), "Dimension mismatch", HERE);
+    const auto is_last = (m_flds_l_corner[dim] + m_flds_l_shape[dim] ==
+                          m_flds_g_shape[dim]);
+    raise::ErrorIf(xc.extent(0) != m_flds_l_shape[dim], "xc size mismatch", HERE);
+    raise::ErrorIf(xe.extent(0) != m_flds_l_shape[dim] + (is_last ? 1 : 0),
+                   "xe size mismatch",
+                   HERE);
+    auto varc = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1));
+    auto vare = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1) + "e");
+    auto xc_h = Kokkos::create_mirror_view(xc);
+    auto xe_h = Kokkos::create_mirror_view(xe);
+    Kokkos::deep_copy(xc_h, xc);
+    Kokkos::deep_copy(xe_h, xe);
+    m_writer.Put(varc, xc_h);
+    m_writer.Put(vare, xe_h);
+  }
+
   void Writer::beginWriting(const std::string& fname,
                             std::size_t        tstep,
                             long double        time) {
     m_adios.ExitComputationBlock();
-    m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
-    m_mode   = adios2::Mode::Append;
+    try {
+      m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
+    } catch (std::exception& e) {
+      raise::Fatal(e.what(), HERE);
+    }
+    m_mode = adios2::Mode::Append;
     m_writer.BeginStep();
     m_writer.Put(m_io.InquireVariable<std::size_t>("Step"), &tstep);
     m_writer.Put(m_io.InquireVariable<long double>("Time"), &time);

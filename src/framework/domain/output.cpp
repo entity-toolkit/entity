@@ -50,10 +50,11 @@ namespace ntt {
       }
     }
 
-    g_writer.defineFieldLayout(glob_shape_with_ghosts,
-                               off_ncells_with_ghosts,
-                               loc_shape_with_ghosts,
-                               incl_ghosts);
+    g_writer.defineMeshLayout(glob_shape_with_ghosts,
+                              off_ncells_with_ghosts,
+                              loc_shape_with_ghosts,
+                              incl_ghosts,
+                              M::CoordType);
     const auto fields_to_write = params.template get<std::vector<std::string>>(
       "output.fields");
     g_writer.defineFieldOutputs(S, fields_to_write);
@@ -130,6 +131,13 @@ namespace ntt {
                       ndfield_t<D, M>&     fld_to,
                       const range_tuple_t& from,
                       const range_tuple_t& to) {
+    for (unsigned short d = 0; d < D; ++d) {
+      raise::ErrorIf(fld_from.extent(d) != fld_to.extent(d),
+                     "Fields have different sizes " +
+                       std::to_string(fld_from.extent(d)) +
+                       " != " + std::to_string(fld_to.extent(d)),
+                     HERE);
+    }
     if constexpr (D == Dim::_1D) {
       Kokkos::deep_copy(Kokkos::subview(fld_to, Kokkos::ALL, to),
                         Kokkos::subview(fld_from, Kokkos::ALL, from));
@@ -158,6 +166,45 @@ namespace ntt {
                    HERE);
     logger::Checkpoint("Writing output", HERE);
     g_writer.beginWriting(fname, step, time);
+
+    const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
+
+    for (unsigned short dim = 0; dim < M::Dim; ++dim) {
+      const auto is_last = local_domain->offset_ncells()[dim] +
+                             local_domain->mesh.n_active()[dim] ==
+                           mesh().n_active()[dim];
+      array_t<real_t*> xc { "Xc",
+                            local_domain->mesh.n_active()[dim] +
+                              (incl_ghosts ? 2 * N_GHOSTS : 0) };
+      array_t<real_t*> xe { "Xe",
+                            local_domain->mesh.n_active()[dim] +
+                              (incl_ghosts ? 2 * N_GHOSTS : 0) +
+                              (is_last ? 1 : 0) };
+      const auto       offset = (incl_ghosts ? N_GHOSTS : 0);
+      const auto       ncells = local_domain->mesh.n_active()[dim];
+      const auto&      metric = g_mesh.metric;
+      Kokkos::parallel_for(
+        "GenerateMesh",
+        ncells,
+        Lambda(index_t i) {
+          const auto      i_ = static_cast<real_t>(i);
+          coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
+          x_Cd[dim] = i_ + HALF;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+          xc(offset + i) = x_Ph[dim];
+          x_Cd[dim]      = i_;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+          xe(offset + i) = x_Ph[dim];
+          if (is_last && i == ncells - 1) {
+            x_Cd[dim] = i_ + ONE;
+            metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+            xe(offset + i + 1) = x_Ph[dim];
+          }
+        });
+      g_writer.writeMesh(dim, xc, xe);
+    }
+
+    const auto output_asis = params.template get<bool>("output.debug.as_is");
     // !TODO: this can probably be optimized to dump things at once
     for (auto& fld : g_writer.fieldWriters()) {
       std::vector<std::string> names;
@@ -239,26 +286,31 @@ namespace ntt {
                                             c);
           }
         } else {
-          // copy fields to output to bckp (:, 0, 1, 2)
+          // copy fields to bckp (:, 0, 1, 2)
+          // if as-is specified ==> copy directly to 3, 4, 5
+          range_tuple_t copy_to = { 0, 3 };
+          if (output_asis) {
+            copy_to = { 3, 6 };
+          }
           if (fld.is_current()) {
             DeepCopyFields<M::Dim, 3, 6>(local_domain->fields.cur,
                                          local_domain->fields.bckp,
                                          { cur::jx1, cur::jx3 + 1 },
-                                         { 0, 3 });
+                                         copy_to);
           } else if (fld.is_field()) {
-            if (fld.is_gr_aux_field()) {
+            if (S == SimEngine::GRPIC && fld.is_gr_aux_field()) {
               if (fld.is_efield()) {
                 // GR: E
                 DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
                                              local_domain->fields.bckp,
                                              { em::ex1, em::ex3 + 1 },
-                                             { 0, 3 });
+                                             copy_to);
               } else {
                 // GR: H
                 DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
                                              local_domain->fields.bckp,
                                              { em::hx1, em::hx3 + 1 },
-                                             { 0, 3 });
+                                             copy_to);
               }
             } else {
               if (fld.is_efield()) {
@@ -266,32 +318,37 @@ namespace ntt {
                 DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.em,
                                              local_domain->fields.bckp,
                                              { em::ex1, em::ex3 + 1 },
-                                             { 0, 3 });
+                                             copy_to);
               } else {
                 // GR/SR: B
                 DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.em,
                                              local_domain->fields.bckp,
                                              { em::bx1, em::bx3 + 1 },
-                                             { 0, 3 });
+                                             copy_to);
               }
             }
           } else {
             raise::Error("Wrong field requested for output", HERE);
           }
-          // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
-          // converting to proper basis and properly interpolating
-          list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
-          list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
-
-          Kokkos::parallel_for("FieldsToPhys",
-                               local_domain->mesh.rangeActiveCells(),
-                               kernel::FieldsToPhys_kernel<M, 6, 6>(
-                                 local_domain->fields.bckp,
-                                 local_domain->fields.bckp,
-                                 comp_from,
-                                 comp_to,
-                                 fld.interp_flag | fld.prepare_flag,
-                                 local_domain->mesh.metric));
+          if (not output_asis) {
+            // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
+            // converting to proper basis and properly interpolating
+            list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
+            list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
+            DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.bckp,
+                                         local_domain->fields.bckp,
+                                         { 0, 3 },
+                                         { 3, 6 });
+            Kokkos::parallel_for("FieldsToPhys",
+                                 local_domain->mesh.rangeActiveCells(),
+                                 kernel::FieldsToPhys_kernel<M, 6, 6>(
+                                   local_domain->fields.bckp,
+                                   local_domain->fields.bckp,
+                                   comp_from,
+                                   comp_to,
+                                   fld.interp_flag | fld.prepare_flag,
+                                   local_domain->mesh.metric));
+          }
         }
       } else if (fld.comp.size() == 6) { // tensor
         raise::ErrorIf(not fld.is_moment() or fld.id() != FldsID::T,

@@ -33,7 +33,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
     auto writer = out::Writer("hdf5");
-    writer.defineFieldLayout({ size * 10 }, { rank * 10 }, { 10 }, false);
+    writer.defineMeshLayout({ size * 10 }, { rank * 10 }, { 10 }, false, Coord::Cart);
     writer.defineFieldOutputs(SimEngine::SRPIC, { "E" });
 
     ndfield_t<Dim::_1D, 3> field { "fld", 10 + 2 * N_GHOSTS };

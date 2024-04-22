@@ -16,18 +16,6 @@
 #include <string>
 #include <vector>
 
-// template <typename T>
-// auto readVar(adios2::Engine& reader, adios2::IO& io, const std::string& name) -> T {
-//   T              var;
-//   // adios2::Engine reader = io.Open("test.h5", adios2::Mode::Read);
-//   // reader.BeginStep();
-//   adios2::Variable<T> Var = io.InquireVariable<T>(name);
-//   // reader.Get(Var, var);
-//   // reader.EndStep();
-//   // reader.Close();
-//   return var;
-// }
-
 void cleanup() {
   namespace fs = std::filesystem;
   fs::path tempfile_path { "test.h5" };
@@ -41,7 +29,7 @@ auto main(int argc, char* argv[]) -> int {
 
     using namespace ntt;
     auto writer = out::Writer("hdf5");
-    writer.defineFieldLayout({ 10, 10, 10 }, { 0, 0, 0 }, { 10, 10, 10 }, false);
+    writer.defineMeshLayout({ 10, 10, 10 }, { 0, 0, 0 }, { 10, 10, 10 }, false, Coord::Cart);
     writer.defineFieldOutputs(SimEngine::SRPIC, { "E", "B", "Rho_1_3", "N_2" });
 
     ndfield_t<Dim::_3D, 3> field { "fld",
