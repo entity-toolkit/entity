@@ -4,27 +4,29 @@
  * @implements
  *   - ntt::SRPICEngine<> : ntt::Engine<>
  * @depends:
- * - enums.h
- * - global.h
- * - arch/kokkos_aliases.h
- * - arch/traits.h
- * - utils/log.h
- * - utils/numeric.h
- * - utils/timer.h
- * - engines/engine.h
- * - framework/domain/domain.h
- * - framework/parameters.h
- * - kernels/ampere_mink.hpp
- * - kernels/ampere_sr.hpp
- * - kernels/currents_deposit.hpp
- * - kernels/faraday_mink.hpp
- * - kernels/faraday_sr.hpp
- * - kernels/particle_pusher_sr.hpp
- * - pgen.hpp
+ *   - enums.h
+ *   - global.h
+ *   - arch/kokkos_aliases.h
+ *   - arch/traits.h
+ *   - utils/log.h
+ *   - utils/numeric.h
+ *   - utils/timer.h
+ *   - engines/engine.h
+ *   - framework/domain/domain.h
+ *   - framework/parameters.h
+ *   - kernels/digital_filter.hpp
+ *   - kernels/ampere_mink.hpp
+ *   - kernels/ampere_sr.hpp
+ *   - kernels/currents_deposit.hpp
+ *   - kernels/faraday_mink.hpp
+ *   - kernels/faraday_sr.hpp
+ *   - kernels/particle_pusher_sr.hpp
+ *   - pgen.hpp
  * @cpp:
  *   - srpic.cpp
  * @namespaces:
  *   - ntt::
+ * @macros:
  */
 
 #ifndef ENGINES_SRPIC_SRPIC_H
@@ -46,12 +48,14 @@
 #include "kernels/ampere_mink.hpp"
 #include "kernels/ampere_sr.hpp"
 #include "kernels/currents_deposit.hpp"
+#include "kernels/digital_filter.hpp"
 #include "kernels/faraday_mink.hpp"
 #include "kernels/faraday_sr.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 #include "pgen.hpp"
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_ScatterView.hpp>
 
 #include <map>
 #include <string>
@@ -122,7 +126,7 @@ namespace ntt {
           timers.stop("Communications");
 
           timers.start("CurrentFiltering");
-          // !TODO filtering
+          CurrentsFilter(dom);
           timers.stop("CurrentFiltering");
         }
 
@@ -418,6 +422,62 @@ namespace ntt {
                                                ONE / n0,
                                                ni2,
                                                domain.mesh.flds_bc()));
+      }
+    }
+
+    void CurrentsFilter(domain_t& domain) {
+      logger::Checkpoint("Launching currents filtering kernels", HERE);
+      range_t<M::Dim> range = domain.mesh.rangeActiveCells();
+      if constexpr (M::CoordType != Coord::Cart) {
+        /**
+         * @brief taking one extra cell in the x2 direction
+         *    . . . . .
+         *    . ^= =^ .
+         *    . |* *\*.
+         *    . |* *\*.
+         *    . ^- -^ .
+         *    . . . . .
+         */
+        if constexpr (M::Dim == Dim::_2D) {
+          range = CreateRangePolicy<Dim::_2D>(
+            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+        } else if constexpr (M::Dim == Dim::_3D) {
+          range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
+                                                domain.mesh.i_min(in::x2),
+                                                domain.mesh.i_min(in::x3) },
+                                              { domain.mesh.i_max(in::x1),
+                                                domain.mesh.i_max(in::x2) + 1,
+                                                domain.mesh.i_max(in::x3) });
+        }
+      }
+      const auto nfilter = m_params.template get<unsigned short>(
+        "algorithms.current_filters");
+      tuple_t<std::size_t, M::Dim> size;
+      if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
+        size[0] = domain.mesh.n_active(in::x1);
+      }
+      if constexpr (M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
+        size[1] = domain.mesh.n_active(in::x2);
+      }
+      if constexpr (M::Dim == Dim::_3D) {
+        size[2] = domain.mesh.n_active(in::x3);
+      }
+      auto sync = 0;
+      for (unsigned short i = 0; i < nfilter; ++i) {
+        ++sync;
+        Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
+        Kokkos::parallel_for("CurrentsFilter",
+                             range,
+                             kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
+                               domain.fields.cur,
+                               domain.fields.buff,
+                               size,
+                               domain.mesh.flds_bc()));
+        if (sync == N_GHOSTS) {
+          sync = 0;
+          m_metadomain.Communicate(domain, Comm::J);
+        }
       }
     }
   };

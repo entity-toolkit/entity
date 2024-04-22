@@ -12,4 +12,6 @@ set(ADIOS2_USE_MPI ${mpi} CACHE BOOL "Use MPI for ADIOS2")
 
 set(ADIOS2_USE_CUDA ${Kokkos_ENABLE_CUDA} CACHE BOOL "Use CUDA for ADIOS2")
 
+find_package(HDF5 COMPONENTS C CXX REQUIRED)
+
 add_compile_options("-D OUTPUT_ENABLED")

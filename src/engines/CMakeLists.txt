@@ -12,10 +12,12 @@
 # - ntt_metrics [required]
 # - ntt_kernels [required]
 # - ntt_pgen [required]
+# - ntt_output [optional]
 # @uses:
 # - kokkos [required]
 # - plog [required]
 # - adios2 [optional]
+# - hdf5 [optional]
 # - mpi [optional]
 # ------------------------------
 
@@ -28,6 +30,9 @@ set(SOURCES
 add_library(ntt_engines ${SOURCES})
 
 set(libs ntt_global ntt_framework ntt_metrics ntt_kernels ntt_pgen)
+if(${output})
+  list(APPEND libs ntt_output hdf5::hdf5)
+endif()
 add_dependencies(ntt_engines ${libs})
 target_link_libraries(ntt_engines PUBLIC ${libs})
 target_compile_definitions(ntt_engines PRIVATE PGEN=\"${PGEN}\")

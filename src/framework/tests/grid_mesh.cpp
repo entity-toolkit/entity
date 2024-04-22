@@ -31,7 +31,9 @@ auto main(int argc, char* argv[]) -> int {
       raise::ErrorIf(mesh.i_max(d) != res[(unsigned short)d] + N_GHOSTS,
                      "i_max != res+N_GHOSTS",
                      HERE);
-      raise::ErrorIf(mesh.n_active(d) != res[(unsigned short)d], "n_active != res", HERE);
+      raise::ErrorIf(mesh.n_active(d) != res[(unsigned short)d],
+                     "n_active != res",
+                     HERE);
       raise::ErrorIf(mesh.n_all(d) != res[(unsigned short)d] + 2 * N_GHOSTS,
                      "n_all != res+2*N_GHOSTS",
                      HERE);

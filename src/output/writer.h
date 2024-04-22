@@ -1,6 +1,13 @@
 /**
  * @file output/writer.h
  * @brief Writer class which takes care of data output
+ * @depends:
+ *   - enums.h
+ *   - global.h
+ *   - arch/kokkos_aliases.h
+ *   - utils/param_container.h
+ *   - output/fields.h
+ *   - output/particles.h
  */
 
 #ifndef OUTPUT_WRITER_H
@@ -50,8 +57,12 @@ namespace out {
     // std::vector<OutputParticles> m_prtl_writers;
 
   public:
+    Writer() : m_engine { "disabled" } {}
+
     Writer(const std::string& engine);
     ~Writer() = default;
+
+    Writer(Writer&&) = default;
 
     void writeAttrs(const prm::Parameters& params);
 

@@ -3,6 +3,7 @@
 # @sources:
 # - parameters.cpp
 # - simulation.cpp
+# - domain/domain.cpp
 # - domain/grid.cpp
 # - domain/metadomain.cpp
 # - domain/communications.cpp
@@ -27,6 +28,7 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/parameters.cpp 
   ${SRC_DIR}/simulation.cpp
+  ${SRC_DIR}/domain/domain.cpp
   ${SRC_DIR}/domain/grid.cpp
   ${SRC_DIR}/domain/metadomain.cpp
   ${SRC_DIR}/domain/communications.cpp

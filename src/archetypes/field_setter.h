@@ -65,10 +65,10 @@ namespace ntt {
     const M              metric;
 
   public:
-    SetEMFields_kernel(ndfield_t<M::Dim, 6>& EM, const I& finit, const M& metric) :
-      EM { EM },
-      finit { finit },
-      metric { metric } {}
+    SetEMFields_kernel(ndfield_t<M::Dim, 6>& EM, const I& finit, const M& metric)
+      : EM { EM }
+      , finit { finit }
+      , metric { metric } {}
 
     ~SetEMFields_kernel() = default;
 

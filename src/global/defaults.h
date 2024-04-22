@@ -14,9 +14,8 @@
 #include "global.h"
 
 #include <string>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace ntt::defaults {
   constexpr std::string_view input_filename = "input";
@@ -59,7 +58,7 @@ namespace ntt::defaults {
   } // namespace output
 
   namespace diag {
-    const unsigned int interval  = 1;
+    const unsigned int interval = 1;
   } // namespace diag
 
   namespace gca {

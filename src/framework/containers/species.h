@@ -45,16 +45,16 @@ namespace ntt {
     const unsigned short m_npld;
 
   public:
-    ParticleSpecies() :
-      m_index { 0 },
-      m_label { "" },
-      m_mass { 0.0 },
-      m_charge { 0.0 },
-      m_maxnpart { 0 },
-      m_pusher { PrtlPusher::INVALID },
-      m_use_gca { false },
-      m_cooling { Cooling::INVALID },
-      m_npld { 0 } {}
+    ParticleSpecies()
+      : m_index { 0 }
+      , m_label { "" }
+      , m_mass { 0.0 }
+      , m_charge { 0.0 }
+      , m_maxnpart { 0 }
+      , m_pusher { PrtlPusher::INVALID }
+      , m_use_gca { false }
+      , m_cooling { Cooling::INVALID }
+      , m_npld { 0 } {}
 
     /**
      * @brief Constructor for the particle species container.
@@ -74,16 +74,16 @@ namespace ntt {
                     const PrtlPusher&  pusher,
                     bool               use_gca,
                     const Cooling&     cooling,
-                    unsigned short     npld = 0) :
-      m_index { index },
-      m_label { std::move(label) },
-      m_mass { m },
-      m_charge { ch },
-      m_maxnpart { maxnpart },
-      m_pusher { pusher },
-      m_use_gca { use_gca },
-      m_cooling { cooling },
-      m_npld { npld } {}
+                    unsigned short     npld = 0)
+      : m_index { index }
+      , m_label { std::move(label) }
+      , m_mass { m }
+      , m_charge { ch }
+      , m_maxnpart { maxnpart }
+      , m_pusher { pusher }
+      , m_use_gca { use_gca }
+      , m_cooling { cooling }
+      , m_npld { npld } {}
 
     ParticleSpecies(const ParticleSpecies&) = default;
 

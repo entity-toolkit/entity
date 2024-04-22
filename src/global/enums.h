@@ -249,8 +249,8 @@ namespace ntt {
       NONE    = 4,
     };
 
-    constexpr PrtlPusher(uint8_t c) :
-      enums_hidden::BaseEnum<PrtlPusher> { c } {}
+    constexpr PrtlPusher(uint8_t c)
+      : enums_hidden::BaseEnum<PrtlPusher> { c } {}
 
     static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
     static constexpr const char* lookup[] = { "boris", "vay", "photon", "none" };

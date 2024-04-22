@@ -24,8 +24,8 @@ namespace ntt {
                              const PrtlPusher&  pusher,
                              bool               use_gca,
                              const Cooling&     cooling,
-                             unsigned short     npld) :
-    ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
+                             unsigned short     npld)
+    : ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
     i1    = array_t<int*> { label + "_i1", maxnpart };
     i1_h  = Kokkos::create_mirror_view(i1);
     dx1   = array_t<prtldx_t*> { label + "_dx1", maxnpart };

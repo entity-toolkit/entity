@@ -32,6 +32,19 @@ namespace ntt {
                                  m_pgen.init_flds,
                                  loc_dom.mesh.metric });
         });
+#if defined(OUTPUT_ENABLED)
+        logger::Checkpoint("Initializing writer", HERE);
+        m_metadomain.runOnLocalDomains(
+          [](auto&       loc_dom,
+             const auto& params,
+             const auto& ncells,
+             const auto& ndomains_per_dim) {
+            loc_dom.InitWriter(params, ncells, ndomains_per_dim);
+          },
+          m_params,
+          m_metadomain.mesh().n_active(),
+          m_metadomain.ndomains_per_dim());
+#endif
       }
     }
   }

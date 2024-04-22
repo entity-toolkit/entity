@@ -25,6 +25,9 @@
  *   - metadomain.cpp
  * @namespaces:
  *   - ntt::
+ * @macros:
+ *   - MPI_ENABLED
+ *   - OUTPUT_ENABLED
  */
 
 #ifndef FRAMEWORK_DOMAIN_METADOMAIN_H
@@ -100,6 +103,7 @@ namespace ntt {
      * @param global_prtl_bc boundary conditions for particles
      * @param metric_params parameters for the metric
      * @param species_params parameters for the particle species
+     * @param output_params parameters for the output
      */
     Metadomain(unsigned int,
                const std::vector<int>&,
@@ -108,7 +112,12 @@ namespace ntt {
                const boundaries_t<FldsBC>&,
                const boundaries_t<PrtlBC>&,
                const std::map<std::string, real_t>&,
-               const std::vector<ParticleSpecies>&);
+               const std::vector<ParticleSpecies>&
+#if defined(OUTPUT_ENABLED)
+               ,
+               const std::string&
+#endif
+    );
 
     Metadomain(const Metadomain&)            = delete;
     Metadomain& operator=(const Metadomain&) = delete;
@@ -155,11 +164,6 @@ namespace ntt {
       return g_local_subdomain_indices;
     }
 
-    // [[nodiscard]]
-    // auto local_subdomain() -> std::vector<std::shared_ptr<Domain<S, M>>>& {
-    //   return g_local_subdomains;
-    // }
-
   private:
     // domain information
     unsigned int g_ndomains;
@@ -175,6 +179,10 @@ namespace ntt {
     Mesh<M>                             g_mesh;
     const std::map<std::string, real_t> g_metric_params;
     const std::vector<ParticleSpecies>  g_species_params;
+
+#if defined(OUTPUT_ENABLED)
+    const std::string g_output_engine;
+#endif
 
 #if defined(MPI_ENABLED)
     int g_mpi_rank, g_mpi_size;

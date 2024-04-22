@@ -113,16 +113,16 @@ namespace ntt {
      * @overload
      * @param spec The particle species container
      */
-    Particles(const ParticleSpecies& spec) :
-      Particles(spec.index(),
-                spec.label(),
-                spec.mass(),
-                spec.charge(),
-                spec.maxnpart(),
-                spec.pusher(),
-                spec.use_gca(),
-                spec.cooling(),
-                spec.npld()) {}
+    Particles(const ParticleSpecies& spec)
+      : Particles(spec.index(),
+                  spec.label(),
+                  spec.mass(),
+                  spec.charge(),
+                  spec.maxnpart(),
+                  spec.pusher(),
+                  spec.use_gca(),
+                  spec.cooling(),
+                  spec.npld()) {}
 
     Particles(const Particles&)            = delete;
     Particles& operator=(const Particles&) = delete;

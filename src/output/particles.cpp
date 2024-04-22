@@ -61,9 +61,9 @@
 
 //           auto xi_host = Kokkos::create_mirror_view(xi);
 //           Kokkos::deep_copy(xi_host, xi);
-//           auto varname = "X" + std::to_string(d + 1) + "_" + std::to_string(s);
-//           auto var     = io.InquireVariable<real_t>(varname);
-//           var.SetShape({ total_size });
+//           auto varname = "X" + std::to_string(d + 1) + "_" +
+//           std::to_string(s); auto var     =
+//           io.InquireVariable<real_t>(varname); var.SetShape({ total_size });
 //           var.SetSelection({ { offset }, { size } });
 //           writer.Put<real_t>(var, xi_host);
 //         }
@@ -87,9 +87,9 @@
 
 //           auto ui_host = Kokkos::create_mirror_view(ui);
 //           Kokkos::deep_copy(ui_host, ui);
-//           auto varname = "U" + std::to_string(d + 1) + "_" + std::to_string(s);
-//           auto var     = io.InquireVariable<real_t>(varname);
-//           var.SetShape({ total_size });
+//           auto varname = "U" + std::to_string(d + 1) + "_" +
+//           std::to_string(s); auto var     =
+//           io.InquireVariable<real_t>(varname); var.SetShape({ total_size });
 //           var.SetSelection({ { offset }, { size } });
 //           writer.Put<real_t>(var, ui_host);
 //         }

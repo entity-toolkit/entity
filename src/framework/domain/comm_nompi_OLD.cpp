@@ -1,12 +1,10 @@
 #ifndef MPI_ENABLED
-  #include "wrapper.h"
-
-  #include "simulation.h"
+  #include <vector>
 
   #include "meshblock/fields.h"
   #include "meshblock/meshblock.h"
-
-  #include <vector>
+  #include "simulation.h"
+  #include "wrapper.h"
 
 namespace ntt {
 

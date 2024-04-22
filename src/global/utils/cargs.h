@@ -13,9 +13,8 @@
 #define GLOBAL_UTILS_CARGS_H
 
 #include <string>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace cargs {
 

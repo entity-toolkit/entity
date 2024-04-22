@@ -1,5 +1,7 @@
 #include "output/writer.h"
 
+#include "global.h"
+
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/param_container.h"
@@ -34,6 +36,8 @@ namespace out {
     m_flds_g_shape  = glob_shape;
     m_flds_l_corner = loc_corner;
     m_flds_l_shape  = loc_shape;
+
+    m_io.DefineAttribute("NGhosts", incl_ghosts ? N_GHOSTS : 0);
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
                                Kokkos::LayoutRight>::value) {

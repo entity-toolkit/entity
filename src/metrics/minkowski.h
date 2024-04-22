@@ -59,10 +59,10 @@ namespace metric {
 
     Minkowski(std::vector<std::size_t> res,
               boundaries_t<real_t>     ext,
-              const std::map<std::string, real_t>& = {}) :
-      MetricBase<D> { res, ext },
-      dx { (x1_max - x1_min) / nx1 },
-      dx_inv { ONE / dx } {
+              const std::map<std::string, real_t>& = {})
+      : MetricBase<D> { res, ext }
+      , dx { (x1_max - x1_min) / nx1 }
+      , dx_inv { ONE / dx } {
       set_dxMin(find_dxMin());
       if constexpr (D != Dim::_1D) {
         raise::ErrorIf(not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx),

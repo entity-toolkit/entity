@@ -36,12 +36,21 @@ namespace ntt {
                                const boundaries_t<FldsBC>&     global_flds_bc,
                                const boundaries_t<PrtlBC>&     global_prtl_bc,
                                const std::map<std::string, real_t>& metric_params,
-                               const std::vector<ParticleSpecies>& species_params) :
-    g_ndomains { global_ndomains },
-    g_decomposition { global_decomposition },
-    g_mesh { global_ncells, global_extent, metric_params, global_flds_bc, global_prtl_bc },
-    g_metric_params { metric_params },
-    g_species_params { species_params } {
+                               const std::vector<ParticleSpecies>& species_params
+#if defined(OUTPUT_ENABLED)
+                               ,
+                               const std::string& output_engine
+#endif
+                               )
+    : g_ndomains { global_ndomains }
+    , g_decomposition { global_decomposition }
+    , g_mesh { global_ncells, global_extent, metric_params, global_flds_bc, global_prtl_bc }
+    , g_metric_params { metric_params }
+    , g_species_params { species_params }
+#if defined(OUTPUT_ENABLED)
+    , g_output_engine { output_engine }
+#endif
+  {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
@@ -162,6 +171,16 @@ namespace ntt {
                                   g_metric_params,
                                   g_species_params);
       } else {
+  #if defined(OUTPUT_ENABLED)
+        g_subdomains.emplace_back(idx,
+                                  l_offset_ndomains,
+                                  l_offset_ncells,
+                                  l_ncells,
+                                  l_extent,
+                                  g_metric_params,
+                                  g_species_params,
+                                  g_output_engine);
+  #else // not OUTPUT_ENABLED
         g_subdomains.emplace_back(idx,
                                   l_offset_ndomains,
                                   l_offset_ncells,
@@ -169,12 +188,24 @@ namespace ntt {
                                   l_extent,
                                   g_metric_params,
                                   g_species_params);
+  #endif
       }
       g_subdomains.back().set_mpi_rank(idx);
       if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
         g_local_subdomain_indices.push_back(idx);
       }
-#else  // not MPI_ENABLED
+#else // not MPI_ENABLED
+
+  #if defined(OUTPUT_ENABLED)
+      g_subdomains.emplace_back(idx,
+                                l_offset_ndomains,
+                                l_offset_ncells,
+                                l_ncells,
+                                l_extent,
+                                g_metric_params,
+                                g_species_params,
+                                g_output_engine);
+  #else // not OUTPUT_ENABLED
       g_subdomains.emplace_back(idx,
                                 l_offset_ndomains,
                                 l_offset_ncells,
@@ -182,6 +213,7 @@ namespace ntt {
                                 l_extent,
                                 g_metric_params,
                                 g_species_params);
+  #endif
       g_local_subdomain_indices.push_back(idx);
 #endif // MPI_ENABLED
       g_domain_offset2index[l_offset_ndomains] = idx;
@@ -366,7 +398,9 @@ namespace ntt {
 #endif // MPI_ENABLED
       // check that non-local subdomains do not allocate memory
       if (not contained_in_local) {
-        // !TODO
+        raise::ErrorIf(not current_domain.is_placeholder(),
+                       "Non-local domain has memory allocated",
+                       HERE);
       }
     }
   }

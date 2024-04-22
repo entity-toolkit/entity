@@ -45,25 +45,25 @@ struct Checker {
           const array_t<real_t*>&   buff_ux1,
           const array_t<real_t*>&   buff_ux2,
           const array_t<real_t*>&   buff_ux3,
-          const array_t<real_t*>&   buff_wei) :
-    metric { metric },
-    stride { stride },
-    i1 { i1 },
-    dx1 { dx1 },
-    i2 { i2 },
-    dx2 { dx2 },
-    phi { phi },
-    ux1 { ux1 },
-    ux2 { ux2 },
-    ux3 { ux3 },
-    weight { weight },
-    buff_x1 { buff_x1 },
-    buff_x2 { buff_x2 },
-    buff_x3 { buff_x3 },
-    buff_ux1 { buff_ux1 },
-    buff_ux2 { buff_ux2 },
-    buff_ux3 { buff_ux3 },
-    buff_wei { buff_wei } {}
+          const array_t<real_t*>&   buff_wei)
+    : metric { metric }
+    , stride { stride }
+    , i1 { i1 }
+    , dx1 { dx1 }
+    , i2 { i2 }
+    , dx2 { dx2 }
+    , phi { phi }
+    , ux1 { ux1 }
+    , ux2 { ux2 }
+    , ux3 { ux3 }
+    , weight { weight }
+    , buff_x1 { buff_x1 }
+    , buff_x2 { buff_x2 }
+    , buff_x3 { buff_x3 }
+    , buff_ux1 { buff_ux1 }
+    , buff_ux2 { buff_ux2 }
+    , buff_ux3 { buff_ux3 }
+    , buff_wei { buff_wei } {}
 
   Inline void operator()(index_t p) const {
     std::size_t pold = p * stride;

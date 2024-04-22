@@ -18,8 +18,8 @@ using namespace ntt;
 
 namespace out {
 
-  OutputField::OutputField(const SimEngine& S, const std::string& name) :
-    m_name { name } {
+  OutputField::OutputField(const SimEngine& S, const std::string& name)
+    : m_name { name } {
     // determine the field ID
     const auto pos = name.find("_");
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);

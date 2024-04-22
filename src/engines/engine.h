@@ -87,25 +87,58 @@ namespace ntt {
     static constexpr Dimension D { M::Dim };
     static constexpr bool      is_engine { true };
 
-    Engine(SimulationParams& params) :
-      m_params { params },
-      m_metadomain {
-        params.get<unsigned int>("simulation.domain.number"),
-        params.get<std::vector<int>>("simulation.domain.decomposition"),
-        params.get<std::vector<std::size_t>>("grid.resolution"),
-        params.get<boundaries_t<real_t>>("grid.extent"),
-        params.get<boundaries_t<FldsBC>>("grid.boundaries.fields"),
-        params.get<boundaries_t<PrtlBC>>("grid.boundaries.particles"),
-        params.get<std::map<std::string, real_t>>("grid.metric.params"),
-        params.get<std::vector<ParticleSpecies>>("particles.species")
-      },
-      m_pgen { m_params, m_metadomain },
-      runtime { params.get<long double>("simulation.runtime") },
-      dt { params.get<real_t>("algorithms.timestep.dt") },
-      max_steps { static_cast<std::size_t>(runtime / dt) } {
+#if defined(OUTPUT_ENABLED)
+    Engine(SimulationParams& params)
+      : m_params { params }
+      , m_metadomain { params.get<unsigned int>("simulation.domain.number"),
+                       params.get<std::vector<int>>(
+                         "simulation.domain.decomposition"),
+                       params.get<std::vector<std::size_t>>("grid.resolution"),
+                       params.get<boundaries_t<real_t>>("grid.extent"),
+                       params.get<boundaries_t<FldsBC>>(
+                         "grid.boundaries.fields"),
+                       params.get<boundaries_t<PrtlBC>>(
+                         "grid.boundaries.particles"),
+                       params.get<std::map<std::string, real_t>>(
+                         "grid.metric.params"),
+                       params.get<std::vector<ParticleSpecies>>(
+                         "particles.species"),
+                       params.template get<std::string>("output.format") }
+
+      , m_pgen { m_params, m_metadomain }
+      , runtime { params.get<long double>("simulation.runtime") }
+      , dt { params.get<real_t>("algorithms.timestep.dt") }
+      , max_steps { static_cast<std::size_t>(runtime / dt) } {
+
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
       print_report();
     }
+#else // not OUTPUT_ENABLED
+    Engine(SimulationParams& params)
+      : m_params { params }
+      , m_metadomain { params.get<unsigned int>("simulation.domain.number"),
+                       params.get<std::vector<int>>(
+                         "simulation.domain.decomposition"),
+                       params.get<std::vector<std::size_t>>("grid.resolution"),
+                       params.get<boundaries_t<real_t>>("grid.extent"),
+                       params.get<boundaries_t<FldsBC>>(
+                         "grid.boundaries.fields"),
+                       params.get<boundaries_t<PrtlBC>>(
+                         "grid.boundaries.particles"),
+                       params.get<std::map<std::string, real_t>>(
+                         "grid.metric.params"),
+                       params.get<std::vector<ParticleSpecies>>(
+                         "particles.species") }
+
+      , m_pgen { m_params, m_metadomain }
+      , runtime { params.get<long double>("simulation.runtime") }
+      , dt { params.get<real_t>("algorithms.timestep.dt") }
+      , max_steps { static_cast<std::size_t>(runtime / dt) } {
+
+      raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
+      print_report();
+    }
+#endif
 
     ~Engine() = default;
 

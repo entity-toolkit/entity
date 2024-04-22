@@ -46,19 +46,19 @@ namespace ntt {
 
     Mesh(const std::vector<std::size_t>&      res,
          const boundaries_t<real_t>&          ext,
-         const std::map<std::string, real_t>& metric_params) :
-      Grid<D> { res },
-      metric { res, ext, metric_params },
-      m_extent { ext } {}
+         const std::map<std::string, real_t>& metric_params)
+      : Grid<D> { res }
+      , metric { res, ext, metric_params }
+      , m_extent { ext } {}
 
     Mesh(const std::vector<std::size_t>&      res,
          const boundaries_t<real_t>&          ext,
          const std::map<std::string, real_t>& metric_params,
          const boundaries_t<FldsBC>&          flds_bc,
-         const boundaries_t<PrtlBC>&          prtl_bc) :
-      Grid<D> { res },
-      metric { res, ext, metric_params },
-      m_extent { ext } {
+         const boundaries_t<PrtlBC>&          prtl_bc)
+      : Grid<D> { res }
+      , metric { res, ext, metric_params }
+      , m_extent { ext } {
       for (auto d { 0 }; d < D; ++d) {
         dir::direction_t<D> dir_plus;
         dir_plus[d] = +1;

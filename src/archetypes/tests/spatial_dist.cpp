@@ -23,9 +23,9 @@ struct Caller {
                 "Caller only available in Cartesian coordinates");
   static_assert(M::Dim != Dim::_1D, "1D Caller not available");
 
-  Caller(const SpDist& dist, const M& metric) :
-    dist { dist },
-    metric { metric } {}
+  Caller(const SpDist& dist, const M& metric)
+    : dist { dist }
+    , metric { metric } {}
 
   Inline void operator()(index_t i1, index_t i2) const {
     if constexpr (M::Dim == Dim::_2D) {

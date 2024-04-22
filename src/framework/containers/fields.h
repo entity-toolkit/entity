@@ -115,14 +115,14 @@ namespace ntt {
 
     Fields(const std::vector<std::size_t>& res);
 
-    Fields(Fields&& other) noexcept :
-      em { std::move(other.em) },
-      bckp { std::move(other.bckp) },
-      cur { std::move(other.cur) },
-      buff { std::move(other.buff) },
-      aux { std::move(other.aux) },
-      em0 { std::move(other.em0) },
-      cur0 { std::move(other.cur0) } {}
+    Fields(Fields&& other) noexcept
+      : em { std::move(other.em) }
+      , bckp { std::move(other.bckp) }
+      , cur { std::move(other.cur) }
+      , buff { std::move(other.buff) }
+      , aux { std::move(other.aux) }
+      , em0 { std::move(other.em0) }
+      , cur0 { std::move(other.cur0) } {}
 
     Fields& operator=(Fields&& other) noexcept {
       if (this != &other) {

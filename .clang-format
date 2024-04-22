@@ -73,7 +73,7 @@ BreakBeforeConceptDeclarations: Always
 BreakBeforeBraces: Attach
 BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: AfterColon
+BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: AfterComma
 BreakStringLiterals: true
 ColumnLimit: 80

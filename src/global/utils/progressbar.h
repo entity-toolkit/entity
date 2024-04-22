@@ -52,9 +52,9 @@ namespace pbar {
     const std::chrono::time_point<std::chrono::system_clock> start;
 
   public:
-    DurationHistory(std::size_t cap) :
-      capacity { cap },
-      start { std::chrono::system_clock::now() } {}
+    DurationHistory(std::size_t cap)
+      : capacity { cap }
+      , start { std::chrono::system_clock::now() } {}
 
     ~DurationHistory() = default;
 

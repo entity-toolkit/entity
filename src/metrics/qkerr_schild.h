@@ -81,22 +81,22 @@ namespace metric {
 
     QKerrSchild(std::vector<std::size_t>             res,
                 boundaries_t<real_t>                 ext,
-                const std::map<std::string, real_t>& params) :
-      MetricBase<D> { res, ext },
-      a { params.at("a") },
-      rg_ { ONE },
-      rh_ { ONE + math::sqrt(ONE - SQR(a)) },
-      r0 { params.at("r0") },
-      h0 { params.at("h") },
-      chi_min { math::log(x1_min - r0) },
-      eta_min { theta2eta(x2_min) },
-      phi_min { x3_min },
-      dchi { (math::log(x1_max - r0) - chi_min) / nx1 },
-      deta { (theta2eta(x2_max) - eta_min) / nx2 },
-      dphi { (x3_max - phi_min) / nx3 },
-      dchi_inv { ONE / dchi },
-      deta_inv { ONE / deta },
-      dphi_inv { ONE / dphi } {
+                const std::map<std::string, real_t>& params)
+      : MetricBase<D> { res, ext }
+      , a { params.at("a") }
+      , rg_ { ONE }
+      , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
+      , r0 { params.at("r0") }
+      , h0 { params.at("h") }
+      , chi_min { math::log(x1_min - r0) }
+      , eta_min { theta2eta(x2_min) }
+      , phi_min { x3_min }
+      , dchi { (math::log(x1_max - r0) - chi_min) / nx1 }
+      , deta { (theta2eta(x2_max) - eta_min) / nx2 }
+      , dphi { (x3_max - phi_min) / nx3 }
+      , dchi_inv { ONE / dchi }
+      , deta_inv { ONE / deta }
+      , dphi_inv { ONE / dphi } {
       set_dxMin(find_dxMin());
     }
 

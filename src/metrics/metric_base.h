@@ -67,16 +67,16 @@ namespace metric {
     static constexpr bool      is_metric { true };
     static constexpr Dimension Dim { D };
 
-    MetricBase(std::vector<std::size_t> res, boundaries_t<real_t> ext) :
-      nx1 { res.size() > 0 ? (real_t)(res[0]) : ONE },
-      nx2 { res.size() > 1 ? (real_t)(res[1]) : ONE },
-      nx3 { res.size() > 2 ? (real_t)(res[2]) : ONE },
-      x1_min { res.size() > 0 ? ext[0].first : ZERO },
-      x1_max { res.size() > 0 ? ext[0].second : ZERO },
-      x2_min { res.size() > 1 ? ext[1].first : ZERO },
-      x2_max { res.size() > 1 ? ext[1].second : ZERO },
-      x3_min { res.size() > 2 ? ext[2].first : ZERO },
-      x3_max { res.size() > 2 ? ext[2].second : ZERO } {}
+    MetricBase(std::vector<std::size_t> res, boundaries_t<real_t> ext)
+      : nx1 { res.size() > 0 ? (real_t)(res[0]) : ONE }
+      , nx2 { res.size() > 1 ? (real_t)(res[1]) : ONE }
+      , nx3 { res.size() > 2 ? (real_t)(res[2]) : ONE }
+      , x1_min { res.size() > 0 ? ext[0].first : ZERO }
+      , x1_max { res.size() > 0 ? ext[0].second : ZERO }
+      , x2_min { res.size() > 1 ? ext[1].first : ZERO }
+      , x2_max { res.size() > 1 ? ext[1].second : ZERO }
+      , x3_min { res.size() > 2 ? ext[2].first : ZERO }
+      , x3_max { res.size() > 2 ? ext[2].second : ZERO } {}
 
     ~MetricBase() = default;
 

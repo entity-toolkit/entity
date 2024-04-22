@@ -65,9 +65,9 @@ namespace timer {
   public:
     Timers(std::initializer_list<std::string> names,
            const std::function<void(void)>&   synchronize = nullptr,
-           const bool&                        blocking    = false) :
-      m_blocking { blocking },
-      m_synchronize { synchronize } {
+           const bool&                        blocking    = false)
+      : m_blocking { blocking }
+      , m_synchronize { synchronize } {
       raise::ErrorIf((synchronize == nullptr) && blocking,
                      "Synchronize function not provided",
                      HERE);

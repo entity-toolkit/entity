@@ -11,12 +11,21 @@
  *   - global.h
  *   - arch/directions.h
  *   - utils/formatting.h
+ *   - framework/parameters.h
  *   - framework/domain/mesh.h
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
  *   - framework/containers/species.h
+ *   - output/writer.h
+ *   - metrics/kerr_schild.h
+ *   - metrics/kerr_schild_0.h
+ *   - metrics/minkowski.h
+ *   - metrics/qkerr_schild.h
+ *   - metrics/qspherical.h
+ *   - metrics/spherical.h
  * @macros:
  *   - MPI_ENABLED
+ *   - OUTPUT_ENABLED
  * @note
  * Illustration below shows the structure of a metadomain with 2D decomposition.
  * Class Domain defines a single element of this global metadomain.
@@ -33,7 +42,7 @@
  * |         |        |                  |                  |
  * |         |        |                  |                  |
  * |         |        |                  |                  |
- * |<- offsetNcells ->|<---- ncells ---->|                  |
+ * |<- offset_ncells->|<---- ncells ---->|                  |
  * |---------|--------X------------------|------------------|
  * | D       | D      |\                 | D                |
  * |         |        | (extent[0],      |                  |
@@ -42,7 +51,7 @@
  * |         |        |                  |                  |
  * |---------|--------|------------------|------------------|
  * ^                  ^
- * |--offsetNdomains--|
+ * |--offset_ndomains-|
  */
 
 #ifndef FRAMEWORK_DOMAIN_DOMAIN_H
@@ -58,6 +67,11 @@
 #include "framework/containers/particles.h"
 #include "framework/containers/species.h"
 #include "framework/domain/mesh.h"
+#include "framework/parameters.h"
+
+#if defined OUTPUT_ENABLED
+  #include "output/writer.h"
+#endif
 
 #include <iomanip>
 #include <map>
@@ -85,13 +99,13 @@ namespace ntt {
            const std::vector<std::size_t>&      ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
-           const std::vector<ParticleSpecies>&) :
-      mesh { ncells, extent, metric_params },
-      fields {},
-      species {},
-      m_index { index },
-      m_offset_ndomains { offset_ndomains },
-      m_offset_ncells { offset_ncells } {}
+           const std::vector<ParticleSpecies>&)
+      : mesh { ncells, extent, metric_params }
+      , fields {}
+      , species {}
+      , m_index { index }
+      , m_offset_ndomains { offset_ndomains }
+      , m_offset_ncells { offset_ncells } {}
 
     Domain(unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
@@ -99,13 +113,31 @@ namespace ntt {
            const std::vector<std::size_t>&      ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
-           const std::vector<ParticleSpecies>&  species_params) :
-      mesh { ncells, extent, metric_params },
-      fields { ncells },
-      species { species_params.begin(), species_params.end() },
-      m_index { index },
-      m_offset_ndomains { offset_ndomains },
-      m_offset_ncells { offset_ncells } {}
+           const std::vector<ParticleSpecies>&  species_params
+#if defined(OUTPUT_ENABLED)
+           ,
+           const std::string& engine
+#endif
+           )
+      : mesh { ncells, extent, metric_params }
+      , fields { ncells }
+      , species { species_params.begin(), species_params.end() }
+      ,
+#if defined(OUTPUT_ENABLED)
+      m_writer { engine }
+      ,
+#endif
+      m_index { index }
+      , m_offset_ndomains { offset_ndomains }
+      , m_offset_ncells { offset_ncells } {
+    }
+
+#if defined(OUTPUT_ENABLED)
+    void InitWriter(const SimulationParams&,
+                    const std::vector<std::size_t>&,
+                    const std::vector<unsigned int>&);
+      // void Write(const SimulationParams&, const std::vector<std::size_t>&);
+#endif
 
 #if defined(MPI_ENABLED)
     [[nodiscard]]
@@ -142,10 +174,14 @@ namespace ntt {
       return m_neighbor_idx.at(dir);
     }
 
-    // [[nodiscard]]
-    // auto is_placeholder() const -> bool {
-    //   return m_placeholder && fields.is_placeholder() && species.is_placeholder();
-    // }
+    [[nodiscard]]
+    auto is_placeholder() const -> bool {
+      std::size_t sp_footprint { 0 };
+      for (auto& sp : species) {
+        sp_footprint += sp.memory_footprint();
+      }
+      return fields.memory_footprint() == 0 and sp_footprint == 0;
+    }
 
     /* setters -------------------------------------------------------------- */
     auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
@@ -154,6 +190,9 @@ namespace ntt {
     }
 
   private:
+#if defined(OUTPUT_ENABLED)
+    out::Writer m_writer;
+#endif
     // index of the domain in the metadomain
     unsigned int                m_index;
     // offset of the domain in # of domains

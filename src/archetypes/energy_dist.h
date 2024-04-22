@@ -78,12 +78,12 @@ namespace ntt {
                random_number_pool_t& pool,
                real_t                temperature,
                real_t                boost_vel       = ZERO,
-               short                 boost_direction = 0) :
-      EnergyDistribution<S, M> { metric },
-      pool { pool },
-      temperature { temperature },
-      boost_velocity { boost_vel },
-      boost_direction { boost_direction } {
+               short                 boost_direction = 0)
+      : EnergyDistribution<S, M> { metric }
+      , pool { pool }
+      , temperature { temperature }
+      , boost_velocity { boost_vel }
+      , boost_direction { boost_direction } {
       raise::ErrorIf(temperature < ZERO,
                      "Maxwellian: Temperature must be non-negative",
                      HERE);

@@ -4,9 +4,8 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <utility>
-
 #include <type_traits>
+#include <utility>
 
 void errorIf(bool condition, const char* message) {
   if (condition) {

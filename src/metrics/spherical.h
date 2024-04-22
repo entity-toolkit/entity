@@ -60,14 +60,14 @@ namespace metric {
 
     Spherical(std::vector<std::size_t> res,
               boundaries_t<real_t>     ext,
-              const std::map<std::string, real_t>& = {}) :
-      MetricBase<D> { res, ext },
-      dr((x1_max - x1_min) / nx1),
-      dtheta((x2_max - x2_min) / nx2),
-      dphi((x3_max - x3_min) / nx3),
-      dr_inv { ONE / dr },
-      dtheta_inv { ONE / dtheta },
-      dphi_inv { ONE / dphi } {
+              const std::map<std::string, real_t>& = {})
+      : MetricBase<D> { res, ext }
+      , dr((x1_max - x1_min) / nx1)
+      , dtheta((x2_max - x2_min) / nx2)
+      , dphi((x3_max - x3_min) / nx3)
+      , dr_inv { ONE / dr }
+      , dtheta_inv { ONE / dtheta }
+      , dphi_inv { ONE / dphi } {
       set_dxMin(find_dxMin());
     }
 

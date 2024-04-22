@@ -2,9 +2,8 @@
 
 #include <algorithm>
 #include <stdexcept>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace cargs {
 
