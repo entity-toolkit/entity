@@ -21,6 +21,7 @@
  *   - metrics/qkerr_schild.h
  *   - metrics/qspherical.h
  *   - metrics/spherical.h
+ *   - output/writer.h
  * @cpp:
  *   - metadomain.cpp
  * @namespaces:
@@ -43,6 +44,10 @@
 #if defined(MPI_ENABLED)
   #include <mpi.h>
 #endif // MPI_ENABLED
+
+#if defined OUTPUT_ENABLED
+  #include "output/writer.h"
+#endif
 
 #include <map>
 #include <memory>
@@ -119,6 +124,11 @@ namespace ntt {
 #endif
     );
 
+#if defined(OUTPUT_ENABLED)
+    void InitWriter(const SimulationParams&);
+    void Write(const SimulationParams&, const std::string&, std::size_t, long double);
+#endif
+
     Metadomain(const Metadomain&)            = delete;
     Metadomain& operator=(const Metadomain&) = delete;
 
@@ -181,12 +191,16 @@ namespace ntt {
     const std::vector<ParticleSpecies>  g_species_params;
 
 #if defined(OUTPUT_ENABLED)
-    const std::string g_output_engine;
+    out::Writer g_writer;
 #endif
 
 #if defined(MPI_ENABLED)
     int g_mpi_rank, g_mpi_size;
 #endif
+
+    // #if defined(OUTPUT_ENABLED)
+    //       , m_writer { engine }
+    // #endif
   };
 
 } // namespace ntt

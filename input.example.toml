@@ -295,7 +295,7 @@
   particles = ""
   # Output format:
   #   @type: string
-  #   @valid: "disabled", "hdf5", "bp5"
+  #   @valid: "disabled", "hdf5", "BPFile"
   #   @default: "hdf5"
   format = ""
   # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):

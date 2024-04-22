@@ -16,7 +16,6 @@
  *   - framework/containers/fields.h
  *   - framework/containers/particles.h
  *   - framework/containers/species.h
- *   - output/writer.h
  *   - metrics/kerr_schild.h
  *   - metrics/kerr_schild_0.h
  *   - metrics/minkowski.h
@@ -25,7 +24,6 @@
  *   - metrics/spherical.h
  * @macros:
  *   - MPI_ENABLED
- *   - OUTPUT_ENABLED
  * @note
  * Illustration below shows the structure of a metadomain with 2D decomposition.
  * Class Domain defines a single element of this global metadomain.
@@ -69,10 +67,6 @@
 #include "framework/domain/mesh.h"
 #include "framework/parameters.h"
 
-#if defined OUTPUT_ENABLED
-  #include "output/writer.h"
-#endif
-
 #include <iomanip>
 #include <map>
 #include <string>
@@ -113,29 +107,13 @@ namespace ntt {
            const std::vector<std::size_t>&      ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
-           const std::vector<ParticleSpecies>&  species_params
-#if defined(OUTPUT_ENABLED)
-           ,
-           const std::string& engine
-#endif
-           )
+           const std::vector<ParticleSpecies>&  species_params)
       : mesh { ncells, extent, metric_params }
       , fields { ncells }
       , species { species_params.begin(), species_params.end() }
-#if defined(OUTPUT_ENABLED)
-      , m_writer { engine }
-#endif
       , m_index { index }
       , m_offset_ndomains { offset_ndomains }
-      , m_offset_ncells { offset_ncells } {
-    }
-
-#if defined(OUTPUT_ENABLED)
-    void InitWriter(const SimulationParams&,
-                    const std::vector<std::size_t>&,
-                    const std::vector<unsigned int>&);
-    void Write(const SimulationParams&, const std::string&, std::size_t, long double);
-#endif
+      , m_offset_ncells { offset_ncells } {}
 
 #if defined(MPI_ENABLED)
     [[nodiscard]]
@@ -188,9 +166,6 @@ namespace ntt {
     }
 
   private:
-#if defined(OUTPUT_ENABLED)
-    out::Writer m_writer;
-#endif
     // index of the domain in the metadomain
     unsigned int                m_index;
     // offset of the domain in # of domains

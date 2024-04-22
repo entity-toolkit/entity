@@ -191,9 +191,7 @@ namespace ntt {
         // write timestep if needed
         if (should_output(step, time)) {
           timers.start("Output");
-          m_metadomain.runOnLocalDomains([&name, this](auto& dom) {
-            dom.Write(m_params, name, step, time);
-          });
+          m_metadomain.Write(m_params, name, step, time);
           timers.stop("Output");
           last_output_time = time;
         }

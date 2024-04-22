@@ -48,7 +48,7 @@ namespace ntt {
     , g_metric_params { metric_params }
     , g_species_params { species_params }
 #if defined(OUTPUT_ENABLED)
-    , g_output_engine { output_engine }
+    , g_writer { output_engine }
 #endif
   {
 #if defined(MPI_ENABLED)
@@ -171,16 +171,6 @@ namespace ntt {
                                   g_metric_params,
                                   g_species_params);
       } else {
-  #if defined(OUTPUT_ENABLED)
-        g_subdomains.emplace_back(idx,
-                                  l_offset_ndomains,
-                                  l_offset_ncells,
-                                  l_ncells,
-                                  l_extent,
-                                  g_metric_params,
-                                  g_species_params,
-                                  g_output_engine);
-  #else // not OUTPUT_ENABLED
         g_subdomains.emplace_back(idx,
                                   l_offset_ndomains,
                                   l_offset_ncells,
@@ -188,24 +178,12 @@ namespace ntt {
                                   l_extent,
                                   g_metric_params,
                                   g_species_params);
-  #endif
       }
       g_subdomains.back().set_mpi_rank(idx);
       if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
         g_local_subdomain_indices.push_back(idx);
       }
-#else // not MPI_ENABLED
-
-  #if defined(OUTPUT_ENABLED)
-      g_subdomains.emplace_back(idx,
-                                l_offset_ndomains,
-                                l_offset_ncells,
-                                l_ncells,
-                                l_extent,
-                                g_metric_params,
-                                g_species_params,
-                                g_output_engine);
-  #else // not OUTPUT_ENABLED
+#else  // not MPI_ENABLED
       g_subdomains.emplace_back(idx,
                                 l_offset_ndomains,
                                 l_offset_ncells,
@@ -213,7 +191,6 @@ namespace ntt {
                                 l_extent,
                                 g_metric_params,
                                 g_species_params);
-  #endif
       g_local_subdomain_indices.push_back(idx);
 #endif // MPI_ENABLED
       g_domain_offset2index[l_offset_ndomains] = idx;

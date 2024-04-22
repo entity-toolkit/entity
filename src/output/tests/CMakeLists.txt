@@ -22,8 +22,9 @@ function(gen_test title)
   add_test(NAME "OUTPUT::${title}" COMMAND "${exec}")
 endfunction()
 
-gen_test(fields)
-
 if (NOT ${mpi})
-gen_test(writer-nompi)
+  gen_test(fields)
+  gen_test(writer-nompi)
+else()
+  gen_test(writer-mpi)
 endif()

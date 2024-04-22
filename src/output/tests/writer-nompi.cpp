@@ -30,8 +30,8 @@
 
 void cleanup() {
   namespace fs = std::filesystem;
-  // fs::path tempfile_path { "test.h5" };
-  // fs::remove(tempfile_path);
+  fs::path tempfile_path { "test.h5" };
+  fs::remove(tempfile_path);
 }
 
 auto main(int argc, char* argv[]) -> int {

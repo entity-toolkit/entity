@@ -20,6 +20,9 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
+#if defined(OUTPUT_ENABLED)
+      m_metadomain.InitWriter(m_params);
+#endif
       logger::Checkpoint("Initializing Engine", HERE);
       if constexpr (
         traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
@@ -32,19 +35,6 @@ namespace ntt {
                                  m_pgen.init_flds,
                                  loc_dom.mesh.metric });
         });
-#if defined(OUTPUT_ENABLED)
-        logger::Checkpoint("Initializing writer", HERE);
-        m_metadomain.runOnLocalDomains(
-          [](auto&       loc_dom,
-             const auto& params,
-             const auto& ncells,
-             const auto& ndomains_per_dim) {
-            loc_dom.InitWriter(params, ncells, ndomains_per_dim);
-          },
-          m_params,
-          m_metadomain.mesh().n_active(),
-          m_metadomain.ndomains_per_dim());
-#endif
       }
     }
   }

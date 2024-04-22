@@ -8,7 +8,7 @@
 # - domain/communications.cpp
 # - containers/particles.cpp
 # - containers/fields.cpp
-# - domain/domain_output.cpp
+# - domain/output.cpp
 # @includes:
 # - ../
 # @depends:
@@ -35,7 +35,7 @@ set(SOURCES
   ${SRC_DIR}/containers/fields.cpp
 )
 if (${output})
-  list(APPEND SOURCES ${SRC_DIR}/domain/domain_output.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/domain/output.cpp)
 endif()
 add_library(ntt_framework ${SOURCES})
 
