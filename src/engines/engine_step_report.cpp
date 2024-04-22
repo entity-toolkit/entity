@@ -37,6 +37,9 @@ namespace ntt {
       diag_flags  ^= Diag::Colorful;
       timer_flags ^= Timer::Colorful;
     }
+    if (m_params.get<std::size_t>("particles.nspec") == 0) {
+      diag_flags ^= Diag::Species;
+    }
     CallOnce(
       [diag_flags](auto& time, auto& step, auto& max_steps, auto& dt) {
         const auto c_bgreen = color::get_color("bgreen",
@@ -67,10 +70,12 @@ namespace ntt {
     if (diag_flags & Diag::Timers) {
       timers.printAll(timer_flags, std::cout);
     }
+    CallOnce([]() {
+      std::cout << std::endl;
+    });
     if (diag_flags & Diag::Species) {
       CallOnce([diag_flags]() {
-        std::cout << std::endl
-                  << color::get_color("bblack", diag_flags & Diag::Colorful);
+        std::cout << color::get_color("bblack", diag_flags & Diag::Colorful);
 #if defined(MPI_ENABLED)
         std::cout << "Particle count:" << std::setw(22) << std::right << "[TOT]"
                   << std::setw(20) << std::right << "[MIN (%)]" << std::setw(20)

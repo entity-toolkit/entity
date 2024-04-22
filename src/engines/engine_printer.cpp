@@ -387,7 +387,9 @@ namespace ntt {
         auto flds_footprint         = domain.fields.memory_footprint();
         auto [flds_size, flds_unit] = bytes_to_human_readable(flds_footprint);
         add_param(report, 8, "Fields", "%.2Lf %s", flds_size, flds_unit.c_str());
-        add_subcategory(report, 8, "Particles");
+        if (domain.species.size() > 0) {
+          add_subcategory(report, 8, "Particles");
+        }
         for (auto& species : domain.species) {
           const auto str = fmt::format("Species #%d (%s)",
                                        species.index(),
