@@ -104,6 +104,12 @@ namespace timer {
       m_timers[name].second = 0.0;
     }
 
+    void resetAll() {
+      for (auto& [name, _] : m_timers) {
+        reset(name);
+      }
+    }
+
     [[nodiscard]]
     auto get(const std::string& name) const -> long double {
       if (name == "Total") {
@@ -250,7 +256,7 @@ namespace timer {
         if (flags & Timer::PrintUnits) {
           os << " " << units;
         }
-        os << c_reset << " with output" << std::endl;
+        os << c_reset << " [- output]" << std::endl;
       }
     }
   };

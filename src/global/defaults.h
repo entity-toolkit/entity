@@ -51,7 +51,7 @@ namespace ntt::defaults {
 
   namespace output {
     const std::string    format      = "hdf5";
-    const unsigned int   interval    = 1;
+    const std::size_t    interval    = 1;
     const unsigned short mom_smooth  = 0;
     const unsigned short flds_stride = 1;
     const std::size_t    prtl_stride = 100;

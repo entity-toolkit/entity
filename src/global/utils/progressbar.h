@@ -50,11 +50,13 @@ namespace pbar {
     std::size_t                                              capacity;
     std::vector<long double>                                 durations;
     const std::chrono::time_point<std::chrono::system_clock> start;
+    std::chrono::time_point<std::chrono::system_clock>       prev_start;
 
   public:
     DurationHistory(std::size_t cap)
       : capacity { cap }
-      , start { std::chrono::system_clock::now() } {}
+      , start { std::chrono::system_clock::now() }
+      , prev_start { start } {}
 
     ~DurationHistory() = default;
 
@@ -64,7 +66,8 @@ namespace pbar {
         durations.erase(durations.begin());
       }
       durations.push_back(
-        std::chrono::duration_cast<std::chrono::microseconds>(now - start).count());
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_start).count());
+      prev_start = now;
     }
 
     auto average() const -> long double {
@@ -77,8 +80,9 @@ namespace pbar {
     }
 
     auto elapsed() const -> long double {
-      const auto now = std::chrono::system_clock::now();
-      return std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
+      return std::chrono::duration_cast<std::chrono::microseconds>(
+               std::chrono::system_clock::now() - start)
+        .count();
     }
   };
 
