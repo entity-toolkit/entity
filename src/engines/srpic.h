@@ -96,6 +96,10 @@ namespace ntt {
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
 
+      if (step == 0) { // communicate fields one the first timestep
+        m_metadomain.Communicate(dom, Comm::B | Comm::E);
+      }
+
       if (fieldsolver_enabled) {
         timers.start("FieldSolver");
         Faraday(dom, HALF);
