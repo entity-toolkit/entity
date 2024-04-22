@@ -100,6 +100,7 @@ endif()
 if(${output})
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
   find_or_fetch_dependency(adios2 FALSE)
+  find_package(HDF5 REQUIRED)
 
   if(${mpi})
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)

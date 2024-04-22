@@ -31,8 +31,7 @@ namespace out {
                                  const std::vector<std::size_t>& loc_corner,
                                  const std::vector<std::size_t>& loc_shape,
                                  bool                            incl_ghosts) {
-    m_flds_ghosts = incl_ghosts;
-
+    m_flds_ghosts   = incl_ghosts;
     m_flds_g_shape  = glob_shape;
     m_flds_l_corner = loc_corner;
     m_flds_l_shape  = loc_shape;
@@ -142,6 +141,7 @@ namespace out {
   void Writer::beginWriting(const std::string& fname,
                             std::size_t        tstep,
                             long double        time) {
+    m_adios.ExitComputationBlock();
     m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
     m_mode   = adios2::Mode::Append;
     m_writer.BeginStep();
@@ -152,6 +152,7 @@ namespace out {
   void Writer::endWriting() {
     m_writer.EndStep();
     m_writer.Close();
+    m_adios.EnterComputationBlock();
   }
 
   template void Writer::writeField<Dim::_1D, 3>(const std::vector<std::string>&,
