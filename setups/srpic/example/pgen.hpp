@@ -50,9 +50,25 @@ namespace user {
 
     ExtForce() = default;
 
-    // apply only fx1 force on species #1 and #2
-
     Inline auto fx1(const unsigned short& sp,
+                    const real_t&         time,
+                    const coord_t<D>&     x_Ph) const -> real_t {
+      (void)sp;
+      (void)time;
+      (void)x_Ph;
+      return ZERO;
+    }
+
+    Inline auto fx2(const unsigned short& sp,
+                    const real_t&         time,
+                    const coord_t<D>&     x_Ph) const -> real_t {
+      (void)sp;
+      (void)time;
+      (void)x_Ph;
+      return ZERO;
+    }
+
+    Inline auto fx3(const unsigned short& sp,
                     const real_t&         time,
                     const coord_t<D>&     x_Ph) const -> real_t {
       (void)sp;
