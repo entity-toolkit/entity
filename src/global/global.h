@@ -92,6 +92,7 @@
 #include <vector>
 
 #pragma nv_diag_suppress 20011
+#pragma nv_diag_suppress 20013
 
 #define HERE __FILE__, __func__, __LINE__
 

@@ -2,9 +2,9 @@
  * @file archetypes/energy_dist.hpp
  * @brief Defines an archetype for energy distributions
  * @implements
- *   - ntt::EnergyDistribution<>
- *   - ntt::ColdDist<> : ntt::EnergyDistribution<>
- *   - ntt::Maxwellian<> : ntt::EnergyDistribution<>
+ *   - arch::EnergyDistribution<>
+ *   - arch::ColdDist<> : arch::EnergyDistribution<>
+ *   - arch::Maxwellian<> : arch::EnergyDistribution<>
  * @depends:
  *   - enums.h
  *   - global.h
@@ -13,7 +13,7 @@
  *   - utils/numeric.h
  *   - arch/kokkos_aliases.h
  * @namespaces:
- *   - ntt::
+ *   - arch::
  * @note
  * The class returns a random velocity according to a coded distribution
  * For Cartesian: the returned velocity is in the global Cartesian basis
@@ -35,7 +35,8 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 
-namespace ntt {
+namespace arch {
+  using namespace ntt;
 
   template <SimEngine::type S, class M>
   struct EnergyDistribution {
@@ -45,7 +46,10 @@ namespace ntt {
 
     EnergyDistribution(const M& metric) : metric { metric } {}
 
-    Inline virtual void operator()(const coord_t<M::PrtlDim>&,
+    // Takes the physical coordinate of the particle and returns
+    //   the velocity in tetrad basis
+    // last argument -- is the species index (1, ..., nspec)
+    Inline virtual void operator()(const coord_t<D>&,
                                    vec_t<Dim::_3D>& v,
                                    unsigned short = 0) const {
       v[0] = ZERO;
@@ -61,7 +65,7 @@ namespace ntt {
   struct ColdDist : public EnergyDistribution<S, M> {
     ColdDist(const M& metric) : EnergyDistribution<S, M> { metric } {}
 
-    Inline void operator()(const coord_t<M::PrtlDim>&,
+    Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
                            unsigned short = 0) const override {
       v[0] = ZERO;
@@ -170,8 +174,8 @@ namespace ntt {
       v[boost_direction] = boost_gamma * (v[boost_direction] + boost_beta * ut);
     }
 
-    Inline void operator()(const coord_t<M::PrtlDim>& x_Code,
-                           vec_t<Dim::_3D>&           v,
+    Inline void operator()(const coord_t<M::Dim>& x_Code,
+                           vec_t<Dim::_3D>&       v,
                            unsigned short = 0) const override {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
@@ -209,6 +213,6 @@ namespace ntt {
     const short  boost_direction;
   };
 
-} // namespace ntt
+} // namespace arch
 
 #endif // ARCHETYPES_ENERGY_DIST_HPP

@@ -2,7 +2,7 @@
  * @file archetypes/field_setter.hpp
  * @brief Defines a kernel which populates the EM fields with user-defined values
  * @implements
- *   - ntt::SetEMFields_kernel
+ *   - arch::SetEMFields_kernel
  * @depends:
  *   - enums.h
  *   - global.h
@@ -10,7 +10,7 @@
  *   - archetypes/kokkos_aliases.h
  *   - utils/numeric.h
  * @namespaces:
- *   - ntt::
+ *   - arch::
  * @note
  * The functor accepts a class I as a template argument, which must contain
  * one of the ex1, ex2, ex3, bx1, bx2, bx3 methods (dx1, dx2, dx3 for GR).
@@ -35,7 +35,8 @@
 
 #include <Kokkos_Core.hpp>
 
-namespace ntt {
+namespace arch {
+  using namespace ntt;
 
   template <class I, SimEngine::type S, class M>
   class SetEMFields_kernel {
@@ -390,6 +391,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace arch
 
 #endif // ARCHETYPES_FIELD_SETTER_HPP

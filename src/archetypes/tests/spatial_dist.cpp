@@ -16,6 +16,7 @@
 
 using namespace ntt;
 using namespace metric;
+using namespace arch;
 
 template <class SpDist, class M>
 struct Caller {

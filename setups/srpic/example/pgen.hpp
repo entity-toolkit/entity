@@ -21,10 +21,10 @@ namespace user {
   template <Dimension D>
   struct InitFields {
 
-    InitFields(real_t a, real_t sx2, int kx2) :
-      amplitude { a },
-      sx2 { sx2 },
-      kx2 { kx2 } {}
+    InitFields(real_t a, real_t sx2, int kx2)
+      : amplitude { a }
+      , sx2 { sx2 }
+      , kx2 { kx2 } {}
 
     // only set ex2 and bx3
 
@@ -79,27 +79,27 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public ProblemGenerator<S, M> {
+  struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines = traits::compatible_with<SimEngine::SRPIC>::value;
     static constexpr auto metrics = traits::compatible_with<Metric::Minkowski>::value;
     static constexpr auto dimensions = traits::compatible_with<Dim::_2D, Dim::_3D>::value;
 
     // for easy access to variables in the child class
-    using ProblemGenerator<S, M>::D;
-    using ProblemGenerator<S, M>::C;
-    using ProblemGenerator<S, M>::params;
+    using arch::ProblemGenerator<S, M>::D;
+    using arch::ProblemGenerator<S, M>::C;
+    using arch::ProblemGenerator<S, M>::params;
 
     InitFields<D>        init_flds;
     ExtForce<M::PrtlDim> ext_force;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain) :
-      ProblemGenerator<S, M> { p },
-      init_flds { params.template get<real_t>("setup.amplitude", 1.0),
-                  global_domain.mesh().extent(in::x2).second -
-                    global_domain.mesh().extent(in::x2).first,
-                  params.template get<int>("setup.kx2", 2) },
-      ext_force {} {}
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+      : arch::ProblemGenerator<S, M> { p }
+      , init_flds { params.template get<real_t>("setup.amplitude", 1.0),
+                    global_domain.mesh().extent(in::x2).second -
+                      global_domain.mesh().extent(in::x2).first,
+                    params.template get<int>("setup.kx2", 2) }
+      , ext_force {} {}
   };
 
 } // namespace user

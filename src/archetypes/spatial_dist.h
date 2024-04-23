@@ -2,15 +2,15 @@
  * @file archetypes/spatial_dist.hpp
  * @brief Spatial distribution class passed to injectors
  * @implements
- *   - ntt::SpatialDistribution<>
- *   - ntt::UniformDist<> : ntt::SpatialDistribution<>
+ *   - arch::SpatialDistribution<>
+ *   - arch::UniformDist<> : arch::SpatialDistribution<>
  * @depends:
  *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - utils/numeric.h
  * @namespace
- *   - ntt::
+ *   - arch::
  * @note
  * Instances of these functors take coordinate position in code units
  * and return a number between 0 and 1 that represents the spatial distribution
@@ -25,7 +25,8 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
 
-namespace ntt {
+namespace arch {
+  using namespace ntt;
 
   template <SimEngine::type S, class M>
   struct SpatialDistribution {
@@ -51,6 +52,6 @@ namespace ntt {
     }
   };
 
-} // namespace ntt
+} // namespace arch
 
 #endif // ARCHETYPES_SPATIAL_DIST_HPP

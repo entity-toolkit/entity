@@ -60,6 +60,7 @@
 
 #include "arch/directions.h"
 #include "utils/formatting.h"
+#include "utils/numeric.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -82,6 +83,7 @@ namespace ntt {
     Mesh<M>                                 mesh;
     Fields<D, S>                            fields;
     std::vector<Particles<D, M::CoordType>> species;
+    random_number_pool_t random_pool { constant::RandomSeed };
 
     /**
      * @brief constructor for "empty" allocation of non-local domain placeholders

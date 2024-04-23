@@ -20,6 +20,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <Kokkos_StdAlgorithms.hpp>
 
 #include <vector>
 
@@ -70,22 +71,11 @@ namespace ntt {
                       unsigned short                     buff_idx) {
     std::vector<unsigned short> specs = species;
     if (specs.size() == 0) {
-      // if no species specific, take all massive species
+      // if no species specified, take all massive species
       for (auto& sp : prtl_species) {
-        if (sp.mass() > 0 && sp.charge() > 0) {
+        if (sp.mass() > 0) {
           specs.push_back(sp.index());
         }
-      }
-    }
-    // replace species indexes with positions in prtl_species
-    for (auto& sp : specs) {
-      unsigned short idx = 0;
-      for (auto& prtl_sp : prtl_species) {
-        if (prtl_sp.index() == sp) {
-          sp = idx;
-          break;
-        }
-        ++idx;
       }
     }
     auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
@@ -98,30 +88,33 @@ namespace ntt {
       "output.mom_smooth");
 
     for (const auto& sp : specs) {
-      auto& prtl_spec = prtl_species[sp];
-      kernel::ParticleMoments_kernel<S, M, F, 6>(components,
-                                                 scatter_buff,
-                                                 buff_idx,
-                                                 prtl_spec.i1,
-                                                 prtl_spec.i2,
-                                                 prtl_spec.i3,
-                                                 prtl_spec.dx1,
-                                                 prtl_spec.dx2,
-                                                 prtl_spec.dx3,
-                                                 prtl_spec.ux1,
-                                                 prtl_spec.ux2,
-                                                 prtl_spec.ux3,
-                                                 prtl_spec.phi,
-                                                 prtl_spec.weight,
-                                                 prtl_spec.tag,
-                                                 prtl_spec.mass(),
-                                                 prtl_spec.charge(),
-                                                 use_weights,
-                                                 mesh.metric,
-                                                 mesh.flds_bc(),
-                                                 ni2,
-                                                 inv_n0,
-                                                 window);
+      auto& prtl_spec = prtl_species[sp - 1];
+      Kokkos::parallel_for(
+        "ComputeMoments",
+        prtl_spec.rangeActiveParticles(),
+        kernel::ParticleMoments_kernel<S, M, F, 6>(components,
+                                                   scatter_buff,
+                                                   buff_idx,
+                                                   prtl_spec.i1,
+                                                   prtl_spec.i2,
+                                                   prtl_spec.i3,
+                                                   prtl_spec.dx1,
+                                                   prtl_spec.dx2,
+                                                   prtl_spec.dx3,
+                                                   prtl_spec.ux1,
+                                                   prtl_spec.ux2,
+                                                   prtl_spec.ux3,
+                                                   prtl_spec.phi,
+                                                   prtl_spec.weight,
+                                                   prtl_spec.tag,
+                                                   prtl_spec.mass(),
+                                                   prtl_spec.charge(),
+                                                   use_weights,
+                                                   mesh.metric,
+                                                   mesh.flds_bc(),
+                                                   ni2,
+                                                   inv_n0,
+                                                   window));
     }
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
@@ -207,6 +200,7 @@ namespace ntt {
     const auto output_asis = params.template get<bool>("output.debug.as_is");
     // !TODO: this can probably be optimized to dump things at once
     for (auto& fld : g_writer.fieldWriters()) {
+      Kokkos::deep_copy(local_domain->fields.bckp, ZERO);
       std::vector<std::string> names;
       std::vector<std::size_t> addresses;
       if (fld.comp.size() == 0 || fld.comp.size() == 1) { // scalar
@@ -228,6 +222,7 @@ namespace ntt {
                                             local_domain->fields.bckp,
                                             c);
           } else if (fld.id() == FldsID::Rho) {
+            std::cout << "here\n";
             ComputeMoments<S, M, FldsID::Rho>(params,
                                               local_domain->mesh,
                                               local_domain->species,
@@ -374,7 +369,6 @@ namespace ntt {
       }
       g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
     }
-
     g_writer.endWriting();
   }
 

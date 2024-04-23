@@ -21,7 +21,6 @@ namespace user {
 
   template <Dimension D>
   struct InitFields {
-
     InitFields(real_t a, real_t sx1, real_t sx2, real_t sx3, int k1, int k2, int k3)
       : amplitude { a }
       , kx1 { (sx1 > ZERO) ? (real_t)(constant::TWO_PI) * (real_t)k1 / sx1 : ZERO }
@@ -76,7 +75,7 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public ProblemGenerator<S, M> {
+  struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines = traits::compatible_with<SimEngine::SRPIC>::value;
     static constexpr auto metrics = traits::compatible_with<Metric::Minkowski>::value;
@@ -84,9 +83,9 @@ namespace user {
       traits::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value;
 
     // for easy access to variables in the child class
-    using ProblemGenerator<S, M>::D;
-    using ProblemGenerator<S, M>::C;
-    using ProblemGenerator<S, M>::params;
+    using arch::ProblemGenerator<S, M>::D;
+    using arch::ProblemGenerator<S, M>::C;
+    using arch::ProblemGenerator<S, M>::params;
 
     const real_t  amplitude;
     const int     kx1, kx2, kx3;

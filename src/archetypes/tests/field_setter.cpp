@@ -12,6 +12,7 @@
 
 using namespace ntt;
 using namespace metric;
+using namespace arch;
 
 template <Dimension D>
 struct ConstantFiller {

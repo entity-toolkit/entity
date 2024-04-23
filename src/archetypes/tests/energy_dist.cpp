@@ -18,6 +18,7 @@
 
 using namespace ntt;
 using namespace metric;
+using namespace arch;
 
 template <class EnrgDist, Dimension PrtlDim>
 struct Caller {

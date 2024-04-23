@@ -2,13 +2,13 @@
  * @file archetypes/problem_generator.hpp
  * @brief Base class for all problem generators
  * @implements
- *   - ntt::ProblemGenerator<>
+ *   - arch::ProblemGenerator<>
  * @depends:
  *   - enums.h
  *   - global.h
  *   - framework/parameters.h
  * @namespace
- *   - ntt::
+ *   - arch::
  * @note
  * To have easier access to variables inside ProblemGenerator in children
  * classes, one should simply add:
@@ -29,7 +29,8 @@
 
 #include "framework/parameters.h"
 
-namespace ntt {
+namespace arch {
+  using namespace ntt;
 
   template <SimEngine::type S, class M>
   struct ProblemGenerator {
@@ -45,6 +46,6 @@ namespace ntt {
     ~ProblemGenerator() = default;
   };
 
-} // namespace ntt
+} // namespace arch
 
 #endif // ARCHETYPES_PROBLEM_GENERATOR_HPP

@@ -28,12 +28,20 @@ namespace ntt {
         traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
         logger::Checkpoint("Initializing fields from problem generator", HERE);
         m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
-          Kokkos::parallel_for("InitFields",
-                               loc_dom.mesh.rangeActiveCells(),
-                               SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
-                                 loc_dom.fields.em,
-                                 m_pgen.init_flds,
-                                 loc_dom.mesh.metric });
+          Kokkos::parallel_for(
+            "InitFields",
+            loc_dom.mesh.rangeActiveCells(),
+            arch::SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
+              loc_dom.fields.em,
+              m_pgen.init_flds,
+              loc_dom.mesh.metric });
+        });
+      }
+      if constexpr (
+        traits::has_member<traits::pgen::init_prtls_t, user::PGen<S, M>>::value) {
+        logger::Checkpoint("Initializing particles from problem generator", HERE);
+        m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
+          m_pgen.InitPrtls(loc_dom);
         });
       }
     }
