@@ -20,14 +20,14 @@ using namespace ntt;
 using namespace metric;
 using namespace arch;
 
-template <class EnrgDist, Dimension PrtlDim>
+template <class EnrgDist, Dimension D>
 struct Caller {
   Caller(const EnrgDist& dist) : dist { dist } {}
 
   Inline void operator()(index_t) const {
-    vec_t<Dim::_3D>  vp { ZERO };
-    coord_t<PrtlDim> xp { ZERO };
-    for (unsigned short d = 0; d < PrtlDim; ++d) {
+    vec_t<Dim::_3D> vp { ZERO };
+    coord_t<D>      xp { ZERO };
+    for (unsigned short d = 0; d < D; ++d) {
       xp[d] = 5.0;
     }
     dist(xp, vp);
@@ -70,7 +70,7 @@ void testEnergyDist(const std::vector<std::size_t>&      res,
 
   random_number_pool_t pool { constant::RandomSeed };
   Maxwellian<S, M>     maxw { metric, pool, ONE };
-  Kokkos::parallel_for("Maxwellian", 100, Caller<Maxwellian<S, M>, M::PrtlDim>(maxw));
+  Kokkos::parallel_for("Maxwellian", 100, Caller<Maxwellian<S, M>, M::Dim>(maxw));
 }
 
 auto main(int argc, char* argv[]) -> int {

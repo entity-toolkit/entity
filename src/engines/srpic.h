@@ -121,6 +121,7 @@ namespace ntt {
 
         if (deposit_enabled) {
           timers.start("CurrentDeposit");
+          Kokkos::deep_copy(dom.fields.cur, ZERO);
           CurrentsDeposit(dom);
           timers.stop("CurrentDeposit");
 
@@ -163,7 +164,7 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::E);
+        m_metadomain.Communicate(dom, Comm::E | Comm::J);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -352,7 +353,6 @@ namespace ntt {
     }
 
     void CurrentsDeposit(domain_t& domain) {
-
       logger::Checkpoint("Launching currents deposit kernel", HERE);
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);

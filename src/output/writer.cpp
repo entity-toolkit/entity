@@ -8,9 +8,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#include <any>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 namespace out {
@@ -21,10 +19,6 @@ namespace out {
 
     m_io.DefineVariable<std::size_t>("Step");
     m_io.DefineVariable<long double>("Time");
-  }
-
-  void Writer::writeAttrs(const prm::Parameters&) {
-    // todo!()
   }
 
   void Writer::defineMeshLayout(const std::vector<std::size_t>& glob_shape,
@@ -41,15 +35,6 @@ namespace out {
     m_io.DefineAttribute("Dimension", m_flds_g_shape.size());
     m_io.DefineAttribute("Coordinates", std::string(coords.to_string()));
 
-    if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
-                               Kokkos::LayoutRight>::value) {
-      m_io.DefineAttribute("LayoutRight", 1);
-    } else {
-      std::reverse(m_flds_g_shape.begin(), m_flds_g_shape.end());
-      std::reverse(m_flds_l_corner.begin(), m_flds_l_corner.end());
-      std::reverse(m_flds_l_shape.begin(), m_flds_l_shape.end());
-      m_io.DefineAttribute("LayoutRight", 0);
-    }
     for (std::size_t i { 0 }; i < m_flds_g_shape.size(); ++i) {
       // cell-centers
       adios2::Dims g_shape  = { m_flds_g_shape[i] };
@@ -70,6 +55,16 @@ namespace out {
                                   l_corner,
                                   l_shape1,
                                   adios2::ConstantDims);
+    }
+
+    if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
+                               Kokkos::LayoutRight>::value) {
+      m_io.DefineAttribute("LayoutRight", 1);
+    } else {
+      std::reverse(m_flds_g_shape.begin(), m_flds_g_shape.end());
+      std::reverse(m_flds_l_corner.begin(), m_flds_l_corner.end());
+      std::reverse(m_flds_l_shape.begin(), m_flds_l_shape.end());
+      m_io.DefineAttribute("LayoutRight", 0);
     }
   }
 
@@ -165,16 +160,6 @@ namespace out {
   void Writer::writeMesh(unsigned short          dim,
                          const array_t<real_t*>& xc,
                          const array_t<real_t*>& xe) {
-    raise::ErrorIf(dim >= m_flds_l_corner.size(), "Dimension mismatch", HERE);
-    const auto is_last = (m_flds_l_corner[dim] + m_flds_l_shape[dim] ==
-                          m_flds_g_shape[dim]);
-    raise::ErrorIf(xc.extent(0) != m_flds_l_shape[dim],
-                   "xc size mismatch " + std::to_string(xc.extent(0)) +
-                     " != " + std::to_string(m_flds_l_shape[dim]),
-                   HERE);
-    raise::ErrorIf(xe.extent(0) != m_flds_l_shape[dim] + (is_last ? 1 : 0),
-                   "xe size mismatch",
-                   HERE);
     auto varc = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1));
     auto vare = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1) + "e");
     auto xc_h = Kokkos::create_mirror_view(xc);

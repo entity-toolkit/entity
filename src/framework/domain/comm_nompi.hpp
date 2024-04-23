@@ -4,7 +4,6 @@
  * @implements
  *   - comm::CommunicateField<> -> void
  * @depends:
- *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - arch/mpi_aliases.h
@@ -18,7 +17,6 @@
 #ifndef FRAMEWORK_DOMAIN_COMM_NOMPI_HPP
 #define FRAMEWORK_DOMAIN_COMM_NOMPI_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -31,23 +29,24 @@
 namespace comm {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, int N>
+  template <Dimension D, int N>
   inline void CommunicateField(unsigned int                      idx,
-                               ndfield_t<M::Dim, N>&             fld,
-                               const Domain<S, M>*               send_to,
-                               const Domain<S, M>*               recv_from,
+                               ndfield_t<D, N>&                  fld,
+                               unsigned int                      send_idx,
+                               unsigned int                      recv_idx,
+                               int                               send_rank,
+                               int                               recv_rank,
                                const std::vector<range_tuple_t>& send_slice,
                                const std::vector<range_tuple_t>& recv_slice,
                                const range_tuple_t&              comps,
                                bool                              additive) {
-    constexpr auto D = M::Dim;
-    raise::ErrorIf(send_to == nullptr && recv_from == nullptr,
-                   "CommunicateField called with nullptrs",
+    raise::ErrorIf(send_rank < 0 && recv_rank < 0,
+                   "CommunicateField called with negative ranks",
                    HERE);
 
     //  trivial copy if sending to self and receiving from self
-    if ((send_to->index() == idx) || (recv_from->index() == idx)) {
-      raise::ErrorIf((recv_from->index() != idx) || (send_to->index() != idx),
+    if ((send_idx == idx) || (recv_idx == idx)) {
+      raise::ErrorIf((recv_idx != idx) || (send_idx != idx),
                      "Cannot send to self and receive from another domain",
                      HERE);
       // sending/recv to/from self
@@ -66,8 +65,8 @@ namespace comm {
         }
       } else {
         if constexpr (D == Dim::_1D) {
-          const auto offset_x1 = (long int)recv_slice[0].first -
-                                 (long int)send_slice[0].first;
+          const auto offset_x1 = (long int)(recv_slice[0].first) -
+                                 (long int)(send_slice[0].first);
           Kokkos::parallel_for(
             "CommunicateField-extract",
             Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>(
@@ -77,10 +76,10 @@ namespace comm {
               fld(i1, ci) += fld(i1 - offset_x1, ci);
             });
         } else if constexpr (D == Dim::_2D) {
-          const auto offset_x1 = (long int)recv_slice[0].first -
-                                 (long int)send_slice[0].first;
-          const auto offset_x2 = (long int)recv_slice[1].first -
-                                 (long int)send_slice[1].first;
+          const auto offset_x1 = (long int)(recv_slice[0].first) -
+                                 (long int)(send_slice[0].first);
+          const auto offset_x2 = (long int)(recv_slice[1].first) -
+                                 (long int)(send_slice[1].first);
           Kokkos::parallel_for(
             "CommunicateField-extract",
             Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>(
@@ -90,12 +89,12 @@ namespace comm {
               fld(i1, i2, ci) += fld(i1 - offset_x1, i2 - offset_x2, ci);
             });
         } else if constexpr (D == Dim::_3D) {
-          const auto offset_x1 = (long int)recv_slice[0].first -
-                                 (long int)send_slice[0].first;
-          const auto offset_x2 = (long int)recv_slice[1].first -
-                                 (long int)send_slice[1].first;
-          const auto offset_x3 = (long int)recv_slice[2].first -
-                                 (long int)send_slice[2].first;
+          const auto offset_x1 = (long int)(recv_slice[0].first) -
+                                 (long int)(send_slice[0].first);
+          const auto offset_x2 = (long int)(recv_slice[1].first) -
+                                 (long int)(send_slice[1].first);
+          const auto offset_x3 = (long int)(recv_slice[2].first) -
+                                 (long int)(send_slice[2].first);
           Kokkos::parallel_for(
             "CommunicateField-extract",
             Kokkos::MDRangePolicy<Kokkos::Rank<4>, AccelExeSpace>(

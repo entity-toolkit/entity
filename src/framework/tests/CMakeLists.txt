@@ -30,6 +30,7 @@ gen_test(particles)
 gen_test(fields)
 gen_test(grid_mesh)
 gen_test(metadomain)
+gen_test(comm_nompi)
 
 # this test is only run manually to ensure ...
 # ... command line args are working properly ...

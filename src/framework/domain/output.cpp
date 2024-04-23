@@ -59,6 +59,8 @@ namespace ntt {
     const auto fields_to_write = params.template get<std::vector<std::string>>(
       "output.fields");
     g_writer.defineFieldOutputs(S, fields_to_write);
+
+    g_writer.writeAttrs(params);
   }
 
   template <SimEngine::type S, class M, FldsID::type F>
@@ -146,9 +148,9 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::Write(const SimulationParams& params,
-                               const std::string&      fname,
-                               std::size_t             step,
-                               long double             time) {
+
+                               std::size_t step,
+                               long double time) {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -158,7 +160,9 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing output", HERE);
-    g_writer.beginWriting(fname, step, time);
+    g_writer.beginWriting(params.template get<std::string>("simulation.name"),
+                          step,
+                          time);
 
     const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 
@@ -222,7 +226,6 @@ namespace ntt {
                                             local_domain->fields.bckp,
                                             c);
           } else if (fld.id() == FldsID::Rho) {
-            std::cout << "here\n";
             ComputeMoments<S, M, FldsID::Rho>(params,
                                               local_domain->mesh,
                                               local_domain->species,

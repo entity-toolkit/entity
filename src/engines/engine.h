@@ -161,7 +161,6 @@ namespace ntt {
       };
 
 #if defined(OUTPUT_ENABLED)
-      const auto name = m_params.template get<std::string>("simulation.name");
       const auto interval = m_params.template get<std::size_t>(
         "output.interval");
       const auto interval_time = m_params.template get<long double>(
@@ -191,7 +190,7 @@ namespace ntt {
         // write timestep if needed
         if (should_output(step, time)) {
           timers.start("Output");
-          m_metadomain.Write(m_params, name, step, time);
+          m_metadomain.Write(m_params, step, time);
           timers.stop("Output");
           last_output_time = time;
         }

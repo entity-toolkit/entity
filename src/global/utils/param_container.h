@@ -40,6 +40,10 @@ namespace prm {
     std::vector<std::string>        promises;
 
   public:
+    auto allVars() const -> const std::map<std::string, std::any>& {
+      return vars;
+    }
+
     auto contains(key_t key) const -> bool {
       return vars.find(key) != vars.end();
     }

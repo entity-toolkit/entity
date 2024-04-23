@@ -18,6 +18,7 @@
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/writer.cpp 
+  ${SRC_DIR}/write_attrs.cpp 
   ${SRC_DIR}/fields.cpp 
   ${SRC_DIR}/particles.cpp 
   ${SRC_DIR}/utils/interpret_prompt.cpp

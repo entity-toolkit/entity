@@ -126,7 +126,7 @@ namespace ntt {
 
 #if defined(OUTPUT_ENABLED)
     void InitWriter(const SimulationParams&);
-    void Write(const SimulationParams&, const std::string&, std::size_t, long double);
+    void Write(const SimulationParams&, std::size_t, long double);
 #endif
 
     Metadomain(const Metadomain&)            = delete;

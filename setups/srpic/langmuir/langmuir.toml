@@ -4,7 +4,7 @@
   runtime = 0.1
 
 [grid]
-  resolution = [2048, 512]
+  resolution = [256, 64]
   extent = [[0.0, 1.0], [0.0, 0.25]]
 
   [grid.metric]
@@ -19,10 +19,13 @@
   skindepth0 = 0.01
 
 [algorithms]
-  current_filters = 8
+  current_filters = 0
 
   [algorithms.timestep]
     CFL = 0.5
+
+  [algorithms.toggles]
+    deposit = true
 
 [particles]
   ppc0 = 14.0
@@ -42,6 +45,7 @@
 [setup]
   vmax = 0.1
   nx1 = 4
+  nx2 = 2
   
 [output]
   fields = ["Rho", "E"]

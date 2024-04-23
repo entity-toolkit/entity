@@ -4,7 +4,6 @@
  * @implements
  *   - comm::CommunicateField<> -> void
  * @depends:
- *   - enums.h
  *   - global.h
  *   - arch/kokkos_aliases.h
  *   - arch/mpi_aliases.h
@@ -18,7 +17,6 @@
 #ifndef FRAMEWORK_DOMAIN_COMM_MPI_HPP
 #define FRAMEWORK_DOMAIN_COMM_MPI_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -33,39 +31,33 @@
 namespace comm {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, int N>
+  template <Dimension D, int N>
   inline void CommunicateField(unsigned int                      idx,
-                               ndfield_t<M::Dim, N>&             fld,
-                               const Domain<S, M>*               send_to,
-                               const Domain<S, M>*               recv_from,
+                               ndfield_t<D, N>&                  fld,
+                               unsigned int                      send_idx,
+                               unsigned int                      recv_idx,
+                               int                               send_rank,
+                               int                               recv_rank,
                                const std::vector<range_tuple_t>& send_slice,
                                const std::vector<range_tuple_t>& recv_slice,
                                const range_tuple_t&              comps,
                                bool                              additive) {
-    constexpr auto D = M::Dim;
-    raise::ErrorIf(send_to == nullptr && recv_from == nullptr,
-                   "CommunicateField called with nullptrs",
+    raise::ErrorIf(send_rank < 0 && recv_rank < 0,
+                   "CommunicateField called with negative ranks",
                    HERE);
+
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if ((send_to->mpi_rank() == rank && send_to->index() != idx) ||
-        (recv_from->mpi_rank() == rank && recv_from->index() != idx)) {
-      std::cout << "rank " << rank << " with index " << idx << std::endl;
-      std::cout << "sending to " << send_to->index() << " with rank "
-                << send_to->mpi_rank() << std::endl;
-      std::cout << "receiving from " << recv_from->index() << " with rank "
-                << recv_from->mpi_rank() << std::endl;
-    }
     raise::ErrorIf(
-      (send_to->mpi_rank() == rank && send_to->index() != idx) ||
-        (recv_from->mpi_rank() == rank && recv_from->index() != idx),
+      (send_rank == rank && send_idx != idx) ||
+        (recv_rank == rank && recv_idx != idx),
       "Multiple-domain single-rank communication not yet implemented",
       HERE);
 
     //  trivial copy if sending to self and receiving from self
-    if ((send_to->index() == idx) || (recv_from->index() == idx)) {
-      raise::ErrorIf((recv_from->index() != idx) || (send_to->index() != idx),
+    if ((send_idx == idx) || (recv_idx == idx)) {
+      raise::ErrorIf((recv_idx != idx) || (send_idx != idx),
                      "Cannot send to self and receive from another domain",
                      HERE);
       // sending/recv to/from self
@@ -88,15 +80,15 @@ namespace comm {
       nrecv { comps.second - comps.first };
     ndarray_t<static_cast<unsigned short>(D) + 1> send_fld, recv_fld;
     for (short d { 0 }; d < (short)D; ++d) {
-      if (send_to != nullptr) {
+      if (send_rank > 0) {
         nsend *= (send_slice[d].second - send_slice[d].first);
       }
-      if (recv_from != nullptr) {
+      if (recv_rank > 0) {
         nrecv *= (recv_slice[d].second - recv_slice[d].first);
       }
     }
 
-    if (send_to != nullptr) {
+    if (send_rank > 0) {
       if constexpr (D == Dim::_1D) {
         send_fld = ndarray_t<2>("send_fld",
                                 send_slice[0].second - send_slice[0].first,
@@ -121,7 +113,7 @@ namespace comm {
           Kokkos::subview(fld, send_slice[0], send_slice[1], send_slice[2], comps));
       }
     }
-    if (recv_from != nullptr) {
+    if (recv_rank > 0) {
       if constexpr (D == Dim::_1D) {
         recv_fld = ndarray_t<2>("recv_fld",
                                 recv_slice[0].second - recv_slice[0].first,
@@ -139,38 +131,33 @@ namespace comm {
                                 comps.second - comps.first);
       }
     }
-    if (send_to != nullptr && recv_from != nullptr) {
+    if (send_rank > 0 && recv_rank > 0) {
       MPI_Sendrecv(send_fld.data(),
                    nsend,
                    mpi::get_type<real_t>(),
-                   send_to->mpi_rank(),
+                   send_rank,
                    0,
                    recv_fld.data(),
                    nrecv,
                    mpi::get_type<real_t>(),
-                   recv_from->mpi_rank(),
+                   recv_rank,
                    0,
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
-    } else if (send_to != nullptr) {
-      MPI_Send(send_fld.data(),
-               nsend,
-               mpi::get_type<real_t>(),
-               send_to->mpi_rank(),
-               0,
-               MPI_COMM_WORLD);
-    } else if (recv_from != nullptr) {
+    } else if (send_rank > 0) {
+      MPI_Send(send_fld.data(), nsend, mpi::get_type<real_t>(), send_rank, 0, MPI_COMM_WORLD);
+    } else if (recv_rank > 0) {
       MPI_Recv(recv_fld.data(),
                nrecv,
                mpi::get_type<real_t>(),
-               recv_from->mpi_rank(),
+               recv_rank,
                0,
                MPI_COMM_WORLD,
                MPI_STATUS_IGNORE);
     } else {
-      raise::Error("CommunicateField called with nullptrs", HERE);
+      raise::Error("CommunicateField called with negative ranks", HERE);
     }
-    if (recv_from != nullptr) {
+    if (recv_rank > 0) {
       // !TODO: perhaps directly recv to the fld?
       if (not additive) {
         if constexpr (D == Dim::_1D) {

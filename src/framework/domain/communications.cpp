@@ -28,10 +28,10 @@ namespace ntt {
     const auto comm_fields = (tags & Comm::E) || (tags & Comm::B) ||
                              (tags & Comm::J) || (tags & Comm::D) ||
                              (tags & Comm::D0) || (tags & Comm::B0);
-    const auto comm_em = (tags & Comm::E) || (tags & Comm::B) || (tags & Comm::D);
-    const auto comm_em0 = (tags & Comm::B0) || (tags & Comm::D0);
-    const auto comm_j   = (tags & Comm::J);
-    const auto sync_j   = (tags & Comm::J_sync);
+    const bool comm_em = (tags & Comm::E) || (tags & Comm::B) || (tags & Comm::D);
+    const bool comm_em0 = (tags & Comm::B0) || (tags & Comm::D0);
+    const bool comm_j   = (tags & Comm::J);
+    const bool sync_j   = (tags & Comm::J_sync);
     raise::ErrorIf(comm_fields && sync_j,
                    "Cannot communicate fields and sync currents simultaneously",
                    HERE);
@@ -167,38 +167,61 @@ namespace ntt {
             }
           }
         }
+#if defined(MPI_ENABLED)
+        const auto send_rank = (send_to_nghbr_ptr != nullptr)
+                                 ? send_to_nghbr_ptr->mpi_rank()
+                                 : -1;
+        const auto recv_rank = (recv_from_nghbr_ptr != nullptr)
+                                 ? recv_from_nghbr_ptr->mpi_rank()
+                                 : -1;
+#else
+        const auto send_rank = (send_to_nghbr_ptr != nullptr) ? 0 : -1;
+        const auto recv_rank = (recv_from_nghbr_ptr != nullptr) ? 0 : -1;
+#endif
+        const auto send_idx = (send_to_nghbr_ptr != nullptr)
+                                ? send_to_nghbr_ptr->index()
+                                : 0;
+        const auto recv_idx = (recv_from_nghbr_ptr != nullptr)
+                                ? recv_from_nghbr_ptr->index()
+                                : 0;
         // perform send/recv
         if (comm_em) {
-          comm::CommunicateField<S, M, 6>(domain.index(),
-                                          domain.fields.em,
-                                          send_to_nghbr_ptr,
-                                          recv_from_nghbr_ptr,
-                                          send_slice,
-                                          recv_slice,
-                                          comp_range_fld,
-                                          false);
-        }
-        if constexpr (S == SimEngine::GRPIC) {
-          if (comm_em0) {
-            comm::CommunicateField<S, M, 6>(domain.index(),
-                                            domain.fields.em0,
-                                            send_to_nghbr_ptr,
-                                            recv_from_nghbr_ptr,
+          comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                            domain.fields.em,
+                                            send_idx,
+                                            recv_idx,
+                                            send_rank,
+                                            recv_rank,
                                             send_slice,
                                             recv_slice,
                                             comp_range_fld,
                                             false);
+        }
+        if constexpr (S == SimEngine::GRPIC) {
+          if (comm_em0) {
+            comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                              domain.fields.em0,
+                                              send_idx,
+                                              recv_idx,
+                                              send_rank,
+                                              recv_rank,
+                                              send_slice,
+                                              recv_slice,
+                                              comp_range_fld,
+                                              false);
           }
         }
         if (comm_j || sync_j) {
-          comm::CommunicateField<S, M, 3>(domain.index(),
-                                          domain.fields.cur,
-                                          send_to_nghbr_ptr,
-                                          recv_from_nghbr_ptr,
-                                          send_slice,
-                                          recv_slice,
-                                          comp_range_cur,
-                                          sync_j);
+          comm::CommunicateField<M::Dim, 3>(domain.index(),
+                                            domain.fields.cur,
+                                            send_idx,
+                                            recv_idx,
+                                            send_rank,
+                                            recv_rank,
+                                            send_slice,
+                                            recv_slice,
+                                            comp_range_cur,
+                                            sync_j);
         }
       }
     }
