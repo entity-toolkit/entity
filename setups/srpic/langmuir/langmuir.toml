@@ -1,10 +1,10 @@
 [simulation]
   name = "langmuir"
   engine = "srpic"
-  runtime = 0.1
+  runtime = 1.0
 
 [grid]
-  resolution = [256, 64]
+  resolution = [2048, 512]
   extent = [[0.0, 1.0], [0.0, 0.25]]
 
   [grid.metric]
@@ -50,7 +50,7 @@
 [output]
   fields = ["Rho", "E"]
   format = "hdf5"
-  interval_time = 0.001
+  interval_time = 0.0025
 
 [diagnostics]
   colored_stdout = true
