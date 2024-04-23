@@ -168,7 +168,10 @@ namespace out {
     raise::ErrorIf(dim >= m_flds_l_corner.size(), "Dimension mismatch", HERE);
     const auto is_last = (m_flds_l_corner[dim] + m_flds_l_shape[dim] ==
                           m_flds_g_shape[dim]);
-    raise::ErrorIf(xc.extent(0) != m_flds_l_shape[dim], "xc size mismatch", HERE);
+    raise::ErrorIf(xc.extent(0) != m_flds_l_shape[dim],
+                   "xc size mismatch " + std::to_string(xc.extent(0)) +
+                     " != " + std::to_string(m_flds_l_shape[dim]),
+                   HERE);
     raise::ErrorIf(xe.extent(0) != m_flds_l_shape[dim] + (is_last ? 1 : 0),
                    "xe size mismatch",
                    HERE);
