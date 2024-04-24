@@ -26,9 +26,9 @@ namespace ntt::defaults {
 
   const unsigned short current_filters = 0;
 
-  const std::string  em_pusher     = "Boris";
-  const std::string  ph_pusher     = "Photon";
-  const unsigned int sort_interval = 100;
+  const std::string em_pusher     = "Boris";
+  const std::string ph_pusher     = "Photon";
+  const std::size_t sort_interval = 100;
 
   namespace qsph {
     const real_t r0 = 0.0;
@@ -58,7 +58,7 @@ namespace ntt::defaults {
   } // namespace output
 
   namespace diag {
-    const unsigned int interval = 1;
+    const std::size_t interval = 1;
   } // namespace diag
 
   namespace gca {

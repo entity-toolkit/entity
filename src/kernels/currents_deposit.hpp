@@ -102,19 +102,20 @@ namespace kernel {
      * @param p index.
      */
     Inline auto operator()(index_t p) const -> void {
-      if (tag(p) == ParticleTag::alive) {
-        // _f = final, _i = initial
-        tuple_t<int, D> Ip_f, Ip_i;
-        coord_t<D>      xp_f, xp_i, xp_r;
-        vec_t<Dim::_3D> vp { ZERO };
-
-        // get [i, di]_init and [i, di]_final (per dimension)
-        getDepositInterval(p, Ip_f, Ip_i, xp_f, xp_i, xp_r);
-        // recover particle velocity to deposit in unsimulated direction
-        getPrtl3Vel(p, vp);
-        const real_t coeff { weight(p) * charge };
-        depositCurrentsFromParticle(coeff, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+      if (tag(p) == ParticleTag::dead) {
+        return;
       }
+      // _f = final, _i = initial
+      tuple_t<int, D> Ip_f, Ip_i;
+      coord_t<D>      xp_f, xp_i, xp_r;
+      vec_t<Dim::_3D> vp { ZERO };
+
+      // get [i, di]_init and [i, di]_final (per dimension)
+      getDepositInterval(p, Ip_f, Ip_i, xp_f, xp_i, xp_r);
+      // recover particle velocity to deposit in unsimulated direction
+      getPrtl3Vel(p, vp);
+      const real_t coeff { weight(p) * charge };
+      depositCurrentsFromParticle(coeff, vp, Ip_f, Ip_i, xp_f, xp_i, xp_r);
     }
 
     /**

@@ -96,7 +96,7 @@ namespace ntt {
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
 
-      if (step == 0) { // communicate fields one the first timestep
+      if (step == 0) { // communicate fields on the first timestep
         m_metadomain.Communicate(dom, Comm::B | Comm::E);
       }
 
@@ -136,7 +136,7 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        // !TODO communicate particles
+        m_metadomain.Communicate(dom, Comm::Prtl);
         timers.stop("Communications");
       }
 
@@ -247,10 +247,14 @@ namespace ntt {
 
     void ParticlePush(domain_t& domain) {
       using pgen_t = user::PGen<SimEngine::SRPIC, M>;
-      logger::Checkpoint("Launching particle pushers", HERE);
       for (auto& species : domain.species) {
-        const auto npart = species.npart();
-        if (npart == 0) {
+        logger::Checkpoint(
+          fmt::format("Launching particle pusher kernel for %d [%s] : %lu",
+                      species.index(),
+                      species.label().c_str(),
+                      species.npart()),
+          HERE);
+        if (species.npart() == 0) {
           continue;
         }
         const auto q_ovr_m = species.mass() > ZERO
@@ -259,7 +263,6 @@ namespace ntt {
         //  coeff = q / m (dt / 2) omegaB0
         const auto coeff   = q_ovr_m * HALF * dt *
                            m_params.template get<real_t>("scales.omegaB0");
-        // auto       pusher  = species.pusher();
         PrtlPusher::type pusher;
         if (species.pusher() == PrtlPusher::PHOTON) {
           pusher = PrtlPusher::PHOTON;
@@ -353,12 +356,17 @@ namespace ntt {
     }
 
     void CurrentsDeposit(domain_t& domain) {
-      logger::Checkpoint("Launching currents deposit kernel", HERE);
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
       for (auto& species : domain.species) {
-        const auto npart = species.npart();
-        if (npart == 0 || cmp::AlmostZero(species.charge())) {
+        logger::Checkpoint(
+          fmt::format("Launching currents deposit kernel for %d [%s] : %lu %f",
+                      species.index(),
+                      species.label().c_str(),
+                      species.npart(),
+                      (double)species.charge()),
+          HERE);
+        if (species.npart() == 0 || cmp::AlmostZero(species.charge())) {
           continue;
         }
         Kokkos::parallel_for("CurrentsDeposit",
@@ -387,7 +395,6 @@ namespace ntt {
                                (real_t)(species.charge()),
                                dt));
       }
-
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
 

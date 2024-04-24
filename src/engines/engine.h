@@ -159,6 +159,8 @@ namespace ntt {
          },
         m_params.get<bool>("diagnostics.blocking_timers")
       };
+      const auto diag_interval = m_params.get<std::size_t>(
+        "diagnostics.interval");
 
 #if defined(OUTPUT_ENABLED)
       const auto interval = m_params.template get<std::size_t>(
@@ -175,6 +177,7 @@ namespace ntt {
 #endif
 
       auto time_history = pbar::DurationHistory { 1000 };
+
       // main algorithm loop
       while (step < max_steps) {
         // run the engine-dependent algorithm step
@@ -199,7 +202,9 @@ namespace ntt {
         // advance time_history
         time_history.tick();
         // print final timestep report
-        print_step_report(timers, time_history);
+        if (diag_interval > 0 and step % diag_interval == 0) {
+          print_step_report(timers, time_history);
+        }
         timers.resetAll();
       }
     }

@@ -9,8 +9,11 @@
  *   - arch/kokkos_aliases.h
  *   - utils/error.h
  *   - utils/numeric.h
+ *   - arch/mpi_tags.h
  * @namespaces:
  *   - kernel::gr::
+ * @macros:
+ *   - MPI_ENABLED
  * !TODO:
  *   - 3D implementation
  */
@@ -24,6 +27,10 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_tags.h"
+#endif
 
 /* -------------------------------------------------------------------------- */
 /* Local macros                                                               */
@@ -575,50 +582,54 @@ namespace kernel::gr {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Photon pusher not implemented for 1D")
     } else if constexpr (D == Dim::_2D) {
-      if (tag(p) == ParticleTag::alive) {
-        // record previous coordinate
-        i1_prev(p)  = i1(p);
-        i2_prev(p)  = i2(p);
-        dx1_prev(p) = dx1(p);
-        dx2_prev(p) = dx2(p);
-
-        coord_t<Dim::_2D> xp { ZERO };
-        vec_t<Dim::_3D>   vp { ux1(p), ux2(p), ux3(p) };
-
-        xp[0] = i_di_to_Xi(i1(p), dx1(p));
-        xp[1] = i_di_to_Xi(i2(p), dx2(p));
-
-        /* ----------------------------- Leapfrog pusher ---------------------------- */
-        // u_i(n - 1/2) -> u_i(n + 1/2)
-        vec_t<Dim::_3D> vp_upd { ZERO };
-        GeodesicMomentumPush<Massless_t>(Massless_t {}, xp, vp, vp_upd);
-        // x^i(n) -> x^i(n + 1)
-        coord_t<Dim::_2D> xp_upd { ZERO };
-        GeodesicCoordinatePush<Massless_t>(Massless_t {}, xp, vp_upd, xp_upd);
-        // update phi
-        UpdatePhi<Massless_t>(
-          Massless_t {},
-          { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
-          vp_upd,
-          phi(p));
-
-        // update coordinate
-        int      i1_, i2_;
-        prtldx_t dx1_, dx2_;
-        from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
-        from_Xi_to_i_di(xp_upd[1], i2_, dx2_);
-        i1(p)  = i1_;
-        dx1(p) = dx1_;
-        i2(p)  = i2_;
-        dx2(p) = dx2_;
-
-        // update velocity
-        ux1(p) = vp_upd[0];
-        ux2(p) = vp_upd[1];
-        ux3(p) = vp_upd[2];
-
-        boundaryConditions(p);
+      if (tag(p) != ParticleTag::alive) {
+        if (tag(p) != ParticleTag::dead) {
+          raise::KernelError(HERE, "Invalid particle tag in pusher");
+        }
+        return;
       }
+      // record previous coordinate
+      i1_prev(p)  = i1(p);
+      i2_prev(p)  = i2(p);
+      dx1_prev(p) = dx1(p);
+      dx2_prev(p) = dx2(p);
+
+      coord_t<Dim::_2D> xp { ZERO };
+      vec_t<Dim::_3D>   vp { ux1(p), ux2(p), ux3(p) };
+
+      xp[0] = i_di_to_Xi(i1(p), dx1(p));
+      xp[1] = i_di_to_Xi(i2(p), dx2(p));
+
+      /* ----------------------------- Leapfrog pusher ---------------------------- */
+      // u_i(n - 1/2) -> u_i(n + 1/2)
+      vec_t<Dim::_3D> vp_upd { ZERO };
+      GeodesicMomentumPush<Massless_t>(Massless_t {}, xp, vp, vp_upd);
+      // x^i(n) -> x^i(n + 1)
+      coord_t<Dim::_2D> xp_upd { ZERO };
+      GeodesicCoordinatePush<Massless_t>(Massless_t {}, xp, vp_upd, xp_upd);
+      // update phi
+      UpdatePhi<Massless_t>(
+        Massless_t {},
+        { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
+        vp_upd,
+        phi(p));
+
+      // update coordinate
+      int      i1_, i2_;
+      prtldx_t dx1_, dx2_;
+      from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
+      from_Xi_to_i_di(xp_upd[1], i2_, dx2_);
+      i1(p)  = i1_;
+      dx1(p) = dx1_;
+      i2(p)  = i2_;
+      dx2(p) = dx2_;
+
+      // update velocity
+      ux1(p) = vp_upd[0];
+      ux2(p) = vp_upd[1];
+      ux3(p) = vp_upd[2];
+
+      boundaryConditions(p);
     } else if constexpr (D == Dim::_3D) {
       NTTError("not implemented");
     }
@@ -631,68 +642,72 @@ namespace kernel::gr {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Massive pusher not implemented for 1D")
     } else if constexpr (D == Dim::_2D) {
-      if (tag(p) == ParticleTag::alive) {
-        // record previous coordinate
-        i1_prev(p)  = i1(p);
-        i2_prev(p)  = i2(p);
-        dx1_prev(p) = dx1(p);
-        dx2_prev(p) = dx2(p);
-
-        coord_t<Dim::_2D> xp { ZERO };
-
-        xp[0] = i_di_to_Xi(i1(p), dx1(p));
-        xp[1] = i_di_to_Xi(i2(p), dx2(p));
-
-        vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
-          Bp_hat { ZERO };
-        interpolateFields(p, Dp_cntrv, Bp_cntrv);
-        metric.template transform<Idx::U, Idx::T>(xp, Dp_cntrv, Dp_hat);
-        metric.template transform<Idx::U, Idx::T>(xp, Bp_cntrv, Bp_hat);
-
-        vec_t<Dim::_3D> vp { ux1(p), ux2(p), ux3(p) };
-
-        /* -------------------------------- Leapfrog -------------------------------- */
-        /* u_i(n - 1/2) -> u*_i(n) */
-        vec_t<Dim::_3D> vp_upd { ZERO };
-        EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-        /* u*_i(n) -> u**_i(n) */
-        vp[0] = vp_upd[0];
-        vp[1] = vp_upd[1];
-        vp[2] = vp_upd[2];
-        GeodesicMomentumPush<Massive_t>(Massive_t {}, xp, vp, vp_upd);
-        /* u**_i(n) -> u_i(n + 1/2) */
-        vp[0] = vp_upd[0];
-        vp[1] = vp_upd[1];
-        vp[2] = vp_upd[2];
-        EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
-        /* x^i(n) -> x^i(n + 1) */
-        coord_t<Dim::_2D> xp_upd { ZERO };
-        GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
-
-        // update phi
-        UpdatePhi<Massive_t>(
-          Massive_t {},
-          { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
-          vp_upd,
-          phi(p));
-
-        // update coordinate
-        int      i1_, i2_;
-        prtldx_t dx1_, dx2_;
-        from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
-        from_Xi_to_i_di(xp_upd[1], i2_, dx2_);
-        i1(p)  = i1_;
-        dx1(p) = dx1_;
-        i2(p)  = i2_;
-        dx2(p) = dx2_;
-
-        // update velocity
-        ux1(p) = vp_upd[0];
-        ux2(p) = vp_upd[1];
-        ux3(p) = vp_upd[2];
-
-        boundaryConditions(p);
+      if (tag(p) != ParticleTag::alive) {
+        if (tag(p) != ParticleTag::dead) {
+          raise::KernelError(HERE, "Invalid particle tag in pusher");
+        }
+        return;
       }
+      // record previous coordinate
+      i1_prev(p)  = i1(p);
+      i2_prev(p)  = i2(p);
+      dx1_prev(p) = dx1(p);
+      dx2_prev(p) = dx2(p);
+
+      coord_t<Dim::_2D> xp { ZERO };
+
+      xp[0] = i_di_to_Xi(i1(p), dx1(p));
+      xp[1] = i_di_to_Xi(i2(p), dx2(p));
+
+      vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
+        Bp_hat { ZERO };
+      interpolateFields(p, Dp_cntrv, Bp_cntrv);
+      metric.template transform<Idx::U, Idx::T>(xp, Dp_cntrv, Dp_hat);
+      metric.template transform<Idx::U, Idx::T>(xp, Bp_cntrv, Bp_hat);
+
+      vec_t<Dim::_3D> vp { ux1(p), ux2(p), ux3(p) };
+
+      /* -------------------------------- Leapfrog -------------------------------- */
+      /* u_i(n - 1/2) -> u*_i(n) */
+      vec_t<Dim::_3D> vp_upd { ZERO };
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      /* u*_i(n) -> u**_i(n) */
+      vp[0] = vp_upd[0];
+      vp[1] = vp_upd[1];
+      vp[2] = vp_upd[2];
+      GeodesicMomentumPush<Massive_t>(Massive_t {}, xp, vp, vp_upd);
+      /* u**_i(n) -> u_i(n + 1/2) */
+      vp[0] = vp_upd[0];
+      vp[1] = vp_upd[1];
+      vp[2] = vp_upd[2];
+      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      /* x^i(n) -> x^i(n + 1) */
+      coord_t<Dim::_2D> xp_upd { ZERO };
+      GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
+
+      // update phi
+      UpdatePhi<Massive_t>(
+        Massive_t {},
+        { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
+        vp_upd,
+        phi(p));
+
+      // update coordinate
+      int      i1_, i2_;
+      prtldx_t dx1_, dx2_;
+      from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
+      from_Xi_to_i_di(xp_upd[1], i2_, dx2_);
+      i1(p)  = i1_;
+      dx1(p) = dx1_;
+      i2(p)  = i2_;
+      dx2(p) = dx2_;
+
+      // update velocity
+      ux1(p) = vp_upd[0];
+      ux2(p) = vp_upd[1];
+      ux3(p) = vp_upd[2];
+
+      boundaryConditions(p);
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
     }
@@ -723,6 +738,21 @@ namespace kernel::gr {
     if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
     }
+#if defined(MPI_ENABLED)
+    if constexpr (D == Dim::_1D) {
+      tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
+    } else if constexpr (D == Dim::_2D) {
+      tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1, i2(p) < 0, i2(p) >= ni2);
+    } else if constexpr (D == Dim::_3D) {
+      tag(p) = mpi::SendTag(tag(p),
+                            i1(p) < 0,
+                            i1(p) >= ni1,
+                            i2(p) < 0,
+                            i2(p) >= ni2,
+                            i3(p) < 0,
+                            i3(p) >= ni3);
+    }
+#endif
   }
 
 } // namespace kernel::gr

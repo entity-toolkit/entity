@@ -10,6 +10,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -18,6 +19,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <map>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -276,6 +278,251 @@ namespace arch {
       domain.species[injector.species.second - 1].set_npart(
         domain.species[injector.species.second - 1].npart() + nparticles);
     }
+  }
+
+  template <SimEngine::type S, class M>
+  struct GlobalInjector_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const bool use_weights;
+
+    array_t<real_t*> in_ux1;
+    array_t<real_t*> in_ux2;
+    array_t<real_t*> in_ux3;
+    array_t<real_t*> in_x1;
+    array_t<real_t*> in_x2;
+    array_t<real_t*> in_x3;
+    array_t<real_t*> in_phi;
+    array_t<real_t*> in_wei;
+
+    array_t<std::size_t> idx { "idx" };
+    array_t<int*>        i1s, i2s, i3s;
+    array_t<prtldx_t*>   dx1s, dx2s, dx3s;
+    array_t<real_t*>     ux1s, ux2s, ux3s;
+    array_t<real_t*>     phis;
+    array_t<real_t*>     weights;
+    array_t<short*>      tags;
+
+    const std::size_t offset;
+
+    M global_metric;
+
+    real_t      x1_min, x1_max, x2_min, x2_max, x3_min, x3_max;
+    std::size_t i1_offset, i2_offset, i3_offset;
+
+    GlobalInjector_kernel(Particles<M::Dim, M::CoordType>& species,
+                          const M&                         global_metric,
+                          const Domain<S, M>&              local_domain,
+                          const std::map<std::string, std::vector<real_t>>& data,
+                          bool use_weights)
+      : use_weights { use_weights }
+      , i1s { species.i1 }
+      , i2s { species.i2 }
+      , i3s { species.i3 }
+      , dx1s { species.dx1 }
+      , dx2s { species.dx2 }
+      , dx3s { species.dx3 }
+      , ux1s { species.ux1 }
+      , ux2s { species.ux2 }
+      , ux3s { species.ux3 }
+      , phis { species.phi }
+      , weights { species.weight }
+      , tags { species.tag }
+      , offset { species.npart() }
+      , global_metric { global_metric } {
+      const auto n_inject = data.at("x1").size();
+
+      x1_min    = local_domain.mesh.extent(in::x1).first;
+      x1_max    = local_domain.mesh.extent(in::x1).second;
+      i1_offset = local_domain.offset_ncells()[0];
+
+      copy_from_vector("x1", in_x1, data, n_inject);
+      copy_from_vector("ux1", in_ux1, data, n_inject);
+      copy_from_vector("ux2", in_ux2, data, n_inject);
+      copy_from_vector("ux3", in_ux3, data, n_inject);
+      if (use_weights) {
+        copy_from_vector("weights", in_wei, data, n_inject);
+      }
+      if constexpr (D == Dim::_2D or D == Dim::_3D) {
+        x2_min    = local_domain.mesh.extent(in::x2).first;
+        x2_max    = local_domain.mesh.extent(in::x2).second;
+        i2_offset = local_domain.offset_ncells()[1];
+        copy_from_vector("x2", in_x2, data, n_inject);
+      }
+      if constexpr (D == Dim::_2D and M::CoordType != Coord::Cart) {
+        copy_from_vector("phi", in_phi, data, n_inject);
+      }
+      if constexpr (D == Dim::_3D) {
+        x3_min    = local_domain.mesh.extent(in::x3).first;
+        x3_max    = local_domain.mesh.extent(in::x3).second;
+        i3_offset = local_domain.offset_ncells()[2];
+        copy_from_vector("x3", in_x3, data, n_inject);
+      }
+    }
+
+    void copy_from_vector(const std::string& name,
+                          array_t<real_t*>&  arr,
+                          const std::map<std::string, std::vector<real_t>>& data,
+                          std::size_t n_inject) {
+      raise::ErrorIf(data.find(name) == data.end(), name + " not found in data", HERE);
+      raise::ErrorIf(data.at(name).size() != n_inject, "Inconsistent data size", HERE);
+      arr        = array_t<real_t*> { name, n_inject };
+      auto arr_h = Kokkos::create_mirror_view(arr);
+      for (std::size_t i = 0; i < data.at(name).size(); ++i) {
+        arr_h(i) = data.at(name)[i];
+      }
+      Kokkos::deep_copy(arr, arr_h);
+    }
+
+    auto number_injected() const -> std::size_t {
+      auto idx_h = Kokkos::create_mirror_view(idx);
+      Kokkos::deep_copy(idx_h, idx);
+      return idx_h();
+    }
+
+    Inline void operator()(index_t p) const {
+      if constexpr (D == Dim::_1D) {
+        if (in_x1(p) >= x1_min and in_x1(p) < x1_max) {
+          coord_t<Dim::_1D>     x_Cd { ZERO };
+          vec_t<Dim::_3D>       u_XYZ { ZERO };
+          const vec_t<Dim::_3D> u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
+
+          auto index { offset + Kokkos::atomic_fetch_add(&idx(), 1) };
+          global_metric.template convert<Crd::Ph, Crd::Cd>({ in_x1(p) }, x_Cd);
+          global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_XYZ);
+
+          const auto i1 = static_cast<int>(static_cast<std::size_t>(x_Cd[0]) - i1_offset);
+          const auto dx1 = static_cast<prtldx_t>(x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
+
+          i1s(index)  = i1;
+          dx1s(index) = dx1;
+          ux1s(index) = u_XYZ[0];
+          ux2s(index) = u_XYZ[1];
+          ux3s(index) = u_XYZ[2];
+          tags(index) = ParticleTag::alive;
+          if (use_weights) {
+            weights(index) = weights(p);
+          } else {
+            weights(index) = ONE;
+          }
+        }
+      } else if constexpr (D == Dim::_2D) {
+        if ((in_x1(p) >= x1_min and in_x1(p) < x1_max) and
+            (in_x2(p) >= x2_min and in_x2(p) < x2_max)) {
+          coord_t<Dim::_2D>   x_Cd { ZERO };
+          vec_t<Dim::_3D>     u_Cd { ZERO };
+          vec_t<Dim::_3D>     u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
+          coord_t<M::PrtlDim> x_Cd_ { ZERO };
+
+          auto index {
+            offset + Kokkos::atomic_fetch_add(&idx(), static_cast<std::size_t>(1))
+          };
+          global_metric.template convert<Crd::Ph, Crd::Cd>({ in_x1(p), in_x2(p) },
+                                                           x_Cd);
+          x_Cd_[0] = x_Cd[0];
+          x_Cd_[1] = x_Cd[1];
+          if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
+            x_Cd_[2] = in_phi(p);
+          }
+          if constexpr (S == SimEngine::SRPIC) {
+            global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, u_Ph, u_Cd);
+          } else if constexpr (S == SimEngine::GRPIC) {
+            global_metric.template transform<Idx::T, Idx::D>(x_Cd, u_Ph, u_Cd);
+          } else {
+            raise::KernelError(HERE, "Unknown simulation engine");
+          }
+          const auto i1 = static_cast<int>(static_cast<std::size_t>(x_Cd[0]) - i1_offset);
+          const auto dx1 = static_cast<prtldx_t>(x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
+          const auto i2 = static_cast<int>(static_cast<std::size_t>(x_Cd[1]) - i2_offset);
+          const auto dx2 = static_cast<prtldx_t>(x_Cd[1] - static_cast<real_t>(i2 + i2_offset));
+ 
+          i1s(index)  = i1;
+          dx1s(index) = dx1;
+          i2s(index)  = i2;
+          dx2s(index) = dx2;
+          ux1s(index) = u_Cd[0];
+          ux2s(index) = u_Cd[1];
+          ux3s(index) = u_Cd[2];
+          if (M::CoordType != Coord::Cart) {
+            phis(index) = in_phi(p);
+          }
+          tags(index) = ParticleTag::alive;
+          if (use_weights) {
+            weights(index) = weights(p);
+          } else {
+            weights(index) = ONE;
+          }
+        }
+      } else {
+        if ((in_x1(p) >= x1_min and in_x1(p) < x1_max) and
+            (in_x2(p) >= x2_min and in_x2(p) < x2_max) and
+            (in_x3(p) >= x3_min and in_x3(p) < x3_max)) {
+          coord_t<Dim::_3D> x_Cd { ZERO };
+          vec_t<Dim::_3D>   u_Cd { ZERO };
+          vec_t<Dim::_3D>   u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
+
+          auto index { offset + Kokkos::atomic_fetch_add(&idx(), 1) };
+          global_metric.template convert<Crd::Ph, Crd::Cd>(
+            { in_x1(p), in_x2(p), in_x3(p) },
+            x_Cd);
+          if constexpr (S == SimEngine::SRPIC) {
+            global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_Cd);
+          } else if constexpr (S == SimEngine::GRPIC) {
+            global_metric.template transform<Idx::T, Idx::D>(x_Cd, u_Ph, u_Cd);
+          } else {
+            raise::KernelError(HERE, "Unknown simulation engine");
+          }
+          const auto i1 = static_cast<int>(static_cast<std::size_t>(x_Cd[0]) - i1_offset);
+          const auto dx1 = static_cast<prtldx_t>(x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
+          const auto i2 = static_cast<int>(static_cast<std::size_t>(x_Cd[1]) - i2_offset);
+          const auto dx2 = static_cast<prtldx_t>(x_Cd[1] - static_cast<real_t>(i2 + i2_offset));
+          const auto i3 = static_cast<int>(static_cast<std::size_t>(x_Cd[2]) - i3_offset);
+          const auto dx3 = static_cast<prtldx_t>(x_Cd[2] - static_cast<real_t>(i3 + i3_offset));
+
+          i1s(index)  = i1;
+          dx1s(index) = dx1;
+          i2s(index)  = i2;
+          dx2s(index) = dx2;
+          i3s(index)  = i3;
+          dx3s(index) = dx3;
+          ux1s(index) = u_Cd[0];
+          ux2s(index) = u_Cd[1];
+          ux3s(index) = u_Cd[2];
+          tags(index) = ParticleTag::alive;
+          if (use_weights) {
+            weights(index) = weights(p);
+          } else {
+            weights(index) = ONE;
+          }
+        }
+      }
+    }
+  };
+
+  /**
+   * @brief Injects particles from a globally-defined vector
+   * @note very inefficient, should only be used for debug purposes
+   * @note (or when injecting very small # of particles)
+   */
+  template <SimEngine::type S, class M>
+  inline void InjectGlobally(const Metadomain<S, M>& global_domain,
+                             Domain<S, M>&           local_domain,
+                             spidx_t                 spidx,
+                             const std::map<std::string, std::vector<real_t>>& data,
+                             bool use_weights = false) {
+    static_assert(M::is_metric, "M must be a metric class");
+    const auto n_inject        = data.at("ux1").size();
+    auto       injector_kernel = GlobalInjector_kernel<S, M>(
+      local_domain.species[spidx - 1],
+      global_domain.mesh().metric,
+      local_domain,
+      data,
+      use_weights);
+    Kokkos::parallel_for("InjectGlobally", n_inject, injector_kernel);
+    const auto n_inj = injector_kernel.number_injected();
+    local_domain.species[spidx - 1].set_npart(
+      local_domain.species[spidx - 1].npart() + n_inj);
   }
 
 } // namespace arch

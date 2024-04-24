@@ -1,11 +1,11 @@
 [simulation]
-  name = "langmuir"
+  name = "shear"
   engine = "srpic"
   runtime = 1.0
 
 [grid]
-  resolution = [2048, 512]
-  extent = [[0.0, 1.0], [0.0, 0.25]]
+  resolution = [256, 256]
+  extent = [[0.0, 1.0], [0.0, 1.0]]
 
   [grid.metric]
     metric = "minkowski"
@@ -25,24 +25,22 @@
     CFL = 0.5
 
 [particles]
-  ppc0 = 14.0
+  ppc0 = 10.0
 
   [[particles.species]]
   label = "e-"
   mass = 1.0
   charge = -1.0
-  maxnpart = 1e7
+  maxnpart = 1e6
 
   [[particles.species]]
   label = "e+"
   mass = 1.0
   charge = 1.0
-  maxnpart = 1e7
+  maxnpart = 1e6
 
 [setup]
   vmax = 0.1
-  nx1 = 4
-  nx2 = 2
   
 [output]
   fields = ["Rho", "E"]

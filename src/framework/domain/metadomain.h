@@ -197,10 +197,6 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     int g_mpi_rank, g_mpi_size;
 #endif
-
-    // #if defined(OUTPUT_ENABLED)
-    //       , m_writer { engine }
-    // #endif
   };
 
 } // namespace ntt

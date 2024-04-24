@@ -11,8 +11,14 @@
  *   - arch/traits.h
  *   - utils/error.h
  *   - utils/numeric.h
+ *   - arch/mpi_tags.h
  * @namespaces:
  *   - kernel::sr::
+ * @macros:
+ *   - MPI_ENABLED
+ * @note
+ * At the end of the boundary condition call, if MPI is enabled particles
+ * are additionally tagged depending on which direction they are leaving
  */
 
 #ifndef KERNELS_PARTICLE_PUSHER_SR_HPP
@@ -25,6 +31,10 @@
 #include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_tags.h"
+#endif
 
 #include <tuple>
 #include <type_traits>
@@ -256,6 +266,9 @@ namespace kernel::sr {
 
     Inline void operator()(index_t p) const {
       if (tag(p) != ParticleTag::alive) {
+        if (tag(p) != ParticleTag::dead) {
+          raise::KernelError(HERE, "Invalid particle tag in pusher");
+        }
         return;
       }
       coord_t<M::PrtlDim> xp_Cd { ZERO };
@@ -275,7 +288,6 @@ namespace kernel::sr {
       getInterpFlds(p, ei, bi);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-      // if constexpr (is_contained<Synchrotron_t, Union_t<Args...>>::value) {
       if (cooling != 0) {
         // backup fields & velocities to use later in cooling
         ei_Cart_rad[0] = ei_Cart[0];
@@ -918,6 +930,21 @@ namespace kernel::sr {
           }
         }
       }
+#if defined(MPI_ENABLED)
+      if constexpr (D == Dim::_1D) {
+        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
+      } else if constexpr (D == Dim::_2D) {
+        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1, i2(p) < 0, i2(p) >= ni2);
+      } else if constexpr (D == Dim::_3D) {
+        tag(p) = mpi::SendTag(tag(p),
+                              i1(p) < 0,
+                              i1(p) >= ni1,
+                              i2(p) < 0,
+                              i2(p) >= ni2,
+                              i3(p) < 0,
+                              i3(p) >= ni3);
+      }
+#endif
     }
   };
 
