@@ -221,6 +221,9 @@ namespace timer {
         }
       }
       for (auto& [name, timer] : m_timers) {
+        if (name == "Output") {
+          continue;
+        }
         std::string units = "µs";
         auto        value = timer.second;
         if (flags & Timer::AutoConvert) {
@@ -256,7 +259,22 @@ namespace timer {
         if (flags & Timer::PrintUnits) {
           os << " " << units;
         }
-        os << c_reset << " [- output]" << std::endl;
+        os << c_reset << std::endl;
+      }
+      if (flags & Timer::PrintOutput) {
+        std::string units = "µs";
+        auto        value = get("Output");
+        if (flags & Timer::AutoConvert) {
+          convertTime(value, units);
+        }
+        os << "Output" << c_bblack
+           << fmt::pad("Output", 22, '.', true).substr(6, 22);
+        os << std::setw(17) << std::right << std::setfill('.')
+           << fmt::format("%s%.2Lf", c_byellow.c_str(), value);
+        if (flags & Timer::PrintUnits) {
+          os << " " << units;
+        }
+        os << c_reset << std::endl;
       }
     }
   };

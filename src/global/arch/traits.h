@@ -10,6 +10,8 @@
  *   - traits::run_t, traits::to_string_t
  *   - traits::pgen::init_flds_t
  *   - traits::pgen::ext_force_t
+ *   - traits::pgen::init_prtls_t
+ *   - traits::pgen::custom_poststep_t
  *   - traits::check_compatibility<>
  *   - traits::compatibility<>
  *   - traits::is_pair<>
@@ -83,10 +85,13 @@ namespace traits {
     using init_flds_t = decltype(&T::init_flds);
 
     template <typename T>
+    using init_prtls_t = decltype(&T::InitPrtls);
+
+    template <typename T>
     using ext_force_t = decltype(&T::ext_force);
 
     template <typename T>
-    using init_prtls_t = decltype(&T::InitPrtls);
+    using custom_poststep_t = decltype(&T::CustomPostStep);
   } // namespace pgen
 
   // for pgen extforce

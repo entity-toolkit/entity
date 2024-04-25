@@ -227,10 +227,7 @@ namespace kernel {
                                        static_cast<real_t>(i2(p)) + HALF,
                                        static_cast<real_t>(i3(p)) + HALF });
         }
-        if (use_weights) {
-          coeff *= weight(p);
-        }
-        coeff *= smooth;
+        coeff *= weight(p) * smooth;
       }
 
       auto buff_access = Buff.access();

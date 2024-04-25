@@ -211,9 +211,9 @@ namespace Timer {
     PrintTitle    = 1 << 4,
     AutoConvert   = 1 << 5,
     Colorful      = 1 << 6,
-    All = PrintRelative | PrintUnits | PrintIndents | PrintTotal | PrintTitle |
-          AutoConvert | Colorful,
-    Default = All,
+    PrintOutput   = 1 << 7,
+    Default       = PrintRelative | PrintUnits | PrintIndents | PrintTotal |
+              PrintTitle | AutoConvert | Colorful,
   };
 } // namespace Timer
 

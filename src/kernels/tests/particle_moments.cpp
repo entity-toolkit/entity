@@ -76,7 +76,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   array_t<real_t*>   ux2 { "ux2", 10 };
   array_t<real_t*>   ux3 { "ux3", 10 };
   array_t<real_t*>   phi { "phi", 10 };
-  array_t<real_t*>   weight { "weight", 0 };
+  array_t<real_t*>   weight { "weight", 10 };
   array_t<short*>    tag { "tag", 10 };
   const float        mass        = 1.0;
   const float        charge      = 1.0;
@@ -91,6 +91,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   put_value<real_t>(ux2, (real_t)(-2.0), 0);
   put_value<real_t>(ux3, (real_t)(3.0), 0);
   put_value<short>(tag, ParticleTag::alive, 0);
+  put_value<real_t>(weight, 1.0, 0);
 
   put_value<int>(i1, 2, 4);
   put_value<int>(i2, 2, 4);
@@ -100,6 +101,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   put_value<real_t>(ux2, (real_t)(2.0), 4);
   put_value<real_t>(ux3, (real_t)(-1.0), 4);
   put_value<short>(tag, ParticleTag::alive, 4);
+  put_value<real_t>(weight, 1.0, 4);
 
   auto boundaries = boundaries_t<FldsBC> {};
   if constexpr (M::CoordType != Coord::Cart) {

@@ -88,13 +88,12 @@ namespace user {
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist =
         SinEDist<S, M>(local_domain.mesh.metric, vmax, nx1, nx2, sx1, sx2);
-      const auto injector = arch::ParticleInjector<S, M, SinEDist>(energy_dist,
-                                                                   { 1, 2 });
-      arch::InjectUniformNumberDensity<S, M, arch::ParticleInjector<S, M, SinEDist>>(
-        params,
-        local_domain,
-        injector,
-        1.0);
+      const auto injector = arch::UniformInjector<S, M, SinEDist>(energy_dist,
+                                                                  { 1, 2 });
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, SinEDist>>(params,
+                                                                       local_domain,
+                                                                       injector,
+                                                                       1.0);
     }
   };
 

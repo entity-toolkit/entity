@@ -29,8 +29,9 @@ namespace ntt {
                        std::ostream& = std::cout);
 
   template <SimEngine::type S, class M>
-  void Engine<S, M>::print_step_report(timer::Timers& timers,
-                                       pbar::DurationHistory& time_history) const {
+  void Engine<S, M>::print_step_report(timer::Timers&         timers,
+                                       pbar::DurationHistory& time_history,
+                                       bool print_output) const {
     DiagFlags  diag_flags  = Diag::Default;
     TimerFlags timer_flags = Timer::Default;
     if (not m_params.get<bool>("diagnostics.colored_stdout")) {
@@ -39,6 +40,9 @@ namespace ntt {
     }
     if (m_params.get<std::size_t>("particles.nspec") == 0) {
       diag_flags ^= Diag::Species;
+    }
+    if (print_output) {
+      diag_flags |= Timer::PrintOutput;
     }
     CallOnce(
       [diag_flags](auto& time, auto& step, auto& max_steps, auto& dt) {

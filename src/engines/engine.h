@@ -141,7 +141,7 @@ namespace ntt {
 
     void init();
     void print_report() const;
-    void print_step_report(timer::Timers&, pbar::DurationHistory&) const;
+    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool) const;
 
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 
@@ -153,7 +153,7 @@ namespace ntt {
          "CurrentFiltering", "CurrentDeposit",
          "ParticlePusher", "FieldBoundaries",
          "ParticleBoundaries", "Communications",
-         "UserSpecific", "Output" },
+         "Custom", "Output" },
         []() {
           Kokkos::fence();
          },
@@ -185,10 +185,19 @@ namespace ntt {
           step_forward(timers, dom);
         });
 
+        m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
+          timers.start("Custom");
+          if (traits::has_member<traits::pgen::custom_poststep_t, user::PGen<S, M>>::value) {
+            m_pgen.CustomPostStep(step, time, dom);
+          }
+          timers.stop("Custom");
+        });
+
         // advance time & timestep
         ++step;
         time += dt;
 
+        auto print_output = false;
 #if defined(OUTPUT_ENABLED)
         // write timestep if needed
         if (should_output(step, time)) {
@@ -196,6 +205,7 @@ namespace ntt {
           m_metadomain.Write(m_params, step, time);
           timers.stop("Output");
           last_output_time = time;
+          print_output     = true;
         }
 #endif
 
@@ -203,7 +213,7 @@ namespace ntt {
         time_history.tick();
         // print final timestep report
         if (diag_interval > 0 and step % diag_interval == 0) {
-          print_step_report(timers, time_history);
+          print_step_report(timers, time_history, print_output);
         }
         timers.resetAll();
       }
