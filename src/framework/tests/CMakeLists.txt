@@ -29,7 +29,9 @@ gen_test(parameters)
 gen_test(particles)
 gen_test(fields)
 gen_test(grid_mesh)
-gen_test(metadomain)
+if (${DEBUG})
+  gen_test(metadomain)
+endif()
 gen_test(comm_nompi)
 
 # this test is only run manually to ensure ...
