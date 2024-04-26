@@ -90,7 +90,7 @@ auto main(int argc, char* argv[]) -> int {
         for (const auto& name : names) {
           auto data = io.InquireVariable<real_t>(name);
           raise::ErrorIf(data.Shape().size() != 3,
-                         fmt::format("%s is not 3D", name),
+                         fmt::format("%s is not 3D", name.c_str()),
                          HERE);
 
           auto        dims = data.Shape();

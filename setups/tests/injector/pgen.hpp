@@ -38,7 +38,7 @@ namespace user {
     }
 
   private:
-    const real_t vmax, phase;
+    const real_t phase, vmax;
   };
 
   template <SimEngine::type S, class M>

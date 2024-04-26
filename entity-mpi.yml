@@ -1,0 +1,10 @@
+name: entity-mpi
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - adios2=*=mpi*
+  - hdf5=*=mpi*
+  - pip
+  - pip:
+    - nt2py
