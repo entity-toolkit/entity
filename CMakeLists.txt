@@ -123,5 +123,5 @@ else()
   # ------------------------------- Main source ------------------------------ #
   set_problem_generator(${pgen})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
-  # include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
 endif()

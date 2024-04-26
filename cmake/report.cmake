@@ -76,32 +76,11 @@ endfunction()
 
 set(ON_OFF_VALUES "ON" "OFF")
 
-PrintChoices("Simulation engine"
-  "engine"
-  "${simulation_engines}"
-  ${engine}
-  ${default_engine}
-  "${Blue}"
-  ENGINE_REPORT
-  1
-  36
-)
-PrintChoices("Metric"
-  "metric"
-  "${metrics}"
-  ${metric}
-  ${default_metric}
-  "${Blue}"
-  METRIC_REPORT
-  1
-  36
-)
-
 if(${PGEN_FOUND})
   PrintChoices("Problem generator"
     "pgen"
     "${problem_generators}"
-    ${pgen}
+    ${PGEN}
     ${default_pgen}
     "${Blue}"
     PGEN_REPORT
@@ -187,7 +166,7 @@ PrintChoices("C++ compiler"
   "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
   "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
   "N/A"
-  "${White}"
+  "${ColorReset}"
   CXX_COMPILER_REPORT
   0
   42
@@ -198,14 +177,13 @@ PrintChoices("C compiler"
   "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
   "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
   "N/A"
-  "${White}"
+  "${ColorReset}"
   C_COMPILER_REPORT
   0
   42
 )
 
 if(${Kokkos_ENABLE_CUDA})
-  # check if empty
   if("${CMAKE_CUDA_COMPILER}" STREQUAL "")
     execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
   else()
@@ -225,7 +203,7 @@ if(${Kokkos_ENABLE_CUDA})
     "${CUDACOMP} v${CUDACOMP_VERSION}"
     "${CUDACOMP} v${CUDACOMP_VERSION}"
     "N/A"
-    "${White}"
+    "${ColorReset}"
     CUDA_COMPILER_REPORT
     0
     42
@@ -235,7 +213,7 @@ endif()
 set(DOT_SYMBOL "${ColorReset}.")
 set(DOTTED_LINE_SYMBOL "${ColorReset}. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ")
 
-set(DASHED_LINE_SYMBOL "${ColorReset}- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ")
+set(DASHED_LINE_SYMBOL "${ColorReset}....................................................................... ")
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
   set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}")
@@ -243,65 +221,54 @@ else()
   set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}    ")
 endif()
 
-message("
-${DOTTED_LINE_SYMBOL}
-${DOT_SYMBOL}${Blue}                          __        __                               ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                         /\\ \\__  __/\\ \\__                            ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __                   ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}              / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\                  ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}             /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __             ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}             \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\            ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}              \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/            ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                                                /\\___/               ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                                                \\/__/                ${DOT_SYMBOL}
-${DOT_SYMBOL}                                                                     ${DOT_SYMBOL}
-${DOT_SYMBOL}${Blue}                              ${VERSION_SYMBOL}                             ${DOT_SYMBOL}
-${DOTTED_LINE_SYMBOL}")
+message("${Blue}              __        __
+             /\\ \\__  __/\\ \\__
+    __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __
+  / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\
+ /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __
+ \\ \\____\\ \\_\\ \\_\\ \\__\\\\ \\_\\ \\__\\\\ \\____ \\/\\_\\
+  \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/
+                                    /\\___/
+Entity ${VERSION_SYMBOL}\t\t    \\/__/")
 message("${DASHED_LINE_SYMBOL}
-Main configurations ${Dim}[1]${ColorReset}
-${DASHED_LINE_SYMBOL}")
-message("  ${ENGINE_REPORT}\n")
-message("  ${METRIC_REPORT}\n")
+Main configurations ${Dim}[^1]${ColorReset}")
 
 if(${PGEN_FOUND})
-  message("  ${PGEN_REPORT}\n")
+  message("  ${PGEN_REPORT}")
 endif()
 
-message("  ${PRECISION_REPORT}\n")
-message("  ${OUTPUT_REPORT}\n")
-message("  ${GUI_REPORT}\n")
+message("  ${PRECISION_REPORT}")
+message("  ${OUTPUT_REPORT}")
 message("${DASHED_LINE_SYMBOL}
-Compile configurations
-${DASHED_LINE_SYMBOL}")
+Compile configurations")
 
-message("  ${CUDA_REPORT}\n")
-message("  ${OPENMP_REPORT}\n")
+message("  ${CUDA_REPORT}")
+message("  ${OPENMP_REPORT}")
 
-message("  ${C_COMPILER_REPORT}\n")
+message("  ${C_COMPILER_REPORT}")
 
-message("  ${CXX_COMPILER_REPORT}\n")
+message("  ${CXX_COMPILER_REPORT}")
 
 if(NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
-  message("  ${CUDA_COMPILER_REPORT}\n")
+  message("  ${CUDA_COMPILER_REPORT}")
 endif()
 
-message("  ${MPI_REPORT}\n")
+message("  ${MPI_REPORT}")
 
-message("  ${DEBUG_REPORT}\n")
+message("  ${DEBUG_REPORT}")
 
-message("${DASHED_LINE_SYMBOL}
-Dependencies
-${DASHED_LINE_SYMBOL}")
+message("${DASHED_LINE_SYMBOL}\nDependencies")
 
-message("  - Kokkos:\t\t\t\t  v${Kokkos_VERSION}\n")
-
+message("  - Kokkos:\tv${Kokkos_VERSION}")
 if(${output})
-  message("  - ADIOS2:\t\t\t\t  v${adios2_VERSION}\n")
+  message("  - ADIOS2:\tv${adios2_VERSION}")
+endif()
+if(${HDF5_FOUND})
+  message("  - HDF5:\tv${HDF5_VERSION}")
 endif()
 
 message("${DASHED_LINE_SYMBOL}
 Notes
-${DASHED_LINE_SYMBOL}
-  ${Dim}[1] Set with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value
+  ${Dim}[^1] Set with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value
    :  will be used unless the variable is explicitly set.${ColorReset}
 ")
