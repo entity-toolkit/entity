@@ -186,11 +186,12 @@ namespace ntt {
         });
 
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
-          timers.start("Custom");
-          if (traits::has_member<traits::pgen::custom_poststep_t, user::PGen<S, M>>::value) {
+          if constexpr (
+            traits::has_member<traits::pgen::custom_poststep_t, user::PGen<S, M>>::value) {
+            timers.start("Custom");
             m_pgen.CustomPostStep(step, time, dom);
+            timers.stop("Custom");
           }
-          timers.stop("Custom");
         });
 
         // advance time & timestep

@@ -50,3 +50,5 @@ Testing/
 
 .schema.json
 *_old/
+
+compile_commands.json
