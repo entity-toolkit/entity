@@ -3,10 +3,6 @@
  * @brief Grid class containing information about the discretization
  * @implements
  *   - ntt::Grid<>
- * @depends:
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
  * @cpp:
  *   - grid.cpp
  * @namespaces:

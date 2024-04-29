@@ -4,11 +4,6 @@
  * @implements
  *   - arch::SpatialDistribution<>
  *   - arch::UniformDist<> : arch::SpatialDistribution<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/numeric.h
  * @namespace
  *   - arch::
  * @note

@@ -5,10 +5,6 @@
  *   - out::OutputParticle
  * @cpp:
  *   - particles.cpp
- * @depends:
- *   - enums.h
- *   - utils/error.h
- *   - output/utils/getspecies.h
  */
 
 #ifndef OUTPUT_PARTICLES_H

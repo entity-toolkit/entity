@@ -1,8 +1,6 @@
 /**
  * @file defaults.h
  * @brief Default values for the simulation parameters
- * @depends:
- *   - global.h
  * @namespaces:
  *   - ntt::defaults
  * @note These values are used when the user does not provide them in the input file
@@ -15,7 +13,6 @@
 
 #include <string>
 #include <string_view>
-#include <vector>
 
 namespace ntt::defaults {
   constexpr std::string_view input_filename = "input";

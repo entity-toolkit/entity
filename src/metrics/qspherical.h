@@ -5,13 +5,6 @@
  * where: theta = eta + 2h*eta * (PI - 2eta) * (PI - eta) / PI^2
  * @implements
  *   - metric::QSpherical<> : metric::MetricBase<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - metrics/metric_base.h
- *   - arch/kokkos_aliases.h
- *   - utils/comparators.h
- *   - utils/numeric.h
  * @namespaces:
  *   - metric::
  * !TODO
@@ -32,7 +25,6 @@
 
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace metric {

@@ -3,11 +3,6 @@
  * @brief Simulation engien class which specialized on GRPIC
  * @implements
  *   - ntt::GRPICEngine<> : ntt::Engine<>
- * @depends:
- *   - enums.h
- *   - utils/timer.h
- *   - engines/engine.h
- *   - framework/domain/domain.h
  * @cpp:
  *   - srpic.cpp
  * @namespaces:

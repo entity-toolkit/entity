@@ -3,14 +3,6 @@
  * @brief Definition of the particle container class
  * @implements
  *   - ntt::Particles<> : ntt::ParticleSpecies
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/formatting.h
- *   - utils/sorting.h
- *   - framework/containers/species.h
  * @cpp:
  *   - particles.cpp
  * @macros:
@@ -31,8 +23,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#include <iostream>
-#include <ostream>
 #include <string>
 #include <vector>
 

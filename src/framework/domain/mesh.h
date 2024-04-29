@@ -3,13 +3,6 @@
  * @brief Grid and Mesh classes containing information about the geometry
  * @implements
  *   - ntt::Mesh<> : ntt::Grid<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/directions.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - framework/domain/grid.h
  * @namespaces:
  *   - ntt::
  * @note

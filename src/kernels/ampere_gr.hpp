@@ -4,12 +4,6 @@
  * @implements
  *   - kernel::gr::Ampere_kernel<>
  *   - kernel::gr::CurrentsAmpere_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::gr::
  * !TODO:

@@ -4,13 +4,6 @@
  * Kerr metric in qspherical Kerr-Schild coordinates (rg=c=1)
  * @implements
  *   - metric::QKerrSchild<> : metric::MetricBase<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - metrics/metric_base.h
- *   - arch/kokkos_aliases.h
- *   - utils/comparators.h
- *   - utils/numeric.h
  * @namespaces:
  *   - metric::
  * !TODO

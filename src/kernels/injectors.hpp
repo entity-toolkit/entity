@@ -5,12 +5,6 @@
  *   - kernel::UniformInjector_kernel<>
  *   - kernel::GlobalInjector_kernel<>
  *   - kernel::NonUniformInjector_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::
  */

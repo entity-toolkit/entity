@@ -6,9 +6,6 @@
  *   - dir::direction_t
  *   - dir::map_t
  *   - dir::dirs_t
- * @depends:
- *   - global.h
- *   - utils/error.h
  * @namespaces:
  *   - dir::Directions
  * @note

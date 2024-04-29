@@ -4,11 +4,6 @@
  * @implements
  *   - kernel::mink::Ampere_kernel<>
  *   - kernel::mink::CurrentsAmpere_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
  * @namespaces:
  *   - kernel::mink::
  */
@@ -16,7 +11,6 @@
 #ifndef KERNELS_AMPERE_MINK_HPP
 #define KERNELS_AMPERE_MINK_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"

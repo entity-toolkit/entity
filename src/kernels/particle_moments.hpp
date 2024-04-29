@@ -3,12 +3,6 @@
  * @brief Algorithm for computing different moments from particle distribution
  * @implements
  *   - kernel::ParticleMoments_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::
  */

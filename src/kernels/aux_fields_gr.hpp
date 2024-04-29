@@ -4,12 +4,6 @@
  * @implements
  *   - kernel::gr::ComputeAuxE_kernel<>
  *   - kernel::gr::ComputeAuxH_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::gr::
  * !TODO:
@@ -19,7 +13,6 @@
 #ifndef KERNELS_AUX_FIELDS_GR_HPP
 #define KERNELS_AUX_FIELDS_GR_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"

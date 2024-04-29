@@ -5,12 +5,6 @@
  *   - out::OutputField
  * @cpp:
  *   - fields.cpp
- * @depends:
- *   - global.h
- *   - enums.h
- *   - utils/formatting.h
- *   - utils/error.h
- *   - output/utils/interpret_prompt.h
  * @namespaces:
  *   - out::
  */

@@ -3,6 +3,7 @@
 # @sources:
 # - engine_printer.cpp
 # - engine_init.cpp
+# - engine_run.cpp
 # - engine_step_report.cpp
 # @includes:
 # - ../
@@ -25,6 +26,7 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/engine_printer.cpp
   ${SRC_DIR}/engine_init.cpp
+  ${SRC_DIR}/engine_run.cpp
   ${SRC_DIR}/engine_step_report.cpp
 )
 add_library(ntt_engines ${SOURCES})

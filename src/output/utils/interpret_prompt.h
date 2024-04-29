@@ -6,10 +6,6 @@
  * @implements
  *   - out::InterpretSpecies -> std::vector<unsigned short>
  *   - out::InterpretComponents -> std::vector<std::vector<unsigned short>>
- * @depends:
- *   - global.h
- *   - utils/formatting.h
- *   - utils/error.h
  * @cpp:
  *   - interpret_prompt.cpp
  * @namespaces:
@@ -20,8 +16,6 @@
 
 #ifndef OUTPUT_UTILS_INTERPRET_PROMPT_H
 #define OUTPUT_UTILS_INTERPRET_PROMPT_H
-
-#include "global.h"
 
 #include <string>
 #include <vector>

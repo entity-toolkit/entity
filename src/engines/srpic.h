@@ -3,25 +3,6 @@
  * @brief Simulation engien class which specialized on SRPIC
  * @implements
  *   - ntt::SRPICEngine<> : ntt::Engine<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - arch/traits.h
- *   - utils/log.h
- *   - utils/numeric.h
- *   - utils/timer.h
- *   - engines/engine.h
- *   - framework/domain/domain.h
- *   - framework/parameters.h
- *   - kernels/digital_filter.hpp
- *   - kernels/ampere_mink.hpp
- *   - kernels/ampere_sr.hpp
- *   - kernels/currents_deposit.hpp
- *   - kernels/faraday_mink.hpp
- *   - kernels/faraday_sr.hpp
- *   - kernels/particle_pusher_sr.hpp
- *   - pgen.hpp
  * @cpp:
  *   - srpic.cpp
  * @namespaces:

@@ -3,9 +3,6 @@
  * @brief Base class for all the metrics
  * @implements
  *   - metric::MetricBase
- * @depends:
- *   - enums.h
- *   - global.h
  * @namespaces:
  *   - metric::
  * @note
@@ -47,13 +44,10 @@
 #ifndef METRICS_METRIC_BASE_H
 #define METRICS_METRIC_BASE_H
 
-#include "enums.h"
 #include "global.h"
 
 #include "utils/numeric.h"
 
-#include <string>
-#include <utility>
 #include <vector>
 
 namespace metric {

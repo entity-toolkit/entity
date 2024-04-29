@@ -231,7 +231,7 @@ message("${Blue}              __        __
                                     /\\___/
 Entity ${VERSION_SYMBOL}\t\t    \\/__/")
 message("${DASHED_LINE_SYMBOL}
-Main configurations ${Dim}[^1]${ColorReset}")
+Main configurations")
 
 if(${PGEN_FOUND})
   message("  ${PGEN_REPORT}")
@@ -269,6 +269,6 @@ endif()
 
 message("${DASHED_LINE_SYMBOL}
 Notes
-  ${Dim}[^1] Set with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value
-   :  will be used unless the variable is explicitly set.${ColorReset}
+   ${Dim}: Set flags with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value
+   :   will be used unless the variable is explicitly set.${ColorReset}
 ")

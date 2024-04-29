@@ -3,12 +3,6 @@
  * @brief Communication routines without mpi
  * @implements
  *   - comm::CommunicateField<> -> void
- * @depends:
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - arch/mpi_aliases.h
- *   - utils/error.h
- *   - framework/domain/domain.h
  * @namespaces:
  *   - comm::
  * @note This should only be included if the MPI_ENABLED flag is not set

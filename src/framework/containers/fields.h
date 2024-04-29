@@ -3,10 +3,6 @@
  * @brief Definition of the Fields container
  * @implements
  *   - ntt::Fields
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
  * @cpp:
  *   - fields.cpp
  * @namespaces:

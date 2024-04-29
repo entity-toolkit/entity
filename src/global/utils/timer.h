@@ -4,14 +4,6 @@
  * @implements
  *   - timer::Timers
  *   - enum timer::TimerFlags
- * @depends:
- *   - global.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - utils/comparators.h
- *   - utils/formatting.h
- *   - arch/mpi_aliases.h
- *   - utils/colors.h
  * @namespces:
  *   - timer::
  * @macros:
@@ -35,7 +27,6 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
-#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>

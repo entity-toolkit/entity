@@ -3,11 +3,6 @@
  * @brief Covariant algorithms for the current deposition
  * @implements
  *   - kernel::DepositCurrents_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::
  */

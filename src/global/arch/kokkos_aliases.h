@@ -14,8 +14,6 @@
  *   - arch/kokkos_aliases.cpp
  * @namespaces:
  *   - math:: (aliased to Kokkos::)
- * @depends:
- *   - global.h
  */
 
 #ifndef GLOBAL_ARCH_KOKKOS_ALIASES_H

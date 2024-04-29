@@ -3,12 +3,6 @@
  * @brief Algorithms for covariant digital filtering
  * @implements
  *   - kernel::DigitalFilter_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::
  */
@@ -22,8 +16,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include <type_traits>
 
 #define FILTER_IN_I1(ARR, COMP, I, J)                                          \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \

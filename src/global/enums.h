@@ -14,9 +14,6 @@
  *   - enum ntt::Cooling           // synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc
- * @depends:
- *   - utils/error.h
- *   - utils/formatting.h
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -48,10 +45,8 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 
-#include <algorithm>
 #include <cstring>
 #include <string>
-#include <string_view>
 
 namespace ntt {
 

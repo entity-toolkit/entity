@@ -15,8 +15,6 @@
  *   - macro CROSS_x2
  *   - macro CROSS_x3
  *   - literal real-valued numbers
- * @depends:
- *   - arch/kokkos_aliases.h
  * @namespaces:
  *   - constant::
  * @macros:

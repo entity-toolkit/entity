@@ -4,14 +4,6 @@
  * @implements
  *   - kernel::sr::Pusher_kernel<>
  *   - kernel::sr::PusherBase_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - arch/traits.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - arch/mpi_tags.h
  * @namespaces:
  *   - kernel::sr::
  * @macros:
@@ -35,9 +27,6 @@
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
 #endif
-
-#include <tuple>
-#include <type_traits>
 
 /* -------------------------------------------------------------------------- */
 /* Local macros                                                               */

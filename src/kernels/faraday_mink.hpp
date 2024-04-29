@@ -3,11 +3,6 @@
  * @brief Algorithms for Faraday's law in cartesian Minkowski space
  * @implements
  *   - kernel::mink::Faraday_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
  * @namespaces:
  *   - kernel::mink
  */
@@ -15,7 +10,6 @@
 #ifndef KERNELS_FARADAY_MINK_HPP
 #define KERNELS_FARADAY_MINK_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"

@@ -5,13 +5,6 @@
  *   - arch::EnergyDistribution<>
  *   - arch::ColdDist<> : arch::EnergyDistribution<>
  *   - arch::Maxwellian<> : arch::EnergyDistribution<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - utils/comparators.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - arch/kokkos_aliases.h
  * @namespaces:
  *   - arch::
  * @note

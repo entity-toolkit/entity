@@ -1,3 +1,12 @@
+/**
+ * @file output/utils/attr_writer.h
+ * @brief Functions to write custom type attributes to ADIOS2
+ * @implements
+ *   - out::writeAnyAttr -> void
+ *   - out::defineAttribute<> -> void
+ * @namespaces:
+ *   - out::
+ */
 #ifndef OUTPUT_UTILS_ATTR_WRITER_H
 #define OUTPUT_UTILS_ATTR_WRITER_H
 
@@ -11,11 +20,6 @@
 #include <unordered_map>
 
 namespace out {
-#include <any>
-#include <functional>
-#include <typeindex>
-#include <unordered_map>
-#include <vector>
 
   template <typename T>
   void defineAttribute(adios2::IO& io, const std::string& name, const std::any& value) {

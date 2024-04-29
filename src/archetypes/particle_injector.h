@@ -18,15 +18,14 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
+#include "framework/domain/metadomain.h"
 
 #include "kernels/injectors.hpp"
 
 #include <Kokkos_Core.hpp>
 
 #include <map>
-#include <tuple>
 #include <utility>
 #include <vector>
 
