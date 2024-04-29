@@ -250,6 +250,26 @@ namespace Comm {
 
 typedef int CommTags;
 
+namespace BC {
+  enum BCTags_ {
+    None = 0,
+    Ex1  = 1 << 0,
+    Ex2  = 1 << 1,
+    Ex3  = 1 << 2,
+    Bx1  = 1 << 3,
+    Bx2  = 1 << 4,
+    Bx3  = 1 << 5,
+    Dx1  = 1 << 0,
+    Dx2  = 1 << 1,
+    Dx3  = 1 << 2,
+    B    = Bx1 | Bx2 | Bx3,
+    E    = Ex1 | Ex2 | Ex3,
+    D    = Dx1 | Dx2 | Dx3,
+  };
+} // namespace BC
+
+typedef int BCTags;
+
 /* aliases ------------------------------------------------------------------ */
 
 using Dim = Dimension;

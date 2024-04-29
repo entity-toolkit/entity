@@ -32,15 +32,14 @@
 #include "kernels/digital_filter.hpp"
 #include "kernels/faraday_mink.hpp"
 #include "kernels/faraday_sr.hpp"
+#include "kernels/fields_bcs.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 #include "pgen.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 
-#include <map>
 #include <string>
-#include <variant>
 
 namespace ntt {
 
@@ -77,9 +76,10 @@ namespace ntt {
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
 
-      if (step == 0) { // communicate fields on the first timestep
+      if (step == 0) {
+        // communicate fields and apply BCs on the first timestep
         m_metadomain.Communicate(dom, Comm::B | Comm::E);
-        FieldBoundaries(dom, Comm::B | Comm::E);
+        FieldBoundaries(dom, BC::B | BC::E);
       }
 
       if (fieldsolver_enabled) {
@@ -92,7 +92,7 @@ namespace ntt {
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, Comm::B);
+        FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
       }
 
@@ -132,7 +132,7 @@ namespace ntt {
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, Comm::B);
+        FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
 
         timers.start("FieldSolver");
@@ -150,7 +150,7 @@ namespace ntt {
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, Comm::E);
+        FieldBoundaries(dom, BC::E);
         timers.stop("FieldBoundaries");
       }
     }
@@ -474,22 +474,135 @@ namespace ntt {
       }
     }
 
-    void FieldBoundaries(domain_t&, CommTags) {
-      // ABSORB
-      // ATMOSPHERE
-      // CUSTOM
-      // HORIZON
-      // AXIS
-      // for (auto& direction : dir::Directions<D>::orth) {
-      // const auto ds = m_params.template get<real_t>(
-      //"grid.boundaries.absorb_d");
-      // if (mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
-      // }
-      //}
-      // for (auto& bc : domain.mesh.flds_bc()) {
-      //   std::cout << bc.first.to_string() << " x " << bc.second.to_string()
-      //             << std::endl;
-      // }
+    void FieldBoundaries(domain_t& domain, BCTags tags) {
+      for (auto& direction : dir::Directions<M::Dim>::orth) {
+        if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
+          /**
+           * absorbing boundaries
+           */
+          const auto ds = m_params.template get<real_t>(
+            "grid.boundaries.absorb_d");
+          const auto dim = direction.get_dim();
+          real_t     xmin, xmax, xg_edge;
+          if (direction.get_sign() > 0) {
+            xmax    = m_metadomain.mesh().extent(dim).second;
+            xmin    = xmax - ds;
+            xg_edge = xmax;
+          } else {
+            xmin    = m_metadomain.mesh().extent(dim).first;
+            xmax    = xmin + ds;
+            xg_edge = xmin;
+          }
+          real_t      x1, x2;
+          std::size_t i_min, i_max;
+          if (dim == in::x1) {
+            x1 = domain.mesh.metric.template convert<1, Crd::Ph, Crd::Cd>(xmin);
+            x2 = domain.mesh.metric.template convert<1, Crd::Ph, Crd::Cd>(xmax);
+          } else if (dim == in::x2) {
+            if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+              x1 = domain.mesh.metric.template convert<2, Crd::Ph, Crd::Cd>(xmin);
+              x2 = domain.mesh.metric.template convert<2, Crd::Ph, Crd::Cd>(xmax);
+            } else {
+              raise::Error("Invalid dimension", HERE);
+            }
+          } else if (dim == in::x3) {
+            if constexpr (M::Dim == Dim::_3D) {
+              x1 = domain.mesh.metric.template convert<3, Crd::Ph, Crd::Cd>(xmin);
+              x2 = domain.mesh.metric.template convert<3, Crd::Ph, Crd::Cd>(xmax);
+            } else {
+              raise::Error("Invalid dimension", HERE);
+            }
+          }
+          x1 = math::max(x1, ZERO);
+          x2 = math::min(x2, static_cast<real_t>(domain.mesh.n_active(dim)) + ONE);
+          if (direction.get_sign() > 0) {
+            i_min = static_cast<std::size_t>(math::floor(x1)) + N_GHOSTS;
+            i_max = static_cast<std::size_t>(math::floor(x2)) + 2 * N_GHOSTS;
+          } else {
+            i_min = static_cast<std::size_t>(math::ceil(x1));
+            i_max = static_cast<std::size_t>(math::ceil(x2)) + N_GHOSTS;
+          }
+          tuple_t<std::size_t, M::Dim> range_min { 0 };
+          tuple_t<std::size_t, M::Dim> range_max { 0 };
+          for (unsigned short d { 0 }; d < M::Dim; ++d) {
+            range_max[d] = domain.mesh.n_all(static_cast<in>(d));
+          }
+          range_min[static_cast<unsigned short>(dim)] = i_min;
+          range_max[static_cast<unsigned short>(dim)] = i_max;
+          if (dim == in::x1 and i_min != i_max) {
+            Kokkos ::parallel_for(
+              "AbsorbFields",
+              CreateRangePolicy<M::Dim>(range_min, range_max),
+              kernel::AbsorbFields_kernel<M, 1>(domain.fields.em,
+                                                domain.mesh.metric,
+                                                xg_edge,
+                                                ds,
+                                                tags));
+          } else if (dim == in::x2 and i_min != i_max) {
+            if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+              Kokkos ::parallel_for(
+                "AbsorbFields",
+                CreateRangePolicy<M::Dim>(range_min, range_max),
+                kernel::AbsorbFields_kernel<M, 2>(domain.fields.em,
+                                                  domain.mesh.metric,
+                                                  xg_edge,
+                                                  ds,
+                                                  tags));
+            } else {
+              raise::Error("Invalid dimension", HERE);
+            }
+          } else if (dim == in::x3 and i_min != i_max) {
+            if constexpr (M::Dim == Dim::_3D) {
+              Kokkos ::parallel_for(
+                "AbsorbFields",
+                CreateRangePolicy<M::Dim>(range_min, range_max),
+                kernel::AbsorbFields_kernel<M, 3>(domain.fields.em,
+                                                  domain.mesh.metric,
+                                                  xg_edge,
+                                                  ds,
+                                                  tags));
+            } else {
+              raise::Error("Invalid dimension", HERE);
+            }
+          }
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
+          /**
+           * axis boundaries
+           */
+          raise::ErrorIf(M::CoordType == Coord::Cart,
+                         "Invalid coordinate type for axis BCs",
+                         HERE);
+          raise::ErrorIf(direction.get_dim() != in::x2,
+                         "Invalid axis direction, should be x2",
+                         HERE);
+          const auto i2_min = domain.mesh.i_min(in::x2);
+          const auto i2_max = domain.mesh.i_max(in::x2);
+          if (direction.get_sign() < 0) {
+            Kokkos::parallel_for(
+              "AxisBCFields",
+              domain.mesh.n_all(in::x1),
+              kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
+                                                           i2_min,
+                                                           tags));
+          } else {
+            Kokkos::parallel_for(
+              "AxisBCFields",
+              domain.mesh.n_all(in::x1),
+              kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
+                                                          i2_max,
+                                                          tags));
+          }
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
+          /**
+           * atmosphere boundaries
+           */
+          // !TODO
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
+          raise::Error("Custom boundaries not implemented", HERE);
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
+          raise::Error("HORIZON BCs only applicable for GR", HERE);
+        }
+      } // loop over directions
     }
   };
 

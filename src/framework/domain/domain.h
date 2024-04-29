@@ -50,12 +50,10 @@
 #include "framework/containers/particles.h"
 #include "framework/containers/species.h"
 #include "framework/domain/mesh.h"
-#include "framework/parameters.h"
 
 #include <iomanip>
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace ntt {
