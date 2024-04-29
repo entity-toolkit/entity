@@ -5,6 +5,8 @@
 *.o
 build*/
 bin/
+compile_commands.json
+.cache/
 
 # Python files
 *.ipynb
@@ -33,6 +35,7 @@ logs/
 venv/
 
 # Temporary media files
+*.jpg
 *.png
 *.mov
 *.mp4
@@ -50,5 +53,3 @@ Testing/
 
 .schema.json
 *_old/
-
-compile_commands.json

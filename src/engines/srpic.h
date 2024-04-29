@@ -98,6 +98,7 @@ namespace ntt {
 
       if (step == 0) { // communicate fields on the first timestep
         m_metadomain.Communicate(dom, Comm::B | Comm::E);
+        FieldBoundaries(dom, Comm::B | Comm::E);
       }
 
       if (fieldsolver_enabled) {
@@ -110,7 +111,7 @@ namespace ntt {
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        // !TODO field boundaries
+        FieldBoundaries(dom, Comm::B);
         timers.stop("FieldBoundaries");
       }
 
@@ -150,7 +151,7 @@ namespace ntt {
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        // !TODO field boundaries
+        FieldBoundaries(dom, Comm::B);
         timers.stop("FieldBoundaries");
 
         timers.start("FieldSolver");
@@ -168,7 +169,7 @@ namespace ntt {
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
-        // !TODO field boundaries
+        FieldBoundaries(dom, Comm::E);
         timers.stop("FieldBoundaries");
       }
     }
@@ -490,6 +491,24 @@ namespace ntt {
           m_metadomain.Communicate(domain, Comm::J);
         }
       }
+    }
+
+    void FieldBoundaries(domain_t&, CommTags) {
+      // ABSORB
+      // ATMOSPHERE
+      // CUSTOM
+      // HORIZON
+      // AXIS
+      // for (auto& direction : dir::Directions<D>::orth) {
+      // const auto ds = m_params.template get<real_t>(
+      //"grid.boundaries.absorb_d");
+      // if (mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
+      // }
+      //}
+      // for (auto& bc : domain.mesh.flds_bc()) {
+      //   std::cout << bc.first.to_string() << " x " << bc.second.to_string()
+      //             << std::endl;
+      // }
     }
   };
 

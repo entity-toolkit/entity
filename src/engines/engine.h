@@ -191,6 +191,10 @@ namespace ntt {
             timers.start("Custom");
             m_pgen.CustomPostStep(step, time, dom);
             timers.stop("Custom");
+          } else {
+            (void)dom;
+            (void)timers;
+            (void)this;
           }
         });
 
