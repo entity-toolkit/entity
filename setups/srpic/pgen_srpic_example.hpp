@@ -7,11 +7,12 @@
 #include "arch/traits.h"
 
 #include "archetypes/problem_generator.h"
+#include "framework/domain/metadomain.h"
 
 namespace user {
   using namespace ntt;
 
-  template <SimeEngine::type S, class M>
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines { traits::compatible_with<SimEngine::SRPIC>::value };
@@ -26,7 +27,6 @@ namespace user {
     using arch::ProblemGenerator<S, M>::D;
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
-    using arch::ProblemGenerator<S, M>::domain;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>&)
       : arch::ProblemGenerator<S, M>(p) {}

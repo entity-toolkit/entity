@@ -88,6 +88,7 @@
 #ifndef GLOBAL_GLOBAL_H
 #define GLOBAL_GLOBAL_H
 
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -281,6 +282,13 @@ using real_t = float;
 #else
 using real_t = double;
 #endif
+
+namespace Range {
+  constexpr std::pair<real_t, real_t> All = {
+    -std::numeric_limits<real_t>::infinity(),
+    std::numeric_limits<real_t>::infinity()
+  };
+}; // namespace Range
 
 // ND list alias
 template <typename T, Dimension D>

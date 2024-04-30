@@ -145,6 +145,15 @@ namespace ntt {
       }
     }
 
+    [[nodiscard]]
+    auto n_all() const -> std::vector<std::size_t> {
+      std::vector<std::size_t> nall;
+      for (std::size_t i = 0; i < D; ++i) {
+        nall.push_back(m_resolution[i] + 2 * N_GHOSTS);
+      }
+      return nall;
+    }
+
     /* Ranges in the device execution space --------------------------------- */
     /**
      * @brief Loop over all active cells (disregard ghost cells)

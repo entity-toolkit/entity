@@ -42,9 +42,11 @@ namespace ntt::defaults {
   } // namespace gr
 
   namespace bc {
-    const real_t d_absorb_frac = 0.01;
-    const real_t absorb_coeff  = 1.0;
-  } // namespace bc
+    namespace absorb {
+      const real_t ds_frac = 0.01;
+      const real_t coeff   = 1.0;
+    } // namespace absorb
+  }   // namespace bc
 
   namespace output {
     const std::string    format      = "hdf5";

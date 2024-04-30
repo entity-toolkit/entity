@@ -7,14 +7,10 @@
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 #include "utils/comparators.h"
-#include "utils/formatting.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
-
-#include <vector>
 
 namespace user {
   using namespace ntt;
@@ -93,7 +89,7 @@ namespace user {
     InitFields<D> init_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
-      : ProblemGenerator<S, M> { p }
+      : arch::ProblemGenerator<S, M> { p }
       , amplitude { params.template get<real_t>("setup.amplitude", 1.0) }
       , kx1 { params.template get<int>("setup.kx1", 1) }
       , kx2 { params.template get<int>("setup.kx2", 0) }
