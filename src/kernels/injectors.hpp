@@ -19,6 +19,9 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "framework/containers/particles.h"
+#include "framework/domain/domain.h"
+
 namespace kernel {
   using namespace ntt;
   using spidx_t = unsigned short;
@@ -514,9 +517,9 @@ namespace kernel {
           if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
             const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1);
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1);
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_2(index + offset2) = dx1;
 
             vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
@@ -567,14 +570,14 @@ namespace kernel {
           if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
             const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1);
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1);
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_2(index + offset2) = dx1;
 
-            i2s_1(index + offset1)  = static_cast<int>(i2);
+            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_1(index + offset1) = dx2;
-            i2s_2(index + offset2)  = static_cast<int>(i2);
+            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_2(index + offset2) = dx2;
 
             coord_t<M::PrtlDim> x_Cd_ { ZERO };
@@ -644,19 +647,19 @@ namespace kernel {
           if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
             const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1);
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1);
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_2(index + offset2) = dx1;
 
-            i2s_1(index + offset1)  = static_cast<int>(i2);
+            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_1(index + offset1) = dx2;
-            i2s_2(index + offset2)  = static_cast<int>(i2);
+            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_2(index + offset2) = dx2;
 
-            i3s_1(index + offset1)  = static_cast<int>(i3);
+            i3s_1(index + offset1)  = static_cast<int>(i3) - N_GHOSTS;
             dx3s_1(index + offset1) = dx3;
-            i3s_2(index + offset2)  = static_cast<int>(i3);
+            i3s_2(index + offset2)  = static_cast<int>(i3) - N_GHOSTS;
             dx3s_2(index + offset2) = dx3;
 
             vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
