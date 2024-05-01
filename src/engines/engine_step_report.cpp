@@ -42,7 +42,7 @@ namespace ntt {
       diag_flags ^= Diag::Species;
     }
     if (print_output) {
-      diag_flags |= Timer::PrintOutput;
+      timer_flags |= Timer::PrintOutput;
     }
     CallOnce(
       [diag_flags](auto& time, auto& step, auto& max_steps, auto& dt) {

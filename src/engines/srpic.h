@@ -46,7 +46,9 @@ namespace ntt {
   template <class M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
-    using base_t = Engine<SimEngine::SRPIC, M>;
+    using base_t   = Engine<SimEngine::SRPIC, M>;
+    using pgen_t   = user::PGen<SimEngine::SRPIC, M>;
+    using domain_t = Domain<SimEngine::SRPIC, M>;
     // constexprs
     using base_t::pgen_is_ok;
     // contents
@@ -61,7 +63,6 @@ namespace ntt {
     using base_t::runtime;
     using base_t::step;
     using base_t::time;
-    using domain_t = Domain<SimEngine::SRPIC, M>;
 
   public:
     static constexpr auto S { SimEngine::SRPIC };
@@ -228,7 +229,6 @@ namespace ntt {
     }
 
     void ParticlePush(domain_t& domain) {
-      using pgen_t = user::PGen<SimEngine::SRPIC, M>;
       for (auto& species : domain.species) {
         logger::Checkpoint(
           fmt::format("Launching particle pusher kernel for %d [%s] : %lu",
@@ -532,42 +532,42 @@ namespace ntt {
       tuple_t<std::size_t, M::Dim> range_min { 0 };
       tuple_t<std::size_t, M::Dim> range_max { 0 };
 
-      const auto dd = static_cast<unsigned short>(dim);
       for (unsigned short d { 0 }; d < M::Dim; ++d) {
-        range_min[d] = intersect_range[d].first -
-                       (d == dd and sign < 0 ? N_GHOSTS : 0);
-        range_max[d] = intersect_range[d].second +
-                       (d == dd and sign > 0 ? N_GHOSTS : 0);
+        range_min[d] = intersect_range[d].first;
+        range_max[d] = intersect_range[d].second;
       }
       if (dim == in::x1) {
-        Kokkos::parallel_for("AbsorbFields",
-                             CreateRangePolicy<M::Dim>(range_min, range_max),
-                             kernel::AbsorbFields_kernel<M, 1>(domain.fields.em,
-                                                               domain.mesh.metric,
-                                                               xg_edge,
-                                                               ds,
-                                                               tags));
+        Kokkos::parallel_for(
+          "AbsorbFields",
+          CreateRangePolicy<M::Dim>(range_min, range_max),
+          kernel::AbsorbBoundaries_kernel<M, 1>(domain.fields.em,
+                                                domain.mesh.metric,
+                                                xg_edge,
+                                                ds,
+                                                tags));
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          Kokkos::parallel_for("AbsorbFields",
-                               CreateRangePolicy<M::Dim>(range_min, range_max),
-                               kernel::AbsorbFields_kernel<M, 2>(domain.fields.em,
-                                                                 domain.mesh.metric,
-                                                                 xg_edge,
-                                                                 ds,
-                                                                 tags));
+          Kokkos::parallel_for(
+            "AbsorbFields",
+            CreateRangePolicy<M::Dim>(range_min, range_max),
+            kernel::AbsorbBoundaries_kernel<M, 2>(domain.fields.em,
+                                                  domain.mesh.metric,
+                                                  xg_edge,
+                                                  ds,
+                                                  tags));
         } else {
           raise::Error("Invalid dimension", HERE);
         }
       } else if (dim == in::x3) {
         if constexpr (M::Dim == Dim::_3D) {
-          Kokkos::parallel_for("AbsorbFields",
-                               CreateRangePolicy<M::Dim>(range_min, range_max),
-                               kernel::AbsorbFields_kernel<M, 3>(domain.fields.em,
-                                                                 domain.mesh.metric,
-                                                                 xg_edge,
-                                                                 ds,
-                                                                 tags));
+          Kokkos::parallel_for(
+            "AbsorbFields",
+            CreateRangePolicy<M::Dim>(range_min, range_max),
+            kernel::AbsorbBoundaries_kernel<M, 3>(domain.fields.em,
+                                                  domain.mesh.metric,
+                                                  xg_edge,
+                                                  ds,
+                                                  tags));
         } else {
           raise::Error("Invalid dimension", HERE);
         }
@@ -607,29 +607,163 @@ namespace ntt {
       /**
        * atmosphere boundaries
        */
-      (void)(direction);
-      (void)(domain);
-      (void)(tags);
-      // const auto min_buff = m_params.template get<unsigned short>(
-      //                         "algorithms.current_filters") +
-      //                       2;
-      // const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
-      // const auto dim           = direction.get_dim();
-      // std::size_t ig_min, ig_max, il_min, il_max;
-      // if (direction.get_sign() > 0) {
-      //   ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
-      //   ig_max = m_metadomain.mesh().n_active(dim);
-      //   if (domain.offset_ncells()[dim] + domain.mesh.n_active(dim) < ig_min) {
-      //     continue;
-      //   } else {
-      //     il_min = ig_min - domain.offset_ncells()[dim];
-      //     il_max = ig_max - domain.offset_ncells()[dim];
-      //   }
-      // } else {
-      //   ig_min = 0;
-      //   ig_max = buffer_ncells;
-      // }
-      // !TODO
+      if constexpr (traits::has_member<traits::pgen::field_driver_t, pgen_t>::value) {
+        const auto min_buff = m_params.template get<unsigned short>(
+                                "algorithms.current_filters") +
+                              2;
+        const auto  buffer_ncells = min_buff > 5 ? min_buff : 5;
+        const auto  sign          = direction.get_sign();
+        const auto  dim           = direction.get_dim();
+        const auto  dd            = static_cast<unsigned short>(dim);
+        real_t      xg_min { ZERO }, xg_max { ZERO };
+        std::size_t ig_min, ig_max, il_edge;
+        if (sign > 0) { // + direction
+          ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
+          ig_max = m_metadomain.mesh().n_active(dim);
+        } else { // - direction
+          ig_min = 0;
+          ig_max = buffer_ncells;
+        }
+        if (dim == in::x1) {
+          xg_min = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
+            static_cast<real_t>(ig_min));
+          xg_max = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
+            static_cast<real_t>(ig_max));
+        } else if (dim == in::x2) {
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            xg_min = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
+              static_cast<real_t>(ig_min));
+            xg_max = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
+              static_cast<real_t>(ig_max));
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else if (dim == in::x3) {
+          if constexpr (M::Dim == Dim::_3D) {
+            xg_min = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
+              static_cast<real_t>(ig_min));
+            xg_max = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
+              static_cast<real_t>(ig_max));
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+        boundaries_t<real_t> box;
+        boundaries_t<bool>   incl_ghosts;
+        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+          if (d == dd) {
+            box.push_back({ xg_min, xg_max });
+            if (sign > 0) {
+              incl_ghosts.push_back({ false, true });
+            } else {
+              incl_ghosts.push_back({ true, false });
+            }
+          } else {
+            box.push_back(Range::All);
+            incl_ghosts.push_back({ true, true });
+          }
+        }
+        if (not domain.mesh.Intersects(box)) {
+          return;
+        }
+        const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
+        tuple_t<std::size_t, M::Dim> range_min { 0 };
+        tuple_t<std::size_t, M::Dim> range_max { 0 };
+
+        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+          range_min[d] = intersect_range[d].first;
+          range_max[d] = intersect_range[d].second;
+        }
+        auto field_driver = m_pgen.FieldDriver(time);
+        if (sign > 0) {
+          il_edge = range_min[dd] - N_GHOSTS;
+        } else {
+          il_edge = range_max[dd] - 1 - N_GHOSTS;
+        }
+        const auto range = CreateRangePolicy<M::Dim>(range_min, range_max);
+        if (dim == in::x1) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "AtmosphereBCFields",
+              range,
+              kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x1>(
+                domain.fields.em,
+                field_driver,
+                domain.mesh.metric,
+                il_edge,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "AtmosphereBCFields",
+              range,
+              kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x1>(
+                domain.fields.em,
+                field_driver,
+                domain.mesh.metric,
+                il_edge,
+                tags));
+          }
+        } else if (dim == in::x2) {
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x2>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x2>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else if (dim == in::x3) {
+          if constexpr (M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x3>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x3>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else {
+        raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
+                     HERE);
+      }
     }
   };
 

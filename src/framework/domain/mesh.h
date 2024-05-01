@@ -117,6 +117,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      * @note min will be taken with a floor, and max with a ceil
      * @note if the box does not intersect with the mesh, the range will be all {0, 0}
+     * @note indices are shifted by N_GHOSTS
      */
     [[nodiscard]]
     auto ExtentToRange(boundaries_t<real_t> box, boundaries_t<bool> incl_ghosts)
@@ -126,13 +127,13 @@ namespace ntt {
                      "Invalid incl_ghosts dimension",
                      HERE);
       boundaries_t<std::size_t> range;
-      auto                      d = 0;
       if (not Intersects(box)) {
         for (std::size_t i { 0 }; i < box.size(); ++i) {
           range.push_back({ 0, 0 });
         }
         return range;
       }
+      auto d = 0;
       for (const auto& b : box) {
         if (b == Range::All) {
           range.push_back({ incl_ghosts[d].first ? 0 : N_GHOSTS,
@@ -144,7 +145,7 @@ namespace ntt {
                                        extent()[d].second);
           const auto xi_max = std::max(std::min(extent()[d].second, b.second),
                                        extent()[d].first);
-          real_t     xi_min_Cd, xi_max_Cd;
+          real_t     xi_min_Cd { ZERO }, xi_max_Cd { ZERO };
           if (d == 0) {
             xi_min_Cd = math::floor(
               metric.template convert<1, Crd::Ph, Crd::Cd>(xi_min));
@@ -172,8 +173,10 @@ namespace ntt {
             raise::Error("invalid dimension", HERE);
             throw;
           }
-          range.push_back({ static_cast<std::size_t>(xi_min_Cd) + N_GHOSTS,
-                            static_cast<std::size_t>(xi_max_Cd) + N_GHOSTS });
+          range.push_back({ static_cast<std::size_t>(xi_min_Cd) +
+                              (incl_ghosts[d].first ? 0 : N_GHOSTS),
+                            static_cast<std::size_t>(xi_max_Cd) +
+                              (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS) });
         }
         ++d;
       }
