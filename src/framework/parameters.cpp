@@ -4,7 +4,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -180,7 +179,9 @@ namespace ntt {
             promiseToDefine("grid.boundaries.atmosphere.temperature");
             promiseToDefine("grid.boundaries.atmosphere.density");
             promiseToDefine("grid.boundaries.atmosphere.height");
+            promiseToDefine("grid.boundaries.atmosphere.ds");
             promiseToDefine("grid.boundaries.atmosphere.species");
+            promiseToDefine("grid.boundaries.atmosphere.g");
           }
         }
       }
@@ -211,7 +212,9 @@ namespace ntt {
             promiseToDefine("grid.boundaries.atmosphere.temperature");
             promiseToDefine("grid.boundaries.atmosphere.density");
             promiseToDefine("grid.boundaries.atmosphere.height");
+            promiseToDefine("grid.boundaries.atmosphere.ds");
             promiseToDefine("grid.boundaries.atmosphere.species");
+            promiseToDefine("grid.boundaries.atmosphere.g");
           }
         }
       }
@@ -581,12 +584,23 @@ namespace ntt {
     }
 
     if (isPromised("grid.boundaries.atmosphere.temperature")) {
-      set("grid.boundaries.atmosphere.temperature",
-          toml::find<real_t>(raw_data, "grid", "boundaries", "atmosphere", "temperature"));
+      const auto atm_T = toml::find<real_t>(raw_data,
+                                            "grid",
+                                            "boundaries",
+                                            "atmosphere",
+                                            "temperature");
+      const auto atm_h = toml::find<real_t>(raw_data,
+                                            "grid",
+                                            "boundaries",
+                                            "atmosphere",
+                                            "height");
+      set("grid.boundaries.atmosphere.temperature", atm_T);
       set("grid.boundaries.atmosphere.density",
           toml::find<real_t>(raw_data, "grid", "boundaries", "atmosphere", "density"));
-      set("grid.boundaries.atmosphere.height",
-          toml::find<real_t>(raw_data, "grid", "boundaries", "atmosphere", "height"));
+      set("grid.boundaries.atmosphere.ds",
+          toml::find_or(raw_data, "grid", "boundaries", "atmosphere", "ds", ZERO));
+      set("grid.boundaries.atmosphere.height", atm_h);
+      set("grid.boundaries.atmosphere.g", atm_T / atm_h);
       const auto atm_species = toml::find<std::pair<unsigned short, unsigned short>>(
         raw_data,
         "grid",

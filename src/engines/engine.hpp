@@ -1,5 +1,5 @@
 /**
- * @file engines/engine.h
+ * @file engines/engine.hpp
  * @brief Base simulation class which just initializes the metadomain
  * @implements
  *   - ntt::Engine<>

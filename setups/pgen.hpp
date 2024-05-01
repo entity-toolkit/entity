@@ -6,9 +6,9 @@
 
 #include "arch/traits.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 
 #include "archetypes/problem_generator.h"
+#include "framework/domain/metadomain.h"
 
 #include <plog/Log.h>
 

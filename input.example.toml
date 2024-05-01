@@ -132,6 +132,17 @@
       # Species indices of particles that populate the atmosphere
       #   @type: array of ints of size 2
       species = ""
+      # Distance from the edge to which the gravity is imposed in physical units
+      #   @type: float
+      #   @default: 0.0
+      #   @note: 0.0 means no limit
+      ds = ""
+
+      # @inferred:
+      # - g [= temperature / height]
+      #     @brief: Acceleration due to imposed gravity
+      #     @type: float
+      #     @from: `grid.boundaries.atmosphere.temperature`, `grid.boundaries.atmosphere.height`
 
 [scales]
   # Fiducial larmor radius:

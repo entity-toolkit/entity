@@ -20,8 +20,9 @@
     [grid.boundaries.atmosphere]
       temperature = 0.1
       density = 4.0
-      height = 0.05
+      height = 0.25
       species = [1, 2]
+      ds = 2.0
     
 [scales]
   larmor0 = 0.1
@@ -33,8 +34,13 @@
   [algorithms.timestep]
     CFL = 0.5
 
+  [algorithms.toggles]
+    fieldsolver = false
+    deposit = false
+
 [particles]
   ppc0 = 10.0
+  use_weights = true
 
   [[particles.species]]
   label = "e-"

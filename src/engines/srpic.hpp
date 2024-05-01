@@ -1,5 +1,5 @@
 /**
- * @file engines/srpic.h
+ * @file engines/srpic.hpp
  * @brief Simulation engien class which specialized on SRPIC
  * @implements
  *   - ntt::SRPICEngine<> : ntt::Engine<>
@@ -22,7 +22,7 @@
 #include "utils/numeric.h"
 #include "utils/timer.h"
 
-#include "engines/engine.h"
+#include "engines/engine.hpp"
 #include "framework/domain/domain.h"
 #include "framework/parameters.h"
 
@@ -296,44 +296,201 @@ namespace ntt {
         if (cooling == Cooling::SYNCHROTRON) {
           cooling_tags = kernel::sr::Cooling::Synchrotron;
         }
-        Kokkos::parallel_for(
-          "ParticlePusher",
-          species.rangeActiveParticles(),
-          kernel::sr::Pusher_kernel<M, pgen_t>(pusher,
-                                               has_gca,
-                                               false,
-                                               cooling_tags,
-                                               domain.fields.em,
-                                               species.index(),
-                                               species.i1,
-                                               species.i2,
-                                               species.i3,
-                                               species.i1_prev,
-                                               species.i2_prev,
-                                               species.i3_prev,
-                                               species.dx1,
-                                               species.dx2,
-                                               species.dx3,
-                                               species.dx1_prev,
-                                               species.dx2_prev,
-                                               species.dx3_prev,
-                                               species.ux1,
-                                               species.ux2,
-                                               species.ux3,
-                                               species.phi,
-                                               species.tag,
-                                               domain.mesh.metric,
-                                               m_pgen,
-                                               time,
-                                               coeff,
-                                               dt,
-                                               domain.mesh.n_active(in::x1),
-                                               domain.mesh.n_active(in::x2),
-                                               domain.mesh.n_active(in::x3),
-                                               domain.mesh.prtl_bc(),
-                                               gca_larmor_max,
-                                               gca_eovrb_max,
-                                               sync_coeff));
+        bool   has_atmosphere = false;
+        real_t gx1 { ZERO }, gx2 { ZERO }, gx3 { ZERO }, x_surf { ZERO },
+          ds { ZERO };
+        ds = m_params.template get<real_t>("grid.boundaries.absorb.ds");
+        for (auto& direction : dir::Directions<M::Dim>::orth) {
+          if (m_metadomain.mesh().prtl_bc_in(direction) == PrtlBC::ATMOSPHERE) {
+            raise::ErrorIf(
+              has_atmosphere,
+              "Only one direction is allowed to have atm boundaries",
+              HERE);
+            has_atmosphere      = true;
+            const auto sign     = direction.get_sign();
+            const auto dim      = direction.get_dim();
+            const auto min_buff = m_params.template get<unsigned short>(
+                                    "algorithms.current_filters") +
+                                  2;
+            const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
+            if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
+              raise::Error("For non-cartesian coordinates atmosphere BCs is "
+                           "possible only in -x1 (@ rmin)",
+                           HERE);
+            }
+            real_t      xg_min { ZERO }, xg_max { ZERO };
+            std::size_t ig_min, ig_max;
+            if (sign > 0) { // + direction
+              ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
+              ig_max = m_metadomain.mesh().n_active(dim);
+            } else { // - direction
+              ig_min = 0;
+              ig_max = buffer_ncells;
+            }
+            const auto g = m_params.template get<real_t>(
+              "grid.boundaries.atmosphere.g");
+            if (dim == in::x1) {
+              xg_min = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
+                static_cast<real_t>(ig_min));
+              xg_max = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
+                static_cast<real_t>(ig_max));
+              gx1 = sign > 0 ? g : -g;
+              gx2 = ZERO;
+              gx3 = ZERO;
+            } else if (dim == in::x2) {
+              if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+                xg_min = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
+                  static_cast<real_t>(ig_min));
+                xg_max = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
+                  static_cast<real_t>(ig_max));
+              } else {
+                raise::Error("Invalid dimension", HERE);
+              }
+              gx1 = ZERO;
+              gx2 = sign > 0 ? g : -g;
+              gx3 = ZERO;
+            } else if (dim == in::x3) {
+              if constexpr (M::Dim == Dim::_3D) {
+                xg_min = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
+                  static_cast<real_t>(ig_min));
+                xg_max = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
+                  static_cast<real_t>(ig_max));
+              } else {
+                raise::Error("Invalid dimension", HERE);
+              }
+              gx1 = ZERO;
+              gx2 = ZERO;
+              gx3 = sign > 0 ? g : -g;
+            } else {
+              raise::Error("Invalid dimension", HERE);
+            }
+            if (sign > 0) {
+              x_surf = xg_max;
+            } else {
+              x_surf = xg_min;
+            }
+          }
+        }
+        // clang-format off
+        if (not has_atmosphere and not has_extforce) {
+          Kokkos::parallel_for(
+            "ParticlePusher",
+            species.rangeActiveParticles(),
+            kernel::sr::Pusher_kernel<M>(
+                pusher, has_gca, false,
+                cooling_tags,
+                domain.fields.em,
+                species.index(),
+                species.i1,        species.i2,       species.i3,
+                species.i1_prev,   species.i2_prev,  species.i3_prev,
+                species.dx1,       species.dx2,      species.dx3,
+                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+                species.ux1,       species.ux2,      species.ux3,
+                species.phi,       species.tag,
+                domain.mesh.metric,
+                time, coeff, dt,
+                domain.mesh.n_active(in::x1),
+                domain.mesh.n_active(in::x2),
+                domain.mesh.n_active(in::x3),
+                domain.mesh.prtl_bc(),
+                gca_larmor_max, gca_eovrb_max, sync_coeff
+            ));
+        } else if (has_atmosphere and not has_extforce) {
+          const auto force =
+            kernel::sr::Force<M::PrtlDim, M::CoordType, kernel::sr::NoForce_t, true> {
+              {gx1, gx2, gx3},
+              x_surf,
+              ds
+            };
+          Kokkos::parallel_for(
+            "ParticlePusher",
+            species.rangeActiveParticles(),
+            kernel::sr::Pusher_kernel<M, decltype(force)>(
+                pusher, has_gca, false,
+                cooling_tags,
+                domain.fields.em,
+                species.index(),
+                species.i1,        species.i2,       species.i3,
+                species.i1_prev,   species.i2_prev,  species.i3_prev,
+                species.dx1,       species.dx2,      species.dx3,
+                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+                species.ux1,       species.ux2,      species.ux3,
+                species.phi,       species.tag,
+                domain.mesh.metric,
+                force,
+                time, coeff, dt,
+                domain.mesh.n_active(in::x1),
+                domain.mesh.n_active(in::x2),
+                domain.mesh.n_active(in::x3),
+                domain.mesh.prtl_bc(),
+                gca_larmor_max, gca_eovrb_max, sync_coeff
+            ));
+        } else if (not has_atmosphere and has_extforce) {
+          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+            const auto force =
+              kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
+                m_pgen.ext_force
+              };
+            Kokkos::parallel_for(
+              "ParticlePusher",
+              species.rangeActiveParticles(),
+              kernel::sr::Pusher_kernel<M, decltype(force)>(
+                  pusher, has_gca, false,
+                  cooling_tags,
+                  domain.fields.em,
+                  species.index(),
+                  species.i1,        species.i2,       species.i3,
+                  species.i1_prev,   species.i2_prev,  species.i3_prev,
+                  species.dx1,       species.dx2,      species.dx3,
+                  species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+                  species.ux1,       species.ux2,      species.ux3,
+                  species.phi,       species.tag,
+                  domain.mesh.metric,
+                  force,
+                  time, coeff, dt,
+                  domain.mesh.n_active(in::x1),
+                  domain.mesh.n_active(in::x2),
+                  domain.mesh.n_active(in::x3),
+                  domain.mesh.prtl_bc(),
+                  gca_larmor_max, gca_eovrb_max, sync_coeff
+              ));
+          } else {
+            raise::Error("External force not implemented", HERE);
+          }
+        } else { // has_atmosphere and has_extforce
+          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+            const auto force =
+              kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
+                m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
+              };
+            Kokkos::parallel_for(
+              "ParticlePusher",
+              species.rangeActiveParticles(),
+              kernel::sr::Pusher_kernel<M, decltype(force)>(
+                  pusher, has_gca, false,
+                  cooling_tags,
+                  domain.fields.em,
+                  species.index(),
+                  species.i1,        species.i2,       species.i3,
+                  species.i1_prev,   species.i2_prev,  species.i3_prev,
+                  species.dx1,       species.dx2,      species.dx3,
+                  species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+                  species.ux1,       species.ux2,      species.ux3,
+                  species.phi,       species.tag,
+                  domain.mesh.metric,
+                  force,
+                  time, coeff, dt,
+                  domain.mesh.n_active(in::x1),
+                  domain.mesh.n_active(in::x2),
+                  domain.mesh.n_active(in::x3),
+                  domain.mesh.prtl_bc(),
+                  gca_larmor_max, gca_eovrb_max, sync_coeff
+              ));
+          } else {
+            raise::Error("External force not implemented", HERE);
+          }          
+        }
+        // clang-format on
       }
     }
 
@@ -611,10 +768,15 @@ namespace ntt {
         const auto min_buff = m_params.template get<unsigned short>(
                                 "algorithms.current_filters") +
                               2;
-        const auto  buffer_ncells = min_buff > 5 ? min_buff : 5;
-        const auto  sign          = direction.get_sign();
-        const auto  dim           = direction.get_dim();
-        const auto  dd            = static_cast<unsigned short>(dim);
+        const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
+        const auto sign          = direction.get_sign();
+        const auto dim           = direction.get_dim();
+        if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
+          raise::Error("For non-cartesian coordinates atmosphere BCs is "
+                       "possible only in -x1 (@ rmin)",
+                       HERE);
+        }
+        const auto  dd = static_cast<unsigned short>(dim);
         real_t      xg_min { ZERO }, xg_max { ZERO };
         std::size_t ig_min, ig_max, il_edge;
         if (sign > 0) { // + direction

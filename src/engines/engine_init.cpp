@@ -11,7 +11,7 @@
 #include "metrics/spherical.h"
 
 #include "archetypes/field_setter.h"
-#include "engines/engine.h"
+#include "engines/engine.hpp"
 
 #include <Kokkos_Core.hpp>
 

@@ -13,7 +13,7 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "engines/engine.h"
+#include "engines/engine.hpp"
 
 #if defined(GPU_ENABLED)
   #include <cuda_runtime.h>

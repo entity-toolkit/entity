@@ -7,6 +7,8 @@
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 
+#include "archetypes/energy_dist.h"
+#include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
@@ -88,6 +90,18 @@ namespace user {
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
       return DriveFields<D> { time, Bsurf, Rstar, Omega };
+    }
+
+    inline void InitPrtls(Domain<S, M>& local_domain) {
+      const auto injector = arch::UniformInjector<S, M, arch::ColdDist>(
+        arch::ColdDist<S, M> { local_domain.mesh.metric },
+        { 1, 2 });
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::ColdDist>>(
+        params,
+        local_domain,
+        injector,
+        1.0,
+        true);
     }
   };
 

@@ -10,13 +10,11 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "engines/grpic.h"
-#include "engines/srpic.h"
+#include "engines/grpic.hpp"
+#include "engines/srpic.hpp"
 #include "framework/simulation.h"
 
 #include "pgen.hpp"
-
-#include <iostream>
 
 template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
 static constexpr bool should_compile {

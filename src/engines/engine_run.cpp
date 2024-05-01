@@ -7,7 +7,7 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "engines/engine.h"
+#include "engines/engine.hpp"
 
 namespace ntt {
 
@@ -21,7 +21,8 @@ namespace ntt {
          "CurrentFiltering", "CurrentDeposit",
          "ParticlePusher", "FieldBoundaries",
          "ParticleBoundaries", "Communications",
-         "Custom", "Output" },
+         "Injector", "Custom",
+         "Output" },
         []() {
           Kokkos::fence();
          },
@@ -51,9 +52,6 @@ namespace ntt {
         // run the engine-dependent algorithm step
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           step_forward(timers, dom);
-        });
-
-        m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           if constexpr (
             traits::has_member<traits::pgen::custom_poststep_t, user::PGen<S, M>>::value) {
             timers.start("Custom");
