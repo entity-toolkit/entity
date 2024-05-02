@@ -31,8 +31,10 @@ const auto mink_1d = u8R"(
   [grid.boundaries]
     fields = [["PERIODIC"]]
     particles = [["ABSORB", "ABSORB"]]
-    absorb_d = 0.025
-    absorb_coeff = 10.0
+
+    [grid.boundaries.absorb]
+      coeff = 10.0
+      ds = 0.025
 
 [scales]
   larmor0 = 0.1
@@ -96,7 +98,16 @@ const auto sph_2d = u8R"(
   [grid.boundaries]
     fields = [["ATMOSPHERE", "ABSORB"]]
     particles = [["ATMOSPHERE", "ABSORB"]]
-    absorb_coeff = 10.0
+
+    [grid.boundaries.absorb]
+      coeff = 10.0
+
+    [grid.boundaries.atmosphere]
+      temperature = 0.1
+      density = 1.0
+      height = 0.1
+      species = [1, 2]
+      ds = 0.2
 
 [scales]
   larmor0 = 0.01
@@ -356,14 +367,14 @@ auto main(int argc, char* argv[]) -> int {
 
       // absorb coeffs
       assert_equal<real_t>(
-        params_sph_2d.get<real_t>("grid.boundaries.absorb_d"),
-        (real_t)(defaults::bc::d_absorb_frac * 19.0),
-        "grid.boundaries.absorb_d");
+        params_sph_2d.get<real_t>("grid.boundaries.absorb.ds"),
+        (real_t)(defaults::bc::absorb::ds_frac * 19.0),
+        "grid.boundaries.absorb.ds");
 
       assert_equal<real_t>(
-        params_sph_2d.get<real_t>("grid.boundaries.absorb_coeff"),
+        params_sph_2d.get<real_t>("grid.boundaries.absorb.coeff"),
         (real_t)10.0,
-        "grid.boundaries.absorb_coeff");
+        "grid.boundaries.absorb.coeff");
 
       assert_equal(params_sph_2d.get<bool>("particles.use_weights"),
                    true,
@@ -512,14 +523,14 @@ auto main(int argc, char* argv[]) -> int {
 
       // absorb coeffs
       assert_equal<real_t>(
-        params_qks_2d.get<real_t>("grid.boundaries.absorb_d"),
-        (real_t)(defaults::bc::d_absorb_frac * (100.0 - 0.8)),
-        "grid.boundaries.absorb_d");
+        params_qks_2d.get<real_t>("grid.boundaries.absorb.ds"),
+        (real_t)(defaults::bc::absorb::ds_frac * (100.0 - 0.8)),
+        "grid.boundaries.absorb.ds");
 
       assert_equal<real_t>(
-        params_qks_2d.get<real_t>("grid.boundaries.absorb_coeff"),
-        defaults::bc::absorb_coeff,
-        "grid.boundaries.absorb_coeff");
+        params_qks_2d.get<real_t>("grid.boundaries.absorb.coeff"),
+        defaults::bc::absorb::coeff,
+        "grid.boundaries.absorb.coeff");
 
       assert_equal(params_qks_2d.get<std::size_t>("particles.nspec"),
                    (std::size_t)2,
