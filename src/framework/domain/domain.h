@@ -6,22 +6,6 @@
  * as well as pointers to neighboring domains.
  * @implements
  *   - ntt::Domain<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/directions.h
- *   - utils/formatting.h
- *   - framework/parameters.h
- *   - framework/domain/mesh.h
- *   - framework/containers/fields.h
- *   - framework/containers/particles.h
- *   - framework/containers/species.h
- *   - metrics/kerr_schild.h
- *   - metrics/kerr_schild_0.h
- *   - metrics/minkowski.h
- *   - metrics/qkerr_schild.h
- *   - metrics/qspherical.h
- *   - metrics/spherical.h
  * @macros:
  *   - MPI_ENABLED
  * @note
@@ -66,12 +50,10 @@
 #include "framework/containers/particles.h"
 #include "framework/containers/species.h"
 #include "framework/domain/mesh.h"
-#include "framework/parameters.h"
 
 #include <iomanip>
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace ntt {

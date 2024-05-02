@@ -3,13 +3,6 @@
  * @brief Implementation of the particle pusher for GR
  * @implements
  *   - kernel::gr::Pusher_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - arch/mpi_tags.h
  * @namespaces:
  *   - kernel::gr::
  * @macros:
@@ -46,12 +39,12 @@
 
 #define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
 
-#define DERIVATIVE_IN_R(func, x)                                                     \
-  ((metric.func({ x[0] + epsilon, x[1] }) - metric.func({ x[0] - epsilon, x[1] })) / \
+#define DERIVATIVE_IN_R(func, x)                                               \
+  ((func({ x[0] + epsilon, x[1] }) - func({ x[0] - epsilon, x[1] })) /         \
    (TWO * epsilon))
 
-#define DERIVATIVE_IN_TH(func, x)                                                    \
-  ((metric.func({ x[0], x[1] + epsilon }) - metric.func({ x[0], x[1] - epsilon })) / \
+#define DERIVATIVE_IN_TH(func, x)                                              \
+  ((func({ x[0], x[1] + epsilon }) - func({ x[0], x[1] - epsilon })) /         \
    (TWO * epsilon))
 
 /* -------------------------------------------------------------------------- */
@@ -93,34 +86,34 @@ namespace kernel::gr {
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
 
   public:
-    Pusher_kernel(const ndfield_t<D, 6>&                DB,
-                  const ndfield_t<D, 6>&                DB0,
-                  const array_t<int*>&                  i1,
-                  const array_t<int*>&                  i2,
-                  const array_t<int*>&                  i3,
-                  const array_t<int*>&                  i1_prev,
-                  const array_t<int*>&                  i2_prev,
-                  const array_t<int*>&                  i3_prev,
-                  const array_t<prtldx_t*>&             dx1,
-                  const array_t<prtldx_t*>&             dx2,
-                  const array_t<prtldx_t*>&             dx3,
-                  const array_t<prtldx_t*>&             dx1_prev,
-                  const array_t<prtldx_t*>&             dx2_prev,
-                  const array_t<prtldx_t*>&             dx3_prev,
-                  const array_t<real_t*>&               ux1,
-                  const array_t<real_t*>&               ux2,
-                  const array_t<real_t*>&               ux3,
-                  const array_t<real_t*>&               phi,
-                  const array_t<short*>&                tag,
-                  const M&                              metric,
-                  const real_t&                         coeff,
-                  const real_t&                         dt,
-                  const int&                            ni1,
-                  const int&                            ni2,
-                  const int&                            ni3,
-                  const real_t&                         epsilon,
-                  const int&                            niter,
-                  const boundaries_t<ParticleBC::type>& boundaries)
+    Pusher_kernel(const ndfield_t<D, 6>&            DB,
+                  const ndfield_t<D, 6>&            DB0,
+                  const array_t<int*>&              i1,
+                  const array_t<int*>&              i2,
+                  const array_t<int*>&              i3,
+                  const array_t<int*>&              i1_prev,
+                  const array_t<int*>&              i2_prev,
+                  const array_t<int*>&              i3_prev,
+                  const array_t<prtldx_t*>&         dx1,
+                  const array_t<prtldx_t*>&         dx2,
+                  const array_t<prtldx_t*>&         dx3,
+                  const array_t<prtldx_t*>&         dx1_prev,
+                  const array_t<prtldx_t*>&         dx2_prev,
+                  const array_t<prtldx_t*>&         dx3_prev,
+                  const array_t<real_t*>&           ux1,
+                  const array_t<real_t*>&           ux2,
+                  const array_t<real_t*>&           ux3,
+                  const array_t<real_t*>&           phi,
+                  const array_t<short*>&            tag,
+                  const M&                          metric,
+                  const real_t&                     coeff,
+                  const real_t&                     dt,
+                  const int&                        ni1,
+                  const int&                        ni2,
+                  const int&                        ni3,
+                  const real_t&                     epsilon,
+                  const int&                        niter,
+                  const boundaries_t<PrtlBC::type>& boundaries)
       : DB { DB }
       , DB0 { DB0 }
       , i1 { i1 }
@@ -152,13 +145,13 @@ namespace kernel::gr {
                       metric.rhorizon())) -
                     5 } {
 
-      NTTHostErrorIf(boundaries.size() < 2, "boundaries defined incorrectly");
-      is_absorb_i1min = (boundaries[0].first == ParticleBC::ABSORB) ||
-                        (boundaries[0].first == ParticleBC::HORIZON);
-      is_absorb_i1max = (boundaries[0].second == ParticleBC::ABSORB) ||
-                        (boundaries[0].second == ParticleBC::HORIZON);
-      is_axis_i2min = (boundaries[1].first == ParticleBC::AXIS);
-      is_axis_i2max = (boundaries[1].second == ParticleBC::AXIS);
+      raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
+      is_absorb_i1min = (boundaries[0].first == PrtlBC::ABSORB) ||
+                        (boundaries[0].first == PrtlBC::HORIZON);
+      is_absorb_i1max = (boundaries[0].second == PrtlBC::ABSORB) ||
+                        (boundaries[0].second == PrtlBC::HORIZON);
+      is_axis_i2min = (boundaries[1].first == PrtlBC::AXIS);
+      is_axis_i2max = (boundaries[1].second == PrtlBC::AXIS);
     }
 
     /**
@@ -322,7 +315,7 @@ namespace kernel::gr {
                                                      const vec_t<Dim::_3D>& vp,
                                                      vec_t<Dim::_3D>& vp_upd) const {
     if constexpr (D == Dim::_1D) {
-      NTTError("not applicable");
+      raise::KernelError(HERE, "1D not applicable");
     } else if constexpr (D == Dim::_2D) {
       // initialize midpoint values & updated values
       vec_t<Dim::_3D> vp_mid { ZERO };
@@ -344,26 +337,28 @@ namespace kernel::gr {
         real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / metric.alpha(xp) };
 
         // find updated velocity
-        vp_upd[0] = vp[0] +
-                    dt *
-                      (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(alpha, xp) +
-                       vp_mid[0] * DERIVATIVE_IN_R(beta1, xp) -
-                       (HALF / u0) *
-                         (DERIVATIVE_IN_R((template h<1, 1>), xp) * SQR(vp_mid[0]) +
-                          DERIVATIVE_IN_R((template h<2, 2>), xp) * SQR(vp_mid[1]) +
-                          DERIVATIVE_IN_R((template h<3, 3>), xp) * SQR(vp_mid[2]) +
-                          TWO * DERIVATIVE_IN_R((template h<1, 3>), xp) *
-                            vp_mid[0] * vp_mid[2]));
+        vp_upd[0] =
+          vp[0] +
+          dt *
+            (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(metric.alpha, xp) +
+             vp_mid[0] * DERIVATIVE_IN_R(metric.beta1, xp) -
+             (HALF / u0) *
+               (DERIVATIVE_IN_R((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
+                DERIVATIVE_IN_R((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
+                DERIVATIVE_IN_R((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
+                TWO * DERIVATIVE_IN_R((metric.template h<1, 3>), xp) *
+                  vp_mid[0] * vp_mid[2]));
         vp_upd[1] =
           vp[1] +
-          dt * (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
-                vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
-                (HALF / u0) *
-                  (DERIVATIVE_IN_TH((template h<1, 1>), xp) * SQR(vp_mid[0]) +
-                   DERIVATIVE_IN_TH((template h<2, 2>), xp) * SQR(vp_mid[1]) +
-                   DERIVATIVE_IN_TH((template h<3, 3>), xp) * SQR(vp_mid[2]) +
-                   TWO * DERIVATIVE_IN_TH((template h<1, 3>), xp) * vp_mid[0] *
-                     vp_mid[2]));
+          dt *
+            (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
+             vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
+             (HALF / u0) *
+               (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
+                DERIVATIVE_IN_TH((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
+                DERIVATIVE_IN_TH((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
+                TWO * DERIVATIVE_IN_TH((metric.template h<1, 3>), xp) *
+                  vp_mid[0] * vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
@@ -377,7 +372,7 @@ namespace kernel::gr {
                                                        const vec_t<Dim::_3D>& vp,
                                                        coord_t<D>& xp_upd) const {
     if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "GeodesicCoordinatePush: 1D implementation called")
+      raise::KernelError(HERE, "GeodesicCoordinatePush: 1D implementation called");
     } else if constexpr (D == Dim::_2D) {
       vec_t<Dim::_3D>   vp_cntrv { ZERO };
       coord_t<Dim::_2D> xp_mid { ZERO };
@@ -413,7 +408,7 @@ namespace kernel::gr {
                                                  coord_t<D>&            xp_upd,
                                                  vec_t<Dim::_3D>& vp_upd) const {
     if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "GeodesicFullPush: 1D implementation called")
+      raise::KernelError(HERE, "GeodesicFullPush: 1D implementation called");
     } else if constexpr (D == Dim::_2D) {
       // initialize midpoint values & updated values
       vec_t<Dim::_2D> xp_mid { ZERO };
@@ -447,24 +442,29 @@ namespace kernel::gr {
         // find updated velocity
         vp_upd[0] =
           vp[0] +
-          dt * (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_R(alpha, xp_mid) +
-                vp_mid[0] * DERIVATIVE_IN_R(beta1, xp_mid) -
-                (HALF / u0) *
-                  (DERIVATIVE_IN_R((template h<1, 1>), xp_mid) * SQR(vp_mid[0]) +
-                   DERIVATIVE_IN_R((template h<2, 2>), xp_mid) * SQR(vp_mid[1]) +
-                   DERIVATIVE_IN_R((template h<3, 3>), xp_mid) * SQR(vp_mid[2]) +
-                   TWO * DERIVATIVE_IN_R((template h<1, 3>), xp_mid) *
-                     vp_mid[0] * vp_mid[2]));
-        vp_upd[1] =
-          vp[1] +
-          dt * (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_TH(alpha, xp_mid) +
-                vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp_mid) -
-                (HALF / u0) *
-                  (DERIVATIVE_IN_TH((template h<1, 1>), xp_mid) * SQR(vp_mid[0]) +
-                   DERIVATIVE_IN_TH((template h<2, 2>), xp_mid) * SQR(vp_mid[1]) +
-                   DERIVATIVE_IN_TH((template h<3, 3>), xp_mid) * SQR(vp_mid[2]) +
-                   TWO * DERIVATIVE_IN_TH((template h<1, 3>), xp_mid) *
-                     vp_mid[0] * vp_mid[2]));
+          dt *
+            (-metric.alpha(xp_mid) * u0 * DERIVATIVE_IN_R(metric.alpha, xp_mid) +
+             vp_mid[0] * DERIVATIVE_IN_R(metric.beta1, xp_mid) -
+             (HALF / u0) *
+               (DERIVATIVE_IN_R((metric.template h<1, 1>), xp_mid) * SQR(vp_mid[0]) +
+                DERIVATIVE_IN_R((metric.template h<2, 2>), xp_mid) * SQR(vp_mid[1]) +
+                DERIVATIVE_IN_R((metric.template h<3, 3>), xp_mid) * SQR(vp_mid[2]) +
+                TWO * DERIVATIVE_IN_R((metric.template h<1, 3>), xp_mid) *
+                  vp_mid[0] * vp_mid[2]));
+        vp_upd[1] = vp[1] +
+                    dt *
+                      (-metric.alpha(xp_mid) * u0 *
+                         DERIVATIVE_IN_TH(metric.alpha, xp_mid) +
+                       vp_mid[1] * DERIVATIVE_IN_TH(metric.beta1, xp_mid) -
+                       (HALF / u0) *
+                         (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp_mid) *
+                            SQR(vp_mid[0]) +
+                          DERIVATIVE_IN_TH((metric.template h<2, 2>), xp_mid) *
+                            SQR(vp_mid[1]) +
+                          DERIVATIVE_IN_TH((metric.template h<3, 3>), xp_mid) *
+                            SQR(vp_mid[2]) +
+                          TWO * DERIVATIVE_IN_TH((metric.template h<1, 3>), xp_mid) *
+                            vp_mid[0] * vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
@@ -481,7 +481,7 @@ namespace kernel::gr {
                                           const vec_t<Dim::_3D>& vp,
                                           real_t&                phi) const {
     if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "UpdatePhi: 1D implementation called")
+      raise::KernelError(HERE, "UpdatePhi: 1D implementation called");
     } else if constexpr (D == Dim::_2D) {
       vec_t<Dim::_3D> vp_cntrv { ZERO };
       metric.template transform<Idx::D, Idx::U>(xp, vp, vp_cntrv);
@@ -502,7 +502,7 @@ namespace kernel::gr {
                                                   vec_t<Dim::_3D>& e0,
                                                   vec_t<Dim::_3D>& b0) const {
     if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "interpolateFields: 1D implementation called")
+      raise::KernelError(HERE, "interpolateFields: 1D implementation called");
     } else if constexpr (D == Dim::_2D) {
       // first order interpolation
       // Using fields em::e = D(t = n), and em::b0 = B(t = n)
@@ -580,7 +580,7 @@ namespace kernel::gr {
   template <class M>
   Inline void Pusher_kernel<M>::operator()(Massless_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "Photon pusher not implemented for 1D")
+      raise::KernelError(HERE, "Photon pusher not implemented for 1D");
     } else if constexpr (D == Dim::_2D) {
       if (tag(p) != ParticleTag::alive) {
         if (tag(p) != ParticleTag::dead) {
@@ -631,7 +631,7 @@ namespace kernel::gr {
 
       boundaryConditions(p);
     } else if constexpr (D == Dim::_3D) {
-      NTTError("not implemented");
+      raise::KernelError(HERE, "3D not implemented");
     }
   }
 
@@ -640,7 +640,7 @@ namespace kernel::gr {
   template <class M>
   Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "Massive pusher not implemented for 1D")
+      raise::KernelError(HERE, "Massive pusher not implemented for 1D");
     } else if constexpr (D == Dim::_2D) {
       if (tag(p) != ParticleTag::alive) {
         if (tag(p) != ParticleTag::dead) {

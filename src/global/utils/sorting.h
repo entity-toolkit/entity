@@ -4,8 +4,6 @@
  * @implements
  *   - sort::BinBool<>
  *   - sort::BinTag<>
- * @depends:
- *   - arch/kokkos_aliases.h
  * @namespaces:
  *   - sort::
  * @note BinBool sorts by boolean values "true" then "false"

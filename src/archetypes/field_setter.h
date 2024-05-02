@@ -3,12 +3,6 @@
  * @brief Defines a kernel which populates the EM fields with user-defined values
  * @implements
  *   - arch::SetEMFields_kernel
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/traits.h
- *   - archetypes/kokkos_aliases.h
- *   - utils/numeric.h
  * @namespaces:
  *   - arch::
  * @note

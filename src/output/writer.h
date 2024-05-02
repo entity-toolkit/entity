@@ -1,13 +1,6 @@
 /**
  * @file output/writer.h
  * @brief Writer class which takes care of data output
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/param_container.h
- *   - output/fields.h
- *   - output/particles.h
  */
 
 #ifndef OUTPUT_WRITER_H

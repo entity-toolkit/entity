@@ -12,6 +12,7 @@
 #ifndef GLOBAL_UTILS_COLORS_H
 #define GLOBAL_UTILS_COLORS_H
 
+#include <cstring>
 #include <map>
 #include <string>
 

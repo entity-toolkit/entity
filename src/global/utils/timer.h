@@ -4,14 +4,6 @@
  * @implements
  *   - timer::Timers
  *   - enum timer::TimerFlags
- * @depends:
- *   - global.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - utils/comparators.h
- *   - utils/formatting.h
- *   - arch/mpi_aliases.h
- *   - utils/colors.h
  * @namespces:
  *   - timer::
  * @macros:
@@ -35,7 +27,6 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
-#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -196,10 +187,16 @@ namespace timer {
         if (flags & Timer::PrintIndents) {
           os << "  ";
         }
-        os << name << c_bblack
+        os << ((name != "Sorting" or flags & Timer::PrintSorting) ? c_reset
+                                                                  : c_bblack)
+           << name << c_reset << c_bblack
            << fmt::pad(name, 20, '.', true).substr(name.size(), 20);
         os << std::setw(17) << std::right << std::setfill('.')
-           << fmt::format("%s%.2Lf", c_byellow.c_str(), mean_time);
+           << fmt::format("%s%.2Lf",
+                          (name != "Sorting" or flags & Timer::PrintSorting)
+                            ? c_byellow.c_str()
+                            : c_bblack.c_str(),
+                          mean_time);
         if (flags & Timer::PrintUnits) {
           os << " " << mean_units << " ";
         }
@@ -232,10 +229,16 @@ namespace timer {
         if (flags & Timer::PrintIndents) {
           os << "  ";
         }
-        os << name << c_bblack
+        os << ((name != "Sorting" or flags & Timer::PrintSorting) ? c_reset
+                                                                  : c_bblack)
+           << name << c_bblack
            << fmt::pad(name, 20, '.', true).substr(name.size(), 20);
         os << std::setw(17) << std::right << std::setfill('.')
-           << fmt::format("%s%.2Lf", c_byellow.c_str(), value);
+           << fmt::format("%s%.2Lf",
+                          (name != "Sorting" or flags & Timer::PrintSorting)
+                            ? c_byellow.c_str()
+                            : c_bblack.c_str(),
+                          value);
         if (flags & Timer::PrintUnits) {
           os << " " << units;
         }
@@ -261,16 +264,19 @@ namespace timer {
         }
         os << c_reset << std::endl;
       }
-      if (flags & Timer::PrintOutput) {
+      {
         std::string units = "µs";
         auto        value = get("Output");
         if (flags & Timer::AutoConvert) {
           convertTime(value, units);
         }
-        os << "Output" << c_bblack
-           << fmt::pad("Output", 22, '.', true).substr(6, 22);
+        os << ((flags & Timer::PrintOutput) ? c_reset : c_bblack) << "Output"
+           << c_bblack << fmt::pad("Output", 22, '.', true).substr(6, 22);
         os << std::setw(17) << std::right << std::setfill('.')
-           << fmt::format("%s%.2Lf", c_byellow.c_str(), value);
+           << fmt::format("%s%.2Lf",
+                          (flags & Timer::PrintOutput) ? c_byellow.c_str()
+                                                       : c_bblack.c_str(),
+                          value);
         if (flags & Timer::PrintUnits) {
           os << " " << units;
         }

@@ -3,8 +3,6 @@
  * @brief Container for particle species information
  * @implements
  *   - ntt::ParticleSpecies
- * @depends:
- *   - enums.h
  * @namespaces:
  *   - ntt::
  * @note Particles class inherits from this one

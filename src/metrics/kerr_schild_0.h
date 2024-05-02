@@ -5,12 +5,6 @@
  * in Kerr-Schild coordinates (rg=c=1)
  * @implements
  *   - metric::KerrSchild0<> : metric::MetricBase<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - metrics/metric_base.h
- *   - arch/kokkos_aliases.h
- *   - utils/numeric.h
  * @namespaces:
  *   - metric::
  * !TODO
@@ -30,7 +24,6 @@
 
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace metric {

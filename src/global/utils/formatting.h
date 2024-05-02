@@ -1,8 +1,6 @@
 /**
  * @file utils/formatting.h
  * @brief String formatting utilities
- * @depends:
- *   - arch/traits.h
  * @implements
  *   - fmt::format<> -> std::string
  *   - fmt::pad -> std::string
@@ -21,7 +19,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <map>
 #include <memory>
 #include <regex>
 #include <sstream>

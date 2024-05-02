@@ -3,25 +3,6 @@
  * @brief ...
  * @implements
  *   - ntt::Metadomain<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - utils/error.h
- *   - utils/tools.h
- *   - utils/comparators.h
- *   - arch/mpi_aliases.h
- *   - framework/domain/domain.h
- *   - framework/containers/species.h
- *   - framework/domain/mesh.h
- *   - framework/domain/comm_mpi.hpp
- *   - framework/domain/comm_nompi.hpp
- *   - metrics/kerr_schild.h
- *   - metrics/kerr_schild_0.h
- *   - metrics/minkowski.h
- *   - metrics/qkerr_schild.h
- *   - metrics/qspherical.h
- *   - metrics/spherical.h
- *   - output/writer.h
  * @cpp:
  *   - metadomain.cpp
  * @namespaces:
@@ -37,9 +18,12 @@
 #include "enums.h"
 #include "global.h"
 
+#include "utils/timer.h"
+
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
+#include "framework/parameters.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -50,7 +34,6 @@
 #endif
 
 #include <map>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -97,7 +80,7 @@ namespace ntt {
       }
     }
 
-    void Communicate(Domain<S, M>&, CommTags);
+    void Communicate(Domain<S, M>&, CommTags, timer::Timers* = nullptr);
 
     /**
      * @param global_ndomains total number of domains

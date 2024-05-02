@@ -4,11 +4,6 @@
  * @implements
  *   - mpi::PrtlSendTag<>
  *   - mpi::SendTag<> -> short
- * @depends:
- *   - global.h
- *   - arch/directions.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
  * @namespaces:
  *   - mpi::
  */

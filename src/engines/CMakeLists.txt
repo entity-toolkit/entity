@@ -3,6 +3,7 @@
 # @sources:
 # - engine_printer.cpp
 # - engine_init.cpp
+# - engine_run.cpp
 # - engine_step_report.cpp
 # @includes:
 # - ../
@@ -11,6 +12,7 @@
 # - ntt_framework [required]
 # - ntt_metrics [required]
 # - ntt_kernels [required]
+# - ntt_archetypes [required]
 # - ntt_pgen [required]
 # - ntt_output [optional]
 # @uses:
@@ -25,11 +27,12 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/engine_printer.cpp
   ${SRC_DIR}/engine_init.cpp
+  ${SRC_DIR}/engine_run.cpp
   ${SRC_DIR}/engine_step_report.cpp
 )
 add_library(ntt_engines ${SOURCES})
 
-set(libs ntt_global ntt_framework ntt_metrics ntt_kernels ntt_pgen)
+set(libs ntt_global ntt_framework ntt_metrics ntt_archetypes ntt_kernels ntt_pgen)
 if(${output})
   list(APPEND libs ntt_output hdf5::hdf5)
 endif()

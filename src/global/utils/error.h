@@ -7,9 +7,6 @@
  *   - raise::ErrorIf -> void
  *   - raise::KernelError<> -> void
  *   - raise::KernelNotImplementedError -> void
- * @depends:
- *   - arch/kokkos_aliases.h
- *   - utils/formatting.h
  * @namespaces:
  *   - raise::
  * @macros:
@@ -23,7 +20,6 @@
 #define GLOBAL_UTILS_ERROR_H
 
 #include "arch/kokkos_aliases.h"
-#include "utils/formatting.h"
 
 #include <Kokkos_Core.hpp>
 #include <plog/Log.h>

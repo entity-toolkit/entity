@@ -3,12 +3,6 @@
  * @brief Convert particle positions & velocities to physical units
  * @implements
  *   - kernel::PrtlToPhys_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::
  * @note

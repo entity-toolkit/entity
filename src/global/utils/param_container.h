@@ -5,11 +5,6 @@
  *   - prm::Parameters
  * @namespaces:
  *   - prm::
- * @depends:
- *   - global.h
- *   - utils/error.h
- *   - utils/formatting.h
- *   - utils/log.h
  */
 
 #ifndef GLOBAL_UTILS_PARAM_CONTAINER_H

@@ -6,9 +6,6 @@
 
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
-#include "utils/comparators.h"
-#include "utils/formatting.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
@@ -16,8 +13,6 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-
-#include <vector>
 
 namespace user {
   using namespace ntt;

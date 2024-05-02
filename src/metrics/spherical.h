@@ -3,13 +3,6 @@
  * @brief Flat space-time spherical metric class diag(-1, 1, r^2, r^2, sin(th)^2)
  * @implements
  *   - metric::Spherical<> : metric::MetricBase<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - metrics/metric_base.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - metric::
  * !TODO
@@ -29,7 +22,6 @@
 
 #include <map>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace metric {

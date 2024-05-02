@@ -3,15 +3,6 @@
  * @brief Simulation class which creates and calles the engines
  * @implements
  *   - ntt::Simulation
- * @depends:
- *   - enums.h
- *   - defaults.h
- *   - global.h
- *   - utils/error.h
- *   - utils/formatting.h
- *   - utils/plog.h
- *   - framework/io/cargs.h
- *   - framework/parameters.h
  * @cpp:
  *   - simulation.cpp
  * @namespaces:

@@ -105,16 +105,44 @@
     #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]) [["ATMOSPHERE", "ABSORB"]]
     #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["ABSORB"]]
     particles = ""
-    # Size of the absorption layer in physical (code) units:
-    #   @type: float
-    #   @default: 1% of the domain size (in shortest dimension)
-    #   @note: In spherical, this is the size of the layer in r from the outer wall
-    #   @note: In cartesian, this is the same for all dimensions where applicable
-    absorb_d = ""
-    # Absorption coefficient for fields:
-    #   @type: float: -inf < ... < inf, != 0
-    #   @default: 1.0
-    absorb_coeff = ""
+    
+    [grid.boundaries.absorb]
+      # Size of the absorption layer in physical (code) units:
+      #   @type: float
+      #   @default: 1% of the domain size (in shortest dimension)
+      #   @note: In spherical, this is the size of the layer in r from the outer wall
+      #   @note: In cartesian, this is the same for all dimensions where applicable
+      ds = ""
+      # Absorption coefficient for fields:
+      #   @type: float: -inf < ... < inf, != 0
+      #   @default: 1.0
+      coeff = ""
+
+    [grid.boundaries.atmosphere]
+    # @required: if ATMOSPHERE is one of the boundaries
+      # Temperature of the atmosphere in units of m0 c^2
+      #   @type: float
+      temperature = ""
+      # Peak number density of the atmosphere at base in units of n0
+      #   @type: float
+      density = ""
+      # Pressure scale-height in physical units
+      #   @type: float
+      height = ""
+      # Species indices of particles that populate the atmosphere
+      #   @type: array of ints of size 2
+      species = ""
+      # Distance from the edge to which the gravity is imposed in physical units
+      #   @type: float
+      #   @default: 0.0
+      #   @note: 0.0 means no limit
+      ds = ""
+
+      # @inferred:
+      # - g [= temperature / height]
+      #     @brief: Acceleration due to imposed gravity
+      #     @type: float
+      #     @from: `grid.boundaries.atmosphere.temperature`, `grid.boundaries.atmosphere.height`
 
 [scales]
   # Fiducial larmor radius:

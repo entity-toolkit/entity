@@ -6,9 +6,6 @@
  *   - dir::direction_t
  *   - dir::map_t
  *   - dir::dirs_t
- * @depends:
- *   - global.h
- *   - utils/error.h
  * @namespaces:
  *   - dir::Directions
  * @note
@@ -90,6 +87,41 @@ namespace dir {
         }
       }
       return result;
+    }
+
+    auto get_sign() const -> short {
+      short sign = 0;
+      for (std::size_t i = 0; i < this->size(); ++i) {
+        if ((*this)[i] != 0) {
+          raise::ErrorIf(sign != 0,
+                         "Undefined signature for non-orth direction",
+                         HERE);
+          sign = (*this)[i];
+        }
+      }
+      raise::ErrorIf(sign == 0, "Undefined signature", HERE);
+      return sign;
+    }
+
+    auto get_dim() const -> in {
+      short dir = -1;
+      for (std::size_t i = 0; i < this->size(); ++i) {
+        if ((*this)[i] != 0) {
+          raise::ErrorIf(dir > 0, "Undefined dim for non-orth direction", HERE);
+          dir = i;
+        }
+      }
+      raise::ErrorIf(dir == -1, "Undefined dim", HERE);
+      if (dir == 0) {
+        return in::x1;
+      } else if (dir == 1) {
+        return in::x2;
+      } else if (dir == 2) {
+        return in::x3;
+      } else {
+        raise::Error("Undefined dim", HERE);
+        throw;
+      }
     }
   };
 

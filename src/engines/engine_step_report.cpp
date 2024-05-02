@@ -14,7 +14,7 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "engines/engine.h"
+#include "engines/engine.hpp"
 
 #include <iomanip>
 #include <iostream>
@@ -31,7 +31,8 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Engine<S, M>::print_step_report(timer::Timers&         timers,
                                        pbar::DurationHistory& time_history,
-                                       bool print_output) const {
+                                       bool                   print_output,
+                                       bool print_sorting) const {
     DiagFlags  diag_flags  = Diag::Default;
     TimerFlags timer_flags = Timer::Default;
     if (not m_params.get<bool>("diagnostics.colored_stdout")) {
@@ -42,7 +43,10 @@ namespace ntt {
       diag_flags ^= Diag::Species;
     }
     if (print_output) {
-      diag_flags |= Timer::PrintOutput;
+      timer_flags |= Timer::PrintOutput;
+    }
+    if (print_sorting) {
+      timer_flags |= Timer::PrintSorting;
     }
     CallOnce(
       [diag_flags](auto& time, auto& step, auto& max_steps, auto& dt) {

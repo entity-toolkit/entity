@@ -3,11 +3,6 @@
  * @brief Progress bar for logging the simulation progress
  * @implements
  *   - pbar::ProgressBar -> void
- * @depends:
- *   - arch/mpi_aliases.h
- *   - utils/formatting.h
- *   - utils/error.h
- *   - utils/colors.h
  * @namespaces:
  *   - pbar::
  * @macros:
@@ -19,10 +14,8 @@
 #ifndef GLOBAL_UTILS_PROGRESSBAR_H
 #define GLOBAL_UTILS_PROGRESSBAR_H
 
-#include "arch/mpi_aliases.h"
 #include "utils/colors.h"
 #include "utils/error.h"
-#include "utils/formatting.h"
 
 #include <chrono>
 #include <iomanip>
@@ -34,6 +27,8 @@
 #include <vector>
 
 #if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
   #include <mpi.h>
 #endif // MPI_ENABLED
 

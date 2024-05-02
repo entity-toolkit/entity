@@ -3,10 +3,6 @@
  * @brief Algorithms to interpolate staggered fields and convert to a different basis
  * @implements
  *   - kernel::FieldsToPhys_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
  * @namespaces:
  *   - kernel::
  * @note
@@ -25,7 +21,6 @@
 #ifndef KERNELS_FIELDS_TO_PHYS_HPP
 #define KERNELS_FIELDS_TO_PHYS_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"

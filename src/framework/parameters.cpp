@@ -4,7 +4,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -160,15 +159,30 @@ namespace ntt {
       "grid",
       "boundaries",
       "fields");
-    raise::ErrorIf(flds_bc.size() < 1 || flds_bc.size() > 3,
-                   "invalid `grid.boundaries.fields`",
-                   HERE);
-    promiseToDefine("grid.boundaries.fields");
-    for (const auto& bcs : flds_bc) {
-      for (const auto& bc : bcs) {
-        if (fmt::toLower(bc) == "absorb") {
-          promiseToDefine("grid.boundaries.absorb_d");
-          promiseToDefine("grid.boundaries.absorb_coeff");
+    {
+      raise::ErrorIf(flds_bc.size() < 1 || flds_bc.size() > 3,
+                     "invalid `grid.boundaries.fields`",
+                     HERE);
+      promiseToDefine("grid.boundaries.fields");
+      auto atm_defined = false;
+      for (const auto& bcs : flds_bc) {
+        for (const auto& bc : bcs) {
+          if (fmt::toLower(bc) == "absorb") {
+            promiseToDefine("grid.boundaries.absorb.ds");
+            promiseToDefine("grid.boundaries.absorb.coeff");
+          }
+          if (fmt::toLower(bc) == "atmosphere") {
+            raise::ErrorIf(atm_defined,
+                           "ATMOSPHERE is only allowed in one direction",
+                           HERE);
+            atm_defined = true;
+            promiseToDefine("grid.boundaries.atmosphere.temperature");
+            promiseToDefine("grid.boundaries.atmosphere.density");
+            promiseToDefine("grid.boundaries.atmosphere.height");
+            promiseToDefine("grid.boundaries.atmosphere.ds");
+            promiseToDefine("grid.boundaries.atmosphere.species");
+            promiseToDefine("grid.boundaries.atmosphere.g");
+          }
         }
       }
     }
@@ -178,15 +192,30 @@ namespace ntt {
       "grid",
       "boundaries",
       "particles");
-    raise::ErrorIf(prtl_bc.size() < 1 || prtl_bc.size() > 3,
-                   "invalid `grid.boundaries.particles`",
-                   HERE);
-    promiseToDefine("grid.boundaries.particles");
-    for (const auto& bcs : prtl_bc) {
-      for (const auto& bc : bcs) {
-        if (fmt::toLower(bc) == "absorb") {
-          promiseToDefine("grid.boundaries.absorb_d");
-          promiseToDefine("grid.boundaries.absorb_coeff");
+    {
+      raise::ErrorIf(prtl_bc.size() < 1 || prtl_bc.size() > 3,
+                     "invalid `grid.boundaries.particles`",
+                     HERE);
+      promiseToDefine("grid.boundaries.particles");
+      auto atm_defined = false;
+      for (const auto& bcs : prtl_bc) {
+        for (const auto& bc : bcs) {
+          if (fmt::toLower(bc) == "absorb") {
+            promiseToDefine("grid.boundaries.absorb.ds");
+            promiseToDefine("grid.boundaries.absorb.coeff");
+          }
+          if (fmt::toLower(bc) == "atmosphere") {
+            raise::ErrorIf(atm_defined,
+                           "ATMOSPHERE is only allowed in one direction",
+                           HERE);
+            atm_defined = true;
+            promiseToDefine("grid.boundaries.atmosphere.temperature");
+            promiseToDefine("grid.boundaries.atmosphere.density");
+            promiseToDefine("grid.boundaries.atmosphere.height");
+            promiseToDefine("grid.boundaries.atmosphere.ds");
+            promiseToDefine("grid.boundaries.atmosphere.species");
+            promiseToDefine("grid.boundaries.atmosphere.g");
+          }
         }
       }
     }
@@ -253,8 +282,16 @@ namespace ntt {
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
     set("particles.use_weights",
         toml::find_or(raw_data, "particles", "use_weights", false));
-    set("particles.sort_interval",
-        toml::find_or(raw_data, "particles", "sort_interval", defaults::sort_interval));
+
+#if defined(MPI_ENABLED)
+    const std::size_t sort_interval = 1;
+#else
+    const std::size_t sort_interval = toml::find_or(raw_data,
+                                                    "particles",
+                                                    "sort_interval",
+                                                    defaults::sort_interval);
+#endif
+    set("particles.sort_interval", sort_interval);
 
     /* [particles.species] -------------------------------------------------- */
     std::vector<ParticleSpecies> species;
@@ -522,33 +559,63 @@ namespace ntt {
     set("grid.boundaries.fields", flds_bc_pairwise);
     set("grid.boundaries.particles", prtl_bc_pairwise);
 
-    if (isPromised("grid.boundaries.absorb_d")) {
+    if (isPromised("grid.boundaries.absorb.ds")) {
       if (coord_enum == Coord::Cart) {
         auto min_extent = std::numeric_limits<real_t>::max();
         for (const auto& e : extent) {
           min_extent = std::min(min_extent, e[1] - e[0]);
         }
-        set("grid.boundaries.absorb_d",
+        set("grid.boundaries.absorb.ds",
             toml::find_or(raw_data,
                           "grid",
                           "boundaries",
-                          "absorb_d",
-                          min_extent * defaults::bc::d_absorb_frac));
+                          "absorb",
+                          "ds",
+                          min_extent * defaults::bc::absorb::ds_frac));
       } else {
         auto r_extent = extent[0][1] - extent[0][0];
-        set("grid.boundaries.absorb_d",
+        set("grid.boundaries.absorb.ds",
             toml::find_or(raw_data,
                           "grid",
                           "boundaries",
-                          "absorb_d",
-                          r_extent * defaults::bc::d_absorb_frac));
+                          "absorb",
+                          "ds",
+                          r_extent * defaults::bc::absorb::ds_frac));
       }
-      set("grid.boundaries.absorb_coeff",
+      set("grid.boundaries.absorb.coeff",
           toml::find_or(raw_data,
                         "grid",
                         "boundaries",
-                        "absorb_coeff",
-                        defaults::bc::absorb_coeff));
+                        "absorb",
+                        "coeff",
+                        defaults::bc::absorb::coeff));
+    }
+
+    if (isPromised("grid.boundaries.atmosphere.temperature")) {
+      const auto atm_T = toml::find<real_t>(raw_data,
+                                            "grid",
+                                            "boundaries",
+                                            "atmosphere",
+                                            "temperature");
+      const auto atm_h = toml::find<real_t>(raw_data,
+                                            "grid",
+                                            "boundaries",
+                                            "atmosphere",
+                                            "height");
+      set("grid.boundaries.atmosphere.temperature", atm_T);
+      set("grid.boundaries.atmosphere.density",
+          toml::find<real_t>(raw_data, "grid", "boundaries", "atmosphere", "density"));
+      set("grid.boundaries.atmosphere.ds",
+          toml::find_or(raw_data, "grid", "boundaries", "atmosphere", "ds", ZERO));
+      set("grid.boundaries.atmosphere.height", atm_h);
+      set("grid.boundaries.atmosphere.g", atm_T / atm_h);
+      const auto atm_species = toml::find<std::pair<unsigned short, unsigned short>>(
+        raw_data,
+        "grid",
+        "boundaries",
+        "atmosphere",
+        "species");
+      set("grid.boundaries.atmosphere.species", atm_species);
     }
 
     // gca

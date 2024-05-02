@@ -3,21 +3,6 @@
  * @brief Structure for defining and holding initial simulation parameters
  * @implements
  *   - ntt::SimulationParams : ntt::Parameters
- * @depends:
- *   - utils/param_container.h
- *   - defaults.h
- *   - enums.h
- *   - arch/kokkos_aliases.h
- *   - framework/containers/species.h
- *   - utils/error.h
- *   - utils/formatting.h
- *   - utils/numeric.h
- *   - metrics/kerr_schild.h
- *   - metrics/minkowski.h
- *   - metrics/qkerr_schild.h
- *   - metrics/qspherical.h
- *   - metrics/spherical.h
- *   - metrics/kerr_schild_0.h
  * @cpp:
  *   - parameters.cpp
  * @namespaces:

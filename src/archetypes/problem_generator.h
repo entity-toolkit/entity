@@ -3,10 +3,6 @@
  * @brief Base class for all problem generators
  * @implements
  *   - arch::ProblemGenerator<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - framework/parameters.h
  * @namespace
  *   - arch::
  * @note

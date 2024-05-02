@@ -6,11 +6,6 @@
  *   - raise::Warning -> void
  *   - logger::Checkpoint -> void
  *   - info::Print -> void
- * @depends:
- *   - global.h
- *   - arch/mpi_aliases.h
- *   - utils/formatting.h
- *   - utils/colors.h
  * @namespaces:
  *   - logger::
  *   - info::
@@ -27,7 +22,6 @@
 
 #include "arch/mpi_aliases.h"
 #include "utils/colors.h"
-#include "utils/formatting.h"
 
 #include <Kokkos_Core.hpp>
 #include <plog/Log.h>

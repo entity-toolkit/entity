@@ -6,8 +6,6 @@
  *   - cmp::AlmostZero<> -> bool  // float/double
  *   - cmp::AlmostEqual_host<> -> bool // float vs float, double vs double
  *   - cmp::AlmostZero_host<> -> bool  // float/double
- * @depends:
- *   - arch/kokkos_aliases.h
  * @namespaces:
  *   - cmp::
  * @note

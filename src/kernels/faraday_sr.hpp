@@ -3,12 +3,6 @@
  * @brief Algorithms for Faraday's law in curvilinear SR
  * @implements
  *   - kernel::sr::Faraday_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::sr::
  * !TODO:

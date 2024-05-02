@@ -3,10 +3,6 @@
  * @brief Grid class containing information about the discretization
  * @implements
  *   - ntt::Grid<>
- * @depends:
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
  * @cpp:
  *   - grid.cpp
  * @namespaces:
@@ -147,6 +143,15 @@ namespace ntt {
           raise::Error("invalid dimension", HERE);
           throw;
       }
+    }
+
+    [[nodiscard]]
+    auto n_all() const -> std::vector<std::size_t> {
+      std::vector<std::size_t> nall;
+      for (std::size_t i = 0; i < D; ++i) {
+        nall.push_back(m_resolution[i] + 2 * N_GHOSTS);
+      }
+      return nall;
     }
 
     /* Ranges in the device execution space --------------------------------- */

@@ -5,12 +5,6 @@
  *   - kernel::UniformInjector_kernel<>
  *   - kernel::GlobalInjector_kernel<>
  *   - kernel::NonUniformInjector_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - kernel::
  */
@@ -24,6 +18,9 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+
+#include "framework/containers/particles.h"
+#include "framework/domain/domain.h"
 
 namespace kernel {
   using namespace ntt;
@@ -520,9 +517,9 @@ namespace kernel {
           if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
             const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1);
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1);
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_2(index + offset2) = dx1;
 
             vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
@@ -538,7 +535,7 @@ namespace kernel {
             ux3s_2(index + offset2) = v_XYZ[2];
 
             tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
             if (M::CoordType == Coord::Cart) {
               weights_1(index + offset1) = ONE;
               weights_2(index + offset2) = ONE;
@@ -573,14 +570,14 @@ namespace kernel {
           if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
             const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1);
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1);
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_2(index + offset2) = dx1;
 
-            i2s_1(index + offset1)  = static_cast<int>(i2);
+            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_1(index + offset1) = dx2;
-            i2s_2(index + offset2)  = static_cast<int>(i2);
+            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_2(index + offset2) = dx2;
 
             coord_t<M::PrtlDim> x_Cd_ { ZERO };
@@ -611,7 +608,7 @@ namespace kernel {
             ux3s_2(index + offset2) = v_Cd[2];
 
             tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
             if (M::CoordType == Coord::Cart) {
               weights_1(index + offset1) = ONE;
               weights_2(index + offset2) = ONE;
@@ -650,19 +647,19 @@ namespace kernel {
           if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
             const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1);
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1);
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
             dx1s_2(index + offset2) = dx1;
 
-            i2s_1(index + offset1)  = static_cast<int>(i2);
+            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_1(index + offset1) = dx2;
-            i2s_2(index + offset2)  = static_cast<int>(i2);
+            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
             dx2s_2(index + offset2) = dx2;
 
-            i3s_1(index + offset1)  = static_cast<int>(i3);
+            i3s_1(index + offset1)  = static_cast<int>(i3) - N_GHOSTS;
             dx3s_1(index + offset1) = dx3;
-            i3s_2(index + offset2)  = static_cast<int>(i3);
+            i3s_2(index + offset2)  = static_cast<int>(i3) - N_GHOSTS;
             dx3s_2(index + offset2) = dx3;
 
             vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
@@ -686,7 +683,7 @@ namespace kernel {
             ux3s_2(index + offset2) = v_Cd[2];
 
             tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
             if (M::CoordType == Coord::Cart) {
               weights_1(index + offset1) = ONE;
               weights_2(index + offset2) = ONE;

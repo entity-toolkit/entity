@@ -13,6 +13,9 @@
   [grid.boundaries]
     fields = [["ABSORB", "ABSORB"], ["ABSORB", "ABSORB"]]
     particles = [["ABSORB", "ABSORB"], ["ABSORB", "ABSORB"]]
+
+    [grid.boundaries.absorb]
+      ds = 0.15
     
 [scales]
   larmor0 = 0.1

@@ -1,27 +1,8 @@
 /**
- * @file engines/engine.h
+ * @file engines/engine.hpp
  * @brief Base simulation class which just initializes the metadomain
  * @implements
  *   - ntt::Engine<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - pgen.hpp
- *   - arch/traits.h
- *   - arch/directions.h
- *   - arch/mpi_aliases.h
- *   - utils/error.h
- *   - utils/log.h
- *   - utils/formatting.h
- *   - utils/progressbar.h
- *   - utils/colors.h
- *   - utils/timer.h
- *   - archetypes/field_setter.h
- *   - framework/containers/fields.h
- *   - framework/containers/particles.h
- *   - framework/containers/species.h
- *   - framework/domain/metadomain.h
- *   - framework/parameters.h
  * @cpp:
  *   - engine_init.cpp
  *   - engine_printer.cpp
@@ -42,13 +23,9 @@
 
 #include "arch/traits.h"
 #include "utils/error.h"
-#include "utils/formatting.h"
-#include "utils/log.h"
 #include "utils/progressbar.h"
 #include "utils/timer.h"
 
-#include "framework/containers/fields.h"
-#include "framework/containers/particles.h"
 #include "framework/containers/species.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
@@ -80,8 +57,8 @@ namespace ntt {
 
   public:
     static constexpr bool pgen_is_ok {
-      traits::check_compatibility<S>::value(user::PGen<S, M>::engines) &&
-      traits::check_compatibility<M::MetricType>::value(user::PGen<S, M>::metrics) &&
+      traits::check_compatibility<S>::value(user::PGen<S, M>::engines) and
+      traits::check_compatibility<M::MetricType>::value(user::PGen<S, M>::metrics) and
       traits::check_compatibility<M::Dim>::value(user::PGen<S, M>::dimensions)
     };
 
@@ -141,84 +118,11 @@ namespace ntt {
 
     void init();
     void print_report() const;
-    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool) const;
+    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool, bool) const;
 
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 
-    void run() {
-      init();
-
-      auto timers = timer::Timers {
-        { "FieldSolver",
-         "CurrentFiltering", "CurrentDeposit",
-         "ParticlePusher", "FieldBoundaries",
-         "ParticleBoundaries", "Communications",
-         "Custom", "Output" },
-        []() {
-          Kokkos::fence();
-         },
-        m_params.get<bool>("diagnostics.blocking_timers")
-      };
-      const auto diag_interval = m_params.get<std::size_t>(
-        "diagnostics.interval");
-
-#if defined(OUTPUT_ENABLED)
-      const auto interval = m_params.template get<std::size_t>(
-        "output.interval");
-      const auto interval_time = m_params.template get<long double>(
-        "output.interval_time");
-      long double last_output_time = -interval_time - 1.0;
-      const auto  should_output =
-        [&interval, &interval_time, &last_output_time](auto step, auto time) {
-          return ((interval_time <= 0.0) and (step % interval == 0)) or
-                 ((time - last_output_time >= interval_time) and
-                  (interval_time > 0.0));
-        };
-#endif
-
-      auto time_history = pbar::DurationHistory { 1000 };
-
-      // main algorithm loop
-      while (step < max_steps) {
-        // run the engine-dependent algorithm step
-        m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
-          step_forward(timers, dom);
-        });
-
-        m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
-          if constexpr (
-            traits::has_member<traits::pgen::custom_poststep_t, user::PGen<S, M>>::value) {
-            timers.start("Custom");
-            m_pgen.CustomPostStep(step, time, dom);
-            timers.stop("Custom");
-          }
-        });
-
-        // advance time & timestep
-        ++step;
-        time += dt;
-
-        auto print_output = false;
-#if defined(OUTPUT_ENABLED)
-        // write timestep if needed
-        if (should_output(step, time)) {
-          timers.start("Output");
-          m_metadomain.Write(m_params, step, time);
-          timers.stop("Output");
-          last_output_time = time;
-          print_output     = true;
-        }
-#endif
-
-        // advance time_history
-        time_history.tick();
-        // print final timestep report
-        if (diag_interval > 0 and step % diag_interval == 0) {
-          print_step_report(timers, time_history, print_output);
-        }
-        timers.resetAll();
-      }
-    }
+    void run();
   };
 
 } // namespace ntt

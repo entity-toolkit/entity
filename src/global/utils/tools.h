@@ -7,9 +7,6 @@
  *   - tools::divideInProportions2D -> std::tuple<unsigned int, unsigned int>
  *   - tools::divideInProportions3D -> std::tuple<unsigned int, unsigned int, unsigned int>
  *   - tools::Decompose -> std::vector<std::vector<std::size_t>>
- * @depends:
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - tools::
  */

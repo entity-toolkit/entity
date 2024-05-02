@@ -3,15 +3,6 @@
  * @brief Particle pusher for the SR
  * @implements
  *   - kernel::sr::Pusher_kernel<>
- *   - kernel::sr::PusherBase_kernel<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - arch/traits.h
- *   - utils/error.h
- *   - utils/numeric.h
- *   - arch/mpi_tags.h
  * @namespaces:
  *   - kernel::sr::
  * @macros:
@@ -35,9 +26,6 @@
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
 #endif
-
-#include <tuple>
-#include <type_traits>
 
 /* -------------------------------------------------------------------------- */
 /* Local macros                                                               */
@@ -67,19 +55,142 @@ namespace kernel::sr {
 
   typedef int CoolingTags;
 
+  struct NoForce_t {
+    NoForce_t() {}
+  };
+
+  /**
+   * @brief
+   * A helper struct which combines the atmospheric gravity
+   * with (optionally) custom user-defined force
+   * @tparam D Dimension
+   * @tparam C Coordinate system
+   * @tparam F Additional force
+   * @tparam Atm Toggle for atmospheric gravity
+   * @note when `Atm` is true, `g` contains a vector of gravity acceleration
+   * @note when `Atm` is true, sign of `ds` indicates the direction of the boundary
+   * !TODO: compensate for the species mass when applying atmospheric force
+   */
+  template <Dimension D, Coord::type C, class F = NoForce_t, bool Atm = false>
+  struct Force {
+    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
+    static_assert(ExtForce or Atm,
+                  "Force initialized with neither PGen force nor gravity");
+
+    const F      pgen_force;
+    const real_t gx1, gx2, gx3, x_surf, ds;
+
+    Force(const F& pgen_force, const vec_t<Dim::_3D>& g, real_t x_surf, real_t ds)
+      : pgen_force { pgen_force }
+      , gx1 { g[0] }
+      , gx2 { g[1] }
+      , gx3 { g[2] }
+      , x_surf { x_surf }
+      , ds { ds } {}
+
+    Force(const F& pgen_force)
+      : Force {
+        pgen_force,
+        {ZERO, ZERO, ZERO},
+        ZERO,
+        ZERO
+    } {
+      raise::ErrorIf(Atm, "Atmospheric gravity not provided", HERE);
+    }
+
+    Force(const vec_t<Dim::_3D>& g, real_t x_surf, real_t ds)
+      : Force { NoForce_t {}, g, x_surf, ds } {
+      raise::ErrorIf(ExtForce, "External force not provided", HERE);
+    }
+
+    Inline auto fx1(const unsigned short& sp,
+                    const real_t&         time,
+                    bool                  ext_force,
+                    const coord_t<D>&     x_Ph) const -> real_t {
+      real_t f_x1 = ZERO;
+      if constexpr (ExtForce) {
+        if (ext_force) {
+          f_x1 += pgen_force.fx1(sp, time, x_Ph);
+        }
+      }
+      if constexpr (Atm) {
+        if (gx1 != ZERO) {
+          if ((ds > ZERO and x_Ph[0] >= x_surf + ds) or
+              (ds < ZERO and x_Ph[0] <= x_surf + ds)) {
+            return f_x1;
+          }
+          if constexpr (C == Coord::Cart) {
+            return f_x1 + gx1;
+          } else {
+            return f_x1 + gx1 * SQR(x_surf / x_Ph[0]);
+          }
+        }
+      }
+      return f_x1;
+    }
+
+    Inline auto fx2(const unsigned short& sp,
+                    const real_t&         time,
+                    bool                  ext_force,
+                    const coord_t<D>&     x_Ph) const -> real_t {
+      real_t f_x2 = ZERO;
+      if constexpr (ExtForce) {
+        if (ext_force) {
+          f_x2 += pgen_force.fx2(sp, time, x_Ph);
+        }
+      }
+      if constexpr (Atm) {
+        if (gx2 != ZERO) {
+          if ((ds > ZERO and x_Ph[1] >= x_surf + ds) or
+              (ds < ZERO and x_Ph[1] <= x_surf + ds)) {
+            return f_x2;
+          }
+          if constexpr (C == Coord::Cart) {
+            return f_x2 + gx2;
+          } else {
+            raise::KernelError(HERE, "Invalid force for coordinate system");
+          }
+        }
+      }
+      return f_x2;
+    }
+
+    Inline auto fx3(const unsigned short& sp,
+                    const real_t&         time,
+                    bool                  ext_force,
+                    const coord_t<D>&     x_Ph) const -> real_t {
+      real_t f_x3 = ZERO;
+      if constexpr (ExtForce) {
+        if (ext_force) {
+          f_x3 += pgen_force.fx3(sp, time, x_Ph);
+        }
+      }
+      if constexpr (Atm) {
+        if (gx3 != ZERO) {
+          if ((ds > ZERO and x_Ph[2] >= x_surf + ds) or
+              (ds < ZERO and x_Ph[2] <= x_surf + ds)) {
+            return f_x3;
+          }
+          if constexpr (C == Coord::Cart) {
+            return f_x3 + gx3;
+          } else {
+            raise::KernelError(HERE, "Invalid force for coordinate system");
+          }
+        }
+      }
+      return f_x3;
+    }
+  };
+
   /**
    * @tparam M Metric
-   * @tparam PG Problem generator
-   * @tparam P Particle pusher
-   * @tparam Cs Cooling algorithms
+   * @tparam F Additional force
    */
-  template <class M, class PG>
+  template <class M, class F = NoForce_t>
   struct Pusher_kernel {
     static_assert(M::is_metric, "M must be a metric class");
-    static_assert(PG::is_pgen, "PG must be a problem generator class");
-    static constexpr auto D = M::Dim;
-    static constexpr auto ExtForce =
-      traits::has_member<traits::pgen::ext_force_t, PG>::value;
+    static constexpr auto D        = M::Dim;
+    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
 
   private:
     const PrtlPusher::type pusher;
@@ -97,7 +208,7 @@ namespace kernel::sr {
     array_t<real_t*>      phi;
     array_t<short*>       tag;
     const M               metric;
-    const PG              pgen;
+    const F               force;
 
     const real_t time, coeff, dt;
     const int    ni1, ni2, ni3;
@@ -138,7 +249,7 @@ namespace kernel::sr {
                   array_t<real_t*>&           phi,
                   array_t<short*>&            tag,
                   const M&                    metric,
-                  const PG&                   pgen,
+                  const F&                    force,
                   real_t                      time,
                   real_t                      coeff,
                   real_t                      dt,
@@ -173,7 +284,7 @@ namespace kernel::sr {
       , phi { phi }
       , tag { tag }
       , metric { metric }
-      , pgen { pgen }
+      , force { force }
       , time { time }
       , coeff { coeff }
       , dt { dt }
@@ -212,6 +323,76 @@ namespace kernel::sr {
         is_periodic_i3max = (boundaries[2].second == PrtlBC::PERIODIC);
       }
     }
+
+    Pusher_kernel(const PrtlPusher::type&     pusher,
+                  bool                        GCA,
+                  bool                        ext_force,
+                  CoolingTags                 cooling,
+                  const ndfield_t<D, 6>&      EB,
+                  unsigned short              sp,
+                  array_t<int*>&              i1,
+                  array_t<int*>&              i2,
+                  array_t<int*>&              i3,
+                  array_t<int*>&              i1_prev,
+                  array_t<int*>&              i2_prev,
+                  array_t<int*>&              i3_prev,
+                  array_t<prtldx_t*>&         dx1,
+                  array_t<prtldx_t*>&         dx2,
+                  array_t<prtldx_t*>&         dx3,
+                  array_t<prtldx_t*>&         dx1_prev,
+                  array_t<prtldx_t*>&         dx2_prev,
+                  array_t<prtldx_t*>&         dx3_prev,
+                  array_t<real_t*>&           ux1,
+                  array_t<real_t*>&           ux2,
+                  array_t<real_t*>&           ux3,
+                  array_t<real_t*>&           phi,
+                  array_t<short*>&            tag,
+                  const M&                    metric,
+                  real_t                      time,
+                  real_t                      coeff,
+                  real_t                      dt,
+                  int                         ni1,
+                  int                         ni2,
+                  int                         ni3,
+                  const boundaries_t<PrtlBC>& boundaries,
+                  real_t                      gca_larmor_max,
+                  real_t                      gca_eovrb_max,
+                  real_t                      coeff_sync)
+      : Pusher_kernel(pusher,
+                      GCA,
+                      ext_force,
+                      cooling,
+                      EB,
+                      sp,
+                      i1,
+                      i2,
+                      i3,
+                      i1_prev,
+                      i2_prev,
+                      i3_prev,
+                      dx1,
+                      dx2,
+                      dx3,
+                      dx1_prev,
+                      dx2_prev,
+                      dx3_prev,
+                      ux1,
+                      ux2,
+                      ux3,
+                      phi,
+                      tag,
+                      metric,
+                      NoForce_t {},
+                      time,
+                      coeff,
+                      dt,
+                      ni1,
+                      ni2,
+                      ni3,
+                      boundaries,
+                      gca_larmor_max,
+                      gca_eovrb_max,
+                      coeff_sync) {}
 
     Inline void synchrotronDrag(index_t&               p,
                                 vec_t<Dim::_3D>&       u_prime,
@@ -301,22 +482,20 @@ namespace kernel::sr {
         u_prime[2]     = ux3(p);
       }
       if constexpr (ExtForce) {
-        if (ext_force) {
-          coord_t<M::PrtlDim> xp_Ph { ZERO };
-          xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
-          if constexpr (M::PrtlDim != Dim::_1D) {
-            xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
-          }
-          if constexpr (M::PrtlDim == Dim::_3D) {
-            xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
-          }
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(
-            xp_Cd,
-            { pgen.ext_force.fx1(sp, time, xp_Ph),
-              pgen.ext_force.fx2(sp, time, xp_Ph),
-              pgen.ext_force.fx3(sp, time, xp_Ph) },
-            force_Cart);
+        coord_t<M::PrtlDim> xp_Ph { ZERO };
+        xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
+        if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+          xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
         }
+        if constexpr (M::PrtlDim == Dim::_3D) {
+          xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
+        }
+        metric.template transform_xyz<Idx::T, Idx::XYZ>(
+          xp_Cd,
+          { force.fx1(sp, time, ext_force, xp_Ph),
+            force.fx2(sp, time, ext_force, xp_Ph),
+            force.fx3(sp, time, ext_force, xp_Ph) },
+          force_Cart);
       }
       if (GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
@@ -328,47 +507,37 @@ namespace kernel::sr {
           is_gca = true;
           // update with GCA
           if constexpr (ExtForce) {
-            if (ext_force) {
-              velUpd(true, p, force_Cart, ei_Cart, bi_Cart);
-            }
+            velUpd(true, p, force_Cart, ei_Cart, bi_Cart);
           } else {
             velUpd(true, p, ei_Cart, bi_Cart);
           }
         } else {
           // update with conventional pusher
           if constexpr (ExtForce) {
-            if (ext_force) {
-              ux1(p) += HALF * dt * force_Cart[0];
-              ux2(p) += HALF * dt * force_Cart[1];
-              ux3(p) += HALF * dt * force_Cart[2];
-            }
+            ux1(p) += HALF * dt * force_Cart[0];
+            ux2(p) += HALF * dt * force_Cart[1];
+            ux3(p) += HALF * dt * force_Cart[2];
           }
           velUpd(false, p, ei_Cart, bi_Cart);
           if constexpr (ExtForce) {
-            if (ext_force) {
-              ux1(p) += HALF * dt * force_Cart[0];
-              ux2(p) += HALF * dt * force_Cart[1];
-              ux3(p) += HALF * dt * force_Cart[2];
-            }
+            ux1(p) += HALF * dt * force_Cart[0];
+            ux2(p) += HALF * dt * force_Cart[1];
+            ux3(p) += HALF * dt * force_Cart[2];
           }
         }
       } else {
         /* conventional pusher mode ------------------------------------- */
         // update with conventional pusher
         if constexpr (ExtForce) {
-          if (ext_force) {
-            ux1(p) += HALF * dt * force_Cart[0];
-            ux2(p) += HALF * dt * force_Cart[1];
-            ux3(p) += HALF * dt * force_Cart[2];
-          }
+          ux1(p) += HALF * dt * force_Cart[0];
+          ux2(p) += HALF * dt * force_Cart[1];
+          ux3(p) += HALF * dt * force_Cart[2];
         }
         velUpd(false, p, ei_Cart, bi_Cart);
         if constexpr (ExtForce) {
-          if (ext_force) {
-            ux1(p) += HALF * dt * force_Cart[0];
-            ux2(p) += HALF * dt * force_Cart[1];
-            ux3(p) += HALF * dt * force_Cart[2];
-          }
+          ux1(p) += HALF * dt * force_Cart[0];
+          ux2(p) += HALF * dt * force_Cart[1];
+          ux3(p) += HALF * dt * force_Cart[2];
         }
       }
       // cooling

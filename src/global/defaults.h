@@ -1,8 +1,6 @@
 /**
  * @file defaults.h
  * @brief Default values for the simulation parameters
- * @depends:
- *   - global.h
  * @namespaces:
  *   - ntt::defaults
  * @note These values are used when the user does not provide them in the input file
@@ -15,7 +13,6 @@
 
 #include <string>
 #include <string_view>
-#include <vector>
 
 namespace ntt::defaults {
   constexpr std::string_view input_filename = "input";
@@ -45,9 +42,11 @@ namespace ntt::defaults {
   } // namespace gr
 
   namespace bc {
-    const real_t d_absorb_frac = 0.01;
-    const real_t absorb_coeff  = 1.0;
-  } // namespace bc
+    namespace absorb {
+      const real_t ds_frac = 0.01;
+      const real_t coeff   = 1.0;
+    } // namespace absorb
+  }   // namespace bc
 
   namespace output {
     const std::string    format      = "hdf5";

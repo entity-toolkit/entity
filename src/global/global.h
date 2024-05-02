@@ -88,6 +88,7 @@
 #ifndef GLOBAL_GLOBAL_H
 #define GLOBAL_GLOBAL_H
 
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -212,6 +213,7 @@ namespace Timer {
     AutoConvert   = 1 << 5,
     Colorful      = 1 << 6,
     PrintOutput   = 1 << 7,
+    PrintSorting  = 1 << 8,
     Default       = PrintRelative | PrintUnits | PrintIndents | PrintTotal |
               PrintTitle | AutoConvert | Colorful,
   };
@@ -250,6 +252,26 @@ namespace Comm {
 
 typedef int CommTags;
 
+namespace BC {
+  enum BCTags_ {
+    None = 0,
+    Ex1  = 1 << 0,
+    Ex2  = 1 << 1,
+    Ex3  = 1 << 2,
+    Bx1  = 1 << 3,
+    Bx2  = 1 << 4,
+    Bx3  = 1 << 5,
+    Dx1  = 1 << 0,
+    Dx2  = 1 << 1,
+    Dx3  = 1 << 2,
+    B    = Bx1 | Bx2 | Bx3,
+    E    = Ex1 | Ex2 | Ex3,
+    D    = Dx1 | Dx2 | Dx3,
+  };
+} // namespace BC
+
+typedef int BCTags;
+
 /* aliases ------------------------------------------------------------------ */
 
 using Dim = Dimension;
@@ -261,6 +283,13 @@ using real_t = float;
 #else
 using real_t = double;
 #endif
+
+namespace Range {
+  constexpr std::pair<real_t, real_t> All = {
+    -std::numeric_limits<real_t>::infinity(),
+    std::numeric_limits<real_t>::infinity()
+  };
+}; // namespace Range
 
 // ND list alias
 template <typename T, Dimension D>

@@ -3,12 +3,6 @@
  * @brief MPI communication routines
  * @implements
  *   - comm::CommunicateField<> -> void
- * @depends:
- *   - global.h
- *   - arch/kokkos_aliases.h
- *   - arch/mpi_aliases.h
- *   - utils/error.h
- *   - framework/domain/domain.h
  * @namespaces:
  *   - comm::
  * @note This should only be included if the MPI_ENABLED flag is set
@@ -23,13 +17,9 @@
 #include "arch/mpi_aliases.h"
 #include "utils/error.h"
 
-#include "framework/domain/domain.h"
-
 #include <Kokkos_Core.hpp>
 #include <mpi.h>
 
-#include <array>
-#include <tuple>
 #include <vector>
 
 namespace comm {

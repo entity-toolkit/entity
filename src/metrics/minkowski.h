@@ -3,14 +3,6 @@
  * @brief Minkowski metric class: diag(-1, 1, 1, 1)
  * @implements
  *   - metric::Minkowski<> : metric::MetricBase<>
- * @depends:
- *   - enums.h
- *   - global.h
- *   - metrics/metric_base.h
- *   - arch/kokkos_aliases.h
- *   - utils/comparators.h
- *   - utils/error.h
- *   - utils/numeric.h
  * @namespaces:
  *   - metric::
  * @note Cell sizes in each direction dx1 = dx2 = dx3 are assumed equal
@@ -31,8 +23,6 @@
 
 #include <map>
 #include <string>
-#include <string_view>
-#include <utility>
 #include <vector>
 
 namespace metric {
