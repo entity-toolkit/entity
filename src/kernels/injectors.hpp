@@ -535,7 +535,7 @@ namespace kernel {
             ux3s_2(index + offset2) = v_XYZ[2];
 
             tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
             if (M::CoordType == Coord::Cart) {
               weights_1(index + offset1) = ONE;
               weights_2(index + offset2) = ONE;
@@ -608,7 +608,7 @@ namespace kernel {
             ux3s_2(index + offset2) = v_Cd[2];
 
             tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
             if (M::CoordType == Coord::Cart) {
               weights_1(index + offset1) = ONE;
               weights_2(index + offset2) = ONE;
@@ -683,7 +683,7 @@ namespace kernel {
             ux3s_2(index + offset2) = v_Cd[2];
 
             tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
             if (M::CoordType == Coord::Cart) {
               weights_1(index + offset1) = ONE;
               weights_2(index + offset2) = ONE;

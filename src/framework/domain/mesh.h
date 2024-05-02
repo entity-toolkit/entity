@@ -117,7 +117,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      * @note min will be taken with a floor, and max with a ceil
      * @note if the box does not intersect with the mesh, the range will be all {0, 0}
-     * @note indices are shifted by N_GHOSTS
+     * @note indices are already shifted by N_GHOSTS (i.e. they start at N_GHOSTS not 0)
      */
     [[nodiscard]]
     auto ExtentToRange(boundaries_t<real_t> box, boundaries_t<bool> incl_ghosts)

@@ -22,10 +22,11 @@
 #include "utils/numeric.h"
 #include "utils/timer.h"
 
-#include "engines/engine.hpp"
+#include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters.h"
 
+#include "engines/engine.hpp"
 #include "kernels/ampere_mink.hpp"
 #include "kernels/ampere_sr.hpp"
 #include "kernels/currents_deposit.hpp"
@@ -33,6 +34,7 @@
 #include "kernels/faraday_mink.hpp"
 #include "kernels/faraday_sr.hpp"
 #include "kernels/fields_bcs.hpp"
+#include "kernels/particle_moments.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 #include "pgen.hpp"
 
@@ -76,6 +78,8 @@ namespace ntt {
         "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
+      const auto sort_interval = m_params.template get<std::size_t>(
+        "particles.sort_interval");
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
@@ -119,7 +123,10 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::Prtl);
+        m_metadomain.Communicate(dom,
+                                 (step % sort_interval == 0) ? Comm::Prtl
+                                                             : Comm::None,
+                                 &timers);
         timers.stop("Communications");
       }
 
@@ -153,6 +160,12 @@ namespace ntt {
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::E);
         timers.stop("FieldBoundaries");
+      }
+
+      {
+        timers.start("Injector");
+        ParticleInjector(dom);
+        timers.stop("Injector");
       }
     }
 
@@ -229,6 +242,42 @@ namespace ntt {
     }
 
     void ParticlePush(domain_t& domain) {
+      real_t     gx1 { ZERO }, gx2 { ZERO }, gx3 { ZERO };
+      real_t     x_surf { ZERO };
+      const auto g = m_params.template get<real_t>(
+        "grid.boundaries.atmosphere.g");
+      const auto ds = m_params.template get<real_t>(
+        "grid.boundaries.atmosphere.ds");
+      bool has_atmosphere = false;
+      for (auto& direction : dir::Directions<M::Dim>::orth) {
+        if (m_metadomain.mesh().prtl_bc_in(direction) == PrtlBC::ATMOSPHERE) {
+          raise::ErrorIf(has_atmosphere,
+                         "Only one direction is allowed to have atm boundaries",
+                         HERE);
+          has_atmosphere                         = true;
+          const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
+          if (dim == in::x1) {
+            gx1 = sign > 0 ? g : -g;
+            gx2 = ZERO;
+            gx3 = ZERO;
+          } else if (dim == in::x2) {
+            gx1 = ZERO;
+            gx2 = sign > 0 ? g : -g;
+            gx3 = ZERO;
+          } else if (dim == in::x3) {
+            gx1 = ZERO;
+            gx2 = ZERO;
+            gx3 = sign > 0 ? g : -g;
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+          if (sign > 0) {
+            x_surf = xg_min;
+          } else {
+            x_surf = xg_max;
+          }
+        }
+      }
       for (auto& species : domain.species) {
         logger::Checkpoint(
           fmt::format("Launching particle pusher kernel for %d [%s] : %lu",
@@ -295,81 +344,6 @@ namespace ntt {
         kernel::sr::CoolingTags cooling_tags = 0;
         if (cooling == Cooling::SYNCHROTRON) {
           cooling_tags = kernel::sr::Cooling::Synchrotron;
-        }
-        bool   has_atmosphere = false;
-        real_t gx1 { ZERO }, gx2 { ZERO }, gx3 { ZERO }, x_surf { ZERO },
-          ds { ZERO };
-        ds = m_params.template get<real_t>("grid.boundaries.absorb.ds");
-        for (auto& direction : dir::Directions<M::Dim>::orth) {
-          if (m_metadomain.mesh().prtl_bc_in(direction) == PrtlBC::ATMOSPHERE) {
-            raise::ErrorIf(
-              has_atmosphere,
-              "Only one direction is allowed to have atm boundaries",
-              HERE);
-            has_atmosphere      = true;
-            const auto sign     = direction.get_sign();
-            const auto dim      = direction.get_dim();
-            const auto min_buff = m_params.template get<unsigned short>(
-                                    "algorithms.current_filters") +
-                                  2;
-            const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
-            if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
-              raise::Error("For non-cartesian coordinates atmosphere BCs is "
-                           "possible only in -x1 (@ rmin)",
-                           HERE);
-            }
-            real_t      xg_min { ZERO }, xg_max { ZERO };
-            std::size_t ig_min, ig_max;
-            if (sign > 0) { // + direction
-              ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
-              ig_max = m_metadomain.mesh().n_active(dim);
-            } else { // - direction
-              ig_min = 0;
-              ig_max = buffer_ncells;
-            }
-            const auto g = m_params.template get<real_t>(
-              "grid.boundaries.atmosphere.g");
-            if (dim == in::x1) {
-              xg_min = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
-                static_cast<real_t>(ig_min));
-              xg_max = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
-                static_cast<real_t>(ig_max));
-              gx1 = sign > 0 ? g : -g;
-              gx2 = ZERO;
-              gx3 = ZERO;
-            } else if (dim == in::x2) {
-              if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-                xg_min = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
-                  static_cast<real_t>(ig_min));
-                xg_max = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
-                  static_cast<real_t>(ig_max));
-              } else {
-                raise::Error("Invalid dimension", HERE);
-              }
-              gx1 = ZERO;
-              gx2 = sign > 0 ? g : -g;
-              gx3 = ZERO;
-            } else if (dim == in::x3) {
-              if constexpr (M::Dim == Dim::_3D) {
-                xg_min = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
-                  static_cast<real_t>(ig_min));
-                xg_max = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
-                  static_cast<real_t>(ig_max));
-              } else {
-                raise::Error("Invalid dimension", HERE);
-              }
-              gx1 = ZERO;
-              gx2 = ZERO;
-              gx3 = sign > 0 ? g : -g;
-            } else {
-              raise::Error("Invalid dimension", HERE);
-            }
-            if (sign > 0) {
-              x_surf = xg_max;
-            } else {
-              x_surf = xg_min;
-            }
-          }
         }
         // clang-format off
         if (not has_atmosphere and not has_extforce) {
@@ -491,6 +465,189 @@ namespace ntt {
           }          
         }
         // clang-format on
+      }
+    }
+
+    void ParticleInjector(domain_t& domain) {
+      for (auto& direction : dir::Directions<M::Dim>::orth) {
+        if (m_metadomain.mesh().prtl_bc_in(direction) == PrtlBC::ATMOSPHERE) {
+          const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
+
+          const auto x_surf = sign > 0 ? xg_min : xg_max;
+          const auto ds     = m_params.template get<real_t>(
+            "grid.boundaries.atmosphere.ds");
+          const auto temp = m_params.template get<real_t>(
+            "grid.boundaries.atmosphere.temperature");
+          const auto height = m_params.template get<real_t>(
+            "grid.boundaries.atmosphere.height");
+          const auto species =
+            m_params.template get<std::pair<unsigned short, unsigned short>>(
+              "grid.boundaries.atmosphere.species");
+          const auto nmax = m_params.template get<real_t>(
+                              "grid.boundaries.atmosphere.density") /
+                            TWO;
+
+          Kokkos::deep_copy(domain.fields.bckp, ZERO);
+          auto scatter_buff = Kokkos::Experimental::create_scatter_view(
+            domain.fields.bckp);
+          const auto use_weights = M::CoordType != Coord::Cart;
+          const auto ni2         = domain.mesh.n_active(in::x2);
+          const auto inv_n0 = ONE / m_params.template get<real_t>("scales.n0");
+
+          // compute the density of the two species
+          for (const auto& sp :
+               std::vector<unsigned short>({ species.first, species.second })) {
+            // !TODO: smooth this and communicate
+            auto& prtl_spec = domain.species[sp - 1];
+            Kokkos::parallel_for(
+              "ComputeMoments",
+              prtl_spec.rangeActiveParticles(),
+              kernel::ParticleMoments_kernel<SimEngine::SRPIC, M, FldsID::Rho, 6>(
+                {},
+                scatter_buff,
+                0,
+                prtl_spec.i1,
+                prtl_spec.i2,
+                prtl_spec.i3,
+                prtl_spec.dx1,
+                prtl_spec.dx2,
+                prtl_spec.dx3,
+                prtl_spec.ux1,
+                prtl_spec.ux2,
+                prtl_spec.ux3,
+                prtl_spec.phi,
+                prtl_spec.weight,
+                prtl_spec.tag,
+                prtl_spec.mass(),
+                prtl_spec.charge(),
+                use_weights,
+                domain.mesh.metric,
+                domain.mesh.flds_bc(),
+                ni2,
+                inv_n0,
+                0));
+          }
+          Kokkos::Experimental::contribute(domain.fields.bckp, scatter_buff);
+
+          if (dim == in::x1) {
+            if (sign > 0) {
+              const auto atm_injector =
+                arch::AtmosphereInjector<SimEngine::SRPIC, M, true, in::x1> {
+                  domain.mesh.metric,
+                  domain.fields.bckp,
+                  nmax,
+                  height,
+                  x_surf,
+                  ds,
+                  temp,
+                  domain.random_pool,
+                  species
+                };
+              arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
+                                                                   domain,
+                                                                   atm_injector,
+                                                                   nmax,
+                                                                   use_weights);
+            } else {
+              const auto atm_injector =
+                arch::AtmosphereInjector<SimEngine::SRPIC, M, false, in::x1> {
+                  domain.mesh.metric,
+                  domain.fields.bckp,
+                  nmax,
+                  height,
+                  x_surf,
+                  ds,
+                  temp,
+                  domain.random_pool,
+                  species
+                };
+              arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
+                                                                   domain,
+                                                                   atm_injector,
+                                                                   nmax,
+                                                                   use_weights);
+            }
+          } else if (dim == in::x2) {
+            if (sign > 0) {
+              const auto atm_injector =
+                arch::AtmosphereInjector<SimEngine::SRPIC, M, true, in::x2> {
+                  domain.mesh.metric,
+                  domain.fields.bckp,
+                  nmax,
+                  height,
+                  x_surf,
+                  ds,
+                  temp,
+                  domain.random_pool,
+                  species
+                };
+              arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
+                                                                   domain,
+                                                                   atm_injector,
+                                                                   nmax,
+                                                                   use_weights);
+            } else {
+              const auto atm_injector =
+                arch::AtmosphereInjector<SimEngine::SRPIC, M, false, in::x2> {
+                  domain.mesh.metric,
+                  domain.fields.bckp,
+                  nmax,
+                  height,
+                  x_surf,
+                  ds,
+                  temp,
+                  domain.random_pool,
+                  species
+                };
+              arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
+                                                                   domain,
+                                                                   atm_injector,
+                                                                   nmax,
+                                                                   use_weights);
+            }
+          } else if (dim == in::x3) {
+            if (sign > 0) {
+              const auto atm_injector =
+                arch::AtmosphereInjector<SimEngine::SRPIC, M, true, in::x3> {
+                  domain.mesh.metric,
+                  domain.fields.bckp,
+                  nmax,
+                  height,
+                  x_surf,
+                  ds,
+                  temp,
+                  domain.random_pool,
+                  species
+                };
+              arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
+                                                                   domain,
+                                                                   atm_injector,
+                                                                   nmax,
+                                                                   use_weights);
+            } else {
+              const auto atm_injector =
+                arch::AtmosphereInjector<SimEngine::SRPIC, M, false, in::x3> {
+                  domain.mesh.metric,
+                  domain.fields.bckp,
+                  nmax,
+                  height,
+                  x_surf,
+                  ds,
+                  temp,
+                  domain.random_pool,
+                  species
+                };
+              arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
+                                                                   domain,
+                                                                   atm_injector,
+                                                                   nmax,
+                                                                   use_weights);
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+          return;
+        }
       }
     }
 
@@ -765,53 +922,8 @@ namespace ntt {
        * atmosphere boundaries
        */
       if constexpr (traits::has_member<traits::pgen::field_driver_t, pgen_t>::value) {
-        const auto min_buff = m_params.template get<unsigned short>(
-                                "algorithms.current_filters") +
-                              2;
-        const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
-        const auto sign          = direction.get_sign();
-        const auto dim           = direction.get_dim();
-        if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
-          raise::Error("For non-cartesian coordinates atmosphere BCs is "
-                       "possible only in -x1 (@ rmin)",
-                       HERE);
-        }
-        const auto  dd = static_cast<unsigned short>(dim);
-        real_t      xg_min { ZERO }, xg_max { ZERO };
-        std::size_t ig_min, ig_max, il_edge;
-        if (sign > 0) { // + direction
-          ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
-          ig_max = m_metadomain.mesh().n_active(dim);
-        } else { // - direction
-          ig_min = 0;
-          ig_max = buffer_ncells;
-        }
-        if (dim == in::x1) {
-          xg_min = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
-            static_cast<real_t>(ig_min));
-          xg_max = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
-            static_cast<real_t>(ig_max));
-        } else if (dim == in::x2) {
-          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            xg_min = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
-              static_cast<real_t>(ig_min));
-            xg_max = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
-              static_cast<real_t>(ig_max));
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        } else if (dim == in::x3) {
-          if constexpr (M::Dim == Dim::_3D) {
-            xg_min = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
-              static_cast<real_t>(ig_min));
-            xg_max = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
-              static_cast<real_t>(ig_max));
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
+        const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
+        const auto           dd = static_cast<unsigned short>(dim);
         boundaries_t<real_t> box;
         boundaries_t<bool>   incl_ghosts;
         for (unsigned short d { 0 }; d < M::Dim; ++d) {
@@ -838,7 +950,8 @@ namespace ntt {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
-        auto field_driver = m_pgen.FieldDriver(time);
+        auto        field_driver = m_pgen.FieldDriver(time);
+        std::size_t il_edge;
         if (sign > 0) {
           il_edge = range_min[dd] - N_GHOSTS;
         } else {
@@ -926,6 +1039,77 @@ namespace ntt {
         raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
                      HERE);
       }
+    }
+
+  private:
+    /**
+     * @brief Get the buffer region of the atmosphere and the direction
+     * @param direction direction in which the atmosphere is applied
+     * @return tuple: [sign of the direction, the direction (as in::), the min and max extent
+     * @note xg_min and xg_max are the extents where the fields are set, not the atmosphere itself
+     * @note i.e.
+     *
+     *         fields set      particles injected
+     * ghost zone  |               |
+     *    v        v               v
+     * |....|...........|*******************.....  -> x1
+     * ^                ^
+     * xg_min         xg_max
+     * |                |                  |
+     * |<--  buffer  -->|<-- atmosphere -->|
+     *
+     * in this case the function returns { -1, in::x1, xg_min, xg_max }
+     */
+    auto get_atm_extent(dir::direction_t<M::Dim> direction) const
+      -> std::tuple<short, in, real_t, real_t> {
+      const auto sign     = direction.get_sign();
+      const auto dim      = direction.get_dim();
+      const auto min_buff = m_params.template get<unsigned short>(
+                              "algorithms.current_filters") +
+                            2;
+      const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
+      if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
+        raise::Error("For non-cartesian coordinates atmosphere BCs is "
+                     "possible only in -x1 (@ rmin)",
+                     HERE);
+      }
+      real_t      xg_min { ZERO }, xg_max { ZERO };
+      std::size_t ig_min, ig_max;
+      if (sign > 0) { // + direction
+        ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
+        ig_max = m_metadomain.mesh().n_active(dim);
+      } else { // - direction
+        ig_min = 0;
+        ig_max = buffer_ncells;
+      }
+
+      if (dim == in::x1) {
+        xg_min = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
+          static_cast<real_t>(ig_min));
+        xg_max = m_metadomain.mesh().metric.template convert<1, Crd::Cd, Crd::Ph>(
+          static_cast<real_t>(ig_max));
+      } else if (dim == in::x2) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          xg_min = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
+            static_cast<real_t>(ig_min));
+          xg_max = m_metadomain.mesh().metric.template convert<2, Crd::Cd, Crd::Ph>(
+            static_cast<real_t>(ig_max));
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else if (dim == in::x3) {
+        if constexpr (M::Dim == Dim::_3D) {
+          xg_min = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
+            static_cast<real_t>(ig_min));
+          xg_max = m_metadomain.mesh().metric.template convert<3, Crd::Cd, Crd::Ph>(
+            static_cast<real_t>(ig_max));
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+      return { sign, dim, xg_min, xg_max };
     }
   };
 

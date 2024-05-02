@@ -282,8 +282,16 @@ namespace ntt {
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
     set("particles.use_weights",
         toml::find_or(raw_data, "particles", "use_weights", false));
-    set("particles.sort_interval",
-        toml::find_or(raw_data, "particles", "sort_interval", defaults::sort_interval));
+
+#if defined(MPI_ENABLED)
+    const std::size_t sort_interval = 1;
+#else
+    const std::size_t sort_interval = toml::find_or(raw_data,
+                                                    "particles",
+                                                    "sort_interval",
+                                                    defaults::sort_interval);
+#endif
+    set("particles.sort_interval", sort_interval);
 
     /* [particles.species] -------------------------------------------------- */
     std::vector<ParticleSpecies> species;

@@ -16,8 +16,9 @@
 
 #include "utils/timer.h"
 
-#include "engines/engine.hpp"
 #include "framework/domain/domain.h"
+
+#include "engines/engine.hpp"
 
 namespace ntt {
 

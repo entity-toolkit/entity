@@ -69,6 +69,7 @@ namespace kernel::sr {
    * @tparam Atm Toggle for atmospheric gravity
    * @note when `Atm` is true, `g` contains a vector of gravity acceleration
    * @note when `Atm` is true, sign of `ds` indicates the direction of the boundary
+   * !TODO: compensate for the species mass when applying atmospheric force
    */
   template <Dimension D, Coord::type C, class F = NoForce_t, bool Atm = false>
   struct Force {

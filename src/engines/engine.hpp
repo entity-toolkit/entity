@@ -118,7 +118,7 @@ namespace ntt {
 
     void init();
     void print_report() const;
-    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool) const;
+    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool, bool) const;
 
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 

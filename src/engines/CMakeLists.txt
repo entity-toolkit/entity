@@ -12,6 +12,7 @@
 # - ntt_framework [required]
 # - ntt_metrics [required]
 # - ntt_kernels [required]
+# - ntt_archetypes [required]
 # - ntt_pgen [required]
 # - ntt_output [optional]
 # @uses:
@@ -31,7 +32,7 @@ set(SOURCES
 )
 add_library(ntt_engines ${SOURCES})
 
-set(libs ntt_global ntt_framework ntt_metrics ntt_kernels ntt_pgen)
+set(libs ntt_global ntt_framework ntt_metrics ntt_archetypes ntt_kernels ntt_pgen)
 if(${output})
   list(APPEND libs ntt_output hdf5::hdf5)
 endif()

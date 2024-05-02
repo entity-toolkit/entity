@@ -213,6 +213,7 @@ namespace Timer {
     AutoConvert   = 1 << 5,
     Colorful      = 1 << 6,
     PrintOutput   = 1 << 7,
+    PrintSorting  = 1 << 8,
     Default       = PrintRelative | PrintUnits | PrintIndents | PrintTotal |
               PrintTitle | AutoConvert | Colorful,
   };

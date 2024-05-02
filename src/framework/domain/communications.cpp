@@ -5,6 +5,7 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
+#include "utils/timer.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -28,7 +29,9 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::Communicate(Domain<S, M>& domain, CommTags tags) {
+  void Metadomain<S, M>::Communicate(Domain<S, M>&  domain,
+                                     CommTags       tags,
+                                     timer::Timers* timers) {
     const auto comm_fields = (tags & Comm::E) || (tags & Comm::B) ||
                              (tags & Comm::J) || (tags & Comm::D) ||
                              (tags & Comm::D0) || (tags & Comm::B0);
@@ -255,12 +258,18 @@ namespace ntt {
         }
       }
     }
-#if defined(MPI_ENABLED)
-    // only necessary when MPI is enabled
     if (tags & Comm::Prtl) {
+      raise::ErrorIf(timers == nullptr,
+                     "Timers not passed when Comm::Prtl called",
+                     HERE);
       for (auto& species : domain.species) {
         // at this point particles should already by tagged in the pusher
+        timers->start("Sorting");
         const auto npart_per_tag = species.SortByTags();
+        timers->stop("Sorting");
+#if defined(MPI_ENABLED)
+        timers.start("Communications");
+        // only necessary when MPI is enabled
         /**
          *                                                        index_last
          *                                                            |
@@ -271,7 +280,7 @@ namespace ntt {
          *     tag_offset[tag1] -----+        +----- tag_offset[tag1] + npart_per_tag[tag1]
          *          "send_pmin"                      "send_pmax" (after last element)
          */
-        auto       tag_offset { npart_per_tag };
+        auto tag_offset { npart_per_tag };
         for (std::size_t i { 1 }; i < tag_offset.size(); ++i) {
           tag_offset[i] += tag_offset[i - 1];
         }
@@ -431,11 +440,14 @@ namespace ntt {
             Kokkos::subview(species.tag, std::make_pair(send_pmin, send_pmax)),
             ParticleTag::dead);
         }
+        timers.stop("Communications");
         // !TODO: maybe there is a way to not sort twice
+        timers->start("Sorting");
         species.SortByTags();
+        timers->stop("Sorting");
+#endif
       }
     }
-#endif
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;

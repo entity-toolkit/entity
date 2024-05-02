@@ -21,8 +21,8 @@ namespace ntt {
          "CurrentFiltering", "CurrentDeposit",
          "ParticlePusher", "FieldBoundaries",
          "ParticleBoundaries", "Communications",
-         "Injector", "Custom",
-         "Output" },
+         "Injector", "Sorting",
+         "Custom", "Output" },
         []() {
           Kokkos::fence();
          },
@@ -63,6 +63,9 @@ namespace ntt {
             (void)this;
           }
         });
+        auto print_sorting = (step % m_params.template get<std::size_t>(
+                                       "particles.sort_interval") ==
+                              0);
 
         // advance time & timestep
         ++step;
@@ -84,7 +87,7 @@ namespace ntt {
         time_history.tick();
         // print final timestep report
         if (diag_interval > 0 and step % diag_interval == 0) {
-          print_step_report(timers, time_history, print_output);
+          print_step_report(timers, time_history, print_output, print_sorting);
         }
         timers.resetAll();
       }

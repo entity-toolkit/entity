@@ -10,10 +10,10 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "engines/grpic.hpp"
-#include "engines/srpic.hpp"
 #include "framework/simulation.h"
 
+#include "engines/grpic.hpp"
+#include "engines/srpic.hpp"
 #include "pgen.hpp"
 
 template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>

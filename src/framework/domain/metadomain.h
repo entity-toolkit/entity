@@ -18,6 +18,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "utils/timer.h"
+
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
@@ -78,7 +80,7 @@ namespace ntt {
       }
     }
 
-    void Communicate(Domain<S, M>&, CommTags);
+    void Communicate(Domain<S, M>&, CommTags, timer::Timers* = nullptr);
 
     /**
      * @param global_ndomains total number of domains
