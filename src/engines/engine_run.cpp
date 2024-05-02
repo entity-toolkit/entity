@@ -1,5 +1,7 @@
 #include "enums.h"
 
+#include "arch/traits.h"
+
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
@@ -53,7 +55,7 @@ namespace ntt {
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           step_forward(timers, dom);
           if constexpr (
-            traits::has_member<traits::pgen::custom_poststep_t, user::PGen<S, M>>::value) {
+            traits::has_method<traits::pgen::custom_poststep_t, decltype(m_pgen)>::value) {
             timers.start("Custom");
             m_pgen.CustomPostStep(step, time, dom);
             timers.stop("Custom");
