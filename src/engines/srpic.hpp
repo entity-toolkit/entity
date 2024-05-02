@@ -797,7 +797,8 @@ namespace ntt {
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
           AtmosphereFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
-          raise::Error("Custom boundaries not implemented", HERE);
+          CustomFieldsIn(direction, domain, tags);
+          // raise::Error("Custom boundaries not implemented", HERE);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
           raise::Error("HORIZON BCs only applicable for GR", HERE);
         }
@@ -1038,6 +1039,17 @@ namespace ntt {
       } else {
         raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
                      HERE);
+      }
+    }
+
+    void CustomFieldsIn(dir::direction_t<M::Dim> direction,
+                        domain_t&                domain,
+                        BCTags                   tags) {
+      if constexpr (
+        traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
+        const auto custom_fields = m_pgen.CustomFields(time);
+      } else {
+        raise::Error("Custom boundaries not implemented", HERE);
       }
     }
 
