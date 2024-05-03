@@ -32,18 +32,34 @@ namespace ntt {
                       const Meshblock<D, S>&  mblock) :
       EnergyDistribution<D, S>(params, mblock),
       maxwellian { mblock },
-      temperature { params.get<real_t>("problem", "atm_T") } {}
+      temperature { params.get<real_t>("problem", "atm_T") },
+      _rstar { params.get<real_t>("problem", "atm_buff") + params.extent()[0] },
+      _bsurf { params.get<real_t>("problem", "psr_Bsurf", ONE) } {}
 
-    Inline void operator()(const coord_t<D>&, vec_t<Dim3>& v, const int&) const override {
-      maxwellian(v, temperature);
-      // v[0] = math::sqrt(SQR(1000.0) - 1.0);
-      // v[1] = ZERO;
-      // v[2] = ZERO;
+    Inline void operator()(const coord_t<D>& x_ph, vec_t<Dim3>& v, const int&) const override {
+      
+      vec_t<Dim3> b_int;
+      vec_t<Dim3> v_int;
+      real_t bnorm, vnorm;
+
+      maxwellian(v_int, temperature);
+
+      b_int[0] = _bsurf * math::cos(x_ph[1]) / CUBE(x_ph[0] / _rstar);
+      b_int[1] = _bsurf * HALF * math::sin(x_ph[1]) / CUBE(x_ph[0] / _rstar);
+      b_int[2] = ZERO;
+
+      bnorm = math::sqrt(b_int[0] * b_int[0] + b_int[1] * b_int[1] + b_int[2] * b_int[2]);      
+      v[0] = v_int[0] * b_int[0] / bnorm;
+      v[1] = v_int[0] * b_int[1] / bnorm;
+      v[2] = v_int[0] * b_int[2] / bnorm;
+
     }
 
   private:
     const Maxwellian<D, S> maxwellian;
     const real_t           temperature;
+    const real_t           _rstar;
+    const real_t           _bsurf;
   };
 
   /**
@@ -82,7 +98,7 @@ namespace ntt {
 
     Inline auto ext_force_x1(const real_t& time, const coord_t<PrtlCoordD>& x_ph) const
       -> real_t override {
-      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) * 0.5 * (1.0 - math::tanh((x_ph[0] - (m_psr_Rstar + m_atm_h * 20.0))/(0.1*m_psr_Rstar)));
+      return -m_gravity * SQR(m_psr_Rstar / x_ph[0]) * 0.5 * (1.0 - math::tanh((x_ph[0]/m_psr_Rstar - (m_psr_Rstar + m_atm_h * 2.0))/(0.0125*m_psr_Rstar)));
       // return 0.0;
       // * ((time > 100.0)
       //                                       ? ONE
@@ -150,16 +166,26 @@ namespace ntt {
 
     auto pival = 3.141592653589793;
 		auto omega_centre = 0.25 * pival;
+		// auto omega_centreB = 0.75 * pival;
 		auto delta = 0.05 * pival;
     
+    if (x_ph[1] < omega_centre) {
 		_omega *= 1.0 / (1.0 + math::exp(50.0 * (math::abs(x_ph[1] - omega_centre) - delta))) * (1.5*(-omega_centre + x_ph[1]))/delta;
+    } else {
+		_omega *= 1.0 / (1.0 + math::exp(50.0 * (math::abs(x_ph[1] - omega_centre) - delta))) * (1.5*(-omega_centre + x_ph[1]))/delta;
+    }
+		// _omega *= (1.0 / (1.0 + math::exp(50.0 * (math::abs(x_ph[1] - omega_centre) - delta))) * (1.5*(-omega_centre + x_ph[1]))/delta) + 
+    // 1.0 / (1.0 + math::exp(50.0 * (math::abs(x_ph[1] - omega_centreB) - delta))) * (1.5*(-omega_centreB + x_ph[1]))/delta;
+
 
     // if (x_ph[1] < 0.5 * pival) {
       // auto sigma  = (x_ph[1] - 0.5 * pival) / (0.25 * pival);
       // _omega     *= sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0);
       // _omega *= sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0) * (0.5 + 0.5*math::tanh(58.90486225480862 - 50.*x_ph[1])*math::tanh(98.17477042468103 - 50.*x_ph[1]));
+      
       e_out[0]  = _omega * b_out[1] * x_ph[0] * math::sin(x_ph[1]);
       e_out[1]  = -_omega * b_out[0] * x_ph[0] * math::sin(x_ph[1]);
+      e_out[2] = 0.0;
 
     // } else {
     //   e_out[0] = ZERO;
@@ -306,9 +332,10 @@ namespace ntt {
             const auto r   = mblock.metric.x1_Code2Phys(
               static_cast<real_t>(i1_) + HALF);
             // m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) / CUBE(r);
-            m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) *
-                                       (r > rstar) *
-                                       (r < rstar + static_cast<real_t>(8) * h);
+            m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) * (r > rstar);
+                                        // + C * (r <= rstar);
+                                       // *
+                                      //  (r < rstar + static_cast<real_t>(5) * h);
             // 2 -- for two species
             m_ppc_per_spec(i1_, i2_) *= ppc0 / TWO;
           });
@@ -401,7 +428,7 @@ namespace ntt {
         //                                     : ONE);
         const auto omega = m_psr_omega *
                            ((1 - math::tanh((5.0 - time)/2.0)) *
-                            (1 + (-1 + math::tanh((125.0 - time)/2.0)) / 2.)) /
+                            (1 + (-1 + math::tanh((45.0 - time)/2.0)) / 2.)) /
                            2.;
 
 // 37.5 72.5
@@ -474,9 +501,9 @@ namespace ntt {
             const auto r   = m_mblock.metric.x1_Code2Phys(i1_ + HALF);
 
             // m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) / CUBE(r);
-            m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) *
-                                       (r > rstar) *
-                                       (r < rstar + static_cast<real_t>(8) * h);
+            m_ppc_per_spec(i1_, i2_) = densityProfile(r, C, h, rstar) * (r > rstar);
+                                        // + C * (r <= rstar);// *
+                                      //  (r < rstar + static_cast<real_t>(5) * h);
 
             const auto actual_ndens = m_mblock.buff(i1, i2, buff_idx);
             if (frac * m_ppc_per_spec(i1_, i2_) > actual_ndens) {
@@ -584,7 +611,7 @@ namespace ntt {
 
       //   }
 
-      // // Resonant scattering kernel
+      // Resonant scattering kernel
       // {
       //   const auto fid_freq { params.get<real_t>("problem", "fid_freq") };
       //   const auto bq { params.get<real_t>("problem", "bq") };
@@ -614,6 +641,15 @@ namespace ntt {
       //         if (species.tag(p) != ParticleTag::alive) {
       //           return;
       //         }
+
+      //         // typename RandomNumberPool_t::generator_type rand_gen_0 =
+      //         //     random_pool.get_state();
+
+      //         // if (Random<real_t>(rand_gen_0) < 0.9) {
+      //         //   return;
+      //         // }
+
+      //         // random_pool.free_state(rand_gen_0);
 
       //         // Interpolation of B to the position of the photon
       //         vec_t<Dim3> b_int_Cart;
@@ -712,10 +748,10 @@ namespace ntt {
       //         // Check lepton position and exclude those inside the atmosphere
       //         const vec_t<Dim2> xi { i_di_to_Xi(species.i1(p), species.dx1(p)),
       //                                i_di_to_Xi(species.i2(p), species.dx2(p)) };
-      //         coord_t<Dim2>     x_ph;
-      //         m_mblock.metric.x_Code2Sph(xi, x_ph);
+      //         coord_t<Dim2>     x_l;
+      //         m_mblock.metric.x_Code2Sph(xi, x_l);
 
-      //         if (x_ph[0] < m_psr_Rstar + m_atm_h * TWO) {
+      //         if (x_l[0] < m_psr_Rstar + m_atm_h * TWO) {
       //           return;
       //         }
 
@@ -794,52 +830,138 @@ namespace ntt {
       //         auto   qdist = 0.0;
       //         auto   vmax  = 0.0;
       //         auto   vmin  = 100000.0;
-      //         auto   nmax  = 1000;
+      //         auto   nmax  = 100;
       //         real_t eph_LF_L, eph_RF_L, u_ph_RF_L, v_ph_RF_L, w_ph_RF_L, u_ph_L,
       //           v_ph_L, w_ph_L, boostfactor;
 
-      //         for (std::size_t n { 0 }; n < nmax; ++n) {
+      //         // for (std::size_t n { 0 }; n < nmax; ++n) {
 
-      //           // Calculate the photon energy and momentum
-      //           typename RandomNumberPool_t::generator_type rand_gen =
-      //             random_pool.get_state();
-      //           auto eph_LF = fid_freq * planckSample(rand_gen);
-      //           // auto eph_LF = fid_freq;
+      //         //   // Calculate the photon energy and momentum
+      //         //   typename RandomNumberPool_t::generator_type rand_gen =
+      //         //     random_pool.get_state();
+      //         //   auto eph_LF = fid_freq * planckSample(rand_gen);
+      //         //   // auto eph_LF = fid_freq;
 
-      //           // Here fix the direction of photon momentum (e.g., spherical from
-      //           // star, isotropic, etc.) Isotropic photon distribution
-      //           // auto rand_costheta_RF = math::cos(120./180. * Random<real_t>(rand_gen) * M_PI);
-      //           // // auto rand_costheta_RF = math::cos(120./180. * M_PI);
-      //           // auto rand_sintheta_RF = math::sqrt(
-      //           //   1.0 - rand_costheta_RF * rand_costheta_RF);
-      //           // auto rand_phi_RF    = 2.0 * M_PI * Random<real_t>(rand_gen);
-      //           // auto rand_cosphi_RF = math::cos(rand_phi_RF);
-      //           // auto rand_sinphi_RF = math::sin(rand_phi_RF);
-      //           // auto u_ph           = eph_LF * (rand_costheta_RF * a_RF_x +
-      //           //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_x +
-      //           //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_x);
-      //           // auto v_ph           = eph_LF * (rand_costheta_RF * a_RF_y +
-      //           //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_y +
-      //           //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_y);
-      //           // auto w_ph           = eph_LF * (rand_costheta_RF * a_RF_z +
-      //           //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
-      //           //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
+      //         //   // Here fix the direction of photon momentum (e.g., spherical from
+      //         //   // star, isotropic, etc.) Isotropic photon distribution
+      //         //   // auto rand_costheta_RF = math::cos(120./180. * Random<real_t>(rand_gen) * M_PI);
+      //         //   // // auto rand_costheta_RF = math::cos(120./180. * M_PI);
+      //         //   // auto rand_sintheta_RF = math::sqrt(
+      //         //   //   1.0 - rand_costheta_RF * rand_costheta_RF);
+      //         //   // auto rand_phi_RF    = 2.0 * M_PI * Random<real_t>(rand_gen);
+      //         //   // auto rand_cosphi_RF = math::cos(rand_phi_RF);
+      //         //   // auto rand_sinphi_RF = math::sin(rand_phi_RF);
+      //         //   // auto u_ph           = eph_LF * (rand_costheta_RF * a_RF_x +
+      //         //   //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_x +
+      //         //   //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_x);
+      //         //   // auto v_ph           = eph_LF * (rand_costheta_RF * a_RF_y +
+      //         //   //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_y +
+      //         //   //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_y);
+      //         //   // auto w_ph           = eph_LF * (rand_costheta_RF * a_RF_z +
+      //         //   //                       rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
+      //         //   //                       rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
+
+      //         //   // Radially streaming photons
+      //         //   const vec_t<Dim3> xi { i_di_to_Xi(species.i1(p), species.dx1(p)),
+      //         //                          i_di_to_Xi(species.i2(p), species.dx2(p)),
+      //         //                          species.phi(p) };
+      //         //   coord_t<Dim3>     x_ph { ZERO };
+      //         //   m_mblock.metric.x_Code2Cart(xi, x_ph);
+      //         //   auto xnorm { 1.0 / NORM(x_ph[0], x_ph[1], x_ph[2]) };
+      //         //   auto x1norm = x_ph[0] * xnorm;
+      //         //   auto x2norm = x_ph[1] * xnorm;
+      //         //   auto x3norm = x_ph[2] * xnorm;
+      //         //   auto u_ph   = eph_LF * x1norm;
+      //         //   auto v_ph   = eph_LF * x2norm;
+      //         //   auto w_ph   = eph_LF * x3norm;
+      //         //   auto rand_costheta_RF { DOT(px, py, pz, x1norm, x2norm, x3norm) /
+      //         //                           NORM(px, py, pz) };
+      //         //   eph_LF = math::sqrt(SQR(u_ph) + SQR(v_ph) + SQR(w_ph));
+
+      //         //   // Boost photon into the lepton rest frame
+      //         //   real_t eph_RF, u_ph_RF, v_ph_RF, w_ph_RF;
+      //         //   boost_photon(eph_LF,
+      //         //                u_ph,
+      //         //                v_ph,
+      //         //                w_ph,
+      //         //                gamma,
+      //         //                px,
+      //         //                py,
+      //         //                pz,
+      //         //                eph_RF,
+      //         //                u_ph_RF,
+      //         //                v_ph_RF,
+      //         //                w_ph_RF);
+
+      //         //   auto bbq = math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest + bz0_rest * bz0_rest) / bq; 
+      //         //   auto omegares = bbq / (gamma * (1.0 - sqrt(beta_sq) * rand_costheta_RF));
+
+      //         //   // Calculate the resonance quality factor
+      //         //   auto xres = (eph_LF / omegares - 1.0);
+
+      //         //   auto qres = 0.0;
+      //         //   auto gfac = 0.001;
+      //         //   auto tpeak = fid_freq / 2.821;
+      //         //   if (fabs(xres) < 10.0 * gfac) {
+      //         //     qres = SQR(eph_LF) / omegares * math::exp(-0.5 * xres * xres / ((gfac) * (gfac))) /
+      //         //            sqrt(2.0 * M_PI * ((gfac) * (gfac))) * 1.0 / (math::exp(eph_LF/tpeak) - 1.0);
+      //         //   }
+
+      //         //   tres += qres;
+
+      //         //   if (qres > qdist) {
+      //         //     eph_LF_L    = eph_LF;
+      //         //     eph_RF_L    = eph_RF;
+      //         //     u_ph_RF_L   = u_ph_RF;
+      //         //     v_ph_RF_L   = v_ph_RF;
+      //         //     w_ph_RF_L   = w_ph_RF;
+      //         //     qdist       = qres;
+      //         //     u_ph_L      = u_ph;
+      //         //     v_ph_L      = v_ph;
+      //         //     w_ph_L      = w_ph;
+      //         //     boostfactor = (1.0 - sqrt(beta_sq) * rand_costheta_RF);
+      //         //   }
+
+      //         //   if (xres > vmax) {
+      //         //     vmax = xres;
+      //         //   }
+
+      //         //   if (xres < vmin) {
+      //         //     vmin = xres;
+      //         //   }
+
+      //         //   random_pool.free_state(rand_gen);
+      //         // }  
+              
+
+      //         // // Calculate cross section: probability for scattering event (TODO: add dt dependence)
+      //         // auto p_scatter = tres / static_cast<real_t>(nmax) * dt * 1000000000000.0 *
+      //         //                  (vmax - vmin) * sqrt(beta_sq) / gamma * SQR(m_psr_Rstar/x_ph[0]);
+
+      //         // Check if the photon scatters
+      //         typename RandomNumberPool_t::generator_type rand_gen =
+      //           random_pool.get_state();
+
 
       //           // Radially streaming photons
-      //           const vec_t<Dim3> xi { i_di_to_Xi(species.i1(p), species.dx1(p)),
+      //           const vec_t<Dim3> xiph { i_di_to_Xi(species.i1(p), species.dx1(p)),
       //                                  i_di_to_Xi(species.i2(p), species.dx2(p)),
       //                                  species.phi(p) };
       //           coord_t<Dim3>     x_ph { ZERO };
-      //           m_mblock.metric.x_Code2Cart(xi, x_ph);
+      //           m_mblock.metric.x_Code2Cart(xiph, x_ph);
       //           auto xnorm { 1.0 / NORM(x_ph[0], x_ph[1], x_ph[2]) };
       //           auto x1norm = x_ph[0] * xnorm;
       //           auto x2norm = x_ph[1] * xnorm;
       //           auto x3norm = x_ph[2] * xnorm;
+      //           auto rand_costheta_RF { DOT(px, py, pz, x1norm, x2norm, x3norm) /
+      //                                   NORM(px, py, pz) };
+
+      //           auto bbq = math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest + bz0_rest * bz0_rest) / bq; 
+      //           auto eph_LF = bbq / (gamma * (1.0 - sqrt(beta_sq) * rand_costheta_RF));
+
       //           auto u_ph   = eph_LF * x1norm;
       //           auto v_ph   = eph_LF * x2norm;
       //           auto w_ph   = eph_LF * x3norm;
-      //           auto rand_costheta_RF { DOT(px, py, pz, x1norm, x2norm, x3norm) /
-      //                                   NORM(px, py, pz) };
       //           eph_LF = math::sqrt(SQR(u_ph) + SQR(v_ph) + SQR(w_ph));
 
       //           // Boost photon into the lepton rest frame
@@ -857,55 +979,20 @@ namespace ntt {
       //                        v_ph_RF,
       //                        w_ph_RF);
 
-      //           // Calculate the resonance quality factor
-      //           auto xres = (eph_RF * bq /
-      //                          math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
-      //                                     bz0_rest * bz0_rest) -
-      //                        1.0);
-
-      //           auto qres = 0.0;
-      //           auto gfac = 0.001;
-      //           if (fabs(xres) < 10.0 * gfac) {
-      //             qres = math::exp(-0.5 * xres * xres / ((gfac) * (gfac))) /
-      //                    sqrt(2.0 * M_PI * ((gfac) * (gfac)));
-      //           }
-
-      //           tres += qres;
-
-      //           if (qres > qdist) {
       //             eph_LF_L    = eph_LF;
       //             eph_RF_L    = eph_RF;
       //             u_ph_RF_L   = u_ph_RF;
       //             v_ph_RF_L   = v_ph_RF;
       //             w_ph_RF_L   = w_ph_RF;
-      //             qdist       = qres;
       //             u_ph_L      = u_ph;
       //             v_ph_L      = v_ph;
       //             w_ph_L      = w_ph;
-      //             boostfactor = (1.0 - sqrt(beta_sq) * rand_costheta_RF);
-      //           }
 
-      //           if (xres > vmax) {
-      //             vmax = xres;
-      //           }
+      //         auto tpeak = fid_freq / 2.821;
+      //         auto ndot = 10000000000000.0 * SQR(m_psr_Rstar/x_l[0]) * sqrt(beta_sq) / gamma
+      //                       * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
+      //         auto p_scatter = dt * ndot;
 
-      //           if (xres < vmin) {
-      //             vmin = xres;
-      //           }
-
-      //           random_pool.free_state(rand_gen);
-      //         }  
-              
-
-      //         // Calculate cross section: probability for scattering event (TODO: add dt dependence)
-      //         auto bbq = NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2])/bq;
-              // auto p_scatter = tres / static_cast<real_t>(nmax) * dt /
-              //                  (vmax - vmin) * 1.0 / (CUBE(gamma) * SQR(boostfactor) * SQR(1.0/bbq) * SQR(x_ph[0]/m_psr_Rstar)
-              //                  * (math::exp(bbq/(gamma*boostfactor)*1.0/fid_freq) - 1.0));
-
-      //         // Check if the photon scatters
-      //         typename RandomNumberPool_t::generator_type rand_gen =
-      //           random_pool.get_state();
       //         if (Random<real_t>(rand_gen) < p_scatter) {
 
       //         // Make sure the photon has exact resonance energy (momentum according to the 'most' resonant one above)
@@ -1099,29 +1186,29 @@ namespace ntt {
       //           // Inject the scattered photon
       //           if ((eph > 2.0)) {
       //             if (pol_par) {
-      //               // auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
-      //               // init_prtl_2d_i_di(photons_par,
-      //               //                   ph_offset_par + ph_p,
-      //               //                   species.i1(p),
-      //               //                   species.i2(p),
-      //               //                   species.dx1(p),
-      //               //                   species.dx2(p),
-      //               //                   kph_x,
-      //               //                   kph_y,
-      //               //                   kph_z,
-      //               //                   species.weight(p));
+      //               auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
+      //               init_prtl_2d_i_di(photons_par,
+      //                                 ph_offset_par + ph_p,
+      //                                 species.i1(p),
+      //                                 species.i2(p),
+      //                                 species.dx1(p),
+      //                                 species.dx2(p),
+      //                                 kph_x,
+      //                                 kph_y,
+      //                                 kph_z,
+      //                                 species.weight(p));
       //             } else {
-      //               // auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_perp(), 1);
-      //               // init_prtl_2d_i_di(photons_perp,
-      //               //                   ph_offset_perp + ph_p,
-      //               //                   species.i1(p),
-      //               //                   species.i2(p),
-      //               //                   species.dx1(p),
-      //               //                   species.dx2(p),
-      //               //                   kph_x,
-      //               //                   kph_y,
-      //               //                   kph_z,
-      //               //                   species.weight(p));
+      //               auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_perp(), 1);
+      //               init_prtl_2d_i_di(photons_perp,
+      //                                 ph_offset_perp + ph_p,
+      //                                 species.i1(p),
+      //                                 species.i2(p),
+      //                                 species.dx1(p),
+      //                                 species.dx2(p),
+      //                                 kph_x,
+      //                                 kph_y,
+      //                                 kph_z,
+      //                                 species.weight(p));
       //             }
       //           }
       //         }
