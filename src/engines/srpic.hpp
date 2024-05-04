@@ -1045,15 +1045,19 @@ namespace ntt {
     void CustomFieldsIn(dir::direction_t<M::Dim> direction,
                         domain_t&                domain,
                         BCTags                   tags) {
-      if constexpr (
-        traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
-        const auto [box, custom_fields] = m_pgen.CustomFields(time);
-        if (domain.mesh.Intersects(box)) {
-        }
-
-      } else {
-        raise::Error("Custom boundaries not implemented", HERE);
-      }
+      (void)direction;
+      (void)domain;
+      (void)tags;
+      raise::Error("Custom boundaries not implemented", HERE);
+      // if constexpr (
+      //   traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
+      //   const auto [box, custom_fields] = m_pgen.CustomFields(time);
+      //   if (domain.mesh.Intersects(box)) {
+      //   }
+      //
+      // } else {
+      //   raise::Error("Custom boundaries not implemented", HERE);
+      // }
     }
 
   private:
