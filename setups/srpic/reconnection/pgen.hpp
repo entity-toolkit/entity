@@ -45,6 +45,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::params;
 
     const real_t  Bmag, width, y0;
+    const real_t  inj_pad, y_min, y_max;
     InitFields<D> init_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
@@ -52,13 +53,26 @@ namespace user {
       , Bmag { p.template get<real_t>("setup.Bmag", 1.0) }
       , width { p.template get<real_t>("setup.width") }
       , y0 { (m.mesh().extent(in::x2).first + m.mesh().extent(in::x2).second) * HALF }
+      , inj_pad { p.template get<real_t>("setup.inj_pad") }
+      , y_min { m.mesh().extent(in::x2).first }
+      , y_max { m.mesh().extent(in::x2).second }
       , init_flds { Bmag, width, y0 } {}
 
     inline PGen() {}
 
     template <typename T>
     auto CustomFields(dir::direction_t<M::Dim> direction, real_t time) const
-      -> std::pair<std::pair<real_t, real_t>, T> {}
+      -> std::pair<std::pair<real_t, real_t>, T> {
+      const auto dim  = direction.get_dim();
+      const auto sign = direction.get_sign();
+      raise::ErrorIf(dim != in::x2, "Custom boundaries only work in +/-y", HERE);
+      std::pair<real_t, real_t> range { ZERO, ZERO };
+      if (sign < 0) { // -y
+        range = { Range::Min, y_min + inj_pad };
+      } else { // +y
+        range = { y_max - inj_pad, Range::Max };
+      }
+    }
   };
 
 } // namespace user

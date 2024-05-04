@@ -1047,7 +1047,10 @@ namespace ntt {
                         BCTags                   tags) {
       if constexpr (
         traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
-        const auto custom_fields = m_pgen.CustomFields(time);
+        const auto [box, custom_fields] = m_pgen.CustomFields(time);
+        if (domain.mesh.Intersects(box)) {
+        }
+
       } else {
         raise::Error("Custom boundaries not implemented", HERE);
       }

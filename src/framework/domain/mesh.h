@@ -82,9 +82,20 @@ namespace ntt {
         if (b == Range::All) {
           intersection.push_back({ extent()[d].first, extent()[d].second });
         } else {
-          intersection.push_back(
-            { std::min(extent()[d].second, std::max(extent()[d].first, b.first)),
-              std::max(extent()[d].first, std::min(extent()[d].second, b.second)) });
+          real_t x_min, x_max;
+          if (b.first == Range::Min) {
+            x_min = extent()[d].first;
+          } else {
+            x_min = std::min(extent()[d].second,
+                             std::max(extent()[d].first, b.first));
+          }
+          if (b.second == Range::Max) {
+            x_max = extent()[d].second;
+          } else {
+            x_max = std::max(extent()[d].first,
+                             std::min(extent()[d].second, b.second));
+            intersection.push_back({ x_min, x_max });
+          }
         }
         ++d;
       }
