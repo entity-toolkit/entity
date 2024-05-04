@@ -139,7 +139,7 @@ namespace kernel::sr {
           f_x2 += pgen_force.fx2(sp, time, x_Ph);
         }
       }
-      if constexpr (Atm) {
+      if constexpr (Atm and (D == Dim::_2D or D == Dim::_3D)) {
         if (gx2 != ZERO) {
           if ((ds > ZERO and x_Ph[1] >= x_surf + ds) or
               (ds < ZERO and x_Ph[1] <= x_surf + ds)) {
@@ -165,7 +165,7 @@ namespace kernel::sr {
           f_x3 += pgen_force.fx3(sp, time, x_Ph);
         }
       }
-      if constexpr (Atm) {
+      if constexpr (Atm and D == Dim::_3D) {
         if (gx3 != ZERO) {
           if ((ds > ZERO and x_Ph[2] >= x_surf + ds) or
               (ds < ZERO and x_Ph[2] <= x_surf + ds)) {

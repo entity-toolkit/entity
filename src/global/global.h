@@ -289,6 +289,8 @@ namespace Range {
     -std::numeric_limits<real_t>::infinity(),
     std::numeric_limits<real_t>::infinity()
   };
+  constexpr real_t Min = -std::numeric_limits<real_t>::infinity();
+  constexpr real_t Max = std::numeric_limits<real_t>::infinity();
 }; // namespace Range
 
 // ND list alias

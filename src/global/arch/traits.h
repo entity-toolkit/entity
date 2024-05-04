@@ -12,6 +12,7 @@
  *   - traits::pgen::ext_force_t
  *   - traits::pgen::field_driver_t
  *   - traits::pgen::init_prtls_t
+ *   - traits::pgen::custom_fields_t
  *   - traits::pgen::custom_poststep_t
  *   - traits::check_compatibility<>
  *   - traits::compatibility<>
@@ -93,6 +94,9 @@ namespace traits {
 
     template <typename T>
     using field_driver_t = decltype(&T::FieldDriver);
+
+    template <typename T>
+    using custom_fields_t = decltype(&T::CustomFields);
 
     template <typename T>
     using custom_poststep_t = decltype(&T::CustomPostStep);
