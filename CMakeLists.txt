@@ -53,13 +53,13 @@ if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
     Release
     CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D NDEBUG")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
 else()
   set(CMAKE_BUILD_TYPE
     Debug
     CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -D DEBUG -Wall -Wextra -Wno-unknown-pragmas")
+    "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
