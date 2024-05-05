@@ -20,7 +20,7 @@
     [grid.boundaries.atmosphere]
       temperature = 0.1
       density = 4.0
-      height = 0.05
+      height = 0.02
       species = [1, 2]
       ds = 2.0
     
@@ -39,7 +39,7 @@
     larmor_max = 1.0
 
 [particles]
-  ppc0 = 10.0
+  ppc0 = 20.0
   use_weights = true
   sort_interval = 100
 
@@ -59,7 +59,7 @@
 
 [setup]
   Bsurf = 1.0
-  period = 30.0
+  period = 60.0
   
 [output]
   fields = ["N_1", "N_2", "E", "B", "T00"]
