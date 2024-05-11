@@ -54,17 +54,16 @@ namespace ntt {
         // run the engine-dependent algorithm step
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           step_forward(timers, dom);
-          if constexpr (
-            traits::has_method<traits::pgen::custom_poststep_t, decltype(m_pgen)>::value) {
-            timers.start("Custom");
-            m_pgen.CustomPostStep(step, time, dom);
-            timers.stop("Custom");
-          } else {
-            (void)dom;
-            (void)timers;
-            (void)this;
-          }
         });
+        // poststep (if defined)
+        if constexpr (
+          traits::has_method<traits::pgen::custom_poststep_t, decltype(m_pgen)>::value) {
+          timers.start("Custom");
+          m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
+            m_pgen.CustomPostStep(step, time, dom);
+          });
+          timers.stop("Custom");
+        }
         auto print_sorting = (step % m_params.template get<std::size_t>(
                                        "particles.sort_interval") ==
                               0);
