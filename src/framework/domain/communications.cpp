@@ -268,7 +268,7 @@ namespace ntt {
         const auto npart_per_tag = species.SortByTags();
         timers->stop("Sorting");
 #if defined(MPI_ENABLED)
-        timers.start("Communications");
+        timers->start("Communications");
         // only necessary when MPI is enabled
         /**
          *                                                        index_last
@@ -440,7 +440,7 @@ namespace ntt {
             Kokkos::subview(species.tag, std::make_pair(send_pmin, send_pmax)),
             ParticleTag::dead);
         }
-        timers.stop("Communications");
+        timers->stop("Communications");
         // !TODO: maybe there is a way to not sort twice
         timers->start("Sorting");
         species.SortByTags();
