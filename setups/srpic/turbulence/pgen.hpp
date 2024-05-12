@@ -67,8 +67,9 @@ namespace user {
 
   template <Dimension D>
   struct ExtForce {
-    ExtForce(real_t SX1, real_t SX2, real_t SX3) 
-    : sx1 {SX1}
+    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3) 
+    : amps { amplitudes }
+    , sx1 {SX1}
     , sx2 {SX2}
     , sx3 {SX3} {}
     const std::vector<unsigned short> species { 1, 2 };
@@ -96,17 +97,16 @@ namespace user {
       real_t k23         = ONE * constant::TWO_PI / sx3;
       real_t k24         = ONE;
 
-      // auto f_m1 = k14 * amplitudes_(0, REAL) *
-      //               cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-      //             k14 * amplitudes_(0, IMAG) *
-      //               sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]);
-      // auto f_m2 = k24 * amplitudes_(1, REAL) *
-      //               cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-      //             k24 * amplitudes_(1, IMAG) *
-      //               sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]);
+      auto f_m1 = k14 * amps(0, REAL) *
+                    cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+                  k14 * amps(0, IMAG) *
+                    sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]);
+      auto f_m2 = k24 * amps(1, REAL) *
+                    cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+                  k24 * amps(1, IMAG) *
+                    sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]);
 
-      // return f_m1 + f_m2;
-      return ZERO;
+      return f_m1 + f_m2;
 
     }
 
@@ -116,7 +116,31 @@ namespace user {
       (void)sp;
       (void)time;
       (void)x_Ph;
-      return ZERO;
+
+      real_t k01         = ONE * constant::TWO_PI / sx1;
+      real_t k02         = ZERO * constant::TWO_PI / sx2;
+      real_t k03         = ZERO * constant::TWO_PI / sx3;
+      real_t k04         = ONE;
+      real_t k11         = ZERO * constant::TWO_PI / sx1;
+      real_t k12         = ONE * constant::TWO_PI / sx2;
+      real_t k13         = ZERO * constant::TWO_PI / sx3;
+      real_t k14         = ONE;
+      real_t k21         = ZERO * constant::TWO_PI / sx1;
+      real_t k22         = ZERO * constant::TWO_PI / sx2;
+      real_t k23         = ONE * constant::TWO_PI / sx3;
+      real_t k24         = ONE;
+
+      auto f_m3 = k04 * amps(2, REAL) *
+                    cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+                  k04 * amps(2, IMAG) *
+                    sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]);
+      auto f_m4 = k24 * amps(3, REAL) *
+                    cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+                  k24 * amps(3, IMAG) *
+                    sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]);
+
+      return f_m3 + f_m4;
+
     }
 
     Inline auto fx3(const unsigned short& sp,
@@ -125,12 +149,36 @@ namespace user {
       (void)sp;
       (void)time;
       (void)x_Ph;
-      return ZERO;
+
+      real_t k01         = 1.0 * constant::TWO_PI / sx1;
+      real_t k02         = 0.0 * constant::TWO_PI / sx2;
+      real_t k03         = 0.0 * constant::TWO_PI / sx3;
+      real_t k04         = 1.0;
+      real_t k11         = 0.0 * constant::TWO_PI / sx1;
+      real_t k12         = 1.0 * constant::TWO_PI / sx2;
+      real_t k13         = 0.0 * constant::TWO_PI / sx3;
+      real_t k14         = 1.0;
+      real_t k21         = 0.0 * constant::TWO_PI / sx1;
+      real_t k22         = 0.0 * constant::TWO_PI / sx2;
+      real_t k23         = 1.0 * constant::TWO_PI / sx3;
+      real_t k24         = 1.0;
+
+      auto f_m5 = k04 * amps(4, REAL) *
+                    cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+                  k04 * amps(4, IMAG) *
+                    sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]);
+      auto f_m6 = k14 * amps(5, REAL) *
+                    cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+                  k14 * amps(5, IMAG) *
+                    sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]);
+
+      return f_m5 + f_m6;
+
     }
 
   private:
     const real_t sx1, sx2, sx3;
-
+    array_t<real_t* [2]> amps;
   };
 
   template <SimEngine::type S, class M>
@@ -162,7 +210,7 @@ namespace user {
       , amp0 { machno * temperature * 1.0 / 6.0 } // TODO: HERE NEED TO INCLUDE PARTICLE MASS
       , phi0 { ((real_t)rand() / RAND_MAX) * constant::TWO_PI }
       , amplitudes { "DrivingModes", 6 }
-      , ext_force {SX1, SX2, SX3}
+      , ext_force {amplitudes, SX1, SX2, SX3}
       , init_flds {amplitudes, amp0, phi0} {
       }
 
@@ -173,29 +221,34 @@ namespace user {
     auto gamma0 = 0.5 * sqrt(temperature * machno * constant::TWO_PI / SX2);
     auto sigma0 = amp0 * sqrt(6.0 * gamma0);
 
+    // TODO: PHASE HAS TO BE RANROMIZED
     // auto pool = *(mblock.random_pool_ptr);
 
-    // Kokkos::parallel_for(
-    //   "RandomAmplitudes",
-    //   amplitudes_.extent(0),
-    //   Lambda(index_t i) {
-    //     auto rand_gen = pool.get_state();
-    //     auto unr      = rand_gen.frand() - 0.5;
-    //     auto uni      = rand_gen.frand() - 0.5;
-    //     pool.free_state(rand_gen);
+    Kokkos::parallel_for(
+      "RandomAmplitudes",
+      amplitudes.extent(0),
+      Lambda(index_t i) {
+        // auto rand_gen = pool.get_state();
+        // auto unr      = rand_gen.frand() - 0.5;
+        // auto uni      = rand_gen.frand() - 0.5;
+        // pool.free_state(rand_gen);
+        auto unr      = 0.23 - 0.5;
+        auto uni      = 0.78 - 0.5;
+        // TODO: TIMESTEP HAS TO BE INFERRED FROM SIMULATION
+        auto dt_ = 0.1;
 
-    //     auto ampr_prev = amplitudes_(i, REAL);
-    //     auto ampi_prev = amplitudes_(i, IMAG);
+        auto ampr_prev = amplitudes(i, REAL);
+        auto ampi_prev = amplitudes(i, IMAG);
 
-    //     amplitudes_(i, REAL) = (ampr_prev * cos(omega0 * dt_) +
-    //                             ampi_prev * sin(omega0 * dt_)) *
-    //                              exp(-gamma0 * dt_) +
-    //                            unr * sigma0;
-    //     amplitudes_(i, IMAG) = (-ampr_prev * sin(omega0 * dt_) +
-    //                             ampi_prev * cos(omega0 * dt_)) *
-    //                              exp(-gamma0 * dt_) +
-    //                            uni * sigma0;
-    //   });
+        amplitudes(i, REAL) = (ampr_prev * cos(omega0 * dt_) +
+                                ampi_prev * sin(omega0 * dt_)) *
+                                 exp(-gamma0 * dt_) +
+                               unr * sigma0;
+        amplitudes(i, IMAG) = (-ampr_prev * sin(omega0 * dt_) +
+                                ampi_prev * cos(omega0 * dt_)) *
+                                 exp(-gamma0 * dt_) +
+                               uni * sigma0;
+      });
 
     }
 
