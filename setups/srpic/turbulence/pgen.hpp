@@ -232,6 +232,7 @@ namespace user {
         // auto unr      = rand_gen.frand() - 0.5;
         // auto uni      = rand_gen.frand() - 0.5;
         // pool.free_state(rand_gen);
+        // TODO: PHASE HAS TO BE RANROMIZED (REMOVE THIS REPLACE BY PREVIOUS LINES)
         auto unr      = 0.23 - 0.5;
         auto uni      = 0.78 - 0.5;
         // TODO: TIMESTEP HAS TO BE INFERRED FROM SIMULATION
