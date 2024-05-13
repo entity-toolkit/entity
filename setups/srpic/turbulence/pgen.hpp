@@ -8,6 +8,8 @@
 #include "arch/traits.h"
 #include "utils/numeric.h"
 
+#include "archetypes/energy_dist.h"
+#include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
@@ -160,6 +162,20 @@ namespace user {
           amplitudes_(i, REAL) = amp0_ * math::cos(phi0_);
           amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_);
         });
+    }
+
+    inline void InitPrtls(Domain<S, M>& local_domain) {
+      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                      local_domain.random_pool,
+                                                      temperature);
+      const auto injector    = arch::UniformInjector<S, M, arch::Maxwellian>(
+        energy_dist,
+        { 1, 2 });
+      const real_t ndens = 1.0;
+      arch::InjectUniform<S, M, decltype(injector)>(params,
+                                                    local_domain,
+                                                    injector,
+                                                    ndens);
     }
 
     void CustomPostStep(std::size_t, long double, Domain<S, M>& domain) {
