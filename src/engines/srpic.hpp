@@ -242,19 +242,18 @@ namespace ntt {
     }
 
     void ParticlePush(domain_t& domain) {
-      real_t     gx1 { ZERO }, gx2 { ZERO }, gx3 { ZERO };
-      real_t     x_surf { ZERO };
-      const auto g = m_params.template get<real_t>(
-        "grid.boundaries.atmosphere.g");
-      const auto ds = m_params.template get<real_t>(
-        "grid.boundaries.atmosphere.ds");
-      bool has_atmosphere = false;
+      real_t gx1 { ZERO }, gx2 { ZERO }, gx3 { ZERO }, ds { ZERO };
+      real_t x_surf { ZERO };
+      bool   has_atmosphere = false;
       for (auto& direction : dir::Directions<M::Dim>::orth) {
         if (m_metadomain.mesh().prtl_bc_in(direction) == PrtlBC::ATMOSPHERE) {
           raise::ErrorIf(has_atmosphere,
                          "Only one direction is allowed to have atm boundaries",
                          HERE);
-          has_atmosphere                         = true;
+          has_atmosphere = true;
+          const auto g   = m_params.template get<real_t>(
+            "grid.boundaries.atmosphere.g");
+          ds = m_params.template get<real_t>("grid.boundaries.atmosphere.ds");
           const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
           if (dim == in::x1) {
             gx1 = sign > 0 ? g : -g;
