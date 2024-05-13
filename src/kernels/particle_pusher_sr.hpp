@@ -294,7 +294,6 @@ namespace kernel::sr {
       , gca_larmor { gca_larmor_max }
       , gca_EovrB_sqr { SQR(gca_eovrb_max) }
       , coeff_sync { coeff_sync } {
-
       raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
                         (boundaries[0].first == PrtlBC::ABSORB);

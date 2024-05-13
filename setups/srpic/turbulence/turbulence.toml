@@ -42,6 +42,6 @@
 [setup]
   
 [output]
-  fields = ["N_1", "N_2", "E", "B", "J"]
+  fields = ["N_1", "N_2", "E", "B", "J", "T00_1", "T00_2"]
   format = "hdf5"
   interval_time = 0.1
