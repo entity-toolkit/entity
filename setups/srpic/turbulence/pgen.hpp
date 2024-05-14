@@ -204,12 +204,30 @@ namespace user {
 
     auto fext_en_total = 0.0;
     for (auto& species : domain.species) {
+      auto pld = species.pld[0];
+      auto weight = species.weight;
         Kokkos::parallel_reduce(
           "ExtForceE",
           species.rangeActiveParticles(), ClassLambda(index_t p, double& fext_en) {
-            fext_en += species.pld[0](p);
+            fext_en += pld(p)*weight(p);
           }, fext_en_total);
     }
+
+    auto pkin_en_total = 0.0;
+    for (auto& species : domain.species) {
+      auto ux1 = species.ux1;
+      auto ux2 = species.ux2;
+      auto ux3 = species.ux3;
+      auto weight = species.weight;
+        Kokkos::parallel_reduce(
+          "ExtForceE",
+          species.rangeActiveParticles(), ClassLambda(index_t p, double& pkin_en) {
+            pkin_en += math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))*weight(p);
+          }, pkin_en_total);
+    }
+
+    printf("External force energy: %f\n", fext_en_total);
+    printf("Particle kinetic energy: %f\n", pkin_en_total);
 
     }
   };
