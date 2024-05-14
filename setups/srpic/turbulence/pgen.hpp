@@ -47,15 +47,14 @@ namespace user {
       real_t k22 = ZERO * constant::TWO_PI / sx2;
       real_t k23 = ONE * constant::TWO_PI / sx3;
       real_t k24 = ONE;
-      // return (k14 * amps(0, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-      //         k14 * amps(0, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2])) +
-      //        (k24 * amps(1, REAL) *
-      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-      //         k24 * amps(1, IMAG) *
-      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
-      return ONE;
+      return (k14 * amps(0, REAL) *
+                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+              k14 * amps(0, IMAG) *
+                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2])) +
+             (k24 * amps(1, REAL) *
+                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+              k24 * amps(1, IMAG) *
+                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
     }
 
     Inline auto fx2(const unsigned short&, const real_t&, const coord_t<D>& x_Ph) const
@@ -72,15 +71,14 @@ namespace user {
       real_t k22 = ZERO * constant::TWO_PI / sx2;
       real_t k23 = ONE * constant::TWO_PI / sx3;
       real_t k24 = ONE;
-      // return (k04 * amps(2, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
-      //         k04 * amps(2, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
-      //        (k24 * amps(3, REAL) *
-      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-      //         k24 * amps(3, IMAG) *
-      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
-      return ONE;
+      return (k04 * amps(2, REAL) *
+                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+              k04 * amps(2, IMAG) *
+                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
+             (k24 * amps(3, REAL) *
+                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+              k24 * amps(3, IMAG) *
+                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
     }
 
     Inline auto fx3(const unsigned short&, const real_t&, const coord_t<D>& x_Ph) const
@@ -97,15 +95,14 @@ namespace user {
       real_t k22 = ZERO * constant::TWO_PI / sx2;
       real_t k23 = ONE * constant::TWO_PI / sx3;
       real_t k24 = ONE;
-      // return (k04 * amps(4, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
-      //         k04 * amps(4, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
-      //        (k14 * amps(5, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-      //         k14 * amps(5, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
-      return ONE;
+      return (k04 * amps(4, REAL) *
+                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+              k04 * amps(4, IMAG) *
+                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
+             (k14 * amps(5, REAL) *
+                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+              k14 * amps(5, IMAG) *
+                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
     }
 
   private:

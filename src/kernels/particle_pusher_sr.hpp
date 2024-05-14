@@ -530,12 +530,15 @@ namespace kernel::sr {
           ux1(p) += HALF * dt * force_Cart[0];
           ux2(p) += HALF * dt * force_Cart[1];
           ux3(p) += HALF * dt * force_Cart[2];
+          pld(p) += HALF * (ux1(p) * force_Cart[0] + ux2(p) * force_Cart[1] + ux3(p) * force_Cart[2]) * dt;
         }
         velUpd(false, p, ei_Cart, bi_Cart);
         if constexpr (ExtForce) {
           ux1(p) += HALF * dt * force_Cart[0];
           ux2(p) += HALF * dt * force_Cart[1];
           ux3(p) += HALF * dt * force_Cart[2];
+          pld(p) += HALF * (ux1(p) * force_Cart[0] + ux2(p) * force_Cart[1] + ux3(p) * force_Cart[2]) * dt;
+
         }
       }
       // cooling

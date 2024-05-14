@@ -1,7 +1,7 @@
 [simulation]
   name = "turbulence"
   engine = "srpic"
-  runtime = 10.0
+  runtime = 20.0
 
 [grid]
   resolution = [128, 128, 128]
