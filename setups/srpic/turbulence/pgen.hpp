@@ -203,17 +203,12 @@ namespace user {
         });
 
     auto fext_en_total = 0.0;
-    std::vector<unsigned short> specs = species;
-
-    for (const auto& sp : specs) {
-          auto& prtl_spec = prtl_species[sp - 1];
-
+    for (auto& species : domain.species) {
         Kokkos::parallel_reduce(
           "ExtForceE",
-          Kokkos::RangePolicy<AccelExeSpace, P>(0, prtl_spec.npart()), ClassLambda(index_t i) {
-            fext_en_total += prtl_spec.pld[0](i);
-          });
-
+          species.rangeActiveParticles(), ClassLambda(index_t p, double& fext_en) {
+            fext_en += species.pld[0](p);
+          }, fext_en_total);
     }
 
     }
