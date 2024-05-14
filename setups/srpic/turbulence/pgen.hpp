@@ -201,6 +201,21 @@ namespace user {
                                   math::exp(-gamma0 * dt) +
                                 uni * sigma0;
         });
+
+    auto fext_en_total = 0.0;
+    std::vector<unsigned short> specs = species;
+
+    for (const auto& sp : specs) {
+          auto& prtl_spec = prtl_species[sp - 1];
+
+        Kokkos::parallel_reduce(
+          "ExtForceE",
+          Kokkos::RangePolicy<AccelExeSpace, P>(0, prtl_spec.npart()), ClassLambda(index_t i) {
+            fext_en_total += prtl_spec.pld[0](i);
+          });
+
+    }
+
     }
   };
 

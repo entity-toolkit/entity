@@ -204,6 +204,7 @@ namespace kernel::sr {
     array_t<prtldx_t*>    dx1, dx2, dx3;
     array_t<prtldx_t*>    dx1_prev, dx2_prev, dx3_prev;
     array_t<real_t*>      ux1, ux2, ux3;
+    array_t<real_t*>      pld;
     array_t<real_t*>      phi;
     array_t<short*>       tag;
     const M               metric;
@@ -245,6 +246,7 @@ namespace kernel::sr {
                   array_t<real_t*>&           ux1,
                   array_t<real_t*>&           ux2,
                   array_t<real_t*>&           ux3,
+                  array_t<real_t*>&           pld,
                   array_t<real_t*>&           phi,
                   array_t<short*>&            tag,
                   const M&                    metric,
@@ -280,6 +282,7 @@ namespace kernel::sr {
       , ux1 { ux1 }
       , ux2 { ux2 }
       , ux3 { ux3 }
+      , pld { pld }
       , phi { phi }
       , tag { tag }
       , metric { metric }
@@ -343,6 +346,7 @@ namespace kernel::sr {
                   array_t<real_t*>&           ux1,
                   array_t<real_t*>&           ux2,
                   array_t<real_t*>&           ux3,
+                  array_t<real_t*>&           pld,
                   array_t<real_t*>&           phi,
                   array_t<short*>&            tag,
                   const M&                    metric,
@@ -377,6 +381,7 @@ namespace kernel::sr {
                       ux1,
                       ux2,
                       ux3,
+                      pld,
                       phi,
                       tag,
                       metric,
@@ -538,7 +543,6 @@ namespace kernel::sr {
           ux2(p) += HALF * dt * force_Cart[1];
           ux3(p) += HALF * dt * force_Cart[2];
           pld(p) += HALF * (ux1(p) * force_Cart[0] + ux2(p) * force_Cart[1] + ux3(p) * force_Cart[2]) * dt;
-
         }
       }
       // cooling

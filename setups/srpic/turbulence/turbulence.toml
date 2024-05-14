@@ -32,12 +32,14 @@
   mass = 1.0
   charge = -1.0
   maxnpart = 1e8
+  n_payloads = 1
 
   [[particles.species]]
   label = "e+"
   mass = 1.0
   charge = 1.0
   maxnpart = 1e8
+  n_payloads = 1
 
 [setup]
   
