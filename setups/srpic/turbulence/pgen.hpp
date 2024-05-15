@@ -13,6 +13,9 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
+#include <iostream>
+#include <fstream>
+
 enum {
   REAL = 0,
   IMAG = 1
@@ -177,7 +180,7 @@ namespace user {
                                                     ndens);
     }
 
-    void CustomPostStep(std::size_t, long double, Domain<S, M>& domain) {
+    void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
       auto omega0 = 0.6 * math::sqrt(temperature * machno * constant::TWO_PI / SX1);
       auto gamma0 = 0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
@@ -202,32 +205,53 @@ namespace user {
                                 uni * sigma0;
         });
 
-    auto fext_en_total = 0.0;
+    auto fext_en_total = ZERO;
     for (auto& species : domain.species) {
       auto pld = species.pld[0];
       auto weight = species.weight;
         Kokkos::parallel_reduce(
-          "ExtForceE",
-          species.rangeActiveParticles(), ClassLambda(index_t p, double& fext_en) {
+          "ExtForceEnrg",
+          species.rangeActiveParticles(), ClassLambda(index_t p, real_t& fext_en) {
             fext_en += pld(p)*weight(p);
           }, fext_en_total);
     }
 
-    auto pkin_en_total = 0.0;
+    auto pkin_en_total = ZERO;
     for (auto& species : domain.species) {
       auto ux1 = species.ux1;
       auto ux2 = species.ux2;
       auto ux3 = species.ux3;
       auto weight = species.weight;
         Kokkos::parallel_reduce(
-          "ExtForceE",
-          species.rangeActiveParticles(), ClassLambda(index_t p, double& pkin_en) {
-            pkin_en += math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))*weight(p);
+          "KinEnrg",
+          species.rangeActiveParticles(), ClassLambda(index_t p, real_t& pkin_en) {
+            pkin_en += (ONE - math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))*weight(p);
           }, pkin_en_total);
     }
 
-    printf("External force energy: %f\n", fext_en_total);
-    printf("Particle kinetic energy: %f\n", pkin_en_total);
+    auto benrg_total = ZERO;
+    auto emfields = domain.fields.em;
+    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& benrg) {
+      benrg += (SQR(emfields(i1, i2, i3, em::bx1)) + SQR(emfields(i1, i2, i3, em::bx2)) + SQR(emfields(i1, i2, i3, em::bx3)))*HALF;
+    }, benrg_total);
+
+
+    std::ofstream myfile;
+    if (time == 0) {
+    myfile.open ("fextenrg.txt");
+    } else {
+    myfile.open ("fextenrg.txt", std::ios_base::app);
+    }
+    myfile << fext_en_total << std::endl;
+    myfile.close();
+
+    if (time == 0) {
+    myfile.open ("kenrg.txt");
+    } else {
+    myfile.open ("kenrg.txt", std::ios_base::app);
+    }
+    myfile << pkin_en_total << std::endl;
+    myfile.close();
 
     }
   };
