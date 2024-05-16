@@ -225,7 +225,7 @@ namespace user {
         Kokkos::parallel_reduce(
           "KinEnrg",
           species.rangeActiveParticles(), ClassLambda(index_t p, real_t& pkin_en) {
-            pkin_en += (ONE - math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))*weight(p);
+            pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) - ONE )*weight(p);
           }, pkin_en_total);
     }
 
