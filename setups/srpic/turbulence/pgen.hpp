@@ -225,16 +225,15 @@ namespace user {
         Kokkos::parallel_reduce(
           "KinEnrg",
           species.rangeActiveParticles(), ClassLambda(index_t p, real_t& pkin_en) {
-            pkin_en += (ONE - math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))*weight(p);
+            pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) - ONE )*weight(p);
           }, pkin_en_total);
     }
 
-    auto benrg_total = ZERO;
-    auto emfields = domain.fields.em;
-    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& benrg) {
-      benrg += (SQR(emfields(i1, i2, i3, em::bx1)) + SQR(emfields(i1, i2, i3, em::bx2)) + SQR(emfields(i1, i2, i3, em::bx3)))*HALF;
-    }, benrg_total);
-
+    // auto benrg_total = ZERO;
+    // auto emfields = domain.fields.em;
+    // Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& benrg) {
+    //   benrg += (SQR(emfields(i1, i2, i3, em::bx1)) + SQR(emfields(i1, i2, i3, em::bx2)) + SQR(emfields(i1, i2, i3, em::bx3)))*HALF;
+    // }, benrg_total);
 
     std::ofstream myfile;
     if (time == 0) {
