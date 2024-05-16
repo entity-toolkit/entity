@@ -218,7 +218,9 @@ namespace kernel::sr {
     bool         is_periodic_i1min { false }, is_periodic_i1max { false };
     bool         is_periodic_i2min { false }, is_periodic_i2max { false };
     bool         is_periodic_i3min { false }, is_periodic_i3max { false };
-    bool         is_axis_i2min { false }, is_axis_i2max { false };
+    bool         is_reflect_i1min { false }, is_reflect_i1max { false };
+    bool         is_reflect_i2min { false }, is_reflect_i2max { false };
+    bool         is_reflect_i3min { false }, is_reflect_i3max { false };
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
     // synchrotron cooling parameters
@@ -301,6 +303,10 @@ namespace kernel::sr {
                         (boundaries[0].second == PrtlBC::ABSORB);
       is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
       is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
+      is_reflect_i1min  = (boundaries[0].first == PrtlBC::AXIS) ||
+                         (boundaries[0].first == PrtlBC::REFLECT);
+      is_reflect_i1max = (boundaries[0].second == PrtlBC::AXIS) ||
+                         (boundaries[0].second == PrtlBC::REFLECT);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_absorb_i2min = (boundaries[1].first == PrtlBC::ATMOSPHERE) ||
@@ -309,8 +315,10 @@ namespace kernel::sr {
                           (boundaries[1].second == PrtlBC::ABSORB);
         is_periodic_i2min = (boundaries[1].first == PrtlBC::PERIODIC);
         is_periodic_i2max = (boundaries[1].second == PrtlBC::PERIODIC);
-        is_axis_i2min     = (boundaries[1].first == PrtlBC::AXIS);
-        is_axis_i2max     = (boundaries[1].second == PrtlBC::AXIS);
+        is_reflect_i2min  = (boundaries[1].first == PrtlBC::AXIS) ||
+                           (boundaries[1].first == PrtlBC::REFLECT);
+        is_reflect_i2max = (boundaries[1].second == PrtlBC::AXIS) ||
+                           (boundaries[1].second == PrtlBC::REFLECT);
       }
       if constexpr (D == Dim::_3D) {
         raise::ErrorIf(boundaries.size() < 3, "boundaries defined incorrectly", HERE);
@@ -320,6 +328,10 @@ namespace kernel::sr {
                           (boundaries[2].second == PrtlBC::ABSORB);
         is_periodic_i3min = (boundaries[2].first == PrtlBC::PERIODIC);
         is_periodic_i3max = (boundaries[2].second == PrtlBC::PERIODIC);
+        is_reflect_i3min  = (boundaries[2].first == PrtlBC::AXIS) ||
+                           (boundaries[2].first == PrtlBC::REFLECT);
+        is_reflect_i3max = (boundaries[2].second == PrtlBC::AXIS) ||
+                           (boundaries[2].second == PrtlBC::REFLECT);
       }
     }
 
@@ -1048,6 +1060,9 @@ namespace kernel::sr {
             i1_prev(p) += ni1;
           } else if (is_absorb_i1min) {
             tag(p) = ParticleTag::dead;
+          } else if (is_reflect_i1min) {
+            i1(p)  = 0;
+            dx1(p) = ONE - dx1(p);
           }
         } else if (i1(p) >= ni1) {
           if (is_periodic_i1max) {
@@ -1055,6 +1070,9 @@ namespace kernel::sr {
             i1_prev(p) -= ni1;
           } else if (is_absorb_i1max) {
             tag(p) = ParticleTag::dead;
+          } else if (is_reflect_i1max) {
+            i1(p)  = ni1 - 1;
+            dx1(p) = ONE - dx1(p);
           }
         }
       }
@@ -1065,7 +1083,7 @@ namespace kernel::sr {
             i2_prev(p) += ni2;
           } else if (is_absorb_i2min) {
             tag(p) = ParticleTag::dead;
-          } else if (is_axis_i2min) {
+          } else if (is_reflect_i2min) {
             i2(p)  = 0;
             dx2(p) = ONE - dx2(p);
           }
@@ -1075,7 +1093,7 @@ namespace kernel::sr {
             i2_prev(p) -= ni2;
           } else if (is_absorb_i2max) {
             tag(p) = ParticleTag::dead;
-          } else if (is_axis_i2max) {
+          } else if (is_reflect_i2max) {
             i2(p)  = ni2 - 1;
             dx2(p) = ONE - dx2(p);
           }
@@ -1088,6 +1106,9 @@ namespace kernel::sr {
             i3_prev(p) += ni3;
           } else if (is_absorb_i3min) {
             tag(p) = ParticleTag::dead;
+          } else if (is_reflect_i3min) {
+            i3(p)  = 0;
+            dx3(p) = ONE - dx3(p);
           }
         } else if (i3(p) >= ni3) {
           if (is_periodic_i3max) {
@@ -1095,6 +1116,9 @@ namespace kernel::sr {
             i3_prev(p) -= ni3;
           } else if (is_absorb_i3max) {
             tag(p) = ParticleTag::dead;
+          } else if (is_reflect_i3max) {
+            i3(p)  = ni3 - 1;
+            dx3(p) = ONE - dx3(p);
           }
         }
       }

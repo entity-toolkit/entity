@@ -42,6 +42,7 @@
 #include <Kokkos_ScatterView.hpp>
 
 #include <string>
+#include <utility>
 
 namespace ntt {
 
@@ -795,9 +796,10 @@ namespace ntt {
           AxisFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
           AtmosphereFieldsIn(direction, domain, tags);
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+          ConductorFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           CustomFieldsIn(direction, domain, tags);
-          // raise::Error("Custom boundaries not implemented", HERE);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
           raise::Error("HORIZON BCs only applicable for GR", HERE);
         }
@@ -1038,6 +1040,78 @@ namespace ntt {
       } else {
         raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
                      HERE);
+      }
+    }
+
+    void ConductorFieldsIn(dir::direction_t<M::Dim> direction,
+                           domain_t&                domain,
+                           BCTags                   tags) {
+      const auto sign = direction.get_sign();
+      const auto dim  = direction.get_dim();
+      raise::ErrorIf(
+        dim != in::x1 and M::CoordType != Coord::Cart,
+        "Conductor BCs only implemented for x1 in non-cartesian coordinates",
+        HERE);
+      em normal_b_comp, tang_e_comp1, tang_e_comp2;
+      if (dim == in::x1) {
+        normal_b_comp = em::bx1;
+        tang_e_comp1  = em::ex2;
+        tang_e_comp2  = em::ex3;
+      } else if (dim == in::x2) {
+        normal_b_comp = em::bx2;
+        tang_e_comp1  = em::ex1;
+        tang_e_comp2  = em::ex3;
+      } else if (dim == in::x3) {
+        normal_b_comp = em::bx3;
+        tang_e_comp1  = em::ex1;
+        tang_e_comp2  = em::ex2;
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+      std::vector<std::size_t> xi_min, xi_max;
+      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
+      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        const auto dd = all_dirs[d];
+        if (dim == dd) {
+          if (sign > 0) { // + direction
+            xi_min.push_back(domain.mesh.n_all(dd) - N_GHOSTS);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          } else { // - direction
+            xi_min.push_back(0);
+            xi_max.push_back(N_GHOSTS);
+          }
+        } else {
+          xi_min.push_back(0);
+          xi_max.push_back(domain.mesh.n_all(dd));
+        }
+      }
+      raise::ErrorIf(xi_min.size() != xi_max.size() or
+                       xi_min.size() != static_cast<std::size_t>(M::Dim),
+                     "Invalid range size",
+                     HERE);
+      for (const unsigned short comp :
+           { normal_b_comp, tang_e_comp1, tang_e_comp2 }) {
+        if constexpr (M::Dim == Dim::_1D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(xi_min[0], xi_max[0]),
+                                            comp),
+                            ZERO);
+        } else if constexpr (M::Dim == Dim::_2D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(xi_min[0], xi_max[0]),
+                                            std::make_pair(xi_min[1], xi_max[1]),
+                                            comp),
+                            ZERO);
+        } else if constexpr (M::Dim == Dim::_3D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(xi_min[0], xi_max[0]),
+                                            std::make_pair(xi_min[1], xi_max[1]),
+                                            std::make_pair(xi_min[2], xi_max[2]),
+                                            comp),
+                            ZERO);
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
       }
     }
 
