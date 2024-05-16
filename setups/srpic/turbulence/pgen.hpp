@@ -229,13 +229,6 @@ namespace user {
           }, pkin_en_total);
     }
 
-    auto benrg_total = ZERO;
-    auto emfields = domain.fields.em;
-    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& benrg) {
-      benrg += (SQR(emfields(i1, i2, i3, em::bx1)) + SQR(emfields(i1, i2, i3, em::bx2)) + SQR(emfields(i1, i2, i3, em::bx3)))*HALF;
-    }, benrg_total);
-
-
     std::ofstream myfile;
     if (time == 0) {
     myfile.open ("fextenrg.txt");
@@ -252,6 +245,38 @@ namespace user {
     }
     myfile << pkin_en_total << std::endl;
     myfile.close();
+
+if constexpr (D == Dim::_3D) {
+
+    auto benrg_total = ZERO;
+    auto EB = domain.fields.em;
+    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& benrg) {
+      benrg += (SQR(EB(i1, i2, i3, em::bx1)) + SQR(EB(i1, i2, i3, em::bx2)) + SQR(EB(i1, i2, i3, em::bx3)))*HALF;
+    }, benrg_total);
+
+    if (time == 0) {
+    myfile.open ("bsqenrg.txt");
+    } else {
+    myfile.open ("bsqenrg.txt", std::ios_base::app);
+    }
+    myfile << benrg_total << std::endl;
+    myfile.close();
+
+    auto eenrg_total = ZERO;
+    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& eenrg) {
+      eenrg += (SQR(EB(i1, i2, i3, em::ex1)) + SQR(EB(i1, i2, i3, em::ex2)) + SQR(EB(i1, i2, i3, em::ex3)))*HALF;
+    }, eenrg_total);
+
+    if (time == 0) {
+    myfile.open ("esqenrg.txt");
+    } else {
+    myfile.open ("esqenrg.txt", std::ios_base::app);
+    }
+    myfile << eenrg_total << std::endl;
+    myfile.close();
+
+}
+
 
     }
   };
