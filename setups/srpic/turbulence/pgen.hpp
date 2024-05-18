@@ -254,12 +254,12 @@ namespace user {
           ClassLambda(index_t p, real_t & pkin_en) {
             pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
                         ONE) *
-                       weight(p) / params.template get<real_t>("scales.n0");
+                       weight(p);
           },
           pkin_en_total);
       }
-
-      printf("%d", params.template get<real_t>("scales.n0"));
+      // Weight the macroparticle integral by sim parameters
+      pkin_en_total /= params.template get<real_t>("scales.n0");
 
       std::ofstream myfile;
       if (time == 0) {
