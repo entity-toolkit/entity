@@ -13,8 +13,8 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 enum {
   REAL = 0,
@@ -36,8 +36,9 @@ namespace user {
 
     ExtForce() = default;
 
-    Inline auto fx1(const unsigned short&, const real_t&, const coord_t<D>& x_Ph) const
-      -> real_t {
+    Inline auto fx1(const unsigned short&,
+                    const real_t&,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t k01 = ONE * constant::TWO_PI / sx1;
       real_t k02 = ZERO * constant::TWO_PI / sx2;
       real_t k03 = ZERO * constant::TWO_PI / sx3;
@@ -60,8 +61,9 @@ namespace user {
                 math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
     }
 
-    Inline auto fx2(const unsigned short&, const real_t&, const coord_t<D>& x_Ph) const
-      -> real_t {
+    Inline auto fx2(const unsigned short&,
+                    const real_t&,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t k01 = ONE * constant::TWO_PI / sx1;
       real_t k02 = ZERO * constant::TWO_PI / sx2;
       real_t k03 = ZERO * constant::TWO_PI / sx3;
@@ -84,8 +86,9 @@ namespace user {
                 math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
     }
 
-    Inline auto fx3(const unsigned short&, const real_t&, const coord_t<D>& x_Ph) const
-      -> real_t {
+    Inline auto fx3(const unsigned short&,
+                    const real_t&,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t k01 = ONE * constant::TWO_PI / sx1;
       real_t k02 = ZERO * constant::TWO_PI / sx2;
       real_t k03 = ZERO * constant::TWO_PI / sx3;
@@ -167,17 +170,38 @@ namespace user {
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature);
-      const auto injector    = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 });
-      const real_t ndens = 1.0;
-      arch::InjectUniform<S, M, decltype(injector)>(params,
-                                                    local_domain,
-                                                    injector,
-                                                    ndens);
+      {
+        const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                        local_domain.random_pool,
+                                                        temperature);
+        const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+          energy_dist,
+          { 1, 2 });
+        const real_t ndens = 1.0;
+        arch::InjectUniform<S, M, decltype(injector)>(params,
+                                                      local_domain,
+                                                      injector,
+                                                      ndens);
+      }
+
+      {
+        const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                        local_domain.random_pool,
+                                                        temperature*10);        
+        // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+        //                                                 local_domain.random_pool,
+        //                                                 temperature * 2,
+        //                                                 10.0,
+        //                                                 1);
+        const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+          energy_dist,
+          { 1, 2 });
+        const real_t ndens = 0.01;
+        arch::InjectUniform<S, M, decltype(injector)>(params,
+                                                      local_domain,
+                                                      injector,
+                                                      ndens);
+      }
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
@@ -205,79 +229,112 @@ namespace user {
                                 uni * sigma0;
         });
 
-    auto fext_en_total = ZERO;
-    for (auto& species : domain.species) {
-      auto pld = species.pld[0];
-      auto weight = species.weight;
+      auto fext_en_total = ZERO;
+      for (auto& species : domain.species) {
+        auto pld    = species.pld[0];
+        auto weight = species.weight;
         Kokkos::parallel_reduce(
           "ExtForceEnrg",
-          species.rangeActiveParticles(), ClassLambda(index_t p, real_t& fext_en) {
-            fext_en += pld(p)*weight(p);
-          }, fext_en_total);
-    }
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p, real_t & fext_en) {
+            fext_en += pld(p) * weight(p);
+          },
+          fext_en_total);
+      }
 
-    auto pkin_en_total = ZERO;
-    for (auto& species : domain.species) {
-      auto ux1 = species.ux1;
-      auto ux2 = species.ux2;
-      auto ux3 = species.ux3;
-      auto weight = species.weight;
+      auto pkin_en_total = ZERO;
+      for (auto& species : domain.species) {
+        auto ux1    = species.ux1;
+        auto ux2    = species.ux2;
+        auto ux3    = species.ux3;
+        auto weight = species.weight;
         Kokkos::parallel_reduce(
           "KinEnrg",
-          species.rangeActiveParticles(), ClassLambda(index_t p, real_t& pkin_en) {
-            pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) - ONE )*weight(p);
-          }, pkin_en_total);
-    }
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p, real_t & pkin_en) {
+            pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
+                        ONE) *
+                       weight(p) / params.template get<real_t>("scales.n0");
+          },
+          pkin_en_total);
+      }
 
-    std::ofstream myfile;
-    if (time == 0) {
-    myfile.open ("fextenrg.txt");
-    } else {
-    myfile.open ("fextenrg.txt", std::ios_base::app);
-    }
-    myfile << fext_en_total << std::endl;
-    myfile.close();
+      printf("%d", params.template get<real_t>("scales.n0"));
 
-    if (time == 0) {
-    myfile.open ("kenrg.txt");
-    } else {
-    myfile.open ("kenrg.txt", std::ios_base::app);
-    }
-    myfile << pkin_en_total << std::endl;
-    myfile.close();
+      std::ofstream myfile;
+      if (time == 0) {
+        myfile.open("fextenrg.txt");
+      } else {
+        myfile.open("fextenrg.txt", std::ios_base::app);
+      }
+      myfile << fext_en_total << std::endl;
+      myfile.close();
 
-if constexpr (D == Dim::_3D) {
+      if (time == 0) {
+        myfile.open("kenrg.txt");
+      } else {
+        myfile.open("kenrg.txt", std::ios_base::app);
+      }
+      myfile << pkin_en_total << std::endl;
+      myfile.close();
 
-    auto benrg_total = ZERO;
-    auto EB = domain.fields.em;
-    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& benrg) {
-      benrg += (SQR(EB(i1, i2, i3, em::bx1)) + SQR(EB(i1, i2, i3, em::bx2)) + SQR(EB(i1, i2, i3, em::bx3)))*HALF;
-    }, benrg_total);
+      if constexpr (D == Dim::_3D) {
+        
+        auto metric = domain.mesh.metric;
+        
+        auto benrg_total = ZERO;
+        auto EB          = domain.fields.em;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, index_t i3, real_t & benrg) {
+            coord_t<Dim::_3D> x_Cd { ZERO };
+            vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, i3, em::bx1),
+                                      EB(i1, i2, i3, em::bx2),
+                                      EB(i1, i2, i3, em::bx3) };
+            vec_t<Dim::_3D>   b_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd,
+                                                                  b_Cntrv,
+                                                                  b_XYZ);
+            benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
+          },
+          benrg_total);
+        benrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
 
-    if (time == 0) {
-    myfile.open ("bsqenrg.txt");
-    } else {
-    myfile.open ("bsqenrg.txt", std::ios_base::app);
-    }
-    myfile << benrg_total << std::endl;
-    myfile.close();
+        if (time == 0) {
+          myfile.open("bsqenrg.txt");
+        } else {
+          myfile.open("bsqenrg.txt", std::ios_base::app);
+        }
+        myfile << benrg_total << std::endl;
+        myfile.close();
+        auto eenrg_total = ZERO;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, index_t i3, real_t & eenrg) {
+            coord_t<Dim::_3D> x_Cd { ZERO };
+            vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
+                                      EB(i1, i2, i3, em::ex2),
+                                      EB(i1, i2, i3, em::ex3) };
+            vec_t<Dim::_3D>   e_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd,
+                                                                  e_Cntrv,
+                                                                  e_XYZ);            
+            eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
+          },
+          eenrg_total);
+        eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
+  
 
-    auto eenrg_total = ZERO;
-    Kokkos::parallel_reduce("BEnrg", domain.mesh.rangeActiveCells(), Lambda(index_t i1, index_t i2, index_t i3, real_t& eenrg) {
-      eenrg += (SQR(EB(i1, i2, i3, em::ex1)) + SQR(EB(i1, i2, i3, em::ex2)) + SQR(EB(i1, i2, i3, em::ex3)))*HALF;
-    }, eenrg_total);
-
-    if (time == 0) {
-    myfile.open ("esqenrg.txt");
-    } else {
-    myfile.open ("esqenrg.txt", std::ios_base::app);
-    }
-    myfile << eenrg_total << std::endl;
-    myfile.close();
-
-}
-
-
+        if (time == 0) {
+          myfile.open("esqenrg.txt");
+        } else {
+          myfile.open("esqenrg.txt", std::ios_base::app);
+        }
+        myfile << eenrg_total << std::endl;
+        myfile.close();
+      }
     }
   };
 
