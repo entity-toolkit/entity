@@ -93,10 +93,7 @@ namespace arch {
     // Juttner-Synge distribution
     Inline void JS(vec_t<Dim::_3D>& v, const real_t& temp) const {
       auto   rand_gen = pool.get_state();
-      real_t randu { Random<real_t>(rand_gen) },
-        randeta { Random<real_t>(rand_gen) };
-      real_t randX1 { Random<real_t>(rand_gen) },
-        randX2 { Random<real_t>(rand_gen) };
+      real_t randX1, randX2;
       if (temp < static_cast<real_t>(0.5)) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
 
@@ -126,7 +123,8 @@ namespace arch {
 
       } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
-        randu = ONE;
+        auto randu   = ONE;
+        auto randeta = Random<real_t>(rand_gen);
         while (SQR(randeta) <= SQR(randu) + ONE) {
           randX1 = Random<real_t>(rand_gen) * Random<real_t>(rand_gen) *
                    Random<real_t>(rand_gen);
@@ -157,14 +155,14 @@ namespace arch {
       const auto boost_dir = static_cast<unsigned short>(boost_direction);
       const auto boost_beta { boost_velocity /
                               math::sqrt(ONE + SQR(boost_velocity)) };
-      const auto boost_gamma { boost_velocity / boost_beta };
       const auto gamma { U2GAMMA(v[0], v[1], v[2]) };
       auto       rand_gen = pool.get_state();
       if (-boost_beta * v[boost_dir] > gamma * Random<real_t>(rand_gen)) {
         v[boost_dir] = -v[boost_dir];
       }
       pool.free_state(rand_gen);
-      v[boost_dir] = boost_gamma * (v[boost_dir] + boost_beta * gamma);
+      v[boost_dir] = math::sqrt(ONE + SQR(boost_velocity)) *
+                     (v[boost_dir] + boost_beta * gamma);
     }
 
     Inline void operator()(const coord_t<M::Dim>& x_Code,

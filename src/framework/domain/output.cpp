@@ -260,6 +260,9 @@ namespace ntt {
           } else {
             raise::Error("Wrong moment requested for output", HERE);
           }
+          SynchronizeFields(*local_domain,
+                            Comm::Bckp,
+                            { addresses.back(), addresses.back() + 1 });
         } else {
           raise::Error("Wrong # of components requested for non-moment output",
                        HERE);
@@ -283,6 +286,12 @@ namespace ntt {
                                             local_domain->fields.bckp,
                                             c);
           }
+          raise::ErrorIf(addresses[1] - addresses[0] != addresses[2] - addresses[1],
+                         "Indices for the backup are not contiguous",
+                         HERE);
+          SynchronizeFields(*local_domain,
+                            Comm::Bckp,
+                            { addresses[0], addresses[2] + 1 });
         } else {
           // copy fields to bckp (:, 0, 1, 2)
           // if as-is specified ==> copy directly to 3, 4, 5
@@ -367,6 +376,9 @@ namespace ntt {
                                           local_domain->fields.bckp,
                                           c);
         }
+        SynchronizeFields(*local_domain,
+                          Comm::Bckp,
+                          { addresses[0], addresses[5] + 1 });
       } else {
         raise::Error("Wrong # of components requested for output", HERE);
       }

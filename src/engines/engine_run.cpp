@@ -47,7 +47,9 @@ namespace ntt {
         };
 #endif
 
-      auto time_history = pbar::DurationHistory { 1000 };
+      auto       time_history  = pbar::DurationHistory { 1000 };
+      const auto sort_interval = m_params.template get<std::size_t>(
+        "particles.sort_interval");
 
       // main algorithm loop
       while (step < max_steps) {
@@ -64,9 +66,7 @@ namespace ntt {
           });
           timers.stop("Custom");
         }
-        auto print_sorting = (step % m_params.template get<std::size_t>(
-                                       "particles.sort_interval") ==
-                              0);
+        auto print_sorting = (sort_interval > 0 and step % sort_interval == 0);
 
         // advance time & timestep
         ++step;

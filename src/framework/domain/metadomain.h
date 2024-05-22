@@ -80,7 +80,9 @@ namespace ntt {
       }
     }
 
-    void Communicate(Domain<S, M>&, CommTags, timer::Timers* = nullptr);
+    void CommunicateFields(Domain<S, M>&, CommTags);
+    void SynchronizeFields(Domain<S, M>&, CommTags, const range_tuple_t& = { 0, 0 });
+    void CommunicateParticles(Domain<S, M>&, timer::Timers*);
 
     /**
      * @param global_ndomains total number of domains

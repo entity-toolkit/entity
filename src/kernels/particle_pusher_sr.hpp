@@ -221,6 +221,7 @@ namespace kernel::sr {
     bool         is_reflect_i1min { false }, is_reflect_i1max { false };
     bool         is_reflect_i2min { false }, is_reflect_i2max { false };
     bool         is_reflect_i3min { false }, is_reflect_i3max { false };
+    bool         is_axis_i2min { false }, is_axis_i2max { false };
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
     // synchrotron cooling parameters
@@ -303,10 +304,8 @@ namespace kernel::sr {
                         (boundaries[0].second == PrtlBC::ABSORB);
       is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
       is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
-      is_reflect_i1min  = (boundaries[0].first == PrtlBC::AXIS) ||
-                         (boundaries[0].first == PrtlBC::REFLECT);
-      is_reflect_i1max = (boundaries[0].second == PrtlBC::AXIS) ||
-                         (boundaries[0].second == PrtlBC::REFLECT);
+      is_reflect_i1min  = (boundaries[0].first == PrtlBC::REFLECT);
+      is_reflect_i1max  = (boundaries[0].second == PrtlBC::REFLECT);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_absorb_i2min = (boundaries[1].first == PrtlBC::ATMOSPHERE) ||
@@ -315,10 +314,10 @@ namespace kernel::sr {
                           (boundaries[1].second == PrtlBC::ABSORB);
         is_periodic_i2min = (boundaries[1].first == PrtlBC::PERIODIC);
         is_periodic_i2max = (boundaries[1].second == PrtlBC::PERIODIC);
-        is_reflect_i2min  = (boundaries[1].first == PrtlBC::AXIS) ||
-                           (boundaries[1].first == PrtlBC::REFLECT);
-        is_reflect_i2max = (boundaries[1].second == PrtlBC::AXIS) ||
-                           (boundaries[1].second == PrtlBC::REFLECT);
+        is_reflect_i2min  = (boundaries[1].first == PrtlBC::REFLECT);
+        is_reflect_i2max  = (boundaries[1].second == PrtlBC::REFLECT);
+        is_axis_i2min     = (boundaries[1].first == PrtlBC::AXIS);
+        is_axis_i2max     = (boundaries[1].second == PrtlBC::AXIS);
       }
       if constexpr (D == Dim::_3D) {
         raise::ErrorIf(boundaries.size() < 3, "boundaries defined incorrectly", HERE);
@@ -328,10 +327,8 @@ namespace kernel::sr {
                           (boundaries[2].second == PrtlBC::ABSORB);
         is_periodic_i3min = (boundaries[2].first == PrtlBC::PERIODIC);
         is_periodic_i3max = (boundaries[2].second == PrtlBC::PERIODIC);
-        is_reflect_i3min  = (boundaries[2].first == PrtlBC::AXIS) ||
-                           (boundaries[2].first == PrtlBC::REFLECT);
-        is_reflect_i3max = (boundaries[2].second == PrtlBC::AXIS) ||
-                           (boundaries[2].second == PrtlBC::REFLECT);
+        is_reflect_i3min  = (boundaries[2].first == PrtlBC::REFLECT);
+        is_reflect_i3max  = (boundaries[2].second == PrtlBC::REFLECT);
       }
     }
 
@@ -606,7 +603,7 @@ namespace kernel::sr {
         dx3_prev(p) = dx3(p);
         from_Xi_to_i_di(xp[2], i3(p), dx3(p));
       }
-      boundaryConditions(p);
+      boundaryConditions(p, xp);
     }
 
     /**
@@ -1052,8 +1049,9 @@ namespace kernel::sr {
     }
 
     // Extra
-    Inline void boundaryConditions(index_t& p) const {
+    Inline void boundaryConditions(index_t& p, coord_t<M::PrtlDim>& xp) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+        auto invert_vel = false;
         if (i1(p) < 0) {
           if (is_periodic_i1min) {
             i1(p)      += ni1;
@@ -1061,8 +1059,9 @@ namespace kernel::sr {
           } else if (is_absorb_i1min) {
             tag(p) = ParticleTag::dead;
           } else if (is_reflect_i1min) {
-            i1(p)  = 0;
-            dx1(p) = ONE - dx1(p);
+            i1(p)      = 0;
+            dx1(p)     = ONE - dx1(p);
+            invert_vel = true;
           }
         } else if (i1(p) >= ni1) {
           if (is_periodic_i1max) {
@@ -1071,12 +1070,30 @@ namespace kernel::sr {
           } else if (is_absorb_i1max) {
             tag(p) = ParticleTag::dead;
           } else if (is_reflect_i1max) {
-            i1(p)  = ni1 - 1;
-            dx1(p) = ONE - dx1(p);
+            i1(p)      = ni1 - 1;
+            dx1(p)     = ONE - dx1(p);
+            invert_vel = true;
+          }
+        }
+        if (invert_vel) {
+          if constexpr (M::CoordType == Coord::Cart) {
+            ux1(p) = -ux1(p);
+          } else {
+            vec_t<Dim::_3D> v { ZERO };
+            metric.template transform_xyz<Idx::XYZ, Idx::U>(
+              xp,
+              { ux1(p), ux2(p), ux3(p) },
+              v);
+            v[0] = -v[0];
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(
+              xp,
+              v,
+              { ux1(p), ux2(p), ux3(p) });
           }
         }
       }
       if constexpr (D == Dim::_2D || D == Dim::_3D) {
+        auto invert_vel = false;
         if (i2(p) < 0) {
           if (is_periodic_i2min) {
             i2(p)      += ni2;
@@ -1084,6 +1101,10 @@ namespace kernel::sr {
           } else if (is_absorb_i2min) {
             tag(p) = ParticleTag::dead;
           } else if (is_reflect_i2min) {
+            i2(p)      = 0;
+            dx2(p)     = ONE - dx2(p);
+            invert_vel = true;
+          } else if (is_axis_i2min) {
             i2(p)  = 0;
             dx2(p) = ONE - dx2(p);
           }
@@ -1094,12 +1115,33 @@ namespace kernel::sr {
           } else if (is_absorb_i2max) {
             tag(p) = ParticleTag::dead;
           } else if (is_reflect_i2max) {
+            i2(p)      = ni2 - 1;
+            dx2(p)     = ONE - dx2(p);
+            invert_vel = true;
+          } else if (is_axis_i2max) {
             i2(p)  = ni2 - 1;
             dx2(p) = ONE - dx2(p);
           }
         }
+        if (invert_vel) {
+          if constexpr (M::CoordType == Coord::Cart) {
+            ux2(p) = -ux2(p);
+          } else {
+            vec_t<Dim::_3D> v { ZERO };
+            metric.template transform_xyz<Idx::XYZ, Idx::U>(
+              xp,
+              { ux1(p), ux2(p), ux3(p) },
+              v);
+            v[1] = -v[1];
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(
+              xp,
+              v,
+              { ux1(p), ux2(p), ux3(p) });
+          }
+        }
       }
       if constexpr (D == Dim::_3D) {
+        auto invert_vel = false;
         if (i3(p) < 0) {
           if (is_periodic_i3min) {
             i3(p)      += ni3;
@@ -1107,8 +1149,9 @@ namespace kernel::sr {
           } else if (is_absorb_i3min) {
             tag(p) = ParticleTag::dead;
           } else if (is_reflect_i3min) {
-            i3(p)  = 0;
-            dx3(p) = ONE - dx3(p);
+            i3(p)      = 0;
+            dx3(p)     = ONE - dx3(p);
+            invert_vel = true;
           }
         } else if (i3(p) >= ni3) {
           if (is_periodic_i3max) {
@@ -1117,8 +1160,25 @@ namespace kernel::sr {
           } else if (is_absorb_i3max) {
             tag(p) = ParticleTag::dead;
           } else if (is_reflect_i3max) {
-            i3(p)  = ni3 - 1;
-            dx3(p) = ONE - dx3(p);
+            i3(p)      = ni3 - 1;
+            dx3(p)     = ONE - dx3(p);
+            invert_vel = true;
+          }
+        }
+        if (invert_vel) {
+          if constexpr (M::CoordType == Coord::Cart) {
+            ux3(p) = -ux3(p);
+          } else {
+            vec_t<Dim::_3D> v { ZERO };
+            metric.template transform_xyz<Idx::XYZ, Idx::U>(
+              xp,
+              { ux1(p), ux2(p), ux3(p) },
+              v);
+            v[2] = -v[2];
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(
+              xp,
+              v,
+              { ux1(p), ux2(p), ux3(p) });
           }
         }
       }

@@ -84,7 +84,7 @@ namespace ntt {
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
-        m_metadomain.Communicate(dom, Comm::B | Comm::E);
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::E);
         FieldBoundaries(dom, BC::B | BC::E);
       }
 
@@ -94,7 +94,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::B);
+        m_metadomain.CommunicateFields(dom, Comm::B);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -114,8 +114,8 @@ namespace ntt {
           timers.stop("CurrentDeposit");
 
           timers.start("Communications");
-          m_metadomain.Communicate(dom, Comm::J_sync);
-          m_metadomain.Communicate(dom, Comm::J);
+          m_metadomain.SynchronizeFields(dom, Comm::J);
+          // m_metadomain.CommunicateFields(dom, Comm::J);
           timers.stop("Communications");
 
           timers.start("CurrentFiltering");
@@ -124,10 +124,9 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom,
-                                 (step % sort_interval == 0) ? Comm::Prtl
-                                                             : Comm::None,
-                                 &timers);
+        if ((sort_interval > 0) and (step % sort_interval == 0)) {
+          m_metadomain.CommunicateParticles(dom, &timers);
+        }
         timers.stop("Communications");
       }
 
@@ -137,7 +136,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::B);
+        m_metadomain.CommunicateFields(dom, Comm::B);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -155,7 +154,7 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::E | Comm::J);
+        m_metadomain.CommunicateFields(dom, Comm::E | Comm::J);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -770,9 +769,9 @@ namespace ntt {
       if constexpr (M::Dim == Dim::_3D) {
         size[2] = domain.mesh.n_active(in::x3);
       }
-      auto sync = 0;
+      // auto sync = 0;
       for (unsigned short i = 0; i < nfilter; ++i) {
-        ++sync;
+        // ++sync;
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",
                              range,
@@ -781,10 +780,10 @@ namespace ntt {
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
-        if (sync == N_GHOSTS) {
-          sync = 0;
-          m_metadomain.Communicate(domain, Comm::J);
-        }
+        // if (sync == N_GHOSTS) {
+        //   sync = 0;
+        m_metadomain.CommunicateFields(domain, Comm::J);
+        // }
       }
     }
 

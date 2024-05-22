@@ -23,9 +23,14 @@
 namespace comm {
   using namespace ntt;
 
+  /**
+   * @note: Send `fld`, recv to `fld_buff`
+   * @note: `fld` and `fld_buff` may be the same
+   */
   template <Dimension D, int N>
   inline void CommunicateField(unsigned int                      idx,
                                ndfield_t<D, N>&                  fld,
+                               ndfield_t<D, N>&                  fld_buff,
                                unsigned int                      send_idx,
                                unsigned int                      recv_idx,
                                int                               send_rank,
@@ -67,7 +72,7 @@ namespace comm {
               { recv_slice[0].first, comps.first },
               { recv_slice[0].second, comps.second }),
             Lambda(index_t i1, index_t ci) {
-              fld(i1, ci) += fld(i1 - offset_x1, ci);
+              fld_buff(i1, ci) += fld(i1 - offset_x1, ci);
             });
         } else if constexpr (D == Dim::_2D) {
           const auto offset_x1 = (long int)(recv_slice[0].first) -
@@ -80,7 +85,7 @@ namespace comm {
               { recv_slice[0].first, recv_slice[1].first, comps.first },
               { recv_slice[0].second, recv_slice[1].second, comps.second }),
             Lambda(index_t i1, index_t i2, index_t ci) {
-              fld(i1, i2, ci) += fld(i1 - offset_x1, i2 - offset_x2, ci);
+              fld_buff(i1, i2, ci) += fld(i1 - offset_x1, i2 - offset_x2, ci);
             });
         } else if constexpr (D == Dim::_3D) {
           const auto offset_x1 = (long int)(recv_slice[0].first) -
@@ -101,10 +106,10 @@ namespace comm {
                 recv_slice[2].second,
                 comps.second }),
             Lambda(index_t i1, index_t i2, index_t i3, index_t ci) {
-              fld(i1, i2, i3, ci) += fld(i1 - offset_x1,
-                                         i2 - offset_x2,
-                                         i3 - offset_x3,
-                                         ci);
+              fld_buff(i1, i2, i3, ci) += fld(i1 - offset_x1,
+                                              i2 - offset_x2,
+                                              i3 - offset_x3,
+                                              ci);
             });
         }
       }
