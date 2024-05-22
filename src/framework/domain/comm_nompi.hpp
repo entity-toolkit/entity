@@ -50,6 +50,7 @@ namespace comm {
                      HERE);
       // sending/recv to/from self
       if (not additive) {
+        // simply filling the ghost cells
         if constexpr (D == Dim::_1D) {
           Kokkos::deep_copy(Kokkos::subview(fld, recv_slice[0], comps),
                             Kokkos::subview(fld, send_slice[0], comps));
@@ -63,6 +64,7 @@ namespace comm {
             Kokkos::subview(fld, send_slice[0], send_slice[1], send_slice[2], comps));
         }
       } else {
+        // adding received fields to ghosts + active
         if constexpr (D == Dim::_1D) {
           const auto offset_x1 = (long int)(recv_slice[0].first) -
                                  (long int)(send_slice[0].first);
@@ -113,9 +115,7 @@ namespace comm {
             });
         }
       }
-    }
-
-    else {
+    } else {
       raise::Error("Multi domain without MPI is not supported yet", HERE);
     }
   }
