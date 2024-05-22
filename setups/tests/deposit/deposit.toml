@@ -4,7 +4,7 @@
   runtime = 1.0
 
 [grid]
-  resolution = [64, 64]
+  resolution = [256, 256]
   extent = [[0.0, 1.0], [0.0, 1.0]]
 
   [grid.metric]

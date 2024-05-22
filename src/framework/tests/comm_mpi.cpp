@@ -50,6 +50,11 @@ auto main(int argc, char* argv[]) -> int {
           fld_b2(i1, i2, 2) = 5.0;
         }
       });
+  } catch (std::exception& e) {
+    std::cerr << "Exception: " << e.what() << std::endl;
+    Kokkos::finalize();
+    return 1;
+  }
 
   Kokkos::finalize();
   return 0;
