@@ -33,6 +33,8 @@ if (${DEBUG})
   gen_test(metadomain)
 endif()
 gen_test(comm_nompi)
+gen_test(comm_mpi)
+
 
 # this test is only run manually to ensure ...
 # ... command line args are working properly ...
