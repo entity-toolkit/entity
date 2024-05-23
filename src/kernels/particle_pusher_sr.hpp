@@ -19,7 +19,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
