@@ -1078,16 +1078,16 @@ namespace kernel::sr {
           if constexpr (M::CoordType == Coord::Cart) {
             ux1(p) = -ux1(p);
           } else {
-            vec_t<Dim::_3D> v { ZERO };
+            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
             metric.template transform_xyz<Idx::XYZ, Idx::U>(
               xp,
               { ux1(p), ux2(p), ux3(p) },
               v);
             v[0] = -v[0];
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(
-              xp,
-              v,
-              { ux1(p), ux2(p), ux3(p) });
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, v, vXYZ);
+            ux1(p) = vXYZ[0];
+            ux2(p) = vXYZ[1];
+            ux3(p) = vXYZ[2];
           }
         }
       }
@@ -1126,16 +1126,16 @@ namespace kernel::sr {
           if constexpr (M::CoordType == Coord::Cart) {
             ux2(p) = -ux2(p);
           } else {
-            vec_t<Dim::_3D> v { ZERO };
+            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
             metric.template transform_xyz<Idx::XYZ, Idx::U>(
               xp,
               { ux1(p), ux2(p), ux3(p) },
               v);
             v[1] = -v[1];
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(
-              xp,
-              v,
-              { ux1(p), ux2(p), ux3(p) });
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, v, vXYZ);
+            ux1(p) = vXYZ[0];
+            ux2(p) = vXYZ[1];
+            ux3(p) = vXYZ[2];
           }
         }
       }
@@ -1168,16 +1168,16 @@ namespace kernel::sr {
           if constexpr (M::CoordType == Coord::Cart) {
             ux3(p) = -ux3(p);
           } else {
-            vec_t<Dim::_3D> v { ZERO };
+            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
             metric.template transform_xyz<Idx::XYZ, Idx::U>(
               xp,
               { ux1(p), ux2(p), ux3(p) },
               v);
             v[2] = -v[2];
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(
-              xp,
-              v,
-              { ux1(p), ux2(p), ux3(p) });
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, v, vXYZ);
+            ux1(p) = vXYZ[0];
+            ux2(p) = vXYZ[1];
+            ux3(p) = vXYZ[2];
           }
         }
       }
