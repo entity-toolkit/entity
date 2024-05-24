@@ -408,7 +408,7 @@ namespace ntt {
               "ParticlePusher",
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, false,
+                  pusher, has_gca, true,
                   cooling_tags,
                   domain.fields.em,
                   species.index(),
@@ -440,7 +440,7 @@ namespace ntt {
               "ParticlePusher",
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, false,
+                  pusher, has_gca, true,
                   cooling_tags,
                   domain.fields.em,
                   species.index(),
