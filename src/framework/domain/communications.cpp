@@ -291,14 +291,57 @@ namespace ntt {
     }
   }
 
+  template <Dimension D, int N>
+  void AddBufferedFields(ndfield_t<D, N>&     field,
+                         ndfield_t<D, N>&     buffer,
+                         const range_t<D>&    range_policy,
+                         const range_tuple_t& components) {
+    const auto cmin = components.first;
+    const auto cmax = components.second;
+    if constexpr (D == Dim::_1D) {
+      Kokkos::parallel_for(
+        "AddBufferedFields",
+        range_policy,
+        Lambda(index_t i1) {
+          for (auto c { cmin }; c < cmax; ++c) {
+            field(i1, c) += buffer(i1, c);
+          }
+        });
+    } else if constexpr (D == Dim::_2D) {
+      Kokkos::parallel_for(
+        "AddBufferedFields",
+        range_policy,
+        Lambda(index_t i1, index_t i2) {
+          for (auto c { cmin }; c < cmax; ++c) {
+            field(i1, i2, c) += buffer(i1, i2, c);
+          }
+        });
+    } else if constexpr (D == Dim::_3D) {
+      Kokkos::parallel_for(
+        "AddBuffers",
+        range_policy,
+        Lambda(index_t i1, index_t i2, index_t i3) {
+          for (auto c { cmin }; c < cmax; ++c) {
+            field(i1, i2, i3, c) += buffer(i1, i2, i3, c);
+          }
+        });
+    } else {
+      raise::Error("Wrong Dimension", HERE);
+    }
+  }
+
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>&        domain,
                                            CommTags             tags,
                                            const range_tuple_t& components) {
     const bool comm_j    = (tags & Comm::J);
     const bool comm_bckp = (tags & Comm::Bckp);
-    raise::ErrorIf(not(comm_j || comm_bckp),
+    const bool comm_buff = (tags & Comm::Buff);
+    raise::ErrorIf(not(comm_j || comm_bckp || comm_buff),
                    "SynchronizeFields called with no task or incorrect task",
+                   HERE);
+    raise::ErrorIf(comm_j and comm_buff,
+                   "SynchronizeFields cannot sync J and Buff at the same time",
                    HERE);
     const auto synchronize = true;
 
@@ -309,12 +352,47 @@ namespace ntt {
     if (comm_bckp) {
       comms += "Bckp ";
     }
+    if (comm_buff) {
+      comms += "Buff ";
+    }
     logger::Checkpoint(fmt::format("Synchronizing %s\n", comms.c_str()), HERE);
 
     auto comp_range_cur = range_tuple_t {};
     if (comm_j) {
       comp_range_cur = range_tuple_t(cur::jx1, cur::jx3 + 1);
       Kokkos::deep_copy(domain.fields.buff, ZERO);
+    }
+    ndfield_t<M::Dim, 6> bckp_recv;
+    ndfield_t<M::Dim, 3> buff_recv;
+    if (comm_bckp) {
+      if constexpr (M::Dim == Dim::_1D) {
+        bckp_recv = ndfield_t<M::Dim, 6> { "bckp_recv",
+                                           domain.fields.bckp.extent(0) };
+      } else if constexpr (M::Dim == Dim::_2D) {
+        bckp_recv = ndfield_t<M::Dim, 6> { "bckp_recv",
+                                           domain.fields.bckp.extent(0),
+                                           domain.fields.bckp.extent(1) };
+      } else if constexpr (M::Dim == Dim::_3D) {
+        bckp_recv = ndfield_t<M::Dim, 6> { "bckp_recv",
+                                           domain.fields.bckp.extent(0),
+                                           domain.fields.bckp.extent(1),
+                                           domain.fields.bckp.extent(2) };
+      }
+    }
+    if (comm_buff) {
+      if constexpr (M::Dim == Dim::_1D) {
+        buff_recv = ndfield_t<M::Dim, 3> { "buff_recv",
+                                           domain.fields.buff.extent(0) };
+      } else if constexpr (M::Dim == Dim::_2D) {
+        buff_recv = ndfield_t<M::Dim, 3> { "buff_recv",
+                                           domain.fields.buff.extent(0),
+                                           domain.fields.buff.extent(1) };
+      } else if constexpr (M::Dim == Dim::_3D) {
+        buff_recv = ndfield_t<M::Dim, 3> { "buff_recv",
+                                           domain.fields.buff.extent(0),
+                                           domain.fields.buff.extent(1),
+                                           domain.fields.buff.extent(2) };
+      }
     }
     // traverse in all directions and sync the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
@@ -344,7 +422,20 @@ namespace ntt {
       if (comm_bckp) {
         comm::CommunicateField<M::Dim, 6>(domain.index(),
                                           domain.fields.bckp,
-                                          domain.fields.bckp,
+                                          bckp_recv,
+                                          send_idx,
+                                          recv_idx,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          components,
+                                          synchronize);
+      }
+      if (comm_buff) {
+        comm::CommunicateField<M::Dim, 3>(domain.index(),
+                                          domain.fields.buff,
+                                          buff_recv,
                                           send_idx,
                                           recv_idx,
                                           send_rank,
@@ -356,39 +447,22 @@ namespace ntt {
       }
     }
     if (comm_j) {
-      // add filled buffers to the main current array
-      auto currents = domain.fields.cur;
-      auto buffer   = domain.fields.buff;
-      if constexpr (M::Dim == Dim::_1D) {
-        Kokkos::parallel_for(
-          "AddBuffers",
-          domain.mesh.rangeAllCells(),
-          Lambda(index_t i1) {
-            for (const auto& c : { cur::jx1, cur::jx2, cur::jx3 }) {
-              currents(i1, c) += buffer(i1, c);
-            }
-          });
-      } else if constexpr (M::Dim == Dim::_2D) {
-        Kokkos::parallel_for(
-          "AddBuffers",
-          domain.mesh.rangeAllCells(),
-          Lambda(index_t i1, index_t i2) {
-            for (const auto& c : { cur::jx1, cur::jx2, cur::jx3 }) {
-              currents(i1, i2, c) += buffer(i1, i2, c);
-            }
-          });
-      } else if constexpr (M::Dim == Dim::_3D) {
-        Kokkos::parallel_for(
-          "AddBuffers",
-          domain.mesh.rangeAllCells(),
-          Lambda(index_t i1, index_t i2, index_t i3) {
-            for (const auto& c : { cur::jx1, cur::jx2, cur::jx3 }) {
-              currents(i1, i2, i3, c) += buffer(i1, i2, i3, c);
-            }
-          });
-      } else {
-        raise::Error("Wrong Dimension", HERE);
-      }
+      AddBufferedFields<M::Dim, 3>(domain.fields.cur,
+                                   domain.fields.buff,
+                                   domain.mesh.rangeActiveCells(),
+                                   comp_range_cur);
+    }
+    if (comm_bckp) {
+      AddBufferedFields<M::Dim, 6>(domain.fields.bckp,
+                                   bckp_recv,
+                                   domain.mesh.rangeActiveCells(),
+                                   components);
+    }
+    if (comm_buff) {
+      AddBufferedFields<M::Dim, 3>(domain.fields.buff,
+                                   buff_recv,
+                                   domain.mesh.rangeActiveCells(),
+                                   components);
     }
   }
 

@@ -117,23 +117,35 @@ namespace logger {
 namespace info {
   using namespace files;
 
-  inline void Print(const std::string& msg, bool stdout = true, bool once = true) {
+  inline void Print(const std::string& msg,
+                    bool               colored = true,
+                    bool               stdout  = true,
+                    bool               once    = true) {
     auto msg_nocol = color::strip(msg);
     if (once) {
       CallOnce(
-        [](auto& msg, auto& msg_nocol, auto& stdout) {
+        [](auto& msg, auto& msg_nocol, auto& stdout, auto& colored) {
           PLOGN_(InfoFile) << msg_nocol << std::flush;
           if (stdout) {
-            std::cout << msg << std::endl;
+            if (colored) {
+              std::cout << msg << std::endl;
+            } else {
+              std::cout << msg_nocol << std::endl;
+            }
           }
         },
         msg,
         msg_nocol,
-        stdout);
+        stdout,
+        colored);
     } else {
       PLOGN_(InfoFile) << msg_nocol << std::flush;
       if (stdout) {
-        std::cout << msg << std::endl;
+        if (colored) {
+          std::cout << msg << std::endl;
+        } else {
+          std::cout << msg_nocol << std::endl;
+        }
       }
     }
   }

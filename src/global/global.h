@@ -246,6 +246,7 @@ namespace Comm {
     B0   = 1 << 5,
     H    = 1 << 6,
     Bckp = 1 << 7,
+    Buff = 1 << 8,
   };
 } // namespace Comm
 

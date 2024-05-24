@@ -115,7 +115,6 @@ namespace ntt {
 
           timers.start("Communications");
           m_metadomain.SynchronizeFields(dom, Comm::J);
-          // m_metadomain.CommunicateFields(dom, Comm::J);
           timers.stop("Communications");
 
           timers.start("CurrentFiltering");
@@ -487,7 +486,7 @@ namespace ntt {
                             TWO;
 
           Kokkos::deep_copy(domain.fields.bckp, ZERO);
-          auto scatter_buff = Kokkos::Experimental::create_scatter_view(
+          auto scatter_bckp = Kokkos::Experimental::create_scatter_view(
             domain.fields.bckp);
           const auto use_weights = M::CoordType != Coord::Cart;
           const auto ni2         = domain.mesh.n_active(in::x2);
@@ -498,35 +497,24 @@ namespace ntt {
                std::vector<unsigned short>({ species.first, species.second })) {
             // !TODO: smooth this and communicate
             auto& prtl_spec = domain.species[sp - 1];
+            // clang-format off
             Kokkos::parallel_for(
               "ComputeMoments",
               prtl_spec.rangeActiveParticles(),
               kernel::ParticleMoments_kernel<SimEngine::SRPIC, M, FldsID::Rho, 6>(
-                {},
-                scatter_buff,
-                0,
-                prtl_spec.i1,
-                prtl_spec.i2,
-                prtl_spec.i3,
-                prtl_spec.dx1,
-                prtl_spec.dx2,
-                prtl_spec.dx3,
-                prtl_spec.ux1,
-                prtl_spec.ux2,
-                prtl_spec.ux3,
-                prtl_spec.phi,
-                prtl_spec.weight,
-                prtl_spec.tag,
-                prtl_spec.mass(),
-                prtl_spec.charge(),
+                {}, scatter_bckp, 0,
+                prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                prtl_spec.mass(), prtl_spec.charge(),
                 use_weights,
-                domain.mesh.metric,
-                domain.mesh.flds_bc(),
-                ni2,
-                inv_n0,
-                0));
+                domain.mesh.metric, domain.mesh.flds_bc(),
+                ni2, inv_n0, 0));
+            // clang-format on
           }
-          Kokkos::Experimental::contribute(domain.fields.bckp, scatter_buff);
+          Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
+          m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
 
           if (dim == in::x1) {
             if (sign > 0) {
