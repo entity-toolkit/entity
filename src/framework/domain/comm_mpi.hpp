@@ -50,11 +50,11 @@ namespace comm {
       "Multiple-domain single-rank communication not yet implemented",
       HERE);
 
-    if ((send_idx == idx) || (recv_idx == idx)) {
+    if ((send_idx == idx) and (recv_idx == idx)) {
       //  trivial copy if sending to self and receiving from self
-      raise::ErrorIf((recv_idx != idx) || (send_idx != idx),
-                     "Cannot send to self and receive from another domain",
-                     HERE);
+      // raise::ErrorIf((recv_idx != idx) || (send_idx != idx),
+      //                "Cannot send to self and receive from another domain",
+      //                HERE);
       if (not additive) {
         // simply filling the ghost cells
         if constexpr (D == Dim::_1D) {
