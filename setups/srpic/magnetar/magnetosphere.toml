@@ -3,6 +3,9 @@
   engine = "srpic"
   runtime = 60.0
 
+  [simulation.domain]
+    decomposition = [-1,2]
+
 [grid]
   resolution = [512, 256]
   extent = [[1.0, 10.0]]

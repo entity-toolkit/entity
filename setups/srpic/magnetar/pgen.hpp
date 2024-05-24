@@ -44,11 +44,11 @@ namespace user {
     }
 
     Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-      return Omega * bx2(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]);
+      return Omega * bx2(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * (538.1679523882938/(538.1679523882938 + math::cosh(48.86921905584123 - 80.*x_Ph[1])));
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      return -Omega * bx1(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]);
+      return -Omega * bx1(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * (538.1679523882938/(538.1679523882938 + math::cosh(48.86921905584123 - 80.*x_Ph[1])));
     }
 
     Inline auto ex3(const coord_t<D>&) const -> real_t {
@@ -87,7 +87,7 @@ namespace user {
     inline PGen() {}
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
-      return DriveFields<D> { time, Bsurf, Rstar, Omega };
+      return DriveFields<D> { time, Bsurf, Rstar, Omega * SQR(SQR(math::sin(0.25 * time * static_cast<real_t>(constant::TWO_PI))))};
     }
   };
 
