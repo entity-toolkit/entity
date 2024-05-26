@@ -7,9 +7,9 @@
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 
+#include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
-#include "archetypes/particle_injector.h"
 
 namespace user {
   using namespace ntt;
@@ -133,7 +133,13 @@ namespace user {
       //   }
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
-      return DriveFields<D> { time, Bsurf, Rstar, Omega * SQR(SQR(math::sin(0.25 * time * static_cast<real_t>(constant::TWO_PI))))};
+      return DriveFields<D> {
+        time,
+        Bsurf,
+        Rstar,
+        Omega *
+          SQR(SQR(math::sin(0.25 * time * static_cast<real_t>(constant::TWO_PI))))
+      };
     }
   };
 

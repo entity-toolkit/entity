@@ -115,6 +115,7 @@ namespace ntt {
 
           timers.start("Communications");
           m_metadomain.SynchronizeFields(dom, Comm::J);
+          m_metadomain.CommunicateFields(dom, Comm::J);
           timers.stop("Communications");
 
           timers.start("CurrentFiltering");
@@ -724,7 +725,7 @@ namespace ntt {
       range_t<M::Dim> range = domain.mesh.rangeActiveCells();
       if constexpr (M::CoordType != Coord::Cart) {
         /**
-         * @brief taking one extra cell in the x2 direction
+         * @brief taking one extra cell in the x2 direction if AXIS BCs
          *    . . . . .
          *    . ^= =^ .
          *    . |* *\*.
@@ -733,16 +734,20 @@ namespace ntt {
          *    . . . . .
          */
         if constexpr (M::Dim == Dim::_2D) {
-          range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
-            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          if (domain.mesh.flds_bc_in({ +1, 0 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_2D>(
+              { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          }
         } else if constexpr (M::Dim == Dim::_3D) {
-          range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
-                                                domain.mesh.i_min(in::x2),
-                                                domain.mesh.i_min(in::x3) },
-                                              { domain.mesh.i_max(in::x1),
-                                                domain.mesh.i_max(in::x2) + 1,
-                                                domain.mesh.i_max(in::x3) });
+          if (domain.mesh.flds_bc_in({ +1, 0, 0 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
+                                                  domain.mesh.i_min(in::x2),
+                                                  domain.mesh.i_min(in::x3) },
+                                                { domain.mesh.i_max(in::x1),
+                                                  domain.mesh.i_max(in::x2) + 1,
+                                                  domain.mesh.i_max(in::x3) });
+          }
         }
       }
       const auto nfilter = m_params.template get<unsigned short>(
@@ -757,9 +762,8 @@ namespace ntt {
       if constexpr (M::Dim == Dim::_3D) {
         size[2] = domain.mesh.n_active(in::x3);
       }
-      // auto sync = 0;
+      // !TODO: this needs to be done more efficiently
       for (unsigned short i = 0; i < nfilter; ++i) {
-        // ++sync;
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",
                              range,
@@ -768,10 +772,7 @@ namespace ntt {
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
-        // if (sync == N_GHOSTS) {
-        //   sync = 0;
         m_metadomain.CommunicateFields(domain, Comm::J);
-        // }
       }
     }
 
@@ -780,13 +781,19 @@ namespace ntt {
         if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
           AbsorbFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
-          AxisFieldsIn(direction, domain, tags);
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
+            AxisFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
           AtmosphereFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
-          ConductorFieldsIn(direction, domain, tags);
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+            ConductorFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
-          CustomFieldsIn(direction, domain, tags);
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
+            CustomFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
           raise::Error("HORIZON BCs only applicable for GR", HERE);
         }
