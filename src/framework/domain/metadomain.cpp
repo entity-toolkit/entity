@@ -301,7 +301,7 @@ namespace ntt {
             flds_bc = fldsbc_in_dir;
             break;
           } else if ((fldsbc_in_dir == FldsBC::PERIODIC) and
-                     (flds_bc != FldsBC::SYNC)) {
+                     (fldsbc_in_dir != FldsBC::SYNC)) {
             flds_bc = FldsBC::PERIODIC;
           } else if (fldsbc_in_dir == FldsBC::SYNC) {
             flds_bc = FldsBC::SYNC;
@@ -317,7 +317,7 @@ namespace ntt {
             prtl_bc = prtlbc_in_dir;
             break;
           } else if ((prtlbc_in_dir == PrtlBC::PERIODIC) and
-                     (prtl_bc != PrtlBC::SYNC)) {
+                     (prtlbc_in_dir != PrtlBC::SYNC)) {
             prtl_bc = PrtlBC::PERIODIC;
           } else if (prtlbc_in_dir == PrtlBC::SYNC) {
             prtl_bc = PrtlBC::SYNC;
