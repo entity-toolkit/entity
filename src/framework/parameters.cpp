@@ -405,7 +405,7 @@ namespace ntt {
     set("diagnostics.blocking_timers",
         toml::find_or(raw_data, "diagnostics", "blocking_timers", false));
     set("diagnostics.colored_stdout",
-        toml::find_or(raw_data, "diagnostics", "colored_stdout", true));
+        toml::find_or(raw_data, "diagnostics", "colored_stdout", false));
 
     /* inferred variables --------------------------------------------------- */
     // extent

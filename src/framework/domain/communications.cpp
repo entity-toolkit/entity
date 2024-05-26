@@ -24,20 +24,19 @@
   #include "framework/domain/comm_nompi.hpp"
 #endif
 
-#include <tuple>
 #include <utility>
 #include <vector>
 
 namespace ntt {
 
-  using comm_params_t = std::tuple<unsigned int, int, std::vector<range_tuple_t>>;
+  using address_t     = std::pair<unsigned int, int>;
+  using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvParams(Metadomain<S, M>*        metadomain,
-                         Domain<S, M>&            domain,
-                         dir::direction_t<M::Dim> direction,
-                         bool                     synchronize)
-    -> std::pair<comm_params_t, comm_params_t> {
+  auto GetSendRecvRanks(Metadomain<S, M>*        metadomain,
+                        Domain<S, M>&            domain,
+                        dir::direction_t<M::Dim> direction)
+    -> std::pair<address_t, address_t> {
     Domain<S, M>* send_to_nghbr_ptr   = nullptr;
     Domain<S, M>* recv_from_nghbr_ptr = nullptr;
     // set pointers to the correct send/recv domains
@@ -82,16 +81,54 @@ namespace ntt {
     } else {
       // no communication necessary
       return {
-        {0, 0, {}},
-        {0, 0, {}},
+        {0, -1},
+        {0, -1}
       };
-      // continue;
     }
-    const auto is_sending   = (send_to_nghbr_ptr != nullptr);
-    const auto is_receiving = (recv_from_nghbr_ptr != nullptr);
-    auto       send_slice   = std::vector<range_tuple_t> {};
-    auto       recv_slice   = std::vector<range_tuple_t> {};
-    const in   components[] = { in::x1, in::x2, in::x3 };
+#if defined(MPI_ENABLED)
+    const auto send_rank = (send_to_nghbr_ptr != nullptr)
+                             ? send_to_nghbr_ptr->mpi_rank()
+                             : -1;
+    const auto recv_rank = (recv_from_nghbr_ptr != nullptr)
+                             ? recv_from_nghbr_ptr->mpi_rank()
+                             : -1;
+#else
+    const auto send_rank = (send_to_nghbr_ptr != nullptr) ? 0 : -1;
+    const auto recv_rank = (recv_from_nghbr_ptr != nullptr) ? 0 : -1;
+#endif
+    const auto send_ind = (send_to_nghbr_ptr != nullptr)
+                            ? send_to_nghbr_ptr->index()
+                            : 0;
+    const auto recv_ind = (recv_from_nghbr_ptr != nullptr)
+                            ? recv_from_nghbr_ptr->index()
+                            : 0;
+    return {
+      {send_ind, send_rank},
+      {recv_ind, recv_rank}
+    };
+  }
+
+  template <SimEngine::type S, class M>
+  auto GetSendRecvParams(Metadomain<S, M>*        metadomain,
+                         Domain<S, M>&            domain,
+                         dir::direction_t<M::Dim> direction,
+                         bool                     synchronize)
+    -> std::pair<comm_params_t, comm_params_t> {
+    const auto [send_indrank,
+                recv_indrank] = GetSendRecvRanks(metadomain, domain, direction);
+    const auto [send_ind, send_rank] = send_indrank;
+    const auto [recv_ind, recv_rank] = recv_indrank;
+    const auto is_sending            = (send_rank >= 0);
+    const auto is_receiving          = (recv_rank >= 0);
+    if (not(is_sending or is_receiving)) {
+      return {
+        {{ 0, -1 }, {}},
+        {{ 0, -1 }, {}}
+      };
+    }
+    auto     send_slice   = std::vector<range_tuple_t> {};
+    auto     recv_slice   = std::vector<range_tuple_t> {};
+    const in components[] = { in::x1, in::x2, in::x3 };
     // find the field components and indices to be sent/received
     for (std::size_t d { 0 }; d < direction.size(); ++d) {
       const auto c   = components[d];
@@ -150,27 +187,10 @@ namespace ntt {
         }
       }
     }
-#if defined(MPI_ENABLED)
-    const auto send_rank = (send_to_nghbr_ptr != nullptr)
-                             ? send_to_nghbr_ptr->mpi_rank()
-                             : -1;
-    const auto recv_rank = (recv_from_nghbr_ptr != nullptr)
-                             ? recv_from_nghbr_ptr->mpi_rank()
-                             : -1;
-#else
-    const auto send_rank = (send_to_nghbr_ptr != nullptr) ? 0 : -1;
-    const auto recv_rank = (recv_from_nghbr_ptr != nullptr) ? 0 : -1;
-#endif
-    const auto send_idx = (send_to_nghbr_ptr != nullptr)
-                            ? send_to_nghbr_ptr->index()
-                            : 0;
-    const auto recv_idx = (recv_from_nghbr_ptr != nullptr)
-                            ? recv_from_nghbr_ptr->index()
-                            : 0;
 
     return {
-      {send_idx, send_rank, send_slice},
-      {recv_idx, recv_rank, recv_slice},
+      {{ send_ind, send_rank }, send_slice},
+      {{ recv_ind, recv_rank }, recv_slice},
     };
   }
 
@@ -237,22 +257,21 @@ namespace ntt {
     }
     // traverse in all directions and send/recv the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
-      auto [send_params,
-            recv_params] = GetSendRecvParams(this, domain, direction, false);
-      unsigned int               send_idx, recv_idx;
-      int                        send_rank, recv_rank;
-      std::vector<range_tuple_t> send_slice, recv_slice;
-      std::tie(send_idx, send_rank, send_slice) = send_params;
-      std::tie(recv_idx, recv_rank, recv_slice) = recv_params;
-      if (send_slice.size() == 0 and recv_slice.size() == 0) {
+      const auto [send_params,
+                  recv_params] = GetSendRecvParams(this, domain, direction, false);
+      const auto [send_indrank, send_slice] = send_params;
+      const auto [recv_indrank, recv_slice] = recv_params;
+      const auto [send_ind, send_rank]      = send_indrank;
+      const auto [recv_ind, recv_rank]      = recv_indrank;
+      if (send_rank < 0 and recv_rank < 0) {
         continue;
       }
       if (comm_em) {
         comm::CommunicateField<M::Dim, 6>(domain.index(),
                                           domain.fields.em,
                                           domain.fields.em,
-                                          send_idx,
-                                          recv_idx,
+                                          send_ind,
+                                          recv_ind,
                                           send_rank,
                                           recv_rank,
                                           send_slice,
@@ -265,8 +284,8 @@ namespace ntt {
           comm::CommunicateField<M::Dim, 6>(domain.index(),
                                             domain.fields.em0,
                                             domain.fields.em0,
-                                            send_idx,
-                                            recv_idx,
+                                            send_ind,
+                                            recv_ind,
                                             send_rank,
                                             recv_rank,
                                             send_slice,
@@ -279,8 +298,8 @@ namespace ntt {
         comm::CommunicateField<M::Dim, 3>(domain.index(),
                                           domain.fields.cur,
                                           domain.fields.cur,
-                                          send_idx,
-                                          recv_idx,
+                                          send_ind,
+                                          recv_ind,
                                           send_rank,
                                           recv_rank,
                                           send_slice,
@@ -396,22 +415,21 @@ namespace ntt {
     }
     // traverse in all directions and sync the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
-      auto [send_params,
-            recv_params] = GetSendRecvParams(this, domain, direction, true);
-      unsigned int               send_idx, recv_idx;
-      int                        send_rank, recv_rank;
-      std::vector<range_tuple_t> send_slice, recv_slice;
-      std::tie(send_idx, send_rank, send_slice) = send_params;
-      std::tie(recv_idx, recv_rank, recv_slice) = recv_params;
-      if (send_slice.size() == 0 and recv_slice.size() == 0) {
+      const auto [send_params,
+                  recv_params] = GetSendRecvParams(this, domain, direction, true);
+      const auto [send_indrank, send_slice] = send_params;
+      const auto [recv_indrank, recv_slice] = recv_params;
+      const auto [send_ind, send_rank]      = send_indrank;
+      const auto [recv_ind, recv_rank]      = recv_indrank;
+      if (send_rank < 0 and recv_rank < 0) {
         continue;
       }
       if (comm_j) {
         comm::CommunicateField<M::Dim, 3>(domain.index(),
                                           domain.fields.cur,
                                           domain.fields.buff,
-                                          send_idx,
-                                          recv_idx,
+                                          send_ind,
+                                          recv_ind,
                                           send_rank,
                                           recv_rank,
                                           send_slice,
@@ -423,8 +441,8 @@ namespace ntt {
         comm::CommunicateField<M::Dim, 6>(domain.index(),
                                           domain.fields.bckp,
                                           bckp_recv,
-                                          send_idx,
-                                          recv_idx,
+                                          send_ind,
+                                          recv_ind,
                                           send_rank,
                                           recv_rank,
                                           send_slice,
@@ -436,8 +454,8 @@ namespace ntt {
         comm::CommunicateField<M::Dim, 3>(domain.index(),
                                           domain.fields.buff,
                                           buff_recv,
-                                          send_idx,
-                                          recv_idx,
+                                          send_ind,
+                                          recv_ind,
                                           send_rank,
                                           recv_rank,
                                           send_slice,
@@ -501,58 +519,19 @@ namespace ntt {
       auto index_last = tag_offset[tag_offset.size() - 1] +
                         npart_per_tag[npart_per_tag.size() - 1];
       for (auto& direction : dir::Directions<D>::all) {
-        Domain<S, M>* send_to_nghbr_ptr   = nullptr;
-        Domain<S, M>* recv_from_nghbr_ptr = nullptr;
-        // set pointers to the correct send/recv domains
-        // can coincide with the current domain if periodic
-        if (domain.mesh.prtl_bc_in(direction) == PrtlBC::PERIODIC) {
-          // sending / receiving from itself
-          raise::ErrorIf(
-            domain.neighbor_idx_in(direction) != domain.index(),
-            "Periodic boundaries imply communication within the same domain",
-            HERE);
-          raise::ErrorIf(
-            domain.mesh.prtl_bc_in(-direction) != PrtlBC::PERIODIC,
-            "Periodic boundary conditions must be set in both directions",
-            HERE);
-          send_to_nghbr_ptr = recv_from_nghbr_ptr = &domain;
-        } else if (domain.mesh.prtl_bc_in(direction) == PrtlBC::SYNC) {
-          // sending to other domain
-          raise::ErrorIf(
-            domain.neighbor_idx_in(direction) == domain.index(),
-            "Sync boundaries imply communication between separate domains",
-            HERE);
-          send_to_nghbr_ptr = subdomain_ptr(domain.neighbor_idx_in(direction));
-          if (domain.mesh.prtl_bc_in(-direction) == PrtlBC::SYNC) {
-            // receiving from other domain
-            raise::ErrorIf(
-              domain.neighbor_idx_in(-direction) == domain.index(),
-              "Sync boundaries imply communication between separate domains",
-              HERE);
-            recv_from_nghbr_ptr = subdomain_ptr(domain.neighbor_idx_in(-direction));
-          }
-        } else if (domain.mesh.prtl_bc_in(-direction) == PrtlBC::SYNC) {
-          // only receiving from other domain
-          raise::ErrorIf(
-            domain.neighbor_idx_in(-direction) == domain.index(),
-            "Sync boundaries imply communication between separate domains",
-            HERE);
-          recv_from_nghbr_ptr = subdomain_ptr(domain.neighbor_idx_in(-direction));
-        } else {
-          // no communication necessary
+        const auto [send_params,
+                    recv_params] = GetSendRecvParams(this, domain, direction, true);
+        const auto [send_indrank, send_slice] = send_params;
+        const auto [recv_indrank, recv_slice] = recv_params;
+        const auto [send_ind, send_rank]      = send_indrank;
+        const auto [recv_ind, recv_rank]      = recv_indrank;
+        if (send_rank < 0 and recv_rank < 0) {
           continue;
         }
-
         const auto send_dir_tag = mpi::PrtlSendTag<D>::dir2tag(direction);
         const auto nsend        = npart_per_tag[send_dir_tag];
         const auto send_pmin    = tag_offset[send_dir_tag];
         const auto send_pmax    = tag_offset[send_dir_tag] + nsend;
-        const auto send_rank    = (send_to_nghbr_ptr != nullptr)
-                                    ? send_to_nghbr_ptr->mpi_rank()
-                                    : -1;
-        const auto recv_rank    = (recv_from_nghbr_ptr != nullptr)
-                                    ? recv_from_nghbr_ptr->mpi_rank()
-                                    : -1;
         const auto recv_count = comm::CommunicateParticles<M::Dim, M::CoordType>(
           species,
           send_rank,
@@ -563,7 +542,7 @@ namespace ntt {
           if constexpr (D == Dim::_1D) {
             int shift_in_x1 { 0 };
             if ((-direction)[0] == -1) {
-              shift_in_x1 = -recv_from_nghbr_ptr->mesh.n_active(in::x1);
+              shift_in_x1 = -subdomain(recv_ind).mesh.n_active(in::x1);
             } else if ((-direction)[0] == 1) {
               shift_in_x1 = domain.mesh.n_active(in::x1);
             }
@@ -581,12 +560,12 @@ namespace ntt {
           } else if constexpr (D == Dim::_2D) {
             int shift_in_x1 { 0 }, shift_in_x2 { 0 };
             if ((-direction)[0] == -1) {
-              shift_in_x1 = -recv_from_nghbr_ptr->mesh.n_active(in::x1);
+              shift_in_x1 = -subdomain(recv_ind).mesh.n_active(in::x1);
             } else if ((-direction)[0] == 1) {
               shift_in_x1 = domain.mesh.n_active()[0];
             }
             if ((-direction)[1] == -1) {
-              shift_in_x2 = -recv_from_nghbr_ptr->mesh.n_active(in::x2);
+              shift_in_x2 = -subdomain(recv_ind).mesh.n_active(in::x2);
             } else if ((-direction)[1] == 1) {
               shift_in_x2 = domain.mesh.n_active(in::x2);
             }
@@ -608,17 +587,17 @@ namespace ntt {
           } else if constexpr (D == Dim::_3D) {
             int shift_in_x1 { 0 }, shift_in_x2 { 0 }, shift_in_x3 { 0 };
             if ((-direction)[0] == -1) {
-              shift_in_x1 = -recv_from_nghbr_ptr->mesh.n_active(in::x1);
+              shift_in_x1 = -subdomain(recv_ind).mesh.n_active(in::x1);
             } else if ((-direction)[0] == 1) {
               shift_in_x1 = domain.mesh.n_active(in::x1);
             }
             if ((-direction)[1] == -1) {
-              shift_in_x2 = -recv_from_nghbr_ptr->mesh.n_active(in::x2);
+              shift_in_x2 = -subdomain(recv_ind).mesh.n_active(in::x2);
             } else if ((-direction)[1] == 1) {
               shift_in_x2 = domain.mesh.n_active(in::x2);
             }
             if ((-direction)[2] == -1) {
-              shift_in_x3 = -recv_from_nghbr_ptr->mesh.n_active(in::x3);
+              shift_in_x3 = -subdomain(recv_ind).mesh.n_active(in::x3);
             } else if ((-direction)[2] == 1) {
               shift_in_x3 = domain.mesh.n_active(in::x3);
             }
