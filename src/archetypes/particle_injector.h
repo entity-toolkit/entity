@@ -276,10 +276,14 @@ namespace arch {
     raise::ErrorIf((M::CoordType == Coord::Cart) && use_weights,
                    "Weights should not be used for Cartesian coordinates",
                    HERE);
-    raise::ErrorIf(params.template get<bool>("particles.use_weights") != use_weights,
-                   "Weights must be enabled from the input file to use them in "
-                   "the injector",
-                   HERE);
+    raise::ErrorIf(
+      params.template get<bool>("particles.use_weights") and not use_weights,
+      "Weights are enabled in the input but not enabled in the injector",
+      HERE);
+    raise::ErrorIf(
+      not params.template get<bool>("particles.use_weights") and use_weights,
+      "Weights are not enabled in the input but enabled in the injector",
+      HERE);
     if (domain.species[injector.species.first - 1].charge() +
           domain.species[injector.species.second - 1].charge() !=
         0.0f) {
