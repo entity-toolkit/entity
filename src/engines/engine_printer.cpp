@@ -370,7 +370,7 @@ namespace ntt {
           report,
           8 + 2 + 2 * M::Dim,
           fmt::format("%-10s  %-10s  %-10s", "[flds]", "[prtl]", "[neighbor]").c_str());
-        for (auto& direction : dir::Directions<M::Dim>::orth) {
+        for (auto& direction : dir::Directions<M::Dim>::all) {
           const auto flds_bc      = domain.mesh.flds_bc_in(direction);
           const auto prtl_bc      = domain.mesh.prtl_bc_in(direction);
           bool       has_sync     = false;

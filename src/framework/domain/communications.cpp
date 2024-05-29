@@ -45,7 +45,12 @@ namespace ntt {
       // sending / receiving from itself
       raise::ErrorIf(
         domain.neighbor_idx_in(direction) != domain.index(),
-        "Periodic boundaries imply communication within the same domain",
+        fmt::format(
+          "Periodic boundaries in `%s` imply communication within the "
+          "same domain, but %u != %u",
+          direction.to_string().c_str(),
+          domain.neighbor_idx_in(direction),
+          domain.index()),
         HERE);
       raise::ErrorIf(
         domain.mesh.flds_bc_in(-direction) != FldsBC::PERIODIC,

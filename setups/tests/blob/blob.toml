@@ -1,28 +1,28 @@
 [simulation]
-  name = "magnetosphere"
+  name = "blob-1x1x2"
   engine = "srpic"
-  runtime = 60.0
+  runtime = 5.0
+
+  [simulation.domain]
+    decomposition = [1, 1, 2]
 
 [grid]
-  resolution = [512, 256]
-  extent = [[1.0, 10.0]]
+  resolution = [128, 192, 64]
+  # extent = [[1.0, 10.0]]
+  extent = [[-2.0, 2.0], [-3.0, 3.0], [-1.0, 1.0]]
 
   [grid.metric]
-    metric = "qspherical"
+    # metric = "qspherical"
+    metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["ATMOSPHERE", "ABSORB"]]
-    particles = [["ATMOSPHERE", "ABSORB"]]
+    # fields = [["ATMOSPHERE", "ABSORB"]]
+    # particles = [["ATMOSPHERE", "ABSORB"]]
+    fields = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
     
-    [grid.boundaries.absorb]
-      ds = 1.0
-
-    [grid.boundaries.atmosphere]
-      temperature = 0.1
-      density = 4.0
-      height = 0.02
-      species = [1, 2]
-      ds = 2.0
+    # [grid.boundaries.absorb]
+    #   ds = 1.0
     
 [scales]
   larmor0 = 2e-5
@@ -34,37 +34,31 @@
   [algorithms.timestep]
     CFL = 0.5
 
-  [algorithms.gca]
-    e_ovr_b_max = 0.9
-    larmor_max = 1.0
-
 [particles]
   ppc0 = 20.0
-  use_weights = true
-  sort_interval = 100
+  # use_weights = true
 
   [[particles.species]]
   label = "e-"
   mass = 1.0
   charge = -1.0
   maxnpart = 1e7
-  pusher = "Boris,GCA"
+  pusher = "Boris"
 
   [[particles.species]]
   label = "e+"
   mass = 1.0
   charge = 1.0
   maxnpart = 1e7
-  pusher = "Boris,GCA"
+  pusher = "Boris"
 
 [setup]
-  Bsurf = 1.0
-  period = 60.0
+  xi_min = [0.55, 1.85, -0.25]
+  xi_max = [0.65, 2.3, -0.1]
+  v1     = [0.25, -0.55, 0.0]
+  v2     = [-0.75, -0.15, 0.0]
   
 [output]
-  fields = ["N_1", "N_2", "E", "B", "T00"]
+  fields = ["Nppc_1", "Nppc_2", "E", "B", "J"]
   format = "hdf5"
-  interval_time = 0.1
-
-[diagnostics]
-  interval = 10
+  interval_time = 0.02
