@@ -52,8 +52,7 @@ namespace user {
       real_t k23 = ONE * constant::TWO_PI / sx3;
       real_t k24 = ONE;
 
-      // return 0.01 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
-
+      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
       return (k14 * amps(0, REAL) *
                 math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
@@ -88,6 +87,7 @@ namespace user {
                 math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
               k24 * amps(3, IMAG) *
                 math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+      // return ZERO;
     }
 
     Inline auto fx3(const unsigned short&,
@@ -113,6 +113,7 @@ namespace user {
                 math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
               k14 * amps(5, IMAG) *
                 math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
+      // return ZERO;
     }
 
   private:
