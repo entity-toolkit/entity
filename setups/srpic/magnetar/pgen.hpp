@@ -124,8 +124,10 @@ namespace user {
         auto ux3    = species.ux3;
         auto i1     = species.i1;
         auto i2     = species.i2;
+        auto i3     = species.i3;
         auto dx1    = species.dx1;
         auto dx2    = species.dx2;
+        auto dx3    = species.dx3;
         auto weight = species.weight;        
         auto tag    = species.tag;
 
@@ -143,8 +145,9 @@ namespace user {
             auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
 
           // TODO: Calculate angular coordinate for setting limit close to axis
-            // const vec_t<Dim::_2D> xi { i_di_to_Xi(i1(p), dx1(p)),
-            //                       i_di_to_Xi(i2(p), dx2(p)) };
+            const vec_t<Dim::_3D> xi { i_di_to_Xi(i1(p), dx1(p)),
+                                  i_di_to_Xi(i2(p), dx2(p)) ,
+                                  i_di_to_Xi(i3(p), dx3(p)) };
           //   coord_t<Dim2>     xs;
           //   m_mblock.metric.x_Code2Sph(xi, xs);
 
@@ -154,6 +157,25 @@ namespace user {
               auto new_gamma = gamma - 2.0 * gamma_pairs;
               auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
               auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+
+      std::vector<real_t> x1p, x2p, x3p, ux1p, ux2p, ux3p;
+        x1p.push_back(xi[0]);
+        x2p.push_back(xi[1]);
+        x3p.push_back(xi[2]);
+        ux1p.push_back(px * pair_fac);
+        ux2p.push_back(py * pair_fac);
+        ux3p.push_back(pz * pair_fac);
+
+      const std::map<std::string, std::vector<real_t>> data_1 {
+        { "x1",  x1p},
+        { "x2",  x2p},
+        { "x3",  x3p},
+        {"ux1", ux1p},
+        {"ux2", ux2p},
+        {"ux3", ux3p}
+      };
+
+      arch::InjectGlobally<S, M>(global_domain, domain, (arch::spidx_t)1, data_1);
 
           // TODO: Inject positron-electron pair
               // init_prtl_2d_i_di(electrons,
