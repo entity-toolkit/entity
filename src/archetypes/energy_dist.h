@@ -75,7 +75,7 @@ namespace arch {
                random_number_pool_t& pool,
                real_t                temperature,
                real_t                boost_vel       = ZERO,
-               short                 boost_direction = 0)
+               in                    boost_direction = in::x1)
       : EnergyDistribution<S, M> { metric }
       , pool { pool }
       , temperature { temperature }
@@ -85,7 +85,7 @@ namespace arch {
                      "Maxwellian: Temperature must be non-negative",
                      HERE);
       raise::ErrorIf(
-        (boost_direction != 0) && (M::CoordType != Coord::Cart),
+        (not cmp::AlmostZero(boost_vel, ZERO)) && (M::CoordType != Coord::Cart),
         "Maxwellian: Boosting is only supported in Cartesian coordinates",
         HERE);
     }
@@ -93,10 +93,7 @@ namespace arch {
     // Juttner-Synge distribution
     Inline void JS(vec_t<Dim::_3D>& v, const real_t& temp) const {
       auto   rand_gen = pool.get_state();
-      real_t randu { Random<real_t>(rand_gen) },
-        randeta { Random<real_t>(rand_gen) };
-      real_t randX1 { Random<real_t>(rand_gen) },
-        randX2 { Random<real_t>(rand_gen) };
+      real_t randX1, randX2;
       if (temp < static_cast<real_t>(0.5)) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
 
@@ -126,7 +123,8 @@ namespace arch {
 
       } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
-        randu = ONE;
+        auto randu   = ONE;
+        auto randeta = Random<real_t>(rand_gen);
         while (SQR(randeta) <= SQR(randu) + ONE) {
           randX1 = Random<real_t>(rand_gen) * Random<real_t>(rand_gen) *
                    Random<real_t>(rand_gen);
@@ -153,18 +151,18 @@ namespace arch {
 
     // Boost a symmetric distribution to a relativistic speed using flipping
     // method https://arxiv.org/pdf/1504.03910.pdf
-    Inline void boost(vec_t<Dim::_3D>& v,
-                      const real_t&    boost_vel,
-                      const short&     boost_direction) const {
-      auto   rand_gen = pool.get_state();
-      real_t boost_beta { boost_vel / math::sqrt(ONE + SQR(boost_vel)) };
-      real_t boost_gamma { boost_vel / boost_beta };
-      real_t ut { math::sqrt(ONE + SQR(v[0]) + SQR(v[1]) + SQR(v[2])) };
-      if (-boost_beta * v[boost_direction] > ut * Random<real_t>(rand_gen)) {
-        v[boost_direction] = -v[boost_direction];
+    Inline void boost(vec_t<Dim::_3D>& v) const {
+      const auto boost_dir = static_cast<unsigned short>(boost_direction);
+      const auto boost_beta { boost_velocity /
+                              math::sqrt(ONE + SQR(boost_velocity)) };
+      const auto gamma { U2GAMMA(v[0], v[1], v[2]) };
+      auto       rand_gen = pool.get_state();
+      if (-boost_beta * v[boost_dir] > gamma * Random<real_t>(rand_gen)) {
+        v[boost_dir] = -v[boost_dir];
       }
       pool.free_state(rand_gen);
-      v[boost_direction] = boost_gamma * (v[boost_direction] + boost_beta * ut);
+      v[boost_dir] = math::sqrt(ONE + SQR(boost_velocity)) *
+                     (v[boost_dir] + boost_beta * gamma);
     }
 
     Inline void operator()(const coord_t<M::Dim>& x_Code,
@@ -188,12 +186,7 @@ namespace arch {
       if constexpr (M::CoordType == Coord::Cart) {
         // boost only when using cartesian coordinates
         if (not cmp::AlmostZero(boost_velocity)) {
-          if (boost_direction < 0) {
-            boost(v, -boost_velocity, -boost_direction - 1);
-          } else if (boost_direction > 0) {
-            boost(v, boost_velocity, boost_direction - 1);
-          }
-          // no boost when boost_direction == 0
+          boost(v);
         }
       }
     }
@@ -203,7 +196,7 @@ namespace arch {
 
     const real_t temperature;
     const real_t boost_velocity;
-    const short  boost_direction;
+    const in     boost_direction;
   };
 
 } // namespace arch

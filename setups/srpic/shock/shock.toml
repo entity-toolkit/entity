@@ -1,22 +1,22 @@
 [simulation]
-  name = "turbulence"
+  name = "shock"
   engine = "srpic"
-  runtime = 20.0
+  runtime = 100.0
 
 [grid]
-  resolution = [184, 184, 184]
-  extent = [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
+  resolution = [2048, 128]
+  extent = [[0.0, 10.0], [-0.3125, 0.3125]]
 
   [grid.metric]
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
-    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    fields = [["CONDUCTOR", "ABSORB"], ["PERIODIC"]]
+    particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
     
 [scales]
-  larmor0 = 0.02
-  skindepth0 = 0.02
+  larmor0 = 1e-2
+  skindepth0 = 1e-3
 
 [algorithms]
   current_filters = 4
@@ -25,23 +25,25 @@
     CFL = 0.5
 
 [particles]
-  ppc0 = 32.0
+  ppc0 = 4.0
 
   [[particles.species]]
   label = "e-"
   mass = 1.0
   charge = -1.0
-  maxnpart = 1e8
+  maxnpart = 1e7
 
   [[particles.species]]
   label = "e+"
   mass = 1.0
   charge = 1.0
-  maxnpart = 1e8
+  maxnpart = 1e7
 
 [setup]
-  
+  drift_ux = -0.1
+  temperature = 0.01
+
 [output]
-  fields = ["N_1", "N_2", "E", "B", "J", "T00_1", "T00_2"]
+  fields = ["N_1", "N_2", "E", "B", "J"]
   format = "hdf5"
   interval_time = 0.1

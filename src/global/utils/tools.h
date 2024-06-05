@@ -224,7 +224,11 @@ namespace tools {
       } else if (decomposition[0] > 0 && decomposition[1] < 0 &&
                  decomposition[2] < 0) {
         n1 = decomposition[0];
-        std::tie(n2, n3) = divideInProportions2D(ndomains, ncells[1], ncells[2]);
+        raise::ErrorIf(ndomains % n1 != 0,
+                       "Decomposition error: does not divide evenly",
+                       HERE);
+        std::tie(n2, 
+                 n3) = divideInProportions2D(ndomains / n1, ncells[1], ncells[2]);
       } else if (decomposition[0] < 0 && decomposition[1] < 0 &&
                  decomposition[2] < 0) {
         std::tie(n1, n2, n3) = divideInProportions3D(ndomains,

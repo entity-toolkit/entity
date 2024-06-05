@@ -229,10 +229,4 @@ Inline auto Random<double>(random_generator_t& gen) -> double {
   return gen.drand();
 }
 
-// /**
-//  * @brief Synchronize CPU/GPU before advancing.
-//  * @param debug_only Only synchronize if `DEBUG` is defined (default: always sync).
-//  */
-// void WaitAndSynchronize(bool debug_only = false);
-
 #endif // GLOBAL_ARCH_KOKKOS_ALIASES_H

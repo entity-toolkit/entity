@@ -1,9 +1,0 @@
-name: entity-nompi
-channels:
-  - conda-forge
-dependencies:
-  - adios2
-  - hdf5
-  - pip
-  - pip:
-    - nt2py

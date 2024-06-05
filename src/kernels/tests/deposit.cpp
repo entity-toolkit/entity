@@ -20,7 +20,6 @@
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 void errorIf(bool condition, const std::string& message) {
   if (condition) {

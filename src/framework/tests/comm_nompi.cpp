@@ -5,6 +5,7 @@
 
 #include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
+#include "utils/numeric.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -17,6 +18,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     const std::size_t nx1 = 15, nx2 = 15;
     ndfield_t<Dim::_2D, 3> fld { "fld", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
+    ndfield_t<Dim::_2D, 3> buff { "buff", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
 
     Kokkos::parallel_for(
       "Fill",
@@ -40,6 +42,7 @@ auto main(int argc, char* argv[]) -> int {
           fld(i1, i2, 2) = 5.0;
         }
       });
+    Kokkos::deep_copy(buff, ZERO);
 
     const auto send_slice = std::vector<range_tuple_t> {
       {nx1 + N_GHOSTS, nx1 + 2 * N_GHOSTS},
@@ -81,22 +84,23 @@ auto main(int argc, char* argv[]) -> int {
         const auto c   = components[d];
         const auto dir = direction[d];
         if (dir == 0) {
-          send_slice.emplace_back(i_min(c), i_max(c));
+          send_slice.emplace_back(i_min(c) - N_GHOSTS, i_max(c) + N_GHOSTS);
         } else if (dir == 1) {
-          send_slice.emplace_back(i_max(c), i_max(c) + N_GHOSTS);
+          send_slice.emplace_back(i_max(c) - N_GHOSTS, i_max(c) + N_GHOSTS);
         } else {
-          send_slice.emplace_back(i_min(c) - N_GHOSTS, i_min(c));
+          send_slice.emplace_back(i_min(c) - N_GHOSTS, i_min(c) + N_GHOSTS);
         }
         if (-dir == 0) {
-          recv_slice.emplace_back(i_min(c), i_max(c));
+          recv_slice.emplace_back(i_min(c) - N_GHOSTS, i_max(c) + N_GHOSTS);
         } else if (-dir == 1) {
-          recv_slice.emplace_back(i_max(c) - N_GHOSTS, i_max(c));
+          recv_slice.emplace_back(i_max(c) - N_GHOSTS, i_max(c) + N_GHOSTS);
         } else {
-          recv_slice.emplace_back(i_min(c), i_min(c) + N_GHOSTS);
+          recv_slice.emplace_back(i_min(c) - N_GHOSTS, i_min(c) + N_GHOSTS);
         }
       }
       comm::CommunicateField<Dim::_2D, 3>((unsigned int)0,
                                           fld,
+                                          buff,
                                           0,
                                           0,
                                           0,
@@ -106,39 +110,17 @@ auto main(int argc, char* argv[]) -> int {
                                           comp_slice,
                                           true);
     }
+    // add buffers
+    Kokkos::parallel_for(
+      "Fill",
+      CreateRangePolicy<Dim::_2D>({ 0, 0 },
+                                  { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
+      Lambda(index_t i1, index_t i2) {
+        for (auto k { 0 }; k < 3; ++k) {
+          fld(i1, i2, k) += buff(i1, i2, k);
+        }
+      });
 
-    for (auto& direction : dir::Directions<Dim::_2D>::all) {
-      auto send_slice = std::vector<range_tuple_t> {};
-      auto recv_slice = std::vector<range_tuple_t> {};
-      for (std::size_t d { 0 }; d < direction.size(); ++d) {
-        const auto c   = components[d];
-        const auto dir = direction[d];
-        if (dir == 0) {
-          send_slice.emplace_back(i_min(c), i_max(c));
-        } else if (dir == 1) {
-          send_slice.emplace_back(i_max(c) - N_GHOSTS, i_max(c));
-        } else {
-          send_slice.emplace_back(i_min(c), i_min(c) + N_GHOSTS);
-        }
-        if (-dir == 0) {
-          recv_slice.emplace_back(i_min(c), i_max(c));
-        } else if (-dir == 1) {
-          recv_slice.emplace_back(i_max(c), i_max(c) + N_GHOSTS);
-        } else {
-          recv_slice.emplace_back(i_min(c) - N_GHOSTS, i_min(c));
-        }
-      }
-      comm::CommunicateField<Dim::_2D, 3>((unsigned int)0,
-                                          fld,
-                                          0,
-                                          0,
-                                          0,
-                                          0,
-                                          send_slice,
-                                          recv_slice,
-                                          comp_slice,
-                                          false);
-    }
     // check
     Kokkos::parallel_for(
       "Fill",

@@ -91,32 +91,20 @@ namespace ntt {
 
     for (const auto& sp : specs) {
       auto& prtl_spec = prtl_species[sp - 1];
+      // clang-format off
       Kokkos::parallel_for(
         "ComputeMoments",
         prtl_spec.rangeActiveParticles(),
-        kernel::ParticleMoments_kernel<S, M, F, 6>(components,
-                                                   scatter_buff,
-                                                   buff_idx,
-                                                   prtl_spec.i1,
-                                                   prtl_spec.i2,
-                                                   prtl_spec.i3,
-                                                   prtl_spec.dx1,
-                                                   prtl_spec.dx2,
-                                                   prtl_spec.dx3,
-                                                   prtl_spec.ux1,
-                                                   prtl_spec.ux2,
-                                                   prtl_spec.ux3,
-                                                   prtl_spec.phi,
-                                                   prtl_spec.weight,
-                                                   prtl_spec.tag,
-                                                   prtl_spec.mass(),
-                                                   prtl_spec.charge(),
+        kernel::ParticleMoments_kernel<S, M, F, 6>(components, scatter_buff, buff_idx,
+                                                   prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                   prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                   prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                   prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                   prtl_spec.mass(), prtl_spec.charge(),
                                                    use_weights,
-                                                   mesh.metric,
-                                                   mesh.flds_bc(),
-                                                   ni2,
-                                                   inv_n0,
-                                                   window));
+                                                   mesh.metric, mesh.flds_bc(),
+                                                   ni2, inv_n0, window));
+      // clang-format on
     }
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
@@ -260,6 +248,9 @@ namespace ntt {
           } else {
             raise::Error("Wrong moment requested for output", HERE);
           }
+          SynchronizeFields(*local_domain,
+                            Comm::Bckp,
+                            { addresses.back(), addresses.back() + 1 });
         } else {
           raise::Error("Wrong # of components requested for non-moment output",
                        HERE);
@@ -283,6 +274,12 @@ namespace ntt {
                                             local_domain->fields.bckp,
                                             c);
           }
+          raise::ErrorIf(addresses[1] - addresses[0] != addresses[2] - addresses[1],
+                         "Indices for the backup are not contiguous",
+                         HERE);
+          SynchronizeFields(*local_domain,
+                            Comm::Bckp,
+                            { addresses[0], addresses[2] + 1 });
         } else {
           // copy fields to bckp (:, 0, 1, 2)
           // if as-is specified ==> copy directly to 3, 4, 5
@@ -367,6 +364,9 @@ namespace ntt {
                                           local_domain->fields.bckp,
                                           c);
         }
+        SynchronizeFields(*local_domain,
+                          Comm::Bckp,
+                          { addresses[0], addresses[5] + 1 });
       } else {
         raise::Error("Wrong # of components requested for output", HERE);
       }

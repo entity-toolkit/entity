@@ -42,6 +42,7 @@
 #include <Kokkos_ScatterView.hpp>
 
 #include <string>
+#include <utility>
 
 namespace ntt {
 
@@ -83,7 +84,7 @@ namespace ntt {
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
-        m_metadomain.Communicate(dom, Comm::B | Comm::E);
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::E);
         FieldBoundaries(dom, BC::B | BC::E);
       }
 
@@ -93,7 +94,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::B);
+        m_metadomain.CommunicateFields(dom, Comm::B);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -113,8 +114,8 @@ namespace ntt {
           timers.stop("CurrentDeposit");
 
           timers.start("Communications");
-          m_metadomain.Communicate(dom, Comm::J_sync);
-          m_metadomain.Communicate(dom, Comm::J);
+          m_metadomain.SynchronizeFields(dom, Comm::J);
+          m_metadomain.CommunicateFields(dom, Comm::J);
           timers.stop("Communications");
 
           timers.start("CurrentFiltering");
@@ -123,10 +124,9 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom,
-                                 (step % sort_interval == 0) ? Comm::Prtl
-                                                             : Comm::None,
-                                 &timers);
+        if ((sort_interval > 0) and (step % sort_interval == 0)) {
+          m_metadomain.CommunicateParticles(dom, &timers);
+        }
         timers.stop("Communications");
       }
 
@@ -136,7 +136,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::B);
+        m_metadomain.CommunicateFields(dom, Comm::B);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -154,7 +154,7 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.Communicate(dom, Comm::E | Comm::J);
+        m_metadomain.CommunicateFields(dom, Comm::E | Comm::J);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -408,7 +408,7 @@ namespace ntt {
               "ParticlePusher",
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, false,
+                  pusher, has_gca, true,
                   cooling_tags,
                   domain.fields.em,
                   species.index(),
@@ -440,7 +440,7 @@ namespace ntt {
               "ParticlePusher",
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, false,
+                  pusher, has_gca, true,
                   cooling_tags,
                   domain.fields.em,
                   species.index(),
@@ -487,7 +487,7 @@ namespace ntt {
                             TWO;
 
           Kokkos::deep_copy(domain.fields.bckp, ZERO);
-          auto scatter_buff = Kokkos::Experimental::create_scatter_view(
+          auto scatter_bckp = Kokkos::Experimental::create_scatter_view(
             domain.fields.bckp);
           const auto use_weights = M::CoordType != Coord::Cart;
           const auto ni2         = domain.mesh.n_active(in::x2);
@@ -498,35 +498,24 @@ namespace ntt {
                std::vector<unsigned short>({ species.first, species.second })) {
             // !TODO: smooth this and communicate
             auto& prtl_spec = domain.species[sp - 1];
+            // clang-format off
             Kokkos::parallel_for(
               "ComputeMoments",
               prtl_spec.rangeActiveParticles(),
               kernel::ParticleMoments_kernel<SimEngine::SRPIC, M, FldsID::Rho, 6>(
-                {},
-                scatter_buff,
-                0,
-                prtl_spec.i1,
-                prtl_spec.i2,
-                prtl_spec.i3,
-                prtl_spec.dx1,
-                prtl_spec.dx2,
-                prtl_spec.dx3,
-                prtl_spec.ux1,
-                prtl_spec.ux2,
-                prtl_spec.ux3,
-                prtl_spec.phi,
-                prtl_spec.weight,
-                prtl_spec.tag,
-                prtl_spec.mass(),
-                prtl_spec.charge(),
+                {}, scatter_bckp, 0,
+                prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                prtl_spec.mass(), prtl_spec.charge(),
                 use_weights,
-                domain.mesh.metric,
-                domain.mesh.flds_bc(),
-                ni2,
-                inv_n0,
-                0));
+                domain.mesh.metric, domain.mesh.flds_bc(),
+                ni2, inv_n0, 0));
+            // clang-format on
           }
-          Kokkos::Experimental::contribute(domain.fields.bckp, scatter_buff);
+          Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
+          m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
 
           if (dim == in::x1) {
             if (sign > 0) {
@@ -736,7 +725,7 @@ namespace ntt {
       range_t<M::Dim> range = domain.mesh.rangeActiveCells();
       if constexpr (M::CoordType != Coord::Cart) {
         /**
-         * @brief taking one extra cell in the x2 direction
+         * @brief taking one extra cell in the x2 direction if AXIS BCs
          *    . . . . .
          *    . ^= =^ .
          *    . |* *\*.
@@ -745,16 +734,20 @@ namespace ntt {
          *    . . . . .
          */
         if constexpr (M::Dim == Dim::_2D) {
-          range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
-            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          if (domain.mesh.flds_bc_in({ +1, 0 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_2D>(
+              { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          }
         } else if constexpr (M::Dim == Dim::_3D) {
-          range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
-                                                domain.mesh.i_min(in::x2),
-                                                domain.mesh.i_min(in::x3) },
-                                              { domain.mesh.i_max(in::x1),
-                                                domain.mesh.i_max(in::x2) + 1,
-                                                domain.mesh.i_max(in::x3) });
+          if (domain.mesh.flds_bc_in({ +1, 0, 0 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
+                                                  domain.mesh.i_min(in::x2),
+                                                  domain.mesh.i_min(in::x3) },
+                                                { domain.mesh.i_max(in::x1),
+                                                  domain.mesh.i_max(in::x2) + 1,
+                                                  domain.mesh.i_max(in::x3) });
+          }
         }
       }
       const auto nfilter = m_params.template get<unsigned short>(
@@ -769,9 +762,8 @@ namespace ntt {
       if constexpr (M::Dim == Dim::_3D) {
         size[2] = domain.mesh.n_active(in::x3);
       }
-      auto sync = 0;
+      // !TODO: this needs to be done more efficiently
       for (unsigned short i = 0; i < nfilter; ++i) {
-        ++sync;
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",
                              range,
@@ -780,10 +772,7 @@ namespace ntt {
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
-        if (sync == N_GHOSTS) {
-          sync = 0;
-          m_metadomain.Communicate(domain, Comm::J);
-        }
+        m_metadomain.CommunicateFields(domain, Comm::J);
       }
     }
 
@@ -792,12 +781,19 @@ namespace ntt {
         if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
           AbsorbFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
-          AxisFieldsIn(direction, domain, tags);
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
+            AxisFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
           AtmosphereFieldsIn(direction, domain, tags);
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+            ConductorFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
-          CustomFieldsIn(direction, domain, tags);
-          // raise::Error("Custom boundaries not implemented", HERE);
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
+            CustomFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
           raise::Error("HORIZON BCs only applicable for GR", HERE);
         }
@@ -1038,6 +1034,78 @@ namespace ntt {
       } else {
         raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
                      HERE);
+      }
+    }
+
+    void ConductorFieldsIn(dir::direction_t<M::Dim> direction,
+                           domain_t&                domain,
+                           BCTags                   tags) {
+      const auto sign = direction.get_sign();
+      const auto dim  = direction.get_dim();
+      raise::ErrorIf(
+        dim != in::x1 and M::CoordType != Coord::Cart,
+        "Conductor BCs only implemented for x1 in non-cartesian coordinates",
+        HERE);
+      em normal_b_comp, tang_e_comp1, tang_e_comp2;
+      if (dim == in::x1) {
+        normal_b_comp = em::bx1;
+        tang_e_comp1  = em::ex2;
+        tang_e_comp2  = em::ex3;
+      } else if (dim == in::x2) {
+        normal_b_comp = em::bx2;
+        tang_e_comp1  = em::ex1;
+        tang_e_comp2  = em::ex3;
+      } else if (dim == in::x3) {
+        normal_b_comp = em::bx3;
+        tang_e_comp1  = em::ex1;
+        tang_e_comp2  = em::ex2;
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+      std::vector<std::size_t> xi_min, xi_max;
+      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
+      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        const auto dd = all_dirs[d];
+        if (dim == dd) {
+          if (sign > 0) { // + direction
+            xi_min.push_back(domain.mesh.n_all(dd) - N_GHOSTS);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          } else { // - direction
+            xi_min.push_back(0);
+            xi_max.push_back(N_GHOSTS);
+          }
+        } else {
+          xi_min.push_back(0);
+          xi_max.push_back(domain.mesh.n_all(dd));
+        }
+      }
+      raise::ErrorIf(xi_min.size() != xi_max.size() or
+                       xi_min.size() != static_cast<std::size_t>(M::Dim),
+                     "Invalid range size",
+                     HERE);
+      for (const unsigned short comp :
+           { normal_b_comp, tang_e_comp1, tang_e_comp2 }) {
+        if constexpr (M::Dim == Dim::_1D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(xi_min[0], xi_max[0]),
+                                            comp),
+                            ZERO);
+        } else if constexpr (M::Dim == Dim::_2D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(xi_min[0], xi_max[0]),
+                                            std::make_pair(xi_min[1], xi_max[1]),
+                                            comp),
+                            ZERO);
+        } else if constexpr (M::Dim == Dim::_3D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(xi_min[0], xi_max[0]),
+                                            std::make_pair(xi_min[1], xi_max[1]),
+                                            std::make_pair(xi_min[2], xi_max[2]),
+                                            comp),
+                            ZERO);
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
       }
     }
 

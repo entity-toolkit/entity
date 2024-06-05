@@ -196,7 +196,7 @@ namespace ntt {
                       c_loadmin.c_str(),
                       load_min,
                       c_reset.c_str());
-    os << fmt::pad(raw2, 20, ' ', false).substr(0, 20 - raw1.size())
+    os << fmt::pad(raw2, 20, ' ', false).substr(0, 20 - raw2.size())
        << fmt::format("%s (%s%4.1f%%%s)",
                       npart_max_str.c_str(),
                       c_loadmax.c_str(),

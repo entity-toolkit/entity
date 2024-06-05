@@ -70,6 +70,8 @@ inline constexpr double INV_64 = 0.015625;
 #define DOT(ax1, ax2, ax3, bx1, bx2, bx3)                                      \
   ((ax1) * (bx1) + (ax2) * (bx2) + (ax3) * (bx3))
 #define NORM_SQR(ax1, ax2, ax3)                (DOT((ax1), (ax2), (ax3), (ax1), (ax2), (ax3)))
+#define U2GAMMA_SQR(ax1, ax2, ax3)             (ONE + NORM_SQR((ax1), (ax2), (ax3)))
+#define U2GAMMA(ax1, ax2, ax3)                 (math::sqrt(U2GAMMA_SQR((ax1), (ax2), (ax3))))
 #define NORM(ax1, ax2, ax3)                    (math::sqrt(NORM_SQR((ax1), (ax2), (ax3))))
 #define CROSS_x1(ax1, ax2, ax3, bx1, bx2, bx3) ((ax2) * (bx3) - (ax3) * (bx2))
 #define CROSS_x2(ax1, ax2, ax3, bx1, bx2, bx3) ((ax3) * (bx1) - (ax1) * (bx3))

@@ -120,6 +120,9 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Engine<S, M>::print_report() const {
+    const auto colored_stdout = m_params.template get<bool>(
+      "diagnostics.colored_stdout");
+    std::string report = "";
     CallOnce(
       [&](auto& metadomain, auto& params) {
 #if defined(MPI_ENABLED)
@@ -205,7 +208,7 @@ namespace ntt {
         const std::string dbg = "OFF";
 #endif
 
-        std::string report { "\n\n" };
+        report += "\n\n";
         add_header(report, { entity_version }, { color::BRIGHT_GREEN });
         report += "\n";
         add_category(report, 4, "Backend");
@@ -325,24 +328,25 @@ namespace ntt {
           add_param(report, 6, "# of payloads", "%d", species.npld());
         }
         report.pop_back();
-        info::Print(report);
       },
       m_metadomain,
       m_params);
+    info::Print(report, colored_stdout);
 
+    report = "\n";
     CallOnce([&]() {
-      std::string report = "\n";
       add_category(report, 4, "Domains");
       report.pop_back();
-      info::Print(report);
     });
+    info::Print(report, colored_stdout);
+
     for (unsigned int idx { 0 }; idx < m_metadomain.ndomains(); ++idx) {
       auto is_local = false;
       for (const auto& lidx : m_metadomain.local_subdomain_indices()) {
         is_local |= (idx == lidx);
       }
       if (is_local) {
-        std::string report = "";
+        report             = "";
         const auto& domain = m_metadomain.subdomain(idx);
         add_subcategory(report,
                         4,
@@ -366,7 +370,7 @@ namespace ntt {
           report,
           8 + 2 + 2 * M::Dim,
           fmt::format("%-10s  %-10s  %-10s", "[flds]", "[prtl]", "[neighbor]").c_str());
-        for (auto& direction : dir::Directions<M::Dim>::orth) {
+        for (auto& direction : dir::Directions<M::Dim>::all) {
           const auto flds_bc      = domain.mesh.flds_bc_in(direction);
           const auto prtl_bc      = domain.mesh.prtl_bc_in(direction);
           bool       has_sync     = false;
@@ -401,7 +405,7 @@ namespace ntt {
         if (idx == m_metadomain.ndomains() - 1) {
           report += "\n\n";
         }
-        info::Print(report, true, false);
+        info::Print(report, colored_stdout, true, false);
       }
 #if defined(MPI_ENABLED)
       MPI_Barrier(MPI_COMM_WORLD);

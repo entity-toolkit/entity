@@ -33,7 +33,7 @@ namespace kernel {
     const std::size_t     i2_max;
 
   public:
-    DigitalFilter_kernel(const ndfield_t<D, 3>& array,
+    DigitalFilter_kernel(ndfield_t<D, 3>&       array,
                          const ndfield_t<D, 3>& buffer,
                          const std::size_t (&size_)[D],
                          const boundaries_t<FldsBC>& boundaries)

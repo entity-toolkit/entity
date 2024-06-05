@@ -237,16 +237,16 @@ typedef int DiagFlags;
 
 namespace Comm {
   enum CommTags_ {
-    None   = 0,
-    E      = 1 << 0,
-    B      = 1 << 1,
-    J      = 1 << 2,
-    Prtl   = 1 << 3,
-    D      = 1 << 4,
-    D0     = 1 << 5,
-    B0     = 1 << 6,
-    H      = 1 << 7,
-    J_sync = 1 << 8,
+    None = 0,
+    E    = 1 << 0,
+    B    = 1 << 1,
+    J    = 1 << 2,
+    D    = 1 << 3,
+    D0   = 1 << 4,
+    B0   = 1 << 5,
+    H    = 1 << 6,
+    Bckp = 1 << 7,
+    Buff = 1 << 8,
   };
 } // namespace Comm
 
