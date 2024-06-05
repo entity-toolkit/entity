@@ -169,7 +169,7 @@ namespace user {
       const std::map<std::string, std::vector<real_t>> data_1 {
         { "x1",  x1p},
         { "x2",  x2p},
-        { "x3",  x3p},
+        { "phi",  x3p},
         {"ux1", ux1p},
         {"ux2", ux2p},
         {"ux3", ux3p}
