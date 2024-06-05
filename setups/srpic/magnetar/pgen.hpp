@@ -11,6 +11,8 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
+#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+
 namespace user {
   using namespace ntt;
 
@@ -45,12 +47,16 @@ namespace user {
     }
 
     Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-      return Omega * bx2(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * (538.1679523882938/(538.1679523882938 + math::cosh(48.86921905584123 - 80.*x_Ph[1])));
+      auto pival        = 3.141592653589793;
+      auto sigma  = (x_Ph[1] - 0.5 * pival) / (0.2 * pival);
+      return Omega * bx2(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0);
       // return ZERO;
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      return -Omega * bx1(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * (538.1679523882938/(538.1679523882938 + math::cosh(48.86921905584123 - 80.*x_Ph[1])));
+      auto pival        = 3.141592653589793;
+      auto sigma  = (x_Ph[1] - 0.5 * pival) / (0.2 * pival);
+      return - Omega * bx1(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * sigma * math::exp((1.0 - SQR(SQR(sigma))) / 4.0);
       // return ZERO;
     }
 
@@ -92,55 +98,97 @@ namespace user {
 
     inline PGen() {}
 
-      //   inline void InitPrtls(Domain<S, M>& local_domain) {
-
-      // std::vector<real_t> x1s, y1s, z1s, ux1s, uy1s, uz1s;
-      // std::vector<real_t> x2s, y2s, z2s, ux2s, uy2s, uz2s;
-      // x1s.push_back(2.0);
-      // y1s.push_back(1.0);
-      // z1s.push_back(ZERO);
-      // ux1s.push_back(ZERO);
-      // uy1s.push_back(0.5);
-      // uz1s.push_back(ZERO);
-      // x2s.push_back(2.0);
-      // y2s.push_back(1.0);
-      // z2s.push_back(ZERO);
-      // ux2s.push_back(ZERO);
-      // uy2s.push_back(-0.5);
-      // uz2s.push_back(ZERO);
-      
-      // const std::map<std::string, std::vector<real_t>> data_1 {
-      //   { "x1",  x1s},
-      //   { "x2",  y1s},
-      //   { "phi",  z1s},
-      //   {"ux1", ux1s},
-      //   {"ux2", uy1s},
-      //   {"ux3", uz1s}
-      // };
-      // const std::map<std::string, std::vector<real_t>> data_2 {
-      //   { "x1",  x2s},
-      //   { "x2",  y2s},
-      //   { "phi",  z2s},
-      //   {"ux1", ux2s},
-      //   {"ux2", uy2s},
-      //   {"ux3", uz2s}
-      // };
-
-
-      // arch::InjectGlobally<S, M>(global_domain, local_domain, (arch::spidx_t)1, data_1);
-      // arch::InjectGlobally<S, M>(global_domain, local_domain, (arch::spidx_t)2, data_2);
-
-      //   }
-
     auto FieldDriver(real_t time) const -> DriveFields<D> {
       return DriveFields<D> {
         time,
         Bsurf,
         Rstar,
-        Omega *
-          SQR(SQR(math::sin(0.25 * time * static_cast<real_t>(constant::TWO_PI))))
+        Omega * ((1 - math::tanh((5.0 - time) / 2.0)) *
+                          (1 + (-1 + math::tanh((45.0 - time) / 2.0)) / 2.)) /
+                         2.
       };
     }
+
+    void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
+      const auto pp_thres    = 4*10.0;
+      const auto gamma_pairs = 4*0.5 * 3.5;
+
+     for (std::size_t s { 0 }; s < 6; ++s) {
+        if ((s == 1) || (s == 2) || (s == 3)) {
+          continue;
+        }
+        auto& species = domain.species[s];
+
+        auto ux1    = species.ux1;
+        auto ux2    = species.ux2;
+        auto ux3    = species.ux3;
+        auto i1     = species.i1;
+        auto i2     = species.i2;
+        auto dx1    = species.dx1;
+        auto dx2    = species.dx2;
+        auto weight = species.weight;        
+        auto tag    = species.tag;
+
+        Kokkos::parallel_for(
+          "ResonantScattering",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (tag(p) != ParticleTag::alive) {
+              return;
+            }
+
+            auto px      = ux1(p);
+            auto py      = ux2(p);
+            auto pz      = ux3(p);
+            auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
+
+          // TODO: Calculate angular coordinate for setting limit close to axis
+            // const vec_t<Dim::_2D> xi { i_di_to_Xi(i1(p), dx1(p)),
+            //                       i_di_to_Xi(i2(p), dx2(p)) };
+          //   coord_t<Dim2>     xs;
+          //   m_mblock.metric.x_Code2Sph(xi, xs);
+
+          //   if ((gamma > pp_thres) && (math::sin(xs[1]) > 0.1)) {
+            if ((gamma > pp_thres)) {
+
+              auto new_gamma = gamma - 2.0 * gamma_pairs;
+              auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+              auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+
+          // TODO: Inject positron-electron pair
+              // init_prtl_2d_i_di(electrons,
+              //                   elec_offset + elec_p,
+              //                   species.i1(p),
+              //                   species.i2(p),
+              //                   species.dx1(p),
+              //                   species.dx2(p),
+              //                   px * pair_fac,
+              //                   py * pair_fac,
+              //                   pz * pair_fac,
+              //                   species.weight(p));
+
+              // init_prtl_2d_i_di(positrons,
+              //                   pos_offset + pos_p,
+              //                   species.i1(p),
+              //                   species.i2(p),
+              //                   species.dx1(p),
+              //                   species.dx2(p),
+              //                   px * pair_fac,
+              //                   py * pair_fac,
+              //                   pz * pair_fac,
+              //                   species.weight(p));
+
+              ux1(p) *= new_fac;
+              ux2(p) *= new_fac;
+              ux3(p) *= new_fac;
+
+            }
+          });
+
+      }
+      
+    }
+
   };
 
 } // namespace user
