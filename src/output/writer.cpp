@@ -21,6 +21,24 @@ namespace out {
     m_io.DefineVariable<long double>("Time");
   }
 
+  void Writer::addTracker(const std::string& type,
+                          std::size_t        interval,
+                          long double        interval_time) {
+    m_trackers.insert(std::pair<std::string, out::Tracker>(
+      { type, Tracker(type, interval, interval_time) }));
+  }
+
+  auto Writer::shouldWrite(const std::string& type,
+                           std::size_t        step,
+                           long double        time) -> bool {
+    if (m_trackers.find(type) != m_trackers.end()) {
+      return m_trackers.at(type).shouldWrite(step, time);
+    } else {
+      raise::Error("Tracker type not found", HERE);
+      return false;
+    }
+  }
+
   void Writer::defineMeshLayout(const std::vector<std::size_t>& glob_shape,
                                 const std::vector<std::size_t>& loc_corner,
                                 const std::vector<std::size_t>& loc_shape,

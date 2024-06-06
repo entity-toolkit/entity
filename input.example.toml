@@ -305,48 +305,80 @@
 # Parameters for specific problem generators and setups:
 [setup]
 
-
 [output]
-  # Field quantities to output:
-  #   @type: array of strings
-  #   @valid: fields: "E", "B", "J", "divE"
-  #   @valid: moments: "Rho", "Charge", "N", "Nppc", "T0i", "Tij"
-  #   @valid: for GR: "D", "H", "divD", "A"
-  #   @default: []
-  #   @note: For T, you can use unspecified indices, e.g., Tij, T0i, or specific ones, e.g., Ttt, T00, T02, T23
-  #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
-  #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
-  fields = ""
-  # Particle species indices to output:
-  #   @type: array of ints
-  #   @default: [] = all species
-  particles = ""
   # Output format:
   #   @type: string
   #   @valid: "disabled", "hdf5", "BPFile"
   #   @default: "hdf5"
   format = ""
-  # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
-  #   @type: unsigned short: >= 0
-  #   @default: 0
-  mom_smooth = ""
-  # @NOT_IMPLEMENTED: Stride for the output of fields:
-  #   @type: unsigned short: > 1
-  #   @default: 1
-  fields_stride = ""
-  # Stride for the output of particles:
-  #   @type: unsigned int: > 1
-  #   @default: 100
-  prtl_stride = ""
-  # Number of timesteps between outputs:
+  # Number of timesteps between all outputs (overriden by specific output interval below):
   #   @type: unsigned int: > 0
   #   @default: 1
   interval = ""
-  # Physical (code) time interval between outputs:
+  # Physical (code) time interval between all outputs (overriden by specific output intervals below):
   #   @type: float: > 0
   #   @default: -1.0 (disabled)
   #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
   interval_time = ""
+
+  [output.fields]
+    # Field quantities to output:
+    #   @type: array of strings
+    #   @valid: fields: "E", "B", "J", "divE"
+    #   @valid: moments: "Rho", "Charge", "N", "Nppc", "T0i", "Tij"
+    #   @valid: for GR: "D", "H", "divD", "A"
+    #   @default: []
+    #   @note: For T, you can use unspecified indices, e.g., Tij, T0i, or specific ones, e.g., Ttt, T00, T02, T23
+    #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
+    #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
+    quantities = ""
+    # @NOT_IMPLEMENTED: Stride for the output of fields:
+    #   @type: unsigned short: > 1
+    #   @default: 1
+    stride = ""
+    # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
+    #   @type: unsigned short: >= 0
+    #   @default: 0
+    mom_smooth = ""
+    # Number of timesteps between field outputs (overrides `output.interval`):
+    #   @type: unsigned int: > 0
+    #   @default: 0 (use `output.interval`)
+    interval = ""
+    # Physical (code) time interval between field outputs (overrides `output.interval_time`):
+    #   @type: float: > 0
+    #   @default: -1.0 (use `output.interval_time`)
+    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    interval_time = ""
+
+  [output.particles]
+    # Particle species indices to output:
+    #   @type: array of ints
+    #   @default: [] = all species
+    species = ""
+    # Stride for the output of particles:
+    #   @type: unsigned int: > 1
+    #   @default: 100
+    stride = ""
+    # Number of timesteps between particle outputs (overrides `output.interval`):
+    #   @type: unsigned int: > 0
+    #   @default: 0 (use `output.interval`)
+    interval = ""
+    # Physical (code) time interval between field outputs (overrides `output.interval_time`):
+    #   @type: float: > 0
+    #   @default: -1.0 (use `output.interval_time`)
+    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    interval_time = ""
+
+  [output.spectra]
+    # Number of timesteps between spectra outputs (overrides `output.interval`):
+    #   @type: unsigned int: > 0
+    #   @default: 0 (use `output.interval`)
+    interval = ""
+    # Physical (code) time interval between spectra outputs (overrides `output.interval_time`):
+    #   @type: float: > 0
+    #   @default: -1.0 (use `output.interval_time`)
+    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    interval_time = ""
 
   [output.debug]
     # Output fields "as is" without conversions:

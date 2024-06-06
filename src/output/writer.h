@@ -27,6 +27,37 @@
 
 namespace out {
 
+  class Tracker {
+    const std::string m_type;
+    const std::size_t m_interval;
+    const long double m_interval_time;
+    const bool        m_use_time;
+
+    long double m_last_output_time { -1.0 };
+
+  public:
+    Tracker(const std::string& type, std::size_t interval, long double interval_time)
+      : m_type { type }
+      , m_interval { interval }
+      , m_interval_time { interval_time }
+      , m_use_time { interval_time > 0.0 } {}
+
+    ~Tracker() = default;
+
+    auto shouldWrite(std::size_t step, long double time) -> bool {
+      if (m_use_time) {
+        if (time - m_last_output_time >= m_interval_time) {
+          m_last_output_time = time;
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return step % m_interval == 0;
+      }
+    }
+  };
+
   class Writer {
 #if !defined(MPI_ENABLED)
     adios2::ADIOS m_adios;
@@ -46,6 +77,8 @@ namespace out {
     bool              m_flds_ghosts;
     const std::string m_engine;
 
+    std::map<std::string, Tracker> m_trackers;
+
     std::vector<OutputField>   m_flds_writers;
     std::vector<OutputSpecies> m_prtl_writers;
 
@@ -56,6 +89,9 @@ namespace out {
     ~Writer() = default;
 
     Writer(Writer&&) = default;
+
+    void addTracker(const std::string&, std::size_t, long double);
+    auto shouldWrite(const std::string&, std::size_t, long double) -> bool;
 
     void writeAttrs(const prm::Parameters& params);
 

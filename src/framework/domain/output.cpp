@@ -59,12 +59,18 @@ namespace ntt {
                               incl_ghosts,
                               M::CoordType);
     const auto fields_to_write = params.template get<std::vector<std::string>>(
-      "output.fields");
+      "output.fields.quantities");
     const auto species_to_write = params.template get<std::vector<unsigned short>>(
-      "output.particles");
+      "output.particles.species");
     g_writer.defineFieldOutputs(S, fields_to_write);
     g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
-
+    for (const auto& type : { "fields", "particles", "spectra" }) {
+      g_writer.addTracker(type,
+                          params.template get<std::size_t>(
+                            "output." + std::string(type) + ".interval"),
+                          params.template get<long double>(
+                            "output." + std::string(type) + ".interval_time"));
+    }
     g_writer.writeAttrs(params);
   }
 
@@ -92,7 +98,7 @@ namespace ntt {
     const auto ni2         = mesh.n_active(in::x2);
     const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
     const auto window      = params.template get<unsigned short>(
-      "output.mom_smooth");
+      "output.fields.mom_smooth");
 
     for (const auto& sp : specs) {
       auto& prtl_spec = prtl_species[sp - 1];
@@ -140,14 +146,18 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::Write(const SimulationParams& params,
-
-                               std::size_t step,
-                               long double time) {
+  auto Metadomain<S, M>::Write(const SimulationParams& params,
+                               std::size_t             step,
+                               long double             time) -> bool {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
+    if (not g_writer.shouldWrite("fields", step, time) and
+        not g_writer.shouldWrite("particles", step, time) and
+        not g_writer.shouldWrite("spectra", step, time)) {
+      return false;
+    }
     auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
@@ -157,117 +167,210 @@ namespace ntt {
                           step,
                           time);
 
-    const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
+    if (g_writer.shouldWrite("fields", step, time)) {
+      const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 
-    for (unsigned short dim = 0; dim < M::Dim; ++dim) {
-      const auto is_last = local_domain->offset_ncells()[dim] +
-                             local_domain->mesh.n_active()[dim] ==
-                           mesh().n_active()[dim];
-      array_t<real_t*> xc { "Xc",
-                            local_domain->mesh.n_active()[dim] +
-                              (incl_ghosts ? 2 * N_GHOSTS : 0) };
-      array_t<real_t*> xe { "Xe",
-                            local_domain->mesh.n_active()[dim] +
-                              (incl_ghosts ? 2 * N_GHOSTS : 0) +
-                              (is_last ? 1 : 0) };
-      const auto       offset = (incl_ghosts ? N_GHOSTS : 0);
-      const auto       ncells = local_domain->mesh.n_active()[dim];
-      const auto&      metric = local_domain->mesh.metric;
-      Kokkos::parallel_for(
-        "GenerateMesh",
-        ncells,
-        Lambda(index_t i) {
-          const auto      i_ = static_cast<real_t>(i);
-          coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
-          x_Cd[dim] = i_ + HALF;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-          xc(offset + i) = x_Ph[dim];
-          x_Cd[dim]      = i_;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-          xe(offset + i) = x_Ph[dim];
-          if (is_last && i == ncells - 1) {
-            x_Cd[dim] = i_ + ONE;
+      for (unsigned short dim = 0; dim < M::Dim; ++dim) {
+        const auto is_last = local_domain->offset_ncells()[dim] +
+                               local_domain->mesh.n_active()[dim] ==
+                             mesh().n_active()[dim];
+        array_t<real_t*> xc { "Xc",
+                              local_domain->mesh.n_active()[dim] +
+                                (incl_ghosts ? 2 * N_GHOSTS : 0) };
+        array_t<real_t*> xe { "Xe",
+                              local_domain->mesh.n_active()[dim] +
+                                (incl_ghosts ? 2 * N_GHOSTS : 0) +
+                                (is_last ? 1 : 0) };
+        const auto       offset = (incl_ghosts ? N_GHOSTS : 0);
+        const auto       ncells = local_domain->mesh.n_active()[dim];
+        const auto&      metric = local_domain->mesh.metric;
+        Kokkos::parallel_for(
+          "GenerateMesh",
+          ncells,
+          Lambda(index_t i) {
+            const auto      i_ = static_cast<real_t>(i);
+            coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
+            x_Cd[dim] = i_ + HALF;
             metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-            xe(offset + i + 1) = x_Ph[dim];
-          }
-        });
-      g_writer.writeMesh(dim, xc, xe);
-    }
+            xc(offset + i) = x_Ph[dim];
+            x_Cd[dim]      = i_;
+            metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+            xe(offset + i) = x_Ph[dim];
+            if (is_last && i == ncells - 1) {
+              x_Cd[dim] = i_ + ONE;
+              metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+              xe(offset + i + 1) = x_Ph[dim];
+            }
+          });
+        g_writer.writeMesh(dim, xc, xe);
+      }
 
-    const auto output_asis = params.template get<bool>("output.debug.as_is");
-    // !TODO: this can probably be optimized to dump things at once
-    for (auto& fld : g_writer.fieldWriters()) {
-      Kokkos::deep_copy(local_domain->fields.bckp, ZERO);
-      std::vector<std::string> names;
-      std::vector<std::size_t> addresses;
-      if (fld.comp.size() == 0 || fld.comp.size() == 1) { // scalar
-        names.push_back(fld.name());
-        addresses.push_back(0);
-        if (fld.is_moment()) {
-          // output a particle distribution moment (single component)
-          // this includes T, Rho, Charge, N, Nppc
-          const auto c = static_cast<unsigned short>(addresses.back());
-          if (fld.id() == FldsID::T) {
-            raise::ErrorIf(fld.comp.size() != 1,
-                           "Wrong # of components requested for T output",
-                           HERE);
-            ComputeMoments<S, M, FldsID::T>(params,
-                                            local_domain->mesh,
-                                            local_domain->species,
-                                            fld.species,
-                                            fld.comp[0],
-                                            local_domain->fields.bckp,
-                                            c);
-          } else if (fld.id() == FldsID::Rho) {
-            ComputeMoments<S, M, FldsID::Rho>(params,
+      const auto output_asis = params.template get<bool>("output.debug.as_is");
+      // !TODO: this can probably be optimized to dump things at once
+      for (auto& fld : g_writer.fieldWriters()) {
+        Kokkos::deep_copy(local_domain->fields.bckp, ZERO);
+        std::vector<std::string> names;
+        std::vector<std::size_t> addresses;
+        if (fld.comp.size() == 0 || fld.comp.size() == 1) { // scalar
+          names.push_back(fld.name());
+          addresses.push_back(0);
+          if (fld.is_moment()) {
+            // output a particle distribution moment (single component)
+            // this includes T, Rho, Charge, N, Nppc
+            const auto c = static_cast<unsigned short>(addresses.back());
+            if (fld.id() == FldsID::T) {
+              raise::ErrorIf(fld.comp.size() != 1,
+                             "Wrong # of components requested for T output",
+                             HERE);
+              ComputeMoments<S, M, FldsID::T>(params,
+                                              local_domain->mesh,
+                                              local_domain->species,
+                                              fld.species,
+                                              fld.comp[0],
+                                              local_domain->fields.bckp,
+                                              c);
+            } else if (fld.id() == FldsID::Rho) {
+              ComputeMoments<S, M, FldsID::Rho>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                fld.species,
+                                                {},
+                                                local_domain->fields.bckp,
+                                                c);
+            } else if (fld.id() == FldsID::Charge) {
+              ComputeMoments<S, M, FldsID::Charge>(params,
+                                                   local_domain->mesh,
+                                                   local_domain->species,
+                                                   fld.species,
+                                                   {},
+                                                   local_domain->fields.bckp,
+                                                   c);
+            } else if (fld.id() == FldsID::N) {
+              ComputeMoments<S, M, FldsID::N>(params,
                                               local_domain->mesh,
                                               local_domain->species,
                                               fld.species,
                                               {},
                                               local_domain->fields.bckp,
                                               c);
-          } else if (fld.id() == FldsID::Charge) {
-            ComputeMoments<S, M, FldsID::Charge>(params,
+            } else if (fld.id() == FldsID::Nppc) {
+              ComputeMoments<S, M, FldsID::Nppc>(params,
                                                  local_domain->mesh,
                                                  local_domain->species,
                                                  fld.species,
                                                  {},
                                                  local_domain->fields.bckp,
                                                  c);
-          } else if (fld.id() == FldsID::N) {
-            ComputeMoments<S, M, FldsID::N>(params,
-                                            local_domain->mesh,
-                                            local_domain->species,
-                                            fld.species,
-                                            {},
-                                            local_domain->fields.bckp,
-                                            c);
-          } else if (fld.id() == FldsID::Nppc) {
-            ComputeMoments<S, M, FldsID::Nppc>(params,
-                                               local_domain->mesh,
-                                               local_domain->species,
-                                               fld.species,
-                                               {},
-                                               local_domain->fields.bckp,
-                                               c);
+            } else {
+              raise::Error("Wrong moment requested for output", HERE);
+            }
+            SynchronizeFields(*local_domain,
+                              Comm::Bckp,
+                              { addresses.back(), addresses.back() + 1 });
           } else {
-            raise::Error("Wrong moment requested for output", HERE);
+            raise::Error(
+              "Wrong # of components requested for non-moment output",
+              HERE);
           }
-          SynchronizeFields(*local_domain,
-                            Comm::Bckp,
-                            { addresses.back(), addresses.back() + 1 });
-        } else {
-          raise::Error("Wrong # of components requested for non-moment output",
-                       HERE);
-        }
-      } else if (fld.comp.size() == 3) { // vector
-        for (auto i = 0; i < 3; ++i) {
-          names.push_back(fld.name(i));
-          addresses.push_back(i + 3);
-        }
-        if (fld.is_moment()) {
+        } else if (fld.comp.size() == 3) { // vector
           for (auto i = 0; i < 3; ++i) {
-            const auto c = static_cast<unsigned short>(addresses[i]);
+            names.push_back(fld.name(i));
+            addresses.push_back(i + 3);
+          }
+          if (fld.is_moment()) {
+            for (auto i = 0; i < 3; ++i) {
+              const auto c = static_cast<unsigned short>(addresses[i]);
+              raise::ErrorIf(fld.comp[i].size() != 2,
+                             "Wrong # of components requested for moment",
+                             HERE);
+              ComputeMoments<S, M, FldsID::T>(params,
+                                              local_domain->mesh,
+                                              local_domain->species,
+                                              fld.species,
+                                              fld.comp[i],
+                                              local_domain->fields.bckp,
+                                              c);
+            }
+            raise::ErrorIf(addresses[1] - addresses[0] !=
+                             addresses[2] - addresses[1],
+                           "Indices for the backup are not contiguous",
+                           HERE);
+            SynchronizeFields(*local_domain,
+                              Comm::Bckp,
+                              { addresses[0], addresses[2] + 1 });
+          } else {
+            // copy fields to bckp (:, 0, 1, 2)
+            // if as-is specified ==> copy directly to 3, 4, 5
+            range_tuple_t copy_to = { 0, 3 };
+            if (output_asis) {
+              copy_to = { 3, 6 };
+            }
+            if (fld.is_current()) {
+              DeepCopyFields<M::Dim, 3, 6>(local_domain->fields.cur,
+                                           local_domain->fields.bckp,
+                                           { cur::jx1, cur::jx3 + 1 },
+                                           copy_to);
+            } else if (fld.is_field()) {
+              if (S == SimEngine::GRPIC && fld.is_gr_aux_field()) {
+                if (fld.is_efield()) {
+                  // GR: E
+                  DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
+                                               local_domain->fields.bckp,
+                                               { em::ex1, em::ex3 + 1 },
+                                               copy_to);
+                } else {
+                  // GR: H
+                  DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
+                                               local_domain->fields.bckp,
+                                               { em::hx1, em::hx3 + 1 },
+                                               copy_to);
+                }
+              } else {
+                if (fld.is_efield()) {
+                  // GR/SR: D/E
+                  DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.em,
+                                               local_domain->fields.bckp,
+                                               { em::ex1, em::ex3 + 1 },
+                                               copy_to);
+                } else {
+                  // GR/SR: B
+                  DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.em,
+                                               local_domain->fields.bckp,
+                                               { em::bx1, em::bx3 + 1 },
+                                               copy_to);
+                }
+              }
+            } else {
+              raise::Error("Wrong field requested for output", HERE);
+            }
+            if (not output_asis) {
+              // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
+              // converting to proper basis and properly interpolating
+              list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
+              list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
+              DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.bckp,
+                                           local_domain->fields.bckp,
+                                           { 0, 3 },
+                                           { 3, 6 });
+              Kokkos::parallel_for("FieldsToPhys",
+                                   local_domain->mesh.rangeActiveCells(),
+                                   kernel::FieldsToPhys_kernel<M, 6, 6>(
+                                     local_domain->fields.bckp,
+                                     local_domain->fields.bckp,
+                                     comp_from,
+                                     comp_to,
+                                     fld.interp_flag | fld.prepare_flag,
+                                     local_domain->mesh.metric));
+            }
+          }
+        } else if (fld.comp.size() == 6) { // tensor
+          raise::ErrorIf(not fld.is_moment() or fld.id() != FldsID::T,
+                         "Only T tensor has 6 components",
+                         HERE);
+          for (auto i = 0; i < 6; ++i) {
+            names.push_back(fld.name(i));
+            addresses.push_back(i);
+            const auto c = static_cast<unsigned short>(addresses.back());
             raise::ErrorIf(fld.comp[i].size() != 2,
                            "Wrong # of components requested for moment",
                            HERE);
@@ -279,170 +382,86 @@ namespace ntt {
                                             local_domain->fields.bckp,
                                             c);
           }
-          raise::ErrorIf(addresses[1] - addresses[0] != addresses[2] - addresses[1],
-                         "Indices for the backup are not contiguous",
-                         HERE);
           SynchronizeFields(*local_domain,
                             Comm::Bckp,
-                            { addresses[0], addresses[2] + 1 });
+                            { addresses[0], addresses[5] + 1 });
         } else {
-          // copy fields to bckp (:, 0, 1, 2)
-          // if as-is specified ==> copy directly to 3, 4, 5
-          range_tuple_t copy_to = { 0, 3 };
-          if (output_asis) {
-            copy_to = { 3, 6 };
-          }
-          if (fld.is_current()) {
-            DeepCopyFields<M::Dim, 3, 6>(local_domain->fields.cur,
-                                         local_domain->fields.bckp,
-                                         { cur::jx1, cur::jx3 + 1 },
-                                         copy_to);
-          } else if (fld.is_field()) {
-            if (S == SimEngine::GRPIC && fld.is_gr_aux_field()) {
-              if (fld.is_efield()) {
-                // GR: E
-                DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
-                                             local_domain->fields.bckp,
-                                             { em::ex1, em::ex3 + 1 },
-                                             copy_to);
-              } else {
-                // GR: H
-                DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
-                                             local_domain->fields.bckp,
-                                             { em::hx1, em::hx3 + 1 },
-                                             copy_to);
-              }
-            } else {
-              if (fld.is_efield()) {
-                // GR/SR: D/E
-                DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.em,
-                                             local_domain->fields.bckp,
-                                             { em::ex1, em::ex3 + 1 },
-                                             copy_to);
-              } else {
-                // GR/SR: B
-                DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.em,
-                                             local_domain->fields.bckp,
-                                             { em::bx1, em::bx3 + 1 },
-                                             copy_to);
-              }
-            }
-          } else {
-            raise::Error("Wrong field requested for output", HERE);
-          }
-          if (not output_asis) {
-            // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
-            // converting to proper basis and properly interpolating
-            list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
-            list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
-            DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.bckp,
-                                         local_domain->fields.bckp,
-                                         { 0, 3 },
-                                         { 3, 6 });
-            Kokkos::parallel_for("FieldsToPhys",
-                                 local_domain->mesh.rangeActiveCells(),
-                                 kernel::FieldsToPhys_kernel<M, 6, 6>(
-                                   local_domain->fields.bckp,
-                                   local_domain->fields.bckp,
-                                   comp_from,
-                                   comp_to,
-                                   fld.interp_flag | fld.prepare_flag,
-                                   local_domain->mesh.metric));
-          }
+          raise::Error("Wrong # of components requested for output", HERE);
         }
-      } else if (fld.comp.size() == 6) { // tensor
-        raise::ErrorIf(not fld.is_moment() or fld.id() != FldsID::T,
-                       "Only T tensor has 6 components",
-                       HERE);
-        for (auto i = 0; i < 6; ++i) {
-          names.push_back(fld.name(i));
-          addresses.push_back(i);
-          const auto c = static_cast<unsigned short>(addresses.back());
-          raise::ErrorIf(fld.comp[i].size() != 2,
-                         "Wrong # of components requested for moment",
-                         HERE);
-          ComputeMoments<S, M, FldsID::T>(params,
-                                          local_domain->mesh,
-                                          local_domain->species,
-                                          fld.species,
-                                          fld.comp[i],
-                                          local_domain->fields.bckp,
-                                          c);
-        }
-        SynchronizeFields(*local_domain,
-                          Comm::Bckp,
-                          { addresses[0], addresses[5] + 1 });
-      } else {
-        raise::Error("Wrong # of components requested for output", HERE);
+        g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
       }
-      g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
-    }
+    } // end shouldWrite("fields", step, time)
 
-    const auto prtl_stride = params.template get<std::size_t>(
-      "output.prtl_stride");
-    for (const auto& prtl : g_writer.speciesWriters()) {
-      auto& species = local_domain->species[prtl.species() - 1];
-      if (not species.is_sorted()) {
-        species.SortByTags();
+    if (g_writer.shouldWrite("particles", step, time)) {
+      const auto prtl_stride = params.template get<std::size_t>(
+        "output.particles.stride");
+      for (const auto& prtl : g_writer.speciesWriters()) {
+        auto& species = local_domain->species[prtl.species() - 1];
+        if (not species.is_sorted()) {
+          species.SortByTags();
+        }
+        const std::size_t nout = species.npart() / prtl_stride;
+        array_t<real_t*>  buff_x1, buff_x2, buff_x3;
+        array_t<real_t*>  buff_ux1, buff_ux2, buff_ux3;
+        array_t<real_t*>  buff_wei;
+        buff_wei = array_t<real_t*> { "w", nout };
+        buff_ux1 = array_t<real_t*> { "u1", nout };
+        buff_ux2 = array_t<real_t*> { "u2", nout };
+        buff_ux3 = array_t<real_t*> { "u3", nout };
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          buff_x1 = array_t<real_t*> { "x1", nout };
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          buff_x2 = array_t<real_t*> { "x2", nout };
+        }
+        if constexpr (M::Dim == Dim::_3D or
+                      ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
+          buff_x3 = array_t<real_t*> { "x3", nout };
+        }
+        Kokkos::parallel_for(
+          "PrtlToPhys",
+          nout,
+          kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
+                                          buff_x1,
+                                          buff_x2,
+                                          buff_x3,
+                                          buff_ux1,
+                                          buff_ux2,
+                                          buff_ux3,
+                                          buff_wei,
+                                          species.i1,
+                                          species.i2,
+                                          species.i3,
+                                          species.dx1,
+                                          species.dx2,
+                                          species.dx3,
+                                          species.ux1,
+                                          species.ux2,
+                                          species.ux3,
+                                          species.phi,
+                                          species.weight,
+                                          local_domain->mesh.metric));
+        g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
+        g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
+        g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
+        g_writer.writeParticleQuantity(buff_ux3, prtl.name("U", 3));
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          g_writer.writeParticleQuantity(buff_x1, prtl.name("X", 1));
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          g_writer.writeParticleQuantity(buff_x2, prtl.name("X", 2));
+        }
+        if constexpr (M::Dim == Dim::_3D or
+                      ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
+          g_writer.writeParticleQuantity(buff_x3, prtl.name("X", 3));
+        }
       }
-      const std::size_t nout = species.npart() / prtl_stride;
-      array_t<real_t*>  buff_x1, buff_x2, buff_x3;
-      array_t<real_t*>  buff_ux1, buff_ux2, buff_ux3;
-      array_t<real_t*>  buff_wei;
-      buff_wei = array_t<real_t*> { "w", nout };
-      buff_ux1 = array_t<real_t*> { "u1", nout };
-      buff_ux2 = array_t<real_t*> { "u2", nout };
-      buff_ux3 = array_t<real_t*> { "u3", nout };
-      if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-        buff_x1 = array_t<real_t*> { "x1", nout };
-      }
-      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-        buff_x2 = array_t<real_t*> { "x2", nout };
-      }
-      if constexpr (M::Dim == Dim::_3D or
-                    ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
-        buff_x3 = array_t<real_t*> { "x3", nout };
-      }
-      Kokkos::parallel_for(
-        "PrtlToPhys",
-        nout,
-        kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                        buff_x1,
-                                        buff_x2,
-                                        buff_x3,
-                                        buff_ux1,
-                                        buff_ux2,
-                                        buff_ux3,
-                                        buff_wei,
-                                        species.i1,
-                                        species.i2,
-                                        species.i3,
-                                        species.dx1,
-                                        species.dx2,
-                                        species.dx3,
-                                        species.ux1,
-                                        species.ux2,
-                                        species.ux3,
-                                        species.phi,
-                                        species.weight,
-                                        local_domain->mesh.metric));
-      g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
-      g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
-      g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
-      g_writer.writeParticleQuantity(buff_ux3, prtl.name("U", 3));
-      if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-        g_writer.writeParticleQuantity(buff_x1, prtl.name("X", 1));
-      }
-      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-        g_writer.writeParticleQuantity(buff_x2, prtl.name("X", 2));
-      }
-      if constexpr (M::Dim == Dim::_3D or
-                    ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
-        g_writer.writeParticleQuantity(buff_x3, prtl.name("X", 3));
-      }
-    }
+    } // end shouldWrite("particles", step, time)
 
     g_writer.endWriting();
+    return true;
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
