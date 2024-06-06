@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/log.h"
 
@@ -17,6 +18,7 @@
 
 #include "kernels/fields_to_phys.hpp"
 #include "kernels/particle_moments.hpp"
+#include "kernels/prtls_to_phys.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -58,7 +60,10 @@ namespace ntt {
                               M::CoordType);
     const auto fields_to_write = params.template get<std::vector<std::string>>(
       "output.fields");
+    const auto species_to_write = params.template get<std::vector<unsigned short>>(
+      "output.particles");
     g_writer.defineFieldOutputs(S, fields_to_write);
+    g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
 
     g_writer.writeAttrs(params);
   }
@@ -372,6 +377,71 @@ namespace ntt {
       }
       g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
     }
+
+    const auto prtl_stride = params.template get<std::size_t>(
+      "output.prtl_stride");
+    for (const auto& prtl : g_writer.speciesWriters()) {
+      auto& species = local_domain->species[prtl.species() - 1];
+      if (not species.is_sorted()) {
+        species.SortByTags();
+      }
+      const std::size_t nout = species.npart() / prtl_stride;
+      array_t<real_t*>  buff_x1, buff_x2, buff_x3;
+      array_t<real_t*>  buff_ux1, buff_ux2, buff_ux3;
+      array_t<real_t*>  buff_wei;
+      buff_wei = array_t<real_t*> { "w", nout };
+      buff_ux1 = array_t<real_t*> { "u1", nout };
+      buff_ux2 = array_t<real_t*> { "u2", nout };
+      buff_ux3 = array_t<real_t*> { "u3", nout };
+      if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+        buff_x1 = array_t<real_t*> { "x1", nout };
+      }
+      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+        buff_x2 = array_t<real_t*> { "x2", nout };
+      }
+      if constexpr (M::Dim == Dim::_3D or
+                    ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
+        buff_x3 = array_t<real_t*> { "x3", nout };
+      }
+      Kokkos::parallel_for(
+        "PrtlToPhys",
+        nout,
+        kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
+                                        buff_x1,
+                                        buff_x2,
+                                        buff_x3,
+                                        buff_ux1,
+                                        buff_ux2,
+                                        buff_ux3,
+                                        buff_wei,
+                                        species.i1,
+                                        species.i2,
+                                        species.i3,
+                                        species.dx1,
+                                        species.dx2,
+                                        species.dx3,
+                                        species.ux1,
+                                        species.ux2,
+                                        species.ux3,
+                                        species.phi,
+                                        species.weight,
+                                        local_domain->mesh.metric));
+      g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
+      g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
+      g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
+      g_writer.writeParticleQuantity(buff_ux3, prtl.name("U", 3));
+      if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+        g_writer.writeParticleQuantity(buff_x1, prtl.name("X", 1));
+      }
+      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+        g_writer.writeParticleQuantity(buff_x2, prtl.name("X", 2));
+      }
+      if constexpr (M::Dim == Dim::_3D or
+                    ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
+        g_writer.writeParticleQuantity(buff_x3, prtl.name("X", 3));
+      }
+    }
+
     g_writer.endWriting();
   }
 

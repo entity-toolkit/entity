@@ -278,6 +278,7 @@ namespace ntt {
         }
       }
       for (auto& species : domain.species) {
+        species.set_unsorted();
         logger::Checkpoint(
           fmt::format("Launching particle pusher kernel for %d [%s] : %lu",
                       species.index(),
@@ -513,6 +514,7 @@ namespace ntt {
                 domain.mesh.metric, domain.mesh.flds_bc(),
                 ni2, inv_n0, 0));
             // clang-format on
+            prtl_spec.set_unsorted();
           }
           Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
           m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });

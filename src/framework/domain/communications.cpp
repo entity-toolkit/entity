@@ -637,6 +637,7 @@ namespace ntt {
       timers->stop("Communications");
       // !TODO: maybe there is a way to not sort twice
       timers->start("Sorting");
+      species.set_unsorted();
       species.SortByTags();
       timers->stop("Sorting");
 #endif

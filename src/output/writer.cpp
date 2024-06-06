@@ -97,6 +97,29 @@ namespace out {
     }
   }
 
+  void Writer::defineParticleOutputs(Dimension                          dim,
+                                     const std::vector<unsigned short>& specs) {
+    m_prtl_writers.clear();
+    for (const auto& s : specs) {
+      m_prtl_writers.emplace_back(s);
+    }
+    for (const auto& prtl : m_prtl_writers) {
+      for (auto d { 0u }; d < dim; ++d) {
+        m_io.DefineVariable<real_t>(prtl.name("X", d + 1),
+                                    {},
+                                    {},
+                                    { adios2::UnknownDim });
+      }
+      for (auto d { 0u }; d < Dim::_3D; ++d) {
+        m_io.DefineVariable<real_t>(prtl.name("U", d + 1),
+                                    {},
+                                    {},
+                                    { adios2::UnknownDim });
+      }
+      m_io.DefineVariable<real_t>(prtl.name("W", 0), {}, {}, { adios2::UnknownDim });
+    }
+  }
+
   template <Dimension D, int N>
   void WriteField(adios2::IO&            io,
                   adios2::Engine&        writer,
@@ -155,6 +178,15 @@ namespace out {
     for (std::size_t i { 0 }; i < addresses.size(); ++i) {
       WriteField<D, N>(m_io, m_writer, names[i], fld, addresses[i], m_flds_ghosts);
     }
+  }
+
+  void Writer::writeParticleQuantity(const array_t<real_t*>& array,
+                                     const std::string&      varname) {
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { array.extent(0) }));
+    auto array_h = Kokkos::create_mirror_view(array);
+    Kokkos::deep_copy(array_h, array);
+    m_writer.Put<real_t>(var, array_h);
   }
 
   void Writer::writeMesh(unsigned short          dim,

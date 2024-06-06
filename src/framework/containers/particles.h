@@ -38,6 +38,7 @@ namespace ntt {
   private:
     // Number of currently active (used) particles
     std::size_t m_npart { 0 };
+    bool        m_is_sorted { false };
 
 #if !defined(MPI_ENABLED)
     const std::size_t m_ntags { 2 };
@@ -144,6 +145,11 @@ namespace ntt {
       return m_npart;
     }
 
+    [[nodiscard]]
+    auto is_sorted() const -> bool {
+      return m_is_sorted;
+    }
+
     /**
      * @brief Get the number of distinct tags possible
      */
@@ -200,6 +206,10 @@ namespace ntt {
           maxnpart()),
         HERE);
       m_npart = n;
+    }
+
+    void set_unsorted() {
+      m_is_sorted = false;
     }
 
     /**

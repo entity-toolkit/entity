@@ -46,8 +46,8 @@ namespace out {
     bool              m_flds_ghosts;
     const std::string m_engine;
 
-    std::vector<OutputField> m_flds_writers;
-    // std::vector<OutputParticles> m_prtl_writers;
+    std::vector<OutputField>   m_flds_writers;
+    std::vector<OutputSpecies> m_prtl_writers;
 
   public:
     Writer() : m_engine { "disabled" } {}
@@ -65,7 +65,8 @@ namespace out {
                           bool incl_ghosts,
                           Coord);
 
-    void defineFieldOutputs(const SimEngine& S, const std::vector<std::string>&);
+    void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
+    void defineParticleOutputs(Dimension, const std::vector<unsigned short>&);
 
     void writeMesh(unsigned short, const array_t<real_t*>&, const array_t<real_t*>&);
 
@@ -74,12 +75,18 @@ namespace out {
                     const ndfield_t<D, N>&,
                     const std::vector<std::size_t>&);
 
+    void writeParticleQuantity(const array_t<real_t*>&, const std::string&);
+
     void beginWriting(const std::string&, std::size_t, long double);
     void endWriting();
 
     /* getters -------------------------------------------------------------- */
     auto fieldWriters() const -> const std::vector<OutputField>& {
       return m_flds_writers;
+    }
+
+    auto speciesWriters() const -> const std::vector<OutputSpecies>& {
+      return m_prtl_writers;
     }
   };
 
