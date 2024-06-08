@@ -412,6 +412,21 @@ namespace ntt {
                       "stride",
                       defaults::output::prtl_stride));
 
+    // spectra
+    set("output.spectra.e_min",
+        toml::find_or(raw_data, "output", "spectra", "e_min", defaults::output::spec_emin));
+    set("output.spectra.e_max",
+        toml::find_or(raw_data, "output", "spectra", "e_max", defaults::output::spec_emax));
+    set("output.spectra.log_bins",
+        toml::find_or(raw_data,
+                      "output",
+                      "spectra",
+                      "log_bins",
+                      defaults::output::spec_log));
+    set("output.spectra.n_bins",
+        toml::find_or(raw_data, "output", "spectra", "n_bins", defaults::output::spec_nbins));
+
+    // intervals
     for (const auto& type : { "fields", "particles", "spectra" }) {
       const auto q_int      = toml::find_or<std::size_t>(raw_data,
                                                     "output",

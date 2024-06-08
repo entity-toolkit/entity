@@ -370,6 +370,22 @@
     interval_time = ""
 
   [output.spectra]
+    # Minimum energy for the spectra output:
+    #   @type: float
+    #   @default: 1e-3
+    e_min = ""
+    # Maximum energy for the spectra output:
+    #   @type: float
+    #   @default: 1e3
+    e_max = ""
+    # Whether to use logarithmic bins
+    #   @type: bool
+    #   @default: true
+    log_bins = ""
+    # Number of bins for the spectra output:
+    #   @type: unsigned int: > 0
+    #   @default: 200
+    n_bins = ""
     # Number of timesteps between spectra outputs (overrides `output.interval`):
     #   @type: unsigned int: > 0
     #   @default: 0 (use `output.interval`)

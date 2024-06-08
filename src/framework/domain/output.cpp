@@ -4,6 +4,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/log.h"
+#include "utils/numeric.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -64,6 +65,12 @@ namespace ntt {
       "output.particles.species");
     g_writer.defineFieldOutputs(S, fields_to_write);
     g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
+    // spectra write all particle species
+    std::vector<unsigned short> spectra_species {};
+    for (const auto& sp : species_params()) {
+      spectra_species.push_back(sp.index());
+    }
+    g_writer.defineSpectraOutputs(spectra_species);
     for (const auto& type : { "fields", "particles", "spectra" }) {
       g_writer.addTracker(type,
                           params.template get<std::size_t>(
@@ -459,6 +466,72 @@ namespace ntt {
         }
       }
     } // end shouldWrite("particles", step, time)
+
+    if (g_writer.shouldWrite("spectra", step, time)) {
+      const auto log_bins = params.template get<bool>(
+        "output.spectra.log_bins");
+      const auto n_bins = params.template get<std::size_t>(
+        "output.spectra.n_bins");
+      auto e_min = params.template get<real_t>("output.spectra.e_min");
+      auto e_max = params.template get<real_t>("output.spectra.e_max");
+      if (log_bins) {
+        e_min = math::log10(e_min);
+        e_max = math::log10(e_max);
+      }
+      array_t<real_t*> energy { "energy", n_bins + 1 };
+      Kokkos::parallel_for(
+        "GenerateEnergyBins",
+        n_bins + 1,
+        Lambda(index_t e) {
+          if (log_bins) {
+            energy(e) = math::pow(10.0, e_min + (e_max - e_min) * e / n_bins);
+          } else {
+            energy(e) = e_min + (e_max - e_min) * e / n_bins;
+          }
+        });
+      for (const auto& spec : g_writer.spectraWriters()) {
+        auto&            species = local_domain->species[spec.species() - 1];
+        array_t<real_t*> dn { "dn", n_bins };
+        auto       dn_scatter = Kokkos::Experimental::create_scatter_view(dn);
+        auto       ux1        = species.ux1;
+        auto       ux2        = species.ux2;
+        auto       ux3        = species.ux3;
+        auto       weight     = species.weight;
+        auto       tag        = species.tag;
+        const auto is_massive = species.mass() > 0.0f;
+        Kokkos::parallel_for(
+          "ComputeSpectra",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (tag(p) != ParticleTag::alive) {
+              return;
+            }
+            real_t en;
+            if (is_massive) {
+              en = U2GAMMA(ux1(p), ux2(p), ux3(p)) - ONE;
+            } else {
+              en = NORM(ux1(p), ux2(p), ux3(p));
+            }
+            if (log_bins) {
+              en = math::log10(en);
+            }
+            std::size_t e_ind = 0;
+            if (en <= e_min) {
+              e_ind = 0;
+            } else if (en >= e_max) {
+              e_ind = n_bins;
+            } else {
+              e_ind = static_cast<std::size_t>(
+                static_cast<real_t>(n_bins) * (en - e_min) / (e_max - e_min));
+            }
+            auto dn_acc    = dn_scatter.access();
+            dn_acc(e_ind) += weight(p);
+          });
+        Kokkos::Experimental::contribute(dn, dn_scatter);
+        g_writer.writeSpectrum(dn, spec.name());
+      }
+      g_writer.writeSpectrumBins(energy, "sEbn");
+    } // end shouldWrite("spectra", step, time)
 
     g_writer.endWriting();
     return true;

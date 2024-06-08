@@ -54,6 +54,10 @@ namespace ntt::defaults {
     const unsigned short mom_smooth  = 0;
     const unsigned short flds_stride = 1;
     const std::size_t    prtl_stride = 100;
+    const real_t         spec_emin   = 1e-3;
+    const real_t         spec_emax   = 1e3;
+    const bool           spec_log    = true;
+    const std::size_t    spec_nbins  = 200;
   } // namespace output
 
   namespace diag {

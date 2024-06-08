@@ -11,6 +11,12 @@
 #include <string>
 #include <vector>
 
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
+  #include <mpi.h>
+#endif
+
 namespace out {
 
   Writer::Writer(const std::string& engine) : m_engine { engine } {
@@ -138,6 +144,17 @@ namespace out {
     }
   }
 
+  void Writer::defineSpectraOutputs(const std::vector<unsigned short>& specs) {
+    m_spectra_writers.clear();
+    for (const auto& s : specs) {
+      m_spectra_writers.emplace_back(s);
+    }
+    m_io.DefineVariable<real_t>("sEbn", {}, {}, { adios2::UnknownDim });
+    for (const auto& sp : m_spectra_writers) {
+      m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
+    }
+  }
+
   template <Dimension D, int N>
   void WriteField(adios2::IO&            io,
                   adios2::Engine&        writer,
@@ -205,6 +222,50 @@ namespace out {
     auto array_h = Kokkos::create_mirror_view(array);
     Kokkos::deep_copy(array_h, array);
     m_writer.Put<real_t>(var, array_h);
+  }
+
+  void Writer::writeSpectrum(const array_t<real_t*>& counts,
+                             const std::string&      varname) {
+    auto counts_h = Kokkos::create_mirror_view(counts);
+    Kokkos::deep_copy(counts_h, counts);
+#if defined(MPI_ENABLED)
+    array_t<real_t*> counts_all { "counts_all", counts.extent(0) };
+    auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
+    int              rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Reduce(counts_h.data(),
+               counts_h_all.data(),
+               counts_h.extent(0),
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_ROOT_RANK,
+               MPI_COMM_WORLD);
+    if (rank == MPI_ROOT_RANK) {
+      auto var = m_io.InquireVariable<real_t>(varname);
+      var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+      m_writer.Put<real_t>(var, counts_h_all);
+    }
+#else
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+    m_writer.Put<real_t>(var, counts_h);
+#endif
+  }
+
+  void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
+                                 const std::string&      varname) {
+#if defined(MPI_ENABLED)
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank != MPI_ROOT_RANK) {
+      return;
+    }
+#endif
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins.extent(0) }));
+    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
+    Kokkos::deep_copy(e_bins_h, e_bins);
+    m_writer.Put<real_t>(var, e_bins_h);
   }
 
   void Writer::writeMesh(unsigned short          dim,

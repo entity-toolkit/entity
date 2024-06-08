@@ -3,18 +3,12 @@
  * @brief Defines the metadata for particle output
  * @implements
  *   - out::OutputSpecies
- * @cpp:
- *   - particles.cpp
  */
 
 #ifndef OUTPUT_PARTICLES_H
 #define OUTPUT_PARTICLES_H
 
-#include "enums.h"
-
 #include <string>
-
-using namespace ntt;
 
 namespace out {
 

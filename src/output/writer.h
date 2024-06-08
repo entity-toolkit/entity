@@ -14,6 +14,7 @@
 
 #include "output/fields.h"
 #include "output/particles.h"
+#include "output/spectra.h"
 
 #include <adios2.h>
 #include <adios2/cxx11/KokkosView.h>
@@ -81,6 +82,7 @@ namespace out {
 
     std::vector<OutputField>   m_flds_writers;
     std::vector<OutputSpecies> m_prtl_writers;
+    std::vector<OutputSpectra> m_spectra_writers;
 
   public:
     Writer() : m_engine { "disabled" } {}
@@ -103,6 +105,7 @@ namespace out {
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
     void defineParticleOutputs(Dimension, const std::vector<unsigned short>&);
+    void defineSpectraOutputs(const std::vector<unsigned short>&);
 
     void writeMesh(unsigned short, const array_t<real_t*>&, const array_t<real_t*>&);
 
@@ -112,6 +115,8 @@ namespace out {
                     const std::vector<std::size_t>&);
 
     void writeParticleQuantity(const array_t<real_t*>&, const std::string&);
+    void writeSpectrum(const array_t<real_t*>&, const std::string&);
+    void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
     void beginWriting(const std::string&, std::size_t, long double);
     void endWriting();
@@ -123,6 +128,10 @@ namespace out {
 
     auto speciesWriters() const -> const std::vector<OutputSpecies>& {
       return m_prtl_writers;
+    }
+
+    auto spectraWriters() const -> const std::vector<OutputSpectra>& {
+      return m_spectra_writers;
     }
   };
 
