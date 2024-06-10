@@ -20,10 +20,10 @@ auto main() -> int {
       raise::ErrorIf(e.id() != FldsID::E, "E should have ID FldsID::E", HERE);
       raise::ErrorIf(e.species.size() != 0, "E should have no species", HERE);
       raise::ErrorIf(e.comp.size() != 3, "E should have 3 components", HERE);
-      raise::ErrorIf(e.name() != "Ei", "E should have name `Ei`", HERE);
-      raise::ErrorIf(e.name(0) != "E1", "E should have name `E1`", HERE);
-      raise::ErrorIf(e.name(1) != "E2", "E should have name `E2`", HERE);
-      raise::ErrorIf(e.name(2) != "E3", "E should have name `E3`", HERE);
+      raise::ErrorIf(e.name() != "fEi", "E should have name `Ei`", HERE);
+      raise::ErrorIf(e.name(0) != "fE1", "E should have name `E1`", HERE);
+      raise::ErrorIf(e.name(1) != "fE2", "E should have name `E2`", HERE);
+      raise::ErrorIf(e.name(2) != "fE3", "E should have name `E3`", HERE);
       raise::ErrorIf(!(e.prepare_flag & PrepareOutput::ConvertToHat),
                      "E in SRPIC should be converted to hat",
                      HERE);
@@ -37,7 +37,7 @@ auto main() -> int {
       raise::ErrorIf(not rho.is_moment(), "Rho should be a moment", HERE);
       raise::ErrorIf(rho.is_field(), "Rho should not be a field", HERE);
       raise::ErrorIf(rho.id() != FldsID::Rho, "Rho should have ID FldsID::Rho", HERE);
-      raise::ErrorIf(rho.name() != "Rho_1_3", "Rho should have name `Rho_1_3`", HERE);
+      raise::ErrorIf(rho.name() != "fRho_1_3", "Rho should have name `Rho_1_3`", HERE);
       raise::ErrorIf(rho.comp.size() != 0, "Rho should have 0 components", HERE);
       raise::ErrorIf(rho.prepare_flag != PrepareOutput::None,
                      "Rho should not have any prepare flags",
@@ -55,10 +55,10 @@ auto main() -> int {
       raise::ErrorIf(not t.is_moment(), "T should be a moment", HERE);
       raise::ErrorIf(t.is_field(), "T should not be a field", HERE);
       raise::ErrorIf(t.id() != FldsID::T, "T should have ID FldsID::T", HERE);
-      raise::ErrorIf(t.name() != "Tti_2_3", "T should have name `Tti_2_3`", HERE);
-      raise::ErrorIf(t.name(0) != "T01_2_3", "T should have name `T01_2_3`", HERE);
-      raise::ErrorIf(t.name(1) != "T02_2_3", "T should have name `T02_2_3`", HERE);
-      raise::ErrorIf(t.name(2) != "T03_2_3", "T should have name `T03_2_3`", HERE);
+      raise::ErrorIf(t.name() != "fTti_2_3", "T should have name `Tti_2_3`", HERE);
+      raise::ErrorIf(t.name(0) != "fT01_2_3", "T should have name `T01_2_3`", HERE);
+      raise::ErrorIf(t.name(1) != "fT02_2_3", "T should have name `T02_2_3`", HERE);
+      raise::ErrorIf(t.name(2) != "fT03_2_3", "T should have name `T03_2_3`", HERE);
       raise::ErrorIf(t.comp.size() != 3, "T should have 3 component", HERE);
       raise::ErrorIf(t.comp[0].size() != 2,
                      "T.comp[0] should have 2 components",
