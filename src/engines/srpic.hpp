@@ -484,8 +484,7 @@ namespace ntt {
             m_params.template get<std::pair<unsigned short, unsigned short>>(
               "grid.boundaries.atmosphere.species");
           const auto nmax = m_params.template get<real_t>(
-                              "grid.boundaries.atmosphere.density") /
-                            TWO;
+            "grid.boundaries.atmosphere.density");
 
           Kokkos::deep_copy(domain.fields.bckp, ZERO);
           auto scatter_bckp = Kokkos::Experimental::create_scatter_view(
@@ -512,7 +511,7 @@ namespace ntt {
                 prtl_spec.mass(), prtl_spec.charge(),
                 use_weights,
                 domain.mesh.metric, domain.mesh.flds_bc(),
-                ni2, inv_n0, 0));
+                ni2, inv_n0, N_GHOSTS));
             // clang-format on
             prtl_spec.set_unsorted();
           }

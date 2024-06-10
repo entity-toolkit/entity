@@ -322,6 +322,10 @@
   interval_time = ""
 
   [output.fields]
+    # Toggle for the field output:
+    #   @type: bool
+    #   @default: true
+    enable = ""
     # Field quantities to output:
     #   @type: array of strings
     #   @valid: fields: "E", "B", "J", "divE"
@@ -351,6 +355,10 @@
     interval_time = ""
 
   [output.particles]
+    # Toggle for the particles output:
+    #   @type: bool
+    #   @default: true
+    enable = ""
     # Particle species indices to output:
     #   @type: array of ints
     #   @default: [] = all species
@@ -370,6 +378,10 @@
     interval_time = ""
 
   [output.spectra]
+    # Toggle for the spectra output:
+    #   @type: bool
+    #   @default: true
+    enable = ""
     # Minimum energy for the spectra output:
     #   @type: float
     #   @default: 1e-3

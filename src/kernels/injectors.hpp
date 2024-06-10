@@ -505,47 +505,46 @@ namespace kernel {
 
     Inline void operator()(index_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
+        const auto        i1_ = COORD(i1);
+        coord_t<Dim::_1D> x_Cd { i1_ + HALF };
+        coord_t<Dim::_1D> x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        const auto ppc = static_cast<std::size_t>(ppc0 * spatial_dist(x_Ph));
+        if (ppc == 0) {
+          return;
+        }
+        const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
         auto       rand_gen = random_pool.get_state();
-        const auto i1_      = COORD(i1);
-        auto       ppc      = ppc0;
-        while (ppc > ZERO) {
-          const auto        dx1 = Random<prtldx_t>(rand_gen);
-          coord_t<Dim::_1D> x_Cd { i1_ + static_cast<real_t>(dx1) };
-          coord_t<Dim::_1D> x_Ph { ZERO };
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-          // decide to inject or not
-          if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
-            const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+        for (auto p { 0u }; p < ppc; ++p) {
+          const auto dx1 = Random<prtldx_t>(rand_gen);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
-            dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
-            dx1s_2(index + offset2) = dx1;
+          i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_1(index + offset1 - p) = dx1;
+          i1s_2(index + offset2 - p)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_2(index + offset2 - p) = dx1;
 
-            vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
-            energy_dist(x_Ph, v_T, spidx1);
-            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
-            ux1s_1(index + offset1) = v_XYZ[0];
-            ux2s_1(index + offset1) = v_XYZ[1];
-            ux3s_1(index + offset1) = v_XYZ[2];
-            energy_dist(x_Ph, v_T, spidx2);
-            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
-            ux1s_2(index + offset2) = v_XYZ[0];
-            ux2s_2(index + offset2) = v_XYZ[1];
-            ux3s_2(index + offset2) = v_XYZ[2];
+          vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
+          energy_dist(x_Ph, v_T, spidx1);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
+          ux1s_1(index + offset1 - p) = v_XYZ[0];
+          ux2s_1(index + offset1 - p) = v_XYZ[1];
+          ux3s_1(index + offset1 - p) = v_XYZ[2];
+          energy_dist(x_Ph, v_T, spidx2);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
+          ux1s_2(index + offset2 - p) = v_XYZ[0];
+          ux2s_2(index + offset2 - p) = v_XYZ[1];
+          ux3s_2(index + offset2 - p) = v_XYZ[2];
 
-            tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset2) = ParticleTag::alive;
-            if (M::CoordType == Coord::Cart) {
-              weights_1(index + offset1) = ONE;
-              weights_2(index + offset2) = ONE;
-            } else {
-              const auto sqrt_det_h      = metric.sqrt_det_h(x_Cd);
-              weights_1(index + offset1) = sqrt_det_h * inv_V0;
-              weights_2(index + offset2) = sqrt_det_h * inv_V0;
-            }
+          tags_1(index + offset1 - p) = ParticleTag::alive;
+          tags_2(index + offset2 - p) = ParticleTag::alive;
+          if (M::CoordType == Coord::Cart) {
+            weights_1(index + offset1 - p) = ONE;
+            weights_2(index + offset2 - p) = ONE;
+          } else {
+            const auto wei                 = metric.sqrt_det_h({ i1_ + HALF });
+            weights_1(index + offset1 - p) = wei;
+            weights_2(index + offset2 - p) = wei;
           }
-          ppc -= ONE;
         }
         random_pool.free_state(rand_gen);
       } else {
@@ -555,70 +554,67 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
+        const auto          i1_ = COORD(i1);
+        const auto          i2_ = COORD(i2);
+        coord_t<Dim::_2D>   x_Cd { i1_ + HALF, i2_ + HALF };
+        coord_t<Dim::_2D>   x_Ph { ZERO };
+        coord_t<M::PrtlDim> x_Cd_ { ZERO };
+        x_Cd_[0] = x_Cd[0];
+        x_Cd_[1] = x_Cd[1];
+        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
+          x_Cd_[2] = ZERO;
+        }
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        const auto ppc = static_cast<std::size_t>(ppc0 * spatial_dist(x_Ph));
+        if (ppc == 0) {
+          return;
+        }
+        const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
         auto       rand_gen = random_pool.get_state();
-        const auto i1_      = COORD(i1);
-        const auto i2_      = COORD(i2);
-        auto       ppc      = ppc0;
-        while (ppc > ZERO) {
-          const auto        dx1 = Random<prtldx_t>(rand_gen);
-          const auto        dx2 = Random<prtldx_t>(rand_gen);
-          coord_t<Dim::_2D> x_Cd { i1_ + static_cast<real_t>(dx1),
-                                   i2_ + static_cast<real_t>(dx2) };
-          coord_t<Dim::_2D> x_Ph { ZERO };
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-          // decide to inject or not
-          if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
-            const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+        for (auto p { 0u }; p < ppc; ++p) {
+          const auto dx1 = Random<prtldx_t>(rand_gen);
+          const auto dx2 = Random<prtldx_t>(rand_gen);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
-            dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
-            dx1s_2(index + offset2) = dx1;
+          i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_1(index + offset1 - p) = dx1;
+          i1s_2(index + offset2 - p)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_2(index + offset2 - p) = dx1;
 
-            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
-            dx2s_1(index + offset1) = dx2;
-            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
-            dx2s_2(index + offset2) = dx2;
+          i2s_1(index + offset1 - p)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_1(index + offset1 - p) = dx2;
+          i2s_2(index + offset2 - p)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_2(index + offset2 - p) = dx2;
 
-            coord_t<M::PrtlDim> x_Cd_ { ZERO };
-            x_Cd_[0] = x_Cd[0];
-            x_Cd_[1] = x_Cd[1];
-            if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
-              x_Cd_[2] = ZERO;
-            }
-
-            vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-            energy_dist(x_Ph, v_T, spidx1);
-            if constexpr (S == SimEngine::SRPIC) {
-              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
-              metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
-            }
-            ux1s_1(index + offset1) = v_Cd[0];
-            ux2s_1(index + offset1) = v_Cd[1];
-            ux3s_1(index + offset1) = v_Cd[2];
-            energy_dist(x_Ph, v_T, spidx2);
-            if constexpr (S == SimEngine::SRPIC) {
-              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
-              metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
-            }
-            ux1s_2(index + offset2) = v_Cd[0];
-            ux2s_2(index + offset2) = v_Cd[1];
-            ux3s_2(index + offset2) = v_Cd[2];
-
-            tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset2) = ParticleTag::alive;
-            if (M::CoordType == Coord::Cart) {
-              weights_1(index + offset1) = ONE;
-              weights_2(index + offset2) = ONE;
-            } else {
-              const auto sqrt_det_h      = metric.sqrt_det_h(x_Cd);
-              weights_1(index + offset1) = sqrt_det_h * inv_V0;
-              weights_2(index + offset2) = sqrt_det_h * inv_V0;
-            }
+          vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
+          energy_dist(x_Ph, v_T, spidx1);
+          if constexpr (S == SimEngine::SRPIC) {
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
+          } else if constexpr (S == SimEngine::GRPIC) {
+            metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
           }
-          ppc -= ONE;
+          ux1s_1(index + offset1 - p) = v_Cd[0];
+          ux2s_1(index + offset1 - p) = v_Cd[1];
+          ux3s_1(index + offset1 - p) = v_Cd[2];
+          energy_dist(x_Ph, v_T, spidx2);
+          if constexpr (S == SimEngine::SRPIC) {
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
+          } else if constexpr (S == SimEngine::GRPIC) {
+            metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
+          }
+          ux1s_2(index + offset2 - p) = v_Cd[0];
+          ux2s_2(index + offset2 - p) = v_Cd[1];
+          ux3s_2(index + offset2 - p) = v_Cd[2];
+
+          tags_1(index + offset1 - p) = ParticleTag::alive;
+          tags_2(index + offset2 - p) = ParticleTag::alive;
+          if (M::CoordType == Coord::Cart) {
+            weights_1(index + offset1 - p) = ONE;
+            weights_2(index + offset2 - p) = ONE;
+          } else {
+            const auto wei = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
+            weights_1(index + offset1 - p) = wei;
+            weights_2(index + offset2 - p) = wei;
+          }
         }
         random_pool.free_state(rand_gen);
       }
@@ -630,70 +626,70 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
+        const auto        i1_ = COORD(i1);
+        const auto        i2_ = COORD(i2);
+        const auto        i3_ = COORD(i3);
+        coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
+        coord_t<Dim::_3D> x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        const auto ppc = static_cast<std::size_t>(ppc0 * spatial_dist(x_Ph));
+        if (ppc == 0) {
+          return;
+        }
+        const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
         auto       rand_gen = random_pool.get_state();
-        const auto i1_      = COORD(i1);
-        const auto i2_      = COORD(i2);
-        const auto i3_      = COORD(i3);
-        auto       ppc      = ppc0;
-        while (ppc > ZERO) {
-          const auto        dx1 = Random<prtldx_t>(rand_gen);
-          const auto        dx2 = Random<prtldx_t>(rand_gen);
-          const auto        dx3 = Random<prtldx_t>(rand_gen);
-          coord_t<Dim::_3D> x_Cd { i1_ + static_cast<real_t>(dx1),
-                                   i2_ + static_cast<real_t>(dx2),
-                                   i3_ + static_cast<real_t>(dx3) };
-          coord_t<Dim::_3D> x_Ph { ZERO };
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-          if (Random<real_t>(rand_gen) < spatial_dist(x_Ph)) {
-            const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+        for (auto p { 0u }; p < ppc; ++p) {
+          const auto dx1 = Random<prtldx_t>(rand_gen);
+          const auto dx2 = Random<prtldx_t>(rand_gen);
+          const auto dx3 = Random<prtldx_t>(rand_gen);
 
-            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
-            dx1s_1(index + offset1) = dx1;
-            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
-            dx1s_2(index + offset2) = dx1;
+          i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_1(index + offset1 - p) = dx1;
+          i1s_2(index + offset2 - p)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_2(index + offset2 - p) = dx1;
 
-            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
-            dx2s_1(index + offset1) = dx2;
-            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
-            dx2s_2(index + offset2) = dx2;
+          i2s_1(index + offset1 - p)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_1(index + offset1 - p) = dx2;
+          i2s_2(index + offset2 - p)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_2(index + offset2 - p) = dx2;
 
-            i3s_1(index + offset1)  = static_cast<int>(i3) - N_GHOSTS;
-            dx3s_1(index + offset1) = dx3;
-            i3s_2(index + offset2)  = static_cast<int>(i3) - N_GHOSTS;
-            dx3s_2(index + offset2) = dx3;
+          i3s_1(index + offset1 - p)  = static_cast<int>(i3) - N_GHOSTS;
+          dx3s_1(index + offset1 - p) = dx3;
+          i3s_2(index + offset2 - p)  = static_cast<int>(i3) - N_GHOSTS;
+          dx3s_2(index + offset2 - p) = dx3;
 
-            vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-            energy_dist(x_Ph, v_T, spidx1);
-            if constexpr (S == SimEngine::SRPIC) {
-              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
-              metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
-            }
-            ux1s_1(index + offset1) = v_Cd[0];
-            ux2s_1(index + offset1) = v_Cd[1];
-            ux3s_1(index + offset1) = v_Cd[2];
-            energy_dist(x_Ph, v_T, spidx2);
-            if constexpr (S == SimEngine::SRPIC) {
-              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
-              metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
-            }
-            ux1s_2(index + offset2) = v_Cd[0];
-            ux2s_2(index + offset2) = v_Cd[1];
-            ux3s_2(index + offset2) = v_Cd[2];
-
-            tags_1(index + offset1) = ParticleTag::alive;
-            tags_2(index + offset2) = ParticleTag::alive;
-            if (M::CoordType == Coord::Cart) {
-              weights_1(index + offset1) = ONE;
-              weights_2(index + offset2) = ONE;
-            } else {
-              const auto sqrt_det_h      = metric.sqrt_det_h(x_Cd);
-              weights_1(index + offset1) = sqrt_det_h * inv_V0;
-              weights_2(index + offset2) = sqrt_det_h * inv_V0;
-            }
+          vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
+          energy_dist(x_Ph, v_T, spidx1);
+          if constexpr (S == SimEngine::SRPIC) {
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
+          } else if constexpr (S == SimEngine::GRPIC) {
+            metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
           }
-          ppc -= ONE;
+          ux1s_1(index + offset1 - p) = v_Cd[0];
+          ux2s_1(index + offset1 - p) = v_Cd[1];
+          ux3s_1(index + offset1 - p) = v_Cd[2];
+          energy_dist(x_Ph, v_T, spidx2);
+          if constexpr (S == SimEngine::SRPIC) {
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
+          } else if constexpr (S == SimEngine::GRPIC) {
+            metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
+          }
+          ux1s_2(index + offset2 - p) = v_Cd[0];
+          ux2s_2(index + offset2 - p) = v_Cd[1];
+          ux3s_2(index + offset2 - p) = v_Cd[2];
+
+          tags_1(index + offset1 - p) = ParticleTag::alive;
+          tags_2(index + offset2 - p) = ParticleTag::alive;
+          if (M::CoordType == Coord::Cart) {
+            weights_1(index + offset1 - p) = ONE;
+            weights_2(index + offset2 - p) = ONE;
+          } else {
+            const auto wei = metric.sqrt_det_h(
+                               { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
+                             inv_V0;
+            weights_1(index + offset1 - p) = wei;
+            weights_2(index + offset2 - p) = wei;
+          }
         }
         random_pool.free_state(rand_gen);
       } else {

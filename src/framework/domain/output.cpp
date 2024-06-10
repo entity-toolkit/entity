@@ -160,9 +160,16 @@ namespace ntt {
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
-    if (not g_writer.shouldWrite("fields", step, time) and
-        not g_writer.shouldWrite("particles", step, time) and
-        not g_writer.shouldWrite("spectra", step, time)) {
+    const auto write_fields = params.template get<bool>(
+                                "output.fields.enable") and
+                              g_writer.shouldWrite("fields", step, time);
+    const auto write_particles = params.template get<bool>(
+                                   "output.particles.enable") and
+                                 g_writer.shouldWrite("particles", step, time);
+    const auto write_spectra = params.template get<bool>(
+                                 "output.spectra.enable") and
+                               g_writer.shouldWrite("spectra", step, time);
+    if (not(write_fields or write_particles or write_spectra)) {
       return false;
     }
     auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
@@ -174,7 +181,7 @@ namespace ntt {
                           step,
                           time);
 
-    if (g_writer.shouldWrite("fields", step, time)) {
+    if (write_fields) {
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 
       for (unsigned short dim = 0; dim < M::Dim; ++dim) {
@@ -399,7 +406,7 @@ namespace ntt {
       }
     } // end shouldWrite("fields", step, time)
 
-    if (g_writer.shouldWrite("particles", step, time)) {
+    if (write_particles) {
       const auto prtl_stride = params.template get<std::size_t>(
         "output.particles.stride");
       for (const auto& prtl : g_writer.speciesWriters()) {
@@ -426,29 +433,20 @@ namespace ntt {
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
           buff_x3 = array_t<real_t*> { "x3", nout };
         }
+        // clang-format off
         Kokkos::parallel_for(
           "PrtlToPhys",
           nout,
           kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                          buff_x1,
-                                          buff_x2,
-                                          buff_x3,
-                                          buff_ux1,
-                                          buff_ux2,
-                                          buff_ux3,
+                                          buff_x1, buff_x2, buff_x3,
+                                          buff_ux1, buff_ux2, buff_ux3,
                                           buff_wei,
-                                          species.i1,
-                                          species.i2,
-                                          species.i3,
-                                          species.dx1,
-                                          species.dx2,
-                                          species.dx3,
-                                          species.ux1,
-                                          species.ux2,
-                                          species.ux3,
-                                          species.phi,
-                                          species.weight,
+                                          species.i1, species.i2, species.i3,
+                                          species.dx1, species.dx2, species.dx3,
+                                          species.ux1, species.ux2, species.ux3,
+                                          species.phi, species.weight,
                                           local_domain->mesh.metric));
+        // clang-format on
         g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
         g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
         g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
@@ -467,7 +465,7 @@ namespace ntt {
       }
     } // end shouldWrite("particles", step, time)
 
-    if (g_writer.shouldWrite("spectra", step, time)) {
+    if (write_spectra) {
       const auto log_bins = params.template get<bool>(
         "output.spectra.log_bins");
       const auto n_bins = params.template get<std::size_t>(

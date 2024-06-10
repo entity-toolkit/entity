@@ -375,10 +375,13 @@ namespace ntt {
         toml::find_or<long double>(raw_data, "output", "interval_time", -1.0));
     promiseToDefine("output.fields.interval");
     promiseToDefine("output.fields.interval_time");
+    promiseToDefine("output.fields.enable");
     promiseToDefine("output.particles.interval");
     promiseToDefine("output.particles.interval_time");
+    promiseToDefine("output.particles.enable");
     promiseToDefine("output.spectra.interval");
     promiseToDefine("output.spectra.interval_time");
+    promiseToDefine("output.spectra.enable");
 
     const auto flds_out = toml::find_or(raw_data,
                                         "output",
@@ -438,6 +441,8 @@ namespace ntt {
                                                          std::string(type),
                                                          "interval_time",
                                                          -1.0);
+      set("output." + std::string(type) + ".enable",
+          toml::find_or(raw_data, "output", std::string(type), "enable", true));
       if (q_int == 0 && q_int_time == -1.0) {
         set("output." + std::string(type) + ".interval",
             get<std::size_t>("output.interval"));
