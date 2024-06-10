@@ -98,7 +98,7 @@ namespace out {
       }
       // capitalize the first letter
       tmp[0] = std::toupper(tmp[0]);
-      return tmp;
+      return "f" + tmp;
     }
 
     [[nodiscard]]
@@ -130,7 +130,7 @@ namespace out {
       }
       // capitalize the first letter
       tmp[0] = std::toupper(tmp[0]);
-      return tmp;
+      return "f" + tmp;
     }
 
     [[nodiscard]]

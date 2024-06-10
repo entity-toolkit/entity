@@ -25,8 +25,6 @@
 namespace kernel {
   using namespace ntt;
 
-  struct UseWeights_t {};
-
   template <SimEngine::type S, class M>
   class PrtlToPhys_kernel {
     static_assert(M::is_metric, "M must be a metric class");
@@ -104,15 +102,10 @@ namespace kernel {
       raise::ErrorIf(buff_ux3.extent(0) == 0, "Invalid buffer size", HERE);
     }
 
-    Inline void operator()(const UseWeights_t&, index_t p) const {
-      bufferX(p);
-      bufferU(p);
-      buff_wei(p) = weight(p * stride);
-    }
-
     Inline void operator()(index_t p) const {
       bufferX(p);
       bufferU(p);
+      buff_wei(p) = weight(p * stride);
     }
 
     Inline void bufferX(index_t& p) const {

@@ -134,6 +134,36 @@ template <Dimension D, unsigned short N>
 using scatter_ndfield_t =
   typename kokkos_aliases_hidden::scatter_ndfield_impl<D, N>::type;
 
+namespace kokkos_aliases_hidden {
+  // c++ magic
+  template <Dimension D, unsigned short N>
+  struct randacc_ndfield_impl {
+    using type = void;
+  };
+
+  template <unsigned short N>
+  struct randacc_ndfield_impl<Dim::_1D, N> {
+    using type =
+      Kokkos::View<const real_t* [N], Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
+  };
+
+  template <unsigned short N>
+  struct randacc_ndfield_impl<Dim::_2D, N> {
+    using type =
+      Kokkos::View<const real_t** [N], Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
+  };
+
+  template <unsigned short N>
+  struct randacc_ndfield_impl<Dim::_3D, N> {
+    using type =
+      Kokkos::View<const real_t*** [N], Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <Dimension D, unsigned short N>
+using randacc_ndfield_t =
+  typename kokkos_aliases_hidden::randacc_ndfield_impl<D, N>::type;
+
 // Defining aliases for `RangePolicy` and `MDRangePolicy` for the device space
 namespace kokkos_aliases_hidden {
   // c++ magic

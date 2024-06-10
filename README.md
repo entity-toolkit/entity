@@ -32,12 +32,12 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
   - [ ]  Output
     - [x]  Fields/currents (SR/GR)
     - [x]  Moments (SR)
-    - [ ]  Moments (GR)
+    - [x]  Moments (GR)
     - [x]  Particles (SR/GR)
-    - [ ]  Energy distributions (SR/GR)
+    - [x]  Energy distributions (SR/GR)
     - [ ]  Particle tracking (SR/GR)
   - [ ]  Extra physics
-    - [ ]  Radiation (synchrotron/IC)
+    - [x]  Radiation (synchrotron/IC)
     - [ ]  gamma+B pair production
     - [ ]  QED
   - [x]  MPI
@@ -77,9 +77,8 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 A limited number of unit tests are now available. To compile/run them:
 ```shell
 cmake -B build -D TESTS=ON
-cd build
-make -j
-cd tests && ctest -j
+cmake --build build -j $(nproc)
+ctest --test-dir build
 ```
 
 Tests are automatically run when on pull requests to the `master` branch.

@@ -96,7 +96,6 @@ namespace arch {
       real_t randX1, randX2;
       if (temp < static_cast<real_t>(0.5)) {
         // Juttner-Synge distribution using the Box-Muller method - non-relativistic
-
         randX1 = Random<real_t>(rand_gen);
         while (cmp::AlmostZero(randX1)) {
           randX1 = Random<real_t>(rand_gen);
@@ -120,7 +119,6 @@ namespace arch {
         randX1 = math::sqrt(-TWO * math::log(randX1));
         randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
         v[2]   = randX1 * math::cos(randX2) * math::sqrt(temp);
-
       } else {
         // Juttner-Synge distribution using the Sobol method - relativistic
         auto randu   = ONE;

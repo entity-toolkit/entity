@@ -87,16 +87,12 @@ namespace arch {
       } else {
         raise::KernelError(HERE, "Invalid dimension");
       }
-      
-       return math::max((target_density(x_Ph) - dens) / target_max_density,
-                       static_cast<real_t>(0.0));     
-      // if(static_cast<real_t>(0.9) * (ONE - ONE / 4.0)*target_density(x_Ph) > dens) {
-      // return math::max(math::floor(target_density(x_Ph) - dens) / target_max_density,
-      //                  static_cast<real_t>(0.0));
-      // } else {
-      //   return static_cast<real_t>(0.0);
-      // }
-
+      const auto target = target_density(x_Ph);
+      if (0.9 * target > dens) {
+        return (target - dens) / target_max_density;
+      } else {
+        return ZERO;
+      }
     }
   };
 

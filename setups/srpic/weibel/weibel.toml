@@ -1,0 +1,74 @@
+[simulation]
+  name = "weibel"
+  engine = "srpic"
+  runtime = 100.0
+
+[grid]
+  resolution = [512, 512]
+  extent = [[-10.0, 10.0], [-10.0, 10.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+    
+[scales]
+  larmor0 = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 16.0
+
+  [[particles.species]]
+    label = "e-_p"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e7
+
+  [[particles.species]]
+    label = "e+_p"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e7
+
+  [[particles.species]]
+    label = "e-_b"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e7
+
+  [[particles.species]]
+    label = "e+_b"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e7
+
+[setup]
+  drift_u_1  = 0.2
+  drift_u_2  = 0.2
+  temp_1     = 1e-4
+  temp_2     = 1e-4
+  
+[output]
+  format = "hdf5"
+  interval_time = 0.25
+
+  [output.fields]
+    quantities = ["N_1_2", "N_3_4", "B", "E", "T0i_1", "T0i_3"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+[diagnostics]
+  colored_stdout = true

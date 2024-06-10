@@ -33,20 +33,6 @@ namespace ntt {
       const auto diag_interval = m_params.get<std::size_t>(
         "diagnostics.interval");
 
-#if defined(OUTPUT_ENABLED)
-      const auto interval = m_params.template get<std::size_t>(
-        "output.interval");
-      const auto interval_time = m_params.template get<long double>(
-        "output.interval_time");
-      long double last_output_time = -interval_time - 1.0;
-      const auto  should_output =
-        [&interval, &interval_time, &last_output_time](auto step, auto time) {
-          return ((interval_time <= 0.0) and (step % interval == 0)) or
-                 ((time - last_output_time >= interval_time) and
-                  (interval_time > 0.0));
-        };
-#endif
-
       auto       time_history  = pbar::DurationHistory { 1000 };
       const auto sort_interval = m_params.template get<std::size_t>(
         "particles.sort_interval");
@@ -74,14 +60,9 @@ namespace ntt {
 
         auto print_output = false;
 #if defined(OUTPUT_ENABLED)
-        // write timestep if needed
-        if (should_output(step, time)) {
-          timers.start("Output");
-          m_metadomain.Write(m_params, step, time);
-          timers.stop("Output");
-          last_output_time = time;
-          print_output     = true;
-        }
+        timers.start("Output");
+        print_output = m_metadomain.Write(m_params, step, time);
+        timers.stop("Output");
 #endif
 
         // advance time_history

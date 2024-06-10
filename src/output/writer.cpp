@@ -11,6 +11,12 @@
 #include <string>
 #include <vector>
 
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
+  #include <mpi.h>
+#endif
+
 namespace out {
 
   Writer::Writer(const std::string& engine) : m_engine { engine } {
@@ -19,6 +25,24 @@ namespace out {
 
     m_io.DefineVariable<std::size_t>("Step");
     m_io.DefineVariable<long double>("Time");
+  }
+
+  void Writer::addTracker(const std::string& type,
+                          std::size_t        interval,
+                          long double        interval_time) {
+    m_trackers.insert(std::pair<std::string, out::Tracker>(
+      { type, Tracker(type, interval, interval_time) }));
+  }
+
+  auto Writer::shouldWrite(const std::string& type,
+                           std::size_t        step,
+                           long double        time) -> bool {
+    if (m_trackers.find(type) != m_trackers.end()) {
+      return m_trackers.at(type).shouldWrite(step, time);
+    } else {
+      raise::Error("Tracker type not found", HERE);
+      return false;
+    }
   }
 
   void Writer::defineMeshLayout(const std::vector<std::size_t>& glob_shape,
@@ -97,6 +121,40 @@ namespace out {
     }
   }
 
+  void Writer::defineParticleOutputs(Dimension                          dim,
+                                     const std::vector<unsigned short>& specs) {
+    m_prtl_writers.clear();
+    for (const auto& s : specs) {
+      m_prtl_writers.emplace_back(s);
+    }
+    for (const auto& prtl : m_prtl_writers) {
+      for (auto d { 0u }; d < dim; ++d) {
+        m_io.DefineVariable<real_t>(prtl.name("X", d + 1),
+                                    {},
+                                    {},
+                                    { adios2::UnknownDim });
+      }
+      for (auto d { 0u }; d < Dim::_3D; ++d) {
+        m_io.DefineVariable<real_t>(prtl.name("U", d + 1),
+                                    {},
+                                    {},
+                                    { adios2::UnknownDim });
+      }
+      m_io.DefineVariable<real_t>(prtl.name("W", 0), {}, {}, { adios2::UnknownDim });
+    }
+  }
+
+  void Writer::defineSpectraOutputs(const std::vector<unsigned short>& specs) {
+    m_spectra_writers.clear();
+    for (const auto& s : specs) {
+      m_spectra_writers.emplace_back(s);
+    }
+    m_io.DefineVariable<real_t>("sEbn", {}, {}, { adios2::UnknownDim });
+    for (const auto& sp : m_spectra_writers) {
+      m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
+    }
+  }
+
   template <Dimension D, int N>
   void WriteField(adios2::IO&            io,
                   adios2::Engine&        writer,
@@ -155,6 +213,59 @@ namespace out {
     for (std::size_t i { 0 }; i < addresses.size(); ++i) {
       WriteField<D, N>(m_io, m_writer, names[i], fld, addresses[i], m_flds_ghosts);
     }
+  }
+
+  void Writer::writeParticleQuantity(const array_t<real_t*>& array,
+                                     const std::string&      varname) {
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { array.extent(0) }));
+    auto array_h = Kokkos::create_mirror_view(array);
+    Kokkos::deep_copy(array_h, array);
+    m_writer.Put<real_t>(var, array_h);
+  }
+
+  void Writer::writeSpectrum(const array_t<real_t*>& counts,
+                             const std::string&      varname) {
+    auto counts_h = Kokkos::create_mirror_view(counts);
+    Kokkos::deep_copy(counts_h, counts);
+#if defined(MPI_ENABLED)
+    array_t<real_t*> counts_all { "counts_all", counts.extent(0) };
+    auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
+    int              rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Reduce(counts_h.data(),
+               counts_h_all.data(),
+               counts_h.extent(0),
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_ROOT_RANK,
+               MPI_COMM_WORLD);
+    if (rank == MPI_ROOT_RANK) {
+      auto var = m_io.InquireVariable<real_t>(varname);
+      var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+      m_writer.Put<real_t>(var, counts_h_all);
+    }
+#else
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+    m_writer.Put<real_t>(var, counts_h);
+#endif
+  }
+
+  void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
+                                 const std::string&      varname) {
+#if defined(MPI_ENABLED)
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank != MPI_ROOT_RANK) {
+      return;
+    }
+#endif
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins.extent(0) }));
+    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
+    Kokkos::deep_copy(e_bins_h, e_bins);
+    m_writer.Put<real_t>(var, e_bins_h);
   }
 
   void Writer::writeMesh(unsigned short          dim,

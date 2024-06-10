@@ -45,9 +45,11 @@
   nx2 = 2
   
 [output]
-  fields = ["Rho", "E"]
   format = "hdf5"
   interval_time = 0.0025
+
+  [output.fields]
+    quantities = ["Rho", "E"]
 
 [diagnostics]
   colored_stdout = true
