@@ -59,6 +59,8 @@
   v2     = [-0.75, -0.15, 0.0]
   
 [output]
-  fields = ["Nppc_1", "Nppc_2", "E", "B", "J"]
   format = "hdf5"
   interval_time = 0.02
+
+  [output.fields]
+    quantities = ["Nppc_1", "Nppc_2", "E", "B", "J"]

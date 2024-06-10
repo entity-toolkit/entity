@@ -117,10 +117,9 @@ namespace kernel {
         coord_t<M::Dim> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
         if constexpr (M::CoordType == Coord::Cart) {
-          coord_t<M::PrtlDim> x_Ph_ { ZERO };
-          vec_t<Dim::_3D>     v_Ph { ZERO };
+          vec_t<Dim::_3D> v_Ph { ZERO };
           energy_dist(x_Ph, v_Ph, spidx1);
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph_, v_Ph, v1);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph, v_Ph, v1);
           energy_dist(x_Ph, v_Ph, spidx2);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph, v_Ph, v2);
         } else if constexpr (S == SimEngine::SRPIC) {

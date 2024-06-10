@@ -42,9 +42,11 @@
 [setup]
   
 [output]
-  fields = ["N_1", "N_2", "E", "B", "J"]
   format = "hdf5"
   interval_time = 0.01
+
+  [output.quantities]
+    quantities = ["N_1", "N_2", "E", "B", "J"]
 
 [diagnostics]
   colored_stdout = true
