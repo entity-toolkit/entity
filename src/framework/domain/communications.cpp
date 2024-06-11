@@ -107,6 +107,8 @@ namespace ntt {
     const auto recv_ind = (recv_from_nghbr_ptr != nullptr)
                             ? recv_from_nghbr_ptr->index()
                             : 0;
+    (void)send_rank;
+    (void)recv_rank;
     return {
       {send_ind, send_rank},
       {recv_ind, recv_rank}
