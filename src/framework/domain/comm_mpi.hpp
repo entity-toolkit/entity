@@ -11,11 +11,14 @@
 #ifndef FRAMEWORK_DOMAIN_COMM_MPI_HPP
 #define FRAMEWORK_DOMAIN_COMM_MPI_HPP
 
+#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
 #include "arch/mpi_aliases.h"
 #include "utils/error.h"
+
+#include "framework/containers/particles.h"
 
 #include <Kokkos_Core.hpp>
 #include <mpi.h>
