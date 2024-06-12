@@ -1,10 +1,7 @@
 [simulation]
   name = "magnetar"
   engine = "srpic"
-  runtime = 60.0
-
-  # [simulation.domain]
-  #   decomposition = [-1,2]
+  runtime = 200.0
 
 [grid]
   resolution = [4096,2048]
@@ -16,7 +13,7 @@
   [grid.boundaries]
     fields = [["ATMOSPHERE", "ABSORB"]]
     particles = [["ATMOSPHERE", "ABSORB"]]
-    
+
     [grid.boundaries.absorb]
       ds = 1.0
 
@@ -25,8 +22,8 @@
       density = 40.0
       height = 0.02
       species = [1, 2]
-      ds = 1.5
-    
+      ds = 0.5
+
 [scales]
   larmor0 = 5e-6
   skindepth0 = 0.01
@@ -91,11 +88,19 @@
 [setup]
   Bsurf = 1.0
   omega = 0.0125
-  
+
 [output]
-  fields = ["N_1", "N_2", "E", "B"]
   format = "hdf5"
-  interval_time = 0.1
+
+  [output.fields]
+    interval_time = 0.5
+    quantities = ["N_1", "N_2", "N_5", "N_6", "B", "E", "J"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
 
 [diagnostics]
-  interval = 10
+  interval = 100
