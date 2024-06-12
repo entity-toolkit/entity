@@ -323,8 +323,8 @@ namespace arch {
         }
         cell_range = CreateRangePolicy<M::Dim>(x_min, x_max);
       }
-      auto ppc = number_density *
-                 params.template get<real_t>("particles.ppc0") * HALF;
+      const auto ppc = number_density *
+                       params.template get<real_t>("particles.ppc0") * HALF;
       auto injector_kernel =
         kernel::NonUniformInjector_kernel<S, M, typename I::energy_dist_t, typename I::spatial_dist_t>(
           ppc,

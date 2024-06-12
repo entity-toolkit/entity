@@ -511,7 +511,7 @@ namespace ntt {
                 prtl_spec.mass(), prtl_spec.charge(),
                 use_weights,
                 domain.mesh.metric, domain.mesh.flds_bc(),
-                ni2, inv_n0, N_GHOSTS));
+                ni2, inv_n0, 0));
             // clang-format on
             prtl_spec.set_unsorted();
           }
