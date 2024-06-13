@@ -44,18 +44,18 @@
   sort_interval = 100
 
   [[particles.species]]
-  label = "e-"
-  mass = 1.0
-  charge = -1.0
-  maxnpart = 1e8
-  pusher = "Boris,GCA"
+    label = "e-"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e8
+    pusher = "Boris,GCA"
 
   [[particles.species]]
-  label = "e+"
-  mass = 1.0
-  charge = 1.0
-  maxnpart = 1e8
-  pusher = "Boris,GCA"
+    label = "e+"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e8
+    pusher = "Boris,GCA"
 
 [setup]
   Bsurf = 1.0
@@ -67,6 +67,7 @@
   [output.fields]
     interval_time = 0.1
     quantities = ["N_1", "N_2", "E", "B", "T00"]
+    mom_smooth = 2
 
   [output.particles]
     enable = false

@@ -6,6 +6,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
+#include "utils/numeric.h"
 
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
