@@ -11,7 +11,7 @@ else()
   set(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK ON CACHE BOOL "Kokkos debug bounds check")
 endif()
 
-set(Kokkos_ENABLE_HIP ${default_KOKKOS_ENABLE_HIP} CACHE BOOL "Enable CUDA")
+set(Kokkos_ENABLE_HIP ${default_KOKKOS_ENABLE_HIP} CACHE BOOL "Enable HIP")
 set(Kokkos_ENABLE_CUDA ${default_KOKKOS_ENABLE_CUDA} CACHE BOOL "Enable CUDA")
 set(Kokkos_ENABLE_OPENMP ${default_KOKKOS_ENABLE_OPENMP} CACHE BOOL "Enable OpenMP")
 
