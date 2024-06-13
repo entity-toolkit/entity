@@ -15,7 +15,7 @@
 
 #include "engines/engine.hpp"
 
-#if defined(GPU_ENABLED)
+#if defined(CUDA_ENABLED)
   #include <cuda_runtime.h>
 #endif
 
@@ -170,14 +170,14 @@ namespace ntt {
           cpp_standard = "pre-standard " + std::to_string(__cplusplus);
         }
 
-#if defined(GPU_ENABLED)
+#if defined(CUDA_ENABLED)
         int cuda_v;
         cudaRuntimeGetVersion(&cuda_v);
         const auto major { cuda_v / 1000 };
         const auto minor { cuda_v % 1000 / 10 };
         const auto patch { cuda_v % 10 };
         const auto cuda_version = fmt::format("%d.%d.%d", major, minor, patch);
-#else // not GPU_ENABLED
+#else // not CUDA_ENABLED
         const std::string cuda_version = "OFF";
 #endif
 
