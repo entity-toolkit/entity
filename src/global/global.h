@@ -272,6 +272,15 @@ namespace BC {
 
 typedef int BCTags;
 
+namespace Inj {
+  enum InjTags_ {
+    None        = 0,
+    AssumeEmpty = 1 << 0,
+  };
+} // namespace Inj
+
+typedef int InjTags;
+
 /* aliases ------------------------------------------------------------------ */
 
 using Dim = Dimension;
