@@ -18,6 +18,40 @@
 namespace user {
   using namespace ntt;
 
+  template <Dimension D>
+  struct Gravity {
+    const std::vector<unsigned short> species { 1, 2 };
+
+    Gravity(real_t f, real_t tscale, real_t ymid)
+      : force { f }
+      , tscale { tscale }
+      , ymid { ymid } {}
+
+    Inline auto fx1(const unsigned short&, const real_t&, const coord_t<D>&) const
+      -> real_t {
+      return ZERO;
+    }
+
+    Inline auto fx2(const unsigned short&,
+                    const real_t&     t,
+                    const coord_t<D>& x_Ph) const -> real_t {
+      const auto sign = (x_Ph[1] < ymid) ? ONE : -ONE;
+      if (t > tscale) {
+        return sign * force;
+      } else {
+        return sign * force * (ONE - math::cos(constant::PI * t / tscale)) / TWO;
+      }
+    }
+
+    Inline auto fx3(const unsigned short&, const real_t&, const coord_t<D>&) const
+      -> real_t {
+      return ZERO;
+    }
+
+  private:
+    const real_t force, tscale, ymid;
+  };
+
   template <SimEngine::type S, class M>
   struct CurrentLayer : public arch::SpatialDistribution<S, M> {
     CurrentLayer(const M& metric, real_t width, real_t yi)
@@ -75,6 +109,8 @@ namespace user {
     const real_t  Bmag, width, angle, overdensity, y1, y2, bg_temp;
     InitFields<D> init_flds;
 
+    Gravity<D> ext_force;
+
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , Bmag { p.template get<real_t>("setup.Bmag", 1.0) }
@@ -88,7 +124,12 @@ namespace user {
              3 * INV_4 *
                (m.mesh().extent(in::x2).second - m.mesh().extent(in::x2).first) }
       , init_flds { Bmag, width, angle, y1, y2 }
-      , bg_temp { p.template get<real_t>("setup.bg_temp") } {}
+      , bg_temp { p.template get<real_t>("setup.bg_temp") }
+      , ext_force {
+        p.template get<real_t>("setup.fmag", 0.1),
+        (m.mesh().extent(in::x1).second - m.mesh().extent(in::x1).first),
+        INV_2 * (m.mesh().extent(in::x2).second + m.mesh().extent(in::x2).first)
+      } {}
 
     inline PGen() {}
 
