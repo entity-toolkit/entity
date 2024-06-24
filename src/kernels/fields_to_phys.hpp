@@ -42,8 +42,8 @@ namespace kernel {
     const PrepareOutputFlags flags;
     const M                  metric;
 
-    unsigned short cf1 { 0 }, cf2 { 0 }, cf3 { 0 };
-    unsigned short ct1 { 0 }, ct2 { 0 }, ct3 { 0 };
+    const unsigned short cf1, cf2, cf3;
+    const unsigned short ct1, ct2, ct3;
 
   public:
     FieldsToPhys_kernel(const ndfield_t<D, N1>&   from,
@@ -55,13 +55,13 @@ namespace kernel {
       : Ffrom { from }
       , Fto { to }
       , flags { flags }
-      , metric { metric } {
-      cf1 = comps_from[0];
-      ct1 = comps_to[0];
-      cf2 = comps_from[1];
-      ct2 = comps_to[1];
-      cf3 = comps_from[2];
-      ct3 = comps_to[2];
+      , metric { metric }
+      , cf1 { comps_from[0] }
+      , cf2 { comps_from[1] }
+      , cf3 { comps_from[2] }
+      , ct1 { comps_to[0] }
+      , ct2 { comps_to[1] }
+      , ct3 { comps_to[2] } {
       raise::ErrorIf((cf1 >= N1) || (cf2 >= N1) || (cf3 >= N1),
                      "FieldsToPhys_kernel: Invalid component index",
                      HERE);

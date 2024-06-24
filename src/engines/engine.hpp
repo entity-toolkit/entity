@@ -12,7 +12,7 @@
  *   - MPI
  *   - DEBUG
  *   - OUTPUT_ENABLED
- *   - GPU_ENABLED
+ *   - CUDA_ENABLED
  */
 
 #ifndef ENGINES_ENGINE_H

@@ -236,9 +236,14 @@ namespace arch {
   }
 
   /**
-   * @brief Injects particles from a globally-defined vector
+   * @brief Injects particles from a globally-defined map
    * @note very inefficient, should only be used for debug purposes
    * @note (or when injecting very small # of particles)
+   * @param global_domain Global metadomain object
+   * @param local_domain Local domain object
+   * @param spidx Species index
+   * @param data Map containing all the coordinates/velocities of particles to inject
+   * @param use_weights Boolean toggle to use weights or not
    */
   template <SimEngine::type S, class M>
   inline void InjectGlobally(const Metadomain<S, M>& global_domain,
@@ -260,6 +265,15 @@ namespace arch {
       local_domain.species[spidx - 1].npart() + n_inj);
   }
 
+  /**
+   * @brief Injects particles based on spatial distribution function
+   * @param params Simulation parameters
+   * @param domain Local domain object
+   * @param injector Non-uniform injector object
+   * @param number_density Total number density (in units of n0)
+   * @param use_weights Use weights
+   * @param box Region to inject the particles in
+   */
   template <SimEngine::type S, class M, class I>
   inline void InjectNonUniform(const SimulationParams& params,
                                Domain<S, M>&           domain,
@@ -276,10 +290,14 @@ namespace arch {
     raise::ErrorIf((M::CoordType == Coord::Cart) && use_weights,
                    "Weights should not be used for Cartesian coordinates",
                    HERE);
-    raise::ErrorIf(params.template get<bool>("particles.use_weights") != use_weights,
-                   "Weights must be enabled from the input file to use them in "
-                   "the injector",
-                   HERE);
+    raise::ErrorIf(
+      params.template get<bool>("particles.use_weights") and not use_weights,
+      "Weights are enabled in the input but not enabled in the injector",
+      HERE);
+    raise::ErrorIf(
+      not params.template get<bool>("particles.use_weights") and use_weights,
+      "Weights are not enabled in the input but enabled in the injector",
+      HERE);
     if (domain.species[injector.species.first - 1].charge() +
           domain.species[injector.species.second - 1].charge() !=
         0.0f) {
@@ -305,7 +323,8 @@ namespace arch {
         }
         cell_range = CreateRangePolicy<M::Dim>(x_min, x_max);
       }
-      auto ppc = number_density * params.template get<real_t>("particles.ppc0");
+      const auto ppc = number_density *
+                       params.template get<real_t>("particles.ppc0") * HALF;
       auto injector_kernel =
         kernel::NonUniformInjector_kernel<S, M, typename I::energy_dist_t, typename I::spatial_dist_t>(
           ppc,

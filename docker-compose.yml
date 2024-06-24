@@ -1,0 +1,12 @@
+services:
+  entity-cuda:
+    image: morninbru/entity:cuda
+    container_name: entity_cuda
+    stdin_open: true
+    tty: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: .
+        target: /home/entity/

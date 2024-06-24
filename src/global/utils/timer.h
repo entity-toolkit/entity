@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>

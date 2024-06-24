@@ -51,9 +51,11 @@
   rate = 0.1
   
 [output]
-  fields = ["N_1", "N_2", "E"]
   format = "hdf5"
   interval_time = 0.01
+
+  [output.fields]
+    quantities = ["N_1", "N_2", "E"]
 
 [diagnostics]
   interval = 10

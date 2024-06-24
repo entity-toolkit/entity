@@ -33,9 +33,11 @@
   kx3 = 0
   
 [output]
-  fields = ["E", "B"]
   format = "hdf5"
   interval_time = 0.1
+
+  [output.fields]
+    quantities = ["E", "B"]
 
 [diagnostics]
   colored_stdout = true

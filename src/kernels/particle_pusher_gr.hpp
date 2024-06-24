@@ -65,16 +65,16 @@ namespace kernel::gr {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
-    const ndfield_t<D, 6> DB;
-    const ndfield_t<D, 6> DB0;
-    array_t<int*>         i1, i2, i3;
-    array_t<int*>         i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*>    dx1, dx2, dx3;
-    array_t<prtldx_t*>    dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>      ux1, ux2, ux3;
-    array_t<real_t*>      phi;
-    array_t<short*>       tag;
-    const M               metric;
+    const randacc_ndfield_t<D, 6> DB;
+    const randacc_ndfield_t<D, 6> DB0;
+    array_t<int*>                 i1, i2, i3;
+    array_t<int*>                 i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*>            dx1, dx2, dx3;
+    array_t<prtldx_t*>            dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>              ux1, ux2, ux3;
+    array_t<real_t*>              phi;
+    array_t<short*>               tag;
+    const M                       metric;
 
     const real_t coeff, dt;
     const int    ni1, ni2, ni3;

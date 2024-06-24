@@ -2,13 +2,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/comparators.h"
-#include "utils/formatting.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
-#include "metrics/qspherical.h"
-#include "metrics/spherical.h"
 
 #include "kernels/particle_pusher_sr.hpp"
 
@@ -19,7 +15,6 @@
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace ntt;
@@ -128,81 +123,45 @@ void testGCAPusher(const std::vector<std::size_t>&      res,
     {PrtlBC::PERIODIC, PrtlBC::PERIODIC}
   };
 
+  // clang-format off
   Kokkos::parallel_for(
     "pusher",
     1,
     kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                   true,
-                                                   false,
-                                                   kernel::sr::Cooling::None,
+                                                   true, false, kernel::sr::Cooling::None,
                                                    emfield,
                                                    1,
-                                                   i1,
-                                                   i2,
-                                                   i3,
-                                                   i1_prev,
-                                                   i2_prev,
-                                                   i3_prev,
-                                                   dx1,
-                                                   dx2,
-                                                   dx3,
-                                                   dx1_prev,
-                                                   dx2_prev,
-                                                   dx3_prev,
-                                                   ux1,
-                                                   ux2,
-                                                   ux3,
-                                                   phi,
-                                                   tag,
+                                                   i1, i2, i3,
+                                                   i1_prev, i2_prev, i3_prev,
+                                                   dx1, dx2, dx3,
+                                                   dx1_prev, dx2_prev, dx3_prev,
+                                                   ux1, ux2, ux3,
+                                                   phi, tag,
                                                    metric,
-                                                   ZERO,
-                                                   coeff,
-                                                   dt,
-                                                   nx1,
-                                                   nx2,
-                                                   nx3,
+                                                   ZERO, coeff, dt,
+                                                   nx1, nx2, nx3,
                                                    boundaries,
-                                                   (real_t)100000.0,
-                                                   (real_t)1.0,
-                                                   ZERO));
+                                                   (real_t)100000.0, (real_t)1.0, ZERO));
 
   Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
     kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                   true,
-                                                   false,
-                                                   kernel::sr::Cooling::None,
+                                                   true, false, kernel::sr::Cooling::None,
                                                    emfield,
                                                    1,
-                                                   i1,
-                                                   i2,
-                                                   i3,
-                                                   i1_prev,
-                                                   i2_prev,
-                                                   i3_prev,
-                                                   dx1,
-                                                   dx2,
-                                                   dx3,
-                                                   dx1_prev,
-                                                   dx2_prev,
-                                                   dx3_prev,
-                                                   ux1,
-                                                   ux2,
-                                                   ux3,
-                                                   phi,
-                                                   tag,
+                                                   i1, i2, i3,
+                                                   i1_prev, i2_prev, i3_prev,
+                                                   dx1, dx2, dx3,
+                                                   dx1_prev, dx2_prev, dx3_prev,
+                                                   ux1, ux2, ux3,
+                                                   phi, tag,
                                                    metric,
-                                                   ZERO,
-                                                   -coeff,
-                                                   dt,
-                                                   nx1,
-                                                   nx2,
-                                                   nx3,
+                                                   ZERO, -coeff, dt,
+                                                   nx1, nx2, nx3,
                                                    boundaries,
-                                                   (real_t)100000.0,
-                                                   (real_t)1.0,
-                                                   ZERO));
+                                                   (real_t)100000.0, (real_t)1.0, ZERO));
+  // clang-format on
 
   auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
   auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
