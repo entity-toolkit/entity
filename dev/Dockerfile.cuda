@@ -1,0 +1,77 @@
+FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
+ENV CUDA_HOME=/usr/local/cuda
+MAINTAINER "@haykh"
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=host.docker.internal:0.0
+
+# basic packages
+RUN apt-get update 
+RUN apt-get install -y bc zsh git wget curl ssh build-essential cmake vim emacs bat fzf
+RUN apt-get install -y ffmpeg libhdf5-dev python3 python3-pip python3-venv 
+
+# eza
+RUN apt install -y gpg
+RUN mkdir -p /etc/apt/keyrings
+RUN wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | tee /etc/apt/sources.list.d/gierens.list
+RUN chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+RUN apt update
+RUN apt install -y eza
+
+# cleanup
+RUN apt-get clean && \
+    apt-get autoclean && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/cache/* && \
+    rm -rf /var/lib/log/*
+
+# adios2
+ENV HDF5_ROOT=/usr
+RUN git clone https://github.com/ornladios/ADIOS2.git /opt/adios2-src
+RUN cd /opt/adios2-src && \
+    cmake -B build \
+    -D CMAKE_CXX_STANDARD=17 \
+    -D CMAKE_CXX_EXTENSIONS=OFF \
+    -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+    -D BUILD_SHARED_LIBS=ON \
+    -D ADIOS2_USE_HDF5=ON \
+    -D ADIOS2_USE_Python=OFF \
+    -D ADIOS2_USE_Fortran=OFF \
+    -D ADIOS2_USE_ZeroMQ=OFF \
+    -D BUILD_TESTING=OFF \
+    -D ADIOS2_BUILD_EXAMPLES=OFF \
+    -D ADIOS2_USE_MPI=OFF \
+    -D ADIOS2_HAVE_HDF5_VOL=OFF \
+    -D CMAKE_INSTALL_PREFIX=/opt/adios2 && \
+    cmake --build build && \
+    cmake --install build
+ENV ADIOS2_DIR=/opt/adios2
+
+# python
+RUN ln -s /bin/python3 /bin/python
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install black numpy myplotlib nt2py jupyterlab ipykernel
+ENV VIRTUAL_ENV=/opt/venv
+
+# user environment
+ENV USER=ntt
+WORKDIR /home
+ENV PATH=/opt/adios2/bin:/usr/local/cuda/bin:/opt/venv/bin:$PATH
+RUN echo "alias ls='eza -a --sort=type'" >> /root/.bashrc
+RUN echo "alias ll='eza -a --long --header --sort=type --time-style=long-iso'" >> /root/.bashrc
+RUN echo "alias cat='batcat -pp'" >> /root/.bashrc
+
+RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes
+RUN echo eval "\$(starship init bash)" >> /root/.bashrc
+RUN mkdir -p /home/.config
+RUN starship preset pure-preset -o /home/.config/starship.toml
+RUN sed -i 's/$python\\//g' /home/.config/starship.toml
+ENV STARSHIP_CONFIG=/home/.config/starship.toml
+
+# welcome message
+COPY welcome.cuda /home/.welcome.cuda
+RUN echo '/usr/bin/bash ./.welcome.cuda' > /etc/profile.d/welcome.sh
+
+ENTRYPOINT ["/usr/bin/bash", "-l"]
