@@ -237,7 +237,7 @@ void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
     Lambda(index_t i1, index_t i2, index_t i3) {
       const coord_t<Dim::_3D> x_Code_0pp { COORD(i1),
                                            COORD(i2) + HALF,
-                                           COORD(i3) + HALF };
+                                           i3) + HALF };
       const coord_t<Dim::_3D> x_Code_p0p { COORD(i1) + HALF,
                                            COORD(i2),
                                            COORD(i3) + HALF };

@@ -19,11 +19,19 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#define DIFF_4(x, xmm, xm, xp, xpp, ymm, ym, yp, ypp) ((x - xmm)*(x - xp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
+              ((x - xmm)*(x - xpp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + ((x - xp)*(x - xpp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
+              ((x - xm)*(x - xp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + ((x - xm)*(x - xpp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + \
+              ((x - xp)*(x - xpp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + ((x - xm)*(x - xmm)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + \
+              ((x - xm)*(x - xpp)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + ((x - xmm)*(x - xpp)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + \
+              ((x - xm)*(x - xmm)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)) + ((x - xm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)) + \
+              ((x - xmm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp))
+
 namespace kernel::sr {
   using namespace ntt;
 
   /**
-   * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
+   * @brief Algorithm for the 's law: `dB/dt = -curl E` in Curvilinear
    * space (diagonal metric)
    */
   template <class M>
@@ -33,6 +41,8 @@ namespace kernel::sr {
 
     ndfield_t<D, 6> EB;
     const M         metric;
+    const std::size_t i1max;
+    const std::size_t i2max;
     const real_t    coeff;
     bool            is_axis_i2min { false };
 
@@ -40,9 +50,13 @@ namespace kernel::sr {
     Faraday_kernel(const ndfield_t<D, 6>&      EB,
                    const M&                    metric,
                    real_t                      coeff,
+                  std::size_t                 ni1,
+                  std::size_t                 ni2,
                    const boundaries_t<FldsBC>& boundaries)
       : EB { EB }
       , metric { metric }
+      , i1max { ni1 + N_GHOSTS }
+      , i2max { ni2 + N_GHOSTS }
       , coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
@@ -53,8 +67,19 @@ namespace kernel::sr {
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr std::size_t i2min { N_GHOSTS };
+        constexpr std::size_t i1min { N_GHOSTS };
         const real_t          i1_ { COORD(i1) };
         const real_t          i2_ { COORD(i2) };
+
+        coord_t<M::Dim> x_Code { ZERO };
+        coord_t<M::Dim> x_Phys { ZERO };
+
+        x_Code[0] = i1_;
+        x_Code[1] = i2_;
+
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+        const auto r  = x_Phys[0];
+        const auto th = x_Phys[1];
 
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
@@ -66,6 +91,67 @@ namespace kernel::sr {
         const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
         const real_t h3_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
         const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
+
+        if (i1 > i1min && i2 > i2min && i1 < i1max && i2 < i2max ) {
+
+          x_Code[1] = i2_ - 1;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto thmm = x_Phys[1];
+
+          x_Code[1] = i2_;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto thm = x_Phys[1];
+
+          x_Code[1] = i2_ + HALF;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto th0 = x_Phys[1];
+
+          x_Code[1] = i2_ + 1;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto thp = x_Phys[1];
+
+          x_Code[1] = i2_ + 2;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto thpp = x_Phys[1];
+
+          x_Code[1] = i2_;
+          x_Code[0] = i1_ - 1;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto rmm = x_Phys[1];
+
+          x_Code[0] = i1_;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto rm = x_Phys[1];
+
+          x_Code[0] = i1_ + HALF;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto r0 = x_Phys[1];
+
+          x_Code[0] = i1_ + 1;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto rp = x_Phys[1];
+
+          x_Code[0] = i1_ + 2;
+          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
+          auto rpp = x_Phys[1];
+
+          auto curlEr = math::sin(th0) * DIFF_4(th0, thmm, thm, thp, thpp, EB(i1, i2 - 1, em::ex3),
+                              EB(i1, i2, em::ex3), EB(i1, i2 + 1, em::ex3),
+                              EB(i1, i2 + 2, em::ex3)) + math::cos(th0) * (EB(i1, i2 + 1, em::ex3) + EB(i1, i2, em::ex3));
+          auto curlEt = - math::sin(thm) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex3),
+                                EB(i1, i2, em::ex3), EB(i1 + 1, i2, em::ex3),
+                                EB(i1 + 2, i2, em::ex3)) +  (EB(i1 + 1, i2, em::ex3) + EB(i1, i2, em::ex3))/r0);
+          auto curlEp = 1.0 / math::sin(th0) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex2),
+                                EB(i1, i2, em::ex2), EB(i1 + 1, i2, em::ex2),
+                                EB(i1 + 2, i2, em::ex2)) - DIFF_4(th0, thmm, thm, thp, thpp,
+                                EB(i1, i2 - 1, em::ex1), EB(i1, i2, em::ex1),
+                                EB(i1, i2 + 1, em::ex1), EB(i1, i2 + 2, em::ex1)) / SQR(r0));
+                          
+          EB(i1, i2, em::bx1) -= coeff * curlEr;
+          EB(i1, i2, em::bx2) -= coeff * curlEt;
+          EB(i1, i2, em::bx3) -= coeff * curlEp;
+
+        } else {
 
         EB(i1, i2, em::bx1) += coeff * inv_sqrt_detH_0pH *
                                (h3_00 * EB(i1, i2, em::ex3) -
@@ -83,6 +169,8 @@ namespace kernel::sr {
                                 h1_pH0 * EB(i1, i2, em::ex1) +
                                 h2_0pH * EB(i1, i2, em::ex2) -
                                 h2_p1pH * EB(i1 + 1, i2, em::ex2));
+
+        }
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }
