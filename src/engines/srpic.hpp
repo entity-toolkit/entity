@@ -193,11 +193,15 @@ namespace ntt {
           domain.mesh.rangeActiveCells(),
           kernel::mink::Faraday_kernel<M::Dim>(domain.fields.em, coeff1, coeff2));
       } else {
+        const auto ni2 = domain.mesh.n_active(in::x2);
+        const auto ni1 = domain.mesh.n_active(in::x1);
         Kokkos::parallel_for("Faraday",
                              domain.mesh.rangeActiveCells(),
                              kernel::sr::Faraday_kernel<M>(domain.fields.em,
                                                            domain.mesh.metric,
                                                            dT,
+                                                           ni1,
+                                                           ni2,
                                                            domain.mesh.flds_bc()));
       }
     }
