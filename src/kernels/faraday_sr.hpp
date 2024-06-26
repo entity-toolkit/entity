@@ -65,11 +65,10 @@ namespace kernel::sr {
         const real_t          i1_ { COORD(i1) };
         const real_t          i2_ { COORD(i2) };
 
-        const real_t inv_sqrt_detH_0pH { ONE /
-                                         metric.sqrt_det_h({ i1_, i2_ + HALF }) };
-        const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h( { i1_ + HALF, i2_ }) };
+        const real_t inv_sqrt_detH_0pH { ONE / metric.sqrt_det_h({ i1_, i2_ + HALF }) };
         const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) };
-  
+          const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h( { i1_ + HALF, i2_ }) };
+
         const real_t h1_pHm1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ - ONE }) };
         const real_t h1_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
         const real_t h1_pHp1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + ONE }) };
@@ -85,11 +84,11 @@ namespace kernel::sr {
         const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
         const real_t h3_0p2 { metric.template h_<3, 3>({ i1_, i2_ + TWO }) };
         const real_t h3_m10 { metric.template h_<3, 3>({ i1_ - ONE, i2_ }) };
-        const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
         const real_t h3_p20 { metric.template h_<3, 3>({ i1_ + TWO, i2_ }) };
+        const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
 
         // If it fits, do fourth order stencil 
-        if (i1 > i1min + 10 && i2 > i2min + 10 && i1 < i1max - 10 && i2 < i2max - 10 ) {
+        if (i1 > i1min + 1 && i2 > i2min + 1 && i1 < i1max - 1 && i2 < i2max - 1 ) {
 
           const real_t amm = h3_0m1*EB(i1, i2 - 1, em::ex3);
           const real_t am = h3_00*EB(i1, i2, em::ex3);
@@ -117,9 +116,9 @@ namespace kernel::sr {
 
           const real_t curlEp = inv_sqrt_detH_pHpH * ((-1.125*cm + 0.04166666666666666*cmm + 1.125*cp - 0.04166666666666666*cpp) - (-1.125*dm + 0.04166666666666666*dmm + 1.125*dp - 0.04166666666666666*dpp));
 
-          EB(i1, i2, em::bx1) -= coeff * curlEr;
-          EB(i1, i2, em::bx2) -= coeff * curlEt;
-          EB(i1, i2, em::bx3) -= coeff * curlEp;
+          EB(i1, i2, em::bx1) -= coeff * 1.0;
+          EB(i1, i2, em::bx2) -= coeff * 1.0;
+          EB(i1, i2, em::bx3) -= coeff * 1.0;
 
         } else {
 
