@@ -20,10 +20,13 @@
 
 # v1.0.0
 
+- [x] particle output
+- [x] BUG in MPI particles/currents
+
+# v1.1.0
+
 - [ ] custom boundary conditions for particles and fields
 - [ ] transfer GR from v0.9
-- [ ] particle output
-- [ ] BUG in MPI particles/currents
 
 ### Performance improvements to try
 
