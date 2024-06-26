@@ -19,13 +19,13 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#define DIFF_4(x, xmm, xm, xp, xpp, ymm, ym, yp, ypp) ((x - xmm)*(x - xp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
+#define DIFF_4(x, xmm, xm, xp, xpp, ymm, ym, yp, ypp) (((x - xmm)*(x - xp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
               ((x - xmm)*(x - xpp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + ((x - xp)*(x - xpp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
               ((x - xm)*(x - xp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + ((x - xm)*(x - xpp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + \
               ((x - xp)*(x - xpp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + ((x - xm)*(x - xmm)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + \
               ((x - xm)*(x - xpp)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + ((x - xmm)*(x - xpp)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + \
               ((x - xm)*(x - xmm)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)) + ((x - xm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)) + \
-              ((x - xmm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp))
+              ((x - xmm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)))
 
 namespace kernel::sr {
   using namespace ntt;
@@ -92,6 +92,7 @@ namespace kernel::sr {
         const real_t h3_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
         const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
 
+        // If it fits, do fourth order stencil 
         if (i1 > i1min && i2 > i2min && i1 < i1max && i2 < i2max ) {
 
           x_Code[1] = i2_ - 1;
@@ -117,39 +118,35 @@ namespace kernel::sr {
           x_Code[1] = i2_;
           x_Code[0] = i1_ - 1;
           metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rmm = x_Phys[1];
+          auto rmm = x_Phys[0];
 
           x_Code[0] = i1_;
           metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rm = x_Phys[1];
+          auto rm = x_Phys[0];
 
           x_Code[0] = i1_ + HALF;
           metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto r0 = x_Phys[1];
+          auto r0 = x_Phys[0];
 
           x_Code[0] = i1_ + 1;
           metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rp = x_Phys[1];
+          auto rp = x_Phys[0];
 
           x_Code[0] = i1_ + 2;
           metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rpp = x_Phys[1];
-
-          auto curlEr = math::sin(th0) * DIFF_4(th0, thmm, thm, thp, thpp, EB(i1, i2 - 1, em::ex3),
+          auto rpp = x_Phys[0];
+                          
+          EB(i1, i2, em::bx1) -= coeff * (math::sin(th0) * DIFF_4(th0, thmm, thm, thp, thpp, EB(i1, i2 - 1, em::ex3),
                               EB(i1, i2, em::ex3), EB(i1, i2 + 1, em::ex3),
-                              EB(i1, i2 + 2, em::ex3)) + math::cos(th0) * (EB(i1, i2 + 1, em::ex3) + EB(i1, i2, em::ex3));
-          auto curlEt = - math::sin(thm) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex3),
+                              EB(i1, i2 + 2, em::ex3)) + math::cos(th0) * (EB(i1, i2 + 1, em::ex3) + EB(i1, i2, em::ex3)));
+          EB(i1, i2, em::bx2) -= coeff * (- math::sin(thm) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex3),
                                 EB(i1, i2, em::ex3), EB(i1 + 1, i2, em::ex3),
-                                EB(i1 + 2, i2, em::ex3)) +  (EB(i1 + 1, i2, em::ex3) + EB(i1, i2, em::ex3))/r0);
-          auto curlEp = 1.0 / math::sin(th0) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex2),
+                                EB(i1 + 2, i2, em::ex3)) +  (EB(i1 + 1, i2, em::ex3) + EB(i1, i2, em::ex3))/r0));
+          EB(i1, i2, em::bx3) -= coeff * (1.0 / math::sin(th0) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex2),
                                 EB(i1, i2, em::ex2), EB(i1 + 1, i2, em::ex2),
                                 EB(i1 + 2, i2, em::ex2)) - DIFF_4(th0, thmm, thm, thp, thpp,
                                 EB(i1, i2 - 1, em::ex1), EB(i1, i2, em::ex1),
-                                EB(i1, i2 + 1, em::ex1), EB(i1, i2 + 2, em::ex1)) / SQR(r0));
-                          
-          EB(i1, i2, em::bx1) -= coeff * curlEr;
-          EB(i1, i2, em::bx2) -= coeff * curlEt;
-          EB(i1, i2, em::bx3) -= coeff * curlEp;
+                                EB(i1, i2 + 1, em::ex1), EB(i1, i2 + 2, em::ex1)) / SQR(r0)));
 
         } else {
 
