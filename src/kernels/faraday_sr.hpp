@@ -71,82 +71,70 @@ namespace kernel::sr {
         const real_t          i1_ { COORD(i1) };
         const real_t          i2_ { COORD(i2) };
 
-        coord_t<M::Dim> x_Code { ZERO };
-        coord_t<M::Dim> x_Phys { ZERO };
-
-        x_Code[0] = i1_;
-        x_Code[1] = i2_;
-
-        metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-        const auto r  = x_Phys[0];
-        const auto th = x_Phys[1];
-
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
-        const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h(
-                                                  { i1_ + HALF, i2_ + HALF }) };
-        const real_t h1_pHp1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + ONE }) };
+        const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h( { i1_ + HALF, i2_ }) };
+        const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) };
+  
+        const real_t h1_pHm1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ - ONE }) };
         const real_t h1_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
-        const real_t h2_p1pH { metric.template h_<2, 2>({ i1_ + ONE, i2_ + HALF }) };
+        const real_t h1_pHp1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + ONE }) };
+        const real_t h1_pHp2 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + TWO }) };
+
+        const real_t h2_m1pH { metric.template h_<2, 2>({ i1_ - ONE, i2_ + HALF }) };
         const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
+        const real_t h2_p1pH { metric.template h_<2, 2>({ i1_ + ONE, i2_ + HALF }) };
+        const real_t h2_p2pH { metric.template h_<2, 2>({ i1_ + TWO, i2_ + HALF }) };
+
+        const real_t h3_0m1 { metric.template h_<3, 3>({ i1_, i2_ - ONE }) };
         const real_t h3_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
         const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
+        const real_t h3_0p2 { metric.template h_<3, 3>({ i1_, i2_ + TWO }) };
+        const real_t h3_m10 { metric.template h_<3, 3>({ i1_ - ONE, i2_ }) };
+        const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
+        const real_t h3_p20 { metric.template h_<3, 3>({ i1_ + TWO, i2_ }) };
 
         // If it fits, do fourth order stencil 
-        if (i1 > i1min && i2 > i2min && i1 < i1max && i2 < i2max ) {
+        if (i1 > i1min + 1 && i2 > i2min + 1 && i1 < i1max - 1 && i2 < i2max - 1 ) {
 
-          x_Code[1] = i2_ - 1;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto thmm = x_Phys[1];
+          auto ymm = h3_0m1*EB(i1, i2 - 1, em::ex3);
+          auto ym = h3_00*EB(i1, i2, em::ex3);
+          auto yp = h3_0p1*EB(i1, i2 + 1, em::ex3);
+          auto ypp = h3_0p2*EB(i1, i2 + 2, em::ex3);    
 
-          x_Code[1] = i2_;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto thm = x_Phys[1];
+          const auto curlEr = inv_sqrt_detH_0pH * DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, ymm, ym, yp, ypp);
 
-          x_Code[1] = i2_ + HALF;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto th0 = x_Phys[1];
+          ymm = h3_m10*EB(i1 - 1, i2, em::ex3);
+          ym = h3_00*EB(i1, i2, em::ex3);
+          yp = h3_p10*EB(i1 + 1, i2, em::ex3);
+          ypp = h3_p20*EB(i1 + 2, i2, em::ex3);    
 
-          x_Code[1] = i2_ + 1;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto thp = x_Phys[1];
+          const auto curlEt = inv_sqrt_detH_pH0 * DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, ymm, ym, yp, ypp);
 
-          x_Code[1] = i2_ + 2;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto thpp = x_Phys[1];
+          ymm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
+          ym = h2_0pH*EB(i1, i2, em::ex2);
+          yp = h2_p1pH*EB(i1 + 1, i2, em::ex2);
+          ypp = h2_p2pH*EB(i1 + 2, i2, em::ex2); 
 
-          x_Code[1] = i2_;
-          x_Code[0] = i1_ - 1;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rmm = x_Phys[0];
+          auto zmm = h1_pHm1*EB(i1, i2 - 1, em::ex1);
+          auto zm = h1_pH0*EB(i1, i2, em::ex1);
+          auto zp = h1_pHp1*EB(i1, i2 + 1, em::ex1);
+          auto zpp = h1_pHp2*EB(i1, i2 + 2, em::ex1);   
 
-          x_Code[0] = i1_;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rm = x_Phys[0];
+          const auto curlEp = inv_sqrt_detH_pHpH * (DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, ymm, ym, yp, ypp) - DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, zmm, zm, zp, zpp));
 
-          x_Code[0] = i1_ + HALF;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto r0 = x_Phys[0];
+          EB(i1, i2, em::bx1) -= coeff * curlEr;
+          EB(i1, i2, em::bx2) -= coeff * curlEt;
+          EB(i1, i2, em::bx3) -= coeff * curlEp;
 
-          x_Code[0] = i1_ + 1;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rp = x_Phys[0];
-
-          x_Code[0] = i1_ + 2;
-          metric.template convert<Crd::Cd, Crd::Ph>(x_Code, x_Phys);
-          auto rpp = x_Phys[0];
-                          
-          EB(i1, i2, em::bx1) -= coeff * (math::sin(th0) * DIFF_4(th0, thmm, thm, thp, thpp, EB(i1, i2 - 1, em::ex3),
-                              EB(i1, i2, em::ex3), EB(i1, i2 + 1, em::ex3),
-                              EB(i1, i2 + 2, em::ex3)) + math::cos(th0) * (EB(i1, i2 + 1, em::ex3) + EB(i1, i2, em::ex3)));
-          EB(i1, i2, em::bx2) -= coeff * (- math::sin(thm) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex3),
-                                EB(i1, i2, em::ex3), EB(i1 + 1, i2, em::ex3),
-                                EB(i1 + 2, i2, em::ex3)) +  (EB(i1 + 1, i2, em::ex3) + EB(i1, i2, em::ex3))/r0));
-          EB(i1, i2, em::bx3) -= coeff * (1.0 / math::sin(th0) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex2),
-                                EB(i1, i2, em::ex2), EB(i1 + 1, i2, em::ex2),
-                                EB(i1 + 2, i2, em::ex2)) - DIFF_4(th0, thmm, thm, thp, thpp,
-                                EB(i1, i2 - 1, em::ex1), EB(i1, i2, em::ex1),
-                                EB(i1, i2 + 1, em::ex1), EB(i1, i2 + 2, em::ex1)) / SQR(r0)));
+          // EB(i1, i2, em::bx2) -= coeff * (- math::sin(thm) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex3),
+          //                       EB(i1, i2, em::ex3), EB(i1 + 1, i2, em::ex3),
+          //                       EB(i1 + 2, i2, em::ex3)) +  (EB(i1 + 1, i2, em::ex3) + EB(i1, i2, em::ex3))/r0));
+          // EB(i1, i2, em::bx3) -= coeff * (1.0 / math::sin(th0) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex2),
+          //                       EB(i1, i2, em::ex2), EB(i1 + 1, i2, em::ex2),
+          //                       EB(i1 + 2, i2, em::ex2)) - DIFF_4(th0, thmm, thm, thp, thpp,
+          //                       EB(i1, i2 - 1, em::ex1), EB(i1, i2, em::ex1),
+          //                       EB(i1, i2 + 1, em::ex1), EB(i1, i2 + 2, em::ex1)) / SQR(r0)));
 
         } else {
 
