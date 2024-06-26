@@ -95,7 +95,7 @@ namespace kernel::sr {
         const real_t h3_p20 { metric.template h_<3, 3>({ i1_ + TWO, i2_ }) };
 
         // If it fits, do fourth order stencil 
-        if (i1 > i1min + 1 && i2 > i2min + 1 && i1 < i1max - 1 && i2 < i2max - 1 ) {
+        if (i1 > i1min + 10 && i2 > i2min + 10 && i1 < i1max - 10 && i2 < i2max - 10 ) {
 
           auto ymm = h3_0m1*EB(i1, i2 - 1, em::ex3);
           auto ym = h3_00*EB(i1, i2, em::ex3);
