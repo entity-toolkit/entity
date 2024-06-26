@@ -19,13 +19,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#define DIFF_4(x, xmm, xm, xp, xpp, ymm, ym, yp, ypp) (((x - xmm)*(x - xp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
-              ((x - xmm)*(x - xpp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + ((x - xp)*(x - xpp)*ym)/((xm - xmm)*(xm - xp)*(xm - xpp)) + \
-              ((x - xm)*(x - xp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + ((x - xm)*(x - xpp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + \
-              ((x - xp)*(x - xpp)*ymm)/((-xm + xmm)*(xmm - xp)*(xmm - xpp)) + ((x - xm)*(x - xmm)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + \
-              ((x - xm)*(x - xpp)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + ((x - xmm)*(x - xpp)*yp)/((-xm + xp)*(-xmm + xp)*(xp - xpp)) + \
-              ((x - xm)*(x - xmm)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)) + ((x - xm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)) + \
-              ((x - xmm)*(x - xp)*ypp)/((-xm + xpp)*(-xmm + xpp)*(-xp + xpp)))
+// #define DIFF_4(ymm, ym, yp, ypp) (-1.125*ym + 0.04166666666666666*ymm + 1.125*yp - 0.04166666666666666*ypp)
 
 namespace kernel::sr {
   using namespace ntt;
@@ -97,44 +91,35 @@ namespace kernel::sr {
         // If it fits, do fourth order stencil 
         if (i1 > i1min + 10 && i2 > i2min + 10 && i1 < i1max - 10 && i2 < i2max - 10 ) {
 
-          auto ymm = h3_0m1*EB(i1, i2 - 1, em::ex3);
-          auto ym = h3_00*EB(i1, i2, em::ex3);
-          auto yp = h3_0p1*EB(i1, i2 + 1, em::ex3);
-          auto ypp = h3_0p2*EB(i1, i2 + 2, em::ex3);    
+          const real_t amm = h3_0m1*EB(i1, i2 - 1, em::ex3);
+          const real_t am = h3_00*EB(i1, i2, em::ex3);
+          const real_t ap = h3_0p1*EB(i1, i2 + 1, em::ex3);
+          const real_t app = h3_0p2*EB(i1, i2 + 2, em::ex3);    
 
-          const auto curlEr = inv_sqrt_detH_0pH * DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, ymm, ym, yp, ypp);
+          const real_t curlEr = inv_sqrt_detH_0pH * (-1.125*am + 0.04166666666666666*amm + 1.125*ap - 0.04166666666666666*app);
 
-          ymm = h3_m10*EB(i1 - 1, i2, em::ex3);
-          ym = h3_00*EB(i1, i2, em::ex3);
-          yp = h3_p10*EB(i1 + 1, i2, em::ex3);
-          ypp = h3_p20*EB(i1 + 2, i2, em::ex3);    
+          const real_t bmm = h3_m10*EB(i1 - 1, i2, em::ex3);
+          const real_t bm = h3_00*EB(i1, i2, em::ex3);
+          const real_t bp = h3_p10*EB(i1 + 1, i2, em::ex3);
+          const real_t bpp = h3_p20*EB(i1 + 2, i2, em::ex3);    
 
-          const auto curlEt = inv_sqrt_detH_pH0 * DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, ymm, ym, yp, ypp);
+          const real_t curlEt = inv_sqrt_detH_pH0 * (-1.125*bm + 0.04166666666666666*bmm + 1.125*bp - 0.04166666666666666*bpp);
 
-          ymm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
-          ym = h2_0pH*EB(i1, i2, em::ex2);
-          yp = h2_p1pH*EB(i1 + 1, i2, em::ex2);
-          ypp = h2_p2pH*EB(i1 + 2, i2, em::ex2); 
+          const real_t cmm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
+          const real_t cm = h2_0pH*EB(i1, i2, em::ex2);
+          const real_t cp = h2_p1pH*EB(i1 + 1, i2, em::ex2);
+          const real_t cpp = h2_p2pH*EB(i1 + 2, i2, em::ex2); 
 
-          auto zmm = h1_pHm1*EB(i1, i2 - 1, em::ex1);
-          auto zm = h1_pH0*EB(i1, i2, em::ex1);
-          auto zp = h1_pHp1*EB(i1, i2 + 1, em::ex1);
-          auto zpp = h1_pHp2*EB(i1, i2 + 2, em::ex1);   
+          const real_t dmm = h1_pHm1*EB(i1, i2 - 1, em::ex1);
+          const real_t dm = h1_pH0*EB(i1, i2, em::ex1);
+          const real_t dp = h1_pHp1*EB(i1, i2 + 1, em::ex1);
+          const real_t dpp = h1_pHp2*EB(i1, i2 + 2, em::ex1);   
 
-          const auto curlEp = inv_sqrt_detH_pHpH * (DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, ymm, ym, yp, ypp) - DIFF_4(ZERO, -ONE-HALF, -HALF, HALF, ONE+HALF, zmm, zm, zp, zpp));
+          const real_t curlEp = inv_sqrt_detH_pHpH * ((-1.125*cm + 0.04166666666666666*cmm + 1.125*cp - 0.04166666666666666*cpp) - (-1.125*dm + 0.04166666666666666*dmm + 1.125*dp - 0.04166666666666666*dpp));
 
           EB(i1, i2, em::bx1) -= coeff * curlEr;
           EB(i1, i2, em::bx2) -= coeff * curlEt;
           EB(i1, i2, em::bx3) -= coeff * curlEp;
-
-          // EB(i1, i2, em::bx2) -= coeff * (- math::sin(thm) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex3),
-          //                       EB(i1, i2, em::ex3), EB(i1 + 1, i2, em::ex3),
-          //                       EB(i1 + 2, i2, em::ex3)) +  (EB(i1 + 1, i2, em::ex3) + EB(i1, i2, em::ex3))/r0));
-          // EB(i1, i2, em::bx3) -= coeff * (1.0 / math::sin(th0) * (DIFF_4(r0, rmm, rm, rp, rpp, EB(i1 - 1, i2, em::ex2),
-          //                       EB(i1, i2, em::ex2), EB(i1 + 1, i2, em::ex2),
-          //                       EB(i1 + 2, i2, em::ex2)) - DIFF_4(th0, thmm, thm, thp, thpp,
-          //                       EB(i1, i2 - 1, em::ex1), EB(i1, i2, em::ex1),
-          //                       EB(i1, i2 + 1, em::ex1), EB(i1, i2 + 2, em::ex1)) / SQR(r0)));
 
         } else {
 
@@ -142,9 +127,6 @@ namespace kernel::sr {
                                (h3_00 * EB(i1, i2, em::ex3) -
                                 h3_0p1 * EB(i1, i2 + 1, em::ex3));
         if ((i2 != i2min) || !is_axis_i2min) {
-          const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
-                                                   { i1_ + HALF, i2_ }) };
-          const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
           EB(i1, i2, em::bx2) += coeff * inv_sqrt_detH_pH0 *
                                  (h3_p10 * EB(i1 + 1, i2, em::ex3) -
                                   h3_00 * EB(i1, i2, em::ex3));
