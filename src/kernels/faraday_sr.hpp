@@ -116,9 +116,9 @@ namespace kernel::sr {
 
           const real_t curlEp = inv_sqrt_detH_pHpH * ((-1.125*cm + 0.04166666666666666*cmm + 1.125*cp - 0.04166666666666666*cpp) - (-1.125*dm + 0.04166666666666666*dmm + 1.125*dp - 0.04166666666666666*dpp));
 
-          EB(i1, i2, em::bx1) -= coeff * 1.0;
-          EB(i1, i2, em::bx2) -= coeff * 1.0;
-          EB(i1, i2, em::bx3) -= coeff * 1.0;
+          EB(i1, i2, em::bx1) -= coeff * curlEr;
+          EB(i1, i2, em::bx2) -= coeff * curlEt;
+          EB(i1, i2, em::bx3) -= coeff * curlEp;
 
         } else {
 
