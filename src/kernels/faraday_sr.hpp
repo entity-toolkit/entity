@@ -102,7 +102,7 @@ namespace kernel::sr {
           const real_t bp = h3_p10*EB(i1 + 1, i2, em::ex3);
           const real_t bpp = h3_p20*EB(i1 + 2, i2, em::ex3);    
 
-          const real_t curlEt = inv_sqrt_detH_pH0 * (-1.125*bm + 0.04166666666666666*bmm + 1.125*bp - 0.04166666666666666*bpp);
+          const real_t curlEt = - inv_sqrt_detH_pH0 * (-1.125*bm + 0.04166666666666666*bmm + 1.125*bp - 0.04166666666666666*bpp);
 
           const real_t cmm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
           const real_t cm = h2_0pH*EB(i1, i2, em::ex2);
