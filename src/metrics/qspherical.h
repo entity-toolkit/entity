@@ -317,6 +317,8 @@ namespace metric {
           return v_in * math::exp(xi[0] * dchi + chi_min) * dchi;
         } else if constexpr (i == 2) {
           return v_in * (dtheta_deta(xi[1] * deta + eta_min) * deta);
+        } else if constexpr (D == Dim::_2D) {
+          return v_in;
         } else {
           return v_in * dphi;
         }
@@ -327,6 +329,8 @@ namespace metric {
           return v_in * dchi_inv / (math::exp(xi[0] * dchi + chi_min));
         } else if constexpr (i == 2) {
           return v_in * deta_inv / (dtheta_deta(xi[1] * deta + eta_min));
+        } else if constexpr (D == Dim::_2D) {
+          return v_in;
         } else {
           return v_in * dphi_inv;
         }
