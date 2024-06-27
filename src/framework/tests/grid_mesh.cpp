@@ -39,7 +39,7 @@ auto main(int argc, char* argv[]) -> int {
                      HERE);
       raise::ErrorIf(mesh.extent(d) != ext[(unsigned short)d], "extent != ext", HERE);
     }
-    raise::ErrorIf(not cmp::AlmostEqual(mesh.metric.dxMin(), (real_t)0.1154700538),
+    raise::ErrorIf(not cmp::AlmostEqual(mesh.metric.dxMin(), (real_t)(0.2 / std::sqrt(3.0))),
                    "dxMin wrong",
                    HERE);
   } catch (const std::exception& e) {
