@@ -285,6 +285,8 @@ namespace metric {
           return v_in * dr;
         } else if constexpr (i == 2) {
           return v_in * dtheta;
+        } else if constexpr (D == Dim::_2D) {
+          return v_in;
         } else {
           return v_in * dphi;
         }
@@ -295,6 +297,8 @@ namespace metric {
           return v_in * dr_inv;
         } else if constexpr (i == 2) {
           return v_in * dtheta_inv;
+        } else if constexpr (D == Dim::_2D) {
+          return v_in;
         } else {
           return v_in * dphi_inv;
         }
