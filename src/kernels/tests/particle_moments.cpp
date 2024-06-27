@@ -225,24 +225,22 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
         }
       }
     }
-    const real_t gamma_1 = math::sqrt(
-      ONE + v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2]);
-    const real_t gamma_2 = math::sqrt(
-      ONE + v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2]);
+    const real_t gammaSQR_1 = ONE + v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2];
+    const real_t gammaSQR_2 = ONE + v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2];
 
-    const real_t gamma_1_expect = math::sqrt(1.0 + 1.0 + 4.0 + 9.0);
-    const real_t gamma_2_expect = math::sqrt(1.0 + 9.0 + 4.0 + 1.0);
+    const real_t gammaSQR_1_expect = 15.0;
+    const real_t gammaSQR_2_expect = 15.0;
 
-    errorIf(not cmp::AlmostEqual(gamma_1, gamma_1_expect, epsilon * acc),
-            fmt::format("wrong gamma_1 %.8e %.8e for %dD %s",
-                        gamma_1,
-                        gamma_1_expect,
+    errorIf(not cmp::AlmostEqual_host(gammaSQR_1, gammaSQR_1_expect, epsilon * acc),
+            fmt::format("wrong gamma_1 %.12e %.12e for %dD %s",
+                        gammaSQR_1,
+                        gammaSQR_1_expect,
                         metric.Dim,
                         metric.Label));
-    errorIf(not cmp::AlmostEqual(gamma_2, gamma_2_expect, epsilon * acc),
-            fmt::format("wrong gamma_2 %.8e %.8e for %dD %s",
-                        gamma_2,
-                        gamma_2_expect,
+    errorIf(not cmp::AlmostEqual_host(gammaSQR_2, gammaSQR_2_expect, epsilon * acc),
+            fmt::format("wrong gamma_2 %.12e %.12e for %dD %s",
+                        gammaSQR_2,
+                        gammaSQR_2_expect,
                         metric.Dim,
                         metric.Label));
   }
@@ -260,7 +258,8 @@ auto main(int argc, char* argv[]) -> int {
         10
     },
       { { 0.0, 10.0 }, { 0.0, 10.0 } },
-      {});
+      {},
+      10);
 
     testParticleMoments<SimEngine::SRPIC, Spherical<Dim::_2D>>(
       {
