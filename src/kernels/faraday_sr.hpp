@@ -67,7 +67,7 @@ namespace kernel::sr {
 
         const real_t inv_sqrt_detH_0pH { ONE / metric.sqrt_det_h({ i1_, i2_ + HALF }) };
         const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) };
-          const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h( { i1_ + HALF, i2_ }) };
+        const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h( { i1_ + HALF, i2_ }) };
 
         const real_t h1_pHm1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ - ONE }) };
         const real_t h1_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
@@ -88,13 +88,14 @@ namespace kernel::sr {
         const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
 
         // If it fits, do fourth order stencil 
-        if (i1 > i1min + 1 && i2 > i2min + 1 && i1 < i1max - 1 && i2 < i2max - 1 ) {
+        // if (i1 > i1min + 1 && i2 > i2min + 1 && i1 < i1max - 1 && i2 < i2max - 1 ) {
 
           const real_t amm = h3_0m1*EB(i1, i2 - 1, em::ex3);
           const real_t am = h3_00*EB(i1, i2, em::ex3);
           const real_t ap = h3_0p1*EB(i1, i2 + 1, em::ex3);
           const real_t app = h3_0p2*EB(i1, i2 + 2, em::ex3);    
 
+          // 1/sqrt(h)*(del_\theta*g_\phi\phi*E^\phi)
           const real_t curlEr = inv_sqrt_detH_0pH * (-1.125*am + 0.04166666666666666*amm + 1.125*ap - 0.04166666666666666*app);
 
           const real_t bmm = h3_m10*EB(i1 - 1, i2, em::ex3);
@@ -102,6 +103,7 @@ namespace kernel::sr {
           const real_t bp = h3_p10*EB(i1 + 1, i2, em::ex3);
           const real_t bpp = h3_p20*EB(i1 + 2, i2, em::ex3);    
 
+          // -1/sqrt(h)*(del_r*g_\phi\phi*E^\phi)
           const real_t curlEt = - inv_sqrt_detH_pH0 * (-1.125*bm + 0.04166666666666666*bmm + 1.125*bp - 0.04166666666666666*bpp);
 
           const real_t cmm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
@@ -114,29 +116,30 @@ namespace kernel::sr {
           const real_t dp = h1_pHp1*EB(i1, i2 + 1, em::ex1);
           const real_t dpp = h1_pHp2*EB(i1, i2 + 2, em::ex1);   
 
+          // 1/sqrt(h)*(del_r*g_\theta\theta*E^\theta-del_\theta*g_rr*E^r)
           const real_t curlEp = inv_sqrt_detH_pHpH * ((-1.125*cm + 0.04166666666666666*cmm + 1.125*cp - 0.04166666666666666*cpp) - (-1.125*dm + 0.04166666666666666*dmm + 1.125*dp - 0.04166666666666666*dpp));
 
           EB(i1, i2, em::bx1) -= coeff * curlEr;
           EB(i1, i2, em::bx2) -= coeff * curlEt;
           EB(i1, i2, em::bx3) -= coeff * curlEp;
 
-        } else {
+        // } else {
 
-        EB(i1, i2, em::bx1) += coeff * inv_sqrt_detH_0pH *
-                               (h3_00 * EB(i1, i2, em::ex3) -
-                                h3_0p1 * EB(i1, i2 + 1, em::ex3));
-        if ((i2 != i2min) || !is_axis_i2min) {
-          EB(i1, i2, em::bx2) += coeff * inv_sqrt_detH_pH0 *
-                                 (h3_p10 * EB(i1 + 1, i2, em::ex3) -
-                                  h3_00 * EB(i1, i2, em::ex3));
-        }
-        EB(i1, i2, em::bx3) += coeff * inv_sqrt_detH_pHpH *
-                               (h1_pHp1 * EB(i1, i2 + 1, em::ex1) -
-                                h1_pH0 * EB(i1, i2, em::ex1) +
-                                h2_0pH * EB(i1, i2, em::ex2) -
-                                h2_p1pH * EB(i1 + 1, i2, em::ex2));
+        // EB(i1, i2, em::bx1) += coeff * inv_sqrt_detH_0pH *
+        //                        (h3_00 * EB(i1, i2, em::ex3) -
+        //                         h3_0p1 * EB(i1, i2 + 1, em::ex3));
+        // if ((i2 != i2min) || !is_axis_i2min) {
+        //   EB(i1, i2, em::bx2) += coeff * inv_sqrt_detH_pH0 *
+        //                          (h3_p10 * EB(i1 + 1, i2, em::ex3) -
+        //                           h3_00 * EB(i1, i2, em::ex3));
+        // }
+        // EB(i1, i2, em::bx3) += coeff * inv_sqrt_detH_pHpH *
+        //                        (h1_pHp1 * EB(i1, i2 + 1, em::ex1) -
+        //                         h1_pH0 * EB(i1, i2, em::ex1) +
+        //                         h2_0pH * EB(i1, i2, em::ex2) -
+        //                         h2_p1pH * EB(i1 + 1, i2, em::ex2));
 
-        }
+        // }
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }
