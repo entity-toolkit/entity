@@ -9,6 +9,7 @@ on:
 jobs:
   tests:
     strategy:
+      fail-fast: false
       matrix:
         gpu: ["amd", "nvidia"]
         precision: ["double", "single"]
