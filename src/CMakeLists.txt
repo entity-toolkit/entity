@@ -37,5 +37,4 @@ add_subdirectory(${SRC_DIR}/../setups ${CMAKE_CURRENT_BINARY_DIR}/setups)
 
 set(libs ntt_global ntt_framework ntt_metrics ntt_engines ntt_pgen)
 add_dependencies(${ENTITY} ${libs})
-target_link_libraries(${ENTITY} PUBLIC ${libs})
-target_link_libraries(${ENTITY} PUBLIC stdc++fs)
+target_link_libraries(${ENTITY} ${libs})
