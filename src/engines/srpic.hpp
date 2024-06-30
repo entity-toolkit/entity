@@ -261,17 +261,20 @@ namespace ntt {
           ds = m_params.template get<real_t>("grid.boundaries.atmosphere.ds");
           const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
           if (dim == in::x1) {
-            gx1 = sign > 0 ? g : -g;
+            // gx1 = sign > 0 ? g : -g;
+            gx1 = ZERO;
             gx2 = ZERO;
             gx3 = ZERO;
           } else if (dim == in::x2) {
             gx1 = ZERO;
-            gx2 = sign > 0 ? g : -g;
+            gx2 = ZERO;
+            // gx2 = sign > 0 ? g : -g;
             gx3 = ZERO;
           } else if (dim == in::x3) {
             gx1 = ZERO;
             gx2 = ZERO;
-            gx3 = sign > 0 ? g : -g;
+            gx3 = ZERO;
+            // gx3 = sign > 0 ? g : -g;
           } else {
             raise::Error("Invalid dimension", HERE);
           }
