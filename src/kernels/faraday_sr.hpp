@@ -19,13 +19,11 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-// #define DIFF_4(ymm, ym, yp, ypp) (-1.125*ym + 0.04166666666666666*ymm + 1.125*yp - 0.04166666666666666*ypp)
-
 namespace kernel::sr {
   using namespace ntt;
 
   /**
-   * @brief Algorithm for the 's law: `dB/dt = -curl E` in Curvilinear
+   * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
    * space (diagonal metric)
    */
   template <class M>
@@ -35,8 +33,6 @@ namespace kernel::sr {
 
     ndfield_t<D, 6> EB;
     const M         metric;
-    const std::size_t i1max;
-    const std::size_t i2max;
     const real_t    coeff;
     bool            is_axis_i2min { false };
 
@@ -44,13 +40,9 @@ namespace kernel::sr {
     Faraday_kernel(const ndfield_t<D, 6>&      EB,
                    const M&                    metric,
                    real_t                      coeff,
-                  std::size_t                 ni1,
-                  std::size_t                 ni2,
                    const boundaries_t<FldsBC>& boundaries)
       : EB { EB }
       , metric { metric }
-      , i1max { ni1 + N_GHOSTS }
-      , i2max { ni2 + N_GHOSTS }
       , coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
@@ -61,137 +53,27 @@ namespace kernel::sr {
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr std::size_t i2min { N_GHOSTS };
-        constexpr std::size_t i1min { N_GHOSTS };
         const real_t          i1_ { COORD(i1) };
         const real_t          i2_ { COORD(i2) };
 
-        const real_t inv_sqrt_detH_0pH { ONE / metric.sqrt_det_h({ i1_, i2_ + HALF }) };
-        const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) };
-        const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h( { i1_ + HALF, i2_ }) };
-
-        const real_t h1_pHm1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ - ONE }) };
-        const real_t h1_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
+        const real_t inv_sqrt_detH_0pH { ONE /
+                                         metric.sqrt_det_h({ i1_, i2_ + HALF }) };
+        const real_t inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h(
+                                                  { i1_ + HALF, i2_ + HALF }) };
         const real_t h1_pHp1 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + ONE }) };
-        const real_t h1_pHp2 { metric.template h_<1, 1>({ i1_ + HALF, i2_ + TWO }) };
-        const real_t h1_mH0 { metric.template h_<1, 1>({ i1_ - HALF, i2_ }) };
-        const real_t h1_mHp1 { metric.template h_<1, 1>({ i1_ - HALF, i2_ + ONE}) };
-        const real_t h1_p1H0 { metric.template h_<1, 1>({ i1_ + ONE + HALF, i2_ }) };
-        const real_t h1_p1Hp1 { metric.template h_<1, 1>({ i1_ + ONE + HALF, i2_ + ONE}) };
-
-        const real_t h2_m1pH { metric.template h_<2, 2>({ i1_ - ONE, i2_ + HALF }) };
-        const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
+        const real_t h1_pH0 { metric.template h_<1, 1>({ i1_ + HALF, i2_ }) };
         const real_t h2_p1pH { metric.template h_<2, 2>({ i1_ + ONE, i2_ + HALF }) };
-        const real_t h2_p2pH { metric.template h_<2, 2>({ i1_ + TWO, i2_ + HALF }) };
-        const real_t h2_0mH { metric.template h_<2, 2>({ i1_, i2_ - HALF }) };
-        const real_t h2_p1mH { metric.template h_<2, 2>({ i1_ + ONE, i2_ - HALF }) };
-        const real_t h2_0p1H { metric.template h_<2, 2>({ i1_, i2_ + ONE + HALF }) };
-        const real_t h2_p1p1H { metric.template h_<2, 2>({ i1_ + ONE, i2_ + ONE + HALF }) };
-
-        const real_t h3_0m1 { metric.template h_<3, 3>({ i1_, i2_ - ONE }) };
+        const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
         const real_t h3_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
         const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
-        const real_t h3_0p2 { metric.template h_<3, 3>({ i1_, i2_ + TWO }) };
-        const real_t h3_m10 { metric.template h_<3, 3>({ i1_ - ONE, i2_ }) };
-        const real_t h3_p20 { metric.template h_<3, 3>({ i1_ + TWO, i2_ }) };
-        const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
-        const real_t h3_m1p1 { metric.template h_<3, 3>({ i1_ - ONE, i2_ + ONE}) };
-        const real_t h3_p1m1 { metric.template h_<3, 3>({ i1_ + ONE, i2_ - ONE}) };
-        const real_t h3_p1p1 { metric.template h_<3, 3>({ i1_ + ONE, i2_ + ONE}) };
-
-        // If it fits, do fourth order stencil 
-        // if (i1 > i1min + 1 && i2 > i2min + 1 && i1 < i1max - 1 && i2 < i2max - 1 ) {
-
-        //   const real_t coeffb = -0.065;
-        //   const real_t coeffa = 1.0 - 2.0 * coeffb - 3.0 * coeffb;
-
-        //   const real_t amm = h3_0m1*EB(i1, i2 - 1, em::ex3);
-        //   const real_t am = h3_00*EB(i1, i2, em::ex3);
-        //   const real_t ap = h3_0p1*EB(i1, i2 + 1, em::ex3);
-        //   const real_t app = h3_0p2*EB(i1, i2 + 2, em::ex3);    
-
-        //   const real_t aml = h3_m10*EB(i1 - 1, i2, em::ex3);
-        //   const real_t amr = h3_m1p1*EB(i1 - 1, i2 + 1, em::ex3);
-        //   const real_t apl = h3_p10*EB(i1 + 1, i2, em::ex3);
-        //   const real_t apr = h3_p1p1*EB(i1 + 1, i2 + 1, em::ex3);
-
-        //   // 1/sqrt(h)*(del_\theta*g_\phi\phi*E^\phi)
-        //   const real_t curlEr = inv_sqrt_detH_0pH * (coeffa * (ap - am) + coeffb * (app - amm) + coeffb * (amr - aml) + coeffb * (apr - apl));
-
-        //   const real_t bmm = h3_m10*EB(i1 - 1, i2, em::ex3);
-        //   const real_t bm = h3_00*EB(i1, i2, em::ex3);
-        //   const real_t bp = h3_p10*EB(i1 + 1, i2, em::ex3);
-        //   const real_t bpp = h3_p20*EB(i1 + 2, i2, em::ex3);    
-
-        //   const real_t bml = h3_0m1*EB(i1, i2 - 1, em::ex3);
-        //   const real_t bmr = h3_p1m1*EB(i1 + 1, i2 - 1, em::ex3);  
-        //   const real_t bpl = h3_0p1*EB(i1, i2 + 1, em::ex3);
-        //   const real_t bpr = h3_p1p1*EB(i1 + 1, i2 + 1, em::ex3);        
-
-        //   // -1/sqrt(h)*(del_r*g_\phi\phi*E^\phi)
-        //   const real_t curlEt = - inv_sqrt_detH_pH0 * (coeffa * (bp - bm) + coeffb * (bpp - bmm) + coeffb * (bmr - bml) + coeffb * (bpr - bpl));
-
-        //   const real_t cmm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
-        //   const real_t cm = h2_0pH*EB(i1, i2, em::ex2);
-        //   const real_t cp = h2_p1pH*EB(i1 + 1, i2, em::ex2);
-        //   const real_t cpp = h2_p2pH*EB(i1 + 2, i2, em::ex2); 
-
-        //   const real_t cml = h2_0mH*EB(i1, i2 - 1, em::ex2);
-        //   const real_t cmr = h2_p1mH*EB(i1 + 1, i2 - 1, em::ex2);
-        //   const real_t cpl = h2_0p1H*EB(i1, i2 + 1, em::ex2);
-        //   const real_t cpr = h2_p1p1H*EB(i1 + 1, i2 + 1, em::ex2); 
-
-        //   const real_t dmm = h1_pHm1*EB(i1, i2 - 1, em::ex1);
-        //   const real_t dm = h1_pH0*EB(i1, i2, em::ex1);
-        //   const real_t dp = h1_pHp1*EB(i1, i2 + 1, em::ex1);
-        //   const real_t dpp = h1_pHp2*EB(i1, i2 + 2, em::ex1);   
-
-        //   const real_t dml = h1_mH0*EB(i1 - 1, i2, em::ex1);
-        //   const real_t dmr = h1_mHp1*EB(i1 - 1, i2 + 1, em::ex1);
-        //   const real_t dpl = h1_p1H0*EB(i1 + 1, i2, em::ex1);
-        //   const real_t dpr = h1_p1Hp1*EB(i1 + 1, i2 + 1, em::ex1);   
-
-        //   // 1/sqrt(h)*(del_r*g_\theta\theta*E^\theta-del_\theta*g_rr*E^r)
-        //   const real_t curlEp = inv_sqrt_detH_pHpH * ((coeffa * (cp - cm) + coeffb * (cpp - cmm) + coeffb * (cmr - cml) + coeffb * (cpr - cpl)) - (coeffa * (dp - dm) + coeffb * (dpp - dmm) + coeffb * (dmr - dml) + coeffb * (dpr - dpl)));
-
-          // const real_t amm = h3_0m1*EB(i1, i2 - 1, em::ex3);
-          // const real_t am = h3_00*EB(i1, i2, em::ex3);
-          // const real_t ap = h3_0p1*EB(i1, i2 + 1, em::ex3);
-          // const real_t app = h3_0p2*EB(i1, i2 + 2, em::ex3);    
-
-          // // 1/sqrt(h)*(del_\theta*g_\phi\phi*E^\phi)
-          // const real_t curlEr = inv_sqrt_detH_0pH * (-1.125*am + 0.04166666666666666*amm + 1.125*ap - 0.04166666666666666*app);
-
-          // const real_t bmm = h3_m10*EB(i1 - 1, i2, em::ex3);
-          // const real_t bm = h3_00*EB(i1, i2, em::ex3);
-          // const real_t bp = h3_p10*EB(i1 + 1, i2, em::ex3);
-          // const real_t bpp = h3_p20*EB(i1 + 2, i2, em::ex3);    
-
-          // // -1/sqrt(h)*(del_r*g_\phi\phi*E^\phi)
-          // const real_t curlEt = - inv_sqrt_detH_pH0 * (-1.125*bm + 0.04166666666666666*bmm + 1.125*bp - 0.04166666666666666*bpp);
-
-          // const real_t cmm = h2_m1pH*EB(i1 - 1, i2, em::ex2);
-          // const real_t cm = h2_0pH*EB(i1, i2, em::ex2);
-          // const real_t cp = h2_p1pH*EB(i1 + 1, i2, em::ex2);
-          // const real_t cpp = h2_p2pH*EB(i1 + 2, i2, em::ex2); 
-
-          // const real_t dmm = h1_pHm1*EB(i1, i2 - 1, em::ex1);
-          // const real_t dm = h1_pH0*EB(i1, i2, em::ex1);
-          // const real_t dp = h1_pHp1*EB(i1, i2 + 1, em::ex1);
-          // const real_t dpp = h1_pHp2*EB(i1, i2 + 2, em::ex1);   
-
-          // // 1/sqrt(h)*(del_r*g_\theta\theta*E^\theta-del_\theta*g_rr*E^r)
-          // const real_t curlEp = inv_sqrt_detH_pHpH * ((-1.125*cm + 0.04166666666666666*cmm + 1.125*cp - 0.04166666666666666*cpp) - (-1.125*dm + 0.04166666666666666*dmm + 1.125*dp - 0.04166666666666666*dpp));
-
-        //   EB(i1, i2, em::bx1) -= coeff * curlEr;
-        //   EB(i1, i2, em::bx2) -= coeff * curlEt;
-        //   EB(i1, i2, em::bx3) -= coeff * curlEp;
-
-        // } else {
 
         EB(i1, i2, em::bx1) += coeff * inv_sqrt_detH_0pH *
                                (h3_00 * EB(i1, i2, em::ex3) -
                                 h3_0p1 * EB(i1, i2 + 1, em::ex3));
         if ((i2 != i2min) || !is_axis_i2min) {
+          const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
+                                                   { i1_ + HALF, i2_ }) };
+          const real_t h3_p10 { metric.template h_<3, 3>({ i1_ + ONE, i2_ }) };
           EB(i1, i2, em::bx2) += coeff * inv_sqrt_detH_pH0 *
                                  (h3_p10 * EB(i1 + 1, i2, em::ex3) -
                                   h3_00 * EB(i1, i2, em::ex3));
@@ -201,8 +83,6 @@ namespace kernel::sr {
                                 h1_pH0 * EB(i1, i2, em::ex1) +
                                 h2_0pH * EB(i1, i2, em::ex2) -
                                 h2_p1pH * EB(i1 + 1, i2, em::ex2));
-
-        // }
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }
