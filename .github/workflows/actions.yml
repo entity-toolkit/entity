@@ -1,0 +1,33 @@
+name: Unit tests
+
+on:
+  pull_request:
+    branches:
+      - '**rc'
+      - 'master'
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        gpu: ["amd", "nvidia"]
+        precision: ["double", "single"]
+    runs-on: [self-hosted, "${{ matrix.gpu }}-gpu"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+      - name: Configure
+        run: |
+          if [ "${{ matrix.gpu }}" = "nvidia" ]; then
+            FLAGS="-D Kokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_AMPERE86=ON"
+          elif [ "${{ matrix.gpu }}" = "amd" ]; then
+            FLAGS="-D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_GFX1100=ON"
+          fi
+          cmake -B build -D TESTS=ON -D output=ON -D precision=${{ matrix.precision }} $FLAGS
+      - name: Compile
+        run: |
+          cmake --build build -j $(exec nproc)
+      - name: Run tests
+        run: |
+          ctest --test-dir build --output-on-failure --verbose

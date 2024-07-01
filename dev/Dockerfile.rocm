@@ -1,7 +1,6 @@
 # syntax = devthefuture/dockerfile-x
 
 FROM rocm/rocm-terminal:latest
-MAINTAINER "@haykh"
 
 USER root
 ENV PATH=/opt/rocm/bin:$PATH
