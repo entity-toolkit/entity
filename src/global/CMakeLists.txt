@@ -23,3 +23,4 @@ target_include_directories(ntt_global
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 )
+target_link_libraries(ntt_global PRIVATE stdc++fs)
