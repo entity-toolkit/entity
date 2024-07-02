@@ -2,9 +2,9 @@
  * @file enums.h
  * @brief Special enum variables describing the simulation
  * @implements
- *   - enum ntt::Coord             // Cart, Sph, Qsph
+ *   - enum ntt::Coord             // Cart, Sph, Qsph, Fs
  *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
- *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0
+ *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0, Flux_Surface
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
@@ -134,12 +134,13 @@ namespace ntt {
       Cart    = 1,
       Sph     = 2,
       Qsph    = 3,
+      Fs      = 4,
     };
 
     constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
 
-    static constexpr type        variants[] = { Cart, Sph, Qsph };
-    static constexpr const char* lookup[]   = { "cart", "sph", "qsph" };
+    static constexpr type        variants[] = { Cart, Sph, Qsph, Fs };
+    static constexpr const char* lookup[]   = { "cart", "sph", "qsph", "fs" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -154,16 +155,19 @@ namespace ntt {
       Kerr_Schild   = 4,
       QKerr_Schild  = 5,
       Kerr_Schild_0 = 6,
+      Flux_Surface = 7,
     };
 
     constexpr Metric(uint8_t c) : enums_hidden::BaseEnum<Metric> { c } {}
 
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
-                                                QKerr_Schild, Kerr_Schild_0 };
+                                                QKerr_Schild, Kerr_Schild_0,
+                                                Flux_Surface };
     static constexpr const char* lookup[]   = { "minkowski",    "spherical",
                                                 "qspherical",   "kerr_schild",
-                                                "qkerr_schild", "kerr_schild_0" };
+                                                "qkerr_schild", "kerr_schild_0",
+                                                "flux_surface" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
