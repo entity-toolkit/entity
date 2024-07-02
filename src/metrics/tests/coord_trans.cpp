@@ -3,6 +3,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
 
+#include "metrics/flux_surface.h"
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
@@ -183,14 +184,16 @@ auto main(int argc, char* argv[]) -> int {
     testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 150);
 
     testMetric<FluxSurface<Dim::_1D>>(
-      { 128 },
+      {
+        128
+    },
       { { 2.0, 50.0 } },
       10,
-      { { "a", (real_t)0.95 } , 
-        { "psi0", (real_t)1.0 } , 
-        { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 } ,
-        { "pCur", (real_t)3.1 }  });
+      { { "a", (real_t)0.95 },
+        { "psi0", (real_t)1.0 },
+        { "theta0", (real_t)1.0 },
+        { "Omega", (real_t)0.5 },
+        { "pCur", (real_t)3.1 } });
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
