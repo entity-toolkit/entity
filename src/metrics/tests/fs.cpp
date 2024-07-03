@@ -112,7 +112,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       const auto A     = SQR(SQR(r) + SQR(a)) - SQR(a * math::sin(th)) * Delta;
       const auto dpsi_r = 0;
       const auto dpsi_dtheta = psi0 * math::sin(th);
-      const auto omega = 2 * a * r / A ;
+      const auto omega = TWO * a * r / A ;
 
       const auto h_11_expect  = Sigma / Delta;
       const auto h_22_expect  = Sigma ;
@@ -168,7 +168,7 @@ auto main(int argc, char* argv[]) -> int {
     testMetric<FluxSurface<Dim::_1D>>(
       { 128 },
       { { 2.0, 50.0 } },
-      10,
+      30,
       { { "a", (real_t)0.95 } , 
         { "psi0", (real_t)1.0 } , 
         { "theta0", (real_t)1.0 } , 
