@@ -52,7 +52,7 @@ namespace metric {
     }
 
     Inline auto omega(const real_t& r, const real_t& theta) const -> real_t {
-      return 2 * a * r / A(r, theta);
+      return TWO * a * r / A(r, theta);
     }
 
     Inline auto psi(const real_t& r, const real_t& theta) const -> real_t {
