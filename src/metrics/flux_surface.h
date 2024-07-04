@@ -76,8 +76,9 @@ namespace metric {
     }
 
     Inline auto eta2r(const real_t& eta) const -> real_t{
-      real_t exp = math::exp(eta * (rh_ - rh_m));
-      return (rh_ - rh_m * exp) / (1 - exp);
+      real_t diff = TWO * math::sqrt(ONE - SQR(a));
+      real_t exp_m1 = std::expm1(eta * diff);
+      return rh_m - diff / exp_m1;
     }
 
 
