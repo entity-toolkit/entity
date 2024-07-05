@@ -76,9 +76,7 @@ namespace metric {
     }
 
     Inline auto eta2r(const real_t& eta) const -> real_t{
-      real_t diff = TWO * math::sqrt(ONE - SQR(a));
-      real_t exp_m1 = std::expm1(eta * diff);
-      return rh_m - diff / exp_m1;
+      return rh_m - TWO * math::sqrt(ONE - SQR(a)) / math::expm1(eta * TWO * math::sqrt(ONE - SQR(a)));
     }
 
 
@@ -109,7 +107,7 @@ namespace metric {
       , eta_min { r2eta(x1_min) }
       , eta_max { r2eta(x1_max) }
       , d_eta { (eta_max - eta_min) / nx1 }
-      , d_eta_inv { 1 / d_eta }{
+      , d_eta_inv { ONE / d_eta }{
       set_dxMin(find_dxMin());
     }
 
