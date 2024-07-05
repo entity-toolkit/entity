@@ -538,11 +538,22 @@ namespace ntt {
                                                       coeff / V0,
                                                       ONE / n0));
       } else {
-        range_t<M::Dim> range {};
+        auto range = domain.mesh.rangeActiveCells();
         if constexpr (M::Dim == Dim::_2D) {
-          range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
-            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_2D>(
+              { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          }
+        } else if constexpr (M::Dim == Dim::_3D) {
+          if (domain.mesh.flds_bc_in({ 0, +1, 0 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
+                                                  domain.mesh.i_min(in::x2),
+                                                  domain.mesh.i_min(in::x3) },
+                                                { domain.mesh.i_max(in::x1),
+                                                  domain.mesh.i_max(in::x2) + 1,
+                                                  domain.mesh.i_max(in::x3) });
+          }
         }
         const auto ni2 = domain.mesh.n_active(in::x2);
         Kokkos::parallel_for(
@@ -572,13 +583,13 @@ namespace ntt {
          *    . . . . .
          */
         if constexpr (M::Dim == Dim::_2D) {
-          if (domain.mesh.flds_bc_in({ +1, 0 }) == FldsBC::AXIS) {
+          if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
             range = CreateRangePolicy<Dim::_2D>(
               { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
               { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
           }
         } else if constexpr (M::Dim == Dim::_3D) {
-          if (domain.mesh.flds_bc_in({ +1, 0, 0 }) == FldsBC::AXIS) {
+          if (domain.mesh.flds_bc_in({ 0, +1, 0 }) == FldsBC::AXIS) {
             range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
                                                   domain.mesh.i_min(in::x2),
                                                   domain.mesh.i_min(in::x3) },
@@ -600,7 +611,7 @@ namespace ntt {
       if constexpr (M::Dim == Dim::_3D) {
         size[2] = domain.mesh.n_active(in::x3);
       }
-      // !TODO: this needs to be done more efficiently
+      // @TODO: this needs to be done more efficiently
       for (unsigned short i = 0; i < nfilter; ++i) {
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",
