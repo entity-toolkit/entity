@@ -55,7 +55,7 @@ auto main() -> int {
 
   using enum_str_t = const std::vector<std::string>;
 
-  enum_str_t all_coords  = { "cart", "sph", "qsph" };
+  enum_str_t all_coords  = { "cart", "sph", "qsph", "fs" };
   enum_str_t all_metrics = { "minkowski",   "spherical",    "qspherical",
                              "kerr_schild", "qkerr_schild", "kerr_schild_0", 
                              "flux_surface" };
