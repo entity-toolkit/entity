@@ -188,7 +188,7 @@ auto main(int argc, char* argv[]) -> int {
         128
     },
       { { 2.0, 50.0 } },
-      10,
+      100,
       { { "a", (real_t)0.95 },
         { "psi0", (real_t)1.0 },
         { "theta0", (real_t)1.0 },
