@@ -436,8 +436,8 @@ namespace user {
             c10   = c010 * (ONE - dx1_) + c110 * dx1_;
             e_int[2] = c00 * (ONE - dx2_) + c10 * dx2_;
 
-            metric.template transform_xyz<Crd::Cd, Crd::XYZ>(xc, b_int, b_int_Cart);
-            metric.template transform_xyz<Crd::Cd, Crd::XYZ>(xc, e_int, e_int_Cart);
+            // metric.template transform_xyz<Crd::Cd, Crd::XYZ>(xc, b_int, b_int_Cart);
+            // metric.template transform_xyz<Crd::Cd, Crd::XYZ>(xc, e_int, e_int_Cart);
 
             // Define lepton properties for evaluation
             auto px      = ux1(p);
@@ -505,15 +505,13 @@ namespace user {
             auto c_RF_y = b_RF_x * a_RF_z - b_RF_z * a_RF_x;
             auto c_RF_z = b_RF_y * a_RF_x - b_RF_x * a_RF_y;
 
-            const coord_t<Dim::_3D> xcph { static_cast<real_t>(i1(p)) + dx1(p),
-                                  static_cast<real_t>(i2(p)) + dx2(p),
-                                  phi(p) };
-            coord_t<Dim::_3D>     x_ph { ZERO };
-            metric.template convert<Crd::Cd, Crd::Ph>(xcph, x_ph);
-            auto xnorm { 1.0 / NORM(x_ph[0], x_ph[1], x_ph[2]) };
-            auto x1norm = x_ph[0] * xnorm;
-            auto x2norm = x_ph[1] * xnorm;
-            auto x3norm = x_ph[2] * xnorm;
+
+            coord_t<Dim::_3D>     x_cart { ZERO };
+            // metric.template convert<Crd::Cd, Crd::XYZ>(xc, x_cart);
+            auto xnorm { 1.0 / NORM(x_cart[0], x_cart[1], x_cart[2]) };
+            auto x1norm = x_cart[0] * xnorm;
+            auto x2norm = x_cart[1] * xnorm;
+            auto x3norm = x_cart[2] * xnorm;
             auto rand_costheta_RF { DOT(px, py, pz, x1norm, x2norm, x3norm) /
                                     NORM(px, py, pz) };
 
