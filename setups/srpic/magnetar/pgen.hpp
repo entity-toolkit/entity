@@ -915,6 +915,7 @@ namespace user {
               // Check for pair production trigger
               if (ePh >= ethres) {
 
+                tag(p) = ParticleTag::dead;
                 auto upar { math::abs(cosAngle) * math::sqrt(SQR(ePh) - FOUR) /
                             math::sqrt(SQR(ePh * sinAngle) + FOUR * SQR(cosAngle)) };
 
