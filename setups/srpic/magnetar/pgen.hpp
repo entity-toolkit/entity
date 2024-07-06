@@ -53,7 +53,7 @@ namespace user {
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      auto sigma = (x_Ph[1] - 0.5 * constant::PI) /
+      auto sigma = (x_Ph[1] - HALF * constant::PI) /
                    (static_cast<real_t>(0.2) * constant::PI);
       return -Omega * bx1(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]) * sigma *
              math::exp((ONE - SQR(SQR(sigma))) * INV_4);
@@ -357,12 +357,12 @@ namespace user {
           }
 
             // Get particle coordinates for later processing
-            const coord_t<Dim::_3D> xc {static_cast<real_t>(i1(p)) + dx1(p),
+            const coord_t<Dim::_3D> xc3d {static_cast<real_t>(i1(p)) + dx1(p),
                   static_cast<real_t>(i2(p)) + dx2(p), phi(p)};    
-            const coord_t<Dim::_2D> xCd{static_cast<real_t>(i1(p)) + dx1(p),
+            const coord_t<Dim::_2D> xc2d{static_cast<real_t>(i1(p)) + dx1(p),
                   static_cast<real_t>(i2(p)) + dx2(p)};               
             coord_t<Dim::_2D> xPh { ZERO };
-            metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
+            metric.template convert<Crd::Cd, Crd::Ph>(xc2d, xPh);
 
             // If particle is too close to atmosphere, skip (saving time)
             if (xPh[0] < Rstar + 0.1) return;
@@ -433,8 +433,8 @@ namespace user {
             c10   = c010 * (ONE - dx1_) + c110 * dx1_;
             e_int[2] = c00 * (ONE - dx2_) + c10 * dx2_;
 
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc, b_int, b_int_Cart);
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc, e_int, e_int_Cart);
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, b_int, b_int_Cart);
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, e_int, e_int_Cart);
 
             // Define lepton properties for evaluation
             auto px      = ux1(p);
@@ -504,7 +504,7 @@ namespace user {
 
 
             coord_t<Dim::_3D>     x_cart { ZERO };
-            metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xc, x_cart);
+            metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xc3d, x_cart);
             auto xnorm { 1.0 / NORM(x_cart[0], x_cart[1], x_cart[2]) };
             auto x1norm = x_cart[0] * xnorm;
             auto x2norm = x_cart[1] * xnorm;
@@ -578,9 +578,9 @@ namespace user {
                                               v_ph_RF_L * v_ph_RF_L +
                                               w_ph_RF_L * w_ph_RF_L);
               auto gamma_ex    = gammaeb / eb;
-              auto betax_ex    = u_ph_RF_L * 1.0 / gammaeb;
-              auto betay_ex    = v_ph_RF_L * 1.0 / gammaeb;
-              auto betaz_ex    = w_ph_RF_L * 1.0 / gammaeb;
+              auto betax_ex    = u_ph_RF_L / gammaeb;
+              auto betay_ex    = v_ph_RF_L / gammaeb;
+              auto betaz_ex    = w_ph_RF_L / gammaeb;
               auto pel_ex_x    = gamma_ex * betax_ex;
               auto pel_ex_y    = gamma_ex * betay_ex;
               auto pel_ex_z    = gamma_ex * betaz_ex;
@@ -848,7 +848,7 @@ namespace user {
           }
 
             // Get particle coordinates for later processing
-            const coord_t<Dim::_3D> xc {static_cast<real_t>(i1(p)) + dx1(p),
+            const coord_t<Dim::_3D> xc3d {static_cast<real_t>(i1(p)) + dx1(p),
                   static_cast<real_t>(i2(p)) + dx2(p), phi(p)};   
 
             // Interpolation and conversion of electric and magnetic fields
@@ -890,7 +890,7 @@ namespace user {
             c10   = c010 * (ONE - dx1_) + c110 * dx1_;
             b_int[2] = c00 * (ONE - dx2_) + c10 * dx2_;
 
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc, b_int, b_int_Cart);
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, b_int, b_int_Cart);
 
             //  Check for the angle of photon propagation with magnetic field
             auto babs { NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2]) };
@@ -916,12 +916,11 @@ namespace user {
               if (ePh >= ethres) {
 
                 tag(p) = ParticleTag::dead;
+
                 auto upar { math::abs(cosAngle) * math::sqrt(SQR(ePh) - FOUR) /
                             math::sqrt(SQR(ePh * sinAngle) + FOUR * SQR(cosAngle)) };
 
               auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-
               i1_e(elec_p + offset_e) = i1(p);
               dx1_e(elec_p + offset_e) = dx1(p);
               i2_e(elec_p + offset_e) = i2(p);
@@ -933,6 +932,7 @@ namespace user {
               weight_e(elec_p + offset_e) = weight(p);
               tag_e(elec_p + offset_e) = ParticleTag::alive;
 
+              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
               i1_p(pos_p + offset_p) = i1(p);
               dx1_p(pos_p + offset_p) = dx1(p);
               i2_p(pos_p + offset_p) = i2(p);
