@@ -365,7 +365,7 @@ namespace user {
             metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
 
             // If particle is too close to atmosphere, skip (saving time)
-            if (math::sin(xPh[1]) < Rstar + 0.1) return;
+            if (xPh[0] < Rstar + 0.1) return;
                                     
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
