@@ -65,7 +65,7 @@ namespace ntt {
       "output.fields.quantities");
     const auto custom_fields_to_write = params.template get<std::vector<std::string>>(
       "output.fields.custom");
-    const std::vector<std::string> all_fields_to_write;
+    std::vector<std::string> all_fields_to_write;
     std::merge(fields_to_write.begin(),
                fields_to_write.end(),
                custom_fields_to_write.begin(),
