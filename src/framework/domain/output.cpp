@@ -167,8 +167,9 @@ namespace ntt {
     const SimulationParams& params,
     std::size_t             step,
     long double             time,
-    std::function<void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t)> CustomOutput)
-    -> bool {
+    std::function<
+      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const range_t<M::Dim>&)>
+      CustomFieldOutput) -> bool {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -292,8 +293,11 @@ namespace ntt {
               raise::Error("Wrong moment requested for output", HERE);
             }
           } else if (fld.is_custom()) {
-            if (CustomOutput) {
-              CustomOutput(fld.name(), local_domain->fields.bckp, addresses.back());
+            if (CustomFieldOutput) {
+              CustomFieldOutput(fld.name(),
+                                local_domain->fields.bckp,
+                                addresses.back(),
+                                local_domain->mesh.rangeActiveCells());
             } else {
               raise::Error("Custom output requested but no function provided",
                            HERE);
