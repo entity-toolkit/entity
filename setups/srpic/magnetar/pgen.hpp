@@ -954,7 +954,7 @@ namespace user {
               weight_p(pos_p + offset_p) = weight(p);
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
-              // cbuff(i1(p), i2(p)) += weight(p);
+              // Kokkos::atomic_add(&cbuff(i1(p), i2(p)), weight(p));
 
           }
 
