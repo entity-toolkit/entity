@@ -62,7 +62,8 @@ namespace out {
       interp_flag = PrepareOutput::InterpToCellCenterFromEdges;
     } else if (is_field() || is_gr_aux_field()) {
       interp_flag = PrepareOutput::InterpToCellCenterFromFaces;
-    } else if (not(is_moment() || is_vpotential() || is_divergence()|| is_custom())) {
+    } else if (
+      not(is_moment() || is_vpotential() || is_divergence() || is_custom())) {
       raise::Error("Unrecognized field type for output", HERE);
     }
   }

@@ -294,7 +294,7 @@ namespace ntt {
             }
           } else if (fld.is_custom()) {
             if (CustomFieldOutput) {
-              CustomFieldOutput(fld.name(),
+              CustomFieldOutput(fld.name().substr(1),
                                 local_domain->fields.bckp,
                                 addresses.back(),
                                 local_domain->mesh.rangeActiveCells());
