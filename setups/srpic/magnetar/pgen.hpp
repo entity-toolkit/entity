@@ -956,7 +956,7 @@ namespace user {
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
               auto cbuff_acc     = cbuff_sc.access();
-              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += ONE;
+              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += 1.0;
           }
 
         });
