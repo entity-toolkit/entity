@@ -62,7 +62,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
         timers.start("Output");
         if constexpr (
-          traits::has_method<traits::pgen::custom_output_t, decltype(m_pgen)>::value) {
+          traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
           auto lambda_custom_field_output = [&m_pgen](const std::string& name,
                                                       ndfield_t<M::Dim, 6>& buff,
                                                       std::size_t idx) {
