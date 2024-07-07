@@ -383,15 +383,21 @@ namespace ntt {
     promiseToDefine("output.spectra.interval_time");
     promiseToDefine("output.spectra.enable");
 
-    const auto flds_out = toml::find_or(raw_data,
+    const auto flds_out        = toml::find_or(raw_data,
                                         "output",
                                         "fields",
                                         "quantities",
                                         std::vector<std::string> {});
+    const auto custom_flds_out = toml::find_or(raw_data,
+                                               "output",
+                                               "fields",
+                                               "custom",
+                                               std::vector<std::string> {});
     if (flds_out.size() == 0) {
       raise::Warning("No fields output specified", HERE);
     }
     set("output.fields.quantities", flds_out);
+    set("output.fields.custom", custom_flds_out);
     set("output.fields.mom_smooth",
         toml::find_or(raw_data,
                       "output",

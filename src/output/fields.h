@@ -78,6 +78,11 @@ namespace out {
     }
 
     [[nodiscard]]
+    auto is_custom() const -> bool {
+      return (id() == FldsID::Custom);
+    }
+
+    [[nodiscard]]
     inline auto name() const -> std::string {
       // generate the name
       auto tmp = std::string(id().to_string());

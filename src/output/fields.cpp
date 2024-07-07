@@ -24,7 +24,11 @@ namespace out {
     const auto pos = name.find("_");
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
     name_raw       = name_raw.substr(0, name_raw.find_first_of("0123ijxyzt"));
-    m_id           = FldsID::pick(fmt::toLower(name_raw).c_str());
+    if (FldsID::contains(fmt::toLower(name_raw).c_str())) {
+      m_id = FldsID::pick(fmt::toLower(name_raw).c_str());
+    } else {
+      m_id = FldsID::Custom;
+    }
     // determine the species and components to output
     if (is_moment()) {
       species = InterpretSpecies(name);
@@ -41,11 +45,11 @@ namespace out {
       // energy-momentum tensor
       comp = InterpretComponents({ name.substr(1, 1), name.substr(2, 1) });
     } else {
-      // scalar (Rho, divE, etc.)
+      // scalar (Rho, divE, Custom, etc.)
       comp = {};
     }
     // data preparation flags
-    if (not is_moment()) {
+    if (not is_moment() && not is_custom()) {
       if (S == SimEngine::SRPIC) {
         prepare_flag = PrepareOutput::ConvertToHat;
       } else {
