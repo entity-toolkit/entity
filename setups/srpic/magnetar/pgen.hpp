@@ -151,7 +151,7 @@ namespace user {
 
     const Metadomain<S, M>& global_domain;
 
-    const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt;
+    const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0;
     InitFields<D> init_flds;
     
     array_t<real_t**> cbuff;
@@ -162,6 +162,7 @@ namespace user {
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
       , Omega { p.template get<real_t>("setup.omega") }
+      , inv_n0 {ONE / p.template get<real_t>("scales.n0")}
       , fid_freq { p.template get<real_t>("setup.fid_freq", ZERO) }
       , bq { p.template get<real_t>("setup.bq", ONE) }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
@@ -956,7 +957,9 @@ namespace user {
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
               auto cbuff_acc     = cbuff_sc.access();
-              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += 1.0;
+              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
+                   metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+                                       static_cast<real_t>(i2(p)) + HALF });;
           }
 
         });
