@@ -970,13 +970,13 @@ namespace user {
         }
   
 void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const range_t<M::Dim> range) {
-  if (name == "custom") {
+  // if (name == "pploc") {
     Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
       buffer(i1, i2, index) = ONE;
     });
-  } else {
-    raise::Error("Custom output not provided", HERE);
-  } 
+  // } else {
+    // raise::Error("Custom output not provided", HERE);
+  // } 
 }
   
   };
