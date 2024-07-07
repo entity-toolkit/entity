@@ -156,7 +156,7 @@ namespace user {
     
     const std::vector<std::size_t> res;
     std::size_t nx1, nx2;
-    ndfield_t<Dim::_2D, 6> cbuff;
+    ndfield_t<Dim::_2D, 1> cbuff;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
@@ -167,11 +167,13 @@ namespace user {
       , res { params.template get<std::vector<std::size_t>>("grid.resolution") }
       , nx1 {res[0] + 2 * N_GHOSTS}
       , nx2 {res[1] + 2 * N_GHOSTS}
-      , cbuff { "CBUFF", nx1, nx2, 6 }
+      , cbuff { "CBUFF", nx1, nx2 }
       , fid_freq { p.template get<real_t>("setup.fid_freq", ZERO) }
       , bq { p.template get<real_t>("setup.bq", ONE) }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
-      , init_flds { Bsurf, Rstar } {}
+      , init_flds { Bsurf, Rstar } {
+        Kokkos::deep_copy(cbuff, ZERO);
+      }
 
     inline PGen() {}
 
@@ -952,6 +954,8 @@ namespace user {
               weight_p(pos_p + offset_p) = weight(p);
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
+              // cbuff(i1(p), i2(p)) += weight(p);
+
           }
 
         });
@@ -971,9 +975,11 @@ namespace user {
   
 void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const range_t<M::Dim> range) {
   // if (name == "pploc") {
-    Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
-      buffer(i1, i2, index) = ONE;
-    });
+  Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, range_tuple_t(index, index + 1)), cbuff);
+
+    // Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
+      // buffer(i1, i2, index) = cbuff(i1, i2);
+    // });
   // } else {
     // raise::Error("Custom output not provided", HERE);
   // } 
