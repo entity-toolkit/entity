@@ -154,9 +154,7 @@ namespace user {
     const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt;
     InitFields<D> init_flds;
     
-    const std::vector<std::size_t> res;
-    std::size_t nx1, nx2;
-    ndfield_t<Dim::_2D, 1> cbuff;
+    array_t<real_t**> cbuff;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
@@ -164,10 +162,6 @@ namespace user {
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
       , Omega { p.template get<real_t>("setup.omega") }
-      , res { params.template get<std::vector<std::size_t>>("grid.resolution") }
-      , nx1 {res[0] + 2 * N_GHOSTS}
-      , nx2 {res[1] + 2 * N_GHOSTS}
-      , cbuff { "CBUFF", nx1, nx2 }
       , fid_freq { p.template get<real_t>("setup.fid_freq", ZERO) }
       , bq { p.template get<real_t>("setup.bq", ONE) }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
@@ -188,6 +182,12 @@ namespace user {
     }
 
         void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
+      if (time == 0) {
+        cbuff = array_t<real_t**>("cbuff",
+                                  domain.mesh.n_all(in::x1),
+                                  domain.mesh.n_all(in::x2));
+      }
+      Kokkos::deep_copy(cbuff, ZERO);
 
     //       const auto pp_thres    = 1*10.0;
     //       const auto gamma_pairs = 1*0.5 * 3.5;
@@ -806,6 +806,7 @@ namespace user {
         auto& species_p   = domain.species[5];
         auto metric       = domain.mesh.metric;
         auto EB           = domain.fields.em;
+        auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
@@ -954,8 +955,8 @@ namespace user {
               weight_p(pos_p + offset_p) = weight(p);
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
-              // Kokkos::atomic_add(&cbuff(i1(p), i2(p)), weight(p));
-
+              auto cbuff_acc     = cbuff_sc.access();
+              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += static_cast<real_t>(weight(p));
           }
 
         });
@@ -969,14 +970,16 @@ namespace user {
             species_p.set_npart(offset_p + pos_ind_h());
 
           }
+
+      Kokkos::Experimental::contribute(cbuff, cbuff_sc);
       } // Pair production kernel (threshold)
 
         }
   
 void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const range_t<M::Dim> range) {
   // if (name == "pploc") {
-  Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, range_tuple_t(index, index + 1)), cbuff);
-
+        Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
+                          cbuff);
     // Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
       // buffer(i1, i2, index) = cbuff(i1, i2);
     // });
