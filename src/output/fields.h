@@ -49,7 +49,7 @@ namespace out {
     [[nodiscard]]
     auto is_field() const -> bool {
       return (id() == FldsID::E || id() == FldsID::B || id() == FldsID::D ||
-              id() == FldsID::H || id() == FldsID::Custom);
+              id() == FldsID::H);
     }
 
     [[nodiscard]]
