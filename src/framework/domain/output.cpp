@@ -25,6 +25,8 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 namespace ntt {
@@ -61,9 +63,17 @@ namespace ntt {
                               M::CoordType);
     const auto fields_to_write = params.template get<std::vector<std::string>>(
       "output.fields.quantities");
+    const auto custom_fields_to_write = params.template get<std::vector<std::string>>(
+      "output.fields.custom");
+    const std::vector<std::string> all_fields_to_write;
+    std::merge(fields_to_write.begin(),
+               fields_to_write.end(),
+               custom_fields_to_write.begin(),
+               custom_fields_to_write.end(),
+               std::back_inserter(all_fields_to_write));
     const auto species_to_write = params.template get<std::vector<unsigned short>>(
       "output.particles.species");
-    g_writer.defineFieldOutputs(S, fields_to_write);
+    g_writer.defineFieldOutputs(S, all_fields_to_write);
     g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
     // spectra write all particle species
     std::vector<unsigned short> spectra_species {};
@@ -153,9 +163,12 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto Metadomain<S, M>::Write(const SimulationParams& params,
-                               std::size_t             step,
-                               long double             time) -> bool {
+  auto Metadomain<S, M>::Write(
+    const SimulationParams& params,
+    std::size_t             step,
+    long double             time,
+    std::function<void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t)> CustomOutput)
+    -> bool {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -278,14 +291,21 @@ namespace ntt {
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
-            SynchronizeFields(*local_domain,
-                              Comm::Bckp,
-                              { addresses.back(), addresses.back() + 1 });
+          } else if (fld.is_custom()) {
+            if (CustomOutput) {
+              CustomOutput(fld.name(), local_domain->fields.bckp, addresses.back());
+            } else {
+              raise::Error("Custom output requested but no function provided",
+                           HERE);
+            }
           } else {
-            raise::Error(
-              "Wrong # of components requested for non-moment output",
-              HERE);
+            raise::Error("Wrong # of components requested for "
+                         "non-moment/non-custom output",
+                         HERE);
           }
+          SynchronizeFields(*local_domain,
+                            Comm::Bckp,
+                            { addresses.back(), addresses.back() + 1 });
         } else if (fld.comp.size() == 3) { // vector
           for (auto i = 0; i < 3; ++i) {
             names.push_back(fld.name(i));
