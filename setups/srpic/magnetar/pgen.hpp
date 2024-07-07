@@ -153,6 +153,10 @@ namespace user {
 
     const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt;
     InitFields<D> init_flds;
+    
+    const std::vector<std::size_t> res;
+    std::size_t nx1, nx2;
+    ndfield_t<Dim::_2D, 6> cbuff;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
@@ -160,6 +164,10 @@ namespace user {
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
       , Omega { p.template get<real_t>("setup.omega") }
+      , res { params.template get<std::vector<std::size_t>>("grid.resolution") }
+      , nx1 {res[0] + 2 * N_GHOSTS}
+      , nx2 {res[1] + 2 * N_GHOSTS}
+      , cbuff { "CBUFF", nx1, nx2, 6 }
       , fid_freq { p.template get<real_t>("setup.fid_freq", ZERO) }
       , bq { p.template get<real_t>("setup.bq", ONE) }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
@@ -960,6 +968,18 @@ namespace user {
       } // Pair production kernel (threshold)
 
         }
+  
+void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index) {
+  if (name == "pploc") {
+    Kokkos::parallel_for("CustomFieldOutput", global_domain.mesh.rangeActiveCells(), KOKKOS_LAMBDA(index_t i1, index_t i2) {
+      cbuff(i1, i2, 1) = ONE;
+    });
+
+  } else {
+    raise::Error("Custom output not provided", HERE);
+  } 
+}
+  
   };
 
 } // namespace user
