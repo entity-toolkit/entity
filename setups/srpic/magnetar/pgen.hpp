@@ -187,8 +187,8 @@ namespace user {
         cbuff = array_t<real_t**>("cbuff",
                                   domain.mesh.n_all(in::x1),
                                   domain.mesh.n_all(in::x2));
+        Kokkos::deep_copy(cbuff, ZERO);
       }
-      Kokkos::deep_copy(cbuff, ZERO);
 
     //       const auto pp_thres    = 1*10.0;
     //       const auto gamma_pairs = 1*0.5 * 3.5;
@@ -959,7 +959,7 @@ namespace user {
               auto cbuff_acc     = cbuff_sc.access();
               cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
-                                       static_cast<real_t>(i2(p)) + HALF });;
+                                       static_cast<real_t>(i2(p)) + HALF });
           }
 
         });
