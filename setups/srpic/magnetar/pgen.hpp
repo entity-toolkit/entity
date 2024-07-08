@@ -151,7 +151,7 @@ namespace user {
 
     const Metadomain<S, M>& global_domain;
 
-    const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0;
+    const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0, gamma_pairs, pp_thres;
     InitFields<D> init_flds;
     
     array_t<real_t**> cbuff;
@@ -165,6 +165,8 @@ namespace user {
       , inv_n0 {ONE / p.template get<real_t>("scales.n0")}
       , fid_freq { p.template get<real_t>("setup.fid_freq", ZERO) }
       , bq { p.template get<real_t>("setup.bq", ONE) }
+      , pp_thres { p.template get<real_t>("setup.pp_thres") }
+      , gamma_pairs { p.template get<real_t>("setup.gamma_pairs") }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
       , init_flds { Bsurf, Rstar } {
         Kokkos::deep_copy(cbuff, ZERO);
@@ -192,9 +194,6 @@ namespace user {
 
     // Ad-hoc PP kernel
     {
-        const auto pp_thres    = 1*10.0;
-        const auto gamma_pairs = 1*0.5 * 3.5;
-
         auto& species_e = domain.species[4];
         auto& species_p = domain.species[5];
         auto metric = domain.mesh.metric;
