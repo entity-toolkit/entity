@@ -59,9 +59,9 @@ namespace kernel::gr {
   class Pusher_kernel {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
-    static_assert(D == Dim::1D, "Only 1d available for this pusher");
+    static_assert(D == Dim::_1D, "Only 1d available for this pusher");
 
-    const ndfield_t<D, 1> D;
+    const ndfield_t<D, 1> Dfield;
     array_t<int*>         i1;
     array_t<int*>         i1_prev;
     array_t<prtldx_t*>    dx1;
@@ -91,11 +91,10 @@ namespace kernel::gr {
                   const M&                          metric,
                   const real_t&                     coeff,
                   const real_t&                     dt,
-                  const int&                        n1i,
+                  const int&                        ni1,
                   const real_t&                     epsilon,
                   const int&                        niter,
-                  const real_t&                     Omega_,
-                  const boundaries_t<PrtlBC::type>& boundaries)
+                  const boundaries_t<PrtlBC>& boundaries)
       : Dfield { Dfield }
       , i1 { i1 }
       , i1_prev { i1_prev }
@@ -107,15 +106,12 @@ namespace kernel::gr {
       , metric { metric }
       , coeff { coeff }
       , dt { dt }
-      , n1i { n1i }
+      , ni1 { ni1 }
       , epsilon { epsilon }
       , niter { niter }
-      , Omega_ { metric.Omega() }
-      , i1_absorb { static_cast<int>(metric.template convert<1, Crd::Ph, Crd::Cd>(
-                      metric.rhorizon())) -
-                    5 } {
+      , i1_absorb { 2 } {
 
-      raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
+      raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ABSORB) ||
                         (boundaries[0].first == PrtlBC::HORIZON);
       is_absorb_i1max = (boundaries[0].second == PrtlBC::ABSORB) ||
@@ -125,12 +121,12 @@ namespace kernel::gr {
     /**
      * @brief Main pusher subroutine for photon particles.
      */
-    Inline void operator()(Massless_t, index_t) const;
+    //Inline void operator()(Massless_t, index_t) const;
 
     /**
      * @brief Main pusher subroutine for massive particles.
      */
-    Inline void operator()(Massive_t, index_t) const;
+    Inline void operator()(index_t) const;
 
     /**
      * @brief Iterative geodesic pusher substep for momentum only.
@@ -138,7 +134,7 @@ namespace kernel::gr {
      * @param vp particle velocity.
      * @param vp_upd updated particle velocity [return].
      */
-    Inline void Pusher_kernel<M>::ForceFreePush( const coord_t<D>& xp,
+    Inline void ForceFreePush( const coord_t<D>& xp,
                                                 const real_t&     vp,
                                                         real_t&     vp_upd) const;
 
@@ -148,9 +144,9 @@ namespace kernel::gr {
      * @param vp particle velocity.
      * @param xp_upd updated particle coordinate [return].
      */
-    Inline void Pusher_kernel<M>::CoordinatePush(const coord_t<D>&  xp,
+    Inline void CoordinatePush(const coord_t<D>&  xp,
                                                   const real_t&      vp,
-                                                  const real_t&  xp_upd) const;
+                                                  coord_t<D>&  xp_upd) const;
 
 
     /**
@@ -160,7 +156,7 @@ namespace kernel::gr {
      * @param e0 electric field at the particle position.
      * @param v_upd updated covarient velocity of the particle [return].
      */
-    Inline void Pusher_kernel<M>::EfieldHalfPush(const coord_t<D>& xp,
+    Inline void EfieldHalfPush(const coord_t<D>& xp,
                                                   const real_t&     vp,
                                                   const real_t&     e0,
                                                   real_t&       vp_upd) const;
@@ -172,7 +168,7 @@ namespace kernel::gr {
      * @param e interpolated e-field 
      */
     Inline void interpolateFields(index_t& p,
-                                  real_t&  e,) const {
+                                  real_t&  e) const {
       const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
       const auto dx1_ { static_cast<real_t>(dx1(p)) };
       real_t c1  = HALF * (Dfield(i, em::dx1) + Dfield(i - 1, em::dx1));
@@ -184,21 +180,21 @@ namespace kernel::gr {
      * @brief Compute controvariant component u^0 for massive particles.
      */
 
-    Inline auto compute_u0(const real_t& v, 
-                              const coord_t<D>& xi){
+    Inline auto compute_u0_v(const real_t& v, 
+                              const coord_t<D>& xi) const {
       return ONE / math::sqrt(SQR(metric.alpha(xi)) - 
                  metric.f2(xi) * SQR(v) - TWO * metric.f1(xi) * v - metric.f0(xi));
     }
 
-    Inline auto compute_u0(const coord_t<Dim::_3D>& u_cov, 
+    Inline auto compute_u0_u(const coord_t<Dim::_3D>& u_cov, 
                            const coord_t<Dim::_3D>& u_ccov,
-                           const coord_t<D>& xi){
+                           const coord_t<D>& xi) const {
       return math::sqrt((u_cov[0] * u_ccov[0] + u_cov[1] * u_ccov[1] + u_cov[2] * u_ccov[2]) / 
                         (SQR(metric.alpha(xi)) + SQR(metric.beta(xi))));
     }
 
     // Extra
-    Inline void boundaryConditions(index_t&) const{
+    Inline void boundaryConditions(index_t& p) const{
       if (i1(p) < i1_absorb && is_absorb_i1min) {
         tag(p) = ParticleTag::dead;
       } else if (i1(p) >= ni1 && is_absorb_i1max) {
@@ -232,7 +228,7 @@ namespace kernel::gr {
     real_t COEFF { HALF * coeff * metric.alpha(xp) };
 
     //calculate canonical momentum
-    real_t u0 { compute_u0(vp, xp) };
+    real_t u0 { compute_u0_v(vp, xp) };
     pp = u0 * (metric.f2(xp) * vp + metric.f1(xp));
 
     //calculate updated canonical momentum
@@ -255,7 +251,7 @@ namespace kernel::gr {
 
     vp_upd = vp;
 
-    real_t u0 { compute_u0(vp, xp) };
+    real_t u0 { compute_u0_v(vp, xp) };
     //calculate canonical momentum
     pp = u0 * (metric.f2(xp) * vp + metric.f1(xp));
     pp_upd = pp ;
@@ -264,15 +260,15 @@ namespace kernel::gr {
     // find midpoint values
     vp_mid = HALF * (vp + vp_upd);
     
-    u0 = compute_u0(vp_mid, xp);
+    u0 = compute_u0_v(vp_mid, xp);
 
     // find updated canonical momentum
     pp_upd = pp + 
             dt * u0 * 
-            (- metric.alpha(xp) * DERIVATIVE(metric.alpha, xp) +
-                HALF * (DERIVATIVE(metric.f2, xp) * SQR(vp_mid) + 
-                        TWO * DERIVATIVE(metric.f1, xp) * vp_mid +
-                        DERIVATIVE(metric.f0, xp)));
+            (- metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
+                HALF * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp_mid) + 
+                        TWO * DERIVATIVE(metric.f1, xp[0]) * vp_mid +
+                        DERIVATIVE(metric.f0, xp[0])));
     
     // find updated velocity
     vp_upd = (pp_upd / u0 - metric.f1(xp)) / metric.f2(xp);
@@ -285,13 +281,13 @@ namespace kernel::gr {
   template <class M>
   Inline void Pusher_kernel<M>::CoordinatePush(const coord_t<D>&  xp,
                                                   const real_t&      vp,
-                                                  const coord_t<D>&  xp_upd) const {
+                                                  coord_t<D>&  xp_upd) const {
     xp_upd[0] = dt * vp + xp[0];
   }
 
   /* ------------------------- Massive particle pusher ------------------------ */
 template <class M>
-  Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
+  Inline void Pusher_kernel<M>::operator()(index_t p) const {
     if (tag(p) != ParticleTag::alive) {
       if (tag(p) != ParticleTag::dead) {
         raise::KernelError(HERE, "Invalid particle tag in pusher");
@@ -308,7 +304,7 @@ template <class M>
     real_t Dp_contrv { ZERO };
     interpolateFields(p, Dp_contrv);
 
-    real_t ep_controv { metric.alpha(xp) * metric.template transform<1, Idx::U, Idx::D>(xp, Dp_cntrv) };
+    real_t ep_controv { metric.alpha(xp) * metric.template transform<1, Idx::U, Idx::D>(xp, Dp_contrv) };
 
     vec_t<Dim::_3D> up_cov { ZERO };
     vec_t<Dim::_3D> up_ccov { ZERO };
@@ -319,7 +315,7 @@ template <class M>
 
     metric.template transform<Idx::D, Idx::U>(xp, up_cov, up_ccov);
 
-    real_t vp { up_cov[0] / compute_u0(up_cov, up_ccov, xp) };
+    real_t vp { up_cov[0] / compute_u0_u(up_cov, up_ccov, xp) };
     
 
     /* -------------------------------- Leapfrog -------------------------------- */
@@ -335,21 +331,21 @@ template <class M>
     EfieldHalfPush(xp, vp, ep_controv, vp_upd);
 
     /* x^i(n) -> x^i(n + 1) */
-    real_t xp_upd { ZERO };
+    coord_t<D> xp_upd { ZERO };
     CoordinatePush(xp, vp_upd, xp_upd);
 
     /* update coordinate */
     int      i1_;
     prtldx_t dx1_;
-    from_Xi_to_i_di(xp_upd, i1_, dx1_);
+    from_Xi_to_i_di(xp_upd[0], i1_, dx1_);
     i1(p)  = i1_;
     dx1(p) = dx1_;
 
     /* update velocity */
-    real_t u0 { compute_u0(vp_upd, xp) };
+    real_t u0 { compute_u0_v(vp_upd, xp) };
     ux1(p) = vp_upd * u0;
-    ux3(p) = u0 * (metric.template h<3,3>(xp) * Omega_
-                   + metric.f1(xp) * vp_upd / (Omega_ + metric.beta3(xp)));
+    ux3(p) = u0 * (metric.template h<3,3>(xp) * metric.OmegaF()
+                   + metric.f1(xp) * vp_upd / (metric.OmegaF()+ metric.beta3(xp)));
  
 
     boundaryConditions(p);

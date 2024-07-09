@@ -160,7 +160,7 @@ namespace metric {
       return math::sqrt(h<3, 3>(xi)) * omega(r_, theta_);
     }
 
-    Inline auto bet3(const coord_t<D>& xi) const -> real_t {
+    Inline auto beta3(const coord_t<D>& xi) const -> real_t {
       const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
       const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
       return -omega(r_, theta_);

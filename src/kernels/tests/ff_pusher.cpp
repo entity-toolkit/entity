@@ -3,6 +3,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
+#include "utils/comparators.h"
 
 #include "metrics/flux_surface.h"
 
@@ -54,6 +55,8 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   extent = ext;
 
   M metric { res, extent, params };
+  
+  const auto D = M::Dim;
 
   const int nx1 = res[0];
 
@@ -71,7 +74,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
     "init efield",
     range_ext,
     Lambda(index_t i1) {
-      emfield(i1, em::ex1) = 1.92;
+      efield(i1, em::ex1) = 1.92;
     });
 
   
@@ -87,13 +90,13 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   put_value<int>(i1, 5, 0);
   put_value<prtldx_t>(dx1, (prtldx_t)(0.15), 0);
   put_value<real_t>(ux1, ZERO, 0);
-  put_value<real_t>(ux3, metric.Omega_(), 0);
+  put_value<real_t>(ux3, metric.OmegaF(), 0);
   put_value<short>(tag, ParticleTag::alive, 0);
 
   put_value<int>(i1, 5, 1);
   put_value<prtldx_t>(dx1, (prtldx_t)(0.15), 1);
   put_value<real_t>(ux1, ZERO, 1);
-  put_value<real_t>(ux3, metric.Omega_(), 1);
+  put_value<real_t>(ux3, metric.OmegaF(), 1);
   put_value<short>(tag, ParticleTag::alive, 1);
 
 
@@ -146,7 +149,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
 
   auto i1_      = Kokkos::create_mirror_view(i1);
   Kokkos::deep_copy(i1_, i1);
-  auto i1_ prev_     = Kokkos::create_mirror_view(i1_prev);
+  auto i1_prev_     = Kokkos::create_mirror_view(i1_prev);
   Kokkos::deep_copy(i1_prev_, i1_prev);
   auto dx1_      = Kokkos::create_mirror_view(dx1);
   Kokkos::deep_copy(dx1_, dx1);
@@ -169,41 +172,40 @@ void testFFPusher(const std::vector<std::size_t>&      res,
 
   real_t u0 { math::sqrt((u_d[0] * u_u[0] + u_d[1] * u_u[1] + u_d[2] * u_u[2]) / 
                          (SQR(metric.alpha(xp)) + SQR(metric.beta(xp)))) };
-  real_t vp { u_p[0] / u0 };
+  real_t vp { u_u[0] / u0 };
 
   real_t diff { u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) -
-                      dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) - 
-                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp) + 
-                            HALF * u0 * (DERIVATIVE(metric.f2, xp) * SQR(vp) + 
-                                         TWO * DERIVATIVE(metric.f1, xp) * vp +
-                                         DERIVATIVE(metric.f0, xp))) };
+                      dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield(i1_(1), em::ex1) - 
+                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) + 
+                            HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) + 
+                                         TWO * DERIVATIVE(metric.f1, xp[0]) * vp +
+                                         DERIVATIVE(metric.f0, xp[0]))) };
   
   if (not cmp::AlmostEqual(diff, ZERO, eps * acc)) {
       printf("%.12e %s\n", diff, "Pusher test failed at negative charge.");
-      return false;
     }
 
 //positive charge
-  coord_t<D> xp { i_di_to_Xi(i1_(1), dx1_(1)) };
-  coord_t<D> xp_prev { i_di_to_Xi(i1_prev_(1), dx1_prev(1)) };
-  coord_t<Dim::_3D> u_d {ux1_(1), ux2_(1), ux3_(1)};
-  coord_t<Dim::_3D> u_u { ZERO };
+  xp[0] = i_di_to_Xi(i1_(1), dx1_(1));
+  xp_prev[0] = i_di_to_Xi(i1_prev_(1), dx1_prev(1));
+  u_d[0] = ux1_(1);
+  u_d[1] = ux2_(1);
+  u_d[2] = ux3_(1);
   metric.template transform<Idx::D, Idx::U>(xp, u_d, u_u);
 
-  real_t u0 = math::sqrt((u_d[0] * u_u[0] + u_d[1] * u_u[1] + u_d[2] * u_u[2]) / 
+  u0 = math::sqrt((u_d[0] * u_u[0] + u_d[1] * u_u[1] + u_d[2] * u_u[2]) / 
                          (SQR(metric.alpha(xp)) + SQR(metric.beta(xp)))) ;
-  real_t vp = u_p[0] / u0 ;
+  vp = u_u[0] / u0 ;
 
-  real_t diff = u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) -
-                      dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) - 
-                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp) + 
-                            HALF * u0 * (DERIVATIVE(metric.f2, xp) * SQR(vp) + 
-                                         TWO * DERIVATIVE(metric.f1, xp) * vp +
-                                         DERIVATIVE(metric.f0, xp))) ;
+  diff = u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) -
+                      dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield(i1_(1), em::ex1) - 
+                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) + 
+                            HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) + 
+                                         TWO * DERIVATIVE(metric.f1, xp[0]) * vp +
+                                         DERIVATIVE(metric.f0, xp[0]))) ;
   
   if (not cmp::AlmostEqual(diff, ZERO, eps * acc)) {
       printf("%.12e %s\n", diff, "Pusher test failed at positive charge.");
-      return false;
     }
 
   
@@ -216,7 +218,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
 
-    testFFPusher<SimEngine::SRPIC, Minkowski<Dim::_3D>>(
+    testFFPusher<SimEngine::GRPIC, FluxSurface<Dim::_1D>>(
       { 128 },
       { { 2.0, 50.0 } },
       100,
