@@ -178,15 +178,17 @@ void testFFPusher(const std::vector<std::size_t>&      res,
                        ) / metric.OmegaF()};
   real_t vp { u_u[0] / u0 };
 
-  real_t diff { u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) /
-                      (dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield_ - 
-                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) + 
-                            HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) + 
-                                         TWO * DERIVATIVE(metric.f1, xp[0]) * vp +
-                                         DERIVATIVE(metric.f0, xp[0])))) };
-  
-  if (not cmp::AlmostEqual(diff, ZERO, eps * acc)) {
-      printf("%.12e %s\n", diff, "Pusher test failed at negative charge.");
+  real_t left {  u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev))  };
+  real_t right { dt * (coeff * metric.alpha(xp_prev) * metric.template h_<1, 1>(xp_prev) * 1.92 -
+                            u0 * metric.alpha(xp_prev) * DERIVATIVE(metric.alpha, xp_prev[0]) +
+                            HALF * u0 * (DERIVATIVE(metric.f2, xp_prev[0]) * SQR(vp) +
+                                         TWO * DERIVATIVE(metric.f1, xp_prev[0]) * vp +
+                                         DERIVATIVE(metric.f0, xp_prev[0]))) };
+  real_t ratio { left / right };
+
+  if (not cmp::AlmostEqual(ratio, ONE, eps * acc)) {
+      printf("%.12e != 1\n", ratio);
+      throw std::runtime_error("Pusher fails at negative charge.");
     }
 
 //positive charge
@@ -203,15 +205,17 @@ void testFFPusher(const std::vector<std::size_t>&      res,
                 ) / metric.OmegaF() ;
   vp = u_u[0] / u0 ;
 
-  diff = u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) -
-                      dt * (-coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield_ - 
-                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) + 
-                            HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) + 
+  left = u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev));
+  right = dt * (-coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * 1.92 -
+                            u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
+                            HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) +
                                          TWO * DERIVATIVE(metric.f1, xp[0]) * vp +
-                                         DERIVATIVE(metric.f0, xp[0]))) ;
-  
-  if (not cmp::AlmostEqual(diff, ZERO, eps * acc)) {
-      printf("%.12e %s\n", diff, "Pusher test failed at positive charge.");
+                                         DERIVATIVE(metric.f0, xp[0])));
+  ratio = left / right;
+
+    if (not cmp::AlmostEqual(ratio, ONE, eps * acc)) {
+      printf("%.12e != 1\n", ratio);
+      throw std::runtime_error("Pusher fails at positive charge.");
     }
 
   
