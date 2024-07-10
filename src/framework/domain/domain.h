@@ -107,6 +107,7 @@ namespace ntt {
 
     void set_mpi_rank(int rank) {
       m_mpi_rank = rank;
+      random_pool = random_number_pool_t { constant::RandomSeed + rank };
     }
 #endif // MPI_ENABLED
 
