@@ -56,7 +56,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
 
   M metric { res, extent, params };
   
-  const auto D = M::Dim;
+  static constexpr auto D = M::Dim;
 
   const int nx1 = res[0];
 
@@ -161,25 +161,29 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   Kokkos::deep_copy(ux2_, ux2);
   auto ux3_      = Kokkos::create_mirror_view(ux3);
   Kokkos::deep_copy(ux3_, ux3);
+  auto efield_ = Kokkos::create_mirror_view(efield(i1(1), em::ex1));
+  Kokkos::deep_copy(efield_, efield(i1(1), em::ex1));
 
 
 //negative charge
   coord_t<D> xp { i_di_to_Xi(i1_(0), dx1_(0)) };
-  coord_t<D> xp_prev { i_di_to_Xi(i1_prev_(0), dx1_prev(0)) };
-  coord_t<Dim::_3D> u_d {ux1_(0), ux2_(0), ux3_(0)};
-  coord_t<Dim::_3D> u_u { ZERO };
+  coord_t<D> xp_prev { i_di_to_Xi(i1_prev_(0), dx1_prev_(0)) };
+  vec_t<Dim::_3D> u_d {ux1_(0), ux2_(0), ux3_(0)};
+  vec_t<Dim::_3D> u_u { ZERO };
   metric.template transform<Idx::D, Idx::U>(xp, u_d, u_u);
 
-  real_t u0 { math::sqrt((u_d[0] * u_u[0] + u_d[1] * u_u[1] + u_d[2] * u_u[2]) / 
-                         (SQR(metric.alpha(xp)) + SQR(metric.beta(xp)))) };
+  real_t u0 { (u_u[2] - 
+                       u_u[0] * metric.f1(xi) / 
+                       (metric.template h<3, 3>(xi) * (metric.OmegaF() + metric.beta3(xi)))
+                       ) / metric.OmegaF()};
   real_t vp { u_u[0] / u0 };
 
-  real_t diff { u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) -
-                      dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield(i1_(1), em::ex1) - 
+  real_t diff { u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) /
+                      (dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield_ - 
                             u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) + 
                             HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) + 
                                          TWO * DERIVATIVE(metric.f1, xp[0]) * vp +
-                                         DERIVATIVE(metric.f0, xp[0]))) };
+                                         DERIVATIVE(metric.f0, xp[0])))) };
   
   if (not cmp::AlmostEqual(diff, ZERO, eps * acc)) {
       printf("%.12e %s\n", diff, "Pusher test failed at negative charge.");
@@ -187,18 +191,20 @@ void testFFPusher(const std::vector<std::size_t>&      res,
 
 //positive charge
   xp[0] = i_di_to_Xi(i1_(1), dx1_(1));
-  xp_prev[0] = i_di_to_Xi(i1_prev_(1), dx1_prev(1));
+  xp_prev[0] = i_di_to_Xi(i1_prev_(1), dx1_prev_(1));
   u_d[0] = ux1_(1);
   u_d[1] = ux2_(1);
   u_d[2] = ux3_(1);
   metric.template transform<Idx::D, Idx::U>(xp, u_d, u_u);
 
-  u0 = math::sqrt((u_d[0] * u_u[0] + u_d[1] * u_u[1] + u_d[2] * u_u[2]) / 
-                         (SQR(metric.alpha(xp)) + SQR(metric.beta(xp)))) ;
+  u0 = (u_u[2] - 
+                u_u[0] * metric.f1(xi) / 
+                (metric.template h<3, 3>(xi) * (metric.OmegaF() + metric.beta3(xi)))
+                ) / metric.OmegaF() ;
   vp = u_u[0] / u0 ;
 
   diff = u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev)) -
-                      dt * (coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield(i1_(1), em::ex1) - 
+                      dt * (-coeff * metric.alpha(xp) * metric.template h_<1, 1>(xp) * efield_ - 
                             u0 * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) + 
                             HALF * u0 * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp) + 
                                          TWO * DERIVATIVE(metric.f1, xp[0]) * vp +

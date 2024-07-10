@@ -103,6 +103,7 @@ namespace kernel::gr {
       , ux1 { ux1 }
       , ux2 { ux2 }
       , ux3 { ux3 }
+      , tag { tag }
       , metric { metric }
       , coeff { coeff }
       , dt { dt }
@@ -116,6 +117,7 @@ namespace kernel::gr {
                         (boundaries[0].first == PrtlBC::HORIZON);
       is_absorb_i1max = (boundaries[0].second == PrtlBC::ABSORB) ||
                         (boundaries[0].second == PrtlBC::HORIZON);
+      
     }
 
     /**
@@ -186,11 +188,12 @@ namespace kernel::gr {
                  metric.f2(xi) * SQR(v) - TWO * metric.f1(xi) * v - metric.f0(xi));
     }
 
-    Inline auto compute_u0_u(const coord_t<Dim::_3D>& u_cov, 
-                           const coord_t<Dim::_3D>& u_ccov,
+    Inline auto compute_u0_u(const coord_t<Dim::_3D>& u_ccov, 
                            const coord_t<D>& xi) const {
-      return math::sqrt((u_cov[0] * u_ccov[0] + u_cov[1] * u_ccov[1] + u_cov[2] * u_ccov[2]) / 
-                        (SQR(metric.alpha(xi)) + SQR(metric.beta(xi))));
+      return (u_ccov[2] - 
+                       u_ccov[0] * metric.f1(xi) / 
+                       (metric.template h<3, 3>(xi) * (metric.OmegaF() + metric.beta3(xi)))
+                       ) / metric.OmegaF();
     }
 
     // Extra
@@ -315,7 +318,7 @@ template <class M>
 
     metric.template transform<Idx::D, Idx::U>(xp, up_cov, up_ccov);
 
-    real_t vp { up_cov[0] / compute_u0_u(up_cov, up_ccov, xp) };
+    real_t vp { up_ccov[0] / compute_u0_u(up_ccov, xp) };
     
 
     /* -------------------------------- Leapfrog -------------------------------- */
