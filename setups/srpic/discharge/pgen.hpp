@@ -23,40 +23,45 @@ namespace user {
       return ONE;
     }
 
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
+
+    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
+
   private:
     const real_t Bsurf;
 
   };
 
-  // template <Dimension D>
-  // struct DriveFields : public InitFields<D> {
-  //   DriveFields(real_t time, real_t bsurf, real_t rstar, real_t omega)
-  //     : InitFields<D> { bsurf, rstar }
-  //     , time { time }
-  //     , Omega { omega } {}
+  template <Dimension D>
+  struct DriveFields : public InitFields<D> {
+    DriveFields(real_t time, real_t bsurf, real_t omega)
+      : InitFields<D> { bsurf }
+      , time { time }
+      , Omega { omega } {}
 
-  //   using InitFields<D>::bx1;
-  //   using InitFields<D>::bx2;
+    using InitFields<D>::bx1;
+    using InitFields<D>::bx2;
+    using InitFields<D>::bx3;
 
-  //   Inline auto bx3(const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
+    Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
 
-  //   Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-  //     return ZERO;
-  //   }
+    Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
 
-  //   Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-  //     return ZERO;
-  //   }
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
 
-  //   Inline auto ex3(const coord_t<D>&) const -> real_t {
-  //     return ZERO;
-  //   }
-
-  // private:
-  //   const real_t time, Omega;
-  // };
+  private:
+    const real_t time, Omega;
+  };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -86,15 +91,10 @@ namespace user {
 
     inline PGen() {}
 
-    // auto FieldDriver(real_t time) const -> DriveFields<D> {
-    //   const real_t omega_t =
-    //     Omega *
-    //     ((ONE - math::tanh((static_cast<real_t>(5.0) - time) * HALF)) *
-    //      (ONE + (-ONE + math::tanh((static_cast<real_t>(45.0) - time) * HALF)) *
-    //               HALF)) *
-    //     HALF;
-    //   return DriveFields<D> { time, Bsurf, Rstar, omega_t };
-    // }
+    auto FieldDriver(real_t time) const -> DriveFields<D> {
+      const real_t omega_t = 0.0;
+      return DriveFields<D> { time, Bsurf, omega_t };
+    }
   
   };
 
