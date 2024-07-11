@@ -474,19 +474,19 @@ namespace ntt {
     if (comm_j) {
       AddBufferedFields<M::Dim, 3>(domain.fields.cur,
                                    domain.fields.buff,
-                                   domain.mesh.rangeAllCells(),
+                                   domain.mesh.rangeActiveCells(),
                                    comp_range_cur);
     }
     if (comm_bckp) {
       AddBufferedFields<M::Dim, 6>(domain.fields.bckp,
                                    bckp_recv,
-                                   domain.mesh.rangeAllCells(),
+                                   domain.mesh.rangeActiveCells(),
                                    components);
     }
     if (comm_buff) {
       AddBufferedFields<M::Dim, 3>(domain.fields.buff,
                                    buff_recv,
-                                   domain.mesh.rangeAllCells(),
+                                   domain.mesh.rangeActiveCells(),
                                    components);
     }
   }
