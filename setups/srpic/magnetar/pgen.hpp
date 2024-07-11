@@ -24,9 +24,10 @@ namespace user {
       return Bsurf * SQR(Rstar / x_Ph[0]);
     }
 
-    // Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
-    //   return Bsurf * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / Rstar);
-    // }
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+      // return Bsurf * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / Rstar);
+      return ZERO;
+    }
 
   private:
     const real_t Bsurf, Rstar;
