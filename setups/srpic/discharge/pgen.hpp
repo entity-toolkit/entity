@@ -20,7 +20,7 @@ namespace user {
     InitFields() = default;
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return 1.0;
+      return ONE;
     }
 
   };
