@@ -571,8 +571,10 @@ namespace kernel {
         const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
         auto       rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
-          const auto dx1 = Random<prtldx_t>(rand_gen);
-          const auto dx2 = Random<prtldx_t>(rand_gen);
+          // const auto dx1 = Random<prtldx_t>(rand_gen);
+          // const auto dx2 = Random<prtldx_t>(rand_gen);
+          const auto dx1 = HALF;
+          const auto dx2 = HALF;
 
           i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
           dx1s_1(index + offset1 - p) = dx1;
