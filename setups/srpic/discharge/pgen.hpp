@@ -52,7 +52,7 @@ namespace user {
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return 2.*Omega*x_Ph[1]*(1 + math::tanh(4.*(-1 + time)))*(0.5 - 0.5*math::tanh(7.5*(-0.4 + math::abs(x_Ph[1]))));
     }
 
     Inline auto ex3(const coord_t<D>&) const -> real_t {
@@ -78,13 +78,14 @@ namespace user {
     using arch::ProblemGenerator<S, M>::params;
 
 
-    const real_t  Bsurf;
+    const real_t  Bsurf, Omega;
     const Metadomain<S, M>& global_domain;
     InitFields<D> init_flds;
     
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , global_domain { m }
+      , Omega { p.template get<real_t>("setup.omega") }
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , init_flds {Bsurf} {
       }
@@ -92,7 +93,7 @@ namespace user {
     inline PGen() {}
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
-      const real_t omega_t = 0.0;
+      const real_t omega_t = Omega;
       return DriveFields<D> { time, Bsurf, omega_t };
     }
   
