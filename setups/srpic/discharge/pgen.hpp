@@ -17,11 +17,14 @@ namespace user {
 
   template <Dimension D>
   struct InitFields {
-    InitFields() = default;
+    InitFields(real_t bsurf) : Bsurf { bsurf } {}
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
       return ONE;
     }
+
+  private:
+    const real_t Bsurf;
 
   };
 
@@ -69,14 +72,16 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const Metadomain<S, M>& global_domain;
 
+    const real_t  Bsurf;
+    const Metadomain<S, M>& global_domain;
     InitFields<D> init_flds;
     
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , global_domain { m }
-      , init_flds {} {
+      , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
+      , init_flds {Bsurf} {
       }
 
     inline PGen() {}
