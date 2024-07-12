@@ -347,7 +347,7 @@ template <class M>
     /* update velocity */
     real_t u0 { compute_u0_v(vp_upd, xp) };
     ux1(p) = vp_upd * u0;
-    ux3(p) = u0 * (metric.template h<3,3>(xp) * metric.OmegaF()
+    ux3(p) = u0 * (metric.template h_<3,3>(xp) * metric.OmegaF()
                    + metric.f1(xp) * vp_upd / (metric.OmegaF()+ metric.beta3(xp)));
  
 

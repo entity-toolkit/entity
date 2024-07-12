@@ -173,9 +173,8 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   metric.template transform<Idx::D, Idx::U>(xp, u_d, u_u);
 
   real_t u0 { (u_u[2] - 
-                       u_u[0] * metric.f1(xi) / 
-                       (metric.template h<3, 3>(xi) * (metric.OmegaF() + metric.beta3(xi)))
-                       ) / metric.OmegaF()};
+        u_u[0] * metric.f1(xi) * metric.template h<3, 3>(xi) / (metric.OmegaF() + metric.beta3(xi))
+        ) / metric.OmegaF() };
   real_t vp { u_u[0] / u0 };
 
   real_t left {  u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev))  };
@@ -186,9 +185,10 @@ void testFFPusher(const std::vector<std::size_t>&      res,
                                          DERIVATIVE(metric.f0, xp_prev[0]))) };
   real_t ratio { left / right };
 
+  unsigned int wrong { 0 };
   if (not cmp::AlmostEqual(ratio, ONE, eps * acc)) {
-      printf("%.12e != 1\n", ratio);
-      throw std::runtime_error("Pusher fails at negative charge.");
+      printf("%.12e != 1 at negative charge\n", ratio);
+      ++wrong;
     }
 
 //positive charge
@@ -200,9 +200,8 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   metric.template transform<Idx::D, Idx::U>(xp, u_d, u_u);
 
   u0 = (u_u[2] - 
-                u_u[0] * metric.f1(xi) / 
-                (metric.template h<3, 3>(xi) * (metric.OmegaF() + metric.beta3(xi)))
-                ) / metric.OmegaF() ;
+        u_u[0] * metric.f1(xi) * metric.template h<3, 3>(xi) / (metric.OmegaF() + metric.beta3(xi))
+        ) / metric.OmegaF() ;
   vp = u_u[0] / u0 ;
 
   left = u0 * (metric.f2(xp) * vp + metric.f1(xp)) - (metric.f2(xp_prev) * vp + metric.f1(xp_prev));
@@ -214,11 +213,13 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   ratio = left / right;
 
     if (not cmp::AlmostEqual(ratio, ONE, eps * acc)) {
-      printf("%.12e != 1\n", ratio);
-      throw std::runtime_error("Pusher fails at positive charge.");
+      printf("%.12e != 1 at positive charge\n", ratio);
+      ++wrong;
     }
 
-  
+    if (not wrong){
+      throw std::runtime_error("ff_usher failed.");
+    }
 
 }
 
