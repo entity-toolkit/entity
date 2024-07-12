@@ -165,7 +165,7 @@ namespace ntt {
 
       {
         timers.start("Injector");
-        // ParticleInjector(dom);
+        ParticleInjector(dom);
         timers.stop("Injector");
       }
     }
