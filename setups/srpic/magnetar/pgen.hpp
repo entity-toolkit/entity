@@ -20,13 +20,13 @@ namespace user {
     InitFields(real_t bsurf, real_t rstar) : Bsurf { bsurf }, Rstar { rstar } {}
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      // return Bsurf * math::cos(x_Ph[1]) / CUBE(x_Ph[0] / Rstar);
-      return Bsurf * SQR(Rstar / x_Ph[0]);
+      return Bsurf * math::cos(x_Ph[1]) / CUBE(x_Ph[0] / Rstar);
+      // return Bsurf * SQR(Rstar / x_Ph[0]);
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
-      // return Bsurf * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / Rstar);
-      return ZERO;
+      return Bsurf * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / Rstar);
+      // return ZERO;
     }
 
   private:

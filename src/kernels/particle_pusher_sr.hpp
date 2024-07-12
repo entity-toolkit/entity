@@ -1185,7 +1185,7 @@ namespace kernel::sr {
       if constexpr (D == Dim::_1D) {
         tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
       } else if constexpr (D == Dim::_2D) {
-        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1, i2(p) < 0, i2(p) >= ni2);
+        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) > ni1, i2(p) < 0, i2(p) > ni2);
       } else if constexpr (D == Dim::_3D) {
         tag(p) = mpi::SendTag(tag(p),
                               i1(p) < 0,
