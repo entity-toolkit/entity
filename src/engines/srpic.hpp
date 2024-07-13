@@ -89,85 +89,85 @@ namespace ntt {
         ParticleInjector(dom);
       }
 
-      if (fieldsolver_enabled) {
-        timers.start("FieldSolver");
-        Faraday(dom, HALF);
-        timers.stop("FieldSolver");
+      // if (fieldsolver_enabled) {
+      //   timers.start("FieldSolver");
+      //   Faraday(dom, HALF);
+      //   timers.stop("FieldSolver");
 
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B);
-        timers.stop("Communications");
+      //   timers.start("Communications");
+      //   m_metadomain.CommunicateFields(dom, Comm::B);
+      //   timers.stop("Communications");
 
-        timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::B);
-        timers.stop("FieldBoundaries");
-      }
+      //   timers.start("FieldBoundaries");
+      //   FieldBoundaries(dom, BC::B);
+      //   timers.stop("FieldBoundaries");
+      // }
 
-      {
-        timers.start("ParticlePusher");
-        ParticlePush(dom);
-        timers.stop("ParticlePusher");
+      // {
+      //   timers.start("ParticlePusher");
+      //   ParticlePush(dom);
+      //   timers.stop("ParticlePusher");
 
-        if (deposit_enabled) {
-          timers.start("CurrentDeposit");
-          Kokkos::deep_copy(dom.fields.cur, ZERO);
-          CurrentsDeposit(dom);
-          timers.stop("CurrentDeposit");
+      //   if (deposit_enabled) {
+      //     timers.start("CurrentDeposit");
+      //     Kokkos::deep_copy(dom.fields.cur, ZERO);
+      //     CurrentsDeposit(dom);
+      //     timers.stop("CurrentDeposit");
 
-          timers.start("Communications");
-          m_metadomain.SynchronizeFields(dom, Comm::J);
-          m_metadomain.CommunicateFields(dom, Comm::J);
-          timers.stop("Communications");
+      //     timers.start("Communications");
+      //     m_metadomain.SynchronizeFields(dom, Comm::J);
+      //     m_metadomain.CommunicateFields(dom, Comm::J);
+      //     timers.stop("Communications");
 
-          timers.start("CurrentFiltering");
-          CurrentsFilter(dom);
-          timers.stop("CurrentFiltering");
-        }
+      //     timers.start("CurrentFiltering");
+      //     CurrentsFilter(dom);
+      //     timers.stop("CurrentFiltering");
+      //   }
 
-        timers.start("Communications");
-        if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
-        }
-        timers.stop("Communications");
-      }
+      //   timers.start("Communications");
+      //   if ((sort_interval > 0) and (step % sort_interval == 0)) {
+      //     m_metadomain.CommunicateParticles(dom, &timers);
+      //   }
+      //   timers.stop("Communications");
+      // }
 
-      if (fieldsolver_enabled) {
-        timers.start("FieldSolver");
-        Faraday(dom, HALF);
-        timers.stop("FieldSolver");
+      // if (fieldsolver_enabled) {
+      //   timers.start("FieldSolver");
+      //   Faraday(dom, HALF);
+      //   timers.stop("FieldSolver");
 
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B);
-        timers.stop("Communications");
+      //   timers.start("Communications");
+      //   m_metadomain.CommunicateFields(dom, Comm::B);
+      //   timers.stop("Communications");
 
-        timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::B);
-        timers.stop("FieldBoundaries");
+      //   timers.start("FieldBoundaries");
+      //   FieldBoundaries(dom, BC::B);
+      //   timers.stop("FieldBoundaries");
 
-        timers.start("FieldSolver");
-        Ampere(dom, ONE);
-        timers.stop("FieldSolver");
+      //   timers.start("FieldSolver");
+      //   Ampere(dom, ONE);
+      //   timers.stop("FieldSolver");
 
-        if (deposit_enabled) {
-          timers.start("FieldSolver");
-          CurrentsAmpere(dom);
-          timers.stop("FieldSolver");
-        }
+      //   if (deposit_enabled) {
+      //     timers.start("FieldSolver");
+      //     CurrentsAmpere(dom);
+      //     timers.stop("FieldSolver");
+      //   }
 
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::E | Comm::J);
-        timers.stop("Communications");
+      //   timers.start("Communications");
+      //   m_metadomain.CommunicateFields(dom, Comm::E | Comm::J);
+      //   timers.stop("Communications");
 
-        timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::E);
-        timers.stop("FieldBoundaries");
-      }
+      //   timers.start("FieldBoundaries");
+      //   FieldBoundaries(dom, BC::E);
+      //   timers.stop("FieldBoundaries");
+      // }
 
-      {
-        timers.start("Injector");
-        ParticleInjector(dom);
-        timers.stop("Injector");
-      }
+      // {
+      //   timers.start("Injector");
+      //   ParticleInjector(dom);
+      //   timers.stop("Injector");
+      // }
     }
 
     /* algorithm substeps --------------------------------------------------- */
