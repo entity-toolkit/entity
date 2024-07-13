@@ -189,7 +189,7 @@ namespace ntt {
                             static_cast<std::size_t>(xi_max_Cd) +
                               (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS) });
         }
-        ++d;
+        d = d++;
       }
       return range;
     }
