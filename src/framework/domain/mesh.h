@@ -184,7 +184,7 @@ namespace ntt {
             raise::Error("invalid dimension", HERE);
             throw;
           }
-          range.push_back({ static_cast<std::size_t>(ZERO) +
+          range.push_back({ static_cast<std::size_t>(xi_min_Cd) +
                               (incl_ghosts[d].first ? 0 : N_GHOSTS),
                             static_cast<std::size_t>(xi_max_Cd) +
                               (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS) });
