@@ -9,19 +9,19 @@
 namespace ntt {
 
   template <>
-  auto Grid<Dim::_1D>::rangeAllCells() -> range_t<Dim::_1D> {
+  auto Grid<Dim::_1D>::rangeAllCells() const -> range_t<Dim::_1D> {
     box_region_t<Dim::_1D> region { CellLayer::allLayer };
     return rangeCells(region);
   }
 
   template <>
-  auto Grid<Dim::_2D>::rangeAllCells() -> range_t<Dim::_2D> {
+  auto Grid<Dim::_2D>::rangeAllCells() const -> range_t<Dim::_2D> {
     box_region_t<Dim::_2D> region { CellLayer::allLayer, CellLayer::allLayer };
     return rangeCells(region);
   }
 
   template <>
-  auto Grid<Dim::_3D>::rangeAllCells() -> range_t<Dim::_3D> {
+  auto Grid<Dim::_3D>::rangeAllCells() const -> range_t<Dim::_3D> {
     box_region_t<Dim::_3D> region { CellLayer::allLayer,
                                     CellLayer::allLayer,
                                     CellLayer::allLayer };
@@ -29,19 +29,19 @@ namespace ntt {
   }
 
   template <>
-  auto Grid<Dim::_1D>::rangeActiveCells() -> range_t<Dim::_1D> {
+  auto Grid<Dim::_1D>::rangeActiveCells() const -> range_t<Dim::_1D> {
     box_region_t<Dim::_1D> region { CellLayer::activeLayer };
     return rangeCells(region);
   }
 
   template <>
-  auto Grid<Dim::_2D>::rangeActiveCells() -> range_t<Dim::_2D> {
+  auto Grid<Dim::_2D>::rangeActiveCells() const -> range_t<Dim::_2D> {
     box_region_t<Dim::_2D> region { CellLayer::activeLayer, CellLayer::activeLayer };
     return rangeCells(region);
   }
 
   template <>
-  auto Grid<Dim::_3D>::rangeActiveCells() -> range_t<Dim::_3D> {
+  auto Grid<Dim::_3D>::rangeActiveCells() const -> range_t<Dim::_3D> {
     box_region_t<Dim::_3D> region { CellLayer::activeLayer,
                                     CellLayer::activeLayer,
                                     CellLayer::activeLayer };
@@ -49,7 +49,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  auto Grid<D>::rangeCells(const box_region_t<D>& region) -> range_t<D> {
+  auto Grid<D>::rangeCells(const box_region_t<D>& region) const -> range_t<D> {
     tuple_t<std::size_t, D> imin, imax;
     for (unsigned short i = 0; i < (unsigned short)D; i++) {
       switch (region[i]) {
@@ -87,7 +87,8 @@ namespace ntt {
 
   // !TODO: too ugly, implement a better solution (combine with device)
   template <Dimension D>
-  auto Grid<D>::rangeCellsOnHost(const box_region_t<D>& region) -> range_h_t<D> {
+  auto Grid<D>::rangeCellsOnHost(const box_region_t<D>& region) const
+    -> range_h_t<D> {
     tuple_t<std::size_t, D> imin, imax;
     for (unsigned short i = 0; i < (unsigned short)D; i++) {
       switch (region[i]) {
@@ -123,19 +124,19 @@ namespace ntt {
   }
 
   template <>
-  auto Grid<Dim::_1D>::rangeAllCellsOnHost() -> range_h_t<Dim::_1D> {
+  auto Grid<Dim::_1D>::rangeAllCellsOnHost() const -> range_h_t<Dim::_1D> {
     box_region_t<Dim::_1D> region { CellLayer::allLayer };
     return rangeCellsOnHost(region);
   }
 
   template <>
-  auto Grid<Dim::_2D>::rangeAllCellsOnHost() -> range_h_t<Dim::_2D> {
+  auto Grid<Dim::_2D>::rangeAllCellsOnHost() const -> range_h_t<Dim::_2D> {
     box_region_t<Dim::_2D> region { CellLayer::allLayer, CellLayer::allLayer };
     return rangeCellsOnHost(region);
   }
 
   template <>
-  auto Grid<Dim::_3D>::rangeAllCellsOnHost() -> range_h_t<Dim::_3D> {
+  auto Grid<Dim::_3D>::rangeAllCellsOnHost() const -> range_h_t<Dim::_3D> {
     box_region_t<Dim::_3D> region { CellLayer::allLayer,
                                     CellLayer::allLayer,
                                     CellLayer::allLayer };
@@ -143,19 +144,19 @@ namespace ntt {
   }
 
   template <>
-  auto Grid<Dim::_1D>::rangeActiveCellsOnHost() -> range_h_t<Dim::_1D> {
+  auto Grid<Dim::_1D>::rangeActiveCellsOnHost() const -> range_h_t<Dim::_1D> {
     box_region_t<Dim::_1D> region { CellLayer::activeLayer };
     return rangeCellsOnHost(region);
   }
 
   template <>
-  auto Grid<Dim::_2D>::rangeActiveCellsOnHost() -> range_h_t<Dim::_2D> {
+  auto Grid<Dim::_2D>::rangeActiveCellsOnHost() const -> range_h_t<Dim::_2D> {
     box_region_t<Dim::_2D> region { CellLayer::activeLayer, CellLayer::activeLayer };
     return rangeCellsOnHost(region);
   }
 
   template <>
-  auto Grid<Dim::_3D>::rangeActiveCellsOnHost() -> range_h_t<Dim::_3D> {
+  auto Grid<Dim::_3D>::rangeActiveCellsOnHost() const -> range_h_t<Dim::_3D> {
     box_region_t<Dim::_3D> region { CellLayer::activeLayer,
                                     CellLayer::activeLayer,
                                     CellLayer::activeLayer };
@@ -163,7 +164,7 @@ namespace ntt {
   }
 
   template <Dimension D>
-  auto Grid<D>::rangeCells(const tuple_t<list_t<int, 2>, D>& ranges)
+  auto Grid<D>::rangeCells(const tuple_t<list_t<int, 2>, D>& ranges) const
     -> range_t<D> {
     tuple_t<std::size_t, D> imin, imax;
     for (unsigned short i = 0; i < (unsigned short)D; i++) {
