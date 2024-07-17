@@ -1,12 +1,16 @@
 /**
  * @file archetypes/particle_injector.h
- * @brief Particle injector routines
- * ...
+ * @brief Particle injector routines and classes
+ * @implements
+ *   - arch::UniformInjector<>
+ *   - arch::NonUniformInjector<>
+ *   - arch::AtmosphereInjector<>
+ *   - arch::InjectUniform<> -> void
+ *   - arch::InjectGlobally<> -> void
+ *   - arch::InjectNonUniform<> -> void
+ * @namespaces:
+ *   - arch::
  */
-
-/* -------------------------------------------------------------------------- */
-/* This header file is still under construction                               */
-/* -------------------------------------------------------------------------- */
 
 #ifndef ARCHETYPES_PARTICLE_INJECTOR_H
 #define ARCHETYPES_PARTICLE_INJECTOR_H
