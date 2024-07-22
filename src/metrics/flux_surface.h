@@ -59,9 +59,6 @@ namespace metric {
       return psi0 * (1 - cos(theta));
     }
     
-    Inline auto dpsi_dr(const real_t& r, const real_t& theta) const -> real_t {
-      return ZERO;
-    }
 
     Inline auto dpsi_dtheta(const real_t& r, const real_t& theta) const -> real_t {
       return psi0 * math::sin(theta);
@@ -76,8 +73,7 @@ namespace metric {
     }
 
     Inline auto eta2r(const real_t& eta) const -> real_t{
-      real_t exp = math::exp(eta * (rh_ - rh_m));
-      return (rh_ - rh_m * exp) / (1 - exp);
+      return rh_m - TWO * math::sqrt(ONE - SQR(a)) / math::expm1(eta * TWO * math::sqrt(ONE - SQR(a)));
     }
 
 
@@ -108,7 +104,7 @@ namespace metric {
       , eta_min { r2eta(x1_min) }
       , eta_max { r2eta(x1_max) }
       , d_eta { (eta_max - eta_min) / nx1 }
-      , d_eta_inv { 1 / d_eta }{
+      , d_eta_inv { ONE / d_eta }{
       set_dxMin(find_dxMin());
     }
 
@@ -133,6 +129,11 @@ namespace metric {
     Inline auto rg() const -> real_t {
       return rg_;
     }
+    
+    [[nodiscard]]
+    Inline auto OmegaF() const -> real_t {
+      return Omega;
+    }
 
 
     /**
@@ -146,31 +147,37 @@ namespace metric {
     }
 
     /**
+     * shift vector, only third covariant component is non-zero
+     * @param x coordinate array in code units
+     */
+
+    Inline auto beta(const coord_t<D>& xi) const -> real_t {
+      return math::sqrt(h<3, 3>(xi)) * omega(eta2r(xi[0] * d_eta + eta_min) , eta2theta(xi[0] * d_eta + eta_min) );
+    }
+
+    Inline auto beta3(const coord_t<D>& xi) const -> real_t {
+      return -omega(eta2r(xi[0] * d_eta + eta_min) , eta2theta(xi[0] * d_eta + eta_min));
+    }
+
+    /**
      * @brief Compute helper functions f0,f1,f2 in 1D-GRPIC
      */
     Inline auto f2(const coord_t<D>& xi) const -> real_t {
       const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
       const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
-      const real_t dpsi_dtheta_ { dpsi_dtheta(r_, theta_) };
-      const real_t Delta_ { Delta(r_) };
-      const real_t temp = SQR(dpsi_dtheta_) + Delta_ * SQR(dpsi_dr(r_, theta_));
-      return Sigma(r_, theta_) * Delta_ * SQR(dpsi_dtheta_) / temp  + 
-             SQR(A(r_, theta_)* math::sin(theta_) * dpsi_dtheta_ * pCur / temp ) 
-             / h_<3, 3>(xi);
+      return SQR(d_eta) * Sigma(r_, theta_) * (Delta(r_) + 
+             A(r_, theta_) * SQR(pCur / dpsi_dtheta(r_, theta_) ) 
+	     );
     }
 
     Inline auto f1(const coord_t<D>& xi) const -> real_t {
       const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
       const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
-      const real_t dpsi_dtheta_ { dpsi_dtheta(r_, theta_) };
-      return A(r_, theta_)* math::sin(theta_) * dpsi_dtheta_ * pCur * (Omega - omega(r_, theta_)) /
-             (SQR(dpsi_dtheta_) + Delta(r_) * SQR(dpsi_dr(r_, theta_)));
+      return d_eta * A(r_, theta_)* math::sin(theta_) * pCur * (Omega + beta3(xi)) / dpsi_dtheta(r_, theta_);
     }
 
     Inline auto f0(const coord_t<D>& xi) const -> real_t {
-      const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
-      const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
-      return h_<3, 3>(xi) * SQR(Omega - omega(r_, theta_));
+      return h_<3, 3>(xi) * SQR(Omega + beta3(xi));
     }
 
     /**
@@ -203,15 +210,12 @@ namespace metric {
       const real_t theta_ { eta2theta(x[0] * d_eta + eta_min) };
       const real_t Sigma_ { Sigma(r_, theta_) };
       const real_t Delta_ { Delta(r_) };
-      const real_t dpsi_dtheta_ { dpsi_dtheta(r_, theta_) };
-      const real_t dpsi_r_ { dpsi_dr(r_, theta_) };
       if constexpr (i == 1 && j == 1) {
         // h_11
-        return SQR(d_eta) * Sigma_ * Delta_ * SQR( dpsi_dtheta_) /
-                (SQR(dpsi_dtheta_) + Delta_ * SQR(dpsi_r_));
+        return SQR(d_eta) * Sigma_ * Delta_;
       } else if constexpr (i == 2 && j == 2) {
         // h_22
-        return Sigma_  / (SQR(dpsi_dtheta_) + Delta_ * SQR(dpsi_r_));
+        return Sigma_  / SQR(dpsi_dtheta(r_, theta_) ) ;
       } else if constexpr (i == 3 && j == 3) {
         // h_33
         return A(r_, theta_) * SQR(math::sin(theta_)) / Sigma_;
@@ -277,18 +281,28 @@ namespace metric {
                     (in == Idx::Sph && out == Idx::T)) {
         // tetrad <-> sph
         return v_in;
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
-        // tetrad/sph -> cntrv
-        return v_in / math::sqrt(h_<i, i>(x));
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
-        // cntrv -> tetrad/sph
-        return v_in * math::sqrt(h_<i, i>(x));
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
-        // tetrad/sph -> cov
-        return v_in / math::sqrt(h<i, i>(x));
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
-        // cov -> tetrad/sph
-        return v_in * math::sqrt(h<i, i>(x));
+      } else if constexpr (((in == Idx::T || in == Idx::Sph) && out == Idx::U) ||
+                           (in == Idx::D && (out == Idx::T || out == Idx::Sph))){
+        // tetrad/sph -> cntrv ; cov -> tetrad/sph
+        if constexpr (i == 1){
+          return v_in / math::sqrt(h_<i, i>(x)) / Delta(eta2r(x[0] * d_eta + eta_min));
+        }else if constexpr (i == 2){
+          return v_in / math::sqrt(h_<i, i>(x)) * 
+                 dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min));
+        }else{
+          return v_in / math::sqrt(h_<i, i>(x));
+        }
+      } else if constexpr ((in == Idx::U && (out == Idx::T || out == Idx::Sph)) ||
+                            ((in == Idx::T || in == Idx::Sph) && out == Idx::D)){
+        // cntrv -> tetrad/sph ; tetrad/sph -> cov
+        if constexpr (i == 1){
+          return v_in * math::sqrt(h_<i, i>(x)) * Delta(eta2r(x[0] * d_eta + eta_min));
+        }else if constexpr (i == 2){
+          return v_in * math::sqrt(h_<i, i>(x)) / 
+                 dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min));
+        }else{
+          return v_in * math::sqrt(h_<i, i>(x));
+        }
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         return v_in * h_<i, i>(x);
@@ -299,12 +313,9 @@ namespace metric {
                            (in == Idx::PD && out == Idx::D)) {
         // cntrv -> phys cntrv || phys cov -> cov
         if constexpr (i == 1){
-          real_t r_ { eta2r(x[0] * d_eta + eta_min) };
-          return v_in * Delta(r_) * d_eta ;
+          return v_in * Delta(eta2r(x[0] * d_eta + eta_min)) * d_eta ;
         }else if constexpr (i == 2){
-          real_t r_ { eta2r(x[0] * d_eta + eta_min) };
-          real_t theta_ { eta2theta(x[0] * d_eta + eta_min) };
-          return v_in / dpsi_dtheta(r_, theta_);
+          return v_in / dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min) );
         }else{
           return v_in;
         }
@@ -312,12 +323,9 @@ namespace metric {
                            (in == Idx::D && out == Idx::PD)) {
         // phys cntrv -> cntrv || cov -> phys cov
         if constexpr (i == 1){
-          real_t r_ { eta2r(x[0] * d_eta + eta_min) };
-          return v_in * d_eta_inv / Delta(r_);
+          return v_in * d_eta_inv / Delta(eta2r(x[0] * d_eta + eta_min));
         }else if constexpr (i == 2){
-          real_t r_ { eta2r(x[0] * d_eta + eta_min) };
-          real_t theta_ { eta2theta(x[0] * d_eta + eta_min) };
-          return v_in * dpsi_dtheta(r_, theta_);
+          return v_in * dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min));
         }else{
           return v_in;
         }

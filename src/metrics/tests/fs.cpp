@@ -74,6 +74,10 @@ void testMetric(const std::vector<std::size_t>&      res,
     res_tup[d]  = res[d];
     npts       *= res[d];
   }
+  
+  const auto x_min = ext[0].first;
+  const auto x_max = ext[0].second;
+
 
   unsigned long all_wrongs = 0;
   const auto    rg         = metric.rg();
@@ -83,6 +87,12 @@ void testMetric(const std::vector<std::size_t>&      res,
   const auto psi0 = params.at("psi0");
   const auto pCur = params.at("pCur");
   const auto Omega = params.at("Omega") * a / (SQR(a) + SQR(rh));
+  const auto rh_m = rh - TWO * math::sqrt(ONE - SQR(a));
+
+  const auto eta_min = math::log((x_min - rh) / (x_min - rh_m)) / (rh - rh_m);
+  const auto eta_max = math::log((x_max - rh) / (x_max - rh_m)) / (rh - rh_m);
+  const auto d_eta = (eta_max - eta_min) / ((real_t)res[0]);
+
   Kokkos::parallel_reduce(
     "h_ij/hij",
     npts,
@@ -122,8 +132,8 @@ void testMetric(const std::vector<std::size_t>&      res,
       const auto h33_expect = ONE / h_33_expect;
 
       const auto f0_expect = h_33_expect * SQR(Omega - omega);
-      const auto f1_expect = A * pCur * math::sin(th) * (Omega - omega) / dpsi_dtheta;
-      const auto f2_expect = Sigma * Delta + Sigma * A * SQR(pCur / dpsi_dtheta);
+      const auto f1_expect = d_eta * A * pCur * math::sin(th) * (Omega - omega) / dpsi_dtheta;
+      const auto f2_expect = SQR(d_eta) * Sigma * (Delta + A * SQR(pCur / dpsi_dtheta));
 
       const auto f0_predict = metric.f0(x_Code);
       const auto f1_predict = metric.f1(x_Code);
