@@ -299,8 +299,8 @@ namespace user {
           if ((gamma > pp_thres) && (math::sin(xPh[1]) > 0.1)) {
 
             auto new_gamma = gamma - 2.0 * gamma_pairs;
-            // auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
-            // auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+            auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+            auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
 
             // auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
             // auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
