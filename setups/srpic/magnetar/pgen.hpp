@@ -302,8 +302,8 @@ namespace user {
             auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
             auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
 
-            // auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-            // auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+            auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+            auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
 
           //     i1_e(elec_p + offset_e) = i1(p);
           //     dx1_e(elec_p + offset_e) = dx1(p);
