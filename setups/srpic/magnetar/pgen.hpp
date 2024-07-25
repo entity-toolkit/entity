@@ -290,14 +290,14 @@ namespace user {
             return;
           }
 
-                auto px      = ux1(p);
-                auto py      = ux2(p);
-                auto pz      = ux3(p);
-                auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
+            auto px      = ux1(p);
+            auto py      = ux2(p);
+            auto pz      = ux3(p);
+            auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
 
-              const coord_t<D> xCd{
-                  static_cast<real_t>(i1(p)) + dx1(p),
-                  static_cast<real_t>(i2(p)) + dx2(p)};
+            const coord_t<D> xCd{
+                static_cast<real_t>(i1(p)) + dx1(p),
+                static_cast<real_t>(i2(p)) + dx2(p)};
 
             coord_t<D> xPh { ZERO };
             metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
@@ -308,8 +308,8 @@ namespace user {
             auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
             auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
 
-            auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-            auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+            auto elec_p { Kokkos::atomic_fetch_add(&elec_ind(), 1) };
+            auto pos_p  { Kokkos::atomic_fetch_add(&pos_ind(), 1) };
 
               i1_e(elec_p + offset_e) = i1(p);
               dx1_e(elec_p + offset_e) = dx1(p);
