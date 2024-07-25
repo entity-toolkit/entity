@@ -211,6 +211,7 @@ namespace user {
         auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
         auto pp_thres_ = this->pp_thres;
         auto gamma_pairs_ = this->gamma_pairs;
+        auto inv_n0_ = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1) {
@@ -341,12 +342,12 @@ namespace user {
 
               if (s == 0) {
                 auto cbuff_acc     = cbuff_sc.access();
-                cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
+                cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
                     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
                                         static_cast<real_t>(i2(p)) + HALF });
               } else {
                 auto cbuff2_acc     = cbuff2_sc.access();
-                cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
+                cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
                     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
                                         static_cast<real_t>(i2(p)) + HALF });
               }
