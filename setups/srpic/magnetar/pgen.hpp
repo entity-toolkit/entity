@@ -209,6 +209,8 @@ namespace user {
         auto metric = domain.mesh.metric;
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
         auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
+        auto pp_thres_ = this->pp_thres;
+        auto gamma_pairs_ = this->gamma_pairs;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1) {
@@ -302,11 +304,11 @@ namespace user {
             coord_t<D> xPh { ZERO };
             metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
 
-          if ((gamma > 10.0) && (math::sin(xPh[1]) > 0.1)) {
+          if ((gamma > pp_thres_) && (math::sin(xPh[1]) > 0.1)) {
 
-            auto new_gamma = gamma - 2.0 * gamma_pairs;
+            auto new_gamma = gamma - 2.0 * gamma_pairs_;
             auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
-            auto pair_fac = math::sqrt(SQR(gamma_pairs) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
+            auto pair_fac = math::sqrt(SQR(gamma_pairs_) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
 
             auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
             auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
