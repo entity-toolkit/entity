@@ -284,6 +284,9 @@ namespace user {
             return;
           }
 
+          auto elec_ind_ = this->elec_ind;
+          auto pos_ind_  = this->pos_ind;
+
                 auto px      = ux1(p);
                 auto py      = ux2(p);
                 auto pz      = ux3(p);
