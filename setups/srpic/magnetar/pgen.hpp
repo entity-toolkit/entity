@@ -1059,7 +1059,7 @@ void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std
   // } else {
     // raise::Error("Custom output not provided", HERE);
   } 
-  if (name == "pploc2") {
+  if (name == "pplocsec") {
         Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
                           cbuff2);
   }
