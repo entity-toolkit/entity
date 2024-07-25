@@ -156,7 +156,7 @@ namespace user {
     const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0, gamma_pairs, pp_thres;
     InitFields<D> init_flds;
     
-    array_t<real_t**> cbuff;
+    array_t<real_t**> cbuff, cbuff2;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
@@ -172,6 +172,7 @@ namespace user {
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
       , init_flds { Bsurf, Rstar } {
         Kokkos::deep_copy(cbuff, ZERO);
+        Kokkos::deep_copy(cbuff2, ZERO);
       }
 
     inline PGen() {}
@@ -192,6 +193,10 @@ namespace user {
                                   domain.mesh.n_all(in::x1),
                                   domain.mesh.n_all(in::x2));
         Kokkos::deep_copy(cbuff, ZERO);
+        cbuff2 = array_t<real_t**>("cbuff2",
+                                  domain.mesh.n_all(in::x1),
+                                  domain.mesh.n_all(in::x2));
+        Kokkos::deep_copy(cbuff2, ZERO);
       }
 
     // Ad-hoc PP kernel
@@ -203,6 +208,7 @@ namespace user {
         auto& species3_p = domain.species[5];
         auto metric = domain.mesh.metric;
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
+        auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1) {
@@ -284,9 +290,6 @@ namespace user {
             return;
           }
 
-          auto elec_ind_ = this->elec_ind;
-          auto pos_ind_  = this->pos_ind;
-
                 auto px      = ux1(p);
                 auto py      = ux2(p);
                 auto pz      = ux3(p);
@@ -308,37 +311,43 @@ namespace user {
             auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
             auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
 
-          //     i1_e(elec_p + offset_e) = i1(p);
-          //     dx1_e(elec_p + offset_e) = dx1(p);
-          //     i2_e(elec_p + offset_e) = i2(p);
-          //     dx2_e(elec_p + offset_e) = dx2(p);
-          //     phi_e(elec_p + offset_e) = phi(p);
-          //     ux1_e(elec_p + offset_e) = px * pair_fac;
-          //     ux2_e(elec_p + offset_e) = py * pair_fac;
-          //     ux3_e(elec_p + offset_e) = pz * pair_fac;
-          //     weight_e(elec_p + offset_e) = weight(p);
-          //     tag_e(elec_p + offset_e) = ParticleTag::alive;
+              i1_e(elec_p + offset_e) = i1(p);
+              dx1_e(elec_p + offset_e) = dx1(p);
+              i2_e(elec_p + offset_e) = i2(p);
+              dx2_e(elec_p + offset_e) = dx2(p);
+              phi_e(elec_p + offset_e) = phi(p);
+              ux1_e(elec_p + offset_e) = px * pair_fac;
+              ux2_e(elec_p + offset_e) = py * pair_fac;
+              ux3_e(elec_p + offset_e) = pz * pair_fac;
+              weight_e(elec_p + offset_e) = weight(p);
+              tag_e(elec_p + offset_e) = ParticleTag::alive;
 
-          //     i1_p(pos_p + offset_p) = i1(p);
-          //     dx1_p(pos_p + offset_p) = dx1(p);
-          //     i2_p(pos_p + offset_p) = i2(p);
-          //     dx2_p(pos_p + offset_p) = dx2(p);
-          //     phi_p(pos_p + offset_p) = phi(p);
-          //     ux1_p(pos_p + offset_p) = px * pair_fac;
-          //     ux2_p(pos_p + offset_p) = py * pair_fac;
-          //     ux3_p(pos_p + offset_p) = pz * pair_fac;
-          //     weight_p(pos_p + offset_p) = weight(p);
-          //     tag_p(pos_p + offset_p) = ParticleTag::alive;
+              i1_p(pos_p + offset_p) = i1(p);
+              dx1_p(pos_p + offset_p) = dx1(p);
+              i2_p(pos_p + offset_p) = i2(p);
+              dx2_p(pos_p + offset_p) = dx2(p);
+              phi_p(pos_p + offset_p) = phi(p);
+              ux1_p(pos_p + offset_p) = px * pair_fac;
+              ux2_p(pos_p + offset_p) = py * pair_fac;
+              ux3_p(pos_p + offset_p) = pz * pair_fac;
+              weight_p(pos_p + offset_p) = weight(p);
+              tag_p(pos_p + offset_p) = ParticleTag::alive;
 
-          //     ux1(p) *= new_fac;
-          //     ux2(p) *= new_fac;
-          //     ux3(p) *= new_fac;
+              ux1(p) *= new_fac;
+              ux2(p) *= new_fac;
+              ux3(p) *= new_fac;
 
-          //     auto cbuff_acc     = cbuff_sc.access();
-          //     cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
-          //          metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
-          //                              static_cast<real_t>(i2(p)) + HALF });
-
+              if (s == 0) {
+                auto cbuff_acc     = cbuff_sc.access();
+                cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
+                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+                                        static_cast<real_t>(i2(p)) + HALF });
+              } else {
+                auto cbuff2_acc     = cbuff2_sc.access();
+                cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
+                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+                                        static_cast<real_t>(i2(p)) + HALF });
+              }
           }
 
         });
@@ -366,6 +375,7 @@ namespace user {
           }
 
         Kokkos::Experimental::contribute(cbuff, cbuff_sc);
+        Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
         } // Ad-hoc PP kernel
 
     // // Resonant scattering kernel
@@ -1040,7 +1050,7 @@ namespace user {
         }
   
 void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const range_t<M::Dim> range) {
-  // if (name == "pploc") {
+  if (name == "pploc") {
         Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
                           cbuff);
     // Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
@@ -1048,7 +1058,11 @@ void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std
     // });
   // } else {
     // raise::Error("Custom output not provided", HERE);
-  // } 
+  } 
+  if (name == "pploc2") {
+        Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
+                          cbuff2);
+  }
 }
   
   };
