@@ -27,8 +27,7 @@ void errorIf(bool condition, const std::string& message = "") {
   }
 }
 
-Inline auto equal(const real_t& a, const real_t& b, const std::string& msg)
-  -> bool {
+Inline auto equal(real_t a, real_t b, const std::string& msg) -> bool {
   if (not(math::abs(a - b) < 1e-4)) {
     printf("%.12e != %.12e %s\n", a, b, msg.c_str());
     return false;

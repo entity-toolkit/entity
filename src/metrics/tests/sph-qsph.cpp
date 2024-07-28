@@ -23,7 +23,7 @@ template <Dimension D>
 Inline auto equal(const vec_t<D>& a,
                   const vec_t<D>& b,
                   const char*     msg,
-                  const real_t    acc = ONE) -> bool {
+                  real_t          acc = ONE) -> bool {
   const auto eps = epsilon * acc;
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {

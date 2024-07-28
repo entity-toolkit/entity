@@ -159,19 +159,19 @@ namespace ntt {
      * @brief Loop over all active cells (disregard ghost cells)
      * @returns Kokkos range policy with proper min/max indices and dimension
      */
-    auto rangeActiveCells() -> range_t<D>;
+    auto rangeActiveCells() const -> range_t<D>;
     /**
      * @brief Loop over all cells
      * @returns Kokkos range policy with proper min/max indices and dimension
      */
-    auto rangeAllCells() -> range_t<D>;
+    auto rangeAllCells() const -> range_t<D>;
 
     /**
      * @brief Pick a particular region of cells
      * @param box_region_t region of cells to pick: tuple of cellLayer objects
      * @returns Kokkos range policy with proper min/max indices and dimension
      */
-    auto rangeCells(const box_region_t<D>&) -> range_t<D>;
+    auto rangeCells(const box_region_t<D>&) const -> range_t<D>;
     /**
      * @brief Pick a particular region of cells
      * @overload
@@ -180,7 +180,7 @@ namespace ntt {
      * @example {{0, 0}, {0, 0}, {0, 0}} corresponds to allActiveLayer in all 3 dimensions
      * @returns Kokkos range policy with proper min/max indices and dimension
      */
-    auto rangeCells(const tuple_t<list_t<int, 2>, D>&) -> range_t<D>;
+    auto rangeCells(const tuple_t<list_t<int, 2>, D>&) const -> range_t<D>;
 
     /* Ranges in the host execution space ----------------------------------- */
     /**
@@ -188,20 +188,20 @@ namespace ntt {
      * @returns Kokkos range policy in the host space with proper min/max
      * indices and dimension.
      */
-    auto rangeActiveCellsOnHost() -> range_h_t<D>;
+    auto rangeActiveCellsOnHost() const -> range_h_t<D>;
     /**
      * @brief Loop over all cells
      * @returns Kokkos range policy in the host space with proper min/max
      * indices and dimension.
      */
-    auto rangeAllCellsOnHost() -> range_h_t<D>;
+    auto rangeAllCellsOnHost() const -> range_h_t<D>;
     /**
      * @brief Pick a particular region of cells
      * @param box_region_t region of cells to pick: tuple of cellLayer objects
      * @returns Kokkos range policy in the host space with proper min/max
      * indices and dimension.
      */
-    auto rangeCellsOnHost(const box_region_t<D>&) -> range_h_t<D>;
+    auto rangeCellsOnHost(const box_region_t<D>&) const -> range_h_t<D>;
 
   protected:
     std::vector<std::size_t> m_resolution;
