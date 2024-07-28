@@ -29,10 +29,8 @@ void errorIf(bool condition, const std::string& message) {
 
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
-Inline auto equal(const real_t& a,
-                  const real_t& b,
-                  const char*   msg = "",
-                  const real_t  acc = ONE) -> bool {
+Inline auto equal(real_t a, real_t b, const char* msg = "", real_t acc = ONE)
+  -> bool {
   const auto eps = epsilon * acc;
   if (not cmp::AlmostEqual(a, b, eps)) {
     printf("%.12e != %.12e %s\n", a, b, msg);
@@ -85,17 +83,21 @@ void testDeposit(const std::vector<std::size_t>&      res,
 
   auto J_scat = Kokkos::Experimental::create_scatter_view(J);
 
-  const real_t xi = 0.53, xf = 0.47;
-  const real_t yi = 0.34, yf = 0.52;
+  const int i0 = 4, j0 = 4;
+
+  const prtldx_t dxi = 0.53, dxf = 0.47;
+  const prtldx_t dyi = 0.34, dyf = 0.52;
+  const real_t   xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0 + (real_t)dxf;
+  const real_t   yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0 + (real_t)dyf;
 
   const real_t xr = 0.5 * (xi + xf);
   const real_t yr = 0.5 * (yi + yf);
 
-  const real_t Wx1 = 0.5 * (xi + xr);
-  const real_t Wx2 = 0.5 * (xf + xr);
+  const real_t Wx1 = 0.5 * (xi + xr) - (real_t)i0;
+  const real_t Wx2 = 0.5 * (xf + xr) - (real_t)i0;
 
-  const real_t Wy1 = 0.5 * (yi + yr);
-  const real_t Wy2 = 0.5 * (yf + yr);
+  const real_t Wy1 = 0.5 * (yi + yr) - (real_t)j0;
+  const real_t Wy2 = 0.5 * (yf + yr) - (real_t)j0;
 
   const real_t Fx1 = (xr - xi);
   const real_t Fx2 = (xf - xr);
@@ -109,16 +111,14 @@ void testDeposit(const std::vector<std::size_t>&      res,
   const real_t Jy1 = Fy1 * (1 - Wx1) + Fy2 * (1 - Wx2);
   const real_t Jy2 = Fy1 * Wx1 + Fy2 * Wx2;
 
-  const int i0 = 4, j0 = 4;
-
   put_value<int>(i1, i0, 0);
   put_value<int>(i2, j0, 0);
   put_value<int>(i1_prev, i0, 0);
   put_value<int>(i2_prev, j0, 0);
-  put_value<prtldx_t>(dx1, xf, 0);
-  put_value<prtldx_t>(dx2, yf, 0);
-  put_value<prtldx_t>(dx1_prev, xi, 0);
-  put_value<prtldx_t>(dx2_prev, yi, 0);
+  put_value<prtldx_t>(dx1, dxf, 0);
+  put_value<prtldx_t>(dx2, dyf, 0);
+  put_value<prtldx_t>(dx1_prev, dxi, 0);
+  put_value<prtldx_t>(dx2_prev, dyi, 0);
   put_value<real_t>(weight, 1.0, 0);
   put_value<short>(tag, ParticleTag::alive, 0);
 

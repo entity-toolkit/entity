@@ -512,37 +512,37 @@ namespace kernel {
         if (ppc == 0) {
           return;
         }
-        const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
-        auto       rand_gen = random_pool.get_state();
+        auto rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
-          const auto dx1 = Random<prtldx_t>(rand_gen);
+          const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+          const auto dx1   = Random<prtldx_t>(rand_gen);
 
-          i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
-          dx1s_1(index + offset1 - p) = dx1;
-          i1s_2(index + offset2 - p)  = static_cast<int>(i1) - N_GHOSTS;
-          dx1s_2(index + offset2 - p) = dx1;
+          i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_1(index + offset1) = dx1;
+          i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_2(index + offset2) = dx1;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
           energy_dist(x_Ph, v_T, spidx1);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
-          ux1s_1(index + offset1 - p) = v_XYZ[0];
-          ux2s_1(index + offset1 - p) = v_XYZ[1];
-          ux3s_1(index + offset1 - p) = v_XYZ[2];
+          ux1s_1(index + offset1) = v_XYZ[0];
+          ux2s_1(index + offset1) = v_XYZ[1];
+          ux3s_1(index + offset1) = v_XYZ[2];
           energy_dist(x_Ph, v_T, spidx2);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
-          ux1s_2(index + offset2 - p) = v_XYZ[0];
-          ux2s_2(index + offset2 - p) = v_XYZ[1];
-          ux3s_2(index + offset2 - p) = v_XYZ[2];
+          ux1s_2(index + offset2) = v_XYZ[0];
+          ux2s_2(index + offset2) = v_XYZ[1];
+          ux3s_2(index + offset2) = v_XYZ[2];
 
-          tags_1(index + offset1 - p) = ParticleTag::alive;
-          tags_2(index + offset2 - p) = ParticleTag::alive;
+          tags_1(index + offset1) = ParticleTag::alive;
+          tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1 - p) = ONE;
-            weights_2(index + offset2 - p) = ONE;
+            weights_1(index + offset1) = ONE;
+            weights_2(index + offset2) = ONE;
           } else {
-            const auto wei                 = metric.sqrt_det_h({ i1_ + HALF });
-            weights_1(index + offset1 - p) = wei;
-            weights_2(index + offset2 - p) = wei;
+            const auto wei = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
+            weights_1(index + offset1) = wei;
+            weights_2(index + offset2) = wei;
           }
         }
         random_pool.free_state(rand_gen);
@@ -568,21 +568,21 @@ namespace kernel {
         if (ppc == 0) {
           return;
         }
-        const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
-        auto       rand_gen = random_pool.get_state();
+        auto rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
-          const auto dx1 = Random<prtldx_t>(rand_gen);
-          const auto dx2 = Random<prtldx_t>(rand_gen);
+          const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+          const auto dx1   = Random<prtldx_t>(rand_gen);
+          const auto dx2   = Random<prtldx_t>(rand_gen);
 
-          i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
-          dx1s_1(index + offset1 - p) = dx1;
-          i1s_2(index + offset2 - p)  = static_cast<int>(i1) - N_GHOSTS;
-          dx1s_2(index + offset2 - p) = dx1;
+          i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_1(index + offset1) = dx1;
+          i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_2(index + offset2) = dx1;
 
-          i2s_1(index + offset1 - p)  = static_cast<int>(i2) - N_GHOSTS;
-          dx2s_1(index + offset1 - p) = dx2;
-          i2s_2(index + offset2 - p)  = static_cast<int>(i2) - N_GHOSTS;
-          dx2s_2(index + offset2 - p) = dx2;
+          i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_1(index + offset1) = dx2;
+          i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_2(index + offset2) = dx2;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
           energy_dist(x_Ph, v_T, spidx1);
@@ -591,28 +591,28 @@ namespace kernel {
           } else if constexpr (S == SimEngine::GRPIC) {
             metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
           }
-          ux1s_1(index + offset1 - p) = v_Cd[0];
-          ux2s_1(index + offset1 - p) = v_Cd[1];
-          ux3s_1(index + offset1 - p) = v_Cd[2];
+          ux1s_1(index + offset1) = v_Cd[0];
+          ux2s_1(index + offset1) = v_Cd[1];
+          ux3s_1(index + offset1) = v_Cd[2];
           energy_dist(x_Ph, v_T, spidx2);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
             metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
           }
-          ux1s_2(index + offset2 - p) = v_Cd[0];
-          ux2s_2(index + offset2 - p) = v_Cd[1];
-          ux3s_2(index + offset2 - p) = v_Cd[2];
+          ux1s_2(index + offset2) = v_Cd[0];
+          ux2s_2(index + offset2) = v_Cd[1];
+          ux3s_2(index + offset2) = v_Cd[2];
 
-          tags_1(index + offset1 - p) = ParticleTag::alive;
-          tags_2(index + offset2 - p) = ParticleTag::alive;
+          tags_1(index + offset1) = ParticleTag::alive;
+          tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1 - p) = ONE;
-            weights_2(index + offset2 - p) = ONE;
+            weights_1(index + offset1) = ONE;
+            weights_2(index + offset2) = ONE;
           } else {
             const auto wei = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
-            weights_1(index + offset1 - p) = wei;
-            weights_2(index + offset2 - p) = wei;
+            weights_1(index + offset1) = wei;
+            weights_2(index + offset2) = wei;
           }
         }
         random_pool.free_state(rand_gen);
@@ -635,27 +635,27 @@ namespace kernel {
         if (ppc == 0) {
           return;
         }
-        const auto index    = Kokkos::atomic_fetch_add(&idx(), ppc);
-        auto       rand_gen = random_pool.get_state();
+        auto rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
-          const auto dx1 = Random<prtldx_t>(rand_gen);
-          const auto dx2 = Random<prtldx_t>(rand_gen);
-          const auto dx3 = Random<prtldx_t>(rand_gen);
+          const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+          const auto dx1   = Random<prtldx_t>(rand_gen);
+          const auto dx2   = Random<prtldx_t>(rand_gen);
+          const auto dx3   = Random<prtldx_t>(rand_gen);
 
-          i1s_1(index + offset1 - p)  = static_cast<int>(i1) - N_GHOSTS;
-          dx1s_1(index + offset1 - p) = dx1;
-          i1s_2(index + offset2 - p)  = static_cast<int>(i1) - N_GHOSTS;
-          dx1s_2(index + offset2 - p) = dx1;
+          i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_1(index + offset1) = dx1;
+          i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
+          dx1s_2(index + offset2) = dx1;
 
-          i2s_1(index + offset1 - p)  = static_cast<int>(i2) - N_GHOSTS;
-          dx2s_1(index + offset1 - p) = dx2;
-          i2s_2(index + offset2 - p)  = static_cast<int>(i2) - N_GHOSTS;
-          dx2s_2(index + offset2 - p) = dx2;
+          i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_1(index + offset1) = dx2;
+          i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
+          dx2s_2(index + offset2) = dx2;
 
-          i3s_1(index + offset1 - p)  = static_cast<int>(i3) - N_GHOSTS;
-          dx3s_1(index + offset1 - p) = dx3;
-          i3s_2(index + offset2 - p)  = static_cast<int>(i3) - N_GHOSTS;
-          dx3s_2(index + offset2 - p) = dx3;
+          i3s_1(index + offset1)  = static_cast<int>(i3) - N_GHOSTS;
+          dx3s_1(index + offset1) = dx3;
+          i3s_2(index + offset2)  = static_cast<int>(i3) - N_GHOSTS;
+          dx3s_2(index + offset2) = dx3;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
           energy_dist(x_Ph, v_T, spidx1);
@@ -664,30 +664,30 @@ namespace kernel {
           } else if constexpr (S == SimEngine::GRPIC) {
             metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
           }
-          ux1s_1(index + offset1 - p) = v_Cd[0];
-          ux2s_1(index + offset1 - p) = v_Cd[1];
-          ux3s_1(index + offset1 - p) = v_Cd[2];
+          ux1s_1(index + offset1) = v_Cd[0];
+          ux2s_1(index + offset1) = v_Cd[1];
+          ux3s_1(index + offset1) = v_Cd[2];
           energy_dist(x_Ph, v_T, spidx2);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
             metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
           }
-          ux1s_2(index + offset2 - p) = v_Cd[0];
-          ux2s_2(index + offset2 - p) = v_Cd[1];
-          ux3s_2(index + offset2 - p) = v_Cd[2];
+          ux1s_2(index + offset2) = v_Cd[0];
+          ux2s_2(index + offset2) = v_Cd[1];
+          ux3s_2(index + offset2) = v_Cd[2];
 
-          tags_1(index + offset1 - p) = ParticleTag::alive;
-          tags_2(index + offset2 - p) = ParticleTag::alive;
+          tags_1(index + offset1) = ParticleTag::alive;
+          tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1 - p) = ONE;
-            weights_2(index + offset2 - p) = ONE;
+            weights_1(index + offset1) = ONE;
+            weights_2(index + offset2) = ONE;
           } else {
             const auto wei = metric.sqrt_det_h(
                                { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
                              inv_V0;
-            weights_1(index + offset1 - p) = wei;
-            weights_2(index + offset2 - p) = wei;
+            weights_1(index + offset1) = wei;
+            weights_2(index + offset2) = wei;
           }
         }
         random_pool.free_state(rand_gen);

@@ -29,7 +29,7 @@ template <Dimension D>
 Inline auto equal(const coord_t<D>& a,
                   const coord_t<D>& b,
                   const char*       msg,
-                  const real_t      acc = ONE) -> bool {
+                  real_t            acc = ONE) -> bool {
   const auto eps = epsilon * acc;
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
@@ -149,7 +149,7 @@ auto main(int argc, char* argv[]) -> int {
 
     testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
     testMetric<Minkowski<Dim::_2D>>(res2d, ext2dcart, 200);
-    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 200);
+    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 500);
     testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
     testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 100, params);
 

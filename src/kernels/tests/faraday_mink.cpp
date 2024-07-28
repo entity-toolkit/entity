@@ -23,8 +23,7 @@ void errorIf(bool condition, const std::string& message) {
   }
 }
 
-Inline auto equal(const real_t& a, const real_t& b, const char* msg, const real_t acc)
-  -> bool {
+Inline auto equal(real_t a, real_t b, const char* msg, real_t acc) -> bool {
   if (not(math::abs(a - b) < acc)) {
     printf("%.12e != %.12e [%.12e] %s\n", a, b, math::abs(a - b), msg);
     return false;

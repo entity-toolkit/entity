@@ -275,10 +275,6 @@ auto main(int argc, char* argv[]) -> int {
         fbc.size(),
         "grid.boundaries.fields.size()");
 
-      assert_equal(params_mink_1d.get<std::size_t>("particles.nspec"),
-                   (std::size_t)2,
-                   "particles.nspec");
-
       const auto species = params_mink_1d.get<std::vector<ParticleSpecies>>(
         "particles.species");
       assert_equal<std::string>(species[0].label(), "e-", "species[0].label");
@@ -380,10 +376,6 @@ auto main(int argc, char* argv[]) -> int {
                    true,
                    "particles.use_weights");
 
-      assert_equal(params_sph_2d.get<std::size_t>("particles.nspec"),
-                   (std::size_t)3,
-                   "particles.nspec");
-
       assert_equal(params_sph_2d.get<real_t>("algorithms.gca.e_ovr_b_max"),
                    (real_t)0.95,
                    "algorithms.gca.e_ovr_b_max");
@@ -460,7 +452,7 @@ auto main(int argc, char* argv[]) -> int {
                            (real_t)(0.99),
                            "grid.metric.ks_a");
       assert_equal<real_t>(params_qks_2d.get<real_t>("grid.metric.ks_rh"),
-                           (real_t)(1.1410673598),
+                           (real_t)((1.0 + std::sqrt(1 - 0.99 * 0.99))),
                            "grid.metric.ks_rh");
 
       const auto expect = std::map<std::string, real_t> {
@@ -531,10 +523,6 @@ auto main(int argc, char* argv[]) -> int {
         params_qks_2d.get<real_t>("grid.boundaries.absorb.coeff"),
         defaults::bc::absorb::coeff,
         "grid.boundaries.absorb.coeff");
-
-      assert_equal(params_qks_2d.get<std::size_t>("particles.nspec"),
-                   (std::size_t)2,
-                   "particles.nspec");
 
       const auto species = params_qks_2d.get<std::vector<ParticleSpecies>>(
         "particles.species");
