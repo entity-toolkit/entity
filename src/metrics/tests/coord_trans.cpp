@@ -149,7 +149,7 @@ auto main(int argc, char* argv[]) -> int {
 
     testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
     testMetric<Minkowski<Dim::_2D>>(res2d, ext2dcart, 200);
-    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 200);
+    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 500);
     testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
     testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 100, params);
 
