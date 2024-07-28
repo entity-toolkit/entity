@@ -1,7 +1,7 @@
 [simulation]
   name = "shock"
   engine = "srpic"
-  runtime = 100.0
+  runtime = 50.0
 
 [grid]
   resolution = [2048, 128]
@@ -19,33 +19,33 @@
   skindepth0 = 1e-2
 
 [algorithms]
-  current_filters = 4
+  current_filters = 8
 
   [algorithms.timestep]
     CFL = 0.5
 
 [particles]
-  ppc0 = 4.0
+  ppc0 = 16.0
 
   [[particles.species]]
-  label = "e-"
-  mass = 1.0
-  charge = -1.0
-  maxnpart = 1e7
+    label = "e-"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e8
 
   [[particles.species]]
-  label = "e+"
-  mass = 1.0
-  charge = 1.0
-  maxnpart = 1e7
+    label = "e+"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e8
 
 [setup]
   drift_ux = 0.1
-  temperature = 1e-4
+  temperature = 1e-3
 
 [output]
   interval_time = 0.1
   format = "hdf5"
   
   [output.fields]
-    quantities = ["N_1", "N_2", "E", "B", "J"]
+    quantities = ["N_1", "N_2", "E", "B", "T0i_1", "T0i_2", "J"]
