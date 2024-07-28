@@ -16,7 +16,7 @@
     
 [scales]
   larmor0 = 1e-2
-  skindepth0 = 1e-3
+  skindepth0 = 1e-2
 
 [algorithms]
   current_filters = 4
@@ -40,10 +40,12 @@
   maxnpart = 1e7
 
 [setup]
-  drift_ux = -0.1
-  temperature = 0.01
+  drift_ux = 0.1
+  temperature = 1e-4
 
 [output]
-  fields = ["N_1", "N_2", "E", "B", "J"]
-  format = "hdf5"
   interval_time = 0.1
+  format = "hdf5"
+  
+  [output.fields]
+    quantities = ["N_1", "N_2", "E", "B", "J"]
