@@ -27,12 +27,11 @@ jobs:
             FLAGS="-D Kokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_AMPERE86=ON"
           elif [ "${{ matrix.device }}" = "amd-gpu" ]; then
             FLAGS="-D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_GFX1100=ON"
-            export HSA_OVERRIDE_GFX_VERSION=11.0.0 HIP_VISIBLE_DEVICES=0 ROCR_VISIBLE_DEVICES=0
           fi
           cmake -B build -D TESTS=ON -D output=ON -D precision=${{ matrix.precision }} $FLAGS
       - name: Compile
         run: |
-          cmake --build build
+          cmake --build build -j $(nproc)
       - name: Run tests
         run: |
           ctest --test-dir build --output-on-failure --verbose
