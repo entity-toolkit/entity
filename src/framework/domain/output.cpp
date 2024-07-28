@@ -14,6 +14,7 @@
 #include "metrics/spherical.h"
 
 #include "framework/containers/particles.h"
+#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
@@ -168,7 +169,7 @@ namespace ntt {
     std::size_t             step,
     long double             time,
     std::function<
-      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const range_t<M::Dim>&)>
+      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
       CustomFieldOutput) -> bool {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
@@ -297,7 +298,7 @@ namespace ntt {
               CustomFieldOutput(fld.name().substr(1),
                                 local_domain->fields.bckp,
                                 addresses.back(),
-                                local_domain->mesh.rangeActiveCells());
+                                *local_domain);
             } else {
               raise::Error("Custom output requested but no function provided",
                            HERE);

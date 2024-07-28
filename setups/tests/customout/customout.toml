@@ -47,4 +47,4 @@
 
   [output.fields]
     quantities = ["E", "B", "J"]
-    custom = ["mybuff"]
+    custom = ["mybuff", "EdotB+1"]
