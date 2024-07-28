@@ -29,10 +29,8 @@ void errorIf(bool condition, const std::string& message) {
 
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
-Inline auto equal(const real_t& a,
-                  const real_t& b,
-                  const char*   msg = "",
-                  const real_t  acc = ONE) -> bool {
+Inline auto equal(real_t a, real_t b, const char* msg = "", real_t acc = ONE)
+  -> bool {
   const auto eps = epsilon * acc;
   if (not cmp::AlmostEqual(a, b, eps)) {
     printf("%.12e != %.12e %s\n", a, b, msg);
@@ -89,8 +87,8 @@ void testDeposit(const std::vector<std::size_t>&      res,
 
   const prtldx_t dxi = 0.53, dxf = 0.47;
   const prtldx_t dyi = 0.34, dyf = 0.52;
-  const real_t xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0 + (real_t)dxf;
-  const real_t yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0 + (real_t)dyf;
+  const real_t   xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0 + (real_t)dxf;
+  const real_t   yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0 + (real_t)dyf;
 
   const real_t xr = 0.5 * (xi + xf);
   const real_t yr = 0.5 * (yi + yf);
