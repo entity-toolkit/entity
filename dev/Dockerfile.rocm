@@ -1,0 +1,25 @@
+# syntax = devthefuture/dockerfile-x
+
+FROM rocm/rocm-terminal:latest
+
+USER root
+ENV PATH=/opt/rocm/bin:$PATH
+
+INCLUDE Dockerfile.common
+
+# additional ROCm packages
+RUN git clone -b release/rocm-rel-6.1.1.1 https://github.com/ROCm/rocThrust.git /opt/rocthrust-src && \
+    git clone -b release/rocm-rel-6.1.00.36 https://github.com/ROCm/rocPRIM.git /opt/rocprim-src && \
+    cd /opt/rocthrust-src && ./install --install && \
+    cd /opt/rocprim-src && ./install --install && \
+    rm -rf /opt/rocthrust-src /opt/rocprim-src
+
+ENV CMAKE_PREFIX_PATH=/opt/rocm 
+ENV CC=hipcc 
+ENV CXX=hipcc
+
+# welcome message
+COPY welcome.rocm /root/.welcome.rocm
+RUN echo '/usr/bin/bash /root/.welcome.rocm' | tee -a /etc/profile.d/welcome.sh
+
+ENTRYPOINT ["/usr/bin/bash", "-l"]

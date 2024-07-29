@@ -9,6 +9,8 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include "framework/domain/domain.h"
+
 #include "engines/engine.hpp"
 
 namespace ntt {
@@ -61,7 +63,21 @@ namespace ntt {
         auto print_output = false;
 #if defined(OUTPUT_ENABLED)
         timers.start("Output");
-        print_output = m_metadomain.Write(m_params, step, time);
+        if constexpr (
+          traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
+          auto lambda_custom_field_output = [&](const std::string&    name,
+                                                ndfield_t<M::Dim, 6>& buff,
+                                                std::size_t           idx,
+                                                const Domain<S, M>&   dom) {
+            m_pgen.CustomFieldOutput(name, buff, idx, dom);
+          };
+          print_output = m_metadomain.Write(m_params,
+                                            step,
+                                            time,
+                                            lambda_custom_field_output);
+        } else {
+          print_output = m_metadomain.Write(m_params, step, time);
+        }
         timers.stop("Output");
 #endif
 

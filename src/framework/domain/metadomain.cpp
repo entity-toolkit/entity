@@ -21,6 +21,7 @@
   #include <mpi.h>
 #endif
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -375,7 +376,7 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
     const auto dx_min              = g_mesh.metric.dxMin();
-    auto       dx_min_from_domains = INFINITY;
+    auto       dx_min_from_domains = std::numeric_limits<real_t>::infinity();
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto& current_domain = g_subdomains[idx];
       const auto  current_dx_min = current_domain.mesh.metric.dxMin();

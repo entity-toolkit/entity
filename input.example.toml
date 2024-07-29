@@ -336,6 +336,10 @@
     #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
     #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
     quantities = ""
+    # Custom (user-defined) field quantities:
+    #   @type: array of strings
+    #   @default: []
+    custom = ""
     # @NOT_IMPLEMENTED: Stride for the output of fields:
     #   @type: unsigned short: > 1
     #   @default: 1

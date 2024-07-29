@@ -27,3 +27,7 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): framework, PIC}
 
 😺 __Muni Zhou__ {[@munizhou](https://github.com/munizhou): PIC}
+
+## Branch policy
+
+Master branch contains the latest stable version of the code which has already been released. Development on the core is done on branches starting with `dev/`, while fixing bugs is done in branches that start with `bug/`. User-specific modifications (i.e., new problem generators plus perhaps minor corrections in the core) are done on branches starting with `pgen/`. Before merging to the master branch, all the branches must first be merged to the latest release-candidate branch, which ends with `rc`, via a pull request. After which, when all the release goals are met, the `rc` branch is merged to the master and released as a new stable version. Stale branches will be archived with a tag starting with `archive/` (can still be accessed via the "Tags" tab) and removed.

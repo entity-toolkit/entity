@@ -27,8 +27,7 @@ void errorIf(bool condition, const std::string& message = "") {
   }
 }
 
-Inline auto equal(const real_t& a, const real_t& b, const std::string& msg)
-  -> bool {
+Inline auto equal(real_t a, real_t b, const std::string& msg) -> bool {
   if (not(math::abs(a - b) < 1e-4)) {
     printf("%.12e != %.12e %s\n", a, b, msg.c_str());
     return false;
@@ -266,7 +265,6 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xCd_1, xPh_1);
     metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xCd_2, xPh_2);
 
-    // printf("t = %f\n", time);
     if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
       xi_1 += dt * ux_1 / gamma_1;
       xi_2 += dt * ux_2 / gamma_2;
@@ -282,12 +280,12 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       if (xi_2 < extent[0].first) {
         xi_2 += sx;
       }
-      // printf("    x_1 = %.6e | %.6e\n", xPh_1[0], xi_1);
-      // printf("    x_2 = %.6e | %.6e\n", xPh_2[0], xi_2);
-      errorIf(
-        not equal(xPh_1[0], xi_1, fmt::format("xPh_1[0] != xi_1 @ t = %f", time)));
-      errorIf(
-        not equal(xPh_2[0], xi_2, fmt::format("xPh_2[0] != xi_2 @ t = %f", time)));
+      errorIf(not equal(xPh_1[0] / sx,
+                        xi_1 / sx,
+                        fmt::format("xPh_1[0] != xi_1 @ t = %f", time)));
+      errorIf(not equal(xPh_2[0] / sx,
+                        xi_2 / sx,
+                        fmt::format("xPh_2[0] != xi_2 @ t = %f", time)));
     }
     if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
       yi_1 += dt * uy_1 / gamma_1;
@@ -304,12 +302,12 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       if (yi_2 < extent[1].first) {
         yi_2 += sy;
       }
-      // printf("    y_1 = %.6e | %.6e\n", xPh_1[1], yi_1);
-      // printf("    y_2 = %.6e | %.6e\n", xPh_2[1], yi_2);
-      errorIf(
-        not equal(xPh_1[1], yi_1, fmt::format("xPh_1[1] != yi_1 @ t = %f", time)));
-      errorIf(
-        not equal(xPh_2[1], yi_2, fmt::format("xPh_2[1] != yi_2 @ t = %f", time)));
+      errorIf(not equal(xPh_1[1] / sy,
+                        yi_1 / sy,
+                        fmt::format("xPh_1[1] != yi_1 @ t = %f", time)));
+      errorIf(not equal(xPh_2[1] / sy,
+                        yi_2 / sy,
+                        fmt::format("xPh_2[1] != yi_2 @ t = %f", time)));
     }
     if constexpr (M::Dim == Dim::_3D) {
       zi_1 += dt * uz_1 / gamma_1;
@@ -326,12 +324,12 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       if (zi_2 < extent[2].first) {
         zi_2 += sz;
       }
-      // printf("    z_1 = %.6e | %.6e\n", xPh_1[2], zi_1);
-      // printf("    z_2 = %.6e | %.6e\n", xPh_2[2], zi_2);
-      errorIf(
-        not equal(xPh_1[2], zi_1, fmt::format("xPh_1[2] != zi_1 @ t = %f", time)));
-      errorIf(
-        not equal(xPh_2[2], zi_2, fmt::format("xPh_2[2] != zi_2 @ t = %f", time)));
+      errorIf(not equal(xPh_1[2] / sz,
+                        zi_1 / sz,
+                        fmt::format("xPh_1[2] != zi_1 @ t = %f", time)));
+      errorIf(not equal(xPh_2[2] / sz,
+                        zi_2 / sz,
+                        fmt::format("xPh_2[2] != zi_2 @ t = %f", time)));
     }
     time += dt;
   }

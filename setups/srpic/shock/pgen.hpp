@@ -15,23 +15,6 @@ namespace user {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
-  struct DriftDist : public arch::EnergyDistribution<S, M> {
-    DriftDist(const M& metric, real_t ux)
-      : arch::EnergyDistribution<S, M> { metric }
-      , ux { ux } {}
-
-    Inline void operator()(const coord_t<M::Dim>&,
-                           vec_t<Dim::_3D>& v,
-                           unsigned short) const override {
-      v[0] = -ux;
-      v[1] = 0.1 * ux;
-    }
-
-  private:
-    const real_t ux;
-  };
-
-  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines { traits::compatible_with<SimEngine::SRPIC>::value };
@@ -68,13 +51,6 @@ namespace user {
         local_domain,
         injector,
         1.0);
-      // const auto energy_dist = DriftDist<S, M>(local_domain.mesh.metric, drift_ux);
-      // const auto injector = arch::UniformInjector<S, M, DriftDist>(energy_dist,
-      //                                                              { 1, 2 });
-      // arch::InjectUniform<S, M, arch::UniformInjector<S, M, DriftDist>>(params,
-      //                                                                   local_domain,
-      //                                                                   injector,
-      //                                                                   1.0);
     }
   };
 

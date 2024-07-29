@@ -17,7 +17,7 @@ function(gen_test title)
 
   set (libs ntt_output ntt_global ntt_metrics ntt_framework)
   add_dependencies(${exec} ${libs})
-  target_link_libraries(${exec} PRIVATE ${libs})
+  target_link_libraries(${exec} PRIVATE ${libs} stdc++fs)
 
   add_test(NAME "OUTPUT::${title}" COMMAND "${exec}")
 endfunction()

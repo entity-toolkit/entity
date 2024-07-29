@@ -57,7 +57,7 @@ namespace kernel {
     const float              charge;
     const bool               use_weights;
     const M                  metric;
-    const std::size_t        ni2;
+    const int                ni2;
     const real_t             inv_n0;
     const unsigned short     window;
 
@@ -111,7 +111,7 @@ namespace kernel {
       , charge { charge }
       , use_weights { use_weights }
       , metric { metric }
-      , ni2 { ni2 }
+      , ni2 { static_cast<int>(ni2) }
       , inv_n0 { inv_n0 }
       , window { window }
       , contrib { get_contrib<F>(mass, charge) }

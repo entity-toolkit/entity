@@ -33,11 +33,11 @@ else
   gcc_version=${error_msg}
 fi
 
-nvcc_or_error=$(nvcc --version 2>&1)
+rocm_or_error=$(hipcc --version | grep HIP 2>&1)
 if [ $? -eq 0 ]; then
-  nvcc_version=${FgYellow}$(nvcc --version | grep tools)${Reset}
+  rocm_version=${FgYellow}$(hipcc --version | grep HIP)${Reset}
 else
-  nvcc_version=${error_msg}
+  rocm_version=${error_msg}
 fi
 
 cmake_or_error=$(cmake --version 2>&1)
@@ -68,7 +68,8 @@ else
   python_version=${error_msg}
 fi
 
-str=$(cat <<EOF
+str=$(
+  cat <<EOF
 ${FgBlue}              __        __ 
              /\\ \\__  __/\\ \\__ 
     __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __ 
@@ -77,11 +78,11 @@ ${FgBlue}              __        __
  \\ \\____\\ \\_\\ \\_\\ \\__\\\\\\ \\_\\ \\__\\\\\\ \\____ \\/\\_\\ 
   \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/ 
                                     /\\___/ 
-${Reset}${Underscore}Entity CUDA container${Reset}${FgBlue}               \\/__/${Reset} 
+${Reset}${Underscore}Entity ROCm container${Reset}${FgBlue}               \\/__/${Reset} 
 
 ## Installed packages:
   - ${gcc_version}
-  - ${nvcc_version}
+  - ${rocm_version}
   - ${cmake_version}
   - ${hdf5_version}
   - ${adios2_version}
@@ -92,12 +93,15 @@ ${Reset}${Underscore}Entity CUDA container${Reset}${FgBlue}               \\/__/
 * Clone the code:
   ${FgGreen}$ git clone https://github.com/entity-toolkit/entity.git && cd entity${Reset}
 
-* Configure the build for your NVIDIA CUDA architecture:
-  ${FgGreen}$ cmake -B build -D pgen=... -D output=ON -D Kokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_***=ON${Reset}
+* Configure the build for your AMD GPU architecture:
+  ${FgGreen}$ cmake -B build -D pgen=... -D output=ON -D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_***=ON${Reset}
   All available architectures can be found here: https://kokkos.org/kokkos-core-wiki/keywords.html#nvidia-gpus.
 
 * Build the code:
   ${FgGreen}$ cmake --build build -j \$(nproc)${Reset}
+
+* Do not forget to set the following environment variables to their appropriate values:
+  ${FgGreen}$ HSA_OVERRIDE_GFX_VERSION=**.*.* HIP_VISIBLE_DEVICES=* ROCR_VISIBLE_DEVICES=*${RESET}
 
 * The executable will be generated as \`build/src/entity.xc\`. Run it by specifying the input file:
   ${FgGreen}$ build/src/entity.xc -input <input_file>${Reset}
@@ -105,7 +109,7 @@ ${Reset}${Underscore}Entity CUDA container${Reset}${FgBlue}               \\/__/
 ## Testing the code
 
 * To build the tests, remove the \`build\` directory, and preconfigure with:
-  ${FgGreen}$ cmake -B build -D TESTS=ON -D output=ON -D Kokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_***=ON${Reset}
+  ${FgGreen}$ cmake -B build -D TESTS=ON -D output=ON -D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_***=ON${Reset}
 
 * Then run the tests with:
   ${FgGreen}$ ctest --test-dir build${Reset}
@@ -114,6 +118,5 @@ ${Reset}${Underscore}Entity CUDA container${Reset}${FgBlue}               \\/__/
 ${Red}Enjoy!${Reset} 🚀
 EOF
 )
-
 
 printf "$str\n"
