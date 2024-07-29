@@ -150,6 +150,16 @@ PrintChoices("CUDA"
   0
   42
 )
+PrintChoices("HIP"
+  "Kokkos_ENABLE_HIP"
+  "${ON_OFF_VALUES}"
+  ${Kokkos_ENABLE_HIP}
+  "OFF"
+  "${Green}"
+  HIP_REPORT
+  0
+  42
+)
 PrintChoices("OpenMP"
   "Kokkos_ENABLE_OPENMP"
   "${ON_OFF_VALUES}"
@@ -183,6 +193,28 @@ PrintChoices("C compiler"
   42
 )
 
+get_cmake_property(_variableNames VARIABLES)
+foreach (_variableName ${_variableNames})
+    string(REGEX MATCH "Kokkos_ARCH_*" _isMatched ${_variableName})
+    if(_isMatched)
+        get_property(isSet CACHE ${_variableName} PROPERTY VALUE)
+        if(isSet STREQUAL "ON")
+          string(REGEX REPLACE "Kokkos_ARCH_" "" ARCH ${_variableName})
+          break()
+        endif()
+    endif()
+endforeach()
+PrintChoices("Architecture"
+  "Kokkos_ARCH_*"
+  "${ARCH}"
+  "${ARCH}"
+  "N/A"
+  "${ColorReset}"
+  ARCH_REPORT
+  0
+  42
+)
+
 if(${Kokkos_ENABLE_CUDA})
   if("${CMAKE_CUDA_COMPILER}" STREQUAL "")
     execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
@@ -194,20 +226,25 @@ if(${Kokkos_ENABLE_CUDA})
 
   message(STATUS "CUDA compiler: ${CUDACOMP}")
   execute_process(COMMAND bash -c "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'"
-
     OUTPUT_VARIABLE CUDACOMP_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   PrintChoices("CUDA compiler"
     "CMAKE_CUDA_COMPILER"
-    "${CUDACOMP} v${CUDACOMP_VERSION}"
-    "${CUDACOMP} v${CUDACOMP_VERSION}"
+    "${CUDACOMP}"
+    "${CUDACOMP}"
     "N/A"
     "${ColorReset}"
     CUDA_COMPILER_REPORT
     0
     42
   )
+endif()
+
+if (${Kokkos_ENABLE_HIP})
+  execute_process(COMMAND bash -c "hipcc --version | grep HIP | cut -d ':' -f 2 | tr -d ' '"
+    OUTPUT_VARIABLE ROCM_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
 set(DOT_SYMBOL "${ColorReset}.")
@@ -242,7 +279,9 @@ message("  ${OUTPUT_REPORT}")
 message("${DASHED_LINE_SYMBOL}
 Compile configurations")
 
+message("  ${ARCH_REPORT}")
 message("  ${CUDA_REPORT}")
+message("  ${HIP_REPORT}")
 message("  ${OPENMP_REPORT}")
 
 message("  ${C_COMPILER_REPORT}")
@@ -259,6 +298,11 @@ message("  ${DEBUG_REPORT}")
 
 message("${DASHED_LINE_SYMBOL}\nDependencies")
 
+if (NOT "${CUDACOMP_VERSION}" STREQUAL "")
+  message("  - CUDA:\tv${CUDACOMP_VERSION}")
+elseif(NOT "${ROCM_VERSION}" STREQUAL "")
+  message("  - ROCm:\tv${ROCM_VERSION}")
+endif()
 message("  - Kokkos:\tv${Kokkos_VERSION}")
 if(${output})
   message("  - ADIOS2:\tv${adios2_VERSION}")
