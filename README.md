@@ -12,6 +12,8 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 ## Core developers (alphabetical)
 
+👀 __Yangyang Cai__ {[@StaticObserver](https://github.com/StaticObserver): GRPIC}
+
 💁‍♂️ __Alexander Chernoglazov__ {[@SChernoglazov](https://github.com/SChernoglazov): PIC}
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
