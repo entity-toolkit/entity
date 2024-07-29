@@ -78,26 +78,36 @@ namespace out {
     }
 
     [[nodiscard]]
+    auto is_custom() const -> bool {
+      return (id() == FldsID::Custom);
+    }
+
+    [[nodiscard]]
     inline auto name() const -> std::string {
       // generate the name
-      auto tmp = std::string(id().to_string());
-      if (id() == FldsID::T) {
-        tmp += m_name.substr(1, 2);
-      } else if (id() == FldsID::A) {
-        tmp += "3";
-      } else if (is_field()) {
-        tmp += "i";
-      }
-      if (species.size() > 0) {
-        tmp += "_";
-        for (auto& s : species) {
-          tmp += std::to_string(s);
-          tmp += "_";
+      std::string tmp;
+      if (id() == FldsID::Custom) {
+        tmp = m_name;
+      } else {
+        tmp = std::string(id().to_string());
+        if (id() == FldsID::T) {
+          tmp += m_name.substr(1, 2);
+        } else if (id() == FldsID::A) {
+          tmp += "3";
+        } else if (is_field()) {
+          tmp += "i";
         }
-        tmp.pop_back();
+        if (species.size() > 0) {
+          tmp += "_";
+          for (auto& s : species) {
+            tmp += std::to_string(s);
+            tmp += "_";
+          }
+          tmp.pop_back();
+        }
+        // capitalize the first letter
+        tmp[0] = std::toupper(tmp[0]);
       }
-      // capitalize the first letter
-      tmp[0] = std::toupper(tmp[0]);
       return "f" + tmp;
     }
 

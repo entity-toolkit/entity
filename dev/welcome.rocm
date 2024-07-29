@@ -68,7 +68,8 @@ else
   python_version=${error_msg}
 fi
 
-str=$(cat <<EOF
+str=$(
+  cat <<EOF
 ${FgBlue}              __        __ 
              /\\ \\__  __/\\ \\__ 
     __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __ 
@@ -78,8 +79,6 @@ ${FgBlue}              __        __
   \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/ 
                                     /\\___/ 
 ${Reset}${Underscore}Entity ROCm container${Reset}${FgBlue}               \\/__/${Reset} 
-
-${FgRed}This image is experimental, and may not work out of the box.${Reset}
 
 ## Installed packages:
   - ${gcc_version}
@@ -101,13 +100,16 @@ ${FgRed}This image is experimental, and may not work out of the box.${Reset}
 * Build the code:
   ${FgGreen}$ cmake --build build -j \$(nproc)${Reset}
 
+* Do not forget to set the following environment variables to their appropriate values:
+  ${FgGreen}$ HSA_OVERRIDE_GFX_VERSION=**.*.* HIP_VISIBLE_DEVICES=* ROCR_VISIBLE_DEVICES=*${RESET}
+
 * The executable will be generated as \`build/src/entity.xc\`. Run it by specifying the input file:
   ${FgGreen}$ build/src/entity.xc -input <input_file>${Reset}
 
 ## Testing the code
 
 * To build the tests, remove the \`build\` directory, and preconfigure with:
-  ${FgGreen}$ cmake -B build -D TESTS=ON -D output=ON -D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_***=ON${Reset}
+  ${FgGreen}$ cmake -B build -D TESTS=ON -D output=ON -D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_***=ON${Reset}
 
 * Then run the tests with:
   ${FgGreen}$ ctest --test-dir build${Reset}
@@ -116,6 +118,5 @@ ${FgRed}This image is experimental, and may not work out of the box.${Reset}
 ${Red}Enjoy!${Reset} 🚀
 EOF
 )
-
 
 printf "$str\n"
