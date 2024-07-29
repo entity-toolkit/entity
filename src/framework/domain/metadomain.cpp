@@ -381,7 +381,7 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     auto dx_mins        = std::vector<real_t>(g_ndomains);
     dx_mins[g_mpi_rank] = dx_min;
-    MPI_Allgather(&dx_mins[g_mpi_rank],
+    MPI_Allgather(&dx_min,
                   1,
                   mpi::get_type<real_t>(),
                   dx_mins.data(),
