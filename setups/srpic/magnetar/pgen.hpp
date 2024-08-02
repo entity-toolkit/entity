@@ -214,9 +214,9 @@ namespace user {
         auto inv_n0_ = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
-            if (s == 1) {
-              continue;
-            }
+            // if (s == 1) {
+            //   continue;
+            // }
 
             array_t<std::size_t> elec_ind("elec_ind");
             array_t<std::size_t> pos_ind("pos_ind");
@@ -246,7 +246,7 @@ namespace user {
             auto weight_p = species3_p.weight;
             auto tag_p    = species3_p.tag;
 
-            if (s == 0) {
+            if ((s == 0) || (s == 1)) {
 
               offset_e = species2_e.npart();
               offset_p = species2_p.npart();
@@ -340,7 +340,7 @@ namespace user {
               ux2(p) *= new_fac;
               ux3(p) *= new_fac;
 
-              if (s == 0) {
+              if ((s == 0) || (s == 1)) {
                 auto cbuff_acc     = cbuff_sc.access();
                 cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
                     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
@@ -357,7 +357,7 @@ namespace user {
 
             auto elec_ind_h = Kokkos::create_mirror(elec_ind);
             Kokkos::deep_copy(elec_ind_h, elec_ind);
-            if (s == 0) {
+            if ((s == 0) || (s == 1)) {
               species2_e.set_npart(offset_e + elec_ind_h());
             } else {
               species3_e.set_npart(offset_e + elec_ind_h());
@@ -367,7 +367,7 @@ namespace user {
 
             auto pos_ind_h = Kokkos::create_mirror(pos_ind);
             Kokkos::deep_copy(pos_ind_h, pos_ind);
-            if (s == 0) {
+            if ((s == 0) || (s == 1)) {
               species2_p.set_npart(offset_p + pos_ind_h());
             } else {
               species3_p.set_npart(offset_p + pos_ind_h());
