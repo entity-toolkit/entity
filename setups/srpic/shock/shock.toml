@@ -42,6 +42,10 @@
 [setup]
   drift_ux = 0.1
   temperature = 1e-3
+  Bmag = 0.0
+  Btheta = 0.0
+  Bphi = 0.0
+  Bbeta = 0.0
 
 [output]
   interval_time = 0.1
