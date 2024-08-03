@@ -14,6 +14,47 @@
 namespace user {
   using namespace ntt;
 
+  template <Dimension D>
+  struct InitFields
+  {
+      InitFields(real_t bmag, real_t btheta, real_t bphi, real_t bbeta) : 
+        Bmag { bmag }, Btheta { btheta }, Bphi { bphi }, Bbeta { bbeta } {}
+
+      // alternative: initialize magnetisation from simulation parameters as in Tristan?
+      // Bmag = math::sqrt(ppc0 * 0.5 * c * c * me * sigma);
+
+      // magnetic field components
+      Inline auto bx1(const coord_t<D> &x_Ph) const -> real_t
+      {
+          return Bmag * math::cos(Btheta / 180.0 * Kokkos::numbers::pi);
+      }
+      Inline auto bx2(const coord_t<D> &x_Ph) const -> real_t
+      {
+          return Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
+      }
+      Inline auto bx3(const coord_t<D> &x_Ph) const -> real_t
+      {
+          return Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
+      }
+
+      // electric field components
+      Inline auto ex1(const coord_t<D> &x_Ph) const -> real_t
+      {
+          return ZERO;
+      }
+      Inline auto ex2(const coord_t<D> &x_Ph) const -> real_t
+      {
+          return -Bbeta * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
+      }
+      Inline auto ex3(const coord_t<D> &x_Ph) const -> real_t
+      {
+          return -Bbeta * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
+      }
+
+  private:
+      const real_t Btheta, Bphi, Bbeta, Bmag;
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -30,10 +71,18 @@ namespace user {
 
     const real_t drift_ux, temperature;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      , drift_ux { p.template get<real_t>("setup.drift_ux") }
-      , temperature { p.template get<real_t>("setup.temperature") } {}
+    const real_t Btheta, Bphi, Bbeta, Bmag;
+    InitFields<D> init_flds;
+
+    inline PGen(const SimulationParams &p, const Metadomain<S, M> &m)
+        : arch::ProblemGenerator<S, M> { p }
+        , drift_ux { p.template get<real_t>("setup.drift_ux") }
+        , temperature { p.template get<real_t>("setup.temperature") }
+        , Bmag { p.template get<real_t>("setup.Bmag", 0.0) }
+        , Btheta { p.template get<real_t>("setup.Btheta", 0.0) }
+        , Bphi { p.template get<real_t>("setup.Bphi", 0.0) }
+        , Bbeta { p.template get<real_t>("setup.Bbeta", 0.0) }
+        , init_flds { Bmag, Btheta, Bphi, Bbeta } {}
 
     inline PGen() {}
 
