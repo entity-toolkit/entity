@@ -217,12 +217,12 @@ namespace kernel::gr {
       // find midpoint values
       vp_mid  = 0.5 * (vp + vp_upd);
       // find updated velociity
-      vp_upd = compute_u0_inv(vp_rlx, xp) * vp / compute_u0_inv(vp, xp) +
-	      (( compute_u0_inv(vp_rlx,xp) / compute_u0_inv(vp, xp) - ONE) * metric.f1(xp) + 
-		      dt * (coeff * ex * compute_u0_inv(vp_rlx, xp) + 
+      vp_upd = compute_u0_inv(vp_mid, xp) * vp / compute_u0_inv(vp, xp) +
+	      (( compute_u0_inv(vp_mid, xp) / compute_u0_inv(vp, xp) - ONE) * metric.f1(xp) + 
+		      dt * (coeff * ex * compute_u0_inv(vp_mid, xp) + 
 			    (-metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
-                             HALF * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp_rlx) + 
-                                     TWO * DERIVATIVE(metric.f1, xp[0]) * vp_rlx +
+                             HALF * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp_mid) + 
+                                     TWO * DERIVATIVE(metric.f1, xp[0]) * vp_mid +
                                      DERIVATIVE(metric.f0, xp[0]))
 	                    )
 			   )
