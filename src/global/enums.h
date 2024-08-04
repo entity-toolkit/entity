@@ -135,6 +135,7 @@ namespace ntt {
       Cart    = 1,
       Sph     = 2,
       Qsph    = 3,
+      Fs      = 4, 
     };
 
     constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
