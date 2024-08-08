@@ -217,12 +217,41 @@ namespace out {
 
   void Writer::writeParticleQuantity(const array_t<real_t*>& array,
                                      const std::string&      varname) {
-    auto var = m_io.InquireVariable<real_t>(varname);
-    var.SetSelection(adios2::Box<adios2::Dims>({}, { array.extent(0) }));
     auto array_h = Kokkos::create_mirror_view(array);
     Kokkos::deep_copy(array_h, array);
+#if defined(MPI_ENABLED)
+    array_t<real_t*> array_all { "array_all", array.extent(0) };
+    auto             array_h_all = Kokkos::create_mirror_view(array_all);
+    int              rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Reduce(array_h.data(),
+               array_h_all.data(),
+               array_h.extent(0),
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_ROOT_RANK,
+               MPI_COMM_WORLD);
+    if (rank == MPI_ROOT_RANK) {
+      auto var = m_io.InquireVariable<real_t>(varname);
+      var.SetSelection(adios2::Box<adios2::Dims>({}, { array.extent(0) }));
+      m_writer.Put<real_t>(var, array_h_all);
+    }
+#else
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { array.extent(0) }));
     m_writer.Put<real_t>(var, array_h);
+#endif
+
   }
+
+
+
+
+
+
+
+
+
 
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
                              const std::string&      varname) {
