@@ -214,9 +214,9 @@ namespace user {
         auto inv_n0_ = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
-            // if (s == 1) {
-            //   continue;
-            // }
+            if (s == 1) {
+              continue;
+            }
 
             array_t<std::size_t> elec_ind("elec_ind");
             array_t<std::size_t> pos_ind("pos_ind");
@@ -389,10 +389,10 @@ namespace user {
     //   auto EB             = domain.fields.em;
     //   auto metric         = domain.mesh.metric;
 
-         for (std::size_t s { 0 }; s < 6; ++s) {
-            if (s == 1) {
-              continue;
-            }
+        //  for (std::size_t s { 0 }; s < 6; ++s) {
+        //     if (s == 1) {
+        //       continue;
+        //     }
 
     //         auto& species = domain.species[s];
     //         auto ux1    = species.ux1;
@@ -892,32 +892,32 @@ namespace user {
     //         auto offset_e = species_e.npart();
     //         auto offset_p = species_p.npart();
 
-            auto ux1_e    = species3_e.ux1;
-            auto ux2_e    = species3_e.ux2;
-            auto ux3_e    = species3_e.ux3;
-            auto i1_e     = species3_e.i1;
-            auto i2_e     = species3_e.i2;
-            auto dx1_e    = species3_e.dx1;
-            auto dx2_e    = species3_e.dx2;
-            auto phi_e    = species3_e.phi;
-            auto weight_e = species3_e.weight;
-            auto tag_e    = species3_e.tag;
+            // auto ux1_e    = species3_e.ux1;
+            // auto ux2_e    = species3_e.ux2;
+            // auto ux3_e    = species3_e.ux3;
+            // auto i1_e     = species3_e.i1;
+            // auto i2_e     = species3_e.i2;
+            // auto dx1_e    = species3_e.dx1;
+            // auto dx2_e    = species3_e.dx2;
+            // auto phi_e    = species3_e.phi;
+            // auto weight_e = species3_e.weight;
+            // auto tag_e    = species3_e.tag;
 
-            auto ux1_p    = species3_p.ux1;
-            auto ux2_p    = species3_p.ux2;
-            auto ux3_p    = species3_p.ux3;
-            auto i1_p     = species3_p.i1;
-            auto i2_p     = species3_p.i2;
-            auto dx1_p    = species3_p.dx1;
-            auto dx2_p    = species3_p.dx2;
-            auto phi_p    = species3_p.phi;
-            auto weight_p = species3_p.weight;
-            auto tag_p    = species3_p.tag;
+            // auto ux1_p    = species3_p.ux1;
+            // auto ux2_p    = species3_p.ux2;
+            // auto ux3_p    = species3_p.ux3;
+            // auto i1_p     = species3_p.i1;
+            // auto i2_p     = species3_p.i2;
+            // auto dx1_p    = species3_p.dx1;
+            // auto dx2_p    = species3_p.dx2;
+            // auto phi_p    = species3_p.phi;
+            // auto weight_p = species3_p.weight;
+            // auto tag_p    = species3_p.tag;
 
-            if (s == 0) {
+            // if (s == 0) {
 
-              offset_e = species2_e.npart();
-              offset_p = species2_p.npart();
+            //   offset_e = species2_e.npart();
+            //   offset_p = species2_p.npart();
 
     //         // Get particle coordinates for later processing
     //         const coord_t<Dim::_3D> xc3d {static_cast<real_t>(i1(p)) + dx1(p),
@@ -1022,35 +1022,35 @@ namespace user {
     //                                    static_cast<real_t>(i2(p)) + HALF });
     //       }
 
-            auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-            auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+          //   auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+          //   auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
 
-              i1_e(elec_p + offset_e) = i1(p);
-              dx1_e(elec_p + offset_e) = dx1(p);
-              i2_e(elec_p + offset_e) = i2(p);
-              dx2_e(elec_p + offset_e) = dx2(p);
-              phi_e(elec_p + offset_e) = phi(p);
-              ux1_e(elec_p + offset_e) = px * pair_fac;
-              ux2_e(elec_p + offset_e) = py * pair_fac;
-              ux3_e(elec_p + offset_e) = pz * pair_fac;
-              weight_e(elec_p + offset_e) = weight(p);
-              tag_e(elec_p + offset_e) = ParticleTag::alive;
+          //     i1_e(elec_p + offset_e) = i1(p);
+          //     dx1_e(elec_p + offset_e) = dx1(p);
+          //     i2_e(elec_p + offset_e) = i2(p);
+          //     dx2_e(elec_p + offset_e) = dx2(p);
+          //     phi_e(elec_p + offset_e) = phi(p);
+          //     ux1_e(elec_p + offset_e) = px * pair_fac;
+          //     ux2_e(elec_p + offset_e) = py * pair_fac;
+          //     ux3_e(elec_p + offset_e) = pz * pair_fac;
+          //     weight_e(elec_p + offset_e) = weight(p);
+          //     tag_e(elec_p + offset_e) = ParticleTag::alive;
 
-              i1_p(pos_p + offset_p) = i1(p);
-              dx1_p(pos_p + offset_p) = dx1(p);
-              i2_p(pos_p + offset_p) = i2(p);
-              dx2_p(pos_p + offset_p) = dx2(p);
-              phi_p(pos_p + offset_p) = phi(p);
-              ux1_p(pos_p + offset_p) = px * pair_fac;
-              ux2_p(pos_p + offset_p) = py * pair_fac;
-              ux3_p(pos_p + offset_p) = pz * pair_fac;
-              weight_p(pos_p + offset_p) = weight(p);
-              tag_p(pos_p + offset_p) = ParticleTag::alive;
+          //     i1_p(pos_p + offset_p) = i1(p);
+          //     dx1_p(pos_p + offset_p) = dx1(p);
+          //     i2_p(pos_p + offset_p) = i2(p);
+          //     dx2_p(pos_p + offset_p) = dx2(p);
+          //     phi_p(pos_p + offset_p) = phi(p);
+          //     ux1_p(pos_p + offset_p) = px * pair_fac;
+          //     ux2_p(pos_p + offset_p) = py * pair_fac;
+          //     ux3_p(pos_p + offset_p) = pz * pair_fac;
+          //     weight_p(pos_p + offset_p) = weight(p);
+          //     tag_p(pos_p + offset_p) = ParticleTag::alive;
 
-              ux1(p) *= new_fac;
-              ux2(p) *= new_fac;
-              ux3(p) *= new_fac;
-          }
+          //     ux1(p) *= new_fac;
+          //     ux2(p) *= new_fac;
+          //     ux3(p) *= new_fac;
+          // }
 
     //   Kokkos::Experimental::contribute(cbuff, cbuff_sc);
     //   } // Pair production kernel (threshold)
