@@ -60,23 +60,20 @@ namespace out {
   };
 
   class Writer {
-#if !defined(MPI_ENABLED)
-    adios2::ADIOS m_adios;
-#else // MPI_ENABLED
-    adios2::ADIOS m_adios { MPI_COMM_WORLD };
-#endif
+    adios2::ADIOS* p_adios { nullptr };
+
     adios2::IO     m_io;
     adios2::Engine m_writer;
     adios2::Mode   m_mode { adios2::Mode::Write };
 
     // global shape of the fields array to output
-    adios2::Dims      m_flds_g_shape;
+    adios2::Dims m_flds_g_shape;
     // local corner of the fields array to output
-    adios2::Dims      m_flds_l_corner;
+    adios2::Dims m_flds_l_corner;
     // local shape of the fields array to output
-    adios2::Dims      m_flds_l_shape;
-    bool              m_flds_ghosts;
-    const std::string m_engine;
+    adios2::Dims m_flds_l_shape;
+    bool         m_flds_ghosts;
+    std::string  m_engine;
 
     std::map<std::string, Tracker> m_trackers;
 
@@ -84,13 +81,16 @@ namespace out {
     std::vector<OutputSpecies> m_prtl_writers;
     std::vector<OutputSpectra> m_spectra_writers;
 
-  public:
-    Writer() : m_engine { "disabled" } {}
+    bool m_writing_mode { false };
 
-    Writer(const std::string& engine);
+  public:
+    Writer() {}
+
     ~Writer() = default;
 
     Writer(Writer&&) = default;
+
+    void init(adios2::ADIOS*, const std::string&);
 
     void addTracker(const std::string&, std::size_t, long double);
     auto shouldWrite(const std::string&, std::size_t, long double) -> bool;

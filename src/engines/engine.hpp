@@ -34,6 +34,15 @@
 
 #include <Kokkos_Core.hpp>
 
+#if defined(OUTPUT_ENABLED)
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
+#endif // OUTPUT_ENABLED
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif // MPI_ENABLED
+
 #include <map>
 #include <vector>
 
@@ -45,6 +54,12 @@ namespace ntt {
     static_assert(user::PGen<S, M>::is_pgen, "unrecognized problem generator");
 
   protected:
+#if MPI_ENABLED
+    adios2::ADIOS m_adios { MPI_COMM_WORLD };
+#else
+    adios2::ADIOS m_adios;
+#endif
+
     SimulationParams& m_params;
     Metadomain<S, M>  m_metadomain;
     user::PGen<S, M>  m_pgen;
@@ -65,29 +80,6 @@ namespace ntt {
     static constexpr Dimension D { M::Dim };
     static constexpr bool      is_engine { true };
 
-#if defined(OUTPUT_ENABLED)
-    Engine(SimulationParams& params)
-      : m_params { params }
-      , m_metadomain { params.get<unsigned int>("simulation.domain.number"),
-                       params.get<std::vector<int>>(
-                         "simulation.domain.decomposition"),
-                       params.get<std::vector<std::size_t>>("grid.resolution"),
-                       params.get<boundaries_t<real_t>>("grid.extent"),
-                       params.get<boundaries_t<FldsBC>>(
-                         "grid.boundaries.fields"),
-                       params.get<boundaries_t<PrtlBC>>(
-                         "grid.boundaries.particles"),
-                       params.get<std::map<std::string, real_t>>(
-                         "grid.metric.params"),
-                       params.get<std::vector<ParticleSpecies>>(
-                         "particles.species"),
-                       params.template get<std::string>("output.format") }
-      , m_pgen { m_params, m_metadomain }
-      , runtime { params.get<long double>("simulation.runtime") }
-      , dt { params.get<real_t>("algorithms.timestep.dt") }
-      , max_steps { static_cast<std::size_t>(runtime / dt) }
-
-#else // not OUTPUT_ENABLED
     Engine(SimulationParams& params)
       : m_params { params }
       , m_metadomain { params.get<unsigned int>("simulation.domain.number"),
@@ -106,10 +98,7 @@ namespace ntt {
       , m_pgen { m_params, m_metadomain }
       , runtime { params.get<long double>("simulation.runtime") }
       , dt { params.get<real_t>("algorithms.timestep.dt") }
-      , max_steps { static_cast<std::size_t>(runtime / dt) }
-#endif
-    {
-
+      , max_steps { static_cast<std::size_t>(runtime / dt) } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
       print_report();
     }

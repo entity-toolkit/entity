@@ -11,6 +11,7 @@
 #include "metrics/spherical.h"
 
 #include "archetypes/field_setter.h"
+
 #include "engines/engine.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -21,7 +22,7 @@ namespace ntt {
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
 #if defined(OUTPUT_ENABLED)
-      m_metadomain.InitWriter(m_params);
+      m_metadomain.InitWriter(&m_adios, m_params);
 #endif
       logger::Checkpoint("Initializing Engine", HERE);
       if constexpr (

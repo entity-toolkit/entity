@@ -37,21 +37,12 @@ namespace ntt {
                                const boundaries_t<FldsBC>&     global_flds_bc,
                                const boundaries_t<PrtlBC>&     global_prtl_bc,
                                const std::map<std::string, real_t>& metric_params,
-                               const std::vector<ParticleSpecies>& species_params
-#if defined(OUTPUT_ENABLED)
-                               ,
-                               const std::string& output_engine
-#endif
-                               )
+                               const std::vector<ParticleSpecies>& species_params)
     : g_ndomains { global_ndomains }
     , g_decomposition { global_decomposition }
     , g_mesh { global_ncells, global_extent, metric_params, global_flds_bc, global_prtl_bc }
     , g_metric_params { metric_params }
-    , g_species_params { species_params }
-#if defined(OUTPUT_ENABLED)
-    , g_writer { output_engine }
-#endif
-  {
+    , g_species_params { species_params } {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);

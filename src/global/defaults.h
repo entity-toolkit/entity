@@ -60,6 +60,11 @@ namespace ntt::defaults {
     const std::size_t    spec_nbins  = 200;
   } // namespace output
 
+  namespace checkpoint {
+    const std::size_t interval = 1000;
+    const std::size_t keep     = 2;
+  } // namespace checkpoint
+
   namespace diag {
     const std::size_t interval = 1;
   } // namespace diag
