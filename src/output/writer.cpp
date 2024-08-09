@@ -130,17 +130,20 @@ namespace out {
     for (const auto& prtl : m_prtl_writers) {
       for (auto d { 0u }; d < dim; ++d) {
         m_io.DefineVariable<real_t>(prtl.name("X", d + 1),
-                                    {},
-                                    {},
+                                    { adios2::UnknownDim },
+                                    { adios2::UnknownDim },
                                     { adios2::UnknownDim });
       }
       for (auto d { 0u }; d < Dim::_3D; ++d) {
         m_io.DefineVariable<real_t>(prtl.name("U", d + 1),
-                                    {},
-                                    {},
+                                    { adios2::UnknownDim },
+                                    { adios2::UnknownDim },
                                     { adios2::UnknownDim });
       }
-      m_io.DefineVariable<real_t>(prtl.name("W", 0), {}, {}, { adios2::UnknownDim });
+      m_io.DefineVariable<real_t>(prtl.name("W", 0),
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim });
     }
   }
 
@@ -216,9 +219,13 @@ namespace out {
   }
 
   void Writer::writeParticleQuantity(const array_t<real_t*>& array,
+                                     std::size_t             glob_total,
+                                     std::size_t             loc_offset,
                                      const std::string&      varname) {
     auto var = m_io.InquireVariable<real_t>(varname);
-    var.SetSelection(adios2::Box<adios2::Dims>({}, { array.extent(0) }));
+    var.SetShape({ glob_total });
+    var.SetSelection(
+      adios2::Box<adios2::Dims>({ loc_offset }, { array.extent(0) }));
     auto array_h = Kokkos::create_mirror_view(array);
     Kokkos::deep_copy(array_h, array);
     m_writer.Put<real_t>(var, array_h);

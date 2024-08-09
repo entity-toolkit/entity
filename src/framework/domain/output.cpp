@@ -26,6 +26,10 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif // MPI_ENABLED
+
 #include <algorithm>
 #include <iterator>
 #include <vector>
@@ -458,34 +462,55 @@ namespace ntt {
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
           buff_x3 = array_t<real_t*> { "x3", nout };
         }
-        // clang-format off
-        Kokkos::parallel_for(
-          "PrtlToPhys",
-          nout,
-          kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                          buff_x1, buff_x2, buff_x3,
-                                          buff_ux1, buff_ux2, buff_ux3,
-                                          buff_wei,
-                                          species.i1, species.i2, species.i3,
-                                          species.dx1, species.dx2, species.dx3,
-                                          species.ux1, species.ux2, species.ux3,
-                                          species.phi, species.weight,
-                                          local_domain->mesh.metric));
-        // clang-format on
-        g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
-        g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
-        g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
-        g_writer.writeParticleQuantity(buff_ux3, prtl.name("U", 3));
+        if (nout > 0) {
+          // clang-format off
+          Kokkos::parallel_for(
+            "PrtlToPhys",
+            nout,
+            kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
+                                            buff_x1, buff_x2, buff_x3,
+                                            buff_ux1, buff_ux2, buff_ux3,
+                                            buff_wei,
+                                            species.i1, species.i2, species.i3,
+                                            species.dx1, species.dx2, species.dx3,
+                                            species.ux1, species.ux2, species.ux3,
+                                            species.phi, species.weight,
+                                            local_domain->mesh.metric));
+          // clang-format on
+        }
+        std::size_t offset   = 0;
+        std::size_t glob_tot = nout;
+#if defined(MPI_ENABLED)
+        auto glob_nout = std::vector<std::size_t>(g_ndomains);
+        MPI_Allgather(&nout,
+                      1,
+                      mpi::get_type<std::size_t>(),
+                      glob_nout.data(),
+                      1,
+                      mpi::get_type<std::size_t>(),
+                      MPI_COMM_WORLD);
+        glob_tot = 0;
+        for (auto r = 0; r < g_mpi_size; ++r) {
+          if (r < g_mpi_rank) {
+            offset += glob_nout[r];
+          }
+          glob_tot += glob_nout[r];
+        }
+#endif // MPI_ENABLED
+        g_writer.writeParticleQuantity(buff_wei, glob_tot, offset, prtl.name("W", 0));
+        g_writer.writeParticleQuantity(buff_ux1, glob_tot, offset, prtl.name("U", 1));
+        g_writer.writeParticleQuantity(buff_ux2, glob_tot, offset, prtl.name("U", 2));
+        g_writer.writeParticleQuantity(buff_ux3, glob_tot, offset, prtl.name("U", 3));
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
-          g_writer.writeParticleQuantity(buff_x1, prtl.name("X", 1));
+          g_writer.writeParticleQuantity(buff_x1, glob_tot, offset, prtl.name("X", 1));
         }
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          g_writer.writeParticleQuantity(buff_x2, prtl.name("X", 2));
+          g_writer.writeParticleQuantity(buff_x2, glob_tot, offset, prtl.name("X", 2));
         }
         if constexpr (M::Dim == Dim::_3D or
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
-          g_writer.writeParticleQuantity(buff_x3, prtl.name("X", 3));
+          g_writer.writeParticleQuantity(buff_x3, glob_tot, offset, prtl.name("X", 3));
         }
       }
     } // end shouldWrite("particles", step, time)
