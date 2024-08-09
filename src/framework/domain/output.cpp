@@ -173,7 +173,7 @@ namespace ntt {
     std::size_t             step,
     long double             time,
     std::function<
-      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
+      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const range_t<M::Dim>&)>
       CustomFieldOutput) -> bool {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
