@@ -462,21 +462,22 @@ namespace ntt {
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
           buff_x3 = array_t<real_t*> { "x3", nout };
         }
-        // clang-format off
-        Kokkos::parallel_for(
-          "PrtlToPhys",
-          nout,
-          kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                          buff_x1, buff_x2, buff_x3,
-                                          buff_ux1, buff_ux2, buff_ux3,
-                                          buff_wei,
-                                          species.i1, species.i2, species.i3,
-                                          species.dx1, species.dx2, species.dx3,
-                                          species.ux1, species.ux2, species.ux3,
-                                          species.phi, species.weight,
-                                          local_domain->mesh.metric));
-
-        // clang-format on
+        if (nout > 0) {
+          // clang-format off
+          Kokkos::parallel_for(
+            "PrtlToPhys",
+            nout,
+            kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
+                                            buff_x1, buff_x2, buff_x3,
+                                            buff_ux1, buff_ux2, buff_ux3,
+                                            buff_wei,
+                                            species.i1, species.i2, species.i3,
+                                            species.dx1, species.dx2, species.dx3,
+                                            species.ux1, species.ux2, species.ux3,
+                                            species.phi, species.weight,
+                                            local_domain->mesh.metric));
+          // clang-format on
+        }
         std::size_t offset   = 0;
         std::size_t glob_tot = nout;
 #if defined(MPI_ENABLED)
