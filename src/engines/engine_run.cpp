@@ -65,11 +65,11 @@ namespace ntt {
         timers.start("Output");
         if constexpr (
           traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
-          auto lambda_custom_field_output = [&](const std::string&     name,
-                                                ndfield_t<M::Dim, 6>&  buff,
-                                                std::size_t            idx,
-                                                const range_t<M::Dim>& range) {
-            m_pgen.CustomFieldOutput(name, buff, idx, range);
+          auto lambda_custom_field_output = [&](const std::string&    name,
+                                                ndfield_t<M::Dim, 6>& buff,
+                                                std::size_t           idx,
+                                                const Domain<S, M>&   dom) {
+            m_pgen.CustomFieldOutput(name, buff, idx, dom);
           };
           print_output = m_metadomain.Write(m_params,
                                             step,
