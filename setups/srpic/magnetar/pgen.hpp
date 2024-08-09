@@ -1057,21 +1057,21 @@ namespace user {
 
         }
   
-void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const range_t<M::Dim> range) {
-  if (name == "pploc") {
-        Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
-                          cbuff);
-    // Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
-      // buffer(i1, i2, index) = cbuff(i1, i2);
-    // });
-  // } else {
-    // raise::Error("Custom output not provided", HERE);
-  } 
-  if (name == "pplocsec") {
-        Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
-                          cbuff2);
-  }
-}
+// void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const range_t<M::Dim> range) {
+//   if (name == "pploc") {
+//         Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
+//                           cbuff);
+//     // Kokkos::parallel_for("CustomFieldOutput", range, KOKKOS_LAMBDA(index_t i1, index_t i2) {
+//       // buffer(i1, i2, index) = cbuff(i1, i2);
+//     // });
+//   // } else {
+//     // raise::Error("Custom output not provided", HERE);
+//   } 
+//   if (name == "pplocsec") {
+//         Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
+//                           cbuff2);
+//   }
+// }
   
   };
 
