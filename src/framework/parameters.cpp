@@ -466,6 +466,14 @@ namespace ntt {
     set("output.debug.ghosts",
         toml::find_or(raw_data, "output", "debug", "ghosts", false));
 
+    /* [checkpoint] --------------------------------------------------------- */
+    set("checkpoint.interval",
+        toml::find_or(raw_data, "checkpoint", "interval", defaults::checkpoint::interval));
+    set("checkpoint.interval_time",
+        toml::find_or<long double>(raw_data, "checkpoint", "interval_time", -1.0));
+    set("checkpoint.keep",
+        toml::find_or(raw_data, "checkpoint", "keep", defaults::checkpoint::keep));
+
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",
         toml::find_or(raw_data, "diagnostics", "interval", defaults::diag::interval));

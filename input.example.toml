@@ -422,6 +422,23 @@
     #   @default: false
     ghosts = ""
 
+[checkpoint]
+  # Number of timesteps between checkpoints:
+  #   @type: unsigned int: > 0
+  #   @default: 1000
+  interval = ""
+  # Physical (code) time interval between checkpoints:
+  #   @type: float: > 0
+  #   @default: -1.0 (disabled)
+  #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+  interval_time = ""
+  # Number of checkpoints to keep:
+  #   @type: unsigned int: > 0
+  #   @default: 2
+  #   @note: 0 = disable checkpointing
+  #   @note: -1 = keep all checkpoints
+  keep = ""
+
 [diagnostics]
   # Number of timesteps between diagnostic logs:
   #   @type: int: > 0
