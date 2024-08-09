@@ -1,137 +1,69 @@
+/**
+ * @file framework/simulation.h
+ * @brief Simulation class which creates and calles the engines
+ * @implements
+ *   - ntt::Simulation
+ * @cpp:
+ *   - simulation.cpp
+ * @namespaces:
+ *   - ntt::
+ * @macros:
+ *   - DEBUG
+ */
+
 #ifndef FRAMEWORK_SIMULATION_H
 #define FRAMEWORK_SIMULATION_H
 
-#include "wrapper.h"
+#include "enums.h"
 
-#include "sim_params.h"
+#include "arch/traits.h"
+#include "utils/error.h"
 
-#include "io/output.h"
-#include "io/writer.h"
-#include "meshblock/meshblock.h"
-#include "utils/timer.h"
+#include "framework/parameters.h"
 
-#include <toml.hpp>
-
-#include <string>
+#include <stdexcept>
+#include <type_traits>
 
 namespace ntt {
-  auto stringizeSimulationEngine(const SimulationEngine&) -> std::string;
-  auto stringizeBoundaryCondition(const BoundaryCondition&) -> std::string;
-  auto stringizeParticlePusher(const ParticlePusher&) -> std::string;
 
-  namespace {
-    enum DiagFlags_ {
-      DiagFlags_None     = 0,
-      DiagFlags_Progress = 1 << 0,
-      DiagFlags_Timers   = 1 << 1,
-      DiagFlags_Species  = 2 << 2,
-      DiagFlags_Default  = DiagFlags_Progress | DiagFlags_Timers | DiagFlags_Species,
-    };
-  }
-  typedef int DiagFlags;
-
-  /**
-   * @brief Main class of the simulation containing all the necessary methods and
-   * configurations.
-   * @tparam D dimension.
-   * @tparam S simulation engine.
-   */
-  template <Dimension D, SimulationEngine S>
   class Simulation {
-  protected:
-    // user-defined and inferred simulation parameters
-    SimulationParams m_params;
-    // time in physical units
-    real_t           m_time { 0.0 };
-    // time in iteration timesteps
-    std::size_t      m_tstep { 0 };
+    SimulationParams params;
 
   public:
-    // meshblock with all the fields / metric / and particles
-    Meshblock<D, S>    meshblock;
-    // writer
-    Writer<D, S>       writer;
-    // random number pool
-    RandomNumberPool_t random_pool;
+    Simulation(int argc, char* argv[]);
+    ~Simulation();
 
-    /**
-     * @brief Constructor for simulation class.
-     * @param inputdata toml-object with parsed toml parameters.
-     */
-    Simulation(const toml::value& inputdata);
-    ~Simulation() = default;
-
-    /* -------------------------------------------------------------------------- */
-    /*                                Main routines                               */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @brief Initialize / allocate all the simulation objects based on the `m_params`.
-     */
-    void               Initialize();
-
-    /**
-     * @brief Verify that all the specified parameters are compatible before beginning the
-     * simulation.
-     */
-    void               Verify();
-
-    /**
-     * @brief Print all the simulation details using `plog`.
-     */
-    void               PrintDetails();
-
-    /**
-     * @brief Finalize the simulation objects.
-     */
-    void               Finalize();
-
-    /**
-     * @brief Diagnostic logging.
-     * @param os output stream.
-     */
-    void               PrintDiagnostics(const std::size_t&         step,
-                                        const real_t&              time,
-                                        const std::vector<double>& fractions,
-                                        const timer::Timers&       timer,
-                                        std::vector<long double>&  tstep_durations,
-                                        const DiagFlags           diag_flags,
-                                        std::ostream&              os = std::cout);
-
-    /* -------------------------------------------------------------------------- */
-    /*                                   Getters                                  */
-    /* -------------------------------------------------------------------------- */
-    /**
-     * @brief Get pointer to `m_params`.
-     */
-    [[nodiscard]] auto params() -> SimulationParams* {
-      return &m_params;
-    }
-    /**
-     * @brief Get the physical time
-     */
-    [[nodiscard]] auto time() const -> real_t {
-      return m_time;
-    }
-    /**
-     * @brief Get the current timestep
-     */
-    [[nodiscard]] auto tstep() const -> std::size_t {
-      return m_tstep;
+    template <template <class> class E, template <Dimension> class M, Dimension D>
+    inline void run() {
+      using engine_t = E<M<D>>;
+      static_assert(engine_t::is_engine,
+                    "template arg for Simulation::run has to be an engine");
+      static_assert(traits::has_method<traits::run_t, engine_t>::value,
+                    "Engine must contain a ::run() method");
+      try {
+        engine_t engine { params };
+        engine.run();
+      } catch (const std::exception& e) {
+        raise::Fatal(e.what(), HERE);
+      }
     }
 
-    /**
-     * @brief Loop over all active cells (disregard ghost cells).
-     * @returns Kokkos range policy with proper min/max indices and dimension.
-     */
-    auto rangeActiveCells() -> range_t<D>;
+    [[nodiscard]]
+    inline auto requested_dimension() const -> Dimension {
+      return params.get<Dimension>("grid.dim");
+    }
 
-    /**
-     * @brief Loop over all cells.
-     * @returns Kokkos range policy with proper min/max indices and dimension.
-     */
-    auto rangeAllCells() -> range_t<D>;
+    [[nodiscard]]
+    inline auto requested_engine() const -> SimEngine {
+      return params.get<SimEngine>("simulation.engine");
+    }
+
+    [[nodiscard]]
+    inline auto requested_metric() const -> Metric {
+      return params.get<Metric>("grid.metric.metric");
+    }
   };
 
-}    // namespace ntt
+} // namespace ntt
 
-#endif
+#endif // FRAMEWORK_SIMULATION_H

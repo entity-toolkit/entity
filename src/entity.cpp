@@ -1,93 +1,117 @@
-#include "wrapper.h"
+#include "enums.h"
 
-#include "io/cargs.h"
-#include "io/input.h"
+#include "arch/traits.h"
+#include "utils/error.h"
 
-/**
- * Engine specific instantiations
- */
-#if defined(SANDBOX_ENGINE)
-#  include "sandbox.h"
-#  define SIMULATION_CONTAINER SANDBOX
-#elif defined(PIC_ENGINE)
-#  include "pic.h"
-#  define SIMULATION_CONTAINER PIC
-#elif defined(GRPIC_ENGINE)
-#  include "grpic.h"
-#  define SIMULATION_CONTAINER GRPIC
-#endif
+#include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
+#include "metrics/minkowski.h"
+#include "metrics/qkerr_schild.h"
+#include "metrics/qspherical.h"
+#include "metrics/spherical.h"
 
-#include <plog/Appenders/RollingFileAppender.h>
-#include <plog/Formatters/TxtFormatter.h>
-#include <plog/Init.h>
-#include <plog/Log.h>
-#include <toml.hpp>
+#include "framework/simulation.h"
 
-#include <cstdio>
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <vector>
+#include "engines/grpic.hpp"
+#include "engines/srpic.hpp"
+#include "pgen.hpp"
+
+template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
+static constexpr bool should_compile {
+  traits::check_compatibility<S>::value(user::PGen<S, M<D>>::engines) &&
+  traits::check_compatibility<M<D>::MetricType>::value(user::PGen<S, M<D>>::metrics) &&
+  traits::check_compatibility<D>::value(user::PGen<S, M<D>>::dimensions)
+};
+
+template <template <class> class E, template <Dimension> class M, Dimension D>
+void shouldCompile(ntt::Simulation& sim) {
+  if constexpr (should_compile<E<M<D>>::S, M, D>) {
+    sim.run<E, M, D>();
+  }
+}
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
-  try {
-    ntt::CommandLineArguments cl_args;
-    cl_args.readCommandLineArguments(argc, argv);
-    auto inputfilename = cl_args.getArgument("-input", ntt::defaults::input_filename);
-    auto inputdata     = toml::parse(static_cast<std::string>(inputfilename));
-    auto log_level     = ntt::readFromInput<std::string>(
-      inputdata, "diagnostics", "log_level", ntt::defaults::log_level);
-    plog::Severity log_level_enum { plog::info };
-    if (log_level == "DEBUG") {
-      log_level_enum = plog::verbose;
-    } else if (log_level == "INFO") {
-      log_level_enum = plog::info;
-    } else if (log_level == "WARNING") {
-      log_level_enum = plog::warning;
-    } else if (log_level == "ERROR") {
-      log_level_enum = plog::error;
-    }
+  ntt::Simulation sim { argc, argv };
+  const auto      is_srpic = sim.requested_engine() == ntt::SimEngine::SRPIC;
+  const auto      is_grpic = sim.requested_engine() == ntt::SimEngine::GRPIC;
+  const auto is_minkowski  = sim.requested_metric() == ntt::Metric::Minkowski;
+  const auto is_spherical  = sim.requested_metric() == ntt::Metric::Spherical;
+  const auto is_qspherical = sim.requested_metric() == ntt::Metric::QSpherical;
+  const auto is_kerr_schild = sim.requested_metric() == ntt::Metric::Kerr_Schild;
+  const auto is_qkerr_schild = sim.requested_metric() == ntt::Metric::QKerr_Schild;
+  const auto is_kerr_schild_0 = sim.requested_metric() ==
+                                ntt::Metric::Kerr_Schild_0;
+  const auto is_1d = sim.requested_dimension() == Dim::_1D;
+  const auto is_2d = sim.requested_dimension() == Dim::_2D;
+  const auto is_3d = sim.requested_dimension() == Dim::_3D;
 
-    auto sim_title = ntt::readFromInput<std::string>(
-      inputdata, "simulation", "title", ntt::defaults::title);
-    auto logfile_name  = sim_title + ".log";
-    auto infofile_name = sim_title + ".info";
-    std::remove(logfile_name.c_str());
-    std::remove(infofile_name.c_str());
-    plog::RollingFileAppender<plog::TxtFormatter>     logfileAppender(logfile_name.c_str());
-    plog::RollingFileAppender<plog::Nt2InfoFormatter> infofileAppender(infofile_name.c_str());
-    plog::init<ntt::LogFile>(log_level_enum, &logfileAppender);
-    plog::init<ntt::InfoFile>(plog::verbose, &infofileAppender);
-
-    short res = static_cast<short>(
-      ntt::readFromInput<std::vector<int>>(inputdata, "domain", "resolution").size());
-    if (res == 1) {
-#ifndef GRPIC_ENGINE
-      ntt::SIMULATION_CONTAINER<ntt::Dim1> sim(inputdata);
-      NTTLog();
-      sim.Run();
-#else
-      NTTHostError("GRPIC engine does not support 1D");
-#endif
-    } else if (res == 2) {
-      ntt::SIMULATION_CONTAINER<ntt::Dim2> sim(inputdata);
-      NTTLog();
-      sim.Run();
-    } else if (res == 3) {
-      ntt::SIMULATION_CONTAINER<ntt::Dim3> sim(inputdata);
-      NTTLog();
-      sim.Run();
-    } else {
-      NTTHostError("wrong dimension specified");
-    }
-  } catch (std::exception& err) {
-    std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
-
-    return -1;
+  // sanity checks
+  if (not is_srpic and not is_grpic) {
+    raise::Fatal("Invalid engine", HERE);
   }
-  Kokkos::finalize();
+
+  if (not is_minkowski and not is_spherical and not is_qspherical and
+      not is_kerr_schild and not is_qkerr_schild and not is_kerr_schild_0) {
+    raise::Fatal("Invalid metric", HERE);
+  }
+
+  if (not is_1d and not is_2d and not is_3d) {
+    raise::Fatal("Invalid dimension", HERE);
+  }
+
+  if (is_srpic and not(is_minkowski or is_spherical or is_qspherical)) {
+    raise::Fatal("Invalid metric for SRPIC", HERE);
+  }
+
+  if (is_grpic and not(is_kerr_schild or is_qkerr_schild or is_kerr_schild_0)) {
+    raise::Fatal("Invalid metric for GRPIC", HERE);
+  }
+
+  if ((is_spherical or is_qspherical or is_kerr_schild or is_qkerr_schild or
+       is_kerr_schild_0) and
+      (is_1d or is_3d)) {
+    raise::Fatal("Invalid dimension for metric", HERE);
+  }
+
+  if (is_srpic and is_minkowski and is_1d) {
+    shouldCompile<ntt::SRPICEngine, metric::Minkowski, Dim::_1D>(sim);
+    return 0;
+  }
+
+  if (is_srpic and is_minkowski and is_2d) {
+    shouldCompile<ntt::SRPICEngine, metric::Minkowski, Dim::_2D>(sim);
+    return 0;
+  }
+
+  if (is_srpic and is_minkowski and is_3d) {
+    shouldCompile<ntt::SRPICEngine, metric::Minkowski, Dim::_3D>(sim);
+    return 0;
+  }
+
+  if (is_srpic and is_spherical and is_2d) {
+    shouldCompile<ntt::SRPICEngine, metric::Spherical, Dim::_2D>(sim);
+    return 0;
+  }
+
+  if (is_srpic and is_qspherical and is_2d) {
+    shouldCompile<ntt::SRPICEngine, metric::QSpherical, Dim::_2D>(sim);
+    return 0;
+  }
+
+  if (is_grpic and is_kerr_schild and is_2d) {
+    shouldCompile<ntt::GRPICEngine, metric::KerrSchild, Dim::_2D>(sim);
+    return 0;
+  }
+
+  if (is_grpic and is_qkerr_schild and is_2d) {
+    shouldCompile<ntt::GRPICEngine, metric::QKerrSchild, Dim::_2D>(sim);
+    return 0;
+  }
+
+  if (is_grpic and is_kerr_schild_0 and is_2d) {
+    shouldCompile<ntt::GRPICEngine, metric::KerrSchild0, Dim::_2D>(sim);
+    return 0;
+  }
 
   return 0;
 }

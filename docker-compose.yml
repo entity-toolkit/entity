@@ -1,0 +1,37 @@
+x-common-config: &common-config
+  stdin_open: true
+  tty: true
+  ports:
+    - "8080:8080"
+  volumes:
+    - type: bind
+      source: .
+      target: /root/entity/
+
+x-cuda-base: &cuda-base
+  image: morninbru/entity:cuda
+
+x-rocm-base: &rocm-base
+  image: morninbru/entity:rocm
+
+services:
+  entity-cuda-compilers:
+    container_name: entity_cuda_compilers
+    <<: [*cuda-base, *common-config]
+  entity-cuda:
+    container_name: entity_cuda
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    <<: [*cuda-base, *common-config]
+  entity-rocm-compilers:
+    container_name: entity_rocm_compilers
+    <<: [*common-config, *rocm-base]
+  entity-rocm:
+    container_name: entity_rocm
+    devices:
+      - "/dev/kfd"
+      - "/dev/dri"
+    security_opt:
+      - seccomp:unconfined
+    <<: [*common-config, *rocm-base]

@@ -1,5 +1,4 @@
 set(Kokkos_REPOSITORY https://github.com/kokkos/kokkos.git CACHE STRING "Kokkos repository")
-set(fmt_REPOSITORY https://github.com/fmtlib/fmt.git CACHE STRING "fmt repository")
 set(plog_REPOSITORY https://github.com/SergiusTheBest/plog.git CACHE STRING "plog repository")
 set(toml11_REPOSITORY https://github.com/ToruNiina/toml11 CACHE STRING "toml11 repository")
 
@@ -35,10 +34,18 @@ function(find_or_fetch_dependency package_name header_only)
       # fetching package
       message(STATUS "${Blue}${package_name} not found. Fetching from ${${package_name}_REPOSITORY}${ColorReset}")
       include(FetchContent)
-      FetchContent_Declare(
-        ${package_name}
-        GIT_REPOSITORY ${${package_name}_REPOSITORY}
-      )
+      if(${package_name} STREQUAL "Kokkos")
+        FetchContent_Declare(
+          ${package_name}
+          GIT_REPOSITORY ${${package_name}_REPOSITORY}
+          GIT_TAG 4.3.00
+        )
+      else()
+        FetchContent_Declare(
+          ${package_name}
+          GIT_REPOSITORY ${${package_name}_REPOSITORY}
+        )
+      endif()
       FetchContent_MakeAvailable(${package_name})
 
       set(lower_pckg_name ${package_name})
