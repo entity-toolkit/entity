@@ -30,9 +30,12 @@
   #include <mpi.h>
 #endif // MPI_ENABLED
 
-#if defined OUTPUT_ENABLED
+#if defined(OUTPUT_ENABLED)
   #include "output/writer.h"
-#endif
+
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
+#endif // OUTPUT_ENABLED
 
 #include <functional>
 #include <map>
@@ -95,7 +98,6 @@ namespace ntt {
      * @param global_prtl_bc boundary conditions for particles
      * @param metric_params parameters for the metric
      * @param species_params parameters for the particle species
-     * @param output_params parameters for the output
      */
     Metadomain(unsigned int,
                const std::vector<int>&,
@@ -104,15 +106,10 @@ namespace ntt {
                const boundaries_t<FldsBC>&,
                const boundaries_t<PrtlBC>&,
                const std::map<std::string, real_t>&,
-               const std::vector<ParticleSpecies>&
-#if defined(OUTPUT_ENABLED)
-               ,
-               const std::string&
-#endif
-    );
+               const std::vector<ParticleSpecies>&);
 
 #if defined(OUTPUT_ENABLED)
-    void InitWriter(const SimulationParams&);
+    void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
                std::size_t,
                long double,

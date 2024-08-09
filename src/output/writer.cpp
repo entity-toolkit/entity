@@ -19,8 +19,11 @@
 
 namespace out {
 
-  Writer::Writer(const std::string& engine) : m_engine { engine } {
-    m_io = m_adios.DeclareIO("Entity::ADIOS2");
+  void Writer::init(adios2::ADIOS* ptr_adios, const std::string& engine) {
+    m_engine = engine;
+    p_adios  = ptr_adios;
+
+    m_io = p_adios->DeclareIO("Entity::ADIOS2");
     m_io.SetEngine(engine);
 
     m_io.DefineVariable<std::size_t>("Step");
@@ -291,7 +294,11 @@ namespace out {
   void Writer::beginWriting(const std::string& fname,
                             std::size_t        tstep,
                             long double        time) {
-    m_adios.ExitComputationBlock();
+    p_adios->ExitComputationBlock();
+    if (m_writing_mode) {
+      raise::Fatal("Already writing", HERE);
+    }
+    m_writing_mode = true;
     try {
       m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
     } catch (std::exception& e) {
@@ -304,9 +311,13 @@ namespace out {
   }
 
   void Writer::endWriting() {
+    if (!m_writing_mode) {
+      raise::Fatal("Not writing", HERE);
+    }
+    m_writing_mode = false;
     m_writer.EndStep();
     m_writer.Close();
-    m_adios.EnterComputationBlock();
+    p_adios->EnterComputationBlock();
   }
 
   template void Writer::writeField<Dim::_1D, 3>(const std::vector<std::string>&,

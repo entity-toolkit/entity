@@ -37,7 +37,8 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::InitWriter(const SimulationParams& params) {
+  void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
+                                    const SimulationParams& params) {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -61,6 +62,7 @@ namespace ntt {
       }
     }
 
+    g_writer.init(ptr_adios, params.template get<std::string>("output.format"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
