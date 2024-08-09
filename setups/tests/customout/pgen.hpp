@@ -56,12 +56,25 @@ namespace user {
     void CustomFieldOutput(const std::string&   name,
                            ndfield_t<M::Dim, 6> buffer,
                            std::size_t          index,
-                           const range_t<M::Dim>) {
+                           const Domain<S, M>&  domain) {
       printf("CustomFieldOutput: %s\n", name.c_str());
+      // examples for 2D
       if (name == "mybuff") {
         // copy the custom buffer to the buffer output
         Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
                           cbuff);
+      } else if (name == "EdotB+1") {
+        // calculate the custom buffer from EM fields
+        const auto& EM = domain.fields.em;
+        Kokkos::parallel_for(
+          "EdotB+1",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2) {
+            buffer(i1, i2, index) = EM(i1, i2, em::ex1) * EM(i1, i2, em::bx1) +
+                                    EM(i1, i2, em::ex2) * EM(i1, i2, em::bx2) +
+                                    EM(i1, i2, em::ex3) * EM(i1, i2, em::bx3) +
+                                    ONE;
+          });
       } else {
         raise::Error("Custom output not provided", HERE);
       }

@@ -14,6 +14,7 @@
 #include "metrics/spherical.h"
 
 #include "framework/containers/particles.h"
+#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
@@ -24,6 +25,10 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif // MPI_ENABLED
 
 #include <algorithm>
 #include <iterator>
@@ -168,7 +173,7 @@ namespace ntt {
     std::size_t             step,
     long double             time,
     std::function<
-      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const range_t<M::Dim>&)>
+      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
       CustomFieldOutput) -> bool {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
@@ -297,7 +302,7 @@ namespace ntt {
               CustomFieldOutput(fld.name().substr(1),
                                 local_domain->fields.bckp,
                                 addresses.back(),
-                                local_domain->mesh.rangeActiveCells());
+                                *local_domain);
             } else {
               raise::Error("Custom output requested but no function provided",
                            HERE);
@@ -470,21 +475,41 @@ namespace ntt {
                                           species.ux1, species.ux2, species.ux3,
                                           species.phi, species.weight,
                                           local_domain->mesh.metric));
+
         // clang-format on
-        g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
-        g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
-        g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
-        g_writer.writeParticleQuantity(buff_ux3, prtl.name("U", 3));
+        std::size_t offset   = 0;
+        std::size_t glob_tot = nout;
+#if defined(MPI_ENABLED)
+        auto glob_nout = std::vector<std::size_t>(g_ndomains);
+        MPI_Allgather(&nout,
+                      1,
+                      mpi::get_type<std::size_t>(),
+                      glob_nout.data(),
+                      1,
+                      mpi::get_type<std::size_t>(),
+                      MPI_COMM_WORLD);
+        glob_tot = 0;
+        for (auto r = 0; r < g_mpi_size; ++r) {
+          if (r < g_mpi_rank) {
+            offset += glob_nout[r];
+          }
+          glob_tot += glob_nout[r];
+        }
+#endif // MPI_ENABLED
+        g_writer.writeParticleQuantity(buff_wei, glob_tot, offset, prtl.name("W", 0));
+        g_writer.writeParticleQuantity(buff_ux1, glob_tot, offset, prtl.name("U", 1));
+        g_writer.writeParticleQuantity(buff_ux2, glob_tot, offset, prtl.name("U", 2));
+        g_writer.writeParticleQuantity(buff_ux3, glob_tot, offset, prtl.name("U", 3));
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
-          g_writer.writeParticleQuantity(buff_x1, prtl.name("X", 1));
+          g_writer.writeParticleQuantity(buff_x1, glob_tot, offset, prtl.name("X", 1));
         }
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          g_writer.writeParticleQuantity(buff_x2, prtl.name("X", 2));
+          g_writer.writeParticleQuantity(buff_x2, glob_tot, offset, prtl.name("X", 2));
         }
         if constexpr (M::Dim == Dim::_3D or
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
-          g_writer.writeParticleQuantity(buff_x3, prtl.name("X", 3));
+          g_writer.writeParticleQuantity(buff_x3, glob_tot, offset, prtl.name("X", 3));
         }
       }
     } // end shouldWrite("particles", step, time)

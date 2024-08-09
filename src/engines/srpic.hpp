@@ -563,7 +563,7 @@ namespace ntt {
       if constexpr (M::Dim == Dim::_3D) {
         size[2] = domain.mesh.n_active(in::x3);
       }
-      // @TODO: this needs to be done more efficiently
+      // !TODO: this needs to be done more efficiently
       for (unsigned short i = 0; i < nfilter; ++i) {
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",

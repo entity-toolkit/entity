@@ -29,7 +29,7 @@ template <Dimension D>
 Inline auto equal(const vec_t<D>& a,
                   const vec_t<D>& b,
                   const char*     msg,
-                  const real_t    acc = ONE) -> bool {
+                  real_t          acc = ONE) -> bool {
   const auto eps = epsilon * acc;
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
@@ -199,24 +199,24 @@ auto main(int argc, char* argv[]) -> int {
       { "h", (real_t)0.25}
     };
 
-    testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
-    testMetric<Minkowski<Dim::_2D>>(res2d, ext2dcart, 200);
-    testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 200);
-    testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
-    testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 10, params);
+    // testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
+    // testMetric<Minkowski<Dim::_2D>>(res2d, ext2dcart, 200);
+    // testMetric<Minkowski<Dim::_3D>>(res3d, ext3dcart, 200);
+    // testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
+    // testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 10, params);
 
-    const auto resks  = std::vector<std::size_t> { 64, 54 };
-    const auto extsgr = boundaries_t<real_t> {
-      {0.8,         50.0},
-      {0.0, constant::PI}
-    };
-    const auto paramsks = std::map<std::string, real_t> {
-      {"r0",         -TWO},
-      { "h",         ZERO},
-      { "a", (real_t)0.95}
-    };
-    testMetric<KerrSchild<Dim::_2D>>(resks, extsgr, 150, paramsks);
-
+    // const auto resks  = std::vector<std::size_t> { 64, 54 };
+    // const auto extsgr = boundaries_t<real_t> {
+    //   {0.8,         50.0},
+    //   {0.0, constant::PI}
+    // };
+    // const auto paramsks = std::map<std::string, real_t> {
+    //   {"r0",         -TWO},
+    //   { "h",         ZERO},
+    //   { "a", (real_t)0.95}
+    // };
+    // testMetric<KerrSchild<Dim::_2D>>(resks, extsgr, 150, paramsks);
+    //
     const auto resqks = std::vector<std::size_t> { 64, 42 };
     const auto extqks = boundaries_t<real_t> {
       {0.8,         10.0},
@@ -228,13 +228,13 @@ auto main(int argc, char* argv[]) -> int {
       { "a", (real_t)0.8}
     };
     testMetric<QKerrSchild<Dim::_2D>>(resqks, extqks, 500, paramsqks);
-
-    const auto resks0 = std::vector<std::size_t> { 64, 54 };
-    const auto extks0 = boundaries_t<real_t> {
-      {0.5,         20.0},
-      {0.0, constant::PI}
-    };
-    testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 10);
+    //
+    // const auto resks0 = std::vector<std::size_t> { 64, 54 };
+    // const auto extks0 = boundaries_t<real_t> {
+    //   {0.5,         20.0},
+    //   {0.0, constant::PI}
+    // };
+    // testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 10);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

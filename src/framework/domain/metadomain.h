@@ -119,7 +119,7 @@ namespace ntt {
                std::function<void(const std::string&,
                                   ndfield_t<M::Dim, 6>&,
                                   std::size_t,
-                                  const range_t<M::Dim>&)> = {}) -> bool;
+                                  const Domain<S, M>&)> = {}) -> bool;
 #endif
 
     Metadomain(const Metadomain&)            = delete;

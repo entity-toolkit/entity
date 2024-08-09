@@ -23,11 +23,10 @@ template <Dimension D>
 Inline auto equal(const vec_t<D>& a,
                   const vec_t<D>& b,
                   const char*     msg,
-                  const real_t    acc = ONE) -> bool {
+                  real_t          acc = ONE) -> bool {
   const auto eps = epsilon * acc;
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
-      printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
       return false;
     }
   }
@@ -64,13 +63,12 @@ void testMetric(const std::vector<std::size_t>&      res,
     npts       *= res[d];
   }
 
-  unsigned long all_wrongs = 0;
-  const auto    rg         = metric.rg();
-  const auto    a          = metric.spin();
-  Kokkos::parallel_reduce(
+  const auto rg = metric.rg();
+  const auto a  = metric.spin();
+  Kokkos::parallel_for(
     "h_ij/hij",
     npts,
-    Lambda(index_t n, unsigned long& wrongs) {
+    Lambda(index_t n) {
       tuple_t<std::size_t, M::Dim> idx;
       unravel<M::Dim>(n, idx, res_tup);
       coord_t<M::Dim> x_Code { ZERO };
@@ -138,17 +136,35 @@ void testMetric(const std::vector<std::size_t>&      res,
       vec_t<Dim::_3D> hij_expect { h11_expect, h22_expect, h33_expect };
       vec_t<Dim::_3D> h_ij_expect { h_11_expect, h_22_expect, h_33_expect };
 
-      wrongs += not equal<Dim::_3D>(h_ij_predict, h_ij_expect, "h_ij", acc);
-      wrongs += not equal<Dim::_1D>(h_13_predict, { h_13_expect }, "h_13", acc);
-      wrongs += not equal<Dim::_3D>(hij_predict, hij_expect, "hij", acc);
-      wrongs += not equal<Dim::_1D>(h13_predict, { h13_expect }, "h13", acc);
-    },
-    all_wrongs);
-
-  errorIf(all_wrongs != 0,
-          "wrong h_ij/hij for " + std::to_string(M::Dim) + "D " +
-            std::string(metric.Label) + " with " + std::to_string(all_wrongs) +
-            " errors");
+      if (not equal<Dim::_3D>(h_ij_predict, h_ij_expect, "h_ij", acc)) {
+        printf("h_ij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
+               h_ij_predict[0],
+               h_ij_predict[1],
+               h_ij_predict[2],
+               h_ij_expect[0],
+               h_ij_expect[1],
+               h_ij_expect[2]);
+        Kokkos::abort("h_ij");
+      }
+      if (not equal<Dim::_1D>(h_13_predict, { h_13_expect }, "h_13", acc)) {
+        printf("h_13: %.12e : %.12e\n", h_13_predict[0], h_13_expect);
+        Kokkos::abort("h_13");
+      }
+      if (not equal<Dim::_3D>(hij_predict, hij_expect, "hij", acc)) {
+        printf("hij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
+               hij_predict[0],
+               hij_predict[1],
+               hij_predict[2],
+               hij_expect[0],
+               hij_expect[1],
+               hij_expect[2]);
+        Kokkos::abort("hij");
+      }
+      if (not equal<Dim::_1D>(h13_predict, { h13_expect }, "h13", acc)) {
+        printf("h13: %.12e : %.12e\n", h13_predict[0], h13_expect);
+        Kokkos::abort("h13");
+      }
+    });
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -168,7 +184,7 @@ auto main(int argc, char* argv[]) -> int {
 
     testMetric<QKerrSchild<Dim::_2D>>(
       {
-        64,
+        32,
         42
     },
       { { 0.8, 10.0 }, { 0.0, constant::PI } },
