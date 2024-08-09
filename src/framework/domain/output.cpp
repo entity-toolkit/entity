@@ -302,7 +302,7 @@ namespace ntt {
               CustomFieldOutput(fld.name().substr(1),
                                 local_domain->fields.bckp,
                                 addresses.back(),
-                                *local_domain);
+                                local_domain->mesh.rangeActiveCells());
             } else {
               raise::Error("Custom output requested but no function provided",
                            HERE);
