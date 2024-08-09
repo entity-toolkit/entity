@@ -1057,7 +1057,10 @@ namespace user {
 
         }
   
-void CustomFieldOutput(const std::string& name, ndfield_t<M::Dim, 6> buffer, std::size_t index, const Domain<S, M>& domain) {
+void CustomFieldOutput(const std::string&   name,
+                           ndfield_t<M::Dim, 6> buffer,
+                           std::size_t          index,
+                           const Domain<S, M>&  domain) {
   if (name == "pploc") {
         Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, index),
                           cbuff);
