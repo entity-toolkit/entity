@@ -114,7 +114,10 @@ namespace out {
                     const ndfield_t<D, N>&,
                     const std::vector<std::size_t>&);
 
-    void writeParticleQuantity(const array_t<real_t*>&, const std::string&);
+    void writeParticleQuantity(const array_t<real_t*>&,
+                               std::size_t,
+                               std::size_t,
+                               const std::string&);
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
