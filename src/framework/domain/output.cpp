@@ -197,7 +197,6 @@ namespace ntt {
     g_writer.beginWriting(params.template get<std::string>("simulation.name"),
                           step,
                           time);
-
     if (write_fields) {
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 

@@ -12,6 +12,7 @@
 #ifndef CHECKPOINT_WRITER_H
 #define CHECKPOINT_WRITER_H
 
+#include "enums.h"
 #include "global.h"
 
 #include "utils/tools.h"
@@ -21,6 +22,8 @@
 #include <adios2.h>
 #include <adios2/cxx11/KokkosView.h>
 
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace checkpoint {
@@ -35,7 +38,7 @@ namespace checkpoint {
 
     bool m_writing_mode { false };
 
-    std::vector<std::string> m_written;
+    std::vector<std::pair<std::string, std::string>> m_written;
 
     int  m_keep;
     bool m_enabled;
@@ -49,9 +52,34 @@ namespace checkpoint {
 
     auto shouldSave(std::size_t, long double) -> bool;
 
-    void beginSaving(const ntt::SimulationParams&, std::size_t, long double);
+    void beginSaving(std::size_t, long double);
     void endSaving();
 
+    void saveAttrs(const ntt::SimulationParams&);
+
+    template <typename T>
+    void savePerDomainVariable(const std::string&, std::size_t, std::size_t, T);
+
+    template <Dimension D, int N>
+    void saveField(const std::string&, const ndfield_t<D, N>&);
+
+    template <typename T>
+    void saveParticleQuantity(const std::string&,
+                              std::size_t,
+                              std::size_t,
+                              std::size_t,
+                              const array_t<T*>&);
+
+    void defineFieldVariables(const ntt::SimEngine&,
+                              const std::vector<std::size_t>&,
+                              const std::vector<std::size_t>&,
+                              const std::vector<std::size_t>&);
+    void defineParticleVariables(const ntt::Coord&,
+                                 Dimension,
+                                 std::size_t,
+                                 const std::vector<unsigned short>&);
+
+    [[nodiscard]]
     auto enabled() const -> bool {
       return m_enabled;
     }
