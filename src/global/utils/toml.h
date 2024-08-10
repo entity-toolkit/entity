@@ -10365,15 +10365,14 @@ namespace toml {
   // recursive
 
   namespace detail {
-    template <typename T>
-    T& last_one(T& arg) {
-      return arg;
+
+    template <typename... Ts>
+    auto last_one(Ts&&... args) -> decltype(std::get<sizeof...(Ts) - 1>(
+      std::forward_as_tuple(std::forward<Ts>(args)...))) {
+      return std::get<sizeof...(Ts) - 1>(
+        std::forward_as_tuple(std::forward<Ts>(args)...));
     }
 
-    template <typename T1, typename T2, typename... Ts>
-    auto last_one(T1&, T2& arg, Ts&... args) -> decltype(last_one(arg, args...)) {
-      return last_one(arg, args...);
-    }
   } // namespace detail
 
   template <typename Value, typename K1, typename K2, typename K3, typename... Ks>
@@ -10398,39 +10397,6 @@ namespace toml {
       return find_or<T>(v.at(k1), k2, k3, keys...);
     } catch (...) {
       return static_cast<T>(detail::last_one(k3, keys...));
-    }
-  }
-
-  template <typename Value, typename K1, typename K2, typename K3, typename K4, typename... Ks>
-  auto find_or(Value&& v, const K1& k1, const K2& k2, K3&& k3, K4&& k4, Ks&&... keys) noexcept
-    -> cxx::enable_if_t<detail::is_basic_value<cxx::remove_cvref_t<Value>>::value,
-                        decltype(find_or(v,
-                                         k2,
-                                         std::forward<K3>(k3),
-                                         std::forward<K4>(k4),
-                                         std::forward<Ks>(keys)...))> {
-    try {
-      return find_or(v.at(k1),
-                     k2,
-                     std::forward<K3>(k3),
-                     std::forward<K4>(k4),
-                     std::forward<Ks>(keys)...);
-    } catch (...) {
-      return detail::last_one(k4, keys...);
-    }
-  }
-
-  template <typename T, typename TC, typename K1, typename K2, typename K3, typename K4, typename... Ks>
-  T find_or(const basic_value<TC>& v,
-            const K1&              k1,
-            const K2&              k2,
-            const K3&              k3,
-            const K4&              k4,
-            const Ks&... keys) noexcept {
-    try {
-      return find_or<T>(v.at(k1), k2, k3, k4, keys...);
-    } catch (...) {
-      return static_cast<T>(detail::last_one(k4, keys...));
     }
   }
 
