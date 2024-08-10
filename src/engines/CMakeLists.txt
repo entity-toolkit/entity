@@ -18,6 +18,7 @@
 # @uses:
 # - kokkos [required]
 # - plog [required]
+# - toml11 [required]
 # - adios2 [optional]
 # - hdf5 [optional]
 # - mpi [optional]

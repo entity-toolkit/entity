@@ -4,6 +4,7 @@
 # - global.cpp
 # - arch/kokkos_aliases.cpp
 # - utils/cargs.cpp
+# - utils/param_container.cpp
 # @includes:
 # - ./
 # @uses:
@@ -18,6 +19,9 @@ set(SOURCES
   ${SRC_DIR}/arch/kokkos_aliases.cpp 
   ${SRC_DIR}/utils/cargs.cpp
 )
+if (${output})
+  list(APPEND SOURCES ${SRC_DIR}/utils/param_container.cpp)
+endif()
 add_library(ntt_global ${SOURCES})
 target_include_directories(ntt_global
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

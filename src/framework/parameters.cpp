@@ -8,6 +8,7 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
+#include "utils/toml.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -17,8 +18,6 @@
 #include "metrics/spherical.h"
 
 #include "framework/containers/species.h"
-
-#include <toml.hpp>
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -46,15 +45,15 @@ namespace ntt {
     return { dx0, V0 };
   }
 
-  SimulationParams::SimulationParams(const toml::value& raw_data) {
+  SimulationParams::SimulationParams(const toml::value& toml_data)
+    : raw_data { toml_data } {
     /* [simulation] --------------------------------------------------------- */
     set("simulation.name", toml::find<std::string>(raw_data, "simulation", "name"));
     set("simulation.runtime",
         toml::find<long double>(raw_data, "simulation", "runtime"));
 
-    const auto engine = fmt::toLower(
-      toml::find<std::string>(raw_data, "simulation", "engine"));
-    const auto engine_enum = SimEngine::pick(engine.c_str());
+    const auto engine_enum = SimEngine::pick(
+      fmt::toLower(toml::find<std::string>(toml_data, "simulation", "engine")).c_str());
     set("simulation.engine", engine_enum);
 
     int default_ndomains = 1;
@@ -79,7 +78,7 @@ namespace ntt {
     promiseToDefine("simulation.domain.decomposition");
 
     /* [grid] --------------------------------------------------------------- */
-    const auto res = toml::find<std::vector<std::size_t>>(raw_data,
+    const auto res = toml::find<std::vector<std::size_t>>(toml_data,
                                                           "grid",
                                                           "resolution");
     raise::ErrorIf(res.size() < 1 || res.size() > 3,
@@ -107,17 +106,18 @@ namespace ntt {
     promiseToDefine("grid.extent");
 
     /* [grid.metric] -------------------------------------------------------- */
-    const auto metric = fmt::toLower(
-      toml::find<std::string>(raw_data, "grid", "metric", "metric"));
-    const auto metric_enum = Metric::pick(metric.c_str());
+    const auto metric_enum = Metric::pick(
+      fmt::toLower(toml::find<std::string>(toml_data, "grid", "metric", "metric"))
+        .c_str());
     promiseToDefine("grid.metric.metric");
     std::string coord;
-    if (metric == "minkowski") {
+    if (metric_enum == Metric::Minkowski) {
       raise::ErrorIf(engine_enum != SimEngine::SRPIC,
                      "minkowski metric is only supported for SRPIC",
                      HERE);
       coord = "cart";
-    } else if (metric[0] == 'q') {
+    } else if (metric_enum == Metric::QKerr_Schild or
+               metric_enum == Metric::QSpherical) {
       // quasi-spherical geometry
       raise::ErrorIf(dim == Dim::_1D,
                      "not enough dimensions for qspherical geometry",

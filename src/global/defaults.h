@@ -62,7 +62,7 @@ namespace ntt::defaults {
 
   namespace checkpoint {
     const std::size_t interval = 1000;
-    const std::size_t keep     = 2;
+    const int         keep     = 2;
   } // namespace checkpoint
 
   namespace diag {

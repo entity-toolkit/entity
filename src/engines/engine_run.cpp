@@ -26,7 +26,8 @@ namespace ntt {
          "ParticlePusher", "FieldBoundaries",
          "ParticleBoundaries", "Communications",
          "Injector", "Sorting",
-         "Custom", "Output" },
+         "Custom", "Output",
+         "Checkpoint" },
         []() {
           Kokkos::fence();
          },
@@ -60,7 +61,8 @@ namespace ntt {
         ++step;
         time += dt;
 
-        auto print_output = false;
+        auto print_output     = false;
+        auto print_checkpoint = false;
 #if defined(OUTPUT_ENABLED)
         timers.start("Output");
         if constexpr (
@@ -79,13 +81,21 @@ namespace ntt {
           print_output = m_metadomain.Write(m_params, step, time);
         }
         timers.stop("Output");
+
+        timers.start("Checkpoint");
+        print_checkpoint = m_metadomain.WriteCheckpoint(m_params, step, time);
+        timers.stop("Checkpoint");
 #endif
 
         // advance time_history
         time_history.tick();
         // print final timestep report
         if (diag_interval > 0 and step % diag_interval == 0) {
-          print_step_report(timers, time_history, print_output, print_sorting);
+          print_step_report(timers,
+                            time_history,
+                            print_output,
+                            print_checkpoint,
+                            print_sorting);
         }
         timers.resetAll();
       }

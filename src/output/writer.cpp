@@ -5,11 +5,11 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/param_container.h"
+#include "utils/tools.h"
 
 #include <Kokkos_Core.hpp>
-
-#include <string>
-#include <vector>
+#include <adios2.h>
+#include <adios2/cxx11/KokkosView.h>
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_aliases.h"
@@ -17,13 +17,18 @@
   #include <mpi.h>
 #endif
 
+#include <string>
+#include <vector>
+
 namespace out {
 
   void Writer::init(adios2::ADIOS* ptr_adios, const std::string& engine) {
     m_engine = engine;
     p_adios  = ptr_adios;
 
-    m_io = p_adios->DeclareIO("Entity::ADIOS2");
+    raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
+
+    m_io = p_adios->DeclareIO("Entity::Output");
     m_io.SetEngine(engine);
 
     m_io.DefineVariable<std::size_t>("Step");
@@ -33,8 +38,8 @@ namespace out {
   void Writer::addTracker(const std::string& type,
                           std::size_t        interval,
                           long double        interval_time) {
-    m_trackers.insert(std::pair<std::string, out::Tracker>(
-      { type, Tracker(type, interval, interval_time) }));
+    m_trackers.insert(std::pair<std::string, tools::Tracker>(
+      { type, tools::Tracker(type, interval, interval_time) }));
   }
 
   auto Writer::shouldWrite(const std::string& type,
@@ -159,6 +164,10 @@ namespace out {
     for (const auto& sp : m_spectra_writers) {
       m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
     }
+  }
+
+  void Writer::writeAttrs(const prm::Parameters& params) {
+    params.write(m_io);
   }
 
   template <Dimension D, int N>
@@ -294,6 +303,7 @@ namespace out {
   void Writer::beginWriting(const std::string& fname,
                             std::size_t        tstep,
                             long double        time) {
+    raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
     p_adios->ExitComputationBlock();
     if (m_writing_mode) {
       raise::Fatal("Already writing", HERE);
@@ -311,6 +321,7 @@ namespace out {
   }
 
   void Writer::endWriting() {
+    raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
     if (!m_writing_mode) {
       raise::Fatal("Not writing", HERE);
     }

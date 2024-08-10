@@ -54,3 +54,5 @@ Testing/
 .schema.json
 *_old/
 action-token
+*.vim
+ignore-*

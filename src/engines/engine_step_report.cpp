@@ -32,6 +32,7 @@ namespace ntt {
   void Engine<S, M>::print_step_report(timer::Timers&         timers,
                                        pbar::DurationHistory& time_history,
                                        bool                   print_output,
+                                       bool                   print_checkpoint,
                                        bool print_sorting) const {
     DiagFlags  diag_flags  = Diag::Default;
     TimerFlags timer_flags = Timer::Default;
@@ -44,6 +45,9 @@ namespace ntt {
     }
     if (print_output) {
       timer_flags |= Timer::PrintOutput;
+    }
+    if (print_checkpoint) {
+      timer_flags |= Timer::PrintCheckpoint;
     }
     if (print_sorting) {
       timer_flags |= Timer::PrintSorting;
@@ -235,59 +239,3 @@ namespace ntt {
   template class Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
   template class Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
 } // namespace ntt
-
-//   template <Dimension D, SimulationEngine S>
-//   auto Simulation<D, S>::PrintDiagnostics(const std::size_t&   step,
-//                                           const real_t&        time,
-//                                           const timer::Timers& timers,
-//                                           std::vector<long double>& tstep_durations,
-//                                           const DiagFlags diag_flags,
-//                                           std::ostream&   os) -> void {
-//     if (tstep_durations.size() > m_params.diagMaxnForPbar()) {
-//       tstep_durations.erase(tstep_durations.begin());
-//     }
-//     tstep_durations.push_back(timers.get("Total"));
-//     if (step % m_params.diagInterval() == 0) {
-//       auto&      mblock = this->meshblock;
-//       const auto title {
-//         fmt::format("Time = %f : step = %d : Δt = %f", time, step, mblock.timestep())
-//       };
-//       PrintOnce(
-//         [](std::ostream& os, std::string title) {
-//           os << title << std::endl;
-//         },
-//         os,
-//         title);
-//       if (diag_flags & DiagFlags_Timers) {
-//         timers.printAll("", timer::TimerFlags_Default, os);
-//       }
-//       if (diag_flags & DiagFlags_Species) {
-//         auto header = fmt::format("%s %27s", "[SPECIES]", "[TOT]");
-// #if defined(MPI_ENABLED)
-//         header += fmt::format("%17s %s", "[MIN (%) :", "MAX (%)]");
-// #endif
-//         PrintOnce(
-//           [](std::ostream& os, std::string header) {
-//             os << header << std::endl;
-//           },
-//           os,
-//           header);
-//         for (const auto& species : meshblock.particles) {
-//           species.PrintParticleCounts(os);
-//         }
-//       }
-//       if (diag_flags & DiagFlags_Progress) {
-//         PrintOnce(
-//           [](std::ostream& os) {
-//             os << std::setw(65) << std::setfill('-') << "" << std::endl;
-//           },
-//           os);
-//         ProgressBar(tstep_durations, time, m_params.totalRuntime(), os);
-//       }
-//       PrintOnce(
-//         [](std::ostream& os) {
-//           os << std::setw(65) << std::setfill('=') << "" << std::endl;
-//         },
-//         os);
-//     }
-//   }

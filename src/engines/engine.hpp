@@ -25,6 +25,7 @@
 #include "utils/error.h"
 #include "utils/progressbar.h"
 #include "utils/timer.h"
+#include "utils/toml.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/metadomain.h"
@@ -60,9 +61,9 @@ namespace ntt {
     adios2::ADIOS m_adios;
 #endif
 
-    SimulationParams& m_params;
-    Metadomain<S, M>  m_metadomain;
-    user::PGen<S, M>  m_pgen;
+    SimulationParams m_params;
+    Metadomain<S, M> m_metadomain;
+    user::PGen<S, M> m_pgen;
 
     const long double runtime;
     const real_t      dt;
@@ -80,24 +81,25 @@ namespace ntt {
     static constexpr Dimension D { M::Dim };
     static constexpr bool      is_engine { true };
 
-    Engine(SimulationParams& params)
-      : m_params { params }
-      , m_metadomain { params.get<unsigned int>("simulation.domain.number"),
-                       params.get<std::vector<int>>(
+    Engine(const toml::value& raw_params)
+      : m_params { raw_params }
+      , m_metadomain { m_params.get<unsigned int>("simulation.domain.number"),
+                       m_params.get<std::vector<int>>(
                          "simulation.domain.decomposition"),
-                       params.get<std::vector<std::size_t>>("grid.resolution"),
-                       params.get<boundaries_t<real_t>>("grid.extent"),
-                       params.get<boundaries_t<FldsBC>>(
+                       m_params.get<std::vector<std::size_t>>(
+                         "grid.resolution"),
+                       m_params.get<boundaries_t<real_t>>("grid.extent"),
+                       m_params.get<boundaries_t<FldsBC>>(
                          "grid.boundaries.fields"),
-                       params.get<boundaries_t<PrtlBC>>(
+                       m_params.get<boundaries_t<PrtlBC>>(
                          "grid.boundaries.particles"),
-                       params.get<std::map<std::string, real_t>>(
+                       m_params.get<std::map<std::string, real_t>>(
                          "grid.metric.params"),
-                       params.get<std::vector<ParticleSpecies>>(
+                       m_params.get<std::vector<ParticleSpecies>>(
                          "particles.species") }
       , m_pgen { m_params, m_metadomain }
-      , runtime { params.get<long double>("simulation.runtime") }
-      , dt { params.get<real_t>("algorithms.timestep.dt") }
+      , runtime { m_params.get<long double>("simulation.runtime") }
+      , dt { m_params.get<real_t>("algorithms.timestep.dt") }
       , max_steps { static_cast<std::size_t>(runtime / dt) } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
       print_report();
@@ -107,7 +109,7 @@ namespace ntt {
 
     void init();
     void print_report() const;
-    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool, bool) const;
+    void print_step_report(timer::Timers&, pbar::DurationHistory&, bool, bool, bool) const;
 
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 

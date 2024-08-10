@@ -204,17 +204,18 @@ typedef int PrepareOutputFlags;
 
 namespace Timer {
   enum TimerFlags_ {
-    None          = 0,
-    PrintRelative = 1 << 0,
-    PrintUnits    = 1 << 1,
-    PrintIndents  = 1 << 2,
-    PrintTotal    = 1 << 3,
-    PrintTitle    = 1 << 4,
-    AutoConvert   = 1 << 5,
-    Colorful      = 1 << 6,
-    PrintOutput   = 1 << 7,
-    PrintSorting  = 1 << 8,
-    Default       = PrintRelative | PrintUnits | PrintIndents | PrintTotal |
+    None            = 0,
+    PrintRelative   = 1 << 0,
+    PrintUnits      = 1 << 1,
+    PrintIndents    = 1 << 2,
+    PrintTotal      = 1 << 3,
+    PrintTitle      = 1 << 4,
+    AutoConvert     = 1 << 5,
+    Colorful        = 1 << 6,
+    PrintOutput     = 1 << 7,
+    PrintSorting    = 1 << 8,
+    PrintCheckpoint = 1 << 9,
+    Default         = PrintRelative | PrintUnits | PrintIndents | PrintTotal |
               PrintTitle | AutoConvert | Colorful,
   };
 } // namespace Timer

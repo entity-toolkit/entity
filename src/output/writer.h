@@ -11,6 +11,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/param_container.h"
+#include "utils/tools.h"
 
 #include "output/fields.h"
 #include "output/particles.h"
@@ -28,37 +29,6 @@
 
 namespace out {
 
-  class Tracker {
-    const std::string m_type;
-    const std::size_t m_interval;
-    const long double m_interval_time;
-    const bool        m_use_time;
-
-    long double m_last_output_time { -1.0 };
-
-  public:
-    Tracker(const std::string& type, std::size_t interval, long double interval_time)
-      : m_type { type }
-      , m_interval { interval }
-      , m_interval_time { interval_time }
-      , m_use_time { interval_time > 0.0 } {}
-
-    ~Tracker() = default;
-
-    auto shouldWrite(std::size_t step, long double time) -> bool {
-      if (m_use_time) {
-        if (time - m_last_output_time >= m_interval_time) {
-          m_last_output_time = time;
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        return step % m_interval == 0;
-      }
-    }
-  };
-
   class Writer {
     adios2::ADIOS* p_adios { nullptr };
 
@@ -75,7 +45,7 @@ namespace out {
     bool         m_flds_ghosts;
     std::string  m_engine;
 
-    std::map<std::string, Tracker> m_trackers;
+    std::map<std::string, tools::Tracker> m_trackers;
 
     std::vector<OutputField>   m_flds_writers;
     std::vector<OutputSpecies> m_prtl_writers;
@@ -95,7 +65,7 @@ namespace out {
     void addTracker(const std::string&, std::size_t, long double);
     auto shouldWrite(const std::string&, std::size_t, long double) -> bool;
 
-    void writeAttrs(const prm::Parameters& params);
+    void writeAttrs(const prm::Parameters&);
 
     void defineMeshLayout(const std::vector<std::size_t>&,
                           const std::vector<std::size_t>&,

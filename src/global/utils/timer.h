@@ -118,7 +118,11 @@ namespace timer {
 
     void printAll(const TimerFlags flags = Timer::Default,
                   std::ostream&    os    = std::cout) const {
+#if !defined(MPI_ENABLED)
       std::string header = fmt::format("%s %27s", "[SUBSTEP]", "[DURATION]");
+#else
+      std::string header = fmt::format("%s %32s", "[SUBSTEP]", "[DURATION]");
+#endif
 
       const auto c_bblack = color::get_color("bblack", flags & Timer::Colorful);
       const auto c_reset  = color::get_color("reset", flags & Timer::Colorful);
@@ -162,7 +166,7 @@ namespace timer {
       for (auto& [name, timer] : m_timers) {
         auto        timers = mpi_timers[name];
         long double tot    = std::accumulate(timers.begin(), timers.end(), 0.0);
-        if (name != "Output") {
+        if (name != "Output" and name != "Checkpoint") {
           total += tot;
         }
       }
@@ -214,12 +218,12 @@ namespace timer {
 #else  // not MPI_ENABLED
       long double total = 0.0;
       for (auto& [name, timer] : m_timers) {
-        if (name != "Output") {
+        if (name != "Output" and name != "Checkpoint") {
           total += timer.second;
         }
       }
       for (auto& [name, timer] : m_timers) {
-        if (name == "Output") {
+        if (name == "Output" or name == "Checkpoint") {
           continue;
         }
         std::string units = "µs";
@@ -257,8 +261,13 @@ namespace timer {
         if (flags & Timer::AutoConvert) {
           convertTime(value, units);
         }
+#if !defined(MPI_ENABLED)
         os << c_bblack << std::setw(22) << std::left << std::setfill(' ')
            << "Total" << c_reset;
+#else
+        os << c_bblack << std::setw(27) << std::left << std::setfill(' ')
+           << "Total" << c_reset;
+#endif
         os << c_blue << std::setw(12) << std::right << std::setfill(' ') << value;
         if (flags & Timer::PrintUnits) {
           os << " " << units;
@@ -277,6 +286,25 @@ namespace timer {
            << fmt::format("%s%.2Lf",
                           (flags & Timer::PrintOutput) ? c_byellow.c_str()
                                                        : c_bblack.c_str(),
+                          value);
+        if (flags & Timer::PrintUnits) {
+          os << " " << units;
+        }
+        os << c_reset << std::endl;
+      }
+      {
+        std::string units = "µs";
+        auto        value = get("Checkpoint");
+        if (flags & Timer::AutoConvert) {
+          convertTime(value, units);
+        }
+        os << ((flags & Timer::PrintCheckpoint) ? c_reset : c_bblack)
+           << "Checkpoint" << c_bblack
+           << fmt::pad("Checkpoint", 22, '.', true).substr(10, 22);
+        os << std::setw(17) << std::right << std::setfill('.')
+           << fmt::format("%s%.2Lf",
+                          (flags & Timer::PrintCheckpoint) ? c_byellow.c_str()
+                                                           : c_bblack.c_str(),
                           value);
         if (flags & Timer::PrintUnits) {
           os << " " << units;
