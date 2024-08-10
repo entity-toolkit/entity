@@ -82,10 +82,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 find_or_fetch_dependency(Kokkos FALSE)
 find_or_fetch_dependency(plog TRUE)
-find_or_fetch_dependency(toml11 TRUE)
 set(DEPENDENCIES Kokkos::kokkos)
 include_directories(${plog_SRC}/include)
-include_directories(${toml11_SRC})
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})

@@ -21,6 +21,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/timer.h"
 
+#include "checkpoint/writer.h"
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
@@ -108,6 +109,11 @@ namespace ntt {
                const std::map<std::string, real_t>&,
                const std::vector<ParticleSpecies>&);
 
+    Metadomain(const Metadomain&)            = delete;
+    Metadomain& operator=(const Metadomain&) = delete;
+
+    ~Metadomain() = default;
+
 #if defined(OUTPUT_ENABLED)
     void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
@@ -117,12 +123,9 @@ namespace ntt {
                                   ndfield_t<M::Dim, 6>&,
                                   std::size_t,
                                   const Domain<S, M>&)> = {}) -> bool;
+    void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
+    auto WriteCheckpoint(const SimulationParams&, std::size_t, long double) -> bool;
 #endif
-
-    Metadomain(const Metadomain&)            = delete;
-    Metadomain& operator=(const Metadomain&) = delete;
-
-    ~Metadomain() = default;
 
     /* setters -------------------------------------------------------------- */
 
@@ -181,7 +184,8 @@ namespace ntt {
     const std::vector<ParticleSpecies>  g_species_params;
 
 #if defined(OUTPUT_ENABLED)
-    out::Writer g_writer;
+    out::Writer        g_writer;
+    checkpoint::Writer g_checkpoint_writer;
 #endif
 
 #if defined(MPI_ENABLED)

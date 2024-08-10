@@ -1,16 +1,16 @@
 #include "framework/simulation.h"
 
 #include "defaults.h"
+#include "enums.h"
 #include "global.h"
 
 #include "utils/cargs.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/plog.h"
+#include "utils/toml.h"
 
 #include "framework/parameters.h"
-
-#include <toml.hpp>
 
 #include <string>
 
@@ -26,11 +26,23 @@ namespace ntt {
     const auto outputdir = static_cast<std::string>(
       cl_args.getArgument("-output", defaults::output_path));
 
-    const auto inputdata = toml::parse(inputfname);
-    const auto sim_name = toml::find<std::string>(inputdata, "simulation", "name");
+    raw_params = toml::parse(inputfname);
+    const auto sim_name = toml::find<std::string>(raw_params, "simulation", "name");
     logger::initPlog<files::LogFile, files::InfoFile, files::ErrFile>(sim_name);
 
-    params = SimulationParams(inputdata);
+    m_requested_engine = SimEngine::pick(
+      fmt::toLower(toml::find<std::string>(raw_params, "simulation", "engine")).c_str());
+    m_requested_metric = Metric::pick(
+      fmt::toLower(toml::find<std::string>(raw_params, "grid", "metric", "metric"))
+        .c_str());
+
+    const auto res = toml::find<std::vector<std::size_t>>(raw_params,
+                                                          "grid",
+                                                          "resolution");
+    raise::ErrorIf(res.size() < 1 || res.size() > 3,
+                   "invalid `grid.resolution`",
+                   HERE);
+    m_requested_dimension = static_cast<Dimension>(res.size());
   }
 
   Simulation::~Simulation() {

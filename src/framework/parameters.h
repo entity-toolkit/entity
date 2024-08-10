@@ -18,22 +18,31 @@
 #define FRAMEWORK_PARAMETERS_H
 
 #include "utils/param_container.h"
-
-#include <toml.hpp>
+#include "utils/toml.h"
 
 namespace ntt {
 
   struct SimulationParams : public prm::Parameters {
+
     SimulationParams() = default;
     SimulationParams(const toml::value&);
 
     SimulationParams& operator=(const SimulationParams& other) {
       vars     = std::move(other.vars);
       promises = std::move(other.promises);
+      raw_data = std::move(other.raw_data);
       return *this;
     }
 
     ~SimulationParams() = default;
+
+    [[nodiscard]]
+    auto data() const -> const toml::value& {
+      return raw_data;
+    }
+
+  private:
+    toml::value raw_data;
   };
 
 } // namespace ntt
