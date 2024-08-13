@@ -38,7 +38,8 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
-                                    const SimulationParams& params) {
+                                    const SimulationParams& params,
+                                    bool                    is_resuming) {
     raise::ErrorIf(
       local_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -47,7 +48,6 @@ namespace ntt {
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
-
     const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 
     auto glob_shape_with_ghosts = mesh().n_active();
@@ -95,7 +95,11 @@ namespace ntt {
                           params.template get<long double>(
                             "output." + std::string(type) + ".interval_time"));
     }
-    g_writer.writeAttrs(params);
+    if (is_resuming) {
+      g_writer.setMode(adios2::Mode::Append);
+    } else {
+      g_writer.writeAttrs(params);
+    }
   }
 
   template <SimEngine::type S, class M, FldsID::type F>

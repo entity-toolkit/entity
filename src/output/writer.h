@@ -62,6 +62,8 @@ namespace out {
 
     void init(adios2::ADIOS*, const std::string&);
 
+    void setMode(adios2::Mode);
+
     void addTracker(const std::string&, std::size_t, long double);
     auto shouldWrite(const std::string&, std::size_t, long double) -> bool;
 

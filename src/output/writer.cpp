@@ -53,6 +53,10 @@ namespace out {
     }
   }
 
+  void Writer::setMode(adios2::Mode mode) {
+    m_mode = mode;
+  }
+
   void Writer::defineMeshLayout(const std::vector<std::size_t>& glob_shape,
                                 const std::vector<std::size_t>& loc_corner,
                                 const std::vector<std::size_t>& loc_shape,

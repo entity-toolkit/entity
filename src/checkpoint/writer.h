@@ -6,7 +6,7 @@
  * @cpp:
  *   - writer.cpp
  * @namespaces:
- *   - save::
+ *   - checkpoint::
  */
 
 #ifndef CHECKPOINT_WRITER_H
@@ -55,7 +55,7 @@ namespace checkpoint {
     void beginSaving(std::size_t, long double);
     void endSaving();
 
-    void saveAttrs(const ntt::SimulationParams&);
+    void saveAttrs(const ntt::SimulationParams&, long double);
 
     template <typename T>
     void savePerDomainVariable(const std::string&, std::size_t, std::size_t, T);

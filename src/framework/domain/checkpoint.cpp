@@ -73,7 +73,7 @@ namespace ntt {
     g_checkpoint_writer.beginSaving(step, time);
     {
 
-      g_checkpoint_writer.saveAttrs(params);
+      g_checkpoint_writer.saveAttrs(params, time);
 
       g_checkpoint_writer.saveField<M::Dim, 6>("em", local_domain->fields.em);
       if constexpr (S == SimEngine::GRPIC) {

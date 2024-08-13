@@ -18,6 +18,7 @@
 #include "utils/toml.h"
 
 #include "framework/domain/domain.h"
+#include "framework/parameters.h"
 
 #include "engines/engine.hpp"
 
@@ -33,7 +34,7 @@ namespace ntt {
   public:
     static constexpr auto S { SimEngine::SRPIC };
 
-    GRPICEngine(const toml::value& raw_data) : base_t { raw_data } {}
+    GRPICEngine(const SimulationParams& params) : base_t { params } {}
 
     ~GRPICEngine() = default;
 

@@ -65,11 +65,14 @@ namespace ntt {
     Metadomain<S, M> m_metadomain;
     user::PGen<S, M> m_pgen;
 
+    const bool        is_resuming;
     const long double runtime;
     const real_t      dt;
     const std::size_t max_steps;
-    long double       time { 0.0 };
-    std::size_t       step { 0 };
+    const std::size_t start_step;
+    const long double start_time;
+    long double       time;
+    std::size_t       step;
 
   public:
     static constexpr bool pgen_is_ok {
@@ -81,8 +84,8 @@ namespace ntt {
     static constexpr Dimension D { M::Dim };
     static constexpr bool      is_engine { true };
 
-    Engine(const toml::value& raw_params)
-      : m_params { raw_params }
+    Engine(const SimulationParams& params)
+      : m_params { params }
       , m_metadomain { m_params.get<unsigned int>("simulation.domain.number"),
                        m_params.get<std::vector<int>>(
                          "simulation.domain.decomposition"),
@@ -98,9 +101,14 @@ namespace ntt {
                        m_params.get<std::vector<ParticleSpecies>>(
                          "particles.species") }
       , m_pgen { m_params, m_metadomain }
+      , is_resuming { m_params.get<bool>("checkpoint.is_resuming") }
       , runtime { m_params.get<long double>("simulation.runtime") }
       , dt { m_params.get<real_t>("algorithms.timestep.dt") }
-      , max_steps { static_cast<std::size_t>(runtime / dt) } {
+      , max_steps { static_cast<std::size_t>(runtime / dt) }
+      , start_step { m_params.get<std::size_t>("checkpoint.start_step") }
+      , start_time { m_params.get<long double>("checkpoint.start_time") }
+      , time { start_time }
+      , step { start_step } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
       print_report();
     }

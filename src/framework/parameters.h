@@ -25,7 +25,6 @@ namespace ntt {
   struct SimulationParams : public prm::Parameters {
 
     SimulationParams() = default;
-    SimulationParams(const toml::value&);
 
     SimulationParams& operator=(const SimulationParams& other) {
       vars     = std::move(other.vars);
@@ -36,9 +35,19 @@ namespace ntt {
 
     ~SimulationParams() = default;
 
+    void setImmutableParams(const toml::value&);
+    void setMutableParams(const toml::value&);
+    void setCheckpointParams(bool, std::size_t, long double);
+    void setSetupParams(const toml::value&);
+    void checkPromises() const;
+
     [[nodiscard]]
     auto data() const -> const toml::value& {
       return raw_data;
+    }
+
+    void setRawData(const toml::value& data) {
+      raw_data = data;
     }
 
   private:
