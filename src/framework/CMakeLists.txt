@@ -49,6 +49,7 @@ if(${output})
 endif()
 add_dependencies(ntt_framework ${libs})
 target_link_libraries(ntt_framework PUBLIC ${libs})
+target_link_libraries(ntt_framework PRIVATE stdc++fs)
 
 target_include_directories(ntt_framework
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../

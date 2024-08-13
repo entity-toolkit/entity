@@ -196,14 +196,16 @@ namespace checkpoint {
     m_writer.Put(var, &data);
   }
 
-  void Writer::saveAttrs(const ntt::SimulationParams& params) {
+  void Writer::saveAttrs(const ntt::SimulationParams& params, long double time) {
     CallOnce([&]() {
       std::ofstream metadata;
       if (m_written.empty()) {
         raise::Fatal("No checkpoint file to save metadata", HERE);
       }
       metadata.open(m_written.back().second.c_str());
-      metadata << params.data() << std::endl;
+      metadata << "[metadata]\n"
+               << "  time = " << time << "\n\n"
+               << params.data() << std::endl;
       metadata.close();
     });
   }

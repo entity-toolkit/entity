@@ -71,7 +71,7 @@ namespace ntt {
   public:
     static constexpr auto S { SimEngine::SRPIC };
 
-    SRPICEngine(const toml::value& raw_data) : base_t { raw_data } {}
+    SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
     ~SRPICEngine() = default;
 

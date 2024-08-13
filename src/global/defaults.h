@@ -16,7 +16,6 @@
 
 namespace ntt::defaults {
   constexpr std::string_view input_filename = "input";
-  constexpr std::string_view output_path    = "output";
 
   const real_t correction = 1.0;
   const real_t cfl        = 0.95;

@@ -22,29 +22,32 @@ namespace ntt {
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
 #if defined(OUTPUT_ENABLED)
-      m_metadomain.InitWriter(&m_adios, m_params);
+      m_metadomain.InitWriter(&m_adios, m_params, is_resuming);
       m_metadomain.InitCheckpointWriter(&m_adios, m_params);
 #endif
       logger::Checkpoint("Initializing Engine", HERE);
-      if constexpr (
-        traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
-        logger::Checkpoint("Initializing fields from problem generator", HERE);
-        m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
-          Kokkos::parallel_for(
-            "InitFields",
-            loc_dom.mesh.rangeActiveCells(),
-            arch::SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
-              loc_dom.fields.em,
-              m_pgen.init_flds,
-              loc_dom.mesh.metric });
-        });
-      }
-      if constexpr (
-        traits::has_member<traits::pgen::init_prtls_t, user::PGen<S, M>>::value) {
-        logger::Checkpoint("Initializing particles from problem generator", HERE);
-        m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
-          m_pgen.InitPrtls(loc_dom);
-        });
+      if (not is_resuming) {
+        if constexpr (
+          traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
+          logger::Checkpoint("Initializing fields from problem generator", HERE);
+          m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
+            Kokkos::parallel_for(
+              "InitFields",
+              loc_dom.mesh.rangeActiveCells(),
+              arch::SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
+                loc_dom.fields.em,
+                m_pgen.init_flds,
+                loc_dom.mesh.metric });
+          });
+        }
+        if constexpr (
+          traits::has_member<traits::pgen::init_prtls_t, user::PGen<S, M>>::value) {
+          logger::Checkpoint("Initializing particles from problem generator", HERE);
+          m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
+            m_pgen.InitPrtls(loc_dom);
+          });
+        }
+      } else {
       }
     }
   }

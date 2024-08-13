@@ -115,7 +115,7 @@ namespace ntt {
     ~Metadomain() = default;
 
 #if defined(OUTPUT_ENABLED)
-    void InitWriter(adios2::ADIOS*, const SimulationParams&);
+    void InitWriter(adios2::ADIOS*, const SimulationParams&, bool is_resuming);
     auto Write(const SimulationParams&,
                std::size_t,
                long double,
@@ -125,6 +125,8 @@ namespace ntt {
                                   const Domain<S, M>&)> = {}) -> bool;
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&, std::size_t, long double) -> bool;
+
+    void ContinueFromCheckpoint();
 #endif
 
     /* setters -------------------------------------------------------------- */

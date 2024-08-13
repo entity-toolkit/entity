@@ -28,7 +28,7 @@
 namespace ntt {
 
   class Simulation {
-    toml::value raw_params;
+    SimulationParams m_params;
 
     Dimension m_requested_dimension;
     SimEngine m_requested_engine { SimEngine::INVALID };
@@ -46,7 +46,7 @@ namespace ntt {
       static_assert(traits::has_method<traits::run_t, engine_t>::value,
                     "Engine must contain a ::run() method");
       try {
-        engine_t engine { raw_params };
+        engine_t engine { m_params };
         engine.run();
       } catch (const std::exception& e) {
         raise::Fatal(e.what(), HERE);
