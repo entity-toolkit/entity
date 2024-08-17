@@ -53,6 +53,7 @@ namespace ntt {
     m_params.setRawData(raw_params);
     std::size_t checkpoint_step = 0;
     if (is_resuming) {
+      logger::Checkpoint("Reading params from a checkpoint", HERE);
       if (not std::filesystem::exists("checkpoints")) {
         raise::Fatal("No checkpoints found", HERE);
       }
@@ -84,6 +85,7 @@ namespace ntt {
       m_params.setCheckpointParams(true, checkpoint_step, start_time);
       m_params.setSetupParams(raw_checkpoint_params);
     } else {
+      logger::Checkpoint("Defining new params", HERE);
       m_params.setImmutableParams(raw_params);
       m_params.setMutableParams(raw_params);
       m_params.setCheckpointParams(false, 0, 0.0);

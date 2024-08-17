@@ -1,6 +1,7 @@
 #include "enums.h"
 
 #include "arch/traits.h"
+#include "utils/diag.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -57,9 +58,9 @@ namespace ntt {
         }
         auto print_sorting = (sort_interval > 0 and step % sort_interval == 0);
 
-        // advance time & timestep
-        ++step;
+        // advance time & step
         time += dt;
+        ++step;
 
         auto print_output     = false;
         auto print_checkpoint = false;
@@ -75,27 +76,43 @@ namespace ntt {
           };
           print_output = m_metadomain.Write(m_params,
                                             step,
+                                            step - 1,
                                             time,
+                                            time - dt,
                                             lambda_custom_field_output);
         } else {
-          print_output = m_metadomain.Write(m_params, step, time);
+          print_output = m_metadomain.Write(m_params, step, step - 1, time, time - dt);
         }
         timers.stop("Output");
 
         timers.start("Checkpoint");
-        print_checkpoint = m_metadomain.WriteCheckpoint(m_params, step, time);
+        print_checkpoint = m_metadomain.WriteCheckpoint(m_params,
+                                                        step,
+                                                        step - 1,
+                                                        time,
+                                                        time - dt);
         timers.stop("Checkpoint");
 #endif
 
         // advance time_history
         time_history.tick();
-        // print final timestep report
+        // print timestep report
         if (diag_interval > 0 and step % diag_interval == 0) {
-          print_step_report(timers,
-                            time_history,
-                            print_output,
-                            print_checkpoint,
-                            print_sorting);
+          diag::printDiagnostics(
+            step - 1,
+            max_steps,
+            time - dt,
+            dt,
+            timers,
+            time_history,
+            m_metadomain.l_ncells(),
+            m_metadomain.species_labels(),
+            m_metadomain.l_npart_perspec(),
+            m_metadomain.l_maxnpart_perspec(),
+            print_sorting,
+            print_output,
+            print_checkpoint,
+            m_params.get<bool>("diagnostics.colored_stdout"));
         }
         timers.resetAll();
       }

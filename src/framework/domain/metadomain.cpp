@@ -342,7 +342,7 @@ namespace ntt {
       }
       // check that local subdomains are contained in g_local_subdomain_indices
       auto contained_in_local = false;
-      for (const auto& gidx : g_local_subdomain_indices) {
+      for (const auto& gidx : l_subdomain_indices()) {
         contained_in_local |= (idx == gidx);
       }
 #if defined(MPI_ENABLED)

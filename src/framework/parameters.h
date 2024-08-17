@@ -24,7 +24,7 @@ namespace ntt {
 
   struct SimulationParams : public prm::Parameters {
 
-    SimulationParams() = default;
+    SimulationParams() {}
 
     SimulationParams& operator=(const SimulationParams& other) {
       vars     = std::move(other.vars);

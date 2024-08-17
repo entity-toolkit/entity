@@ -317,7 +317,6 @@ namespace ntt {
       set("scales.q0", V0 / (ppc0 * SQR(skindepth0)));
 
       set("grid.metric.metric", metric_enum);
-      set("algorithms.timestep.dt", get<real_t>("algorithms.timestep.CFL") * dx0);
     }
   }
 
@@ -421,7 +420,8 @@ namespace ntt {
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",
         toml::find_or(toml_data, "algorithms", "timestep", "CFL", defaults::cfl));
-    promiseToDefine("algorithms.timestep.dt");
+    set("algorithms.timestep.dt",
+        get<real_t>("algorithms.timestep.CFL") * get<real_t>("scales.dx0"));
     set("algorithms.timestep.correction",
         toml::find_or(toml_data,
                       "algorithms",

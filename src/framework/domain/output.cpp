@@ -41,10 +41,10 @@ namespace ntt {
                                     const SimulationParams& params,
                                     bool                    is_resuming) {
     raise::ErrorIf(
-      local_subdomain_indices().size() != 1,
+      l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
-    auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
@@ -176,35 +176,43 @@ namespace ntt {
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
     const SimulationParams& params,
-    std::size_t             step,
-    long double             time,
+    std::size_t             current_step,
+    std::size_t             finished_step,
+    long double             current_time,
+    long double             finished_time,
     std::function<
       void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
       CustomFieldOutput) -> bool {
     raise::ErrorIf(
-      local_subdomain_indices().size() != 1,
+      l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
     const auto write_fields = params.template get<bool>(
                                 "output.fields.enable") and
-                              g_writer.shouldWrite("fields", step, time);
+                              g_writer.shouldWrite("fields",
+                                                   finished_step,
+                                                   finished_time);
     const auto write_particles = params.template get<bool>(
                                    "output.particles.enable") and
-                                 g_writer.shouldWrite("particles", step, time);
+                                 g_writer.shouldWrite("particles",
+                                                      finished_step,
+                                                      finished_time);
     const auto write_spectra = params.template get<bool>(
                                  "output.spectra.enable") and
-                               g_writer.shouldWrite("spectra", step, time);
+                               g_writer.shouldWrite("spectra",
+                                                    finished_step,
+                                                    finished_time);
     if (not(write_fields or write_particles or write_spectra)) {
       return false;
     }
-    auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing output", HERE);
     g_writer.beginWriting(params.template get<std::string>("simulation.name"),
-                          step,
-                          time);
+                          current_step,
+                          current_time);
     if (write_fields) {
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 

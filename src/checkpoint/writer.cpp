@@ -91,24 +91,24 @@ namespace checkpoint {
                                  { adios2::UnknownDim },
                                  { adios2::UnknownDim },
                                  { adios2::UnknownDim });
-        m_io.DefineVariable<real_t>(fmt::format("s%d_dx%d", s + 1, d + 1),
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim });
+        m_io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d", s + 1, d + 1),
+                                      { adios2::UnknownDim },
+                                      { adios2::UnknownDim },
+                                      { adios2::UnknownDim });
         m_io.DefineVariable<int>(fmt::format("s%d_i%d_prev", s + 1, d + 1),
                                  { adios2::UnknownDim },
                                  { adios2::UnknownDim },
                                  { adios2::UnknownDim });
-        m_io.DefineVariable<real_t>(fmt::format("s%d_dx%d_prev", s + 1, d + 1),
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim });
-      }
-      if (dim == Dim::_2D and C != ntt::Coord::Cart) {
-        m_io.DefineVariable<prtldx_t>(fmt::format("s%d_phi", s + 1),
+        m_io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d_prev", s + 1, d + 1),
                                       { adios2::UnknownDim },
                                       { adios2::UnknownDim },
                                       { adios2::UnknownDim });
+      }
+      if (dim == Dim::_2D and C != ntt::Coord::Cart) {
+        m_io.DefineVariable<real_t>(fmt::format("s%d_phi", s + 1),
+                                    { adios2::UnknownDim },
+                                    { adios2::UnknownDim },
+                                    { adios2::UnknownDim });
       }
       for (auto d { 0u }; d < 3; ++d) {
         m_io.DefineVariable<real_t>(fmt::format("s%d_ux%d", s + 1, d + 1),
