@@ -115,7 +115,12 @@ namespace timer {
       const auto pcent = static_cast<unsigned short>(
         (timer.second / local_tot) * 100.0);
       timer_stats.insert(
-        { name, std::make_tuple(timer.second, pcent, 0.0, 0u, 0u) });
+        { name,
+          std::make_tuple(timer.second,
+                          timer.second / static_cast<duration_t>(npart),
+                          timer.second / static_cast<duration_t>(ncells),
+                          pcent,
+                          0u) });
     }
     timer_stats.insert({ "Total", std::make_tuple(local_tot, 0.0, 0.0, 100u, 0u) });
 #endif
