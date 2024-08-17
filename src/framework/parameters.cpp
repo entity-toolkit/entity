@@ -408,11 +408,16 @@ namespace ntt {
         toml::find_or(raw_data, "output", "fields", "stride", defaults::output::flds_stride));
 
     // particles
-    const auto prtl_out = toml::find_or(raw_data,
-                                        "output",
-                                        "particles",
-                                        "species",
-                                        std::vector<unsigned short> {});
+    auto prtl_out = toml::find_or(raw_data,
+                                  "output",
+                                  "particles",
+                                  "species",
+                                  std::vector<unsigned short> {});
+    if (prtl_out.size() == 0) {
+      for (unsigned short i = 0; i < species.size(); ++i) {
+        prtl_out.push_back(i + 1);
+      }
+    }
     set("output.particles.species", prtl_out);
     set("output.particles.stride",
         toml::find_or(raw_data,
