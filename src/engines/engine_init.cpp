@@ -27,6 +27,8 @@ namespace ntt {
 #endif
       logger::Checkpoint("Initializing Engine", HERE);
       if (not is_resuming) {
+        // start a new simulation with initial conditions
+        logger::Checkpoint("Loading initial conditions", HERE);
         if constexpr (
           traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
           logger::Checkpoint("Initializing fields from problem generator", HERE);
@@ -48,6 +50,13 @@ namespace ntt {
           });
         }
       } else {
+        // read simulation data from the checkpoint
+        raise::ErrorIf(
+          m_params.template get<std::size_t>("checkpoint.start_step") == 0,
+          "Resuming simulation from a checkpoint requires a valid start_step",
+          HERE);
+        logger::Checkpoint("Resuming simulation from a checkpoint", HERE);
+        m_metadomain.ContinueFromCheckpoint(&m_adios, m_params);
       }
     }
   }

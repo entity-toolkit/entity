@@ -12,6 +12,7 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include "checkpoint/reader.h"
 #include "checkpoint/writer.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
@@ -21,11 +22,12 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*          ptr_adios,
                                               const SimulationParams& params) {
+    raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
     raise::ErrorIf(
-      local_subdomain_indices().size() != 1,
+      l_subdomain_indices().size() != 1,
       "Checkpoint writing for now is only supported for one subdomain per rank",
       HERE);
-    auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
@@ -56,24 +58,26 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
-                                         std::size_t             step,
-                                         long double             time) -> bool {
+                                         std::size_t             current_step,
+                                         std::size_t             finished_step,
+                                         long double             current_time,
+                                         long double finished_time) -> bool {
     raise::ErrorIf(
-      local_subdomain_indices().size() != 1,
+      l_subdomain_indices().size() != 1,
       "Checkpointing for now is only supported for one subdomain per rank",
       HERE);
-    if (!g_checkpoint_writer.shouldSave(step, time)) {
+    if (!g_checkpoint_writer.shouldSave(finished_step, finished_time) or
+        finished_step <= 1) {
       return false;
     }
-    auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing checkpoint", HERE);
-    g_checkpoint_writer.beginSaving(step, time);
+    g_checkpoint_writer.beginSaving(current_step, current_time);
     {
-
-      g_checkpoint_writer.saveAttrs(params, time);
+      g_checkpoint_writer.saveAttrs(params, current_time);
 
       g_checkpoint_writer.saveField<M::Dim, 6>("em", local_domain->fields.em);
       if constexpr (S == SimEngine::GRPIC) {
@@ -250,6 +254,220 @@ namespace ntt {
     g_checkpoint_writer.endSaving();
     logger::Checkpoint("Checkpoint written", HERE);
     return true;
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS* ptr_adios,
+                                                const SimulationParams& params) {
+    raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
+    auto fname = fmt::format(
+      "checkpoints/step-%08lu.bp",
+      params.template get<std::size_t>("checkpoint.start_step"));
+    logger::Checkpoint(fmt::format("Reading checkpoint from %s", fname.c_str()),
+                       HERE);
+
+    adios2::IO io = ptr_adios->DeclareIO("Entity::CheckpointRead");
+    io.SetEngine("BPFile");
+#if !defined(MPI_ENABLED)
+    adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
+#else
+    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_SELF);
+#endif
+
+    reader.BeginStep();
+    for (auto& ldidx : l_subdomain_indices()) {
+      auto&                     domain = g_subdomains[ldidx];
+      adios2::Box<adios2::Dims> range;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        range.first.push_back(domain.offset_ncells()[d]);
+        range.second.push_back(domain.mesh.n_all()[d]);
+      }
+      range.first.push_back(0);
+      range.second.push_back(6);
+      checkpoint::ReadFields<M::Dim, 6>(io, reader, "em", range, domain.fields.em);
+      if constexpr (S == ntt::SimEngine::GRPIC) {
+        checkpoint::ReadFields<M::Dim, 6>(io,
+                                          reader,
+                                          "em0",
+                                          range,
+                                          domain.fields.em0);
+        adios2::Box<adios2::Dims> range3;
+        for (auto d { 0u }; d < M::Dim; ++d) {
+          range3.first.push_back(domain.offset_ncells()[d]);
+          range3.second.push_back(domain.mesh.n_all()[d]);
+        }
+        range3.first.push_back(0);
+        range3.second.push_back(3);
+        checkpoint::ReadFields<M::Dim, 3>(io,
+                                          reader,
+                                          "cur0",
+                                          range3,
+                                          domain.fields.cur0);
+      }
+      for (auto s { 0u }; s < (unsigned short)(domain.species.size()); ++s) {
+        const auto [loc_npart, offset_npart] =
+          checkpoint::ReadParticleCount(io, reader, s, ldidx, ndomains());
+
+        raise::ErrorIf(loc_npart > domain.species[s].maxnpart(),
+                       "loc_npart > domain.species[s].maxnpart()",
+                       HERE);
+        if (loc_npart == 0) {
+          continue;
+        }
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          checkpoint::ReadParticleData<int>(io,
+                                            reader,
+                                            "i1",
+                                            s,
+                                            domain.species[s].i1,
+                                            loc_npart,
+                                            offset_npart);
+          checkpoint::ReadParticleData<prtldx_t>(io,
+                                                 reader,
+                                                 "dx1",
+                                                 s,
+                                                 domain.species[s].dx1,
+                                                 loc_npart,
+                                                 offset_npart);
+          checkpoint::ReadParticleData<int>(io,
+                                            reader,
+                                            "i1_prev",
+                                            s,
+                                            domain.species[s].i1_prev,
+                                            loc_npart,
+                                            offset_npart);
+          checkpoint::ReadParticleData<prtldx_t>(io,
+                                                 reader,
+                                                 "dx1_prev",
+                                                 s,
+                                                 domain.species[s].dx1_prev,
+                                                 loc_npart,
+                                                 offset_npart);
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          checkpoint::ReadParticleData<int>(io,
+                                            reader,
+                                            "i2",
+                                            s,
+                                            domain.species[s].i2,
+                                            loc_npart,
+                                            offset_npart);
+          checkpoint::ReadParticleData<prtldx_t>(io,
+                                                 reader,
+                                                 "dx2",
+                                                 s,
+                                                 domain.species[s].dx2,
+                                                 loc_npart,
+                                                 offset_npart);
+          checkpoint::ReadParticleData<int>(io,
+                                            reader,
+                                            "i2_prev",
+                                            s,
+                                            domain.species[s].i2_prev,
+                                            loc_npart,
+                                            offset_npart);
+          checkpoint::ReadParticleData<prtldx_t>(io,
+                                                 reader,
+                                                 "dx2_prev",
+                                                 s,
+                                                 domain.species[s].dx2_prev,
+                                                 loc_npart,
+                                                 offset_npart);
+        }
+        if constexpr (M::Dim == Dim::_3D) {
+          checkpoint::ReadParticleData<int>(io,
+                                            reader,
+                                            "i3",
+                                            s,
+                                            domain.species[s].i3,
+                                            loc_npart,
+                                            offset_npart);
+          checkpoint::ReadParticleData<prtldx_t>(io,
+                                                 reader,
+                                                 "dx3",
+                                                 s,
+                                                 domain.species[s].dx3,
+                                                 loc_npart,
+                                                 offset_npart);
+          checkpoint::ReadParticleData<int>(io,
+                                            reader,
+                                            "i3_prev",
+                                            s,
+                                            domain.species[s].i3_prev,
+                                            loc_npart,
+                                            offset_npart);
+          checkpoint::ReadParticleData<prtldx_t>(io,
+                                                 reader,
+                                                 "dx3_prev",
+                                                 s,
+                                                 domain.species[s].dx3_prev,
+                                                 loc_npart,
+                                                 offset_npart);
+        }
+        if constexpr (M::Dim == Dim::_2D and M::CoordType != Coord::Cart) {
+          checkpoint::ReadParticleData<real_t>(io,
+                                               reader,
+                                               "phi",
+                                               s,
+                                               domain.species[s].phi,
+                                               loc_npart,
+                                               offset_npart);
+        }
+        checkpoint::ReadParticleData<real_t>(io,
+                                             reader,
+                                             "ux1",
+                                             s,
+                                             domain.species[s].ux1,
+                                             loc_npart,
+                                             offset_npart);
+        checkpoint::ReadParticleData<real_t>(io,
+                                             reader,
+                                             "ux2",
+                                             s,
+                                             domain.species[s].ux2,
+                                             loc_npart,
+                                             offset_npart);
+        checkpoint::ReadParticleData<real_t>(io,
+                                             reader,
+                                             "ux3",
+                                             s,
+                                             domain.species[s].ux3,
+                                             loc_npart,
+                                             offset_npart);
+        checkpoint::ReadParticleData<short>(io,
+                                            reader,
+                                            "tag",
+                                            s,
+                                            domain.species[s].tag,
+                                            loc_npart,
+                                            offset_npart);
+        checkpoint::ReadParticleData<real_t>(io,
+                                             reader,
+                                             "weight",
+                                             s,
+                                             domain.species[s].weight,
+                                             loc_npart,
+                                             offset_npart);
+        for (auto p { 0u }; p < domain.species[s].npld(); ++p) {
+          checkpoint::ReadParticleData<real_t>(io,
+                                               reader,
+                                               fmt::format("pld%d", p + 1),
+                                               s,
+                                               domain.species[s].pld[p],
+                                               loc_npart,
+                                               offset_npart);
+        }
+        domain.species[s].set_npart(loc_npart);
+      } // species loop
+
+    } // local subdomain loop
+
+    reader.EndStep();
+    reader.Close();
+    logger::Checkpoint(
+      fmt::format("Checkpoint reading done from %s", fname.c_str()),
+      HERE);
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;

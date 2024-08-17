@@ -2,6 +2,7 @@
 # @defines: ntt_checkpoint [STATIC/SHARED]
 # @sources:
 # - writer.cpp
+# - reader.cpp
 # @includes:
 # - ../
 # @depends:
@@ -15,6 +16,7 @@
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES 
   ${SRC_DIR}/writer.cpp 
+  ${SRC_DIR}/reader.cpp 
 )
 add_library(ntt_checkpoint ${SOURCES})
 
