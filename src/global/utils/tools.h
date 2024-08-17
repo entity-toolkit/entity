@@ -2,6 +2,7 @@
  * @file utils/tools.h
  * @brief Helper functions for general use
  * @implements
+ *   - tools::ArrayImbalance -> unsigned short
  *   - tools::TensorProduct<> -> boundaries_t<T>
  *   - tools::decompose1D -> std::vector<std::size_t>
  *   - tools::divideInProportions2D -> std::tuple<unsigned int, unsigned int>
@@ -17,6 +18,8 @@
 
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -26,6 +29,30 @@
 #include <vector>
 
 namespace tools {
+
+  /**
+   * @brief Compute the imbalance of a list of nonnegative values
+   * @param values List of values
+   * @return Imbalance of the list (0...100)
+   */
+  template <typename T>
+  auto ArrayImbalance(const std::vector<T>& values) -> unsigned short {
+    raise::ErrorIf(values.empty(), "Disbalance error: value array is empty", HERE);
+    const auto mean = static_cast<double>(std::accumulate(values.begin(),
+                                                          values.end(),
+                                                          static_cast<T>(0))) /
+                      static_cast<double>(values.size());
+    const auto sq_sum = static_cast<double>(std::inner_product(values.begin(),
+                                                               values.end(),
+                                                               values.begin(),
+                                                               static_cast<T>(0)));
+    if (cmp::AlmostZero_host(sq_sum) || cmp::AlmostZero_host(mean)) {
+      return 0;
+    }
+    const auto cv = std::sqrt(
+      sq_sum / static_cast<double>(values.size()) / mean - 1.0);
+    return static_cast<unsigned short>(100.0 / (1.0 + math::exp(-cv)));
+  }
 
   /**
    * @brief Compute a tensor product of a list of vectors

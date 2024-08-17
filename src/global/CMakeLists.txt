@@ -5,6 +5,9 @@
 # - arch/kokkos_aliases.cpp
 # - utils/cargs.cpp
 # - utils/param_container.cpp
+# - utils/timer.cpp
+# - utils/diag.cpp
+# - utils/progressbar.cpp
 # @includes:
 # - ./
 # @uses:
@@ -18,6 +21,9 @@ set(SOURCES
   ${SRC_DIR}/global.cpp 
   ${SRC_DIR}/arch/kokkos_aliases.cpp 
   ${SRC_DIR}/utils/cargs.cpp
+  ${SRC_DIR}/utils/timer.cpp
+  ${SRC_DIR}/utils/diag.cpp
+  ${SRC_DIR}/utils/progressbar.cpp
 )
 if (${output})
   list(APPEND SOURCES ${SRC_DIR}/utils/param_container.cpp)
