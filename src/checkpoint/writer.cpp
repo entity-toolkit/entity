@@ -3,13 +3,13 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/mpi_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
 
 #include "framework/parameters.h"
 
+#include <Kokkos_Core.hpp>
 #include <adios2.h>
 #include <adios2/cxx11/KokkosView.h>
 
@@ -52,17 +52,9 @@ namespace checkpoint {
                                     const std::vector<std::size_t>& glob_shape,
                                     const std::vector<std::size_t>& loc_corner,
                                     const std::vector<std::size_t>& loc_shape) {
-    auto gs3 = std::vector<std::size_t>(glob_shape.begin(), glob_shape.end());
-    auto lc3 = std::vector<std::size_t>(loc_corner.begin(), loc_corner.end());
-    auto ls3 = std::vector<std::size_t>(loc_shape.begin(), loc_shape.end());
     auto gs6 = std::vector<std::size_t>(glob_shape.begin(), glob_shape.end());
     auto lc6 = std::vector<std::size_t>(loc_corner.begin(), loc_corner.end());
     auto ls6 = std::vector<std::size_t>(loc_shape.begin(), loc_shape.end());
-
-    gs3.push_back(3);
-    lc3.push_back(0);
-    ls3.push_back(3);
-
     gs6.push_back(6);
     lc6.push_back(0);
     ls6.push_back(6);
@@ -70,6 +62,12 @@ namespace checkpoint {
     m_io.DefineVariable<real_t>("em", gs6, lc6, ls6, adios2::ConstantDims);
     if (S == ntt::SimEngine::GRPIC) {
       m_io.DefineVariable<real_t>("em0", gs6, lc6, ls6, adios2::ConstantDims);
+      auto gs3 = std::vector<std::size_t>(glob_shape.begin(), glob_shape.end());
+      auto lc3 = std::vector<std::size_t>(loc_corner.begin(), loc_corner.end());
+      auto ls3 = std::vector<std::size_t>(loc_shape.begin(), loc_shape.end());
+      gs3.push_back(3);
+      lc3.push_back(0);
+      ls3.push_back(3);
       m_io.DefineVariable<real_t>("cur0", gs3, lc3, ls3, adios2::ConstantDims);
     }
   }
@@ -150,6 +148,10 @@ namespace checkpoint {
       m_writer        = m_io.Open(fname, adios2::Mode::Write);
       auto meta_fname = fmt::format("checkpoints/meta-%08lu.toml", step);
       m_written.push_back({ fname, meta_fname });
+      logger::Checkpoint(fmt::format("Writing checkpoint to %s and %s",
+                                     fname.c_str(),
+                                     meta_fname.c_str()),
+                         HERE);
     } catch (std::exception& e) {
       raise::Fatal(e.what(), HERE);
     }
@@ -215,7 +217,9 @@ namespace checkpoint {
                          const ndfield_t<D, N>& field) {
     auto field_h = Kokkos::create_mirror_view(field);
     Kokkos::deep_copy(field_h, field);
-    m_writer.Put(m_io.InquireVariable<real_t>(fieldname), field_h.data());
+    m_writer.Put(m_io.InquireVariable<real_t>(fieldname),
+                 field_h.data(),
+                 adios2::Mode::Sync);
   }
 
   template <typename T>
@@ -224,12 +228,12 @@ namespace checkpoint {
                                     std::size_t        loc_offset,
                                     std::size_t        loc_size,
                                     const array_t<T*>& data) {
-    auto var = m_io.InquireVariable<T>(quantity);
-    var.SetShape({ glob_total });
-    var.SetSelection(adios2::Box<adios2::Dims>({ loc_offset }, { loc_size }));
-    auto slice  = range_tuple_t(0, loc_size);
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
+    auto slice = range_tuple_t(0, loc_size);
+    auto var   = m_io.InquireVariable<T>(quantity);
+    var.SetShape({ glob_total });
+    var.SetSelection(adios2::Box<adios2::Dims>({ loc_offset }, { loc_size }));
     m_writer.Put(var, Kokkos::subview(data_h, slice).data());
   }
 

@@ -76,6 +76,7 @@ namespace ntt {
           HERE);
         checkpoint_inputfname = inputfname;
       }
+      logger::Checkpoint(fmt::format("Using %08lu", checkpoint_step), HERE);
       const auto raw_checkpoint_params = toml::parse(checkpoint_inputfname);
       const auto start_time = toml::find<long double>(raw_checkpoint_params,
                                                       "metadata",

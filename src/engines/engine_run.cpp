@@ -20,6 +20,7 @@ namespace ntt {
   void Engine<S, M>::run() {
     if constexpr (pgen_is_ok) {
       init();
+      return;
 
       auto timers = timer::Timers {
         { "FieldSolver",

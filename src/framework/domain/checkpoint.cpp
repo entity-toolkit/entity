@@ -32,9 +32,9 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
 
-    auto glob_shape_with_ghosts = mesh().n_active();
+    auto glob_shape_with_ghosts = mesh().n_all();
     auto off_ncells_with_ghosts = local_domain->offset_ncells();
-    auto loc_shape_with_ghosts  = local_domain->mesh.n_active();
+    auto loc_shape_with_ghosts  = local_domain->mesh.n_all();
 
     std::vector<unsigned short> nplds;
     for (auto s { 0u }; s < local_domain->species.size(); ++s) {
@@ -78,7 +78,6 @@ namespace ntt {
     g_checkpoint_writer.beginSaving(current_step, current_time);
     {
       g_checkpoint_writer.saveAttrs(params, current_time);
-
       g_checkpoint_writer.saveField<M::Dim, 6>("em", local_domain->fields.em);
       if constexpr (S == SimEngine::GRPIC) {
         g_checkpoint_writer.saveField<M::Dim, 6>("em0", local_domain->fields.em0);
