@@ -1,0 +1,53 @@
+[simulation]
+  name = "reconnection"
+  engine = "srpic"
+  runtime = 10.0
+
+[grid]
+  resolution = [1024, 2048]
+  extent = [[-1.0, 1.0], [-2.0, 2.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+    
+[scales]
+  larmor0 = 2e-4
+  skindepth0 = 2e-3
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 8.0
+
+  [[particles.species]]
+    label = "e-"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e7
+
+  [[particles.species]]
+    label = "e+"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e7
+
+[setup]
+  Bmag = 1.0
+  width = 0.01
+  bg_temp = 1e-4
+  overdensity = 3.0
+  
+[output]
+  format = "hdf5"
+  interval_time = 0.1
+
+  [output.fields]
+    quantities = ["N_1", "N_2", "E", "B", "J"]

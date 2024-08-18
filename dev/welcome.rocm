@@ -1,0 +1,122 @@
+#!/bin/sh
+Reset="\x1b[0m"
+Bright="\x1b[1m"
+Dim="\x1b[2m"
+Underscore="\x1b[4m"
+Blink="\x1b[5m"
+Reverse="\x1b[7m"
+Hidden="\x1b[8m"
+
+FgBlack="\x1b[30m"
+FgRed="\x1b[31m"
+FgGreen="\x1b[32m"
+FgYellow="\x1b[33m"
+FgBlue="\x1b[34m"
+FgMagenta="\x1b[35m"
+FgCyan="\x1b[36m"
+FgWhite="\x1b[37m"
+
+BgBlack="\x1b[40m"
+BgRed="\x1b[41m"
+BgGreen="\x1b[42m"
+BgYellow="\x1b[43m"
+BgBlue="\x1b[44m"
+BgMagenta="\x1b[45m"
+BgCyan="\x1b[46m"
+BgWhite="\x1b[47m"
+
+error_msg=${FgRed}"NOT FOUND"${Reset}
+gcc_or_error=$(gcc --version 2>&1)
+if [ $? -eq 0 ]; then
+  gcc_version=${FgYellow}$(gcc --version | grep gcc)${Reset}
+else
+  gcc_version=${error_msg}
+fi
+
+rocm_or_error=$(hipcc --version | grep HIP 2>&1)
+if [ $? -eq 0 ]; then
+  rocm_version=${FgYellow}$(hipcc --version | grep HIP)${Reset}
+else
+  rocm_version=${error_msg}
+fi
+
+cmake_or_error=$(cmake --version 2>&1)
+if [ $? -eq 0 ]; then
+  cmake_version=${FgYellow}$(cmake --version | grep ver)${Reset}
+else
+  cmake_version=${error_msg}
+fi
+
+hdf5_or_error=$(h5cc -showconfig | grep Version 2>&1)
+if [ $? -eq 0 ]; then
+  hdf5_version=${FgYellow}$(h5cc -showconfig | grep Version | xargs)${Reset}
+else
+  hdf5_version=${error_msg}
+fi
+
+adios2_or_error=$(adios2-config -v 2>&1)
+if [ $? -eq 0 ]; then
+  adios2_version=${FgYellow}$(adios2-config -v | grep ADIOS)${Reset}
+else
+  adios2_version=${error_msg}
+fi
+
+python_or_error=$(python --version 2>&1)
+if [ $? -eq 0 ]; then
+  python_version=${FgYellow}$(python --version)${Reset}
+else
+  python_version=${error_msg}
+fi
+
+str=$(
+  cat <<EOF
+${FgBlue}              __        __ 
+             /\\ \\__  __/\\ \\__ 
+    __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __ 
+  / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\ 
+ /\\  __//\\ \\/\\ \\ \\ \\_\\ \\ \\ \\ \\_\\ \\ \\_\\ \\  __ 
+ \\ \\____\\ \\_\\ \\_\\ \\__\\\\\\ \\_\\ \\__\\\\\\ \\____ \\/\\_\\ 
+  \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/ 
+                                    /\\___/ 
+${Reset}${Underscore}Entity ROCm container${Reset}${FgBlue}               \\/__/${Reset} 
+
+## Installed packages:
+  - ${gcc_version}
+  - ${rocm_version}
+  - ${cmake_version}
+  - ${hdf5_version}
+  - ${adios2_version}
+  - ${python_version}
+
+## Usage
+
+* Clone the code:
+  ${FgGreen}$ git clone https://github.com/entity-toolkit/entity.git && cd entity${Reset}
+
+* Configure the build for your AMD GPU architecture:
+  ${FgGreen}$ cmake -B build -D pgen=... -D output=ON -D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_***=ON${Reset}
+  All available architectures can be found here: https://kokkos.org/kokkos-core-wiki/keywords.html#nvidia-gpus.
+
+* Build the code:
+  ${FgGreen}$ cmake --build build -j \$(nproc)${Reset}
+
+* Do not forget to set the following environment variables to their appropriate values:
+  ${FgGreen}$ HSA_OVERRIDE_GFX_VERSION=**.*.* HIP_VISIBLE_DEVICES=* ROCR_VISIBLE_DEVICES=*${RESET}
+
+* The executable will be generated as \`build/src/entity.xc\`. Run it by specifying the input file:
+  ${FgGreen}$ build/src/entity.xc -input <input_file>${Reset}
+
+## Testing the code
+
+* To build the tests, remove the \`build\` directory, and preconfigure with:
+  ${FgGreen}$ cmake -B build -D TESTS=ON -D output=ON -D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_***=ON${Reset}
+
+* Then run the tests with:
+  ${FgGreen}$ ctest --test-dir build${Reset}
+
+
+${Red}Enjoy!${Reset} 🚀
+EOF
+)
+
+printf "$str\n"

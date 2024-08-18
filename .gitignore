@@ -3,13 +3,15 @@
 
 # Compilation junk
 *.o
-*.tmp
 build*/
 bin/
+compile_commands.json
+.cache/
 
-# Accidental python files
+# Python files
 *.ipynb
 __pycache__
+*ipynb_checkpoints
 
 # Notation files
 *.cson
@@ -17,9 +19,15 @@ __pycache__
 # Temporary files
 *.swp
 *.ini
+*.tmp
+temp*/
+logs/
+*.log
+*.bak
 
 # Trash files
 .trash/
+*~
 
 .vscode/*.log
 
@@ -27,14 +35,22 @@ __pycache__
 venv/
 
 # Temporary media files
+*.jpg
 *.png
 *.mov
 *.mp4
 
-temp*/
-logs/
+# Accidental files
+*.xc
+*.h5
 
-*ipynb_checkpoints
-
+# VSCode files
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+
+# CMake testing files
+Testing/
+
+.schema.json
+*_old/
+action-token

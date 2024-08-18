@@ -1,0 +1,81 @@
+ARG DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=host.docker.internal:0.0
+
+# upgrade
+RUN apt-get update && apt-get upgrade -y
+
+# cmake & build tools
+RUN apt-get remove -y --purge cmake && \
+    apt-get install -y wget build-essential && \
+    wget "https://github.com/Kitware/CMake/releases/download/v3.29.6/cmake-3.29.6-linux-x86_64.tar.gz" -P /opt && \
+    tar xvf /opt/cmake-3.29.6-linux-x86_64.tar.gz -C /opt && \
+    rm /opt/cmake-3.29.6-linux-x86_64.tar.gz
+ENV PATH=/opt/cmake-3.29.6-linux-x86_64/bin:$PATH
+
+# adios2
+RUN apt-get update && apt-get install -y git libhdf5-dev && \
+    git clone https://github.com/ornladios/ADIOS2.git /opt/adios2-src && \
+    cd /opt/adios2-src && \
+    cmake -B build \
+      -D CMAKE_CXX_STANDARD=17 \
+      -D CMAKE_CXX_EXTENSIONS=OFF \
+      -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+      -D BUILD_SHARED_LIBS=ON \
+      -D ADIOS2_USE_HDF5=ON \
+      -D ADIOS2_USE_Python=OFF \
+      -D ADIOS2_USE_Fortran=OFF \
+      -D ADIOS2_USE_ZeroMQ=OFF \
+      -D BUILD_TESTING=OFF \
+      -D ADIOS2_BUILD_EXAMPLES=OFF \
+      -D ADIOS2_USE_MPI=OFF \
+      -D ADIOS2_HAVE_HDF5_VOL=OFF \
+      -D CMAKE_INSTALL_PREFIX=/opt/adios2 && \
+    cmake --build build -j && \
+    cmake --install build && \
+    rm -rf /opt/adios2-src
+ENV ADIOS2_DIR=/opt/adios2
+ENV HDF5_ROOT=/usr
+
+# other packages + python
+RUN apt-get update && \
+    apt-get install -y bc gpg curl ssh vim emacs bat fzf ffmpeg hdf5-tools software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get install -y python3.12-dev python3.12-venv
+
+# eza
+RUN mkdir -p /etc/apt/keyrings && \
+    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | gpg --dearmor -o /etc/apt/keyrings/gierens.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | tee /etc/apt/sources.list.d/gierens.list && \
+    chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list && \
+    apt-get update && apt-get install -y eza
+
+# cleanup
+RUN apt-get clean && \
+    apt-get autoclean && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/cache/* && \
+    rm -rf /var/lib/log/* && \
+    rm -rf /var/lib/apt/lists/*
+
+# python
+RUN ln -s $(which python3.12) /bin/python && \
+    python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install black numpy myplotlib nt2py jupyterlab ipykernel
+ENV VIRTUAL_ENV=/opt/venv
+
+# user environment
+ARG HOME=/root
+WORKDIR $HOME
+RUN echo "alias ls='eza -a --sort=type'" >> $HOME/.bashrc && \
+    echo "alias ll='eza -a --long --header --sort=type --time-style=long-iso'" >> $HOME/.bashrc && \
+    echo "alias cat='batcat -pp'" >> $HOME/.bashrc
+
+RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes && \
+    echo eval "\$(starship init bash)" >> $HOME/.bashrc && \
+    mkdir -p $HOME/.config && \
+    starship preset pure-preset -o $HOME/.config/starship.toml && \
+    sed -i 's/$python\\//g' $HOME/.config/starship.toml
+ENV STARSHIP_CONFIG=$HOME/.config/starship.toml
+
+ENV PATH=/opt/adios2/bin:/opt/venv/bin:$PATH

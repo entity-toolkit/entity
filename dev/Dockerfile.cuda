@@ -1,0 +1,14 @@
+# syntax = devthefuture/dockerfile-x
+
+FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
+
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=/usr/local/cuda/bin:$PATH
+
+INCLUDE Dockerfile.common
+
+# welcome message
+COPY welcome.cuda /root/.welcome.cuda
+RUN echo '/usr/bin/bash /root/.welcome.cuda' | tee -a /etc/profile.d/welcome.sh
+
+ENTRYPOINT ["/usr/bin/bash", "-l"]
