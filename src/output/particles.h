@@ -2,34 +2,33 @@
  * @file output/particles.h
  * @brief Defines the metadata for particle output
  * @implements
- *   - out::OutputParticle
- * @cpp:
- *   - particles.cpp
+ *   - out::OutputSpecies
  */
 
 #ifndef OUTPUT_PARTICLES_H
 #define OUTPUT_PARTICLES_H
 
-#include "enums.h"
-
 #include <string>
-#include <vector>
-
-using namespace ntt;
 
 namespace out {
 
-  class OutputParticle {
+  class OutputSpecies {
     const unsigned short m_sp;
 
   public:
-    OutputParticle(unsigned short sp) : m_sp { sp } {}
+    OutputSpecies(unsigned short sp) : m_sp { sp } {}
 
-    ~OutputParticle() = default;
+    ~OutputSpecies() = default;
 
     [[nodiscard]]
     auto species() const -> unsigned short {
       return m_sp;
+    }
+
+    [[nodiscard]]
+    auto name(const std::string& q, unsigned short c) const -> std::string {
+      return "p" + q + (c == 0 ? "" : std::to_string(c)) + "_" +
+             std::to_string(m_sp);
     }
   };
 

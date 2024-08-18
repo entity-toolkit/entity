@@ -18,6 +18,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
 #include "utils/timer.h"
 
 #include "framework/containers/species.h"
@@ -33,6 +34,7 @@
   #include "output/writer.h"
 #endif
 
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
@@ -80,7 +82,9 @@ namespace ntt {
       }
     }
 
-    void Communicate(Domain<S, M>&, CommTags, timer::Timers* = nullptr);
+    void CommunicateFields(Domain<S, M>&, CommTags);
+    void SynchronizeFields(Domain<S, M>&, CommTags, const range_tuple_t& = { 0, 0 });
+    void CommunicateParticles(Domain<S, M>&, timer::Timers*);
 
     /**
      * @param global_ndomains total number of domains
@@ -109,7 +113,13 @@ namespace ntt {
 
 #if defined(OUTPUT_ENABLED)
     void InitWriter(const SimulationParams&);
-    void Write(const SimulationParams&, std::size_t, long double);
+    auto Write(const SimulationParams&,
+               std::size_t,
+               long double,
+               std::function<void(const std::string&,
+                                  ndfield_t<M::Dim, 6>&,
+                                  std::size_t,
+                                  const Domain<S, M>&)> = {}) -> bool;
 #endif
 
     Metadomain(const Metadomain&)            = delete;

@@ -21,6 +21,7 @@
   #include <mpi.h>
 #endif
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -293,36 +294,26 @@ namespace ntt {
           // skip the orthogonal directions
           continue;
         }
+        // if one of the boundaries is not periodic, then use it
+        // otherwise, use periodic
         FldsBC flds_bc { FldsBC::INVALID };
         for (auto dir : assoc_orth) {
           const auto fldsbc_in_dir = current_domain.mesh.flds_bc_in(dir);
-          if ((fldsbc_in_dir != FldsBC::PERIODIC) and
-              (fldsbc_in_dir != FldsBC::SYNC)) {
+          if (fldsbc_in_dir != FldsBC::PERIODIC) {
             flds_bc = fldsbc_in_dir;
             break;
-          } else if ((fldsbc_in_dir == FldsBC::PERIODIC) and
-                     (flds_bc != FldsBC::SYNC)) {
-            flds_bc = FldsBC::PERIODIC;
-          } else if (fldsbc_in_dir == FldsBC::SYNC) {
-            flds_bc = FldsBC::SYNC;
           } else {
-            raise::Error("Invalid boundary condition for fields", HERE);
+            flds_bc = FldsBC::PERIODIC;
           }
         }
         PrtlBC prtl_bc { PrtlBC::INVALID };
         for (auto dir : assoc_orth) {
           const auto prtlbc_in_dir = current_domain.mesh.prtl_bc_in(dir);
-          if ((prtlbc_in_dir != PrtlBC::PERIODIC) and
-              (prtlbc_in_dir != PrtlBC::SYNC)) {
+          if (prtlbc_in_dir != PrtlBC::PERIODIC) {
             prtl_bc = prtlbc_in_dir;
             break;
-          } else if ((prtlbc_in_dir == PrtlBC::PERIODIC) and
-                     (prtl_bc != PrtlBC::SYNC)) {
-            prtl_bc = PrtlBC::PERIODIC;
-          } else if (prtlbc_in_dir == PrtlBC::SYNC) {
-            prtl_bc = PrtlBC::SYNC;
           } else {
-            raise::Error("Invalid boundary condition for particles", HERE);
+            prtl_bc = PrtlBC::PERIODIC;
           }
         }
         raise::ErrorIf(flds_bc == FldsBC::INVALID,
@@ -385,7 +376,7 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
     const auto dx_min              = g_mesh.metric.dxMin();
-    auto       dx_min_from_domains = INFINITY;
+    auto       dx_min_from_domains = std::numeric_limits<real_t>::infinity();
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto& current_domain = g_subdomains[idx];
       const auto  current_dx_min = current_domain.mesh.metric.dxMin();

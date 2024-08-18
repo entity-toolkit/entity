@@ -37,6 +37,14 @@ endif()
 
 set_property(CACHE default_KOKKOS_ENABLE_CUDA PROPERTY TYPE BOOL)
 
+if(DEFINED ENV{Kokkos_ENABLE_HIP})
+  set(default_KOKKOS_ENABLE_HIP $ENV{Kokkos_ENABLE_HIP} CACHE INTERNAL "Default flag for HIP")
+else()
+  set(default_KOKKOS_ENABLE_HIP OFF CACHE INTERNAL "Default flag for HIP")
+endif()
+
+set_property(CACHE default_KOKKOS_ENABLE_HIP PROPERTY TYPE BOOL)
+
 if(DEFINED ENV{Kokkos_ENABLE_OPENMP})
   set(default_KOKKOS_ENABLE_OPENMP $ENV{Kokkos_ENABLE_OPENMP} CACHE INTERNAL "Default flag for OpenMP")
 else()

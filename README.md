@@ -1,9 +1,18 @@
-# `Entity` a.k.a. `ntt`
-One particle-in-cell code to rule them all. Find our detailed documentation [here](https://haykh.github.io/entity/).
+# `Entity` 
+
+tl;dr: One particle-in-cell code to rule them all. 
+
+`Entity` is an open-source coordinate-agnostic particle-in-cell (PIC) code written in C++17 specifically targeted to study plasma physics in relativistic astrophysical systems. The main algorithms of the code are written in covariant form, allowing to easily implement arbitrary grid geometries. The code is highly modular, and is written in the architecture-agnostic way using the [`Kokkos`](https://kokkos.org/kokkos-core-wiki/) performance portability library, allowing the code to efficiently use device parallelization on CPU and GPU architectures of different types. The multi-node parallelization is implemented using the `MPI` library, and the data output is done via the [`ADIOS2`](https://github.com/ornladios/ADIOS2) library which supports multiple output formats, including `HDF5` and `BP5`.
+
+`Entity` is part of the `Entity toolkit` framework, which also includes a Python library for fast and efficient data analysis and visualization of the simulation data: [`nt2py`](https://pypi.org/project/nt2py/).
+
+Our [detailed documentation](https://entity-toolkit.github.io/) includes everything you need to know to get started with using and/or contributing to the `Entity toolkit`. If you find bugs or issues, please feel free to add a GitHub issue or submit a pull request. Users with significant contributions to the code will be added to the list of developers, and assigned an emoji of their choice (important).
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-## Dev team (alphabetical)
+## Core developers (alphabetical)
+
+👀 __Yangyang Cai__ {[@StaticObserver](https://github.com/StaticObserver): GRPIC}
 
 💁‍♂️ __Alexander Chernoglazov__ {[@SChernoglazov](https://github.com/SChernoglazov): PIC}
 
@@ -21,77 +30,6 @@ One particle-in-cell code to rule them all. Find our detailed documentation [her
 
 😺 __Muni Zhou__ {[@munizhou](https://github.com/munizhou): PIC}
 
-## State of things
+## Branch policy
 
-* Framework 
-  - [ ]  Metrics
-    - [x]  Minkowski (SR)
-    - [x]  Spherical/Qspherical (SR)
-    - [x]  Kerr-Schild/QKerr-Schild, zero-mass Kerr-Schild (GR)
-    - [ ]  virtual inheritance of metric classes
-  - [ ]  Output
-    - [x]  Fields/currents (SR/GR)
-    - [x]  Moments (SR)
-    - [ ]  Moments (GR)
-    - [x]  Particles (SR/GR)
-    - [ ]  Energy distributions (SR/GR)
-    - [ ]  Particle tracking (SR/GR)
-  - [ ]  Extra physics
-    - [ ]  Radiation (synchrotron/IC)
-    - [ ]  gamma+B pair production
-    - [ ]  QED
-  - [x]  MPI
-    - [x]  restructure meshblocks
-    - [x]  rewrite fieldsolvers (addressing + ranges)
-    - [ ]  improve performance
-
-
-* SR (minkowski)
-  - [x]  fieldsolver (1D/2D/3D)
-  - [x]  pusher (1D/2D/3D)
-  - [x]  deposit (1D/2D/3D)
-  - [x]  filtering (1D/2D/3D)
-
-
-* SR (spherical)
-  - [x]  fieldsolver (2D)
-  - [x]  pusher (2D)
-  - [x]  deposit (2D)
-  - [x]  filtering (2D)
-
-
-* GR (spherical)
-  - [x]  fieldsolver (2D)
-  - [x]  pusher (2D)
-  - [x]  deposit (2D)
-  - [x]  filtering (2D)
-
-### Known bugs / minor issues to fix
-
-  ...
-
-> To keep the code clean, readable and easy to debug we employ some of the `c++` best practices described in details in [the following online manual](https://www.learncpp.com/). Basically, if there is any ambiguity on how to implement something, it's a good start to first look if there is any "best practice" solution offered in that manual.
-
-### Unit testing
-
-A limited number of unit tests are now available. To compile/run them:
-```shell
-cmake -B build -D TESTS=ON
-cd build
-make -j
-cd tests && ctest -j
-```
-
-Tests are automatically run when on pull requests to the `master` branch.
-
-## Third-party libraries
-
-1. [`Kokkos`](https://github.com/kokkos/kokkos/): for CPU/GPU portability
-2. [`adios2`](https://github.com/ornladios/ADIOS2): for output
-
-## Dependencies
-
-While we try to keep the code as compatible as possible, there are certain stringent requirements we impose.
-
-1. `cmake>=3.16`: for configuration (verify: `cmake --version`);
-2. `icx>=19.1` or `gcc>=8.3.1` with `c++17` support (verify: `[icx|gcc] -std=c++17 -v`; optionally `nvcc` compilers: `nvcc --version`).
+Master branch contains the latest stable version of the code which has already been released. Development on the core is done on branches starting with `dev/`, while fixing bugs is done in branches that start with `bug/`. User-specific modifications (i.e., new problem generators plus perhaps minor corrections in the core) are done on branches starting with `pgen/`. Before merging to the master branch, all the branches must first be merged to the latest release-candidate branch, which ends with `rc`, via a pull request. After which, when all the release goals are met, the `rc` branch is merged to the master and released as a new stable version. Stale branches will be archived with a tag starting with `archive/` (can still be accessed via the "Tags" tab) and removed.

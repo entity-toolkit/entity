@@ -366,32 +366,104 @@ namespace ntt {
     set("particles.species", species);
 
     /* [output] ------------------------------------------------------------- */
-    const auto flds_out = toml::find_or(raw_data,
-                                        "output",
-                                        "fields",
-                                        std::vector<std::string> {});
-    const auto prtl_out = toml::find_or(raw_data,
-                                        "output",
-                                        "particles",
-                                        std::vector<unsigned short> {});
-    if (flds_out.size() == 0) {
-      raise::Warning("No fields output specified", HERE);
-    }
-    set("output.fields", flds_out);
-    set("output.particles", prtl_out);
-
+    // fields
     set("output.format",
         toml::find_or(raw_data, "output", "format", defaults::output::format));
-    set("output.mom_smooth",
-        toml::find_or(raw_data, "output", "mom_smooth", defaults::output::mom_smooth));
-    set("output.flds_stride",
-        toml::find_or(raw_data, "output", "flds_stride", defaults::output::flds_stride));
-    set("output.prtl_stride",
-        toml::find_or(raw_data, "output", "prtl_stride", defaults::output::prtl_stride));
     set("output.interval",
         toml::find_or(raw_data, "output", "interval", defaults::output::interval));
     set("output.interval_time",
         toml::find_or<long double>(raw_data, "output", "interval_time", -1.0));
+    promiseToDefine("output.fields.interval");
+    promiseToDefine("output.fields.interval_time");
+    promiseToDefine("output.fields.enable");
+    promiseToDefine("output.particles.interval");
+    promiseToDefine("output.particles.interval_time");
+    promiseToDefine("output.particles.enable");
+    promiseToDefine("output.spectra.interval");
+    promiseToDefine("output.spectra.interval_time");
+    promiseToDefine("output.spectra.enable");
+
+    const auto flds_out        = toml::find_or(raw_data,
+                                        "output",
+                                        "fields",
+                                        "quantities",
+                                        std::vector<std::string> {});
+    const auto custom_flds_out = toml::find_or(raw_data,
+                                               "output",
+                                               "fields",
+                                               "custom",
+                                               std::vector<std::string> {});
+    if (flds_out.size() == 0) {
+      raise::Warning("No fields output specified", HERE);
+    }
+    set("output.fields.quantities", flds_out);
+    set("output.fields.custom", custom_flds_out);
+    set("output.fields.mom_smooth",
+        toml::find_or(raw_data,
+                      "output",
+                      "fields",
+                      "mom_smooth",
+                      defaults::output::mom_smooth));
+    set("output.fields.stride",
+        toml::find_or(raw_data, "output", "fields", "stride", defaults::output::flds_stride));
+
+    // particles
+    auto prtl_out = toml::find_or(raw_data,
+                                  "output",
+                                  "particles",
+                                  "species",
+                                  std::vector<unsigned short> {});
+    if (prtl_out.size() == 0) {
+      for (unsigned short i = 0; i < species.size(); ++i) {
+        prtl_out.push_back(i + 1);
+      }
+    }
+    set("output.particles.species", prtl_out);
+    set("output.particles.stride",
+        toml::find_or(raw_data,
+                      "output",
+                      "particles",
+                      "stride",
+                      defaults::output::prtl_stride));
+
+    // spectra
+    set("output.spectra.e_min",
+        toml::find_or(raw_data, "output", "spectra", "e_min", defaults::output::spec_emin));
+    set("output.spectra.e_max",
+        toml::find_or(raw_data, "output", "spectra", "e_max", defaults::output::spec_emax));
+    set("output.spectra.log_bins",
+        toml::find_or(raw_data,
+                      "output",
+                      "spectra",
+                      "log_bins",
+                      defaults::output::spec_log));
+    set("output.spectra.n_bins",
+        toml::find_or(raw_data, "output", "spectra", "n_bins", defaults::output::spec_nbins));
+
+    // intervals
+    for (const auto& type : { "fields", "particles", "spectra" }) {
+      const auto q_int      = toml::find_or<std::size_t>(raw_data,
+                                                    "output",
+                                                    std::string(type),
+                                                    "interval",
+                                                    0);
+      const auto q_int_time = toml::find_or<long double>(raw_data,
+                                                         "output",
+                                                         std::string(type),
+                                                         "interval_time",
+                                                         -1.0);
+      set("output." + std::string(type) + ".enable",
+          toml::find_or(raw_data, "output", std::string(type), "enable", true));
+      if (q_int == 0 && q_int_time == -1.0) {
+        set("output." + std::string(type) + ".interval",
+            get<std::size_t>("output.interval"));
+        set("output." + std::string(type) + ".interval_time",
+            get<long double>("output.interval_time"));
+      } else {
+        set("output." + std::string(type) + ".interval", q_int);
+        set("output." + std::string(type) + ".interval_time", q_int_time);
+      }
+    }
 
     /* [output.debug] ------------------------------------------------------- */
     set("output.debug.as_is",
@@ -405,7 +477,7 @@ namespace ntt {
     set("diagnostics.blocking_timers",
         toml::find_or(raw_data, "diagnostics", "blocking_timers", false));
     set("diagnostics.colored_stdout",
-        toml::find_or(raw_data, "diagnostics", "colored_stdout", true));
+        toml::find_or(raw_data, "diagnostics", "colored_stdout", false));
 
     /* inferred variables --------------------------------------------------- */
     // extent

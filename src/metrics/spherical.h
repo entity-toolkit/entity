@@ -256,10 +256,8 @@ namespace metric {
       -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
-      if constexpr (i > static_cast<idx_t>(D)) {
-        return v_in;
-      } else if constexpr ((in == Idx::T && out == Idx::Sph) ||
-                           (in == Idx::Sph && out == Idx::T)) {
+      if constexpr ((in == Idx::T && out == Idx::Sph) ||
+                    (in == Idx::Sph && out == Idx::T)) {
         // tetrad <-> sph
         return v_in;
       } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
@@ -287,6 +285,8 @@ namespace metric {
           return v_in * dr;
         } else if constexpr (i == 2) {
           return v_in * dtheta;
+        } else if constexpr (D == Dim::_2D) {
+          return v_in;
         } else {
           return v_in * dphi;
         }
@@ -297,6 +297,8 @@ namespace metric {
           return v_in * dr_inv;
         } else if constexpr (i == 2) {
           return v_in * dtheta_inv;
+        } else if constexpr (D == Dim::_2D) {
+          return v_in;
         } else {
           return v_in * dphi_inv;
         }

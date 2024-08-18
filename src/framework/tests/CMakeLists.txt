@@ -25,6 +25,9 @@ function(gen_test title)
   add_test(NAME "FRAMEWORK::${title}" COMMAND "${exec}")
 endfunction()
 
+if (${mpi})
+gen_test(comm_mpi)
+else()
 gen_test(parameters)
 gen_test(particles)
 gen_test(fields)
@@ -33,6 +36,8 @@ if (${DEBUG})
   gen_test(metadomain)
 endif()
 gen_test(comm_nompi)
+endif()
+
 
 # this test is only run manually to ensure ...
 # ... command line args are working properly ...

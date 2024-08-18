@@ -9,6 +9,8 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
+#include "framework/domain/domain.h"
+
 #include "engines/engine.hpp"
 
 namespace ntt {
@@ -33,21 +35,9 @@ namespace ntt {
       const auto diag_interval = m_params.get<std::size_t>(
         "diagnostics.interval");
 
-#if defined(OUTPUT_ENABLED)
-      const auto interval = m_params.template get<std::size_t>(
-        "output.interval");
-      const auto interval_time = m_params.template get<long double>(
-        "output.interval_time");
-      long double last_output_time = -interval_time - 1.0;
-      const auto  should_output =
-        [&interval, &interval_time, &last_output_time](auto step, auto time) {
-          return ((interval_time <= 0.0) and (step % interval == 0)) or
-                 ((time - last_output_time >= interval_time) and
-                  (interval_time > 0.0));
-        };
-#endif
-
-      auto time_history = pbar::DurationHistory { 1000 };
+      auto       time_history  = pbar::DurationHistory { 1000 };
+      const auto sort_interval = m_params.template get<std::size_t>(
+        "particles.sort_interval");
 
       // main algorithm loop
       while (step < max_steps) {
@@ -64,9 +54,7 @@ namespace ntt {
           });
           timers.stop("Custom");
         }
-        auto print_sorting = (step % m_params.template get<std::size_t>(
-                                       "particles.sort_interval") ==
-                              0);
+        auto print_sorting = (sort_interval > 0 and step % sort_interval == 0);
 
         // advance time & timestep
         ++step;
@@ -74,14 +62,23 @@ namespace ntt {
 
         auto print_output = false;
 #if defined(OUTPUT_ENABLED)
-        // write timestep if needed
-        if (should_output(step, time)) {
-          timers.start("Output");
-          m_metadomain.Write(m_params, step, time);
-          timers.stop("Output");
-          last_output_time = time;
-          print_output     = true;
+        timers.start("Output");
+        if constexpr (
+          traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
+          auto lambda_custom_field_output = [&](const std::string&    name,
+                                                ndfield_t<M::Dim, 6>& buff,
+                                                std::size_t           idx,
+                                                const Domain<S, M>&   dom) {
+            m_pgen.CustomFieldOutput(name, buff, idx, dom);
+          };
+          print_output = m_metadomain.Write(m_params,
+                                            step,
+                                            time,
+                                            lambda_custom_field_output);
+        } else {
+          print_output = m_metadomain.Write(m_params, step, time);
         }
+        timers.stop("Output");
 #endif
 
         // advance time_history

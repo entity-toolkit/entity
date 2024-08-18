@@ -57,7 +57,7 @@ namespace kernel {
     const float              charge;
     const bool               use_weights;
     const M                  metric;
-    const std::size_t        ni2;
+    const int                ni2;
     const real_t             inv_n0;
     const unsigned short     window;
 
@@ -111,7 +111,7 @@ namespace kernel {
       , charge { charge }
       , use_weights { use_weights }
       , metric { metric }
-      , ni2 { ni2 }
+      , ni2 { static_cast<int>(ni2) }
       , inv_n0 { inv_n0 }
       , window { window }
       , contrib { get_contrib<F>(mass, charge) }
@@ -226,52 +226,60 @@ namespace kernel {
 
       auto buff_access = Buff.access();
       if constexpr (D == Dim::_1D) {
-        for (auto i1_ { i1(p) - window + N_GHOSTS };
-             i1_ <= i1(p) + window + N_GHOSTS;
-             ++i1_) {
-          buff_access(i1_, buff_idx) += coeff;
+        for (auto di1 { -window }; di1 <= window; ++di1) {
+          buff_access(i1(p) + di1 + N_GHOSTS, buff_idx) += coeff;
         }
       } else if constexpr (D == Dim::_2D) {
-        for (auto i2_ { i2(p) - window + N_GHOSTS };
-             i2_ <= i2(p) + window + N_GHOSTS;
-             ++i2_) {
-          for (auto i1_ { i1(p) - window + N_GHOSTS };
-               i1_ <= i1(p) + window + N_GHOSTS;
-               ++i1_) {
+        for (auto di2 { -window }; di2 <= window; ++di2) {
+          for (auto di1 { -window }; di1 <= window; ++di1) {
             if constexpr (M::CoordType == Coord::Cart) {
-              buff_access(i1_, i2_, buff_idx) += coeff;
+              buff_access(i1(p) + di1 + N_GHOSTS,
+                          i2(p) + di2 + N_GHOSTS,
+                          buff_idx) += coeff;
             } else {
               // reflect contribution at axes
-              if (is_axis_i2min && (i2_ < N_GHOSTS)) {
-                buff_access(i1_, 2 * N_GHOSTS - i2_, buff_idx) += coeff;
-              } else if (is_axis_i2max && (i2_ >= ni2 + N_GHOSTS)) {
-                buff_access(i1_, 2 * (ni2 + N_GHOSTS) - i2_, buff_idx) += coeff;
+              if (is_axis_i2min && (i2(p) + di2 < 0)) {
+                buff_access(i1(p) + di1 + N_GHOSTS,
+                            N_GHOSTS - (i2(p) + di2),
+                            buff_idx) += coeff;
+              } else if (is_axis_i2max && (i2(p) + di2 >= ni2)) {
+                buff_access(i1(p) + di1 + N_GHOSTS,
+                            2 * ni2 - (i2(p) + di2) + N_GHOSTS,
+                            buff_idx) += coeff;
               } else {
-                buff_access(i1_, i2_, buff_idx) += coeff;
+                buff_access(i1(p) + di1 + N_GHOSTS,
+                            i2(p) + di2 + N_GHOSTS,
+                            buff_idx) += coeff;
               }
             }
           }
         }
       } else if constexpr (D == Dim::_3D) {
-        for (auto i3_ { i3(p) - window + N_GHOSTS };
-             i3_ <= i3(p) + window + N_GHOSTS;
-             ++i3_) {
-          for (auto i2_ { i2(p) - window + N_GHOSTS };
-               i2_ <= i2(p) + window + N_GHOSTS;
-               ++i2_) {
-            for (auto i1_ { i1(p) - window + N_GHOSTS };
-                 i1_ <= i1(p) + window + N_GHOSTS;
-                 ++i1_) {
+        for (auto di3 { -window }; di3 <= window; ++di3) {
+          for (auto di2 { -window }; di2 <= window; ++di2) {
+            for (auto di1 { -window }; di1 <= window; ++di1) {
               if constexpr (M::CoordType == Coord::Cart) {
-                buff_access(i1_, i2_, i3_, buff_idx) += coeff;
+                buff_access(i1(p) + di1 + N_GHOSTS,
+                            i2(p) + di2 + N_GHOSTS,
+                            i3(p) + di3 + N_GHOSTS,
+                            buff_idx) += coeff;
               } else {
                 // reflect contribution at axes
-                if (is_axis_i2min && (i2_ < N_GHOSTS)) {
-                  buff_access(i1_, 2 * N_GHOSTS - i2_, i3_, buff_idx) += coeff;
-                } else if (is_axis_i2max && (i2_ >= ni2 + N_GHOSTS)) {
-                  buff_access(i1_, 2 * (ni2 + N_GHOSTS) - i2_, i3_, buff_idx) += coeff;
+                if (is_axis_i2min && (i2(p) + di2 < 0)) {
+                  buff_access(i1(p) + di1 + N_GHOSTS,
+                              N_GHOSTS - (i2(p) + di2),
+                              i3(p) + di3 + N_GHOSTS,
+                              buff_idx) += coeff;
+                } else if (is_axis_i2max && (i2(p) + di2 >= ni2)) {
+                  buff_access(i1(p) + di1 + N_GHOSTS,
+                              2 * ni2 - (i2(p) + di2) + N_GHOSTS,
+                              i3(p) + di3 + N_GHOSTS,
+                              buff_idx) += coeff;
                 } else {
-                  buff_access(i1_, i2_, i3_, buff_idx) += coeff;
+                  buff_access(i1(p) + di1 + N_GHOSTS,
+                              i2(p) + di2 + N_GHOSTS,
+                              i3(p) + di3 + N_GHOSTS,
+                              buff_idx) += coeff;
                 }
               }
             }

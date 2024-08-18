@@ -104,7 +104,7 @@ namespace ntt {
 
   template <Dimension D, Coord::type C>
   auto Particles<D, C>::SortByTags() -> std::vector<std::size_t> {
-    if (npart() == 0) {
+    if (npart() == 0 || is_sorted()) {
       return npart_per_tag();
     }
     using KeyType = array_t<short*>;
@@ -151,6 +151,7 @@ namespace ntt {
     const auto np_per_tag = npart_per_tag();
     set_npart(np_per_tag[(short)(ParticleTag::alive)]);
 
+    m_is_sorted = true;
     return np_per_tag;
   }
 

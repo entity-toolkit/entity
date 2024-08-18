@@ -61,13 +61,14 @@ auto main() -> int {
   enum_str_t all_simulation_engines = { "srpic", "grpic" };
   enum_str_t all_particle_bcs = { "periodic", "absorb",  "atmosphere", "custom",
                                   "reflect",  "horizon", "axis",       "sync" };
-  enum_str_t all_fields_bcs   = { "periodic", "absorb", "atmosphere", "custom",
-                                  "horizon",  "axis",   "sync" };
+  enum_str_t all_fields_bcs = { "periodic", "absorb",    "atmosphere", "custom",
+                                "horizon",  "conductor", "axis",       "sync" };
   enum_str_t all_particle_pushers = { "boris", "vay", "photon", "none" };
   enum_str_t all_coolings         = { "synchrotron", "none" };
 
-  enum_str_t all_out_flds = { "e", "dive", "d",   "divd",   "b", "h",   "j",
-                              "a", "t",    "rho", "charge", "n", "nppc" };
+  enum_str_t all_out_flds = { "e",      "dive", "d",    "divd",  "b",
+                              "h",      "j",    "a",    "t",     "rho",
+                              "charge", "n",    "nppc", "custom" };
 
   checkEnum<Coord>(all_coords);
   checkEnum<Metric>(all_metrics);
