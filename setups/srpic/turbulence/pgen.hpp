@@ -265,7 +265,7 @@ namespace user {
       }
 
       // Weight the macroparticle integral by sim parameters
-      fext_en_total = fext_en_total;
+      fext_en_total /= params.template get<real_t>("scales.n0");
 
       auto pkin_en_total = ZERO;
       for (auto& species : domain.species) {
