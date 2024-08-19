@@ -217,6 +217,12 @@ namespace user {
       auto gamma0 = 0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
       auto pool   = domain.random_pool;
+
+      #if defined(MPI_ENABLED)
+        int              rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      #endif
+
       Kokkos::parallel_for(
         "RandomAmplitudes",
         amplitudes.extent(0),
@@ -239,6 +245,7 @@ namespace user {
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
+        auto fext_en_s = ZERO;
         auto pld    = species.pld[0];
         auto weight = species.weight;
         Kokkos::parallel_reduce(
@@ -247,11 +254,19 @@ namespace user {
           ClassLambda(index_t p, real_t & fext_en) {
             fext_en += pld(p) * weight(p);
           },
-          fext_en_total);
+          fext_en_s);
+      #if defined(MPI_ENABLED)
+        auto fext_en_sg = ZERO;
+        MPI_Allreduce(&fext_en_s, &fext_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+        fext_en_total += fext_en_sg;
+      #else
+        fext_en_total += fext_en_s; 
+      #endif
       }
 
       auto pkin_en_total = ZERO;
       for (auto& species : domain.species) {
+        auto pkin_en_s = ZERO;
         auto ux1    = species.ux1;
         auto ux2    = species.ux2;
         auto ux3    = species.ux3;
@@ -264,33 +279,24 @@ namespace user {
                         ONE) *
                        weight(p);
           },
-          pkin_en_total);
+          pkin_en_s);
+      #if defined(MPI_ENABLED)
+        auto pkin_en_sg = ZERO;
+        MPI_Allreduce(&pkin_en_s, &pkin_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+        pkin_en_total += pkin_en_sg;
+      #else
+        pkin_en_total += pkin_en_s;
+      #endif
       }
       // Weight the macroparticle integral by sim parameters
       pkin_en_total /= params.template get<real_t>("scales.n0");
-
-      std::ofstream myfile;
-      if (time == 0) {
-        myfile.open("fextenrg.txt");
-      } else {
-        myfile.open("fextenrg.txt", std::ios_base::app);
-      }
-      myfile << fext_en_total << std::endl;
-      myfile.close();
-
-      if (time == 0) {
-        myfile.open("kenrg.txt");
-      } else {
-        myfile.open("kenrg.txt", std::ios_base::app);
-      }
-      myfile << pkin_en_total << std::endl;
-      myfile.close();
 
       if constexpr (D == Dim::_3D) {
         
         auto metric = domain.mesh.metric;
         
         auto benrg_total = ZERO;
+        auto benrg_s = ZERO;
         auto EB          = domain.fields.em;
         Kokkos::parallel_reduce(
           "BEnrg",
@@ -306,17 +312,17 @@ namespace user {
                                                                   b_XYZ);
             benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
           },
-          benrg_total);
-        benrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
+          benrg_s);
+        #if defined(MPI_ENABLED)
+          auto benrg_sg = ZERO;
+          MPI_Allreduce(&benrg_s, &benrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          benrg_total += benrg_sg;
+        #else
+          benrg_total += benrg_s;
+        #endif
 
-        if (time == 0) {
-          myfile.open("bsqenrg.txt");
-        } else {
-          myfile.open("bsqenrg.txt", std::ios_base::app);
-        }
-        myfile << benrg_total << std::endl;
-        myfile.close();
         auto eenrg_total = ZERO;
+        auto eenrg_s = ZERO;
         Kokkos::parallel_reduce(
           "BEnrg",
           domain.mesh.rangeActiveCells(),
@@ -331,17 +337,91 @@ namespace user {
                                                                   e_XYZ);            
             eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
           },
-          eenrg_total);
-        eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
-  
+          eenrg_s);
 
-        if (time == 0) {
-          myfile.open("esqenrg.txt");
-        } else {
-          myfile.open("esqenrg.txt", std::ios_base::app);
-        }
-        myfile << eenrg_total << std::endl;
-        myfile.close();
+        #if defined(MPI_ENABLED)
+          auto eenrg_sg = ZERO;
+          MPI_Allreduce(&eenrg_s, &eenrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          eenrg_total += eenrg_sg;  
+        #else
+          eenrg_total += eenrg_s;
+        #endif
+
+        eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
+
+      std::ofstream myfile;
+      #if defined(MPI_ENABLED)
+
+        if(rank == MPI_ROOT_RANK)
+
+          if (time == 0) {
+            myfile.open("fextenrg.txt");
+          } else {
+            myfile.open("fextenrg.txt", std::ios_base::app);
+          }
+          myfile << fext_en_total << std::endl;
+          myfile.close();
+
+          if (time == 0) {
+            myfile.open("kenrg.txt");
+          } else {
+            myfile.open("kenrg.txt", std::ios_base::app);
+          }
+          myfile << pkin_en_total << std::endl;
+          myfile.close();
+
+          if (time == 0) {
+            myfile.open("bsqenrg.txt");
+          } else {
+            myfile.open("bsqenrg.txt", std::ios_base::app);
+          }
+          myfile << benrg_total << std::endl;
+          myfile.close();
+
+          if (time == 0) {
+            myfile.open("esqenrg.txt");
+          } else {
+            myfile.open("esqenrg.txt", std::ios_base::app);
+          }
+          myfile << eenrg_total << std::endl;
+          myfile.close();
+
+      #else
+
+          if (time == 0) {
+            myfile.open("fextenrg.txt");
+          } else {
+            myfile.open("fextenrg.txt", std::ios_base::app);
+          }
+          myfile << fext_en_total << std::endl;
+          myfile.close();
+
+          if (time == 0) {
+            myfile.open("kenrg.txt");
+          } else {
+            myfile.open("kenrg.txt", std::ios_base::app);
+          }
+          myfile << pkin_en_total << std::endl;
+          myfile.close();
+
+          if (time == 0) {
+            myfile.open("bsqenrg.txt");
+          } else {
+            myfile.open("bsqenrg.txt", std::ios_base::app);
+          }
+          myfile << benrg_total << std::endl;
+          myfile.close();
+
+          if (time == 0) {
+            myfile.open("esqenrg.txt");
+          } else {
+            myfile.open("esqenrg.txt", std::ios_base::app);
+          }
+          myfile << eenrg_total << std::endl;
+          myfile.close();
+
+      #endif
+
       }
     }
   };
