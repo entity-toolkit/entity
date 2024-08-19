@@ -328,7 +328,7 @@ namespace user {
         #endif
 
       // Weight the field integral by sim parameters
-        benrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
+        benrg_total *= params.template get<real_t>("scales.V0") * SQR(params.template get<real_t>("scales.B0")) * HALF;
 
         auto eenrg_s = ZERO;
         Kokkos::parallel_reduce(
@@ -354,7 +354,7 @@ namespace user {
         #endif
 
       // Weight the field integral by sim parameters
-        eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
+        eenrg_total *= params.template get<real_t>("scales.V0") * SQR(params.template get<real_t>("scales.B0")) * HALF;
 
       }
 
