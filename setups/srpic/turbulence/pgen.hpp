@@ -264,6 +264,9 @@ namespace user {
       #endif
       }
 
+      // Weight the macroparticle integral by sim parameters
+      fext_en_total = fext_en_total;
+
       auto pkin_en_total = ZERO;
       for (auto& species : domain.species) {
         auto pkin_en_s = ZERO;
@@ -288,14 +291,17 @@ namespace user {
         pkin_en_total += pkin_en_s;
       #endif
       }
+
       // Weight the macroparticle integral by sim parameters
       pkin_en_total /= params.template get<real_t>("scales.n0");
+        
+      auto benrg_total = ZERO;
+      auto eenrg_total = ZERO;
 
       if constexpr (D == Dim::_3D) {
         
         auto metric = domain.mesh.metric;
         
-        auto benrg_total = ZERO;
         auto benrg_s = ZERO;
         auto EB          = domain.fields.em;
         Kokkos::parallel_reduce(
@@ -321,7 +327,9 @@ namespace user {
           benrg_total += benrg_s;
         #endif
 
-        auto eenrg_total = ZERO;
+      // Weight the field integral by sim parameters
+        benrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
+
         auto eenrg_s = ZERO;
         Kokkos::parallel_reduce(
           "BEnrg",
@@ -332,9 +340,7 @@ namespace user {
                                       EB(i1, i2, i3, em::ex2),
                                       EB(i1, i2, i3, em::ex3) };
             vec_t<Dim::_3D>   e_XYZ;
-            metric.template transform<Idx::U, Idx::T>(x_Cd,
-                                                                  e_Cntrv,
-                                                                  e_XYZ);            
+            metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
             eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
           },
           eenrg_s);
@@ -347,82 +353,82 @@ namespace user {
           eenrg_total += eenrg_s;
         #endif
 
+      // Weight the field integral by sim parameters
         eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
 
-      std::ofstream myfile;
+      }
+
+      std::ofstream myfile1;
+      std::ofstream myfile2;
+      std::ofstream myfile3;
+      std::ofstream myfile4;
+
       #if defined(MPI_ENABLED)
 
-        if(rank == MPI_ROOT_RANK)
+        if(rank == MPI_ROOT_RANK) {
+
+          printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
+          
+          if (time == 0) {
+            myfile1.open("fextenrg.txt");
+          } else {
+            myfile1.open("fextenrg.txt", std::ios_base::app);
+          }
+          myfile1 << fext_en_total << std::endl;
 
           if (time == 0) {
-            myfile.open("fextenrg.txt");
+            myfile2.open("kenrg.txt");
           } else {
-            myfile.open("fextenrg.txt", std::ios_base::app);
+            myfile2.open("kenrg.txt", std::ios_base::app);
           }
-          myfile << fext_en_total << std::endl;
-          myfile.close();
+          myfile2 << pkin_en_total << std::endl;
 
           if (time == 0) {
-            myfile.open("kenrg.txt");
+            myfile3.open("bsqenrg.txt");
           } else {
-            myfile.open("kenrg.txt", std::ios_base::app);
+            myfile3.open("bsqenrg.txt", std::ios_base::app);
           }
-          myfile << pkin_en_total << std::endl;
-          myfile.close();
+          myfile3 << benrg_total << std::endl;
 
           if (time == 0) {
-            myfile.open("bsqenrg.txt");
+            myfile4.open("esqenrg.txt");
           } else {
-            myfile.open("bsqenrg.txt", std::ios_base::app);
+            myfile4.open("esqenrg.txt", std::ios_base::app);
           }
-          myfile << benrg_total << std::endl;
-          myfile.close();
-
-          if (time == 0) {
-            myfile.open("esqenrg.txt");
-          } else {
-            myfile.open("esqenrg.txt", std::ios_base::app);
-          }
-          myfile << eenrg_total << std::endl;
-          myfile.close();
+          myfile4 << eenrg_total << std::endl;
+        }
 
       #else
 
           if (time == 0) {
-            myfile.open("fextenrg.txt");
+            myfile1.open("fextenrg.txt");
           } else {
-            myfile.open("fextenrg.txt", std::ios_base::app);
+            myfile1.open("fextenrg.txt", std::ios_base::app);
           }
-          myfile << fext_en_total << std::endl;
-          myfile.close();
+          myfile1 << fext_en_total << std::endl;
 
           if (time == 0) {
-            myfile.open("kenrg.txt");
+            myfile2.open("kenrg.txt");
           } else {
-            myfile.open("kenrg.txt", std::ios_base::app);
+            myfile2.open("kenrg.txt", std::ios_base::app);
           }
-          myfile << pkin_en_total << std::endl;
-          myfile.close();
+          myfile2 << pkin_en_total << std::endl;
 
           if (time == 0) {
-            myfile.open("bsqenrg.txt");
+            myfile3.open("bsqenrg.txt");
           } else {
-            myfile.open("bsqenrg.txt", std::ios_base::app);
+            myfile3.open("bsqenrg.txt", std::ios_base::app);
           }
-          myfile << benrg_total << std::endl;
-          myfile.close();
+          myfile3 << benrg_total << std::endl;
 
           if (time == 0) {
-            myfile.open("esqenrg.txt");
+            myfile4.open("esqenrg.txt");
           } else {
-            myfile.open("esqenrg.txt", std::ios_base::app);
+            myfile4.open("esqenrg.txt", std::ios_base::app);
           }
-          myfile << eenrg_total << std::endl;
-          myfile.close();
+          myfile4 << eenrg_total << std::endl;
 
       #endif
-
-      }
     }
   };
 
