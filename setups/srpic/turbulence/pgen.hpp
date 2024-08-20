@@ -193,22 +193,22 @@ namespace user {
       }
 
       {
-        const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                        local_domain.random_pool,
-                                                        temperature*10);        
+        // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+        //                                                 local_domain.random_pool,
+        //                                                 temperature*10);        
         // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
         //                                                 local_domain.random_pool,
         //                                                 temperature * 2,
         //                                                 10.0,
         //                                                 1);
-        const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
-          energy_dist,
-          { 1, 2 });
-        const real_t ndens = 0.01;
-        arch::InjectUniform<S, M, decltype(injector)>(params,
-                                                      local_domain,
-                                                      injector,
-                                                      ndens);
+        // const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+        //   energy_dist,
+        //   { 1, 2 });
+        // const real_t ndens = 0.01;
+        // arch::InjectUniform<S, M, decltype(injector)>(params,
+        //                                               local_domain,
+        //                                               injector,
+        //                                               ndens);
       }
     }
 
@@ -328,7 +328,7 @@ namespace user {
         #endif
 
       // Weight the field integral by sim parameters
-        benrg_total *= params.template get<real_t>("scales.V0") * SQR(params.template get<real_t>("scales.B0")) * HALF;
+        benrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
         auto eenrg_s = ZERO;
         Kokkos::parallel_reduce(
@@ -354,7 +354,7 @@ namespace user {
         #endif
 
       // Weight the field integral by sim parameters
-        eenrg_total *= params.template get<real_t>("scales.V0") * SQR(params.template get<real_t>("scales.B0")) * HALF;
+        eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
       }
 
