@@ -243,18 +243,19 @@ namespace ntt {
     static constexpr const char* label = "prtl_pusher";
 
     enum type : uint8_t {
-      INVALID = 0,
-      BORIS   = 1,
-      VAY     = 2,
-      PHOTON  = 3,
-      NONE    = 4,
+      INVALID   = 0,
+      BORIS     = 1,
+      VAY       = 2,
+      PHOTON    = 3,
+      FORCEFREE = 4
+      NONE      = 5,
     };
 
     constexpr PrtlPusher(uint8_t c)
       : enums_hidden::BaseEnum<PrtlPusher> { c } {}
 
     static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
-    static constexpr const char* lookup[] = { "boris", "vay", "photon", "none" };
+    static constexpr const char* lookup[] = { "boris", "vay", "photon", "forcefree", "none"};
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
