@@ -4,7 +4,6 @@
 # - engine_printer.cpp
 # - engine_init.cpp
 # - engine_run.cpp
-# - engine_step_report.cpp
 # @includes:
 # - ../
 # @depends:
@@ -18,6 +17,7 @@
 # @uses:
 # - kokkos [required]
 # - plog [required]
+# - toml11 [required]
 # - adios2 [optional]
 # - hdf5 [optional]
 # - mpi [optional]
@@ -28,7 +28,6 @@ set(SOURCES
   ${SRC_DIR}/engine_printer.cpp
   ${SRC_DIR}/engine_init.cpp
   ${SRC_DIR}/engine_run.cpp
-  ${SRC_DIR}/engine_step_report.cpp
 )
 add_library(ntt_engines ${SOURCES})
 
