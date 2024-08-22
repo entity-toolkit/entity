@@ -4,6 +4,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/formatting.h"
 #include "utils/param_container.h"
 #include "utils/tools.h"
 #include "utils/log.h" 
@@ -40,8 +41,7 @@ namespace out {
   void Writer::addTracker(const std::string& type,
                           std::size_t        interval,
                           long double        interval_time) {
-    m_trackers.insert(std::pair<std::string, tools::Tracker>(
-      { type, tools::Tracker(type, interval, interval_time) }));
+    m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
   auto Writer::shouldWrite(const std::string& type,
@@ -50,7 +50,7 @@ namespace out {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
-    raise::Warning(fmt::format("Tracker type %s not found", type.c_str()), HERE);      
+      raise::Error(fmt::format("Tracker type %s not found", type.c_str()), HERE);
       return false;
     }
   }
