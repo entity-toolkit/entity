@@ -6,6 +6,8 @@
 #include "utils/error.h"
 #include "utils/param_container.h"
 #include "utils/tools.h"
+#include "utils/log.h" 
+#include "utils/formatting.h"
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
@@ -48,8 +50,7 @@ namespace out {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
-      raise::Error("Tracker type not found", HERE);
-      return false;
+    raise::Warning(fmt::format("Tracker type %s not found", type.c_str()), HERE);      return false;
     }
   }
 
