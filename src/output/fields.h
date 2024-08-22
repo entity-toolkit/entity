@@ -43,7 +43,7 @@ namespace out {
     [[nodiscard]]
     auto is_moment() const -> bool {
       return (id() == FldsID::T || id() == FldsID::Rho || id() == FldsID::Nppc ||
-              id() == FldsID::N || id() == FldsID::Charge);
+              id() == FldsID::N || id() == FldsID::Charge || id() == FldsID::V);
     }
 
     [[nodiscard]]
@@ -94,6 +94,8 @@ namespace out {
           tmp += m_name.substr(1, 2);
         } else if (id() == FldsID::A) {
           tmp += "3";
+        } else if (id() == FldsID::V) {
+          tmp += m_name.substr(1, 1);
         } else if (is_field()) {
           tmp += "i";
         }
