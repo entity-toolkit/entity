@@ -306,7 +306,7 @@ namespace tools {
     }
 
     auto shouldWrite(std::size_t step, long double time) -> bool {
-      // raise::ErrorIf(!m_initialized, "Tracker not initialized", HERE);
+      raise::ErrorIf(!m_initialized, "Tracker not initialized", HERE);
       if (m_use_time) {
         if ((m_last_output_time < 0) or
             (time - m_last_output_time >= m_interval_time)) {
