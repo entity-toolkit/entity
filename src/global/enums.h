@@ -289,16 +289,17 @@ namespace ntt {
       N       = 12,
       Nppc    = 13,
       Custom  = 14,
+      V       = 15,
     };
 
     constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
 
     static constexpr type variants[]      = { E, divE, D,   divD,   B, H,    J,
-                                              A, T,    Rho, Charge, N, Nppc, Custom };
+                                              A, T,    Rho, Charge, N, Nppc, Custom , V};
     static constexpr const char* lookup[] = { "e",    "dive",  "d",      "divd",
                                               "b",    "h",     "j",      "a",
                                               "t",    "rho",   "charge", "n",
-                                              "nppc", "custom" };
+                                              "nppc", "custom", "v" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
