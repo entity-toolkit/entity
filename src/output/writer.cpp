@@ -50,7 +50,8 @@ namespace out {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
-    raise::Warning(fmt::format("Tracker type %s not found", type.c_str()), HERE);      return false;
+    raise::Warning(fmt::format("Tracker type %s not found", type.c_str()), HERE);      
+      return false;
     }
   }
 
