@@ -344,7 +344,7 @@ namespace ntt {
 
     for (unsigned int idx { 0 }; idx < m_metadomain.ndomains(); ++idx) {
       auto is_local = false;
-      for (const auto& lidx : m_metadomain.local_subdomain_indices()) {
+      for (const auto& lidx : m_metadomain.l_subdomain_indices()) {
         is_local |= (idx == lidx);
       }
       if (is_local) {

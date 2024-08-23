@@ -16,8 +16,9 @@ jobs:
         exclude: 
         - device: amd-gpu 
           precision: double
-        # my AMD GPUs doesn't support fp64 atomics : (
+        # my AMD GPU doesn't support fp64 atomics : (
     runs-on: [self-hosted, "${{ matrix.device }}"]
+    if: contains(github.event.head_commit.message, 'totest')
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0

@@ -4,12 +4,13 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/formatting.h"
 #include "utils/param_container.h"
+#include "utils/tools.h"
 
 #include <Kokkos_Core.hpp>
-
-#include <string>
-#include <vector>
+#include <adios2.h>
+#include <adios2/cxx11/KokkosView.h>
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_aliases.h"
@@ -17,10 +18,18 @@
   #include <mpi.h>
 #endif
 
+#include <string>
+#include <vector>
+
 namespace out {
 
-  Writer::Writer(const std::string& engine) : m_engine { engine } {
-    m_io = m_adios.DeclareIO("Entity::ADIOS2");
+  void Writer::init(adios2::ADIOS* ptr_adios, const std::string& engine) {
+    m_engine = engine;
+    p_adios  = ptr_adios;
+
+    raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
+
+    m_io = p_adios->DeclareIO("Entity::Output");
     m_io.SetEngine(engine);
 
     m_io.DefineVariable<std::size_t>("Step");
@@ -30,8 +39,7 @@ namespace out {
   void Writer::addTracker(const std::string& type,
                           std::size_t        interval,
                           long double        interval_time) {
-    m_trackers.insert(std::pair<std::string, out::Tracker>(
-      { type, Tracker(type, interval, interval_time) }));
+    m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
   auto Writer::shouldWrite(const std::string& type,
@@ -40,9 +48,13 @@ namespace out {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
-      raise::Error("Tracker type not found", HERE);
+      raise::Error(fmt::format("Tracker type %s not found", type.c_str()), HERE);
       return false;
     }
+  }
+
+  void Writer::setMode(adios2::Mode mode) {
+    m_mode = mode;
   }
 
   void Writer::defineMeshLayout(const std::vector<std::size_t>& glob_shape,
@@ -156,6 +168,10 @@ namespace out {
     for (const auto& sp : m_spectra_writers) {
       m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
     }
+  }
+
+  void Writer::writeAttrs(const prm::Parameters& params) {
+    params.write(m_io);
   }
 
   template <Dimension D, int N>
@@ -291,7 +307,12 @@ namespace out {
   void Writer::beginWriting(const std::string& fname,
                             std::size_t        tstep,
                             long double        time) {
-    m_adios.ExitComputationBlock();
+    raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
+    p_adios->ExitComputationBlock();
+    if (m_writing_mode) {
+      raise::Fatal("Already writing", HERE);
+    }
+    m_writing_mode = true;
     try {
       m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
     } catch (std::exception& e) {
@@ -304,9 +325,14 @@ namespace out {
   }
 
   void Writer::endWriting() {
+    raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
+    if (!m_writing_mode) {
+      raise::Fatal("Not writing", HERE);
+    }
+    m_writing_mode = false;
     m_writer.EndStep();
     m_writer.Close();
-    m_adios.EnterComputationBlock();
+    p_adios->EnterComputationBlock();
   }
 
   template void Writer::writeField<Dim::_1D, 3>(const std::vector<std::string>&,

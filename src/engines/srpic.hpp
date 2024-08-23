@@ -21,6 +21,7 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
+#include "utils/toml.h"
 
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
@@ -70,7 +71,7 @@ namespace ntt {
   public:
     static constexpr auto S { SimEngine::SRPIC };
 
-    SRPICEngine(SimulationParams& params) : base_t { params } {}
+    SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
     ~SRPICEngine() = default;
 
