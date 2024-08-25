@@ -26,10 +26,16 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
 
   try {
+    adios2::ADIOS adios;
 
     using namespace ntt;
-    auto writer = out::Writer("hdf5");
-    writer.defineMeshLayout({ 10, 10, 10 }, { 0, 0, 0 }, { 10, 10, 10 }, false, Coord::Cart);
+    auto writer = out::Writer();
+    writer.init(&adios, "hdf5");
+    writer.defineMeshLayout({ 10, 10, 10 },
+                            { 0, 0, 0 },
+                            { 10, 10, 10 },
+                            false,
+                            Coord::Cart);
     writer.defineFieldOutputs(SimEngine::SRPIC, { "E", "B", "Rho_1_3", "N_2" });
 
     ndfield_t<Dim::_3D, 3> field { "fld",
