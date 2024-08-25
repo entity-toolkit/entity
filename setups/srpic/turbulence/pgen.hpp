@@ -286,22 +286,22 @@ namespace user {
         //   energy_dist,
         //   { 1, 2 });
 
-        const auto energy_dist = PowerlawDist<S, M>(local_domain.mesh.metric,
-                                                     local_domain.random_pool,
-                                                     pl_gamma_min,
-                                                     pl_gamma_max,
-                                                     pl_index);  
+        // const auto energy_dist = PowerlawDist<S, M>(local_domain.mesh.metric,
+        //                                              local_domain.random_pool,
+        //                                              pl_gamma_min,
+        //                                              pl_gamma_max,
+        //                                              pl_index);  
 
-        const auto injector = arch::UniformInjector<S, M, PowerlawDist>(
-          energy_dist,
-          { 1, 2 });  
+        // const auto injector = arch::UniformInjector<S, M, PowerlawDist>(
+        //   energy_dist,
+        //   { 1, 2 });  
 
 
-        const real_t ndens = 0.1;
-        arch::InjectUniform<S, M, decltype(injector)>(params,
-                                                      local_domain,
-                                                      injector,
-                                                      ndens);
+        // const real_t ndens = 0.1;
+        // arch::InjectUniform<S, M, decltype(injector)>(params,
+        //                                               local_domain,
+        //                                               injector,
+        //                                               ndens);
       }
     }
 
