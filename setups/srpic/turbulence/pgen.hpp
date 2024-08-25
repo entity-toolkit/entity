@@ -451,77 +451,77 @@ namespace user {
 
       }
 
-      std::ofstream myfile1;
-      std::ofstream myfile2;
-      std::ofstream myfile3;
-      std::ofstream myfile4;
+      // std::ofstream myfile1;
+      // std::ofstream myfile2;
+      // std::ofstream myfile3;
+      // std::ofstream myfile4;
 
-      #if defined(MPI_ENABLED)
+      // #if defined(MPI_ENABLED)
 
-        if(rank == MPI_ROOT_RANK) {
+      //   if(rank == MPI_ROOT_RANK) {
 
-          printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
+      //     printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
           
-          if (time == 0) {
-            myfile1.open("fextenrg.txt");
-          } else {
-            myfile1.open("fextenrg.txt", std::ios_base::app);
-          }
-          myfile1 << fext_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile1.open("fextenrg.txt");
+      //     } else {
+      //       myfile1.open("fextenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile1 << fext_en_total << std::endl;
 
-          if (time == 0) {
-            myfile2.open("kenrg.txt");
-          } else {
-            myfile2.open("kenrg.txt", std::ios_base::app);
-          }
-          myfile2 << pkin_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile2.open("kenrg.txt");
+      //     } else {
+      //       myfile2.open("kenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile2 << pkin_en_total << std::endl;
 
-          if (time == 0) {
-            myfile3.open("bsqenrg.txt");
-          } else {
-            myfile3.open("bsqenrg.txt", std::ios_base::app);
-          }
-          myfile3 << benrg_total << std::endl;
+      //     if (time == 0) {
+      //       myfile3.open("bsqenrg.txt");
+      //     } else {
+      //       myfile3.open("bsqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile3 << benrg_total << std::endl;
 
-          if (time == 0) {
-            myfile4.open("esqenrg.txt");
-          } else {
-            myfile4.open("esqenrg.txt", std::ios_base::app);
-          }
-          myfile4 << eenrg_total << std::endl;
-        }
+      //     if (time == 0) {
+      //       myfile4.open("esqenrg.txt");
+      //     } else {
+      //       myfile4.open("esqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile4 << eenrg_total << std::endl;
+      //   }
 
-      #else
+      // #else
 
-          if (time == 0) {
-            myfile1.open("fextenrg.txt");
-          } else {
-            myfile1.open("fextenrg.txt", std::ios_base::app);
-          }
-          myfile1 << fext_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile1.open("fextenrg.txt");
+      //     } else {
+      //       myfile1.open("fextenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile1 << fext_en_total << std::endl;
 
-          if (time == 0) {
-            myfile2.open("kenrg.txt");
-          } else {
-            myfile2.open("kenrg.txt", std::ios_base::app);
-          }
-          myfile2 << pkin_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile2.open("kenrg.txt");
+      //     } else {
+      //       myfile2.open("kenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile2 << pkin_en_total << std::endl;
 
-          if (time == 0) {
-            myfile3.open("bsqenrg.txt");
-          } else {
-            myfile3.open("bsqenrg.txt", std::ios_base::app);
-          }
-          myfile3 << benrg_total << std::endl;
+      //     if (time == 0) {
+      //       myfile3.open("bsqenrg.txt");
+      //     } else {
+      //       myfile3.open("bsqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile3 << benrg_total << std::endl;
 
-          if (time == 0) {
-            myfile4.open("esqenrg.txt");
-          } else {
-            myfile4.open("esqenrg.txt", std::ios_base::app);
-          }
-          myfile4 << eenrg_total << std::endl;
+      //     if (time == 0) {
+      //       myfile4.open("esqenrg.txt");
+      //     } else {
+      //       myfile4.open("esqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile4 << eenrg_total << std::endl;
 
-      #endif
+      // #endif
     }
   };
 
