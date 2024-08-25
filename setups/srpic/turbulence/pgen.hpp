@@ -24,6 +24,28 @@ enum {
 namespace user {
   using namespace ntt;
 
+  template <Dimension D>
+  struct InitFields {
+    InitFields(real_t Bnorm)
+      : Bnorm { Bnorm } {
+    }
+
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
+      return ONE;
+    }
+
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
+
+    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
+
+  private:
+    const real_t Bnorm;
+  };
+
   template <SimEngine::type S, class M>
   struct PowerlawDist : public arch::EnergyDistribution<S, M> {
     PowerlawDist(const M&               metric,
@@ -194,6 +216,7 @@ namespace user {
     array_t<real_t* [2]> amplitudes;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
+    InitFields<D> init_flds;
 
     inline PGen(const SimulationParams& params, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { params }
@@ -216,6 +239,7 @@ namespace user {
       , phi0 { INV_4 } // !TODO: randomize
       , amplitudes { "DrivingModes", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
+      , init_flds { ONE }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       Init();
     }
