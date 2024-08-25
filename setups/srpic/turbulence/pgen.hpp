@@ -152,8 +152,8 @@ namespace user {
       // , SX1 { 2.0 }
       // , SX2 { 2.0 }
       // , SX3 { 2.0 }
-      , temperature { params.template get<real_t>("problem.temperature", 0.1) }
-      , machno { params.template get<real_t>("problem.machno", 0.1) }
+      , temperature { params.template get<real_t>("setup.temperature", 0.16) }
+      , machno { params.template get<real_t>("setup.machno", 0.1) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { INV_4 } // !TODO: randomize
@@ -185,7 +185,7 @@ namespace user {
         const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
           energy_dist,
           { 1, 2 });
-        const real_t ndens = 1.0;
+        const real_t ndens = 0.9;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,
@@ -193,28 +193,28 @@ namespace user {
       }
 
       {
-        // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-        //                                                 local_domain.random_pool,
-        //                                                 temperature*10);        
+        const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                        local_domain.random_pool,
+                                                        temperature*100);        
         // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
         //                                                 local_domain.random_pool,
         //                                                 temperature * 2,
         //                                                 10.0,
         //                                                 1);
-        // const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
-        //   energy_dist,
-        //   { 1, 2 });
-        // const real_t ndens = 0.01;
-        // arch::InjectUniform<S, M, decltype(injector)>(params,
-        //                                               local_domain,
-        //                                               injector,
-        //                                               ndens);
+        const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+          energy_dist,
+          { 1, 2 });
+        const real_t ndens = 0.1;
+        arch::InjectUniform<S, M, decltype(injector)>(params,
+                                                      local_domain,
+                                                      injector,
+                                                      ndens);
       }
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      auto omega0 = 0.6 * math::sqrt(temperature * machno * constant::TWO_PI / SX1);
-      auto gamma0 = 0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
+      auto omega0 = 0.1*0.6 * math::sqrt(temperature * machno * constant::TWO_PI / SX1);
+      auto gamma0 = 0.1*0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
       auto pool   = domain.random_pool;
 
