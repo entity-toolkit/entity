@@ -24,6 +24,53 @@ enum {
 namespace user {
   using namespace ntt;
 
+  template <SimEngine::type S, class M>
+  struct PowerlawDist : public arch::EnergyDistribution<S, M> {
+    PowerlawDist(const M&                   metric,
+             random_number_pool_t&      pool,
+             real_t                     g_min,
+             real_t                     g_max,
+             real_t                        n)
+      : arch::EnergyDistribution<S, M> { metric }
+      , g_min { g_min }
+      , g_max { g_max }
+      , random_pool { pool }
+      , n {n} {}
+
+    Inline void operator()(const coord_t<M::Dim>& x_Ph,
+                           vec_t<Dim::_3D>&       v,
+                           unsigned short         sp) const override {
+      // if (sp == 1) {
+         auto   rand_gen = random_pool.get_state();
+         auto   rand_X1 = Random<real_t>(rand_gen);
+         auto   rand_gam = ONE + math::pow(math::pow(g_min,ONE + n) + (-math::pow(g_min,ONE + n) + math::pow(g_max,ONE + n))*rand_X1,ONE/(ONE + n));
+         auto   rand_u = math::sqrt( SQR(rand_gam) - ONE );
+        if constexpr (M::Dim == Dim::_1D) {
+          v[0] = ZERO;
+        } else if constexpr (M::Dim == Dim::_2D) {
+          v[0] = ZERO;
+          v[1] = ZERO;
+        } else {
+          auto rand_X2 = Random<real_t>(rand_gen);
+          auto rand_X3 = Random<real_t>(rand_gen);
+          v[0]   = rand_u * (TWO * rand_X1 - ONE);
+          v[2]   = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
+          v[1]   = v[2] * math::cos(constant::TWO_PI * rand_X3);
+          v[2]   = v[2] * math::sin(constant::TWO_PI * rand_X3);
+        }
+        random_pool.free_state(rand_gen);
+      // } else {
+      //   v[0] = ZERO;
+      //   v[1] = ZERO;
+      //   v[2] = ZERO;
+      // }
+    }
+
+  private:
+    const real_t g_min, g_max, n;
+    random_number_pool_t random_pool;
+  };
+
   template <Dimension D>
   struct ExtForce {
     ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
@@ -137,6 +184,7 @@ namespace user {
     const real_t         temperature, machno;
     const unsigned int   nmodes;
     const real_t         amp0, phi0;
+    const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
@@ -152,9 +200,12 @@ namespace user {
       // , SX1 { 2.0 }
       // , SX2 { 2.0 }
       // , SX3 { 2.0 }
-      , temperature { params.template get<real_t>("problem.temperature", 0.1) }
-      , machno { params.template get<real_t>("problem.machno", 0.1) }
+      , temperature { params.template get<real_t>("setup.temperature", 0.1) }
+      , machno { params.template get<real_t>("setup.machno", 0.1) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
+      , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
+      , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
+      , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { INV_4 } // !TODO: randomize
       , amplitudes { "DrivingModes", nmodes }
@@ -185,7 +236,7 @@ namespace user {
         const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
           energy_dist,
           { 1, 2 });
-        const real_t ndens = 1.0;
+        const real_t ndens = 0.99;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,
@@ -193,17 +244,27 @@ namespace user {
       }
 
       {
-        const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                        local_domain.random_pool,
-                                                        temperature*10);        
+        // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+        //                                                 local_domain.random_pool,
+        //                                                 temperature*10);        
         // const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
         //                                                 local_domain.random_pool,
         //                                                 temperature * 2,
         //                                                 10.0,
         //                                                 1);
-        const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+        // const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+        //   energy_dist,
+        //   { 1, 2 });
+
+        const auto energy_dist = PowerlawDist<S, M>(local_domain.mesh.metric,
+                                                     local_domain.random_pool,
+                                                     pl_gamma_min,
+                                                     pl_gamma_max,
+                                                     pl_index);  
+
+        const auto injector = arch::UniformInjector<S, M, PowerlawDist>(
           energy_dist,
-          { 1, 2 });
+          { 1, 2 });  
         const real_t ndens = 0.01;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
