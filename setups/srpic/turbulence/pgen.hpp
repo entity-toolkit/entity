@@ -26,16 +26,16 @@ namespace user {
 
   template <SimEngine::type S, class M>
   struct PowerlawDist : public arch::EnergyDistribution<S, M> {
-    PowerlawDist(const M&                   metric,
+    PowerlawDist(const M&               metric,
              random_number_pool_t&      pool,
              real_t                     g_min,
              real_t                     g_max,
-             real_t                        n)
+             real_t                     pl_ind)
       : arch::EnergyDistribution<S, M> { metric }
       , g_min { g_min }
       , g_max { g_max }
       , random_pool { pool }
-      , n {n} {}
+      , pl_ind { pl_ind } {}
 
     Inline void operator()(const coord_t<M::Dim>& x_Ph,
                            vec_t<Dim::_3D>&       v,
@@ -43,8 +43,14 @@ namespace user {
       // if (sp == 1) {
          auto   rand_gen = random_pool.get_state();
          auto   rand_X1 = Random<real_t>(rand_gen);
-         auto   rand_gam = ONE + math::pow(math::pow(g_min,ONE + n) + (-math::pow(g_min,ONE + n) + math::pow(g_max,ONE + n))*rand_X1,ONE/(ONE + n));
+         auto   rand_gam = ONE;
+         if (pl_ind != -1.0) {
+            rand_gam += math::pow(math::pow(g_min,ONE + pl_ind) + (-math::pow(g_min,ONE + pl_ind) + math::pow(g_max,ONE + pl_ind))*rand_X1,ONE/(ONE + pl_ind));
+         } else {
+            rand_gam += math::pow(g_min,ONE - rand_X1)*math::pow(g_max,rand_X1);
+         }
          auto   rand_u = math::sqrt( SQR(rand_gam) - ONE );
+
         if constexpr (M::Dim == Dim::_1D) {
           v[0] = ZERO;
         } else if constexpr (M::Dim == Dim::_2D) {
@@ -53,7 +59,7 @@ namespace user {
         } else {
           auto rand_X2 = Random<real_t>(rand_gen);
           auto rand_X3 = Random<real_t>(rand_gen);
-          v[0]   = rand_u * (TWO * rand_X1 - ONE);
+          v[0]   = rand_u * (TWO * rand_X2 - ONE);
           v[2]   = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
           v[1]   = v[2] * math::cos(constant::TWO_PI * rand_X3);
           v[2]   = v[2] * math::sin(constant::TWO_PI * rand_X3);
@@ -67,7 +73,7 @@ namespace user {
     }
 
   private:
-    const real_t g_min, g_max, n;
+    const real_t g_min, g_max, pl_ind;
     random_number_pool_t random_pool;
   };
 
