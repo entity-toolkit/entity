@@ -31,7 +31,7 @@ namespace user {
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return ONE;
+      return ZERO;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
