@@ -31,6 +31,7 @@
 #endif // MPI_ENABLED
 
 #include <algorithm>
+#include <filesystem>
 #include <iterator>
 #include <vector>
 
@@ -62,7 +63,9 @@ namespace ntt {
       }
     }
 
-    g_writer.init(ptr_adios, params.template get<std::string>("output.format"));
+    g_writer.init(ptr_adios,
+                  params.template get<std::string>("output.format"),
+                  params.template get<std::string>("simulation.name"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
@@ -95,7 +98,7 @@ namespace ntt {
                           params.template get<long double>(
                             "output." + std::string(type) + ".interval_time"));
     }
-    if (is_resuming) {
+    if (is_resuming and std::filesystem::exists(g_writer.fname())) {
       g_writer.setMode(adios2::Mode::Append);
     } else {
       g_writer.writeAttrs(params);
@@ -210,9 +213,7 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing output", HERE);
-    g_writer.beginWriting(params.template get<std::string>("simulation.name"),
-                          current_step,
-                          current_time);
+    g_writer.beginWriting(current_step, current_time);
     if (write_fields) {
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 
