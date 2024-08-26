@@ -795,7 +795,7 @@ namespace ntt {
 
   void SimulationParams::setSetupParams(const toml::value& toml_data) {
     /* [setup] -------------------------------------------------------------- */
-    const auto& setup = toml::find_or(raw_data, "setup", toml::table {});
+    const auto& setup = toml::find_or(toml_data, "setup", toml::table {});
     for (const auto& [key, val] : setup) {
       if (val.is_boolean()) {
         set("setup." + key, (bool)(val.as_boolean()));
