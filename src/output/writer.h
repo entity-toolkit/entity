@@ -44,6 +44,7 @@ namespace out {
     adios2::Dims m_flds_l_shape;
     bool         m_flds_ghosts;
     std::string  m_engine;
+    std::string  m_fname;
 
     std::map<std::string, tools::Tracker> m_trackers;
 
@@ -60,7 +61,7 @@ namespace out {
 
     Writer(Writer&&) = default;
 
-    void init(adios2::ADIOS*, const std::string&);
+    void init(adios2::ADIOS*, const std::string&, const std::string&);
 
     void setMode(adios2::Mode);
 
@@ -90,10 +91,14 @@ namespace out {
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
-    void beginWriting(const std::string&, std::size_t, long double);
+    void beginWriting(std::size_t, long double);
     void endWriting();
 
     /* getters -------------------------------------------------------------- */
+    auto fname() const -> const std::string& {
+      return m_fname;
+    }
+
     auto fieldWriters() const -> const std::vector<OutputField>& {
       return m_flds_writers;
     }
