@@ -41,7 +41,7 @@ namespace kernel {
     static constexpr auto D = M::Dim;
 
     static_assert((F == FldsID::Rho) || (F == FldsID::Charge) ||
-                    (F == FldsID::N) || (F == FldsID::Nppc) || (F == FldsID::T),
+                    (F == FldsID::N) || (F == FldsID::Nppc) || (F == FldsID::T) || (F == FldsID::V),
                   "Invalid field ID");
 
     const unsigned short     c1, c2;
@@ -89,7 +89,7 @@ namespace kernel {
                            std::size_t                        ni2,
                            real_t                             inv_n0,
                            unsigned short                     window)
-      : c1 { (components.size() == 2) ? components[0]
+      : c1 { (components.size() > 0) ? components[0]
                                       : static_cast<unsigned short>(0) }
       , c2 { (components.size() == 2) ? components[1]
                                       : static_cast<unsigned short>(0) }
@@ -200,6 +200,67 @@ namespace kernel {
             coeff *= u_Phys[c - 1];
           }
         }
+      } else {
+        // for other cases, use the `contrib` defined above
+        coeff = contrib;
+      }
+
+      if constexpr (F == FldsID::V) {
+        real_t          gamma { ZERO };
+        // for stress-energy tensor
+        vec_t<Dim::_3D> u_Phys { ZERO };
+        if constexpr (S == SimEngine::SRPIC) {
+          // SR
+          // stress-energy tensor for SR is computed in the tetrad (hatted) basis
+          if constexpr (M::CoordType == Coord::Cart) {
+            u_Phys[0] = ux1(p);
+            u_Phys[1] = ux2(p);
+            u_Phys[2] = ux3(p);
+          } else {
+            static_assert(D != Dim::_1D, "non-Cartesian SRPIC 1D");
+            coord_t<M::PrtlDim> x_Code { ZERO };
+            x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+            x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+            if constexpr (D == Dim::_3D) {
+              x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+            } else {
+              x_Code[2] = phi(p);
+            }
+            metric.template transform_xyz<Idx::XYZ, Idx::T>(
+              x_Code,
+              { ux1(p), ux2(p), ux3(p) },
+              u_Phys);
+          }
+          if (mass == ZERO) {
+            gamma = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+          } else {
+            gamma = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+          }
+        } else {
+          // GR
+          // stress-energy tensor for GR is computed in contravariant basis
+          static_assert(D != Dim::_1D, "GRPIC 1D");
+          coord_t<D> x_Code { ZERO };
+          x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+          x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+          if constexpr (D == Dim::_3D) {
+            x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+          }
+          vec_t<Dim::_3D> u_Cntrv { ZERO };
+          // compute u_i u^i for energy
+          metric.template transform<Idx::D, Idx::U>(x_Code,
+                                                    { ux1(p), ux2(p), ux3(p) },
+                                                    u_Cntrv);
+          gamma = u_Cntrv[0] * ux1(p) + u_Cntrv[1] * ux2(p) + u_Cntrv[2] * ux3(p);
+          if (mass == ZERO) {
+            gamma = math::sqrt(gamma);
+          } else {
+            gamma = math::sqrt(ONE + gamma);
+          }
+          metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
+        }
+        // compute the corresponding moment
+        coeff = u_Phys[c1 - 1] / gamma;
       } else {
         // for other cases, use the `contrib` defined above
         coeff = contrib;
