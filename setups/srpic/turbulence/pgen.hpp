@@ -31,7 +31,7 @@ namespace user {
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return Bnorm;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
@@ -209,7 +209,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::params;
 
     const real_t         SX1, SX2, SX3;
-    const real_t         temperature, machno;
+    const real_t         temperature, machno, Bnorm;
     const unsigned int   nmodes;
     const real_t         amp0, phi0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
@@ -232,6 +232,7 @@ namespace user {
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 0.1) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
+      , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
@@ -239,7 +240,7 @@ namespace user {
       , phi0 { INV_4 } // !TODO: randomize
       , amplitudes { "DrivingModes", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
-      , init_flds { ONE }
+      , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       Init();
     }
