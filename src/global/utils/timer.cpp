@@ -263,7 +263,6 @@ namespace timer {
       std::string units   = "µs";
       auto        time    = std::get<0>(stats.at(name));
       const auto  tot_pct = std::get<3>(stats.at(name));
-      const auto  var_pct = std::get<4>(stats.at(name));
       if (flags & Timer::AutoConvert) {
         convertTime(time, units);
       }
