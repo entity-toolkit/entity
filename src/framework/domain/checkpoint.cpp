@@ -46,14 +46,16 @@ namespace ntt {
       params.template get<std::size_t>("checkpoint.interval"),
       params.template get<long double>("checkpoint.interval_time"),
       params.template get<int>("checkpoint.keep"));
-    g_checkpoint_writer.defineFieldVariables(S,
-                                             glob_shape_with_ghosts,
-                                             off_ncells_with_ghosts,
-                                             loc_shape_with_ghosts);
-    g_checkpoint_writer.defineParticleVariables(M::CoordType,
-                                                M::Dim,
-                                                local_domain->species.size(),
-                                                nplds);
+    if (g_checkpoint_writer.enabled()) {
+      g_checkpoint_writer.defineFieldVariables(S,
+                                               glob_shape_with_ghosts,
+                                               off_ncells_with_ghosts,
+                                               loc_shape_with_ghosts);
+      g_checkpoint_writer.defineParticleVariables(M::CoordType,
+                                                  M::Dim,
+                                                  local_domain->species.size(),
+                                                  nplds);
+    }
   }
 
   template <SimEngine::type S, class M>
@@ -66,7 +68,7 @@ namespace ntt {
       l_subdomain_indices().size() != 1,
       "Checkpointing for now is only supported for one subdomain per rank",
       HERE);
-    if (!g_checkpoint_writer.shouldSave(finished_step, finished_time) or
+    if (not g_checkpoint_writer.shouldSave(finished_step, finished_time) or
         finished_step <= 1) {
       return false;
     }
