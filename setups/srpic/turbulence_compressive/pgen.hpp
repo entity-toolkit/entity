@@ -114,29 +114,87 @@ namespace user {
     Inline auto fx1(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
+      // real_t k01 = ONE * constant::TWO_PI / sx1;
+      // real_t k02 = ZERO * constant::TWO_PI / sx2;
+      // real_t k03 = ZERO * constant::TWO_PI / sx3;
+      // real_t k04 = ONE;
+      // real_t k11 = ZERO * constant::TWO_PI / sx1;
+      // real_t k12 = ONE * constant::TWO_PI / sx2;
+      // real_t k13 = ZERO * constant::TWO_PI / sx3;
+      // real_t k14 = ONE;
+      // real_t k21 = ZERO * constant::TWO_PI / sx1;
+      // real_t k22 = ZERO * constant::TWO_PI / sx2;
+      // real_t k23 = ONE * constant::TWO_PI / sx3;
+      // real_t k24 = ONE;
 
       // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
-      return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-              k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2])) +
-             (k24 * amps(1, REAL) *
-                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-              k24 * amps(1, IMAG) *
-                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+      // return (k14 * amps(0, REAL) *
+      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+      //         k14 * amps(0, IMAG) *
+      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2])) +
+      //        (k24 * amps(1, REAL) *
+      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+      //         k24 * amps(1, IMAG) *
+      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+
+      real_t k1_1 = ONE * constant::TWO_PI / sx1;
+      real_t k1_2 = ZERO * constant::TWO_PI / sx2;
+      real_t k1_3 = ONE * constant::TWO_PI / sx3;
+      real_t k2_1 = ZERO * constant::TWO_PI / sx1;
+      real_t k2_2 = ONE * constant::TWO_PI / sx2;
+      real_t k2_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t k3_1 = ONE * constant::TWO_PI / sx1;
+      real_t k3_2 = ONE * constant::TWO_PI / sx2;
+      real_t k3_3 = ONE * constant::TWO_PI / sx3;
+      real_t k4_1 = ONE * constant::TWO_PI / sx1;
+      real_t k4_2 = - ONE * constant::TWO_PI / sx2;
+      real_t k4_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t k5_1 = TWO * constant::TWO_PI / sx1;
+      real_t k5_2 = ZERO * constant::TWO_PI / sx2;
+      real_t k5_3 = ONE * constant::TWO_PI / sx3;
+      real_t k6_1 = ZERO * constant::TWO_PI / sx1;
+      real_t k6_2 = TWO * constant::TWO_PI / sx2;
+      real_t k6_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t k7_1 = ONE * constant::TWO_PI / sx1;
+      real_t k7_2 = TWO * constant::TWO_PI / sx2;
+      real_t k7_3 = ONE * constant::TWO_PI / sx3;
+      real_t k8_1 = ONE * constant::TWO_PI / sx1;
+      real_t k8_2 = - TWO * constant::TWO_PI / sx2;
+      real_t k8_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t k9_1 = TWO * constant::TWO_PI / sx1;
+      real_t k9_2 = ONE * constant::TWO_PI / sx2;
+      real_t k9_3 = ONE * constant::TWO_PI / sx3;
+      real_t k10_1 = TWO * constant::TWO_PI / sx1;
+      real_t k10_2 = - ONE * constant::TWO_PI / sx2;
+      real_t k10_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t k11_1 = 3.0 * constant::TWO_PI / sx1;
+      real_t k11_2 = ZERO * constant::TWO_PI / sx2;
+      real_t k11_3 = ONE * constant::TWO_PI / sx3;
+      real_t k12_1 = ZERO * constant::TWO_PI / sx1;
+      real_t k12_2 = 3.0 * constant::TWO_PI / sx2;
+      real_t k12_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t k13_1 = TWO * constant::TWO_PI / sx1;
+      real_t k13_2 = TWO * constant::TWO_PI / sx2;
+      real_t k13_3 = ONE * constant::TWO_PI / sx3;
+      real_t k14_1 = TWO * constant::TWO_PI / sx1;
+      real_t k14_2 = - TWO * constant::TWO_PI / sx2;
+      real_t k14_3 = ONE * constant::TWO_PI / sx3;
+
+      real_t dsqrttwo = ONE / math::sqrt(TWO);
+      real_t dsqrtfive = ONE / math::sqrt(5.0);
+      real_t chival = ONE; // 0 for incomp, 1 for comp
+      real_t cchi = math::cos(constant::PI * chival /TWO);
+      real_t schi = math::sin(constant::PI * chival /TWO);
+
+
+
 
     }
 
