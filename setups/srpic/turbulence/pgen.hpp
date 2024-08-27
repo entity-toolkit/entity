@@ -212,9 +212,10 @@ namespace user {
     const real_t         SX1, SX2, SX3;
     const real_t         temperature, machno, Bnorm;
     const unsigned int   nmodes;
-    const real_t         amp0, phi0;
+    const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
+    array_t<real_t*> phi0;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
     InitFields<D> init_flds;
@@ -238,11 +239,19 @@ namespace user {
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
-      , phi0 { INV_4 } // !TODO: randomize
+      , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
+      // Initializing random phases
+      auto phi0_ = Kokkos::create_mirror_view(phi0);
+      srand (static_cast <unsigned> (12345));
+      for (int i = 0; i < nmodes; ++i) {
+        phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+      }
+      Kokkos::deep_copy(phi0, phi0_);
+      // Initializing amplitudes
       Init();
     }
 
@@ -257,8 +266,9 @@ namespace user {
         "RandomAmplitudes",
         amplitudes.extent(0),
         Lambda(index_t i) {
-          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_);
-          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_);
+          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i));
+          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i));
+          printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
         });
     }
 

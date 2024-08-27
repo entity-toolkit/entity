@@ -273,10 +273,12 @@ namespace user {
     const real_t         amp0, phi0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
+    array_t<real_t* [1]> arr_coeff, arr_omega;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
     InitFields<D> init_flds;
 
+    // TODO: Test if nmodes is a multiple of 2
     inline PGen(const SimulationParams& params, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { params }
       , SX1 { global_domain.mesh().extent(in::x1).second -
@@ -298,6 +300,7 @@ namespace user {
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { INV_4 } // !TODO: randomize
       , amplitudes { "DrivingModes", nmodes }
+      , arr_coeff { "Coefficients", static_cast<int>(HALF * nmodes) }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , init_flds { ONE }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
@@ -316,6 +319,39 @@ namespace user {
           amplitudes_(i, REAL) = amp0_ * math::cos(phi0_);
           amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_);
         });
+
+        auto       arr_coeff_ = arr_coeff;
+        // positive modes
+        arr_coeff_(0) = 1.0;
+        arr_coeff_(1) = 1.0;
+        arr_coeff_(2) = sqrt(2.0);
+        arr_coeff_(3) = sqrt(2.0);
+        arr_coeff_(4) = 2.0;
+        arr_coeff_(5) = 2.0;
+        arr_coeff_(6) = sqrt(5.0);
+        arr_coeff_(7) = sqrt(5.0);
+        arr_coeff_(8) = sqrt(5.0);
+        arr_coeff_(9) = sqrt(5.0);
+        arr_coeff_(10) = 3.0;
+        arr_coeff_(11) = 3.0;
+        arr_coeff_(12) = sqrt(8.0);
+        arr_coeff_(13) = sqrt(8.0);
+        // negative modes
+        arr_coeff_(14) = 1.0;
+        arr_coeff_(15) = 1.0;
+        arr_coeff_(16) = sqrt(2.0);
+        arr_coeff_(17) = sqrt(2.0);
+        arr_coeff_(18) = 2.0;
+        arr_coeff_(19) = 2.0;
+        arr_coeff_(20) = sqrt(5.0);
+        arr_coeff_(21) = sqrt(5.0);
+        arr_coeff_(22) = sqrt(5.0);
+        arr_coeff_(23) = sqrt(5.0);
+        arr_coeff_(24) = 3.0;
+        arr_coeff_(25) = 3.0;
+        arr_coeff_(26) = sqrt(8.0);
+        arr_coeff_(27) = sqrt(8.0);
+
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
@@ -366,6 +402,9 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
+
+
+
       auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno * constant::TWO_PI / SX1);
       auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
