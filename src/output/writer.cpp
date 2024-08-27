@@ -23,7 +23,9 @@
 
 namespace out {
 
-  void Writer::init(adios2::ADIOS* ptr_adios, const std::string& engine) {
+  void Writer::init(adios2::ADIOS*     ptr_adios,
+                    const std::string& engine,
+                    const std::string& title) {
     m_engine = engine;
     p_adios  = ptr_adios;
 
@@ -34,6 +36,7 @@ namespace out {
 
     m_io.DefineVariable<std::size_t>("Step");
     m_io.DefineVariable<long double>("Time");
+    m_fname = title + (m_engine == "hdf5" ? ".h5" : ".bp");
   }
 
   void Writer::addTracker(const std::string& type,
@@ -304,9 +307,7 @@ namespace out {
     m_writer.Put(vare, xe_h);
   }
 
-  void Writer::beginWriting(const std::string& fname,
-                            std::size_t        tstep,
-                            long double        time) {
+  void Writer::beginWriting(std::size_t tstep, long double time) {
     raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
     p_adios->ExitComputationBlock();
     if (m_writing_mode) {
@@ -314,7 +315,7 @@ namespace out {
     }
     m_writing_mode = true;
     try {
-      m_writer = m_io.Open(fname + (m_engine == "hdf5" ? ".h5" : ".bp"), m_mode);
+      m_writer = m_io.Open(m_fname, m_mode);
     } catch (std::exception& e) {
       raise::Fatal(e.what(), HERE);
     }

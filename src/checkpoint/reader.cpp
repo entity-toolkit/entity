@@ -27,9 +27,7 @@ namespace checkpoint {
     auto field_var = io.InquireVariable<real_t>(field);
     field_var.SetStepSelection(adios2::Box<std::size_t>({ 0 }, { 1 }));
     field_var.SetSelection(range);
-    auto array_h = Kokkos::create_mirror_view(array);
-    reader.Get(field_var, array_h.data());
-    Kokkos::deep_copy(array, array_h);
+    reader.Get(field_var, array.data());
   }
 
   auto ReadParticleCount(adios2::IO&     io,
@@ -74,9 +72,7 @@ namespace checkpoint {
       fmt::format("s%d_%s", s + 1, quantity.c_str()));
     var.SetStepSelection(adios2::Box<std::size_t>({ 0 }, { 1 }));
     var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
-    auto array_h = Kokkos::create_mirror_view(array);
-    reader.Get(var, array_h.data());
-    Kokkos::deep_copy(array, array_h);
+    reader.Get(var, array.data());
   }
 
   template void ReadFields<Dim::_1D, 3>(adios2::IO&,

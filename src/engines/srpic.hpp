@@ -885,8 +885,15 @@ namespace ntt {
                        xi_min.size() != static_cast<std::size_t>(M::Dim),
                      "Invalid range size",
                      HERE);
-      for (const unsigned short comp :
-           { normal_b_comp, tang_e_comp1, tang_e_comp2 }) {
+      std::vector<unsigned short> comps;
+      if (tags & BC::E) {
+        comps.push_back(tang_e_comp1);
+        comps.push_back(tang_e_comp2);
+      }
+      if (tags & BC::B) {
+        comps.push_back(normal_b_comp);
+      }
+      for (const auto& comp : comps) {
         if constexpr (M::Dim == Dim::_1D) {
           Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
                                             std::make_pair(xi_min[0], xi_max[0]),
