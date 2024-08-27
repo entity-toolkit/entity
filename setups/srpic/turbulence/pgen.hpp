@@ -228,9 +228,6 @@ namespace user {
               global_domain.mesh().extent(in::x2).first }
       , SX3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
-      // , SX1 { 2.0 }
-      // , SX2 { 2.0 }
-      // , SX3 { 2.0 }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 0.1) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }

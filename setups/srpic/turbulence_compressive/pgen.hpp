@@ -138,62 +138,62 @@ namespace user {
       //         k24 * amps(1, IMAG) *
       //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
 
-      real_t k1_1 = ONE * constant::TWO_PI / sx1;
-      real_t k1_2 = ZERO * constant::TWO_PI / sx2;
-      real_t k1_3 = ONE * constant::TWO_PI / sx3;
-      real_t k2_1 = ZERO * constant::TWO_PI / sx1;
-      real_t k2_2 = ONE * constant::TWO_PI / sx2;
-      real_t k2_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k1_1 = ONE * constant::TWO_PI / sx1;
+      // real_t k1_2 = ZERO * constant::TWO_PI / sx2;
+      // real_t k1_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k2_1 = ZERO * constant::TWO_PI / sx1;
+      // real_t k2_2 = ONE * constant::TWO_PI / sx2;
+      // real_t k2_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t k3_1 = ONE * constant::TWO_PI / sx1;
-      real_t k3_2 = ONE * constant::TWO_PI / sx2;
-      real_t k3_3 = ONE * constant::TWO_PI / sx3;
-      real_t k4_1 = ONE * constant::TWO_PI / sx1;
-      real_t k4_2 = - ONE * constant::TWO_PI / sx2;
-      real_t k4_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k3_1 = ONE * constant::TWO_PI / sx1;
+      // real_t k3_2 = ONE * constant::TWO_PI / sx2;
+      // real_t k3_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k4_1 = ONE * constant::TWO_PI / sx1;
+      // real_t k4_2 = - ONE * constant::TWO_PI / sx2;
+      // real_t k4_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t k5_1 = TWO * constant::TWO_PI / sx1;
-      real_t k5_2 = ZERO * constant::TWO_PI / sx2;
-      real_t k5_3 = ONE * constant::TWO_PI / sx3;
-      real_t k6_1 = ZERO * constant::TWO_PI / sx1;
-      real_t k6_2 = TWO * constant::TWO_PI / sx2;
-      real_t k6_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k5_1 = TWO * constant::TWO_PI / sx1;
+      // real_t k5_2 = ZERO * constant::TWO_PI / sx2;
+      // real_t k5_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k6_1 = ZERO * constant::TWO_PI / sx1;
+      // real_t k6_2 = TWO * constant::TWO_PI / sx2;
+      // real_t k6_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t k7_1 = ONE * constant::TWO_PI / sx1;
-      real_t k7_2 = TWO * constant::TWO_PI / sx2;
-      real_t k7_3 = ONE * constant::TWO_PI / sx3;
-      real_t k8_1 = ONE * constant::TWO_PI / sx1;
-      real_t k8_2 = - TWO * constant::TWO_PI / sx2;
-      real_t k8_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k7_1 = ONE * constant::TWO_PI / sx1;
+      // real_t k7_2 = TWO * constant::TWO_PI / sx2;
+      // real_t k7_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k8_1 = ONE * constant::TWO_PI / sx1;
+      // real_t k8_2 = - TWO * constant::TWO_PI / sx2;
+      // real_t k8_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t k9_1 = TWO * constant::TWO_PI / sx1;
-      real_t k9_2 = ONE * constant::TWO_PI / sx2;
-      real_t k9_3 = ONE * constant::TWO_PI / sx3;
-      real_t k10_1 = TWO * constant::TWO_PI / sx1;
-      real_t k10_2 = - ONE * constant::TWO_PI / sx2;
-      real_t k10_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k9_1 = TWO * constant::TWO_PI / sx1;
+      // real_t k9_2 = ONE * constant::TWO_PI / sx2;
+      // real_t k9_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k10_1 = TWO * constant::TWO_PI / sx1;
+      // real_t k10_2 = - ONE * constant::TWO_PI / sx2;
+      // real_t k10_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t k11_1 = 3.0 * constant::TWO_PI / sx1;
-      real_t k11_2 = ZERO * constant::TWO_PI / sx2;
-      real_t k11_3 = ONE * constant::TWO_PI / sx3;
-      real_t k12_1 = ZERO * constant::TWO_PI / sx1;
-      real_t k12_2 = 3.0 * constant::TWO_PI / sx2;
-      real_t k12_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k11_1 = 3.0 * constant::TWO_PI / sx1;
+      // real_t k11_2 = ZERO * constant::TWO_PI / sx2;
+      // real_t k11_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k12_1 = ZERO * constant::TWO_PI / sx1;
+      // real_t k12_2 = 3.0 * constant::TWO_PI / sx2;
+      // real_t k12_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t k13_1 = TWO * constant::TWO_PI / sx1;
-      real_t k13_2 = TWO * constant::TWO_PI / sx2;
-      real_t k13_3 = ONE * constant::TWO_PI / sx3;
-      real_t k14_1 = TWO * constant::TWO_PI / sx1;
-      real_t k14_2 = - TWO * constant::TWO_PI / sx2;
-      real_t k14_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k13_1 = TWO * constant::TWO_PI / sx1;
+      // real_t k13_2 = TWO * constant::TWO_PI / sx2;
+      // real_t k13_3 = ONE * constant::TWO_PI / sx3;
+      // real_t k14_1 = TWO * constant::TWO_PI / sx1;
+      // real_t k14_2 = - TWO * constant::TWO_PI / sx2;
+      // real_t k14_3 = ONE * constant::TWO_PI / sx3;
 
-      real_t dsqrttwo = ONE / math::sqrt(TWO);
-      real_t dsqrtfive = ONE / math::sqrt(5.0);
-      real_t chival = ONE; // 0 for incomp, 1 for comp
-      real_t cchi = math::cos(constant::PI * chival /TWO);
-      real_t schi = math::sin(constant::PI * chival /TWO);
+      // real_t dsqrttwo = ONE / math::sqrt(TWO);
+      // real_t dsqrtfive = ONE / math::sqrt(5.0);
+      // real_t chival = ONE; // 0 for incomp, 1 for comp
+      // real_t cchi = math::cos(constant::PI * chival /TWO);
+      // real_t schi = math::sin(constant::PI * chival /TWO);
 
-
+      return ZERO;
 
 
     }
@@ -213,41 +213,41 @@ namespace user {
       real_t k22 = ZERO * constant::TWO_PI / sx2;
       real_t k23 = ONE * constant::TWO_PI / sx3;
       real_t k24 = ONE;
-      return (k04 * amps(2, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
-              k04 * amps(2, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
-             (k24 * amps(3, REAL) *
-                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-              k24 * amps(3, IMAG) *
-                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
-      // return ZERO;
+      // return (k04 * amps(2, REAL) *
+      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+      //         k04 * amps(2, IMAG) *
+      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
+      //        (k24 * amps(3, REAL) *
+      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+      //         k24 * amps(3, IMAG) *
+      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+      return ZERO;
     }
 
     Inline auto fx3(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-      return (k04 * amps(4, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
-              k04 * amps(4, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
-             (k14 * amps(5, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-              k14 * amps(5, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
-      // return ZERO;
+      // real_t k01 = ONE * constant::TWO_PI / sx1;
+      // real_t k02 = ZERO * constant::TWO_PI / sx2;
+      // real_t k03 = ZERO * constant::TWO_PI / sx3;
+      // real_t k04 = ONE;
+      // real_t k11 = ZERO * constant::TWO_PI / sx1;
+      // real_t k12 = ONE * constant::TWO_PI / sx2;
+      // real_t k13 = ZERO * constant::TWO_PI / sx3;
+      // real_t k14 = ONE;
+      // real_t k21 = ZERO * constant::TWO_PI / sx1;
+      // real_t k22 = ZERO * constant::TWO_PI / sx2;
+      // real_t k23 = ONE * constant::TWO_PI / sx3;
+      // real_t k24 = ONE;
+      // return (k04 * amps(4, REAL) *
+      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+      //         k04 * amps(4, IMAG) *
+      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
+      //        (k14 * amps(5, REAL) *
+      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+      //         k14 * amps(5, IMAG) *
+      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
+      return ZERO;
     }
 
   private:
@@ -270,15 +270,14 @@ namespace user {
     const real_t         SX1, SX2, SX3;
     const real_t         temperature, machno;
     const unsigned int   nmodes;
-    const real_t         amp0, phi0;
+    const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
-    array_t<real_t* [1]> arr_coeff, arr_omega;
+    array_t<real_t*> phi0, arr_coeff, arr_omega, arr_gamma, arr_sigma;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
     InitFields<D> init_flds;
 
-    // TODO: Test if nmodes is a multiple of 2
     inline PGen(const SimulationParams& params, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { params }
       , SX1 { global_domain.mesh().extent(in::x1).second -
@@ -287,70 +286,131 @@ namespace user {
               global_domain.mesh().extent(in::x2).first }
       , SX3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
-      // , SX1 { 2.0 }
-      // , SX2 { 2.0 }
-      // , SX3 { 2.0 }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 0.1) }
-      // , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 56) }
+      , nmodes { 56 }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
-      , phi0 { INV_4 } // !TODO: randomize
       , amplitudes { "DrivingModes", nmodes }
-      , arr_coeff { "Coefficients", static_cast<int>(HALF * nmodes) }
+      , arr_coeff { "Coefficients", nmodes }
+      , arr_omega { "Omega", nmodes }
+      , arr_gamma { "Gamma", nmodes }
+      , arr_sigma { "Sigma", nmodes }
+      , phi0 { "DrivingPhases", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , init_flds { ONE }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
+      // Initializing random phases
+      auto phi0_ = Kokkos::create_mirror_view(phi0);
+      srand (static_cast <unsigned> (12345));
+      for (int i = 0; i < nmodes; ++i) {
+        phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+      }
+      Kokkos::deep_copy(phi0, phi0_);
+      // Initializing amplitudes
       Init();
     }
 
     void Init() {
-      // initializing amplitudes
       auto       amplitudes_ = amplitudes;
       const auto amp0_       = amp0;
+      const auto temperature_ = temperature;
+      const auto machno_     = machno;
+      const auto nmodes_     = nmodes;
       const auto phi0_       = phi0;
+      const auto SX1_        = SX1;
+      const auto SX2_        = SX2;
+      auto       arr_coeff_ = arr_coeff;
+      auto       arr_omega_  = arr_omega;
+      auto       arr_gamma_  = arr_gamma;
+      auto       arr_sigma_  = arr_sigma;
+
+      auto arr_coeff_h = Kokkos::create_mirror_view(arr_coeff_);
+
+        // positive modes
+        arr_coeff_h(0) = 1.0;
+        arr_coeff_h(1) = 1.0;
+        arr_coeff_h(2) = math::sqrt(2.0);
+        arr_coeff_h(3) = math::sqrt(2.0);
+        arr_coeff_h(4) = 2.0;
+        arr_coeff_h(5) = 2.0;
+        arr_coeff_h(6) = math::sqrt(5.0);
+        arr_coeff_h(7) = math::sqrt(5.0);
+        arr_coeff_h(8) = math::sqrt(5.0);
+        arr_coeff_h(9) = math::sqrt(5.0);
+        arr_coeff_h(10) = 3.0;
+        arr_coeff_h(11) = 3.0;
+        arr_coeff_h(12) = math::sqrt(8.0);
+        arr_coeff_h(13) = math::sqrt(8.0);
+        // negative modes
+        arr_coeff_h(14) = 1.0;
+        arr_coeff_h(15) = 1.0;
+        arr_coeff_h(16) = math::sqrt(2.0);
+        arr_coeff_h(17) = math::sqrt(2.0);
+        arr_coeff_h(18) = 2.0;
+        arr_coeff_h(19) = 2.0;
+        arr_coeff_h(20) = math::sqrt(5.0);
+        arr_coeff_h(21) = math::sqrt(5.0);
+        arr_coeff_h(22) = math::sqrt(5.0);
+        arr_coeff_h(23) = math::sqrt(5.0);
+        arr_coeff_h(24) = 3.0;
+        arr_coeff_h(25) = 3.0;
+        arr_coeff_h(26) = math::sqrt(8.0);
+        arr_coeff_h(27) = math::sqrt(8.0);
+        // positive modes
+        arr_coeff_h(28) = 1.0;
+        arr_coeff_h(29) = 1.0;
+        arr_coeff_h(30) = math::sqrt(2.0);
+        arr_coeff_h(31) = math::sqrt(2.0);
+        arr_coeff_h(32) = 2.0;
+        arr_coeff_h(33) = 2.0;
+        arr_coeff_h(34) = math::sqrt(5.0);
+        arr_coeff_h(35) = math::sqrt(5.0);
+        arr_coeff_h(36) = math::sqrt(5.0);
+        arr_coeff_h(37) = math::sqrt(5.0);
+        arr_coeff_h(38) = 3.0;
+        arr_coeff_h(39) = 3.0;
+        arr_coeff_h(40) = math::sqrt(8.0);
+        arr_coeff_h(41) = math::sqrt(8.0);
+        // negative modes
+        arr_coeff_h(42) = 1.0;
+        arr_coeff_h(43) = 1.0;
+        arr_coeff_h(44) = math::sqrt(2.0);
+        arr_coeff_h(45) = math::sqrt(2.0);
+        arr_coeff_h(46) = 2.0;
+        arr_coeff_h(47) = 2.0;
+        arr_coeff_h(48) = math::sqrt(5.0);
+        arr_coeff_h(49) = math::sqrt(5.0);
+        arr_coeff_h(50) = math::sqrt(5.0);
+        arr_coeff_h(51) = math::sqrt(5.0);
+        arr_coeff_h(52) = 3.0;
+        arr_coeff_h(53) = 3.0;
+        arr_coeff_h(54) = math::sqrt(8.0);
+        arr_coeff_h(55) = math::sqrt(8.0);
+
+      Kokkos::deep_copy(arr_coeff_, arr_coeff_h);
+
+        Kokkos::parallel_for(
+          "Driving",
+          arr_coeff_.extent(0),
+          Lambda(index_t i) {
+
+            arr_omega_(i) = 0.5*0.6 * math::sqrt(temperature_ * machno_) * constant::TWO_PI / SX1_ * arr_coeff_(i);
+            arr_gamma_(i) = 0.5*0.5 * math::sqrt(temperature_ * machno_) * constant::TWO_PI / SX2_ * arr_coeff_(i);
+            arr_sigma_(i) = amp0_ * math::sqrt(static_cast<real_t>(nmodes_) * arr_gamma_(i)) * arr_coeff_(i);
+
+          });
+
       Kokkos::parallel_for(
         "RandomAmplitudes",
         amplitudes.extent(0),
         Lambda(index_t i) {
-          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_);
-          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_);
+          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i)) * arr_coeff_(i);
+          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i)) * arr_coeff_(i);
+          printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
         });
-
-        auto       arr_coeff_ = arr_coeff;
-        // positive modes
-        arr_coeff_(0) = 1.0;
-        arr_coeff_(1) = 1.0;
-        arr_coeff_(2) = sqrt(2.0);
-        arr_coeff_(3) = sqrt(2.0);
-        arr_coeff_(4) = 2.0;
-        arr_coeff_(5) = 2.0;
-        arr_coeff_(6) = sqrt(5.0);
-        arr_coeff_(7) = sqrt(5.0);
-        arr_coeff_(8) = sqrt(5.0);
-        arr_coeff_(9) = sqrt(5.0);
-        arr_coeff_(10) = 3.0;
-        arr_coeff_(11) = 3.0;
-        arr_coeff_(12) = sqrt(8.0);
-        arr_coeff_(13) = sqrt(8.0);
-        // negative modes
-        arr_coeff_(14) = 1.0;
-        arr_coeff_(15) = 1.0;
-        arr_coeff_(16) = sqrt(2.0);
-        arr_coeff_(17) = sqrt(2.0);
-        arr_coeff_(18) = 2.0;
-        arr_coeff_(19) = 2.0;
-        arr_coeff_(20) = sqrt(5.0);
-        arr_coeff_(21) = sqrt(5.0);
-        arr_coeff_(22) = sqrt(5.0);
-        arr_coeff_(23) = sqrt(5.0);
-        arr_coeff_(24) = 3.0;
-        arr_coeff_(25) = 3.0;
-        arr_coeff_(26) = sqrt(8.0);
-        arr_coeff_(27) = sqrt(8.0);
 
     }
 
@@ -402,12 +462,6 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-
-
-
-      auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno * constant::TWO_PI / SX1);
-      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
-      auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
       auto pool   = domain.random_pool;
 
       #if defined(MPI_ENABLED)
@@ -419,20 +473,20 @@ namespace user {
         "RandomAmplitudes",
         amplitudes.extent(0),
         ClassLambda(index_t i) {
-          auto       rand_gen = pool.get_state();
-          const auto unr      = Random<real_t>(rand_gen) - HALF;
-          const auto uni      = Random<real_t>(rand_gen) - HALF;
-          pool.free_state(rand_gen);
-          const auto ampr_prev = amplitudes(i, REAL);
-          const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                unr * sigma0;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                uni * sigma0;
+          // auto       rand_gen = pool.get_state();
+          // const auto unr      = Random<real_t>(rand_gen) - HALF;
+          // const auto uni      = Random<real_t>(rand_gen) - HALF;
+          // pool.free_state(rand_gen);
+          // const auto ampr_prev = amplitudes(i, REAL);
+          // const auto ampi_prev = amplitudes(i, IMAG);
+          // amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
+          //                        ampi_prev * math::sin(omega0 * dt)) *
+          //                         math::exp(-gamma0 * dt) +
+          //                       unr * sigma0;
+          // amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
+          //                        ampi_prev * math::cos(omega0 * dt)) *
+          //                         math::exp(-gamma0 * dt) +
+          //                       uni * sigma0;
         });
 
       auto fext_en_total = ZERO;
