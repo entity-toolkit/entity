@@ -31,7 +31,7 @@ namespace user {
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return Bnorm;
+      return ZERO;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
@@ -39,7 +39,7 @@ namespace user {
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return Bnorm;
     }
 
   private:
@@ -296,7 +296,7 @@ namespace user {
       // , SX2 { 2.0 }
       // , SX3 { 2.0 }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
-      , machno { params.template get<real_t>("setup.machno", 0.1) }
+      , machno { params.template get<real_t>("setup.machno", 1,0) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 12) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
@@ -342,7 +342,7 @@ namespace user {
         const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
           energy_dist,
           { 1, 2 });
-        const real_t ndens = 0.9;
+        const real_t ndens = 1.0;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,
@@ -373,7 +373,7 @@ namespace user {
           { 1, 2 });  
 
 
-        const real_t ndens = 0.1;
+        const real_t ndens = 0.0;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,
@@ -382,8 +382,8 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
-      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+      auto omega0 = 0.1*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
+      auto gamma0 = 0.1*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
       auto pool   = domain.random_pool;
 
