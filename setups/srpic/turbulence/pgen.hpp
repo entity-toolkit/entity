@@ -255,8 +255,6 @@ namespace user {
       Init();
     }
 
-// TODO: Check mode initialiation again
-// TODO: Randomize phases
     void Init() {
       // initializing amplitudes
       auto       amplitudes_ = amplitudes;
