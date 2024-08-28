@@ -139,8 +139,6 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
-
       return (k14 * amps(0, REAL) *
                 math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
               k14 * amps(0, IMAG) *
@@ -157,6 +155,8 @@ namespace user {
                 math::cos(k31 * x_Ph[0] + k32 * x_Ph[1] + k33 * x_Ph[2]) +
               k34 * amps(7, IMAG) *
                 math::sin(k31 * x_Ph[0] + k32 * x_Ph[1] + k33 * x_Ph[2])) ;
+      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
+
     }
 
     Inline auto fx2(const unsigned short&,
@@ -204,6 +204,8 @@ namespace user {
                 math::sin(k51 * x_Ph[0] + k52 * x_Ph[1] + k53 * x_Ph[2])) ;
       // return ZERO;
     }
+
+  public:
 
   private:
     array_t<real_t* [2]> amps;
@@ -363,6 +365,9 @@ namespace user {
                                   math::exp(-gamma0 * dt) +
                                 uni * sigma0;
         });
+
+      // Update amplitudes in the external force
+      // ext_force.amps = amplitudes;
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
