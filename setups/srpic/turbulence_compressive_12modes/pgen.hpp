@@ -366,9 +366,6 @@ namespace user {
                                 uni * sigma0;
         });
 
-      // Update amplitudes in the external force
-      // ext_force.amps = amplitudes;
-
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
         auto fext_en_s = ZERO;

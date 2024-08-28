@@ -31,7 +31,7 @@ namespace user {
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return Bnorm;
+      return ZERO;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
@@ -39,7 +39,7 @@ namespace user {
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return Bnorm;
     }
 
   private:
@@ -127,8 +127,6 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
-
       return (k14 * amps(0, REAL) *
                 math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
               k14 * amps(0, IMAG) *
@@ -137,6 +135,7 @@ namespace user {
                 math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
               k24 * amps(1, IMAG) *
                 math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
     }
 
@@ -208,7 +207,7 @@ namespace user {
       , SX3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
-      , machno { params.template get<real_t>("setup.machno", 0.1) }
+      , machno { params.template get<real_t>("setup.machno", 1.0) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
