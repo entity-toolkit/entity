@@ -105,7 +105,31 @@ namespace user {
       : amps { amplitudes }
       , sx1 { SX1 }
       , sx2 { SX2 }
-      , sx3 { SX3 } {}
+      , sx3 { SX3 } 
+      , k01 { ONE * constant::TWO_PI / sx1 }
+      , k02 { ZERO * constant::TWO_PI / sx2 }
+      , k03 { ZERO * constant::TWO_PI / sx3 }
+      , k04 { ONE }
+      , k11 { ZERO * constant::TWO_PI / sx1 }
+      , k12 { ONE * constant::TWO_PI / sx2 }
+      , k13 { ZERO * constant::TWO_PI / sx3 }
+      , k14 { ONE }
+      , k21 { ZERO * constant::TWO_PI / sx1 }
+      , k22 { ZERO * constant::TWO_PI / sx2 }
+      , k23 { ONE * constant::TWO_PI / sx3 }
+      , k24 { ONE }
+      , k31 { - ONE * constant::TWO_PI / sx1 }
+      , k32 { ZERO * constant::TWO_PI / sx2 }
+      , k33 { ZERO * constant::TWO_PI / sx3 }
+      , k34 { ONE }
+      , k41 { ZERO * constant::TWO_PI / sx1 }
+      , k42 { - ONE * constant::TWO_PI / sx2 }
+      , k43 { ZERO * constant::TWO_PI / sx3 }
+      , k44 { ONE }
+      , k51 { ZERO * constant::TWO_PI / sx1 }
+      , k52 { ZERO * constant::TWO_PI / sx2 }
+      , k53 { - ONE * constant::TWO_PI / sx3 }
+      , k54 { ONE } {}
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -114,33 +138,6 @@ namespace user {
     Inline auto fx1(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-
-      real_t k31 = - ONE * constant::TWO_PI / sx1;
-      real_t k32 = ZERO * constant::TWO_PI / sx2;
-      real_t k33 = ZERO * constant::TWO_PI / sx3;
-      real_t k34 = ONE;
-      real_t k41 = ZERO * constant::TWO_PI / sx1;
-      real_t k42 = - ONE * constant::TWO_PI / sx2;
-      real_t k43 = ZERO * constant::TWO_PI / sx3;
-      real_t k44 = ONE;
-      real_t k51 = ZERO * constant::TWO_PI / sx1;
-      real_t k52 = ZERO * constant::TWO_PI / sx2;
-      real_t k53 = - ONE * constant::TWO_PI / sx3;
-      real_t k54 = ONE;
-
-      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
       return (k14 * amps(0, REAL) *
                 math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
@@ -158,36 +155,13 @@ namespace user {
                 math::cos(k31 * x_Ph[0] + k32 * x_Ph[1] + k33 * x_Ph[2]) +
               k34 * amps(7, IMAG) *
                 math::sin(k31 * x_Ph[0] + k32 * x_Ph[1] + k33 * x_Ph[2])) ;
+      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
+
     }
 
     Inline auto fx2(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-
-      real_t k31 = - ONE * constant::TWO_PI / sx1;
-      real_t k32 = ZERO * constant::TWO_PI / sx2;
-      real_t k33 = ZERO * constant::TWO_PI / sx3;
-      real_t k34 = ONE;
-      real_t k41 = ZERO * constant::TWO_PI / sx1;
-      real_t k42 = - ONE * constant::TWO_PI / sx2;
-      real_t k43 = ZERO * constant::TWO_PI / sx3;
-      real_t k44 = ONE;
-      real_t k51 = ZERO * constant::TWO_PI / sx1;
-      real_t k52 = ZERO * constant::TWO_PI / sx2;
-      real_t k53 = - ONE * constant::TWO_PI / sx3;
-      real_t k54 = ONE;
 
       return (k04 * amps(2, REAL) *
                 math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
@@ -211,31 +185,6 @@ namespace user {
     Inline auto fx3(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-
-      real_t k31 = - ONE * constant::TWO_PI / sx1;
-      real_t k32 = ZERO * constant::TWO_PI / sx2;
-      real_t k33 = ZERO * constant::TWO_PI / sx3;
-      real_t k34 = ONE;
-      real_t k41 = ZERO * constant::TWO_PI / sx1;
-      real_t k42 = - ONE * constant::TWO_PI / sx2;
-      real_t k43 = ZERO * constant::TWO_PI / sx3;
-      real_t k44 = ONE;
-      real_t k51 = ZERO * constant::TWO_PI / sx1;
-      real_t k52 = ZERO * constant::TWO_PI / sx2;
-      real_t k53 = - ONE * constant::TWO_PI / sx3;
-      real_t k54 = ONE;
 
       return (k04 * amps(4, REAL) *
                 math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
@@ -256,9 +205,17 @@ namespace user {
       // return ZERO;
     }
 
+  public:
+
   private:
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
+    const real_t         k01, k02, k03, k04;
+    const real_t         k11, k12, k13, k14;
+    const real_t         k21, k22, k23, k24;
+    const real_t         k31, k32, k33, k34;
+    const real_t         k41, k42, k43, k44;
+    const real_t         k51, k52, k53, k54;
   };
 
   template <SimEngine::type S, class M>
@@ -292,9 +249,6 @@ namespace user {
               global_domain.mesh().extent(in::x2).first }
       , SX3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
-      // , SX1 { 2.0 }
-      // , SX2 { 2.0 }
-      // , SX3 { 2.0 }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1,0) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 12) }
@@ -411,6 +365,9 @@ namespace user {
                                   math::exp(-gamma0 * dt) +
                                 uni * sigma0;
         });
+
+      // Update amplitudes in the external force
+      // ext_force.amps = amplitudes;
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
