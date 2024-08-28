@@ -250,7 +250,7 @@ namespace user {
       , SX3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
-      , machno { params.template get<real_t>("setup.machno", 1,0) }
+      , machno { params.template get<real_t>("setup.machno", 1.0) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 12) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
