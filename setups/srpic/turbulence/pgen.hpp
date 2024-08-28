@@ -105,7 +105,19 @@ namespace user {
       : amps { amplitudes }
       , sx1 { SX1 }
       , sx2 { SX2 }
-      , sx3 { SX3 } {}
+      , sx3 { SX3 } 
+      , k01 {ONE * constant::TWO_PI / sx1}
+      , k02 {ZERO * constant::TWO_PI / sx2}
+      , k03 {ZERO * constant::TWO_PI / sx3}
+      , k04 {ONE}
+      , k11 {ZERO * constant::TWO_PI / sx1}
+      , k12 {ONE * constant::TWO_PI / sx2}
+      , k13 {ZERO * constant::TWO_PI / sx3}
+      , k14 {ONE}
+      , k21 {ZERO * constant::TWO_PI / sx1}
+      , k22 {ZERO * constant::TWO_PI / sx2}
+      , k23 {ONE * constant::TWO_PI / sx3}
+      , k24 {ONE} {}
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -114,18 +126,6 @@ namespace user {
     Inline auto fx1(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
 
       // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
@@ -143,18 +143,7 @@ namespace user {
     Inline auto fx2(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
+
       return (k04 * amps(2, REAL) *
                 math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
               k04 * amps(2, IMAG) *
@@ -169,18 +158,7 @@ namespace user {
     Inline auto fx3(const unsigned short&,
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
+
       return (k04 * amps(4, REAL) *
                 math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
               k04 * amps(4, IMAG) *
@@ -195,6 +173,7 @@ namespace user {
   private:
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
+    const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
   };
 
   template <SimEngine::type S, class M>
