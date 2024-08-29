@@ -27,7 +27,7 @@ namespace checkpoint {
                     int            keep) {
     m_keep    = keep;
     m_enabled = keep != 0;
-    if (!m_enabled) {
+    if (not m_enabled) {
       return;
     }
     m_tracker.init("checkpoint", interval, interval_time);
