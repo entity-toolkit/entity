@@ -336,8 +336,8 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      auto omega0 = 0.1*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
-      auto gamma0 = 0.1*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+      auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
+      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
       auto pool   = domain.random_pool;
 
