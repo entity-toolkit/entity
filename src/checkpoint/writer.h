@@ -20,7 +20,6 @@
 #include "framework/parameters.h"
 
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
 
 #include <string>
 #include <utility>
