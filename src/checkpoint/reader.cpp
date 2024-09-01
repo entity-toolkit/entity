@@ -31,7 +31,7 @@ namespace checkpoint {
     field_var.SetSelection(range);
 
     auto array_h = Kokkos::create_mirror_view(array);
-    reader.Get(field_var, array_h.data());
+    reader.Get(field_var, array_h.data(), adios2::Mode::Sync);
     Kokkos::deep_copy(array, array_h);
   }
 
@@ -57,7 +57,7 @@ namespace checkpoint {
     std::size_t offset_npart = 0;
 #else
     std::vector<std::size_t> glob_nparts(ndomains);
-    MPI_Allgather(&npart,
+    MPI_Allgather(&loc_npart,
                   1,
                   mpi::get_type<std::size_t>(),
                   glob_nparts.data(),
@@ -88,7 +88,7 @@ namespace checkpoint {
     var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
     const auto slice   = std::pair<std::size_t, std::size_t> { 0, count };
     auto       array_h = Kokkos::create_mirror_view(array);
-    reader.Get(var, Kokkos::subview(array_h, slice).data());
+    reader.Get(var, Kokkos::subview(array_h, slice).data(), adios2::Mode::Sync);
     Kokkos::deep_copy(Kokkos::subview(array, slice),
                       Kokkos::subview(array_h, slice));
   }
