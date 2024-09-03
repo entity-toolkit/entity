@@ -11,7 +11,6 @@
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
 
 #include <filesystem>
 #include <fstream>
@@ -41,11 +40,12 @@ namespace checkpoint {
     m_io.DefineVariable<long double>("Time");
     m_io.DefineAttribute("NGhosts", ntt::N_GHOSTS);
 
-    const std::filesystem::path save_path { "checkpoints" };
-    if (!std::filesystem::exists(save_path)) {
-      std::filesystem::create_directory(save_path);
-    }
-    p_adios->EnterComputationBlock();
+    CallOnce([]() {
+      const std::filesystem::path save_path { "checkpoints" };
+      if (!std::filesystem::exists(save_path)) {
+        std::filesystem::create_directory(save_path);
+      }
+    });
   }
 
   void Writer::defineFieldVariables(const ntt::SimEngine&           S,
@@ -169,7 +169,6 @@ namespace checkpoint {
     m_writing_mode = false;
     m_writer.EndStep();
     m_writer.Close();
-    p_adios->EnterComputationBlock();
 
     // optionally remove the oldest checkpoint
     CallOnce([&]() {
@@ -217,9 +216,7 @@ namespace checkpoint {
                          const ndfield_t<D, N>& field) {
     auto field_h = Kokkos::create_mirror_view(field);
     Kokkos::deep_copy(field_h, field);
-    m_writer.Put(m_io.InquireVariable<real_t>(fieldname),
-                 field_h.data(),
-                 adios2::Mode::Sync);
+    m_writer.Put(m_io.InquireVariable<real_t>(fieldname), field_h.data());
   }
 
   template <typename T>
@@ -228,13 +225,16 @@ namespace checkpoint {
                                     std::size_t        loc_offset,
                                     std::size_t        loc_size,
                                     const array_t<T*>& data) {
-    auto data_h = Kokkos::create_mirror_view(data);
-    Kokkos::deep_copy(data_h, data);
-    auto slice = range_tuple_t(0, loc_size);
-    auto var   = m_io.InquireVariable<T>(quantity);
+    const auto slice = range_tuple_t(0, loc_size);
+    auto       var   = m_io.InquireVariable<T>(quantity);
+
     var.SetShape({ glob_total });
     var.SetSelection(adios2::Box<adios2::Dims>({ loc_offset }, { loc_size }));
-    m_writer.Put(var, Kokkos::subview(data_h, slice).data());
+
+    auto data_h = Kokkos::create_mirror_view(data);
+    Kokkos::deep_copy(data_h, data);
+    auto data_sub = Kokkos::subview(data_h, slice);
+    m_writer.Put(var, data_sub.data());
   }
 
   template void Writer::savePerDomainVariable<int>(const std::string&,

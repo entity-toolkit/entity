@@ -9,7 +9,10 @@
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
 
 #include <string>
 #include <utility>
@@ -25,9 +28,11 @@ namespace checkpoint {
                   ndfield_t<D, N>&                 array) {
     logger::Checkpoint(fmt::format("Reading field: %s", field.c_str()), HERE);
     auto field_var = io.InquireVariable<real_t>(field);
-    field_var.SetStepSelection(adios2::Box<std::size_t>({ 0 }, { 1 }));
     field_var.SetSelection(range);
-    reader.Get(field_var, array.data());
+
+    auto array_h = Kokkos::create_mirror_view(array);
+    reader.Get(field_var, array_h.data(), adios2::Mode::Sync);
+    Kokkos::deep_copy(array, array_h);
   }
 
   auto ReadParticleCount(adios2::IO&     io,
@@ -43,17 +48,27 @@ namespace checkpoint {
       npart_var.Shape()[0] != ndomains or npart_var.Shape().size() != 1,
       "npart_var.Shape()[0] != ndomains or npart_var.Shape().size() != 1",
       HERE);
-    npart_var.SetStepSelection(adios2::Box<std::size_t>({ 0 }, { 1 }));
-    npart_var.SetSelection(
-      adios2::Box<adios2::Dims>({ 0 }, { npart_var.Shape()[0] }));
-    std::vector<std::size_t> nparts(ndomains);
-    reader.Get(npart_var, nparts.data(), adios2::Mode::Sync);
 
-    const auto  loc_npart    = nparts[local_dom];
+    npart_var.SetSelection(adios2::Box<adios2::Dims>({ local_dom }, { 1 }));
+    std::size_t npart;
+    reader.Get(npart_var, &npart, adios2::Mode::Sync);
+    const auto loc_npart = npart;
+#if !defined(MPI_ENABLED)
+    std::size_t offset_npart = 0;
+#else
+    std::vector<std::size_t> glob_nparts(ndomains);
+    MPI_Allgather(&loc_npart,
+                  1,
+                  mpi::get_type<std::size_t>(),
+                  glob_nparts.data(),
+                  1,
+                  mpi::get_type<std::size_t>(),
+                  MPI_COMM_WORLD);
     std::size_t offset_npart = 0;
     for (auto d { 0u }; d < local_dom; ++d) {
-      offset_npart += nparts[d];
+      offset_npart += glob_nparts[d];
     }
+#endif
     return { loc_npart, offset_npart };
   }
 
@@ -70,9 +85,12 @@ namespace checkpoint {
       HERE);
     auto var = io.InquireVariable<T>(
       fmt::format("s%d_%s", s + 1, quantity.c_str()));
-    var.SetStepSelection(adios2::Box<std::size_t>({ 0 }, { 1 }));
     var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
-    reader.Get(var, array.data());
+    const auto slice   = std::pair<std::size_t, std::size_t> { 0, count };
+    auto       array_h = Kokkos::create_mirror_view(array);
+    reader.Get(var, Kokkos::subview(array_h, slice).data(), adios2::Mode::Sync);
+    Kokkos::deep_copy(Kokkos::subview(array, slice),
+                      Kokkos::subview(array_h, slice));
   }
 
   template void ReadFields<Dim::_1D, 3>(adios2::IO&,
