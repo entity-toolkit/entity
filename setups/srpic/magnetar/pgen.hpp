@@ -155,11 +155,13 @@ namespace user {
 
     const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0, gamma_pairs, pp_thres;
     InitFields<D> init_flds;
+    bool          is_first_step;
     
     array_t<real_t**> cbuff, cbuff2;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
+      , is_first_step { true }
       , global_domain { m }
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
@@ -188,7 +190,7 @@ namespace user {
     }
 
         void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      if (time == 0) {
+      if (is_first_step) {
         cbuff = array_t<real_t**>("cbuff",
                                   domain.mesh.n_all(in::x1),
                                   domain.mesh.n_all(in::x2));
@@ -197,6 +199,7 @@ namespace user {
                                   domain.mesh.n_all(in::x1),
                                   domain.mesh.n_all(in::x2));
         Kokkos::deep_copy(cbuff2, ZERO);
+        is_first_step = false;
       }
 
     // Ad-hoc PP kernel
