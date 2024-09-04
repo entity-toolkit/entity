@@ -131,12 +131,6 @@ namespace ntt {
             offset,
             npart,
             local_domain->species[s].i1);
-          g_checkpoint_writer.saveParticleQuantity<int>(
-            fmt::format("s%d_i1", s + 1),
-            glob_tot,
-            offset,
-            npart,
-            local_domain->species[s].i1);
           g_checkpoint_writer.saveParticleQuantity<prtldx_t>(
             fmt::format("s%d_dx1", s + 1),
             glob_tot,
@@ -156,7 +150,7 @@ namespace ntt {
             npart,
             local_domain->species[s].dx1_prev);
         }
-        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
           g_checkpoint_writer.saveParticleQuantity<int>(
             fmt::format("s%d_i2", s + 1),
             glob_tot,
