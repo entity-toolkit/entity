@@ -17,8 +17,8 @@ namespace user {
   template <Dimension D>
   struct InitFields
   {
-      InitFields(real_t bmag, real_t btheta, real_t bphi, real_t bbeta) : 
-        Bmag { bmag }, Btheta { btheta }, Bphi { bphi }, Bbeta { bbeta } {}
+      InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux) : 
+        Bmag { bmag }, Btheta { btheta }, Bphi { bphi }, Vx { drift_ux } {}
 
       // alternative: initialize magnetisation from simulation parameters as in Tristan?
       // Bmag = math::sqrt(ppc0 * 0.5 * c * c * me * sigma);
@@ -44,15 +44,15 @@ namespace user {
       }
       Inline auto ex2(const coord_t<D> &x_Ph) const -> real_t
       {
-          return -Bbeta * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
+          return -Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
       }
       Inline auto ex3(const coord_t<D> &x_Ph) const -> real_t
       {
-          return -Bbeta * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
+          return -Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
       }
 
   private:
-      const real_t Btheta, Bphi, Bbeta, Bmag;
+      const real_t Btheta, Bphi, Vx, Bmag;
   };
 
   template <SimEngine::type S, class M>
@@ -71,7 +71,7 @@ namespace user {
 
     const real_t drift_ux, temperature;
 
-    const real_t Btheta, Bphi, Bbeta, Bmag;
+    const real_t Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
     inline PGen(const SimulationParams &p, const Metadomain<S, M> &m)
@@ -81,8 +81,7 @@ namespace user {
         , Bmag { p.template get<real_t>("setup.Bmag", 0.0) }
         , Btheta { p.template get<real_t>("setup.Btheta", 0.0) }
         , Bphi { p.template get<real_t>("setup.Bphi", 0.0) }
-        , Bbeta { p.template get<real_t>("setup.Bbeta", 0.0) }
-        , init_flds { Bmag, Btheta, Bphi, Bbeta } {}
+        , init_flds { Bmag, Btheta, Bphi, drift_ux } {}
 
     inline PGen() {}
 
