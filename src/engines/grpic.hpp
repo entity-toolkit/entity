@@ -50,7 +50,7 @@ namespace ntt {
     auto constexpr D { M::Dim };
 
   public:
-    static constexpr auto S { SimEngine::SRPIC };
+    static constexpr auto S { SimEngine::GRPIC };
 
     GRPICEngine(SimulationParams& params)
       : Engine<SimEngine::GRPIC, M> { params } {}
