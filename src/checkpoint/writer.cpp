@@ -59,7 +59,7 @@ namespace checkpoint {
     lc6.push_back(0);
     ls6.push_back(6);
 
-    m_io.DefineVariable<real_t>("em", gs6, lc6, ls6, adios2::ConstantDims);
+    m_io.DefineVariable<real_t>("em", gs6, lc6, ls6);
     if (S == ntt::SimEngine::GRPIC) {
       m_io.DefineVariable<real_t>("em0", gs6, lc6, ls6, adios2::ConstantDims);
       auto gs3 = std::vector<std::size_t>(glob_shape.begin(), glob_shape.end());
@@ -216,7 +216,7 @@ namespace checkpoint {
                          const ndfield_t<D, N>& field) {
     auto field_h = Kokkos::create_mirror_view(field);
     Kokkos::deep_copy(field_h, field);
-    m_writer.Put(m_io.InquireVariable<real_t>(fieldname), field_h.data());
+    m_writer.Put(m_io.InquireVariable<real_t>(fieldname), field_h.data(), adios2::Mode::Sync);
   }
 
   template <typename T>
