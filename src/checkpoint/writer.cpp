@@ -61,14 +61,14 @@ namespace checkpoint {
 
     m_io.DefineVariable<real_t>("em", gs6, lc6, ls6);
     if (S == ntt::SimEngine::GRPIC) {
-      m_io.DefineVariable<real_t>("em0", gs6, lc6, ls6, adios2::ConstantDims);
+      m_io.DefineVariable<real_t>("em0", gs6, lc6, ls6);
       auto gs3 = std::vector<std::size_t>(glob_shape.begin(), glob_shape.end());
       auto lc3 = std::vector<std::size_t>(loc_corner.begin(), loc_corner.end());
       auto ls3 = std::vector<std::size_t>(loc_shape.begin(), loc_shape.end());
       gs3.push_back(3);
       lc3.push_back(0);
       ls3.push_back(3);
-      m_io.DefineVariable<real_t>("cur0", gs3, lc3, ls3, adios2::ConstantDims);
+      m_io.DefineVariable<real_t>("cur0", gs3, lc3, ls3);
     }
   }
 
@@ -234,7 +234,7 @@ namespace checkpoint {
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
     auto data_sub = Kokkos::subview(data_h, slice);
-    m_writer.Put(var, data_sub.data());
+    m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
   }
 
   template void Writer::savePerDomainVariable<int>(const std::string&,
