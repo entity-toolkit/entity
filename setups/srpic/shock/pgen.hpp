@@ -20,9 +20,6 @@ namespace user {
       InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux) : 
         Bmag { bmag }, Btheta { btheta }, Bphi { bphi }, Vx { drift_ux } {}
 
-      // alternative: initialize magnetisation from simulation parameters as in Tristan?
-      // Bmag = math::sqrt(ppc0 * 0.5 * c * c * me * sigma);
-
       // magnetic field components
       Inline auto bx1(const coord_t<D> &x_Ph) const -> real_t
       {
@@ -44,7 +41,7 @@ namespace user {
       }
       Inline auto ex2(const coord_t<D> &x_Ph) const -> real_t
       {
-          return -Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
+          return Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
       }
       Inline auto ex3(const coord_t<D> &x_Ph) const -> real_t
       {
