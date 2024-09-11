@@ -16,7 +16,16 @@ namespace user {
 
   template <Dimension D>
   struct InitFields
-  {
+  {   
+      /*
+        Sets up magnetic and electric field components for the simulation.
+        Must satisfy E = -v x B for Lorentz Force to be zero.
+
+        @param bmag: magnetic field scaling
+        @param btheta: magnetic field polar angle
+        @param bphi: magnetic field azimuthal angle
+        @param drift_ux: drift velocity in the x direction
+      */
       InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux) : 
         Bmag { bmag }, Btheta { btheta }, Bphi { bphi }, Vx { drift_ux } {}
 
