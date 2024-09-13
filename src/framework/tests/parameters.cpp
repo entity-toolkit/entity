@@ -5,11 +5,11 @@
 
 #include "utils/comparators.h"
 #include "utils/error.h"
+#include "utils/toml.h"
 
 #include "framework/containers/species.h"
 
 #include <stdio.h>
-#include <toml.hpp>
 
 #include <iostream>
 #include <stdexcept>

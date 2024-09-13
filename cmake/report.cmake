@@ -276,10 +276,11 @@ endif()
 
 message("  ${PRECISION_REPORT}")
 message("  ${OUTPUT_REPORT}")
-message("${DASHED_LINE_SYMBOL}
-Compile configurations")
+message("${DASHED_LINE_SYMBOL}\nCompile configurations")
 
-message("  ${ARCH_REPORT}")
+if(NOT "${ARCH_REPORT}" STREQUAL "")
+  message("  ${ARCH_REPORT}")
+endif()
 message("  ${CUDA_REPORT}")
 message("  ${HIP_REPORT}")
 message("  ${OPENMP_REPORT}")

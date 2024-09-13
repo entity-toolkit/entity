@@ -32,7 +32,10 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     using namespace ntt;
-    auto writer = out::Writer("hdf5");
+
+    adios2::ADIOS adios { MPI_COMM_WORLD };
+    auto          writer = out::Writer();
+    writer.init(&adios, "hdf5");
     writer.defineMeshLayout({ static_cast<unsigned long>(size) * 10 },
                             { static_cast<unsigned long>(rank) * 10 },
                             { 10 },

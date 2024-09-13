@@ -7,6 +7,7 @@
 # - ntt_framework [required]
 # - ntt_metrics [required]
 # - ntt_engine [required]
+# - ntt_pgen [required]
 # @uses:
 # - kokkos [required]
 # - plog [required]
@@ -30,9 +31,12 @@ add_subdirectory(${SRC_DIR}/kernels ${CMAKE_CURRENT_BINARY_DIR}/kernels)
 add_subdirectory(${SRC_DIR}/archetypes ${CMAKE_CURRENT_BINARY_DIR}/archetypes)
 add_subdirectory(${SRC_DIR}/framework ${CMAKE_CURRENT_BINARY_DIR}/framework)
 add_subdirectory(${SRC_DIR}/engines ${CMAKE_CURRENT_BINARY_DIR}/engines)
-if (${output} STREQUAL "ON")
-add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
+
+if (${output})
+  add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
+  add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
 endif()
+
 add_subdirectory(${SRC_DIR}/../setups ${CMAKE_CURRENT_BINARY_DIR}/setups)
 
 set(libs ntt_global ntt_framework ntt_metrics ntt_engines ntt_pgen)
