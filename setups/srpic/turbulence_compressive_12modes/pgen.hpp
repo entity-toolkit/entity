@@ -336,8 +336,13 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
+<<<<<<< HEAD
       auto omega0 = 0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
       auto gamma0 = 0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+=======
+      auto omega0 = 2.0*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
+      auto gamma0 = 2.0*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+>>>>>>> e040c625c08289b943ea7fd86f2ccf73f3397a8c
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
       auto pool   = domain.random_pool;
 
@@ -366,195 +371,192 @@ namespace user {
                                 uni * sigma0;
         });
 
-      // Update amplitudes in the external force
-      // ext_force.amps = amplitudes;
+      // auto fext_en_total = ZERO;
+      // for (auto& species : domain.species) {
+      //   auto fext_en_s = ZERO;
+      //   auto pld    = species.pld[0];
+      //   auto weight = species.weight;
+      //   Kokkos::parallel_reduce(
+      //     "ExtForceEnrg",
+      //     species.rangeActiveParticles(),
+      //     ClassLambda(index_t p, real_t & fext_en) {
+      //       fext_en += pld(p) * weight(p);
+      //     },
+      //     fext_en_s);
+      // #if defined(MPI_ENABLED)
+      //   auto fext_en_sg = ZERO;
+      //   MPI_Allreduce(&fext_en_s, &fext_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      //   fext_en_total += fext_en_sg;
+      // #else
+      //   fext_en_total += fext_en_s; 
+      // #endif
+      // }
 
-      auto fext_en_total = ZERO;
-      for (auto& species : domain.species) {
-        auto fext_en_s = ZERO;
-        auto pld    = species.pld[0];
-        auto weight = species.weight;
-        Kokkos::parallel_reduce(
-          "ExtForceEnrg",
-          species.rangeActiveParticles(),
-          ClassLambda(index_t p, real_t & fext_en) {
-            fext_en += pld(p) * weight(p);
-          },
-          fext_en_s);
-      #if defined(MPI_ENABLED)
-        auto fext_en_sg = ZERO;
-        MPI_Allreduce(&fext_en_s, &fext_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-        fext_en_total += fext_en_sg;
-      #else
-        fext_en_total += fext_en_s; 
-      #endif
-      }
+      // // Weight the macroparticle integral by sim parameters
+      // fext_en_total /= params.template get<real_t>("scales.n0");
 
-      // Weight the macroparticle integral by sim parameters
-      fext_en_total /= params.template get<real_t>("scales.n0");
+      // auto pkin_en_total = ZERO;
+      // for (auto& species : domain.species) {
+      //   auto pkin_en_s = ZERO;
+      //   auto ux1    = species.ux1;
+      //   auto ux2    = species.ux2;
+      //   auto ux3    = species.ux3;
+      //   auto weight = species.weight;
+      //   Kokkos::parallel_reduce(
+      //     "KinEnrg",
+      //     species.rangeActiveParticles(),
+      //     ClassLambda(index_t p, real_t & pkin_en) {
+      //       pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
+      //                   ONE) *
+      //                  weight(p);
+      //     },
+      //     pkin_en_s);
+      // #if defined(MPI_ENABLED)
+      //   auto pkin_en_sg = ZERO;
+      //   MPI_Allreduce(&pkin_en_s, &pkin_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      //   pkin_en_total += pkin_en_sg;
+      // #else
+      //   pkin_en_total += pkin_en_s;
+      // #endif
+      // }
 
-      auto pkin_en_total = ZERO;
-      for (auto& species : domain.species) {
-        auto pkin_en_s = ZERO;
-        auto ux1    = species.ux1;
-        auto ux2    = species.ux2;
-        auto ux3    = species.ux3;
-        auto weight = species.weight;
-        Kokkos::parallel_reduce(
-          "KinEnrg",
-          species.rangeActiveParticles(),
-          ClassLambda(index_t p, real_t & pkin_en) {
-            pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
-                        ONE) *
-                       weight(p);
-          },
-          pkin_en_s);
-      #if defined(MPI_ENABLED)
-        auto pkin_en_sg = ZERO;
-        MPI_Allreduce(&pkin_en_s, &pkin_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-        pkin_en_total += pkin_en_sg;
-      #else
-        pkin_en_total += pkin_en_s;
-      #endif
-      }
-
-      // Weight the macroparticle integral by sim parameters
-      pkin_en_total /= params.template get<real_t>("scales.n0");
+      // // Weight the macroparticle integral by sim parameters
+      // pkin_en_total /= params.template get<real_t>("scales.n0");
         
-      auto benrg_total = ZERO;
-      auto eenrg_total = ZERO;
+      // auto benrg_total = ZERO;
+      // auto eenrg_total = ZERO;
 
-      if constexpr (D == Dim::_3D) {
+      // if constexpr (D == Dim::_3D) {
         
-        auto metric = domain.mesh.metric;
+      //   auto metric = domain.mesh.metric;
         
-        auto benrg_s = ZERO;
-        auto EB          = domain.fields.em;
-        Kokkos::parallel_reduce(
-          "BEnrg",
-          domain.mesh.rangeActiveCells(),
-          Lambda(index_t i1, index_t i2, index_t i3, real_t & benrg) {
-            coord_t<Dim::_3D> x_Cd { ZERO };
-            vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, i3, em::bx1),
-                                      EB(i1, i2, i3, em::bx2),
-                                      EB(i1, i2, i3, em::bx3) };
-            vec_t<Dim::_3D>   b_XYZ;
-            metric.template transform<Idx::U, Idx::T>(x_Cd,
-                                                                  b_Cntrv,
-                                                                  b_XYZ);
-            benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
-          },
-          benrg_s);
-        #if defined(MPI_ENABLED)
-          auto benrg_sg = ZERO;
-          MPI_Allreduce(&benrg_s, &benrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-          benrg_total += benrg_sg;
-        #else
-          benrg_total += benrg_s;
-        #endif
+      //   auto benrg_s = ZERO;
+      //   auto EB          = domain.fields.em;
+      //   Kokkos::parallel_reduce(
+      //     "BEnrg",
+      //     domain.mesh.rangeActiveCells(),
+      //     Lambda(index_t i1, index_t i2, index_t i3, real_t & benrg) {
+      //       coord_t<Dim::_3D> x_Cd { ZERO };
+      //       vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, i3, em::bx1),
+      //                                 EB(i1, i2, i3, em::bx2),
+      //                                 EB(i1, i2, i3, em::bx3) };
+      //       vec_t<Dim::_3D>   b_XYZ;
+      //       metric.template transform<Idx::U, Idx::T>(x_Cd,
+      //                                                             b_Cntrv,
+      //                                                             b_XYZ);
+      //       benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
+      //     },
+      //     benrg_s);
+      //   #if defined(MPI_ENABLED)
+      //     auto benrg_sg = ZERO;
+      //     MPI_Allreduce(&benrg_s, &benrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      //     benrg_total += benrg_sg;
+      //   #else
+      //     benrg_total += benrg_s;
+      //   #endif
 
-      // Weight the field integral by sim parameters
-        benrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
+      // // Weight the field integral by sim parameters
+      //   benrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
-        auto eenrg_s = ZERO;
-        Kokkos::parallel_reduce(
-          "BEnrg",
-          domain.mesh.rangeActiveCells(),
-          Lambda(index_t i1, index_t i2, index_t i3, real_t & eenrg) {
-            coord_t<Dim::_3D> x_Cd { ZERO };
-            vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
-                                      EB(i1, i2, i3, em::ex2),
-                                      EB(i1, i2, i3, em::ex3) };
-            vec_t<Dim::_3D>   e_XYZ;
-            metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
-            eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
-          },
-          eenrg_s);
+      //   auto eenrg_s = ZERO;
+      //   Kokkos::parallel_reduce(
+      //     "BEnrg",
+      //     domain.mesh.rangeActiveCells(),
+      //     Lambda(index_t i1, index_t i2, index_t i3, real_t & eenrg) {
+      //       coord_t<Dim::_3D> x_Cd { ZERO };
+      //       vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
+      //                                 EB(i1, i2, i3, em::ex2),
+      //                                 EB(i1, i2, i3, em::ex3) };
+      //       vec_t<Dim::_3D>   e_XYZ;
+      //       metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
+      //       eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
+      //     },
+      //     eenrg_s);
 
-        #if defined(MPI_ENABLED)
-          auto eenrg_sg = ZERO;
-          MPI_Allreduce(&eenrg_s, &eenrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-          eenrg_total += eenrg_sg;  
-        #else
-          eenrg_total += eenrg_s;
-        #endif
+      //   #if defined(MPI_ENABLED)
+      //     auto eenrg_sg = ZERO;
+      //     MPI_Allreduce(&eenrg_s, &eenrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      //     eenrg_total += eenrg_sg;  
+      //   #else
+      //     eenrg_total += eenrg_s;
+      //   #endif
 
-      // Weight the field integral by sim parameters
-        eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
+      // // Weight the field integral by sim parameters
+      //   eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
-      }
+      // }
 
-      std::ofstream myfile1;
-      std::ofstream myfile2;
-      std::ofstream myfile3;
-      std::ofstream myfile4;
+      // std::ofstream myfile1;
+      // std::ofstream myfile2;
+      // std::ofstream myfile3;
+      // std::ofstream myfile4;
 
-      #if defined(MPI_ENABLED)
+      // #if defined(MPI_ENABLED)
 
-        if(rank == MPI_ROOT_RANK) {
+      //   if(rank == MPI_ROOT_RANK) {
 
-          printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
+      //     printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
           
-          if (time == 0) {
-            myfile1.open("fextenrg.txt");
-          } else {
-            myfile1.open("fextenrg.txt", std::ios_base::app);
-          }
-          myfile1 << fext_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile1.open("fextenrg.txt");
+      //     } else {
+      //       myfile1.open("fextenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile1 << fext_en_total << std::endl;
 
-          if (time == 0) {
-            myfile2.open("kenrg.txt");
-          } else {
-            myfile2.open("kenrg.txt", std::ios_base::app);
-          }
-          myfile2 << pkin_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile2.open("kenrg.txt");
+      //     } else {
+      //       myfile2.open("kenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile2 << pkin_en_total << std::endl;
 
-          if (time == 0) {
-            myfile3.open("bsqenrg.txt");
-          } else {
-            myfile3.open("bsqenrg.txt", std::ios_base::app);
-          }
-          myfile3 << benrg_total << std::endl;
+      //     if (time == 0) {
+      //       myfile3.open("bsqenrg.txt");
+      //     } else {
+      //       myfile3.open("bsqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile3 << benrg_total << std::endl;
 
-          if (time == 0) {
-            myfile4.open("esqenrg.txt");
-          } else {
-            myfile4.open("esqenrg.txt", std::ios_base::app);
-          }
-          myfile4 << eenrg_total << std::endl;
-        }
+      //     if (time == 0) {
+      //       myfile4.open("esqenrg.txt");
+      //     } else {
+      //       myfile4.open("esqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile4 << eenrg_total << std::endl;
+      //   }
 
-      #else
+      // #else
 
-          if (time == 0) {
-            myfile1.open("fextenrg.txt");
-          } else {
-            myfile1.open("fextenrg.txt", std::ios_base::app);
-          }
-          myfile1 << fext_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile1.open("fextenrg.txt");
+      //     } else {
+      //       myfile1.open("fextenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile1 << fext_en_total << std::endl;
 
-          if (time == 0) {
-            myfile2.open("kenrg.txt");
-          } else {
-            myfile2.open("kenrg.txt", std::ios_base::app);
-          }
-          myfile2 << pkin_en_total << std::endl;
+      //     if (time == 0) {
+      //       myfile2.open("kenrg.txt");
+      //     } else {
+      //       myfile2.open("kenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile2 << pkin_en_total << std::endl;
 
-          if (time == 0) {
-            myfile3.open("bsqenrg.txt");
-          } else {
-            myfile3.open("bsqenrg.txt", std::ios_base::app);
-          }
-          myfile3 << benrg_total << std::endl;
+      //     if (time == 0) {
+      //       myfile3.open("bsqenrg.txt");
+      //     } else {
+      //       myfile3.open("bsqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile3 << benrg_total << std::endl;
 
-          if (time == 0) {
-            myfile4.open("esqenrg.txt");
-          } else {
-            myfile4.open("esqenrg.txt", std::ios_base::app);
-          }
-          myfile4 << eenrg_total << std::endl;
+      //     if (time == 0) {
+      //       myfile4.open("esqenrg.txt");
+      //     } else {
+      //       myfile4.open("esqenrg.txt", std::ios_base::app);
+      //     }
+      //     myfile4 << eenrg_total << std::endl;
 
-      #endif
+      // #endif
     }
   };
 

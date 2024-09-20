@@ -16,7 +16,6 @@
 #include "arch/kokkos_aliases.h"
 
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
 
 #include <string>
 #include <utility>

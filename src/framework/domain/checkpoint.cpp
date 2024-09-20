@@ -32,9 +32,15 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
 
-    auto glob_shape_with_ghosts = mesh().n_all();
-    auto off_ncells_with_ghosts = local_domain->offset_ncells();
-    auto loc_shape_with_ghosts  = local_domain->mesh.n_all();
+    std::vector<std::size_t> glob_shape_with_ghosts, off_ncells_with_ghosts;
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      off_ncells_with_ghosts.push_back(
+        local_domain->offset_ncells()[d] +
+        2 * N_GHOSTS * local_domain->offset_ndomains()[d]);
+      glob_shape_with_ghosts.push_back(
+        mesh().n_active()[d] + 2 * N_GHOSTS * ndomains_per_dim()[d]);
+    }
+    auto loc_shape_with_ghosts = local_domain->mesh.n_all();
 
     std::vector<unsigned short> nplds;
     for (auto s { 0u }; s < local_domain->species.size(); ++s) {
@@ -125,12 +131,6 @@ namespace ntt {
             offset,
             npart,
             local_domain->species[s].i1);
-          g_checkpoint_writer.saveParticleQuantity<int>(
-            fmt::format("s%d_i1", s + 1),
-            glob_tot,
-            offset,
-            npart,
-            local_domain->species[s].i1);
           g_checkpoint_writer.saveParticleQuantity<prtldx_t>(
             fmt::format("s%d_dx1", s + 1),
             glob_tot,
@@ -150,7 +150,7 @@ namespace ntt {
             npart,
             local_domain->species[s].dx1_prev);
         }
-        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
           g_checkpoint_writer.saveParticleQuantity<int>(
             fmt::format("s%d_i2", s + 1),
             glob_tot,
@@ -280,7 +280,8 @@ namespace ntt {
       auto&                     domain = g_subdomains[ldidx];
       adios2::Box<adios2::Dims> range;
       for (auto d { 0u }; d < M::Dim; ++d) {
-        range.first.push_back(domain.offset_ncells()[d]);
+        range.first.push_back(domain.offset_ncells()[d] +
+                              2 * N_GHOSTS * domain.offset_ndomains()[d]);
         range.second.push_back(domain.mesh.n_all()[d]);
       }
       range.first.push_back(0);
@@ -294,7 +295,8 @@ namespace ntt {
                                           domain.fields.em0);
         adios2::Box<adios2::Dims> range3;
         for (auto d { 0u }; d < M::Dim; ++d) {
-          range3.first.push_back(domain.offset_ncells()[d]);
+          range3.first.push_back(domain.offset_ncells()[d] +
+                                 2 * N_GHOSTS * domain.offset_ndomains()[d]);
           range3.second.push_back(domain.mesh.n_all()[d]);
         }
         range3.first.push_back(0);
@@ -308,7 +310,6 @@ namespace ntt {
       for (auto s { 0u }; s < (unsigned short)(domain.species.size()); ++s) {
         const auto [loc_npart, offset_npart] =
           checkpoint::ReadParticleCount(io, reader, s, ldidx, ndomains());
-
         raise::ErrorIf(loc_npart > domain.species[s].maxnpart(),
                        "loc_npart > domain.species[s].maxnpart()",
                        HERE);
