@@ -266,11 +266,11 @@ namespace out {
                MPI_SUM,
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
-    if (rank == MPI_ROOT_RANK) {
+    // if (rank == MPI_ROOT_RANK) {
       auto var = m_io.InquireVariable<real_t>(varname);
       var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
       m_writer.Put<real_t>(var, counts_h_all);
-    }
+    // }
 #else
     auto var = m_io.InquireVariable<real_t>(varname);
     var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
@@ -283,9 +283,9 @@ namespace out {
 #if defined(MPI_ENABLED)
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank != MPI_ROOT_RANK) {
-      return;
-    }
+    // if (rank != MPI_ROOT_RANK) {
+    //   return;
+    // }
 #endif
     auto var = m_io.InquireVariable<real_t>(varname);
     var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins.extent(0) }));
