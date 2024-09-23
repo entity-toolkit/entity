@@ -439,7 +439,7 @@ namespace user {
              (amps(25,REAL) *  math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
               amps(25,IMAG) *  math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
              (amps(28,REAL) *  math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
-             amps(28,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k010z * x_Ph[2])) +   
+             amps(28,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
              (- k11x * amps(30,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
               - k11x * amps(30,IMAG) *  math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +              
              (k11z * amps(32,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
@@ -610,18 +610,22 @@ namespace user {
       }
       Kokkos::deep_copy(phi0, phi0_);
       // Initializing mode amplitudes
-      kmag(0) = 0.0; kmag(1) = 0.0; kmag(2) = 0.0; kmag(3) = 0.0; kmag(4) = 0.0; kmag(5) = 0.0; kmag(6) = 0.0; kmag(7) = 0.0; 
-      kmag(8) = 0.0; kmag(9) = 0.0; kmag(10) = 0.0; kmag(11) = 0.0; kmag(12) = 0.0; kmag(13) = 0.0; kmag(14) = 0.0; kmag(15) = 0.0;
-      kmag(16) = 0.0; kmag(17) = 0.0; kmag(18) = 0.0; kmag(19) = 0.0; kmag(20) = 0.0; kmag(21) = 0.0; kmag(22) = 0.0; kmag(23) = 0.0;
-      kmag(24) = 0.0; kmag(25) = 0.0; kmag(26) = 0.0; kmag(27) = 0.0; kmag(28) = 0.0; kmag(29) = 0.0; kmag(30) = 0.0; kmag(31) = 0.0;
-      kmag(32) = 0.0; kmag(33) = 0.0; kmag(34) = 0.0; kmag(35) = 0.0; kmag(36) = 0.0; kmag(37) = 0.0; kmag(38) = 0.0; kmag(39) = 0.0;
-      kmag(40) = 0.0; kmag(41) = 0.0; kmag(42) = 0.0; kmag(43) = 0.0; kmag(44) = 0.0; kmag(45) = 0.0; kmag(46) = 0.0; kmag(47) = 0.0;
-      kmag(48) = 0.0; kmag(49) = 0.0; kmag(50) = 0.0; kmag(51) = 0.0; kmag(52) = 0.0; kmag(53) = 0.0; kmag(54) = 0.0; kmag(55) = 0.0;
-      kmag(56) = 0.0; kmag(57) = 0.0; kmag(58) = 0.0; kmag(59) = 0.0; kmag(60) = 0.0; kmag(61) = 0.0; kmag(62) = 0.0; kmag(63) = 0.0;
-      kmag(64) = 0.0; kmag(65) = 0.0; kmag(66) = 0.0; kmag(67) = 0.0; kmag(68) = 0.0; kmag(69) = 0.0; kmag(70) = 0.0; kmag(71) = 0.0;
-      kmag(72) = 0.0; kmag(73) = 0.0; kmag(74) = 0.0; kmag(75) = 0.0; kmag(76) = 0.0; kmag(77) = 0.0; kmag(78) = 0.0; kmag(79) = 0.0;
-      kmag(80) = 0.0; kmag(81) = 0.0; kmag(82) = 0.0; kmag(83) = 0.0; kmag(84) = 0.0; kmag(85) = 0.0; kmag(86) = 0.0; kmag(87) = 0.0;
-      kmag(88) = 0.0; kmag(89) = 0.0; kmag(90) = 0.0; kmag(91) = 0.0; kmag(92) = 0.0; kmag(93) = 0.0; kmag(94) = 0.0; kmag(95) = 0.0;
+      kmag(0) = 1.0; kmag(1) = 1.0; kmag(2) = 1.0; kmag(3) = 1.0; kmag(4) = 1.0; kmag(5) = 1.0;    // k1,k2
+      kmag(6) = 1.0; kmag(7) = 1.0; kmag(8) = 1.0; kmag(9) = 1.0; kmag(10) = 1.0; kmag(11) = 1.0;   // k3,k4
+      kmag(12) = 1.0; kmag(13) = 1.0; kmag(14) = 1.0; kmag(15) = 1.0; kmag(16) = 1.0; kmag(17) = 1.0; // k5,k6 
+      kmag(18) = math::sqrt(2.0); kmag(19) = math::sqrt(2.0); kmag(20) = math::sqrt(2.0); kmag(21) = math::sqrt(2.0); kmag(22) = math::sqrt(2.0); kmag(23) = math::sqrt(2.0);  // k7,k8
+      kmag(24) = math::sqrt(2.0); kmag(25) = math::sqrt(2.0); kmag(26) = math::sqrt(2.0); kmag(27) = math::sqrt(2.0); kmag(28) = math::sqrt(2.0); kmag(29) = math::sqrt(2.0);  // k9,k10
+      kmag(30) = math::sqrt(2.0); kmag(31) = math::sqrt(2.0); kmag(32) = math::sqrt(2.0); kmag(33) = math::sqrt(2.0); kmag(34) = math::sqrt(2.0); kmag(35) = math::sqrt(2.0);  // k11,k12
+      kmag(36) = math::sqrt(2.0); kmag(37) = math::sqrt(2.0); kmag(38) = math::sqrt(2.0); kmag(39) = math::sqrt(2.0); kmag(40) = math::sqrt(2.0); kmag(41) = math::sqrt(2.0);  // k13,k14
+      kmag(42) = math::sqrt(2.0); kmag(43) = math::sqrt(2.0); kmag(44) = math::sqrt(2.0); kmag(45) = math::sqrt(2.0); kmag(46) = math::sqrt(2.0); kmag(47) = math::sqrt(2.0);   // k15,k16
+      kmag(48) = math::sqrt(2.0); kmag(49) = math::sqrt(2.0); kmag(50) = math::sqrt(2.0); kmag(51) = math::sqrt(2.0); kmag(52) = math::sqrt(2.0); kmag(53) = math::sqrt(2.0);   // k17,k18
+      kmag(54) = math::sqrt(3.0); kmag(55) = math::sqrt(3.0); kmag(56) = math::sqrt(3.0); kmag(57) = math::sqrt(3.0); kmag(58) = math::sqrt(3.0); kmag(59) = math::sqrt(3.0);  // k19,k20
+      kmag(60) = math::sqrt(3.0); kmag(61) = math::sqrt(3.0); kmag(62) = math::sqrt(3.0); kmag(63) = math::sqrt(3.0); kmag(64) = math::sqrt(3.0); kmag(65) = math::sqrt(3.0);  // k21,k22
+      kmag(66) = 0.0; kmag(67) = math::sqrt(3.0); kmag(68) = math::sqrt(3.0); kmag(69) = math::sqrt(3.0); kmag(70) = math::sqrt(3.0); kmag(71) = math::sqrt(3.0);  // k23,k24
+      kmag(72) = 0.0; kmag(73) = math::sqrt(3.0); kmag(74) = math::sqrt(3.0); kmag(75) = math::sqrt(3.0); kmag(76) = math::sqrt(3.0); kmag(77) = math::sqrt(3.0);   // k25,k26
+      kmag(78) = 2.0; kmag(79) = 2.0; kmag(80) = 2.0; kmag(81) = 2.0; kmag(82) = 2.0; kmag(83) = 2.0;   // k27,k28
+      kmag(84) = 2.0; kmag(85) = 2.0; kmag(86) = 2.0; kmag(87) = 2.0; kmag(88) = 2.0; kmag(89) = 2.0;  // k29,k30
+      kmag(90) = 2.0; kmag(91) = 2.0; kmag(92) = 2.0; kmag(93) = 2.0; kmag(94) = 2.0; kmag(95) = 2.0; // k31,k32
       // Initializing driving amplitudes
       Init();
     }
@@ -713,11 +717,11 @@ namespace user {
           amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * kmag(i) * dt) +
                                  ampi_prev * math::sin(omega0 * kmag(i) * dt)) *
                                   math::exp(-gamma0 * kmag(i) * dt) +
-                                unr * sigma0;
+                                unr * sigma0 * kmag_(i);
           amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * kmag(i) * dt) +
                                  ampi_prev * math::cos(omega0 * kmag(i) * dt)) *
                                   math::exp(-gamma0 * kmag(i) * dt) +
-                                uni * sigma0;
+                                uni * sigma0 * kmag_(i);
         });
 
       // auto fext_en_total = ZERO;
