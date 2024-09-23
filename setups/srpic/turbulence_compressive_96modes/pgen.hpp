@@ -299,7 +299,6 @@ namespace user {
               k26z * amps(75,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +              
              (k26x * amps(77,REAL) *  math::cos(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2]) +
               k26x * amps(77,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +   
-            
              ( k27x * amps(78,REAL) *  math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
               k27x * amps(78,IMAG) *  math::sin(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2])) +
              (k28x * amps(81,REAL) *  math::cos(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2]) +
@@ -623,8 +622,8 @@ namespace user {
       kmag_(48) = math::sqrt(TWO); kmag_(49) = math::sqrt(TWO); kmag_(50) = math::sqrt(TWO); kmag_(51) = math::sqrt(TWO); kmag_(52) = math::sqrt(TWO); kmag_(53) = math::sqrt(TWO);   // k17,k18
       kmag_(54) = math::sqrt(THREE); kmag_(55) = math::sqrt(THREE); kmag_(56) = math::sqrt(THREE); kmag_(57) = math::sqrt(THREE); kmag_(58) = math::sqrt(THREE); kmag_(59) = math::sqrt(THREE);  // k19,k20
       kmag_(60) = math::sqrt(THREE); kmag_(61) = math::sqrt(THREE); kmag_(62) = math::sqrt(THREE); kmag_(63) = math::sqrt(THREE); kmag_(64) = math::sqrt(THREE); kmag_(65) = math::sqrt(THREE);  // k21,k22
-      kmag_(66) = 0.0; kmag_(67) = math::sqrt(THREE); kmag_(68) = math::sqrt(THREE); kmag_(69) = math::sqrt(THREE); kmag_(70) = math::sqrt(THREE); kmag_(71) = math::sqrt(THREE);  // k23,k24
-      kmag_(72) = 0.0; kmag_(73) = math::sqrt(THREE); kmag_(74) = math::sqrt(THREE); kmag_(75) = math::sqrt(THREE); kmag_(76) = math::sqrt(THREE); kmag_(77) = math::sqrt(THREE);   // k25,k26
+      kmag_(66) = math::sqrt(THREE); kmag_(67) = math::sqrt(THREE); kmag_(68) = math::sqrt(THREE); kmag_(69) = math::sqrt(THREE); kmag_(70) = math::sqrt(THREE); kmag_(71) = math::sqrt(THREE);  // k23,k24
+      kmag_(72) = math::sqrt(THREE); kmag_(73) = math::sqrt(THREE); kmag_(74) = math::sqrt(THREE); kmag_(75) = math::sqrt(THREE); kmag_(76) = math::sqrt(THREE); kmag_(77) = math::sqrt(THREE);   // k25,k26
       kmag_(78) = TWO; kmag_(79) = TWO; kmag_(80) = TWO; kmag_(81) = TWO; kmag_(82) = TWO; kmag_(83) = TWO;   // k27,k28
       kmag_(84) = TWO; kmag_(85) = TWO; kmag_(86) = TWO; kmag_(87) = TWO; kmag_(88) = TWO; kmag_(89) = TWO;  // k29,k30
       kmag_(90) = TWO; kmag_(91) = TWO; kmag_(92) = TWO; kmag_(93) = TWO; kmag_(94) = TWO; kmag_(95) = TWO; // k31,k32
