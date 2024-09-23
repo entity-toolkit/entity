@@ -106,9 +106,7 @@ namespace user {
       , sx1 { SX1 }
       , sx2 { SX2 }
       , sx3 { SX3 } 
-
-
-// modes with |K| = 1
+      // modes with |K| = 1
       , k01x { ONE * constant::TWO_PI / sx1 }
       , k01y { ZERO * constant::TWO_PI / sx2 }
       , k01z { ZERO * constant::TWO_PI / sx3 }
@@ -127,7 +125,7 @@ namespace user {
       , k06x { ZERO * constant::TWO_PI / sx1 }
       , k06y { ZERO * constant::TWO_PI / sx2 }
       , k06z { - ONE * constant::TWO_PI / sx3 }  
-// modes with |K| = sqrt(2)
+      // modes with |K| = sqrt(2)
       , k07x { ONE * constant::TWO_PI / sx1 }
       , k07y { ONE * constant::TWO_PI / sx2 }
       , k07z { ZERO * constant::TWO_PI / sx3 }
@@ -140,7 +138,6 @@ namespace user {
       , k10x { - ONE * constant::TWO_PI / sx1 }
       , k10y { - ONE * constant::TWO_PI / sx2 }
       , k10z { ZERO * constant::TWO_PI / sx3 }
-
       , k11x { ONE * constant::TWO_PI / sx1 }
       , k11y { ZERO * constant::TWO_PI / sx2 }
       , k11z { ONE * constant::TWO_PI / sx3 }  
@@ -153,7 +150,6 @@ namespace user {
       , k14x { - ONE * constant::TWO_PI / sx1 }
       , k14y { ZERO * constant::TWO_PI / sx2 }
       , k14z { - ONE * constant::TWO_PI / sx3 }  
-
       , k15x { ZERO * constant::TWO_PI / sx1 }
       , k15y { ONE * constant::TWO_PI / sx2 }
       , k15z { ONE * constant::TWO_PI / sx3 }  
@@ -166,8 +162,7 @@ namespace user {
       , k18x { ZERO * constant::TWO_PI / sx1 }
       , k18y { - ONE * constant::TWO_PI / sx2 }
       , k18z { - ONE * constant::TWO_PI / sx3 }  
-
-// modes with |K| = sqrt(3)
+      // modes with |K| = sqrt(3)
       , k19x { ONE * constant::TWO_PI / sx1 }
       , k19y { ONE * constant::TWO_PI / sx2 }
       , k19z { ONE * constant::TWO_PI / sx3 }
@@ -192,26 +187,25 @@ namespace user {
       , k26x { - ONE * constant::TWO_PI / sx1 }
       , k26y { - ONE * constant::TWO_PI / sx2 }
       , k26z { - ONE * constant::TWO_PI / sx3 }
-
-// modes with |K| = 2
-      , k27x { 2.0 * constant::TWO_PI / sx1 }
+      // modes with |K| = 2
+      , k27x { TWO * constant::TWO_PI / sx1 }
       , k27y { ZERO * constant::TWO_PI / sx2 }
       , k27z { ZERO * constant::TWO_PI / sx3 }
-      , k28x { - 2.0 * constant::TWO_PI / sx1 }
+      , k28x { - TWO * constant::TWO_PI / sx1 }
       , k28y { ZERO * constant::TWO_PI / sx2 }
       , k28z { ZERO * constant::TWO_PI / sx3 }    
       , k29x { ZERO * constant::TWO_PI / sx1 }
-      , k29y { 2.0 * constant::TWO_PI / sx2 }
+      , k29y { TWO * constant::TWO_PI / sx2 }
       , k29z { ZERO * constant::TWO_PI / sx3 }
       , k30x { ZERO * constant::TWO_PI / sx1 }
-      , k30y { - 2.0 * constant::TWO_PI / sx2 }
+      , k30y { - TWO * constant::TWO_PI / sx2 }
       , k30z { ZERO * constant::TWO_PI / sx3 }  
       , k31x { ZERO * constant::TWO_PI / sx1 }
       , k31y { ZERO * constant::TWO_PI / sx2 }
-      , k31z { 2.0 * constant::TWO_PI / sx3 }
+      , k31z { TWO * constant::TWO_PI / sx3 }
       , k32x { ZERO * constant::TWO_PI / sx1 }
       , k32y { ZERO * constant::TWO_PI / sx2 }
-      , k32z { - 2.0 * constant::TWO_PI / sx3 }  
+      , k32z { - TWO * constant::TWO_PI / sx3 }  
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -529,12 +523,38 @@ namespace user {
   private:
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
-    const real_t         k01, k02, k03, k04;
-    const real_t         k11, k12, k13, k14;
-    const real_t         k21, k22, k23, k24;
-    const real_t         k31, k32, k33, k34;
-    const real_t         k41, k42, k43, k44;
-    const real_t         k51, k52, k53, k54;
+    const real_t         k01x, k01y, k01z;
+    const real_t         k02x, k02y, k02z;
+    const real_t         k03x, k03y, k03z;
+    const real_t         k04x, k04y, k04z;
+    const real_t         k05x, k05y, k05z;
+    const real_t         k06x, k06y, k06z;
+    const real_t         k07x, k07y, k07z;
+    const real_t         k08x, k08y, k08z;
+    const real_t         k09x, k09y, k09z;
+    const real_t         k10x, k10y, k10z;
+    const real_t         k11x, k11y, k11z;
+    const real_t         k12x, k12y, k12z;
+    const real_t         k13x, k13y, k13z;
+    const real_t         k14x, k14y, k14z;
+    const real_t         k15x, k15y, k15z;
+    const real_t         k16x, k16y, k16z;
+    const real_t         k17x, k17y, k17z;
+    const real_t         k18x, k18y, k18z;
+    const real_t         k19x, k19y, k19z;
+    const real_t         k20x, k20y, k20z;
+    const real_t         k21x, k21y, k21z;
+    const real_t         k22x, k22y, k22z;
+    const real_t         k23x, k23y, k23z;
+    const real_t         k24x, k24y, k24z;
+    const real_t         k25x, k25y, k25z;
+    const real_t         k26x, k26y, k26z;
+    const real_t         k27x, k27y, k27z;
+    const real_t         k28x, k28y, k28z;
+    const real_t         k29x, k29y, k29z;
+    const real_t         k30x, k30y, k30z;
+    const real_t         k31x, k31y, k31z;
+    const real_t         k32x, k32y, k32z;
   };
 
   template <SimEngine::type S, class M>
@@ -570,7 +590,7 @@ namespace user {
               global_domain.mesh().extent(in::x3).first }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 12) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 96) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
