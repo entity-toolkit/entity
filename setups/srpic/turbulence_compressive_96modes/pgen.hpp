@@ -205,7 +205,7 @@ namespace user {
       , k31z { TWO * constant::TWO_PI / sx3 }
       , k32x { ZERO * constant::TWO_PI / sx1 }
       , k32y { ZERO * constant::TWO_PI / sx2 }
-      , k32z { - TWO * constant::TWO_PI / sx3 }  
+      , k32z { - TWO * constant::TWO_PI / sx3 }  {}
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -575,7 +575,7 @@ namespace user {
     const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
-    array_t<real_t*> phi0;
+    array_t<real_t*> phi0, kmag;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
     InitFields<D> init_flds;
@@ -597,6 +597,7 @@ namespace user {
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { "DrivingPhases", nmodes }
+      , kmag { "DrivingKmag", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , init_flds { Bnorm }
@@ -608,7 +609,20 @@ namespace user {
         phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
       }
       Kokkos::deep_copy(phi0, phi0_);
-      // Initializing amplitudes
+      // Initializing mode amplitudes
+      kmag(0) = 0.0; kmag(1) = 0.0; kmag(2) = 0.0; kmag(3) = 0.0; kmag(4) = 0.0; kmag(5) = 0.0; kmag(6) = 0.0; kmag(7) = 0.0; 
+      kmag(8) = 0.0; kmag(9) = 0.0; kmag(10) = 0.0; kmag(11) = 0.0; kmag(12) = 0.0; kmag(13) = 0.0; kmag(14) = 0.0; kmag(15) = 0.0;
+      kmag(16) = 0.0; kmag(17) = 0.0; kmag(18) = 0.0; kmag(19) = 0.0; kmag(20) = 0.0; kmag(21) = 0.0; kmag(22) = 0.0; kmag(23) = 0.0;
+      kmag(24) = 0.0; kmag(25) = 0.0; kmag(26) = 0.0; kmag(27) = 0.0; kmag(28) = 0.0; kmag(29) = 0.0; kmag(30) = 0.0; kmag(31) = 0.0;
+      kmag(32) = 0.0; kmag(33) = 0.0; kmag(34) = 0.0; kmag(35) = 0.0; kmag(36) = 0.0; kmag(37) = 0.0; kmag(38) = 0.0; kmag(39) = 0.0;
+      kmag(40) = 0.0; kmag(41) = 0.0; kmag(42) = 0.0; kmag(43) = 0.0; kmag(44) = 0.0; kmag(45) = 0.0; kmag(46) = 0.0; kmag(47) = 0.0;
+      kmag(48) = 0.0; kmag(49) = 0.0; kmag(50) = 0.0; kmag(51) = 0.0; kmag(52) = 0.0; kmag(53) = 0.0; kmag(54) = 0.0; kmag(55) = 0.0;
+      kmag(56) = 0.0; kmag(57) = 0.0; kmag(58) = 0.0; kmag(59) = 0.0; kmag(60) = 0.0; kmag(61) = 0.0; kmag(62) = 0.0; kmag(63) = 0.0;
+      kmag(64) = 0.0; kmag(65) = 0.0; kmag(66) = 0.0; kmag(67) = 0.0; kmag(68) = 0.0; kmag(69) = 0.0; kmag(70) = 0.0; kmag(71) = 0.0;
+      kmag(72) = 0.0; kmag(73) = 0.0; kmag(74) = 0.0; kmag(75) = 0.0; kmag(76) = 0.0; kmag(77) = 0.0; kmag(78) = 0.0; kmag(79) = 0.0;
+      kmag(80) = 0.0; kmag(81) = 0.0; kmag(82) = 0.0; kmag(83) = 0.0; kmag(84) = 0.0; kmag(85) = 0.0; kmag(86) = 0.0; kmag(87) = 0.0;
+      kmag(88) = 0.0; kmag(89) = 0.0; kmag(90) = 0.0; kmag(91) = 0.0; kmag(92) = 0.0; kmag(93) = 0.0; kmag(94) = 0.0; kmag(95) = 0.0;
+      // Initializing driving amplitudes
       Init();
     }
 
@@ -617,12 +631,13 @@ namespace user {
       auto       amplitudes_ = amplitudes;
       const auto amp0_       = amp0;
       const auto phi0_       = phi0;
+      const auto kmag_       = kmag;
       Kokkos::parallel_for(
         "RandomAmplitudes",
         amplitudes.extent(0),
         Lambda(index_t i) {
-          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i));
-          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i));
+          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i)) * kmag_(i);
+          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i)) * kmag_(i);
           printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
         });
     }
@@ -695,13 +710,13 @@ namespace user {
           pool.free_state(rand_gen);
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
+          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * kmag(i) * dt) +
+                                 ampi_prev * math::sin(omega0 * kmag(i) * dt)) *
+                                  math::exp(-gamma0 * kmag(i) * dt) +
                                 unr * sigma0;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
+          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * kmag(i) * dt) +
+                                 ampi_prev * math::cos(omega0 * kmag(i) * dt)) *
+                                  math::exp(-gamma0 * kmag(i) * dt) +
                                 uni * sigma0;
         });
 
