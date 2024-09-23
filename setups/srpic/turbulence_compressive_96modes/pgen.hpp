@@ -610,23 +610,25 @@ namespace user {
       }
       Kokkos::deep_copy(phi0, phi0_);
       // Initializing mode amplitudes
+      auto kmag_ = Kokkos::create_mirror_view(kmag);
       auto THREE = ONE + TWO;
-      kmag(0) = ONE; kmag(1) = ONE; kmag(2) = ONE; kmag(3) = ONE; kmag(4) = ONE; kmag(5) = ONE;    // k1,k2
-      kmag(6) = ONE; kmag(7) = ONE; kmag(8) = ONE; kmag(9) = ONE; kmag(10) = ONE; kmag(11) = ONE;   // k3,k4
-      kmag(12) = ONE; kmag(13) = ONE; kmag(14) = ONE; kmag(15) = ONE; kmag(16) = ONE; kmag(17) = ONE; // k5,k6 
-      kmag(18) = math::sqrt(TWO); kmag(19) = math::sqrt(TWO); kmag(20) = math::sqrt(TWO); kmag(21) = math::sqrt(TWO); kmag(22) = math::sqrt(TWO); kmag(23) = math::sqrt(TWO);  // k7,k8
-      kmag(24) = math::sqrt(TWO); kmag(25) = math::sqrt(TWO); kmag(26) = math::sqrt(TWO); kmag(27) = math::sqrt(TWO); kmag(28) = math::sqrt(TWO); kmag(29) = math::sqrt(TWO);  // k9,k10
-      kmag(30) = math::sqrt(TWO); kmag(31) = math::sqrt(TWO); kmag(32) = math::sqrt(TWO); kmag(33) = math::sqrt(TWO); kmag(34) = math::sqrt(TWO); kmag(35) = math::sqrt(TWO);  // k11,k12
-      kmag(36) = math::sqrt(TWO); kmag(37) = math::sqrt(TWO); kmag(38) = math::sqrt(TWO); kmag(39) = math::sqrt(TWO); kmag(40) = math::sqrt(TWO); kmag(41) = math::sqrt(TWO);  // k13,k14
-      kmag(42) = math::sqrt(TWO); kmag(43) = math::sqrt(TWO); kmag(44) = math::sqrt(TWO); kmag(45) = math::sqrt(TWO); kmag(46) = math::sqrt(TWO); kmag(47) = math::sqrt(TWO);   // k15,k16
-      kmag(48) = math::sqrt(TWO); kmag(49) = math::sqrt(TWO); kmag(50) = math::sqrt(TWO); kmag(51) = math::sqrt(TWO); kmag(52) = math::sqrt(TWO); kmag(53) = math::sqrt(TWO);   // k17,k18
-      kmag(54) = math::sqrt(THREE); kmag(55) = math::sqrt(THREE); kmag(56) = math::sqrt(THREE); kmag(57) = math::sqrt(THREE); kmag(58) = math::sqrt(THREE); kmag(59) = math::sqrt(THREE);  // k19,k20
-      kmag(60) = math::sqrt(THREE); kmag(61) = math::sqrt(THREE); kmag(62) = math::sqrt(THREE); kmag(63) = math::sqrt(THREE); kmag(64) = math::sqrt(THREE); kmag(65) = math::sqrt(THREE);  // k21,k22
-      kmag(66) = 0.0; kmag(67) = math::sqrt(THREE); kmag(68) = math::sqrt(THREE); kmag(69) = math::sqrt(THREE); kmag(70) = math::sqrt(THREE); kmag(71) = math::sqrt(THREE);  // k23,k24
-      kmag(72) = 0.0; kmag(73) = math::sqrt(THREE); kmag(74) = math::sqrt(THREE); kmag(75) = math::sqrt(THREE); kmag(76) = math::sqrt(THREE); kmag(77) = math::sqrt(THREE);   // k25,k26
-      kmag(78) = TWO; kmag(79) = TWO; kmag(80) = TWO; kmag(81) = TWO; kmag(82) = TWO; kmag(83) = TWO;   // k27,k28
-      kmag(84) = TWO; kmag(85) = TWO; kmag(86) = TWO; kmag(87) = TWO; kmag(88) = TWO; kmag(89) = TWO;  // k29,k30
-      kmag(90) = TWO; kmag(91) = TWO; kmag(92) = TWO; kmag(93) = TWO; kmag(94) = TWO; kmag(95) = TWO; // k31,k32
+      kmag_(0) = ONE; kmag_(1) = ONE; kmag_(2) = ONE; kmag_(3) = ONE; kmag_(4) = ONE; kmag_(5) = ONE;    // k1,k2
+      kmag_(6) = ONE; kmag_(7) = ONE; kmag_(8) = ONE; kmag_(9) = ONE; kmag_(10) = ONE; kmag_(11) = ONE;   // k3,k4
+      kmag_(12) = ONE; kmag_(13) = ONE; kmag_(14) = ONE; kmag_(15) = ONE; kmag_(16) = ONE; kmag_(17) = ONE; // k5,k6 
+      kmag_(18) = math::sqrt(TWO); kmag_(19) = math::sqrt(TWO); kmag_(20) = math::sqrt(TWO); kmag_(21) = math::sqrt(TWO); kmag_(22) = math::sqrt(TWO); kmag_(23) = math::sqrt(TWO);  // k7,k8
+      kmag_(24) = math::sqrt(TWO); kmag_(25) = math::sqrt(TWO); kmag_(26) = math::sqrt(TWO); kmag_(27) = math::sqrt(TWO); kmag_(28) = math::sqrt(TWO); kmag_(29) = math::sqrt(TWO);  // k9,k10
+      kmag_(30) = math::sqrt(TWO); kmag_(31) = math::sqrt(TWO); kmag_(32) = math::sqrt(TWO); kmag_(33) = math::sqrt(TWO); kmag_(34) = math::sqrt(TWO); kmag_(35) = math::sqrt(TWO);  // k11,k12
+      kmag_(36) = math::sqrt(TWO); kmag_(37) = math::sqrt(TWO); kmag_(38) = math::sqrt(TWO); kmag_(39) = math::sqrt(TWO); kmag_(40) = math::sqrt(TWO); kmag_(41) = math::sqrt(TWO);  // k13,k14
+      kmag_(42) = math::sqrt(TWO); kmag_(43) = math::sqrt(TWO); kmag_(44) = math::sqrt(TWO); kmag_(45) = math::sqrt(TWO); kmag_(46) = math::sqrt(TWO); kmag_(47) = math::sqrt(TWO);   // k15,k16
+      kmag_(48) = math::sqrt(TWO); kmag_(49) = math::sqrt(TWO); kmag_(50) = math::sqrt(TWO); kmag_(51) = math::sqrt(TWO); kmag_(52) = math::sqrt(TWO); kmag_(53) = math::sqrt(TWO);   // k17,k18
+      kmag_(54) = math::sqrt(THREE); kmag_(55) = math::sqrt(THREE); kmag_(56) = math::sqrt(THREE); kmag_(57) = math::sqrt(THREE); kmag_(58) = math::sqrt(THREE); kmag_(59) = math::sqrt(THREE);  // k19,k20
+      kmag_(60) = math::sqrt(THREE); kmag_(61) = math::sqrt(THREE); kmag_(62) = math::sqrt(THREE); kmag_(63) = math::sqrt(THREE); kmag_(64) = math::sqrt(THREE); kmag_(65) = math::sqrt(THREE);  // k21,k22
+      kmag_(66) = 0.0; kmag_(67) = math::sqrt(THREE); kmag_(68) = math::sqrt(THREE); kmag_(69) = math::sqrt(THREE); kmag_(70) = math::sqrt(THREE); kmag_(71) = math::sqrt(THREE);  // k23,k24
+      kmag_(72) = 0.0; kmag_(73) = math::sqrt(THREE); kmag_(74) = math::sqrt(THREE); kmag_(75) = math::sqrt(THREE); kmag_(76) = math::sqrt(THREE); kmag_(77) = math::sqrt(THREE);   // k25,k26
+      kmag_(78) = TWO; kmag_(79) = TWO; kmag_(80) = TWO; kmag_(81) = TWO; kmag_(82) = TWO; kmag_(83) = TWO;   // k27,k28
+      kmag_(84) = TWO; kmag_(85) = TWO; kmag_(86) = TWO; kmag_(87) = TWO; kmag_(88) = TWO; kmag_(89) = TWO;  // k29,k30
+      kmag_(90) = TWO; kmag_(91) = TWO; kmag_(92) = TWO; kmag_(93) = TWO; kmag_(94) = TWO; kmag_(95) = TWO; // k31,k32
+      Kokkos::deep_copy(kmag, kmag_);
       // Initializing driving amplitudes
       Init();
     }
@@ -725,192 +727,192 @@ namespace user {
                                 uni * sigma0 * kmag(i);
         });
 
-      // auto fext_en_total = ZERO;
-      // for (auto& species : domain.species) {
-      //   auto fext_en_s = ZERO;
-      //   auto pld    = species.pld[0];
-      //   auto weight = species.weight;
-      //   Kokkos::parallel_reduce(
-      //     "ExtForceEnrg",
-      //     species.rangeActiveParticles(),
-      //     ClassLambda(index_t p, real_t & fext_en) {
-      //       fext_en += pld(p) * weight(p);
-      //     },
-      //     fext_en_s);
-      // #if defined(MPI_ENABLED)
-      //   auto fext_en_sg = ZERO;
-      //   MPI_Allreduce(&fext_en_s, &fext_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      //   fext_en_total += fext_en_sg;
-      // #else
-      //   fext_en_total += fext_en_s; 
-      // #endif
-      // }
+      auto fext_en_total = ZERO;
+      for (auto& species : domain.species) {
+        auto fext_en_s = ZERO;
+        auto pld    = species.pld[0];
+        auto weight = species.weight;
+        Kokkos::parallel_reduce(
+          "ExtForceEnrg",
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p, real_t & fext_en) {
+            fext_en += pld(p) * weight(p);
+          },
+          fext_en_s);
+      #if defined(MPI_ENABLED)
+        auto fext_en_sg = ZERO;
+        MPI_Allreduce(&fext_en_s, &fext_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+        fext_en_total += fext_en_sg;
+      #else
+        fext_en_total += fext_en_s; 
+      #endif
+      }
 
-      // // Weight the macroparticle integral by sim parameters
-      // fext_en_total /= params.template get<real_t>("scales.n0");
+      // Weight the macroparticle integral by sim parameters
+      fext_en_total /= params.template get<real_t>("scales.n0");
 
-      // auto pkin_en_total = ZERO;
-      // for (auto& species : domain.species) {
-      //   auto pkin_en_s = ZERO;
-      //   auto ux1    = species.ux1;
-      //   auto ux2    = species.ux2;
-      //   auto ux3    = species.ux3;
-      //   auto weight = species.weight;
-      //   Kokkos::parallel_reduce(
-      //     "KinEnrg",
-      //     species.rangeActiveParticles(),
-      //     ClassLambda(index_t p, real_t & pkin_en) {
-      //       pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
-      //                   ONE) *
-      //                  weight(p);
-      //     },
-      //     pkin_en_s);
-      // #if defined(MPI_ENABLED)
-      //   auto pkin_en_sg = ZERO;
-      //   MPI_Allreduce(&pkin_en_s, &pkin_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      //   pkin_en_total += pkin_en_sg;
-      // #else
-      //   pkin_en_total += pkin_en_s;
-      // #endif
-      // }
+      auto pkin_en_total = ZERO;
+      for (auto& species : domain.species) {
+        auto pkin_en_s = ZERO;
+        auto ux1    = species.ux1;
+        auto ux2    = species.ux2;
+        auto ux3    = species.ux3;
+        auto weight = species.weight;
+        Kokkos::parallel_reduce(
+          "KinEnrg",
+          species.rangeActiveParticles(),
+          ClassLambda(index_t p, real_t & pkin_en) {
+            pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
+                        ONE) *
+                       weight(p);
+          },
+          pkin_en_s);
+      #if defined(MPI_ENABLED)
+        auto pkin_en_sg = ZERO;
+        MPI_Allreduce(&pkin_en_s, &pkin_en_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+        pkin_en_total += pkin_en_sg;
+      #else
+        pkin_en_total += pkin_en_s;
+      #endif
+      }
 
-      // // Weight the macroparticle integral by sim parameters
-      // pkin_en_total /= params.template get<real_t>("scales.n0");
+      // Weight the macroparticle integral by sim parameters
+      pkin_en_total /= params.template get<real_t>("scales.n0");
         
-      // auto benrg_total = ZERO;
-      // auto eenrg_total = ZERO;
+      auto benrg_total = ZERO;
+      auto eenrg_total = ZERO;
 
-      // if constexpr (D == Dim::_3D) {
+      if constexpr (D == Dim::_3D) {
         
-      //   auto metric = domain.mesh.metric;
+        auto metric = domain.mesh.metric;
         
-      //   auto benrg_s = ZERO;
-      //   auto EB          = domain.fields.em;
-      //   Kokkos::parallel_reduce(
-      //     "BEnrg",
-      //     domain.mesh.rangeActiveCells(),
-      //     Lambda(index_t i1, index_t i2, index_t i3, real_t & benrg) {
-      //       coord_t<Dim::_3D> x_Cd { ZERO };
-      //       vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, i3, em::bx1),
-      //                                 EB(i1, i2, i3, em::bx2),
-      //                                 EB(i1, i2, i3, em::bx3) };
-      //       vec_t<Dim::_3D>   b_XYZ;
-      //       metric.template transform<Idx::U, Idx::T>(x_Cd,
-      //                                                             b_Cntrv,
-      //                                                             b_XYZ);
-      //       benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
-      //     },
-      //     benrg_s);
-      //   #if defined(MPI_ENABLED)
-      //     auto benrg_sg = ZERO;
-      //     MPI_Allreduce(&benrg_s, &benrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      //     benrg_total += benrg_sg;
-      //   #else
-      //     benrg_total += benrg_s;
-      //   #endif
+        auto benrg_s = ZERO;
+        auto EB          = domain.fields.em;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, index_t i3, real_t & benrg) {
+            coord_t<Dim::_3D> x_Cd { ZERO };
+            vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, i3, em::bx1),
+                                      EB(i1, i2, i3, em::bx2),
+                                      EB(i1, i2, i3, em::bx3) };
+            vec_t<Dim::_3D>   b_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd,
+                                                                  b_Cntrv,
+                                                                  b_XYZ);
+            benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
+          },
+          benrg_s);
+        #if defined(MPI_ENABLED)
+          auto benrg_sg = ZERO;
+          MPI_Allreduce(&benrg_s, &benrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          benrg_total += benrg_sg;
+        #else
+          benrg_total += benrg_s;
+        #endif
 
-      // // Weight the field integral by sim parameters
-      //   benrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
+      // Weight the field integral by sim parameters
+        benrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
-      //   auto eenrg_s = ZERO;
-      //   Kokkos::parallel_reduce(
-      //     "BEnrg",
-      //     domain.mesh.rangeActiveCells(),
-      //     Lambda(index_t i1, index_t i2, index_t i3, real_t & eenrg) {
-      //       coord_t<Dim::_3D> x_Cd { ZERO };
-      //       vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
-      //                                 EB(i1, i2, i3, em::ex2),
-      //                                 EB(i1, i2, i3, em::ex3) };
-      //       vec_t<Dim::_3D>   e_XYZ;
-      //       metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
-      //       eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
-      //     },
-      //     eenrg_s);
+        auto eenrg_s = ZERO;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, index_t i3, real_t & eenrg) {
+            coord_t<Dim::_3D> x_Cd { ZERO };
+            vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
+                                      EB(i1, i2, i3, em::ex2),
+                                      EB(i1, i2, i3, em::ex3) };
+            vec_t<Dim::_3D>   e_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
+            eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
+          },
+          eenrg_s);
 
-      //   #if defined(MPI_ENABLED)
-      //     auto eenrg_sg = ZERO;
-      //     MPI_Allreduce(&eenrg_s, &eenrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      //     eenrg_total += eenrg_sg;  
-      //   #else
-      //     eenrg_total += eenrg_s;
-      //   #endif
+        #if defined(MPI_ENABLED)
+          auto eenrg_sg = ZERO;
+          MPI_Allreduce(&eenrg_s, &eenrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          eenrg_total += eenrg_sg;  
+        #else
+          eenrg_total += eenrg_s;
+        #endif
 
-      // // Weight the field integral by sim parameters
-      //   eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
+      // Weight the field integral by sim parameters
+        eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
-      // }
+      }
 
-      // std::ofstream myfile1;
-      // std::ofstream myfile2;
-      // std::ofstream myfile3;
-      // std::ofstream myfile4;
+      std::ofstream myfile1;
+      std::ofstream myfile2;
+      std::ofstream myfile3;
+      std::ofstream myfile4;
 
-      // #if defined(MPI_ENABLED)
+      #if defined(MPI_ENABLED)
 
-      //   if(rank == MPI_ROOT_RANK) {
+        if(rank == MPI_ROOT_RANK) {
 
-      //     printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
+          printf("fext_en_total: %f, pkin_en_total: %f, benrg_total: %f, eenrg_total: %f, MPI rank %d\n", fext_en_total, pkin_en_total, benrg_total, eenrg_total, MPI_ROOT_RANK);
           
-      //     if (time == 0) {
-      //       myfile1.open("fextenrg.txt");
-      //     } else {
-      //       myfile1.open("fextenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile1 << fext_en_total << std::endl;
+          if (time == 0) {
+            myfile1.open("fextenrg.txt");
+          } else {
+            myfile1.open("fextenrg.txt", std::ios_base::app);
+          }
+          myfile1 << fext_en_total << std::endl;
 
-      //     if (time == 0) {
-      //       myfile2.open("kenrg.txt");
-      //     } else {
-      //       myfile2.open("kenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile2 << pkin_en_total << std::endl;
+          if (time == 0) {
+            myfile2.open("kenrg.txt");
+          } else {
+            myfile2.open("kenrg.txt", std::ios_base::app);
+          }
+          myfile2 << pkin_en_total << std::endl;
 
-      //     if (time == 0) {
-      //       myfile3.open("bsqenrg.txt");
-      //     } else {
-      //       myfile3.open("bsqenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile3 << benrg_total << std::endl;
+          if (time == 0) {
+            myfile3.open("bsqenrg.txt");
+          } else {
+            myfile3.open("bsqenrg.txt", std::ios_base::app);
+          }
+          myfile3 << benrg_total << std::endl;
 
-      //     if (time == 0) {
-      //       myfile4.open("esqenrg.txt");
-      //     } else {
-      //       myfile4.open("esqenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile4 << eenrg_total << std::endl;
-      //   }
+          if (time == 0) {
+            myfile4.open("esqenrg.txt");
+          } else {
+            myfile4.open("esqenrg.txt", std::ios_base::app);
+          }
+          myfile4 << eenrg_total << std::endl;
+        }
 
-      // #else
+      #else
 
-      //     if (time == 0) {
-      //       myfile1.open("fextenrg.txt");
-      //     } else {
-      //       myfile1.open("fextenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile1 << fext_en_total << std::endl;
+          if (time == 0) {
+            myfile1.open("fextenrg.txt");
+          } else {
+            myfile1.open("fextenrg.txt", std::ios_base::app);
+          }
+          myfile1 << fext_en_total << std::endl;
 
-      //     if (time == 0) {
-      //       myfile2.open("kenrg.txt");
-      //     } else {
-      //       myfile2.open("kenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile2 << pkin_en_total << std::endl;
+          if (time == 0) {
+            myfile2.open("kenrg.txt");
+          } else {
+            myfile2.open("kenrg.txt", std::ios_base::app);
+          }
+          myfile2 << pkin_en_total << std::endl;
 
-      //     if (time == 0) {
-      //       myfile3.open("bsqenrg.txt");
-      //     } else {
-      //       myfile3.open("bsqenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile3 << benrg_total << std::endl;
+          if (time == 0) {
+            myfile3.open("bsqenrg.txt");
+          } else {
+            myfile3.open("bsqenrg.txt", std::ios_base::app);
+          }
+          myfile3 << benrg_total << std::endl;
 
-      //     if (time == 0) {
-      //       myfile4.open("esqenrg.txt");
-      //     } else {
-      //       myfile4.open("esqenrg.txt", std::ios_base::app);
-      //     }
-      //     myfile4 << eenrg_total << std::endl;
+          if (time == 0) {
+            myfile4.open("esqenrg.txt");
+          } else {
+            myfile4.open("esqenrg.txt", std::ios_base::app);
+          }
+          myfile4 << eenrg_total << std::endl;
 
-      // #endif
+      #endif
     }
   };
 
