@@ -50,11 +50,11 @@ namespace user {
       }
       Inline auto ex2(const coord_t<D> &x_Ph) const -> real_t
       {
-          return Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
+          return -Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::cos(Bphi / 180.0 * Kokkos::numbers::pi);
       }
       Inline auto ex3(const coord_t<D> &x_Ph) const -> real_t
       {
-          return -Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
+          return Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
       }
 
   private:
