@@ -4,7 +4,7 @@
  * @implements
  *   - ntt::GRPICEngine<> : ntt::Engine<>
  * @cpp:
- *   - srpic.cpp
+ *   - grpic.cpp
  * @namespaces:
  *   - ntt::
  */
@@ -48,19 +48,32 @@ namespace ntt {
 
   template <class M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
-    using Engine<SimEngine::GRPIC, M>::m_params;
-    using Engine<SimEngine::GRPIC, M>::m_metadomain;
-
+    using base_t   = Engine<SimEngine::GRPIC, M>;
+    using pgen_t   = user::PGen<SimEngine::GRPIC, M>;
+    using domain_t = Domain<SimEngine::GRPIC, M>;
+    // constexprs
+    using base_t::pgen_is_ok;
+    // contents
+    using base_t::m_metadomain;
+    using base_t::m_params;
+    using base_t::m_pgen;
+    // methods
+    using base_t::init;
+    // variables
+    using base_t::dt;
+    using base_t::max_steps;
+    using base_t::runtime;
+    using base_t::step;
+    using base_t::time;
 
   public:
-    static constexpr auto S { SimEngine::SRPIC };
+    static constexpr auto S { SimEngine::GRPIC };
 
-    GRPICEngine(SimulationParams& params)
-      : Engine<SimEngine::GRPIC, M> { params } {}
+    GRPICEngine(SimulationParams& params) : base_t { params } {}
 
     ~GRPICEngine() = default;
 
-    void step_forward(timer::Timers&, Domain<SimEngine::GRPIC, M>&) override {}
+    void step_forward(timer::Timers& timers, domain_t& dom) override {}
   };
 
 } // namespace ntt
