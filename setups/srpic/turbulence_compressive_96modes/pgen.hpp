@@ -106,106 +106,142 @@ namespace user {
       , sx1 { SX1 }
       , sx2 { SX2 }
       , sx3 { SX3 } 
+
       // modes with |K| = 1
-      , k01x { ONE * constant::TWO_PI / sx1 }
+
+      , k01x {  ONE * constant::TWO_PI / sx1 }
       , k01y { ZERO * constant::TWO_PI / sx2 }
       , k01z { ZERO * constant::TWO_PI / sx3 }
-      , k02x { - ONE * constant::TWO_PI / sx1 }
+
+      , k02x { -ONE * constant::TWO_PI / sx1 }
       , k02y { ZERO * constant::TWO_PI / sx2 }
-      , k02z { ZERO * constant::TWO_PI / sx3 }    
+      , k02z { ZERO * constant::TWO_PI / sx3 }  
+
       , k03x { ZERO * constant::TWO_PI / sx1 }
-      , k03y { ONE * constant::TWO_PI / sx2 }
+      , k03y {  ONE * constant::TWO_PI / sx2 }
       , k03z { ZERO * constant::TWO_PI / sx3 }
+
       , k04x { ZERO * constant::TWO_PI / sx1 }
-      , k04y { - ONE * constant::TWO_PI / sx2 }
-      , k04z { ZERO * constant::TWO_PI / sx3 }  
+      , k04y { -ONE * constant::TWO_PI / sx2 }
+      , k04z { ZERO * constant::TWO_PI / sx3 } 
+
       , k05x { ZERO * constant::TWO_PI / sx1 }
       , k05y { ZERO * constant::TWO_PI / sx2 }
-      , k05z { ONE * constant::TWO_PI / sx3 }
+      , k05z {  ONE * constant::TWO_PI / sx3 }
+
       , k06x { ZERO * constant::TWO_PI / sx1 }
       , k06y { ZERO * constant::TWO_PI / sx2 }
-      , k06z { - ONE * constant::TWO_PI / sx3 }  
+      , k06z { -ONE * constant::TWO_PI / sx3 }  
+
       // modes with |K| = sqrt(2)
-      , k07x { ONE * constant::TWO_PI / sx1 }
-      , k07y { ONE * constant::TWO_PI / sx2 }
+
+      , k07x {  ONE * constant::TWO_PI / sx1 }
+      , k07y {  ONE * constant::TWO_PI / sx2 }
       , k07z { ZERO * constant::TWO_PI / sx3 }
-      , k08x { - ONE * constant::TWO_PI / sx1 }
-      , k08y { ONE * constant::TWO_PI / sx2 }
+
+      , k08x { -ONE * constant::TWO_PI / sx1 }
+      , k08y {  ONE * constant::TWO_PI / sx2 }
       , k08z { ZERO * constant::TWO_PI / sx3 }    
-      , k09x { ONE * constant::TWO_PI / sx1 }
-      , k09y { - ONE * constant::TWO_PI / sx2 }
-      , k09z { ZERO * constant::TWO_PI / sx3 }      
-      , k10x { - ONE * constant::TWO_PI / sx1 }
-      , k10y { - ONE * constant::TWO_PI / sx2 }
+
+      , k09x {  ONE * constant::TWO_PI / sx1 }
+      , k09y { -ONE * constant::TWO_PI / sx2 }
+      , k09z { ZERO * constant::TWO_PI / sx3 }  
+
+      , k10x { -ONE * constant::TWO_PI / sx1 }
+      , k10y { -ONE * constant::TWO_PI / sx2 }
       , k10z { ZERO * constant::TWO_PI / sx3 }
-      , k11x { ONE * constant::TWO_PI / sx1 }
+
+      , k11x {  ONE * constant::TWO_PI / sx1 }
       , k11y { ZERO * constant::TWO_PI / sx2 }
-      , k11z { ONE * constant::TWO_PI / sx3 }  
-      , k12x { - ONE * constant::TWO_PI / sx1 }
+      , k11z {  ONE * constant::TWO_PI / sx3 }  
+
+      , k12x { -ONE * constant::TWO_PI / sx1 }
       , k12y { ZERO * constant::TWO_PI / sx2 }
-      , k12z { ONE * constant::TWO_PI / sx3 }
-      , k13x { ONE * constant::TWO_PI / sx1 }
+      , k12z {  ONE * constant::TWO_PI / sx3 }
+
+      , k13x {  ONE * constant::TWO_PI / sx1 }
       , k13y { ZERO * constant::TWO_PI / sx2 }
-      , k13z { - ONE * constant::TWO_PI / sx3 }  
-      , k14x { - ONE * constant::TWO_PI / sx1 }
+      , k13z { -ONE * constant::TWO_PI / sx3 }  
+
+      , k14x { -ONE * constant::TWO_PI / sx1 }
       , k14y { ZERO * constant::TWO_PI / sx2 }
-      , k14z { - ONE * constant::TWO_PI / sx3 }  
+      , k14z { -ONE * constant::TWO_PI / sx3 }  
+
       , k15x { ZERO * constant::TWO_PI / sx1 }
-      , k15y { ONE * constant::TWO_PI / sx2 }
-      , k15z { ONE * constant::TWO_PI / sx3 }  
+      , k15y {  ONE * constant::TWO_PI / sx2 }
+      , k15z {  ONE * constant::TWO_PI / sx3 }  
+
       , k16x { ZERO * constant::TWO_PI / sx1 }
-      , k16y { - ONE * constant::TWO_PI / sx2 }
-      , k16z { ONE * constant::TWO_PI / sx3 }  
+      , k16y { -ONE * constant::TWO_PI / sx2 }
+      , k16z {  ONE * constant::TWO_PI / sx3 }  
+
       , k17x { ZERO * constant::TWO_PI / sx1 }
-      , k17y { ONE * constant::TWO_PI / sx2 }
-      , k17z { - ONE * constant::TWO_PI / sx3 }  
+      , k17y {  ONE * constant::TWO_PI / sx2 }
+      , k17z { -ONE * constant::TWO_PI / sx3 }  
+
       , k18x { ZERO * constant::TWO_PI / sx1 }
-      , k18y { - ONE * constant::TWO_PI / sx2 }
-      , k18z { - ONE * constant::TWO_PI / sx3 }  
+      , k18y { -ONE * constant::TWO_PI / sx2 }
+      , k18z { -ONE * constant::TWO_PI / sx3 }  
+
       // modes with |K| = sqrt(3)
-      , k19x { ONE * constant::TWO_PI / sx1 }
-      , k19y { ONE * constant::TWO_PI / sx2 }
-      , k19z { ONE * constant::TWO_PI / sx3 }
-      , k20x { - ONE * constant::TWO_PI / sx1 }
-      , k20y { ONE * constant::TWO_PI / sx2 }
-      , k20z { ONE * constant::TWO_PI / sx3 }
-      , k21x { ONE * constant::TWO_PI / sx1 }
-      , k21y { - ONE * constant::TWO_PI / sx2 }
-      , k21z { ONE * constant::TWO_PI / sx3 }
-      , k22x { ONE * constant::TWO_PI / sx1 }
-      , k22y { ONE * constant::TWO_PI / sx2 }
-      , k22z { - ONE * constant::TWO_PI / sx3 }
-      , k23x { - ONE * constant::TWO_PI / sx1 }
-      , k23y { - ONE * constant::TWO_PI / sx2 }
-      , k23z { ONE * constant::TWO_PI / sx3 }
-      , k24x { - ONE * constant::TWO_PI / sx1 }
-      , k24y { ONE * constant::TWO_PI / sx2 }
-      , k24z { - ONE * constant::TWO_PI / sx3 }
-      , k25x { ONE * constant::TWO_PI / sx1 }
-      , k25y { - ONE * constant::TWO_PI / sx2 }
-      , k25z { - ONE * constant::TWO_PI / sx3 }
-      , k26x { - ONE * constant::TWO_PI / sx1 }
-      , k26y { - ONE * constant::TWO_PI / sx2 }
-      , k26z { - ONE * constant::TWO_PI / sx3 }
+
+      , k19x {  ONE * constant::TWO_PI / sx1 }
+      , k19y {  ONE * constant::TWO_PI / sx2 }
+      , k19z {  ONE * constant::TWO_PI / sx3 }
+
+      , k20x { -ONE * constant::TWO_PI / sx1 }
+      , k20y {  ONE * constant::TWO_PI / sx2 }
+      , k20z {  ONE * constant::TWO_PI / sx3 }
+
+      , k21x {  ONE * constant::TWO_PI / sx1 }
+      , k21y { -ONE * constant::TWO_PI / sx2 }
+      , k21z {  ONE * constant::TWO_PI / sx3 }
+
+      , k22x {  ONE * constant::TWO_PI / sx1 }
+      , k22y {  ONE * constant::TWO_PI / sx2 }
+      , k22z { -ONE * constant::TWO_PI / sx3 }
+
+      , k23x { -ONE * constant::TWO_PI / sx1 }
+      , k23y { -ONE * constant::TWO_PI / sx2 }
+      , k23z {  ONE * constant::TWO_PI / sx3 }
+
+      , k24x { -ONE * constant::TWO_PI / sx1 }
+      , k24y {  ONE * constant::TWO_PI / sx2 }
+      , k24z { -ONE * constant::TWO_PI / sx3 }
+
+      , k25x {  ONE * constant::TWO_PI / sx1 }
+      , k25y { -ONE * constant::TWO_PI / sx2 }
+      , k25z { -ONE * constant::TWO_PI / sx3 }
+
+      , k26x { -ONE * constant::TWO_PI / sx1 }
+      , k26y { -ONE * constant::TWO_PI / sx2 }
+      , k26z { -ONE * constant::TWO_PI / sx3 }
+
       // modes with |K| = 2
-      , k27x { TWO * constant::TWO_PI / sx1 }
+      
+      , k27x {  TWO * constant::TWO_PI / sx1 }
       , k27y { ZERO * constant::TWO_PI / sx2 }
       , k27z { ZERO * constant::TWO_PI / sx3 }
-      , k28x { - TWO * constant::TWO_PI / sx1 }
+
+      , k28x { -TWO * constant::TWO_PI / sx1 }
       , k28y { ZERO * constant::TWO_PI / sx2 }
-      , k28z { ZERO * constant::TWO_PI / sx3 }    
+      , k28z { ZERO * constant::TWO_PI / sx3 }   
+
       , k29x { ZERO * constant::TWO_PI / sx1 }
-      , k29y { TWO * constant::TWO_PI / sx2 }
+      , k29y {  TWO * constant::TWO_PI / sx2 }
       , k29z { ZERO * constant::TWO_PI / sx3 }
+
       , k30x { ZERO * constant::TWO_PI / sx1 }
-      , k30y { - TWO * constant::TWO_PI / sx2 }
+      , k30y { -TWO * constant::TWO_PI / sx2 }
       , k30z { ZERO * constant::TWO_PI / sx3 }  
+
       , k31x { ZERO * constant::TWO_PI / sx1 }
       , k31y { ZERO * constant::TWO_PI / sx2 }
-      , k31z { TWO * constant::TWO_PI / sx3 }
+      , k31z {  TWO * constant::TWO_PI / sx3 }
+      
       , k32x { ZERO * constant::TWO_PI / sx1 }
       , k32y { ZERO * constant::TWO_PI / sx2 }
-      , k32z { - TWO * constant::TWO_PI / sx3 }  {}
+      , k32z { -TWO * constant::TWO_PI / sx3 }  {}
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -215,7 +251,7 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return ( k01x * amps(0,REAL) *  math::cos(k01x * x_Ph[0] + k01y * x_Ph[1] + k01z * x_Ph[2]) +
+      return (k01x * amps(0,REAL) *  math::cos(k01x * x_Ph[0] + k01y * x_Ph[1] + k01z * x_Ph[2]) +
               k01x * amps(0,IMAG) *  math::sin(k01x * x_Ph[0] + k01y * x_Ph[1] + k01z * x_Ph[2])) +
              (k02x * amps(3,REAL) *  math::cos(k02x * x_Ph[0] + k02y * x_Ph[1] + k02z * x_Ph[2]) +
               k02x * amps(3,IMAG) *  math::sin(k02x * x_Ph[0] + k02y * x_Ph[1] + k02z * x_Ph[2])) +
@@ -223,10 +259,10 @@ namespace user {
               amps(6,IMAG) *  math::sin(k03x * x_Ph[0] + k03y * x_Ph[1] + k03z * x_Ph[2])) +
              (amps(9,REAL) *  math::cos(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2]) +
               amps(9,IMAG) *  math::sin(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2])) +
-             (amps(12,REAL) *  math::cos(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2]) +
-              amps(12,IMAG) *  math::sin(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2])) +
-             (amps(15,REAL) *  math::cos(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2]) +
-              amps(15,IMAG) *  math::sin(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2])) +
+             (amps(12,REAL) * math::cos(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2]) +
+              amps(12,IMAG) * math::sin(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2])) +
+             (amps(15,REAL) * math::cos(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2]) +
+              amps(15,IMAG) * math::sin(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2])) +
              (k07y * amps(18,REAL) *  math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
               k07y * amps(18,IMAG) *  math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +              
              (k07x * amps(20,REAL) *  math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
@@ -243,7 +279,7 @@ namespace user {
               k10y * amps(27,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +              
              (k10x * amps(29,REAL) *  math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
               k10x * amps(29,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
-              (k11z * amps(30,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
+             (k11z * amps(30,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
               k11z * amps(30,IMAG) *  math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +              
              (k11x * amps(32,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
               k11x * amps(32,IMAG) *  math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +      
@@ -251,11 +287,11 @@ namespace user {
               k12z * amps(33,IMAG) *  math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +              
              (k12x * amps(35,REAL) *  math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
               k12x * amps(35,IMAG) *  math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +        
-               (k13z * amps(36,REAL) *  math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
+             (k13z * amps(36,REAL) *  math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
               k13z * amps(36,IMAG) *  math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +              
              (k13x * amps(38,REAL) *  math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
               k13x * amps(38,IMAG) *  math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +       
-               (k14z * amps(39,REAL) *  math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
+             (k14z * amps(39,REAL) *  math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
               k14z * amps(39,IMAG) *  math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +              
              (k14x * amps(41,REAL) *  math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
               k14x * amps(41,IMAG) *  math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +    
@@ -299,7 +335,7 @@ namespace user {
             //   k26z * amps(75,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +              
             //  (k26x * amps(77,REAL) *  math::cos(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2]) +
             //   k26x * amps(77,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +   
-             ( k27x * amps(78,REAL) *  math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
+             (k27x * amps(78,REAL) * math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
               k27x * amps(78,IMAG) *  math::sin(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2])) +
              (k28x * amps(81,REAL) *  math::cos(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2]) +
               k28x * amps(81,IMAG) *  math::sin(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2])) +
@@ -321,54 +357,54 @@ namespace user {
               amps(1,IMAG) *  math::sin(k01x * x_Ph[0] + k01y * x_Ph[1] + k01z * x_Ph[2])) +
              (amps(4,REAL) *  math::cos(k02x * x_Ph[0] + k02y * x_Ph[1] + k02z * x_Ph[2]) +
               amps(4,IMAG) *  math::sin(k02x * x_Ph[0] + k02y * x_Ph[1] + k02z * x_Ph[2])) +
-             (k03y * amps(7,REAL) *  math::cos(k03x * x_Ph[0] + k03y * x_Ph[1] + k03z * x_Ph[2]) +
-              k03y * amps(7,IMAG) *  math::sin(k03x * x_Ph[0] + k03y * x_Ph[1] + k03z * x_Ph[2])) +
-             k04y * (amps(10,REAL) *  math::cos(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2]) +
-              k04y * amps(10,IMAG) *  math::sin(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2])) +
-             (amps(13,REAL) *  math::cos(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2]) +
-              amps(13,IMAG) *  math::sin(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2])) +
-             (amps(16,REAL) *  math::cos(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2]) +
-              amps(16,IMAG) *  math::sin(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2])) +
-             (- k07x * amps(18,REAL) *  math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
-              - k07x * amps(18,IMAG) *  math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +   
-             (k07y * amps(20,REAL) *  math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
-              k07y * amps(20,IMAG) *  math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +   
-             (- k08x * amps(21,REAL) *  math::cos(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2]) +
-              - k08x * amps(21,IMAG) *  math::sin(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2])) +   
-             (k08y * amps(23,REAL) *  math::cos(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2]) +
-              k08y * amps(23,IMAG) *  math::sin(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2])) +   
-             (- k09x * amps(24,REAL) *  math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
-              - k09x * amps(24,IMAG) *  math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
-             (k09y * amps(26,REAL) *  math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
-              k09y * amps(26,IMAG) *  math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
-             (- k10x * amps(27,REAL) *  math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
-              - k10x * amps(27,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
-             (k10y * amps(29,REAL) *  math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
-              k10y * amps(29,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
-             (amps(31,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
-              amps(31,IMAG) *  math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +              
-             (amps(34,REAL) *  math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
-              amps(34,IMAG) *  math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +              
-             (amps(37,REAL) *  math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
-              amps(37,IMAG) *  math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +              
-             (amps(40,REAL) *  math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
-              amps(40,IMAG) *  math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +              
-             (k15z * amps(43,REAL) *  math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
-              k15z * amps(43,IMAG) *  math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +   
-             (k15y * amps(44,REAL) *  math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
-              k15y * amps(44,IMAG) *  math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +   
-             (k16z * amps(46,REAL) *  math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
-              k16z * amps(46,IMAG) *  math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +   
-             (k16y * amps(47,REAL) *  math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
-              k16y * amps(47,IMAG) *  math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +   
-             (k17z * amps(49,REAL) *  math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
-              k17z * amps(49,IMAG) *  math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +   
-             (k17y * amps(50,REAL) *  math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
-              k17y * amps(50,IMAG) *  math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +   
-             (k18z * amps(52,REAL) *  math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
-              k18z * amps(52,IMAG) *  math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +   
-             (k18y * amps(53,REAL) *  math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
-              k18y * amps(53,IMAG) *  math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +   
+             (k03y * amps(7,REAL) * math::cos(k03x * x_Ph[0] + k03y * x_Ph[1] + k03z * x_Ph[2]) +
+              k03y * amps(7,IMAG) * math::sin(k03x * x_Ph[0] + k03y * x_Ph[1] + k03z * x_Ph[2])) +
+             (k04y * amps(10,REAL) * math::cos(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2]) +
+              k04y * amps(10,IMAG) * math::sin(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2])) +
+             (amps(13,REAL) * math::cos(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2]) +
+              amps(13,IMAG) * math::sin(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2])) +
+             (amps(16,REAL) * math::cos(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2]) +
+              amps(16,IMAG) * math::sin(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2])) +
+            (-k07x * amps(18,REAL) * math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
+             -k07x * amps(18,IMAG) * math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +   
+             (k07y * amps(20,REAL) * math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
+              k07y * amps(20,IMAG) * math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +   
+            (-k08x * amps(21,REAL) * math::cos(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2]) +
+             -k08x * amps(21,IMAG) * math::sin(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2])) +   
+             (k08y * amps(23,REAL) * math::cos(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2]) +
+              k08y * amps(23,IMAG) * math::sin(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2])) +   
+            (-k09x * amps(24,REAL) * math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
+             -k09x * amps(24,IMAG) * math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
+             (k09y * amps(26,REAL) * math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
+              k09y * amps(26,IMAG) * math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
+            (-k10x * amps(27,REAL) * math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
+             -k10x * amps(27,IMAG) * math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
+             (k10y * amps(29,REAL) * math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
+              k10y * amps(29,IMAG) * math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
+             (amps(31,REAL) * math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
+              amps(31,IMAG) * math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +              
+             (amps(34,REAL) * math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
+              amps(34,IMAG) * math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +              
+             (amps(37,REAL) * math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
+              amps(37,IMAG) * math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +              
+             (amps(40,REAL) * math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
+              amps(40,IMAG) * math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +              
+             (k15z * amps(43,REAL) * math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
+              k15z * amps(43,IMAG) * math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +   
+             (k15y * amps(44,REAL) * math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
+              k15y * amps(44,IMAG) * math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +   
+             (k16z * amps(46,REAL) * math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
+              k16z * amps(46,IMAG) * math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +   
+             (k16y * amps(47,REAL) * math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
+              k16y * amps(47,IMAG) * math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +   
+             (k17z * amps(49,REAL) * math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
+              k17z * amps(49,IMAG) * math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +   
+             (k17y * amps(50,REAL) * math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
+              k17y * amps(50,IMAG) * math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +   
+             (k18z * amps(52,REAL) * math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
+              k18z * amps(52,IMAG) * math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +   
+             (k18y * amps(53,REAL) * math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
+              k18y * amps(53,IMAG) * math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +   
             //  (k19z * amps(55,REAL) *  math::cos(k19x * x_Ph[0] + k19y * x_Ph[1] + k19z * x_Ph[2]) +
             //   k19z * amps(55,IMAG) *  math::sin(k19x * x_Ph[0] + k19y * x_Ph[1] + k19z * x_Ph[2])) +              
             //  (k19y * amps(56,REAL) *  math::cos(k19x * x_Ph[0] + k19y * x_Ph[1] + k19z * x_Ph[2]) +
@@ -401,18 +437,18 @@ namespace user {
             //   k26z * amps(76,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +              
             //  (k26y * amps(77,REAL) *  math::cos(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2]) +
             //   k26y * amps(77,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +   
-             (amps(79,REAL) *  math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
-              amps(79,IMAG) *  math::sin(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2])) +
-             (amps(82,REAL) *  math::cos(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2]) +
-              amps(82,IMAG) *  math::sin(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2])) +
-             (k29y * amps(85,REAL) *  math::cos(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2]) +
-              k29y * amps(85,IMAG) *  math::sin(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2])) +
-             k30y * (amps(88,REAL) *  math::cos(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2]) +
-              k30y * amps(88,IMAG) *  math::sin(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2])) +
-             (amps(91,REAL) *  math::cos(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2]) +
-              amps(91,IMAG) *  math::sin(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2])) +
-             (amps(94,REAL) *  math::cos(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2]) +
-              amps(94,IMAG) *  math::sin(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2])) ;
+             (amps(79,REAL) * math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
+              amps(79,IMAG) * math::sin(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2])) +
+             (amps(82,REAL) * math::cos(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2]) +
+              amps(82,IMAG) * math::sin(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2])) +
+             (k29y * amps(85,REAL) * math::cos(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2]) +
+              k29y * amps(85,IMAG) * math::sin(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2])) +
+             (k30y * amps(88,REAL) * math::cos(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2]) +
+              k30y * amps(88,IMAG) * math::sin(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2])) +
+             (amps(91,REAL) * math::cos(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2]) +
+              amps(91,IMAG) * math::sin(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2])) +
+             (amps(94,REAL) * math::cos(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2]) +
+              amps(94,IMAG) * math::sin(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2])) ;
     }
 
     Inline auto fx3(const unsigned short&,
@@ -427,50 +463,50 @@ namespace user {
               amps(8,IMAG) *  math::sin(k03x * x_Ph[0] + k03y * x_Ph[1] + k03z * x_Ph[2])) +
              (amps(11,REAL) *  math::cos(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2]) +
               amps(11,IMAG) *  math::sin(k04x * x_Ph[0] + k04y * x_Ph[1] + k04z * x_Ph[2])) +
-             (k05z * amps(14,REAL) *  math::cos(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2]) +
-              k05z * amps(14,IMAG) *  math::sin(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2])) +
-             (k06z * amps(17,REAL) *  math::cos(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2]) +
-              k06z * amps(17,IMAG) *  math::sin(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2])) +
-             (amps(19,REAL) *  math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
-              amps(19,IMAG) *  math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +   
-             (amps(22,REAL) *  math::cos(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2]) +
-              amps(22,IMAG) *  math::sin(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2])) +   
-             (amps(25,REAL) *  math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
-              amps(25,IMAG) *  math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
-             (amps(28,REAL) *  math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
-             amps(28,IMAG) *  math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
-             (- k11x * amps(30,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
-              - k11x * amps(30,IMAG) *  math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +              
-             (k11z * amps(32,REAL) *  math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
-              k11z * amps(32,IMAG) *  math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +  
-             (- k12x * amps(33,REAL) *  math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
-              - k12x * amps(33,IMAG) *  math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +              
-             (k12z * amps(35,REAL) *  math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
-              k12z * amps(35,IMAG) *  math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +        
-               (- k13x * amps(36,REAL) *  math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
-              - k13x * amps(36,IMAG) *  math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +              
-             (k13z * amps(38,REAL) *  math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
-              k13z * amps(38,IMAG) *  math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +       
-               (- k14x * amps(39,REAL) *  math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
-              - k14z * amps(39,IMAG) *  math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +              
-             (k14z * amps(41,REAL) *  math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
-              k14z * amps(41,IMAG) *  math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +  
-             (- k15y * amps(43,REAL) *  math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
-              - k15y * amps(43,IMAG) *  math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +              
-             (k15z * amps(44,REAL) *  math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
-              k15z * amps(44,IMAG) *  math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +  
-             (- k16y * amps(46,REAL) *  math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
-              - k16y * amps(46,IMAG) *  math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +              
-             (k16z * amps(47,REAL) *  math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
-              k16z * amps(47,IMAG) *  math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +  
-             (- k17y * amps(49,REAL) *  math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
-              - k17y * amps(49,IMAG) *  math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +              
-             (k17z * amps(50,REAL) *  math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
-              k17z * amps(50,IMAG) *  math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +  
-             (- k18y * amps(52,REAL) *  math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
-              - k18y * amps(52,IMAG) *  math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +              
-             (k18z * amps(53,REAL) *  math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
-              k18z * amps(53,IMAG) *  math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +  
+             (k05z * amps(14,REAL) * math::cos(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2]) +
+              k05z * amps(14,IMAG) * math::sin(k05x * x_Ph[0] + k05y * x_Ph[1] + k05z * x_Ph[2])) +
+             (k06z * amps(17,REAL) * math::cos(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2]) +
+              k06z * amps(17,IMAG) * math::sin(k06x * x_Ph[0] + k06y * x_Ph[1] + k06z * x_Ph[2])) +
+             (amps(19,REAL) * math::cos(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2]) +
+              amps(19,IMAG) * math::sin(k07x * x_Ph[0] + k07y * x_Ph[1] + k07z * x_Ph[2])) +   
+             (amps(22,REAL) * math::cos(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2]) +
+              amps(22,IMAG) * math::sin(k08x * x_Ph[0] + k08y * x_Ph[1] + k08z * x_Ph[2])) +   
+             (amps(25,REAL) * math::cos(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2]) +
+              amps(25,IMAG) * math::sin(k09x * x_Ph[0] + k09y * x_Ph[1] + k09z * x_Ph[2])) +   
+             (amps(28,REAL) * math::cos(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2]) +
+              amps(28,IMAG) * math::sin(k10x * x_Ph[0] + k10y * x_Ph[1] + k10z * x_Ph[2])) +   
+            (-k11x * amps(30,REAL) * math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
+             -k11x * amps(30,IMAG) * math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +              
+             (k11z * amps(32,REAL) * math::cos(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2]) +
+              k11z * amps(32,IMAG) * math::sin(k11x * x_Ph[0] + k11y * x_Ph[1] + k11z * x_Ph[2])) +  
+            (-k12x * amps(33,REAL) * math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
+             -k12x * amps(33,IMAG) * math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +              
+             (k12z * amps(35,REAL) * math::cos(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2]) +
+              k12z * amps(35,IMAG) * math::sin(k12x * x_Ph[0] + k12y * x_Ph[1] + k12z * x_Ph[2])) +        
+            (-k13x * amps(36,REAL) * math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
+             -k13x * amps(36,IMAG) * math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +              
+             (k13z * amps(38,REAL) * math::cos(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2]) +
+              k13z * amps(38,IMAG) * math::sin(k13x * x_Ph[0] + k13y * x_Ph[1] + k13z * x_Ph[2])) +       
+            (-k14x * amps(39,REAL) * math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
+             -k14z * amps(39,IMAG) * math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +              
+             (k14z * amps(41,REAL) * math::cos(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2]) +
+              k14z * amps(41,IMAG) * math::sin(k14x * x_Ph[0] + k14y * x_Ph[1] + k14z * x_Ph[2])) +  
+            (-k15y * amps(43,REAL) * math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
+             -k15y * amps(43,IMAG) * math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +              
+             (k15z * amps(44,REAL) * math::cos(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2]) +
+              k15z * amps(44,IMAG) * math::sin(k15x * x_Ph[0] + k15y * x_Ph[1] + k15z * x_Ph[2])) +  
+            (-k16y * amps(46,REAL) * math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
+             -k16y * amps(46,IMAG) * math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +              
+             (k16z * amps(47,REAL) * math::cos(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2]) +
+              k16z * amps(47,IMAG) * math::sin(k16x * x_Ph[0] + k16y * x_Ph[1] + k16z * x_Ph[2])) +  
+            (-k17y * amps(49,REAL) * math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
+             -k17y * amps(49,IMAG) * math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +              
+             (k17z * amps(50,REAL) * math::cos(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2]) +
+              k17z * amps(50,IMAG) * math::sin(k17x * x_Ph[0] + k17y * x_Ph[1] + k17z * x_Ph[2])) +  
+            (-k18y * amps(52,REAL) * math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
+             -k18y * amps(52,IMAG) * math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +              
+             (k18z * amps(53,REAL) * math::cos(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2]) +
+              k18z * amps(53,IMAG) * math::sin(k18x * x_Ph[0] + k18y * x_Ph[1] + k18z * x_Ph[2])) +  
             //  ((- k19x * amps(54,REAL) - k19y * amps(55,REAL)) *  math::cos(k19x * x_Ph[0] + k19y * x_Ph[1] + k19z * x_Ph[2]) +
             //   (- k19x * amps(54,REAL) - k19y * amps(55,REAL)) *  math::sin(k19x * x_Ph[0] + k19y * x_Ph[1] + k19z * x_Ph[2])) +              
             //  (k19z * amps(56,REAL) *  math::cos(k19x * x_Ph[0] + k19y * x_Ph[1] + k19z * x_Ph[2]) +
@@ -503,18 +539,18 @@ namespace user {
             //   (- k26x * amps(75,REAL) - k26y * amps(76,REAL)) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +              
             //  (k26z * amps(77,REAL) *  math::cos(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2]) +
             //   k26z * amps(77,IMAG) *  math::sin(k26x * x_Ph[0] + k26y * x_Ph[1] + k26z * x_Ph[2])) +   
-             (amps(80,REAL) *  math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
-              amps(80,IMAG) *  math::sin(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2])) + 
-             (amps(83,REAL) *  math::cos(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2]) +
-              amps(83,IMAG) *  math::sin(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2])) +
-             (amps(86,REAL) *  math::cos(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2]) +
-              amps(86,IMAG) *  math::sin(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2])) +
-             (amps(89,REAL) *  math::cos(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2]) +
-              amps(89,IMAG) *  math::sin(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2])) +
-             (k31z * amps(92,REAL) *  math::cos(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2]) +
-              k31z * amps(92,IMAG) *  math::sin(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2])) +
-             (k32z * amps(95,REAL) *  math::cos(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2]) +
-              k32z * amps(95,IMAG) *  math::sin(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2])) ;
+             (amps(80,REAL) * math::cos(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2]) +
+              amps(80,IMAG) * math::sin(k27x * x_Ph[0] + k27y * x_Ph[1] + k27z * x_Ph[2])) + 
+             (amps(83,REAL) * math::cos(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2]) +
+              amps(83,IMAG) * math::sin(k28x * x_Ph[0] + k28y * x_Ph[1] + k28z * x_Ph[2])) +
+             (amps(86,REAL) * math::cos(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2]) +
+              amps(86,IMAG) * math::sin(k29x * x_Ph[0] + k29y * x_Ph[1] + k29z * x_Ph[2])) +
+             (amps(89,REAL) * math::cos(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2]) +
+              amps(89,IMAG) * math::sin(k30x * x_Ph[0] + k30y * x_Ph[1] + k30z * x_Ph[2])) +
+             (k31z * amps(92,REAL) * math::cos(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2]) +
+              k31z * amps(92,IMAG) * math::sin(k31x * x_Ph[0] + k31y * x_Ph[1] + k31z * x_Ph[2])) +
+             (k32z * amps(95,REAL) * math::cos(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2]) +
+              k32z * amps(95,IMAG) * math::sin(k32x * x_Ph[0] + k32y * x_Ph[1] + k32z * x_Ph[2])) ;
     }
 
   public:
