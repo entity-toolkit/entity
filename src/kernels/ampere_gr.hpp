@@ -57,9 +57,6 @@ namespace kernel::gr {
       , coeff { coeff } {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        raise::ErrorIf(boundaries[1].size() < 2,
-                       "boundaries defined incorrectly",
-                       HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
         is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
       }
