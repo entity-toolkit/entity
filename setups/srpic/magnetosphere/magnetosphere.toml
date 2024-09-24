@@ -60,7 +60,18 @@
 [setup]
   Bsurf = 1.0
   period = 60.0
-
+  /Curvature = 1.0
+  Compactness = 0.5
+  CurvGammaCool = 100.0
+  CurvGammaEmit = 10.0
+  angThres = 0.1
+  rad_radius = 2.0
+  ph_thres = 5.0
+  ph_dens = 10.0
+  pair_dens = 10.0
+  BoverBq = 1.0
+  gammaSec = 5.0
+  
 [output]
   format = "hdf5"
   
