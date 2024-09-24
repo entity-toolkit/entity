@@ -38,6 +38,9 @@
     e_ovr_b_max = 0.9
     larmor_max = 1.0
 
+  [algorithms.synchrotron]
+    gamma_rad = 20.0
+
 [particles]
   ppc0 = 5.0
   use_weights = true
@@ -49,6 +52,8 @@
   charge = -1.0
   maxnpart = 1e8
   pusher = "Boris,GCA"
+  cooling = "Synchrotron"
+  
 
   [[particles.species]]
   label = "e+"
@@ -56,6 +61,15 @@
   charge = 1.0
   maxnpart = 1e8
   pusher = "Boris,GCA"
+  cooling = "Synchrotron"
+
+  [[particles.species]]
+  label = "ph"
+  mass = 0.0
+  charge = 0.0
+  maxnpart = 1e8
+  n_payloads = 1
+
 
 [setup]
   Bsurf = 1.0
@@ -83,7 +97,8 @@
     enable = false
 
   [output.spectra]
-    enable = false
+    enable = true
+    n_bins = 500
 
 [diagnostics]
   interval = 50

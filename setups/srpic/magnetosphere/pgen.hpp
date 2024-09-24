@@ -199,8 +199,8 @@ namespace user {
 	    const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
 
 	    //minus included into coeff 
-	    EB(i1, i2, em::bx3) += coeff*( h1_pHp1 * corrEx2iP1j - h1_pH0 * corrEx2ij +
-					   h2_p1pH * corrEx1ijP1 - h2_0pH * corrEx1ij);
+	    EB(i1, i2, em::bx3) += coeff*( h2_p1pH * corrEx2iP1j - h2_0pH * corrEx2ij +
+					   h1_pHp1 * corrEx1ijP1 - h1_pH0 * corrEx1ij);
 	  });
       }
     }
@@ -229,8 +229,8 @@ namespace user {
       const auto PairDensity {params.template get<real_t>("setups.pair_dens") }; 
       const auto gammaSec {params.template get<real_t>("setups.gammaSec") };
       const auto BoverBq {params.template get<real_t>("setups.BoverBq") };
-      const auto coeffCool {-2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) *Bsurf* SQR(Curv) * SQR(SQR(1/CurvGammaCool))};
-      const auto coeffPhoton {2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) * Bsurf * Curv * CUBE(CurvGammaEmit) * SQR(SQR(1/CurvGammaCool))};
+      const auto coeffCool {-2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) *Bsurf * SQR(SQR(1/CurvGammaCool))};
+      const auto coeffPhoton {2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) * Bsurf * CUBE(CurvGammaEmit) * SQR(SQR(1/CurvGammaCool))};
       const auto coeffAbs {static_cast<real_t>(0.23)*(27/4)*(dt/larm)*SQR(CUBE(CurvGammaEmit)/SQR(CurvGammaCool)) * Bsurf * sqrt(CUBE(Rstar/RLC)) * BoverBq };
       const auto _Bsurf = Bsurf;
 
