@@ -26,7 +26,6 @@
 #include "framework/parameters.h"
 
 #include "engines/engine.hpp"
-
 #include "kernels/ampere_gr.hpp"
 #include "kernels/aux_fields_gr.hpp"
 #include "kernels/currents_deposit.hpp"
@@ -35,7 +34,6 @@
 #include "kernels/fields_bcs.hpp"
 #include "kernels/particle_moments.hpp"
 #include "kernels/particle_pusher_gr.hpp"
-
 #include "pgen.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -102,25 +100,26 @@ namespace ntt {
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
         /**
-        * Initially: em0::B   --
-        *            em0::D   --
-        *            em::B    at -1/2
-        *            em::D    at -1/2
-        *
-        *            cur0::J  --
-        *            cur::J   --
-        *
-        *            aux::E   --
-        *            aux::H   --
-        *
-        *            x_prtl   at -1/2
-        *            u_prtl   at -1/2
-        */
+         * Initially: em0::B   --
+         *            em0::D   --
+         *            em::B    at -1/2
+         *            em::D    at -1/2
+         *
+         *            cur0::J  --
+         *            cur::J   --
+         *
+         *            aux::E   --
+         *            aux::H   --
+         *
+         *            x_prtl   at -1/2
+         *            u_prtl   at -1/2
+         */
 
         /**
-        * em0::D, em::D, em0::B, em::B <- boundary conditions
-        */
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
+         * em0::D, em::D, em0::B, em::B <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom,
+                                       Comm::B | Comm::B0 | Comm::D | Comm::D0);
         FieldBoundaries(dom, BC::B | BC::D);
 
         /**
@@ -167,7 +166,7 @@ namespace ntt {
       }
     }
 
-/* algorithm substeps --------------------------------------------------- */
+    /* algorithm substeps --------------------------------------------------- */
     void FieldBoundaries(domain_t& domain, BCTags tags) {
       for (auto& direction : dir::Directions<M::Dim>::orth) {
         if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
@@ -361,7 +360,7 @@ namespace ntt {
                                                                domain.fields.em0,
                                                                domain.fields.aux,
                                                                domain.mesh.metric));
-       } else if (g == gr_getH::D0_B0) {
+      } else if (g == gr_getH::D0_B0) {
         Kokkos::parallel_for("ComputeAuxH",
                              range,
                              kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em0,
@@ -399,31 +398,33 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       if (g == gr_faraday::aux) {
-        Kokkos::parallel_for("Faraday",
-                             domain.mesh.rangeActiveCells(),
-                             kernel::gr::Faraday_kernel<M>(domain.fields.em0,
-                                                           domain.fields.em0,
-                                                           domain.fields.aux,
-                                                           domain.mesh.metric,
-                                                           dT,
-                                                           domain.mesh.n_active(in::x2),
-                                                           domain.mesh.flds_bc()));
+        Kokkos::parallel_for(
+          "Faraday",
+          domain.mesh.rangeActiveCells(),
+          kernel::gr::Faraday_kernel<M>(domain.fields.em0,
+                                        domain.fields.em0,
+                                        domain.fields.aux,
+                                        domain.mesh.metric,
+                                        dT,
+                                        domain.mesh.n_active(in::x2),
+                                        domain.mesh.flds_bc()));
       } else if (g == gr_faraday::main) {
-        Kokkos::parallel_for("Faraday",
-                     domain.mesh.rangeActiveCells(),
-                     kernel::gr::Faraday_kernel<M>(domain.fields.em0,
-                                                   domain.fields.em0,
-                                                   domain.fields.aux,
-                                                   domain.mesh.metric,
-                                                   dT,
-                                                   domain.mesh.n_active(in::x2),
-                                                   domain.mesh.flds_bc()));
+        Kokkos::parallel_for(
+          "Faraday",
+          domain.mesh.rangeActiveCells(),
+          kernel::gr::Faraday_kernel<M>(domain.fields.em0,
+                                        domain.fields.em0,
+                                        domain.fields.aux,
+                                        domain.mesh.metric,
+                                        dT,
+                                        domain.mesh.n_active(in::x2),
+                                        domain.mesh.flds_bc()));
 
       } else {
-          raise::Error("Wrong option for `g`", HERE);
-        }
+        raise::Error("Wrong option for `g`", HERE);
+      }
     }
-  
+
     void Ampere(domain_t& domain, const gr_ampere& g, real_t fraction = ONE) {
       logger::Checkpoint("Launching Ampere kernel", HERE);
       const auto dT = fraction *
@@ -431,23 +432,50 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1},
-            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2)});
-      auto range_pole = CreateRangePolicy<Dim::_1D>(
-            { domain.mesh.i_min(in::x1)},
-            { domain.mesh.i_max(in::x1)});
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1 },
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) });
+      auto range_pole = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x1) },
+                                                    { domain.mesh.i_max(in::x1) });
       const auto ni2 = domain.mesh.n_active(in::x2);
-      Kokkos::parallel_for("Ampere",
-                           range,
-                           kernel::gr::Ampere_kernel<M>(domain.fields.em,
-                                                        domain.fields.em,
-                                                        domain.fields.em,
-                                                        domain.mesh.metric,
-                                                        dT,
-                                                        ni2,
-                                                        domain.mesh.flds_bc()));
-    }
 
+      if (g == gr_ampere::aux) {
+        // First push, updates D0 with J.
+        Kokkos::parallel_for("Ampere-1",
+                             range,
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em, // has to be zeros
+                                                          domain.fields.em0,
+                                                          domain.fields.aux,
+                                                          domain.mesh.metric,
+                                                          dT,
+                                                          ni2,
+                                                          domain.mesh.flds_bc()));
+      } else if (g == gr_ampere::main) {
+        // Second push, updates D with J0 but assigns it to D0.
+        Kokkos::parallel_for("Ampere-2",
+                             range,
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em,
+                                                          domain.fields.em0,
+                                                          domain.fields.aux,
+                                                          domain.mesh.metric,
+                                                          dT,
+                                                          ni2,
+                                                          domain.mesh.flds_bc()));
+      } else if (g == gr_ampere::init) {
+        // Second push, updates D with J0 and assigns it to D.
+        Kokkos::parallel_for("Ampere-3",
+                             range,
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em, //has to be zeros
+                                                          domain.fields.em,
+                                                          domain.fields.aux,
+                                                          domain.mesh.metric,
+                                                          dT,
+                                                          ni2,
+                                                          domain.mesh.flds_bc()));
+      } else {
+        raise::Error("Wrong option for `g`", HERE);
+      }
+
+    }
   };
 } // namespace ntt
 
