@@ -156,6 +156,13 @@ namespace ntt {
          */
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
         FieldBoundaries(dom, BC::B);
+
+        /**
+         * em::D <- (em0::D) <- curl aux::H
+         *
+         * Now: em::D at 0
+         */
+        Ampere(dom, gr_ampere::init, HALF);
       }
     }
 
@@ -398,7 +405,7 @@ namespace ntt {
                                                            domain.fields.aux,
                                                            domain.mesh.metric,
                                                            dT,
-                                                           domain.mesh.i_max(in::x2),
+                                                           domain.mesh.n_active(in::x2),
                                                            domain.mesh.flds_bc()));
       } else if (g == gr_faraday::main) {
         Kokkos::parallel_for("Faraday",
@@ -408,12 +415,36 @@ namespace ntt {
                                                    domain.fields.aux,
                                                    domain.mesh.metric,
                                                    dT,
-                                                   domain.mesh.i_max(in::x2),
+                                                   domain.mesh.n_active(in::x2),
                                                    domain.mesh.flds_bc()));
 
       } else {
           raise::Error("Wrong option for `g`", HERE);
         }
+    }
+  
+    void Ampere(domain_t& domain, const gr_ampere& g, real_t fraction = ONE) {
+      logger::Checkpoint("Launching Ampere kernel", HERE);
+      const auto dT = fraction *
+                      m_params.template get<real_t>(
+                        "algorithms.timestep.correction") *
+                      dt;
+      auto range = CreateRangePolicy<Dim::_2D>(
+            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1},
+            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2)});
+      auto range_pole = CreateRangePolicy<Dim::_1D>(
+            { domain.mesh.i_min(in::x1)},
+            { domain.mesh.i_max(in::x1)});
+      const auto ni2 = domain.mesh.n_active(in::x2);
+      Kokkos::parallel_for("Ampere",
+                           range,
+                           kernel::gr::Ampere_kernel<M>(domain.fields.em,
+                                                        domain.fields.em,
+                                                        domain.fields.em,
+                                                        domain.mesh.metric,
+                                                        dT,
+                                                        ni2,
+                                                        domain.mesh.flds_bc()));
     }
 
   };
