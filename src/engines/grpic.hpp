@@ -54,6 +54,15 @@ namespace ntt {
     D_B0,
     D0_B0
   };
+  enum class gr_faraday {
+    aux,
+    main
+  };
+  enum class gr_ampere {
+    init,
+    aux,
+    main
+  };
 
   template <class M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
@@ -130,9 +139,17 @@ namespace ntt {
          */
         ComputeAuxE(dom, gr_getE::D0_B);
         ComputeAuxH(dom, gr_getH::D_B0);
+
+        /**
+         * aux::E, aux::H <- boundary conditions
+         */
+        // ?? aux field boundaries ??
+
+        Faraday(dom, gr_faraday::aux, HALF);
       }
     }
 
+/* algorithm substeps --------------------------------------------------- */
     void FieldBoundaries(domain_t& domain, BCTags tags) {
       for (auto& direction : dir::Directions<M::Dim>::orth) {
         if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
@@ -324,14 +341,14 @@ namespace ntt {
                              range,
                              kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em,
                                                                domain.fields.em0,
-                                                               domain.fields.em,
+                                                               domain.fields.aux,
                                                                domain.mesh.metric));
        } else if (g == gr_getH::D0_B0) {
         Kokkos::parallel_for("ComputeAuxH",
                              range,
                              kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em0,
                                                                domain.fields.em0,
-                                                               domain.fields.em,
+                                                               domain.fields.aux,
                                                                domain.mesh.metric));
       } else {
         raise::Error("Wrong option for `g`", HERE);
@@ -357,6 +374,37 @@ namespace ntt {
       return range;
     }
 
+    void Faraday(domain_t& domain, const gr_faraday& g, real_t fraction = ONE) {
+      logger::Checkpoint("Launching Faraday kernel", HERE);
+      const auto dT = fraction *
+                      m_params.template get<real_t>(
+                        "algorithms.timestep.correction") *
+                      dt;
+      if (g == gr_faraday::aux) {
+        Kokkos::parallel_for("Faraday",
+                             domain.mesh.rangeActiveCells(),
+                             kernel::gr::Faraday_kernel<M>(domain.fields.em0,
+                                                           domain.fields.em0,
+                                                           domain.fields.aux,
+                                                           domain.mesh.metric,
+                                                           dT,
+                                                           domain.mesh.i_max(in::x2),
+                                                           domain.mesh.flds_bc()));
+      } else if (g == gr_faraday::main) {
+        Kokkos::parallel_for("Faraday",
+                     domain.mesh.rangeActiveCells(),
+                     kernel::gr::Faraday_kernel<M>(domain.fields.em0,
+                                                   domain.fields.em0,
+                                                   domain.fields.aux,
+                                                   domain.mesh.metric,
+                                                   dT,
+                                                   domain.mesh.i_max(in::x2),
+                                                   domain.mesh.flds_bc()));
+
+      } else {
+          raise::Error("Wrong option for `g`", HERE);
+        }
+    }
 
   };
 } // namespace ntt
