@@ -105,6 +105,13 @@ namespace ntt {
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
         FieldBoundaries(dom, BC::B | BC::D);
 
+        /**
+         * em0::B <- em::B
+         * em0::D <- em::D
+         *
+         * Now: em0::B & em0::D at -1/2
+         */
+        CopyFields(dom);
       }
     }
 
@@ -253,6 +260,22 @@ namespace ntt {
       // } else {
       //   raise::Error("Custom boundaries not implemented", HERE);
       // }
+    }
+
+    /**
+     * @brief Swaps em and em0 fields, cur and cur0 currents.
+     */
+    // void SwapFields() {
+    //   auto& mblock = this->meshblock;
+    //   std::swap(mblock.em, mblock.em0);
+    //   std::swap(mblock.cur, mblock.cur0);
+    // }
+
+    /**
+     * @brief Copies em fields into em0
+     */
+    void CopyFields(domain_t&                domain) {
+      Kokkos::deep_copy(domain.fields.em0, domain.fields.em);
     }
 
   };
