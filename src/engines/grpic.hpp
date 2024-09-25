@@ -46,6 +46,15 @@
 
 namespace ntt {
 
+  enum class gr_getE {
+    D0_B,
+    D_B0
+  };
+  enum class gr_getH {
+    D_B0,
+    D0_B0
+  };
+
   template <class M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
@@ -112,6 +121,15 @@ namespace ntt {
          * Now: em0::B & em0::D at -1/2
          */
         CopyFields(dom);
+
+        /**
+         * aux::E <- alpha * em::D + beta x em0::B
+         * aux::H <- alpha * em::B0 - beta x em::D
+         *
+         * Now: aux::E & aux::H at -1/2
+         */
+        ComputeAuxE(dom, gr_getE::D0_B);
+        ComputeAuxH(dom, gr_getH::D_B0);
       }
     }
 
@@ -274,9 +292,71 @@ namespace ntt {
     /**
      * @brief Copies em fields into em0
      */
-    void CopyFields(domain_t&                domain) {
+    void CopyFields(domain_t& domain) {
       Kokkos::deep_copy(domain.fields.em0, domain.fields.em);
     }
+
+    void ComputeAuxE(domain_t& domain, const gr_getE& g) {
+      auto range = range_with_axis_BCs(domain);
+      if (g == gr_getE::D0_B) {
+        Kokkos::parallel_for("ComputeAuxE",
+                             range,
+                             kernel::gr::ComputeAuxE_kernel<M>(domain.fields.em0,
+                                                               domain.fields.em,
+                                                               domain.fields.em,
+                                                               domain.mesh.metric));
+      } else if (g == gr_getE::D_B0) {
+        Kokkos::parallel_for("ComputeAuxE",
+                             range,
+                             kernel::gr::ComputeAuxE_kernel<M>(domain.fields.em,
+                                                               domain.fields.em0,
+                                                               domain.fields.em,
+                                                               domain.mesh.metric));
+      } else {
+        raise::Error("Wrong option for `g`", HERE);
+      }
+    }
+
+    void ComputeAuxH(domain_t& domain, const gr_getH& g) {
+      auto range = range_with_axis_BCs(domain);
+      if (g == gr_getH::D_B0) {
+        Kokkos::parallel_for("ComputeAuxH",
+                             range,
+                             kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em,
+                                                               domain.fields.em0,
+                                                               domain.fields.em,
+                                                               domain.mesh.metric));
+       } else if (g == gr_getH::D0_B0) {
+        Kokkos::parallel_for("ComputeAuxH",
+                             range,
+                             kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em0,
+                                                               domain.fields.em0,
+                                                               domain.fields.em,
+                                                               domain.mesh.metric));
+      } else {
+        raise::Error("Wrong option for `g`", HERE);
+      }
+    }
+
+    auto range_with_axis_BCs(const domain_t& domain) -> range_t<M::Dim> {
+      auto range = domain.mesh.rangeActiveCells();
+      if constexpr (M::CoordType != Coord::Cart) {
+        /**
+         * @brief taking one extra cell in the x1 and x2 directions if AXIS BCs
+         */
+        if constexpr (M::Dim == Dim::_2D) {
+          if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_2D>(
+              { domain.mesh.i_min(in::x1) - 1, domain.mesh.i_min(in::x2) },
+              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          }
+        } else if constexpr (M::Dim == Dim::_3D) {
+          raise::Error("Invalid dimension", HERE);
+        }
+      }
+      return range;
+    }
+
 
   };
 } // namespace ntt
