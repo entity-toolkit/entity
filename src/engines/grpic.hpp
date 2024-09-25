@@ -144,6 +144,11 @@ namespace ntt {
          */
         // ?? aux field boundaries ??
 
+        /**
+         * em0::B <- (em0::B) <- -curl aux::E
+         *
+         * Now: em0::B at 0
+         */
         Faraday(dom, gr_faraday::aux, HALF);
       }
     }
