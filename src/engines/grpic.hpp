@@ -150,6 +150,12 @@ namespace ntt {
          * Now: em0::B at 0
          */
         Faraday(dom, gr_faraday::aux, HALF);
+
+        /**
+         * em0::B, em::B <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        FieldBoundaries(dom, BC::B);
       }
     }
 
