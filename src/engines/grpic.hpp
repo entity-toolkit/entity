@@ -164,6 +164,99 @@ namespace ntt {
          * Now: em::D at 0
          */
         Ampere(dom, gr_ampere::init, HALF);
+
+        /**
+         * em0::D, em::D <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        FieldBoundaries(dom, BC::D);
+
+        /**
+         * aux::E <- alpha * em::D + beta x em0::B
+         * aux::H <- alpha * em0::B - beta x em::D
+         *
+         * Now: aux::E & aux::H at 0
+         */
+        ComputeAuxE(dom, gr_getE::D_B0);
+        ComputeAuxH(dom, gr_getH::D_B0);
+
+        /**
+         * aux::E, aux::H <- boundary conditions
+         */
+        // ?? aux field boundaries ??
+
+        // !ADD: GR -- particles?
+
+        /**
+         * em0::B <- (em::B) <- -curl aux::E
+         *
+         * Now: em0::B at 1/2
+         */
+        Faraday(dom, gr_faraday::main, ONE);
+        /**
+         * em0::B, em::B <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        FieldBoundaries(dom, BC::B);
+
+        /**
+         * em0::D <- (em0::D) <- curl aux::H
+         *
+         * Now: em0::D at 1/2
+         */
+        Ampere(dom, gr_ampere::aux, ONE);
+        /**
+         * em0::D, em::D <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        FieldBoundaries(dom, BC::D);
+
+        /**
+         * aux::H <- alpha * em0::B - beta x em0::D
+         *
+         * Now: aux::H at 1/2
+         */
+        ComputeAuxH(dom, gr_getH::D0_B0);
+        /**
+         * aux::H <- boundary conditions
+         */
+        // ?? aux field boundaries ??
+
+        /**
+         * em0::D <- (em::D) <- curl aux::H
+         *
+         * Now: em0::D at 1
+         *      em::D at 0
+         */
+        Ampere(dom, gr_ampere::main, ONE);
+        /**
+         * em0::D, em::D <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        FieldBoundaries(dom, BC::D);
+
+        /**
+         * em::D <-> em0::D
+         * em::B <-> em0::B
+         * em::J <-> em0::J
+         */
+        SwapFields(dom);
+        /**
+         * Finally: em0::B   at -1/2
+         *          em0::D   at 0
+         *          em::B    at 1/2
+         *          em::D    at 1
+         *
+         *          cur0::J  --
+         *          cur::J   --
+         *
+         *          aux::E   --
+         *          aux::H   --
+         *
+         *          x_prtl   at 1
+         *          u_prtl   at 1/2
+         */
+        
       }
     }
 
@@ -318,11 +411,10 @@ namespace ntt {
     /**
      * @brief Swaps em and em0 fields, cur and cur0 currents.
      */
-    // void SwapFields() {
-    //   auto& mblock = this->meshblock;
-    //   std::swap(mblock.em, mblock.em0);
-    //   std::swap(mblock.cur, mblock.cur0);
-    // }
+    void SwapFields(domain_t& domain) {
+      std::swap(domain.fields.em, domain.fields.em0);
+      std::swap(domain.fields.cur, domain.fields.cur0);
+    }
 
     /**
      * @brief Copies em fields into em0
