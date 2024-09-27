@@ -119,8 +119,7 @@ namespace ntt {
         /**
          * em0::D, em::D, em0::B, em::B <- boundary conditions
          */
-        m_metadomain.CommunicateFields(dom,
-                                       Comm::B | Comm::B0 | Comm::D | Comm::D0);
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
         FieldBoundaries(dom, BC::B | BC::D);
 
         /**
@@ -137,7 +136,7 @@ namespace ntt {
          *
          * Now: aux::E & aux::H at -1/2
          */
-        ComputeAuxE(dom, gr_getE::D0_B);
+        ComputeAuxE(dom, gr_getE::D_B0);
         ComputeAuxH(dom, gr_getH::D_B0);
 
         /**
@@ -258,6 +257,20 @@ namespace ntt {
          */
         
       }
+
+      if (fieldsolver_enabled) {
+
+      }
+
+      {
+
+
+      }
+
+      if (fieldsolver_enabled) {
+
+      }
+
     }
 
     /* algorithm substeps --------------------------------------------------- */
@@ -467,19 +480,17 @@ namespace ntt {
 
     auto range_with_axis_BCs(const domain_t& domain) -> range_t<M::Dim> {
       auto range = domain.mesh.rangeActiveCells();
-      if constexpr (M::CoordType != Coord::Cart) {
-        /**
-         * @brief taking one extra cell in the x1 and x2 directions if AXIS BCs
-         */
-        if constexpr (M::Dim == Dim::_2D) {
-          if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
-            range = CreateRangePolicy<Dim::_2D>(
-              { domain.mesh.i_min(in::x1) - 1, domain.mesh.i_min(in::x2) },
-              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
-          }
-        } else if constexpr (M::Dim == Dim::_3D) {
-          raise::Error("Invalid dimension", HERE);
+      /**
+       * @brief taking one extra cell in the x1 and x2 directions if AXIS BCs
+       */
+      if constexpr (M::Dim == Dim::_2D) {
+        if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
+          range = CreateRangePolicy<Dim::_2D>(
+            { domain.mesh.i_min(in::x1) - 1, domain.mesh.i_min(in::x2) },
+            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
         }
+      } else if constexpr (M::Dim == Dim::_3D) {
+        raise::Error("Invalid dimension", HERE);
       }
       return range;
     }
@@ -525,17 +536,15 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = CreateRangePolicy<Dim::_2D>(
-        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1 },
-        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) });
-      auto range_pole = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x1) },
-                                                    { domain.mesh.i_max(in::x1) });
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
       const auto ni2 = domain.mesh.n_active(in::x2);
 
       if (g == gr_ampere::aux) {
         // First push, updates D0 with J.
         Kokkos::parallel_for("Ampere-1",
                              range,
-                             kernel::gr::Ampere_kernel<M>(domain.fields.em, // has to be zeros
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em,
                                                           domain.fields.em0,
                                                           domain.fields.aux,
                                                           domain.mesh.metric,
@@ -557,7 +566,7 @@ namespace ntt {
         // Second push, updates D with J0 and assigns it to D.
         Kokkos::parallel_for("Ampere-3",
                              range,
-                             kernel::gr::Ampere_kernel<M>(domain.fields.em, //has to be zeros
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em,
                                                           domain.fields.em,
                                                           domain.fields.aux,
                                                           domain.mesh.metric,
