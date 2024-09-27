@@ -489,6 +489,40 @@ namespace kernel {
     }
   };
 
+template <class M>
+  struct OpenBoundaries_kernel {
+    ndfield_t<M::Dim, 6> Fld;
+    const std::size_t i1_min;
+    const bool        setE, setB;
+
+    OpenBoundaries_kernel(ndfield_t<M::Dim, 6> Fld, BCTags tags)
+      : Fld { Fld }
+      , i1_min { i1_min }
+      , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
+      , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
+
+    Inline void operator()(index_t i2) const {
+      if constexpr (M::Dim == Dim::_2D) {
+        if (setE) {
+          Fld(i1_min - 1, i2, em::ex1) = Fld(i1_min    , i2, em::ex1);
+          Fld(i1_min    , i2, em::ex2) = Fld(i1_min + 1, i2, em::ex2);
+          Fld(i1_min - 1, i2, em::ex2) = Fld(i1_min    , i2, em::ex2);
+          Fld(i1_min    , i2, em::ex3) = Fld(i1_min + 1, i2, em::ex3);
+          Fld(i1_min - 1, i2, em::ex3) = Fld(i1_min    , i2, em::ex3);
+        } else if (setB) {
+          Fld(i1_min    , i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
+          Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min    , i2, em::bx1);
+          Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min    , i2, em::bx2);
+          Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min    , i2, em::bx3);
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "AbsorbFields_kernel: 2D implementation called for D != 2");
+      }
+    } 
+  };  
+
 } // namespace kernel
 
 #endif // KERNELS_FIELDS_BCS_HPP
