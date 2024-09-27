@@ -64,7 +64,6 @@ namespace ntt {
   };
   enum class gr_bc {
     main,
-    main0,
     aux
   };
 
