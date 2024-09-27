@@ -298,8 +298,8 @@ namespace ntt {
 
     void AbsorbFieldsIn(dir::direction_t<M::Dim> direction,
                         domain_t&                domain,
-                        BCTags                   tags
-                        const gr_getE&           g) {
+                        BCTags                   tags,
+                        const gr_bc&             g) {
       /**
        * absorbing boundaries
        */
@@ -372,8 +372,8 @@ namespace ntt {
 
     void AxisFieldsIn(dir::direction_t<M::Dim> direction,
                       domain_t&                domain,
-                      BCTags                   tags
-                      const gr_getE&           g) {
+                      BCTags                   tags,
+                      const gr_bc&             g) {
       /**
        * axis boundaries
        */
@@ -400,8 +400,8 @@ namespace ntt {
 
     void CustomFieldsIn(dir::direction_t<M::Dim> direction,
                         domain_t&                domain,
-                        BCTags                   tags
-                        const gr_getE&           g) {
+                        BCTags                   tags,
+                        const gr_bc&             g) {
       (void)direction;
       (void)domain;
       (void)tags;
