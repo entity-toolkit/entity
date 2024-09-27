@@ -354,7 +354,7 @@ namespace ntt {
                                                 ds,
                                                 tags));
       } else if (dim == in::x2) {
-        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+        if constexpr (M::Dim == Dim::_2D) {
           Kokkos::parallel_for(
             "AbsorbFields",
             CreateRangePolicy<M::Dim>(range_min, range_max),
@@ -366,19 +366,8 @@ namespace ntt {
         } else {
           raise::Error("Invalid dimension", HERE);
         }
-      } else if (dim == in::x3) {
-        if constexpr (M::Dim == Dim::_3D) {
-          Kokkos::parallel_for(
-            "AbsorbFields",
-            CreateRangePolicy<M::Dim>(range_min, range_max),
-            kernel::AbsorbBoundaries_kernel<M, 3>(domain.fields.em,
-                                                  domain.mesh.metric,
-                                                  xg_edge,
-                                                  ds,
-                                                  tags));
-        } else {
+      } else {
           raise::Error("Invalid dimension", HERE);
-        }
       }
     }
 
