@@ -278,21 +278,29 @@ namespace ntt {
 
     /* algorithm substeps --------------------------------------------------- */
     void FieldBoundaries(domain_t& domain, BCTags tags, const gr_bc& g) {
-      for (auto& direction : dir::Directions<M::Dim>::orth) {
-        if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
-          AbsorbFieldsIn(direction, domain, tags);
-        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
-          if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
-            AxisFieldsIn(direction, domain, tags);
+      if (g == gr_bc::main) {
+        for (auto& direction : dir::Directions<M::Dim>::orth) {
+          if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
+            AbsorbFieldsIn(direction, domain, tags);
+          } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
+            if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
+              AxisFieldsIn(direction, domain, tags);
+            }
+          } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
+            if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
+              CustomFieldsIn(direction, domain, tags, g);
+            }
+          } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
+            raise::Error("HORIZON BCs only applicable for GR", HERE);
           }
-        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
-          if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
-            CustomFieldsIn(direction, domain, tags);
+        } // loop over directions
+      } else if (g == gr_bc::aux) {
+        for (auto& direction : dir::Directions<M::Dim>::orth) {
+          if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
+            raise::Error("HORIZON BCs only applicable for GR", HERE);
           }
-        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-          raise::Error("HORIZON BCs only applicable for GR", HERE);
         }
-      } // loop over directions
+      }
     }
 
     void AbsorbFieldsIn(dir::direction_t<M::Dim> direction,
@@ -350,12 +358,28 @@ namespace ntt {
                                                 xg_edge,
                                                 ds,
                                                 tags));
+        Kokkos::parallel_for(
+          "AbsorbFields",
+          CreateRangePolicy<M::Dim>(range_min, range_max),
+          kernel::AbsorbBoundaries_kernel<M, 1>(domain.fields.em0,
+                                                domain.mesh.metric,
+                                                xg_edge,
+                                                ds,
+                                                tags));
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D) {
           Kokkos::parallel_for(
             "AbsorbFields",
             CreateRangePolicy<M::Dim>(range_min, range_max),
             kernel::AbsorbBoundaries_kernel<M, 2>(domain.fields.em,
+                                                  domain.mesh.metric,
+                                                  xg_edge,
+                                                  ds,
+                                                  tags));
+          Kokkos::parallel_for(
+            "AbsorbFields",
+            CreateRangePolicy<M::Dim>(range_min, range_max),
+            kernel::AbsorbBoundaries_kernel<M, 2>(domain.fields.em0,
                                                   domain.mesh.metric,
                                                   xg_edge,
                                                   ds,
@@ -387,11 +411,19 @@ namespace ntt {
           "AxisBCFields",
           domain.mesh.n_all(in::x1),
           kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
+        Kokkos::parallel_for(
+          "AxisBCFields",
+          domain.mesh.n_all(in::x1),
+          kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
       } else {
         Kokkos::parallel_for(
           "AxisBCFields",
           domain.mesh.n_all(in::x1),
           kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
+        Kokkos::parallel_for(
+          "AxisBCFields",
+          domain.mesh.n_all(in::x1),
+          kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
       }
     }
 
