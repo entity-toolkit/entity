@@ -308,7 +308,8 @@ namespace user {
             coord_t<D> xPh { ZERO };
             metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
 
-          if ((gamma > pp_thres_) && (math::sin(xPh[1]) > 0.1)) {
+          if ((gamma > pp_thres_) && (math::sin(xPh[1]) > 0.1)
+          && (xPh[0] < 15.0)) {
 
             auto new_gamma = gamma - 2.0 * gamma_pairs_;
             auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
