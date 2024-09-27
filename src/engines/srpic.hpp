@@ -112,8 +112,8 @@ namespace ntt {
         timers.start("ParticlePusher");
         ParticlePush(dom);
         if constexpr (traits::has_method<traits::pgen::custom_partevolution_t, decltype(m_pgen)>::value) {
-            m_pgen.CustomPartEvolution(step, time, dom);
-        }
+           m_pgen.CustomPartEvolution(step, time, dom);
+	 }
         timers.stop("ParticlePusher");
 
         if (deposit_enabled) {
@@ -158,7 +158,7 @@ namespace ntt {
         timers.start("FieldSolver");
         Ampere(dom, ONE);
         if constexpr (traits::has_method<traits::pgen::custom_fieldevolution_t, decltype(m_pgen)>::value) {
-            m_pgen.CustomFieldEvolution(step, time, dom, true, false);
+           m_pgen.CustomFieldEvolution(step, time, dom, true, false);
         }
         timers.stop("FieldSolver");
 

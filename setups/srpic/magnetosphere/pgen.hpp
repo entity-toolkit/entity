@@ -81,7 +81,7 @@ namespace user {
 
     // these two lines are related to number density computation
     bool          is_first_step;
-    array_t<real_t**> cbuff;
+    //array_t<real_t**> cbuff;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
@@ -95,7 +95,7 @@ namespace user {
       , Curv {p.template get<real_t>("setup.Curvature")}
       , is_first_step { true }
       , init_flds { Bsurf, Rstar } {
-	Kokkos::deep_copy(cbuff, ZERO); //seems like it is duplicated in CustomPartEvolution 
+	//Kokkos::deep_copy(cbuff, ZERO); //seems like it is duplicated in CustomPartEvolution 
       }
     
     inline PGen() {}
@@ -104,7 +104,7 @@ namespace user {
 
     void CustomFieldEvolution(std::size_t step, long double time, Domain<S, M>& domain, bool updateE, bool updateB) {
       if(updateB){
-	const auto comp {params.template get<real_t>("setups.Compactness") };
+	const auto comp {params.template get<real_t>("setup.Compactness") };
 	const auto _omega {params.template get<real_t>("setup.period", ONE)};
 	const auto _rstar {Rstar};
 	const auto _bsurf {Bsurf};
@@ -208,31 +208,31 @@ namespace user {
     void CustomPartEvolution(std::size_t step, long double time, Domain<S, M>& domain) {
 
       //this part is done to compute number density of photons/pairs to limit injection 
-      if (is_first_step) {
+      /*if (is_first_step) {
         cbuff = array_t<real_t**>("cbuff",
                                   domain.mesh.n_all(in::x1),
                                   domain.mesh.n_all(in::x2));
 	is_first_step = false;
       }
       //it must be zero at the beginning of each timestep 
-      Kokkos::deep_copy(cbuff, ZERO);
+      Kokkos::deep_copy(cbuff, ZERO);*/
       
       const auto gcaLarmor {params.template get<real_t>("algorithms.gca.larmor_max")};
       const auto gcaEoverB {params.template get<real_t>("algorithms.gca.e_ovr_b_max")};
       const auto larm {params.template get<real_t>("scales.larmor0")};
       const auto CurvGammaCool {params.template get<real_t>("setup.CurvGammaCool")};
       const auto CurvGammaEmit {params.template get<real_t>("setup.CurvGammaEmit")};
-      const auto angThres {params.template get<real_t>("setups.angThres") };
-      const auto rad_radius {params.template get<real_t>("setups.rad_radius") };
-      const auto ph_thres {params.template get<real_t>("setups.ph_thres") };
-      const auto PhotonDensity {params.template get<real_t>("setups.ph_dens") };
-      const auto PairDensity {params.template get<real_t>("setups.pair_dens") }; 
-      const auto gammaSec {params.template get<real_t>("setups.gammaSec") };
-      const auto BoverBq {params.template get<real_t>("setups.BoverBq") };
+      const auto angThres {params.template get<real_t>("setup.angThres") };
+      const auto rad_radius {params.template get<real_t>("setup.rad_radius") };
+      const auto ph_thres {params.template get<real_t>("setup.ph_thres") };
+      const auto PhotonDensity {params.template get<real_t>("setup.ph_dens") };
+      const auto PairDensity {params.template get<real_t>("setup.pair_dens") }; 
+      const auto gammaSec {params.template get<real_t>("setup.gammaSec") };
+      const auto BoverBq {params.template get<real_t>("setup.BoverBq") };
       const auto coeffCool {-2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) *Bsurf * SQR(SQR(1/CurvGammaCool))};
       const auto coeffPhoton {2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) * Bsurf * CUBE(CurvGammaEmit) * SQR(SQR(1/CurvGammaCool))};
       const auto coeffAbs {static_cast<real_t>(0.23)*(27/4)*(dt/larm)*SQR(CUBE(CurvGammaEmit)/SQR(CurvGammaCool)) * Bsurf * sqrt(CUBE(Rstar/RLC)) * BoverBq };
-      const auto _Bsurf = Bsurf;
+      const auto _Bsurf { Bsurf };
 
       
       auto metric = domain.mesh.metric;
@@ -240,7 +240,7 @@ namespace user {
       auto EB             = domain.fields.em; 
 
       //------------curvature cooling of pairs and curvature photons emission--------------
-
+      
       array_t<std::size_t> phot_ind("phot_ind");
       
       auto& photons = domain.species[2];
@@ -258,20 +258,21 @@ namespace user {
       auto pld0      = photons.pld[0]; //accumulated optical depth
 
       //this part is done to compute number density of photons to limit their injection
-      auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
-      auto inv_n0_ = this->inv_n0;
-      Kokkos::parallel_for(
-      "PhotonDensity", photons.rangeActiveParticles(), Lambda(index_t p) {
-	if (tag_ph(p) == ParticleTag::dead) {
-	  return;
-	}
-	auto cbuff_acc     = cbuff_sc.access();
-	cbuff_acc(static_cast<int>(i1_ph(p)), static_cast<int>(i2_ph(p))) += weight_ph(p) * inv_n0_ /
-	  metric.sqrt_det_h({ static_cast<real_t>(i1_ph(p)) + HALF,
-			      static_cast<real_t>(i2_ph(p)) + HALF });
-      });
-      Kokkos::Experimental::contribute(cbuff, cbuff_sc);
+      //auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
+      //auto inv_n0_ = this->inv_n0;
+      //Kokkos::parallel_for(
+      //"PhotonDensity", photons.rangeActiveParticles(), Lambda(index_t p) {
+      //if (tag_ph(p) == ParticleTag::dead) {
+      //return;
+      //}
+      //auto cbuff_acc     = cbuff_sc.access();
+      //cbuff_acc(static_cast<int>(i1_ph(p)), static_cast<int>(i2_ph(p))) += weight_ph(p) * inv_n0_ /
+      //metric.sqrt_det_h({ static_cast<real_t>(i1_ph(p)) + HALF,
+      //static_cast<real_t>(i2_ph(p)) + HALF });
+      //});
+      //Kokkos::Experimental::contribute(cbuff, cbuff_sc);
       //ideally, end of photon density computation 
+
       
       for (std::size_t s { 0 }; s < 2; ++s) {
 	auto& species = domain.species[s];
@@ -404,6 +405,7 @@ namespace user {
 	    auto ph_prob { coeffPhoton * gamma};
 
 	    auto  rand_gen = random_pool.get_state();
+	    //if ((ph_prob > 0.01) &&
 	    if ((Random<real_t>(rand_gen) < ph_prob) &&
 		(ph_energy > ph_thres) && (xPh[0] < rad_radius) &&
 		(xPh[1] > angThres) && (xPh[1] < (constant::PI - angThres))){
@@ -420,7 +422,8 @@ namespace user {
 	       weight_ph(phot_p + offset_ph) = weight(p);
 	       tag_ph(phot_p + offset_ph) = ParticleTag::alive;
 	       pld0(phot_p + offset_ph) = 0.0;
-	    }	    
+	       }
+	    random_pool.free_state(rand_gen);  
 	  }
 	});
 	auto phot_ind_h = Kokkos::create_mirror(phot_ind);
@@ -431,32 +434,32 @@ namespace user {
       //-----------photon propagation and secondary pair emission----------
 
       // similarly to photon number density, this one should compute pairs number density
-      Kokkos::deep_copy(cbuff, ZERO);
-      cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
-      for (std::size_t s { 0 }; s < 2; ++s) {
-        auto& species = domain.species[s];
-        auto i1     = species.i1;
-        auto i2     = species.i2;
-        auto weight = species.weight;
-        auto tag    = species.tag;
-	Kokkos::parallel_for(
-	  "PhotonDensity", species.rangeActiveParticles(), Lambda(index_t p) {
-	    if (tag(p) == ParticleTag::dead) {
-	      return;
-	    }
-	    auto cbuff_acc     = cbuff_sc.access();
-	    cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
-	      metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
-				  static_cast<real_t>(i2(p)) + HALF });
-	  });
-      }
-      Kokkos::Experimental::contribute(cbuff, cbuff_sc);
+      //Kokkos::deep_copy(cbuff, ZERO);
+      //cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
+      //for (std::size_t s { 0 }; s < 2; ++s) {
+      //  auto& species = domain.species[s];
+       // auto i1     = species.i1;
+       // auto i2     = species.i2;
+       //auto weight = species.weight;
+       //auto tag    = species.tag;
+       //Kokkos::parallel_for(
+       //"PhotonDensity", species.rangeActiveParticles(), Lambda(index_t p) {
+       //if (tag(p) == ParticleTag::dead) {
+       //return;
+       //}
+       //auto cbuff_acc     = cbuff_sc.access();
+       //    cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
+       //     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+      //static_cast<real_t>(i2(p)) + HALF });
+				  //});
+      //}
+      //Kokkos::Experimental::contribute(cbuff, cbuff_sc);
       // this should compute total number density of electrons and positrons
 
       array_t<std::size_t> elec_ind("elec_ind");
       array_t<std::size_t> pos_ind("pos_ind");
 
-      auto& electrons  = domain.species[0];
+      auto& electrons  = domain.species[3];
       auto offset_elec = electrons.npart();
       auto ux1_elec    = electrons.ux1;
       auto ux2_elec    = electrons.ux2;
@@ -469,7 +472,7 @@ namespace user {
       auto weight_elec = electrons.weight;
       auto tag_elec    = electrons.tag;
 
-      auto& positrons = domain.species[1];
+      auto& positrons = domain.species[4];
       auto offset_pos = positrons.npart();
       auto ux1_pos    = positrons.ux1;
       auto ux2_pos    = positrons.ux2;
@@ -607,12 +610,12 @@ namespace user {
        });
       auto elec_ind_h = Kokkos::create_mirror(elec_ind);
       Kokkos::deep_copy(elec_ind_h, elec_ind);
-      domain.species[0].set_npart(offset_elec + elec_ind_h());
+      electrons.set_npart(offset_elec + elec_ind_h());
 
       auto pos_ind_h = Kokkos::create_mirror(pos_ind);
       Kokkos::deep_copy(pos_ind_h, pos_ind);
-      domain.species[1].set_npart(offset_pos + pos_ind_h());
-
+      positrons.set_npart(offset_pos + pos_ind_h());
+      
     }
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {

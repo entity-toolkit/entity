@@ -50,16 +50,15 @@
   label = "e-"
   mass = 1.0
   charge = -1.0
-  maxnpart = 1e8
+  maxnpart = 1e7
   pusher = "Boris,GCA"
   cooling = "Synchrotron"
   
-
   [[particles.species]]
   label = "e+"
   mass = 1.0
   charge = 1.0
-  maxnpart = 1e8
+  maxnpart = 1e7
   pusher = "Boris,GCA"
   cooling = "Synchrotron"
 
@@ -70,17 +69,32 @@
   maxnpart = 1e8
   n_payloads = 1
 
+  [[particles.species]]
+  label = "es-"
+  mass = 1.0
+  charge = -1.0
+  maxnpart = 1e8
+  pusher = "Boris,GCA"
+  cooling = "Synchrotron"
+  
+  [[particles.species]]
+  label = "es+"
+  mass = 1.0
+  charge = 1.0
+  maxnpart = 1e8
+  pusher = "Boris,GCA"
+  cooling = "Synchrotron"
 
 [setup]
   Bsurf = 1.0
   period = 60.0
-  /Curvature = 1.0
+  Curvature = 1.0
   Compactness = 0.5
   CurvGammaCool = 100.0
   CurvGammaEmit = 10.0
   angThres = 0.1
   rad_radius = 2.0
-  ph_thres = 5.0
+  ph_thres = 100.0
   ph_dens = 10.0
   pair_dens = 10.0
   BoverBq = 1.0
@@ -90,8 +104,8 @@
   format = "hdf5"
   
   [output.fields]
-    interval_time = 0.1
-    quantities = ["N_1", "N_2", "E", "B", "T00"]
+    interval_time = 0.5
+    quantities = ["N_1", "N_2", "E", "B"]
 
   [output.particles]
     enable = false
