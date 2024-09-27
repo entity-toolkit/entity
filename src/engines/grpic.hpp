@@ -280,14 +280,14 @@ namespace ntt {
     void FieldBoundaries(domain_t& domain, BCTags tags, const gr_bc& g) {
       for (auto& direction : dir::Directions<M::Dim>::orth) {
         if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
-          AbsorbFieldsIn(direction, domain, tags, g);
+          AbsorbFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
-            AxisFieldsIn(direction, domain, tags, g);
+            AxisFieldsIn(direction, domain, tags);
           }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
-            CustomFieldsIn(direction, domain, tags, g);
+            CustomFieldsIn(direction, domain, tags);
           }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
           raise::Error("HORIZON BCs only applicable for GR", HERE);
@@ -297,8 +297,7 @@ namespace ntt {
 
     void AbsorbFieldsIn(dir::direction_t<M::Dim> direction,
                         domain_t&                domain,
-                        BCTags                   tags,
-                        const gr_bc&             g) {
+                        BCTags                   tags) {
       /**
        * absorbing boundaries
        */
@@ -371,8 +370,7 @@ namespace ntt {
 
     void AxisFieldsIn(dir::direction_t<M::Dim> direction,
                       domain_t&                domain,
-                      BCTags                   tags,
-                      const gr_bc&             g) {
+                      BCTags                   tags) {
       /**
        * axis boundaries
        */
