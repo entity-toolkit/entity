@@ -62,6 +62,11 @@ namespace ntt {
     aux,
     main
   };
+  enum class gr_bc {
+    main,
+    main0,
+    aux
+  };
 
   template <class M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
@@ -274,17 +279,17 @@ namespace ntt {
     }
 
     /* algorithm substeps --------------------------------------------------- */
-    void FieldBoundaries(domain_t& domain, BCTags tags) {
+    void FieldBoundaries(domain_t& domain, BCTags tags, const gr_bc& g) {
       for (auto& direction : dir::Directions<M::Dim>::orth) {
         if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
-          AbsorbFieldsIn(direction, domain, tags);
+          AbsorbFieldsIn(direction, domain, tags, g);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
-            AxisFieldsIn(direction, domain, tags);
+            AxisFieldsIn(direction, domain, tags, g);
           }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
-            CustomFieldsIn(direction, domain, tags);
+            CustomFieldsIn(direction, domain, tags, g);
           }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
           raise::Error("HORIZON BCs only applicable for GR", HERE);
@@ -294,7 +299,8 @@ namespace ntt {
 
     void AbsorbFieldsIn(dir::direction_t<M::Dim> direction,
                         domain_t&                domain,
-                        BCTags                   tags) {
+                        BCTags                   tags
+                        const gr_getE&           g) {
       /**
        * absorbing boundaries
        */
@@ -378,7 +384,8 @@ namespace ntt {
 
     void AxisFieldsIn(dir::direction_t<M::Dim> direction,
                       domain_t&                domain,
-                      BCTags                   tags) {
+                      BCTags                   tags
+                      const gr_getE&           g) {
       /**
        * axis boundaries
        */
@@ -405,7 +412,8 @@ namespace ntt {
 
     void CustomFieldsIn(dir::direction_t<M::Dim> direction,
                         domain_t&                domain,
-                        BCTags                   tags) {
+                        BCTags                   tags
+                        const gr_getE&           g) {
       (void)direction;
       (void)domain;
       (void)tags;
