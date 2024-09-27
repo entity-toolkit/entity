@@ -123,7 +123,7 @@ namespace ntt {
          * em0::D, em::D, em0::B, em::B <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::B | BC::D);
+        FieldBoundaries(dom, BC::B | BC::D, gr_bc::main);
 
         /**
          * em0::B <- em::B
@@ -158,7 +158,7 @@ namespace ntt {
          * em0::B, em::B <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
-        FieldBoundaries(dom, BC::B);
+        FieldBoundaries(dom, BC::B, gr_bc::main);
 
         /**
          * em::D <- (em0::D) <- curl aux::H
@@ -171,7 +171,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::D);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
 
         /**
          * aux::E <- alpha * em::D + beta x em0::B
@@ -199,7 +199,7 @@ namespace ntt {
          * em0::B, em::B <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
-        FieldBoundaries(dom, BC::B);
+        FieldBoundaries(dom, BC::B, gr_bc::main);
 
         /**
          * em0::D <- (em0::D) <- curl aux::H
@@ -211,7 +211,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::D);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
 
         /**
          * aux::H <- alpha * em0::B - beta x em0::D
@@ -235,7 +235,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::D);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
 
         /**
          * em::D <-> em0::D
