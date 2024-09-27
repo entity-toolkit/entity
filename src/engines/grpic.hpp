@@ -544,7 +544,7 @@ namespace ntt {
         // First push, updates D0 with J.
         Kokkos::parallel_for("Ampere-1",
                              range,
-                             kernel::gr::Ampere_kernel<M>(domain.fields.em,
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em0,
                                                           domain.fields.em0,
                                                           domain.fields.aux,
                                                           domain.mesh.metric,
