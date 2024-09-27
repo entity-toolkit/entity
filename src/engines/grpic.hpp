@@ -442,14 +442,14 @@ namespace ntt {
                              range,
                              kernel::gr::ComputeAuxE_kernel<M>(domain.fields.em0,
                                                                domain.fields.em,
-                                                               domain.fields.em,
+                                                               domain.fields.aux,
                                                                domain.mesh.metric));
       } else if (g == gr_getE::D_B0) {
         Kokkos::parallel_for("ComputeAuxE",
                              range,
                              kernel::gr::ComputeAuxE_kernel<M>(domain.fields.em,
                                                                domain.fields.em0,
-                                                               domain.fields.em,
+                                                               domain.fields.aux,
                                                                domain.mesh.metric));
       } else {
         raise::Error("Wrong option for `g`", HERE);
