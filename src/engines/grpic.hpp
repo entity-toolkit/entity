@@ -515,7 +515,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "Faraday",
           domain.mesh.rangeActiveCells(),
-          kernel::gr::Faraday_kernel<M>(domain.fields.em0,
+          kernel::gr::Faraday_kernel<M>(domain.fields.em,
                                         domain.fields.em0,
                                         domain.fields.aux,
                                         domain.mesh.metric,
