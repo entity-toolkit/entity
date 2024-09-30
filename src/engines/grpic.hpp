@@ -800,6 +800,40 @@ namespace ntt {
       } else {
         raise::Error("Wrong option for `g`", HERE);
       }
+    }
+
+    void AmpereCurrents(domain_t& domain, const gr_ampere& g) {
+      logger::Checkpoint("Launching Ampere kernel for adding currents", HERE);
+      const auto q0    = m_params.template get<real_t>("scales.q0");
+      const auto n0    = m_params.template get<real_t>("scales.n0");
+      const auto B0    = m_params.template get<real_t>("scales.B0");
+      const auto coeff = -dt * q0 * n0 / B0;
+      auto       range = range_with_axis_BCs(domain);
+      const auto ni2   = domain.mesh.n_active(in::x2);
+
+      if (g == gr_ampere::aux) {
+        // Updates D0 with J.
+        Kokkos::parallel_for("Ampere-1",
+                             range,
+                             kernel::gr::CurrentsAmpere_kernel<M>(domain.fields.em0,
+                                                                  domain.fields.cur,
+                                                                  domain.mesh.metric,
+                                                                  coeff,
+                                                                  ni2,
+                                                                  domain.mesh.flds_bc()));
+      } else if (g == gr_ampere::main) {
+        // Updates D0 with J0.
+        Kokkos::parallel_for("Ampere-2",
+                             range,
+                             kernel::gr::CurrentsAmpere_kernel<M>(domain.fields.em0,
+                                                                  domain.fields.cur0,
+                                                                  domain.mesh.metric,
+                                                                  coeff,
+                                                                  ni2,
+                                                                  domain.mesh.flds_bc()));
+      } else {
+        raise::Error("Wrong option for `g`", HERE);
+      }
 
     }
 
