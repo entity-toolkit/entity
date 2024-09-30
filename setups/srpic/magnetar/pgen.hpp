@@ -395,6 +395,7 @@ namespace user {
       auto Rstar_          = this->Rstar;
       auto bq_            = this->bq;
       auto dt_            = this->dt;
+      auto fid_freq_      = this->fid_freq;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
@@ -637,7 +638,7 @@ namespace user {
                 v_ph_L      = v_ph;
                 w_ph_L      = w_ph;
 
-            auto tpeak = fid_freq / 2.821;
+            auto tpeak = fid_freq_ / 2.821;
             auto ndot = 10000000000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
                           * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
             auto p_scatter = dt_ * ndot;
