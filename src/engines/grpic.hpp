@@ -145,7 +145,7 @@ namespace ntt {
         /**
          * aux::E, aux::H <- boundary conditions
          */
-        // ?? aux field boundaries ??
+        FieldBoundaries(dom, BC::B | BC::D, gr_bc::aux);
 
         /**
          * em0::B <- (em0::B) <- -curl aux::E
@@ -185,7 +185,7 @@ namespace ntt {
         /**
          * aux::E, aux::H <- boundary conditions
          */
-        // ?? aux field boundaries ??
+        FieldBoundaries(dom, BC::B | BC::D, gr_bc::aux);
 
         // !ADD: GR -- particles?
 
@@ -222,7 +222,7 @@ namespace ntt {
         /**
          * aux::H <- boundary conditions
          */
-        // ?? aux field boundaries ??
+        FieldBoundaries(dom, BC::B, gr_bc::aux);
 
         /**
          * em0::D <- (em::D) <- curl aux::H
@@ -258,7 +258,6 @@ namespace ntt {
          *          x_prtl   at 1
          *          u_prtl   at 1/2
          */
-        
       }
 
       if (fieldsolver_enabled) {
@@ -291,13 +290,13 @@ namespace ntt {
               CustomFieldsIn(direction, domain, tags, g);
             }
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            OpenFieldsIn(direction, domain, tags);
+            OpenFieldsIn(direction, domain, tags, g);
           }
         } // loop over directions
       } else if (g == gr_bc::aux) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
           if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            OpenFieldsIn(direction, domain, tags);
+            OpenFieldsIn(direction, domain, tags, g);
           }
         }
       }
@@ -409,16 +408,16 @@ namespace ntt {
       if (g == gr_bc::main) {
         Kokkos::parallel_for(
           "OpenBCFields",
-          domain.mesh.n_all(in::x1),
+          domain.mesh.n_all(in::x2),
           kernel::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
         Kokkos::parallel_for(
           "OpenBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::AxisBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
+          domain.mesh.n_all(in::x2),
+          kernel::OpenBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
       } else if (g == gr_bc::aux) {
         Kokkos::parallel_for(
           "OpenBCFields",
-          domain.mesh.n_all(in::x1),
+          domain.mesh.n_all(in::x2),
           kernel::OpenBoundaries_kernel<M>(domain.fields.aux, i1_min, tags));
       }
     }
