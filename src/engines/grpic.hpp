@@ -377,7 +377,7 @@ namespace ntt {
            *
            * Now: em0::D at n+1/2
            */
-          // AmpereCurrents(gr_ampere::aux);
+          AmpereCurrents(dom, gr_ampere::aux);
         }
 
         /**
@@ -410,7 +410,7 @@ namespace ntt {
            *
            * Now: em0::D at n+1
            */
-          // AmpereCurrents(gr_ampere::main);
+          AmpereCurrents(dom, gr_ampere::main);
         }
         /**
          * em::D <-> em0::D
