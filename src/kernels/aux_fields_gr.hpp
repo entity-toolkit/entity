@@ -266,7 +266,40 @@ namespace kernel::gr {
           "ComputeAuxH_kernel: 2D implementation called for D != 2");
       }
     }
+  };
 
+  /**
+   * @brief Kernel for computing time average of J
+   * @tparam M Metric
+   */
+  template <class M>
+  class TimeAverageJ_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
+
+    const ndfield_t<D, 3> Jf;
+    ndfield_t<D, 3>       Jf0;
+    const M               metric;
+
+  public:
+    TimeAverageJ_kernel(const ndfield_t<D, 3>& Jf,
+                        const ndfield_t<D, 3>& Jf0,
+                        const M&               metric)
+      : Jf  { Jf }
+      , Jf0 { Jf0 }
+      , metric { metric } {}
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        Jf0(i1, i2, cur::jx1) = HALF * (Jf0(i1, i2, cur::jx1) + Jf(i1, i2, cur::jx1)); 
+        Jf0(i1, i2, cur::jx2) = HALF * (Jf0(i1, i2, cur::jx2) + Jf(i1, i2, cur::jx2)); 
+        Jf0(i1, i2, cur::jx3) = HALF * (Jf0(i1, i2, cur::jx3) + Jf(i1, i2, cur::jx3)); 
+      } else {
+        raise::KernelError(
+          HERE,
+          "ComputeAuxH_kernel: 2D implementation called for D != 2");
+      }
+    }
   };
 } // namespace kernel::gr
 

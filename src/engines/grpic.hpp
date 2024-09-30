@@ -331,7 +331,7 @@ namespace ntt {
       }
 
       if (fieldsolver_enabled) {
-        
+        TimeAverageJ(dom);
       }
 
     }
@@ -701,6 +701,15 @@ namespace ntt {
                          range,
                          kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
                                                              domain.fields.em0,
+                                                             domain.mesh.metric));
+    }
+
+    void TimeAverageJ(domain_t& domain) {
+    auto range = range_with_axis_BCs(domain);
+    Kokkos::parallel_for("TimeAverageJ",
+                         range,
+                         kernel::gr::TimeAverageJ_kernel<M>(domain.fields.cur,
+                                                             domain.fields.cur0,
                                                              domain.mesh.metric));
     }
   };
