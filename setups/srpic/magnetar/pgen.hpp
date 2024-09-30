@@ -890,6 +890,7 @@ namespace user {
         auto EB           = domain.fields.em;
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
         auto bq_          = this->bq;
+        auto inv_n0_      = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
@@ -1039,7 +1040,7 @@ namespace user {
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
               auto cbuff_acc     = cbuff_sc.access();
-              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0 /
+              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
                                        static_cast<real_t>(i2(p)) + HALF });
           }
