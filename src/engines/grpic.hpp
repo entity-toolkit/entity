@@ -292,13 +292,13 @@ namespace ntt {
               CustomFieldsIn(direction, domain, tags, g);
             }
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            raise::Error("HORIZON BCs only applicable for GR", HERE);
+            OpenFieldsIn(direction, domain, tags);
           }
         } // loop over directions
       } else if (g == gr_bc::aux) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
           if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            raise::Error("HORIZON BCs only applicable for GR", HERE);
+            OpenFieldsIn(direction, domain, tags);
           }
         }
       }
@@ -390,6 +390,37 @@ namespace ntt {
         }
       } else {
           raise::Error("Invalid dimension", HERE);
+      }
+    }
+
+    void OpenFieldsIn(dir::direction_t<M::Dim> direction,
+                      domain_t&                domain,
+                      BCTags                   tags,
+                      const gr_bc&             g) {
+      /**
+       * open boundaries
+       */
+      raise::ErrorIf(M::CoordType == Coord::Cart,
+                     "Invalid coordinate type for axis BCs",
+                     HERE);
+      raise::ErrorIf(direction.get_dim() != in::x1,
+                     "Invalid axis direction, should be x2",
+                     HERE);
+      const auto i1_min = domain.mesh.i_min(in::x1);
+      if (g == gr_bc::main) {
+        Kokkos::parallel_for(
+          "OpenBCFields",
+          domain.mesh.n_all(in::x1),
+          kernel::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
+        Kokkos::parallel_for(
+          "OpenBCFields",
+          domain.mesh.n_all(in::x1),
+          kernel::AxisBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
+      } else if (g == gr_bc::aux) {
+        Kokkos::parallel_for(
+          "OpenBCFields",
+          domain.mesh.n_all(in::x1),
+          kernel::OpenBoundaries_kernel<M>(domain.fields.aux, i1_min, tags));
       }
     }
 
