@@ -886,49 +886,49 @@ namespace user {
         auto EB           = domain.fields.em;
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
 
-         for (std::size_t s { 0 }; s < 6; ++s) {
-            if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
-              continue;
-            }
+        //  for (std::size_t s { 0 }; s < 6; ++s) {
+        //     if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
+        //       continue;
+        //     }
 
-            array_t<std::size_t> elec_ind("elec_ind");
-            array_t<std::size_t> pos_ind("pos_ind");
-            auto offset_e = species_e.npart();
-            auto offset_p = species_p.npart();
+        //     array_t<std::size_t> elec_ind("elec_ind");
+        //     array_t<std::size_t> pos_ind("pos_ind");
+        //     auto offset_e = species_e.npart();
+        //     auto offset_p = species_p.npart();
 
-            auto ux1_e    = species_e.ux1;
-            auto ux2_e    = species_e.ux2;
-            auto ux3_e    = species_e.ux3;
-            auto i1_e     = species_e.i1;
-            auto i2_e     = species_e.i2;
-            auto dx1_e    = species_e.dx1;
-            auto dx2_e    = species_e.dx2;
-            auto phi_e    = species_e.phi;
-            auto weight_e = species_e.weight;
-            auto tag_e    = species_e.tag;
+        //     auto ux1_e    = species_e.ux1;
+        //     auto ux2_e    = species_e.ux2;
+        //     auto ux3_e    = species_e.ux3;
+        //     auto i1_e     = species_e.i1;
+        //     auto i2_e     = species_e.i2;
+        //     auto dx1_e    = species_e.dx1;
+        //     auto dx2_e    = species_e.dx2;
+        //     auto phi_e    = species_e.phi;
+        //     auto weight_e = species_e.weight;
+        //     auto tag_e    = species_e.tag;
 
-            auto ux1_p    = species_p.ux1;
-            auto ux2_p    = species_p.ux2;
-            auto ux3_p    = species_p.ux3;
-            auto i1_p     = species_p.i1;
-            auto i2_p     = species_p.i2;
-            auto dx1_p    = species_p.dx1;
-            auto dx2_p    = species_p.dx2;
-            auto phi_p    = species_p.phi;
-            auto weight_p = species_p.weight;
-            auto tag_p    = species_p.tag;
+        //     auto ux1_p    = species_p.ux1;
+        //     auto ux2_p    = species_p.ux2;
+        //     auto ux3_p    = species_p.ux3;
+        //     auto i1_p     = species_p.i1;
+        //     auto i2_p     = species_p.i2;
+        //     auto dx1_p    = species_p.dx1;
+        //     auto dx2_p    = species_p.dx2;
+        //     auto phi_p    = species_p.phi;
+        //     auto weight_p = species_p.weight;
+        //     auto tag_p    = species_p.tag;
 
-            auto& species = domain.species[s];
-            auto ux1    = species.ux1;
-            auto ux2    = species.ux2;
-            auto ux3    = species.ux3;
-            auto i1     = species.i1;
-            auto i2     = species.i2;
-            auto dx1    = species.dx1;
-            auto dx2    = species.dx2;
-            auto phi    = species.phi;
-            auto weight = species.weight;
-            auto tag    = species.tag;
+        //     auto& species = domain.species[s];
+        //     auto ux1    = species.ux1;
+        //     auto ux2    = species.ux2;
+        //     auto ux3    = species.ux3;
+        //     auto i1     = species.i1;
+        //     auto i2     = species.i2;
+        //     auto dx1    = species.dx1;
+        //     auto dx2    = species.dx2;
+        //     auto phi    = species.phi;
+        //     auto weight = species.weight;
+        //     auto tag    = species.tag;
 
     // Kokkos::parallel_for(
     //     "InjectPairs", species.rangeActiveParticles(), Lambda(index_t p) {
@@ -1041,15 +1041,15 @@ namespace user {
 
     //     });
 
-            auto elec_ind_h = Kokkos::create_mirror(elec_ind);
-            Kokkos::deep_copy(elec_ind_h, elec_ind);
-            species_e.set_npart(offset_e + elec_ind_h());
+          //   auto elec_ind_h = Kokkos::create_mirror(elec_ind);
+          //   Kokkos::deep_copy(elec_ind_h, elec_ind);
+          //   species_e.set_npart(offset_e + elec_ind_h());
 
-            auto pos_ind_h = Kokkos::create_mirror(pos_ind);
-            Kokkos::deep_copy(pos_ind_h, pos_ind);
-            species_p.set_npart(offset_p + pos_ind_h());
+          //   auto pos_ind_h = Kokkos::create_mirror(pos_ind);
+          //   Kokkos::deep_copy(pos_ind_h, pos_ind);
+          //   species_p.set_npart(offset_p + pos_ind_h());
 
-          }
+          // }
 
       Kokkos::Experimental::contribute(cbuff, cbuff_sc);
       } // Pair production kernel (threshold)
