@@ -128,13 +128,13 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
               k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2])) +
+                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) +
              (k24 * amps(1, REAL) *
-                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0) +
               k24 * amps(1, IMAG) *
-                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0));
       // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
     }
@@ -144,13 +144,13 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       return (k04 * amps(2, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
               k04 * amps(2, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
+                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
              (k24 * amps(3, REAL) *
-                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
+                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0) +
               k24 * amps(3, IMAG) *
-                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0));
       // return ZERO;
     }
 
@@ -159,13 +159,13 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       return (k04 * amps(4, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
+                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
               k04 * amps(4, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
+                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
              (k14 * amps(5, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
+                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
               k14 * amps(5, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
+                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
       // return ZERO;
     }
 
@@ -204,8 +204,9 @@ namespace user {
               global_domain.mesh().extent(in::x1).first }
       , SX2 { global_domain.mesh().extent(in::x2).second -
               global_domain.mesh().extent(in::x2).first }
-      , SX3 { global_domain.mesh().extent(in::x3).second -
-              global_domain.mesh().extent(in::x3).first }
+      // , SX3 { global_domain.mesh().extent(in::x3).second -
+      //         global_domain.mesh().extent(in::x3).first }
+      , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
@@ -253,7 +254,7 @@ namespace user {
         const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
           energy_dist,
           { 1, 2 });
-        const real_t ndens = 0.9;
+        const real_t ndens = 1.0;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,
@@ -284,7 +285,7 @@ namespace user {
           { 1, 2 });  
 
 
-        const real_t ndens = 0.1;
+        const real_t ndens = 0.0;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,
@@ -419,6 +420,66 @@ namespace user {
             vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
                                       EB(i1, i2, i3, em::ex2),
                                       EB(i1, i2, i3, em::ex3) };
+            vec_t<Dim::_3D>   e_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
+            eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
+          },
+          eenrg_s);
+
+        #if defined(MPI_ENABLED)
+          auto eenrg_sg = ZERO;
+          MPI_Allreduce(&eenrg_s, &eenrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          eenrg_total += eenrg_sg;  
+        #else
+          eenrg_total += eenrg_s;
+        #endif
+
+      // Weight the field integral by sim parameters
+        eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
+
+      }
+
+      if constexpr (D == Dim::_2D) {
+        
+        auto metric = domain.mesh.metric;
+        
+        auto benrg_s = ZERO;
+        auto EB          = domain.fields.em;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, real_t & benrg) {
+            coord_t<Dim::_2D> x_Cd { ZERO };
+            vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, em::bx1),
+                                      EB(i1, i2, em::bx2),
+                                      EB(i1, i2, em::bx3) };
+            vec_t<Dim::_3D>   b_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd,
+                                                                  b_Cntrv,
+                                                                  b_XYZ);
+            benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
+          },
+          benrg_s);
+        #if defined(MPI_ENABLED)
+          auto benrg_sg = ZERO;
+          MPI_Allreduce(&benrg_s, &benrg_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          benrg_total += benrg_sg;
+        #else
+          benrg_total += benrg_s;
+        #endif
+
+      // Weight the field integral by sim parameters
+        benrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
+
+        auto eenrg_s = ZERO;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, real_t & eenrg) {
+            coord_t<Dim::_2D> x_Cd { ZERO };
+            vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, em::ex1),
+                                      EB(i1, i2, em::ex2),
+                                      EB(i1, i2, em::ex3) };
             vec_t<Dim::_3D>   e_XYZ;
             metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);            
             eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
