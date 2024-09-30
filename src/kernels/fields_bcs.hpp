@@ -495,7 +495,7 @@ template <class M>
     const std::size_t i1_min;
     const bool        setE, setB;
 
-    OpenBoundaries_kernel(ndfield_t<M::Dim, 6> Fld, BCTags tags)
+    OpenBoundaries_kernel(ndfield_t<M::Dim, 6> Fld, std::size_t i1_min, BCTags tags)
       : Fld { Fld }
       , i1_min { i1_min }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
