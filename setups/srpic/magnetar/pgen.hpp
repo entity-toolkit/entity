@@ -879,12 +879,12 @@ namespace user {
       } // Resonant scattering kernel
 
    // Pair production kernel (threshold)
-      {
-        auto& species_e   = domain.species[4];
-        auto& species_p   = domain.species[5];
-        auto metric       = domain.mesh.metric;
-        auto EB           = domain.fields.em;
-        auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
+      // {
+      //   auto& species_e   = domain.species[4];
+      //   auto& species_p   = domain.species[5];
+      //   auto metric       = domain.mesh.metric;
+      //   auto EB           = domain.fields.em;
+      //   auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
 
         //  for (std::size_t s { 0 }; s < 6; ++s) {
         //     if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
@@ -1051,8 +1051,8 @@ namespace user {
 
           // }
 
-      Kokkos::Experimental::contribute(cbuff, cbuff_sc);
-      } // Pair production kernel (threshold)
+      // Kokkos::Experimental::contribute(cbuff, cbuff_sc);
+      // } // Pair production kernel (threshold)
 
 
     }
