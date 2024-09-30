@@ -876,7 +876,7 @@ namespace user {
 
     //      }
 
-      } // Resonant scattering kernel
+      // } // Resonant scattering kernel
 
    // Pair production kernel (threshold)
       // {
