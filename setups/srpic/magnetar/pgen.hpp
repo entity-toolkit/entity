@@ -889,6 +889,7 @@ namespace user {
         auto metric       = domain.mesh.metric;
         auto EB           = domain.fields.em;
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
+        auto bq_          = this->bq;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
@@ -1002,7 +1003,7 @@ namespace user {
 
             auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
             if (s == 3) {
-              ethres *= math::sqrt(1.0 + 2.0 * babs / bq);
+              ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
             }
 
               // Check for pair production trigger
