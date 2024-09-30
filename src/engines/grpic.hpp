@@ -260,8 +260,31 @@ namespace ntt {
          */
       }
 
-      if (fieldsolver_enabled) {
+    /**
+     * Initially: em0::B   at n-3/2
+     *            em0::D   at n-1
+     *            em::B    at n-1/2
+     *            em::D    at n
+     *
+     *            cur0::J  --
+     *            cur::J   at n-1/2
+     *
+     *            aux::E   --
+     *            aux::H   --
+     *
+     *            x_prtl   at n
+     *            u_prtl   at n-1/2
+     */
 
+      if (fieldsolver_enabled) {
+        /**
+         * em0::D <- (em0::D + em::D) / 2
+         * em0::B <- (em0::B + em::B) / 2
+         *
+         * Now: em0::D at n-1/2
+         *      em0::B at n-1
+         */
+        TimeAverageDB(dom);
       }
 
       {
@@ -632,6 +655,15 @@ namespace ntt {
         raise::Error("Wrong option for `g`", HERE);
       }
 
+    }
+
+    void TimeAverageDB(domain_t& domain) {
+    auto range = range_with_axis_BCs(domain);
+    Kokkos::parallel_for("TimeAverageDB",
+                         range,
+                         kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
+                                                             domain.fields.em0,
+                                                             domain.mesh.metric));
     }
   };
 } // namespace ntt
