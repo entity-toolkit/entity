@@ -331,9 +331,116 @@ namespace ntt {
       }
 
       if (fieldsolver_enabled) {
+        /**
+         * cur::J <- (cur0::J + cur::J) / 2
+         *
+         * Now: cur::J at n
+         */
         TimeAverageJ(dom);
-      }
+        
+        /**
+         * aux::Е <- alpha * em::D + beta x em0::B
+         *
+         * Now: aux::Е at n
+         */
+        ComputeAuxE(dom, gr_getE::D_B0);
+        /**
+         * aux::Е <- boundary conditions
+         */
+        FieldBoundaries(dom, BC::D, gr_bc::aux);
+        /**
+         * em0::B <- (em::B) <- -curl aux::E
+         *
+         * Now: em0::B at n+1/2
+         *      em::B at n-1/2
+         */
+        Faraday(dom, gr_faraday::main, ONE);
 
+        /**
+         * em0::B, em::B <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        FieldBoundaries(dom, BC::B, gr_bc::main);
+
+
+        /**
+         * em0::D <- (em0::D) <- curl aux::H
+         *
+         * Now: em0::D at n+1/2
+         */
+        Ampere(dom, gr_ampere::aux, ONE);
+        
+
+        if (deposit_enabled) {
+          /**
+           * em0::D <- (em0::D) <- cur::J
+           *
+           * Now: em0::D at n+1/2
+           */
+          // AmpereCurrents(gr_ampere::aux);
+        }
+
+        /**
+         * em0::D, em::D <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
+        
+
+        /**
+         * aux::H <- alpha * em0::B - beta x em0::D
+         *
+         * Now: aux::H at n+1/2
+         */
+        ComputeAuxH(dom, gr_getH::D0_B0);
+        /**
+         * aux::H <- boundary conditions
+         */
+        FieldBoundaries(dom, BC::B, gr_bc::aux);
+        /**
+         * em0::D <- (em::D) <- curl aux::H
+         *
+         * Now: em0::D at n+1
+         *      em::D at n
+         */
+        Ampere(dom, gr_ampere::main, ONE);
+        if (deposit_enabled) {
+          /**
+           * em0::D <- (em0::D) <- cur0::J
+           *
+           * Now: em0::D at n+1
+           */
+          // AmpereCurrents(gr_ampere::main);
+        }
+        /**
+         * em::D <-> em0::D
+         * em::B <-> em0::B
+         * cur::J <-> cur0::J
+         */
+        SwapFields(dom);
+
+
+        /**
+         * em0::D, em::D <- boundary conditions
+         */
+        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
+      }
+      /**
+       * Finally: em0::B   at n-1/2
+       *          em0::D   at n
+       *          em::B    at n+1/2
+       *          em::D    at n+1
+       *
+       *          cur0::J  (at n)
+       *          cur::J   at n+1/2
+       *
+       *          aux::E   (at n+1/2)
+       *          aux::H   (at n)
+       *
+       *          x_prtl   at n+1
+       *          u_prtl   at n+1/2
+       */
     }
 
     /* algorithm substeps --------------------------------------------------- */
