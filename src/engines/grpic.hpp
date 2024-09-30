@@ -285,15 +285,53 @@ namespace ntt {
          *      em0::B at n-1
          */
         TimeAverageDB(dom);
+        /**
+         * aux::E <- alpha * em0::D + beta x em::B
+         *
+         * Now: aux::E at n-1/2
+         */
+        ComputeAuxE(dom, gr_getE::D0_B);
+        /**
+         * aux::E <- boundary conditions
+         */
+        FieldBoundaries(dom, BC::D, gr_bc::aux);
+        /**
+         * em0::B <- (em0::B) <- -curl aux::E
+         *
+         * Now: em0::B at n
+         */
+        Faraday(dom, gr_faraday::aux, ONE);
+
+
+        /**
+         * em0::B, em::B <- boundary conditions
+         */
+        FieldBoundaries(dom, BC::B, gr_bc::main);
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+
+
+        /**
+         * aux::H <- alpha * em0::B - beta x em::D
+         *
+         * Now: aux::H at n
+         */
+        ComputeAuxH(dom, gr_getH::D_B0);
+        /**
+         * aux::H <- boundary conditions
+         */
+        FieldBoundaries(dom, BC::B, gr_bc::aux);
       }
 
       {
-
+        /**
+         * particle pusher goes here 
+         * 
+         */
 
       }
 
       if (fieldsolver_enabled) {
-
+        
       }
 
     }
