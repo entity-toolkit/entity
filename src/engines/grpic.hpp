@@ -330,7 +330,7 @@ namespace ntt {
          * Now: x_prtl at n + 1, u_prtl at n + 1/2
          */
         timers.start("ParticlePusher");
-        ParticlePush(dom);
+        // ParticlePush(dom);
         timers.stop("ParticlePusher");
 
         /**
