@@ -686,10 +686,10 @@ namespace ntt {
           prtl_bc_enum.push_back({ PrtlBC::PERIODIC, PrtlBC::PERIODIC });
         }
       } else {
-        raise::ErrorIf(flds_bc[0].size() != 1,
+        raise::ErrorIf(flds_bc[0].size() != 2,
                        "invalid `grid.boundaries.fields`",
                        HERE);
-        raise::ErrorIf(prtl_bc[0].size() != 1,
+        raise::ErrorIf(prtl_bc[0].size() != 2,
                        "invalid `grid.boundaries.particles`",
                        HERE);
         flds_bc_enum.push_back(
