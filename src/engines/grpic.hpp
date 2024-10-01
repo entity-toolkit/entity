@@ -325,10 +325,44 @@ namespace ntt {
 
       {
         /**
-         * particle pusher goes here 
-         * 
+         * x_prtl, u_prtl <- em::D, em0::B
+         *
+         * Now: x_prtl at n + 1, u_prtl at n + 1/2
          */
+        timers.start("ParticlePusher");
+        ParticlePush(dom);
+        timers.stop("ParticlePusher");
 
+        /**
+         * cur0::J <- current deposition
+         *
+         * Now: cur0::J at n+1/2
+         */
+        if (deposit_enabled) {
+          timers.start("CurrentDeposit");
+          Kokkos::deep_copy(dom.fields.cur, ZERO);
+          CurrentsDeposit(dom);
+          timers.stop("CurrentDeposit");
+
+          timers.start("Communications");
+          m_metadomain.SynchronizeFields(dom, Comm::J);
+          m_metadomain.CommunicateFields(dom, Comm::J);
+          timers.stop("Communications");
+
+          // timers.start("FieldBoundaries");
+          // CurrentsBoundaryConditions();
+          // timers.stop("FieldBoundaries");
+
+          timers.start("CurrentFiltering");
+          CurrentsFilter(dom);
+          timers.stop("CurrentFiltering");
+        }
+
+        timers.start("Communications");
+        if ((sort_interval > 0) and (step % sort_interval == 0)) {
+          m_metadomain.CommunicateParticles(dom, &timers);
+        }
+        timers.stop("Communications");
       }
 
       if (fieldsolver_enabled) {
@@ -854,6 +888,122 @@ namespace ntt {
                                                              domain.fields.cur0,
                                                              domain.mesh.metric));
     }
+
+    void CurrentsDeposit(domain_t& domain) {
+      auto scatter_cur = Kokkos::Experimental::create_scatter_view(
+        domain.fields.cur);
+      for (auto& species : domain.species) {
+        logger::Checkpoint(
+          fmt::format("Launching currents deposit kernel for %d [%s] : %lu %f",
+                      species.index(),
+                      species.label().c_str(),
+                      species.npart(),
+                      (double)species.charge()),
+          HERE);
+        if (species.npart() == 0 || cmp::AlmostZero(species.charge())) {
+          continue;
+        }
+        Kokkos::parallel_for("CurrentsDeposit",
+                             species.rangeActiveParticles(),
+                             kernel::DepositCurrents_kernel<SimEngine::GRPIC, M>(
+                               scatter_cur,
+                               species.i1,
+                               species.i2,
+                               species.i3,
+                               species.i1_prev,
+                               species.i2_prev,
+                               species.i3_prev,
+                               species.dx1,
+                               species.dx2,
+                               species.dx3,
+                               species.dx1_prev,
+                               species.dx2_prev,
+                               species.dx3_prev,
+                               species.ux1,
+                               species.ux2,
+                               species.ux3,
+                               species.phi,
+                               species.weight,
+                               species.tag,
+                               domain.mesh.metric,
+                               (real_t)(species.charge()),
+                               dt));
+      }
+      Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
+    }
+
+    void CurrentsFilter(domain_t& domain) {
+      logger::Checkpoint("Launching currents filtering kernels", HERE);
+      auto       range   = range_with_axis_BCs(domain);
+      const auto nfilter = m_params.template get<unsigned short>(
+        "algorithms.current_filters");
+      tuple_t<std::size_t, M::Dim> size;
+      if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
+        size[0] = domain.mesh.n_active(in::x1);
+      }
+      if constexpr (M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
+        size[1] = domain.mesh.n_active(in::x2);
+      }
+      if constexpr (M::Dim == Dim::_3D) {
+        size[2] = domain.mesh.n_active(in::x3);
+      }
+      // !TODO: this needs to be done more efficiently
+      for (unsigned short i = 0; i < nfilter; ++i) {
+        Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
+        Kokkos::parallel_for("CurrentsFilter",
+                             range,
+                             kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
+                               domain.fields.cur,
+                               domain.fields.buff,
+                               size,
+                               domain.mesh.flds_bc()));
+        m_metadomain.CommunicateFields(domain, Comm::J);
+      }
+    }
+
+    void ParticlePush(domain_t& domain) {
+      for (auto& species : domain.species) {
+        species.set_unsorted();
+        logger::Checkpoint(
+          fmt::format("Launching particle pusher kernel for %d [%s] : %lu",
+                      species.index(),
+                      species.label().c_str(),
+                      species.npart()),
+          HERE);
+        if (species.npart() == 0) {
+          continue;
+        }
+        const auto q_ovr_m = species.mass() > ZERO
+                               ? species.charge() / species.mass()
+                               : ZERO;
+        //  coeff = q / m (dt / 2) omegaB0
+        const auto coeff   = q_ovr_m * HALF * dt *
+                           m_params.template get<real_t>("scales.omegaB0");
+        // clang-format off
+        Kokkos::parallel_for(
+          "ParticlePusher",
+          species.rangeActiveParticles(),
+          kernel::gr::Pusher_kernel<M>(
+              domain.fields.em,
+              domain.fields.em0,
+              species.i1,        species.i2,       species.i3,
+              species.i1_prev,   species.i2_prev,  species.i3_prev,
+              species.dx1,       species.dx2,      species.dx3,
+              species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+              species.ux1,       species.ux2,      species.ux3,
+              species.phi,       species.tag,
+              domain.mesh.metric,
+              coeff, dt,
+              domain.mesh.n_active(in::x1),
+              domain.mesh.n_active(in::x2),
+              domain.mesh.n_active(in::x3),
+              m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<real_t>("algorithms.gr.pusher_niter"),
+              domain.mesh.prtl_bc()
+          ));
+        // clang-format on
+      }
+    }
+
   };
 } // namespace ntt
 
