@@ -277,6 +277,7 @@ namespace ntt {
      */
 
       if (fieldsolver_enabled) {
+        timers.start("FieldSolver");
         /**
          * em0::D <- (em0::D + em::D) / 2
          * em0::B <- (em0::B + em::B) / 2
@@ -291,35 +292,49 @@ namespace ntt {
          * Now: aux::E at n-1/2
          */
         ComputeAuxE(dom, gr_getE::D0_B);
+        timers.stop("FieldSolver");
+        
+        timers.start("FieldBoundaries");
         /**
          * aux::E <- boundary conditions
          */
         FieldBoundaries(dom, BC::D, gr_bc::aux);
+        timers.stop("FieldBoundaries");
+        
+        timers.start("FieldSolver");
         /**
          * em0::B <- (em0::B) <- -curl aux::E
          *
          * Now: em0::B at n
          */
         Faraday(dom, gr_faraday::aux, ONE);
-
+        timers.stop("FieldSolver");
 
         /**
          * em0::B, em::B <- boundary conditions
          */
+        timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B, gr_bc::main);
+        timers.stop("FieldBoundaries");
+        timers.start("Communications");
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        timers.stop("Communications");
 
-
+        timers.start("FieldSolver");
         /**
          * aux::H <- alpha * em0::B - beta x em::D
          *
          * Now: aux::H at n
          */
         ComputeAuxH(dom, gr_getH::D_B0);
+        timers.stop("FieldSolver");
+
+        timers.start("FieldBoundaries");
         /**
          * aux::H <- boundary conditions
          */
         FieldBoundaries(dom, BC::B, gr_bc::aux);
+        timers.stop("FieldBoundaries");
       }
 
       {
@@ -365,23 +380,29 @@ namespace ntt {
       }
 
       if (fieldsolver_enabled) {
+        timers.start("FieldSolver");
         /**
          * cur::J <- (cur0::J + cur::J) / 2
          *
          * Now: cur::J at n
          */
         TimeAverageJ(dom);
-        
         /**
          * aux::Е <- alpha * em::D + beta x em0::B
          *
          * Now: aux::Е at n
          */
         ComputeAuxE(dom, gr_getE::D_B0);
+        timers.stop("FieldSolver");
+
+        timers.start("FieldBoundaries");
         /**
          * aux::Е <- boundary conditions
          */
         FieldBoundaries(dom, BC::D, gr_bc::aux);
+        timers.stop("FieldBoundaries");
+
+        timers.start("FieldSolver");
         /**
          * em0::B <- (em::B) <- -curl aux::E
          *
@@ -389,48 +410,65 @@ namespace ntt {
          *      em::B at n-1/2
          */
         Faraday(dom, gr_faraday::main, ONE);
-
+        timers.stop("FieldSolver");
+        
         /**
          * em0::B, em::B <- boundary conditions
          */
+        timers.start("Communications");
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        timers.stop("Communications");
+        timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B, gr_bc::main);
+        timers.stop("FieldBoundaries");
 
-
+        timers.start("FieldSolver");
         /**
          * em0::D <- (em0::D) <- curl aux::H
          *
          * Now: em0::D at n+1/2
          */
         Ampere(dom, gr_ampere::aux, ONE);
-        
+        timers.stop("FieldSolver");
 
         if (deposit_enabled) {
+          timers.start("FieldSolver");
           /**
            * em0::D <- (em0::D) <- cur::J
            *
            * Now: em0::D at n+1/2
            */
           AmpereCurrents(dom, gr_ampere::aux);
+          timers.stop("FieldSolver");
         }
-
+        
         /**
          * em0::D, em::D <- boundary conditions
          */
+        timers.start("Communications");
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        timers.stop("Communications");
+        timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::D, gr_bc::main);
-        
+        timers.stop("FieldBoundaries");
 
+        timers.start("FieldSolver");
         /**
          * aux::H <- alpha * em0::B - beta x em0::D
          *
          * Now: aux::H at n+1/2
          */
         ComputeAuxH(dom, gr_getH::D0_B0);
+        timers.stop("FieldSolver");
+
+        timers.start("FieldBoundaries");
         /**
          * aux::H <- boundary conditions
          */
         FieldBoundaries(dom, BC::B, gr_bc::aux);
+        timers.stop("FieldBoundaries");
+
+        timers.start("FieldSolver");
         /**
          * em0::D <- (em::D) <- curl aux::H
          *
@@ -438,27 +476,36 @@ namespace ntt {
          *      em::D at n
          */
         Ampere(dom, gr_ampere::main, ONE);
+        timers.stop("FieldSolver");
+
         if (deposit_enabled) {
+          timers.start("FieldSolver");
           /**
            * em0::D <- (em0::D) <- cur0::J
            *
            * Now: em0::D at n+1
            */
           AmpereCurrents(dom, gr_ampere::main);
+          timers.stop("FieldSolver");
         }
+        timers.start("FieldSolver");
         /**
          * em::D <-> em0::D
          * em::B <-> em0::B
          * cur::J <-> cur0::J
          */
         SwapFields(dom);
-
+        timers.stop("FieldSolver");
 
         /**
          * em0::D, em::D <- boundary conditions
          */
+        timers.start("Communications");
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        timers.stop("Communications");
+        timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::D, gr_bc::main);
+        timers.stop("FieldBoundaries");
       }
       /**
        * Finally: em0::B   at n-1/2
