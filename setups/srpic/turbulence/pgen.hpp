@@ -314,15 +314,23 @@ namespace user {
           pool.free_state(rand_gen);
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                unr * sigma0;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                uni * sigma0;
+          amplitudes(i, REAL)  = ampr_prev;
+          // (ampr_prev * math::cos(omega0 * dt) +
+          //                        ampi_prev * math::sin(omega0 * dt)) *
+          //                         math::exp(-gamma0 * dt) +
+          //                       unr * sigma0;
+          amplitudes(i, IMAG) = ampi_prev;
+          // (-ampr_prev * math::sin(omega0 * dt) +
+          //                        ampi_prev * math::cos(omega0 * dt)) *
+          //                         math::exp(-gamma0 * dt) +
+          //                       uni * sigma0;
         });
+
+      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
+      Kokkos::deep_copy(amplitudes_, amplitudes);
+      for (int i = 0; i < nmodes; ++i) {
+        printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
+      }
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
