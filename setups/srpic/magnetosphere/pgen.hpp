@@ -200,7 +200,7 @@ namespace user {
 
 	    //minus included into coeff 
 	    EB(i1, i2, em::bx3) += coeff*( h2_p1pH * corrEx2iP1j - h2_0pH * corrEx2ij +
-					   h1_pHp1 * corrEx1ijP1 - h1_pH0 * corrEx1ij);
+	    h1_pHp1 * corrEx1ijP1 - h1_pH0 * corrEx1ij);
 	  });
       }
     }
@@ -229,7 +229,7 @@ namespace user {
       const auto PairDensity {params.template get<real_t>("setup.pair_dens") }; 
       const auto gammaSec {params.template get<real_t>("setup.gammaSec") };
       const auto BoverBq {params.template get<real_t>("setup.BoverBq") };
-      const auto coeffCool {-2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) *Bsurf * SQR(SQR(1/CurvGammaCool))};
+      const auto coeffCool {2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) *Bsurf * SQR(SQR(1/CurvGammaCool))};
       const auto coeffPhoton {2*(dt/larm) * sqrt(CUBE(Rstar/RLC)) * Bsurf * CUBE(CurvGammaEmit) * SQR(SQR(1/CurvGammaCool))};
       const auto coeffAbs {static_cast<real_t>(0.23)*(27/4)*(dt/larm)*SQR(CUBE(CurvGammaEmit)/SQR(CurvGammaCool)) * Bsurf * sqrt(CUBE(Rstar/RLC)) * BoverBq };
       const auto _Bsurf { Bsurf };
@@ -396,10 +396,38 @@ namespace user {
 	    auto beta_x = px/gamma;
 	    auto beta_y = py/gamma;
 	    auto beta_z = pz/gamma;
+
+	    const auto Babs { NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2]) };
 	    
-	    ux1(p) += coeffCool*gamma4*beta_x;
-	    ux2(p) += coeffCool*gamma4*beta_y;
-	    ux3(p) += coeffCool*gamma4*beta_z;
+	    const auto binitX { b_int_Cart[0]/Babs };
+	    const auto binitY { b_int_Cart[1]/Babs };
+	    const auto binitZ { b_int_Cart[2]/Babs };
+
+
+	    const auto cosAngle { DOT(binitX, binitY, binitZ,
+				      beta_x, beta_y, beta_z)};
+
+	    //auto deltaU = coeffCool*gamma4;
+	    //if (math::abs(deltaU)<0.1*gamma){
+	    //  ux1(p) -= deltaU*beta_x;
+	    //  ux2(p) -= deltaU*beta_y;
+	    //  ux3(p) -= deltaU*beta_z;
+	    //}else{
+	    //  ux1(p) -= 0.1*gamma*beta_x;
+	    //  ux2(p) -=	0.1*gamma*beta_y;
+	    //  ux3(p) -=	0.1*gamma*beta_z;
+	    // }
+	    
+	    //if (math::abs(deltaU)<0.1*gamma){
+	    //  ux1(p) -= SIGN(cosAngle)*deltaU*binitX;
+	    //  ux2(p) -= SIGN(cosAngle)*deltaU*binitY;
+	    //  ux3(p) -= SIGN(cosAngle)*deltaU*binitZ;
+	    //}else{
+	    //  ux1(p) -= 0.1*SIGN(cosAngle)*gamma*binitX;
+	    //  ux2(p) -= 0.1*SIGN(cosAngle)*gamma*binitY;
+	    //  ux3(p) -= 0.1*SIGN(cosAngle)*gamma*binitZ;
+	    //  }*/
+	    
 
 	    auto ph_energy { gamma3/CUBE(CurvGammaEmit)};
 	    auto ph_prob { coeffPhoton * gamma};
