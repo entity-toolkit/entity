@@ -265,7 +265,7 @@ namespace metric {
     }
 
     /**
-     * sqrt(det(h_ij))
+     * sqrt(det(h_ij)) divided by sin(theta).
      * @param x coordinate array in code units
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
