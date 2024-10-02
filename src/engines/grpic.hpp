@@ -668,23 +668,26 @@ namespace ntt {
                      HERE);
       const auto i2_min = domain.mesh.i_min(in::x2);
       const auto i2_max = domain.mesh.i_max(in::x2);
+      auto range = CreateRangePolicy<Dim::_1D>(
+        {domain.mesh.i_min(in::x1) - 1},
+        {domain.mesh.i_max(in::x1)});
       if (direction.get_sign() < 0) {
         Kokkos::parallel_for(
           "AxisBCFields",
-          domain.mesh.n_all(in::x1),
+          range,
           kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
         Kokkos::parallel_for(
           "AxisBCFields",
-          domain.mesh.n_all(in::x1),
+          range,
           kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
       } else {
         Kokkos::parallel_for(
           "AxisBCFields",
-          domain.mesh.n_all(in::x1),
+          range,
           kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
         Kokkos::parallel_for(
           "AxisBCFields",
-          domain.mesh.n_all(in::x1),
+          range,
           kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
       }
     }
