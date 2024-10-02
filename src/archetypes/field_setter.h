@@ -202,13 +202,13 @@ namespace arch {
             const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
             const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
               i1_ + HALF) };
-            const real_t x2_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i2_) };
-            const real_t x2_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
+            const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
+            const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
               i2_ + HALF) };
             { // bx1
-              vec_t<Dim::_3D> b_PU { finit.dx1({ x1_0, x2_H }),
-                                     finit.dx2({ x1_0, x2_H }),
-                                     finit.dx3({ x1_0, x2_H }) };
+              vec_t<Dim::_3D> b_PU { finit.bx1({ x1_0, x2_H }),
+                                     finit.bx2({ x1_0, x2_H }),
+                                     finit.bx3({ x1_0, x2_H }) };
               vec_t<Dim::_3D> b_U { ZERO };
               metric.template transform<Idx::PU, Idx::U>({ i1_, i2_ + HALF },
                                                          b_PU,
@@ -216,9 +216,9 @@ namespace arch {
               EM(i1, i2, em::bx1) = b_U[0];
             }
             { // bx2
-              vec_t<Dim::_3D> b_PU { finit.dx1({ x1_H, x2_0 }),
-                                     finit.dx2({ x1_H, x2_0 }),
-                                     finit.dx3({ x1_H, x2_0 }) };
+              vec_t<Dim::_3D> b_PU { finit.bx1({ x1_H, x2_0 }),
+                                     finit.bx2({ x1_H, x2_0 }),
+                                     finit.bx3({ x1_H, x2_0 }) };
               vec_t<Dim::_3D> b_U { ZERO };
               metric.template transform<Idx::PU, Idx::U>({ i1_ + HALF, i2_ },
                                                          b_PU,
@@ -226,9 +226,9 @@ namespace arch {
               EM(i1, i2, em::bx2) = b_U[1];
             }
             { // bx3
-              vec_t<Dim::_3D> b_PU { finit.dx1({ x1_H, x2_H }),
-                                     finit.dx2({ x1_H, x2_H }),
-                                     finit.dx3({ x1_H, x2_H }) };
+              vec_t<Dim::_3D> b_PU { finit.bx1({ x1_H, x2_H }),
+                                     finit.bx2({ x1_H, x2_H }),
+                                     finit.bx3({ x1_H, x2_H }) };
               vec_t<Dim::_3D> b_U { ZERO };
               metric.template transform<Idx::PU, Idx::U>({ i1_ + HALF, i2_ + HALF },
                                                          b_PU,
