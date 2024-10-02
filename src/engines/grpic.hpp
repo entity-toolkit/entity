@@ -615,27 +615,6 @@ namespace ntt {
                                                 xg_edge,
                                                 ds,
                                                 tags));
-      } else if (dim == in::x2) {
-        if constexpr (M::Dim == Dim::_2D) {
-          Kokkos::parallel_for(
-            "AbsorbFields",
-            CreateRangePolicy<M::Dim>(range_min, range_max),
-            kernel::AbsorbBoundaries_kernel<M, 2>(domain.fields.em,
-                                                  domain.mesh.metric,
-                                                  xg_edge,
-                                                  ds,
-                                                  tags));
-          Kokkos::parallel_for(
-            "AbsorbFields",
-            CreateRangePolicy<M::Dim>(range_min, range_max),
-            kernel::AbsorbBoundaries_kernel<M, 2>(domain.fields.em0,
-                                                  domain.mesh.metric,
-                                                  xg_edge,
-                                                  ds,
-                                                  tags));
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
       } else {
           raise::Error("Invalid dimension", HERE);
       }
@@ -655,10 +634,13 @@ namespace ntt {
                      "Invalid axis direction, should be x2",
                      HERE);
       const auto i1_min = domain.mesh.i_min(in::x1);
+      auto range = CreateRangePolicy<Dim::_1D>(
+        {domain.mesh.i_min(in::x2)},
+        {domain.mesh.i_max(in::x2) + 1});
       if (g == gr_bc::main) {
         Kokkos::parallel_for(
           "OpenBCFields",
-          domain.mesh.n_all(in::x2),
+          range,
           kernel::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
         Kokkos::parallel_for(
           "OpenBCFields",
@@ -667,8 +649,8 @@ namespace ntt {
       } else if (g == gr_bc::aux) {
         Kokkos::parallel_for(
           "OpenBCFields",
-          domain.mesh.n_all(in::x2),
-          kernel::OpenBoundaries_kernel<M>(domain.fields.aux, i1_min, tags));
+          range,
+          kernel::OpenBoundariesAux_kernel<M>(domain.fields.aux, i1_min, tags));
       }
     }
 
