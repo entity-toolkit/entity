@@ -57,9 +57,25 @@ namespace user {
           return Vx * Bmag * math::sin(Btheta / 180.0 * Kokkos::numbers::pi) * math::sin(Bphi / 180.0 * Kokkos::numbers::pi);
       }
 
-  private:
-      const real_t Btheta, Bphi, Vx, Bmag;
-  };
+    private:
+        const real_t Btheta, Bphi, Vx, Bmag;
+    };
+
+  template <Dimension D>
+  struct DriveFields : public InitFields<D> {
+      DriveFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux) : 
+      InitFields<D> {bmag, btheta, bphi, drift_ux} {}
+
+      /* Enforce resetting magnetic and electric field at the boundary
+         This avoids weird  */
+      using InitFields<D>::bx1;
+      using InitFields<D>::bx2;
+      using InitFields<D>::bx3;
+
+      using InitFields<D>::ex1;
+      using InitFields<D>::ex2;
+      using InitFields<D>::ex3;
+    };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -90,6 +106,14 @@ namespace user {
         , init_flds { Bmag, Btheta, Bphi, drift_ux } {}
 
     inline PGen() {}
+
+    auto FieldDriver(real_t time) const -> DriveFields<D> {
+        const real_t bmag = Bmag;
+        const real_t btheta = Btheta;
+        const real_t bphi = Bphi;
+        const real_t ux = drift_ux;
+        return DriveFields<D>{bmag, btheta, bphi, ux};
+    }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
