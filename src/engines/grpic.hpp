@@ -643,7 +643,7 @@ namespace ntt {
           kernel::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
         Kokkos::parallel_for(
           "OpenBCFields",
-          domain.mesh.n_all(in::x2),
+          range, 
           kernel::OpenBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
       } else if (g == gr_bc::aux) {
         Kokkos::parallel_for(
