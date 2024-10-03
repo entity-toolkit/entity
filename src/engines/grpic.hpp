@@ -674,20 +674,20 @@ namespace ntt {
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
+          kernel::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
+          kernel::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
       } else {
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
+          kernel::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
+          kernel::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
       }
     }
 
@@ -825,8 +825,8 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = CreateRangePolicy<Dim::_2D>(
-        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
-        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1},
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2)});
       const auto ni2 = domain.mesh.n_active(in::x2);
 
       if (g == gr_ampere::aux) {
@@ -873,7 +873,10 @@ namespace ntt {
       const auto n0    = m_params.template get<real_t>("scales.n0");
       const auto B0    = m_params.template get<real_t>("scales.B0");
       const auto coeff = -dt * q0 * n0 / B0;
-      auto       range = range_with_axis_BCs(domain);
+      // auto       range = range_with_axis_BCs(domain);
+      auto range = CreateRangePolicy<Dim::_2D>(
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1},
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2)});
       const auto ni2   = domain.mesh.n_active(in::x2);
 
       if (g == gr_ampere::aux) {
@@ -903,18 +906,16 @@ namespace ntt {
     }
 
     void TimeAverageDB(domain_t& domain) {
-    auto range = range_with_axis_BCs(domain);
     Kokkos::parallel_for("TimeAverageDB",
-                         range,
+                         domain.mesh.rangeActiveCells(),
                          kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
                                                              domain.fields.em0,
                                                              domain.mesh.metric));
     }
 
     void TimeAverageJ(domain_t& domain) {
-    auto range = range_with_axis_BCs(domain);
     Kokkos::parallel_for("TimeAverageJ",
-                         range,
+                         domain.mesh.rangeActiveCells(),
                          kernel::gr::TimeAverageJ_kernel<M>(domain.fields.cur,
                                                              domain.fields.cur0,
                                                              domain.mesh.metric));
