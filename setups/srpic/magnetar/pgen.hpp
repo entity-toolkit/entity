@@ -954,7 +954,7 @@ namespace user {
             coord_t<D> xPh { ZERO };
             metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
 
-            if (xPh[0] < 25.0*Rstar_) {
+            if (xPh[0] > 25.0*Rstar_) {
               tag(p) = ParticleTag::dead;
               return;
             }
