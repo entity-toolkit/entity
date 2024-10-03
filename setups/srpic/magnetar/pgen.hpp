@@ -946,6 +946,18 @@ namespace user {
             const coord_t<Dim::_3D> xc3d {static_cast<real_t>(i1(p)) + dx1(p),
                   static_cast<real_t>(i2(p)) + dx2(p), phi(p)};   
 
+            const coord_t<D> xCd{
+                static_cast<real_t>(i1(p)) + dx1(p),
+                static_cast<real_t>(i2(p)) + dx2(p)};
+
+            coord_t<D> xPh { ZERO };
+            metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
+
+            if (xPh[0] < 25.0*Rstar_) {
+              tag(p) = ParticleTag::dead;
+              return;
+            }
+
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
             vec_t<Dim::_3D> b_int { ZERO };
