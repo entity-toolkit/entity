@@ -216,6 +216,29 @@ namespace kernel {
     }
   };
 
+  template <Dimension D, bool P>
+  struct AxisBoundariesGR_kernel {
+    ndfield_t<D, 6>   Fld;
+    const std::size_t i_edge;
+    const bool        setE, setB;
+
+    AxisBoundariesGR_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+      : Fld { Fld }
+      , i_edge { i_edge }
+      , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
+      , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
+
+    Inline void operator()(index_t i1) const {
+      if constexpr (D == Dim::_2D) {
+        if (setB) {
+          Fld(i1, i_edge, em::bx2) = ZERO;
+        }
+      } else {
+        raise::KernelError(HERE, "AxisBoundaries_kernel: D != 2");
+      }
+    }
+  };
+
   template <class I, class M, bool P, in O>
   struct AtmosphereBoundaries_kernel {
     static constexpr Dimension D = M::Dim;
