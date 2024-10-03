@@ -399,7 +399,7 @@ namespace user {
 
             arr_omega_(i) = 0.5*0.6 * math::sqrt(temperature_ * machno_) * constant::TWO_PI / SX1_ * arr_coeff_(i);
             arr_gamma_(i) = 0.5*0.5 * math::sqrt(temperature_ * machno_) * constant::TWO_PI / SX2_ * arr_coeff_(i);
-            arr_sigma_(i) = amp0_ * math::sqrt(static_cast<real_t>(nmodes_) * arr_gamma_(i)) * arr_coeff_(i);
+            arr_sigma_(i) = amp0_ * math::sqrt(static_cast<real_t>(nmodes_) * arr_gamma_(i) / dt) * arr_coeff_(i);
 
           });
 

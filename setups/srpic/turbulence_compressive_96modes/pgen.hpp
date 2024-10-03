@@ -742,7 +742,7 @@ namespace user {
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
       auto omega0 = 2.0*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
       auto gamma0 = 2.0*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
-      auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
+      auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0 / dt);
       auto pool   = domain.random_pool;
 
       #if defined(MPI_ENABLED)
@@ -763,11 +763,11 @@ namespace user {
           amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * kmag(i) * dt) +
                                  ampi_prev * math::sin(omega0 * kmag(i) * dt)) *
                                   math::exp(-gamma0 * kmag(i) * dt) +
-                                unr * sigma0 * kmag(i);
+                                unr * sigma0 * kmag(i) * dt;
           amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * kmag(i) * dt) +
                                  ampi_prev * math::cos(omega0 * kmag(i) * dt)) *
                                   math::exp(-gamma0 * kmag(i) * dt) +
-                                uni * sigma0 * kmag(i);
+                                uni * sigma0 * kmag(i) * dt;
         });
 
       auto fext_en_total = ZERO;
