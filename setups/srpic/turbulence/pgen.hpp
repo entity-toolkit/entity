@@ -129,13 +129,13 @@ namespace user {
 
       return ZERO;
       // return (k14 * amps(0, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
       //         k14 * amps(0, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) +
+      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
       //        (k24 * amps(1, REAL) *
-      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0) +
+      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
       //         k24 * amps(1, IMAG) *
-      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0));
+      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]);
       // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
     }
@@ -145,13 +145,13 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       // return (k04 * amps(2, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
       //         k04 * amps(2, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
+      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
       //        (k24 * amps(3, REAL) *
-      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0) +
+      //           math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
       //         k24 * amps(3, IMAG) *
-      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * 0.0));
+      //           math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
       return ZERO;
     }
 
@@ -160,13 +160,13 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       // return (k04 * amps(4, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
       //         k04 * amps(4, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
+      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
       //        (k14 * amps(5, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
       //         k14 * amps(5, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
+      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
       return ZERO;
     }
 
