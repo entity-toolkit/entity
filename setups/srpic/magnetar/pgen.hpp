@@ -891,6 +891,7 @@ namespace user {
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
         auto bq_          = this->bq;
         auto inv_n0_      = this->inv_n0;
+        auto Rstar_       = this->Rstar;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
