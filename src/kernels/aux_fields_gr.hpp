@@ -257,9 +257,9 @@ namespace kernel::gr {
         BDf0(i1, i2, em::bx1) = HALF * (BDf0(i1, i2, em::bx1) + BDf(i1, i2, em::bx1)); 
         BDf0(i1, i2, em::bx2) = HALF * (BDf0(i1, i2, em::bx2) + BDf(i1, i2, em::bx2)); 
         BDf0(i1, i2, em::bx3) = HALF * (BDf0(i1, i2, em::bx3) + BDf(i1, i2, em::bx3)); 
-        BDf0(i1, i2, em::ex1) = HALF * (BDf0(i1, i2, em::bx1) + BDf(i1, i2, em::ex1)); 
-        BDf0(i1, i2, em::ex2) = HALF * (BDf0(i1, i2, em::bx2) + BDf(i1, i2, em::ex2)); 
-        BDf0(i1, i2, em::ex3) = HALF * (BDf0(i1, i2, em::bx3) + BDf(i1, i2, em::ex3)); 
+        BDf0(i1, i2, em::ex1) = HALF * (BDf0(i1, i2, em::ex1) + BDf(i1, i2, em::ex1)); 
+        BDf0(i1, i2, em::ex2) = HALF * (BDf0(i1, i2, em::ex2) + BDf(i1, i2, em::ex2)); 
+        BDf0(i1, i2, em::ex3) = HALF * (BDf0(i1, i2, em::ex3) + BDf(i1, i2, em::ex3)); 
       } else {
         raise::KernelError(
           HERE,
@@ -291,9 +291,9 @@ namespace kernel::gr {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        Jf0(i1, i2, cur::jx1) = HALF * (Jf0(i1, i2, cur::jx1) + Jf(i1, i2, cur::jx1)); 
-        Jf0(i1, i2, cur::jx2) = HALF * (Jf0(i1, i2, cur::jx2) + Jf(i1, i2, cur::jx2)); 
-        Jf0(i1, i2, cur::jx3) = HALF * (Jf0(i1, i2, cur::jx3) + Jf(i1, i2, cur::jx3)); 
+        Jf(i1, i2, cur::jx1) = HALF * (Jf0(i1, i2, cur::jx1) + Jf(i1, i2, cur::jx1)); 
+        Jf(i1, i2, cur::jx2) = HALF * (Jf0(i1, i2, cur::jx2) + Jf(i1, i2, cur::jx2)); 
+        Jf(i1, i2, cur::jx3) = HALF * (Jf0(i1, i2, cur::jx3) + Jf(i1, i2, cur::jx3)); 
       } else {
         raise::KernelError(
           HERE,
