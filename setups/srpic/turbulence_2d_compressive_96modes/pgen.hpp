@@ -27,15 +27,21 @@ namespace user {
   template <Dimension D>
   struct InitFields {
     InitFields(real_t Bnorm)
-      : Bnorm { Bnorm } {
+      : Bnorm { Bnorm } 
+      , k1x {ZERO * constant::TWO_PI / TWO}
+      , k1y {ONE * constant::TWO_PI / TWO}
+      , k2x {ONE * constant::TWO_PI / TWO}
+      , k2y {ZERO * constant::TWO_PI / TWO} {
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return - Bnorm * 0.1 * math::sin(k1x * x_Ph[0] + k1y * x_Ph[1]);
+      // return ZERO;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return Bnorm * 0.1 * math::sin(k2x * x_Ph[0] + k2y * x_Ph[1]);
+      // return ZERO;
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
@@ -44,6 +50,7 @@ namespace user {
 
   private:
     const real_t Bnorm;
+    const real_t k1x, k1y, k2x, k2y;
   };
 
   template <SimEngine::type S, class M>
