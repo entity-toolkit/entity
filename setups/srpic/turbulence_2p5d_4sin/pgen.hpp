@@ -152,15 +152,15 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return (k04 * amps(4, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-      //         k04 * amps(4, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
-      //        (k14 * amps(5, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-      //         k14 * amps(5, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
-      return ZERO;
+      return (k04 * amps(4, REAL) *
+                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+              k04 * amps(4, IMAG) *
+                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
+             (k14 * amps(5, REAL) *
+                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+              k14 * amps(5, IMAG) *
+                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
+      // return ZERO;
     }
 
   private:
