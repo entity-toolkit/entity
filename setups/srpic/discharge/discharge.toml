@@ -11,8 +11,8 @@
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["ATMOSPHERE", "PERIODIC"]]
-    particles = [["ATMOSPHERE", "PERIODIC"]]
+    fields = [["ATMOSPHERE","ATMOSPHERE"], ["PERIODIC"]]
+    particles = [["ATMOSPHERE","ATMOSPHERE"], ["PERIODIC"]]
 
     [grid.boundaries.absorb]
       ds = 1.0
