@@ -36,6 +36,7 @@ namespace metric {
   private:
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
+    const real_t a, rg_, rh_;
 
   public:
     static constexpr const char* Label { "kerr_schild_0" };
@@ -57,6 +58,9 @@ namespace metric {
                 boundaries_t<real_t>     ext,
                 const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
+      , a { ZERO }
+      , rg_ { ONE }
+      , rh_ { TWO }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }
       , dphi { (x3_max - x3_min) / nx3 }
@@ -70,17 +74,17 @@ namespace metric {
 
     [[nodiscard]]
     Inline auto spin() const -> const real_t& {
-      return ZERO;
+      return a;
     }
 
     [[nodiscard]]
     Inline auto rhorizon() const -> const real_t& {
-      return ZERO;
+      return rh_;
     }
 
     [[nodiscard]]
     Inline auto rg() const -> const real_t& {
-      return ZERO;
+      return rg_;
     }
 
     /**
