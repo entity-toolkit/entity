@@ -95,7 +95,7 @@ namespace ntt {
         Faraday(dom, HALF);
         if constexpr (traits::has_method<traits::pgen::custom_fieldevolution_t, decltype(m_pgen)>::value) {
             m_pgen.CustomFieldEvolution(step, time, dom, false, true);
-        }
+	}
 
         timers.stop("FieldSolver");
 
@@ -113,7 +113,7 @@ namespace ntt {
         ParticlePush(dom);
         if constexpr (traits::has_method<traits::pgen::custom_partevolution_t, decltype(m_pgen)>::value) {
            m_pgen.CustomPartEvolution(step, time, dom);
-	 }
+	}
         timers.stop("ParticlePusher");
 
         if (deposit_enabled) {
@@ -337,13 +337,6 @@ namespace ntt {
                                         "scales.omegaB0") /
                                       (SQR(sync_grad) * species.mass())
                                        : ZERO;
-	const auto larmS {m_params.template get<real_t>("scales.larmor0")};
-	const auto BsurfS { m_params.template get<real_t>("setup.Bsurf", ONE) };
-	const auto RstarS { m_metadomain.mesh().extent(in::x1).first };
-	const auto RLCS { m_params.template get<real_t>("setup.period", ONE) / static_cast<real_t>(constant::TWO_PI)};
-	const auto CurvGammaCoolS {m_params.template get<real_t>("setup.CurvGammaCool")};
-	
-	const auto curv_coeff { 2*(dt/larmS) * sqrt(CUBE(RstarS/RLCS)) *BsurfS * SQR(SQR(1/CurvGammaCoolS))};
 
         // toggle to indicate whether pgen defines the external force
         bool has_extforce = false;
@@ -384,7 +377,7 @@ namespace ntt {
                 domain.mesh.n_active(in::x2),
                 domain.mesh.n_active(in::x3),
                 domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, curv_coeff, sync_coeff
+                gca_larmor_max, gca_eovrb_max, sync_coeff
             ));
         } else if (has_atmosphere and not has_extforce) {
           const auto force =
@@ -414,7 +407,7 @@ namespace ntt {
                 domain.mesh.n_active(in::x2),
                 domain.mesh.n_active(in::x3),
                 domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, curv_coeff, sync_coeff
+                gca_larmor_max, gca_eovrb_max, sync_coeff
             ));
         } else if (not has_atmosphere and has_extforce) {
           if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
@@ -443,7 +436,7 @@ namespace ntt {
                   domain.mesh.n_active(in::x2),
                   domain.mesh.n_active(in::x3),
                   domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, curv_coeff, sync_coeff
+                  gca_larmor_max, gca_eovrb_max, sync_coeff
               ));
           } else {
             raise::Error("External force not implemented", HERE);
@@ -475,7 +468,7 @@ namespace ntt {
                   domain.mesh.n_active(in::x2),
                   domain.mesh.n_active(in::x3),
                   domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, curv_coeff, sync_coeff
+                  gca_larmor_max, gca_eovrb_max, sync_coeff
               ));
           } else {
             raise::Error("External force not implemented", HERE);

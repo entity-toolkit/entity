@@ -224,7 +224,7 @@ namespace kernel::sr {
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
     // synchrotron cooling parameters
-    const real_t coeff_sync, coeff_curv;
+    const real_t coeff_sync;
 
   public:
     Pusher_kernel(const PrtlPusher::type&     pusher,
@@ -261,7 +261,6 @@ namespace kernel::sr {
                   const boundaries_t<PrtlBC>& boundaries,
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
-		  real_t                      coeff_curv,
                   real_t                      coeff_sync)
       : pusher { pusher }
       , GCA { GCA }
@@ -296,7 +295,6 @@ namespace kernel::sr {
       , ni3 { ni3 }
       , gca_larmor { gca_larmor_max }
       , gca_EovrB_sqr { SQR(gca_eovrb_max) }
-      , coeff_curv { coeff_curv} 
       , coeff_sync { coeff_sync } {
       raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
@@ -366,7 +364,6 @@ namespace kernel::sr {
                   const boundaries_t<PrtlBC>& boundaries,
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
-		  real_t                      coeff_curv, 
                   real_t                      coeff_sync)
       : Pusher_kernel(pusher,
                       GCA,
@@ -402,32 +399,7 @@ namespace kernel::sr {
                       boundaries,
                       gca_larmor_max,
                       gca_eovrb_max,
-		      coeff_curv, 
                       coeff_sync) {}
-
-    Inline void curvatureDrag(index_t&               p,
-			      vec_t<Dim::_3D>&     u_prime) const {
-      real_t gamma = math::sqrt(ONE + NORM_SQR(u_prime[0],u_prime[1],u_prime[2]));
-      real_t gamma4 = SQR(SQR(gamma));
-      real_t deltaGamma = coeff_curv * gamma4;
-
-      if (gamma > 1000) {
-	ux1(p) = 1000.0 * u_prime[0]/gamma;
-	ux2(p) = 1000.0 * u_prime[1]/gamma;
-	ux3(p) = 1000.0 * u_prime[2]/gamma;
-      }
-      
-      /*if(math::abs(deltaGamma) < 0.1*gamma){
-	ux1(p) -= deltaGamma * u_prime[0]/gamma;
-	ux2(p) -= deltaGamma * u_prime[1]/gamma;
-	ux3(p) -= deltaGamma * u_prime[2]/gamma;
-      }else{
-	ux1(p) -= 0.1 * gamma * u_prime[0]/gamma;
-	ux2(p) -= 0.1 * gamma * u_prime[1]/gamma;
-	ux3(p) -= 0.1 * gamma * u_prime[2]/gamma;
-	}*/
-    }
-
     
     Inline void synchrotronDrag(index_t&               p,
                                 vec_t<Dim::_3D>&       u_prime,
@@ -543,16 +515,14 @@ namespace kernel::sr {
           // update with GCA
           if constexpr (ExtForce) {
             velUpd(true, p, force_Cart, ei_Cart, bi_Cart);
-	    u_prime[0] = HALF * (u_prime[0] + ux1(p));
-	    u_prime[1] = HALF * (u_prime[1] + ux2(p));
-	    u_prime[2] = HALF * (u_prime[2] + ux3(p));
-	    curvatureDrag(p, u_prime);	    
+	    u_prime[0] = ux1(p);
+	    u_prime[1] = ux2(p);
+	    u_prime[2] = ux3(p);
           } else {
             velUpd(true, p, ei_Cart, bi_Cart);
-	    u_prime[0] = HALF * (u_prime[0] + ux1(p));
-	    u_prime[1] = HALF * (u_prime[1] + ux2(p));
-	    u_prime[2] = HALF * (u_prime[2] + ux3(p));
-	    curvatureDrag(p, u_prime);
+	    u_prime[0] = ux1(p);
+	    u_prime[1] = ux2(p);
+	    u_prime[2] = ux3(p);
           } 
         } else {
           // update with conventional pusher
