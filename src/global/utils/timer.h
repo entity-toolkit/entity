@@ -146,24 +146,24 @@ namespace timer {
       // accumulate timers from MPI blocks
       for (auto& [name, timer] : m_timers) {
         mpi_timers[name] = std::vector<long double>(size, 0.0);
-      if (rank == MPI_ROOT_RANK) {
+      // if (rank == MPI_ROOT_RANK) {
         MPI_Gather(&timer.second,
                    1,
-                   MPI_DOUBLE,
+                   mpi::get_type<long double>(),
                    mpi_timers[name].data(),
                    1,
-                   MPI_DOUBLE,
+                   mpi::get_type<long double>(),
                    MPI_ROOT_RANK,
                    MPI_COMM_WORLD);
-      } else {
-        MPI_Gather(&timer.second,
-                   1,
-                   MPI_DOUBLE,
-                   nullptr,
-                   1,
-                   MPI_DOUBLE,
-                   MPI_ROOT_RANK,
-                   MPI_COMM_WORLD);
+      // } else {
+      //   MPI_Gather(&timer.second,
+      //              1,
+      //              mpi::get_type<long double>(),
+      //              nullptr,
+      //              0,
+      //              mpi::get_type<long double>(),
+      //              MPI_ROOT_RANK,
+      //              MPI_COMM_WORLD);
 
       }
       }

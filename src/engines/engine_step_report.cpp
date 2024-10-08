@@ -136,45 +136,45 @@ namespace ntt {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     std::vector<std::size_t> mpi_npart(size, 0);
     std::vector<std::size_t> mpi_maxnpart(size, 0);
-    if (rank == MPI_ROOT_RANK) {
+    // if (rank == MPI_ROOT_RANK) {
     MPI_Gather(&npart,
                1,
-               MPI_UNSIGNED_LONG_LONG,
+               mpi::get_type<std::size_t>(),
                mpi_npart.data(),
                1,
-               MPI_UNSIGNED_LONG_LONG,
+               mpi::get_type<std::size_t>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
-    } else {
-      MPI_Gather(&npart,
-                 1,
-                 MPI_UNSIGNED_LONG_LONG,
-                 nullptr,
-                 1,
-                 MPI_UNSIGNED_LONG_LONG,
-                 MPI_ROOT_RANK,
-                 MPI_COMM_WORLD);
-    }
+    // } else {
+    //   MPI_Gather(&npart,
+    //              1,
+    //              mpi::get_type<std::size_t>(),
+    //              nullptr,
+    //              0,
+    //              mpi::get_type<std::size_t>(),
+    //              MPI_ROOT_RANK,
+    //              MPI_COMM_WORLD);
+    // }
 
-    if (rank == MPI_ROOT_RANK) {
+    // if (rank == MPI_ROOT_RANK) {
       MPI_Gather(&maxnpart,
                  1,
-                 MPI_UNSIGNED_LONG_LONG,
+                 mpi::get_type<std::size_t>(),
                  mpi_maxnpart.data(),
                  1,
-                 MPI_UNSIGNED_LONG_LONG,
+                 mpi::get_type<std::size_t>(),
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
-    } else {
-      MPI_Gather(&maxnpart,
-                 1,
-                 MPI_UNSIGNED_LONG_LONG,
-                 nullptr,
-                 1,
-                 MPI_UNSIGNED_LONG_LONG,
-                 MPI_ROOT_RANK,
-                 MPI_COMM_WORLD);
-    }
+    // } else {
+    //   MPI_Gather(&maxnpart,
+    //              1,
+    //              mpi::get_type<std::size_t>(),
+    //              nullptr,
+    //              0,
+    //              mpi::get_type<std::size_t>(),
+    //              MPI_ROOT_RANK,
+    //              MPI_COMM_WORLD);
+    // }
 
     if (rank != MPI_ROOT_RANK) {
       return;

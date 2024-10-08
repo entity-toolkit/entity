@@ -75,7 +75,7 @@ namespace mpi {
     } else if constexpr (std::is_same<T, double>::value) {
       return MPI_DOUBLE;
     } else if constexpr (std::is_same<T, long double>::value) {
-      return MPI_LONG_DOUBLE;
+      return MPI_DOUBLE;
     } else if constexpr (std::is_same<T, std::int8_t>::value) {
       return MPI_INT8_T;
     } else if constexpr (std::is_same<T, std::int16_t>::value) {
