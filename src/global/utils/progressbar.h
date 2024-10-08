@@ -129,19 +129,19 @@ namespace pbar {
     if (rank == MPI_ROOT_RANK) {
       MPI_Gather(&avg_duration,
                  1,
-                 MPI_LONG_DOUBLE,
+                 MPI::LONG_DOUBLE,
                  mpi_avg_durations.data(),
                  1,
-                 MPI_LONG_DOUBLE,
+                 MPI::LONG_DOUBLE,
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
     } else {
       MPI_Gather(&avg_duration,
                  1,
-                 MPI_LONG_DOUBLE,
+                 MPI::LONG_DOUBLE,
                  nullptr,
                  1,
-                 MPI_LONG_DOUBLE,
+                 MPI::LONG_DOUBLE,
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
     }
