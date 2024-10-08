@@ -150,7 +150,7 @@ namespace ntt {
                  1,
                  mpi::get_type<std::size_t>(),
                  nullptr,
-                 0,
+                 1,
                  mpi::get_type<std::size_t>(),
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
@@ -170,7 +170,7 @@ namespace ntt {
                  1,
                  mpi::get_type<std::size_t>(),
                  nullptr,
-                 0,
+                 1,
                  mpi::get_type<std::size_t>(),
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);

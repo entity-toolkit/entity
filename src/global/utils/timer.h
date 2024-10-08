@@ -160,7 +160,7 @@ namespace timer {
                    1,
                    mpi::get_type<long double>(),
                    nullptr,
-                   0,
+                   1,
                    mpi::get_type<long double>(),
                    MPI_ROOT_RANK,
                    MPI_COMM_WORLD);
