@@ -166,6 +166,7 @@ namespace timer {
                    MPI_COMM_WORLD);
 
       }
+      }
       if (rank != MPI_ROOT_RANK) {
         return;
       }
