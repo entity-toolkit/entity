@@ -139,19 +139,19 @@ namespace ntt {
     if (rank == MPI_ROOT_RANK) {
     MPI_Gather(&npart,
                1,
-               mpi::get_type<std::size_t>(),
+               MPI_UNSIGNED_LONG_LONG,
                mpi_npart.data(),
                1,
-               mpi::get_type<std::size_t>(),
+               MPI_UNSIGNED_LONG_LONG,
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     } else {
       MPI_Gather(&npart,
                  1,
-                 mpi::get_type<std::size_t>(),
+                 MPI_UNSIGNED_LONG_LONG,
                  nullptr,
                  1,
-                 mpi::get_type<std::size_t>(),
+                 MPI_UNSIGNED_LONG_LONG,
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
     }
@@ -159,19 +159,19 @@ namespace ntt {
     if (rank == MPI_ROOT_RANK) {
       MPI_Gather(&maxnpart,
                  1,
-                 mpi::get_type<std::size_t>(),
+                 MPI_UNSIGNED_LONG_LONG,
                  mpi_maxnpart.data(),
                  1,
-                 mpi::get_type<std::size_t>(),
+                 MPI_UNSIGNED_LONG_LONG,
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
     } else {
       MPI_Gather(&maxnpart,
                  1,
-                 mpi::get_type<std::size_t>(),
+                 MPI_UNSIGNED_LONG_LONG,
                  nullptr,
                  1,
-                 mpi::get_type<std::size_t>(),
+                 MPI_UNSIGNED_LONG_LONG,
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
     }

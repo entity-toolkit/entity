@@ -149,19 +149,19 @@ namespace timer {
       if (rank == MPI_ROOT_RANK) {
         MPI_Gather(&timer.second,
                    1,
-                   mpi::get_type<long double>(),
+                   MPI_LONG_DOUBLE,
                    mpi_timers[name].data(),
                    1,
-                   mpi::get_type<long double>(),
+                   MPI_LONG_DOUBLE,
                    MPI_ROOT_RANK,
                    MPI_COMM_WORLD);
       } else {
         MPI_Gather(&timer.second,
                    1,
-                   mpi::get_type<long double>(),
+                   MPI_LONG_DOUBLE,
                    nullptr,
                    1,
-                   mpi::get_type<long double>(),
+                   MPI_LONG_DOUBLE,
                    MPI_ROOT_RANK,
                    MPI_COMM_WORLD);
 
