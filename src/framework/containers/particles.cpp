@@ -77,30 +77,28 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord::type C>
-  auto Particles<D, C>::npart_per_tag() const -> std::vector<std::size_t> {
-    auto                  this_tag = tag;
-    array_t<std::size_t*> npart_tag("npart_tags", ntags());
+template <Dimension D, Coord::type C>
+auto Particles<D, C>::npart_per_tag() const -> std::vector<std::size_t> {
+  auto                  this_tag = tag;
+  array_t<std::size_t*> npart_tag("npart_tags", ntags());
+  const auto            nprt = npart();
 
-    auto npart_tag_scatter = Kokkos::Experimental::create_scatter_view(npart_tag);
-    Kokkos::parallel_for(
-        "NpartPerTag",
-        npart(),
-        Lambda(index_t p) {
-          auto npart_tag_scatter_access = npart_tag_scatter.access();
-          npart_tag_scatter_access(1) += 1;
+  Kokkos::parallel_for(
+      "NpartPerTag",
+      ntags(),
+      Lambda(index_t t) {
+        npart_tag(t) = (t == 1 ? nprt : 0);
       });
-    Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
+      
+  auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
+  Kokkos::deep_copy(npart_tag_host, npart_tag);
 
-    auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
-    Kokkos::deep_copy(npart_tag_host, npart_tag);
-
-    std::vector<std::size_t> npart_tag_vec;
-    for (std::size_t t { 0 }; t < ntags(); ++t) {
-      npart_tag_vec.push_back(npart_tag_host(t));
-    }
-    return npart_tag_vec;
+  std::vector<std::size_t> npart_tag_vec;
+  for (std::size_t t { 0 }; t < ntags(); ++t) {
+    npart_tag_vec.push_back(npart_tag_host(t));
   }
+  return npart_tag_vec;
+}
 
   template <Dimension D, Coord::type C>
   auto Particles<D, C>::SortByTags() -> std::vector<std::size_t> {
