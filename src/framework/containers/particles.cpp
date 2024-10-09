@@ -80,22 +80,21 @@ namespace ntt {
 template <Dimension D, Coord::type C>
 auto Particles<D, C>::npart_per_tag() const -> std::vector<std::size_t> {
   auto                  this_tag = tag;
-  array_t<std::size_t*> npart_tag("npart_tags", ntags());
-
-  Kokkos::parallel_for(
-    "NpartPerTag",
-    npart(),
-    Lambda(index_t p) {
-      Kokkos::atomic_add(&npart_tag((int)(this_tag(p))), 1);
-    });
-
-  auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
-  Kokkos::deep_copy(npart_tag_host, npart_tag);
-
   std::vector<std::size_t> npart_tag_vec;
+
   for (std::size_t t { 0 }; t < ntags(); ++t) {
-    npart_tag_vec.push_back(npart_tag_host(t));
+    std::size_t npart_tag = 0;
+    Kokkos::parallel_reduce(
+      "NpartPerTag",
+      npart(),
+      Lambda(index_t p, std::size_t& loc_npart_tag) {
+        if (this_tag(p) == t) {
+          loc_npart_tag++;
+        }
+      }, npart_tag);
+    npart_tag_vec.push_back(npart_tag);
   }
+  
   return npart_tag_vec;
 }
 
