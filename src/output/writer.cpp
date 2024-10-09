@@ -15,6 +15,7 @@
   #include "arch/mpi_aliases.h"
 
   #include <mpi.h>
+  #include <hip/hip_runtime.h>
 #endif
 
 namespace out {
@@ -240,15 +241,15 @@ namespace out {
     auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
     int              rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == MPI_ROOT_RANK) {
-          MPI_Reduce(MPI_IN_PLACE,
-               counts_h_all.data(),
-               counts_h.extent(0),
-               mpi::get_type<real_t>(),
-               MPI_SUM,
-               MPI_ROOT_RANK,
-               MPI_COMM_WORLD);
-    } else {
+    // if (rank == MPI_ROOT_RANK) {
+    //       MPI_Reduce(MPI_IN_PLACE,
+    //            counts_h_all.data(),
+    //            counts_h.extent(0),
+    //            mpi::get_type<real_t>(),
+    //            MPI_SUM,
+    //            MPI_ROOT_RANK,
+    //            MPI_COMM_WORLD);
+    // } else {
           MPI_Reduce(counts_h.data(),
                counts_h_all.data(),
                counts_h.extent(0),
@@ -256,7 +257,7 @@ namespace out {
                MPI_SUM,
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
-    }
+    // }
     if (rank == MPI_ROOT_RANK) {
       auto var = m_io.InquireVariable<real_t>(varname);
       var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));

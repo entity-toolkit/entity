@@ -16,6 +16,7 @@
 
 #ifdef MPI_ENABLED
   #include <mpi.h>
+  #include <hip/hip_runtime.h>
 #endif
 
 #include <cstdio>
