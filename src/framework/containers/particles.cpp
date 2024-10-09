@@ -81,15 +81,14 @@ template <Dimension D, Coord::type C>
 auto Particles<D, C>::npart_per_tag() const -> std::vector<std::size_t> {
   auto                  this_tag = tag;
   array_t<std::size_t*> npart_tag("npart_tags", ntags());
-  const auto            nprt = npart();
 
   Kokkos::parallel_for(
-      "NpartPerTag",
-      ntags(),
-      Lambda(index_t t) {
-        npart_tag(t) = (t == 1 ? nprt : 0);
-      });
-      
+    "NpartPerTag",
+    npart(),
+    Lambda(index_t p) {
+      Kokkos::atomic_add(&npart_tag((int)(this_tag(p))), 1);
+    });
+
   auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
   Kokkos::deep_copy(npart_tag_host, npart_tag);
 
