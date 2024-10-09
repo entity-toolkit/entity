@@ -92,15 +92,13 @@ namespace ntt {
       });
     Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
 
-    // auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
-    // Kokkos::deep_copy(npart_tag_host, npart_tag);
+    auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
+    Kokkos::deep_copy(npart_tag_host, npart_tag);
 
     std::vector<std::size_t> npart_tag_vec;
-    npart_tag_vec = { 0 };
-    // for (std::size_t t { 0 }; t < ntags(); ++t) {
-    //   npart_tag_vec.push_back(npart_tag_host(t));
-    // }
-
+    for (std::size_t t { 0 }; t < ntags(); ++t) {
+      npart_tag_vec.push_back(npart_tag_host(t));
+    }
     return npart_tag_vec;
   }
 
