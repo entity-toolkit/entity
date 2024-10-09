@@ -82,15 +82,15 @@ namespace ntt {
     auto                  this_tag = tag;
     array_t<std::size_t*> npart_tag("npart_tags", ntags());
 
-    // auto npart_tag_scatter = Kokkos::Experimental::create_scatter_view(npart_tag);
-    // Kokkos::parallel_for(
-    //   "NpartPerTag",
-    //   npart(),
-    //   Lambda(index_t p) {
-    //     auto npart_tag_scatter_access = npart_tag_scatter.access();
-    //     npart_tag_scatter_access((int)(this_tag(p))) += 1;
-    //   });
-    // Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
+    auto npart_tag_scatter = Kokkos::Experimental::create_scatter_view(npart_tag);
+    Kokkos::parallel_for(
+        "NpartPerTag",
+        npart(),
+        Lambda(index_t p) {
+          auto npart_tag_scatter_access = npart_tag_scatter.access();
+          npart_tag_scatter_access(1) += 1;
+      });
+    Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
 
     auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
     Kokkos::deep_copy(npart_tag_host, npart_tag);
