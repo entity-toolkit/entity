@@ -22,6 +22,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <mpi.h>
+#include <hip/hip_runtime.h>
 
 #include <vector>
 

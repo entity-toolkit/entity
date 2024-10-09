@@ -10,6 +10,7 @@
 #include <adios2.h>
 #include <adios2/cxx11/KokkosView.h>
 #include <mpi.h>
+#include <hip/hip_runtime.h>
 
 #include <filesystem>
 #include <iostream>
