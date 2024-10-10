@@ -35,7 +35,7 @@
 namespace timer {
   using timestamp = std::chrono::time_point<std::chrono::system_clock>;
 
-  inline void convertTime(long double& value, std::string& units) {
+  inline void convertTime(double& value, std::string& units) {
     if (value > 1e6) {
       value /= 1e6;
       units  = " s";
@@ -49,7 +49,7 @@ namespace timer {
   }
 
   class Timers {
-    std::map<std::string, std::pair<timestamp, long double>> m_timers;
+    std::map<std::string, std::pair<timestamp, double>> m_timers;
     std::vector<std::string>                                 m_names;
     const bool                                               m_blocking;
     const std::function<void(void)>                          m_synchronize;
@@ -103,9 +103,9 @@ namespace timer {
     }
 
     [[nodiscard]]
-    auto get(const std::string& name) const -> long double {
+    auto get(const std::string& name) const -> double {
       if (name == "Total") {
-        long double total = 0.0;
+        double total = 0.0;
         for (auto& timer : m_timers) {
           total += timer.second.second;
         }
@@ -142,47 +142,35 @@ namespace timer {
       int rank, size;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       MPI_Comm_size(MPI_COMM_WORLD, &size);
-      std::map<std::string, std::vector<long double>> mpi_timers {};
+      std::map<std::string, std::vector<double>> mpi_timers {};
       // accumulate timers from MPI blocks
       for (auto& [name, timer] : m_timers) {
-        mpi_timers[name] = std::vector<long double>(size, 0.0);
-      // if (rank == MPI_ROOT_RANK) {
+        mpi_timers[name] = std::vector<double>(size, 0.0);
         MPI_Gather(&timer.second,
                    1,
-                   mpi::get_type<long double>(),
+                   mpi::get_type<double>(),
                    mpi_timers[name].data(),
                    1,
-                   mpi::get_type<long double>(),
+                   mpi::get_type<double>(),
                    MPI_ROOT_RANK,
                    MPI_COMM_WORLD);
-      // } else {
-      //   MPI_Gather(&timer.second,
-      //              1,
-      //              mpi::get_type<long double>(),
-      //              nullptr,
-      //              0,
-      //              mpi::get_type<long double>(),
-      //              MPI_ROOT_RANK,
-      //              MPI_COMM_WORLD);
-
-      // }
       }
       if (rank != MPI_ROOT_RANK) {
         return;
       }
-      long double total = 0.0;
+      double total = 0.0;
       for (auto& [name, timer] : m_timers) {
         auto        timers = mpi_timers[name];
-        long double tot    = std::accumulate(timers.begin(), timers.end(), 0.0);
+        double tot    = std::accumulate(timers.begin(), timers.end(), 0.0);
         if (name != "Output") {
           total += tot;
         }
       }
       for (auto& [name, timers] : mpi_timers) {
         // compute min, max, mean
-        long double min_time = *std::min_element(timers.begin(), timers.end());
-        long double max_time = *std::max_element(timers.begin(), timers.end());
-        long double mean_time = std::accumulate(timers.begin(), timers.end(), 0.0) /
+        double min_time = *std::min_element(timers.begin(), timers.end());
+        double max_time = *std::max_element(timers.begin(), timers.end());
+        double mean_time = std::accumulate(timers.begin(), timers.end(), 0.0) /
                                 size;
         std::string mean_units = "µs";
         const auto  min_pct    = mean_time > ZERO
@@ -224,7 +212,7 @@ namespace timer {
       }
       total /= size;
 #else  // not MPI_ENABLED
-      long double total = 0.0;
+      double total = 0.0;
       for (auto& [name, timer] : m_timers) {
         if (name != "Output") {
           total += timer.second;
