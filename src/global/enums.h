@@ -135,12 +135,13 @@ namespace ntt {
       Cart    = 1,
       Sph     = 2,
       Qsph    = 3,
+      Bltp    = 4,
     };
 
     constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
 
-    static constexpr type        variants[] = { Cart, Sph, Qsph, Fs};
-    static constexpr const char* lookup[]   = { "cart", "sph", "qsph", "fs" };
+    static constexpr type        variants[] = { Cart, Sph, Qsph, Bltp};
+    static constexpr const char* lookup[]   = { "cart", "sph", "qsph", "bltp" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -155,7 +156,7 @@ namespace ntt {
       Kerr_Schild   = 4,
       QKerr_Schild  = 5,
       Kerr_Schild_0 = 6,
-      Flux_Surface = 7,
+      BoyerLindqTP  = 7,
     };
 
     constexpr Metric(uint8_t c) : enums_hidden::BaseEnum<Metric> { c } {}
@@ -163,11 +164,11 @@ namespace ntt {
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
                                                 QKerr_Schild, Kerr_Schild_0,
-                                                Flux_Surface };
+                                                BoyerLindqTP };
     static constexpr const char* lookup[]   = { "minkowski",    "spherical",
                                                 "qspherical",   "kerr_schild",
                                                 "qkerr_schild", "kerr_schild_0",
-                                                "flux_surface" };
+                                                "boyer_lindq_tp" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -247,7 +248,7 @@ namespace ntt {
       BORIS     = 1,
       VAY       = 2,
       PHOTON    = 3,
-      FORCEFREE = 4
+      FORCEFREE = 4,
       NONE      = 5,
     };
 

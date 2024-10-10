@@ -1,16 +1,16 @@
 /**
- * @file metrics/flux_surface.h
- * @brief metric along constant flux surfaces in force-free fields, based on totoised Boyer-Lindquist coordinates
+ * @file metrics/boyer_lindq_tp.h
+ * @brief metric along constant flux surfaces in force-free fields, based on totoised Boyer-Lindquist-psi coordinates
  * @implements
- *   - metric::FluxSurface<> : metric::MetricBase<>
+ *   - metric::BoyerLindqTP<> : metric::MetricBase<>
  * @namespaces:
  *   - metric::
  * !TODO
  * None radial surfaces needs to be implemented (dpsi_dr != 0).
  */
 
-#ifndef METRICS_FLUX_SURFACE_H
-#define METRICS_FLUX_SURFACE_H
+#ifndef METRICS_BOYER_LINDQ_TP_H
+#define METRICS_BOYER_LINDQ_TP_H
 
 #include "enums.h"
 #include "global.h"
@@ -28,14 +28,15 @@
 namespace metric {
 
   template <Dimension D>
-  class FluxSurface : public MetricBase<D> {
-    static_assert(D == Dim::_1D, "Only 1D flux_surface is available");
+  class BoyerLindqTP : public MetricBase<D> {
+    static_assert(D == Dim::_1D, "Only 1D boyer_lindq_tp is available");
 
   private:
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t a, rg_, rh_, rh_m, psi0, theta0, Omega, pCur;
+    const real_t a, rg_, psi0, th0;
+    const real_t rh_, rh_m, psi, bt, Omega, dpsi_dth, dbt_dth;
     const real_t eta_max, eta_min;
     const real_t d_eta, d_eta_inv;
 
@@ -43,52 +44,47 @@ namespace metric {
       return SQR(r) - TWO * r + SQR(a);
     }
 
-    Inline auto Sigma(const real_t& r, const real_t& theta) const -> real_t {
-      return SQR(r) + SQR(a) * SQR(math::cos(theta));
+    Inline auto Sigma(const real_t& r) const -> real_t {
+      return SQR(r) + SQR(a) * SQR(math::cos(th0));
     }
 
-    Inline auto A(const real_t& r, const real_t& theta) const -> real_t {
-      return SQR(SQR(r) + SQR(a)) - SQR(a) * Delta(r) * SQR(math::sin(theta));
+    Inline auto A(const real_t& r) const -> real_t {
+      return SQR(SQR(r) + SQR(a)) - SQR(a) * Delta(r) * SQR(math::sin(th0));
     }
 
-    Inline auto omega(const real_t& r, const real_t& theta) const -> real_t {
-      return TWO * a * r / A(r, theta);
-    }
-
-    Inline auto psi(const real_t& r, const real_t& theta) const -> real_t {
-      return psi0 * (1 - cos(theta));
-    }
-    
-
-    Inline auto dpsi_dtheta(const real_t& r, const real_t& theta) const -> real_t {
-      return psi0 * math::sin(theta);
+    Inline auto omega(const real_t& r) const -> real_t {
+      return TWO * a * r / A(r, th0);
     }
 
 
 
 
   public:
-    static constexpr const char*       Label { "flux_surface" };
+    static constexpr const char*       Label { "boyer_lindq_tp" };
     static constexpr Dimension         PrtlDim { D };
-    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Fs };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Flux_Surface };
+    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Bltp };
+    static constexpr ntt::Metric::type MetricType { ntt::Metric::BoyerLindqTP };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::nx1;
     using MetricBase<D>::set_dxMin;
 
-    FluxSurface(std::vector<std::size_t>             res,
+    BoyerLindqTP(std::vector<std::size_t>             res,
                boundaries_t<real_t>                 ext,
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , a { params.at("a") }
       , psi0 { params.at("psi0") }
-      , theta0 { params.at("theta0") }
-      , pCur { params.at("pCur") }
+      , th0 { params.at("theta0") }
+      , bt { params.at("BT") }
       , rg_ { ONE }
       , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
       , rh_m { ONE - math::sqrt(ONE - SQR(a)) }
+      , psi { psi0 * (1 - math::cos(th0)) }
+      , bt { -HALF * psi0 * a * math::sin(th0) * math::cos(th0) / Sigma(rh_) }
       , Omega { params.at("Omega") * a / (SQR(a) + SQR(rh_)) }
+      , dpsi_dth { -psi0 * math::sin(th0) }
+      , dbt_dth { -HALF * psi0 * a * (SQR(a * math::cos(th0)) + SQR(rh) * math::cos(TWO * th0)) / SQR(Sigma(rh_)) }
       , eta_min { r2eta(x1_min) }
       , eta_max { r2eta(x1_max) }
       , d_eta { (eta_max - eta_min) / nx1 }
@@ -130,8 +126,7 @@ namespace metric {
      */
     Inline auto alpha(const coord_t<D>& xi) const -> real_t {
       const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
-      const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
-      return math::sqrt(Sigma(r_, theta_) * Delta(r_) / A(r_, theta_));
+      return math::sqrt(Sigma(r) * Delta(r_) / A(r_));
     }
 
     /**
@@ -140,11 +135,11 @@ namespace metric {
      */
 
     Inline auto beta(const coord_t<D>& xi) const -> real_t {
-      return math::sqrt(h<3, 3>(xi)) * omega(eta2r(xi[0] * d_eta + eta_min) , eta2theta(xi[0] * d_eta + eta_min) );
+      return math::sqrt(h<3, 3>(xi)) * omega(eta2r(xi[0] * d_eta + eta_min));
     }
 
     Inline auto beta3(const coord_t<D>& xi) const -> real_t {
-      return -omega(eta2r(xi[0] * d_eta + eta_min) , eta2theta(xi[0] * d_eta + eta_min));
+      return -omega(eta2r(xi[0] * d_eta + eta_min));
     }
 
     /**
@@ -152,16 +147,14 @@ namespace metric {
      */
     Inline auto f2(const coord_t<D>& xi) const -> real_t {
       const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
-      const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
-      return SQR(d_eta) * Sigma(r_, theta_) * (Delta(r_) + 
-             A(r_, theta_) * SQR(pCur / dpsi_dtheta(r_, theta_) ) 
+      return SQR(d_eta) * Sigma(r_) * (Delta(r_) + 
+             A(r_) * SQR(bt / dpsi_dth ) 
 	     );
     }
 
     Inline auto f1(const coord_t<D>& xi) const -> real_t {
       const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
-      const real_t theta_ { eta2theta(xi[0] * d_eta + eta_min) };
-      return d_eta * A(r_, theta_)* math::sin(theta_) * pCur * (Omega + beta3(xi)) / dpsi_dtheta(r_, theta_);
+      return d_eta * A(r_)* math::sin(th0) * bt * (Omega + beta3(xi)) / dpsi_dth;
     }
 
     Inline auto f0(const coord_t<D>& xi) const -> real_t {
@@ -195,18 +188,15 @@ namespace metric {
       static_assert(j > 0 && j <= 3, "Invalid index j");
 
       const real_t r_  { eta2r(x[0] * d_eta + eta_min) };
-      const real_t theta_ { eta2theta(x[0] * d_eta + eta_min) };
-      const real_t Sigma_ { Sigma(r_, theta_) };
-      const real_t Delta_ { Delta(r_) };
       if constexpr (i == 1 && j == 1) {
         // h_11
-        return SQR(d_eta) * Sigma_ * Delta_;
+        return SQR(d_eta) * Sigma(r_) * Delta(r_);
       } else if constexpr (i == 2 && j == 2) {
         // h_22
-        return Sigma_  / SQR(dpsi_dtheta(r_, theta_) ) ;
+        return Sigma(r_) / SQR(dpsi_dth) ;
       } else if constexpr (i == 3 && j == 3) {
         // h_33
-        return A(r_, theta_) * SQR(math::sin(theta_)) / Sigma_;
+        return A(r_) * SQR(math::sin(th0)) / Sigma(r_);
       }else {
         return ZERO;
       }
@@ -276,7 +266,7 @@ namespace metric {
           return v_in / math::sqrt(h_<i, i>(x)) / Delta(eta2r(x[0] * d_eta + eta_min));
         }else if constexpr (i == 2){
           return v_in / math::sqrt(h_<i, i>(x)) * 
-                 dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min));
+                 dpsi_dth;
         }else{
           return v_in / math::sqrt(h_<i, i>(x));
         }
@@ -287,7 +277,7 @@ namespace metric {
           return v_in * math::sqrt(h_<i, i>(x)) * Delta(eta2r(x[0] * d_eta + eta_min));
         }else if constexpr (i == 2){
           return v_in * math::sqrt(h_<i, i>(x)) / 
-                 dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min));
+                 dpsi_dth;
         }else{
           return v_in * math::sqrt(h_<i, i>(x));
         }
@@ -303,7 +293,7 @@ namespace metric {
         if constexpr (i == 1){
           return v_in * Delta(eta2r(x[0] * d_eta + eta_min)) * d_eta ;
         }else if constexpr (i == 2){
-          return v_in / dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min) );
+          return v_in / dpsi_dth;
         }else{
           return v_in;
         }
@@ -313,7 +303,7 @@ namespace metric {
         if constexpr (i == 1){
           return v_in * d_eta_inv / Delta(eta2r(x[0] * d_eta + eta_min));
         }else if constexpr (i == 2){
-          return v_in * dpsi_dtheta(eta2r(x[0] * d_eta + eta_min), eta2theta(x[0] * d_eta + eta_min));
+          return v_in * dpsi_dth;
         }else{
           return v_in;
         }
@@ -343,10 +333,6 @@ namespace metric {
       return math::log((r - rh_) / (r - rh_m)) / (rh_ - rh_m);
     }
 
-    Inline auto eta2theta(const real_t& eta) const -> real_t{
-      return theta0;
-    }
-
     Inline auto eta2r(const real_t& eta) const -> real_t{
       return rh_m - TWO * math::sqrt(ONE - SQR(a)) / math::expm1(eta * TWO * math::sqrt(ONE - SQR(a)));
     }
@@ -357,4 +343,4 @@ namespace metric {
 }
 
 
-#endif // METRICS_FLUX_SURFACE_H
+#endif // METRICS_BOYER_LINDQ_TP_H
