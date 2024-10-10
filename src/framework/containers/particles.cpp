@@ -121,8 +121,8 @@ namespace ntt {
 //     npart_tag_vec.push_back(npart_tag);
 //   }
   
-  return npart_tag_vec;
-}
+//   return npart_tag_vec;
+// }
 
   template <Dimension D, Coord::type C>
   auto Particles<D, C>::SortByTags() -> std::vector<std::size_t> {
