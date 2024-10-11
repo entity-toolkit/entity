@@ -45,16 +45,16 @@ namespace user {
     }
 
     Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-      real_t factor = time/2.0;
-      if (factor > 1) { factor = 1.0; }
-      //real_t factor = 1.0;
+      //real_t factor = time/2.0;
+      //if (factor > 1) { factor = 1.0; }
+      real_t factor = 1.0;
       return Omega * factor * bx2(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]);
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      real_t factor = time/2.0;
-      if (factor > 1) { factor = 1.0; }
-      //real_t factor = 1.0;
+      //real_t factor = time/2.0;
+      //if (factor > 1) { factor = 1.0; }
+      real_t factor = 1.0;
       return -Omega * factor * bx1(x_Ph) * x_Ph[0] * math::sin(x_Ph[1]);
     }
 
@@ -85,6 +85,7 @@ namespace user {
     const real_t  RLC;
     const real_t  dt, inv_n0;    
     InitFields<D> init_flds;
+    //const Metadomain<S, M>& m;
 
     // these two lines are related to number density computation
     bool          is_first_step;
@@ -96,6 +97,7 @@ namespace user {
       , Omega { static_cast<real_t>(constant::TWO_PI) /
                 p.template get<real_t>("setup.period", ONE) }
       , RLC {1/Omega}
+	//, m {m}
       , inv_n0 {ONE / p.template get<real_t>("scales.n0")}
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
       , Curv {p.template get<real_t>("setup.Curvature")}
@@ -201,8 +203,8 @@ namespace user {
 	    const real_t h2_0pH { metric.template h_<2, 2>({ i1_, i2_ + HALF }) };
 
 	    //minus included into coeff 
-	    //EB(i1, i2, em::bx3) += coeff*( h2_p1pH * corrEx2iP1j - h2_0pH * corrEx2ij +
-	    //h1_pHp1 * corrEx1ijP1 - h1_pH0 * corrEx1ij);
+	    EB(i1, i2, em::bx3) += coeff*( h2_p1pH * corrEx2iP1j - h2_0pH * corrEx2ij +
+	    h1_pHp1 * corrEx1ijP1 - h1_pH0 * corrEx1ij);
 	  });
       }
     }
@@ -279,10 +281,14 @@ namespace user {
 	Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
 
 	auto BCKP           = domain.fields.bckp;      
-	//m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
+	//m.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
 
       
-	for (std::size_t s { 0 }; s < 2; ++s) {
+	for (std::size_t s { 0 }; s < 5; ++s) {
+
+	  if ((s==1) || (s==2)){
+	    continue;
+	  }
 	  auto& species = domain.species[s];
 	  auto ux1    = species.ux1;
 	  auto ux2    = species.ux2;
@@ -614,20 +620,18 @@ namespace user {
 	      
 	      const auto sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
 
+	      vec_t<Dim::_3D> b_phys { ZERO };
+	      metric.template transform<Idx::U, Idx::T>({i+dx1_, j+dx2_}, b_int, b_phys);
+	      const auto BabsPhys { NORM(b_phys[0], b_phys[1], b_phys[2]) };
+	      
 	      if (sinAngle != 0){
 		const auto increment {
-		  coeffAbs * (Babs / _Bsurf) * sinAngle *
-		    math::exp(-8.0 / (3.0 * BoverBq * (Babs / _Bsurf) * sinAngle * ePh))
+		  coeffAbs * (BabsPhys / _Bsurf) * sinAngle *
+		    math::exp(-8.0 / (3.0 * BoverBq * (BabsPhys / _Bsurf) * sinAngle * ePh))
 		    };
 	      
 		pld0(p) += increment;
 	      }
-	      
-	      //check physical position of the photon and erase if too far
-	      const coord_t<Dim::_2D> xc2d{static_cast<real_t>(i1_ph(p)) + dx1_ph(p),
-					   static_cast<real_t>(i2_ph(p)) + dx2_ph(p)};
-	      coord_t<Dim::_2D> xPh { ZERO };
-	      metric.template convert<Crd::Cd, Crd::Ph>(xc2d, xPh);	      
 	      
 	      //emit pairs
 	      

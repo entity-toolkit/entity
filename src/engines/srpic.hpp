@@ -111,9 +111,6 @@ namespace ntt {
       {
         timers.start("ParticlePusher");
         ParticlePush(dom);
-        if constexpr (traits::has_method<traits::pgen::custom_partevolution_t, decltype(m_pgen)>::value) {
-           m_pgen.CustomPartEvolution(step, time, dom);
-	}
         timers.stop("ParticlePusher");
 
         if (deposit_enabled) {
@@ -180,6 +177,9 @@ namespace ntt {
       {
         timers.start("Injector");
         ParticleInjector(dom);
+	if constexpr (traits::has_method<traits::pgen::custom_partevolution_t, decltype(m_pgen)>::value) {
+	    m_pgen.CustomPartEvolution(step, time, dom);
+	}
         timers.stop("Injector");
       }
     }
