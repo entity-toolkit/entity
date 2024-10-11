@@ -220,7 +220,7 @@ namespace kernel::gr {
                dt * (ex +
                      HALF * compute_u0(pp_mid, xp) * 
                           (-DERIVATIVE(metric.alpha, xp[0]) +
-                           DERIVATIVE(metirc.f2, xp[0]) * SQR((pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp)) +
+                           DERIVATIVE(metric.f2, xp[0]) * SQR((pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp)) +
                            TWO * DERIVATIVE(metric.f1, xp[0]) * (pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp) + 
                            DERIVATIVE(metric.f0, xp[0])
                           )
@@ -259,7 +259,7 @@ template <class M>
 
     real_t ep_cntrv { metric.alpha(xp) * metric.template transform<1, Idx::U, Idx::D>(xp, Dp_cntrv) };
 
-    real_t pp { ux1(p) };
+    real_t pp { px1(p) };
     
 
     /* -------------------------------- Leapfrog -------------------------------- */
@@ -281,7 +281,7 @@ template <class M>
     dx1(p) = dx1_;
 
     /* update velocity */
-    ux1(p) = pp_upd;
+    px1(p) = pp_upd;
  
 
     boundaryConditions(p);

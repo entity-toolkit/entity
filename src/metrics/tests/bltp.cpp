@@ -85,10 +85,10 @@ void testMetric(const std::vector<std::size_t>&      res,
   const auto    a          = metric.spin();
   const auto th0 = params.at("theta0");
   const auto psi0 = params.at("psi0");
-  const auto bt = -HALF * psi0 * a * math::sin(th0) * math::cos(th0) / Sigma(rh_);
+  const auto bt = -HALF * psi0 * a * math::sin(th0) * math::cos(th0) / (SQR(rh) + SQR(a * math::cos(th0)));
   const auto Omega = params.at("Omega") * a / (SQR(a) + SQR(rh));
   const auto dpsi_dth = -psi0 * math::sin(th0);
-  const auto dbt_dth = -HALF * psi0 * a * (SQR(a * math::cos(th0)) + SQR(rh) * math::cos(TWO * th0)) / SQR(Sigma(rh_));
+  const auto dbt_dth = -HALF * psi0 * a * (SQR(a * math::cos(th0)) + SQR(rh) * math::cos(TWO * th0)) / SQR(SQR(rh) + SQR(a * math::cos(th0)));
   const auto rh_m = rh - TWO * math::sqrt(ONE - SQR(a));
 
   const auto eta_min = math::log((x_min - rh) / (x_min - rh_m)) / (rh - rh_m);
@@ -168,7 +168,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
     using namespace metric;
-    testMetric<FluxSurface<Dim::_1D>>(
+    testMetric<BoyerLindqTP<Dim::_1D>>(
       { 128 },
       { { 2.0, 20.0 } },
       30,

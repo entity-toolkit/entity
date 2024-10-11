@@ -5,7 +5,7 @@
 #include "utils/numeric.h"
 #include "utils/comparators.h"
 
-#include "metrics/flux_surface.h"
+#include "metrics/boyer_lindq_tp.h"
 
 #include "kernels/particle_pusher_1D_gr.hpp"
 
@@ -104,7 +104,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   array_t<real_t*>   px1 { "px1", 30 };
   array_t<short*>    tag { "tag", 30 };
   
-  const auto sep = real_t { 0.1 * res[0] };
+  const auto sep = { static_cast<real_t>(0.1 * res[0]) };
   real_t x1i { ZERO };
   int ii { 0 };
   prtldx_t dx1i { ZERO };
@@ -140,7 +140,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
    Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 0 }, { 10 }),
-    kernel::gr::Pusher_kernel<FluxSurface<Dim::_1D>>(
+    kernel::gr::Pusher_kernel<BoyerLindqTP<Dim::_1D>>(
                                                    efield,
                                                    i1,
                                                    i1_prev,
@@ -168,7 +168,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
    Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 10 }, { 20 }),
-    kernel::gr::Pusher_kernel<FluxSurface<Dim::_1D>>(
+    kernel::gr::Pusher_kernel<BoyerLindqTP<Dim::_1D>>(
                                                    efield,
                                                    i1,
                                                    i1_prev,
@@ -187,7 +187,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 20 }, { 30 }),
-    kernel::gr::Pusher_kernel<FluxSurface<Dim::_1D>>(
+    kernel::gr::Pusher_kernel<BoyerLindqTP<Dim::_1D>>(
                                                    efield,
                                                    i1,
                                                    i1_prev,
@@ -256,25 +256,23 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
 
-    testFFPusher<SimEngine::GRPIC, FluxSurface<Dim::_1D>>(
+    testFFPusher<SimEngine::GRPIC, BoyerLindqTP<Dim::_1D>>(
       { 128 },
-      { { 2.0, 50.0 } },
+      { { 2.0, 20.0 } },
         5,
       { { "a", (real_t)0.95 } , 
         { "psi0", (real_t)1.0 } , 
         { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 } ,
-        { "pCur", (real_t)3.1 }  });
+        { "Omega", (real_t)0.5 }  });
       
-    testFFPusher<SimEngine::GRPIC, FluxSurface<Dim::_1D>>(
+    testFFPusher<SimEngine::GRPIC, BoyerLindqTP<Dim::_1D>>(
       { 512 },
-      { { 2.0, 50.0 } },
+      { { 2.0, 20.0 } },
         5,
       { { "a", (real_t)0.95 } , 
         { "psi0", (real_t)1.0 } , 
         { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 } ,
-        { "pCur", (real_t)3.1 }  });
+        { "Omega", (real_t)0.5 }  });
 
 
   } catch (std::exception& e) {
