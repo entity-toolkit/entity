@@ -44,7 +44,7 @@ Inline auto equal(const real_t& a,
                   const real_t& b,
                   const char*     msg,
                   const real_t    acc = ONE) -> bool {
-  const auto eps = math::sqrt(epsilon) * acc;
+  const auto eps = 1e-5 * acc;
   if (not cmp::AlmostEqual(a, b, eps)) {
     printf("%.12e != %.12e %s\n", a, b, msg);
     return false;

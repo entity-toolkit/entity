@@ -171,7 +171,7 @@ namespace kernel::gr {
     Inline auto compute_u0(const real_t& pxi, 
                               const coord_t<D>& xi) const -> real_t{
       return math::sqrt((SQR(pxi) + metric.f2(xi)) / 
-                         (metric.f2(xi) * (SQR(metric.alpha(xi)) - metric.f1(xi)) + SQR(metric.f1(xi))));
+                         (metric.f2(xi) * (SQR(metric.alpha(xi)) - metric.f0(xi)) + SQR(metric.f1(xi))));
     }
 
 
@@ -219,7 +219,7 @@ namespace kernel::gr {
       pp_upd = pp + 
                dt * (ex +
                      HALF * compute_u0(pp_mid, xp) * 
-                          (-DERIVATIVE(metric.alpha, xp[0]) +
+                          (-TWO * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
                            DERIVATIVE(metric.f2, xp[0]) * SQR((pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp)) +
                            TWO * DERIVATIVE(metric.f1, xp[0]) * (pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp) + 
                            DERIVATIVE(metric.f0, xp[0])
