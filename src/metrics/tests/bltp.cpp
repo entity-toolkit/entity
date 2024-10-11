@@ -3,7 +3,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
 
-#include "metrics/flux_surface.h"
+#include "metrics/boyer_lindq_tp.h"
 
 #include <iostream>
 #include <limits>
@@ -83,10 +83,12 @@ void testMetric(const std::vector<std::size_t>&      res,
   const auto    rg         = metric.rg();
   const auto    rh         = metric.rhorizon();
   const auto    a          = metric.spin();
-  const auto th = params.at("theta0");
+  const auto th0 = params.at("theta0");
   const auto psi0 = params.at("psi0");
-  const auto pCur = params.at("pCur");
+  const auto bt = -HALF * psi0 * a * math::sin(th0) * math::cos(th0) / Sigma(rh_);
   const auto Omega = params.at("Omega") * a / (SQR(a) + SQR(rh));
+  const auto dpsi_dth = -psi0 * math::sin(th0);
+  const auto dbt_dth = -HALF * psi0 * a * (SQR(a * math::cos(th0)) + SQR(rh) * math::cos(TWO * th0)) / SQR(Sigma(rh_));
   const auto rh_m = rh - TWO * math::sqrt(ONE - SQR(a));
 
   const auto eta_min = math::log((x_min - rh) / (x_min - rh_m)) / (rh - rh_m);
@@ -117,23 +119,21 @@ void testMetric(const std::vector<std::size_t>&      res,
       const auto r  = x_Phys[0];
     
 
-      const auto Sigma = SQR(r) + SQR(a * math::cos(th));
+      const auto Sigma = SQR(r) + SQR(a * math::cos(th0));
       const auto Delta = SQR(r) - TWO * rg * r + SQR(a);
-      const auto A     = SQR(SQR(r) + SQR(a)) - SQR(a * math::sin(th)) * Delta;
-      const auto dpsi_r = 0;
-      const auto dpsi_dtheta = psi0 * math::sin(th);
+      const auto A     = SQR(SQR(r) + SQR(a)) - SQR(a * math::sin(th0)) * Delta;
       const auto omega = TWO * a * r / A ;
 
       const auto h_11_expect  = Sigma / Delta;
       const auto h_22_expect  = Sigma ;
-      const auto h_33_expect  = A * SQR(math::sin(th)) / Sigma;
+      const auto h_33_expect  = A * SQR(math::sin(th0)) / Sigma;
       const auto h11_expect = ONE / h_11_expect;
       const auto h22_expect = ONE / h_22_expect;
       const auto h33_expect = ONE / h_33_expect;
 
       const auto f0_expect = h_33_expect * SQR(Omega - omega);
-      const auto f1_expect = d_eta * A * pCur * math::sin(th) * (Omega - omega) / dpsi_dtheta;
-      const auto f2_expect = SQR(d_eta) * Sigma * (Delta + A * SQR(pCur / dpsi_dtheta));
+      const auto f1_expect = d_eta * A * bt * (Omega - omega) / psi0;
+      const auto f2_expect = SQR(d_eta) * Sigma * (Delta + A * SQR(bt / dpsi_dth));
 
       const auto f0_predict = metric.f0(x_Code);
       const auto f1_predict = metric.f1(x_Code);
@@ -170,13 +170,12 @@ auto main(int argc, char* argv[]) -> int {
     using namespace metric;
     testMetric<FluxSurface<Dim::_1D>>(
       { 128 },
-      { { 2.0, 50.0 } },
+      { { 2.0, 20.0 } },
       30,
       { { "a", (real_t)0.95 } , 
         { "psi0", (real_t)1.0 } , 
         { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 } ,
-        { "pCur", (real_t)3.1 }  });
+        { "Omega", (real_t)0.5 }});
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     Kokkos::finalize();
