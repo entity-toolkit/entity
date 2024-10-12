@@ -64,8 +64,7 @@ namespace ntt {
 
         if (step == 0) {
           // communicate fields and apply BCs on the first timestep
-          m_metadomain.CommunicateFields(dom, Comm::E);
-          FieldBoundaries(dom, BC::E);
+          m_metadomain.CommunicateFields(dom, Comm::D);
           ParticleInjector(dom);
         }
 
@@ -101,12 +100,9 @@ namespace ntt {
           timers.stop("FieldSolver");
 
           timers.start("Communications");
-          m_metadomain.CommunicateFields(dom, Comm::E | Comm::J);
+          m_metadomain.CommunicateFields(dom, Comm::D | Comm::J);
           timers.stop("Communications");
 
-          timers.start("FieldBoundaries");
-          FieldBoundaries(dom, BC::E);
-          timers.stop("FieldBoundaries");
         }
 
         {
@@ -115,8 +111,6 @@ namespace ntt {
           timers.stop("Injector");
         }
     }
-
-    void FieldBoundaries(domain_t& domain, BCTags tags) {}
 
     void ParticleInjector(domain_t& domain, InjTags tags = Inj::None) {}
 
@@ -154,7 +148,7 @@ namespace ntt {
                                                       i1_prev,
                                                       dx1,
                                                       dx1_prev,
-                                                      ux1,
+                                                      px1,
                                                       tag,
                                                       metric,
                                                       coeff, dt,
