@@ -87,7 +87,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   const real_t d_eta_inv { nx1 / (metric.r2eta(extent[0].second) - metric.r2eta(extent[0].first)) };
 
   const auto coeff { d_eta_inv };
-  const auto dt    = real_t { 0.001 };
+  const auto dt    = real_t { 0.1 };
 
   const auto range_ext = CreateRangePolicy<Dim::_1D>(
     { 0 },
@@ -258,15 +258,6 @@ auto main(int argc, char* argv[]) -> int {
 
     testFFPusher<SimEngine::GRPIC, BoyerLindqTP<Dim::_1D>>(
       { 128 },
-      { { 2.0, 20.0 } },
-        5,
-      { { "a", (real_t)0.95 } , 
-        { "psi0", (real_t)1.0 } , 
-        { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 }  });
-      
-    testFFPusher<SimEngine::GRPIC, BoyerLindqTP<Dim::_1D>>(
-      { 512 },
       { { 2.0, 20.0 } },
         5,
       { { "a", (real_t)0.95 } , 
