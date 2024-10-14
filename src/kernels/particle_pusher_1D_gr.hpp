@@ -139,7 +139,6 @@ namespace kernel::gr {
                                                         real_t&     pp_upd) const;
 
     /**
-     * @brief Iterative geodesic pusher substep for coordinate only.
      * @param xp particle coordinate.
      * @param vp particle velocity.
      * @param xp_upd updated particle coordinate [return].
@@ -217,7 +216,7 @@ namespace kernel::gr {
        
       // find updated momentum
       pp_upd = pp + 
-               dt * (ex +
+               dt * (coeff * ex +
                      HALF * compute_u0(pp_mid, xp) * 
                           (-TWO * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
                            DERIVATIVE(metric.f2, xp[0]) * SQR((pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp)) +
