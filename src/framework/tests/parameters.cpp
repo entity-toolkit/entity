@@ -242,7 +242,11 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
 
     {
-      const auto params_mink_1d = SimulationParams(mink_1d);
+      auto params_mink_1d = SimulationParams();
+      params_mink_1d.setImmutableParams(mink_1d);
+      params_mink_1d.setMutableParams(mink_1d);
+      params_mink_1d.setSetupParams(mink_1d);
+      params_mink_1d.checkPromises();
 
       assert_equal<Metric>(params_mink_1d.get<Metric>("grid.metric.metric"),
                            Metric::Minkowski,
@@ -314,7 +318,11 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     {
-      const auto params_sph_2d = SimulationParams(sph_2d);
+      auto params_sph_2d = SimulationParams();
+      params_sph_2d.setImmutableParams(sph_2d);
+      params_sph_2d.setMutableParams(sph_2d);
+      params_sph_2d.setSetupParams(sph_2d);
+      params_sph_2d.checkPromises();
 
       assert_equal<Metric>(params_sph_2d.get<Metric>("grid.metric.metric"),
                            Metric::Spherical,
@@ -427,7 +435,11 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     {
-      const auto params_qks_2d = SimulationParams(qks_2d);
+      auto params_qks_2d = SimulationParams();
+      params_qks_2d.setImmutableParams(qks_2d);
+      params_qks_2d.setMutableParams(qks_2d);
+      params_qks_2d.setSetupParams(qks_2d);
+      params_qks_2d.checkPromises();
 
       assert_equal<Metric>(params_qks_2d.get<Metric>("grid.metric.metric"),
                            Metric::QKerr_Schild,

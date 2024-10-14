@@ -30,7 +30,7 @@ auto main(int argc, char* argv[]) -> int {
 
     using namespace ntt;
     auto writer = out::Writer();
-    writer.init(&adios, "hdf5");
+    writer.init(&adios, "hdf5", "test");
     writer.defineMeshLayout({ 10, 10, 10 },
                             { 0, 0, 0 },
                             { 10, 10, 10 },
@@ -57,11 +57,11 @@ auto main(int argc, char* argv[]) -> int {
       names.push_back(writer.fieldWriters()[0].name(i));
       addresses.push_back(i);
     }
-    writer.beginWriting("test", 0, 0.0);
+    writer.beginWriting(0, 0.0);
     writer.writeField<Dim::_3D, 3>(names, field, addresses);
     writer.endWriting();
 
-    writer.beginWriting("test", 1, 0.1);
+    writer.beginWriting(1, 0.1);
     writer.writeField<Dim::_3D, 3>(names, field, addresses);
     writer.endWriting();
 
