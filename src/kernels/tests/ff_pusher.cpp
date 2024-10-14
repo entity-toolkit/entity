@@ -5,7 +5,7 @@
 #include "utils/numeric.h"
 #include "utils/comparators.h"
 
-#include "metrics/flux_surface.h"
+#include "metrics/boyer_lindq_tp.h"
 
 #include "kernels/particle_pusher_1D_gr.hpp"
 
@@ -87,7 +87,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   const real_t d_eta_inv { nx1 / (metric.r2eta(extent[0].second) - metric.r2eta(extent[0].first)) };
 
   const auto coeff { d_eta_inv };
-  const auto dt    = real_t { 0.001 };
+  const auto dt    = real_t { 0.1 };
 
   const auto range_ext = CreateRangePolicy<Dim::_1D>(
     { 0 },
@@ -101,10 +101,10 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   array_t<int*>      i1_prev { "i1_prev", 30 };
   array_t<prtldx_t*> dx1 { "dx1", 30 };
   array_t<prtldx_t*> dx1_prev { "dx1_prev", 30 };
-  array_t<real_t*>   ux1 { "ux1", 30 };
+  array_t<real_t*>   px1 { "px1", 30 };
   array_t<short*>    tag { "tag", 30 };
   
-  const auto sep = real_t { 0.1 * res[0] };
+  const auto sep = { static_cast<real_t>(0.1 * res[0]) };
   real_t x1i { ZERO };
   int ii { 0 };
   prtldx_t dx1i { ZERO };
@@ -130,7 +130,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
     from_Xi_to_i_di(x1i, ii, dx1i)
     put_value<int>(i1, ii, n);
     put_value<prtldx_t>(dx1, dx1i, n);
-    put_value<real_t>(ux1, -metric.f1({ x1i }) / metric.f2({ x1i }), n);
+    put_value<real_t>(px1, ZERO, n);
     put_value<short>(tag, ParticleTag::alive, n);
   }
   
@@ -140,18 +140,18 @@ void testFFPusher(const std::vector<std::size_t>&      res,
    Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 0 }, { 10 }),
-    kernel::gr::Pusher_kernel<FluxSurface<Dim::_1D>>(
+    kernel::gr::Pusher_kernel<BoyerLindqTP<Dim::_1D>>(
                                                    efield,
                                                    i1,
                                                    i1_prev,
                                                    dx1,
                                                    dx1_prev,
-                                                   ux1,
+                                                   px1,
                                                    tag,
                                                    metric,
                                                    -coeff, dt,
                                                    nx1,
-                                                   1e-5,
+                                                   1e-2,
                                                    30,
                                                    boundaries));
   
@@ -168,18 +168,18 @@ void testFFPusher(const std::vector<std::size_t>&      res,
    Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 10 }, { 20 }),
-    kernel::gr::Pusher_kernel<FluxSurface<Dim::_1D>>(
+    kernel::gr::Pusher_kernel<BoyerLindqTP<Dim::_1D>>(
                                                    efield,
                                                    i1,
                                                    i1_prev,
                                                    dx1,
                                                    dx1_prev,
-                                                   ux1,
+                                                   px1,
                                                    tag,
                                                    metric,
                                                    coeff, dt,
                                                    nx1,
-                                                   1e-5,
+                                                   1e-2,
                                                    30,
                                                    boundaries));
   //negative charge 
@@ -187,18 +187,18 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   Kokkos::parallel_for(
     "pusher",
     CreateRangePolicy<Dim::_1D>({ 20 }, { 30 }),
-    kernel::gr::Pusher_kernel<FluxSurface<Dim::_1D>>(
+    kernel::gr::Pusher_kernel<BoyerLindqTP<Dim::_1D>>(
                                                    efield,
                                                    i1,
                                                    i1_prev,
                                                    dx1,
                                                    dx1_prev,
-                                                   ux1,
+                                                   px1,
                                                    tag,
                                                    metric,
                                                    -coeff, dt,
                                                    nx1,
-                                                   1e-5,
+                                                   1e-2,
                                                    30,
                                                    boundaries));
 
@@ -210,36 +210,36 @@ void testFFPusher(const std::vector<std::size_t>&      res,
   Kokkos::deep_copy(dx1_, dx1);
   auto dx1_prev_      = Kokkos::create_mirror_view(dx1_prev);
   Kokkos::deep_copy(dx1_prev_, dx1_prev);
-  auto ux1_      = Kokkos::create_mirror_view(ux1);
-  Kokkos::deep_copy(ux1_, ux1);
+  auto px1_      = Kokkos::create_mirror_view(px1);
+  Kokkos::deep_copy(px1_, px1);
 
 
   
-  real_t vp_exp[10] { -0.00101477428313248, -0.00176341809594538, -0.00238648615376442, 
-                      -0.00283827679351036, -0.00306921265956161, -0.00303290033101228, 
-                      -0.00270039933123280, -0.00208484416740382, -0.00127661321429062, 
-                      -0.000478820732615589 };
-  real_t vp_e_p_exp[10] { -0.000968871443278805, -0.00170766999655962, -0.00231905310776449, 
-                          -0.00275740867122713, -0.00297377760543621, -0.00292344129084046, 
-                          -0.00258102327970717, -0.00196607452803054, -0.00117812532296952, 
-                          -0.000426442564188143 };
-  real_t vp_e_n_exp[10] { -0.00106067712103997, -0.00181916619206061, -0.00245391919423174, 
-                          -0.00291914490642661, -0.00316464769797483, -0.00314235934553045, 
-                          -0.00281977534327427, -0.00220361375292999, -0.00137510104884271, 
-                          -0.000531198870011043 };
+  real_t pp_exp[10] { 1.00552757803207, 1.00905004166760, 1.01264731982748, 
+                      1.01622119133582, 1.01961904791731, 1.02260412478936, 
+                      1.02480734477237, 1.02564651052812, 1.02418169991879, 
+                      1.01916798198126};
+  real_t pp_e_p_exp[10] { 1.12420507263443, 1.18040523823437, 1.27055279565053, 
+                          1.42520265982451, 1.71347897729332, 2.31132787710123, 
+                          3.74396948272974, 7.98290677490210, 25.6627981723171, 
+                          170.710945349036};
+  real_t pp_e_n_exp[10] { 0.886850044532529, 0.837694736928196, 0.754741504814654, 
+                          0.607238475100313, 0.325753270778111, -0.266166995807237, 
+                          -1.67869862572720, -5.82318047383146, -23.1877218243589, 
+                          -166.709733472388};
 
   unsigned int wrongs { 0 };
   
   for (size_t n { 0 }; n < 10; ++n){
-    wrongs += !equal(ux1_(n), vp_exp[n] * d_eta_inv, "no efield", acc);
+    wrongs += !equal(px1_(n), pp_exp[n], "no efield", acc);
   }
   
   for (size_t n { 0 }; n < 10; ++n){
-    wrongs += !equal(ux1_(n + 10), vp_e_p_exp[n] * d_eta_inv, "positive charge", acc);
+    wrongs += !equal(px1_(n + 10), pp_e_p_exp[n], "positive charge", acc);
   }
   
   for (size_t n { 0 }; n < 10; ++n){
-    wrongs += !equal(ux1_(n + 20), vp_e_n_exp[n] * d_eta_inv, "negative charge", acc);
+    wrongs += !equal(px1_(n + 20), pp_e_n_exp[n], "negative charge", acc);
   }
 
   if (wrongs){
@@ -256,25 +256,14 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
 
-    testFFPusher<SimEngine::GRPIC, FluxSurface<Dim::_1D>>(
+    testFFPusher<SimEngine::GRPIC, BoyerLindqTP<Dim::_1D>>(
       { 128 },
-      { { 2.0, 50.0 } },
+      { { 2.0, 20.0 } },
         5,
       { { "a", (real_t)0.95 } , 
         { "psi0", (real_t)1.0 } , 
         { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 } ,
-        { "pCur", (real_t)3.1 }  });
-      
-    testFFPusher<SimEngine::GRPIC, FluxSurface<Dim::_1D>>(
-      { 512 },
-      { { 2.0, 50.0 } },
-        5,
-      { { "a", (real_t)0.95 } , 
-        { "psi0", (real_t)1.0 } , 
-        { "theta0", (real_t)1.0 } , 
-        { "Omega", (real_t)0.5 } ,
-        { "pCur", (real_t)3.1 }  });
+        { "Omega", (real_t)0.5 }  });
 
 
   } catch (std::exception& e) {

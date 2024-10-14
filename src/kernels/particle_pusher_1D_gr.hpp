@@ -66,7 +66,7 @@ namespace kernel::gr {
     array_t<int*>         i1_prev;
     array_t<prtldx_t*>    dx1;
     array_t<prtldx_t*>    dx1_prev;
-    array_t<real_t*>      ux1;
+    array_t<real_t*>      px1;
     array_t<short*>       tag;
     const M               metric;
 
@@ -85,7 +85,7 @@ namespace kernel::gr {
                   const array_t<int*>&              i1_prev,
                   const array_t<prtldx_t*>&         dx1,
                   const array_t<prtldx_t*>&         dx1_prev,
-                  const array_t<real_t*>&           ux1,
+                  const array_t<real_t*>&           px1,
                   const array_t<short*>&            tag,
                   const M&                          metric,
                   const real_t&                     coeff,
@@ -99,7 +99,7 @@ namespace kernel::gr {
       , i1_prev { i1_prev }
       , dx1 { dx1 }
       , dx1_prev { dx1_prev }
-      , ux1 { ux1 }
+      , px1 { px1 }
       , tag { tag }
       , metric { metric }
       , coeff { coeff }
@@ -134,12 +134,11 @@ namespace kernel::gr {
      * @param vp_upd updated particle velocity [return].
      */
     Inline void ForceFreePush( const coord_t<D>& xp,
-                               const real_t&     vp,
+                               const real_t&     pp,
 			       const real_t&     ex,
-                                                        real_t&     vp_upd) const;
+                                                        real_t&     pp_upd) const;
 
     /**
-     * @brief Iterative geodesic pusher substep for coordinate only.
      * @param xp particle coordinate.
      * @param vp particle velocity.
      * @param xp_upd updated particle coordinate [return].
@@ -168,10 +167,10 @@ namespace kernel::gr {
      * @brief Compute controvariant component u^0 for massive particles.
      */
 
-    Inline auto compute_u0_inv(const real_t& v, 
+    Inline auto compute_u0(const real_t& pxi, 
                               const coord_t<D>& xi) const -> real_t{
-      return math::sqrt(math::abs(SQR(metric.alpha(xi)) -
-                 metric.f2(xi) * SQR(v) - TWO * metric.f1(xi) * v - metric.f0(xi))) ;
+      return math::sqrt((SQR(pxi) + metric.f2(xi)) / 
+                         (metric.f2(xi) * (SQR(metric.alpha(xi)) - metric.f0(xi)) + SQR(metric.f1(xi))));
     }
 
 
@@ -201,32 +200,30 @@ namespace kernel::gr {
   */
   template <class M>
   Inline void Pusher_kernel<M>::ForceFreePush( const coord_t<D>& xp,
-                                               const real_t&     vp,
-					       const real_t&     ex,
-                                                     real_t&     vp_upd) const {
+                                               const real_t&     pp,
+					                                     const real_t&     ex,
+                                                     real_t&     pp_upd) const {
     
 
-    real_t vp_mid { vp };
+    real_t pp_mid { pp };
+    pp_upd = pp;
 
-    vp_upd = vp;
 
-    real_t weight = 0.5;
-     
     //printf("Iteration starts.\n");
     for (auto i { 0 }; i < niter; ++i) {
       // find midpoint values
-      vp_mid  = 0.5 * (vp + vp_upd);
-      // find updated velociity
-      vp_upd = compute_u0_inv(vp_mid, xp) * vp / compute_u0_inv(vp, xp) +
-	      (( compute_u0_inv(vp_mid, xp) / compute_u0_inv(vp, xp) - ONE) * metric.f1(xp) + 
-		      dt * (coeff * ex * compute_u0_inv(vp_mid, xp) + 
-			    (-metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
-                             HALF * (DERIVATIVE(metric.f2, xp[0]) * SQR(vp_mid) + 
-                                     TWO * DERIVATIVE(metric.f1, xp[0]) * vp_mid +
-                                     DERIVATIVE(metric.f0, xp[0]))
-	                    )
-			   )
-		    ) / metric.f2(xp);
+      pp_mid = 0.5 * (pp + pp_upd);
+       
+      // find updated momentum
+      pp_upd = pp + 
+               dt * (coeff * ex +
+                     HALF * compute_u0(pp_mid, xp) * 
+                          (-TWO * metric.alpha(xp) * DERIVATIVE(metric.alpha, xp[0]) +
+                           DERIVATIVE(metric.f2, xp[0]) * SQR((pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp)) +
+                           TWO * DERIVATIVE(metric.f1, xp[0]) * (pp_mid / compute_u0(pp_mid, xp) - metric.f1(xp)) / metric.f2(xp) + 
+                           DERIVATIVE(metric.f0, xp[0])
+                          )
+                    );
     }
   }
 
@@ -261,19 +258,19 @@ template <class M>
 
     real_t ep_cntrv { metric.alpha(xp) * metric.template transform<1, Idx::U, Idx::D>(xp, Dp_cntrv) };
 
-    real_t vp { ux1(p) };
+    real_t pp { px1(p) };
     
 
     /* -------------------------------- Leapfrog -------------------------------- */
     /* u_i(n - 1/2) ->  u_i(n + 1/2) */
-    real_t vp_upd { ZERO };
+    real_t pp_upd { ZERO };
 
-    ForceFreePush(xp, vp, ep_cntrv, vp_upd);
+    ForceFreePush(xp, pp, ep_cntrv, pp_upd);
 
 
     /* x^i(n) -> x^i(n + 1) */
     coord_t<D> xp_upd { ZERO };
-    CoordinatePush(xp, vp_upd, xp_upd);
+    CoordinatePush(xp, (pp_upd / compute_u0(pp_upd, xp) - metric.f1(xp)) / metric.f2(xp), xp_upd);
 
     /* update coordinate */
     int      i1_;
@@ -283,7 +280,7 @@ template <class M>
     dx1(p) = dx1_;
 
     /* update velocity */
-    ux1(p) = vp_upd;
+    px1(p) = pp_upd;
  
 
     boundaryConditions(p);
