@@ -10,6 +10,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/boyer_lindq_tp.h"
 
 #include <iostream>
 #include <limits>
@@ -183,18 +184,14 @@ auto main(int argc, char* argv[]) -> int {
     };
     testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 150);
 
-    const auto resfs = std::vector<std::size_t> { 128 };
-    const auto extfs = boundaries_t<real_t> {
-      {2.0, 50.0}
+    const auto psramsbltp = std::map<std::string, real_t> {
+      {"a"     , (real_t)0.95},
+      {"psi0"  ,          ONE},
+      {"theta0",          ONE},
+      {"Omega" ,         HALF}
     };
-    const auto paramsfs = std::map<std::string, real_t> {
-      {     "a", (real_t)0.95},
-      {  "psi0",  (real_t)1.0},
-      {"theta0",  (real_t)1.0},
-      { "Omega",  (real_t)0.5},
-      {  "pCur",  (real_t)3.1}
-    };
-    testMetric<FluxSurface<Dim::_1D>>(resfs, extfs, 500, paramsfs);
+
+    testMetric<BoyerLindqTP<Dim::_1D>>({ 128 }, ext1dcart, 200, psramsbltp);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

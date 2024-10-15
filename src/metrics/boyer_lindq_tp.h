@@ -36,7 +36,7 @@ namespace metric {
     // and horizon size in units of rg
     // all physical extents are in units of rg
     const real_t a, rg_, psi0, th0;
-    const real_t rh_, rh_m, psi, bt, Omega, dpsi_dth, dbt_dth;
+    const real_t rh, rh_m, psi, bt, Omega, dpsi_dth, dbt_dth;
     const real_t eta_max, eta_min;
     const real_t d_eta, d_eta_inv;
 
@@ -77,13 +77,13 @@ namespace metric {
       , psi0 { params.at("psi0") }
       , th0 { params.at("theta0") }
       , rg_ { ONE }
-      , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
+      , rh { ONE + math::sqrt(ONE - SQR(a)) }
       , rh_m { ONE - math::sqrt(ONE - SQR(a)) }
       , psi { psi0 * (1 - math::cos(th0)) }
-      , bt { -HALF * psi0 * a * math::sin(th0) * math::cos(th0) / Sigma(rh_) }
-      , Omega { params.at("Omega") * a / (SQR(a) + SQR(rh_)) }
+      , bt { -HALF * psi0 * a * math::sin(th0) * math::cos(th0) / Sigma(rh) }
+      , Omega { params.at("Omega") * a / (SQR(a) + SQR(rh)) }
       , dpsi_dth { psi0 * math::sin(th0) }
-      , dbt_dth { -HALF * psi0 * a * (SQR(a * math::cos(th0)) + SQR(rh_) * math::cos(TWO * th0)) / SQR(Sigma(rh_)) }
+      , dbt_dth { -HALF * psi0 * a * (SQR(a * math::cos(th0)) + SQR(rh) * math::cos(TWO * th0)) / SQR(Sigma(rh)) }
       , eta_min { r2eta(x1_min) }
       , eta_max { r2eta(x1_max) }
       , d_eta { (eta_max - eta_min) / nx1 }
@@ -100,7 +100,7 @@ namespace metric {
 
     [[nodiscard]]   
     Inline auto rhorizon() const -> real_t {
-      return rh_;
+      return rh;
     }
 
     [[nodiscard]]   
@@ -160,6 +160,25 @@ namespace metric {
       return h_<3, 3>(xi) * SQR(Omega + beta3(xi));
     }
 
+    /**
+     * @brief force-free charge densities and currents
+     */
+
+    Inline auto rho_ff(const coord_t<D>& xi) const -> real_t {
+      const real_t r_  { eta2r(xi[0] * d_eta + eta_min) };
+      return psi0 / sqrt_det_h(xi) * math::sin(TWO * th0) *
+             ((omega(r_) - Omega) * (ONE + SQR(a * math::sin(th0)) / Sigma(r_)) / SQR(alpha(xi)) +
+               SQR(a * math::sin(th0)) * Omega / Sigma(r_));
+    }
+
+    Inline auto J_ff() const -> real_t {
+      return -d_eta_inv * HALF * psi0 * a * 
+            (ONE - TWO * SQR(rh * math::sin(th0)) / Sigma(rh))
+            / Sigma(rh);
+    }
+
+
+     
     /**
      * minimum effective cell size for a given metric (in physical units)
      */
@@ -264,8 +283,7 @@ namespace metric {
         if constexpr (i == 1){
           return v_in / math::sqrt(h_<i, i>(x)) / Delta(eta2r(x[0] * d_eta + eta_min));
         }else if constexpr (i == 2){
-          return v_in / math::sqrt(h_<i, i>(x)) * 
-                 dpsi_dth;
+          return v_in / math::sqrt(h_<i, i>(x)) * dpsi_dth;
         }else{
           return v_in / math::sqrt(h_<i, i>(x));
         }
@@ -275,8 +293,7 @@ namespace metric {
         if constexpr (i == 1){
           return v_in * math::sqrt(h_<i, i>(x)) * Delta(eta2r(x[0] * d_eta + eta_min));
         }else if constexpr (i == 2){
-          return v_in * math::sqrt(h_<i, i>(x)) / 
-                 dpsi_dth;
+          return v_in * math::sqrt(h_<i, i>(x)) / dpsi_dth;
         }else{
           return v_in * math::sqrt(h_<i, i>(x));
         }
@@ -329,7 +346,7 @@ namespace metric {
     }
     
     Inline auto r2eta(const real_t& r) const -> real_t{
-      return math::log((r - rh_) / (r - rh_m)) / (rh_ - rh_m);
+      return math::log((r - rh) / (r - rh_m)) / (rh - rh_m);
     }
 
     Inline auto eta2r(const real_t& eta) const -> real_t{
