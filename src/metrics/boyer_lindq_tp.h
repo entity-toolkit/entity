@@ -35,7 +35,7 @@ namespace metric {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t a, rg, psi0, th0;
+    const real_t a, rg_, psi0, th0;
     const real_t rh, rh_m, psi, bt, Omega, dpsi_dth, dbt_dth;
     const real_t eta_max, eta_min;
     const real_t d_eta, d_eta_inv;
@@ -76,7 +76,7 @@ namespace metric {
       , a { params.at("a") }
       , psi0 { params.at("psi0") }
       , th0 { params.at("theta0") }
-      , rg { ONE }
+      , rg_ { ONE }
       , rh { ONE + math::sqrt(ONE - SQR(a)) }
       , rh_m { ONE - math::sqrt(ONE - SQR(a)) }
       , psi { psi0 * (1 - math::cos(th0)) }
@@ -110,7 +110,7 @@ namespace metric {
 
     [[nodiscard]]
     Inline auto rg() const -> real_t {
-      return rg;
+      return rg_;
     }
     
     [[nodiscard]]

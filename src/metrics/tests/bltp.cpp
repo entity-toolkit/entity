@@ -162,7 +162,7 @@ void testMetric(const std::vector<std::size_t>&      res,
     },
     all_wrongs);
 
-  const auto J_ff_expect { -HALF * psi0 * a / (SQR(rh) + SQR(a * math::cos(th0))) 
+  const auto J_ff_expect { -HALF / d_eta * psi0 * a / (SQR(rh) + SQR(a * math::cos(th0))) 
                             * (ONE - TWO * SQR(rh * math::sin(th0)) / (SQR(rh) + SQR(a * math::cos(th0))) )};
 
   const auto J_ff_predict { metric.J_ff() };
