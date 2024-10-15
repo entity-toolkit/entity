@@ -3,12 +3,14 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
 
+#include "metrics/flux_surface.h"
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/boyer_lindq_tp.h"
 
 #include <iostream>
 #include <limits>
@@ -181,6 +183,15 @@ auto main(int argc, char* argv[]) -> int {
       {0.0, constant::PI}
     };
     testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 150);
+
+    const auto psramsbltp = std::map<std::string, real_t> {
+      {"a"     , (real_t)0.95},
+      {"psi0"  ,          ONE},
+      {"theta0",          ONE},
+      {"Omega" ,         HALF}
+    };
+
+    testMetric<BoyerLindqTP<Dim::_1D>>({ 128 }, ext1dcart, 200, psramsbltp);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
