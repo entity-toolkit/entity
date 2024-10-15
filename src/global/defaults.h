@@ -16,7 +16,6 @@
 
 namespace ntt::defaults {
   constexpr std::string_view input_filename = "input";
-  constexpr std::string_view output_path    = "output";
 
   const real_t correction = 1.0;
   const real_t cfl        = 0.95;
@@ -59,6 +58,11 @@ namespace ntt::defaults {
     const bool           spec_log    = true;
     const std::size_t    spec_nbins  = 200;
   } // namespace output
+
+  namespace checkpoint {
+    const std::size_t interval = 1000;
+    const int         keep     = 2;
+  } // namespace checkpoint
 
   namespace diag {
     const std::size_t interval = 1;
