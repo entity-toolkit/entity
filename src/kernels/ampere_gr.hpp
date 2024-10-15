@@ -191,7 +191,6 @@ namespace kernel::gr {
 
     ndfield_t<D, 1>       Df;
     const ndfield_t<D, 1>  J;
-    const ndfield_t<D, 1>  J_ff;
     const M               metric;
     const real_t          coeff;
 
@@ -201,11 +200,10 @@ namespace kernel::gr {
      * @brief Constructor.
      * @param mblock Meshblock.
      */
-    Ampere_kernel_1D(const ndfield_t<D, 1> &      Df,
-                          const ndfield_t<D, 1>&  J,
-                          const ndfield_t<D, 1>   J_ff,
-                          const M&                metric,
-                          real_t                  coeff)
+    CurrentsAmpere_kernel_1D(ndfield_t<D, 1> &         Df,
+                             const ndfield_t<D, 1>&    J,
+                             const M&                  metric,
+                             const real_t              coeff)
       : Df { Df }
       , J { J }
       , metric { metric }
@@ -218,7 +216,7 @@ namespace kernel::gr {
 
         const real_t inv_sqrt_detH { ONE / metric.sqrt_det_h(i1_ + HALF) };
 
-        Df(i1, em::dx1) += (J(i1, cur::jx1) - J_ff(i1, cur::jx1)) * coeff * inv_sqrt_detH;
+        Df(i1, em::dx1) += (J(i1, cur::jx1) - metric.J_ff()) * coeff * inv_sqrt_detH;
       } else {
         raise::KernelError(
           HERE,
