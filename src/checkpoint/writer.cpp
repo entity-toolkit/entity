@@ -138,7 +138,6 @@ namespace checkpoint {
   void Writer::beginSaving(std::size_t step, long double time) {
     raise::ErrorIf(!m_enabled, "Checkpoint is not enabled", HERE);
     raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
-    p_adios->ExitComputationBlock();
     if (m_writing_mode) {
       raise::Fatal("Already writing", HERE);
     }
@@ -216,7 +215,9 @@ namespace checkpoint {
                          const ndfield_t<D, N>& field) {
     auto field_h = Kokkos::create_mirror_view(field);
     Kokkos::deep_copy(field_h, field);
-    m_writer.Put(m_io.InquireVariable<real_t>(fieldname), field_h.data(), adios2::Mode::Sync);
+    m_writer.Put(m_io.InquireVariable<real_t>(fieldname),
+                 field_h.data(),
+                 adios2::Mode::Sync);
   }
 
   template <typename T>

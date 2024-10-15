@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/mpi_aliases.h"
 #include "utils/formatting.h"
 
 #include "output/fields.h"
@@ -19,8 +20,8 @@
 
 void cleanup() {
   namespace fs = std::filesystem;
-  // fs::path tempfile_path { "test.h5" };
-  // fs::remove(tempfile_path);
+  fs::path tempfile_path { "test.h5" };
+  fs::remove(tempfile_path);
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -68,7 +69,9 @@ auto main(int argc, char* argv[]) -> int {
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
-    cleanup();
+    CallOnce([]() {
+      cleanup();
+    });
     MPI_Finalize();
     Kokkos::finalize();
     return 1;
