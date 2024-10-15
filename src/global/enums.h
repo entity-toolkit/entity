@@ -4,7 +4,12 @@
  * @implements
  *   - enum ntt::Coord             // Cart, Sph, Qsph, Fs
  *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
+<<<<<<< HEAD
  *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0, Flux_Surface
+=======
+ *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0,
+ *                                    Flux_Surface
+>>>>>>> 29730e373f0d18a95ed75cb30ba6dd18f3ec0028
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
@@ -134,13 +139,13 @@ namespace ntt {
       Cart    = 1,
       Sph     = 2,
       Qsph    = 3,
-      Fs      = 4,
+      Bltp    = 4,
     };
 
     constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
 
-    static constexpr type        variants[] = { Cart, Sph, Qsph, Fs };
-    static constexpr const char* lookup[]   = { "cart", "sph", "qsph", "fs" };
+    static constexpr type        variants[] = { Cart, Sph, Qsph, Bltp};
+    static constexpr const char* lookup[]   = { "cart", "sph", "qsph", "bltp" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -155,7 +160,7 @@ namespace ntt {
       Kerr_Schild   = 4,
       QKerr_Schild  = 5,
       Kerr_Schild_0 = 6,
-      Flux_Surface = 7,
+      BoyerLindqTP  = 7,
     };
 
     constexpr Metric(uint8_t c) : enums_hidden::BaseEnum<Metric> { c } {}
@@ -163,11 +168,11 @@ namespace ntt {
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
                                                 QKerr_Schild, Kerr_Schild_0,
-                                                Flux_Surface };
+                                                BoyerLindqTP };
     static constexpr const char* lookup[]   = { "minkowski",    "spherical",
                                                 "qspherical",   "kerr_schild",
                                                 "qkerr_schild", "kerr_schild_0",
-                                                "flux_surface" };
+                                                "boyer_lindq_tp" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -243,18 +248,19 @@ namespace ntt {
     static constexpr const char* label = "prtl_pusher";
 
     enum type : uint8_t {
-      INVALID = 0,
-      BORIS   = 1,
-      VAY     = 2,
-      PHOTON  = 3,
-      NONE    = 4,
+      INVALID   = 0,
+      BORIS     = 1,
+      VAY       = 2,
+      PHOTON    = 3,
+      FORCEFREE = 4,
+      NONE      = 5,
     };
 
     constexpr PrtlPusher(uint8_t c)
       : enums_hidden::BaseEnum<PrtlPusher> { c } {}
 
     static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
-    static constexpr const char* lookup[] = { "boris", "vay", "photon", "none" };
+    static constexpr const char* lookup[] = { "boris", "vay", "photon", "forcefree", "none"};
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
