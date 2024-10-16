@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [amd-gpu, nvidia-gpu]
+        device: [cpu, amd-gpu, nvidia-gpu]
         precision: [double, single]
         exclude: 
         - device: amd-gpu 
@@ -35,6 +35,8 @@ jobs:
             fi
           elif [ "${{ matrix.device }}" = "amd-gpu" ]; then
             FLAGS="-D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_GFX1100=ON"
+          elif [ "${{ matrix.device }}" = "cpu" ]; then
+            FLAGS=""
           fi
           cmake -B build -D TESTS=ON -D output=ON -D precision=${{ matrix.precision }} $FLAGS
       - name: Compile
