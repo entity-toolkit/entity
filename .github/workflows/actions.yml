@@ -6,6 +6,8 @@ on:
 jobs:
   check-commit:
     runs-on: ubuntu-latest
+    outputs:
+      run_tests: ${{ steps.check_message.outputs.run_tests }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,7 +21,7 @@ jobs:
             exit 1
   tests:
     needs: check-commit
-    if: steps.check_message.outputs.run_tests == 'true'
+    if: needs.check-commit.outputs.run_tests == 'true'
     strategy:
       fail-fast: false
       matrix:
