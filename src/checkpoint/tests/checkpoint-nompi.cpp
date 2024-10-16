@@ -29,9 +29,9 @@ auto main(int argc, char* argv[]) -> int {
   try {
     constexpr auto nx1    = 10;
     constexpr auto nx1_gh = nx1 + 2 * N_GHOSTS;
-    constexpr auto nx2    = 10;
+    constexpr auto nx2    = 13;
     constexpr auto nx2_gh = nx2 + 2 * N_GHOSTS;
-    constexpr auto nx3    = 10;
+    constexpr auto nx3    = 9;
     constexpr auto nx3_gh = nx3 + 2 * N_GHOSTS;
     constexpr auto i1min  = N_GHOSTS;
     constexpr auto i2min  = N_GHOSTS;

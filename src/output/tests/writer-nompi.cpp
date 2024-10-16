@@ -30,9 +30,9 @@ auto main(int argc, char* argv[]) -> int {
   try {
     constexpr auto nx1    = 10;
     constexpr auto nx1_gh = nx1 + 2 * N_GHOSTS;
-    constexpr auto nx2    = 10;
+    constexpr auto nx2    = 14;
     constexpr auto nx2_gh = nx2 + 2 * N_GHOSTS;
-    constexpr auto nx3    = 10;
+    constexpr auto nx3    = 17;
     constexpr auto nx3_gh = nx3 + 2 * N_GHOSTS;
     constexpr auto i1min  = N_GHOSTS;
     constexpr auto i2min  = N_GHOSTS;
@@ -40,6 +40,10 @@ auto main(int argc, char* argv[]) -> int {
     constexpr auto i1max  = nx1 + N_GHOSTS;
     constexpr auto i2max  = nx2 + N_GHOSTS;
     constexpr auto i3max  = nx3 + N_GHOSTS;
+
+    constexpr auto dwn1 = 2;
+    constexpr auto dwn2 = 1;
+    constexpr auto dwn3 = 5;
 
     ndfield_t<Dim::_3D, 3>   field { "fld", nx1_gh, nx2_gh, nx3_gh };
     std::vector<std::string> field_names;
@@ -51,9 +55,12 @@ auto main(int argc, char* argv[]) -> int {
         CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
                                     { i1max, i2max, i3max }),
         Lambda(index_t i1, index_t i2, index_t i3) {
-          field(i1, i2, i3, 0) = i1 + i2 + i3;
-          field(i1, i2, i3, 1) = i1 * i2 / i3;
-          field(i1, i2, i3, 2) = i1 / i2 * i3;
+          const auto i1_       = static_cast<real_t>(i1);
+          const auto i2_       = static_cast<real_t>(i2);
+          const auto i3_       = static_cast<real_t>(i3);
+          field(i1, i2, i3, 0) = i1_;
+          field(i1, i2, i3, 1) = i2_;
+          field(i1, i2, i3, 2) = i3_;
         });
     }
 
@@ -65,7 +72,8 @@ auto main(int argc, char* argv[]) -> int {
       writer.init(&adios, "hdf5", "test");
       writer.defineMeshLayout({ nx1, nx2, nx3 },
                               { 0, 0, 0 },
-                              { nx1, nx3, nx3 },
+                              { nx1, nx2, nx3 },
+                              { dwn1, dwn2, dwn3 },
                               false,
                               Coord::Cart);
       writer.defineFieldOutputs(SimEngine::SRPIC, { "E", "B", "Rho_1_3", "N_2" });
@@ -109,8 +117,7 @@ auto main(int argc, char* argv[]) -> int {
                        "Time is not correct",
                        HERE);
 
-        array_t<real_t***> field_read { "fld_read", nx1, nx2, nx3 };
-        auto field_read_h = Kokkos::create_mirror_view(field_read);
+        array_t<real_t***> field_read {};
 
         int cntr = 0;
         for (const auto& name : field_names) {
@@ -124,12 +131,22 @@ auto main(int argc, char* argv[]) -> int {
             std::size_t nx1_r = dims[0];
             std::size_t nx2_r = dims[1];
             std::size_t nx3_r = dims[2];
-            raise::ErrorIf(
-              (nx1_r != 10) || (nx2_r != 10) || (nx3_r != 10),
-              fmt::format("%s is not %dx%dx%d", name.c_str(), nx1_r, nx2_r, nx3_r),
-              HERE);
+            raise::ErrorIf((nx1_r != nx1 / dwn1) || (nx2_r != nx2 / dwn2) ||
+                             (nx3_r != nx3 / dwn3),
+                           fmt::format("%s = %ldx%ldx%ld is not %dx%dx%d",
+                                       name.c_str(),
+                                       nx1_r,
+                                       nx2_r,
+                                       nx3_r,
+                                       nx1 / dwn1,
+                                       nx2 / dwn2,
+                                       nx3 / dwn3),
+                           HERE);
+
             fieldVar.SetSelection(
               adios2::Box<adios2::Dims>({ 0, 0, 0 }, { nx1_r, nx2_r, nx3_r }));
+            field_read        = array_t<real_t***>(name, nx1_r, nx2_r, nx3_r);
+            auto field_read_h = Kokkos::create_mirror_view(field_read);
             reader.Get(fieldVar, field_read_h.data(), adios2::Mode::Sync);
             Kokkos::deep_copy(field_read, field_read_h);
 
@@ -137,19 +154,32 @@ auto main(int argc, char* argv[]) -> int {
               "check",
               CreateRangePolicy<Dim::_3D>({ 0, 0, 0 }, { nx1_r, nx2_r, nx3_r }),
               Lambda(index_t i1, index_t i2, index_t i3) {
-                if (not cmp::AlmostEqual(
-                      field_read(i1, i2, i3),
-                      field(i1 + i1min, i2 + i2min, i3 + i3min, cntr))) {
-                  printf("%e %e\n",
+                if (not cmp::AlmostEqual(field_read(i1, i2, i3),
+                                         field(i1 * dwn1 + i1min,
+                                               i2 * dwn2 + i2min,
+                                               i3 * dwn3 + i3min,
+                                               cntr))) {
+                  printf("\n:::::::::::::::\nfield_read(%ld, %ld, %ld) = %f != "
+                         "field(%ld, %ld, %ld, %d) = %f\n:::::::::::::::\n",
+                         i1,
+                         i2,
+                         i3,
                          field_read(i1, i2, i3),
-                         field(i1 + i1min, i2 + i2min, i3 + i3min, cntr));
+                         i1 * dwn1 + i1min,
+                         i2 * dwn2 + i2min,
+                         i3 * dwn3 + i3min,
+                         cntr,
+                         field(i1 * dwn1 + i1min,
+                               i2 * dwn2 + i2min,
+                               i3 * dwn3 + i3min,
+                               cntr));
                   raise::KernelError(HERE, "Field is not read correctly");
                 }
               });
-            ++cntr;
           } else {
             raise::Error("Field not found", HERE);
           }
+          ++cntr;
         }
         reader.EndStep();
       }
