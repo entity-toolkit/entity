@@ -494,12 +494,16 @@ namespace ntt {
                       "fields",
                       "mom_smooth",
                       defaults::output::mom_smooth));
-    set("output.fields.stride",
-        toml::find_or(toml_data,
-                      "output",
-                      "fields",
-                      "stride",
-                      defaults::output::flds_stride));
+    auto field_dwn = toml::find_or(toml_data,
+                                   "output",
+                                   "fields",
+                                   "downsampling",
+                                   std::vector<unsigned int> { 1, 1, 1 });
+    raise::ErrorIf(field_dwn.size() > 3, "invalid `output.fields.downsampling`", HERE);
+    if (field_dwn.size() > dim) {
+      field_dwn.erase(field_dwn.begin() + (std::size_t)(dim), field_dwn.end());
+    }
+    set("output.fields.downsampling", field_dwn);
 
     // particles
     const auto prtl_out = toml::find_or(toml_data,

@@ -340,10 +340,6 @@
     #   @type: array of strings
     #   @default: []
     custom = ""
-    # @NOT_IMPLEMENTED: Stride for the output of fields:
-    #   @type: unsigned short: > 1
-    #   @default: 1
-    stride = ""
     # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
     #   @type: unsigned short
     #   @default: 0
@@ -357,6 +353,11 @@
     #   @default: -1.0 (use `output.interval_time`)
     #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
     interval_time = ""
+    # Downsample factor for the output of fields:
+    #   @type: array of unsigned int >= 1
+    #   @default: [1, 1, 1]
+    #   @note: The output is downsampled by the given factors in each direction
+    downsampling = ""
 
   [output.particles]
     # Toggle for the particles output:
