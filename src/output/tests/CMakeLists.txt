@@ -4,8 +4,6 @@
 # - kokkos [required]
 # - mpi [optional]
 # - adios2 [optional]
-# !TODO:
-# - add more proper write tests for ADIOS2
 # ------------------------------
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
