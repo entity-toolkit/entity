@@ -1,27 +1,36 @@
 name: Unit tests
 
 on:
-  pull_request:
-    branches:
-      - '**rc'
-      - 'master'
+  push:
 
 jobs:
+  check-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check commit message
+        id: check_message
+        run: |
+          if git log -1 --pretty=%B | grep -q "RUNTEST"; then
+            echo "::set-output name=run_tests::true"
+          else
+            echo "::set-output name=run_tests::false"
+            exit 1
   tests:
+    needs: check-commit
+    if: steps.check_message.outputs.run_tests == 'true'
     strategy:
       fail-fast: false
       matrix:
         device: [cpu, amd-gpu, nvidia-gpu]
         precision: [double, single]
-        exclude: 
+        exclude: # my AMD GPU doesn't support fp64 atomics : (
         - device: amd-gpu 
           precision: double
-        # my AMD GPU doesn't support fp64 atomics : (
-    runs-on: [self-hosted, "${{ matrix.device }}"]
-    if: contains(github.event.head_commit.message, 'totest')
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v4
       - name: Configure
         run: |
           if [ "${{ matrix.device }}" = "nvidia-gpu" ]; then
