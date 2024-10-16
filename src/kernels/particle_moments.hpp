@@ -261,10 +261,7 @@ namespace kernel {
         }
         // compute the corresponding moment
         coeff = u_Phys[c1 - 1] / gamma;
-      } else {
-        // for other cases, use the `contrib` defined above
-        coeff = contrib;
-      }
+      } 
 
       if constexpr (F != FldsID::Nppc) {
         // for nppc calculation ...
