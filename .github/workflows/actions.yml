@@ -19,6 +19,7 @@ jobs:
           else
             echo "::set-output name=run_tests::false"
             exit 1
+          fi
   tests:
     needs: check-commit
     if: needs.check-commit.outputs.run_tests == 'true'
