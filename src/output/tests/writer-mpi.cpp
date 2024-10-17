@@ -36,10 +36,11 @@ auto main(int argc, char* argv[]) -> int {
 
     adios2::ADIOS adios { MPI_COMM_WORLD };
     auto          writer = out::Writer();
-    writer.init(&adios, "hdf5");
+    writer.init(&adios, "hdf5", "test");
     writer.defineMeshLayout({ static_cast<unsigned long>(size) * 10 },
                             { static_cast<unsigned long>(rank) * 10 },
                             { 10 },
+                            { 1 },
                             false,
                             Coord::Cart);
     writer.defineFieldOutputs(SimEngine::SRPIC, { "E" });
@@ -59,11 +60,11 @@ auto main(int argc, char* argv[]) -> int {
       names.push_back(writer.fieldWriters()[0].name(i));
       addresses.push_back(i);
     }
-    writer.beginWriting("test", 0, 0.0);
+    writer.beginWriting(0, 0.0);
     writer.writeField<Dim::_1D, 3>(names, field, addresses);
     writer.endWriting();
 
-    writer.beginWriting("test", 1, 0.1);
+    writer.beginWriting(1, 0.1);
     writer.writeField<Dim::_1D, 3>(names, field, addresses);
     writer.endWriting();
 
