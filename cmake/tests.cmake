@@ -17,7 +17,7 @@ if (${mpi})
   # tests with mpi
   if (${output})
     add_subdirectory(${SRC_DIR}/output/tests ${CMAKE_CURRENT_BINARY_DIR}/output/tests)
-    add_subdirectory(${SRC_DIR}/framework/tests ${CMAKE_CURRENT_BINARY_DIR}/checkpoint/tests)
+    add_subdirectory(${SRC_DIR}/checkpoint/tests ${CMAKE_CURRENT_BINARY_DIR}/checkpoint/tests)
     add_subdirectory(${SRC_DIR}/framework/tests ${CMAKE_CURRENT_BINARY_DIR}/framework/tests)
   endif()
 else()

@@ -32,7 +32,6 @@ set(SOURCES
   ${SRC_DIR}/domain/grid.cpp
   ${SRC_DIR}/domain/metadomain.cpp
   ${SRC_DIR}/domain/communications.cpp
-  ${SRC_DIR}/domain/checkpoint.cpp
   ${SRC_DIR}/containers/particles.cpp
   ${SRC_DIR}/containers/fields.cpp
 )
