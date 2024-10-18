@@ -399,8 +399,6 @@ namespace user {
       auto fid_freq_      = this->fid_freq;
       auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
       auto inv_n0_      = this->inv_n0;
-      auto photon_sent_ = this->photon_sent;
-      auto checksent = photon_sent_;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
@@ -868,7 +866,6 @@ namespace user {
                   tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
                 }
 
-                checksent = true;
 
                 auto cbuff2_acc     = cbuff2_sc.access();
                 cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
@@ -878,8 +875,6 @@ namespace user {
               }
 
             }
-
-          photon_sent_ = checksent;
 
          });
 
@@ -893,6 +888,7 @@ namespace user {
 
          }
 
+        photon_sent = true;
         Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
       } // Resonant scattering kernel
 
