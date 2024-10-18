@@ -840,7 +840,8 @@ namespace user {
                            kph_z);
 
               // Inject the scattered photon
-              if ((eph > 2.0) && (ph_offset_par < 1) && (ph_offset_perp < 1)) {
+              // if ((eph > 2.0) && (ph_offset_par < 1) && (ph_offset_perp < 1)) {
+              if ((eph > 2.0))) {
                 if (pol_par) {
                   auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
                   i1_par(ph_p + ph_offset_par) = i1(p);
