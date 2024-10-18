@@ -879,8 +879,7 @@ namespace user {
 
             }
 
-          Kokkos::deep_copy(photon_sent_, checksent);
-          random_pool.free_state(rand_gen);
+          photon_sent_ = checksent;
 
          });
 
