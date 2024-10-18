@@ -399,6 +399,8 @@ namespace user {
       auto fid_freq_      = this->fid_freq;
       auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
       auto inv_n0_      = this->inv_n0;
+      auto sendcheck = Kokkos::create_mirror(this->photon_sent);
+      sendcheck = this->photon_sent;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
@@ -888,7 +890,7 @@ namespace user {
 
          }
 
-        photon_sent = true;
+        // photon_sent = sentcheck_mirror;
         Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
       } // Resonant scattering kernel
 
