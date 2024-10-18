@@ -277,8 +277,8 @@ namespace kernel::gr {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
-    const ndfield_t<D, 3> Jf;
-    ndfield_t<D, 3>       Jf0;
+    ndfield_t<D, 3> Jf;
+    const ndfield_t<D, 3>       Jf0;
     const M               metric;
 
   public:
