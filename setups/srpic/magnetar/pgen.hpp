@@ -155,13 +155,14 @@ namespace user {
 
     const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0, gamma_pairs, pp_thres;
     InitFields<D> init_flds;
-    bool          is_first_step;
+    bool          is_first_step, photon_sent;
     
     array_t<real_t**> cbuff, cbuff2;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , is_first_step { true }
+      , photon_sent { false }
       , global_domain { m }
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
@@ -398,6 +399,7 @@ namespace user {
       auto fid_freq_      = this->fid_freq;
       auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
       auto inv_n0_      = this->inv_n0;
+      auto photon_sent_ = this->photon_sent;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
@@ -837,7 +839,7 @@ namespace user {
                            kph_z);
 
               // Inject the scattered photon
-              if ((eph > 2.0)) {
+              if ((eph > 2.0) && (!photon_sent)) {
                 if (pol_par) {
                   auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
                   i1_par(ph_p + ph_offset_par) = i1(p);
@@ -865,6 +867,8 @@ namespace user {
                   tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
                 }
 
+                photon_sent_ = true;
+
                 auto cbuff2_acc     = cbuff2_sc.access();
                 cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
                     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
@@ -875,6 +879,7 @@ namespace user {
             }
 
           random_pool.free_state(rand_gen);
+          photon_sent = photon_sent_;
 
          });
 
