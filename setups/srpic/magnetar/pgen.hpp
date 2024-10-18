@@ -400,6 +400,8 @@ namespace user {
       auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
       auto inv_n0_      = this->inv_n0;
 
+      
+
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
               continue;
@@ -444,8 +446,6 @@ namespace user {
             auto phi_perp    = photons_perp.phi;
             auto weight_perp = photons_perp.weight;
             auto tag_perp    = photons_perp.tag;
-
-            bool sendcheck = this->photon_sent;
 
     Kokkos::parallel_for(
         "ScatterPhotons", species.rangeActiveParticles(), Lambda(index_t p) {
@@ -840,7 +840,7 @@ namespace user {
                            kph_z);
 
               // Inject the scattered photon
-              if ((eph > 2.0) && (!(this->photon_sent))) {
+              if ((eph > 2.0) && (ph_offset_par < 1) && (ph_offset_perp < 1)) {
                 if (pol_par) {
                   auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
                   i1_par(ph_p + ph_offset_par) = i1(p);
@@ -868,8 +868,6 @@ namespace user {
                   tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
                 }
 
-                sendcheck = true;
-
                 auto cbuff2_acc     = cbuff2_sc.access();
                 cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
                     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
@@ -891,7 +889,6 @@ namespace user {
 
          }
 
-        // photon_sent = sendcheck;
         Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
       } // Resonant scattering kernel
 
