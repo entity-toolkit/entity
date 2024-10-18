@@ -216,7 +216,7 @@ namespace kernel::gr {
 
         const real_t inv_sqrt_detH { ONE / metric.sqrt_det_h(i1_ + HALF) };
 
-        Df(i1, em::dx1) += (J(i1, cur::jx1) - metric.J_ff()) * coeff * inv_sqrt_detH;
+        Df(i1, em::dx1) += (J(i1, cur::jx1) * inv_sqrt_detH - metric.J_ff()) * coeff ;
       } else {
         raise::KernelError(
           HERE,

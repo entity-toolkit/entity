@@ -85,7 +85,7 @@ namespace ntt {
         if (step == 0) {
           m_metadomain.CommunicateFields(dom, Comm::D);
           /**  
-           * !CommunicateFields: Special version for 1D GRPIC needed
+           * !CommunicateFields, ParticleInjector: Special version for 1D GRPIC needed
            */
           ParticleInjector(dom);
         }
