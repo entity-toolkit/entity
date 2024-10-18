@@ -124,7 +124,7 @@ namespace ntt {
          * em0::D, em::D, em0::B, em::B <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::B | BC::D, gr_bc::main);
+        FieldBoundaries(dom, BC::B | BC::E, gr_bc::main);
 
         /**
          * em0::B <- em::B
@@ -146,7 +146,7 @@ namespace ntt {
         /**
          * aux::E, aux::H <- boundary conditions
          */
-        FieldBoundaries(dom, BC::B | BC::D, gr_bc::aux);
+        FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
 
         /**
          * em0::B <- (em0::B) <- -curl aux::E
@@ -172,7 +172,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::D, gr_bc::main);
+        FieldBoundaries(dom, BC::E, gr_bc::main);
 
         /**
          * aux::E <- alpha * em::D + beta x em0::B
@@ -186,7 +186,7 @@ namespace ntt {
         /**
          * aux::E, aux::H <- boundary conditions
          */
-        FieldBoundaries(dom, BC::B | BC::D, gr_bc::aux);
+        FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
 
         // !ADD: GR -- particles?
 
@@ -212,7 +212,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::D, gr_bc::main);
+        FieldBoundaries(dom, BC::E, gr_bc::main);
 
         /**
          * aux::H <- alpha * em0::B - beta x em0::D
@@ -236,7 +236,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::D, gr_bc::main);
+        FieldBoundaries(dom, BC::E, gr_bc::main);
 
         /**
          * em::D <-> em0::D
@@ -299,7 +299,7 @@ namespace ntt {
         /**
          * aux::E <- boundary conditions
          */
-        FieldBoundaries(dom, BC::D, gr_bc::aux);
+        FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
         
         timers.start("FieldSolver");
@@ -400,7 +400,7 @@ namespace ntt {
         /**
          * aux::Е <- boundary conditions
          */
-        FieldBoundaries(dom, BC::D, gr_bc::aux);
+        FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
 
         timers.start("FieldSolver");
@@ -450,7 +450,7 @@ namespace ntt {
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::D, gr_bc::main);
+        FieldBoundaries(dom, BC::E, gr_bc::main);
         timers.stop("FieldBoundaries");
 
         timers.start("FieldSolver");
@@ -505,7 +505,7 @@ namespace ntt {
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::D, gr_bc::main);
+        FieldBoundaries(dom, BC::E, gr_bc::main);
         timers.stop("FieldBoundaries");
       }
       /**
@@ -834,7 +834,7 @@ namespace ntt {
         // First push, updates D0 with J.
         Kokkos::parallel_for("Ampere-1",
                              range,
-                             kernel::gr::Ampere_kernel<M>(domain.fields.em0,
+                             kernel::gr::Ampere_kernel<M>(domain.fields.em0, // Din, Dout, aux
                                                           domain.fields.em0,
                                                           domain.fields.aux,
                                                           domain.mesh.metric,
