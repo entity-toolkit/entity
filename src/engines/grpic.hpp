@@ -4,7 +4,7 @@
  * @implements
  *   - ntt::GRPICEngine<> : ntt::Engine<>
  * @cpp:
- *   - srpic.cpp
+ *   - grpic.cpp
  * @namespaces:
  *   - ntt::
  */
@@ -28,7 +28,7 @@ namespace ntt {
     using Engine<SimEngine::GRPIC, M>::m_metadomain;
 
   public:
-    static constexpr auto S { SimEngine::GRPIC };
+    static constexpr auto S { SimEngine::SRPIC };
 
     GRPICEngine(SimulationParams& params)
       : Engine<SimEngine::GRPIC, M> { params } {}

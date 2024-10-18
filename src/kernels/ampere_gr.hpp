@@ -182,6 +182,53 @@ namespace kernel::gr {
     }
   };
 
+<<<<<<< HEAD
+=======
+  /**
+   * @brief Ampere's law for only 1D-GRPIC.
+   */
+  template <class M>
+  class Ampere_kernel_1D {
+    static constexpr auto D = M::Dim;
+
+    ndfield_t<D, 1>       Df;
+    const ndfield_t<D, 1>  J;
+    const M               metric;
+    const real_t          coeff;
+
+
+  public:
+    /**
+     * @brief Constructor.
+     * @param mblock Meshblock.
+     */
+    CurrentsAmpere_kernel_1D(ndfield_t<D, 1> &         Df,
+                             const ndfield_t<D, 1>&    J,
+                             const M&                  metric,
+                             const real_t              coeff)
+      : Df { Df }
+      , J { J }
+      , metric { metric }
+      , coeff { coeff } {
+    }
+
+    Inline void operator()(index_t i1) const {
+      if constexpr (D == Dim::_1D) {
+        const real_t          i1_ { COORD(i1) };
+
+        const real_t inv_sqrt_detH { ONE / metric.sqrt_det_h(i1_ + HALF) };
+
+        Df(i1, em::dx1) += (J(i1, cur::jx1) * inv_sqrt_detH - metric.J_ff()) * coeff ;
+      } else {
+        raise::KernelError(
+          HERE,
+          "CurrentsAmpere_kernel: 1D implementation called for D != 1");
+      }
+    }
+  };
+
+
+>>>>>>> 1d_grpic_dev
 } // namespace kernel::gr
 
 #endif // KERNELS_AMPERE_GR_HPP
