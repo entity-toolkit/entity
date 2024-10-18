@@ -399,7 +399,6 @@ namespace user {
       auto fid_freq_      = this->fid_freq;
       auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
       auto inv_n0_      = this->inv_n0;
-      bool sendcheck = this->photon_sent;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
@@ -445,6 +444,8 @@ namespace user {
             auto phi_perp    = photons_perp.phi;
             auto weight_perp = photons_perp.weight;
             auto tag_perp    = photons_perp.tag;
+
+            bool sendcheck = this->photon_sent;
 
     Kokkos::parallel_for(
         "ScatterPhotons", species.rangeActiveParticles(), Lambda(index_t p) {
@@ -890,7 +891,7 @@ namespace user {
 
          }
 
-        photon_sent = sendcheck;
+        // photon_sent = sendcheck;
         Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
       } // Resonant scattering kernel
 
