@@ -155,14 +155,13 @@ namespace user {
 
     const real_t  Bsurf, Rstar, Omega, fid_freq, bq, dt, inv_n0, gamma_pairs, pp_thres;
     InitFields<D> init_flds;
-    bool          is_first_step, photon_sent;
+    bool          is_first_step;
     
     array_t<real_t**> cbuff, cbuff2;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , is_first_step { true }
-      , photon_sent { false }
       , global_domain { m }
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
