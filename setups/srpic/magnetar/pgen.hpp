@@ -867,6 +867,8 @@ namespace user {
                   tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
                 }
 
+                sandcheck = true;
+
 
                 auto cbuff2_acc     = cbuff2_sc.access();
                 cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
