@@ -28,7 +28,7 @@
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
-  #include <hip/hip_runtime.h>
+  // #include <hip/hip_runtime.h>
 #endif // MPI_ENABLED
 
 #if defined OUTPUT_ENABLED

@@ -30,7 +30,7 @@
   #include "arch/mpi_aliases.h"
 
   #include <mpi.h>
-  #include <hip/hip_runtime.h>
+  // #include <hip/hip_runtime.h>
 #endif // MPI_ENABLED
 
 namespace pbar {
