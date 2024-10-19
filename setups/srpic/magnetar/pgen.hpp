@@ -396,8 +396,8 @@ namespace user {
       auto bq_            = this->bq;
       auto dt_            = this->dt;
       auto fid_freq_      = this->fid_freq;
-      // auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
-      // auto inv_n0_      = this->inv_n0;
+      auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
+      auto inv_n0_      = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
             if (s == 1 || s == 2 || s == 3) {
@@ -865,10 +865,10 @@ namespace user {
                   tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
                 }
 
-                // auto cbuff2_acc     = cbuff2_sc.access();
-                // cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
-                //     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
-                //                         static_cast<real_t>(i2(p)) + HALF });
+                auto cbuff2_acc     = cbuff2_sc.access();
+                cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
+                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+                                        static_cast<real_t>(i2(p)) + HALF });
 
               }
 
@@ -888,7 +888,7 @@ namespace user {
 
          }
 
-        // Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
+        Kokkos::Experimental::contribute(cbuff2, cbuff2_sc);
       } // Resonant scattering kernel
 
    // Pair production kernel (threshold)
