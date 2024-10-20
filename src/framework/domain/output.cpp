@@ -491,7 +491,7 @@ namespace ntt {
                                             species.phi, species.weight,
                                             local_domain->mesh.metric));
           // clang-format on
-        }
+	}
         std::size_t offset   = 0;
         std::size_t glob_tot = nout;
 #if defined(MPI_ENABLED)
