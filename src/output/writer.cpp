@@ -77,17 +77,26 @@ namespace out {
       raise::ErrorIf(dwn[i] != 1 && incl_ghosts,
                      "Downsampling with ghosts not supported",
                      HERE);
+
+      double g = glob_shape[i];
+      double d = m_dwn[i];
+      double l = loc_corner[i];
+      double n = loc_shape[i];
+      double f = math::ceil(l/d)*d-l;
       m_flds_g_shape_dwn.push_back(
-        static_cast<std::size_t>(glob_shape[i] / m_dwn[i]));
+				   static_cast<std::size_t>(math::ceil(g / d)));
       m_flds_l_corner_dwn.push_back(
-        static_cast<std::size_t>(loc_corner[i] / m_dwn[i]));
-      m_flds_l_shape_dwn.push_back(
-        static_cast<std::size_t>((loc_corner[i] + loc_shape[i]) / m_dwn[i]) -
-        static_cast<std::size_t>(loc_corner[i] / m_dwn[i]));
+				    static_cast<std::size_t>(math::ceil(l /d)));
       m_flds_l_first.push_back(
-        static_cast<std::size_t>(loc_corner[i] / m_dwn[i]) * m_dwn[i] -
-        loc_corner[i]);
+			       static_cast<std::size_t>(f)); 
+
+      m_flds_l_shape_dwn.push_back(
+				   static_cast<std::size_t>(math::ceil((n - f) / d)));
+      //m_flds_l_first.push_back(
+      //  static_cast<std::size_t>(loc_corner[i] / m_dwn[i]) * m_dwn[i] -
+      //  loc_corner[i]);
     }
+    
 
     m_io.DefineAttribute("NGhosts", incl_ghosts ? N_GHOSTS : 0);
     m_io.DefineAttribute("Dimension", m_flds_g_shape.size());
@@ -119,6 +128,9 @@ namespace out {
                                Kokkos::LayoutRight>::value) {
       m_io.DefineAttribute("LayoutRight", 1);
     } else {
+      std::reverse(m_flds_g_shape_dwn.begin(), m_flds_g_shape_dwn.end());
+      std::reverse(m_flds_l_corner_dwn.begin(), m_flds_l_corner_dwn.end());
+      std::reverse(m_flds_l_shape_dwn.begin(), m_flds_l_shape_dwn.end());
       m_io.DefineAttribute("LayoutRight", 0);
     }
   }
@@ -247,6 +259,7 @@ namespace out {
           (field.extent(1) - 2 * N_GHOSTS) / dwn2);
         const auto first_cell1 = first_cell[0];
         const auto first_cell2 = first_cell[1];
+	printf("%ld %ld : %ld %ld \n", nx1_dwn, nx2_dwn, first_cell1, first_cell2);
         output_field = array_t<real_t**> { "output_field", nx1_dwn, nx2_dwn };
         Kokkos::parallel_for(
           "outputField",
