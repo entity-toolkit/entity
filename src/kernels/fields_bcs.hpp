@@ -577,6 +577,100 @@ template <class M>
     } 
   };  
 
+  template <class I, class M, idx_t i>
+  struct AbsorbBoundariesGR_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static_assert(i <= static_cast<unsigned short>(M::Dim),
+                  "Invalid component index");
+
+    ndfield_t<M::Dim, 6> Fld;
+    const I              finit;
+    const M              metric;
+    const real_t         xg_edge;
+    const real_t         dx_abs;
+    const BCTags         tags;
+
+    AbsorbBoundariesGR_kernel(ndfield_t<M::Dim, 6> Fld,
+                                 const I&             finit,
+                                 const M&             metric,
+                                 real_t               xg_edge,
+                                 real_t               dx_abs,
+                                 BCTags               tags)
+      : Fld { Fld }
+      , finit { finit }
+      , metric { metric }
+      , xg_edge { xg_edge }
+      , dx_abs { dx_abs }
+      , tags { tags } {}
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (M::Dim == Dim::_2D) {
+        const auto i1_ = COORD(i1);
+        const auto i2_ = COORD(i2);
+        for (const auto comp :
+             { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {
+          if ((comp == em::ex1) and not(tags & BC::Ex1)) {
+            continue;
+          } else if ((comp == em::ex2) and not(tags & BC::Ex2)) {
+            continue;
+          } else if ((comp == em::ex3) and not(tags & BC::Ex3)) {
+            continue;
+          } else if ((comp == em::bx1) and not(tags & BC::Bx1)) {
+            continue;
+          } else if ((comp == em::bx2) and not(tags & BC::Bx2)) {
+            continue;
+          } else if ((comp == em::bx3) and not(tags & BC::Bx3)) {
+            continue;
+          }
+          coord_t<M::Dim> x_Cd { ZERO };
+          if (comp == em::ex1 or comp == em::bx2 or comp == em::bx3) {
+            x_Cd[0] = i1_ + HALF;
+            x_Cd[1] = i2_;
+          } else if (comp == em::ex2 or comp == em::ex3 or comp == em::bx1) {
+            x_Cd[0] = i1_;
+            x_Cd[1] = i2_;
+          }
+
+          const auto dx = math::abs(
+            metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
+          Fld(i1, i2, comp) *= math::tanh(dx / (INV_4 * dx_abs));
+
+          if (comp == em::bx1) {
+            const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
+            const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
+              i2_ + HALF) };
+
+            vec_t<Dim::_3D> b_PU { finit.bx1({ x1_0, x2_H }),
+                                   finit.bx2({ x1_0, x2_H }),
+                                   finit.bx3({ x1_0, x2_H }) };
+            vec_t<Dim::_3D> b_U { ZERO };
+            metric.template transform<Idx::PU, Idx::U>({ i1_, i2_ + HALF },
+                                                         b_PU,
+                                                         b_U);
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * b_U[0];
+          } else if (comp == em::bx2) {
+            const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
+              i1_ + HALF) };
+            const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
+
+            vec_t<Dim::_3D> b_PU { finit.bx1({ x1_H, x2_0 }),
+                                   finit.bx2({ x1_H, x2_0 }),
+                                   finit.bx3({ x1_H, x2_0 }) };
+            vec_t<Dim::_3D> b_U { ZERO };
+            metric.template transform<Idx::PU, Idx::U>({ i1_ + HALF, i2_ },
+                                                         b_PU,
+                                                         b_U);
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * b_U[1];
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "AbsorbFields_kernel: 2D implementation called for D != 2");
+      }
+    }
+  };  
+
 } // namespace kernel
 
 #endif // KERNELS_FIELDS_BCS_HPP

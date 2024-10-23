@@ -562,25 +562,16 @@ namespace ntt {
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
       auto       sign = direction.get_sign();
-      if (sign > 0) { // + direction
-        xg_max  = m_metadomain.mesh().extent(dim).second;
-        xg_min  = xg_max - ds;
-        xg_edge = xg_max;
-      } else { // - direction
-        xg_min  = m_metadomain.mesh().extent(dim).first;
-        xg_max  = xg_min + ds;
-        xg_edge = xg_min;
-      }
+      xg_max  = m_metadomain.mesh().extent(dim).second;
+      xg_min  = xg_max - ds;
+      xg_edge = xg_max;
+
       boundaries_t<real_t> box;
       boundaries_t<bool>   incl_ghosts;
       for (unsigned short d { 0 }; d < M::Dim; ++d) {
         if (d == static_cast<unsigned short>(dim)) {
           box.push_back({ xg_min, xg_max });
-          if (sign > 0) {
-            incl_ghosts.push_back({ false, true });
-          } else {
-            incl_ghosts.push_back({ true, false });
-          }
+          incl_ghosts.push_back({ false, true });
         } else {
           box.push_back(Range::All);
           incl_ghosts.push_back({ true, true });
@@ -601,7 +592,8 @@ namespace ntt {
         Kokkos::parallel_for(
           "AbsorbFields",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::AbsorbBoundaries_kernel<M, 1>(domain.fields.em,
+          kernel::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em,
+                                                m_pgen.init_flds,
                                                 domain.mesh.metric,
                                                 xg_edge,
                                                 ds,
@@ -609,7 +601,8 @@ namespace ntt {
         Kokkos::parallel_for(
           "AbsorbFields",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::AbsorbBoundaries_kernel<M, 1>(domain.fields.em0,
+          kernel::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em0,
+                                                m_pgen.init_flds,
                                                 domain.mesh.metric,
                                                 xg_edge,
                                                 ds,
