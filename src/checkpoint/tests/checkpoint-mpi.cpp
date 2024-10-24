@@ -9,6 +9,7 @@
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
 #include <adios2/cxx11/KokkosView.h>
+#include <mpi.h>
 
 #include <filesystem>
 #include <iostream>
@@ -25,26 +26,44 @@ void cleanup() {
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
+  MPI_Init(&argc, &argv);
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   try {
-    constexpr auto nx1    = 10;
-    constexpr auto nx1_gh = nx1 + 2 * N_GHOSTS;
-    constexpr auto nx2    = 13;
-    constexpr auto nx2_gh = nx2 + 2 * N_GHOSTS;
-    constexpr auto nx3    = 9;
-    constexpr auto nx3_gh = nx3 + 2 * N_GHOSTS;
-    constexpr auto i1min  = N_GHOSTS;
-    constexpr auto i2min  = N_GHOSTS;
-    constexpr auto i3min  = N_GHOSTS;
-    constexpr auto i1max  = nx1 + N_GHOSTS;
-    constexpr auto i2max  = nx2 + N_GHOSTS;
-    constexpr auto i3max  = nx3 + N_GHOSTS;
-    constexpr auto npart1 = 100;
-    constexpr auto npart2 = 100;
+    // assuming 4 ranks
+    // |------|------|
+    // |  2   |  3   |
+    // |------|------|
+    // |      |      |
+    // |  0   |  1   |
+    // |------|------|
+    constexpr auto g_nx1    = 20;
+    constexpr auto g_nx2    = 15;
+    constexpr auto g_nx1_gh = g_nx1 + 4 * N_GHOSTS;
+    constexpr auto g_nx2_gh = g_nx2 + 4 * N_GHOSTS;
+
+    constexpr auto l_nx1 = 10;
+    constexpr auto l_nx2 = (rank < 2) ? 10 : 5;
+
+    constexpr auto l_nx1_gh = l_nx1 + 2 * N_GHOSTS;
+    constexpr auto l_nx2_gh = l_nx2 + 2 * N_GHOSTS;
+
+    constexpr auto l_corner_x1 = (rank % 2) * l_nx1;
+    constexpr auto l_corner_x2 = (rank / 2) * l_nx2;
+
+    constexpr auto i1min = N_GHOSTS;
+    constexpr auto i2min = N_GHOSTS;
+    constexpr auto i1max = l_nx1 + N_GHOSTS;
+    constexpr auto i2max = l_nx2 + N_GHOSTS;
+
+    constexpr auto npart1 = (rank % 2 + rank) * 23 + 100;
+    constexpr auto npart2 = (rank % 2 + rank) * 37 + 100;
 
     // init data
-    ndfield_t<Dim::_3D, 6> field1 { "fld1", nx1_gh, nx2_gh, nx3_gh };
-    ndfield_t<Dim::_3D, 6> field2 { "fld2", nx1_gh, nx2_gh, nx3_gh };
+    ndfield_t<Dim::_2D, 6> field1 { "fld1", l_nx1_gh, l_nx2_gh };
+    ndfield_t<Dim::_2D, 6> field2 { "fld2", l_nx1_gh, l_nx2_gh };
 
     array_t<int*>    i1 { "i_1", npart1 };
     array_t<real_t*> u1 { "u_1", npart1 };
@@ -55,21 +74,20 @@ auto main(int argc, char* argv[]) -> int {
       // fill data
       Kokkos::parallel_for(
         "fillFlds",
-        CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
-                                    { i1max, i2max, i3max }),
-        Lambda(index_t i1, index_t i2, index_t i3) {
-          field1(i1, i2, i3, 0) = i1 + i2 + i3;
-          field1(i1, i2, i3, 1) = i1 * i2 / i3;
-          field1(i1, i2, i3, 2) = i1 / i2 * i3;
-          field1(i1, i2, i3, 3) = i1 + i2 - i3;
-          field1(i1, i2, i3, 4) = i1 * i2 + i3;
-          field1(i1, i2, i3, 5) = i1 / i2 - i3;
-          field2(i1, i2, i3, 0) = -(i1 + i2 + i3);
-          field2(i1, i2, i3, 1) = -(i1 * i2 / i3);
-          field2(i1, i2, i3, 2) = -(i1 / i2 * i3);
-          field2(i1, i2, i3, 3) = -(i1 + i2 - i3);
-          field2(i1, i2, i3, 4) = -(i1 * i2 + i3);
-          field2(i1, i2, i3, 5) = -(i1 / i2 - i3);
+        CreateRangePolicy<Dim::_2D>({ i1min, i2min }, { i1max, i2max }),
+        Lambda(index_t i1, index_t i2) {
+          field1(i1, i2, 0) = static_cast<real_t>(i1 + i2);
+          field1(i1, i2, 1) = static_cast<real_t>(i1 * i2);
+          field1(i1, i2, 2) = static_cast<real_t>(i1 / i2);
+          field1(i1, i2, 3) = static_cast<real_t>(i1 - i2);
+          field1(i1, i2, 4) = static_cast<real_t>(i2 / i1);
+          field1(i1, i2, 5) = static_cast<real_t>(i1);
+          field2(i1, i2, 0) = static_cast<real_t>(-(i1 + i2));
+          field2(i1, i2, 1) = static_cast<real_t>(-(i1 * i2));
+          field2(i1, i2, 2) = static_cast<real_t>(-(i1 / i2));
+          field2(i1, i2, 3) = static_cast<real_t>(-(i1 - i2));
+          field2(i1, i2, 4) = static_cast<real_t>(-(i2 / i1));
+          field2(i1, i2, 5) = static_cast<real_t>(-i1);
         });
       Kokkos::parallel_for(
         "fillPrtl1",
@@ -95,15 +113,15 @@ auto main(int argc, char* argv[]) -> int {
       writer.init(&adios, 0, 0.0, 1);
 
       writer.defineFieldVariables(SimEngine::GRPIC,
-                                  { nx1_gh, nx2_gh, nx3_gh },
-                                  { 0, 0, 0 },
-                                  { nx1_gh, nx2_gh, nx3_gh });
-      writer.defineParticleVariables(Coord::Sph, Dim::_3D, 2, { 0, 2 });
+                                  { g_nx1_gh, g_nx2_gh },
+                                  { l_corner_x1, l_corner_x2 },
+                                  { l_nx1, l_nx2 });
+      writer.defineParticleVariables(Coord::Sph, Dim::_2D, 2, { 0, 0 });
 
       writer.beginSaving(0, 0.0);
 
-      writer.saveField<Dim::_3D, 6>("em", field1);
-      writer.saveField<Dim::_3D, 6>("em0", field2);
+      writer.saveField<Dim::_2D, 6>("em", field1);
+      writer.saveField<Dim::_2D, 6>("em0", field2);
 
       writer.savePerDomainVariable<std::size_t>("s1_npart", 1, 0, npart1);
       writer.savePerDomainVariable<std::size_t>("s2_npart", 1, 0, npart2);

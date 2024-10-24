@@ -21,7 +21,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/timer.h"
 
-#include "checkpoint/writer.h"
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
@@ -32,6 +31,7 @@
 #endif // MPI_ENABLED
 
 #if defined(OUTPUT_ENABLED)
+  #include "checkpoint/writer.h"
   #include "output/writer.h"
 
   #include <adios2.h>
