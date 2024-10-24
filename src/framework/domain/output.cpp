@@ -224,13 +224,12 @@ namespace ntt {
       for (unsigned short dim = 0; dim < M::Dim; ++dim) {
         const auto l_size   = local_domain->mesh.n_active()[dim];
         const auto l_offset = local_domain->offset_ncells()[dim];
-	//std::cout << "offset " << l_offset << " " << dim << std::endl; 
         const auto g_size   = mesh().n_active()[dim];
 
         const auto dwn_in_dim = dwn[dim];
-	double n {l_size};
-	double d {dwn_in_dim};
-	double l {l_offset}; 
+	double n = l_size;
+	double d = dwn_in_dim;
+	double l = l_offset; 
 	double f = math::ceil(l/d)*d-l;
 	const auto first_cell = static_cast<std::size_t>(f);
         const auto l_size_dwn = static_cast<std::size_t>(math::ceil((n-f) / d));
@@ -245,13 +244,7 @@ namespace ntt {
 
         const auto offset = (incl_ghosts ? N_GHOSTS : 0);
         const auto ncells = l_size_dwn;
-	//const auto first_cell = ((static_cast<std::size_t>(l_offset / dwn_in_dim) + 1) * dwn_in_dim - l_offset) % dwn_in_dim;
-        //const auto first_cell = static_cast<std::size_t>(l_offset / dwn_in_dim) *
-        //                          dwn_in_dim -
-        //                        l_offset;
-	std::cout << "first cell " << first_cell << " dim " << dim << " l_offset " << l_offset << " dwn_in_dim " << dwn_in_dim << std::endl;
 	
-
         const auto& metric = local_domain->mesh.metric;
 
         Kokkos::parallel_for(
@@ -260,9 +253,6 @@ namespace ntt {
           Lambda(index_t i_dwn) {
             const auto      i  = first_cell + i_dwn * dwn_in_dim;
             const auto      i_ = static_cast<real_t>(i);
-	    //if (dim == 1){
-	    //  printf(" i %lu and %f \n", i, i_ );
-	    // }
             coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
             x_Cd[dim] = i_ + HALF;
 	    // TODO : change to convert by component 
