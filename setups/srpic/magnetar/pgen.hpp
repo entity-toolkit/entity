@@ -390,6 +390,7 @@ namespace user {
 
      // Resonant scattering kernel
     if (rics_pp) {
+      {
       auto random_pool    = domain.random_pool;
       auto& photons_par   = domain.species[2];
       auto& photons_perp  = domain.species[3];
@@ -1085,6 +1086,7 @@ namespace user {
 
       Kokkos::Experimental::contribute(cbuff, cbuff_sc);
       } // Pair production kernel (threshold)
+    }
 
     if (is_first_step) {
         is_first_step = false;
