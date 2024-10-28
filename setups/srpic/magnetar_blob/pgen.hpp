@@ -260,12 +260,12 @@ namespace user {
         spatial_dist,
         { 1, 2 });
 
-      // arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, Blob, BlobDistribution>>(
-      //   params,
-      //   domain,
-      //   injector,
-      //   30.0, 
-      //   true);
+      arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, Blob, BlobDistribution>>(
+        params,
+        domain,
+        injector,
+        1.0, 
+        true);
     }
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
