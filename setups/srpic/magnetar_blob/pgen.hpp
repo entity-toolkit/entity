@@ -264,7 +264,8 @@ namespace user {
         params,
         domain,
         injector,
-        1.0);
+        30.0, 
+        true);
     }
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
