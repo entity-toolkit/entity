@@ -75,7 +75,7 @@ namespace user {
       coord_t<Dim::_3D> x_Cd3d { x_Cd2d[0], x_Cd2d[1], 0.0 };
       m.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Cd3d, x_Cart);
 
-      return math::exp( (SQR(x_Cart[0] - x_c[0]) + SQR(x_Cart[1] - x_c[1]) + SQR(x_Cart[2] - x_c[2])) / (TWO * SQR(sig)) );
+      return math::exp( - (SQR(x_Cart[0] - x_c[0]) + SQR(x_Cart[1] - x_c[1]) + SQR(x_Cart[2] - x_c[2])) / (TWO * SQR(sig)) );
 
     }
 
@@ -253,7 +253,6 @@ namespace user {
     inline PGen() {}
 
     inline void InitPrtls(Domain<S, M>& domain) {
-      auto p = this->params;
       const auto energy_dist  = Blob<S, M>(domain.mesh.metric, 10.0);
       const auto spatial_dist = BlobDistribution<S, M>(domain.mesh.metric, {2.0, 0.0, 2.0}, 0.25);
       const auto injector = arch::NonUniformInjector<S, M, Blob, BlobDistribution>(
@@ -262,7 +261,7 @@ namespace user {
         { 1, 2 });
 
       arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, Blob, BlobDistribution>>(
-        p,
+        params,
         domain,
         injector,
         1.0, 
