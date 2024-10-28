@@ -75,7 +75,7 @@ namespace user {
       coord_t<Dim::_3D> x_Cd3d { x_Cd2d[0], x_Cd2d[1], 0.0 };
       m.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Cd3d, x_Cart);
 
-      return math::exp( (SQR(x_Cart[0] - x_c[0]) + SQR(x_Cart[1] - x_c[1]) + SQR(x_Cart[2] - x_c[2])) / (2 * SQR(sig)) );
+      return math::exp( (SQR(x_Cart[0] - x_c[0]) + SQR(x_Cart[1] - x_c[1]) + SQR(x_Cart[2] - x_c[2])) / (TWO * SQR(sig)) );
 
     }
 
@@ -242,7 +242,7 @@ namespace user {
       , bq { p.template get<real_t>("setup.bq", ONE) }
       , pp_thres { p.template get<real_t>("setup.pp_thres") }
       , gamma_pairs { p.template get<real_t>("setup.gamma_pairs") }
-      , dt { params.template get<real_t>("algorithms.timestep.dt") }
+      , dt { p.template get<real_t>("algorithms.timestep.dt") }
       , threshold_pp { p.template get<bool>("setup.threshold_pp") }
       , rics_pp { p.template get<bool>("setup.rics_pp") }
       , init_flds { Bsurf, Rstar } {
@@ -260,12 +260,12 @@ namespace user {
         spatial_dist,
         { 1, 2 });
 
-      arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, Blob, BlobDistribution>>(
-        params,
-        domain,
-        injector,
-        30.0, 
-        true);
+      // arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, Blob, BlobDistribution>>(
+      //   params,
+      //   domain,
+      //   injector,
+      //   30.0, 
+      //   true);
     }
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
