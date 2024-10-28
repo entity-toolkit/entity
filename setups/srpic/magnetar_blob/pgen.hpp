@@ -253,6 +253,7 @@ namespace user {
     inline PGen() {}
 
     inline void InitPrtls(Domain<S, M>& domain) {
+      auto p = this->params;
       const auto energy_dist  = Blob<S, M>(domain.mesh.metric, 10.0);
       const auto spatial_dist = BlobDistribution<S, M>(domain.mesh.metric, {2.0, 0.0, 2.0}, 0.25);
       const auto injector = arch::NonUniformInjector<S, M, Blob, BlobDistribution>(
@@ -261,7 +262,7 @@ namespace user {
         { 1, 2 });
 
       arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, Blob, BlobDistribution>>(
-        params,
+        p,
         domain,
         injector,
         1.0, 
