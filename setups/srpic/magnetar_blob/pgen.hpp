@@ -30,7 +30,7 @@ namespace user {
                            vec_t<Dim::_3D>& v_Ph,
                            unsigned short   sp) const override {
       
-      auto m = this->metric;
+      auto& m = this->metric;
 
       coord_t<Dim::_3D> x_Cart { ZERO };
       coord_t<Dim::_2D> x_Cd2d { ZERO };
@@ -66,7 +66,7 @@ namespace user {
 
     Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
 
-      auto m = this->metric;
+      auto& m = this->metric;
 
       coord_t<Dim::_3D> x_Cart { ZERO };
       coord_t<Dim::_2D> x_Cd2d { ZERO };
@@ -550,6 +550,7 @@ namespace user {
 
             // If particle is too close to atmosphere, skip (saving time)
             if (xPh[0] < Rstar_ + 0.1) return;
+            if (xPh[1] > 0.5*constant::PI) return;
                                     
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
