@@ -550,11 +550,7 @@ namespace user {
 
             // If particle is too close to atmosphere, skip (saving  time)
             if (xPh[0] < Rstar_ + 0.1) return;
-            if (xPh[1] < 0.5*constant::PI) {
-                printf("Particle at (%f, %f)\n", xPh[0], xPh[1]);
-                return;
-            }
-
+            if (xPh[1] > 0.5*constant::PI) return;
                                     
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
