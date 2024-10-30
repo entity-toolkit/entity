@@ -253,7 +253,7 @@ namespace user {
     inline PGen() {}
 
     inline void InitPrtls(Domain<S, M>& domain) {
-      const auto energy_dist  = Blob<S, M>(domain.mesh.metric, 1000.0);
+      const auto energy_dist  = Blob<S, M>(domain.mesh.metric, 2.0);
       const auto spatial_dist = BlobDistribution<S, M>(domain.mesh.metric, {2.0, 0.0, 2.0}, 0.25);
       const auto injector = arch::NonUniformInjector<S, M, Blob, BlobDistribution>(
         energy_dist,
@@ -550,7 +550,6 @@ namespace user {
 
             // If particle is too close to atmosphere, skip (saving  time)
             if (xPh[0] < Rstar_ + 0.1) return;
-            if (xPh[1] > 0.5*constant::PI) return;
                                     
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
@@ -863,9 +862,9 @@ namespace user {
 
               // Calculate the lepton energy and momentum after scattering
               auto el_RF   = eb - eph_RFS;
-              auto kl_RF_x = -eph_RFS * rand_costheta_RF * a_RF_x;
-              auto kl_RF_y = -eph_RFS * rand_costheta_RF * a_RF_y;
-              auto kl_RF_z = -eph_RFS * rand_costheta_RF * a_RF_z;
+              auto kl_RF_x = - eph_RFS * rand_costheta_RF * a_RF_x;
+              auto kl_RF_y = - eph_RFS * rand_costheta_RF * a_RF_y;
+              auto kl_RF_z = - eph_RFS * rand_costheta_RF * a_RF_z;
 
              real_t el_EX, kl_EX_x, kl_EX_y, kl_EX_z;
               boost_lepton(el_RF,
