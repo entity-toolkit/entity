@@ -294,6 +294,7 @@ namespace user {
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
           auto theta = HALF * dseed + s*dseed;
+          if (theta < 0.25) return;
 
           coord_t<Dim::_3D> x_Cart { ZERO };
           coord_t<Dim::_2D> x_Ph { 1.05, theta };
@@ -303,15 +304,28 @@ namespace user {
           coord_t<Dim::_3D> x_Cd3d { x_Cd2d[0], x_Cd2d[1], 0.0 };
           m.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Cd3d, x_Cart);
 
+          auto i1_ = math::floor(x_Cd2d[0]);
+          auto i2_ = math::floor(x_Cd2d[1]);
+          auto dx1_ = x_Cd2d[0] - i1_;
+          auto dx2_ = x_Cd2d[1] - i2_;
+
           auto gam = gamma_pairs_;
           auto beta = math::sqrt(1 - 1 / (gam * gam));
 
           auto bx1 = ONE * math::cos(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
           auto bx2 = ONE * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
 
-          vec_t<Dim::_3D> bcd { bx1, bx2, ZERO};
+          auto bx1c = metric.template transform<1, Idx::T, Idx::U>(
+              { i1_, i2_ + HALF },
+              bx1);
+          auto bx2c = metric.template transform<2, Idx::T, Idx::U>(
+              { i1_ + HALF, i2_ },
+              bx2);
+
+          vec_t<Dim::_3D> bcd { bx1c, bx2c, ZERO};
           vec_t<Dim::_3D> bcart { ZERO };
           metric.template transform_xyz<Idx::U, Idx::XYZ>(x_Cd3d, bcd, bcart);
+
           auto bnorm = math::sqrt(SQR(bcart[0]) + SQR(bcart[1]) + SQR(bcart[2]));
           auto bc1 = bcart[0] / bnorm;
           auto bc2 = bcart[1] / bnorm;
@@ -325,10 +339,10 @@ namespace user {
               auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
               auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
 
-              i1_e(elec_p + offset_e) = math::floor(x_Cd2d[0]);
-              dx1_e(elec_p + offset_e) = x_Cd2d[0] - i1_e(elec_p + offset_e);
-              i2_e(elec_p + offset_e) = math::floor(x_Cd2d[1]);
-              dx2_e(elec_p + offset_e) = x_Cd2d[1] - i2_e(elec_p + offset_e);
+              i1_e(elec_p + offset_e) = i1_;
+              dx1_e(elec_p + offset_e) = dx1_;
+              i2_e(elec_p + offset_e) = i2_;
+              dx2_e(elec_p + offset_e) = dx2_;
               phi_e(elec_p + offset_e) = ZERO;
               ux1_e(elec_p + offset_e) = v1;
               ux2_e(elec_p + offset_e) = v2;
@@ -336,10 +350,10 @@ namespace user {
               weight_e(elec_p + offset_e) = ONE;
               tag_e(elec_p + offset_e) = ParticleTag::alive;
 
-              i1_p(pos_p + offset_p) = math::floor(x_Cd2d[0]);
-              dx1_p(pos_p + offset_p) = x_Cd2d[0] - i1_p(pos_p + offset_p);
-              i2_p(pos_p + offset_p) = math::floor(x_Cd2d[1]);
-              dx2_p(pos_p + offset_p) = x_Cd2d[1] - i2_p(pos_p + offset_p);
+              i1_p(pos_p + offset_p) = i1_;
+              dx1_p(pos_p + offset_p) = dx1_;
+              i2_p(pos_p + offset_p) = i2_;
+              dx2_p(pos_p + offset_p) = dx2_;
               phi_p(pos_p + offset_p) = ZERO;
               ux1_p(pos_p + offset_p) = v1;
               ux2_p(pos_p + offset_p) = v2;
