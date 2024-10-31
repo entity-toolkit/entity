@@ -34,44 +34,38 @@ namespace user {
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
       
-      srand (static_cast <unsigned> (12345));
       Kokkos::complex<real_t> dBvec1, dBvec2, dBvec3;
       Kokkos::complex<real_t> B0vec1, B0vec2, B0vec3;
       Kokkos::complex<real_t> cONE;
       dBvec1.real() = ZERO; dBvec1.imag() = ZERO;
       dBvec2.real() = ZERO; dBvec2.imag() = ZERO;
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
-      B0vec1.real() = B0x1; B0vec1.imag() = ZERO;
-      B0vec2.real() = B0x2; B0vec2.imag() = ZERO;
-      B0vec3.real() = B0x3; B0vec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
-      for (unsigned short k = 0; k < 3; ++k) {
-        for (unsigned short l = 0; l < 3; ++l) {
+      auto   rand_X1 = 0.01;
+      auto   rand_X2 = constant::TWO_PI;
 
-          if (k==0 && l==0) continue;
+      real_t kvec1 = constant::TWO_PI;
+      real_t kvec2 = constant::TWO_PI; 
+      real_t kvec3 = ZERO;
 
-          auto   rand_X1 = 0.01;
-          auto   rand_X2 = constant::TWO_PI;
+      real_t kb1 = kvec2 * B0x3 - kvec3 * B0x2;
+      real_t kb2 = kvec3 * B0x1 - kvec1 * B0x3;
+      real_t kb3 = kvec1 * B0x2 - kvec2 * B0x1;
+      real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
+      real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-          Kokkos::complex<real_t> kvec1, kvec2, kvec3;
-          kvec1.real() = constant::TWO_PI * k; kvec1.imag() = ZERO;
-          kvec2.real() = constant::TWO_PI * l; kvec2.imag() = ZERO;
-          kvec3.real() = ZERO; kvec3.imag() = ZERO;
+      dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+      dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-          auto kb1 = kvec2 * B0vec3 - kvec3 * B0vec2;
-          auto kb2 = kvec3 * B0vec1 - kvec1 * B0vec3;
-          auto kb3 = kvec1 * B0vec2 - kvec2 * B0vec1;
-          auto kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
-          auto kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1] + kvec3 * x_Ph[2];
+      dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+      dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-          dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-          dBvec1 += rand_X1 - kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+      dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+      dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-        }
-      }
+      return kbnorm;       
 
-      return static_cast <real_t> (B0vec1.real() + dBvec1.real());
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
