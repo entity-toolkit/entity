@@ -291,7 +291,7 @@ namespace user {
         int nseed = 10;
         auto dseed = constant::PI / static_cast<real_t>(nseed); 
 
-        for (int s = 0; s < nseed; ++s) {
+        Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
           auto theta = HALF * dseed + s*dseed;
 
@@ -336,7 +336,7 @@ namespace user {
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
 
-          }
+          });
 
 
             auto elec_ind_h = Kokkos::create_mirror(elec_ind);
