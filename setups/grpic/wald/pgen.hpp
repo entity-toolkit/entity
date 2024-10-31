@@ -17,10 +17,28 @@ namespace user {
   struct InitFields {
     InitFields(M metric_) : metric { metric_ } {}
 
-    Inline auto VerticalPotential(const coord_t<D>& x_Cd) const -> real_t {
+    Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
+      // return HALF * (metric.template h_<3, 3>(x_Cd) );
+            //  + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
+      // );
+
       coord_t<D> x_Ph { ZERO };
       metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
       return HALF * SQR(x_Ph[0]) * SQR(math::sin(x_Ph[1]));
+    }
+
+    Inline auto A_1(const coord_t<D>& x_Cd) const -> real_t {
+      return HALF * (metric.template h_<1, 3>(x_Cd) 
+             + TWO * metric.spin() * metric.template h_<1, 1>(x_Cd) * metric.beta1(x_Cd)
+      );
+    }
+
+    Inline auto A_0(const coord_t<D>& x_Cd) const -> real_t {
+      real_t g_00 { -metric.alpha(x_Cd) * metric.alpha(x_Cd) 
+                   + metric.template h_<1, 1>(x_Cd) * metric.beta1(x_Cd) * metric.beta1(x_Cd) 
+                  };
+      return HALF * (metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd) 
+             + TWO * metric.spin() * g_00);
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
@@ -33,7 +51,11 @@ namespace user {
       x0p[1] = xi[1] + HALF;
       
       real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      return (VerticalPotential(x0p) - VerticalPotential(x0m)) * inv_sqrt_detH_ijP;
+
+      if (cmp::AlmostZero(x_Ph[1]))
+        return ONE;
+      else
+        return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
@@ -46,10 +68,23 @@ namespace user {
       x0p[1] = xi[1];
 
       real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      return -(VerticalPotential(x0p) - VerticalPotential(x0m)) * inv_sqrt_detH_ijP;
+      if (cmp::AlmostZero(x_Ph[1]))
+        return ZERO;
+      else
+        return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP;
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+      // coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      // metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+
+      // x0m[0] = xi[0] + HALF - HALF;
+      // x0m[1] = xi[1];
+      // x0p[0] = xi[0] + HALF + HALF;
+      // x0p[1] = xi[1];
+
+      // real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      // return -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_ijP;
       return ZERO;
     }
 
