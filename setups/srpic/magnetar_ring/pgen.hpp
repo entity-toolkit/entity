@@ -289,7 +289,7 @@ namespace user {
         auto tag_p    = species_p.tag;
 
         int nseed = 10;
-        auto dseed = constant::PI / static_cast<real_t>(nseed); 
+        auto dseed = HALF * constant::PI / static_cast<real_t>(nseed); 
 
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
