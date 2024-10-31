@@ -305,9 +305,21 @@ namespace user {
 
           auto gam = gamma_pairs_;
           auto beta = math::sqrt(1 - 1 / (gam * gam));
-          auto v1 = gam * beta * x_Cart[0] / x_Ph[0];
-          auto v2 = gam * beta * x_Cart[1] / x_Ph[0];
-          auto v3 = gam * beta * x_Cart[2] / x_Ph[0];
+
+          auto bx1 = ONE * math::cos(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
+          auto bx2 = ONE * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
+
+          vec_t<Dim::_3D> bcd { bx1, bx2, ZERO};
+          vec_t<Dim::_3D> bcart { ZERO };
+          metric.template transform_xyz<Idx::U, Idx::XYZ>(x_Cd3d, bcd, bcart);
+          auto bnorm = math::sqrt(SQR(bcart[0]) + SQR(bcart[1]) + SQR(bcart[2]));
+          auto bc1 = bcart[0] / bnorm;
+          auto bc2 = bcart[1] / bnorm;
+          auto bc3 = bcart[2] / bnorm;
+
+          auto v1 = gam * beta * math::abs(bc1);
+          auto v2 = gam * beta * math::abs(bc2);
+          auto v3 = gam * beta * math::abs(bc3);
 
 
               auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
