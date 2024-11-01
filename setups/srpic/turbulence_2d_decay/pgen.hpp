@@ -48,8 +48,8 @@ namespace user {
           if (k == 0 && l == 0) continue;
 
         auto   rand_gen = random_pool.get_state();
-        real_t rand_X1 = 0.01 * Random<real_t>(rand_gen);
-        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
+        real_t rand_X1 = 0.01 * 0.5;
+        real_t rand_X2 = constant::TWO_PI * 0.5;
         random_pool.free_state(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
