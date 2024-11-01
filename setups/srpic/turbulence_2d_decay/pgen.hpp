@@ -51,6 +51,7 @@ namespace user {
         for (unsigned short j = 0; j < 9; ++j) {
           rand_X1_h(i, j) = 0.01 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
           rand_X2_h(i, j) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+          printf("rand_X1_h(%d, %d) = %f\n", i, j, rand_X1_h(i, j));
         }
       }
       Kokkos::deep_copy(rand_X1, rand_X1_h);
