@@ -26,22 +26,24 @@ namespace user {
 
   template <Dimension D>
   struct InitFields {
-    InitFields(real_t Bnorm)
+    InitFields(real_t Bnorm,
+      random_number_pool_t& random_pool)
       : Bnorm { Bnorm } 
       , B0x1 { ZERO }
       , B0x2 { ZERO }
-      , B0x3 { Bnorm } {}
+      , B0x3 { Bnorm } 
+      , pool { random_pool } {}
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
 
-      
-      real_t dBvec1 = ZERO;
+      real_t dBvec = ZERO;
+      auto rand_gen = pool.get_state();
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
-
-        real_t rand_X1 = 0.1;
-        real_t rand_X2 = constant::TWO_PI;
+        
+        real_t rand_X1 = static_cast<real_t>(0.01) * Random<real_t>(rand_gen);
+        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -53,28 +55,83 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec1 -= TWO * rand_X1 * kb1 / kbnorm * math::sin(kdotx + rand_X2);
+        dBvec -= TWO * rand_X1 * kb1 / kbnorm * math::sin(kdotx + rand_X2);
 
         }
       }
 
-      return dBvec1;       
+      pool.free_state(rand_gen);
+
+      return dBvec;       
 
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
       
-      return ZERO;
-    }
+      real_t dBvec = ZERO;
+      auto rand_gen = pool.get_state();
+      for (unsigned short k = 1; k < 9; ++k) {
+        for (unsigned short l = 1; l < 9; ++l) {
+          if (k == 0 && l == 0) continue;
+        
+        real_t rand_X1 = static_cast<real_t>(0.01) * Random<real_t>(rand_gen);
+        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
+
+        real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
+        real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
+        real_t kvec3 = ZERO;
+
+        real_t kb1 = kvec2 * B0x3 - kvec3 * B0x2;
+        real_t kb2 = kvec3 * B0x1 - kvec1 * B0x3;
+        real_t kb3 = kvec1 * B0x2 - kvec2 * B0x1;
+        real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
+        real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
+
+        dBvec -= TWO * rand_X1 * kb2 / kbnorm * math::sin(kdotx + rand_X2);
+
+        }
+      }
+
+      pool.free_state(rand_gen);
+
+      return dBvec;        
+      }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
       
-      return ZERO;
+      real_t dBvec = ZERO;
+      auto rand_gen = pool.get_state();
+      for (unsigned short k = 1; k < 9; ++k) {
+        for (unsigned short l = 1; l < 9; ++l) {
+          if (k == 0 && l == 0) continue;
+        
+        real_t rand_X1 = static_cast<real_t>(0.01) * Random<real_t>(rand_gen);
+        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
+
+        real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
+        real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
+        real_t kvec3 = ZERO;
+
+        real_t kb1 = kvec2 * B0x3 - kvec3 * B0x2;
+        real_t kb2 = kvec3 * B0x1 - kvec1 * B0x3;
+        real_t kb3 = kvec1 * B0x2 - kvec2 * B0x1;
+        real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
+        real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
+
+        dBvec -= TWO * rand_X1 * kb3 / kbnorm * math::sin(kdotx + rand_X2);
+
+        }
+      }
+
+      pool.free_state(rand_gen);
+
+      return dBvec;        
     }
 
   private:
     const real_t Bnorm;
     const real_t B0x1, B0x2, B0x3;
+    random_number_pool_t pool;
   };
 
   template <SimEngine::type S, class M>
@@ -223,7 +280,7 @@ namespace user {
     const real_t         dt;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& params, const Metadomain<S, M>& global_domain)
+    inline PGen(const SimulationParams& params, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { params }
       , SX1 { global_domain.mesh().extent(in::x1).second -
               global_domain.mesh().extent(in::x1).first }
@@ -243,7 +300,7 @@ namespace user {
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
-      , init_flds { Bnorm }
+      , init_flds { Bnorm, global_domain.subdomain_ptr(global_domain.l_subdomain_indices()[0])->random_pool }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
