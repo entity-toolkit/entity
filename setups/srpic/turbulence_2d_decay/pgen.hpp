@@ -42,14 +42,18 @@ namespace user {
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
-      srand (static_cast <unsigned> (12345));
+      Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
 
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
-        real_t rand_X1 = 0.1 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
-        real_t rand_X2 = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+        auto generator = random_pool.get_state();
+
+        real_t rand_X1 = 0.1 * generator.drand(0., 1.);
+        real_t rand_X2 = constant::TWO_PI * generator.drand(0., 1.);
+
+        random_pool.free_state(generator);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
