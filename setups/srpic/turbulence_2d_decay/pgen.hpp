@@ -34,7 +34,6 @@ namespace user {
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
       
-      random_number_pool_t random_pool { constant::RandomSeed };
       Kokkos::complex<real_t> dBvec1, dBvec2, dBvec3;
       Kokkos::complex<real_t> B0vec1, B0vec2, B0vec3;
       Kokkos::complex<real_t> cONE;
@@ -47,10 +46,8 @@ namespace user {
         for (unsigned short l = 0; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
-        auto   rand_gen = random_pool.get_state();
         real_t rand_X1 = 0.01 * 0.5;
         real_t rand_X2 = constant::TWO_PI * 0.5;
-        random_pool.free_state(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
