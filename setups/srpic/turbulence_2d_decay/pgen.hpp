@@ -43,13 +43,22 @@ namespace user {
       cONE.real() = ZERO; cONE.imag() = ONE;
 
       srand (static_cast <unsigned> (12345));
+      array_t<real_t* [9]> rand_X1("rand_X1", 9);
+      array_t<real_t* [9]> rand_X2("rand_X2", 9);
+      auto rand_X1_h = Kokkos::create_mirror_view(rand_X1);
+      auto rand_X2_h = Kokkos::create_mirror_view(rand_X2);
+      for (unsigned short i = 0; i < 9; ++i) {
+        for (unsigned short j = 0; j < 9; ++j) {
+          rand_X1_h(i, j) = 0.01 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+          rand_X2_h(i, j) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+        }
+      }
+      Kokkos::deep_copy(rand_X1, rand_X1_h);
+      Kokkos::deep_copy(rand_X2, rand_X2_h);
 
       for (unsigned short k = 0; k < 9; ++k) {
         for (unsigned short l = 0; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
-
-        auto   rand_X1 = 0.01 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
-        auto   rand_X2 = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -61,14 +70,14 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        dBvec1 += rand_X1(k, l) * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2(k, l));
+        dBvec1 -= rand_X1(k, l) * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2(k, l));
 
-        dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        dBvec2 += rand_X1(k, l) * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2(k, l));
+        dBvec2 -= rand_X1(k, l) * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2(k, l));
 
-        dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        dBvec3 += rand_X1(k, l) * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2(k, l));
+        dBvec3 -= rand_X1(k, l) * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2(k, l));
 
       }
       }
@@ -90,7 +99,6 @@ namespace user {
   private:
     const real_t Bnorm;
     const real_t B0x1, B0x2, B0x3;
-    random_number_pool_t random_pool;
   };
 
   template <SimEngine::type S, class M>
