@@ -42,29 +42,33 @@ namespace user {
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
-      auto   rand_X1 = 0.01;
-      auto   rand_X2 = constant::TWO_PI;
+      for (unsigned short k = 0; k < 2; ++k) {
 
-      real_t kvec1 = constant::TWO_PI;
-      real_t kvec2 = constant::TWO_PI; 
-      real_t kvec3 = ZERO;
+        auto   rand_X1 = 0.01;
+        auto   rand_X2 = constant::TWO_PI;
 
-      real_t kb1 = kvec2 * B0x3 - kvec3 * B0x2;
-      real_t kb2 = kvec3 * B0x1 - kvec1 * B0x3;
-      real_t kb3 = kvec1 * B0x2 - kvec2 * B0x1;
-      real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
-      real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
+        real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
+        real_t kvec2 = constant::TWO_PI; 
+        real_t kvec3 = ZERO;
 
-      dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-      dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        real_t kb1 = kvec2 * B0x3 - kvec3 * B0x2;
+        real_t kb2 = kvec3 * B0x1 - kvec1 * B0x3;
+        real_t kb3 = kvec1 * B0x2 - kvec2 * B0x1;
+        real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
+        real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-      dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-      dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+        dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-      dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-      dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+        dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-      return kbnorm;       
+        dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+        dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+
+      }
+
+      return dBvec1.real();       
 
     }
 
