@@ -34,23 +34,17 @@ namespace user {
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
       
-      Kokkos::complex<real_t> dBvec1, dBvec2, dBvec3;
-      Kokkos::complex<real_t> B0vec1, B0vec2, B0vec3;
-      Kokkos::complex<real_t> cONE;
-      dBvec1.real() = ZERO; dBvec1.imag() = ZERO;
-      dBvec2.real() = ZERO; dBvec2.imag() = ZERO;
-      dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
-      cONE.real() = ZERO; cONE.imag() = ONE;
-
       Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
-
+      real_t dBvec1 = ZERO;
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
+        // real_t rand_X1 = 0.1;
+        // real_t rand_X2 = constant::TWO_PI;
         auto generator = random_pool.get_state();
-        real_t rand_X1 = 0.1;
-        real_t rand_X2 = constant::TWO_PI * generator.drand(0., 1.);
+        real_t rand_X1 = generator.drand(0., 1.) * 0.1;
+        real_t rand_X2 = generator.drand(0., 1.) * constant::TWO_PI;  
         random_pool.free_state(generator);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
@@ -63,19 +57,11 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(  cONE * kdotx + cONE * rand_X2);
-        dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
-
-        // dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        // dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
-
-        // dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        // dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
-
+        dBvec1 -= TWO * rand_X1 * kb1 / kbnorm * math::sin(kdotx + rand_X2);
         }
       }
 
-      return dBvec1.real();       
+      return dBvec1;       
 
     }
 
