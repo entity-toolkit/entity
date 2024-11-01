@@ -43,14 +43,14 @@ namespace user {
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
-      auto   rand_gen = random_pool.get_state();
-
       for (unsigned short k = 0; k < 9; ++k) {
         for (unsigned short l = 0; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
+        auto   rand_gen = random_pool.get_state();
         real_t rand_X1 = 0.01 * Random<real_t>(rand_gen);
         real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
+        random_pool.free_state(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -65,16 +65,14 @@ namespace user {
         dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
         dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-        dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        // dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+        // dBvec2 -= rand_X1 * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
-        dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
-        dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
+        // dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+        // dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
         }
       }
-
-      random_pool.free_state(rand_gen);
 
       return dBvec1.real();       
 
