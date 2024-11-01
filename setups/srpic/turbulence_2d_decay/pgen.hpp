@@ -43,7 +43,7 @@ namespace user {
       cONE.real() = ZERO; cONE.imag() = ONE;
 
       for (unsigned short k = 0; k < 9; ++k) {
-        for (unsigned short l = 0; l < 9, ++l) {
+        for (unsigned short l = 0; l < 9; ++l) {
 
         auto   rand_X1 = 0.01;
         auto   rand_X2 = constant::TWO_PI;
