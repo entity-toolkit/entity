@@ -33,19 +33,20 @@ namespace user {
       , B0x3 { Bnorm } {}
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      
-      Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
+
+      srand(0);
+
       real_t dBvec1 = ZERO;
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
-        // real_t rand_X1 = 0.1;
-        // real_t rand_X2 = constant::TWO_PI;
-        auto generator = random_pool.get_state();
-        real_t rand_X1 = generator.drand(0., 1.) * 0.1;
-        real_t rand_X2 = generator.drand(0., 1.) * constant::TWO_PI;  
-        random_pool.free_state(generator);
+          array_t<real_t*> randX ("rands", 2);
+          randX(0) = static_cast<real_t>(rand())/static_cast<real_t>(RAND_MAX);
+          randX(1) = static_cast<real_t>(rand())/static_cast<real_t>(RAND_MAX);
+
+        real_t rand_X1 = 0.1 * randX(0);
+        real_t rand_X2 = constant::TWO_PI * randX(1);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -58,6 +59,7 @@ namespace user {
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
         dBvec1 -= TWO * rand_X1 * kb1 / kbnorm * math::sin(kdotx + rand_X2);
+
         }
       }
 
