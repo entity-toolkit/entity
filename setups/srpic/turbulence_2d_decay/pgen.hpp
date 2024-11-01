@@ -26,24 +26,20 @@ namespace user {
 
   template <Dimension D>
   struct InitFields {
-    InitFields(real_t Bnorm,
-      random_number_pool_t& random_pool)
+    InitFields(real_t Bnorm, array_t<real_t* [8]> amplitudes, array_t<real_t* [8]> phi )
       : Bnorm { Bnorm } 
       , B0x1 { ZERO }
       , B0x2 { ZERO }
       , B0x3 { Bnorm } 
-      , pool { random_pool } {}
+      , amp { amplitudes}
+      , phi { phi } {}
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
 
       real_t dBvec = ZERO;
-      auto rand_gen = pool.get_state();
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
-        
-        real_t rand_X1 = static_cast<real_t>(0.01) * Random<real_t>(rand_gen);
-        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -55,12 +51,10 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec -= TWO * rand_X1 * kb1 / kbnorm * math::sin(kdotx + rand_X2);
+        dBvec -= TWO * amp(k, l) * kb1 / kbnorm * math::sin(kdotx + phi(k, l));
 
         }
       }
-
-      pool.free_state(rand_gen);
 
       return dBvec;       
 
@@ -69,13 +63,9 @@ namespace user {
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
       
       real_t dBvec = ZERO;
-      auto rand_gen = pool.get_state();
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
-        
-        real_t rand_X1 = static_cast<real_t>(0.01) * Random<real_t>(rand_gen);
-        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -87,12 +77,10 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec -= TWO * rand_X1 * kb2 / kbnorm * math::sin(kdotx + rand_X2);
+        dBvec -= TWO * amp(k, l) * kb2 / kbnorm * math::sin(kdotx + phi(k, l));
 
         }
       }
-
-      pool.free_state(rand_gen);
 
       return dBvec;        
       }
@@ -100,13 +88,9 @@ namespace user {
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
       
       real_t dBvec = ZERO;
-      auto rand_gen = pool.get_state();
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
-        
-        real_t rand_X1 = static_cast<real_t>(0.01) * Random<real_t>(rand_gen);
-        real_t rand_X2 = constant::TWO_PI * Random<real_t>(rand_gen);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
@@ -118,12 +102,10 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec -= TWO * rand_X1 * kb3 / kbnorm * math::sin(kdotx + rand_X2);
+        dBvec -= TWO * amp(k, l) * kb3 / kbnorm * math::sin(kdotx + phi(k, l));
 
         }
       }
-
-      pool.free_state(rand_gen);
 
       return dBvec;        
     }
@@ -131,7 +113,8 @@ namespace user {
   private:
     const real_t Bnorm;
     const real_t B0x1, B0x2, B0x3;
-    random_number_pool_t pool;
+    array_t<real_t* [8]> amp;
+    array_t<real_t* [8]> phi;
   };
 
   template <SimEngine::type S, class M>
@@ -187,75 +170,6 @@ namespace user {
     random_number_pool_t random_pool;
   };
 
-  template <Dimension D>
-  struct ExtForce {
-    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
-      : amps { amplitudes }
-      , sx1 { SX1 }
-      , sx2 { SX2 }
-      , sx3 { SX3 } 
-      , k01 {ONE * constant::TWO_PI / sx1}
-      , k02 {ZERO * constant::TWO_PI / sx2}
-      , k03 {ZERO * constant::TWO_PI / sx3}
-      , k04 {ONE}
-      , k11 {ZERO * constant::TWO_PI / sx1}
-      , k12 {ONE * constant::TWO_PI / sx2}
-      , k13 {ZERO * constant::TWO_PI / sx3}
-      , k14 {ONE}
-      , k21 {ZERO * constant::TWO_PI / sx1}
-      , k22 {ZERO * constant::TWO_PI / sx2}
-      , k23 {ONE * constant::TWO_PI / sx3}
-      , k24 {ONE} {}
-
-    const std::vector<unsigned short> species { 1, 2 };
-
-    ExtForce() = default;
-
-    Inline auto fx1(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
-
-      // return ZERO;
-      return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-              k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
-
-      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
-
-    }
-
-    Inline auto fx2(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
-
-      return (k04 * amps(2, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-              k04 * amps(2, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
-      // return ZERO;
-    }
-
-    Inline auto fx3(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
-
-      // return (k04 * amps(4, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-      //         k04 * amps(4, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
-      //        (k14 * amps(5, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-      //         k14 * amps(5, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
-      return ZERO;
-    }
-
-  private:
-    array_t<real_t* [2]> amps;
-    const real_t         sx1, sx2, sx3;
-    const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
-  };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -274,9 +188,7 @@ namespace user {
     const unsigned int   nmodes;
     const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
-    array_t<real_t* [2]> amplitudes;
-    array_t<real_t*> phi0;
-    ExtForce<M::PrtlDim> ext_force;
+    array_t<real_t* [8]> amplitudes, phi0;
     const real_t         dt;
     InitFields<D> init_flds;
 
@@ -297,35 +209,22 @@ namespace user {
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
-      , phi0 { "DrivingPhases", nmodes }
-      , amplitudes { "DrivingModes", nmodes }
-      , ext_force { amplitudes, SX1, SX2, SX3 }
-      , init_flds { Bnorm, global_domain.subdomain_ptr(global_domain.l_subdomain_indices()[0])->random_pool }
+      , phi0 { "DrivingPhases", 8 }
+      , amplitudes { "DrivingModes", 8 }
+      , init_flds { Bnorm, amplitudes, phi0 }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
+      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
       srand (static_cast <unsigned> (12345));
-      for (int i = 0; i < nmodes; ++i) {
-        phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+      for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+          phi0_(i, j) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+          amplitudes_(i, j) = static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+        }
       }
       Kokkos::deep_copy(phi0, phi0_);
-      // Initializing amplitudes
-      Init();
-    }
-
-    void Init() {
-      // initializing amplitudes
-      auto       amplitudes_ = amplitudes;
-      const auto amp0_       = amp0;
-      const auto phi0_       = phi0;
-      Kokkos::parallel_for(
-        "RandomAmplitudes",
-        amplitudes.extent(0),
-        Lambda(index_t i) {
-          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i));
-          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i));
-          printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
-        });
+      Kokkos::deep_copy(amplitudes, amplitudes_);
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
