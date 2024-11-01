@@ -56,7 +56,7 @@ namespace user {
         }
       }
 
-      return dBvec;       
+      return B0x1 + dBvec;       
 
     }
 
@@ -82,7 +82,7 @@ namespace user {
         }
       }
 
-      return dBvec;        
+      return B0x2 + dBvec;        
       }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
@@ -107,7 +107,7 @@ namespace user {
         }
       }
 
-      return dBvec;        
+      return B0x3 + dBvec;        
     }
 
   private:
