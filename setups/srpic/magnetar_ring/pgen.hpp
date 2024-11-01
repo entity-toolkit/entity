@@ -306,14 +306,14 @@ namespace user {
 
           auto i1_ = math::floor(x_Cd2d[0]);
           auto i2_ = math::floor(x_Cd2d[1]);
-          auto dx1_ = x_Cd2d[0] - i1_;
-          auto dx2_ = x_Cd2d[1] - i2_;
+          auto dx1_ = x_Cd2d[0] - math::floor(x_Cd2d[0]);
+          auto dx2_ = x_Cd2d[1] - math::floor(x_Cd2d[0]);
 
           auto gam = gamma_pairs_;
           auto beta = math::sqrt(1 - 1 / (gam * gam));
 
-          auto bx1 = ONE * math::cos(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
-          auto bx2 = ONE * HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
+          auto bx1 = math::cos(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
+          auto bx2 = HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
 
           auto bx1c = metric.template transform<1, Idx::T, Idx::U>(
               { i1_, i2_ + HALF },
@@ -331,10 +331,9 @@ namespace user {
           auto bc2 = bcart[1] / bnorm;
           auto bc3 = bcart[2] / bnorm;
 
-          auto v1 = gam * beta * math::abs(bc1);
-          auto v2 = gam * beta * math::abs(bc2);
-          auto v3 = gam * beta * math::abs(bc3);
-
+          auto v1 = gam * beta * bc1;
+          auto v2 = gam * beta * bc2;
+          auto v3 = gam * beta * bc3;
 
               auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
               auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
