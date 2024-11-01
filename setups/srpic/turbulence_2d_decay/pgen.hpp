@@ -49,10 +49,8 @@ namespace user {
           if (k == 0 && l == 0) continue;
 
         auto generator = random_pool.get_state();
-
-        real_t rand_X1 = 0.1 * generator.drand(0., 1.);
+        real_t rand_X1 = 0.1;
         real_t rand_X2 = constant::TWO_PI * generator.drand(0., 1.);
-
         random_pool.free_state(generator);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
@@ -65,7 +63,7 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
+        dBvec1 += rand_X1 * kb1 / kbnorm * cONE * math::exp(  cONE * kdotx + cONE * rand_X2);
         dBvec1 -= rand_X1 * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
         // dBvec2 += rand_X1 * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
