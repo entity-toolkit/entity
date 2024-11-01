@@ -203,12 +203,12 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 8) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
-      , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
+      , amp0 { machno * temperature / static_cast<real_t>(8) }
       , phi0 { "DrivingPhases", 8 }
       , amplitudes { "DrivingModes", 8 }
       , init_flds { Bnorm, amplitudes, phi0 }
@@ -220,7 +220,7 @@ namespace user {
       for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
           phi0_(i, j) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
-          amplitudes_(i, j) = static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+          amplitudes_(i, j) = amp0 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
         }
       }
       Kokkos::deep_copy(phi0, phi0_);
