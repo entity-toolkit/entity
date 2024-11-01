@@ -51,7 +51,7 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec -= TWO * amp(k, l) * kb1 / kbnorm * math::sin(kdotx + phi(k, l));
+        dBvec -= TWO * amp(k-1, l-1) * kb1 / kbnorm * math::sin(kdotx + phi(k-1, l-1));
 
         }
       }
@@ -77,7 +77,7 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec -= TWO * amp(k, l) * kb2 / kbnorm * math::sin(kdotx + phi(k, l));
+        dBvec -= TWO * amp(k-1, l-1) * kb2 / kbnorm * math::sin(kdotx + phi(k-1, l-1));
 
         }
       }
@@ -102,7 +102,7 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec -= TWO * amp(k, l) * kb3 / kbnorm * math::sin(kdotx + phi(k, l));
+        dBvec -= TWO * amp(k-1, l-1) * kb3 / kbnorm * math::sin(kdotx + phi(k-1, l-1));
 
         }
       }
