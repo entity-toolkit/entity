@@ -44,6 +44,7 @@ namespace user {
 
       for (unsigned short k = 0; k < 9; ++k) {
         for (unsigned short l = 0; l < 9; ++l) {
+          if (k == 0 && l == 0) continue;
 
         auto   rand_X1 = 0.01;
         auto   rand_X2 = constant::TWO_PI;
