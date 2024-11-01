@@ -42,12 +42,14 @@ namespace user {
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
+      srand (static_cast <unsigned> (12345));
+
       for (unsigned short k = 0; k < 9; ++k) {
         for (unsigned short l = 0; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
-        auto   rand_X1 = 0.01;
-        auto   rand_X2 = constant::TWO_PI;
+        auto   rand_X1 = 0.01 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+        auto   rand_X2 = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
