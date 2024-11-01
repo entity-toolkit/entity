@@ -285,32 +285,6 @@ namespace user {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       #endif
 
-      Kokkos::parallel_for(
-        "RandomAmplitudes",
-        amplitudes.extent(0),
-        ClassLambda(index_t i) {
-          auto       rand_gen = pool.get_state();
-          const auto unr      = Random<real_t>(rand_gen) - HALF;
-          const auto uni      = Random<real_t>(rand_gen) - HALF;
-          pool.free_state(rand_gen);
-          const auto ampr_prev = amplitudes(i, REAL);
-          const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                unr * sigma0 * dt;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                uni * sigma0 * dt;
-        });
-
-      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
-      Kokkos::deep_copy(amplitudes_, amplitudes);
-      for (int i = 0; i < nmodes; ++i) {
-        printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
-      }
-
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
         auto fext_en_s = ZERO;
