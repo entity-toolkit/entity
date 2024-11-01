@@ -42,8 +42,8 @@ namespace user {
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
-      for (unsigned short k = 0; k < 9; ++k) {
-        for (unsigned short l = 0; l < 9; ++l) {
+      for (unsigned short k = 1; k < 9; ++k) {
+        for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
         real_t rand_X1 = 0.01 * 0.5;
