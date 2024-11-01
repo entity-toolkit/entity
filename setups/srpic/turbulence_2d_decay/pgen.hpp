@@ -44,9 +44,11 @@ namespace user {
           array_t<real_t*> randX ("rands", 2);
           randX(0) = static_cast<real_t>(rand())/static_cast<real_t>(RAND_MAX);
           randX(1) = static_cast<real_t>(rand())/static_cast<real_t>(RAND_MAX);
+          randX_m = Kokkos::create_mirror_view(randX);
+          Kokkos::deep_copy(randX_m, randX);
 
-        real_t rand_X1 = 0.1 * randX(0);
-        real_t rand_X2 = constant::TWO_PI * randX(1);
+        real_t rand_X1 = 0.1 * randX_m(0);
+        real_t rand_X2 = constant::TWO_PI * randX_m(1);
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
