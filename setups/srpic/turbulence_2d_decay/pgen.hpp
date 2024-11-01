@@ -42,13 +42,14 @@ namespace user {
       dBvec3.real() = ZERO; dBvec3.imag() = ZERO;
       cONE.real() = ZERO; cONE.imag() = ONE;
 
-      for (unsigned short k = 0; k < 2; ++k) {
+      for (unsigned short k = 0; k < 9; ++k) {
+        for (unsigned short l = 0; l < 9, ++l) {
 
         auto   rand_X1 = 0.01;
         auto   rand_X2 = constant::TWO_PI;
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
-        real_t kvec2 = constant::TWO_PI; 
+        real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
         real_t kvec3 = ZERO;
 
         real_t kb1 = kvec2 * B0x3 - kvec3 * B0x2;
@@ -66,6 +67,7 @@ namespace user {
         dBvec3 += rand_X1 * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2);
         dBvec3 -= rand_X1 * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2);
 
+      }
       }
 
       return dBvec1.real();       
