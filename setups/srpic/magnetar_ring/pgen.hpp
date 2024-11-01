@@ -307,7 +307,7 @@ namespace user {
           auto i1_ = math::floor(x_Cd2d[0]);
           auto i2_ = math::floor(x_Cd2d[1]);
           auto dx1_ = x_Cd2d[0] - math::floor(x_Cd2d[0]);
-          auto dx2_ = x_Cd2d[1] - math::floor(x_Cd2d[0]);
+          auto dx2_ = x_Cd2d[1] - math::floor(x_Cd2d[1]);
 
           auto gam = gamma_pairs_;
           auto beta = math::sqrt(1 - 1 / (gam * gam));
