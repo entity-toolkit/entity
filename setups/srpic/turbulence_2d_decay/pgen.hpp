@@ -34,21 +34,14 @@ namespace user {
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
 
-      srand(0);
-
+      
       real_t dBvec1 = ZERO;
       for (unsigned short k = 1; k < 9; ++k) {
         for (unsigned short l = 1; l < 9; ++l) {
           if (k == 0 && l == 0) continue;
 
-          array_t<real_t*> randX ("rands", 2);
-          randX(0) = static_cast<real_t>(rand())/static_cast<real_t>(RAND_MAX);
-          randX(1) = static_cast<real_t>(rand())/static_cast<real_t>(RAND_MAX);
-          auto randX_m = Kokkos::create_mirror_view(randX);
-          Kokkos::deep_copy(randX_m, randX);
-
-        real_t rand_X1 = 0.1 * randX_m(0);
-        real_t rand_X2 = constant::TWO_PI * randX_m(1);
+        real_t rand_X1 = 0.1;
+        real_t rand_X2 = constant::TWO_PI;
 
         real_t kvec1 = constant::TWO_PI * static_cast<real_t>(k);
         real_t kvec2 = constant::TWO_PI * static_cast<real_t>(l); 
