@@ -51,7 +51,6 @@ namespace user {
         for (unsigned short j = 0; j < 9; ++j) {
           rand_X1_h(i, j) = 0.01 * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
           rand_X2_h(i, j) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
-          printf("rand_X1_h(%d, %d) = %f\n", i, j, rand_X1_h(i, j));
         }
       }
       Kokkos::deep_copy(rand_X1, rand_X1_h);
@@ -71,14 +70,14 @@ namespace user {
         real_t kbnorm = math::sqrt(kb1*kb1 + kb2*kb2 + kb3*kb3);
         real_t kdotx = kvec1 * x_Ph[0] + kvec2 * x_Ph[1];
 
-        dBvec1 += rand_X1(k, l) * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2(k, l));
-        dBvec1 -= rand_X1(k, l) * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2(k, l));
+        dBvec1 += rand_X1_h(k, l) * kb1 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2_h(k, l));
+        dBvec1 -= rand_X1_h(k, l) * kb1 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2_h(k, l));
 
-        dBvec2 += rand_X1(k, l) * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2(k, l));
-        dBvec2 -= rand_X1(k, l) * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2(k, l));
+        dBvec2 += rand_X1_h(k, l) * kb2 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2_h(k, l));
+        dBvec2 -= rand_X1_h(k, l) * kb2 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2_h(k, l));
 
-        dBvec3 += rand_X1(k, l) * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2(k, l));
-        dBvec3 -= rand_X1(k, l) * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2(k, l));
+        dBvec3 += rand_X1_h(k, l) * kb3 / kbnorm * cONE * math::exp(cONE * kdotx + cONE * rand_X2_h(k, l));
+        dBvec3 -= rand_X1_h(k, l) * kb3 / kbnorm * cONE * math::exp(- cONE * kdotx - cONE * rand_X2_h(k, l));
 
       }
       }
