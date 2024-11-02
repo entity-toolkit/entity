@@ -186,7 +186,7 @@ namespace user {
     const unsigned int   nmodes;
     const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
-    array_t<real_t* [2]> amplitudes;
+    array_t<real_t* [2]> amplitudes, rands;
     array_t<real_t*> phi0;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
@@ -211,6 +211,7 @@ namespace user {
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
+      , rands { "RandomNumbers", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
@@ -236,7 +237,6 @@ namespace user {
         Lambda(index_t i) {
           amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i));
           amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i));
-          printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
         });
     }
 
@@ -298,14 +298,28 @@ namespace user {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       #endif
 
+
       Kokkos::parallel_for(
-        "RandomAmplitudes",
+        "RandomNumbers",
         amplitudes.extent(0),
         ClassLambda(index_t i) {
           auto       rand_gen = pool.get_state();
           const auto unr      = Random<real_t>(rand_gen) - HALF;
           const auto uni      = Random<real_t>(rand_gen) - HALF;
           pool.free_state(rand_gen);
+          rands(i, REAL) = unr;
+          rands(i, IMAG) = uni;
+        });
+
+        MPI_Bcast(rands.data(), rands.size(), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
+
+
+      Kokkos::parallel_for(
+        "RandomAmplitudes",
+        amplitudes.extent(0),
+        ClassLambda(index_t i) {
+          const auto unr      = rands(i, REAL);
+          const auto uni      = rands(i, IMAG);
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
           amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
