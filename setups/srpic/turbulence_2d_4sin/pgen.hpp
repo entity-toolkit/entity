@@ -186,8 +186,8 @@ namespace user {
     const unsigned int   nmodes;
     const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
-    array_t<real_t* [2]> amplitudes, rands;
-    array_t<real_t*> phi0;
+    array_t<real_t* [2]> amplitudes;
+    array_t<real_t*> phi0, rands;
     ExtForce<M::PrtlDim> ext_force;
     const real_t         dt;
     InitFields<D> init_flds;
@@ -211,7 +211,7 @@ namespace user {
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
-      , rands { "RandomNumbers", nmodes }
+      , rands { "RandomNumbers", 2*nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
@@ -304,22 +304,20 @@ namespace user {
         amplitudes.extent(0),
         ClassLambda(index_t i) {
           auto       rand_gen = pool.get_state();
-          const auto unr      = Random<real_t>(rand_gen) - HALF;
-          const auto uni      = Random<real_t>(rand_gen) - HALF;
+          rands(i) = Random<real_t>(rand_gen);
           pool.free_state(rand_gen);
-          rands(i, REAL) = unr;
-          rands(i, IMAG) = uni;
         });
 
-        MPI_Bcast(rands.data(), rands.size(), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
-
+      #if defined(MPI_ENABLED)
+        MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
+      #endif
 
       Kokkos::parallel_for(
         "RandomAmplitudes",
         amplitudes.extent(0),
         ClassLambda(index_t i) {
-          const auto unr      = rands(i, REAL);
-          const auto uni      = rands(i, IMAG);
+          const auto unr      = rands(i);
+          const auto uni      = rands(amplitudes.extent(0) + i);
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
           amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
