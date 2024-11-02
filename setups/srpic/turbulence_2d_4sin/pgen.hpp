@@ -316,8 +316,8 @@ namespace user {
         "RandomAmplitudes",
         amplitudes.extent(0),
         ClassLambda(index_t i) {
-          const auto unr      = rands(i);
-          const auto uni      = rands(amplitudes.extent(0) + i);
+          const auto unr      = rands(i) - HALF;;
+          const auto uni      = rands(amplitudes.extent(0) + i) - HALF;;
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
           amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
