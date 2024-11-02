@@ -301,7 +301,7 @@ namespace user {
 
       Kokkos::parallel_for(
         "RandomNumbers",
-        amplitudes.extent(0),
+        rands.extent(0),
         ClassLambda(index_t i) {
           auto       rand_gen = pool.get_state();
           rands(i) = Random<real_t>(rand_gen);
@@ -330,11 +330,11 @@ namespace user {
                                 uni * sigma0 * dt;
         });
 
-      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
-      Kokkos::deep_copy(amplitudes_, amplitudes);
-      for (int i = 0; i < nmodes; ++i) {
-        printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
-      }
+      // auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
+      // Kokkos::deep_copy(amplitudes_, amplitudes);
+      // for (int i = 0; i < nmodes; ++i) {
+      //   printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
+      // }
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
