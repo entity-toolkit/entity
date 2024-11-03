@@ -298,14 +298,12 @@ namespace user {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       #endif
 
-
       Kokkos::parallel_for(
         "RandomNumbers",
         rands.extent(0),
         ClassLambda(index_t i) {
-          int              rank;
-          MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-          auto       rand_gen = static_cast<real_t>(rank);
+          auto rank_ = this->rank;
+          auto       rand_gen = static_cast<real_t>(rank_);
           // auto       rand_gen = pool.get_state();
           // rands(i) = Random<real_t>(rand_gen);
           // pool.free_state(rand_gen);
