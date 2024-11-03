@@ -222,6 +222,13 @@ namespace user {
         phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
       }
       Kokkos::deep_copy(phi0, phi0_);
+
+      #if defined(MPI_ENABLED)
+        int              rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Bcast(phi0.data(), phi0.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
+      #endif
+
       // Initializing amplitudes
       Init();
     }
