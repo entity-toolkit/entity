@@ -341,8 +341,8 @@ namespace user {
                                 uni * sigma0 * dt_;
         });
 
-      // auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
-      // Kokkos::deep_copy(amplitudes_, amplitudes);
+      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
+      Kokkos::deep_copy(amplitudes_, amplitudes);
       // for (int i = 0; i < nmodes; ++i) {
       //   printf("amplitudes_(%d, REAL) = %f\n, rank = %d", i, amplitudes_(i, REAL), rank);
       // }
@@ -560,6 +560,14 @@ namespace user {
             myfile4.open("esqenrg.txt", std::ios_base::app);
           }
           myfile4 << eenrg_total << std::endl;
+
+          if (time == 0) {
+            myfile4.open("amps.txt");
+          } else {
+            myfile4.open("amps.txt", std::ios_base::app);
+          }
+          myfile4 << amplitudes_(0, REAL) << std::endl;
+
         }
 
       #else
@@ -591,6 +599,13 @@ namespace user {
             myfile4.open("esqenrg.txt", std::ios_base::app);
           }
           myfile4 << eenrg_total << std::endl;
+
+          if (time == 0) {
+            myfile4.open("amps.txt");
+          } else {
+            myfile4.open("amps.txt", std::ios_base::app);
+          }
+          myfile4 << amplitudes_(0, REAL) << std::endl;
 
       #endif
     }
