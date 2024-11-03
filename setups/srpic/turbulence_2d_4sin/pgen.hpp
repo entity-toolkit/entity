@@ -303,6 +303,8 @@ namespace user {
         "RandomNumbers",
         rands.extent(0),
         ClassLambda(index_t i) {
+          int              rank;
+          MPI_Comm_rank(MPI_COMM_WORLD, &rank);
           auto       rand_gen = static_cast<real_t>(rank);
           // auto       rand_gen = pool.get_state();
           // rands(i) = Random<real_t>(rand_gen);
