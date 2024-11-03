@@ -302,10 +302,9 @@ namespace user {
         "RandomNumbers",
         rands.extent(0),
         ClassLambda(index_t i) {
-          // auto       rand_gen = pool.get_state();
-          // rands(i) = Random<real_t>(rand_gen);
-          rands(i) = static_cast<real_t>(rank);
-          // pool.free_state(rand_gen);
+          auto       rand_gen = pool.get_state();
+          rands(i) = Random<real_t>(rand_gen);
+          pool.free_state(rand_gen);
         });
 
       #if defined(MPI_ENABLED)
