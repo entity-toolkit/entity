@@ -309,7 +309,7 @@ namespace user {
         });
 
       #if defined(MPI_ENABLED)
-        MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 1, MPI_COMM_WORLD);
+        MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
       #endif
 
       auto rand_m = Kokkos::create_mirror_view(rands);
