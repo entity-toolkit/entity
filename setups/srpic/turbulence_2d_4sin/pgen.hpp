@@ -305,8 +305,8 @@ namespace user {
         ClassLambda(index_t i) {
           auto       rand_gen = static_cast<real_t>(rank);
           // auto       rand_gen = pool.get_state();
-          rands(i) = Random<real_t>(rand_gen);
-          pool.free_state(rand_gen);
+          // rands(i) = Random<real_t>(rand_gen);
+          // pool.free_state(rand_gen);
         });
 
       #if defined(MPI_ENABLED)
