@@ -312,7 +312,10 @@ namespace user {
       #if defined(MPI_ENABLED)
         MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 1, MPI_COMM_WORLD);
       #endif
-      printf("rands(0) = %f\n", rands(0));
+
+      auto rand_m = Kokkos::create_mirror_view(rands);
+      Kokkos::deep_copy(rand_m, rands);
+      printf("rands(0) = %f\n", rand_m(0));
 
       Kokkos::parallel_for(
         "RandomAmplitudes",
