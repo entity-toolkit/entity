@@ -303,14 +303,16 @@ namespace user {
         "RandomNumbers",
         rands.extent(0),
         ClassLambda(index_t i) {
-          auto       rand_gen = pool.get_state();
+          auto       rand_gen = static_cast<real_t>(rank);
+          // auto       rand_gen = pool.get_state();
           rands(i) = Random<real_t>(rand_gen);
           pool.free_state(rand_gen);
         });
 
       #if defined(MPI_ENABLED)
-        MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
+        MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 1, MPI_COMM_WORLD);
       #endif
+      printf("rands(0) = %f\n", rands(0));
 
       Kokkos::parallel_for(
         "RandomAmplitudes",
@@ -330,10 +332,11 @@ namespace user {
                                 uni * sigma0 * dt;
         });
 
-      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
-      Kokkos::deep_copy(amplitudes_, amplitudes);
-      printf("amplitudes_(1, REAL) = %f\n, rank = %d", amplitudes_(1, REAL), rank);
-      MPI_Barrier(MPI_COMM_WORLD);
+      // auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
+      // Kokkos::deep_copy(amplitudes_, amplitudes);
+      // for (int i = 0; i < nmodes; ++i) {
+      //   printf("amplitudes_(%d, REAL) = %f\n, rank = %d", i, amplitudes_(i, REAL), rank);
+      // }
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
