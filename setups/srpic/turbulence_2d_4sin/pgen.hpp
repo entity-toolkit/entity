@@ -292,6 +292,7 @@ namespace user {
       auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0 / dt);
       auto pool   = domain.random_pool;
+      auto dt_    = this->dt;
 
       #if defined(MPI_ENABLED)
         int              rank;
@@ -311,26 +312,26 @@ namespace user {
         MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
       #endif
 
-      auto rand_m = Kokkos::create_mirror_view(rands);
-      Kokkos::deep_copy(rand_m, rands);
-      printf("rands(0) = %f\n", rand_m(0));
+      // auto rand_m = Kokkos::create_mirror_view(rands);
+      // Kokkos::deep_copy(rand_m, rands);
+      // printf("rands(0) = %f\n", rand_m(0));
 
       Kokkos::parallel_for(
         "RandomAmplitudes",
         amplitudes.extent(0),
         ClassLambda(index_t i) {
-          const auto unr      = rands(i) - HALF;;
-          const auto uni      = rands(amplitudes.extent(0) + i) - HALF;;
+          const auto unr      = rands(i) - HALF;
+          const auto uni      = rands(amplitudes.extent(0) + i) - HALF;
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                unr * sigma0 * dt;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                uni * sigma0 * dt;
+          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt_) +
+                                 ampi_prev * math::sin(omega0 * dt_)) *
+                                  math::exp(-gamma0 * dt_) +
+                                unr * sigma0 * dt_;
+          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt_) +
+                                 ampi_prev * math::cos(omega0 * dt_)) *
+                                  math::exp(-gamma0 * dt_) +
+                                uni * sigma0 * dt_;
         });
 
       // auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
