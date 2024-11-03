@@ -526,6 +526,7 @@ namespace user {
       std::ofstream myfile2;
       std::ofstream myfile3;
       std::ofstream myfile4;
+      std::ofstream myfile5;
 
       #if defined(MPI_ENABLED)
 
