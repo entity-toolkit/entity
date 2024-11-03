@@ -562,11 +562,11 @@ namespace user {
           myfile4 << eenrg_total << std::endl;
 
           if (time == 0) {
-            myfile4.open("amps.txt");
+            myfile5.open("amps.txt");
           } else {
-            myfile4.open("amps.txt", std::ios_base::app);
+            myfile5.open("amps.txt", std::ios_base::app);
           }
-          myfile4 << amplitudes_(0, REAL) << std::endl;
+          myfile5 << amplitudes_(0, REAL) << std::endl;
 
         }
 
@@ -601,11 +601,11 @@ namespace user {
           myfile4 << eenrg_total << std::endl;
 
           if (time == 0) {
-            myfile4.open("amps.txt");
+            myfile5.open("amps.txt");
           } else {
-            myfile4.open("amps.txt", std::ios_base::app);
+            myfile5.open("amps.txt", std::ios_base::app);
           }
-          myfile4 << amplitudes_(0, REAL) << std::endl;
+          myfile5 << amplitudes_(0, REAL) << std::endl;
 
       #endif
     }
