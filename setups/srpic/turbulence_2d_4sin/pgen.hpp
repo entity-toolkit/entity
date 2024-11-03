@@ -330,11 +330,10 @@ namespace user {
                                 uni * sigma0 * dt;
         });
 
-      // auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
-      // Kokkos::deep_copy(amplitudes_, amplitudes);
-      // for (int i = 0; i < nmodes; ++i) {
-      //   printf("amplitudes_(%d, REAL) = %f\n, rank = %d", i, amplitudes_(i, REAL), rank);
-      // }
+      auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
+      Kokkos::deep_copy(amplitudes_, amplitudes);
+      printf("amplitudes_(1, REAL) = %f\n, rank = %d", amplitudes_(1, REAL), rank);
+      MPI_Barrier(MPI_COMM_WORLD);
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
