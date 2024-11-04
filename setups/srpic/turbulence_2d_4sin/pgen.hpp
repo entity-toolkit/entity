@@ -133,7 +133,7 @@ namespace user {
       //         k14 * amps(0, IMAG) *
       //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
 
-      return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
+      return 0.1 * cos(1.0 * constant::TWO_PI * x_Ph[1]);
 
     }
 
