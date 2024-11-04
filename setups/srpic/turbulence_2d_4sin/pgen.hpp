@@ -128,9 +128,9 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       // return ZERO;
-      return (k14 * ONE *
+      return (k14 * HALF * HALF *
                 math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-              k14 * ONE *
+              k14 * HALF * HALF *
                 math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
 
       // return ONE * math::cos(ONE * constant::TWO_PI * x_Ph[1]);
@@ -141,9 +141,9 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return (k04 * ONE *
+      return (k04 * HALF * HALF *
                 math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-              k04 * ONE *
+              k04 * HALF * HALF *
                 math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
       // return ZERO;
     }
