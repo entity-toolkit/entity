@@ -7,14 +7,14 @@ RUN apt-get update && apt-get upgrade -y
 
 # cmake & build tools
 RUN apt-get remove -y --purge cmake && \
-    apt-get install -y sudo wget curl build-essential && \
+    apt-get install -y sudo wget curl build-essential openmpi-bin openmpi-common libopenmpi-dev && \
     wget "https://github.com/Kitware/CMake/releases/download/v3.29.6/cmake-3.29.6-linux-x86_64.tar.gz" -P /opt && \
     tar xvf /opt/cmake-3.29.6-linux-x86_64.tar.gz -C /opt && \
     rm /opt/cmake-3.29.6-linux-x86_64.tar.gz
 ENV PATH=/opt/cmake-3.29.6-linux-x86_64/bin:$PATH
 
 # adios2
-RUN apt-get update && apt-get install -y git libhdf5-dev && \
+RUN apt-get update && apt-get install -y git libhdf5-openmpi-dev && \
     git clone https://github.com/ornladios/ADIOS2.git /opt/adios2-src && \
     cd /opt/adios2-src && \
     cmake -B build \
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y git libhdf5-dev && \
       -D ADIOS2_USE_ZeroMQ=OFF \
       -D BUILD_TESTING=OFF \
       -D ADIOS2_BUILD_EXAMPLES=OFF \
-      -D ADIOS2_USE_MPI=OFF \
+      -D ADIOS2_USE_MPI=ON \
       -D ADIOS2_HAVE_HDF5_VOL=OFF \
       -D CMAKE_INSTALL_PREFIX=/opt/adios2 && \
     cmake --build build -j && \

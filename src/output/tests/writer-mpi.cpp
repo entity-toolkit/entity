@@ -100,8 +100,8 @@ auto main(int argc, char* argv[]) -> int {
         std::size_t step_read;
         long double time_read;
 
-        reader.Get(io.InquireVariable<std::size_t>("Step"), step_read);
-        reader.Get(io.InquireVariable<long double>("Time"), time_read);
+        reader.Get(io.InquireVariable<std::size_t>("Step"), &step_read);
+        reader.Get(io.InquireVariable<long double>("Time"), &time_read);
         raise::ErrorIf(step_read != step, "Step is not correct", HERE);
         raise::ErrorIf((float)time_read != (float)step * 0.1f,
                        "Time is not correct",
