@@ -100,6 +100,8 @@ auto main(int argc, char* argv[]) -> int {
       adios2::IO io = adios.DeclareIO("read-test");
       io.SetEngine("hdf5");
       adios2::Engine reader = io.Open("test.h5", adios2::Mode::Read);
+      const auto layoutRight = io.InquireAttribute<int>("LayoutRight").Data()[0] ==
+                               1;
 
       raise::ErrorIf(io.InquireAttribute<unsigned int>("NGhosts").Data()[0] != 0,
                      "NGhosts is not correct",
@@ -138,6 +140,9 @@ auto main(int argc, char* argv[]) -> int {
             std::size_t nx1_r = dims[0];
             std::size_t nx2_r = dims[1];
             std::size_t nx3_r = dims[2];
+            if (!layoutRight) {
+              std::swap(nx1_r, nx3_r);
+            }
             raise::ErrorIf((nx1_r != CEILDIV(nx1, dwn1)) ||
                              (nx2_r != CEILDIV(nx2, dwn2)) ||
                              (nx3_r != CEILDIV(nx3, dwn3)),
@@ -151,8 +156,14 @@ auto main(int argc, char* argv[]) -> int {
                                        CEILDIV(nx3, dwn3)),
                            HERE);
 
+            if (!layoutRight) {
+              std::swap(nx1_r, nx3_r);
+            }
             fieldVar.SetSelection(
               adios2::Box<adios2::Dims>({ 0, 0, 0 }, { nx1_r, nx2_r, nx3_r }));
+            if (!layoutRight) {
+              std::swap(nx1_r, nx3_r);
+            }
             field_read        = array_t<real_t***>(name, nx1_r, nx2_r, nx3_r);
             auto field_read_h = Kokkos::create_mirror_view(field_read);
             reader.Get(fieldVar, field_read_h.data(), adios2::Mode::Sync);
