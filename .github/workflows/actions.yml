@@ -15,10 +15,9 @@ jobs:
         id: check_message
         run: |
           if git log -1 --pretty=%B | grep -q "RUNTEST"; then
-            echo "::set-output name=run_tests::true"
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=run_tests::false"
-            exit 1
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
           fi
   tests:
     needs: check-commit
