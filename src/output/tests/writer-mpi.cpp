@@ -84,6 +84,8 @@ auto main(int argc, char* argv[]) -> int {
       adios.ExitComputationBlock();
     }
 
+    adios.FlushAll();
+
     {
       // read
       adios2::IO io = adios.DeclareIO("read-test");

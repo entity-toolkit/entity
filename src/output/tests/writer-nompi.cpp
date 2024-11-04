@@ -93,6 +93,8 @@ auto main(int argc, char* argv[]) -> int {
       writer.endWriting();
     }
 
+    adios.FlushAll();
+
     {
       // read
       adios2::IO io = adios.DeclareIO("read-test");
