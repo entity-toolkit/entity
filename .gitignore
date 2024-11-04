@@ -51,6 +51,7 @@ venv/
 # CMake testing files
 Testing/
 
+.clangd
 .schema.json
 *_old/
 action-token

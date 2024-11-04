@@ -35,7 +35,7 @@ namespace checkpoint {
       reader.Get(field_var, array_h.data(), adios2::Mode::Sync);
       Kokkos::deep_copy(array, array_h);
     } else {
-      raise::Error(fmt::format("Field variable: %s not found", field), HERE);
+      raise::Error(fmt::format("Field variable: %s not found", field.c_str()), HERE);
     }
   }
 

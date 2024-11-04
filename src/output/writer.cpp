@@ -78,17 +78,17 @@ namespace out {
                      "Downsampling with ghosts not supported",
                      HERE);
 
-      double g = glob_shape[i];
-      double d = m_dwn[i];
-      double l = loc_corner[i];
-      double n = loc_shape[i];
-      double f = math::ceil(l/d)*d-l;
+      const double g = glob_shape[i];
+      const double d = m_dwn[i];
+      const double l = loc_corner[i];
+      const double n = loc_shape[i];
+      const double f = math::ceil(l / d) * d - l;
       m_flds_g_shape_dwn.push_back(static_cast<std::size_t>(math::ceil(g / d)));
-      m_flds_l_corner_dwn.push_back(static_cast<std::size_t>(math::ceil(l /d)));
+      m_flds_l_corner_dwn.push_back(static_cast<std::size_t>(math::ceil(l / d)));
       m_flds_l_first.push_back(static_cast<std::size_t>(f));
-      m_flds_l_shape_dwn.push_back(static_cast<std::size_t>(math::ceil((n - f) / d)));
+      m_flds_l_shape_dwn.push_back(
+        static_cast<std::size_t>(math::ceil((n - f) / d)));
     }
-    
 
     m_io.DefineAttribute("NGhosts", incl_ghosts ? N_GHOSTS : 0);
     m_io.DefineAttribute("Dimension", m_flds_g_shape.size());
@@ -222,14 +222,15 @@ namespace out {
         Kokkos::deep_copy(output_field, slice);
       } else {
 
-	const auto dwn1 = dwn[0];
-	const double first_cell1_d = first_cell[0];
-	const double nx1_full = field.extent(0) - 2 * N_GHOSTS;
-        const auto first_cell1 = first_cell[0];
+        const auto   dwn1          = dwn[0];
+        const double first_cell1_d = first_cell[0];
+        const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
+        const auto   first_cell1   = first_cell[0];
 
-	const auto nx1_dwn = static_cast<std::size_t>(math::ceil((nx1_full - first_cell1_d) / dwn1));
-	
-        output_field           = array_t<real_t*> { "output_field", nx1_dwn };
+        const auto nx1_dwn = static_cast<std::size_t>(
+          math::ceil((nx1_full - first_cell1_d) / dwn1));
+
+        output_field = array_t<real_t*> { "output_field", nx1_dwn };
         Kokkos::parallel_for(
           "outputField",
           nx1_dwn,
@@ -247,17 +248,19 @@ namespace out {
                                             slice.extent(1) };
         Kokkos::deep_copy(output_field, slice);
       } else {
-	const auto dwn1 = dwn[0];
-	const auto dwn2 = dwn[1];
-	const double first_cell1_d = first_cell[0];
-	const double first_cell2_d = first_cell[1];   
-	const double nx1_full = field.extent(0) - 2 * N_GHOSTS;
-	const double nx2_full = field.extent(1) - 2 * N_GHOSTS;
-        const auto first_cell1 = first_cell[0];
-        const auto first_cell2 = first_cell[1];
+        const auto   dwn1          = dwn[0];
+        const auto   dwn2          = dwn[1];
+        const double first_cell1_d = first_cell[0];
+        const double first_cell2_d = first_cell[1];
+        const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
+        const double nx2_full      = field.extent(1) - 2 * N_GHOSTS;
+        const auto   first_cell1   = first_cell[0];
+        const auto   first_cell2   = first_cell[1];
 
-	const auto nx1_dwn = static_cast<std::size_t>(math::ceil((nx1_full - first_cell1_d) / dwn1));
-	const auto nx2_dwn = static_cast<std::size_t>(math::ceil((nx2_full - first_cell2_d) / dwn2));
+        const auto nx1_dwn = static_cast<std::size_t>(
+          math::ceil((nx1_full - first_cell1_d) / dwn1));
+        const auto nx2_dwn = static_cast<std::size_t>(
+          math::ceil((nx2_full - first_cell2_d) / dwn2));
         output_field = array_t<real_t**> { "output_field", nx1_dwn, nx2_dwn };
         Kokkos::parallel_for(
           "outputField",
@@ -280,24 +283,26 @@ namespace out {
                                             slice.extent(2) };
         Kokkos::deep_copy(output_field, slice);
       } else {
-	const auto dwn1 = dwn[0];
-	const auto dwn2 = dwn[1];
-	const auto dwn3 = dwn[2];
-	const double first_cell1_d = first_cell[0];
-	const double first_cell2_d = first_cell[1];
-	const double first_cell3_d = first_cell[2];
-	const double nx1_full = field.extent(0) - 2 * N_GHOSTS;
-	const double nx2_full = field.extent(1) - 2 * N_GHOSTS;
-	const double nx3_full = field.extent(2) - 2 * N_GHOSTS;
-        const auto first_cell1 = first_cell[0];
-        const auto first_cell2 = first_cell[1];
-	const auto first_cell3 = first_cell[2];
+        const auto   dwn1          = dwn[0];
+        const auto   dwn2          = dwn[1];
+        const auto   dwn3          = dwn[2];
+        const double first_cell1_d = first_cell[0];
+        const double first_cell2_d = first_cell[1];
+        const double first_cell3_d = first_cell[2];
+        const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
+        const double nx2_full      = field.extent(1) - 2 * N_GHOSTS;
+        const double nx3_full      = field.extent(2) - 2 * N_GHOSTS;
+        const auto   first_cell1   = first_cell[0];
+        const auto   first_cell2   = first_cell[1];
+        const auto   first_cell3   = first_cell[2];
 
-	const auto nx1_dwn = static_cast<std::size_t>(math::ceil((nx1_full - first_cell1_d) / dwn1));
-	const auto nx2_dwn = static_cast<std::size_t>(math::ceil((nx2_full - first_cell2_d) / dwn2));
-	const auto nx3_dwn = static_cast<std::size_t>(math::ceil((nx3_full - first_cell3_d) / dwn3));
+        const auto nx1_dwn = static_cast<std::size_t>(
+          math::ceil((nx1_full - first_cell1_d) / dwn1));
+        const auto nx2_dwn = static_cast<std::size_t>(
+          math::ceil((nx2_full - first_cell2_d) / dwn2));
+        const auto nx3_dwn = static_cast<std::size_t>(
+          math::ceil((nx3_full - first_cell3_d) / dwn3));
 
-	
         output_field = array_t<real_t***> { "output_field", nx1_dwn, nx2_dwn, nx3_dwn };
         Kokkos::parallel_for(
           "outputField",

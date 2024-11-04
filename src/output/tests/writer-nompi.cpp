@@ -3,7 +3,6 @@
 
 #include "utils/formatting.h"
 
-#include "output/fields.h"
 #include "output/writer.h"
 
 #include <Kokkos_Core.hpp>
@@ -12,7 +11,6 @@
 
 #include <filesystem>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -23,6 +21,9 @@ void cleanup() {
   fs::path tempfile_path { "test.h5" };
   fs::remove(tempfile_path);
 }
+
+#define CEILDIV(a, b)                                                          \
+  (static_cast<int>(math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
@@ -131,16 +132,17 @@ auto main(int argc, char* argv[]) -> int {
             std::size_t nx1_r = dims[0];
             std::size_t nx2_r = dims[1];
             std::size_t nx3_r = dims[2];
-            raise::ErrorIf((nx1_r != nx1 / dwn1) || (nx2_r != nx2 / dwn2) ||
-                             (nx3_r != nx3 / dwn3),
+            raise::ErrorIf((nx1_r != CEILDIV(nx1, dwn1)) ||
+                             (nx2_r != CEILDIV(nx2, dwn2)) ||
+                             (nx3_r != CEILDIV(nx3, dwn3)),
                            fmt::format("%s = %ldx%ldx%ld is not %dx%dx%d",
                                        name.c_str(),
                                        nx1_r,
                                        nx2_r,
                                        nx3_r,
-                                       nx1 / dwn1,
-                                       nx2 / dwn2,
-                                       nx3 / dwn3),
+                                       CEILDIV(nx1, dwn1),
+                                       CEILDIV(nx2, dwn2),
+                                       CEILDIV(nx3, dwn3)),
                            HERE);
 
             fieldVar.SetSelection(
@@ -195,3 +197,5 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::finalize();
   return 0;
 }
+
+#undef CEILDIV
