@@ -25,7 +25,8 @@ if(${mpi})
   endif()
 else()
   # tests without mpi
-  add_subdirectory(${SRC_DIR}/global/ ${CMAKE_CURRENT_BINARY_DIR}/global/tests)
+  add_subdirectory(${SRC_DIR}/global/tests
+                   ${CMAKE_CURRENT_BINARY_DIR}/global/tests)
   add_subdirectory(${SRC_DIR}/metrics/tests
                    ${CMAKE_CURRENT_BINARY_DIR}/metrics/tests)
   add_subdirectory(${SRC_DIR}/kernels/tests
