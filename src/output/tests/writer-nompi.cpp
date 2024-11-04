@@ -111,8 +111,12 @@ auto main(int argc, char* argv[]) -> int {
         std::size_t step_read;
         long double time_read;
 
-        reader.Get(io.InquireVariable<std::size_t>("Step"), &step_read);
-        reader.Get(io.InquireVariable<long double>("Time"), &time_read);
+        reader.Get(io.InquireVariable<std::size_t>("Step"),
+                   &step_read,
+                   adios2::Mode::Sync);
+        reader.Get(io.InquireVariable<long double>("Time"),
+                   &time_read,
+                   adios2::Mode::Sync);
         raise::ErrorIf(step_read != (step + 1) * 10, "Step is not correct", HERE);
         raise::ErrorIf((float)time_read != 123 + (float)step * 0.4f,
                        "Time is not correct",
