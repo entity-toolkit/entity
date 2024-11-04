@@ -141,9 +141,9 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return (k04 * amps(2, REAL) *
+      return (k04 * amps(1, REAL) *
                 math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-              k04 * amps(2, IMAG) *
+              k04 * amps(1, IMAG) *
                 math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
       // return ZERO;
     }
@@ -203,7 +203,7 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 2) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
