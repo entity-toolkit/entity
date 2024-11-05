@@ -5,6 +5,7 @@
 #include "global.h"
 
 #include "arch/traits.h"
+#include "utils/error.h"
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
@@ -33,48 +34,33 @@ namespace user {
       , Vx { drift_ux } {}
 
     // magnetic field components
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
       return Bmag * math::cos(Btheta);
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx2(const coord_t<D>&) const -> real_t {
       return Bmag * math::sin(Btheta) * math::sin(Bphi);
     }
 
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
       return Bmag * math::sin(Btheta) * math::cos(Bphi);
     }
 
     // electric field components
-    Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto ex1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
       return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
     }
 
-    Inline auto ex3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
       return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
     }
 
   private:
     const real_t Btheta, Bphi, Vx, Bmag;
-  };
-
-  /* Enforce resetting magnetic and electric field at the boundary */
-  template <Dimension D>
-  struct DriveFields : public InitFields<D> {
-    DriveFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
-      : InitFields<D> { bmag, btheta, bphi, drift_ux } {}
-
-    using InitFields<D>::bx1;
-    using InitFields<D>::bx2;
-    using InitFields<D>::bx3;
-
-    using InitFields<D>::ex1;
-    using InitFields<D>::ex2;
-    using InitFields<D>::ex3;
   };
 
   template <SimEngine::type S, class M>
@@ -107,8 +93,18 @@ namespace user {
 
     inline PGen() {}
 
-    auto FieldDriver(real_t time) const -> DriveFields<D> {
-      return DriveFields<D> { Bmag, Btheta, Bphi, drift_ux };
+    auto FixField(const em& comp) const -> real_t {
+      if (comp == em::ex2) {
+        return init_flds.ex2({ ZERO });
+      } else if (comp == em::ex3) {
+        return init_flds.ex3({ ZERO });
+      } else if (comp == em::bx1) {
+        return init_flds.bx1({ ZERO });
+      } else {
+        raise::Error("Other components should not be requested when BC is in X",
+                     HERE);
+        return ZERO;
+      }
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {

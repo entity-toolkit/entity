@@ -11,7 +11,7 @@
     metric = "qspherical"
 
   [grid.boundaries]
-    fields = [["FIXED", "ABSORB"]]
+    fields = [["ATMOSPHERE", "ABSORB"]]
     particles = [["ATMOSPHERE", "ABSORB"]]
     
     [grid.boundaries.absorb]
