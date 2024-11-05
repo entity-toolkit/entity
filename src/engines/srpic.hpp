@@ -42,7 +42,6 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 
-#include <string>
 #include <utility>
 
 namespace ntt {
@@ -586,8 +585,8 @@ namespace ntt {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
             AxisFieldsIn(direction, domain, tags);
           }
-        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
-          AtmosphereFieldsIn(direction, domain, tags);
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::FIXED) {
+          FixedFieldsIn(direction, domain, tags);
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
             ConductorFieldsIn(direction, domain, tags);
@@ -713,11 +712,11 @@ namespace ntt {
       }
     }
 
-    void AtmosphereFieldsIn(dir::direction_t<M::Dim> direction,
-                            domain_t&                domain,
-                            BCTags                   tags) {
+    void FixedFieldsIn(dir::direction_t<M::Dim> direction,
+                       domain_t&                domain,
+                       BCTags                   tags) {
       /**
-       * atmosphere boundaries
+       * fixed field boundaries
        */
       if constexpr (traits::has_member<traits::pgen::field_driver_t, pgen_t>::value) {
         const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
@@ -759,9 +758,9 @@ namespace ntt {
         if (dim == in::x1) {
           if (sign > 0) {
             Kokkos::parallel_for(
-              "AtmosphereBCFields",
+              "FixedBCFields",
               range,
-              kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x1>(
+              kernel::FixedBoundaries_kernel<decltype(field_driver), M, true, in::x1>(
                 domain.fields.em,
                 field_driver,
                 domain.mesh.metric,
@@ -769,9 +768,9 @@ namespace ntt {
                 tags));
           } else {
             Kokkos::parallel_for(
-              "AtmosphereBCFields",
+              "FixedBCFields",
               range,
-              kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x1>(
+              kernel::FixedBoundaries_kernel<decltype(field_driver), M, false, in::x1>(
                 domain.fields.em,
                 field_driver,
                 domain.mesh.metric,
@@ -782,9 +781,9 @@ namespace ntt {
           if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
             if (sign > 0) {
               Kokkos::parallel_for(
-                "AtmosphereBCFields",
+                "FixedBCFields",
                 range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x2>(
+                kernel::FixedBoundaries_kernel<decltype(field_driver), M, true, in::x2>(
                   domain.fields.em,
                   field_driver,
                   domain.mesh.metric,
@@ -792,9 +791,9 @@ namespace ntt {
                   tags));
             } else {
               Kokkos::parallel_for(
-                "AtmosphereBCFields",
+                "FixedBCFields",
                 range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x2>(
+                kernel::FixedBoundaries_kernel<decltype(field_driver), M, false, in::x2>(
                   domain.fields.em,
                   field_driver,
                   domain.mesh.metric,
@@ -808,9 +807,9 @@ namespace ntt {
           if constexpr (M::Dim == Dim::_3D) {
             if (sign > 0) {
               Kokkos::parallel_for(
-                "AtmosphereBCFields",
+                "FixedBCFields",
                 range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x3>(
+                kernel::FixedBoundaries_kernel<decltype(field_driver), M, true, in::x3>(
                   domain.fields.em,
                   field_driver,
                   domain.mesh.metric,
@@ -818,9 +817,9 @@ namespace ntt {
                   tags));
             } else {
               Kokkos::parallel_for(
-                "AtmosphereBCFields",
+                "FixedBCFields",
                 range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x3>(
+                kernel::FixedBoundaries_kernel<decltype(field_driver), M, false, in::x3>(
                   domain.fields.em,
                   field_driver,
                   domain.mesh.metric,
@@ -834,8 +833,7 @@ namespace ntt {
           raise::Error("Invalid dimension", HERE);
         }
       } else {
-        raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
-                     HERE);
+        raise::Error("Field driver not implemented in PGEN for fixed BCs", HERE);
       }
     }
 

@@ -11,7 +11,7 @@
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["CONDUCTOR", "ABSORB"], ["PERIODIC"]]
+    fields = [["FIXED", "ABSORB"], ["PERIODIC"]]
     particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
     
 [scales]
@@ -42,9 +42,9 @@
 [setup]
   drift_ux = 0.1
   temperature = 1e-3
-  Bmag = 0.0     # set to 1.0 if magnetized shock is required
-  Btheta = 0.0   # magnetic field polar angle
-  Bphi = 0.0     # magnetic field azimuthal angle
+  Bmag = 1.0
+  Btheta = 0.0
+  Bphi = 0.0
 
 [output]
   interval_time = 0.1

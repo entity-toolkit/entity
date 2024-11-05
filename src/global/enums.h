@@ -8,7 +8,7 @@
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
- *   - enum ntt::FldsBC            // periodic, absorb, atmosphere, custom,
+ *   - enum ntt::FldsBC            // periodic, absorb, fixed, custom,
  *                                    conductor, horizon, axis, sync
  *   - enum ntt::PrtlPusher        // boris, vay, photon, none
  *   - enum ntt::Cooling           // synchrotron, none
@@ -213,25 +213,25 @@ namespace ntt {
     static constexpr const char* label = "flds_bc";
 
     enum type : uint8_t {
-      INVALID    = 0,
-      PERIODIC   = 1,
-      ABSORB     = 2,
-      ATMOSPHERE = 3,
-      CUSTOM     = 4,
-      CONDUCTOR  = 5,
-      HORIZON    = 6,
-      AXIS       = 7,
-      SYNC       = 8, // <- SYNC means synchronization with other domains
+      INVALID   = 0,
+      PERIODIC  = 1,
+      ABSORB    = 2,
+      FIXED     = 3,
+      CUSTOM    = 4,
+      CONDUCTOR = 5,
+      HORIZON   = 6,
+      AXIS      = 7,
+      SYNC      = 8, // <- SYNC means synchronization with other domains
     };
 
     constexpr FldsBC(uint8_t c) : enums_hidden::BaseEnum<FldsBC> { c } {}
 
-    static constexpr type variants[] = { PERIODIC,  ABSORB,  ATMOSPHERE, CUSTOM,
-                                         CONDUCTOR, HORIZON, AXIS,       SYNC };
-    static constexpr const char* lookup[] = { "periodic",   "absorb",
-                                              "atmosphere", "custom",
-                                              "conductor",  "horizon",
-                                              "axis",       "sync" };
+    static constexpr type variants[]      = { PERIODIC,  ABSORB,  FIXED, CUSTOM,
+                                              CONDUCTOR, HORIZON, AXIS,  SYNC };
+    static constexpr const char* lookup[] = { "periodic",  "absorb",
+                                              "fixed",     "custom",
+                                              "conductor", "horizon",
+                                              "axis",      "sync" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

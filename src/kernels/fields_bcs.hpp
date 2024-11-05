@@ -217,7 +217,7 @@ namespace kernel {
   };
 
   template <class I, class M, bool P, in O>
-  struct AtmosphereBoundaries_kernel {
+  struct FixedBoundaries_kernel {
     static constexpr Dimension D = M::Dim;
     static constexpr bool defines_ex1 = traits::has_method<traits::ex1_t, I>::value;
     static constexpr bool defines_ex2 = traits::has_method<traits::ex2_t, I>::value;
@@ -240,11 +240,11 @@ namespace kernel {
     const std::size_t i_edge;
     const bool        setE, setB;
 
-    AtmosphereBoundaries_kernel(ndfield_t<M::Dim, 6>& Fld,
-                                const I&              finit,
-                                const M&              metric,
-                                std::size_t           i_edge,
-                                BCTags                tags)
+    FixedBoundaries_kernel(ndfield_t<M::Dim, 6>& Fld,
+                           const I&              finit,
+                           const M&              metric,
+                           std::size_t           i_edge,
+                           BCTags                tags)
       : Fld { Fld }
       , finit { finit }
       , metric { metric }
