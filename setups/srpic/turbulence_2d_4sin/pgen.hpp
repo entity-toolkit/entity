@@ -567,7 +567,12 @@ namespace user {
           } else {
             myfile5.open("amps.txt", std::ios_base::app);
           }
-          myfile5 << amplitudes_(0, REAL) << std::endl;
+
+          for (int i = 0; i < nmodes; ++i) {
+            myfile5 << amplitudes_(i, REAL) << " " << amplitudes_(i, IMAG) << " ";
+          }
+          myfile5 << std::endl;
+
 
         }
 
@@ -606,8 +611,11 @@ namespace user {
           } else {
             myfile5.open("amps.txt", std::ios_base::app);
           }
-          myfile5 << amplitudes_(0, REAL) << std::endl;
-
+          for (int i = 0; i < nmodes; ++i) {
+            myfile5 << amplitudes_(i, REAL) << " " << amplitudes_(i, IMAG) << " ";
+          }
+          myfile5 << std::endl;
+          
       #endif
     }
   };
