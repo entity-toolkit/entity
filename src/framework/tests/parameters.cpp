@@ -73,13 +73,18 @@ const auto mink_1d = u8R"(
   mystr   = "hi"
 
 [output]
-  fields = ["Rho", "J", "B"]
-  particles = ["X", "U"]
   format = "hdf5"
-  mom_smooth = 2
-  fields_stride = 1
-  prtl_stride = 100
-  interval_time = 0.01
+
+  [output.fields]
+    quantities = ["Rho", "J", "B"]
+    mom_smooth = 2
+    downsampling = [4, 5]
+    interval = 100
+
+  [output.particles]
+    species = [1, 2]
+    stride = 100
+    interval_time = 0.01
 )"_toml;
 
 const auto sph_2d = u8R"(
@@ -315,6 +320,13 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<std::string>(params_mink_1d.get<std::string>("setup.mystr"),
                                 "hi",
                                 "setup.mystr");
+
+      const auto output_stride = params_mink_1d.get<std::vector<unsigned int>>(
+        "output.fields.downsampling");
+      assert_equal<std::size_t>(output_stride.size(),
+                                1,
+                                "output.fields.downsampling.size()");
+      assert_equal<unsigned int>(output_stride[0], 4, "output.fields.downsampling[0]");
     }
 
     {

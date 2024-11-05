@@ -494,12 +494,19 @@ namespace ntt {
                       "fields",
                       "mom_smooth",
                       defaults::output::mom_smooth));
-    set("output.fields.stride",
-        toml::find_or(toml_data,
-                      "output",
-                      "fields",
-                      "stride",
-                      defaults::output::flds_stride));
+    auto field_dwn = toml::find_or(toml_data,
+                                   "output",
+                                   "fields",
+                                   "downsampling",
+                                   std::vector<unsigned int> { 1, 1, 1 });
+    raise::ErrorIf(field_dwn.size() > 3, "invalid `output.fields.downsampling`", HERE);
+    if (field_dwn.size() > dim) {
+      field_dwn.erase(field_dwn.begin() + (std::size_t)(dim), field_dwn.end());
+    }
+    for (const auto& dwn : field_dwn) {
+      raise::ErrorIf(dwn == 0, "downsampling factor must be nonzero", HERE);
+    }
+    set("output.fields.downsampling", field_dwn);
 
     // particles
     const auto prtl_out = toml::find_or(toml_data,
@@ -561,8 +568,20 @@ namespace ntt {
     /* [output.debug] ------------------------------------------------------- */
     set("output.debug.as_is",
         toml::find_or(toml_data, "output", "debug", "as_is", false));
-    set("output.debug.ghosts",
-        toml::find_or(toml_data, "output", "debug", "ghosts", false));
+    const auto output_ghosts = toml::find_or(toml_data,
+                                             "output",
+                                             "debug",
+                                             "ghosts",
+                                             false);
+    set("output.debug.ghosts", output_ghosts);
+    if (output_ghosts) {
+      for (const auto& dwn : field_dwn) {
+        raise::ErrorIf(
+          dwn != 1,
+          "full resolution required when outputting with ghost cells",
+          HERE);
+      }
+    }
 
     /* [checkpoint] --------------------------------------------------------- */
     set("checkpoint.interval",

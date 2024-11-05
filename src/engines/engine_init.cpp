@@ -50,6 +50,7 @@ namespace ntt {
           });
         }
       } else {
+#if defined(OUTPUT_ENABLED)
         // read simulation data from the checkpoint
         raise::ErrorIf(
           m_params.template get<std::size_t>("checkpoint.start_step") == 0,
@@ -57,6 +58,11 @@ namespace ntt {
           HERE);
         logger::Checkpoint("Resuming simulation from a checkpoint", HERE);
         m_metadomain.ContinueFromCheckpoint(&m_adios, m_params);
+#else
+        raise::Error(
+          "Resuming simulation from a checkpoint requires -D output=ON",
+          HERE);
+#endif
       }
     }
   }

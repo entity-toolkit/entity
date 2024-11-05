@@ -69,6 +69,8 @@ namespace ntt {
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
+                              params.template get<std::vector<unsigned int>>(
+                                "output.fields.downsampling"),
                               incl_ghosts,
                               M::CoordType);
     const auto fields_to_write = params.template get<std::vector<std::string>>(
@@ -216,37 +218,55 @@ namespace ntt {
     g_writer.beginWriting(current_step, current_time);
     if (write_fields) {
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
+      const auto dwn         = params.template get<std::vector<unsigned int>>(
+        "output.fields.downsampling");
 
       for (unsigned short dim = 0; dim < M::Dim; ++dim) {
-        const auto is_last = local_domain->offset_ncells()[dim] +
-                               local_domain->mesh.n_active()[dim] ==
-                             mesh().n_active()[dim];
-        array_t<real_t*> xc { "Xc",
-                              local_domain->mesh.n_active()[dim] +
-                                (incl_ghosts ? 2 * N_GHOSTS : 0) };
-        array_t<real_t*> xe { "Xe",
-                              local_domain->mesh.n_active()[dim] +
-                                (incl_ghosts ? 2 * N_GHOSTS : 0) +
-                                (is_last ? 1 : 0) };
-        const auto       offset = (incl_ghosts ? N_GHOSTS : 0);
-        const auto       ncells = local_domain->mesh.n_active()[dim];
-        const auto&      metric = local_domain->mesh.metric;
+        const auto l_size   = local_domain->mesh.n_active()[dim];
+        const auto l_offset = local_domain->offset_ncells()[dim];
+        const auto g_size   = mesh().n_active()[dim];
+
+        const auto dwn_in_dim = dwn[dim];
+
+        const double n = l_size;
+        const double d = dwn_in_dim;
+        const double l = l_offset;
+        const double f = math::ceil(l / d) * d - l;
+
+        const auto first_cell = static_cast<std::size_t>(f);
+        const auto l_size_dwn = static_cast<std::size_t>(math::ceil((n - f) / d));
+
+        const auto is_last = l_offset + l_size == g_size;
+
+        const auto add_ghost = (incl_ghosts ? 2 * N_GHOSTS : 0);
+        const auto add_last  = (is_last ? 1 : 0);
+
+        array_t<real_t*> xc { "Xc", l_size_dwn + add_ghost };
+        array_t<real_t*> xe { "Xe", l_size_dwn + add_ghost + add_last };
+
+        const auto offset = (incl_ghosts ? N_GHOSTS : 0);
+        const auto ncells = l_size_dwn;
+
+        const auto& metric = local_domain->mesh.metric;
+
         Kokkos::parallel_for(
           "GenerateMesh",
           ncells,
-          Lambda(index_t i) {
+          Lambda(index_t i_dwn) {
+            const auto      i  = first_cell + i_dwn * dwn_in_dim;
             const auto      i_ = static_cast<real_t>(i);
             coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
             x_Cd[dim] = i_ + HALF;
+            // TODO : change to convert by component
             metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-            xc(offset + i) = x_Ph[dim];
-            x_Cd[dim]      = i_;
+            xc(offset + i_dwn) = x_Ph[dim];
+            x_Cd[dim]          = i_;
             metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-            xe(offset + i) = x_Ph[dim];
-            if (is_last && i == ncells - 1) {
+            xe(offset + i_dwn) = x_Ph[dim];
+            if (is_last && i_dwn == ncells - 1) {
               x_Cd[dim] = i_ + ONE;
               metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-              xe(offset + i + 1) = x_Ph[dim];
+              xe(offset + i_dwn + 1) = x_Ph[dim];
             }
           });
         g_writer.writeMesh(dim, xc, xe);

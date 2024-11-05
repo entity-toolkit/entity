@@ -37,14 +37,25 @@ namespace out {
     adios2::Mode   m_mode { adios2::Mode::Write };
 
     // global shape of the fields array to output
-    adios2::Dims m_flds_g_shape;
+    std::vector<std::size_t> m_flds_g_shape;
     // local corner of the fields array to output
-    adios2::Dims m_flds_l_corner;
+    std::vector<std::size_t> m_flds_l_corner;
     // local shape of the fields array to output
-    adios2::Dims m_flds_l_shape;
-    bool         m_flds_ghosts;
-    std::string  m_engine;
-    std::string  m_fname;
+    std::vector<std::size_t> m_flds_l_shape;
+
+    // downsampling factors for each dimension
+    std::vector<unsigned int> m_dwn;
+    // starting cell in each dimension (not including ghosts)
+    std::vector<std::size_t>  m_flds_l_first;
+
+    // same but downsampled
+    adios2::Dims m_flds_g_shape_dwn;
+    adios2::Dims m_flds_l_corner_dwn;
+    adios2::Dims m_flds_l_shape_dwn;
+
+    bool        m_flds_ghosts;
+    std::string m_engine;
+    std::string m_fname;
 
     std::map<std::string, tools::Tracker> m_trackers;
 
@@ -73,7 +84,8 @@ namespace out {
     void defineMeshLayout(const std::vector<std::size_t>&,
                           const std::vector<std::size_t>&,
                           const std::vector<std::size_t>&,
-                          bool incl_ghosts,
+                          const std::vector<unsigned int>&,
+                          bool,
                           Coord);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
