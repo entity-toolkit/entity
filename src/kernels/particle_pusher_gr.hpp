@@ -65,6 +65,7 @@ namespace kernel::gr {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
+  private:
     const randacc_ndfield_t<D, 6> DB;
     const randacc_ndfield_t<D, 6> DB0;
     array_t<int*>                 i1, i2, i3;
@@ -86,34 +87,34 @@ namespace kernel::gr {
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
 
   public:
-    Pusher_kernel(const ndfield_t<D, 6>&            DB,
-                  const ndfield_t<D, 6>&            DB0,
-                  const array_t<int*>&              i1,
-                  const array_t<int*>&              i2,
-                  const array_t<int*>&              i3,
-                  const array_t<int*>&              i1_prev,
-                  const array_t<int*>&              i2_prev,
-                  const array_t<int*>&              i3_prev,
-                  const array_t<prtldx_t*>&         dx1,
-                  const array_t<prtldx_t*>&         dx2,
-                  const array_t<prtldx_t*>&         dx3,
-                  const array_t<prtldx_t*>&         dx1_prev,
-                  const array_t<prtldx_t*>&         dx2_prev,
-                  const array_t<prtldx_t*>&         dx3_prev,
-                  const array_t<real_t*>&           ux1,
-                  const array_t<real_t*>&           ux2,
-                  const array_t<real_t*>&           ux3,
-                  const array_t<real_t*>&           phi,
-                  const array_t<short*>&            tag,
-                  const M&                          metric,
-                  const real_t&                     coeff,
-                  const real_t&                     dt,
-                  const int&                        ni1,
-                  const int&                        ni2,
-                  const int&                        ni3,
-                  const real_t&                     epsilon,
-                  const int&                        niter,
-                  const boundaries_t<PrtlBC::type>& boundaries)
+    Pusher_kernel(const ndfield_t<D, 6>&      DB,
+                  const ndfield_t<D, 6>&      DB0,
+                  array_t<int*>&              i1,
+                  array_t<int*>&              i2,
+                  array_t<int*>&              i3,
+                  array_t<int*>&              i1_prev,
+                  array_t<int*>&              i2_prev,
+                  array_t<int*>&              i3_prev,
+                  array_t<prtldx_t*>&         dx1,
+                  array_t<prtldx_t*>&         dx2,
+                  array_t<prtldx_t*>&         dx3,
+                  array_t<prtldx_t*>&         dx1_prev,
+                  array_t<prtldx_t*>&         dx2_prev,
+                  array_t<prtldx_t*>&         dx3_prev,
+                  array_t<real_t*>&           ux1,
+                  array_t<real_t*>&           ux2,
+                  array_t<real_t*>&           ux3,
+                  array_t<real_t*>&           phi,
+                  array_t<short*>&            tag,
+                  const M&                    metric,
+                  real_t                      coeff,
+                  real_t                      dt,
+                  int                         ni1,
+                  int                         ni2,
+                  int                         ni3,
+                  const real_t&               epsilon,
+                  const int&                  niter,
+                  const boundaries_t<PrtlBC>& boundaries)
       : DB { DB }
       , DB0 { DB0 }
       , i1 { i1 }
@@ -351,8 +352,8 @@ namespace kernel::gr {
         vp_upd[1] =
           vp[1] +
           dt *
-            (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(alpha, xp) +
-             vp_mid[1] * DERIVATIVE_IN_TH(beta1, xp) -
+            (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(metric.alpha, xp) +
+             vp_mid[1] * DERIVATIVE_IN_TH(metric.beta1, xp) -
              (HALF / u0) *
                (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
                 DERIVATIVE_IN_TH((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
