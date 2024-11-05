@@ -296,7 +296,7 @@ namespace user {
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
       auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
-      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+      auto gamma0 = 0.0*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0 / dt);
       auto pool   = domain.random_pool;
       auto dt_    = this->dt;
