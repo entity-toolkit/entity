@@ -345,7 +345,7 @@ namespace ntt {
          * Now: x_prtl at n + 1, u_prtl at n + 1/2
          */
         timers.start("ParticlePusher");
-        // ParticlePush(dom);
+        ParticlePush(dom);
         timers.stop("ParticlePusher");
 
         /**
@@ -1005,10 +1005,16 @@ namespace ntt {
         //  coeff = q / m (dt / 2) omegaB0
         const auto coeff   = q_ovr_m * HALF * dt *
                            m_params.template get<real_t>("scales.omegaB0");
+
         // clang-format off
+
+        if (species.pusher() == PrtlPusher::PHOTON) {
+        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, kernel::gr::Massless_t>(
+          0,
+          species.npart());
         Kokkos::parallel_for(
           "ParticlePusher",
-          species.rangeActiveParticles(),
+          range_policy,
           kernel::gr::Pusher_kernel<M>(
               domain.fields.em,
               domain.fields.em0,
@@ -1023,9 +1029,38 @@ namespace ntt {
               domain.mesh.n_active(in::x1),
               domain.mesh.n_active(in::x2),
               domain.mesh.n_active(in::x3),
-              m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<real_t>("algorithms.gr.pusher_niter"),
+              m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<int>("algorithms.gr.pusher_niter"),
               domain.mesh.prtl_bc()
           ));
+        } else if (species.pusher() == PrtlPusher::BORIS) {
+          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, kernel::gr::Massive_t>(
+          0,
+          species.npart());
+          Kokkos::parallel_for(
+            "ParticlePusher",
+            range_policy,
+            kernel::gr::Pusher_kernel<M>(
+                domain.fields.em,
+                domain.fields.em0,
+                species.i1,        species.i2,       species.i3,
+                species.i1_prev,   species.i2_prev,  species.i3_prev,
+                species.dx1,       species.dx2,      species.dx3,
+                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+                species.ux1,       species.ux2,      species.ux3,
+                species.phi,       species.tag,
+                domain.mesh.metric,
+                coeff, dt,
+                domain.mesh.n_active(in::x1),
+                domain.mesh.n_active(in::x2),
+                domain.mesh.n_active(in::x3),
+                m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<int>("algorithms.gr.pusher_niter"),
+                domain.mesh.prtl_bc()
+          ));
+        } else if (species.pusher() == PrtlPusher::NONE) {
+          // do nothing
+        } else {
+          raise::Error("not implemented", HERE);
+        }
         // clang-format on
       }
     }
