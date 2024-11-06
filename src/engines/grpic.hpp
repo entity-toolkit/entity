@@ -1028,7 +1028,7 @@ namespace ntt {
               domain.mesh.n_active(in::x1),
               domain.mesh.n_active(in::x2),
               domain.mesh.n_active(in::x3),
-              m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<int>("algorithms.gr.pusher_niter"),
+              m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<unsigned short>("algorithms.gr.pusher_niter"),
               domain.mesh.prtl_bc()
           ));
         } else if (species.pusher() == PrtlPusher::BORIS) {
@@ -1052,7 +1052,7 @@ namespace ntt {
                 domain.mesh.n_active(in::x1),
                 domain.mesh.n_active(in::x2),
                 domain.mesh.n_active(in::x3),
-                m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<int>("algorithms.gr.pusher_niter"),
+                m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<unsigned short>("algorithms.gr.pusher_niter"),
                 domain.mesh.prtl_bc()
           ));
         } else if (species.pusher() == PrtlPusher::NONE) {
