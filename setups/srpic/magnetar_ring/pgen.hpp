@@ -288,13 +288,13 @@ namespace user {
         auto weight_p = species_p.weight;
         auto tag_p    = species_p.tag;
 
-        int nseed = 20;
+        int nseed = 30;
         auto dseed = HALF * constant::PI / static_cast<real_t>(nseed); 
 
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
           auto theta = HALF * dseed + s*dseed;
-          if (theta < 0.25) return;
+          if (theta < 0.05) return;
 
           coord_t<Dim::_3D> x_Cart { ZERO };
           coord_t<Dim::_2D> x_Ph { 1.05, theta };
