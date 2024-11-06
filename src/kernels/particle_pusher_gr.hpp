@@ -77,11 +77,11 @@ namespace kernel::gr {
     array_t<short*>               tag;
     const M                       metric;
 
-    const real_t coeff, dt;
-    const int    ni1, ni2, ni3;
-    const real_t epsilon;
-    const int    niter;
-    const int    i1_absorb;
+    const real_t         coeff, dt;
+    const int            ni1, ni2, ni3;
+    const real_t         epsilon;
+    const unsigned short niter;
+    const int            i1_absorb;
 
     bool is_axis_i2min { false }, is_axis_i2max { false };
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
@@ -113,7 +113,7 @@ namespace kernel::gr {
                   int                         ni2,
                   int                         ni3,
                   const real_t&               epsilon,
-                  const int&                  niter,
+                  const unsigned short&       niter,
                   const boundaries_t<PrtlBC>& boundaries)
       : DB { DB }
       , DB0 { DB0 }
