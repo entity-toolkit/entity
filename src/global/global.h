@@ -249,6 +249,17 @@ namespace Comm {
 
 typedef int CommTags;
 
+namespace WriteMode {
+  enum WriteModeTags_ {
+    None      = 0,
+    Fields    = 1 << 0,
+    Particles = 1 << 1,
+    Spectra   = 1 << 2,
+  };
+} // namespace WriteMode
+
+typedef int WriteModeTags;
+
 namespace BC {
   enum BCTags_ {
     None = 0,

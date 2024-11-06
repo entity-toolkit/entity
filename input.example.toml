@@ -320,6 +320,10 @@
   #   @default: -1.0 (disabled)
   #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
   interval_time = ""
+  # Whether to output each timestep into separate files:
+  #   @type: bool
+  #   @default: true
+  separate_files = ""
 
   [output.fields]
     # Toggle for the field output:

@@ -65,7 +65,8 @@ namespace ntt {
 
     g_writer.init(ptr_adios,
                   params.template get<std::string>("output.format"),
-                  params.template get<std::string>("simulation.name"));
+                  params.template get<std::string>("simulation.name"),
+                  params.template get<bool>("output.separate_files"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
@@ -215,8 +216,8 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing output", HERE);
-    g_writer.beginWriting(current_step, current_time);
     if (write_fields) {
+      g_writer.beginWriting(WriteMode::Fields, current_step, current_time);
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
       const auto dwn         = params.template get<std::vector<unsigned int>>(
         "output.fields.downsampling");
@@ -467,9 +468,11 @@ namespace ntt {
         }
         g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
       }
+      g_writer.endWriting(WriteMode::Fields);
     } // end shouldWrite("fields", step, time)
 
     if (write_particles) {
+      g_writer.beginWriting(WriteMode::Particles, current_step, current_time);
       const auto prtl_stride = params.template get<std::size_t>(
         "output.particles.stride");
       for (const auto& prtl : g_writer.speciesWriters()) {
@@ -547,9 +550,11 @@ namespace ntt {
           g_writer.writeParticleQuantity(buff_x3, glob_tot, offset, prtl.name("X", 3));
         }
       }
+      g_writer.endWriting(WriteMode::Particles);
     } // end shouldWrite("particles", step, time)
 
     if (write_spectra) {
+      g_writer.beginWriting(WriteMode::Spectra, current_step, current_time);
       const auto log_bins = params.template get<bool>(
         "output.spectra.log_bins");
       const auto n_bins = params.template get<std::size_t>(
@@ -613,9 +618,9 @@ namespace ntt {
         g_writer.writeSpectrum(dn, spec.name());
       }
       g_writer.writeSpectrumBins(energy, "sEbn");
+      g_writer.endWriting(WriteMode::Spectra);
     } // end shouldWrite("spectra", step, time)
 
-    g_writer.endWriting();
     return true;
   }
 
