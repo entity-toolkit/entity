@@ -79,7 +79,13 @@ namespace ntt {
     const auto species_to_write = params.template get<std::vector<unsigned short>>(
       "output.particles.species");
     g_writer.defineFieldOutputs(S, all_fields_to_write);
-    g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
+
+    Dimension dim = M::PrtlDim;
+    if constexpr (M::CoordType != Coord::Cart) {
+      dim = Dim::_3D;
+    }
+    g_writer.defineParticleOutputs(dim, species_to_write);
+
     // spectra write all particle species
     std::vector<unsigned short> spectra_species {};
     for (const auto& sp : species_params()) {
