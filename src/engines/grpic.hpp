@@ -561,7 +561,6 @@ namespace ntt {
         "grid.boundaries.absorb.ds");
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
-      auto       sign = direction.get_sign();
       xg_max  = m_metadomain.mesh().extent(dim).second;
       xg_min  = xg_max - ds;
       xg_edge = xg_max;
