@@ -82,12 +82,12 @@ namespace ntt {
       const auto sort_interval = m_params.template get<std::size_t>(
         "particles.sort_interval");
 
-      // if (step == 0) {
-      //   // communicate fields and apply BCs on the first timestep
-      //   m_metadomain.CommunicateFields(dom, Comm::B | Comm::E);
-      //   FieldBoundaries(dom, BC::B | BC::E);
-      //   ParticleInjector(dom);
-      // }
+      if (step == 0) {
+        // communicate fields and apply BCs on the first timestep
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::E);
+        FieldBoundaries(dom, BC::B | BC::E);
+        ParticleInjector(dom);
+      }
 
       // if (fieldsolver_enabled) {
       //   timers.start("FieldSolver");
