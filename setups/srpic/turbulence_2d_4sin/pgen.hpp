@@ -169,6 +169,37 @@ namespace user {
     const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
   };
 
+    template <Dimension D>
+  struct ExtCurrent {
+    ExtCurrent(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
+      : amps { amplitudes }
+      , sx1 { SX1 }
+      , sx2 { SX2 }
+      , sx3 { SX3 } {}
+
+
+    ExtCurrent() = default;
+
+    Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+
+    }
+
+    Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+    }
+
+    Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
+      return ZERO;
+    }
+
+  private:
+    array_t<real_t* [2]> amps;
+    const real_t         sx1, sx2, sx3;
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -189,6 +220,7 @@ namespace user {
     array_t<real_t* [2]> amplitudes;
     array_t<real_t*> phi0, rands;
     ExtForce<M::PrtlDim> ext_force;
+    ExtCurrent<M::Dim>   ext_current;
     const real_t         dt;
     InitFields<D> init_flds;
 
@@ -213,6 +245,7 @@ namespace user {
       , amplitudes { "DrivingModes", nmodes }
       , rands { "RandomNumbers", 2*nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
+      , ext_current { amplitudes, SX1, SX2, SX3 }
       , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       // Initializing random phases

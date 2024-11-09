@@ -94,6 +94,9 @@ namespace traits {
     using ext_force_t = decltype(&T::ext_force);
 
     template <typename T>
+    using ext_current_t = decltype(&T::ext_current);
+
+    template <typename T>
     using field_driver_t = decltype(&T::FieldDriver);
 
     template <typename T>
