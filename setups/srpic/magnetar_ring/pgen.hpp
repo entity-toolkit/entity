@@ -838,7 +838,7 @@ namespace user {
                 w_ph_L      = w_ph;
 
             auto tpeak = fid_freq_ / 2.821;
-            auto ndot = 10000000000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
+            auto ndot = 1000000000000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
                           * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
             auto p_scatter = dt_ * ndot;
 
