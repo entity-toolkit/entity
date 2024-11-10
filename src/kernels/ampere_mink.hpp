@@ -38,13 +38,10 @@ namespace kernel::mink {
   template <Dimension D, Coord::type C, class Cu = NoCurrent_t>
   struct Current {
     static constexpr auto ExtCurrent = not std::is_same<Cu, NoCurrent_t>::value;
-
     const Cu      pgen_current;
 
-    Current()
-      : Current { NoCurrent_t {} } {
-      raise::ErrorIf(ExtCurrent, "External current not provided", HERE);
-    }
+    Current(const Cu& pgen_current)
+      : pgen_current { pgen_current } {}
 
     Inline auto jx1(const coord_t<D>&     x_Ph) const -> real_t {
       real_t j_x1 = ZERO;
@@ -72,8 +69,6 @@ namespace kernel::mink {
       return j_x3;
     }
   };
-
-
 
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in Minkowski space.
@@ -145,7 +140,7 @@ namespace kernel::mink {
    * @tparam D Dimension.
    */
   template <class M, class Cu = NoCurrent_t>
-  class CurrentsAmpere_kernel {
+  struct CurrentsAmpere_kernel {
     static constexpr auto        D     = M::Dim;
     static constexpr auto ExtCurrent = not std::is_same<Cu, NoCurrent_t>::value;
     ndfield_t<D, 6> E;
@@ -154,24 +149,12 @@ namespace kernel::mink {
     // coeff = -dt * q0 * n0 / (B0 * V0)
     const real_t    coeff;
     const real_t    inv_n0;
-
-  private:
-    Cu current;
-    const bool             ext_current;
-
+    const Cu current;
 
   public:
     CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
                           const ndfield_t<D, 3>  J,
-                          real_t                 coeff,
-                          real_t                 inv_n0)
-      : E { E }
-      , J { J }
-      , coeff { coeff }
-      , inv_n0 { inv_n0 } {}
-
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
-                          const ndfield_t<D, 3>  J,
+                          const M&               metric,
                           real_t                 coeff,
                           real_t                 inv_n0,
                           const Cu&              current)
@@ -179,7 +162,15 @@ namespace kernel::mink {
       , J { J }
       , coeff { coeff }
       , inv_n0 { inv_n0 } 
+      , metric { metric }
       , current {current} {}
+
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
+                          const ndfield_t<D, 3>  J,
+                          const M&              metric,
+                          real_t                 coeff,
+                          real_t                 inv_n0)
+      : CurrentsAmpere_kernel(E, J, metric, coeff, inv_n0, NoCurrent_t {}) {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -199,24 +190,28 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-      vec_t<Dim::_3D> current_Cart { ZERO };
+      vec_t<Dim::_3D> current_Cd { ZERO };
 
       if constexpr (ExtCurrent) {
         coord_t<Dim::_2D> xp_Ph { ZERO };
         coord_t<Dim::_2D> xp_Cd { i1, i2 };
         xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
         xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
-        metric.template transform_xyz<Idx::T, Idx::XYZ>(
-          xp_Cd,
-          { current.jx1(ext_current, xp_Ph),
-            current.jx2(ext_current, xp_Ph),
-            current.jx3(ext_current, xp_Ph) },
-          current_Cart);
+        metric.template transform_xyz<Idx::XYZ, Idx::U>(
+          xp_Ph,
+          { current.jx1(xp_Ph),
+            current.jx2(xp_Ph),
+            current.jx3(xp_Ph) },
+          current_Cd);
       }
 
         J(i1, i2, cur::jx1) *= inv_n0;
         J(i1, i2, cur::jx2) *= inv_n0;
         J(i1, i2, cur::jx3) *= inv_n0;
+
+        J(i1, i2, cur::jx1) += current_Cd[0];
+        J(i1, i2, cur::jx2) += current_Cd[1];
+        J(i1, i2, cur::jx3) += current_Cd[2];
 
         E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
         E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;

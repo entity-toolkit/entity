@@ -522,9 +522,9 @@ namespace ntt {
       const auto n0    = m_params.template get<real_t>("scales.n0");
       const auto B0    = m_params.template get<real_t>("scales.B0");
       const auto coeff = -dt * q0 * n0 / B0;
+      bool has_extcurrent = false;
       if constexpr (M::CoordType == Coord::Cart) {
         // toggle to indicate whether pgen defines the external current
-        bool has_extcurrent = false;
         if constexpr (traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
           has_extcurrent = true;
         const auto current =
@@ -547,7 +547,8 @@ namespace ntt {
           "Ampere",
           domain.mesh.rangeActiveCells(),
           kernel::mink::CurrentsAmpere_kernel<M>(domain.fields.em,
-                                                      domain.fields.cur,
+                                                      domain.fields.cur, 
+                                                      domain.mesh.metric,
                                                       coeff / V0,
                                                       ONE / n0));
         }

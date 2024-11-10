@@ -127,11 +127,11 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return ZERO;
-      return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-              k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
+      return ZERO;
+      // return (k14 * amps(0, REAL) *
+      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+      //         k14 * amps(0, IMAG) *
+      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
 
       // return ONE * math::cos(ONE * constant::TWO_PI * x_Ph[1]);
 
@@ -141,11 +141,11 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return (k04 * amps(1, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-              k04 * amps(1, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
-      // return ZERO;
+      // return (k04 * amps(1, REAL) *
+      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+      //         k04 * amps(1, IMAG) *
+      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
+      return ZERO;
     }
 
     Inline auto fx3(const unsigned short&,
@@ -175,29 +175,67 @@ namespace user {
       : amps { amplitudes }
       , sx1 { SX1 }
       , sx2 { SX2 }
-      , sx3 { SX3 } {}
-
+      , sx3 { SX3 }
+      , k11 {ZERO * constant::TWO_PI / sx1}
+      , k12 { ONE * constant::TWO_PI / sx2}
+      , k21 {ZERO * constant::TWO_PI / sx1}
+      , k22 {-ONE * constant::TWO_PI / sx2}
+      , k31 { ONE * constant::TWO_PI / sx1}
+      , k32 {ZERO * constant::TWO_PI / sx2}
+      , k41 {-ONE * constant::TWO_PI / sx1}
+      , k42 {ZERO * constant::TWO_PI / sx2} {}
 
     ExtCurrent() = default;
 
     Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
 
-      return ZERO;
-
+      return amps (0, REAL) *
+               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+             amps (0, IMAG) *
+               math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+             amps (1, REAL) *
+               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+             amps (1, IMAG) *
+               math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]);
     }
 
     Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
 
-      return ZERO;
+      return amps (2, REAL) *
+               math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+             amps (2, IMAG) *
+               math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+             amps (3, REAL) *
+               math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
+             amps (3, IMAG) *
+               math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
     }
 
     Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
+
       return ZERO;
+      // return amps (0, REAL) *
+      //          math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+      //        amps (0, IMAG) *
+      //          math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+      //        amps (1, REAL) *
+      //          math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+      //        amps (1, IMAG) *
+      //          math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+      //        amps (2, REAL) *
+      //           math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+      //         amps (2, IMAG) *
+      //           math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+      //         amps (3, REAL) *
+      //           math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
+      //         amps (3, IMAG) *
+      //           math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
     }
 
   private:
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
+    const real_t         k11, k12, k21, k22, k31, k32, k41, k42;
   };
 
   template <SimEngine::type S, class M>
@@ -220,7 +258,7 @@ namespace user {
     array_t<real_t* [2]> amplitudes;
     array_t<real_t*> phi0, rands;
     ExtForce<M::PrtlDim> ext_force;
-    ExtCurrent<M::Dim>   ext_current;
+    ExtCurrent<M::PrtlDim>   ext_current;
     const real_t         dt;
     InitFields<D> init_flds;
 
@@ -235,19 +273,19 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 2) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 4) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
-      , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
-      , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
+      , pl_index { params.template get<real_t>("setup.pl_index", -2.0) } 
+      , dt { params.template get<real_t>("algorithms.timestep.dt") } 
+      , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.005 }
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , rands { "RandomNumbers", 2*nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
       , ext_current { amplitudes, SX1, SX2, SX3 }
-      , init_flds { Bnorm }
-      , dt { params.template get<real_t>("algorithms.timestep.dt") } {
+      , init_flds { Bnorm } {
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
       srand (static_cast <unsigned> (12345));
@@ -329,7 +367,7 @@ namespace user {
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
       auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
-      auto gamma0 = 0.0*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
       auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0 / dt);
       auto pool   = domain.random_pool;
       auto dt_    = this->dt;
