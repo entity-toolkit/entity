@@ -189,30 +189,6 @@ namespace user {
 
     Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
 
-      return amps (0, REAL) *
-               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-             amps (0, IMAG) *
-               math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-             amps (1, REAL) *
-               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
-             amps (1, IMAG) *
-               math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]);
-    }
-
-    Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
-
-      return amps (2, REAL) *
-               math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-             amps (2, IMAG) *
-               math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-             amps (3, REAL) *
-               math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
-             amps (3, IMAG) *
-               math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
-    }
-
-    Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
-
       return ZERO;
       // return amps (0, REAL) *
       //          math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
@@ -221,15 +197,41 @@ namespace user {
       //        amps (1, REAL) *
       //          math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
       //        amps (1, IMAG) *
-      //          math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
-      //        amps (2, REAL) *
-      //           math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-      //         amps (2, IMAG) *
-      //           math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-      //         amps (3, REAL) *
-      //           math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
-      //         amps (3, IMAG) *
-      //           math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+      //          math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]);
+    }
+
+    Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return amps (2, REAL) *
+      //          math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+      //        amps (2, IMAG) *
+      //          math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+      //        amps (3, REAL) *
+      //          math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
+      //        amps (3, IMAG) *
+      //          math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+    }
+
+    Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
+
+      // return ZERO;
+      return amps (0, REAL) *
+               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+             amps (0, IMAG) *
+               math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+             amps (1, REAL) *
+               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+             amps (1, IMAG) *
+               math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+             amps (2, REAL) *
+                math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+              amps (2, IMAG) *
+                math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+              amps (3, REAL) *
+                math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
+              amps (3, IMAG) *
+                math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
     }
 
   private:
