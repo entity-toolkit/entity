@@ -116,11 +116,12 @@ namespace timer {
         (timer.second / local_tot) * 100.0);
       timer_stats.insert(
         { name,
-          std::make_tuple(timer.second,
-                          timer.second / static_cast<duration_t>(npart),
-                          timer.second / static_cast<duration_t>(ncells),
-                          pcent,
-                          0u) });
+          std::make_tuple(
+            timer.second,
+            npart > 0 ? timer.second / static_cast<duration_t>(npart) : 0.0,
+            timer.second / static_cast<duration_t>(ncells),
+            pcent,
+            0u) });
     }
     timer_stats.insert({ "Total", std::make_tuple(local_tot, 0.0, 0.0, 100u, 0u) });
 #endif
