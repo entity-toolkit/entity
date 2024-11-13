@@ -28,7 +28,7 @@ namespace user {
       @param drift_ux: drift velocity in the x direction
     */
     InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
-      : Bmag { bmag * static_cast<real_t>(convert::deg2rad) }
+      : Bmag { bmag }
       , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
       , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
       , Vx { drift_ux } {}
