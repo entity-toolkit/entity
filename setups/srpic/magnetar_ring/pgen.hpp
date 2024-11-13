@@ -504,8 +504,7 @@ namespace user {
             coord_t<D> xPh { ZERO };
             metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
 
-          if ((gamma > pp_thres_) && (math::sin(xPh[1]) > 0.1)
-          && (xPh[0] < 15.0)) {
+          if ((gamma > pp_thres_) && (math::sin(xPh[1]) > 0.1)) {
 
             auto new_gamma = gamma - 2.0 * gamma_pairs_;
             auto new_fac = math::sqrt(SQR(new_gamma) - 1.0) / math::sqrt(SQR(gamma) - 1.0);
@@ -838,13 +837,12 @@ namespace user {
                 w_ph_L      = w_ph;
 
             auto tpeak = fid_freq_;// / 2.821;
-            auto ndot = 5.93674 * 100000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
+            auto ndot = 1.77979 * 10000000000000000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
                           * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
             auto p_scatter = dt_ * ndot;
 
             auto  rand_gen = random_pool.get_state();
-            // if (Random<real_t>(rand_gen) < p_scatter) {
-            if (p_scatter > 1.0 || Random<real_t>(rand_gen) < p_scatter) {
+            if (Random<real_t>(rand_gen) < p_scatter) {
 
               // Make sure the photon has exact resonance energy (momentum according to the 'most' resonant one above)
               u_ph_RF_L = u_ph_RF_L / eph_RF_L *
