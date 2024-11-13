@@ -11,7 +11,7 @@
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["FIXED", "ABSORB"], ["PERIODIC"]]
+    fields = [["ABSORB", "FIXED"], ["PERIODIC"]]
     particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
 
 [scales]
