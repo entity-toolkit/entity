@@ -843,7 +843,8 @@ namespace user {
             auto p_scatter = dt_ * ndot;
 
             auto  rand_gen = random_pool.get_state();
-            if (Random<real_t>(rand_gen) < p_scatter) {
+            // if (Random<real_t>(rand_gen) < p_scatter) {
+            if (p_scatter > 1.0 || Random<real_t>(rand_gen) < p_scatter) {
 
               // Make sure the photon has exact resonance energy (momentum according to the 'most' resonant one above)
               u_ph_RF_L = u_ph_RF_L / eph_RF_L *
