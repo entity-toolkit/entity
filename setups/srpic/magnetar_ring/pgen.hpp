@@ -837,8 +837,8 @@ namespace user {
                 v_ph_L      = v_ph;
                 w_ph_L      = w_ph;
 
-            auto tpeak = fid_freq_ / 2.821;
-            auto ndot = 100000000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
+            auto tpeak = fid_freq_;// / 2.821;
+            auto ndot = 5.93674 * 100000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
                           * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
             auto p_scatter = dt_ * ndot;
 
@@ -1222,13 +1222,13 @@ namespace user {
     //                         ePh };
     //         auto sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
 
-    //         auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
-    //         if (s == 3) {
-    //           ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
-    //         }
+            // auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
+            // if (s == 3) {
+            //   ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
+            // }
 
-    //           // Check for pair production trigger
-    //           if (ePh >= ethres) {
+            //   // Check for pair production trigger
+            //   if (ePh >= ethres) {
 
     //             tag(p) = ParticleTag::dead;
 
