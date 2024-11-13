@@ -183,7 +183,15 @@ namespace user {
       , k31 { ONE * constant::TWO_PI / sx1}
       , k32 {ZERO * constant::TWO_PI / sx2}
       , k41 {-ONE * constant::TWO_PI / sx1}
-      , k42 {ZERO * constant::TWO_PI / sx2} {}
+      , k42 {ZERO * constant::TWO_PI / sx2} 
+      , k51 {ZERO * constant::TWO_PI / sx1}
+      , k52 { ONE * constant::TWO_PI / sx2}
+      , k61 {ZERO * constant::TWO_PI / sx1}
+      , k62 {-ONE * constant::TWO_PI / sx2}
+      , k71 { ONE * constant::TWO_PI / sx1}
+      , k72 {ZERO * constant::TWO_PI / sx2}
+      , k81 {-ONE * constant::TWO_PI / sx1}
+      , k82 {ZERO * constant::TWO_PI / sx2} {}
 
     ExtCurrent() = default;
 
@@ -216,28 +224,45 @@ namespace user {
     Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
 
       // return ZERO;
-      return amps (0, REAL) *
-               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-             amps (0, IMAG) *
+      return amps(0, REAL) *
+               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) -
+             amps(0, IMAG) *
                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-             amps (1, REAL) *
-               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
-             amps (1, IMAG) *
+             amps(1, REAL) *
+               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) -
+             amps(1, IMAG) *
                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
-             amps (2, REAL) *
-                math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-              amps (2, IMAG) *
+             amps(2, REAL) *
+                math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) -
+              amps(2, IMAG) *
                 math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-              amps (3, REAL) *
-                math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
-              amps (3, IMAG) *
-                math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+              amps(3, REAL) *
+                math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
+              amps(3, IMAG) *
+                math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]) +
+              amps(4, REAL) *
+                math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
+              amps(4, IMAG) *
+                math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+              amps(5, REAL) *
+                math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
+              amps(5, IMAG) *
+                math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]) +
+              amps(6, REAL) *
+                math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
+              amps(6, IMAG) *
+                math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+              amps(7, REAL) *
+                math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
+              amps(7, IMAG) *
+                math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
     }
 
   private:
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
     const real_t         k11, k12, k21, k22, k31, k32, k41, k42;
+    const real_t         k51, k52, k61, k62, k71, k72, k81, k82;
   };
 
   template <SimEngine::type S, class M>
@@ -275,13 +300,13 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 4) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 8) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) } 
       , dt { params.template get<real_t>("algorithms.timestep.dt") } 
-      , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.005 }
+      , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.00238419 }
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , rands { "RandomNumbers", 2*nmodes }
@@ -290,7 +315,7 @@ namespace user {
       , init_flds { Bnorm } {
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
-      srand (static_cast <unsigned> (12345));
+      // srand (static_cast <unsigned> (12345));
       for (int i = 0; i < nmodes; ++i) {
         phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
       }
@@ -368,11 +393,15 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
-      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
-      auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0 / dt);
-      auto pool   = domain.random_pool;
-      auto dt_    = this->dt;
+      // auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
+      // auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+      const auto mag0 = params.template get<real_t>("scales.sigma0");
+      const auto vA0 = math::sqrt(mag0/(mag0 + 1.3333333333333333));
+      const auto omega0 = 0.5 * 0.6 * vA0 * constant::TWO_PI / this->SX1;
+      const auto gamma0 = 0.5 * 0.5 * vA0 * constant::TWO_PI / this->SX1;
+      const auto sigma0 = this->amp0 * math::sqrt(static_cast<real_t>(this->nmodes) * gamma0 / this->dt);
+      const auto pool   = domain.random_pool;
+      const auto dt_    = this->dt;
 
       #if defined(MPI_ENABLED)
         int              rank;
@@ -404,12 +433,17 @@ namespace user {
           const auto uni      = rands(amplitudes.extent(0) + i) - HALF;
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt_) +
-                                 ampi_prev * math::sin(omega0 * dt_)) *
+          auto omega0in = omega0;
+          if (i > 3) {
+            omega0in *= - ONE;
+          }
+          
+          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0in * dt_) +
+                                 ampi_prev * math::sin(omega0in * dt_)) *
                                   math::exp(-gamma0 * dt_) +
                                 unr * sigma0 * dt_;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt_) +
-                                 ampi_prev * math::cos(omega0 * dt_)) *
+          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0in * dt_) +
+                                 ampi_prev * math::cos(omega0in * dt_)) *
                                   math::exp(-gamma0 * dt_) +
                                 uni * sigma0 * dt_;
         });
