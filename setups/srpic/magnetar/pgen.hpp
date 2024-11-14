@@ -465,6 +465,19 @@ namespace user {
             // If particle is too close to atmosphere, skip (saving time)
             if (xPh[0] < Rstar_ + 0.1) return;
                                     
+            // Define lepton properties for evaluation
+            auto px      = ux1(p);
+            auto py      = ux2(p);
+            auto pz      = ux3(p);
+            auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
+            auto betax   = px / gamma;
+            auto betay   = py / gamma;
+            auto betaz   = pz / gamma;
+            auto beta_sq = SQR(betax) + SQR(betay) + SQR(betaz);
+
+            // If particle is not relativistic, skip (testing for stopping)
+            if (gamma < 2.0) return;
+
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
             vec_t<Dim::_3D> e_int_Cart { ZERO };
@@ -533,16 +546,6 @@ namespace user {
 
             metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, b_int, b_int_Cart);
             metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, e_int, e_int_Cart);
-
-            // Define lepton properties for evaluation
-            auto px      = ux1(p);
-            auto py      = ux2(p);
-            auto pz      = ux3(p);
-            auto gamma   = math::sqrt(ONE + SQR(px) + SQR(py) + SQR(pz));
-            auto betax   = px / gamma;
-            auto betay   = py / gamma;
-            auto betaz   = pz / gamma;
-            auto beta_sq = SQR(betax) + SQR(betay) + SQR(betaz);
 
             // Boost magnetic fields to the rest frame
             auto bx0_rest = gamma * (b_int_Cart[0] - betay * e_int_Cart[2] +
