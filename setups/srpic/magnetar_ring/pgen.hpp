@@ -838,7 +838,7 @@ namespace user {
 
             auto tpeak = fid_freq_ / 2.821;
 
-            if (true) {
+            if (gamma < 2.0) {
               
               auto pnorm { NORM(px, py, pz) };
               auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (rand_costheta_RF - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
