@@ -844,11 +844,13 @@ namespace user {
               auto Omega_drag = tpeak;
               auto y_drag = eph_LF / tpeak;
               auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (mu_drag - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
-              auto dp = dt_ * f_drag;
+              auto pnorm = NORM(px, py, pz);
+              auto dp = dt_ * pnorm * f_drag;
 
-              ux1(p) *= (ONE - dp);
-              ux2(p) *= (ONE - dp);
-              ux3(p) *= (ONE - dp);
+              ux1(p) += dp * ux1(p) / pnorm;
+              ux2(p) += dp * ux2(p) / pnorm;
+              ux3(p) += dp * ux3(p) / pnorm;
+              
               return;
             }
 
