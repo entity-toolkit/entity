@@ -839,15 +839,13 @@ namespace user {
             auto tpeak = fid_freq_ / 2.821;
 
             if (true) {
-              auto mu_drag = (x_cart[0] * b_int_Cart[0] + x_cart[1] * b_int_Cart[1] + x_cart[2] * b_int_Cart[2]) * xnorm / (math::sqrt(beta_sq));
-              auto Omega_drag = tpeak;
-              auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (mu_drag - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
-              auto pnorm = NORM(px, py, pz);
-              auto dp = dt_ * pnorm * f_drag;
+              auto pnorm { 1.0 / NORM(px, py, pz) };
+              auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (rand_costheta_RF - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
+              auto dp = dt_ * f_drag;
 
-              ux1(p) += dp * ux1(p) / pnorm;
-              ux2(p) += dp * ux2(p) / pnorm;
-              ux3(p) += dp * ux3(p) / pnorm;
+              ux1(p) += dp * ux1(p);
+              ux2(p) += dp * ux2(p);
+              ux3(p) += dp * ux3(p);
               
               return;
             }
