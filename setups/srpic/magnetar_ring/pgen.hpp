@@ -793,7 +793,6 @@ namespace user {
             auto c_RF_y = b_RF_x * a_RF_z - b_RF_z * a_RF_x;
             auto c_RF_z = b_RF_y * a_RF_x - b_RF_x * a_RF_y;
 
-
             coord_t<Dim::_3D>     x_cart { ZERO };
             metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xc3d, x_cart);
             auto xnorm { 1.0 / NORM(x_cart[0], x_cart[1], x_cart[2]) };
@@ -838,6 +837,21 @@ namespace user {
                 w_ph_L      = w_ph;
 
             auto tpeak = fid_freq_ / 2.821;
+
+            if (true) {
+              auto b_sq = SQR(b_int_Cart[0]) + SQR(b_int_Cart[1]) + SQR(b_int_Cart[2]);
+              auto mu_drag = (betax * b_int_Cart[0] + betay * b_int_Cart[1] + betaz * b_int_Cart[2]) / (math::sqrt(beta_sq) * math::sqrt(b_sq));
+              auto Omega_drag = tpeak;
+              auto y_drag = eph_LF / tpeak;
+              auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (mu_drag - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
+              auto dp = dt_ * f_drag;
+
+              ux1(p) *= (ONE - dp);
+              ux2(p) *= (ONE - dp);
+              ux3(p) *= (ONE - dp);
+              return;
+            }
+
             auto ndot = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * 1.0 / gamma
                           * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
             auto p_scatter = dt_ * ndot;
