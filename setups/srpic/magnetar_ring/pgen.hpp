@@ -839,10 +839,8 @@ namespace user {
             auto tpeak = fid_freq_ / 2.821;
 
             if (true) {
-              auto b_sq = SQR(b_int_Cart[0]) + SQR(b_int_Cart[1]) + SQR(b_int_Cart[2]);
-              auto mu_drag = (betax * b_int_Cart[0] + betay * b_int_Cart[1] + betaz * b_int_Cart[2]) / (math::sqrt(beta_sq) * math::sqrt(b_sq));
+              auto mu_drag = (x_cart[0] * b_int_Cart[0] + x_cart[1] * b_int_Cart[1] + x_cart[2] * b_int_Cart[2]) * xnorm / (math::sqrt(beta_sq));
               auto Omega_drag = tpeak;
-              auto y_drag = eph_LF / tpeak;
               auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (mu_drag - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
               auto pnorm = NORM(px, py, pz);
               auto dp = dt_ * pnorm * f_drag;
