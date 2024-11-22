@@ -225,35 +225,35 @@ namespace user {
 
       // return ZERO;
       return amps(0, REAL) *
-               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) -
              amps(0, IMAG) *
                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
              amps(1, REAL) *
-               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) -
              amps(1, IMAG) *
                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
              amps(2, REAL) *
-                math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+                math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) -
               amps(2, IMAG) *
                 math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
               amps(3, REAL) *
-                math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
+                math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
               amps(3, IMAG) *
                 math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]) +
               amps(4, REAL) *
-                math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+                math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
               amps(4, IMAG) *
                 math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
               amps(5, REAL) *
-                math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) +
+                math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
               amps(5, IMAG) *
                 math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]) +
               amps(6, REAL) *
-                math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+                math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
               amps(6, IMAG) *
                 math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
               amps(7, REAL) *
-                math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) +
+                math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
               amps(7, IMAG) *
                 math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
     }

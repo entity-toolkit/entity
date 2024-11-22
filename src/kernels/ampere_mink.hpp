@@ -149,7 +149,7 @@ namespace kernel::mink {
     // coeff = -dt * q0 * n0 / (B0 * V0)
     const real_t    coeff;
     const real_t    inv_n0;
-    const real_t    v0;
+    const real_t    V0;
     const Cu current;
 
   public:
@@ -164,7 +164,7 @@ namespace kernel::mink {
       , J { J }
       , coeff { coeff }
       , inv_n0 { inv_n0 } 
-      , v0 { V0 }
+      , V0 { V0 }
       , metric { metric }
       , current {current} {}
 
@@ -208,13 +208,17 @@ namespace kernel::mink {
           current_Cd);
       }
 
-        J(i1, i2, cur::jx1) *= inv_n0;
-        J(i1, i2, cur::jx2) *= inv_n0;
-        J(i1, i2, cur::jx3) *= inv_n0;
+        // J(i1, i2, cur::jx1) *= inv_n0;
+        // J(i1, i2, cur::jx2) *= inv_n0;
+        // J(i1, i2, cur::jx3) *= inv_n0;
 
-        J(i1, i2, cur::jx1) += current_Cd[0] * v0;
-        J(i1, i2, cur::jx2) += current_Cd[1] * v0;
-        J(i1, i2, cur::jx3) += current_Cd[2] * v0;
+        J(i1, i2, cur::jx1) *= ZERO;
+        J(i1, i2, cur::jx2) *= ZERO;
+        J(i1, i2, cur::jx3) *= ZERO;
+
+        J(i1, i2, cur::jx1) += current_Cd[0] * V0;
+        J(i1, i2, cur::jx2) += current_Cd[1] * V0;
+        J(i1, i2, cur::jx3) += current_Cd[2] * V0;
 
         E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
         E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
@@ -236,6 +240,7 @@ namespace kernel::mink {
         E(i1, i2, i3, em::ex1) += J(i1, i2, i3, cur::jx1) * coeff;
         E(i1, i2, i3, em::ex2) += J(i1, i2, i3, cur::jx2) * coeff;
         E(i1, i2, i3, em::ex3) += J(i1, i2, i3, cur::jx3) * coeff;
+        
       } else {
         raise::KernelError(
           HERE,
