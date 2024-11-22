@@ -149,6 +149,7 @@ namespace kernel::mink {
     // coeff = -dt * q0 * n0 / (B0 * V0)
     const real_t    coeff;
     const real_t    inv_n0;
+    const real_t    v0;
     const Cu current;
 
   public:
@@ -157,11 +158,13 @@ namespace kernel::mink {
                           const M&               metric,
                           real_t                 coeff,
                           real_t                 inv_n0,
+                          real_t                 V0,
                           const Cu&              current)
       : E { E }
       , J { J }
       , coeff { coeff }
       , inv_n0 { inv_n0 } 
+      , v0 { V0 }
       , metric { metric }
       , current {current} {}
 
@@ -170,7 +173,7 @@ namespace kernel::mink {
                           const M&              metric,
                           real_t                 coeff,
                           real_t                 inv_n0)
-      : CurrentsAmpere_kernel(E, J, metric, coeff, inv_n0, NoCurrent_t {}) {}
+      : CurrentsAmpere_kernel(E, J, metric, coeff, inv_n0, ZERO, NoCurrent_t {}) {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -209,9 +212,9 @@ namespace kernel::mink {
         J(i1, i2, cur::jx2) *= inv_n0;
         J(i1, i2, cur::jx3) *= inv_n0;
 
-        J(i1, i2, cur::jx1) += current_Cd[0];
-        J(i1, i2, cur::jx2) += current_Cd[1];
-        J(i1, i2, cur::jx3) += current_Cd[2];
+        J(i1, i2, cur::jx1) += current_Cd[0] * v0;
+        J(i1, i2, cur::jx2) += current_Cd[1] * v0;
+        J(i1, i2, cur::jx3) += current_Cd[2] * v0;
 
         E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
         E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;

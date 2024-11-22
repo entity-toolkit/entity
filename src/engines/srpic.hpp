@@ -541,7 +541,7 @@ namespace ntt {
             "Ampere",
             domain.mesh.rangeActiveCells(),
             kernel::mink::CurrentsAmpere_kernel<M, decltype(m_pgen.ext_current)>(
-              domain.fields.em, domain.fields.cur, domain.mesh.metric, coeff, ONE / n0, m_pgen.ext_current));
+              domain.fields.em, domain.fields.cur, domain.mesh.metric, coeff / V0, ONE / n0, V0, m_pgen.ext_current));
         } else {
         Kokkos::parallel_for(
           "Ampere",
