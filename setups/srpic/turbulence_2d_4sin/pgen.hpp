@@ -306,7 +306,7 @@ namespace user {
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) } 
       , dt { params.template get<real_t>("algorithms.timestep.dt") } 
-      , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.0238419 }
+      , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , rands { "RandomNumbers", 2*nmodes }
