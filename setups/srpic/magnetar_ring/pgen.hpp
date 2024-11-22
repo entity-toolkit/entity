@@ -289,18 +289,92 @@ namespace user {
         auto tag_p    = species_p.tag;
 
         int nseed = 100;
-        auto dseed = HALF * constant::PI / static_cast<real_t>(nseed); 
+        // auto dseed = HALF * constant::PI / static_cast<real_t>(nseed); 
+
+        // Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
+
+        //   // auto theta = HALF * dseed + s*dseed;
+        //   // if (theta < 0.05) return;
+
+        //   auto theta = constant::PI - HALF * dseed - s*dseed;
+        //   if (theta > constant::PI - 0.05) return;
+
+        //   coord_t<Dim::_3D> x_Cart { ZERO };
+        //   coord_t<Dim::_2D> x_Ph { 1.05, theta };
+        //   coord_t<Dim::_2D> x_Cd2d { ZERO };
+        //   m.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd2d);
+
+        //   coord_t<Dim::_3D> x_Cd3d { x_Cd2d[0], x_Cd2d[1], 0.0 };
+        //   m.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Cd3d, x_Cart);
+
+        //   auto i1_ = math::floor(x_Cd2d[0]);
+        //   auto i2_ = math::floor(x_Cd2d[1]);
+        //   auto dx1_ = x_Cd2d[0] - math::floor(x_Cd2d[0]);
+        //   auto dx2_ = x_Cd2d[1] - math::floor(x_Cd2d[1]);
+
+        //   auto gam = gamma_pairs_;
+        //   auto beta = math::sqrt(1 - 1 / (gam * gam));
+
+        //   auto bx1 = math::cos(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
+        //   auto bx2 = HALF * math::sin(x_Ph[1]) / CUBE(x_Ph[0] / ONE);
+
+        //   auto bx1c = metric.template transform<1, Idx::T, Idx::U>(
+        //       { i1_, i2_ + HALF },
+        //       bx1);
+        //   auto bx2c = metric.template transform<2, Idx::T, Idx::U>(
+        //       { i1_ + HALF, i2_ },
+        //       bx2);
+
+        //   vec_t<Dim::_3D> bcd { bx1c, bx2c, ZERO};
+        //   vec_t<Dim::_3D> bcart { ZERO };
+        //   metric.template transform_xyz<Idx::U, Idx::XYZ>(x_Cd3d, bcd, bcart);
+
+        //   auto bnorm = math::sqrt(SQR(bcart[0]) + SQR(bcart[1]) + SQR(bcart[2]));
+        //   auto bc1 = bcart[0] / bnorm;
+        //   auto bc2 = bcart[1] / bnorm;
+        //   auto bc3 = bcart[2] / bnorm;
+
+        //   auto v1 = - gam * beta * bc1;
+        //   auto v2 = - gam * beta * bc2;
+        //   auto v3 = - gam * beta * bc3;
+
+        //       auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+        //       auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+
+        //       i1_e(elec_p + offset_e) = i1_;
+        //       dx1_e(elec_p + offset_e) = dx1_;
+        //       i2_e(elec_p + offset_e) = i2_;
+        //       dx2_e(elec_p + offset_e) = dx2_;
+        //       phi_e(elec_p + offset_e) = ZERO;
+        //       ux1_e(elec_p + offset_e) = v1;
+        //       ux2_e(elec_p + offset_e) = v2;
+        //       ux3_e(elec_p + offset_e) = v3;
+        //       weight_e(elec_p + offset_e) = ONE;
+        //       tag_e(elec_p + offset_e) = ParticleTag::alive;
+
+        //       i1_p(pos_p + offset_p) = i1_;
+        //       dx1_p(pos_p + offset_p) = dx1_;
+        //       i2_p(pos_p + offset_p) = i2_;
+        //       dx2_p(pos_p + offset_p) = dx2_;
+        //       phi_p(pos_p + offset_p) = ZERO;
+        //       ux1_p(pos_p + offset_p) = v1;
+        //       ux2_p(pos_p + offset_p) = v2;
+        //       ux3_p(pos_p + offset_p) = v3;
+        //       weight_p(pos_p + offset_p) = ONE;
+        //       tag_p(pos_p + offset_p) = ParticleTag::alive;
+
+
+        //   });
+
+        auto dseed = 20.0 / static_cast<real_t>(nseed); 
 
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
-          // auto theta = HALF * dseed + s*dseed;
-          // if (theta < 0.05) return;
-
-          auto theta = constant::PI - HALF * dseed - s*dseed;
-          if (theta > constant::PI - 0.05) return;
+          auto r = HALF * dseed + s*dseed;
+          if (r < 1.1) return;
 
           coord_t<Dim::_3D> x_Cart { ZERO };
-          coord_t<Dim::_2D> x_Ph { 1.05, theta };
+          coord_t<Dim::_2D> x_Ph { r, HALF*constant::PI };
           coord_t<Dim::_2D> x_Cd2d { ZERO };
           m.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd2d);
 
