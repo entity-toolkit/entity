@@ -208,13 +208,13 @@ namespace kernel::mink {
           current_Cd);
       }
 
-        // J(i1, i2, cur::jx1) *= inv_n0;
-        // J(i1, i2, cur::jx2) *= inv_n0;
-        // J(i1, i2, cur::jx3) *= inv_n0;
+        J(i1, i2, cur::jx1) *= inv_n0;
+        J(i1, i2, cur::jx2) *= inv_n0;
+        J(i1, i2, cur::jx3) *= inv_n0;
 
-        J(i1, i2, cur::jx1) *= ZERO;
-        J(i1, i2, cur::jx2) *= ZERO;
-        J(i1, i2, cur::jx3) *= ZERO;
+        // J(i1, i2, cur::jx1) *= ZERO;
+        // J(i1, i2, cur::jx2) *= ZERO;
+        // J(i1, i2, cur::jx3) *= ZERO;
 
         J(i1, i2, cur::jx1) += current_Cd[0] * V0;
         J(i1, i2, cur::jx2) += current_Cd[1] * V0;
