@@ -370,11 +370,11 @@ namespace user {
 
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
-          auto r = HALF * dseed + s*dseed;
+          auto r = HALF * dseed + s * dseed;
           if (r < 1.1) return;
 
           coord_t<Dim::_3D> x_Cart { ZERO };
-          coord_t<Dim::_2D> x_Ph { r, HALF*constant::PI };
+          coord_t<Dim::_2D> x_Ph { r, HALF * constant::PI };
           coord_t<Dim::_2D> x_Cd2d { ZERO };
           m.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd2d);
 
@@ -915,7 +915,8 @@ namespace user {
 
             auto tpeak = fid_freq_ / 2.821;
 
-            if (gamma < 2.0) {
+            // if (gamma < 2.0) {
+            if (true) {
               
               auto pnorm { NORM(px, py, pz) };
               auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (rand_costheta_RF - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
