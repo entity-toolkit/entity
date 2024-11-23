@@ -374,7 +374,7 @@ namespace user {
           if (r < 1.1) return;
 
           coord_t<Dim::_3D> x_Cart { ZERO };
-          coord_t<Dim::_2D> x_Ph { r, HALF * constant::PI };
+          coord_t<Dim::_2D> x_Ph { r, 0.9 * HALF * constant::PI };
           coord_t<Dim::_2D> x_Cd2d { ZERO };
           m.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd2d);
 
