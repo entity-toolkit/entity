@@ -404,7 +404,7 @@ namespace user {
       const auto mag0 = params.template get<real_t>("scales.sigma0");
       const auto vA0 = math::sqrt(mag0/(mag0 + 1.3333333333333333));
       const auto omega0 = 0.5 * 0.6 * vA0 * constant::TWO_PI / this->SX1;
-      const auto gamma0 = 0.5 * 0.5 * vA0 * constant::TWO_PI / this->SX1;
+      const auto gamma0 = 0.0 * 0.5 * vA0 * constant::TWO_PI / this->SX1;
       const auto sigma0 = this->amp0 * math::sqrt(static_cast<real_t>(this->nmodes) * gamma0 / this->dt);
       const auto pool   = domain.random_pool;
       const auto dt_    = this->dt;
