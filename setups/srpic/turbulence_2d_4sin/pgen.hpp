@@ -171,11 +171,12 @@ namespace user {
 
     template <Dimension D>
   struct ExtCurrent {
-    ExtCurrent(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
+    ExtCurrent(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3, array_t<real_t*> damp0)
       : amps { amplitudes }
       , sx1 { SX1 }
       , sx2 { SX2 }
       , sx3 { SX3 }
+      , damp { damp0 }
       , k11 {ZERO * constant::TWO_PI / sx1}
       , k12 { ONE * constant::TWO_PI / sx2}
       , k21 {ZERO * constant::TWO_PI / sx1}
@@ -224,42 +225,43 @@ namespace user {
     Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
 
       // return ZERO;
-      return amps(0, REAL) *
+      return damp(0) * amps(0, REAL) *
                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) -
-             amps(0, IMAG) *
+             damp(0) * amps(0, IMAG) *
                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-             amps(1, REAL) *
+             damp(1) * amps(1, REAL) *
                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) -
-             amps(1, IMAG) *
+             damp(1) * amps(1, IMAG) *
                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
-             amps(2, REAL) *
+             damp(2) * amps(2, REAL) *
                 math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) -
-              amps(2, IMAG) *
+              damp(2) * amps(2, IMAG) *
                 math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-              amps(3, REAL) *
+              damp(3) * amps(3, REAL) *
                 math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
-              amps(3, IMAG) *
+              damp(3) * amps(3, IMAG) *
                 math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]) +
-              amps(4, REAL) *
+              damp(4) * amps(4, REAL) *
                 math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
-              amps(4, IMAG) *
+              damp(4) * amps(4, IMAG) *
                 math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
-              amps(5, REAL) *
+              damp(5) * amps(5, REAL) *
                 math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
-              amps(5, IMAG) *
+              damp(5) * amps(5, IMAG) *
                 math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]) +
-              amps(6, REAL) *
+              damp(6) * amps(6, REAL) *
                 math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
-              amps(6, IMAG) *
+              damp(6) * amps(6, IMAG) *
                 math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
-              amps(7, REAL) *
+              damp(7) * amps(7, REAL) *
                 math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
-              amps(7, IMAG) *
+              damp(7) * amps(7, IMAG) *
                 math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
     }
 
   private:
     array_t<real_t* [2]> amps;
+    array_t<real_t*> damp;
     const real_t         sx1, sx2, sx3;
     const real_t         k11, k12, k21, k22, k31, k32, k41, k42;
     const real_t         k51, k52, k61, k62, k71, k72, k81, k82;
@@ -283,7 +285,7 @@ namespace user {
     const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
-    array_t<real_t*> phi0, rands;
+    array_t<real_t*> phi0, rands, damp0;
     ExtForce<M::PrtlDim> ext_force;
     ExtCurrent<M::PrtlDim>   ext_current;
     const real_t         dt;
@@ -307,19 +309,23 @@ namespace user {
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) } 
       , dt { params.template get<real_t>("algorithms.timestep.dt") } 
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.1 }
+      , damp0 { "Damping", nmodes }  
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , rands { "RandomNumbers", 2*nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3 }
-      , ext_current { amplitudes, SX1, SX2, SX3 }
+      , ext_current { amplitudes, SX1, SX2, SX3, damp0}
       , init_flds { Bnorm } {
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
+      auto damp0_ = Kokkos::create_mirror_view(damp0);
       // srand (static_cast <unsigned> (12345));
       for (int i = 0; i < nmodes; ++i) {
         phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+        damp0_(i) = ZERO;
       }
       Kokkos::deep_copy(phi0, phi0_);
+      Kokkos::deep_copy(damp0, damp0_);
 
       #if defined(MPI_ENABLED)
         int              rank;
@@ -446,6 +452,10 @@ namespace user {
                                  ampi_prev * math::cos(omega0in * dt_)) *
                                   math::exp(-gamma0 * dt_) +
                                 uni * sigma0 * dt_;
+
+          if(damp0(i) < ONE) {
+            damp0(i) += dt_;
+          }
         });
 
       auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
