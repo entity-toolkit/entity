@@ -729,11 +729,11 @@ namespace user {
           myfile5 << std::endl;
 
           if (time == 0) {
-            myfile4.open("ejenrg.txt");
+            myfile6.open("ejenrg.txt");
           } else {
-            myfile4.open("ejenrg.txt", std::ios_base::app);
+            myfile6.open("ejenrg.txt", std::ios_base::app);
           }
-          myfile4 << ej_total << std::endl;
+          myfile6 << ej_total << std::endl;
 
         }
 
@@ -778,11 +778,11 @@ namespace user {
           myfile5 << std::endl;
 
           if (time == 0) {
-            myfile4.open("ejenrg.txt");
+            myfile6.open("ejenrg.txt");
           } else {
-            myfile4.open("ejenrg.txt", std::ios_base::app);
+            myfile6.open("ejenrg.txt", std::ios_base::app);
           }
-          myfile4 << ej_total << std::endl;
+          myfile6 << ej_total << std::endl;
           
       #endif
     }
