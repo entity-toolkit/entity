@@ -655,11 +655,9 @@ namespace user {
             xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(x_Cd[0]);
             xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(x_Cd[1]);
 
-            // ej -= (e_XYZ[0] * ext_current_.jx1(xp_Ph) +
-            //        e_XYZ[1] * ext_current_.jx2(xp_Ph) +
-            //        e_XYZ[2] * ext_current_.jx3(xp_Ph));
-
-            ej -= (ext_current_.jx3(xp_Ph)*ext_current_.jx3(xp_Ph));
+            ej -= (e_XYZ[0] * ext_current_.jx1(xp_Ph) +
+                   e_XYZ[1] * ext_current_.jx2(xp_Ph) +
+                   e_XYZ[2] * ext_current_.jx3(xp_Ph));
 
           },
           ej_s);
@@ -673,7 +671,7 @@ namespace user {
         #endif
 
       // Weight the field integral by sim parameters
-        ej_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0");
+        ej_total *= params.template get<real_t>("scales.V0") / params.template get<real_t>("scales.larmor0");
 
       }
 
