@@ -518,6 +518,7 @@ namespace user {
         
       auto benrg_total = ZERO;
       auto eenrg_total = ZERO;
+      auto ej_total = ZERO;
 
       if constexpr (D == Dim::_3D) {
         
@@ -637,6 +638,40 @@ namespace user {
       // Weight the field integral by sim parameters
         eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
+        auto ej_s = ZERO;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, real_t & ej) {
+            coord_t<Dim::_2D> x_Cd { i1, i2 };
+            vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, em::ex1),
+                                      EB(i1, i2, em::ex2),
+                                      EB(i1, i2, em::ex3) };
+            vec_t<Dim::_3D>   e_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);  
+
+            coord_t<Dim::_2D> xp_Ph { ZERO };
+            xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(x_Cd[0]);
+            xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(x_Cd[1]);
+
+            ej += (e_XYZ[0] * ext_current.jx1(xp_Ph) +
+                   e_XYZ[1] * ext_current.jx2(xp_Ph) +
+                   e_XYZ[2] * ext_current.jx3(xp_Ph));
+
+          },
+          ej_s);
+
+        #if defined(MPI_ENABLED)
+          auto ej_sg = ZERO;
+          MPI_Allreduce(&ej_s, &ej_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          ej_total += ej_sg;
+        #else
+          ej_total += ej_s;
+        #endif
+
+      // Weight the field integral by sim parameters
+        ej_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0");
+
       }
 
       std::ofstream myfile1;
@@ -644,6 +679,8 @@ namespace user {
       std::ofstream myfile3;
       std::ofstream myfile4;
       std::ofstream myfile5;
+      std::ofstream myfile6;
+      
 
       #if defined(MPI_ENABLED)
 
@@ -690,6 +727,12 @@ namespace user {
           }
           myfile5 << std::endl;
 
+          if (time == 0) {
+            myfile4.open("ejenrg.txt");
+          } else {
+            myfile4.open("ejenrg.txt", std::ios_base::app);
+          }
+          myfile4 << ej_total << std::endl;
 
         }
 
@@ -732,6 +775,13 @@ namespace user {
             myfile5 << amplitudes_(i, REAL) << " " << amplitudes_(i, IMAG) << " ";
           }
           myfile5 << std::endl;
+
+          if (time == 0) {
+            myfile4.open("ejenrg.txt");
+          } else {
+            myfile4.open("ejenrg.txt", std::ios_base::app);
+          }
+          myfile4 << ej_total << std::endl;
           
       #endif
     }

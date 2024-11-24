@@ -200,7 +200,7 @@ namespace kernel::mink {
         coord_t<Dim::_2D> xp_Cd { i1, i2 };
         xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
         xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
-        metric.template transform_xyz<Idx::XYZ, Idx::U>(
+        metric.template transform<Idx::T, Idx::U>(
           xp_Ph,
           { current.jx1(xp_Ph),
             current.jx2(xp_Ph),
