@@ -198,28 +198,28 @@ namespace user {
 
     Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
 
-      return ZERO;
-      // return amps (0, REAL) *
-      //          math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-      //        amps (0, IMAG) *
-      //          math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
-      //        amps (1, REAL) *
-      //          math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) +
-      //        amps (1, IMAG) *
-      //          math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]);
+      // return ZERO;
+      return damp(4) * amps (4, REAL) *
+               math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
+             damp(4) * amps (4, IMAG) *
+               math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+             damp(5) * amps (5, REAL) *
+               math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
+             damp(5) * amps (5, IMAG) *
+               math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]);
     }
 
     Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
 
-      return ZERO;
-      // return amps (2, REAL) *
-      //          math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-      //        amps (2, IMAG) *
-      //          math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
-      //        amps (3, REAL) *
-      //          math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) +
-      //        amps (3, IMAG) *
-      //          math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+      // return ZERO;
+      return damp(6) * amps (6, REAL) *
+               math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
+             damp(6) * amps (6, IMAG) *
+               math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+             damp(7) * amps (7, REAL) *
+               math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
+             damp(7) * amps (7, IMAG) *
+               math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
     }
 
     Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
@@ -240,23 +240,7 @@ namespace user {
               damp(3) * amps(3, REAL) *
                 math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
               damp(3) * amps(3, IMAG) *
-                math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]) +
-              damp(4) * amps(4, REAL) *
-                math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
-              damp(4) * amps(4, IMAG) *
-                math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
-              damp(5) * amps(5, REAL) *
-                math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
-              damp(5) * amps(5, IMAG) *
-                math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]) +
-              damp(6) * amps(6, REAL) *
-                math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
-              damp(6) * amps(6, IMAG) *
-                math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
-              damp(7) * amps(7, REAL) *
-                math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
-              damp(7) * amps(7, IMAG) *
-                math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
+                math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
     }
 
   private:
@@ -440,10 +424,7 @@ namespace user {
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
           auto omega0in = omega0;
-          if (i > 3) {
-            omega0in *= - ONE;
-          }
-          
+
           amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0in * dt_) +
                                  ampi_prev * math::sin(omega0in * dt_)) *
                                   math::exp(-gamma0 * dt_) +
