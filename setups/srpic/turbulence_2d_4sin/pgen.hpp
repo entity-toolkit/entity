@@ -639,6 +639,7 @@ namespace user {
         eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
         auto ej_s = ZERO;
+        auto ext_current_ = this->ext_current;
         Kokkos::parallel_reduce(
           "BEnrg",
           domain.mesh.rangeActiveCells(),
@@ -654,9 +655,9 @@ namespace user {
             xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(x_Cd[0]);
             xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(x_Cd[1]);
 
-            ej += (e_XYZ[0] * ext_current.jx1(xp_Ph) +
-                   e_XYZ[1] * ext_current.jx2(xp_Ph) +
-                   e_XYZ[2] * ext_current.jx3(xp_Ph));
+            ej += (e_XYZ[0] * ext_current_.jx1(xp_Ph) +
+                   e_XYZ[1] * ext_current_.jx2(xp_Ph) +
+                   e_XYZ[2] * ext_current_.jx3(xp_Ph));
 
           },
           ej_s);
