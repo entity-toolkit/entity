@@ -266,7 +266,7 @@ namespace user {
     const real_t         SX1, SX2, SX3;
     const real_t         temperature, machno, Bnorm;
     const unsigned int   nmodes;
-    const real_t         amp0;
+    const real_t         amp0, gamma0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
     array_t<real_t*> phi0, rands, damp0;
@@ -286,13 +286,14 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 8) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 4) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
       , pl_index { params.template get<real_t>("setup.pl_index", -2.0) } 
       , dt { params.template get<real_t>("algorithms.timestep.dt") } 
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.1 }
+      , gamma0 { ONE }
       , damp0 { "Damping", nmodes }  
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
@@ -300,6 +301,12 @@ namespace user {
       // , ext_force { amplitudes, SX1, SX2, SX3 }
       , ext_current { amplitudes, SX1, SX2, SX3, damp0}
       , init_flds { Bnorm } {
+      // Initialize mean gamma
+      if (temperature < 0.7) {
+        gamma0 = 1.0 + 1.5 * temperature + 1.875 * SQR(temperature) - 1.875 * CUBE(temperature) + 1.05469 * SQR(SQR(temperature)) + 1.40625 * SQR(temperature) * CUBE(temperature);
+      } else {
+        gamma0 = 0.5 / temperature + 3.0 * temperature + (0.0625 * (- 1.23186 - 2.0 * math::log(temperature))) / (SQR(temperature) * CUBE(temperature));
+      }
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
       auto damp0_ = Kokkos::create_mirror_view(damp0);
@@ -385,11 +392,11 @@ namespace user {
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
       // auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
       // auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
-      const auto mag0 = params.template get<real_t>("scales.sigma0");
+      const auto mag0 = params.template get<real_t>("scales.sigma0") / (this->gamma0);
       const auto vA0 = math::sqrt(mag0/(mag0 + 1.3333333333333333));
-      const auto omega0 = 0.5 * 0.6 * vA0 * constant::TWO_PI / this->SX1;
-      const auto gamma0 = 0.5 * 0.5 * vA0 * constant::TWO_PI / this->SX1;
-      const auto sigma0 = this->amp0 * math::sqrt(static_cast<real_t>(this->nmodes) * gamma0 / this->dt);
+      const auto omega0 = 0.6 * vA0 * constant::TWO_PI / (1.73205 * (this->SX1));
+      const auto gamma0 = 0.5 * vA0 * constant::TWO_PI / (1.73205 * (this->SX1));
+      const auto sigma0 = (this->amp0) * math::sqrt(static_cast<real_t>(this->nmodes) * gamma0 / this->dt);
       const auto pool   = domain.random_pool;
       const auto dt_    = this->dt;
 
