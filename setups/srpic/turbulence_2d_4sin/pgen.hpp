@@ -99,75 +99,75 @@ namespace user {
     random_number_pool_t random_pool;
   };
 
-  template <Dimension D>
-  struct ExtForce {
-    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
-      : amps { amplitudes }
-      , sx1 { SX1 }
-      , sx2 { SX2 }
-      , sx3 { SX3 } 
-      , k01 {ONE * constant::TWO_PI / sx1}
-      , k02 {ZERO * constant::TWO_PI / sx2}
-      , k03 {ZERO * constant::TWO_PI / sx3}
-      , k04 {ONE}
-      , k11 {ZERO * constant::TWO_PI / sx1}
-      , k12 {ONE * constant::TWO_PI / sx2}
-      , k13 {ZERO * constant::TWO_PI / sx3}
-      , k14 {ONE}
-      , k21 {ZERO * constant::TWO_PI / sx1}
-      , k22 {ZERO * constant::TWO_PI / sx2}
-      , k23 {ONE * constant::TWO_PI / sx3}
-      , k24 {ONE} {}
+  // template <Dimension D>
+  // struct ExtForce {
+  //   ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
+  //     : amps { amplitudes }
+  //     , sx1 { SX1 }
+  //     , sx2 { SX2 }
+  //     , sx3 { SX3 } 
+  //     , k01 {ONE * constant::TWO_PI / sx1}
+  //     , k02 {ZERO * constant::TWO_PI / sx2}
+  //     , k03 {ZERO * constant::TWO_PI / sx3}
+  //     , k04 {ONE}
+  //     , k11 {ZERO * constant::TWO_PI / sx1}
+  //     , k12 {ONE * constant::TWO_PI / sx2}
+  //     , k13 {ZERO * constant::TWO_PI / sx3}
+  //     , k14 {ONE}
+  //     , k21 {ZERO * constant::TWO_PI / sx1}
+  //     , k22 {ZERO * constant::TWO_PI / sx2}
+  //     , k23 {ONE * constant::TWO_PI / sx3}
+  //     , k24 {ONE} {}
 
-    const std::vector<unsigned short> species { 1, 2 };
+  //   const std::vector<unsigned short> species { 1, 2 };
 
-    ExtForce() = default;
+  //   ExtForce() = default;
 
-    Inline auto fx1(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
+  //   Inline auto fx1(const unsigned short&,
+  //                   const real_t&,
+  //                   const coord_t<D>& x_Ph) const -> real_t {
 
-      return ZERO;
-      // return (k14 * amps(0, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-      //         k14 * amps(0, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
+  //     return ZERO;
+  //     // return (k14 * amps(0, REAL) *
+  //     //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+  //     //         k14 * amps(0, IMAG) *
+  //     //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
 
-      // return ONE * math::cos(ONE * constant::TWO_PI * x_Ph[1]);
+  //     // return ONE * math::cos(ONE * constant::TWO_PI * x_Ph[1]);
 
-    }
+  //   }
 
-    Inline auto fx2(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
+  //   Inline auto fx2(const unsigned short&,
+  //                   const real_t&,
+  //                   const coord_t<D>& x_Ph) const -> real_t {
 
-      // return (k04 * amps(1, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-      //         k04 * amps(1, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
-      return ZERO;
-    }
+  //     // return (k04 * amps(1, REAL) *
+  //     //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+  //     //         k04 * amps(1, IMAG) *
+  //     //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
+  //     return ZERO;
+  //   }
 
-    Inline auto fx3(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
+  //   Inline auto fx3(const unsigned short&,
+  //                   const real_t&,
+  //                   const coord_t<D>& x_Ph) const -> real_t {
 
-      // return (k04 * amps(4, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-      //         k04 * amps(4, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
-      //        (k14 * amps(5, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-      //         k14 * amps(5, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
-      return ZERO;
-    }
+  //     // return (k04 * amps(4, REAL) *
+  //     //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+  //     //         k04 * amps(4, IMAG) *
+  //     //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
+  //     //        (k14 * amps(5, REAL) *
+  //     //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+  //     //         k14 * amps(5, IMAG) *
+  //     //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
+  //     return ZERO;
+  //   }
 
-  private:
-    array_t<real_t* [2]> amps;
-    const real_t         sx1, sx2, sx3;
-    const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
-  };
+  // private:
+  //   array_t<real_t* [2]> amps;
+  //   const real_t         sx1, sx2, sx3;
+  //   const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
+  // };
 
     template <Dimension D>
   struct ExtCurrent {
@@ -270,7 +270,7 @@ namespace user {
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
     array_t<real_t* [2]> amplitudes;
     array_t<real_t*> phi0, rands, damp0;
-    ExtForce<M::PrtlDim> ext_force;
+    // ExtForce<M::PrtlDim> ext_force;
     ExtCurrent<M::PrtlDim>   ext_current;
     const real_t         dt;
     InitFields<D> init_flds;
@@ -297,7 +297,7 @@ namespace user {
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , rands { "RandomNumbers", 2*nmodes }
-      , ext_force { amplitudes, SX1, SX2, SX3 }
+      // , ext_force { amplitudes, SX1, SX2, SX3 }
       , ext_current { amplitudes, SX1, SX2, SX3, damp0}
       , init_flds { Bnorm } {
       // Initializing random phases
