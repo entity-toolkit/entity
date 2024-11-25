@@ -266,8 +266,9 @@ namespace user {
     const real_t         SX1, SX2, SX3;
     const real_t         temperature, machno, Bnorm;
     const unsigned int   nmodes;
-    const real_t         amp0, gamma0;
+    const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
+    real_t               gamma0;
     array_t<real_t* [2]> amplitudes;
     array_t<real_t*> phi0, rands, damp0;
     // ExtForce<M::PrtlDim> ext_force;
