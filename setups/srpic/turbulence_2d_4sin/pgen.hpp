@@ -132,11 +132,15 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return ZERO;
-      // return (k14 * amps(0, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-      //         k14 * amps(0, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
+      // return ZERO;
+      return damp(4) * amps(4, REAL) *
+                math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
+              damp(4) * amps(4, IMAG) *
+                math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+              damp(5) * amps(5, REAL) *
+                math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
+              damp(5) * amps(5, IMAG) *
+                math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]);
 
       // return ONE * math::cos(ONE * constant::TWO_PI * x_Ph[1]);
 
@@ -146,11 +150,15 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return (k04 * amps(1, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-      //         k04 * amps(1, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
-      return ZERO;
+      return damp(6) * amps(6, REAL) *
+                math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
+              damp(6) * amps(6, IMAG) *
+                math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+              damp(7) * amps(7, REAL) *
+                math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
+              damp(7) * amps(7, IMAG) *
+                math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
+      // return ZERO;
     }
 
     Inline auto fx3(const unsigned short&,
@@ -302,7 +310,7 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 4) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 8) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
