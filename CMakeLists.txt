@@ -134,6 +134,9 @@ link_libraries(${DEPENDENCIES})
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests.cmake)
+elseif(BENCHMARK)
+  # ------------------------------ Benchmark --------------------------------- #
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/benchmark.cmake)
 else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})
