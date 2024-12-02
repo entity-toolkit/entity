@@ -316,6 +316,7 @@ namespace comm {
     }
   }
 
+
   void ParticleSendRecvCount(int                send_rank,
                              int                recv_rank,
                              const std::size_t& send_count,
@@ -440,6 +441,149 @@ namespace comm {
     }
     return recv_count;
   }
+
+
+  template <typename T>
+  void CommunicateParticleQuantityBuffer( array_t<T*>&            arr,
+                                          int                     send_rank,
+                                          int                     recv_rank,
+                                          const range_tuple_t&    send_slice,
+                                          const range_tuple_t&    recv_slice,
+                                          Kokkos::View<size_t*>   indices_to_send,
+                                          Kokkos::View<size_t*>   indices_to_allocate) {
+
+    array_t<T*> buffer( "buffer", indices_to_send.size() + 
+                        indices_to_allocate.size());
+    // Populate the buffer for particle array
+    Kokkos::parallel_for(
+    "PopulateBuffer",
+    Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_send.size()),
+    KOKKOS_LAMBDA(const size_t i) {
+      const auto idx  = indices_to_send(i);
+      buffer(i)       = arr(idx);
+    });
+    CommunicateParticleQuantity(buffer, send_rank, recv_rank, send_slice, recv_slice);
+    // Populate from buffer to the particle array
+    Kokkos::parallel_for(
+    "PopulateFromBuffer",
+    Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_allocate.size()),
+    KOKKOS_LAMBDA(const size_t i) {
+      const auto idx  = indices_to_allocate(i);
+      arr(idx) = buffer(indices_to_send.size() + i);
+    });
+  return;
+  }
+
+
+  template <Dimension D, Coord::type C>
+  void CommunicateParticlesBuffer(Particles<D, C>&        species,
+                                  Kokkos::View<size_t*>   indices_to_send,
+                                  Kokkos::View<size_t*>   indices_to_allocate,
+                                  int                     send_rank,
+                                  int                     recv_rank,
+                                  std::vector<int>        shifts_in_x){
+    if ((send_rank < 0) && (recv_rank < 0)) {
+      raise::Error("No send or recv in SendRecvParticlesBuffered", HERE);
+    }
+    // Construct send and receive slice for the buffer
+    auto send_slice = range_tuple_t({ 0, indices_to_send.size() });
+    auto recv_slice = range_tuple_t({ indices_to_send.size(), indices_to_send.size() + 
+                                                              indices_to_allocate.size() });
+    // Send and receive the particles
+    CommunicateParticleQuantityBuffer(species.i1, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    CommunicateParticleQuantityBuffer(species.dx1, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    CommunicateParticleQuantityBuffer(species.i1_prev, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    CommunicateParticleQuantityBuffer(species.dx1_prev, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    if constexpr (D == Dim::_2D || D == Dim::_3D) {
+      CommunicateParticleQuantityBuffer(species.i2, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+      CommunicateParticleQuantityBuffer(species.dx2, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+      CommunicateParticleQuantityBuffer(species.i2_prev, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+      CommunicateParticleQuantityBuffer(species.dx2_prev, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    }
+    if constexpr (D == Dim::_3D) {
+      CommunicateParticleQuantityBuffer(species.i3, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+      CommunicateParticleQuantityBuffer(species.dx3, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+      CommunicateParticleQuantityBuffer(species.i3_prev, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+      CommunicateParticleQuantityBuffer(species.dx3_prev, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    }
+    CommunicateParticleQuantityBuffer(species.ux1, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    CommunicateParticleQuantityBuffer(species.ux2, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    CommunicateParticleQuantityBuffer(species.ux3, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    CommunicateParticleQuantityBuffer(species.weight, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+      CommunicateParticleQuantityBuffer(species.phi, send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    }
+    for (auto p { 0 }; p < species.npld(); ++p) {
+      CommunicateParticleQuantityBuffer(species.pld[p], send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
+    }
+    // Set the tag for the received particles to be alive and perform the necessary displacements
+    auto& this_tag                = species.tag;
+
+    if constexpr (D == Dim::_1D)
+    {
+      const auto shift_in_x1 = shifts_in_x[0];
+      auto& this_i1           = species.i1;
+      auto& this_i1_prev      = species.i1_prev;
+      Kokkos::parallel_for(
+      "SetTagAlive",
+      Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_allocate.size()),
+      KOKKOS_LAMBDA(const size_t i) {
+        const auto idx        = indices_to_allocate(i);
+        this_tag(idx)         = static_cast<short>(ParticleTag::alive);
+        this_i1(idx)          += shift_in_x1;
+        this_i1_prev(idx)     += shift_in_x1;
+      });
+    }
+
+    else if constexpr (D == Dim::_2D)
+    {
+      const auto shift_in_x1 = shifts_in_x[0];
+      const auto shift_in_x2 = shifts_in_x[1];
+      auto& this_i1           = species.i1;
+      auto& this_i2           = species.i2;
+      auto& this_i1_prev      = species.i1_prev;
+      auto& this_i2_prev      = species.i2_prev;
+      Kokkos::parallel_for(
+      "SetTagAlive",
+      Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_allocate.size()),
+      KOKKOS_LAMBDA(const size_t i) {
+        const auto idx        = indices_to_allocate(i);
+        this_tag(idx)         = static_cast<short>(ParticleTag::alive);
+        this_i1(idx)          += shift_in_x1;
+        this_i2(idx)          += shift_in_x2;
+        this_i1_prev(idx)     += shift_in_x1;
+        this_i2_prev(idx)     += shift_in_x2;
+      });
+    }
+
+    else if constexpr (D == Dim::_3D)
+    {
+      const auto shift_in_x1 = shifts_in_x[0];
+      const auto shift_in_x2 = shifts_in_x[1];
+      const auto shift_in_x3 = shifts_in_x[2];
+      auto& this_i1           = species.i1;
+      auto& this_i2           = species.i2;
+      auto& this_i3           = species.i3;
+      auto& this_i1_prev      = species.i1_prev;
+      auto& this_i2_prev      = species.i2_prev;
+      auto& this_i3_prev      = species.i3_prev;
+      Kokkos::parallel_for(
+      "SetTagAlive",
+      Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_allocate.size()),
+      KOKKOS_LAMBDA(const size_t i) {
+        const auto idx        = indices_to_allocate(i);
+        this_tag(idx)         = static_cast<short>(ParticleTag::alive);
+        this_i1(idx)          += shift_in_x1;
+        this_i2(idx)          += shift_in_x2;
+        this_i3(idx)          += shift_in_x3;
+        this_i1_prev(idx)     += shift_in_x1;
+        this_i2_prev(idx)     += shift_in_x2;
+        this_i3_prev(idx)     += shift_in_x3;
+      });
+    }
+    return;
+    }
+
 
 } // namespace comm
 
