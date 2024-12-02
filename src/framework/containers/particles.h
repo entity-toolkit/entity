@@ -60,6 +60,8 @@ namespace ntt {
     array_t<prtldx_t*>            dx1_prev, dx2_prev, dx3_prev;
     // Array to tag the particles
     array_t<short*>               tag;
+    // Array to store the cumulative number of particles per tag
+    array_t<int*>                 tag_offset;
     // Array to store the particle load
     std::vector<array_t<real_t*>> pld;
     // phi coordinate (for axisymmetry)
@@ -72,6 +74,7 @@ namespace ntt {
     array_mirror_t<real_t*>              weight_h;
     array_mirror_t<real_t*>              phi_h;
     array_mirror_t<short*>               tag_h;
+    array_mirror_t<int*>                 tag_offset_h;
     std::vector<array_mirror_t<real_t*>> pld_h;
 
     // for empty allocation
@@ -178,6 +181,7 @@ namespace ntt {
       footprint             += sizeof(prtldx_t) * dx2_prev.extent(0);
       footprint             += sizeof(prtldx_t) * dx3_prev.extent(0);
       footprint             += sizeof(short) * tag.extent(0);
+      footprint             += sizeof(int) * tag_offset.extent(0);
       for (auto& p : pld) {
         footprint += sizeof(real_t) * p.extent(0);
       }
