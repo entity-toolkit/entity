@@ -128,7 +128,11 @@ auto main(int argc, char* argv[]) -> int {
                       {species}
                     ); 
   // Get the pointers to all the subdomains
-  const auto local_subdomain_idx = metadomain.l_subdomain_indices()[0];
+  //int rank;
+  //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  for (int i=0; i<ndomains; i++)
+  {
+  const auto local_subdomain_idx = metadomain.l_subdomain_indices()[i];
   auto local_domain = metadomain.subdomain_ptr(local_subdomain_idx);
 
   // Set the positions of the particles in each domain
@@ -149,6 +153,7 @@ auto main(int argc, char* argv[]) -> int {
           species.npart(), Lambda(const std::size_t i) {
       this_i1(i)       = 1;
       this_i2(i)       = 1;
+      this_i3(i)       = 0;
       this_dx1(i)      = 0.01;
       this_dx2(i)      = 0.01;
       this_ux1(i)      = 0.5;
@@ -157,11 +162,17 @@ auto main(int argc, char* argv[]) -> int {
     });
   }
 
-
+  // Get and print the extent of each domain
+  std::cout << fmt::format("x1 extent {%.2f; %.2f} \n", 
+                          local_domain->mesh.extent(in::x1).first, 
+                          local_domain->mesh.extent(in::x1).second);
+  std::cout << fmt::format("x2 extent {%.2f; %.2f} \n", 
+                          local_domain->mesh.extent(in::x2).first, 
+                          local_domain->mesh.extent(in::x2).second);
   // Print the number of particles per domain
   std::cout << "Number of particles in domain " << local_subdomain_idx << ": " << local_domain->species[0].npart() << std::endl;
   // Print the position of the 5 particles in the domain
-
+  }
   ntt::GlobalFinalize();
 
   std::cout << "Terminating" << std::endl;
