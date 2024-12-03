@@ -1002,9 +1002,9 @@ namespace ntt {
                                ? species.charge() / species.mass()
                                : ZERO;
         //  coeff = q / m (dt / 2) omegaB0
-        const auto coeff   = q_ovr_m * HALF * dt *
-                           m_params.template get<real_t>("scales.omegaB0");
-
+        const auto coeff   = q_ovr_m * HALF * dt * m_params.template get<real_t>(
+                             "algorithms.timestep.correction") * 
+                             m_params.template get<real_t>("scales.omegaB0");
         // clang-format off
 
         if (species.pusher() == PrtlPusher::PHOTON) {
