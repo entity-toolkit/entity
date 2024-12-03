@@ -334,31 +334,53 @@ namespace kernel::gr {
         // find contravariant midpoint velocity
         metric.template transform<Idx::D, Idx::U>(xp, vp_mid, vp_mid_cntrv);
 
-        // find Gamma / alpha at midpoint
+        // find Gamma / alpha at midpointы
         real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / metric.alpha(xp) };
 
         // find updated velocity
+        // vp_upd[0] =
+        //   vp[0] +
+        //   dt *
+        //     (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(metric.alpha, xp) +
+        //      vp_mid[0] * DERIVATIVE_IN_R(metric.beta1, xp) -
+        //      (HALF / u0) *
+        //        (DERIVATIVE_IN_R((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
+        //         DERIVATIVE_IN_R((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
+        //         DERIVATIVE_IN_R((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
+        //         TWO * DERIVATIVE_IN_R((metric.template h<1, 3>), xp) *
+        //           vp_mid[0] * vp_mid[2]));
+        // vp_upd[1] =
+        //   vp[1] +
+        //   dt *
+        //     (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(metric.alpha, xp) +
+        //      vp_mid[0] * DERIVATIVE_IN_TH(metric.beta1, xp) -
+        //      (HALF / u0) *
+        //        (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
+        //         DERIVATIVE_IN_TH((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
+        //         DERIVATIVE_IN_TH((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
+        //         TWO * DERIVATIVE_IN_TH((metric.template h<1, 3>), xp) *
+        //           vp_mid[0] * vp_mid[2]));
         vp_upd[0] =
           vp[0] +
           dt *
-            (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(metric.alpha, xp) +
-             vp_mid[0] * DERIVATIVE_IN_R(metric.beta1, xp) -
+            (-metric.alpha(xp) * u0 * metric.dr_alpha(xp) +
+             vp_mid[0] * metric.dr_beta1(xp) -
              (HALF / u0) *
-               (DERIVATIVE_IN_R((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
-                DERIVATIVE_IN_R((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
-                DERIVATIVE_IN_R((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
-                TWO * DERIVATIVE_IN_R((metric.template h<1, 3>), xp) *
+               (metric.dr_h11(xp) * SQR(vp_mid[0]) +
+                metric.dr_h22(xp) * SQR(vp_mid[1]) +
+                metric.dr_h33(xp) * SQR(vp_mid[2]) +
+                TWO * metric.dr_h13(xp) *
                   vp_mid[0] * vp_mid[2]));
         vp_upd[1] =
           vp[1] +
           dt *
-            (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(metric.alpha, xp) +
-             vp_mid[1] * DERIVATIVE_IN_TH(metric.beta1, xp) -
+            (-metric.alpha(xp) * u0 * metric.dt_alpha(xp) +
+             vp_mid[0] * metric.dt_beta1(xp) -
              (HALF / u0) *
-               (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
-                DERIVATIVE_IN_TH((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
-                DERIVATIVE_IN_TH((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
-                TWO * DERIVATIVE_IN_TH((metric.template h<1, 3>), xp) *
+               (metric.dt_h11(xp) * SQR(vp_mid[0]) +
+                metric.dt_h22(xp) * SQR(vp_mid[1]) +
+                metric.dt_h33(xp) * SQR(vp_mid[2]) +
+                TWO * metric.dt_h13(xp) *
                   vp_mid[0] * vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
@@ -656,9 +678,13 @@ namespace kernel::gr {
       dx2_prev(p) = dx2(p);
 
       coord_t<Dim::_2D> xp { ZERO };
+      coord_t<Dim::_2D> xp_prev { ZERO };
 
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
       xp[1] = i_di_to_Xi(i2(p), dx2(p));
+      
+      xp_prev[0] = i_di_to_Xi(i1_prev(p), dx1_prev(p));
+      xp_prev[1] = i_di_to_Xi(i2_prev(p), dx2_prev(p));
 
       vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
         Bp_hat { ZERO };
@@ -692,7 +718,7 @@ namespace kernel::gr {
         { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
         vp_upd,
         phi(p));
-
+      
       // update coordinate
       int      i1_, i2_;
       prtldx_t dx1_, dx2_;
@@ -726,12 +752,16 @@ namespace kernel::gr {
       }
     }
     if constexpr (D == Dim::_2D || D == Dim::_3D) {
-      if (i2(p) < 1) {
+      if (i2(p) < 0) {
         if (is_axis_i2min) {
+          i2(p)  = 0;
+          dx2(p) = ONE - dx2(p);
           ux2(p) = -ux2(p);
         }
-      } else if (i2(p) >= ni2 - 1) {
+      } else if (i2(p) >= ni2) {
         if (is_axis_i2min) {
+          i2(p)  = ni2 - 1;
+          dx2(p) = ONE - dx2(p);
           ux2(p) = -ux2(p);
         }
       }
