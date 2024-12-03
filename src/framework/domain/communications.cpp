@@ -660,7 +660,7 @@ template <SimEngine::type S, class M>
     for (auto& species : domain.species) {
       const auto npart_per_tag_arr  = species.npart_per_tag();
       const auto tag_offset         = species.tag_offset_h;
-      auto index_last               = tag_offset[tag_offset.size() - 1] +
+      auto index_last               = tag_offset[tag_offset.extent(0) - 1] +
                                       npart_per_tag_arr[npart_per_tag_arr.size() - 1];
       std::vector<int> send_ranks, send_inds;
       std::vector<int> recv_ranks, recv_inds;
@@ -668,9 +668,11 @@ template <SimEngine::type S, class M>
 #if defined(MPI_ENABLED)
       timers->start("Communications_sendrecv");
       // array that holds the number of particles to be received per tag
-      std::vector<size_t> npart_per_tag_arr_recv(npart_per_tag_arr.size(), 0);
+      std::vector<std::size_t> npart_per_tag_arr_recv(npart_per_tag_arr.size(), 0);
       std::size_t total_recv_count = 0;
-      const std::size_t total_send_count     = species.npart() - npart_per_tag_arr[ParticleTag::alive];
+      const std::size_t total_send_count     =  species.npart() - 
+                                                npart_per_tag_arr[ParticleTag::alive] -
+                                                npart_per_tag_arr[ParticleTag::dead];
       for (auto& direction : dir::Directions<D>::all) {
         const auto [send_params,
                     recv_params]              = GetSendRecvParams(this, domain, direction, true);
@@ -714,8 +716,10 @@ template <SimEngine::type S, class M>
       timers->start("PermuteVector");
       auto& this_tag                = species.tag;
       auto& this_tag_offset         = species.tag_offset;
-      Kokkos::View<size_t*> permute_vector("permute_vector", species.npart());
-      Kokkos::View<size_t*> current_offset("current_offset", species.ntags());
+      Kokkos::View<std::size_t*> permute_vector("permute_vector", species.npart());
+      // Current offset is a helper array used to create permute vector
+      // It stores the number of particles of a given tag type stored during the loop
+      Kokkos::View<std::size_t*> current_offset("current_offset", species.ntags());
       Kokkos::parallel_for(
         "PermuteVector",
         species.npart(),
@@ -729,7 +733,7 @@ template <SimEngine::type S, class M>
 
       // allocation_vector(p) assigns the pth received particle
       // to the pth hole in the array, or after npart() if p > sent+dead count.
-      Kokkos::View<size_t*> allocation_vector("allocation_vector", total_recv_count);
+      Kokkos::View<std::size_t*> allocation_vector("allocation_vector", total_recv_count);
       auto allocation_vector_h = Kokkos::create_mirror_view(allocation_vector);
       std::size_t n_alive = npart_per_tag_arr[ParticleTag::alive];
       std::size_t n_dead  = npart_per_tag_arr[ParticleTag::dead];
@@ -759,7 +763,15 @@ template <SimEngine::type S, class M>
 
       std::size_t count_recv = 0;
       std::size_t iteration  = 0;
+      // Main loop over all direction where we send the data
       for (auto& direction : dir::Directions<D>::all) {
+        // When nowhere to send and receive
+        auto send_rank              = send_ranks[iteration];
+        auto recv_rank              = recv_ranks[iteration];
+
+        if (send_rank < 0 and recv_rank < 0) {
+          continue;
+        }
         // Get the coordinate shifts in xi
         std::vector<int> shifts_in_x;
         auto recv_ind = recv_inds[iteration];
@@ -809,22 +821,20 @@ template <SimEngine::type S, class M>
           shifts_in_x.push_back(shift_in_x3);
         }
 
-        auto range_permute          = std::make_pair(static_cast<size_t>(tag_offset[mpi::PrtlSendTag<D>::dir2tag(direction)]),
-                                                     static_cast<size_t>(tag_offset[mpi::PrtlSendTag<D>::dir2tag(direction)] + 
+        // Tuple that contains the start and end indices of permtute_vec pointing to a given tag type = dir2tag(dir)
+        auto range_permute          = std::make_pair(static_cast<std::size_t>(tag_offset[mpi::PrtlSendTag<D>::dir2tag(direction)]),
+                                                     static_cast<std::size_t>(tag_offset[mpi::PrtlSendTag<D>::dir2tag(direction)] + 
                                                                   npart_per_tag_arr[mpi::PrtlSendTag<D>::dir2tag(direction)]));
-
-        auto range_allocate         = std::make_pair(static_cast<size_t>(allocation_vector_h(count_recv)),
-                                                     static_cast<size_t>(allocation_vector_h(count_recv) + 
-                                                                  npart_per_tag_arr_recv[mpi::PrtlSendTag<D>::dir2tag(-direction)]));
-
-        // contains the indices of the holes where the received particles will be placed
-        auto indices_to_allocate    = Kokkos::subview(allocation_vector, range_allocate);
+        // Tuple that contains the start and end indices for allocation_vector pointing to a given tag type = dir2tag(dir)
+        auto range_allocate         = std::make_pair(static_cast<std::size_t>(count_recv),
+                                                     static_cast<std::size_t>(count_recv + 
+                                                     npart_per_tag_arr_recv[mpi::PrtlSendTag<D>::dir2tag(-direction)]));
         // contains the indices of all particles of a given tag = mpi::PrtlSendTag<D>::dir2tag(direction)
         auto indices_to_send        = Kokkos::subview(permute_vector, range_permute);
+        // contains the indices of the holes where the received particles will be placed
+        auto indices_to_allocate    = Kokkos::subview(allocation_vector, range_allocate);
 
         // Main function that sends the particles and receives the arrays
-        auto send_rank              = send_ranks[iteration];
-        auto recv_rank              = recv_ranks[iteration];
         comm::CommunicateParticlesBuffer<M::Dim, M::CoordType>( species,
                                                                 indices_to_send,
                                                                 indices_to_allocate,

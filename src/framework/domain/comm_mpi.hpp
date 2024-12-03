@@ -452,13 +452,13 @@ namespace comm {
                                           Kokkos::View<size_t*>   indices_to_send,
                                           Kokkos::View<size_t*>   indices_to_allocate) {
 
-    array_t<T*> buffer( "buffer", indices_to_send.size() + 
-                        indices_to_allocate.size());
+    array_t<T*> buffer( "buffer", indices_to_send.extent(0) + 
+                        indices_to_allocate.extent(0));
     // Populate the buffer for particle array
     Kokkos::parallel_for(
     "PopulateBuffer",
-    Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_send.size()),
-    KOKKOS_LAMBDA(const size_t i) {
+    indices_to_send.extent(0),
+    Lambda(const size_t i) {
       const auto idx  = indices_to_send(i);
       buffer(i)       = arr(idx);
     });
@@ -466,14 +466,13 @@ namespace comm {
     // Populate from buffer to the particle array
     Kokkos::parallel_for(
     "PopulateFromBuffer",
-    Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_allocate.size()),
-    KOKKOS_LAMBDA(const size_t i) {
+    indices_to_allocate.extent(0),
+    Lambda(const size_t i) {
       const auto idx  = indices_to_allocate(i);
-      arr(idx) = buffer(indices_to_send.size() + i);
+      arr(idx) = buffer(indices_to_send.extent(0) + i);
     });
   return;
   }
-
 
   template <Dimension D, Coord::type C>
   void CommunicateParticlesBuffer(Particles<D, C>&        species,
