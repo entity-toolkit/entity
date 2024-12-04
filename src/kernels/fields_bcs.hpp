@@ -639,28 +639,12 @@ template <class M>
             const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
             const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
               i2_ + HALF) };
-
-            vec_t<Dim::_3D> b_PU { finit.bx1({ x1_0, x2_H }),
-                                   finit.bx2({ x1_0, x2_H }),
-                                   finit.bx3({ x1_0, x2_H }) };
-            vec_t<Dim::_3D> b_U { ZERO };
-            metric.template transform<Idx::PU, Idx::U>({ i1_, i2_ + HALF },
-                                                         b_PU,
-                                                         b_U);
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * b_U[0];
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.bx1({ x1_0, x2_H });
           } else if (comp == em::bx2) {
             const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
               i1_ + HALF) };
             const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
-
-            vec_t<Dim::_3D> b_PU { finit.bx1({ x1_H, x2_0 }),
-                                   finit.bx2({ x1_H, x2_0 }),
-                                   finit.bx3({ x1_H, x2_0 }) };
-            vec_t<Dim::_3D> b_U { ZERO };
-            metric.template transform<Idx::PU, Idx::U>({ i1_ + HALF, i2_ },
-                                                         b_PU,
-                                                         b_U);
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * b_U[1];
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.bx2({ x1_H, x2_0 });
           }
         }
       } else {
