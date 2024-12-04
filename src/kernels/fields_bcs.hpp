@@ -655,6 +655,48 @@ template <class M>
     }
   };  
 
+  template <class M, idx_t i>
+  struct AbsorbCurrentGR_kernel {
+    static_assert(M::is_metric, "M must be a metric class");
+    static_assert(i <= static_cast<unsigned short>(M::Dim),
+                  "Invalid component index");
+
+    ndfield_t<M::Dim, 3> J;
+    const M              metric;
+    const real_t         xg_edge;
+    const real_t         dx_abs;
+    const BCTags         tags;
+
+    AbsorbCurrentGR_kernel(ndfield_t<M::Dim, 3> J,
+                           const M&             metric,
+                           real_t               xg_edge,
+                           real_t               dx_abs,
+                           BCTags               tags)
+      : J { J }
+      , metric { metric }
+      , xg_edge { xg_edge }
+      , dx_abs { dx_abs }
+      , tags { tags } {}
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (M::Dim == Dim::_2D) {
+        const auto i1_ = COORD(i1);
+        const auto i2_ = COORD(i2);
+        coord_t<M::Dim> x_Cd { ZERO };
+        x_Cd[0] = i1_;
+        x_Cd[1] = i2_;
+        const auto dx = math::abs(
+          metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
+        J(i1, i2) *= math::tanh(dx / (INV_4 * dx_abs));
+      
+      } else {
+        raise::KernelError(
+          HERE,
+          "AbsorbFields_kernel: 2D implementation called for D != 2");
+      }
+    }
+  };  
+
 } // namespace kernel
 
 #endif // KERNELS_FIELDS_BCS_HPP

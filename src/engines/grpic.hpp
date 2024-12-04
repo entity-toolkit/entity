@@ -651,8 +651,7 @@ namespace ntt {
           kernel::AbsorbCurrentGR_kernel<M, 1>(domain.fields.cur0,
                                                 domain.mesh.metric,
                                                 xg_edge,
-                                                ds,
-                                                tags));
+                                                ds));
     }
 
     void OpenFieldsIn(dir::direction_t<M::Dim> direction,
