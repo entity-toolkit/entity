@@ -355,7 +355,7 @@ namespace ntt {
          */
         if (deposit_enabled) {
           timers.start("CurrentDeposit");
-          Kokkos::deep_copy(dom.fields.cur, ZERO);
+          Kokkos::deep_copy(dom.fields.cur0, ZERO);
           CurrentsDeposit(dom);
           timers.stop("CurrentDeposit");
 
@@ -610,6 +610,50 @@ namespace ntt {
       } else {
           raise::Error("Invalid dimension", HERE);
       }
+    }
+
+    void CurrentsBoundaryConditions(domain_t& domain) {
+      /**
+       * absorbing boundaries
+       */
+      const auto ds = m_params.template get<real_t>(
+        "grid.boundaries.absorb.ds");
+      const auto dim = in::x1;
+      real_t     xg_min, xg_max, xg_edge;
+      xg_max  = m_metadomain.mesh().extent(dim).second;
+      xg_min  = xg_max - ds;
+      xg_edge = xg_max;
+
+      boundaries_t<real_t> box;
+      boundaries_t<bool>   incl_ghosts;
+      for (unsigned short d { 0 }; d < M::Dim; ++d) {
+        if (d == static_cast<unsigned short>(dim)) {
+          box.push_back({ xg_min, xg_max });
+          incl_ghosts.push_back({ false, true });
+        } else {
+          box.push_back(Range::All);
+          incl_ghosts.push_back({ true, true });
+        }
+      }
+      if (not domain.mesh.Intersects(box)) {
+        return;
+      }
+      const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
+      tuple_t<std::size_t, M::Dim> range_min { 0 };
+      tuple_t<std::size_t, M::Dim> range_max { 0 };
+
+      for (unsigned short d { 0 }; d < M::Dim; ++d) {
+        range_min[d] = intersect_range[d].first;
+        range_max[d] = intersect_range[d].second;
+      }
+      Kokkos::parallel_for(
+          "AbsorbCurrent",
+          CreateRangePolicy<M::Dim>(range_min, range_max),
+          kernel::AbsorbCurrentGR_kernel<M, 1>(domain.fields.cur0,
+                                                domain.mesh.metric,
+                                                xg_edge,
+                                                ds,
+                                                tags));
     }
 
     void OpenFieldsIn(dir::direction_t<M::Dim> direction,
@@ -868,8 +912,8 @@ namespace ntt {
       const auto coeff = -dt * q0 * n0 / B0;
       // auto       range = range_with_axis_BCs(domain);
       auto range = CreateRangePolicy<Dim::_2D>(
-        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) + 1},
-        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2)});
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
       const auto ni2   = domain.mesh.n_active(in::x2);
 
       if (g == gr_ampere::aux) {
@@ -916,7 +960,7 @@ namespace ntt {
 
     void CurrentsDeposit(domain_t& domain) {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
-        domain.fields.cur);
+        domain.fields.cur0);
       for (auto& species : domain.species) {
         logger::Checkpoint(
           fmt::format("Launching currents deposit kernel for %d [%s] : %lu %f",
@@ -954,31 +998,27 @@ namespace ntt {
                                (real_t)(species.charge()),
                                dt));
       }
-      Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
+      Kokkos::Experimental::contribute(domain.fields.cur0, scatter_cur);
     }
 
     void CurrentsFilter(domain_t& domain) {
       logger::Checkpoint("Launching currents filtering kernels", HERE);
-      auto       range   = range_with_axis_BCs(domain);
+      auto range = CreateRangePolicy<Dim::_2D>(
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
       const auto nfilter = m_params.template get<unsigned short>(
         "algorithms.current_filters");
       tuple_t<std::size_t, M::Dim> size;
-      if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
-        size[0] = domain.mesh.n_active(in::x1);
-      }
-      if constexpr (M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
-        size[1] = domain.mesh.n_active(in::x2);
-      }
-      if constexpr (M::Dim == Dim::_3D) {
-        size[2] = domain.mesh.n_active(in::x3);
-      }
+      size[0] = domain.mesh.n_active(in::x1);
+      size[1] = domain.mesh.n_active(in::x2);
+
       // !TODO: this needs to be done more efficiently
       for (unsigned short i = 0; i < nfilter; ++i) {
-        Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
+        Kokkos::deep_copy(domain.fields.buff, domain.fields.cur0);
         Kokkos::parallel_for("CurrentsFilter",
                              range,
                              kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
-                               domain.fields.cur,
+                               domain.fields.cur0,
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
