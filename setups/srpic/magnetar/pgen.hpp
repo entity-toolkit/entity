@@ -476,7 +476,7 @@ namespace user {
             auto beta_sq = SQR(betax) + SQR(betay) + SQR(betaz);
 
             // If particle is not relativistic, skip (testing for stopping)
-            if (gamma < 2.0) return;
+            // if (gamma < 2.0) return;
 
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
