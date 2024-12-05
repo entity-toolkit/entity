@@ -648,7 +648,34 @@ namespace user {
                 w_ph_L      = w_ph;
 
             auto tpeak = fid_freq_ / 2.821;
-            auto ndot = 10000000000000.0 * SQR(Rstar_/xPh[0]) * sqrt(beta_sq) / gamma
+
+            // if (gamma < 2.0) {
+            if (true) {
+              
+              auto pnorm { NORM(px, py, pz) };
+              auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (rand_costheta_RF - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
+              auto dp = dt_ * f_drag;
+
+              auto pplus = pnorm * ( ONE + dp );
+              auto beta_plus = pplus / math::sqrt(1.0 + SQR(pplus));
+
+              if ((rand_costheta_RF - math::sqrt(beta_sq)) * (rand_costheta_RF - beta_plus) < 0.0) {
+                auto beta_star = rand_costheta_RF;
+                auto gamma_star = 1.0 / math::sqrt(1.0 - SQR(beta_star));
+                auto p_star = gamma_star * beta_star;
+                ux1(p) = px * p_star / pnorm;
+                ux2(p) = py * p_star / pnorm;
+                ux3(p) = pz * p_star / pnorm;
+              } else {
+                ux1(p) += dp * ux1(p);
+                ux2(p) += dp * ux2(p);
+                ux3(p) += dp * ux3(p);
+              }
+              
+              return;
+            }
+
+            auto ndot = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * 1.0 / gamma
                           * SQR(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
             auto p_scatter = dt_ * ndot;
 
