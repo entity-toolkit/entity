@@ -100,164 +100,174 @@ namespace ntt {
         "algorithms.toggles.deposit");
       const auto sort_interval = m_params.template get<std::size_t>(
         "particles.sort_interval");
-
+      
       if (step == 0) {
-        // communicate fields and apply BCs on the first timestep
-        /**
-         * Initially: em0::B   --
-         *            em0::D   --
-         *            em::B    at -1/2
-         *            em::D    at -1/2
-         *
-         *            cur0::J  --
-         *            cur::J   --
-         *
-         *            aux::E   --
-         *            aux::H   --
-         *
-         *            x_prtl   at -1/2
-         *            u_prtl   at -1/2
-         */
+        if (fieldsolver_enabled) {
+          // communicate fields and apply BCs on the first timestep
+          /**
+           * Initially: em0::B   --
+           *            em0::D   --
+           *            em::B    at -1/2
+           *            em::D    at -1/2
+           *
+           *            cur0::J  --
+           *            cur::J   --
+           *
+           *            aux::E   --
+           *            aux::H   --
+           *
+           *            x_prtl   at -1/2
+           *            u_prtl   at -1/2
+           */
 
-        /**
-         * em0::D, em::D, em0::B, em::B <- boundary conditions
-         */
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::B | BC::E, gr_bc::main);
+          /**
+           * em0::D, em::D, em0::B, em::B <- boundary conditions
+           */
+          m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
+          FieldBoundaries(dom, BC::B | BC::E, gr_bc::main);
 
-        /**
-         * em0::B <- em::B
-         * em0::D <- em::D
-         *
-         * Now: em0::B & em0::D at -1/2
-         */
-        CopyFields(dom);
+          /**
+           * em0::B <- em::B
+           * em0::D <- em::D
+           *
+           * Now: em0::B & em0::D at -1/2
+           */
+          CopyFields(dom);
 
-        /**
-         * aux::E <- alpha * em::D + beta x em0::B
-         * aux::H <- alpha * em::B0 - beta x em::D
-         *
-         * Now: aux::E & aux::H at -1/2
-         */
-        ComputeAuxE(dom, gr_getE::D_B0);
-        ComputeAuxH(dom, gr_getH::D_B0);
+          /**
+           * aux::E <- alpha * em::D + beta x em0::B
+           * aux::H <- alpha * em::B0 - beta x em::D
+           *
+           * Now: aux::E & aux::H at -1/2
+           */
+          ComputeAuxE(dom, gr_getE::D_B0);
+          ComputeAuxH(dom, gr_getH::D_B0);
 
-        /**
-         * aux::E, aux::H <- boundary conditions
-         */
-        FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
+          /**
+           * aux::E, aux::H <- boundary conditions
+           */
+          FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
 
-        /**
-         * em0::B <- (em0::B) <- -curl aux::E
-         *
-         * Now: em0::B at 0
-         */
-        Faraday(dom, gr_faraday::aux, HALF);
+          /**
+           * em0::B <- (em0::B) <- -curl aux::E
+           *
+           * Now: em0::B at 0
+           */
+          Faraday(dom, gr_faraday::aux, HALF);
 
-        /**
-         * em0::B, em::B <- boundary conditions
-         */
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
-        FieldBoundaries(dom, BC::B, gr_bc::main);
+          /**
+           * em0::B, em::B <- boundary conditions
+           */
+          m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+          FieldBoundaries(dom, BC::B, gr_bc::main);
 
-        /**
-         * em::D <- (em0::D) <- curl aux::H
-         *
-         * Now: em::D at 0
-         */
-        Ampere(dom, gr_ampere::init, HALF);
+          /**
+           * em::D <- (em0::D) <- curl aux::H
+           *
+           * Now: em::D at 0
+           */
+          Ampere(dom, gr_ampere::init, HALF);
 
-        /**
-         * em0::D, em::D <- boundary conditions
-         */
-        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::E, gr_bc::main);
+          /**
+           * em0::D, em::D <- boundary conditions
+           */
+          m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+          FieldBoundaries(dom, BC::E, gr_bc::main);
 
-        /**
-         * aux::E <- alpha * em::D + beta x em0::B
-         * aux::H <- alpha * em0::B - beta x em::D
-         *
-         * Now: aux::E & aux::H at 0
-         */
-        ComputeAuxE(dom, gr_getE::D_B0);
-        ComputeAuxH(dom, gr_getH::D_B0);
+          /**
+           * aux::E <- alpha * em::D + beta x em0::B
+           * aux::H <- alpha * em0::B - beta x em::D
+           *
+           * Now: aux::E & aux::H at 0
+           */
+          ComputeAuxE(dom, gr_getE::D_B0);
+          ComputeAuxH(dom, gr_getH::D_B0);
 
-        /**
-         * aux::E, aux::H <- boundary conditions
-         */
-        FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
+          /**
+           * aux::E, aux::H <- boundary conditions
+           */
+          FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
 
-        // !ADD: GR -- particles?
+          // !ADD: GR -- particles?
 
-        /**
-         * em0::B <- (em::B) <- -curl aux::E
-         *
-         * Now: em0::B at 1/2
-         */
-        Faraday(dom, gr_faraday::main, ONE);
-        /**
-         * em0::B, em::B <- boundary conditions
-         */
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
-        FieldBoundaries(dom, BC::B, gr_bc::main);
+          /**
+           * em0::B <- (em::B) <- -curl aux::E
+           *
+           * Now: em0::B at 1/2
+           */
+          Faraday(dom, gr_faraday::main, ONE);
+          /**
+           * em0::B, em::B <- boundary conditions
+           */
+          m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+          FieldBoundaries(dom, BC::B, gr_bc::main);
 
-        /**
-         * em0::D <- (em0::D) <- curl aux::H
-         *
-         * Now: em0::D at 1/2
-         */
-        Ampere(dom, gr_ampere::aux, ONE);
-        /**
-         * em0::D, em::D <- boundary conditions
-         */
-        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::E, gr_bc::main);
+          /**
+           * em0::D <- (em0::D) <- curl aux::H
+           *
+           * Now: em0::D at 1/2
+           */
+          Ampere(dom, gr_ampere::aux, ONE);
+          /**
+           * em0::D, em::D <- boundary conditions
+           */
+          m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+          FieldBoundaries(dom, BC::E, gr_bc::main);
 
-        /**
-         * aux::H <- alpha * em0::B - beta x em0::D
-         *
-         * Now: aux::H at 1/2
-         */
-        ComputeAuxH(dom, gr_getH::D0_B0);
-        /**
-         * aux::H <- boundary conditions
-         */
-        FieldBoundaries(dom, BC::B, gr_bc::aux);
+          /**
+           * aux::H <- alpha * em0::B - beta x em0::D
+           *
+           * Now: aux::H at 1/2
+           */
+          ComputeAuxH(dom, gr_getH::D0_B0);
+          /**
+           * aux::H <- boundary conditions
+           */
+          FieldBoundaries(dom, BC::B, gr_bc::aux);
 
-        /**
-         * em0::D <- (em::D) <- curl aux::H
-         *
-         * Now: em0::D at 1
-         *      em::D at 0
-         */
-        Ampere(dom, gr_ampere::main, ONE);
-        /**
-         * em0::D, em::D <- boundary conditions
-         */
-        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-        FieldBoundaries(dom, BC::E, gr_bc::main);
+          /**
+           * em0::D <- (em::D) <- curl aux::H
+           *
+           * Now: em0::D at 1
+           *      em::D at 0
+           */
+          Ampere(dom, gr_ampere::main, ONE);
+          /**
+           * em0::D, em::D <- boundary conditions
+           */
+          m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+          FieldBoundaries(dom, BC::E, gr_bc::main);
 
-        /**
-         * em::D <-> em0::D
-         * em::B <-> em0::B
-         * em::J <-> em0::J
-         */
-        SwapFields(dom);
-        /**
-         * Finally: em0::B   at -1/2
-         *          em0::D   at 0
-         *          em::B    at 1/2
-         *          em::D    at 1
-         *
-         *          cur0::J  --
-         *          cur::J   --
-         *
-         *          aux::E   --
-         *          aux::H   --
-         *
-         *          x_prtl   at 1
-         *          u_prtl   at 1/2
-         */
+          /**
+           * em::D <-> em0::D
+           * em::B <-> em0::B
+           * em::J <-> em0::J
+           */
+          SwapFields(dom);
+          /**
+           * Finally: em0::B   at -1/2
+           *          em0::D   at 0
+           *          em::B    at 1/2
+           *          em::D    at 1
+           *
+           *          cur0::J  --
+           *          cur::J   --
+           *
+           *          aux::E   --
+           *          aux::H   --
+           *
+           *          x_prtl   at 1
+           *          u_prtl   at 1/2
+           */
+        }
+      } else {
+          /**
+           * em0::B <- em::B
+           * em0::D <- em::D
+           *
+           * Now: em0::B & em0::D at -1/2
+           */
+          CopyFields(dom);
       }
 
     /**
