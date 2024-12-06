@@ -478,7 +478,7 @@ namespace kernel::gr {
                     dt *
                       (-metric.alpha(xp_mid) * u0 *
                          DERIVATIVE_IN_TH(metric.alpha, xp_mid) +
-                       vp_mid[1] * DERIVATIVE_IN_TH(metric.beta1, xp_mid) -
+                       vp_mid[0] * DERIVATIVE_IN_TH(metric.beta1, xp_mid) -
                        (HALF / u0) *
                          (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp_mid) *
                             SQR(vp_mid[0]) +
