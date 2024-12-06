@@ -631,7 +631,6 @@ namespace ntt {
           index_last += recv_count;
           species.set_npart(index_last);
         }
-
         Kokkos::deep_copy(
           Kokkos::subview(species.tag, std::make_pair(send_pmin, send_pmax)),
           ParticleTag::dead);
@@ -844,6 +843,7 @@ template <SimEngine::type S, class M>
         count_recv += npart_per_tag_arr_recv[mpi::PrtlSendTag<D>::dir2tag(-direction)];
         iteration++;
       }
+      // If receive count is less than send count then make the tags of sent dead ? Ask Hayk
       species.set_npart(index_last + std::max(total_recv_count, total_send_count) - total_send_count);
 #endif
     }

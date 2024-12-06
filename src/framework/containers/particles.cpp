@@ -85,6 +85,9 @@ namespace ntt {
     auto                  this_tag = tag;
     array_t<std::size_t*> npart_tag("npart_tags", ntags());
 
+    // Print tag_h array
+    auto tag_host = Kokkos::create_mirror_view(tag);
+    Kokkos::deep_copy(tag_host, tag);
     auto npart_tag_scatter = Kokkos::Experimental::create_scatter_view(npart_tag);
     Kokkos::parallel_for(
       "NpartPerTag",

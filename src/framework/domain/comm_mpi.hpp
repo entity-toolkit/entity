@@ -363,12 +363,10 @@ namespace comm {
                           recv_rank,
                           send_slice.second - send_slice.first,
                           recv_count);
-
     raise::FatalIf((index_last + recv_count) >= species.maxnpart(),
                    "Too many particles to receive (cannot fit into maxptl)",
                    HERE);
     const auto recv_slice = range_tuple_t({ index_last, index_last + recv_count });
-
     CommunicateParticleQuantity(species.i1, send_rank, recv_rank, send_slice, recv_slice);
     CommunicateParticleQuantity(species.dx1, send_rank, recv_rank, send_slice, recv_slice);
     CommunicateParticleQuantity(species.i1_prev,
