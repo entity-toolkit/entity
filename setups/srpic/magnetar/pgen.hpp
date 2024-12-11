@@ -343,9 +343,9 @@ namespace user {
               weight_p(pos_p + offset_p) = weight(p);
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
-              ux1(p) *= new_fac;
-              ux2(p) *= new_fac;
-              ux3(p) *= new_fac;
+              // ux1(p) *= new_fac;
+              // ux2(p) *= new_fac;
+              // ux3(p) *= new_fac;
 
               if ((s == 0) || (s == 1)) {
                 auto cbuff_acc     = cbuff_sc.access();
