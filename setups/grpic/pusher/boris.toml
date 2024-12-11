@@ -1,14 +1,14 @@
 [simulation]
   name = "boris_a0"
   engine = "grpic"
-  runtime = 100.0
+  runtime = 500.0
 
 [grid]
   resolution = [128,128]
-  extent = [[0.9, 20.0]]
+  extent = [[1.2, 20.0]]
 
   [grid.metric]
-    metric = "qkerr_schild"
+    metric = "kerr_schild"
     qsph_r0 = 0.0 
     qsph_h = 0.0
     ks_a = 0.0
@@ -22,7 +22,7 @@
 
 [scales]
   larmor0 = 5.0
-  skindepth0 = 1e-3
+  skindepth0 = 1e0
 
 [algorithms]
   current_filters = 4
@@ -32,7 +32,7 @@
     pusher_eps = 1e-6
 
   [algorithms.timestep]
-    CFL = 0.1
+    CFL = 1.0
 
   [algorithms.toggles]
     deposit = false
@@ -42,37 +42,33 @@
   ppc0 = 1.0
 
   [[particles.species]]
+  label = "e+"
+  mass = 1.0
+  charge = 1.0
+  maxnpart = 1e0
+
+  [[particles.species]]
   label = "e-"
   mass = 1.0
   charge = -1.0
   maxnpart = 1e0
 
-  [[particles.species]]
-  label = "e+"
-  mass = 1.0
-  charge = -1.0
-  maxnpart = 1e1
-
 [setup]
- x1s  = [5.77]
- y1s  = [1.570796]
- z1s  = [0.000000]
- ux1s = [0.4376657824933686]
- uy1s = [0.000000]
- uz1s = [4.0]
-#  x1s  = [10.0]
-#  y1s  = [1.570796]
-#  z1s  = [0.000000]
-#  ux1s = [0.0]
-#  uy1s = [0.000000]
-#  uz1s = [10.00000]
+  # Fig. 6.4 from Kolos, Stuchlik and Tursunov (2015) 
+  x1s  = [5.77]
+  y1s  = [1.5707963267948966]
+  z1s  = [0.000000]
+  ux1s = [0.43766578249336874]
+  uy1s = [0.000000]
+  uz1s = [1.1707100000000000]
 
-  #x2s  = [7.5]
-  #y2s  = [0.15745454545454546]
-  #z2s  = [0.000000]
-  #ux2s = [0.029637]
-  #uy2s = [0.000000]
-  #uz2s = [3.75]
+  # Fig. 5.3 from Kolos, Stuchlik and Tursunov (2015)
+  x2s  = [6.79]
+  y2s  = [1.5707963267948966]
+  z2s  = [0.000000]
+  ux2s = [0.7398747390396659]
+  uy2s = [0.000000]
+  uz2s = [12.610410000000002]
 
 [output]
   format = "hdf5"

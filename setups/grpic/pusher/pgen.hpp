@@ -27,12 +27,12 @@ namespace user {
     InitFields(M metric_) : metric { metric_ } {}
 
     Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
-      // return HALF * (metric.template h_<3, 3>(x_Cd) );
-            //  + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
-      // );
-      coord_t<D> x_Ph { ZERO };
-      metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-      return HALF * SQR(x_Ph[0]) * SQR(math::sin(x_Ph[1]));
+      return HALF * (metric.template h_<3, 3>(x_Cd) 
+             + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
+      );
+      // coord_t<D> x_Ph { ZERO };
+      // metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+      // return HALF * SQR(x_Ph[0]) * SQR(math::sin(x_Ph[1]));
     }
 
     Inline auto A_1(const coord_t<D>& x_Cd) const -> real_t {
@@ -49,7 +49,7 @@ namespace user {
              + TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
       coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -64,50 +64,114 @@ namespace user {
         return ONE;
       else
         return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP;
-      // return ZERO;
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
       coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
+      x0m[0] = xi[0] - HALF;
+      x0m[1] = xi[1];
+      x0p[0] = xi[0] + HALF;
+      x0p[1] = xi[1];
+
+      real_t inv_sqrt_detH_iPj { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      if (cmp::AlmostZero(x_Ph[1]))
+        return ZERO;
+      else
+        return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_iPj;
+    }
+
+    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j + HALF )
+      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+
+      x0m[0] = xi[0];
+      x0m[1] = xi[1] - HALF;
+      x0p[0] = xi[0];
+      x0p[1] = xi[1] + HALF;
+
+      real_t inv_sqrt_detH_iPjP { ONE / metric.sqrt_det_h({ xi[0], xi[1]}) };
+      return -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_iPjP;
+    }
+
+    Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
+      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+      
+      real_t alpha_iPj { metric.alpha({ xi[0], xi[1] }) };
+      real_t inv_sqrt_detH_ij { ONE / metric.sqrt_det_h({ xi[0] - HALF, xi[1] }) };
+      real_t sqrt_detH_ij { metric.sqrt_det_h({ xi[0] - HALF, xi[1] }) };
+      real_t beta_ij { metric.beta1({ xi[0] - HALF, xi[1]}) };
+      real_t alpha_ij { metric.alpha({ xi[0] - HALF, xi[1]}) };
+      
+      // D1 at ( i + HALF , j )
+      x0m[0] = xi[0] - HALF;
+      x0m[1] = xi[1];
+      x0p[0] = xi[0] + HALF;
+      x0p[1] = xi[1];
+      real_t E1d { (A_0(x0p) - A_0(x0m)) };
+      real_t D1d { E1d / alpha_iPj };
+
+      // D3 at ( i , j )
+      x0m[0] = xi[0] - HALF - HALF;
+      x0m[1] = xi[1];
+      x0p[0] = xi[0] - HALF + HALF;
+      x0p[1] = xi[1];
+      real_t B2_aux { -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ij };
+      real_t D3d { -sqrt_detH_ij * beta_ij * B2_aux / alpha_ij };
+
+      real_t D1u { metric.template h<1, 1>({ xi[0], xi[1] }) * D1d + metric.template h<1, 3>({ xi[0], xi[1] }) * D3d };
+
+      return D1u;
+    }
+
+    Inline auto dx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
+      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+      x0m[0] = xi[0];
+      x0m[1] = xi[1] - HALF;
+      x0p[0] = xi[0];
+      x0p[1] = xi[1] + HALF;
+      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      real_t sqrt_detH_ijP { metric.sqrt_det_h({ xi[0], xi[1] }) };
+      real_t alpha_ijP { metric.alpha({ xi[0], xi[1] }) };
+      real_t beta_ijP { metric.beta1({ xi[0], xi[1] }) };
+
+      real_t E2d { (A_0(x0p) - A_0(x0m)) };
+      real_t B3_aux { -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_ijP };
+      real_t D2d { E2d / alpha_ijP + sqrt_detH_ijP * beta_ijP * B3_aux / alpha_ijP };
+      real_t D2u { metric.template h<2, 2>({ xi[0], xi[1] }) * D2d };
+
+      return D2u;
+    }
+
+    Inline auto dx3(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j )
+      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+      real_t inv_sqrt_detH_ij { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      real_t sqrt_detH_ij { metric.sqrt_det_h({ xi[0], xi[1] }) };
+      real_t beta_ij { metric.beta1({ xi[0], xi[1] }) };
+      real_t alpha_ij { metric.alpha({ xi[0], xi[1] }) };
+      real_t alpha_iPj { metric.alpha({ xi[0] + HALF, xi[1] }) };
+
+      // D3 at ( i , j )
+      x0m[0] = xi[0] - HALF;
+      x0m[1] = xi[1];
+      x0p[0] = xi[0] + HALF;
+      x0p[1] = xi[1];
+      real_t B2_aux { -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ij};
+      real_t D3d { -sqrt_detH_ij * beta_ij * B2_aux / alpha_ij };
+
+      // D1 at ( i + HALF , j )
       x0m[0] = xi[0] + HALF - HALF;
       x0m[1] = xi[1];
       x0p[0] = xi[0] + HALF + HALF;
       x0p[1] = xi[1];
+      real_t E1d { (A_0(x0p) - A_0(x0m)) };
+      real_t D1d { E1d / alpha_iPj };
 
-      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      if (cmp::AlmostZero(x_Ph[1]))
-        return ZERO;
-      else
-        return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP;
-      // return ZERO;
-    }
-
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      // coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
-      // metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
-
-      // x0m[0] = xi[0] + HALF - HALF;
-      // x0m[1] = xi[1];
-      // x0p[0] = xi[0] + HALF + HALF;
-      // x0p[1] = xi[1];
-
-      // real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      // return -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_ijP;
-      return ZERO;
-    }
-
-    Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
-    }
-
-    Inline auto dx2(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
-    }
-
-    Inline auto dx3(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+      return metric.template h<3, 3>({ xi[0], xi[1] }) * D3d + metric.template h<1, 3>({ xi[0], xi[1] }) * D1d;
     }
 
   private:
