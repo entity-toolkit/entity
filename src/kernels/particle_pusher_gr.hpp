@@ -678,13 +678,9 @@ namespace kernel::gr {
       dx2_prev(p) = dx2(p);
 
       coord_t<Dim::_2D> xp { ZERO };
-      coord_t<Dim::_2D> xp_prev { ZERO };
 
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
       xp[1] = i_di_to_Xi(i2(p), dx2(p));
-      
-      xp_prev[0] = i_di_to_Xi(i1_prev(p), dx1_prev(p));
-      xp_prev[1] = i_di_to_Xi(i2_prev(p), dx2_prev(p));
 
       vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
         Bp_hat { ZERO };
