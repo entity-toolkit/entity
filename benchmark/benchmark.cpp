@@ -5,11 +5,11 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/containers/particles.h"
+#include "framework/domain/communications.cpp"
 #include "metrics/metric_base.h"
 #include "metrics/minkowski.h"
-#include "arch/mpi_tags.h"
-
 #include <Kokkos_Random.hpp>
+
 #define TIMER_START(label) \
     Kokkos::fence(); \
     auto start_##label = std::chrono::high_resolution_clock::now();
@@ -22,105 +22,88 @@
 
 /*
   Test to check the performance of the new particle allocation scheme
-    - Create a metadomain object
-    - Create particle array
-    - Initialize the position and velocities of the particles
-    - Set a large timestep (see where that is set)
-    - Make a loop of N iterations, where the positions of particles is sorted
-      and pushed
-    - Check if the particle tags are correct after each iteration
+    - Create a metadomain object                                                main()
+    - Set npart + initialize tags                                               InitializeParticleArrays()
+    - 'Push' the particles by randomly updating the tags                        PushParticles()
+    - Communicate particles to neighbors and time the communication
     - Compute the time taken for best of N iterations for the communication
  */
 
-
-/*
-    Structure of the 2D domain
-    ---------------------------------- (3,3)
-    |          |          |          |
-    |          |          |          |
-    |          |          |          |
-    |          |          |          |
-    ---------------------------------- (3,2)
-    |          |          |          |
-    |          |          |          |
-    |          |          |          |
-    |          |          |          |
-    ---------------------------------- (3,1)
-    |          |          |          |
-    |          |          |          |
-    |          |          |          |
-    |          |          |          |
-    ----------------------------------
-  (0,0)       (1,0)      (2,0)         (3,0)
-*/
-
-/*
-  Function to check the tags of a domain object to make sure that
-  all the tags are alive. If the tags are not alive then the function
-  prints the tag count for each of the particles along with the rank
-  of the domain.
-*/
+// Set npart and set the particle tags to alive
 template <SimEngine::type S, class M>
-void CheckDomainTags(Domain<S, M>&  domain)
-{
-  bool all_alive                = true;
-  bool no_dead_particles        = true;
-  for (auto& species : domain.species) {
-    std::cout << "Checking domain tags for species: " << species.label() << std::endl;
-    const auto npart_per_tag_arr  = species.npart_per_tag();
-    const auto npart              = species.npart();
-    if (npart != npart_per_tag_arr[ParticleTag::alive]){
-      all_alive = false;
-    }
-    for (std::size_t i = 0; i < npart_per_tag_arr.size(); ++i) {
-      if (i == ParticleTag::alive) {
-        continue;
+void InitializeParticleArrays(Domain<S,M> &domain, const int npart){
+  raise::ErrorIf(npart > domain.species[0].maxnpart(), 
+                "Npart cannot be greater than maxnpart", HERE);
+  const auto nspecies = domain.species.size();
+  for (int i_spec = 0; i_spec < nspecies; i_spec++) {
+    domain.species[i_spec].set_npart(npart);
+    domain.species[i_spec].SyncHostDevice();
+    auto &this_tag = domain.species[i_spec].tag;
+    Kokkos::parallel_for(
+      "Initialize particles",
+      npart,
+      Lambda(const std::size_t i)
+      {
+        this_tag(i) = ParticleTag::alive;
       }
-      if (npart_per_tag_arr[i] != 0) {
-        no_dead_particles = false;
-      }
-    }
-
-    raise::ErrorIf(all_alive == false,
-                   "Array contains particles with tags other than alive",
-                   HERE);
-    raise::ErrorIf(no_dead_particles == false,
-                    "Array contains dead particles",
-                    HERE);
-    //raise::ErrorIf(tag_check_h(0) == false,
-    //                "Tag check failed",
-    //                HERE);
+    );
   }
   return;
 }
 
-void InitializePositionsDomain(Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>& domain)
-{
-  for (auto& species : domain.species) {
-    TIMER_START(Sorting_timer);
-    species.SortByTags();
-    TIMER_STOP(Sorting_timer);
-    species.SyncHostDevice();
-    std::cout << "Number of particles in domain: " << species.npart() << std::endl;
-    //std::cout << "Extent of i1" << species.i1.extent(0) << std::endl;
+// Randomly reassign tags to particles for a fraction of particles
+template <SimEngine::type S, class M>
+void PushParticles(Domain<S,M> &domain, const double send_frac, 
+                  const int seed_ind, const int seed_tag){
+  raise::ErrorIf(send_frac > 1.0, "send_frac cannot be greater than 1.0", HERE);
+  const auto nspecies = domain.species.size();
+  for (int i_spec = 0; i_spec < nspecies; i_spec++) {
+    domain.species[i_spec].set_unsorted();
+    const auto nparticles         = domain.species[i_spec].npart();
+    const auto nparticles_to_send = static_cast<int>(send_frac * nparticles);
+    // Generate random indices to send
+    Kokkos::Random_XorShift64_Pool<> random_pool(seed_ind);
+    Kokkos::View<int*> indices_to_send("indices_to_send", nparticles_to_send);
+    Kokkos::fill_random(indices_to_send, random_pool, 0, nparticles);
+    // Generate random tags to send
+    Kokkos::Random_XorShift64_Pool<> random_pool_tag(seed_tag);
+    Kokkos::View<int*> tags_to_send("tags_to_send", nparticles_to_send);
+    Kokkos::fill_random(tags_to_send, random_pool_tag, 0, domain.species[i_spec].ntags());
+    auto &this_tag        = domain.species[i_spec].tag;
+    Kokkos::parallel_for(
+    "Push particles",
+    nparticles_to_send,
+    Lambda(const std::size_t i)
+    {
+      auto prtl_to_send = indices_to_send(i);
+      auto tag_to_send  = tags_to_send(i);
+      this_tag(prtl_to_send) = tag_to_send;
+    }
+  );
+  domain.species[i_spec].npart_per_tag();
+  domain.species[i_spec].SyncHostDevice();
   }
-  CheckDomainTags(domain);
+  return;
 }
-
-
 
 auto main(int argc, char* argv[]) -> int {
   std::cout << "Constructing the domain" << std::endl;
   ntt::GlobalInitialize(argc, argv);
   // Create a Metadomain object
-  const unsigned int ndomains = 9;
-  const std::vector<int> global_decomposition = {{}};
-  const std::vector<std::size_t> global_ncells = {32, 32};
-  const boundaries_t<real_t> global_extent = {{0.0, 0.0}, {3.0, 3.0}};
-  const boundaries_t<FldsBC> global_flds_bc = {{FldsBC::PERIODIC, FldsBC::PERIODIC}, {FldsBC::PERIODIC, FldsBC::PERIODIC}};
-  const boundaries_t<PrtlBC> global_prtl_bc = {{PrtlBC::PERIODIC, PrtlBC::PERIODIC}, {PrtlBC::PERIODIC, PrtlBC::PERIODIC}};
+  const unsigned int ndomains = 1;
+  const std::vector<int> global_decomposition = {{-1,-1, -1}};
+  const std::vector<std::size_t> global_ncells = {32, 32, 32};
+  const boundaries_t<real_t> global_extent = {{0.0, 3.0}, {0.0, 3.0}, {0.0, 3.0}};
+  const boundaries_t<FldsBC> global_flds_bc = { {FldsBC::PERIODIC, FldsBC::PERIODIC},
+                                                {FldsBC::PERIODIC, FldsBC::PERIODIC},
+                                                {FldsBC::PERIODIC, FldsBC::PERIODIC}};
+  const boundaries_t<PrtlBC> global_prtl_bc = { {PrtlBC::PERIODIC, PrtlBC::PERIODIC},
+                                                {PrtlBC::PERIODIC, PrtlBC::PERIODIC},
+                                                {PrtlBC::PERIODIC, PrtlBC::PERIODIC}};
   const std::map<std::string, real_t> metric_params = {};
-  const int maxnpart = 1000;
+  const int maxnpart = argc > 1 ? std::stoi(argv[1]) : 1000;  
+  const double npart_to_send_frac = 0.01;
+  const int npart = static_cast<int>(maxnpart * (1 - 2 * npart_to_send_frac));
   auto species = ntt::Particles<Dim::_2D, ntt::Coord::Cart>(1u,
                                                             "test_e",
                                                             1.0f,
@@ -129,35 +112,7 @@ auto main(int argc, char* argv[]) -> int {
                                                             ntt::PrtlPusher::BORIS,
                                                             false,
                                                             ntt::Cooling::NONE);
-
-    species.set_npart(maxnpart);
-    auto &this_i1  = species.i1;
-    auto &this_i2  = species.i2;
-    auto &this_i3  = species.i3;
-    auto &this_dx1 = species.dx1;
-    auto &this_dx2 = species.dx2;
-    auto &this_dx3 = species.dx3;
-    auto &this_ux1 = species.ux1;
-    auto &this_ux2 = species.ux2;
-    auto &this_ux3 = species.ux3;
-    auto &this_tag = species.tag;
-
-    std::cout << "Species particle count is " << species.npart() << std::endl;
-    Kokkos::parallel_for("SetPositions", 
-          species.npart(), Lambda(const std::size_t i) {
-      this_i1(i)       = 1;
-      this_i2(i)       = 1;
-      this_i3(i)       = 1;
-      this_dx1(i)      = 0.01;
-      this_dx2(i)      = 0.01;
-      this_ux1(i)      = 0.;
-      this_ux2(i)      = 0.;
-      this_ux3(i)      = 0.;
-      this_tag(i)      = 1;
-    });
-    Kokkos::fence();
-  std::cout << "Species set " << species.npart() << std::endl;
-  auto metadomain = Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>
+  auto metadomain = Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>
                     ( ndomains,
                       global_decomposition,
                       global_ncells,
@@ -168,58 +123,53 @@ auto main(int argc, char* argv[]) -> int {
                       {species}
                     ); 
 
-   //metadomain.runOnLocalDomains([&](auto& loc_dom) {
-   // InitializePositionsDomain(loc_dom);
-   //});
+  const auto local_subdomain_idx = metadomain.l_subdomain_indices()[0];
+  auto local_domain = metadomain.subdomain_ptr(local_subdomain_idx);
+  auto timers = timer::Timers {{"Communication"}, nullptr, false};
+  InitializeParticleArrays(*local_domain, npart);
+  // Timers for both the communication routines
+  auto total_time_elapsed_old = 0;
+  auto total_time_elapsed_new = 0;
 
-  // Get the pointer to the subdomain
-  //const auto local_subdomain_idx = metadomain.l_subdomain_indices()[0];
-  //auto local_domain = metadomain.subdomain_ptr(local_subdomain_idx);
-
-  // Set the positions of the particles in each domain
-  //for (auto& species : local_domain->species)
-  //{
-  //  auto tag       = ParticleTag::alive;
-  //  auto &this_i1  = species.i1;
-  //  auto &this_i2  = species.i2;
-  //  auto &this_i3  = species.i3;
-  //  auto &this_dx1 = species.dx1;
-  //  auto &this_dx2 = species.dx2;
-  //  auto &this_dx3 = species.dx3;
-  //  auto &this_ux1 = species.ux1;
-  //  auto &this_ux2 = species.ux2;
-  //  auto &this_ux3 = species.ux3;
-  //  auto &this_tag = species.tag;
-  //  Kokkos::parallel_for("SetPositions", 
-  //        species.npart(), Lambda(const std::size_t i) {
-  //    this_i1(i)       = 1;
-  //    this_i2(i)       = 1;
-  //    this_i3(i)       = 0;
-  //    this_dx1(i)      = 0.01;
-  //    this_dx2(i)      = 0.01;
-  //    this_ux1(i)      = 0.5;
-  //    this_ux2(i)      = 0.5;
-  //    this_tag(i)   = tag;
-  //  });
-//
-    //species.SortByTags();
-    //species.SyncHostDevice();
-  //}
-
-  // Get and print the extent of each domain
-  //std::cout << fmt::format("x1 extent {%.2f; %.2f} \n", 
-  //                        local_domain->mesh.extent(in::x1).first, 
-  //                        local_domain->mesh.extent(in::x1).second);
-  //std::cout << fmt::format("x2 extent {%.2f; %.2f} \n", 
-  //                        local_domain->mesh.extent(in::x2).first, 
-  //                        local_domain->mesh.extent(in::x2).second);
-  // Print the number of particles per domain
-  //std::cout << "Number of particles in domain " << local_subdomain_idx << ": " << local_domain->species[0].npart() << std::endl;
-  // Print the position of the 5 particles in the domain
-
-  ntt::GlobalFinalize();
-
-  std::cout << "Terminating" << std::endl;
-
+  int seed_ind = 0;
+  int seed_tag = 1;
+  for (int i = 0; i < 10; ++i) {
+    // Push
+    seed_ind += 2;
+    seed_tag += 3;
+    PushParticles(*local_domain, npart_to_send_frac, seed_ind, seed_tag);
+    // Sort new
+    Kokkos::fence();
+    auto start_new = std::chrono::high_resolution_clock::now();
+    metadomain.CommunicateParticlesBuffer(*local_domain, &timers);
+    auto stop_new = std::chrono::high_resolution_clock::now();
+    auto duration_new = std::chrono::duration_cast<std::chrono::microseconds>(stop_new - start_new).count();
+    total_time_elapsed_new += duration_new;
+    Kokkos::fence();
+    // Push
+    seed_ind += 2;
+    seed_tag += 3;
+    PushParticles(*local_domain, npart_to_send_frac, seed_ind, seed_tag);
+    // Sort old
+    Kokkos::fence();
+    auto start_old = std::chrono::high_resolution_clock::now();
+    metadomain.CommunicateParticles(*local_domain, &timers);
+    auto stop_old = std::chrono::high_resolution_clock::now();
+    auto duration_old = std::chrono::duration_cast<std::chrono::microseconds>(stop_old - start_old).count();
+    total_time_elapsed_old += duration_old;
+    Kokkos::fence();
+  }
+  std::cout << "Total time elapsed for old: " << total_time_elapsed_old << " microseconds" << std::endl;
+  std::cout << "Total time elapsed for new: " << total_time_elapsed_new << " microseconds" << std::endl;
   return 0;
 }
+
+/*
+  Buggy behavior:
+  Consider a single domain with a single mpi rank
+  Particle tag arrays is set to [0, 0, 1, 1, 2, 3, ...] for a single domain
+  CommunicateParticles() discounts all the dead particles and reassigns the
+  other tags to alive
+  CommunicateParticlesBuffer() only keeps the ParticleTag::Alive particles
+  and discounts the rest
+*/
