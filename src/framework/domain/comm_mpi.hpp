@@ -47,15 +47,19 @@ namespace comm {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+
     raise::ErrorIf(
       (send_rank == rank && send_idx != idx) ||
         (recv_rank == rank && recv_idx != idx),
       "Multiple-domain single-rank communication not yet implemented",
       HERE);
 
+
     if ((send_idx == idx) and (recv_idx == idx)) {
       //  trivial copy if sending to self and receiving from self
+
       if (not additive) {
+
         // simply filling the ghost cells
         if constexpr (D == Dim::_1D) {
           Kokkos::deep_copy(Kokkos::subview(fld, recv_slice[0], comps),
@@ -65,6 +69,7 @@ namespace comm {
             Kokkos::subview(fld, recv_slice[0], recv_slice[1], comps),
             Kokkos::subview(fld, send_slice[0], send_slice[1], comps));
         } else if constexpr (D == Dim::_3D) {
+
           Kokkos::deep_copy(
             Kokkos::subview(fld, recv_slice[0], recv_slice[1], recv_slice[2], comps),
             Kokkos::subview(fld, send_slice[0], send_slice[1], send_slice[2], comps));
@@ -177,13 +182,19 @@ namespace comm {
                                   comps.second - comps.first);
         }
       }
+
+      auto send_fld_h = Kokkos::create_mirror_view(send_fld);
+      auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
+      Kokkos::deep_copy(send_fld_h, send_fld);
       if (send_rank >= 0 && recv_rank >= 0) {
-        MPI_Sendrecv(send_fld.data(),
+        // Segfault here: print mpi params
+        // Create host views
+        MPI_Sendrecv(send_fld_h.data(),
                      nsend,
                      mpi::get_type<real_t>(),
                      send_rank,
                      0,
-                     recv_fld.data(),
+                     recv_fld_h.data(),
                      nrecv,
                      mpi::get_type<real_t>(),
                      recv_rank,
@@ -191,14 +202,16 @@ namespace comm {
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
       } else if (send_rank >= 0) {
-        MPI_Send(send_fld.data(),
+        MPI_Send(send_fld_h.data(),
                  nsend,
                  mpi::get_type<real_t>(),
                  send_rank,
                  0,
                  MPI_COMM_WORLD);
+
       } else if (recv_rank >= 0) {
-        MPI_Recv(recv_fld.data(),
+        auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
+        MPI_Recv(recv_fld_h.data(),
                  nrecv,
                  mpi::get_type<real_t>(),
                  recv_rank,
@@ -208,7 +221,10 @@ namespace comm {
       } else {
         raise::Error("CommunicateField called with negative ranks", HERE);
       }
+      Kokkos::deep_copy(recv_fld, recv_fld_h);
+
       if (recv_rank >= 0) {
+
         // !TODO: perhaps directly recv to the fld?
         if (not additive) {
           if constexpr (D == Dim::_1D) {
@@ -282,16 +298,18 @@ namespace comm {
                                    int                  recv_rank,
                                    const range_tuple_t& send_slice,
                                    const range_tuple_t& recv_slice) {
+    auto array_h = Kokkos::create_mirror_view(arr);
+    Kokkos::deep_copy(array_h, arr);
     const std::size_t send_count = send_slice.second - send_slice.first;
     const std::size_t recv_count = recv_slice.second - recv_slice.first;
     if ((send_rank >= 0) and (recv_rank >= 0) and (send_count > 0) and
         (recv_count > 0)) {
-      MPI_Sendrecv(arr.data() + send_slice.first,
+      MPI_Sendrecv(array_h.data() + send_slice.first,
                    send_count,
                    mpi::get_type<T>(),
                    send_rank,
                    0,
-                   arr.data() + recv_slice.first,
+                   array_h.data() + recv_slice.first,
                    recv_count,
                    mpi::get_type<T>(),
                    recv_rank,
@@ -299,14 +317,14 @@ namespace comm {
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
     } else if ((send_rank >= 0) and (send_count > 0)) {
-      MPI_Send(arr.data() + send_slice.first,
+      MPI_Send(array_h.data() + send_slice.first,
                send_count,
                mpi::get_type<T>(),
                send_rank,
                0,
                MPI_COMM_WORLD);
     } else if ((recv_rank >= 0) and (recv_count > 0)) {
-      MPI_Recv(arr.data() + recv_slice.first,
+      MPI_Recv(array_h.data() + recv_slice.first,
                recv_count,
                mpi::get_type<T>(),
                recv_rank,
@@ -314,6 +332,7 @@ namespace comm {
                MPI_COMM_WORLD,
                MPI_STATUS_IGNORE);
     }
+    Kokkos::deep_copy(arr, array_h);
   }
 
 
@@ -457,8 +476,7 @@ namespace comm {
     "PopulateBuffer",
     indices_to_send.extent(0),
     Lambda(const size_t i) {
-      const auto idx  = indices_to_send(i);
-      buffer(i)       = arr(idx);
+      buffer(i)       = arr(indices_to_send(i));
     });
     CommunicateParticleQuantity(buffer, send_rank, recv_rank, send_slice, recv_slice);
     // Populate from buffer to the particle array
@@ -466,8 +484,7 @@ namespace comm {
     "PopulateFromBuffer",
     indices_to_allocate.extent(0),
     Lambda(const size_t i) {
-      const auto idx  = indices_to_allocate(i);
-      arr(idx) = buffer(indices_to_send.extent(0) + i);
+      arr(indices_to_allocate(i)) = buffer(indices_to_send.extent(0) + i);
     });
   return;
   }
