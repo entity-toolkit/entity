@@ -499,6 +499,16 @@ namespace comm {
     if ((send_rank < 0) && (recv_rank < 0)) {
       raise::Error("No send or recv in SendRecvParticlesBuffered", HERE);
     }
+    // First set the tags of the sent particles to be dead
+    auto& this_tag                = species.tag;
+    //Kokkos::parallel_for(
+    //"SetTagDead",
+    //Kokkos::RangePolicy<AccelExeSpace>(0, indices_to_allocate.size()),
+    //KOKKOS_LAMBDA(const size_t i) {
+    //  const auto idx        = indices_to_send(i);
+    //  this_tag(idx)         = static_cast<short>(ParticleTag::dead);
+    //});
+  
     // Construct send and receive slice for the buffer
     auto send_slice = range_tuple_t({ 0, indices_to_send.size() });
     auto recv_slice = range_tuple_t({ indices_to_send.size(), indices_to_send.size() + 
@@ -531,8 +541,6 @@ namespace comm {
       CommunicateParticleQuantityBuffer(species.pld[p], send_rank, recv_rank, send_slice, recv_slice, indices_to_send, indices_to_allocate);
     }
     // Set the tag for the received particles to be alive and perform the necessary displacements
-    auto& this_tag                = species.tag;
-
     if constexpr (D == Dim::_1D)
     {
       const auto shift_in_x1 = shifts_in_x[0];
@@ -595,6 +603,7 @@ namespace comm {
         this_i3_prev(idx)     += shift_in_x3;
       });
     }
+    Kokkos::fence();
     return;
     }
 
