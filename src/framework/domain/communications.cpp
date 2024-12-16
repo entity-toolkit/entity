@@ -86,8 +86,8 @@ namespace ntt {
     } else {
       // no communication necessary
       return {
-        { 0, -1 },
-        { 0, -1 }
+        {0, -1},
+        {0, -1}
       };
     }
 #if defined(MPI_ENABLED)
@@ -110,8 +110,8 @@ namespace ntt {
     (void)send_rank;
     (void)recv_rank;
     return {
-      { send_ind, send_rank },
-      { recv_ind, recv_rank }
+      {send_ind, send_rank},
+      {recv_ind, recv_rank}
     };
   }
 
@@ -129,8 +129,8 @@ namespace ntt {
     const auto is_receiving          = (recv_rank >= 0);
     if (not(is_sending or is_receiving)) {
       return {
-        { { 0, -1 }, {} },
-        { { 0, -1 }, {} }
+        {{ 0, -1 }, {}},
+        {{ 0, -1 }, {}}
       };
     }
     auto     send_slice   = std::vector<range_tuple_t> {};
@@ -196,8 +196,8 @@ namespace ntt {
     }
 
     return {
-      { { send_ind, send_rank }, send_slice },
-      { { recv_ind, recv_rank }, recv_slice },
+      {{ send_ind, send_rank }, send_slice},
+      {{ recv_ind, recv_rank }, recv_slice},
     };
   }
 
@@ -746,6 +746,7 @@ namespace ntt {
       // to the pth hole in the array, or after npart() if p > sent+dead count.
       Kokkos::View<std::size_t*> allocation_vector("allocation_vector", total_recv);
 
+      // @CRITICAL: this may overwrite unsent data
       Kokkos::parallel_for(
         "AllocationVector",
         total_recv,

@@ -35,6 +35,7 @@
     - Communicate particles to neighbors and time the communication
     - Compute the time taken for best of N iterations for the communication
  */
+using namespace ntt;
 
 // Set npart and set the particle tags to alive
 template <SimEngine::type S, class M>
@@ -94,101 +95,106 @@ void PushParticles(Domain<S, M>& domain,
 }
 
 auto main(int argc, char* argv[]) -> int {
-  std::cout << "Constructing the domain" << std::endl;
-  ntt::GlobalInitialize(argc, argv);
-  // Create a Metadomain object
-  const unsigned int     ndomains             = 1;
-  const std::vector<int> global_decomposition = {
-    { -1, -1, -1 }
-  };
-  const std::vector<std::size_t> global_ncells = { 32, 32, 32 };
-  const boundaries_t<real_t>     global_extent = {
-    { 0.0, 3.0 },
-    { 0.0, 3.0 },
-    { 0.0, 3.0 }
-  };
-  const boundaries_t<FldsBC> global_flds_bc = {
-    { FldsBC::PERIODIC, FldsBC::PERIODIC },
-    { FldsBC::PERIODIC, FldsBC::PERIODIC },
-    { FldsBC::PERIODIC, FldsBC::PERIODIC }
-  };
-  const boundaries_t<PrtlBC> global_prtl_bc = {
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
-  };
-  const std::map<std::string, real_t> metric_params = {};
-  const int    maxnpart           = argc > 1 ? std::stoi(argv[1]) : 1000;
-  const double npart_to_send_frac = 0.01;
-  const int npart   = static_cast<int>(maxnpart * (1 - 2 * npart_to_send_frac));
-  auto      species = ntt::ParticlesSpecies(1u,
-                                       "test_e",
-                                       1.0f,
-                                       1.0f,
-                                       maxnpart,
-                                       ntt::PrtlPusher::BORIS,
-                                       false,
-                                       ntt::Cooling::NONE);
-  auto metadomain   = Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>(
-    ndomains,
-    global_decomposition,
-    global_ncells,
-    global_extent,
-    global_flds_bc,
-    global_prtl_bc,
-    metric_params,
-    { species });
+  GlobalInitialize(argc, argv);
+  {
+    std::cout << "Constructing the domain" << std::endl;
+    // Create a Metadomain object
+    const unsigned int     ndomains             = 2;
+    const std::vector<int> global_decomposition = {
+      {-1, -1, -1}
+    };
+    const std::vector<std::size_t> global_ncells = { 32, 32, 32 };
+    const boundaries_t<real_t>     global_extent = {
+      {0.0, 3.0},
+      {0.0, 3.0},
+      {0.0, 3.0}
+    };
+    const boundaries_t<FldsBC> global_flds_bc = {
+      {FldsBC::PERIODIC, FldsBC::PERIODIC},
+      {FldsBC::PERIODIC, FldsBC::PERIODIC},
+      {FldsBC::PERIODIC, FldsBC::PERIODIC}
+    };
+    const boundaries_t<PrtlBC> global_prtl_bc = {
+      {PrtlBC::PERIODIC, PrtlBC::PERIODIC},
+      {PrtlBC::PERIODIC, PrtlBC::PERIODIC},
+      {PrtlBC::PERIODIC, PrtlBC::PERIODIC}
+    };
+    const std::map<std::string, real_t> metric_params = {};
+    const int    maxnpart           = argc > 1 ? std::stoi(argv[1]) : 1000;
+    const double npart_to_send_frac = 0.01;
+    const int npart = static_cast<int>(maxnpart * (1 - 2 * npart_to_send_frac));
+    auto      species = ntt::ParticleSpecies(1u,
+                                        "test_e",
+                                        1.0f,
+                                        1.0f,
+                                        maxnpart,
+                                        ntt::PrtlPusher::BORIS,
+                                        false,
+                                        ntt::Cooling::NONE);
+    auto metadomain = Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>(
+      ndomains,
+      global_decomposition,
+      global_ncells,
+      global_extent,
+      global_flds_bc,
+      global_prtl_bc,
+      metric_params,
+      { species });
 
-  const auto local_subdomain_idx = metadomain.l_subdomain_indices()[0];
-  auto       local_domain = metadomain.subdomain_ptr(local_subdomain_idx);
-  auto       timers = timer::Timers { { "Communication" }, nullptr, false };
-  InitializeParticleArrays(*local_domain, npart);
-  // Timers for both the communication routines
-  auto total_time_elapsed_old = 0;
-  auto total_time_elapsed_new = 0;
+    const auto local_subdomain_idx = metadomain.l_subdomain_indices()[0];
+    auto       local_domain = metadomain.subdomain_ptr(local_subdomain_idx);
+    auto       timers = timer::Timers { { "Communication" }, nullptr, false };
+    InitializeParticleArrays(*local_domain, npart);
+    // Timers for both the communication routines
+    auto total_time_elapsed_old = 0;
+    auto total_time_elapsed_new = 0;
 
-  int seed_ind = 0;
-  int seed_tag = 1;
-  Kokkos::fence();
+    int seed_ind = 0;
+    int seed_tag = 1;
+    Kokkos::fence();
 
-  for (int i = 0; i < 10; ++i) {
-    {
-      // Push
-      seed_ind += 2;
-      seed_tag += 3;
-      PushParticles(*local_domain, npart_to_send_frac, seed_ind, seed_tag);
-      // Sort new
-      Kokkos::fence();
-      auto start_new = std::chrono::high_resolution_clock::now();
-      metadomain.CommunicateParticlesBuffer(*local_domain, &timers);
-      auto stop_new     = std::chrono::high_resolution_clock::now();
-      auto duration_new = std::chrono::duration_cast<std::chrono::microseconds>(
-                            stop_new - start_new)
-                            .count();
-      total_time_elapsed_new += duration_new;
-      Kokkos::fence();
+    for (int i = 0; i < 10; ++i) {
+      {
+        // Push
+        seed_ind += 2;
+        seed_tag += 3;
+        PushParticles(*local_domain, npart_to_send_frac, seed_ind, seed_tag);
+        // Sort new
+        Kokkos::fence();
+        auto start_new = std::chrono::high_resolution_clock::now();
+        metadomain.CommunicateParticlesBuffer(*local_domain, &timers);
+        auto stop_new = std::chrono::high_resolution_clock::now();
+        auto duration_new = std::chrono::duration_cast<std::chrono::microseconds>(
+                              stop_new - start_new)
+                              .count();
+        total_time_elapsed_new += duration_new;
+        Kokkos::fence();
+      }
+      {
+        // Push
+        seed_ind += 2;
+        seed_tag += 3;
+        PushParticles(*local_domain, npart_to_send_frac, seed_ind, seed_tag);
+        // Sort old
+        Kokkos::fence();
+        auto start_old = std::chrono::high_resolution_clock::now();
+        metadomain.CommunicateParticles(*local_domain, &timers);
+        auto stop_old = std::chrono::high_resolution_clock::now();
+        auto duration_old = std::chrono::duration_cast<std::chrono::microseconds>(
+                              stop_old - start_old)
+                              .count();
+        total_time_elapsed_old += duration_old;
+        Kokkos::fence();
+      }
     }
-    {
-      // Push
-      seed_ind += 2;
-      seed_tag += 3;
-      PushParticles(*local_domain, npart_to_send_frac, seed_ind, seed_tag);
-      // Sort old
-      Kokkos::fence();
-      auto start_old = std::chrono::high_resolution_clock::now();
-      metadomain.CommunicateParticles(*local_domain, &timers);
-      auto stop_old     = std::chrono::high_resolution_clock::now();
-      auto duration_old = std::chrono::duration_cast<std::chrono::microseconds>(
-                            stop_old - start_old)
-                            .count();
-      total_time_elapsed_old += duration_old;
-      Kokkos::fence();
-    }
+    printf("Total time elapsed for old: %f us : %f us/prtl\n",
+           total_time_elapsed_old / 10.0,
+           total_time_elapsed_old / 10.0 * 1000 / npart);
+    printf("Total time elapsed for new: %f us : %f us/prtl\n",
+           total_time_elapsed_new / 10.0,
+           total_time_elapsed_new / 10.0 * 1000 / npart);
   }
-  std::cout << "Total time elapsed for old: " << total_time_elapsed_old
-            << " microseconds" << std::endl;
-  std::cout << "Total time elapsed for new: " << total_time_elapsed_new
-            << " microseconds" << std::endl;
+  GlobalFinalize();
   return 0;
 }
 

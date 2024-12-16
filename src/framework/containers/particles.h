@@ -193,7 +193,6 @@ namespace ntt {
      * @brief Count the number of particles with a specific tag.
      * @return The vector of counts for each tag.
      */
-    [[nodiscard]]
     auto npart_per_tag() const -> std::vector<std::size_t>;
 
     /* setters -------------------------------------------------------------- */
