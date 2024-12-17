@@ -6,9 +6,18 @@
 
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
+#include "utils/comparators.h"
+#include "utils/formatting.h"
+#include "utils/log.h"
+#include "utils/numeric.h"
 
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
+#include "framework/domain/domain.h"
+#include "archetypes/energy_dist.h"
+#include "archetypes/particle_injector.h"
+
+#include <vector>
 
 namespace user {
   using namespace ntt;
@@ -18,8 +27,8 @@ namespace user {
     InitFields(M metric_) : metric { metric_ } {}
 
     Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
-      // return HALF * (metric.template h_<3, 3>(x_Cd)
-      //        + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
+      return HALF * (metric.template h_<3, 3>(x_Cd) );
+            //  + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
       // );
       coord_t<D> x_Ph { ZERO };
       metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
@@ -118,28 +127,17 @@ namespace user {
     using arch::ProblemGenerator<S, M>::params;
 
     InitFields<M, D> init_flds;
-
-    inline PGen(SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      // , xi_min { p.template get<std::vector<real_t>>("setup.inj_rmin") }
-      // , xi_max { p.template get<std::vector<real_t>>("setup.inj_rmax") }
+    const Metadomain<S, M>& global_domain;
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : arch::ProblemGenerator<S, M> { p }
+      , global_domain { m }
       , init_flds { m.mesh().metric } {}
     
     // inline void InitPrtls(Domain<S, M>& local_domain) {
-    //     const auto energy_dist = arch::ColdDist<S, M>(local_domain.mesh.metric);
-    //     const auto spatial_dist = PointDistribution<S, M>(domain.mesh.metric,
-    //                                               xi_min,
-    //                                               xi_max);
-    //     const auto injector = arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>(
-    //       energy_dist,
-    //       spatial_dist,
-    //       { 1, 2 });
-    //     arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>>(params,
-    //                                                   local_domain,
-    //                                                   injector,
-    //                                                   1.0);
+      
+      // arch::InjectGlobally<S, M>(global_domain, local_domain, (arch::spidx_t)1, data_1);
+      // arch::InjectGlobally<S, M>(global_domain, local_domain, (arch::spidx_t)2, data_2);
     // }
-
     // inline PGen() {}
   };
 

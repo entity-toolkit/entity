@@ -5,13 +5,13 @@
 
 [grid]
   resolution = [128,128]
-  extent = [[2.0, 8.0]]
+  extent = [[1.2, 8.0]]
 
   [grid.metric]
-    metric = "qkerr_schild"
+    metric = "kerr_schild"
     qsph_r0 = 0.0 
     qsph_h = 0.0
-    ks_a = 0.0
+    ks_a = 0.95
 
   [grid.boundaries]
     fields = [["ABSORB"]]
@@ -21,14 +21,14 @@
       ds = 0.5
 
 [scales]
-  larmor0 = 1.0 #0.0025
-  skindepth0 = 1.0 #0.05
+  larmor0 = 1.0
+  skindepth0 = 1.0
 
 [algorithms]
   current_filters = 4
 
   [algorithms.timestep]
-    CFL = 0.3
+    CFL = 0.5
 
   [algorithms.toggles]
     deposit = false
@@ -39,25 +39,21 @@
   use_weights = true
   sort_interval = 100
 
-  #[[particles.species]]
-  #label = "e-"
-  #mass = 1.0
-  #charge = -1.0
-  #maxnpart = 1e6
-  #pusher = "Boris"
-  #
-  #[[particles.species]]
-  #label = "e+"
-  #mass = 1.0
-  #charge = 1.0
-  #maxnpart = 1e6
-  #pusher = "Boris"
+#  [[particles.species]]
+#  label = "e-"
+#  mass = 1.0
+#  charge = -1.0
+#  maxnpart = 2e6
+#  pusher = "Boris"
+#
+#  [[particles.species]]
+#  label = "e+"
+#  mass = 1.0
+#  charge = 1.0
+#  maxnpart = 2e6
+#  pusher = "Boris"
 
 [setup]
-  #multiplicity = 1.0
-  #sigma_max = 1000.0
-  #inj_rmin = 1.2
-  #inj_rmax = 7.5
 
 [output]
   format = "hdf5"
@@ -67,12 +63,11 @@
     quantities = ["D", "H", "B", "J"]
 
   [output.particles]
-    enable = false
+    interval_time = 1.0
+    quantities = ["X", "U"]
 
   [output.spectra]
     enable = false
 
 [diagnostics]
-  interval = 2
-  colored_stdout = true
-  blocking_timers = true
+  interval = 1
