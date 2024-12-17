@@ -18,9 +18,10 @@ namespace user {
     InitFields(M metric_) : metric { metric_ } {}
 
     Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
-      // return HALF * (metric.template h_<3, 3>(x_Cd)
-      //        + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
+      // return HALF * (metric.template h_<3, 3>(x_Cd) );
+            //  + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
       // );
+
       coord_t<D> x_Ph { ZERO };
       metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
       return HALF * SQR(x_Ph[0]) * SQR(math::sin(x_Ph[1]));
@@ -74,17 +75,17 @@ namespace user {
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      // coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
-      // metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
-      // x0m[0] = xi[0] + HALF - HALF;
-      // x0m[1] = xi[1];
-      // x0p[0] = xi[0] + HALF + HALF;
-      // x0p[1] = xi[1];
+      x0m[0] = xi[0] + HALF - HALF;
+      x0m[1] = xi[1];
+      x0p[0] = xi[0] + HALF + HALF;
+      x0p[1] = xi[1];
 
-      // real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      // return -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_ijP;
-      return ZERO;
+      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      return -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_ijP;
+      // return ZERO;
     }
 
     Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t {
@@ -121,26 +122,9 @@ namespace user {
 
     inline PGen(SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
-      // , xi_min { p.template get<std::vector<real_t>>("setup.inj_rmin") }
-      // , xi_max { p.template get<std::vector<real_t>>("setup.inj_rmax") }
       , init_flds { m.mesh().metric } {}
-    
-    // inline void InitPrtls(Domain<S, M>& local_domain) {
-    //     const auto energy_dist = arch::ColdDist<S, M>(local_domain.mesh.metric);
-    //     const auto spatial_dist = PointDistribution<S, M>(domain.mesh.metric,
-    //                                               xi_min,
-    //                                               xi_max);
-    //     const auto injector = arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>(
-    //       energy_dist,
-    //       spatial_dist,
-    //       { 1, 2 });
-    //     arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>>(params,
-    //                                                   local_domain,
-    //                                                   injector,
-    //                                                   1.0);
-    // }
 
-    // inline PGen() {}
+    inline PGen() {}
   };
 
 } // namespace user
