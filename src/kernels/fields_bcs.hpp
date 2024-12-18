@@ -1026,18 +1026,15 @@ namespace kernel::bc {
     const M              metric;
     const real_t         xg_edge;
     const real_t         dx_abs;
-    const BCTags         tags;
 
     AbsorbCurrentGR_kernel(ndfield_t<M::Dim, 3> J,
                            const M&             metric,
                            real_t               xg_edge,
-                           real_t               dx_abs,
-                           BCTags               tags)
+                           real_t               dx_abs)
       : J { J }
       , metric { metric }
       , xg_edge { xg_edge }
-      , dx_abs { dx_abs }
-      , tags { tags } {}
+      , dx_abs { dx_abs } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
@@ -1048,8 +1045,9 @@ namespace kernel::bc {
         x_Cd[1]       = i2_;
         const auto dx = math::abs(
           metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
-        J(i1, i2) *= math::tanh(dx / (INV_4 * dx_abs));
-
+        J(i1, i2, cur::jx1) *= math::tanh(dx / (INV_4 * dx_abs));
+        J(i1, i2, cur::jx2) *= math::tanh(dx / (INV_4 * dx_abs));
+        J(i1, i2, cur::jx3) *= math::tanh(dx / (INV_4 * dx_abs));
       } else {
         raise::KernelError(
           HERE,

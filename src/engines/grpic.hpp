@@ -374,9 +374,9 @@ namespace ntt {
           m_metadomain.CommunicateFields(dom, Comm::J);
           timers.stop("Communications");
 
-          // timers.start("FieldBoundaries");
-          // CurrentsBoundaryConditions();
-          // timers.stop("FieldBoundaries");
+          timers.start("FieldBoundaries");
+          CurrentsBoundaryConditions(dom);
+          timers.stop("FieldBoundaries");
 
           timers.start("CurrentFiltering");
           CurrentsFilter(dom);
@@ -660,9 +660,9 @@ namespace ntt {
           "AbsorbCurrent",
           CreateRangePolicy<M::Dim>(range_min, range_max),
           kernel::AbsorbCurrentGR_kernel<M, 1>(domain.fields.cur0,
-                                                domain.mesh.metric,
-                                                xg_edge,
-                                                ds));
+                                               domain.mesh.metric,
+                                               xg_edge,
+                                               ds));
     }
 
     void OpenFieldsIn(dir::direction_t<M::Dim> direction,
@@ -918,7 +918,7 @@ namespace ntt {
       const auto q0    = m_params.template get<real_t>("scales.q0");
       const auto n0    = m_params.template get<real_t>("scales.n0");
       const auto B0    = m_params.template get<real_t>("scales.B0");
-      const auto coeff = -dt * q0 * n0 / B0;
+      const auto coeff = -dt * q0 / B0;
       // auto       range = range_with_axis_BCs(domain);
       auto range = CreateRangePolicy<Dim::_2D>(
         { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
@@ -968,7 +968,7 @@ namespace ntt {
     }
 
     void CurrentsDeposit(domain_t& domain) {
-      auto scatter_cur = Kokkos::Experimental::create_scatter_view(
+      auto scatter_cur0 = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur0);
       for (auto& species : domain.species) {
         logger::Checkpoint(
@@ -984,7 +984,7 @@ namespace ntt {
         Kokkos::parallel_for("CurrentsDeposit",
                              species.rangeActiveParticles(),
                              kernel::DepositCurrents_kernel<SimEngine::GRPIC, M>(
-                               scatter_cur,
+                               scatter_cur0,
                                species.i1,
                                species.i2,
                                species.i3,
@@ -1007,7 +1007,7 @@ namespace ntt {
                                (real_t)(species.charge()),
                                dt));
       }
-      Kokkos::Experimental::contribute(domain.fields.cur0, scatter_cur);
+      Kokkos::Experimental::contribute(domain.fields.cur0, scatter_cur0);
     }
 
     void CurrentsFilter(domain_t& domain) {
@@ -1031,7 +1031,7 @@ namespace ntt {
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
-        m_metadomain.CommunicateFields(domain, Comm::J);
+        m_metadomain.CommunicateFields(domain, Comm::J); //J0
       }
     }
 
