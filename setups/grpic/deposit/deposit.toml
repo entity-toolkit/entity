@@ -1,7 +1,7 @@
 [simulation]
   name = "deposit"
   engine = "grpic"
-  runtime = 10.0
+  runtime = 50.0
 
 [grid]
   resolution = [512,512]
@@ -21,8 +21,8 @@
       ds = 2.0
 
 [scales]
-  larmor0 = 2.0
-  skindepth0 = 2.0
+  larmor0 = 2e-3
+  skindepth0 = 0.1
 
 [algorithms]
   current_filters = 4
@@ -57,14 +57,14 @@
   x1s  = [17.00000]
   y1s  = [1.570796]
   z1s  = [0.000000]
-  ux1s = [8.000000]
+  ux1s = [5.000000]
   uy1s = [0.000000]
   uz1s = [0.000000]
 
   x2s  = [17.00000]
   y2s  = [1.570796]
   z2s  = [0.000000]
-  ux2s = [-8.000000]
+  ux2s = [-5.000000]
   uy2s = [0.000000]
   uz2s = [0.000000]
 
@@ -74,7 +74,7 @@
   [output.fields]
     enable = true
     interval_time = 0.5
-    quantities = ["D", "B"]
+    quantities = ["D"]
 
   [output.particles]
     enable = true
