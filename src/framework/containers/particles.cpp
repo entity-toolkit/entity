@@ -78,7 +78,8 @@ namespace ntt {
   }
 
   template <Dimension D, Coord::type C>
-  auto Particles<D, C>::npart_per_tag() const -> std::vector<std::size_t> {
+  auto Particles<D, C>::npart_per_tag() const -> std::pair<std::vector<std::size_t>,
+                                                 array_t<std::size_t*>>{
     auto                  this_tag = tag;
     array_t<std::size_t*> npart_tag("npart_tags", ntags());
 
@@ -97,23 +98,25 @@ namespace ntt {
 
     auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
     Kokkos::deep_copy(npart_tag_host, npart_tag);
+    array_t<std::size_t*> tag_offset("tag_offset", ntags());
+    auto tag_offset_host = Kokkos::create_mirror_view(tag_offset);
 
     std::vector<std::size_t> npart_tag_vec(ntags());
-    std::vector<std::size_t> tag_offset(ntags());
     for (std::size_t t { 0 }; t < ntags(); ++t) {
-      npart_tag_vec[t]  = npart_tag_host(t);
-      tag_offset[t]     = (t > 0) ? npart_tag_vec[t - 1] : 0;
+      npart_tag_vec[t]    = npart_tag_host(t);
+      tag_offset_host(t)  = (t > 0) ? npart_tag_vec[t - 1] : 0;
     }
     for (std::size_t t { 0 }; t < ntags(); ++t) {
-      tag_offset[t] += (t > 0) ? tag_offset[t - 1] : 0;
+      tag_offset_host(t)  += (t > 0) ? tag_offset_host(t - 1) : 0;
     }
+    Kokkos::deep_copy(tag_offset, tag_offset_host);
     return std::make_pair(npart_tag_vec, tag_offset);
   }
 
   template <Dimension D, Coord::type C>
   auto Particles<D, C>::SortByTags() -> std::vector<std::size_t> {
     if (npart() == 0 || is_sorted()) {
-      return npart_per_tag();
+      return npart_per_tag().first;
     }
     using KeyType = array_t<short*>;
     using BinOp   = sort::BinTag<KeyType>;
@@ -156,7 +159,8 @@ namespace ntt {
       Sorter.sort(Kokkos::subview(phi, slice));
     }
 
-    const auto np_per_tag = npart_per_tag();
+    auto np_per_tag_tag_offset = npart_per_tag();
+    const auto np_per_tag = np_per_tag_tag_offset.first;
     set_npart(np_per_tag[(short)(ParticleTag::alive)]);
 
     m_is_sorted = true;

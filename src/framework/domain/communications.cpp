@@ -656,16 +656,18 @@ namespace ntt {
                    HERE);
     logger::Checkpoint("Communicating particles\n", HERE);
     for (auto& species : domain.species) {
-      auto npart_per_tag_arr = species.npart_per_tag();
-      auto npart             = static_cast<std::size_t>(species.npart());
-      auto total_alive       = static_cast<std::size_t>(
-        npart_per_tag_arr[ParticleTag::alive]);
-      auto total_dead = static_cast<std::size_t>(
-        npart_per_tag_arr[ParticleTag::dead]);
-      auto total_holes = static_cast<std::size_t>(npart - total_alive);
-      auto total_send = static_cast<std::size_t>(npart - total_alive - total_dead);
-      auto total_recv = static_cast<std::size_t>(0);
-      auto tag_count  = static_cast<std::size_t>(npart_per_tag_arr.size());
+      // TO DO: npart per tag must return npart_per_tag_arr and the cumsum array
+      auto [npart_per_tag_arr,
+            tag_offset]       = species.npart_per_tag();
+      auto npart              = static_cast<std::size_t>(species.npart());
+      auto total_alive        = static_cast<std::size_t>(
+                                npart_per_tag_arr[ParticleTag::alive]);
+      auto total_dead         = static_cast<std::size_t>(
+                                npart_per_tag_arr[ParticleTag::dead]);
+      auto total_holes        = static_cast<std::size_t>(npart - total_alive);
+      auto total_send         = static_cast<std::size_t>(npart - total_alive - total_dead);
+      auto total_recv         = static_cast<std::size_t>(0);
+      auto tag_count          = static_cast<std::size_t>(npart_per_tag_arr.size());
 
       std::vector<int> send_ranks, send_inds;
       std::vector<int> recv_ranks, recv_inds;
@@ -715,7 +717,6 @@ namespace ntt {
               (dead)      (alive)        (tag1)  ...
       */
       auto& this_tag        = species.tag;
-      auto& this_tag_offset = species.tag_offset;
       Kokkos::View<std::size_t*> permute_vector("permute_vector", species.npart());
       Kokkos::View<std::size_t*> current_offset("current_offset", species.ntags());
       // @TODO: do not save tag = 1 particles into permute_vector
@@ -726,7 +727,7 @@ namespace ntt {
         species.npart(),
         Lambda(index_t p) {
           const auto current_tag     = this_tag(p);
-          const auto idx_permute_vec = this_tag_offset(current_tag) +
+          const auto idx_permute_vec = tag_offset(current_tag) +
                                        Kokkos::atomic_fetch_add(
                                          &current_offset(current_tag),
                                          1);
@@ -826,11 +827,13 @@ namespace ntt {
         }
 
         // Tuple that contains the start and end indices of permtute_vec pointing to a given tag type = dir2tag(dir)
+        auto tag_offset_h       = Kokkos::create_mirror_view(tag_offset);
+        Kokkos::deep_copy(tag_offset_h, tag_offset);
         auto range_permute = std::make_pair(
           static_cast<std::size_t>(
-            species.tag_offset_h[mpi::PrtlSendTag<D>::dir2tag(direction)]),
+            tag_offset_h[mpi::PrtlSendTag<D>::dir2tag(direction)]),
           static_cast<std::size_t>(
-            species.tag_offset_h[mpi::PrtlSendTag<D>::dir2tag(direction)] +
+            tag_offset_h[mpi::PrtlSendTag<D>::dir2tag(direction)] +
             npart_per_tag_arr[mpi::PrtlSendTag<D>::dir2tag(direction)]));
         // Tuple that contains the start and end indices for allocation_vector pointing to a given tag type = dir2tag(dir)
         auto range_allocate = std::make_pair(
