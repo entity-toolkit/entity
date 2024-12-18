@@ -1,7 +1,7 @@
 [simulation]
   name = "wald"
   engine = "grpic"
-  runtime = 110.0
+  runtime = 510.0
 
 [grid]
   resolution = [128,128]
@@ -21,14 +21,14 @@
       ds = 0.5
 
 [scales]
-  larmor0 = 1.0 #0.0025
-  skindepth0 = 1.0 #0.05
+  larmor0 = 0.0025
+  skindepth0 = 0.05
 
 [algorithms]
   current_filters = 4
 
   [algorithms.timestep]
-    CFL = 0.3
+    CFL = 0.5
 
   [algorithms.toggles]
     deposit = false
@@ -56,8 +56,8 @@
 [setup]
   #multiplicity = 1.0
   #sigma_max = 1000.0
-  #inj_rmin = 1.2
-  #inj_rmax = 7.5
+  inj_rmin = 1.2
+  inj_rmax = 7.5
 
 [output]
   format = "hdf5"
