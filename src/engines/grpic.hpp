@@ -259,15 +259,15 @@ namespace ntt {
            *          x_prtl   at 1
            *          u_prtl   at 1/2
            */
+        } else {
+            /**
+             * em0::B <- em::B
+             * em0::D <- em::D
+             *
+             * Now: em0::B & em0::D at -1/2
+             */
+            CopyFields(dom);
         }
-      } else {
-          /**
-           * em0::B <- em::B
-           * em0::D <- em::D
-           *
-           * Now: em0::B & em0::D at -1/2
-           */
-          CopyFields(dom);
       }
 
     /**
