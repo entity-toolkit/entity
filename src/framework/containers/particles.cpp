@@ -47,9 +47,6 @@ namespace ntt {
     tag   = array_t<short*> { label + "_tag", maxnpart };
     tag_h = Kokkos::create_mirror_view(tag);
 
-    tag_offset = array_t<int*> { label + "_tag_offset", ntags() };
-    tag_offset_h = Kokkos::create_mirror_view(tag_offset);
-
     for (unsigned short n { 0 }; n < npld; ++n) {
       pld.push_back(array_t<real_t*>("pld", maxnpart));
       pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
@@ -101,17 +98,16 @@ namespace ntt {
     auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
     Kokkos::deep_copy(npart_tag_host, npart_tag);
 
-    std::vector<std::size_t> npart_tag_vec;
+    std::vector<std::size_t> npart_tag_vec(ntags());
+    std::vector<std::size_t> tag_offset(ntags());
     for (std::size_t t { 0 }; t < ntags(); ++t) {
-      npart_tag_vec.push_back(npart_tag_host(t));
-      tag_offset_h(t) = (t > 0) ? npart_tag_vec[t - 1] : 0;
+      npart_tag_vec[t]  = npart_tag_host(t);
+      tag_offset[t]     = (t > 0) ? npart_tag_vec[t - 1] : 0;
     }
     for (std::size_t t { 0 }; t < ntags(); ++t) {
-      tag_offset_h(t) += (t > 0) ? tag_offset_h(t - 1) : 0;
+      tag_offset[t] += (t > 0) ? tag_offset[t - 1] : 0;
     }
-    // Copy to device
-    Kokkos::deep_copy(tag_offset, tag_offset_h);
-    return npart_tag_vec;
+    return std::make_pair(npart_tag_vec, tag_offset);
   }
 
   template <Dimension D, Coord::type C>
