@@ -656,7 +656,15 @@ namespace ntt {
                    HERE);
     logger::Checkpoint("Communicating particles\n", HERE);
     for (auto& species : domain.species) {
-      // TO DO: npart per tag must return npart_per_tag_arr and the cumsum array
+      /*
+        Brief on arrays
+        npart_per_tag_arr (vector):       | dead count| alive count | tag=1 count | tag=2 count | ...
+                                          <--------------------------size = ntags()-------------------------->
+        tag_offset (Kokkos::View):        | 0 | dead count | dead + alive count | dead + alive + tag=1 count | ...
+                                          <--------------------------size = ntags()-------------------------->
+        npart_per_tag_arr_recv (vector):  | 0 | 0 | nrecv1 | nrecv2 | ...
+                                          <--------------------------size = ntags()-------------------------->
+      */
       auto [npart_per_tag_arr,
             tag_offset]       = species.npart_per_tag();
       auto npart              = static_cast<std::size_t>(species.npart());
@@ -665,21 +673,24 @@ namespace ntt {
       auto total_dead         = static_cast<std::size_t>(
                                 npart_per_tag_arr[ParticleTag::dead]);
       auto total_holes        = static_cast<std::size_t>(npart - total_alive);
-      auto total_send         = static_cast<std::size_t>(npart - total_alive - total_dead);
       auto total_recv         = static_cast<std::size_t>(0);
-      auto tag_count          = static_cast<std::size_t>(npart_per_tag_arr.size());
 
       std::vector<int> send_ranks, send_inds;
       std::vector<int> recv_ranks, recv_inds;
       // at this point particles should already by tagged in the pusher
 #if defined(MPI_ENABLED)
-      // Defined for debugging
-      int mpi_rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+      std::vector<std::size_t> npart_per_tag_arr_recv(species.ntags(), 0);
+      Kokkos::View<int*> shifts_in_x1("shifts_in_x1", species.ntags());
+      Kokkos::View<int*> shifts_in_x2("shifts_in_x2", species.ntags());
+      Kokkos::View<int*> shifts_in_x3("shifts_in_x3", species.ntags());
+      auto shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
+      auto shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
+      auto shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
 
-      // array that holds the number of particles to be received per tag
-      std::vector<std::size_t> npart_per_tag_arr_recv(tag_count, 0);
+      // Get receive counts + displacements
       for (auto& direction : dir::Directions<D>::all) {
+        const auto tag_recv = mpi::PrtlSendTag<D>::dir2tag(-direction);
+        const auto tag_send = mpi::PrtlSendTag<D>::dir2tag(direction);
         const auto [send_params,
                     recv_params] = GetSendRecvParams(this, domain, direction, true);
         const auto [send_indrank, send_slice] = send_params;
@@ -689,253 +700,233 @@ namespace ntt {
         if (send_rank < 0 and recv_rank < 0) {
           continue;
         }
-        const auto  send_dir_tag = mpi::PrtlSendTag<D>::dir2tag(direction);
-        const auto  nsend        = npart_per_tag_arr[send_dir_tag];
+        const auto  nsend        = npart_per_tag_arr[tag_send];
         std::size_t nrecv        = 0;
-        // Get the receive count
+
         send_ranks.push_back(send_rank);
         recv_ranks.push_back(recv_rank);
         send_inds.push_back(send_ind);
         recv_inds.push_back(recv_ind);
         comm::ParticleSendRecvCount(send_rank, recv_rank, nsend, nrecv);
         total_recv += nrecv;
-        npart_per_tag_arr_recv[mpi::PrtlSendTag<D>::dir2tag(-direction)] = nrecv;
-      }
+        npart_per_tag_arr_recv[tag_recv] = nrecv;
+
+        // @CRITICAL: Ask Hayk if the displacements are correctly set before sending
+        if constexpr (D == Dim::_1D) {
+          if ((-direction)[0] == -1) {
+            shifts_in_x1_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x1);
+          } else if ((-direction)[0] == 1) {
+            shifts_in_x1_h(tag_send) = domain.mesh.n_active(in::x1);
+          }
+        } else if constexpr (D == Dim::_2D) {
+          if ((-direction)[0] == -1) {
+            shifts_in_x1_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x1);
+          } else if ((-direction)[0] == 1) {
+            shifts_in_x1_h(tag_send) = domain.mesh.n_active()[0];
+          }
+          if ((-direction)[1] == -1) {
+            shifts_in_x2_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x2);
+          } else if ((-direction)[1] == 1) {
+            shifts_in_x2_h(tag_send) = domain.mesh.n_active(in::x2);
+          }
+        } else if constexpr (D == Dim::_3D) {
+          if ((-direction)[0] == -1) {
+            shifts_in_x1_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x1);
+          } else if ((-direction)[0] == 1) {
+            shifts_in_x1_h(tag_send) = domain.mesh.n_active(in::x1);
+          }
+          if ((-direction)[1] == -1) {
+            shifts_in_x2_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x2);
+          } else if ((-direction)[1] == 1) {
+            shifts_in_x2_h(tag_send) = domain.mesh.n_active(in::x2);
+          }
+          if ((-direction)[2] == -1) {
+            shifts_in_x3_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x3);
+          } else if ((-direction)[2] == 1) {
+            shifts_in_x3_h(tag_send) = domain.mesh.n_active(in::x3);
+          }
+        }
+      } // end directions loop
+      Kokkos::deep_copy(shifts_in_x1, shifts_in_x1_h);
+      Kokkos::deep_copy(shifts_in_x2, shifts_in_x2_h);
+      Kokkos::deep_copy(shifts_in_x3, shifts_in_x3_h);
 
       raise::FatalIf((npart + total_recv) >= species.maxnpart(),
                      "Too many particles to receive (cannot fit into maxptl)",
                      HERE);
-      // Now we know the number of particles to be sent and received per direction
-      /* permute vector contains the indices of the tags to send and receive
-         in the order of the directions
-         E.g., consider the following tag array
-          [ 0, 0, 3, 0, 1,...]
-         Then, permute vector will look something like
-          [0, 1, 3, ...,  4, ..., ...   2, ...          ]
-          |<--------- >| |<----->|      |<----->| ....
-             tag=0 ct     tag=1 ct       tag=3 ct
-              (dead)      (alive)        (tag1)  ...
-      */
-      auto& this_tag        = species.tag;
-      Kokkos::View<std::size_t*> permute_vector("permute_vector", species.npart());
-      Kokkos::View<std::size_t*> current_offset("current_offset", species.ntags());
-      // @TODO: do not save tag = 1 particles into permute_vector
-      // instead of species.npart(), size will be species.npart() - npart_per_tag[ParticleTag::alive];
 
+      auto& this_tag        = species.tag;
+      auto& this_i1         = species.i1;
+      auto& this_i1_prev    = species.i1_prev;
+      auto& this_i2         = species.i2;
+      auto& this_i2_prev    = species.i2_prev;
+      auto& this_i3         = species.i3;
+      auto& this_i3_prev    = species.i3_prev;
+
+      /* 
+          Brief on permute vector: It contains the sorted indices of tag != alive particles
+          E.g., consider the following tag array
+          species.tag =     [ 0, 0, 3, 0, 1, 2,...]
+          Then, permute vector will look something like
+          permute_vector =  [0, 1, 3, ...,  4, ..., ...   5, ...          ]
+                            |<--------- >| |<----->|      |<----->| ....
+                               tag=0 ct     tag=1 ct       tag=2 ct
+      */
+      Kokkos::View<std::size_t*> permute_vector("permute_vector", total_holes);
+      Kokkos::View<std::size_t*> current_offset("current_offset", species.ntags());
+      auto &this_tag_offset = tag_offset;
+
+      auto n_alive = npart_per_tag_arr[ParticleTag::alive];
+
+      if constexpr (D == Dim::_1D){
       Kokkos::parallel_for(
-        "PermuteVector",
+        "PermuteVector and Displace",
         species.npart(),
         Lambda(index_t p) {
           const auto current_tag     = this_tag(p);
-          const auto idx_permute_vec = tag_offset(current_tag) +
-                                       Kokkos::atomic_fetch_add(
-                                         &current_offset(current_tag),
-                                         1);
-          permute_vector(idx_permute_vec) = p;
+          if (current_tag != ParticleTag::alive){
+            // dead tags only
+            if (current_tag == ParticleTag::dead) {
+              const auto idx_permute_vec =  Kokkos::atomic_fetch_add(
+                                            &current_offset(current_tag),
+                                            1);
+            }
+            // tag = 1->N (excluding dead and alive)
+            else{
+              const auto idx_permute_vec =  this_tag_offset(current_tag) -
+                                            n_alive + 
+                                            Kokkos::atomic_fetch_add(
+                                            &current_offset(current_tag),
+                                            1);
+              permute_vector(idx_permute_vec) = p;
+              this_i1(p)      += shifts_in_x1(current_tag);
+              this_i1_prev(p) += shifts_in_x1(current_tag);
+            }
+          }
         });
+      }
 
-      // Check: add the end of the loop, current_offset should be equal to npart_per_tag
+      if constexpr (D == Dim::_2D){
+      Kokkos::parallel_for(
+        "PermuteVector and Displace",
+        species.npart(),
+        Lambda(index_t p) {
+          const auto current_tag     = this_tag(p);
+          if (current_tag != ParticleTag::alive){
+            // dead tags only
+            if (current_tag == ParticleTag::dead) {
+              const auto idx_permute_vec =  Kokkos::atomic_fetch_add(
+                                            &current_offset(current_tag),
+                                            1);
+            }
+            // tag = 1->N (excluding dead and alive)
+            else{
+              const auto idx_permute_vec =  this_tag_offset(current_tag) -
+                                            n_alive + 
+                                            Kokkos::atomic_fetch_add(
+                                            &current_offset(current_tag),
+                                            1);
+              permute_vector(idx_permute_vec) = p;
+              this_i1(p)      += shifts_in_x1(current_tag);
+              this_i1_prev(p) += shifts_in_x1(current_tag);
+              this_i2(p)      += shifts_in_x2(current_tag);
+              this_i2_prev(p) += shifts_in_x2(current_tag);
+            }
+          }
+        });
+      }
+
+      if constexpr (D == Dim::_3D){
+      Kokkos::parallel_for(
+        "PermuteVector and Displace",
+        species.npart(),
+        Lambda(index_t p) {
+          const auto current_tag     = this_tag(p);
+          if (current_tag != ParticleTag::alive){
+            // dead tags only
+            if (current_tag == ParticleTag::dead) {
+              const auto idx_permute_vec =  Kokkos::atomic_fetch_add(
+                                            &current_offset(current_tag),
+                                            1);
+            }
+            // tag = 1->N (excluding dead and alive)
+            else{
+              const auto idx_permute_vec =  this_tag_offset(current_tag) -
+                                            n_alive + 
+                                            Kokkos::atomic_fetch_add(
+                                            &current_offset(current_tag),
+                                            1);
+              permute_vector(idx_permute_vec) = p;
+              this_i1(p)      += shifts_in_x1(current_tag);
+              this_i1_prev(p) += shifts_in_x1(current_tag);
+              this_i2(p)      += shifts_in_x2(current_tag);
+              this_i2_prev(p) += shifts_in_x2(current_tag);
+              this_i3(p)      += shifts_in_x3(current_tag);
+              this_i3_prev(p) += shifts_in_x3(current_tag);
+            }
+          }
+        });
+      }
+
+      // Sanity check: npart_per_tag must be equal to the current offset except tag=alive
       auto current_offset_h = Kokkos::create_mirror_view(current_offset);
       Kokkos::deep_copy(current_offset_h, current_offset);
-      for (std::size_t i { 0 }; i < current_offset_h.size(); ++i) {
+      for (std::size_t i { 0 }; i < species.ntags(); ++i) {
+        if (i != ParticleTag::alive){
         raise::FatalIf(current_offset_h(i) != npart_per_tag_arr[i],
                        "Error in permute vector construction",
                        HERE);
+        }
+        else{
+          raise::FatalIf(current_offset_h(i) != 0,
+                       "Error in permute vector construction",
+                       HERE);
+        }
       }
 
-      // allocation_vector(p) assigns the pth received particle
-      // to the pth hole in the array, or after npart() if p > sent+dead count.
+      /*
+          Brief on allocation vector: It contains the indices of holes that are filled
+          by the particles received from other domains
+          case 1: total_recv > nholes
+            allocation_vector = | i1 | i2 | i3 | ....    | npart | npart + 1 | ...
+                                <-------total_holes------>   <---total_recv - nholes-->
+                               (same as permuute vector)   (extra particles appended at end)
+          case 2: total_recv <= nholes
+            allocation_vector = | i1 | i2 | i3 | ....
+                                <----total_recv----->
+                                (same as permuute vector)
+      */
       Kokkos::View<std::size_t*> allocation_vector("allocation_vector", total_recv);
-
-      // @CRITICAL: this may overwrite unsent data
-      Kokkos::parallel_for(
-        "AllocationVector",
-        total_recv,
-        Lambda(index_t p) {
-          // Case: received particle count less than dead particle count -> replace dead particles
-          if (p < total_dead) {
+      if (total_recv > total_holes)
+      {
+        // Fill the first bit with the permute vector; these are the holes to be filled
+        Kokkos::parallel_for(
+          "AllocationVector",
+          total_holes,
+          Lambda(index_t p) {
             allocation_vector(p) = permute_vector(p);
-          }
-          // Case: received particle count > dead particle count but < sent particle count -> replace
-          //       sent particles
-          else if (p < total_holes && p >= total_dead) {
-            allocation_vector(p) = permute_vector(total_alive + p);
-          }
-          // Case: received particle count exceeds sent + dead particles -> append at the end
-          else {
-            allocation_vector(p) = static_cast<int>(npart + (p - total_holes));
-          }
-        });
-      Kokkos::fence();
+          });
 
-      std::size_t count_recv = 0;
-      std::size_t iteration  = 0;
-      // Main loop over all direction where we send the data
-      for (auto& direction : dir::Directions<D>::all) {
-        // When nowhere to send and receive
-        auto send_rank = send_ranks[iteration];
-        auto recv_rank = recv_ranks[iteration];
-
-        if (send_rank < 0 and recv_rank < 0) {
-          continue;
-        }
-        // Get the coordinate shifts in xi
-        std::vector<int> shifts_in_x;
-        auto             recv_ind = recv_inds[iteration];
-        if constexpr (D == Dim::_1D) {
-          int shift_in_x1 { 0 };
-          if ((-direction)[0] == -1) {
-            shift_in_x1 = -subdomain(recv_ind).mesh.n_active(in::x1);
-          } else if ((-direction)[0] == 1) {
-            shift_in_x1 = domain.mesh.n_active(in::x1);
-          }
-          shifts_in_x.push_back(shift_in_x1);
-        } else if constexpr (D == Dim::_2D) {
-          int shift_in_x1 { 0 }, shift_in_x2 { 0 };
-          if ((-direction)[0] == -1) {
-            shift_in_x1 = -subdomain(recv_ind).mesh.n_active(in::x1);
-          } else if ((-direction)[0] == 1) {
-            shift_in_x1 = domain.mesh.n_active()[0];
-          }
-          if ((-direction)[1] == -1) {
-            shift_in_x2 = -subdomain(recv_ind).mesh.n_active(in::x2);
-          } else if ((-direction)[1] == 1) {
-            shift_in_x2 = domain.mesh.n_active(in::x2);
-          }
-          shifts_in_x.push_back(shift_in_x1);
-          shifts_in_x.push_back(shift_in_x2);
-        } else if constexpr (D == Dim::_3D) {
-          int shift_in_x1 { 0 }, shift_in_x2 { 0 }, shift_in_x3 { 0 };
-          if ((-direction)[0] == -1) {
-            shift_in_x1 = -subdomain(recv_ind).mesh.n_active(in::x1);
-          } else if ((-direction)[0] == 1) {
-            shift_in_x1 = domain.mesh.n_active(in::x1);
-          }
-          if ((-direction)[1] == -1) {
-            shift_in_x2 = -subdomain(recv_ind).mesh.n_active(in::x2);
-          } else if ((-direction)[1] == 1) {
-            shift_in_x2 = domain.mesh.n_active(in::x2);
-          }
-          if ((-direction)[2] == -1) {
-            shift_in_x3 = -subdomain(recv_ind).mesh.n_active(in::x3);
-          } else if ((-direction)[2] == 1) {
-            shift_in_x3 = domain.mesh.n_active(in::x3);
-          }
-          shifts_in_x.push_back(shift_in_x1);
-          shifts_in_x.push_back(shift_in_x2);
-          shifts_in_x.push_back(shift_in_x3);
-        }
-
-        // Tuple that contains the start and end indices of permtute_vec pointing to a given tag type = dir2tag(dir)
-        auto tag_offset_h       = Kokkos::create_mirror_view(tag_offset);
-        Kokkos::deep_copy(tag_offset_h, tag_offset);
-        auto range_permute = std::make_pair(
-          static_cast<std::size_t>(
-            tag_offset_h[mpi::PrtlSendTag<D>::dir2tag(direction)]),
-          static_cast<std::size_t>(
-            tag_offset_h[mpi::PrtlSendTag<D>::dir2tag(direction)] +
-            npart_per_tag_arr[mpi::PrtlSendTag<D>::dir2tag(direction)]));
-        // Tuple that contains the start and end indices for allocation_vector pointing to a given tag type = dir2tag(dir)
-        auto range_allocate = std::make_pair(
-          static_cast<std::size_t>(count_recv),
-          static_cast<std::size_t>(
-            count_recv +
-            npart_per_tag_arr_recv[mpi::PrtlSendTag<D>::dir2tag(-direction)]));
-        // @TODO: check subview index
-        // contains the indices of all particles of a given tag = mpi::PrtlSendTag<D>::dir2tag(direction)
-        auto indices_to_send = Kokkos::subview(permute_vector, range_permute);
-        // contains the indices of the holes where the received particles will be placed
-        auto indices_to_allocate = Kokkos::subview(allocation_vector,
-                                                   range_allocate);
-
-        // Main function that sends the particles and receives the arrays
-        comm::CommunicateParticlesBuffer<M::Dim, M::CoordType>(species,
-                                                               indices_to_send,
-                                                               indices_to_allocate,
-                                                               send_rank,
-                                                               recv_rank,
-                                                               shifts_in_x);
-        count_recv += npart_per_tag_arr_recv[mpi::PrtlSendTag<D>::dir2tag(-direction)];
-        iteration++;
+        // Now allocate the rest to the end of the array
+        Kokkos::parallel_for(
+          "AllocationVector",
+          total_recv - total_holes,
+          Lambda(index_t p) {
+            allocation_vector(total_holes + p) = static_cast<int>(npart + p);
+          });
       }
-      // Compute where the received particles are allocated
-      // if (mpi_rank == 0){
-      // Kokkos::View<std::size_t*> particles_allocated_per_tag("particles
-      // allocated per tag", tag_count); Kokkos::parallel_for(
-      //  "ParticlesAllocatedPerTag",
-      //  total_recv,
-      //  Lambda(const std::size_t i) {
-      //    auto index = allocation_vector(i);
-      //    auto tag   = this_tag(index);
-      //    Kokkos::atomic_fetch_add(&particles_allocated_per_tag(tag), 1);
-      //  });
-      // Kokkos::fence();
-      // auto particles_allocated_per_tag_h =
-      // Kokkos::create_mirror_view(particles_allocated_per_tag);
-      // Kokkos::deep_copy(particles_allocated_per_tag_h,
-      // particles_allocated_per_tag);
-
-      // std::cout << "Particles allocated per tag (post recv): ";
-      // for (std::size_t i = 0; i < tag_count; i++){
-      //   std::cout << "[" << particles_allocated_per_tag_h[i] << "] ";
-      // }
-      // std::cout << std::endl;
-      //  }
-      //  If receive count is less than send count then make the tags of sent dead
-      if (total_recv <= total_holes) {
-        if (total_recv <= total_dead) {
-          // Case: all sent particles' tags are set to dead
-          /*   (received)
-              [<OOOOOOOOOOO--> | <------------------> | <-------->]
-                     (dead)             (alive)            (sent)
-                                                             ||
-                                                      (to be made dead)
-                                                      ^
-                                                    (offset)
-          */
-
-          auto offset = total_alive + total_dead;
-          Kokkos::parallel_for(
-            "CommunicateParticles",
-            total_send,
-            Lambda(index_t p) {
-              this_tag(permute_vector(offset + p)) = ParticleTag::dead;
-            });
-        } else {
-          // Case: tags of sent particles that are not replaced by recevied particles are made dead
-          /*   (received)                             (received)
-              [<OOOOOOOOOO> | <------------------> |<OOOOOOOOOOO------------->]
-                (dead)         (alive)                     (sent)
-                                                                      ||
-                                                                 (to be made dead)
-                                                               ^
-                                                            (offset)
-          */
-          auto offset = total_alive + total_recv;
-          Kokkos::parallel_for(
-            "CommunicateParticles",
-            total_send - (total_recv - total_dead),
-            Lambda(index_t p) {
-              this_tag(permute_vector(offset + p)) = ParticleTag::dead;
-            });
-        }
+      else
+      {   Kokkos::parallel_for(
+          "AllocationVector",
+          total_recv,
+          Lambda(index_t p) {
+            allocation_vector(p) = permute_vector(p);
+          });
       }
-
-      // Check if the particle tags are only dead or alive
-      species.set_npart(npart + std::max(total_send, total_recv) - total_send);
-      npart_per_tag_arr = species.npart_per_tag();
-      // if (mpi_rank == 0)
-      //{
-      //   std::cout << "After COMM: " << std::endl;
-      //   std::cout << "Tag counts: ";
-      //   for (std::size_t i = 0; i < tag_count; i++){
-      //     std::cout << "[" << npart_per_tag_arr[i] << "] ";
-      //   }
-      //   std::cout << std::endl;
-      //   std::cout << "Holes filled: " << total_holes << " Total recv: " << total_recv <<
-      //   "Total send: " << total_send << std::endl;
-      //   std::cout << std::endl << "*************"<< std::endl;
-      // }
+      // Communicate the arrays
+      comm::CommunicateParticlesBuffer<M::Dim, M::CoordType>(species, permute_vector, allocation_vector,
+                                        this_tag_offset, npart_per_tag_arr, npart_per_tag_arr_recv,
+                                        send_ranks, recv_ranks);
 #endif
     }
   }
