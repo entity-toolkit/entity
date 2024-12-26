@@ -139,7 +139,7 @@ namespace ntt {
 
     constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
 
-    static constexpr type        variants[] = { Cart, Sph, Qsph, Bltp};
+    static constexpr type        variants[] = { Cart, Sph, Qsph, Bltp };
     static constexpr const char* lookup[]   = { "cart", "sph", "qsph", "bltp" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
@@ -164,9 +164,9 @@ namespace ntt {
                                                 QSpherical,   Kerr_Schild,
                                                 QKerr_Schild, Kerr_Schild_0,
                                                 BoyerLindqTP };
-    static constexpr const char* lookup[]   = { "minkowski",    "spherical",
-                                                "qspherical",   "kerr_schild",
-                                                "qkerr_schild", "kerr_schild_0",
+    static constexpr const char* lookup[]   = { "minkowski",     "spherical",
+                                                "qspherical",    "kerr_schild",
+                                                "qkerr_schild",  "kerr_schild_0",
                                                 "boyer_lindq_tp" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
@@ -254,8 +254,12 @@ namespace ntt {
     constexpr PrtlPusher(uint8_t c)
       : enums_hidden::BaseEnum<PrtlPusher> { c } {}
 
-    static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
-    static constexpr const char* lookup[] = { "boris", "vay", "photon", "forcefree", "none"};
+    static constexpr type variants[] = { BORIS, VAY, PHOTON, FORCEFREE, NONE };
+    static constexpr const char* lookup[] = { "boris",
+                                              "vay",
+                                              "photon",
+                                              "forcefree",
+                                              "none" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

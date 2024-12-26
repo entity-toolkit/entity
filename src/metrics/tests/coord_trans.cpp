@@ -3,7 +3,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
 
-#include "metrics/flux_surface.h"
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
 #include "metrics/minkowski.h"
