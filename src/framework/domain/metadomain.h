@@ -18,6 +18,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
 #include "utils/timer.h"
 
 #include "framework/containers/species.h"
@@ -29,10 +30,15 @@
   #include <mpi.h>
 #endif // MPI_ENABLED
 
-#if defined OUTPUT_ENABLED
+#if defined(OUTPUT_ENABLED)
+  #include "checkpoint/writer.h"
   #include "output/writer.h"
-#endif
 
+  #include <adios2.h>
+  #include <adios2/cxx11/KokkosView.h>
+#endif // OUTPUT_ENABLED
+
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
@@ -68,14 +74,14 @@ namespace ntt {
 
     template <typename Func, typename... Args>
     void runOnLocalDomains(Func func, Args&&... args) {
-      for (auto& ldidx : g_local_subdomain_indices) {
+      for (auto& ldidx : l_subdomain_indices()) {
         func(g_subdomains[ldidx], std::forward<Args>(args)...);
       }
     }
 
     template <typename Func, typename... Args>
     void runOnLocalDomainsConst(Func func, Args&&... args) const {
-      for (auto& ldidx : g_local_subdomain_indices) {
+      for (auto& ldidx : l_subdomain_indices()) {
         func(g_subdomains[ldidx], std::forward<Args>(args)...);
       }
     }
@@ -93,7 +99,6 @@ namespace ntt {
      * @param global_prtl_bc boundary conditions for particles
      * @param metric_params parameters for the metric
      * @param species_params parameters for the particle species
-     * @param output_params parameters for the output
      */
     Metadomain(unsigned int,
                const std::vector<int>&,
@@ -102,22 +107,33 @@ namespace ntt {
                const boundaries_t<FldsBC>&,
                const boundaries_t<PrtlBC>&,
                const std::map<std::string, real_t>&,
-               const std::vector<ParticleSpecies>&
-#if defined(OUTPUT_ENABLED)
-               ,
-               const std::string&
-#endif
-    );
-
-#if defined(OUTPUT_ENABLED)
-    void InitWriter(const SimulationParams&);
-    auto Write(const SimulationParams&, std::size_t, long double) -> bool;
-#endif
+               const std::vector<ParticleSpecies>&);
 
     Metadomain(const Metadomain&)            = delete;
     Metadomain& operator=(const Metadomain&) = delete;
 
     ~Metadomain() = default;
+
+#if defined(OUTPUT_ENABLED)
+    void InitWriter(adios2::ADIOS*, const SimulationParams&, bool is_resuming);
+    auto Write(const SimulationParams&,
+               std::size_t,
+               std::size_t,
+               long double,
+               long double,
+               std::function<void(const std::string&,
+                                  ndfield_t<M::Dim, 6>&,
+                                  std::size_t,
+                                  const Domain<S, M>&)> = {}) -> bool;
+    void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
+    auto WriteCheckpoint(const SimulationParams&,
+                         std::size_t,
+                         std::size_t,
+                         long double,
+                         long double) -> bool;
+
+    void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
+#endif
 
     /* setters -------------------------------------------------------------- */
 
@@ -155,8 +171,58 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto local_subdomain_indices() const -> std::vector<unsigned int> {
+    auto l_subdomain_indices() const -> std::vector<unsigned int> {
       return g_local_subdomain_indices;
+    }
+
+    [[nodiscard]]
+    auto l_npart_perspec() const -> std::vector<std::size_t> {
+      std::vector<std::size_t> npart(g_species_params.size(), 0);
+      for (const auto& ldidx : l_subdomain_indices()) {
+        for (std::size_t i = 0; i < g_species_params.size(); ++i) {
+          npart[i] += g_subdomains[ldidx].species[i].npart();
+        }
+      }
+      return npart;
+    }
+
+    [[nodiscard]]
+    auto l_maxnpart_perspec() const -> std::vector<std::size_t> {
+      std::vector<std::size_t> maxnpart(g_species_params.size(), 0);
+      for (const auto& ldidx : l_subdomain_indices()) {
+        for (std::size_t i = 0; i < g_species_params.size(); ++i) {
+          maxnpart[i] += g_subdomains[ldidx].species[i].maxnpart();
+        }
+      }
+      return maxnpart;
+    }
+
+    [[nodiscard]]
+    auto l_npart() const -> std::size_t {
+      const auto npart = l_npart_perspec();
+      return std::accumulate(npart.begin(), npart.end(), 0);
+    }
+
+    [[nodiscard]]
+    auto l_ncells() const -> std::size_t {
+      std::size_t ncells_local = 0;
+      for (const auto& ldidx : l_subdomain_indices()) {
+        std::size_t ncells = 1;
+        for (const auto& n : g_subdomains[ldidx].mesh.n_all()) {
+          ncells *= n;
+        }
+        ncells_local += ncells;
+      }
+      return ncells_local;
+    }
+
+    [[nodiscard]]
+    auto species_labels() const -> std::vector<std::string> {
+      std::vector<std::string> labels;
+      for (const auto& sp : g_species_params) {
+        labels.push_back(sp.label());
+      }
+      return labels;
     }
 
   private:
@@ -176,7 +242,8 @@ namespace ntt {
     const std::vector<ParticleSpecies>  g_species_params;
 
 #if defined(OUTPUT_ENABLED)
-    out::Writer g_writer;
+    out::Writer        g_writer;
+    checkpoint::Writer g_checkpoint_writer;
 #endif
 
 #if defined(MPI_ENABLED)

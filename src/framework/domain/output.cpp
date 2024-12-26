@@ -14,6 +14,7 @@
 #include "metrics/spherical.h"
 
 #include "framework/containers/particles.h"
+#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
@@ -25,21 +26,29 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif // MPI_ENABLED
+
+#include <algorithm>
+#include <filesystem>
+#include <iterator>
 #include <vector>
 
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::InitWriter(const SimulationParams& params) {
+  void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
+                                    const SimulationParams& params,
+                                    bool                    is_resuming) {
     raise::ErrorIf(
-      local_subdomain_indices().size() != 1,
+      l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
-    auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
-
     const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
 
     auto glob_shape_with_ghosts = mesh().n_active();
@@ -54,16 +63,29 @@ namespace ntt {
       }
     }
 
+    g_writer.init(ptr_adios,
+                  params.template get<std::string>("output.format"),
+                  params.template get<std::string>("simulation.name"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
+                              params.template get<std::vector<unsigned int>>(
+                                "output.fields.downsampling"),
                               incl_ghosts,
                               M::CoordType);
     const auto fields_to_write = params.template get<std::vector<std::string>>(
       "output.fields.quantities");
+    const auto custom_fields_to_write = params.template get<std::vector<std::string>>(
+      "output.fields.custom");
+    std::vector<std::string> all_fields_to_write;
+    std::merge(fields_to_write.begin(),
+               fields_to_write.end(),
+               custom_fields_to_write.begin(),
+               custom_fields_to_write.end(),
+               std::back_inserter(all_fields_to_write));
     const auto species_to_write = params.template get<std::vector<unsigned short>>(
       "output.particles.species");
-    g_writer.defineFieldOutputs(S, fields_to_write);
+    g_writer.defineFieldOutputs(S, all_fields_to_write);
     g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
     // spectra write all particle species
     std::vector<unsigned short> spectra_species {};
@@ -78,7 +100,11 @@ namespace ntt {
                           params.template get<long double>(
                             "output." + std::string(type) + ".interval_time"));
     }
-    g_writer.writeAttrs(params);
+    if (is_resuming and std::filesystem::exists(g_writer.fname())) {
+      g_writer.setMode(adios2::Mode::Append);
+    } else {
+      g_writer.writeAttrs(params);
+    }
   }
 
   template <SimEngine::type S, class M, FldsID::type F>
@@ -153,67 +179,94 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto Metadomain<S, M>::Write(const SimulationParams& params,
-                               std::size_t             step,
-                               long double             time) -> bool {
+  auto Metadomain<S, M>::Write(
+    const SimulationParams& params,
+    std::size_t             current_step,
+    std::size_t             finished_step,
+    long double             current_time,
+    long double             finished_time,
+    std::function<
+      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
+      CustomFieldOutput) -> bool {
     raise::ErrorIf(
-      local_subdomain_indices().size() != 1,
+      l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
     const auto write_fields = params.template get<bool>(
                                 "output.fields.enable") and
-                              g_writer.shouldWrite("fields", step, time);
+                              g_writer.shouldWrite("fields",
+                                                   finished_step,
+                                                   finished_time);
     const auto write_particles = params.template get<bool>(
                                    "output.particles.enable") and
-                                 g_writer.shouldWrite("particles", step, time);
+                                 g_writer.shouldWrite("particles",
+                                                      finished_step,
+                                                      finished_time);
     const auto write_spectra = params.template get<bool>(
                                  "output.spectra.enable") and
-                               g_writer.shouldWrite("spectra", step, time);
+                               g_writer.shouldWrite("spectra",
+                                                    finished_step,
+                                                    finished_time);
     if (not(write_fields or write_particles or write_spectra)) {
       return false;
     }
-    auto local_domain = subdomain_ptr(local_subdomain_indices()[0]);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing output", HERE);
-    g_writer.beginWriting(params.template get<std::string>("simulation.name"),
-                          step,
-                          time);
-
+    g_writer.beginWriting(current_step, current_time);
     if (write_fields) {
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
+      const auto dwn         = params.template get<std::vector<unsigned int>>(
+        "output.fields.downsampling");
 
       for (unsigned short dim = 0; dim < M::Dim; ++dim) {
-        const auto is_last = local_domain->offset_ncells()[dim] +
-                               local_domain->mesh.n_active()[dim] ==
-                             mesh().n_active()[dim];
-        array_t<real_t*> xc { "Xc",
-                              local_domain->mesh.n_active()[dim] +
-                                (incl_ghosts ? 2 * N_GHOSTS : 0) };
-        array_t<real_t*> xe { "Xe",
-                              local_domain->mesh.n_active()[dim] +
-                                (incl_ghosts ? 2 * N_GHOSTS : 0) +
-                                (is_last ? 1 : 0) };
-        const auto       offset = (incl_ghosts ? N_GHOSTS : 0);
-        const auto       ncells = local_domain->mesh.n_active()[dim];
-        const auto&      metric = local_domain->mesh.metric;
+        const auto l_size   = local_domain->mesh.n_active()[dim];
+        const auto l_offset = local_domain->offset_ncells()[dim];
+        const auto g_size   = mesh().n_active()[dim];
+
+        const auto dwn_in_dim = dwn[dim];
+
+        const double n = l_size;
+        const double d = dwn_in_dim;
+        const double l = l_offset;
+        const double f = math::ceil(l / d) * d - l;
+
+        const auto first_cell = static_cast<std::size_t>(f);
+        const auto l_size_dwn = static_cast<std::size_t>(math::ceil((n - f) / d));
+
+        const auto is_last = l_offset + l_size == g_size;
+
+        const auto add_ghost = (incl_ghosts ? 2 * N_GHOSTS : 0);
+        const auto add_last  = (is_last ? 1 : 0);
+
+        array_t<real_t*> xc { "Xc", l_size_dwn + add_ghost };
+        array_t<real_t*> xe { "Xe", l_size_dwn + add_ghost + add_last };
+
+        const auto offset = (incl_ghosts ? N_GHOSTS : 0);
+        const auto ncells = l_size_dwn;
+
+        const auto& metric = local_domain->mesh.metric;
+
         Kokkos::parallel_for(
           "GenerateMesh",
           ncells,
-          Lambda(index_t i) {
+          Lambda(index_t i_dwn) {
+            const auto      i  = first_cell + i_dwn * dwn_in_dim;
             const auto      i_ = static_cast<real_t>(i);
             coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
             x_Cd[dim] = i_ + HALF;
+            // TODO : change to convert by component
             metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-            xc(offset + i) = x_Ph[dim];
-            x_Cd[dim]      = i_;
+            xc(offset + i_dwn) = x_Ph[dim];
+            x_Cd[dim]          = i_;
             metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-            xe(offset + i) = x_Ph[dim];
-            if (is_last && i == ncells - 1) {
+            xe(offset + i_dwn) = x_Ph[dim];
+            if (is_last && i_dwn == ncells - 1) {
               x_Cd[dim] = i_ + ONE;
               metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-              xe(offset + i + 1) = x_Ph[dim];
+              xe(offset + i_dwn + 1) = x_Ph[dim];
             }
           });
         g_writer.writeMesh(dim, xc, xe);
@@ -278,14 +331,24 @@ namespace ntt {
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
-            SynchronizeFields(*local_domain,
-                              Comm::Bckp,
-                              { addresses.back(), addresses.back() + 1 });
+          } else if (fld.is_custom()) {
+            if (CustomFieldOutput) {
+              CustomFieldOutput(fld.name().substr(1),
+                                local_domain->fields.bckp,
+                                addresses.back(),
+                                *local_domain);
+            } else {
+              raise::Error("Custom output requested but no function provided",
+                           HERE);
+            }
           } else {
-            raise::Error(
-              "Wrong # of components requested for non-moment output",
-              HERE);
+            raise::Error("Wrong # of components requested for "
+                         "non-moment/non-custom output",
+                         HERE);
           }
+          SynchronizeFields(*local_domain,
+                            Comm::Bckp,
+                            { addresses.back(), addresses.back() + 1 });
         } else if (fld.comp.size() == 3) { // vector
           for (auto i = 0; i < 3; ++i) {
             names.push_back(fld.name(i));
@@ -433,34 +496,55 @@ namespace ntt {
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
           buff_x3 = array_t<real_t*> { "x3", nout };
         }
-        // clang-format off
-        Kokkos::parallel_for(
-          "PrtlToPhys",
-          nout,
-          kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                          buff_x1, buff_x2, buff_x3,
-                                          buff_ux1, buff_ux2, buff_ux3,
-                                          buff_wei,
-                                          species.i1, species.i2, species.i3,
-                                          species.dx1, species.dx2, species.dx3,
-                                          species.ux1, species.ux2, species.ux3,
-                                          species.phi, species.weight,
-                                          local_domain->mesh.metric));
-        // clang-format on
-        g_writer.writeParticleQuantity(buff_wei, prtl.name("W", 0));
-        g_writer.writeParticleQuantity(buff_ux1, prtl.name("U", 1));
-        g_writer.writeParticleQuantity(buff_ux2, prtl.name("U", 2));
-        g_writer.writeParticleQuantity(buff_ux3, prtl.name("U", 3));
+        if (nout > 0) {
+          // clang-format off
+          Kokkos::parallel_for(
+            "PrtlToPhys",
+            nout,
+            kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
+                                            buff_x1, buff_x2, buff_x3,
+                                            buff_ux1, buff_ux2, buff_ux3,
+                                            buff_wei,
+                                            species.i1, species.i2, species.i3,
+                                            species.dx1, species.dx2, species.dx3,
+                                            species.ux1, species.ux2, species.ux3,
+                                            species.phi, species.weight,
+                                            local_domain->mesh.metric));
+          // clang-format on
+        }
+        std::size_t offset   = 0;
+        std::size_t glob_tot = nout;
+#if defined(MPI_ENABLED)
+        auto glob_nout = std::vector<std::size_t>(g_ndomains);
+        MPI_Allgather(&nout,
+                      1,
+                      mpi::get_type<std::size_t>(),
+                      glob_nout.data(),
+                      1,
+                      mpi::get_type<std::size_t>(),
+                      MPI_COMM_WORLD);
+        glob_tot = 0;
+        for (auto r = 0; r < g_mpi_size; ++r) {
+          if (r < g_mpi_rank) {
+            offset += glob_nout[r];
+          }
+          glob_tot += glob_nout[r];
+        }
+#endif // MPI_ENABLED
+        g_writer.writeParticleQuantity(buff_wei, glob_tot, offset, prtl.name("W", 0));
+        g_writer.writeParticleQuantity(buff_ux1, glob_tot, offset, prtl.name("U", 1));
+        g_writer.writeParticleQuantity(buff_ux2, glob_tot, offset, prtl.name("U", 2));
+        g_writer.writeParticleQuantity(buff_ux3, glob_tot, offset, prtl.name("U", 3));
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
-          g_writer.writeParticleQuantity(buff_x1, prtl.name("X", 1));
+          g_writer.writeParticleQuantity(buff_x1, glob_tot, offset, prtl.name("X", 1));
         }
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          g_writer.writeParticleQuantity(buff_x2, prtl.name("X", 2));
+          g_writer.writeParticleQuantity(buff_x2, glob_tot, offset, prtl.name("X", 2));
         }
         if constexpr (M::Dim == Dim::_3D or
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
-          g_writer.writeParticleQuantity(buff_x3, prtl.name("X", 3));
+          g_writer.writeParticleQuantity(buff_x3, glob_tot, offset, prtl.name("X", 3));
         }
       }
     } // end shouldWrite("particles", step, time)

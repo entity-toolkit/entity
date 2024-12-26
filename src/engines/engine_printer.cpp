@@ -137,6 +137,7 @@ namespace ntt {
         const auto hash           = std::string(ENTITY_GIT_HASH);
         const auto pgen           = std::string(PGEN);
         const auto nspec          = metadomain.species_params().size();
+        const auto precision      = (sizeof(real_t) == 4) ? "single" : "double";
 
 #if defined(__clang__)
         const std::string ccx = "Clang/LLVM " __clang_version__;
@@ -219,6 +220,7 @@ namespace ntt {
         add_param(report, 4, "HDF5", "%s", hdf5_version.c_str());
         add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
         add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
+        add_param(report, 4, "Precision", "%s", precision);
         add_param(report, 4, "Debug", "%s", dbg.c_str());
         report += "\n";
         add_category(report, 4, "Configuration");
@@ -342,7 +344,7 @@ namespace ntt {
 
     for (unsigned int idx { 0 }; idx < m_metadomain.ndomains(); ++idx) {
       auto is_local = false;
-      for (const auto& lidx : m_metadomain.local_subdomain_indices()) {
+      for (const auto& lidx : m_metadomain.l_subdomain_indices()) {
         is_local |= (idx == lidx);
       }
       if (is_local) {

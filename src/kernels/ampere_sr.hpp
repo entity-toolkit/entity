@@ -122,7 +122,8 @@ namespace kernel::sr {
    */
   template <class M>
   class CurrentsAmpere_kernel {
-    static constexpr auto D = M::Dim;
+    static constexpr auto        D     = M::Dim;
+    static constexpr std::size_t i2min = N_GHOSTS;
 
     ndfield_t<D, 6>   E;
     ndfield_t<D, 3>   J;
@@ -161,9 +162,8 @@ namespace kernel::sr {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        constexpr std::size_t i2min { N_GHOSTS };
-        const real_t          i1_ { COORD(i1) };
-        const real_t          i2_ { COORD(i2) };
+        const real_t i1_ { COORD(i1) };
+        const real_t i2_ { COORD(i2) };
 
         // convert the "curly" current, to contravariant, normalized to
         // `J0=n0*q0` then add "curly" current with the right coefficient

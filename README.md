@@ -10,19 +10,23 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-## Core developers (alphabetical)
+## Lead developers
 
-💁‍♂️ __Alexander Chernoglazov__ {[@SChernoglazov](https://github.com/SChernoglazov): PIC}
+☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh)}
+
+🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann)}
+
+💁‍♂️ __Alexander Chernoglazov__ {[@SChernoglazov](https://github.com/SChernoglazov)}
+
+🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk)}
+
+🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph)}
+
+## Contributors (alphabetical)
+
+👀 __Yangyang Cai__ {[@StaticObserver](https://github.com/StaticObserver): GRPIC}
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
-
-🧋 __Alisa Galishnikova__ {[@alisagk](https://github.com/alisagk): GRPIC}
-
-☕ __Hayk Hakobyan__ {[@haykh](https://github.com/haykh): framework, PIC, GRPIC, cubed-sphere}
-
-🥔 __Jens Mahlmann__ {[@jmahlmann](https://github.com/jmahlmann): framework, MPI, cubed-sphere}
-
-🐬 __Sasha Philippov__ {[@sashaph](https://github.com/sashaph): all-around}
 
 🤷 __Arno Vanthieghem__ {[@vanthieg](https://github.com/vanthieg): framework, PIC}
 

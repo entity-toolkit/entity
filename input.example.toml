@@ -232,7 +232,7 @@
     #   @default: 0.9
     e_ovr_b_max = ""
     # Maximum Larmor radius allowed for GCA particles (in physical units):
-    #   @type: float: > 0
+    #   @type: float
     #   @default: 0.0
     #   @note: When `larmor_max` == 0, the limit is disabled
     larmor_max = ""
@@ -253,7 +253,7 @@
   #   @default: false
   use_weights = ""
   # Timesteps between particle re-sorting:
-  #   @type: unsigned int: >= 0
+  #   @type: unsigned int
   #   @default: 100
   #   @note: When MPI is enable, particles are sorted every step.
   #   @note: When `sort_interval` == 0, the sorting is disabled.
@@ -293,7 +293,7 @@
     #   @valid: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
     pusher = ""
     # Number of additional (payload) variables for each particle of the given species:
-    #   @type: unsigned short: >= 0
+    #   @type: unsigned short
     #   @default: 0
     n_payloads = ""
     # Radiation reaction to use for the species:
@@ -316,7 +316,7 @@
   #   @default: 1
   interval = ""
   # Physical (code) time interval between all outputs (overriden by specific output intervals below):
-  #   @type: float: > 0
+  #   @type: float
   #   @default: -1.0 (disabled)
   #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
   interval_time = ""
@@ -336,23 +336,28 @@
     #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
     #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
     quantities = ""
-    # @NOT_IMPLEMENTED: Stride for the output of fields:
-    #   @type: unsigned short: > 1
-    #   @default: 1
-    stride = ""
+    # Custom (user-defined) field quantities:
+    #   @type: array of strings
+    #   @default: []
+    custom = ""
     # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
-    #   @type: unsigned short: >= 0
+    #   @type: unsigned short
     #   @default: 0
     mom_smooth = ""
     # Number of timesteps between field outputs (overrides `output.interval`):
-    #   @type: unsigned int: > 0
+    #   @type: unsigned int
     #   @default: 0 (use `output.interval`)
     interval = ""
     # Physical (code) time interval between field outputs (overrides `output.interval_time`):
-    #   @type: float: > 0
+    #   @type: float
     #   @default: -1.0 (use `output.interval_time`)
     #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
     interval_time = ""
+    # Downsample factor for the output of fields:
+    #   @type: array of unsigned int >= 1
+    #   @default: [1, 1, 1]
+    #   @note: The output is downsampled by the given factors in each direction
+    downsampling = ""
 
   [output.particles]
     # Toggle for the particles output:
@@ -372,7 +377,7 @@
     #   @default: 0 (use `output.interval`)
     interval = ""
     # Physical (code) time interval between field outputs (overrides `output.interval_time`):
-    #   @type: float: > 0
+    #   @type: float
     #   @default: -1.0 (use `output.interval_time`)
     #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
     interval_time = ""
@@ -403,7 +408,7 @@
     #   @default: 0 (use `output.interval`)
     interval = ""
     # Physical (code) time interval between spectra outputs (overrides `output.interval_time`):
-    #   @type: float: > 0
+    #   @type: float
     #   @default: -1.0 (use `output.interval_time`)
     #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
     interval_time = ""
@@ -417,6 +422,37 @@
     #   @type: bool
     #   @default: false
     ghosts = ""
+
+[checkpoint]
+  # Number of timesteps between checkpoints:
+  #   @type: unsigned int: > 0
+  #   @default: 1000
+  interval = ""
+  # Physical (code) time interval between checkpoints:
+  #   @type: float: > 0
+  #   @default: -1.0 (disabled)
+  #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+  interval_time = ""
+  # Number of checkpoints to keep:
+  #   @type: int
+  #   @default: 2
+  #   @note: 0 = disable checkpointing
+  #   @note: -1 = keep all checkpoints
+  keep = ""
+
+  # @inferred:
+  # - is_resuming
+  #     @brief: Whether the simulation is resuming from a checkpoint
+  #     @type: bool
+  #     @from: command-line flag
+  # - start_step
+  #     @brief: Timestep of the checkpoint used to resume
+  #     @type: unsigned int
+  #     @from: automatically determined during restart
+  # - start_time
+  #     @brief: Time of the checkpoint used to resume
+  #     @type: float
+  #     @from: automatically determined during restart
 
 [diagnostics]
   # Number of timesteps between diagnostic logs:

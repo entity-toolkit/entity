@@ -18,7 +18,7 @@
  *   - enum ntt::PrtlPusher        // boris, vay, photon, none
  *   - enum ntt::Cooling           // synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
- *                                    a, t, rho, charge, n, nppc
+ *                                    a, t, rho, charge, n, nppc, custom
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -298,16 +298,17 @@ namespace ntt {
       Charge  = 11,
       N       = 12,
       Nppc    = 13,
+      Custom  = 14,
     };
 
     constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
 
-    static constexpr type        variants[] = { E, divE, D,   divD,   B, H,   J,
-                                                A, T,    Rho, Charge, N, Nppc };
-    static constexpr const char* lookup[]   = { "e",   "dive", "d",      "divd",
-                                                "b",   "h",    "j",      "a",
-                                                "t",   "rho",  "charge", "n",
-                                                "nppc" };
+    static constexpr type variants[]      = { E, divE, D,   divD,   B, H,    J,
+                                              A, T,    Rho, Charge, N, Nppc, Custom };
+    static constexpr const char* lookup[] = { "e",    "dive",  "d",      "divd",
+                                              "b",    "h",     "j",      "a",
+                                              "t",    "rho",   "charge", "n",
+                                              "nppc", "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

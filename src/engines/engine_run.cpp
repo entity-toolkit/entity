@@ -1,6 +1,7 @@
 #include "enums.h"
 
 #include "arch/traits.h"
+#include "utils/diag.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -8,6 +9,8 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+
+#include "framework/domain/domain.h"
 
 #include "engines/engine.hpp"
 
@@ -24,7 +27,8 @@ namespace ntt {
          "ParticlePusher", "FieldBoundaries",
          "ParticleBoundaries", "Communications",
          "Injector", "Sorting",
-         "Custom", "Output" },
+         "Custom", "Output",
+         "Checkpoint" },
         []() {
           Kokkos::fence();
          },
@@ -54,22 +58,61 @@ namespace ntt {
         }
         auto print_sorting = (sort_interval > 0 and step % sort_interval == 0);
 
-        // advance time & timestep
-        ++step;
+        // advance time & step
         time += dt;
+        ++step;
 
-        auto print_output = false;
+        auto print_output     = false;
+        auto print_checkpoint = false;
 #if defined(OUTPUT_ENABLED)
         timers.start("Output");
-        print_output = m_metadomain.Write(m_params, step, time);
+        if constexpr (
+          traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
+          auto lambda_custom_field_output = [&](const std::string&    name,
+                                                ndfield_t<M::Dim, 6>& buff,
+                                                std::size_t           idx,
+                                                const Domain<S, M>&   dom) {
+            m_pgen.CustomFieldOutput(name, buff, idx, dom);
+          };
+          print_output = m_metadomain.Write(m_params,
+                                            step,
+                                            step - 1,
+                                            time,
+                                            time - dt,
+                                            lambda_custom_field_output);
+        } else {
+          print_output = m_metadomain.Write(m_params, step, step - 1, time, time - dt);
+        }
         timers.stop("Output");
+
+        timers.start("Checkpoint");
+        print_checkpoint = m_metadomain.WriteCheckpoint(m_params,
+                                                        step,
+                                                        step - 1,
+                                                        time,
+                                                        time - dt);
+        timers.stop("Checkpoint");
 #endif
 
         // advance time_history
         time_history.tick();
-        // print final timestep report
+        // print timestep report
         if (diag_interval > 0 and step % diag_interval == 0) {
-          print_step_report(timers, time_history, print_output, print_sorting);
+          diag::printDiagnostics(
+            step - 1,
+            max_steps,
+            time - dt,
+            dt,
+            timers,
+            time_history,
+            m_metadomain.l_ncells(),
+            m_metadomain.species_labels(),
+            m_metadomain.l_npart_perspec(),
+            m_metadomain.l_maxnpart_perspec(),
+            print_sorting,
+            print_output,
+            print_checkpoint,
+            m_params.get<bool>("diagnostics.colored_stdout"));
         }
         timers.resetAll();
       }

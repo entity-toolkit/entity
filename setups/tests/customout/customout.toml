@@ -1,22 +1,22 @@
 [simulation]
-  name = "shock"
+  name = "customout"
   engine = "srpic"
-  runtime = 100.0
+  runtime = 10.0
 
 [grid]
-  resolution = [2048, 128]
-  extent = [[0.0, 10.0], [-0.3125, 0.3125]]
+  resolution = [256, 256]
+  extent = [[-1.0, 1.0], [-1.0, 1.0]]
 
   [grid.metric]
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["CONDUCTOR", "ABSORB"], ["PERIODIC"]]
-    particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
+    fields = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
     
 [scales]
-  larmor0 = 1e-2
-  skindepth0 = 1e-3
+  larmor0 = 0.01
+  skindepth0 = 0.01
 
 [algorithms]
   current_filters = 4
@@ -25,25 +25,26 @@
     CFL = 0.5
 
 [particles]
-  ppc0 = 4.0
+  ppc0 = 20.0
 
   [[particles.species]]
   label = "e-"
   mass = 1.0
   charge = -1.0
   maxnpart = 1e7
+  pusher = "Boris"
 
   [[particles.species]]
   label = "e+"
   mass = 1.0
   charge = 1.0
   maxnpart = 1e7
-
-[setup]
-  drift_ux = -0.1
-  temperature = 0.01
+  pusher = "Boris"
 
 [output]
-  fields = ["N_1", "N_2", "E", "B", "J"]
   format = "hdf5"
-  interval_time = 0.1
+  interval_time = 0.02
+
+  [output.fields]
+    quantities = ["E", "B", "J"]
+    custom = ["mybuff", "EdotB+1"]

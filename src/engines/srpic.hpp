@@ -21,6 +21,7 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
+#include "utils/toml.h"
 
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
@@ -70,7 +71,7 @@ namespace ntt {
   public:
     static constexpr auto S { SimEngine::SRPIC };
 
-    SRPICEngine(SimulationParams& params) : base_t { params } {}
+    SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
     ~SRPICEngine() = default;
 
@@ -208,6 +209,7 @@ namespace ntt {
                       m_params.template get<real_t>(
                         "algorithms.timestep.correction") *
                       dt;
+      auto range = range_with_axis_BCs(domain);
       if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
@@ -222,15 +224,9 @@ namespace ntt {
 
         Kokkos::parallel_for(
           "Ampere",
-          domain.mesh.rangeActiveCells(),
+          range,
           kernel::mink::Ampere_kernel<M::Dim>(domain.fields.em, coeff1, coeff2));
       } else {
-        range_t<M::Dim> range {};
-        if constexpr (M::Dim == Dim::_2D) {
-          range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
-            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
-        }
         const auto ni2 = domain.mesh.n_active(in::x2);
         Kokkos::parallel_for("Ampere",
                              range,
@@ -538,13 +534,8 @@ namespace ntt {
                                                       coeff / V0,
                                                       ONE / n0));
       } else {
-        range_t<M::Dim> range {};
-        if constexpr (M::Dim == Dim::_2D) {
-          range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
-            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
-        }
-        const auto ni2 = domain.mesh.n_active(in::x2);
+        auto       range = range_with_axis_BCs(domain);
+        const auto ni2   = domain.mesh.n_active(in::x2);
         Kokkos::parallel_for(
           "Ampere",
           range,
@@ -560,34 +551,7 @@ namespace ntt {
 
     void CurrentsFilter(domain_t& domain) {
       logger::Checkpoint("Launching currents filtering kernels", HERE);
-      range_t<M::Dim> range = domain.mesh.rangeActiveCells();
-      if constexpr (M::CoordType != Coord::Cart) {
-        /**
-         * @brief taking one extra cell in the x2 direction if AXIS BCs
-         *    . . . . .
-         *    . ^= =^ .
-         *    . |* *\*.
-         *    . |* *\*.
-         *    . ^- -^ .
-         *    . . . . .
-         */
-        if constexpr (M::Dim == Dim::_2D) {
-          if (domain.mesh.flds_bc_in({ +1, 0 }) == FldsBC::AXIS) {
-            range = CreateRangePolicy<Dim::_2D>(
-              { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
-              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
-          }
-        } else if constexpr (M::Dim == Dim::_3D) {
-          if (domain.mesh.flds_bc_in({ +1, 0, 0 }) == FldsBC::AXIS) {
-            range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
-                                                  domain.mesh.i_min(in::x2),
-                                                  domain.mesh.i_min(in::x3) },
-                                                { domain.mesh.i_max(in::x1),
-                                                  domain.mesh.i_max(in::x2) + 1,
-                                                  domain.mesh.i_max(in::x3) });
-          }
-        }
-      }
+      auto       range   = range_with_axis_BCs(domain);
       const auto nfilter = m_params.template get<unsigned short>(
         "algorithms.current_filters");
       tuple_t<std::size_t, M::Dim> size;
@@ -921,8 +885,15 @@ namespace ntt {
                        xi_min.size() != static_cast<std::size_t>(M::Dim),
                      "Invalid range size",
                      HERE);
-      for (const unsigned short comp :
-           { normal_b_comp, tang_e_comp1, tang_e_comp2 }) {
+      std::vector<unsigned short> comps;
+      if (tags & BC::E) {
+        comps.push_back(tang_e_comp1);
+        comps.push_back(tang_e_comp2);
+      }
+      if (tags & BC::B) {
+        comps.push_back(normal_b_comp);
+      }
+      for (const auto& comp : comps) {
         if constexpr (M::Dim == Dim::_1D) {
           Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
                                             std::make_pair(xi_min[0], xi_max[0]),
@@ -1227,6 +1198,32 @@ namespace ntt {
         raise::Error("Invalid dimension", HERE);
       }
       return { sign, dim, xg_min, xg_max };
+    }
+
+    auto range_with_axis_BCs(const domain_t& domain) -> range_t<M::Dim> {
+      auto range = domain.mesh.rangeActiveCells();
+      if constexpr (M::CoordType != Coord::Cart) {
+        /**
+         * @brief taking one extra cell in the x2 direction if AXIS BCs
+         */
+        if constexpr (M::Dim == Dim::_2D) {
+          if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_2D>(
+              { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+              { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+          }
+        } else if constexpr (M::Dim == Dim::_3D) {
+          if (domain.mesh.flds_bc_in({ 0, +1, 0 }) == FldsBC::AXIS) {
+            range = CreateRangePolicy<Dim::_3D>({ domain.mesh.i_min(in::x1),
+                                                  domain.mesh.i_min(in::x2),
+                                                  domain.mesh.i_min(in::x3) },
+                                                { domain.mesh.i_max(in::x1),
+                                                  domain.mesh.i_max(in::x2) + 1,
+                                                  domain.mesh.i_max(in::x3) });
+          }
+        }
+      }
+      return range;
     }
   };
 
