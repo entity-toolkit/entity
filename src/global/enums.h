@@ -4,12 +4,7 @@
  * @implements
  *   - enum ntt::Coord             // Cart, Sph, Qsph, Fs
  *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
-<<<<<<< HEAD
- *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0, Flux_Surface
-=======
- *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0,
- *                                    Flux_Surface
->>>>>>> 29730e373f0d18a95ed75cb30ba6dd18f3ec0028
+ *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0, BoyerLindqTP
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
