@@ -13,6 +13,8 @@
 #include <Kokkos_Random.hpp>
 
 #include "framework/domain/communications.cpp"
+#include "mpi.h"
+#include "mpi-ext.h"
 
 #define TIMER_START(label)                                                     \
   Kokkos::fence();                                                             \
@@ -97,6 +99,68 @@ void PushParticles(Domain<S, M>& domain,
 auto main(int argc, char* argv[]) -> int {
   GlobalInitialize(argc, argv);
   {
+    /*
+      MPI checks
+    */
+    printf("Compile time check:\n");
+#if defined(MPIX_CUDA_AWARE_SUPPORT) && MPIX_CUDA_AWARE_SUPPORT
+    printf("This MPI library has CUDA-aware support.\n", MPIX_CUDA_AWARE_SUPPORT);
+#elif defined(MPIX_CUDA_AWARE_SUPPORT) && !MPIX_CUDA_AWARE_SUPPORT
+    printf("This MPI library does not have CUDA-aware support.\n");
+#else
+    printf("This MPI library cannot determine if there is CUDA-aware support.\n");
+#endif /* MPIX_CUDA_AWARE_SUPPORT */
+printf("Run time check:\n");
+#if defined(MPIX_CUDA_AWARE_SUPPORT)
+    if (1 == MPIX_Query_cuda_support()) {
+        printf("This MPI library has CUDA-aware support.\n");
+    } else {
+        printf("This MPI library does not have CUDA-aware support.\n");
+    }
+#else /* !defined(MPIX_CUDA_AWARE_SUPPORT) */
+    printf("This MPI library cannot determine if there is CUDA-aware support.\n");
+#endif /* MPIX_CUDA_AWARE_SUPPORT */
+
+  /*
+    Test to send and receive Kokkos arrays
+  */
+  int sender_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &sender_rank);
+
+  int neighbor_rank = 0;
+  if (sender_rank == 0) {
+    neighbor_rank = 1;
+  }
+  else if (sender_rank == 1) {
+    neighbor_rank = 0;
+  }
+  else {
+    raise::Error("This test is only for 2 ranks", HERE);
+  }
+  Kokkos::View<int*> send_array("send_array", 10);
+  Kokkos::View<int*> recv_array("recv_array", 10);
+  if (sender_rank == 0) {
+    Kokkos::deep_copy(send_array, 10);
+  }
+  else {
+    Kokkos::deep_copy(send_array, 20);
+  }
+
+  auto send_array_host = Kokkos::create_mirror_view(send_array);
+  Kokkos::deep_copy(send_array_host, send_array);
+  auto host_recv_array = Kokkos::create_mirror_view(recv_array);
+
+  MPI_Sendrecv(send_array.data(), send_array.extent(0), MPI_INT, neighbor_rank, 0,
+               recv_array.data(), recv_array.extent(0), MPI_INT, neighbor_rank, 0,
+               MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+  // Print the received array
+  Kokkos::deep_copy(host_recv_array, recv_array);
+  for (int i = 0; i < 10; ++i) {
+    printf("Rank %d: Received %d\n", sender_rank, host_recv_array(i));
+  }
+
+
     std::cout << "Constructing the domain" << std::endl;
     // Create a Metadomain object
     const unsigned int     ndomains             = 2;
