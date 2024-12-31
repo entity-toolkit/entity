@@ -712,38 +712,26 @@ namespace ntt {
         npart_per_tag_arr_recv[tag_recv] = nrecv;
 
         // @CRITICAL: Ask Hayk if the displacements are correctly set before sending
-        if constexpr (D == Dim::_1D) {
+        // direction must be defined
+        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
           if ((-direction)[0] == -1) {
-            shifts_in_x1_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x1);
+            shifts_in_x1_h(tag_send) = subdomain(recv_ind).mesh.n_active(in::x1);
           } else if ((-direction)[0] == 1) {
-            shifts_in_x1_h(tag_send) = domain.mesh.n_active(in::x1);
+            shifts_in_x1_h(tag_send) = -domain.mesh.n_active(in::x1);
           }
-        } else if constexpr (D == Dim::_2D) {
-          if ((-direction)[0] == -1) {
-            shifts_in_x1_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x1);
-          } else if ((-direction)[0] == 1) {
-            shifts_in_x1_h(tag_send) = domain.mesh.n_active()[0];
-          }
+        } 
+        if constexpr (D == Dim::_2D || D == Dim::_3D) {
           if ((-direction)[1] == -1) {
-            shifts_in_x2_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x2);
+            shifts_in_x2_h(tag_send) = subdomain(recv_ind).mesh.n_active(in::x2);
           } else if ((-direction)[1] == 1) {
-            shifts_in_x2_h(tag_send) = domain.mesh.n_active(in::x2);
+            shifts_in_x2_h(tag_send) = -domain.mesh.n_active(in::x2);
           }
-        } else if constexpr (D == Dim::_3D) {
-          if ((-direction)[0] == -1) {
-            shifts_in_x1_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x1);
-          } else if ((-direction)[0] == 1) {
-            shifts_in_x1_h(tag_send) = domain.mesh.n_active(in::x1);
-          }
-          if ((-direction)[1] == -1) {
-            shifts_in_x2_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x2);
-          } else if ((-direction)[1] == 1) {
-            shifts_in_x2_h(tag_send) = domain.mesh.n_active(in::x2);
-          }
+        } 
+        if constexpr (D == Dim::_3D) {
           if ((-direction)[2] == -1) {
-            shifts_in_x3_h(tag_send) = -subdomain(recv_ind).mesh.n_active(in::x3);
+            shifts_in_x3_h(tag_send) = subdomain(recv_ind).mesh.n_active(in::x3);
           } else if ((-direction)[2] == 1) {
-            shifts_in_x3_h(tag_send) = domain.mesh.n_active(in::x3);
+            shifts_in_x3_h(tag_send) = -domain.mesh.n_active(in::x3);
           }
         }
       } // end directions loop

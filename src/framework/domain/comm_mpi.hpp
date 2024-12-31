@@ -297,43 +297,70 @@ namespace comm {
                                    int                  recv_rank,
                                    const range_tuple_t& send_slice,
                                    const range_tuple_t& recv_slice) {
-    //auto arr_h = Kokkos::create_mirror_view(arr);
-    //Kokkos::deep_copy(arr_h, arr);
     const std::size_t send_count = send_slice.second - send_slice.first;
     const std::size_t recv_count = recv_slice.second - recv_slice.first;
+    // Make arrays on the host
+    auto send_arr_h = Kokkos::create_mirror_view(Kokkos::subview(arr, send_slice));
+    Kokkos::deep_copy(send_arr_h, Kokkos::subview(arr, send_slice));
+    auto recv_arr_h = Kokkos::create_mirror_view(Kokkos::subview(arr, recv_slice));
     if ((send_rank >= 0) and (recv_rank >= 0) and (send_count > 0) and
         (recv_count > 0)) {
-      MPI_Sendrecv(arr.data() + send_slice.first,
+      MPI_Sendrecv(send_arr_h.data(),
                    send_count,
                    mpi::get_type<T>(),
                    send_rank,
                    0,
-                   arr.data() + recv_slice.first,
+                   recv_arr_h.data(),
                    recv_count,
                    mpi::get_type<T>(),
                    recv_rank,
                    0,
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
+      //MPI_Sendrecv(arr.data() + send_slice.first,
+      //             send_count,
+      //             mpi::get_type<T>(),
+      //             send_rank,
+      //             0,
+      //             arr.data() + recv_slice.first,
+      //             recv_count,
+      //             mpi::get_type<T>(),
+      //             recv_rank,
+      //             0,
+      //             MPI_COMM_WORLD,
+      //             MPI_STATUS_IGNORE);
     } else if ((send_rank >= 0) and (send_count > 0)) {
-      MPI_Send(arr.data() + send_slice.first,
-               send_count,
-               mpi::get_type<T>(),
-               send_rank,
-               0,
-               MPI_COMM_WORLD);
+      MPI_Send( send_arr_h.data(), 
+                send_count, 
+                mpi::get_type<T>(), 
+                send_rank, 
+                0, 
+                MPI_COMM_WORLD);
+      //MPI_Send(arr.data() + send_slice.first,
+      //         send_count,
+      //         mpi::get_type<T>(),
+      //         send_rank,
+      //         0,
+      //         MPI_COMM_WORLD);
     } else if ((recv_rank >= 0) and (recv_count > 0)) {
-      MPI_Recv(arr.data() + recv_slice.first,
-               recv_count,
-               mpi::get_type<T>(),
-               recv_rank,
-               0,
-               MPI_COMM_WORLD,
-               MPI_STATUS_IGNORE);
+      MPI_Recv( recv_arr_h.data(), 
+                recv_count, 
+                mpi::get_type<T>(), 
+                recv_rank, 
+                0, 
+                MPI_COMM_WORLD, 
+                MPI_STATUS_IGNORE);
+      //MPI_Recv(arr.data() + recv_slice.first,
+      //         recv_count,
+      //         mpi::get_type<T>(),
+      //         recv_rank,
+      //         0,
+      //         MPI_COMM_WORLD,
+      //         MPI_STATUS_IGNORE);
     }
-    // if ((recv_rank >= 0) and (recv_count > 0)) {
-    //   Kokkos::deep_copy(arr, arr_h);
-    // }
+    if ((recv_rank >= 0) and (recv_count > 0)) {
+      Kokkos::deep_copy(Kokkos::subview(arr, recv_slice), recv_arr_h);
+    }
   }
 
   void ParticleSendRecvCount(int                send_rank,

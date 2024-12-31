@@ -1008,6 +1008,7 @@ namespace ntt {
         Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
         m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
       }
+      logger::Checkpoint("Atmosphere particles injected\n", HERE);
 
       if (dim == in::x1) {
         if (sign > 0) {
