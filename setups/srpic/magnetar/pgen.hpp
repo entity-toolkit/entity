@@ -407,8 +407,8 @@ namespace user {
             if (s == 2 || s == 3) {
             // if (s == 1 || s == 2 || s == 3) {
             // if (s == 1) {
-            //   continue;
-            // }
+              continue;
+            }
 
             auto& species = domain.species[s];
             auto ux1    = species.ux1;
