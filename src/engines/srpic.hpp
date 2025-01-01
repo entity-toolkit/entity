@@ -102,6 +102,7 @@ namespace ntt {
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
+        Kokkos::fence();
       }
 
       {
@@ -127,7 +128,7 @@ namespace ntt {
 
         timers.start("Communications");
         if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
+          m_metadomain.CommunicateParticlesBuffer(dom, &timers);
         }
         timers.stop("Communications");
       }
@@ -1008,7 +1009,6 @@ namespace ntt {
         Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
         m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
       }
-      logger::Checkpoint("Atmosphere particles injected\n", HERE);
 
       if (dim == in::x1) {
         if (sign > 0) {

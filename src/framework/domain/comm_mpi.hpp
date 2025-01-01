@@ -607,6 +607,7 @@ namespace comm {
             send_buffer_real(NREALS * p + 3) = this_weight(idx);
             send_buffer_prtldx(NFLOATS * p + 0) = this_dx1(idx);
             send_buffer_prtldx(NFLOATS * p + 1) = this_dx1_prev(idx);
+            this_tag(idx)  = ParticleTag::dead;
           });
       }
       if constexpr(D == Dim::_2D && C == Coord::Cart) {
@@ -627,6 +628,7 @@ namespace comm {
             send_buffer_prtldx(NFLOATS * p + 1) = this_dx1_prev(idx);
             send_buffer_prtldx(NFLOATS * p + 2) = this_dx2(idx);
             send_buffer_prtldx(NFLOATS * p + 3) = this_dx2_prev(idx);
+            this_tag(idx)  = ParticleTag::dead;
           });
       }
       if constexpr(D == Dim::_2D && C != Coord::Cart) {
@@ -648,6 +650,7 @@ namespace comm {
             send_buffer_prtldx(NFLOATS * p + 1) = this_dx1_prev(idx);
             send_buffer_prtldx(NFLOATS * p + 2) = this_dx2(idx);
             send_buffer_prtldx(NFLOATS * p + 3) = this_dx2_prev(idx);
+            this_tag(idx)  = ParticleTag::dead;
           });
       }
       if constexpr(D == Dim::_3D) {
@@ -672,6 +675,7 @@ namespace comm {
             send_buffer_prtldx(NFLOATS * p + 3) = this_dx2_prev(idx);
             send_buffer_prtldx(NFLOATS * p + 4) = this_dx3(idx);
             send_buffer_prtldx(NFLOATS * p + 5) = this_dx3_prev(idx);
+            this_tag(idx)  = ParticleTag::dead;
           });
       }
 
@@ -825,7 +829,7 @@ namespace comm {
     });
     }
 
-    if constexpr (D == Dim::_2D && C == Coord::Cart)
+    if constexpr (D == Dim::_2D && C != Coord::Cart)
     {
       Kokkos::parallel_for(
       "PopulateFromRecvBuffer",
@@ -875,6 +879,7 @@ namespace comm {
         this_dx3_prev(idx)  = recv_buffer_prtldx(NFLOATS * p + 5);
     });
     }
+
     species.set_npart(species.npart() + std::max(total_send, total_recv) - total_send);
     return;
 }

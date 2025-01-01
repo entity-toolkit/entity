@@ -787,8 +787,8 @@ namespace ntt {
                                             &current_offset(current_tag),
                                             1);
               permute_vector(idx_permute_vec) = p;
-              this_i1(p)      += shifts_in_x1(current_tag);
-              this_i1_prev(p) += shifts_in_x1(current_tag);
+              this_i1(p)      -= shifts_in_x1(current_tag);
+              this_i1_prev(p) -= shifts_in_x1(current_tag);
             }
           }
         });
@@ -815,10 +815,10 @@ namespace ntt {
                                             &current_offset(current_tag),
                                             1);
               permute_vector(idx_permute_vec) = p;
-              this_i1(p)      += shifts_in_x1(current_tag);
-              this_i1_prev(p) += shifts_in_x1(current_tag);
-              this_i2(p)      += shifts_in_x2(current_tag);
-              this_i2_prev(p) += shifts_in_x2(current_tag);
+              this_i1(p)      -= shifts_in_x1(current_tag);
+              this_i1_prev(p) -= shifts_in_x1(current_tag);
+              this_i2(p)      -= shifts_in_x2(current_tag);
+              this_i2_prev(p) -= shifts_in_x2(current_tag);
             }
           }
         });
@@ -845,16 +845,18 @@ namespace ntt {
                                             &current_offset(current_tag),
                                             1);
               permute_vector(idx_permute_vec) = p;
-              this_i1(p)      += shifts_in_x1(current_tag);
-              this_i1_prev(p) += shifts_in_x1(current_tag);
-              this_i2(p)      += shifts_in_x2(current_tag);
-              this_i2_prev(p) += shifts_in_x2(current_tag);
-              this_i3(p)      += shifts_in_x3(current_tag);
-              this_i3_prev(p) += shifts_in_x3(current_tag);
+              this_i1(p)      -= shifts_in_x1(current_tag);
+              this_i1_prev(p) -= shifts_in_x1(current_tag);
+              this_i2(p)      -= shifts_in_x2(current_tag);
+              this_i2_prev(p) -= shifts_in_x2(current_tag);
+              this_i3(p)      -= shifts_in_x3(current_tag);
+              this_i3_prev(p) -= shifts_in_x3(current_tag);
             }
           }
         });
       }
+
+
 
       // Sanity check: npart_per_tag must be equal to the current offset except tag=alive
       auto current_offset_h = Kokkos::create_mirror_view(current_offset);

@@ -52,10 +52,10 @@ namespace pbar {
   }
 
   auto to_human_readable(long double t, const std::string& u) -> std::string {
-    const auto [tt, tu]   = normalize_duration_fmt(t, u);
+    const auto [tt, tu]   = std::pair{t, u};//normalize_duration_fmt(t, u);
     const auto t1         = static_cast<int>(tt);
     const auto t2         = tt - static_cast<long double>(t1);
-    const auto [tt2, tu2] = normalize_duration_fmt(t2, tu);
+    const auto [tt2, tu2] = std::pair{t2, tu};//normalize_duration_fmt(t2, tu);
     return fmt::format("%d%s %d%s", t1, tu.c_str(), static_cast<int>(tt2), tu2.c_str());
   }
 

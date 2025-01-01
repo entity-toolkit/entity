@@ -107,6 +107,7 @@ namespace ntt {
     }
   }
 
+
   template <SimEngine::type S, class M, FldsID::type F>
   void ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
@@ -271,7 +272,6 @@ namespace ntt {
           });
         g_writer.writeMesh(dim, xc, xe);
       }
-
       const auto output_asis = params.template get<bool>("output.debug.as_is");
       // !TODO: this can probably be optimized to dump things at once
       for (auto& fld : g_writer.fieldWriters()) {
