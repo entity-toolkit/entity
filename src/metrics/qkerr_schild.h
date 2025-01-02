@@ -255,7 +255,7 @@ namespace metric {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
       const real_t eta {x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      const real_t dx_dt {deta * (ONE + TWO * h0 * constant::INV_PI_SQR * (TWO * THREE * SQR(eta) - TWO * THREE * constant::PI * eta + constant::PI_SQR)) };
+      const real_t dx_dt {deta * (ONE + TWO * h0 * static_cast<real_t>(constant::INV_PI_SQR) * (TWO * THREE * SQR(eta) - TWO * THREE * static_cast<real_t>(constant::PI) * eta + static_cast<real_t>(constant::PI_SQR))) };
       const real_t dt_Sigma {- TWO * SQR(a) * math::sin(theta) * math::cos(theta) * dx_dt};
 
       return r * dt_Sigma * CUBE(alpha(x)) / SQR(Sigma(r, theta));
