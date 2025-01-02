@@ -55,16 +55,17 @@ auto main() -> int {
 
   using enum_str_t = const std::vector<std::string>;
 
-  enum_str_t all_coords  = { "cart", "sph", "qsph" };
-  enum_str_t all_metrics = { "minkowski",   "spherical",    "qspherical",
-                             "kerr_schild", "qkerr_schild", "kerr_schild_0" };
+  enum_str_t all_coords  = { "cart", "sph", "qsph", "bltp" };
+  enum_str_t all_metrics = { "minkowski",     "spherical",    "qspherical",
+                             "kerr_schild",   "qkerr_schild", "kerr_schild_0",
+                             "boyer_lindq_tp" };
   enum_str_t all_simulation_engines = { "srpic", "grpic" };
   enum_str_t all_particle_bcs = { "periodic", "absorb",  "atmosphere", "custom",
                                   "reflect",  "horizon", "axis",       "sync" };
   enum_str_t all_fields_bcs = { "periodic", "absorb",    "atmosphere", "custom",
                                 "horizon",  "conductor", "axis",       "sync" };
-  enum_str_t all_particle_pushers = { "boris", "vay", "photon", "none" };
-  enum_str_t all_coolings         = { "synchrotron", "none" };
+  enum_str_t all_particle_pushers = { "boris", "vay", "photon", "forcefree", "none" };
+  enum_str_t all_coolings = { "synchrotron", "none" };
 
   enum_str_t all_out_flds = { "e",      "dive", "d",    "divd",  "b",
                               "h",      "j",    "a",    "t",     "rho",

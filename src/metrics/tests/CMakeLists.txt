@@ -28,4 +28,4 @@ gen_test(coord_trans)
 gen_test(sph-qsph)
 gen_test(ks-qks)
 gen_test(sr-cart-sph)
-
+gen_test(bltp)
