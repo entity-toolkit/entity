@@ -743,6 +743,7 @@ namespace ntt {
       (void)direction;
       (void)domain;
       (void)tags;
+      (void)g;
       raise::Error("Custom boundaries not implemented", HERE);
       // if constexpr (
       //   traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
@@ -915,7 +916,7 @@ namespace ntt {
     void AmpereCurrents(domain_t& domain, const gr_ampere& g) {
       logger::Checkpoint("Launching Ampere kernel for adding currents", HERE);
       const auto q0    = m_params.template get<real_t>("scales.q0");
-      const auto n0    = m_params.template get<real_t>("scales.n0");
+      // const auto n0    = m_params.template get<real_t>("scales.n0");
       const auto B0    = m_params.template get<real_t>("scales.B0");
       const auto coeff = -dt * q0 / B0;
       // auto       range = range_with_axis_BCs(domain);
