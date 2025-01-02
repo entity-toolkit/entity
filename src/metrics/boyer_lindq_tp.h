@@ -281,9 +281,9 @@ namespace metric {
                            (in == Idx::D && (out == Idx::T || out == Idx::Sph))){
         // tetrad/sph -> cntrv ; cov -> tetrad/sph
         if constexpr (i == 1){
-          return v_in / math::sqrt(h_<i, i>(x)) / Delta(eta2r(x[0] * d_eta + eta_min));
+          return v_in / math::sqrt(h_<i, i>(x));
         }else if constexpr (i == 2){
-          return v_in / math::sqrt(h_<i, i>(x)) * dpsi_dth;
+          return v_in / math::sqrt(h_<i, i>(x));
         }else{
           return v_in / math::sqrt(h_<i, i>(x));
         }
@@ -291,9 +291,9 @@ namespace metric {
                             ((in == Idx::T || in == Idx::Sph) && out == Idx::D)){
         // cntrv -> tetrad/sph ; tetrad/sph -> cov
         if constexpr (i == 1){
-          return v_in * math::sqrt(h_<i, i>(x)) * Delta(eta2r(x[0] * d_eta + eta_min));
+          return v_in * math::sqrt(h_<i, i>(x));
         }else if constexpr (i == 2){
-          return v_in * math::sqrt(h_<i, i>(x)) / dpsi_dth;
+          return v_in * math::sqrt(h_<i, i>(x));
         }else{
           return v_in * math::sqrt(h_<i, i>(x));
         }

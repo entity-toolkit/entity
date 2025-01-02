@@ -122,7 +122,7 @@ void testFFPusher(const std::vector<std::size_t>&      res,
     x1i = ZERO + (n % 10) * sep;
     from_Xi_to_i_di(x1i, ii, dx1i) put_value<int>(i1, ii, n);
     put_value<prtldx_t>(dx1, dx1i, n);
-    put_value<real_t>(px1, ZERO, n);
+    put_value<real_t>(px1, ONE, n);
     put_value<short>(tag, ParticleTag::alive, n);
   }
 
@@ -224,7 +224,7 @@ auto main(int argc, char* argv[]) -> int {
         128
     },
       { { 2.0, 20.0 } },
-      5,
+      100,
       { { "a", (real_t)0.95 },
         { "psi0", (real_t)1.0 },
         { "theta0", (real_t)1.0 },
