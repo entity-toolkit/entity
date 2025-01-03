@@ -7,8 +7,13 @@
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 
+#include "archetypes/energy_dist.h"
+#include "archetypes/spatial_dist.h"
+#include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
+#include "kernels/particle_moments.hpp"
+#include "utils/numeric.h"
 
 namespace user {
   using namespace ntt;
@@ -18,26 +23,12 @@ namespace user {
     InitFields(M metric_) : metric { metric_ } {}
 
     Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
-      // return HALF * (metric.template h_<3, 3>(x_Cd)
-      //        + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
-      // );
-      coord_t<D> x_Ph { ZERO };
-      metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-      return HALF * SQR(x_Ph[0]) * SQR(math::sin(x_Ph[1]));
-    }
-
-    Inline auto A_1(const coord_t<D>& x_Cd) const -> real_t {
-      return HALF * (metric.template h_<1, 3>(x_Cd) 
-             + TWO * metric.spin() * metric.template h_<1, 1>(x_Cd) * metric.beta1(x_Cd)
+      return HALF * (metric.template h_<3, 3>(x_Cd) 
+             + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
       );
-    }
-
-    Inline auto A_0(const coord_t<D>& x_Cd) const -> real_t {
-      real_t g_00 { -metric.alpha(x_Cd) * metric.alpha(x_Cd) 
-                   + metric.template h_<1, 1>(x_Cd) * metric.beta1(x_Cd) * metric.beta1(x_Cd) 
-                  };
-      return HALF * (metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd) 
-             + TWO * metric.spin() * g_00);
+      // coord_t<D> x_Ph { ZERO };
+      // metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+      // return HALF * SQR(x_Ph[0]) * SQR(math::sin(x_Ph[1]));
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
@@ -74,16 +65,6 @@ namespace user {
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      // coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
-      // metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
-
-      // x0m[0] = xi[0] + HALF - HALF;
-      // x0m[1] = xi[1];
-      // x0p[0] = xi[0] + HALF + HALF;
-      // x0p[1] = xi[1];
-
-      // real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      // return -(A_1(x0p) - A_1(x0m)) * inv_sqrt_detH_ijP;
       return ZERO;
     }
 
@@ -104,6 +85,105 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
+  struct PointDistribution : public arch::SpatialDistribution<S, M> {
+    PointDistribution(const std::vector<real_t>& xi_min,
+                      const std::vector<real_t>& xi_max,
+                      const real_t               sigma_thr,
+                      const real_t               dens_thr,
+                      long double                time,
+                      const SimulationParams&    params,
+                      Domain<S, M>*              domain_ptr
+                      )
+      : arch::SpatialDistribution<S, M> { domain_ptr->mesh.metric } 
+      , metric { domain_ptr->mesh.metric }
+      , EM { domain_ptr->fields.em } 
+      , sigma_thr {sigma_thr} 
+      , dens_thr {dens_thr} 
+      , time {time} {
+      std::copy(xi_min.begin(), xi_min.end(), x_min);
+      std::copy(xi_max.begin(), xi_max.end(), x_max);
+
+      std::vector<unsigned short> specs {};
+      for (auto& sp : domain_ptr->species) {
+        if (sp.mass() > 0) {
+          specs.push_back(sp.index());
+        }
+      }
+
+      auto scatter_buff = Kokkos::Experimental::create_scatter_view(domain_ptr->fields.buff);
+      printf("%f\n", domain_ptr->fields.buff(10, 10, 0));
+      // some parameters
+      auto& mesh = domain_ptr->mesh;
+      const auto use_weights = params.template get<bool>("particles.use_weights");
+      const auto ni2         = mesh.n_active(in::x2);
+      const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
+
+      for (const auto& sp : specs) {
+        auto& prtl_spec = domain_ptr->species[sp - 1];
+        // clang-format off
+        Kokkos::parallel_for(
+          "ComputeMoments",
+          prtl_spec.rangeActiveParticles(),
+          kernel::ParticleMoments_kernel<S, M, FldsID::Rho, 3>({}, scatter_buff, 0u,
+                                                               prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                               prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                               prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                               prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                               prtl_spec.mass(), prtl_spec.charge(),
+                                                               use_weights,
+                                                               metric, mesh.flds_bc(),
+                                                               ni2, inv_n0, 0));
+        // clang-format on
+      }
+      Kokkos::Experimental::contribute(domain_ptr->fields.buff, scatter_buff);
+      // auto density = domain_ptr->fields.buff;
+      auto density = Kokkos::create_mirror_view(domain_ptr->fields.buff);
+      Kokkos::deep_copy(density, domain_ptr->fields.buff);
+    }
+
+    Inline auto sigma_crit(const coord_t<M::Dim>& x_Ph) const -> real_t {
+      coord_t<M::Dim> xi {ZERO};
+      if constexpr (M::Dim == Dim::_2D) {
+        metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+        const auto i1 = static_cast<int>(xi[0]) + static_cast<int>(N_GHOSTS);
+        const auto i2 = static_cast<int>(xi[1]) + static_cast<int>(N_GHOSTS);
+        // printf("%f %f\n", xi[0], xi[1]);
+        const vec_t<Dim::_3D> B_cntrv { EM(i1, i2, em::bx1), EM(i1, i2, em::bx2), EM(i1, i2, em::bx3) };
+        vec_t<Dim::_3D> B_cov { ZERO };
+        metric.template transform<Idx::U, Idx::D>(xi, B_cntrv, B_cov);
+        const auto bsqr = DOT(B_cntrv[0], B_cntrv[1], B_cntrv[2], B_cov[0], B_cov[1], B_cov[2]);
+        const auto dens = density(i1, i2, 0);
+        // printf("%f\n", domain_ptr->fields.buff(10, 10, 0));
+        // return (bsqr / dens > sigma_thr) || (dens < dens_thr);
+        return 2.0;
+      }
+      return ZERO;
+    }
+
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
+      auto fill = true;
+      for (auto d = 0u; d < M::Dim; ++d) {
+        fill &= x_Ph[d] > x_min[d] and x_Ph[d] < x_max[d];
+      }
+      if (time > ZERO) {
+        fill &= sigma_crit(x_Ph) > ONE;
+      }
+      return fill ? ONE : ZERO;
+    }
+
+  private:
+    tuple_t<real_t, M::Dim> x_min;
+    tuple_t<real_t, M::Dim> x_max;
+    const real_t sigma_thr;
+    const real_t dens_thr;
+    long double time,
+    Domain<S, M>* domain_ptr;
+    ndfield_t<M::Dim, 3> density;
+    ndfield_t<M::Dim, 6> EM;
+    const M metric;
+  };
+
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines { traits::compatible_with<SimEngine::GRPIC>::value };
@@ -117,30 +197,67 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
+    const std::vector<real_t> xi_min;
+    const std::vector<real_t> xi_max;
+    const real_t sigma0, sigma_max, multiplicity, nGJ;
+
     InitFields<M, D> init_flds;
 
     inline PGen(SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
-      // , xi_min { p.template get<std::vector<real_t>>("setup.inj_rmin") }
-      // , xi_max { p.template get<std::vector<real_t>>("setup.inj_rmax") }
+      , xi_min { p.template get<std::vector<real_t>>("setup.xi_min") }
+      , xi_max { p.template get<std::vector<real_t>>("setup.xi_max") }
+      , sigma_max { p.template get<real_t>("setup.sigma_max") }
+      , sigma0 { p.template get<real_t>("scales.sigma0") }
+      , multiplicity { p.template get<real_t>("setup.multiplicity") }
+      , nGJ { p.template get<real_t>("scales.B0") * SQR(p.template get<real_t>("scales.skindepth0")) } //m.mesh().metric.spin() *
       , init_flds { m.mesh().metric } {}
     
-    // inline void InitPrtls(Domain<S, M>& local_domain) {
-    //     const auto energy_dist = arch::ColdDist<S, M>(local_domain.mesh.metric);
-    //     const auto spatial_dist = PointDistribution<S, M>(domain.mesh.metric,
-    //                                               xi_min,
-    //                                               xi_max);
-    //     const auto injector = arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>(
-    //       energy_dist,
-    //       spatial_dist,
-    //       { 1, 2 });
-    //     arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>>(params,
-    //                                                   local_domain,
-    //                                                   injector,
-    //                                                   1.0);
-    // }
+    inline void InitPrtls(Domain<S, M>& local_domain) {
+      const auto energy_dist = arch::ColdDist<S, M>(local_domain.mesh.metric);
+      const auto spatial_dist = PointDistribution<S, M>(xi_min,
+                                                        xi_max,
+                                                        sigma_max / sigma0,
+                                                        multiplicity * nGJ,
+                                                        ZERO,
+                                                        params,
+                                                        &local_domain
+                                                       );
 
-    // inline PGen() {}
+      const auto injector = arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>(
+        energy_dist,
+        spatial_dist,
+        { 1, 2 });
+      arch::InjectNonUniform<S, M, decltype(injector)>(params,
+        local_domain,
+        injector,
+        1.0,
+        true);
+    }
+
+    void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
+      // const auto energy_dist = arch::ColdDist<S, M>(local_domain.mesh.metric);
+      // const auto spatial_dist = PointDistribution<S, M>(local_domain.mesh.metric,
+      //                                                     xi_min,
+      //                                                     xi_max);
+      
+      // const auto spatial_dist = ReplenishDist(local_domain.mesh.metric,
+      //             const ndfield_t<M::Dim, 6>& density,
+      //             unsigned short              idx,
+      //             const T&                    target_density,
+      //             real_t                      target_max_density)
+
+      // const auto injector = arch::NonUniformInjector<S, M, arch::ColdDist, PointDistribution>(
+      //   energy_dist,
+      //   spatial_dist,
+      //   { 1, 2 });
+      // arch::InjectNonUniform<S, M, decltype(injector)>(params,
+      //   local_domain,
+      //   injector,
+      //   1.0,
+      //   true);
+    }
+
   };
 
 } // namespace user
