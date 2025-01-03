@@ -108,6 +108,7 @@ namespace user {
         }
       }
 
+      Kokkos::deep_copy(domain_ptr->fields.buff, ZERO);
       auto scatter_buff = Kokkos::Experimental::create_scatter_view(domain_ptr->fields.buff);
       printf("%f\n", domain_ptr->fields.buff(10, 10, 0));
       // some parameters
