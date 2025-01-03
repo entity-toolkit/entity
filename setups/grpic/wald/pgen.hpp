@@ -90,7 +90,6 @@ namespace user {
                       const std::vector<real_t>& xi_max,
                       const real_t               sigma_thr,
                       const real_t               dens_thr,
-                      long double                time,
                       const SimulationParams&    params,
                       Domain<S, M>*              domain_ptr
                       )
@@ -98,8 +97,7 @@ namespace user {
       , metric { domain_ptr->mesh.metric }
       , EM { domain_ptr->fields.em } 
       , sigma_thr {sigma_thr} 
-      , dens_thr {dens_thr} 
-      , time {time} {
+      , dens_thr {dens_thr} {
       std::copy(xi_min.begin(), xi_min.end(), x_min);
       std::copy(xi_max.begin(), xi_max.end(), x_max);
 
@@ -136,7 +134,6 @@ namespace user {
         // clang-format on
       }
       Kokkos::Experimental::contribute(domain_ptr->fields.buff, scatter_buff);
-      // auto density = domain_ptr->fields.buff;
       auto density = Kokkos::create_mirror_view(domain_ptr->fields.buff);
       Kokkos::deep_copy(density, domain_ptr->fields.buff);
     }
@@ -147,7 +144,6 @@ namespace user {
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
         const auto i1 = static_cast<int>(xi[0]) + static_cast<int>(N_GHOSTS);
         const auto i2 = static_cast<int>(xi[1]) + static_cast<int>(N_GHOSTS);
-        // printf("%f %f\n", xi[0], xi[1]);
         const vec_t<Dim::_3D> B_cntrv { EM(i1, i2, em::bx1), EM(i1, i2, em::bx2), EM(i1, i2, em::bx3) };
         vec_t<Dim::_3D> B_cov { ZERO };
         metric.template transform<Idx::U, Idx::D>(xi, B_cntrv, B_cov);
@@ -163,10 +159,7 @@ namespace user {
     Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
       auto fill = true;
       for (auto d = 0u; d < M::Dim; ++d) {
-        fill &= x_Ph[d] > x_min[d] and x_Ph[d] < x_max[d];
-      }
-      if (time > ZERO) {
-        fill &= sigma_crit(x_Ph) > ONE;
+        fill &= x_Ph[d] > x_min[d] and x_Ph[d] < x_max[d] and sigma_crit(x_Ph) > ONE;
       }
       return fill ? ONE : ZERO;
     }
@@ -176,7 +169,6 @@ namespace user {
     tuple_t<real_t, M::Dim> x_max;
     const real_t sigma_thr;
     const real_t dens_thr;
-    long double time,
     Domain<S, M>* domain_ptr;
     ndfield_t<M::Dim, 3> density;
     ndfield_t<M::Dim, 6> EM;
@@ -219,7 +211,6 @@ namespace user {
                                                         xi_max,
                                                         sigma_max / sigma0,
                                                         multiplicity * nGJ,
-                                                        ZERO,
                                                         params,
                                                         &local_domain
                                                        );
