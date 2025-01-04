@@ -47,6 +47,9 @@ namespace ntt {
     tag   = array_t<short*> { label + "_tag", maxnpart };
     tag_h = Kokkos::create_mirror_view(tag);
 
+    particleID  = array_t<long*> {label + "_particleID", maxnpart};
+    particleID_h = Kokkos::create_mirror_view(particleID);
+
     for (unsigned short n { 0 }; n < npld; ++n) {
       pld.push_back(array_t<real_t*>("pld", maxnpart));
       pld_h.push_back(Kokkos::create_mirror_view(pld[n]));

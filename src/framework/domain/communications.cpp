@@ -710,28 +710,26 @@ namespace ntt {
         comm::ParticleSendRecvCount(send_rank, recv_rank, nsend, nrecv);
         total_recv += nrecv;
         npart_per_tag_arr_recv[tag_recv] = nrecv;
-
-        // @CRITICAL: Ask Hayk if the displacements are correctly set before sending
-        // direction must be defined
+        // Perform displacements before sending
         if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
           if ((-direction)[0] == -1) {
-            shifts_in_x1_h(tag_send) = subdomain(recv_ind).mesh.n_active(in::x1);
+            shifts_in_x1_h(tag_recv) = subdomain(recv_ind).mesh.n_active(in::x1);
           } else if ((-direction)[0] == 1) {
-            shifts_in_x1_h(tag_send) = -domain.mesh.n_active(in::x1);
+            shifts_in_x1_h(tag_recv) = -domain.mesh.n_active(in::x1);
           }
         } 
         if constexpr (D == Dim::_2D || D == Dim::_3D) {
           if ((-direction)[1] == -1) {
-            shifts_in_x2_h(tag_send) = subdomain(recv_ind).mesh.n_active(in::x2);
+            shifts_in_x2_h(tag_recv) = subdomain(recv_ind).mesh.n_active(in::x2);
           } else if ((-direction)[1] == 1) {
-            shifts_in_x2_h(tag_send) = -domain.mesh.n_active(in::x2);
+            shifts_in_x2_h(tag_recv) = -domain.mesh.n_active(in::x2);
           }
         } 
         if constexpr (D == Dim::_3D) {
           if ((-direction)[2] == -1) {
-            shifts_in_x3_h(tag_send) = subdomain(recv_ind).mesh.n_active(in::x3);
+            shifts_in_x3_h(tag_recv) = subdomain(recv_ind).mesh.n_active(in::x3);
           } else if ((-direction)[2] == 1) {
-            shifts_in_x3_h(tag_send) = -domain.mesh.n_active(in::x3);
+            shifts_in_x3_h(tag_recv) = -domain.mesh.n_active(in::x3);
           }
         }
       } // end directions loop
@@ -754,11 +752,11 @@ namespace ntt {
       /* 
           Brief on permute vector: It contains the sorted indices of tag != alive particles
           E.g., consider the following tag array
-          species.tag =     [ 0, 0, 3, 0, 1, 2,...]
+          species.tag =     [ 0, 0, 1, 0, 2, 3,...]
           Then, permute vector will look something like
           permute_vector =  [0, 1, 3, ...,  4, ..., ...   5, ...          ]
                             |<--------- >| |<----->|      |<----->| ....
-                               tag=0 ct     tag=1 ct       tag=2 ct
+                               tag=dead ct  tag=2 ct       tag=3 ct
       */
       Kokkos::View<std::size_t*> permute_vector("permute_vector", total_holes);
       Kokkos::View<std::size_t*> current_offset("current_offset", species.ntags());
@@ -778,6 +776,7 @@ namespace ntt {
               const auto idx_permute_vec =  Kokkos::atomic_fetch_add(
                                             &current_offset(current_tag),
                                             1);
+              permute_vector(idx_permute_vec) = p;
             }
             // tag = 1->N (excluding dead and alive)
             else{
@@ -787,8 +786,8 @@ namespace ntt {
                                             &current_offset(current_tag),
                                             1);
               permute_vector(idx_permute_vec) = p;
-              this_i1(p)      -= shifts_in_x1(current_tag);
-              this_i1_prev(p) -= shifts_in_x1(current_tag);
+              this_i1(p)      += shifts_in_x1(current_tag);
+              this_i1_prev(p) += shifts_in_x1(current_tag);
             }
           }
         });
@@ -806,6 +805,7 @@ namespace ntt {
               const auto idx_permute_vec =  Kokkos::atomic_fetch_add(
                                             &current_offset(current_tag),
                                             1);
+              permute_vector(idx_permute_vec) = p;
             }
             // tag = 1->N (excluding dead and alive)
             else{
@@ -815,10 +815,10 @@ namespace ntt {
                                             &current_offset(current_tag),
                                             1);
               permute_vector(idx_permute_vec) = p;
-              this_i1(p)      -= shifts_in_x1(current_tag);
-              this_i1_prev(p) -= shifts_in_x1(current_tag);
-              this_i2(p)      -= shifts_in_x2(current_tag);
-              this_i2_prev(p) -= shifts_in_x2(current_tag);
+              this_i1(p)      += shifts_in_x1(current_tag);
+              this_i1_prev(p) += shifts_in_x1(current_tag);
+              this_i2(p)      += shifts_in_x2(current_tag);
+              this_i2_prev(p) += shifts_in_x2(current_tag);
             }
           }
         });
@@ -836,6 +836,7 @@ namespace ntt {
               const auto idx_permute_vec =  Kokkos::atomic_fetch_add(
                                             &current_offset(current_tag),
                                             1);
+              permute_vector(idx_permute_vec) = p;
             }
             // tag = 1->N (excluding dead and alive)
             else{
@@ -845,12 +846,12 @@ namespace ntt {
                                             &current_offset(current_tag),
                                             1);
               permute_vector(idx_permute_vec) = p;
-              this_i1(p)      -= shifts_in_x1(current_tag);
-              this_i1_prev(p) -= shifts_in_x1(current_tag);
-              this_i2(p)      -= shifts_in_x2(current_tag);
-              this_i2_prev(p) -= shifts_in_x2(current_tag);
-              this_i3(p)      -= shifts_in_x3(current_tag);
-              this_i3_prev(p) -= shifts_in_x3(current_tag);
+              this_i1(p)      += shifts_in_x1(current_tag);
+              this_i1_prev(p) += shifts_in_x1(current_tag);
+              this_i2(p)      += shifts_in_x2(current_tag);
+              this_i2_prev(p) += shifts_in_x2(current_tag);
+              this_i3(p)      += shifts_in_x3(current_tag);
+              this_i3_prev(p) += shifts_in_x3(current_tag);
             }
           }
         });
@@ -913,6 +914,43 @@ namespace ntt {
             allocation_vector(p) = permute_vector(p);
           });
       }
+
+      /*
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      if (rank == 1 && species.label() == "e+_b")
+      {
+        // Copy the tag array to host
+        auto tag_h = Kokkos::create_mirror_view(species.tag);
+        Kokkos::deep_copy(tag_h, species.tag);
+        std::cout << "Tag locs before send" << std::endl;
+        for (std::size_t i { 0 }; i < species.npart(); i++) {
+          if (tag_h(i) != ParticleTag::alive)
+            std::cout <<" Tag: " << tag_h(i) << " loc: "<< i << std::endl;
+        }
+
+        // Print allocation vector after copying to host
+        auto allocation_vector_h = Kokkos::create_mirror_view(allocation_vector);
+        std::cout << "Total holes: " << total_holes << " Total recv: " << total_recv << std::endl;
+        Kokkos::deep_copy(allocation_vector_h, allocation_vector);
+        for (std::size_t i { 0 }; i < total_recv; ++i) {
+          std::cout << "Rank: " << rank << " Allocation vector: " << allocation_vector_h(i) << std::endl;
+        }
+        // Print the permute vector as well
+        auto permute_vector_h = Kokkos::create_mirror_view(permute_vector);
+        Kokkos::deep_copy(permute_vector_h, permute_vector);
+        for (std::size_t i { 0 }; i < total_holes; ++i) {
+          std::cout << "Rank: " << rank << " Permuted vector: " << permute_vector_h(i) << 
+          " tag: " << tag_h(permute_vector_h(i)) << std::endl;
+        }
+      }
+      */
+     {
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        std::cout << "Rank: " << rank << " Total sent: " << total_holes - total_dead << " Total recv: " << total_recv << std::endl;
+     }
+
       // Communicate the arrays
       comm::CommunicateParticlesBuffer<M::Dim, M::CoordType>(species, permute_vector, allocation_vector,
                                         this_tag_offset, npart_per_tag_arr, npart_per_tag_arr_recv,

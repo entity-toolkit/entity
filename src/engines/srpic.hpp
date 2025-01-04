@@ -126,6 +126,11 @@ namespace ntt {
           timers.stop("CurrentFiltering");
         }
 
+        // Tags are assigned by now
+        if (step == 0){
+          m_metadomain.SetParticleIDs(dom);
+        }
+
         timers.start("Communications");
         if ((sort_interval > 0) and (step % sort_interval == 0)) {
           m_metadomain.CommunicateParticlesBuffer(dom, &timers);
