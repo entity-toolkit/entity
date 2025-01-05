@@ -175,6 +175,14 @@ namespace ntt {
         ParticleInjector(dom);
         timers.stop("Injector");
       }
+
+      if (step % 10 == 0 && step > 0){
+        
+        timers.start("RemoveDead");
+        m_metadomain.RemoveDeadParticles(dom, &timers);
+        timers.stop("RemoveDead");
+      }
+      
     }
 
     /* algorithm substeps --------------------------------------------------- */

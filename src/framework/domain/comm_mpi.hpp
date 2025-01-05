@@ -544,12 +544,6 @@ namespace comm {
     const auto n_alive    = npart_per_tag_arr[ParticleTag::alive];
     const auto n_dead     = npart_per_tag_arr[ParticleTag::dead];
 
-    // Debug test: print send and recv count
-    {
-      int rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      //printf("MPI rank: %d, Total send: %d, Total recv: %d \n", rank, total_send, total_recv);
-    }
     /*
         Brief on recv buffers: Each recv buffer contains all the received arrays of 
         a given type. The different physical quantities are stored next to each other
@@ -710,12 +704,6 @@ namespace comm {
 
       if ((send_rank >= 0) and (recv_rank >= 0) and (send_count > 0) and
       (recv_count > 0)) {
-      // Debug: Print the rank and type of mpi operation performed
-      {
-      int rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      //printf("MPI rank: %d, Performing sendrecv operation \n", rank);
-      }
       MPI_Sendrecv(send_buffer_int_h.data(),
                    send_count * NINTS,
                    mpi::get_type<int>(),
@@ -765,12 +753,6 @@ namespace comm {
                     MPI_COMM_WORLD,
                     MPI_STATUS_IGNORE);
     } else if ((send_rank >= 0) and (send_count > 0)) {
-      // Debug: Print the rank and type of mpi operation performed
-      {      
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        //printf("MPI rank: %d, Performing send operation \n", rank);
-      }
       MPI_Send(send_buffer_int_h.data(),
                send_count * NINTS,
                mpi::get_type<int>(),
@@ -796,12 +778,6 @@ namespace comm {
                 0,
                 MPI_COMM_WORLD);
     } else if ((recv_rank >= 0) and (recv_count > 0)) {
-      // Debug: Print the rank and type of mpi operation performed
-      {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        //printf("MPI rank: %d, Performing recv operation \n", rank);
-      }
       MPI_Recv(recv_buffer_int_h.data() + receive_offset_int,
                recv_count * NINTS,
                mpi::get_type<int>(),
@@ -833,59 +809,8 @@ namespace comm {
     }
     current_received += recv_count;
     iteration++;
+  
 
-    // Debug test: Print recv buffer before and after
-    /*
-    {
-      int total_ranks;
-      MPI_Comm_size(MPI_COMM_WORLD, &total_ranks);
-      for (int allranks=0; allranks<total_ranks; allranks++)
-      {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        MPI_Barrier(MPI_COMM_WORLD);
-        if (rank == allranks && species.label() == "e+_b" && total_send != total_recv) 
-        {
-          // Print sent and received particles
-          std::cout << "Species: " << species.label() << std::endl;
-          //std::cout << "send rank: " << send_rank << "  recv rank: " << recv_rank << std::endl;
-          // Print the tags of the dead particles
-
-          
-          for (int i=0; i<send_count; i++)
-          {
-            auto position_y = send_buffer_int_h(i*NINTS + 2);
-            auto dx_y = send_buffer_prtldx_h(i*NFLOATS + 2);
-            auto velocity_y = send_buffer_real_h(i*NREALS + 1);
-            auto particle_ID = send_buffer_long_h(i*NLONGS + 0);
-            auto particle_tag = send_buffer_long_h(i*NLONGS + 1);
-            printf("MPI rank: %d,  Send ID %ld, tag %ld, pos i2 %d, dx: %f and u2 %f \n", rank,
-            particle_ID, particle_tag, position_y, dx_y, velocity_y);
-          }
-          auto allocation_vector_h = Kokkos::create_mirror_view(allocation_vector);
-          Kokkos::deep_copy(allocation_vector_h, allocation_vector);
-
-          for (int i=0; i<recv_count; i++)
-          {
-            auto position_y = recv_buffer_int_h(receive_offset_int + i*NINTS + 2);
-            auto velocity_y = recv_buffer_real_h(receive_offset_real + i*NREALS + 1);
-            auto dx_y = recv_buffer_prtldx_h(receive_offset_prtldx + i*NFLOATS + 2);
-            auto particle_ID = recv_buffer_long_h(receive_offset_long + i*NLONGS + 0);
-            auto particle_tag = recv_buffer_long_h(receive_offset_long + i*NLONGS + 1);
-            printf("MPI rank: %d,  Recv ID %ld, tag %ld, pos i2 %d, dx: %f  and u2 %f ", rank,
-            particle_ID, particle_tag, position_y, dx_y, velocity_y);
-            // Print where this particle gets allocated to
-            auto idx = current_received + i - recv_count;
-            std::cout << "\n current recieved " << current_received;
-            std::cout << "\n current index " << idx;
-            std::cout << "\n  allocated to position " << allocation_vector_h(idx) << std::endl;
-          }
-          printf("***** \n");
-        }
-      }
-    }
-    */
-   
     } // end over direction loop
     Kokkos::deep_copy(recv_buffer_int, recv_buffer_int_h);
     Kokkos::deep_copy(recv_buffer_real, recv_buffer_real_h);
@@ -989,44 +914,7 @@ namespace comm {
 
     species.set_npart(species.npart() + std::max(permute_vector.extent(0), 
                       allocation_vector.extent(0)) - permute_vector.extent(0));
-    
-    /*
-    {
-      int rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      // Print the total number of particles after each pass
-      int species_npart = species.npart();
-      int global_species_npart = 0;
-      // Reduce all local sums into global_sum on rank 0
-      MPI_Reduce(&species_npart, &global_species_npart, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-      int total_ranks;
-      MPI_Comm_size(MPI_COMM_WORLD, &total_ranks);
-      for (int allranks=0; allranks<total_ranks; allranks++)
-      {
-        MPI_Barrier(MPI_COMM_WORLD);
-        // Only the root rank (rank 0) will print the global sum
 
-        if (rank == allranks && species.label() == "e+_b") {
-          printf("rank %d count: %d \n", rank, species_npart);
-          std::cout << "Total" << species.label() << "count : " << global_species_npart << std::endl;
-          auto [npart_per_tag_arr_new,
-          tag_offset_new]       = species.npart_per_tag();
-          for (int i=0; i<species.ntags(); i++)
-          {
-            std::cout << "Tag: " << i << " count after recv: " << npart_per_tag_arr_new[i] << std::endl;
-          }
-          // Copy the tag array to host
-          auto tag_h = Kokkos::create_mirror_view(species.tag);
-          Kokkos::deep_copy(tag_h, species.tag);
-          std::cout << "Tag locs after send" << std::endl;
-          for (std::size_t i { 0 }; i < species.npart(); i++) {
-            if (tag_h(i) != ParticleTag::alive)
-              std::cout <<" Tag: " << tag_h(i) << " loc: "<< i << std::endl;
-          }
-        }
-      }
-    }
-    */
     return;
 }
 

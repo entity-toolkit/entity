@@ -762,8 +762,6 @@ namespace ntt {
       Kokkos::View<std::size_t*> current_offset("current_offset", species.ntags());
       auto &this_tag_offset = tag_offset;
 
-      auto n_alive = npart_per_tag_arr[ParticleTag::alive];
-
       if constexpr (D == Dim::_1D){
       Kokkos::parallel_for(
         "PermuteVector and Displace",
@@ -781,7 +779,7 @@ namespace ntt {
             // tag = 1->N (excluding dead and alive)
             else{
               const auto idx_permute_vec =  this_tag_offset(current_tag) -
-                                            n_alive + 
+                                            total_alive + 
                                             Kokkos::atomic_fetch_add(
                                             &current_offset(current_tag),
                                             1);
@@ -810,7 +808,7 @@ namespace ntt {
             // tag = 1->N (excluding dead and alive)
             else{
               const auto idx_permute_vec =  this_tag_offset(current_tag) -
-                                            n_alive + 
+                                            total_alive + 
                                             Kokkos::atomic_fetch_add(
                                             &current_offset(current_tag),
                                             1);
@@ -841,7 +839,7 @@ namespace ntt {
             // tag = 1->N (excluding dead and alive)
             else{
               const auto idx_permute_vec =  this_tag_offset(current_tag) -
-                                            n_alive + 
+                                            total_alive + 
                                             Kokkos::atomic_fetch_add(
                                             &current_offset(current_tag),
                                             1);
@@ -915,48 +913,274 @@ namespace ntt {
           });
       }
 
-      /*
-      int rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      if (rank == 1 && species.label() == "e+_b")
-      {
-        // Copy the tag array to host
-        auto tag_h = Kokkos::create_mirror_view(species.tag);
-        Kokkos::deep_copy(tag_h, species.tag);
-        std::cout << "Tag locs before send" << std::endl;
-        for (std::size_t i { 0 }; i < species.npart(); i++) {
-          if (tag_h(i) != ParticleTag::alive)
-            std::cout <<" Tag: " << tag_h(i) << " loc: "<< i << std::endl;
-        }
-
-        // Print allocation vector after copying to host
-        auto allocation_vector_h = Kokkos::create_mirror_view(allocation_vector);
-        std::cout << "Total holes: " << total_holes << " Total recv: " << total_recv << std::endl;
-        Kokkos::deep_copy(allocation_vector_h, allocation_vector);
-        for (std::size_t i { 0 }; i < total_recv; ++i) {
-          std::cout << "Rank: " << rank << " Allocation vector: " << allocation_vector_h(i) << std::endl;
-        }
-        // Print the permute vector as well
-        auto permute_vector_h = Kokkos::create_mirror_view(permute_vector);
-        Kokkos::deep_copy(permute_vector_h, permute_vector);
-        for (std::size_t i { 0 }; i < total_holes; ++i) {
-          std::cout << "Rank: " << rank << " Permuted vector: " << permute_vector_h(i) << 
-          " tag: " << tag_h(permute_vector_h(i)) << std::endl;
-        }
-      }
-      */
-     {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        std::cout << "Rank: " << rank << " Total sent: " << total_holes - total_dead << " Total recv: " << total_recv << std::endl;
-     }
-
       // Communicate the arrays
       comm::CommunicateParticlesBuffer<M::Dim, M::CoordType>(species, permute_vector, allocation_vector,
                                         this_tag_offset, npart_per_tag_arr, npart_per_tag_arr_recv,
                                         send_ranks, recv_ranks);
 #endif
     }
+  }
+
+  /*
+    Function to remove dead particles from the domain
+  */
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>&  domain,
+                                                    timer::Timers* timers){
+    MPI_Barrier(MPI_COMM_WORLD);
+    for (auto& species : domain.species) {
+      auto [npart_per_tag_arr,
+            tag_offset]       = species.npart_per_tag();
+      auto npart              = static_cast<std::size_t>(species.npart());
+      auto total_alive        = static_cast<std::size_t>(
+                                npart_per_tag_arr[ParticleTag::alive]);
+      auto total_dead         = static_cast<std::size_t>(
+                                npart_per_tag_arr[ParticleTag::dead]);
+    
+      if (total_dead != 0){
+        // Check that only alive and dead particles are present
+        for (std::size_t i { 0 }; i < species.ntags(); i++) {
+          if (i != ParticleTag::alive && i != ParticleTag::dead){
+            raise::FatalIf(npart_per_tag_arr[i] != 0,
+                          "Particle tags can only be dead or alive at this point",
+                          HERE);
+          }
+        }
+
+        // Get the indices of all alive particles
+        auto &this_ux1 = species.ux1; 
+        auto &this_ux2 = species.ux2; 
+        auto &this_ux3 = species.ux3; 
+        auto &this_weight = species.weight; 
+        auto &this_phi = species.phi;
+        auto &this_i1 = species.i1; 
+        auto &this_i1_prev = species.i1_prev; 
+        auto &this_i2 = species.i2; 
+        auto &this_i3 = species.i3; 
+        auto &this_i2_prev = species.i2_prev; 
+        auto &this_i3_prev = species.i3_prev; 
+        auto &this_dx1 = species.dx1; 
+        auto &this_dx1_prev = species.dx1_prev;
+        auto &this_dx2 = species.dx2; 
+        auto &this_dx3 = species.dx3; 
+        auto &this_dx2_prev = species.dx2_prev; 
+        auto &this_dx3_prev = species.dx3_prev; 
+        auto &this_tag = species.tag;
+    
+        // Create buffers to store alive particles
+        Kokkos::View<int*>        buffer_ctr("buffer_ctr",      1);
+        Kokkos::View<int*>        buffer_int("buffer_int",      total_alive);
+        Kokkos::View<real_t*>     buffer_real("buffer_real",    total_alive);
+        Kokkos::View<prtldx_t*>   buffer_prtldx("buffer_prtldx",total_alive);
+
+        // Simulaneously update i1, u1, dx1
+        Kokkos::parallel_for(
+        "CopyToBuffer i1 u1 dx1",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_int(idx) = this_i1(p);
+            buffer_real(idx) = this_ux1(p);
+            buffer_prtldx(idx) = this_dx1(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "i1 u1 dx1 from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_i1(p) = buffer_int(p);
+          this_ux1(p) = buffer_real(p);
+          this_dx1(p) = buffer_prtldx(p);
+        });
+
+        // Update i1_prev, dx1_prev, u2 
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer i1_prev dx1_prev u2",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_real(idx) = this_ux2(p);
+            buffer_prtldx(idx) = this_dx1_prev(p);
+            buffer_int(idx) = this_i1_prev(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "i1_prev u2 dx1_prev from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_i1_prev(p) = buffer_int(p);
+          this_ux2(p) = buffer_real(p);
+          this_dx1_prev(p) = buffer_prtldx(p);
+        });
+
+        // Update u3
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer u3",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_real(idx) = this_ux3(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "u3 from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_ux3(p) = buffer_real(p);
+        });
+
+
+        // Update weight
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer weight",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_real(idx) = this_weight(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "weight from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_weight(p) = buffer_real(p);
+        });
+
+        // Update i2, dx2, i2_prev, dx2_prev
+        if constexpr(D == Dim::_2D || D == Dim::_3D){
+        // i2, dx2
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer i2 dx2",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_int(idx) = this_i2(p);
+            buffer_prtldx(idx) = this_dx2(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "i2  dx2 from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_i2(p) = buffer_int(p);
+          this_dx2(p) = buffer_prtldx(p);
+        });
+
+        // i2_prev, dx2_prev
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer i2_prev dx2_prev",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_int(idx) = this_i2_prev(p);
+            buffer_prtldx(idx) = this_dx2_prev(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "i2_prev dx2_prev from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_i2_prev(p) = buffer_int(p);
+          this_dx2_prev(p) = buffer_prtldx(p);
+        });
+
+        }
+
+        // Update i3, dx3, i3_prev, dx3_prev
+        if constexpr(D == Dim::_3D){
+        // i3, dx3
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer i3 dx3",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_int(idx) = this_i3(p);
+            buffer_prtldx(idx) = this_dx3(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "i3  dx3 from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_i3(p) = buffer_int(p);
+          this_dx3(p) = buffer_prtldx(p);
+        });
+
+        // i3_prev, dx3_prev
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer i3_prev dx3_prev",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_int(idx) = this_i3_prev(p);
+            buffer_prtldx(idx) = this_dx3_prev(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "i3_prev dx3_prev from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_i3_prev(p) = buffer_int(p);
+          this_dx3_prev(p) = buffer_prtldx(p);
+        });
+        }
+
+        // phi
+        if constexpr(D == Dim::_2D && M::CoordType != Coord::Cart){
+        Kokkos::deep_copy(buffer_ctr, 0);
+        Kokkos::parallel_for(
+        "CopyToBuffer phi",
+        total_alive,
+        Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+            const auto idx = Kokkos::atomic_fetch_add(&buffer_ctr(0), 1);
+            buffer_real(idx) = this_phi(p);
+          }
+        });
+
+        Kokkos::parallel_for(
+        "phi from Buffer",
+        total_alive,
+        Lambda(index_t p) {
+          this_phi(p) = buffer_real(p);
+        });
+
+        }
+
+        // tags
+        Kokkos::parallel_for(
+        "Make tags alive",
+        total_alive,
+        Lambda(index_t p) {
+          this_tag(p) = ParticleTag::alive;
+        });
+        species.set_npart(total_alive);
+      }
+    }
+    return;
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
