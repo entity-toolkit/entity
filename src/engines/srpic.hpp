@@ -176,7 +176,7 @@ namespace ntt {
         timers.stop("Injector");
       }
 
-      if (step % 10 == 0 && step > 0){
+      if (step % 100 == 0 && step > 0){
         
         timers.start("RemoveDead");
         m_metadomain.RemoveDeadParticles(dom, &timers);

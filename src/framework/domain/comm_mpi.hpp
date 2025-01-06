@@ -918,6 +918,33 @@ namespace comm {
     return;
 }
 
+/*
+  Function to copy the alive particle data the arrays to a buffer and then back
+  to the particle arrays
+*/
+  template <typename T>
+  void MoveDeadToEnd(array_t<T*>&         arr,
+                     Kokkos::View<std::size_t*>   indices_alive) {
+  auto n_alive = indices_alive.extent(0);
+  auto buffer = Kokkos::View<T*>("buffer", n_alive);
+  Kokkos::parallel_for(
+    "PopulateBufferAlive",
+    n_alive,
+    Lambda(const std::size_t p) {
+      buffer(p) = arr(indices_alive(p));
+    });
+
+  Kokkos::parallel_for(
+    "CopyBufferToArr",
+    n_alive,
+    Lambda(const std::size_t p) {
+      arr(p) = buffer(p);
+    });
+
+    return;
+  }
+
+
 } // namespace comm
 
 #endif // FRAMEWORK_DOMAIN_COMM_MPI_HPP
