@@ -923,6 +923,33 @@ namespace ntt {
 
   /*
     Function to remove dead particles from the domain
+
+    Consider the following particle quantity array
+    <---xxx---x---xx---xx-----------xx----x--> (qty)
+    - = alive
+    x = dead
+    ntot = nalive + ndead
+
+    (1) Copy all alive particle data to buffer
+    <---xxx---x---xx---xx-----------xx----x--> (qty)
+                    |
+                    |
+                    v
+    <--------------------------> buffer
+                (nalive)
+
+    (2) Copy from buffer to the beginning of the array
+        overwritting all particles
+    <--------------------------> buffer
+            (nalive)
+              |
+              |
+              v
+    <--------------------------xx----x--> (qty)
+                              ^
+                            (nalive)
+    
+    (3) Set npart to nalive
   */
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>&  domain,
@@ -930,11 +957,11 @@ namespace ntt {
     for (auto& species : domain.species) {
       auto [npart_per_tag_arr,
             tag_offset]       = species.npart_per_tag();
-      auto npart              = static_cast<std::size_t>(species.npart());
-      auto total_alive        = static_cast<std::size_t>(
-                                npart_per_tag_arr[ParticleTag::alive]);
-      auto total_dead         = static_cast<std::size_t>(
-                                npart_per_tag_arr[ParticleTag::dead]);
+      const auto npart              = static_cast<std::size_t>(species.npart());
+      const auto total_alive        = static_cast<std::size_t>(
+                                      npart_per_tag_arr[ParticleTag::alive]);
+      const auto total_dead         = static_cast<std::size_t>(
+                                      npart_per_tag_arr[ParticleTag::dead]);
 
       // Check that only alive and dead particles are present
       for (std::size_t i { 0 }; i < species.ntags(); i++) {
@@ -945,6 +972,14 @@ namespace ntt {
         }
       }
       {
+      auto [npart_per_tag_arr_,
+            tag_offset_]       = species.npart_per_tag();
+      auto npart_              = static_cast<std::size_t>(species.npart());
+      auto total_alive_        = static_cast<std::size_t>(
+                                npart_per_tag_arr_[ParticleTag::alive]);
+      auto total_dead_         = static_cast<std::size_t>(
+                                npart_per_tag_arr_[ParticleTag::dead]);
+
         int rank, totranks;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &totranks);
@@ -952,8 +987,8 @@ namespace ntt {
           if (rank == current_rank && species.label() == "e-_p"){
             std::cout << "Before removing dead particles" << std::endl;
             std::cout << "Rank: " << rank << std::endl;
-            std::cout << "Total alive: " << total_alive << std::endl;
-            std::cout << "Total dead: " << total_dead << std::endl;
+            std::cout << "Total alive: " << total_alive_ << std::endl;
+            std::cout << "Total dead: " << total_dead_ << std::endl;
             std::cout << "Total particles: " << npart << std::endl;
             for (std::size_t i { 0 }; i < species.ntags(); i++) {
               std::cout << "Tag: " << i << " count: " << npart_per_tag_arr[i] << std::endl;
@@ -1000,6 +1035,7 @@ namespace ntt {
       raise::FatalIf(alive_counter_h(0) != total_alive,
                      "Error in finding alive particles",
                      HERE);
+      
       comm::MoveDeadToEnd(species.i1, indices_alive);
       comm::MoveDeadToEnd(species.i1_prev, indices_alive);
       comm::MoveDeadToEnd(species.dx1_prev, indices_alive);
@@ -1024,25 +1060,41 @@ namespace ntt {
       comm::MoveDeadToEnd(species.dx3, indices_alive);
       comm::MoveDeadToEnd(species.dx3_prev, indices_alive);
       }
-      // tags
+      // tags (set first total_alive to alive and rest to dead)
       Kokkos::parallel_for(
       "Make tags alive",
       total_alive,
       Lambda(index_t p) {
         this_tag(p) = ParticleTag::alive;
       });
+
+      Kokkos::parallel_for(
+      "Make tags dead",
+      total_dead,
+      Lambda(index_t p) {
+        this_tag(total_alive + p) = ParticleTag::dead;
+      });
+
       species.set_npart(total_alive);
-      
-      
+
+      {
+      auto [npart_per_tag_arr_,
+            tag_offset_]       = species.npart_per_tag();
+      auto npart_              = static_cast<std::size_t>(species.npart());
+      auto total_alive_        = static_cast<std::size_t>(
+                                npart_per_tag_arr_[ParticleTag::alive]);
+      auto total_dead_         = static_cast<std::size_t>(
+                                npart_per_tag_arr_[ParticleTag::dead]);
+
         int rank, totranks;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &totranks);
         for (std::size_t current_rank=0; current_rank<totranks; current_rank++){
           if (rank == current_rank && species.label() == "e-_p"){
-            std::cout << "Before removing dead particles" << std::endl;
+            std::cout << "After removing dead particles" << std::endl;
             std::cout << "Rank: " << rank << std::endl;
-            std::cout << "Total alive: " << total_alive << std::endl;
-            std::cout << "Total dead: " << total_dead << std::endl;
+            std::cout << "Total alive: " << total_alive_ << std::endl;
+            std::cout << "Total dead: " << total_dead_ << std::endl;
             std::cout << "Total particles: " << npart << std::endl;
             for (std::size_t i { 0 }; i < species.ntags(); i++) {
               std::cout << "Tag: " << i << " count: " << npart_per_tag_arr[i] << std::endl;
@@ -1050,6 +1102,7 @@ namespace ntt {
           }
           MPI_Barrier(MPI_COMM_WORLD);
         }
+      }
     }
 
     return;
