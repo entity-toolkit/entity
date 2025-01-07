@@ -921,6 +921,32 @@ namespace ntt {
     }
   }
 
+
+/*
+  Function to copy the alive particle data the arrays to a buffer and then back
+  to the particle arrays
+*/
+  template <typename T>
+  void MoveDeadToEnd(array_t<T*>&         arr,
+                     Kokkos::View<std::size_t*>   indices_alive) {
+  auto n_alive = indices_alive.extent(0);
+  auto buffer = Kokkos::View<T*>("buffer", n_alive);
+  Kokkos::parallel_for(
+    "PopulateBufferAlive",
+    n_alive,
+    Lambda(const std::size_t p) {
+      buffer(p) = arr(indices_alive(p));
+    });
+
+  Kokkos::parallel_for(
+    "CopyBufferToArr",
+    n_alive,
+    Lambda(const std::size_t p) {
+      arr(p) = buffer(p);
+    });
+    return;
+  }
+
   /*
     Function to remove dead particles from the domain
 
@@ -989,33 +1015,33 @@ namespace ntt {
             std::cout << "Rank: " << rank << std::endl;
             std::cout << "Total alive: " << total_alive_ << std::endl;
             std::cout << "Total dead: " << total_dead_ << std::endl;
-            std::cout << "Total particles: " << npart << std::endl;
+            std::cout << "Total particles: " << npart_ << std::endl;
             for (std::size_t i { 0 }; i < species.ntags(); i++) {
-              std::cout << "Tag: " << i << " count: " << npart_per_tag_arr[i] << std::endl;
+              std::cout << "Tag: " << i << " count: " << npart_per_tag_arr_[i] << std::endl;
             }
           }
           MPI_Barrier(MPI_COMM_WORLD);
         }
       }
       // Get the indices of all alive particles
-      auto &this_ux1 = species.ux1; 
-      auto &this_ux2 = species.ux2; 
-      auto &this_ux3 = species.ux3; 
-      auto &this_weight = species.weight; 
-      auto &this_phi = species.phi;
-      auto &this_i1 = species.i1; 
-      auto &this_i1_prev = species.i1_prev; 
-      auto &this_i2 = species.i2; 
-      auto &this_i3 = species.i3; 
-      auto &this_i2_prev = species.i2_prev; 
-      auto &this_i3_prev = species.i3_prev; 
-      auto &this_dx1 = species.dx1; 
-      auto &this_dx1_prev = species.dx1_prev;
-      auto &this_dx2 = species.dx2; 
-      auto &this_dx3 = species.dx3; 
-      auto &this_dx2_prev = species.dx2_prev; 
-      auto &this_dx3_prev = species.dx3_prev; 
-      auto &this_tag = species.tag;
+      auto &this_i1             = species.i1; 
+      auto &this_i2             = species.i2; 
+      auto &this_i3             = species.i3; 
+      auto &this_i1_prev        = species.i1_prev; 
+      auto &this_i2_prev        = species.i2_prev; 
+      auto &this_i3_prev        = species.i3_prev; 
+      auto &this_dx1            = species.dx1; 
+      auto &this_dx2            = species.dx2; 
+      auto &this_dx3            = species.dx3; 
+      auto &this_dx1_prev       = species.dx1_prev;
+      auto &this_dx2_prev       = species.dx2_prev; 
+      auto &this_dx3_prev       = species.dx3_prev; 
+      auto &this_ux1            = species.ux1; 
+      auto &this_ux2            = species.ux2; 
+      auto &this_ux3            = species.ux3;
+      auto &this_weight         = species.weight; 
+      auto &this_phi            = species.phi; 
+      auto &this_tag            = species.tag;
       // Find indices of tag = alive particles
       Kokkos::View<std::size_t*> indices_alive("indices_alive", total_alive);
       Kokkos::View<std::size_t*> alive_counter("counter_alive", 1);
@@ -1036,29 +1062,29 @@ namespace ntt {
                      "Error in finding alive particles",
                      HERE);
       
-      comm::MoveDeadToEnd(species.i1, indices_alive);
-      comm::MoveDeadToEnd(species.i1_prev, indices_alive);
-      comm::MoveDeadToEnd(species.dx1_prev, indices_alive);
-      comm::MoveDeadToEnd(species.ux1, indices_alive);
-      comm::MoveDeadToEnd(species.ux2, indices_alive);
-      comm::MoveDeadToEnd(species.ux3, indices_alive);
-      comm::MoveDeadToEnd(species.weight, indices_alive);
+      MoveDeadToEnd(species.i1, indices_alive);
+      MoveDeadToEnd(species.dx1, indices_alive);
+      MoveDeadToEnd(species.dx1_prev, indices_alive);
+      MoveDeadToEnd(species.ux1, indices_alive);
+      MoveDeadToEnd(species.ux2, indices_alive);
+      MoveDeadToEnd(species.ux3, indices_alive);
+      MoveDeadToEnd(species.weight, indices_alive);
       // Update i2, dx2, i2_prev, dx2_prev
       if constexpr(D == Dim::_2D || D == Dim::_3D){
-      comm::MoveDeadToEnd(species.i2, indices_alive);
-      comm::MoveDeadToEnd(species.i2_prev, indices_alive);
-      comm::MoveDeadToEnd(species.dx2, indices_alive);
-      comm::MoveDeadToEnd(species.dx2_prev, indices_alive);
+      MoveDeadToEnd(species.i2, indices_alive);
+      MoveDeadToEnd(species.i2_prev, indices_alive);
+      MoveDeadToEnd(species.dx2, indices_alive);
+      MoveDeadToEnd(species.dx2_prev, indices_alive);
       if constexpr(D == Dim::_2D && M::CoordType != Coord::Cart){
-        comm::MoveDeadToEnd(species.phi, indices_alive);
+        MoveDeadToEnd(species.phi, indices_alive);
       }
       }
       // Update i3, dx3, i3_prev, dx3_prev
       if constexpr(D == Dim::_3D){
-      comm::MoveDeadToEnd(species.i3, indices_alive);
-      comm::MoveDeadToEnd(species.i3_prev, indices_alive);
-      comm::MoveDeadToEnd(species.dx3, indices_alive);
-      comm::MoveDeadToEnd(species.dx3_prev, indices_alive);
+      MoveDeadToEnd(species.i3, indices_alive);
+      MoveDeadToEnd(species.i3_prev, indices_alive);
+      MoveDeadToEnd(species.dx3, indices_alive);
+      MoveDeadToEnd(species.dx3_prev, indices_alive);
       }
       // tags (set first total_alive to alive and rest to dead)
       Kokkos::parallel_for(
@@ -1076,6 +1102,16 @@ namespace ntt {
       });
 
       species.set_npart(total_alive);
+
+      std::tie(npart_per_tag_arr,
+            tag_offset)       = species.npart_per_tag();
+      raise::FatalIf(npart_per_tag_arr[ParticleTag::alive] != total_alive,
+                     "Error in removing dead particles: alive count doesn't match",
+                     HERE);
+      raise::FatalIf(npart_per_tag_arr[ParticleTag::dead] != 0,
+                     "Error in removing dead particles: not all particles are dead",
+                     HERE);
+
 
       {
       auto [npart_per_tag_arr_,
@@ -1095,9 +1131,9 @@ namespace ntt {
             std::cout << "Rank: " << rank << std::endl;
             std::cout << "Total alive: " << total_alive_ << std::endl;
             std::cout << "Total dead: " << total_dead_ << std::endl;
-            std::cout << "Total particles: " << npart << std::endl;
+            std::cout << "Total particles: " << npart_ << std::endl;
             for (std::size_t i { 0 }; i < species.ntags(); i++) {
-              std::cout << "Tag: " << i << " count: " << npart_per_tag_arr[i] << std::endl;
+              std::cout << "Tag: " << i << " count: " << npart_per_tag_arr_[i] << std::endl;
             }
           }
           MPI_Barrier(MPI_COMM_WORLD);
