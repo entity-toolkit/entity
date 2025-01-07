@@ -564,6 +564,31 @@ namespace comm {
 
     auto iteration = 0;
     auto current_received = 0;
+
+    {
+      // For debugging purposes
+      // Loop over all mpi processes
+      int rank, maxranks;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &maxranks);
+      for (auto i = 0; i < maxranks; ++i) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (rank == i) {
+          for (auto &direction : dir::Directions<D>::all){
+            const auto send_rank    = send_ranks[iteration];
+            const auto recv_rank    = recv_ranks[iteration];
+            const auto tag_recv     = mpi::PrtlSendTag<D>::dir2tag(-direction);
+            const auto send_count   = npart_per_tag_arr[tag_send];
+            const auto recv_count   = npart_per_tag_arr_recv[tag_recv];
+            printf("Current MPI rank %d, send rank %d recv rank %d, ", rank, 
+                    send_rank, recv_rank);
+            printf("send count %d, recv count %d\n", send_count, recv_count);
+          }
+        }
+      }
+    }
+
+
     for (auto& direction : dir::Directions<D>::all) {
       const auto send_rank    = send_ranks[iteration];
       const auto recv_rank    = recv_ranks[iteration];
