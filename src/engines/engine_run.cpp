@@ -92,12 +92,12 @@ namespace ntt {
     }
   }
 
-  template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template class Engine<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template class Engine<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template class Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template class Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
-  template class Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
+  template void Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::run();
+  template void Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::run();
+  template void Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::run();
+  template void Engine<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::run();
+  template void Engine<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::run();
+  template void Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::run();
+  template void Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::run();
+  template void Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::run();
 } // namespace ntt

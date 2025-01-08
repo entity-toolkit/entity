@@ -226,14 +226,14 @@ namespace ntt {
     os << std::endl;
   }
 
-  template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template class Engine<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template class Engine<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template class Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template class Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
-  template class Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
+  template void Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
+  template void Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::print_step_report(timer::Timers&,pbar::DurationHistory&,bool,bool) const;
 } // namespace ntt
 
 //   template <Dimension D, SimulationEngine S>
