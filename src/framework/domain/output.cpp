@@ -174,6 +174,39 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+  void ComputeVectorPotential(ndfield_t<M::Dim, 6>& buffer,
+                              ndfield_t<M::Dim, 6>& EM,
+                              unsigned short        buff_idx,
+                              const Mesh<M>         mesh) {
+    if constexpr (M::Dim == Dim::_2D) {
+      const auto i2_min = mesh.i_min(in::x2);
+      // !TODO: this is quite slow
+      Kokkos::parallel_for(
+        "ComputeVectorPotential",
+        mesh.rangeActiveCells(),
+        Lambda(index_t i, index_t j) {
+          const real_t i_ { static_cast<real_t>(static_cast<int>(i) - (N_GHOSTS)) };
+          const auto   k_min = (i2_min - (N_GHOSTS)) + 1;
+          const auto   k_max = (j - (N_GHOSTS));
+          real_t       A3    = ZERO;
+          for (auto k { k_min }; k <= k_max; ++k) {
+            real_t k_ = static_cast<real_t>(k);
+            real_t sqrt_detH_ij1 { mesh.metric.sqrt_det_h({ i_, k_ - HALF }) };
+            real_t sqrt_detH_ij2 { mesh.metric.sqrt_det_h({ i_, k_ + HALF }) };
+            auto   k1 { k + N_GHOSTS };
+            A3 += HALF * (sqrt_detH_ij1 * EM(i, k1 - 1, em::bx1) +
+                          sqrt_detH_ij2 * EM(i, k1, em::bx1));
+          }
+          buffer(i, j, buff_idx) = A3;
+        });
+    } else {
+      raise::KernelError(
+        HERE,
+        "ComputeVectorPotential: 2D implementation called for D != 2");
+    }
+  }
+
+  template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
     const SimulationParams& params,
     std::size_t             step,
@@ -311,6 +344,17 @@ namespace ntt {
                                 *local_domain);
             } else {
               raise::Error("Custom output requested but no function provided",
+                           HERE);
+            }
+          } else if (fld.is_vpotential()) {
+            if (S == SimEngine::GRPIC && M::Dim == Dim::_2D) {
+              const auto c = static_cast<unsigned short>(addresses.back());
+              ComputeVectorPotential<S, M>(local_domain->fields.bckp,
+                                           local_domain->fields.em,
+                                           c,
+                                           local_domain->mesh);
+            } else {
+              raise::Error("Vector potential can only be computed for GRPIC in 2D",
                            HERE);
             }
           } else {
