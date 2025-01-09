@@ -956,6 +956,176 @@ namespace ntt {
     }
   }
 
+  /*
+  Function to copy the alive particle data the arrays to a buffer and then back
+  to the particle arrays
+*/
+  template <typename T>
+  void MoveDeadToEnd(array_t<T*>&         arr,
+                     Kokkos::View<std::size_t*>   indices_alive) {
+  auto n_alive = indices_alive.extent(0);
+  auto buffer = Kokkos::View<T*>("buffer", n_alive);
+  Kokkos::parallel_for(
+    "PopulateBufferAlive",
+    n_alive,
+    Lambda(const std::size_t p) {
+      buffer(p) = arr(indices_alive(p));
+    });
+
+  Kokkos::parallel_for(
+    "CopyBufferToArr",
+    n_alive,
+    Lambda(const std::size_t p) {
+      arr(p) = buffer(p);
+    });
+    return;
+  }
+
+   /*
+    Function to remove dead particles from the domain
+
+    Consider the following particle quantity array
+    <---xxx---x---xx---xx-----------xx----x--> (qty)
+    - = alive
+    x = dead
+    ntot = nalive + ndead
+
+    (1) Copy all alive particle data to buffer
+    <---xxx---x---xx---xx-----------xx----x--> (qty)
+                    |
+                    |
+                    v
+    <--------------------------> buffer
+                (nalive)
+
+    (2) Copy from buffer to the beginning of the array
+        overwritting all particles
+    <--------------------------> buffer
+            (nalive)
+              |
+              |
+              v
+    <--------------------------xx----x--> (qty)
+                              ^
+                            (nalive)
+    
+    (3) Set npart to nalive
+  */
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>&  domain,
+                                                    timer::Timers* timers){
+    for (auto& species : domain.species) {
+      auto [npart_per_tag_arr,
+            tag_offset]       = species.npart_per_tag();
+      const auto npart              = static_cast<std::size_t>(species.npart());
+      const auto total_alive        = static_cast<std::size_t>(
+                                      npart_per_tag_arr[ParticleTag::alive]);
+      const auto total_dead         = static_cast<std::size_t>(
+                                      npart_per_tag_arr[ParticleTag::dead]);
+
+      // Check that only alive and dead particles are present
+      for (std::size_t i { 0 }; i < species.ntags(); i++) {
+        if (i != ParticleTag::alive && i != ParticleTag::dead){
+          raise::FatalIf(npart_per_tag_arr[i] != 0,
+                        "Particle tags can only be dead or alive at this point",
+                        HERE);
+        }
+      } 
+
+      // Get the indices of all alive particles
+      auto &this_i1             = species.i1; 
+      auto &this_i2             = species.i2; 
+      auto &this_i3             = species.i3; 
+      auto &this_i1_prev        = species.i1_prev; 
+      auto &this_i2_prev        = species.i2_prev; 
+      auto &this_i3_prev        = species.i3_prev; 
+      auto &this_dx1            = species.dx1; 
+      auto &this_dx2            = species.dx2; 
+      auto &this_dx3            = species.dx3; 
+      auto &this_dx1_prev       = species.dx1_prev;
+      auto &this_dx2_prev       = species.dx2_prev; 
+      auto &this_dx3_prev       = species.dx3_prev; 
+      auto &this_ux1            = species.ux1; 
+      auto &this_ux2            = species.ux2; 
+      auto &this_ux3            = species.ux3;
+      auto &this_weight         = species.weight; 
+      auto &this_phi            = species.phi; 
+      auto &this_tag            = species.tag;
+      // Find indices of tag = alive particles
+      Kokkos::View<std::size_t*> indices_alive("indices_alive", total_alive);
+      Kokkos::View<std::size_t*> alive_counter("counter_alive", 1);
+      Kokkos::deep_copy(alive_counter, 0);
+      Kokkos::parallel_for(
+      "Indices of Alive Particles",
+      species.npart(),
+      Lambda(index_t p) {
+          if (this_tag(p) == ParticleTag::alive){
+          const auto idx = Kokkos::atomic_fetch_add(&alive_counter(0), 1);
+          indices_alive(idx) = p;
+        }
+      });
+      // Sanity check: alive_counter must be equal to total_alive
+      auto alive_counter_h = Kokkos::create_mirror_view(alive_counter);
+      Kokkos::deep_copy(alive_counter_h, alive_counter);
+      raise::FatalIf(alive_counter_h(0) != total_alive,
+                     "Error in finding alive particles",
+                     HERE);
+      
+      MoveDeadToEnd(species.i1, indices_alive);
+      MoveDeadToEnd(species.dx1, indices_alive);
+      MoveDeadToEnd(species.dx1_prev, indices_alive);
+      MoveDeadToEnd(species.ux1, indices_alive);
+      MoveDeadToEnd(species.ux2, indices_alive);
+      MoveDeadToEnd(species.ux3, indices_alive);
+      MoveDeadToEnd(species.weight, indices_alive);
+      // Update i2, dx2, i2_prev, dx2_prev
+      if constexpr(D == Dim::_2D || D == Dim::_3D){
+      MoveDeadToEnd(species.i2, indices_alive);
+      MoveDeadToEnd(species.i2_prev, indices_alive);
+      MoveDeadToEnd(species.dx2, indices_alive);
+      MoveDeadToEnd(species.dx2_prev, indices_alive);
+      if constexpr(D == Dim::_2D && M::CoordType != Coord::Cart){
+        MoveDeadToEnd(species.phi, indices_alive);
+      }
+      }
+      // Update i3, dx3, i3_prev, dx3_prev
+      if constexpr(D == Dim::_3D){
+      MoveDeadToEnd(species.i3, indices_alive);
+      MoveDeadToEnd(species.i3_prev, indices_alive);
+      MoveDeadToEnd(species.dx3, indices_alive);
+      MoveDeadToEnd(species.dx3_prev, indices_alive);
+      }
+      // tags (set first total_alive to alive and rest to dead)
+      Kokkos::parallel_for(
+      "Make tags alive",
+      total_alive,
+      Lambda(index_t p) {
+        this_tag(p) = ParticleTag::alive;
+      });
+
+      Kokkos::parallel_for(
+      "Make tags dead",
+      total_dead,
+      Lambda(index_t p) {
+        this_tag(total_alive + p) = ParticleTag::dead;
+      });
+
+      species.set_npart(total_alive);
+
+      std::tie(npart_per_tag_arr,
+            tag_offset)       = species.npart_per_tag();
+      raise::FatalIf(npart_per_tag_arr[ParticleTag::alive] != total_alive,
+                     "Error in removing dead particles: alive count doesn't match",
+                     HERE);
+      raise::FatalIf(npart_per_tag_arr[ParticleTag::dead] != 0,
+                     "Error in removing dead particles: not all particles are dead",
+                     HERE);
+
+    }
+
+    return;
+  }
+
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;

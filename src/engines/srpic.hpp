@@ -175,6 +175,14 @@ namespace ntt {
         ParticleInjector(dom);
         timers.stop("Injector");
       }
+
+      if (step % 100 == 0 && step > 0){
+        MPI_Barrier(MPI_COMM_WORLD);
+        timers.start("RemoveDead");
+        m_metadomain.RemoveDeadParticles(dom, &timers);
+        timers.stop("RemoveDead");
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
     }
 
     /* algorithm substeps --------------------------------------------------- */
