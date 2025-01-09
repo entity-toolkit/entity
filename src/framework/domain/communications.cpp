@@ -686,6 +686,7 @@ namespace ntt {
       auto shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
       auto shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
       auto shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
+      dir::dirs_t<D> legal_directions;
 
       // Get receive counts + displacements
       for (auto& direction : dir::Directions<D>::all) {
@@ -703,6 +704,7 @@ namespace ntt {
         const auto  nsend        = npart_per_tag_arr[tag_send];
         std::size_t nrecv        = 0;
 
+	legal_directions.push_back(direction);
         send_ranks.push_back(send_rank);
         recv_ranks.push_back(recv_rank);
         send_inds.push_back(send_ind);
@@ -945,16 +947,11 @@ namespace ntt {
         }
       }
       */
-     {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        std::cout << "Rank: " << rank << " Total sent: " << total_holes - total_dead << " Total recv: " << total_recv << std::endl;
-     }
-
+     
       // Communicate the arrays
       comm::CommunicateParticlesBuffer<M::Dim, M::CoordType>(species, permute_vector, allocation_vector,
                                         this_tag_offset, npart_per_tag_arr, npart_per_tag_arr_recv,
-                                        send_ranks, recv_ranks);
+                                        send_ranks, recv_ranks, legal_directions);
 #endif
     }
   }

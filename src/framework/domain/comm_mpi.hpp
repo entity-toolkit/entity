@@ -53,7 +53,6 @@ namespace comm {
         (recv_rank == rank && recv_idx != idx),
       "Multiple-domain single-rank communication not yet implemented",
       HERE);
-
     if ((send_idx == idx) and (recv_idx == idx)) {
       //  trivial copy if sending to self and receiving from self
 
@@ -456,7 +455,8 @@ namespace comm {
                                   std::vector<std::size_t>    npart_per_tag_arr,
                                   std::vector<std::size_t>    npart_per_tag_arr_recv,
                                   std::vector<int>            send_ranks,
-                                  std::vector<int>            recv_ranks) {
+                                  std::vector<int>            recv_ranks,
+				  const dir::dirs_t<D>&    legal_directions) {
     // Pointers to the particle data arrays
     auto &this_ux1 = species.ux1;
     auto &this_ux2 = species.ux2;
@@ -533,13 +533,17 @@ namespace comm {
 
     auto iteration = 0;
     auto current_received = 0;
-    for (auto& direction : dir::Directions<D>::all) {
+    for (const auto& direction : legal_directions) {
       const auto send_rank    = send_ranks[iteration];
       const auto recv_rank    = recv_ranks[iteration];
       const auto tag_send     = mpi::PrtlSendTag<D>::dir2tag(direction);
       const auto tag_recv     = mpi::PrtlSendTag<D>::dir2tag(-direction);
       const auto send_count   = npart_per_tag_arr[tag_send];
       const auto recv_count   = npart_per_tag_arr_recv[tag_recv];
+      {
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      }
       if (send_rank < 0 and recv_rank < 0) {
         continue;
       }
@@ -677,50 +681,50 @@ namespace comm {
       {
       int rank;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      //printf("MPI rank: %d, Performing sendrecv operation \n", rank);
+      //printf("MPI rank: %d, Performing sendrecv operation, direction %d \n", rank, direction);
       }
-      MPI_Sendrecv(send_buffer_int_h.data(),
+      MPI_Sendrecv(send_buffer_int.data(),
                    send_count * NINTS,
                    mpi::get_type<int>(),
                    send_rank,
                    0,
-                   recv_buffer_int_h.data() + receive_offset_int,
+                   recv_buffer_int.data() + receive_offset_int,
                    recv_count*NINTS,
                    mpi::get_type<int>(),
                    recv_rank,
                    0,
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
-      MPI_Sendrecv(send_buffer_real_h.data(),
+      MPI_Sendrecv(send_buffer_real.data(),
                     send_count * NREALS,
                     mpi::get_type<real_t>(),
                     send_rank,
                     0,
-                    recv_buffer_real_h.data() + receive_offset_real,
+                    recv_buffer_real.data() + receive_offset_real,
                     recv_count*NREALS,
                     mpi::get_type<real_t>(),
                     recv_rank,
                     0,
                     MPI_COMM_WORLD,
                     MPI_STATUS_IGNORE);
-      MPI_Sendrecv(send_buffer_prtldx_h.data(),
+      MPI_Sendrecv(send_buffer_prtldx.data(),
                     send_count * NFLOATS,
                     mpi::get_type<prtldx_t>(),
                     send_rank,
                     0,
-                    recv_buffer_prtldx_h.data() + receive_offset_prtldx,
+                    recv_buffer_prtldx.data() + receive_offset_prtldx,
                     recv_count*NFLOATS,
                     mpi::get_type<prtldx_t>(),
                     recv_rank,
                     0,
                     MPI_COMM_WORLD,
                     MPI_STATUS_IGNORE);
-      MPI_Sendrecv(send_buffer_long_h.data(),
+      MPI_Sendrecv(send_buffer_long.data(),
                     send_count * NLONGS,
                     mpi::get_type<long>(),
                     send_rank,
                     0,
-                    recv_buffer_long_h.data() + receive_offset_long,
+                    recv_buffer_long.data() + receive_offset_long,
                     recv_count*NLONGS,
                     mpi::get_type<long>(),
                     recv_rank,
@@ -732,61 +736,61 @@ namespace comm {
       {      
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        //printf("MPI rank: %d, Performing send operation \n", rank);
+        //printf("MPI rank: %d, Performing send operation, direction %d \n", rank, direction);
       }
-      MPI_Send(send_buffer_int_h.data(),
+      MPI_Send(send_buffer_int.data(),
                send_count * NINTS,
                mpi::get_type<int>(),
                send_rank,
                0,
                MPI_COMM_WORLD);
-      MPI_Send(send_buffer_real_h.data(),
+      MPI_Send(send_buffer_real.data(),
                 send_count * NREALS,
                 mpi::get_type<real_t>(),
                 send_rank,
                 0,
                 MPI_COMM_WORLD);
-      MPI_Send(send_buffer_prtldx_h.data(),
+      MPI_Send(send_buffer_prtldx.data(),
                 send_count * NFLOATS,
                 mpi::get_type<prtldx_t>(),
                 send_rank,
                 0,
                 MPI_COMM_WORLD);
-      MPI_Send(send_buffer_long_h.data(),
+      MPI_Send(send_buffer_long.data(),
                 send_count * NLONGS,
                 mpi::get_type<long>(),
                 send_rank,
                 0,
                 MPI_COMM_WORLD);
-    } else if ((recv_rank >= 0) and (recv_count > 0)) {
+      } else if ((recv_rank >= 0) and (recv_count > 0)) {
       // Debug: Print the rank and type of mpi operation performed
       {
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        //printf("MPI rank: %d, Performing recv operation \n", rank);
+        //printf("MPI rank: %d, Performing recv operation, direction %d \n", rank, direction);
       }
-      MPI_Recv(recv_buffer_int_h.data() + receive_offset_int,
+      MPI_Recv(recv_buffer_int.data() + receive_offset_int,
                recv_count * NINTS,
                mpi::get_type<int>(),
                recv_rank,
                0,
                MPI_COMM_WORLD,
                MPI_STATUS_IGNORE);
-      MPI_Recv(recv_buffer_real_h.data() + receive_offset_real,
+      MPI_Recv(recv_buffer_real.data() + receive_offset_real,
                 recv_count * NREALS,
                 mpi::get_type<real_t>(),
                 recv_rank,
                 0,
                 MPI_COMM_WORLD,
                 MPI_STATUS_IGNORE);
-      MPI_Recv(recv_buffer_prtldx_h.data() + receive_offset_prtldx,
+      MPI_Recv(recv_buffer_prtldx.data() + receive_offset_prtldx,
                 recv_count * NFLOATS,
                 mpi::get_type<prtldx_t>(),
                 recv_rank,
                 0,
                 MPI_COMM_WORLD,
                 MPI_STATUS_IGNORE);
-      MPI_Recv(recv_buffer_long_h.data() + receive_offset_long,
+      MPI_Recv(recv_buffer_long.data() + receive_offset_long,
                 recv_count * NLONGS,
                 mpi::get_type<long>(),
                 recv_rank,
@@ -850,9 +854,9 @@ namespace comm {
     */
    
     } // end over direction loop
-    Kokkos::deep_copy(recv_buffer_int, recv_buffer_int_h);
+    /*Kokkos::deep_copy(recv_buffer_int, recv_buffer_int_h);
     Kokkos::deep_copy(recv_buffer_real, recv_buffer_real_h);
-    Kokkos::deep_copy(recv_buffer_prtldx, recv_buffer_prtldx_h);
+    Kokkos::deep_copy(recv_buffer_prtldx, recv_buffer_prtldx_h);*/
     if constexpr (D == Dim::_1D)
     {
       Kokkos::parallel_for(
@@ -949,10 +953,8 @@ namespace comm {
         this_particleID(idx)     = recv_buffer_long(NLONGS * p + 0);
     });
     }
-
     species.set_npart(species.npart() + std::max(permute_vector.extent(0), 
                       allocation_vector.extent(0)) - permute_vector.extent(0));
-    
     /*
     {
       int rank;
