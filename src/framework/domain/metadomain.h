@@ -91,6 +91,7 @@ namespace ntt {
     void CommunicateParticles(Domain<S, M>&, timer::Timers*);
     void CommunicateParticlesBuffer(Domain<S, M>&, timer::Timers*);
     void SetParticleIDs(Domain<S, M>&);
+    void RemoveDeadParticles(Domain<S, M>& ,timer::Timers* );
 
     /**
      * @param global_ndomains total number of domains
