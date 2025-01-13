@@ -591,11 +591,11 @@ template <class M>
     const BCTags         tags;
 
     AbsorbBoundariesGR_kernel(ndfield_t<M::Dim, 6> Fld,
-                                 const I&             finit,
-                                 const M&             metric,
-                                 real_t               xg_edge,
-                                 real_t               dx_abs,
-                                 BCTags               tags)
+                              const I&             finit,
+                              const M&             metric,
+                              real_t               xg_edge,
+                              real_t               dx_abs,
+                              BCTags               tags)
       : Fld { Fld }
       , finit { finit }
       , metric { metric }
