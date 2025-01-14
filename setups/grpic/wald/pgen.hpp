@@ -20,7 +20,7 @@ namespace user {
 
   template <class M, Dimension D>
   struct InitFields {
-    InitFields(M metric_) : metric { metric_ } {}
+    InitFields(M metric_, real_t m_eps) : metric { metric_ }, m_eps { m_eps } {}
 
     Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
       return HALF * (metric.template h_<3, 3>(x_Cd) 
@@ -28,37 +28,37 @@ namespace user {
       );
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
       coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
       x0m[0] = xi[0];
-      x0m[1] = xi[1] - HALF;
+      x0m[1] = xi[1] - HALF * m_eps;
       x0p[0] = xi[0];
-      x0p[1] = xi[1] + HALF;
+      x0p[1] = xi[1] + HALF * m_eps;
       
       real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
 
       if (cmp::AlmostZero(x_Ph[1]))
         return ONE;
       else
-        return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP;
+        return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
       coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
-      x0m[0] = xi[0] - HALF;
+      x0m[0] = xi[0] - HALF * m_eps;
       x0m[1] = xi[1];
-      x0p[0] = xi[0] + HALF;
+      x0p[0] = xi[0] + HALF * m_eps;
       x0p[1] = xi[1];
 
-      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0] , xi[1] }) };
       if (cmp::AlmostZero(x_Ph[1]))
         return ZERO;
       else
-        return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP;
+        return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
@@ -79,6 +79,7 @@ namespace user {
 
   private:
     const M metric;
+    const real_t m_eps;
   };
 
   template <SimEngine::type S, class M>
@@ -185,7 +186,7 @@ namespace user {
 
     const std::vector<real_t> xi_min;
     const std::vector<real_t> xi_max;
-    const real_t sigma0, sigma_max, multiplicity, nGJ, temperature;
+    const real_t sigma0, sigma_max, multiplicity, nGJ, temperature, m_eps;
 
     InitFields<M, D> init_flds;
 
@@ -198,7 +199,8 @@ namespace user {
       , multiplicity { p.template get<real_t>("setup.multiplicity") }
       , nGJ { p.template get<real_t>("scales.B0") * SQR(p.template get<real_t>("scales.skindepth0")) }
       , temperature { p.template get<real_t>("setup.temperature") }
-      , init_flds { m.mesh().metric } {}
+      , m_eps { p.template get<real_t>("setup.m_eps") }
+      , init_flds { m.mesh().metric, m_eps } {}
     
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
