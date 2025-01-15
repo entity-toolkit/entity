@@ -16,6 +16,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/external.h"
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 #include "utils/log.h"
@@ -368,7 +369,7 @@ namespace ntt {
             ));
         } else if (has_atmosphere and not has_extforce) {
           const auto force =
-            kernel::sr::Force<M::PrtlDim, M::CoordType, kernel::sr::NoForce_t, true> {
+            ext::Force<M::PrtlDim, M::CoordType, ext::NoForce_t, true> {
               {gx1, gx2, gx3},
               x_surf,
               ds
@@ -399,7 +400,7 @@ namespace ntt {
         } else if (not has_atmosphere and has_extforce) {
           if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
             const auto force =
-              kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
+              ext::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
                 m_pgen.ext_force
               };
             Kokkos::parallel_for(
@@ -431,7 +432,7 @@ namespace ntt {
         } else { // has_atmosphere and has_extforce
           if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
             const auto force =
-              kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
+              ext::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
                 m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
               };
             Kokkos::parallel_for(

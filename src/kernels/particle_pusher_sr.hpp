@@ -18,6 +18,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/external.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -54,147 +55,23 @@ namespace kernel::sr {
 
   typedef int CoolingTags;
 
-  struct NoForce_t {
-    NoForce_t() {}
-  };
-
-  /**
-   * @brief
-   * A helper struct which combines the atmospheric gravity
-   * with (optionally) custom user-defined force
-   * @tparam D Dimension
-   * @tparam C Coordinate system
-   * @tparam F Additional force
-   * @tparam Atm Toggle for atmospheric gravity
-   * @note when `Atm` is true, `g` contains a vector of gravity acceleration
-   * @note when `Atm` is true, sign of `ds` indicates the direction of the boundary
-   * !TODO: compensate for the species mass when applying atmospheric force
-   */
-  template <Dimension D, Coord::type C, class F = NoForce_t, bool Atm = false>
-  struct Force {
-    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
-    static_assert(ExtForce or Atm,
-                  "Force initialized with neither PGen force nor gravity");
-
-    const F      pgen_force;
-    const real_t gx1, gx2, gx3, x_surf, ds;
-
-    Force(const F& pgen_force, const vec_t<Dim::_3D>& g, real_t x_surf, real_t ds)
-      : pgen_force { pgen_force }
-      , gx1 { g[0] }
-      , gx2 { g[1] }
-      , gx3 { g[2] }
-      , x_surf { x_surf }
-      , ds { ds } {}
-
-    Force(const F& pgen_force)
-      : Force {
-        pgen_force,
-        {ZERO, ZERO, ZERO},
-        ZERO,
-        ZERO
-    } {
-      raise::ErrorIf(Atm, "Atmospheric gravity not provided", HERE);
-    }
-
-    Force(const vec_t<Dim::_3D>& g, real_t x_surf, real_t ds)
-      : Force { NoForce_t {}, g, x_surf, ds } {
-      raise::ErrorIf(ExtForce, "External force not provided", HERE);
-    }
-
-    Inline auto fx1(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
-      real_t f_x1 = ZERO;
-      if constexpr (ExtForce) {
-        if (ext_force) {
-          f_x1 += pgen_force.fx1(sp, time, x_Ph);
-        }
-      }
-      if constexpr (Atm) {
-        if (gx1 != ZERO) {
-          if ((ds > ZERO and x_Ph[0] >= x_surf + ds) or
-              (ds < ZERO and x_Ph[0] <= x_surf + ds)) {
-            return f_x1;
-          }
-          if constexpr (C == Coord::Cart) {
-            return f_x1 + gx1;
-          } else {
-            return f_x1 + gx1 * SQR(x_surf / x_Ph[0]);
-          }
-        }
-      }
-      return f_x1;
-    }
-
-    Inline auto fx2(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
-      real_t f_x2 = ZERO;
-      if constexpr (ExtForce) {
-        if (ext_force) {
-          f_x2 += pgen_force.fx2(sp, time, x_Ph);
-        }
-      }
-      if constexpr (Atm and (D == Dim::_2D or D == Dim::_3D)) {
-        if (gx2 != ZERO) {
-          if ((ds > ZERO and x_Ph[1] >= x_surf + ds) or
-              (ds < ZERO and x_Ph[1] <= x_surf + ds)) {
-            return f_x2;
-          }
-          if constexpr (C == Coord::Cart) {
-            return f_x2 + gx2;
-          } else {
-            raise::KernelError(HERE, "Invalid force for coordinate system");
-          }
-        }
-      }
-      return f_x2;
-    }
-
-    Inline auto fx3(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
-      real_t f_x3 = ZERO;
-      if constexpr (ExtForce) {
-        if (ext_force) {
-          f_x3 += pgen_force.fx3(sp, time, x_Ph);
-        }
-      }
-      if constexpr (Atm and D == Dim::_3D) {
-        if (gx3 != ZERO) {
-          if ((ds > ZERO and x_Ph[2] >= x_surf + ds) or
-              (ds < ZERO and x_Ph[2] <= x_surf + ds)) {
-            return f_x3;
-          }
-          if constexpr (C == Coord::Cart) {
-            return f_x3 + gx3;
-          } else {
-            raise::KernelError(HERE, "Invalid force for coordinate system");
-          }
-        }
-      }
-      return f_x3;
-    }
-  };
-
   /**
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F = NoForce_t>
+  template <class M, class F = ext::NoForce_t>
   struct Pusher_kernel {
     static_assert(M::is_metric, "M must be a metric class");
-    static constexpr auto D        = M::Dim;
-    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
+    static constexpr auto D         = M::Dim;
+    static constexpr auto ExtForce  = F::ExtForce;
+    static constexpr auto ExtFields = F::ExtFields;
 
   private:
     const PrtlPusher::type pusher;
+    // toggle for the GCA hybrid pusher
     const bool             GCA;
-    const bool             ext_force;
+    // toggle for the external force
+    const bool             apply_ext_force;
     const CoolingTags      cooling;
 
     const randacc_ndfield_t<D, 6> EB;
@@ -221,6 +98,7 @@ namespace kernel::sr {
     bool         is_reflect_i2min { false }, is_reflect_i2max { false };
     bool         is_reflect_i3min { false }, is_reflect_i3max { false };
     bool         is_axis_i2min { false }, is_axis_i2max { false };
+
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
     // synchrotron cooling parameters
@@ -229,7 +107,7 @@ namespace kernel::sr {
   public:
     Pusher_kernel(const PrtlPusher::type&     pusher,
                   bool                        GCA,
-                  bool                        ext_force,
+                  bool                        apply_ext_force,
                   CoolingTags                 cooling,
                   const ndfield_t<D, 6>&      EB,
                   unsigned short              sp,
@@ -264,7 +142,7 @@ namespace kernel::sr {
                   real_t                      coeff_sync)
       : pusher { pusher }
       , GCA { GCA }
-      , ext_force { ext_force }
+      , apply_ext_force { apply_ext_force }
       , cooling { cooling }
       , EB { EB }
       , sp { sp }
@@ -333,7 +211,7 @@ namespace kernel::sr {
 
     Pusher_kernel(const PrtlPusher::type&     pusher,
                   bool                        GCA,
-                  bool                        ext_force,
+                  bool                        apply_ext_force,
                   CoolingTags                 cooling,
                   const ndfield_t<D, 6>&      EB,
                   unsigned short              sp,
@@ -367,7 +245,7 @@ namespace kernel::sr {
                   real_t                      coeff_sync)
       : Pusher_kernel(pusher,
                       GCA,
-                      ext_force,
+                      apply_ext_force,
                       cooling,
                       EB,
                       sp,
@@ -389,7 +267,7 @@ namespace kernel::sr {
                       phi,
                       tag,
                       metric,
-                      NoForce_t {},
+                      ext::NoForce_t {},
                       time,
                       coeff,
                       dt,
@@ -476,6 +354,52 @@ namespace kernel::sr {
       getInterpFlds(p, ei, bi);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
+      if constexpr (ExtForce or ExtFields) {
+        coord_t<M::PrtlDim> xp_Ph { ZERO };
+        xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
+        if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+          xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
+        }
+        if constexpr (M::PrtlDim == Dim::_3D) {
+          xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
+        }
+        if constexpr (ExtForce) {
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(
+            xp_Cd,
+            { force.fx1(sp, time, apply_ext_force, xp_Ph),
+              force.fx2(sp, time, apply_ext_force, xp_Ph),
+              force.fx3(sp, time, apply_ext_force, xp_Ph) },
+            force_Cart);
+        }
+        if constexpr (ExtFields) {
+          // reusing ei, bi for the external fields
+          ei[0] = ZERO;
+          ei[1] = ZERO;
+          ei[2] = ZERO;
+          bi[0] = ZERO;
+          bi[1] = ZERO;
+          bi[2] = ZERO;
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(
+            xp_Cd,
+            { force.ex1(sp, time, xp_Ph),
+              force.ex2(sp, time, xp_Ph),
+              force.ex3(sp, time, xp_Ph) },
+            ei);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(
+            xp_Cd,
+            { force.bx1(sp, time, xp_Ph),
+              force.bx2(sp, time, xp_Ph),
+              force.bx3(sp, time, xp_Ph) },
+            bi);
+          // add external fields to the total fields
+          ei_Cart[0] += ei[0];
+          ei_Cart[1] += ei[1];
+          ei_Cart[2] += ei[2];
+          bi_Cart[0] += bi[0];
+          bi_Cart[1] += bi[1];
+          bi_Cart[2] += bi[2];
+        }
+      }
       if (cooling != 0) {
         // backup fields & velocities to use later in cooling
         ei_Cart_rad[0] = ei_Cart[0];
@@ -487,22 +411,6 @@ namespace kernel::sr {
         u_prime[0]     = ux1(p);
         u_prime[1]     = ux2(p);
         u_prime[2]     = ux3(p);
-      }
-      if constexpr (ExtForce) {
-        coord_t<M::PrtlDim> xp_Ph { ZERO };
-        xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
-        if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
-          xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
-        }
-        if constexpr (M::PrtlDim == Dim::_3D) {
-          xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
-        }
-        metric.template transform_xyz<Idx::T, Idx::XYZ>(
-          xp_Cd,
-          { force.fx1(sp, time, ext_force, xp_Ph),
-            force.fx2(sp, time, ext_force, xp_Ph),
-            force.fx3(sp, time, ext_force, xp_Ph) },
-          force_Cart);
       }
       if (GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
@@ -805,33 +713,33 @@ namespace kernel::sr {
 
         // Ex1
         // Interpolate --- (dual)
-        c0  = EB(i - 1 + indx, em::ex1);
-        c1  = EB(i     + indx, em::ex1);
+        c0    = EB(i - 1 + indx, em::ex1);
+        c1    = EB(i + indx, em::ex1);
         e0[0] = c0 * pondmx + c1 * pondpx;
         // Ex2
         // Interpolate --- (primal)
-        c0    = EB(i    , em::ex2);
+        c0    = EB(i, em::ex2);
         c1    = EB(i + 1, em::ex2);
-        e0[1] = c0 * ponpmx  + c1 * ponppx;
+        e0[1] = c0 * ponpmx + c1 * ponppx;
         // Ex3
         // Interpolate --- (primal)
-        c0    = EB(i    , em::ex3);
+        c0    = EB(i, em::ex3);
         c1    = EB(i + 1, em::ex3);
         e0[2] = c0 * ponpmx + c1 * ponppx;
         // Bx1
         // Interpolate --- (primal)
-        c0    = EB(i    , em::bx1);
+        c0    = EB(i, em::bx1);
         c1    = EB(i + 1, em::bx1);
         b0[0] = c0 * ponpmx + c1 * ponppx;
         // Bx2
         // Interpolate --- (dual)
-        c0  = EB(i - 1 + indx, em::bx2);
-        c1  = EB(i     + indx, em::bx2);
+        c0    = EB(i - 1 + indx, em::bx2);
+        c1    = EB(i + indx, em::bx2);
         b0[1] = c0 * pondmx + c1 * pondpx;
         // Bx3
         // Interpolate --- (dual)
-        c0  = EB(i - 1 + indx, em::bx3);
-        c1  = EB(i     + indx, em::bx3);
+        c0    = EB(i - 1 + indx, em::bx3);
+        c1    = EB(i + indx, em::bx3);
         b0[2] = c0 * pondmx + c1 * pondpx;
       } else if constexpr (D == Dim::_2D) {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
@@ -858,59 +766,59 @@ namespace kernel::sr {
 
         // Ex1
         // Interpolate --- (dual, primal)
-        c000  = EB(i - 1 + indx, j           , em::ex1);
-        c100  = EB(i     + indx, j           , em::ex1);
-        c010  = EB(i - 1 + indx, j + 1       , em::ex1);
-        c110  = EB(i     + indx, j + 1       , em::ex1);
+        c000  = EB(i - 1 + indx, j, em::ex1);
+        c100  = EB(i + indx, j, em::ex1);
+        c010  = EB(i - 1 + indx, j + 1, em::ex1);
+        c110  = EB(i + indx, j + 1, em::ex1);
         c00   = c000 * pondmx + c100 * pondpx;
         c10   = c010 * pondmx + c110 * pondpx;
         e0[0] = c00 * ponpmy + c10 * ponppy;
         // Ex2
         // Interpolate -- (primal, dual)
-        c000  = EB(i           , j - 1 + indy, em::ex2);
-        c100  = EB(i + 1       , j - 1 + indy, em::ex2);
-        c010  = EB(i           , j     + indy, em::ex2);
-        c110  = EB(i + 1       , j     + indy, em::ex2);
+        c000  = EB(i, j - 1 + indy, em::ex2);
+        c100  = EB(i + 1, j - 1 + indy, em::ex2);
+        c010  = EB(i, j + indy, em::ex2);
+        c110  = EB(i + 1, j + indy, em::ex2);
         c00   = c000 * ponpmx + c100 * ponppx;
         c10   = c010 * ponpmx + c110 * ponppx;
-        e0[1] = c00  * pondmy + c10  * pondpy;
+        e0[1] = c00 * pondmy + c10 * pondpy;
         // Ex3
         // Interpolate -- (primal, primal)
-        c000  = EB(i           , j           , em::ex3);
-        c100  = EB(i + 1       , j           , em::ex3);
-        c010  = EB(i           , j + 1       , em::ex3);
-        c110  = EB(i + 1       , j + 1       , em::ex3);
+        c000  = EB(i, j, em::ex3);
+        c100  = EB(i + 1, j, em::ex3);
+        c010  = EB(i, j + 1, em::ex3);
+        c110  = EB(i + 1, j + 1, em::ex3);
         c00   = c000 * ponpmx + c100 * ponppx;
         c10   = c010 * ponpmx + c110 * ponppx;
-        e0[2] = c00  * ponpmy + c10  * ponppy;
+        e0[2] = c00 * ponpmy + c10 * ponppy;
 
         // Bx1
         // Interpolate -- (primal, dual)
-        c000  = EB(i           , j - 1 + indy, em::bx1);
-        c100  = EB(i + 1       , j - 1 + indy, em::bx1);
-        c010  = EB(i           , j     + indy, em::bx1);
-        c110  = EB(i + 1       , j     + indy, em::bx1);
+        c000  = EB(i, j - 1 + indy, em::bx1);
+        c100  = EB(i + 1, j - 1 + indy, em::bx1);
+        c010  = EB(i, j + indy, em::bx1);
+        c110  = EB(i + 1, j + indy, em::bx1);
         c00   = c000 * ponpmx + c100 * ponppx;
         c10   = c010 * ponpmx + c110 * ponppx;
-        b0[0] = c00  * pondmy + c10  * pondpy;
+        b0[0] = c00 * pondmy + c10 * pondpy;
         // Bx2
         // Interpolate -- (dual, primal)
-        c000  = EB(i - 1 + indx, j           , em::bx2);
-        c100  = EB(i     + indx, j           , em::bx2);
-        c010  = EB(i - 1 + indx, j + 1       , em::bx2);
-        c110  = EB(i     + indx, j + 1       , em::bx2);
+        c000  = EB(i - 1 + indx, j, em::bx2);
+        c100  = EB(i + indx, j, em::bx2);
+        c010  = EB(i - 1 + indx, j + 1, em::bx2);
+        c110  = EB(i + indx, j + 1, em::bx2);
         c00   = c000 * pondmx + c100 * pondpx;
         c10   = c010 * pondmx + c110 * pondpx;
-        b0[1] = c00  * ponpmy + c10  * ponppy;
+        b0[1] = c00 * ponpmy + c10 * ponppy;
         // Bx3
         // Interpolate -- (dual, dual)
         c000  = EB(i - 1 + indx, j - 1 + indy, em::bx3);
-        c100  = EB(i     + indx, j - 1 + indy, em::bx3);
-        c010  = EB(i - 1 + indx, j     + indy, em::bx3);
-        c110  = EB(i     + indx, j     + indy, em::bx3);
+        c100  = EB(i + indx, j - 1 + indy, em::bx3);
+        c010  = EB(i - 1 + indx, j + indy, em::bx3);
+        c110  = EB(i + indx, j + indy, em::bx3);
         c00   = c000 * pondmx + c100 * pondpx;
         c10   = c010 * pondmx + c110 * pondpx;
-        b0[2] = c00  * pondmy + c10  * pondpy;
+        b0[2] = c00 * pondmy + c10 * pondpy;
       } else if constexpr (D == Dim::_3D) {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
         const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
@@ -925,8 +833,8 @@ namespace kernel::sr {
         int indz = static_cast<int>(dx3_ + HALF);
 
         // first order
-        real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01, c11,
-          c0, c1;
+        real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
+          c11, c0, c1;
 
         real_t ponpmx = ONE - dx1_;
         real_t ponppx = dx1_;
@@ -944,106 +852,106 @@ namespace kernel::sr {
 
         // Ex1
         // Interpolate --- (dual, primal, primal)
-        c000 = EB(i - 1 + indx, j           , k           , em::ex1);
-        c100 = EB(i     + indx, j           , k           , em::ex1);
-        c010 = EB(i - 1 + indx, j + 1       , k           , em::ex1);
-        c110 = EB(i     + indx, j + 1       , k           , em::ex1);
-        c001 = EB(i - 1 + indx, j           , k + 1       , em::ex1);
-        c101 = EB(i     + indx, j           , k + 1       , em::ex1);
-        c011 = EB(i - 1 + indx, j + 1       , k + 1       , em::ex1);
-        c111 = EB(i     + indx, j + 1       , k + 1       , em::ex1);
-        c00  = c000 * pondmx + c100 * pondpx;
-        c10  = c010 * pondmx + c110 * pondpx;
-        c0   = c00 * ponpmy + c10 * ponppy;
-        c01  = c001 * pondmx + c101 * pondpx;
-        c11  = c011 * pondmx + c111 * pondpx;
-        c1   = c01 * ponpmy + c11 * ponppy;  
+        c000  = EB(i - 1 + indx, j, k, em::ex1);
+        c100  = EB(i + indx, j, k, em::ex1);
+        c010  = EB(i - 1 + indx, j + 1, k, em::ex1);
+        c110  = EB(i + indx, j + 1, k, em::ex1);
+        c001  = EB(i - 1 + indx, j, k + 1, em::ex1);
+        c101  = EB(i + indx, j, k + 1, em::ex1);
+        c011  = EB(i - 1 + indx, j + 1, k + 1, em::ex1);
+        c111  = EB(i + indx, j + 1, k + 1, em::ex1);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * pondmx + c101 * pondpx;
+        c11   = c011 * pondmx + c111 * pondpx;
+        c1    = c01 * ponpmy + c11 * ponppy;
         e0[0] = c0 * ponpmz + c1 * ponppz;
         // Ex2
         // Interpolate -- (primal, dual, primal)
-        c000 = EB(i           , j - 1 + indy, k           , em::ex2);
-        c100 = EB(i + 1       , j - 1 + indy, k           , em::ex2);
-        c010 = EB(i           , j     + indy, k           , em::ex2);
-        c110 = EB(i + 1       , j     + indy, k           , em::ex2);
-        c001 = EB(i           , j - 1 + indy, k + 1       , em::ex2);
-        c101 = EB(i + 1       , j - 1 + indy, k + 1       , em::ex2);
-        c011 = EB(i           , j     + indy, k + 1       , em::ex2);
-        c111 = EB(i + 1       , j     + indy, k + 1       , em::ex2);
-        c00  = c000 * ponpmx + c100 * ponppx;
-        c10  = c010 * ponpmx + c110 * ponppx;
-        c0   = c00  * pondmy + c10  * pondpy;
-        c01  = c001 * ponpmx + c101 * ponppx;
-        c11  = c011 * ponpmx + c111 * ponppx;
-        c1   = c01  * pondmy + c11  * pondpy;
+        c000  = EB(i, j - 1 + indy, k, em::ex2);
+        c100  = EB(i + 1, j - 1 + indy, k, em::ex2);
+        c010  = EB(i, j + indy, k, em::ex2);
+        c110  = EB(i + 1, j + indy, k, em::ex2);
+        c001  = EB(i, j - 1 + indy, k + 1, em::ex2);
+        c101  = EB(i + 1, j - 1 + indy, k + 1, em::ex2);
+        c011  = EB(i, j + indy, k + 1, em::ex2);
+        c111  = EB(i + 1, j + indy, k + 1, em::ex2);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        c0    = c00 * pondmy + c10 * pondpy;
+        c01   = c001 * ponpmx + c101 * ponppx;
+        c11   = c011 * ponpmx + c111 * ponppx;
+        c1    = c01 * pondmy + c11 * pondpy;
         e0[1] = c0 * ponpmz + c1 * ponppz;
         // Ex3
         // Interpolate -- (primal, primal, dual)
-        c000 = EB(i           , j           , k - 1 + indz, em::ex3);
-        c100 = EB(i + 1       , j           , k - 1 + indz, em::ex3);
-        c010 = EB(i           , j + 1       , k - 1 + indz, em::ex3);
-        c110 = EB(i + 1       , j + 1       , k - 1 + indz, em::ex3);
-        c001 = EB(i           , j           , k     + indz, em::ex3);
-        c101 = EB(i + 1       , j           , k     + indz, em::ex3);
-        c011 = EB(i           , j + 1       , k     + indz, em::ex3);
-        c111 = EB(i + 1       , j + 1       , k     + indz, em::ex3);
-        c00  = c000 * ponpmx + c100 * ponppx;
-        c10  = c010 * ponpmx + c110 * ponppx;
-        c0   = c00  * ponpmy + c10  * ponppy;
-        c01  = c001 * ponpmx + c101 * ponppx;
-        c11  = c011 * ponpmx + c111 * ponppx;
-        c1   = c01  * ponpmy + c11  * ponppy;
+        c000  = EB(i, j, k - 1 + indz, em::ex3);
+        c100  = EB(i + 1, j, k - 1 + indz, em::ex3);
+        c010  = EB(i, j + 1, k - 1 + indz, em::ex3);
+        c110  = EB(i + 1, j + 1, k - 1 + indz, em::ex3);
+        c001  = EB(i, j, k + indz, em::ex3);
+        c101  = EB(i + 1, j, k + indz, em::ex3);
+        c011  = EB(i, j + 1, k + indz, em::ex3);
+        c111  = EB(i + 1, j + 1, k + indz, em::ex3);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * ponpmx + c101 * ponppx;
+        c11   = c011 * ponpmx + c111 * ponppx;
+        c1    = c01 * ponpmy + c11 * ponppy;
         e0[2] = c0 * pondmz + c1 * pondpz;
 
         // Bx1
         // Interpolate -- (primal, dual, dual)
-        c000 = EB(i           , j - 1 + indy, k - 1 + indz, em::bx1);
-        c100 = EB(i + 1       , j - 1 + indy, k - 1 + indz, em::bx1);
-        c010 = EB(i           , j     + indy, k - 1 + indz, em::bx1);
-        c110 = EB(i + 1       , j     + indy, k - 1 + indz, em::bx1);
-        c001 = EB(i           , j - 1 + indy, k     + indz, em::bx1);
-        c101 = EB(i + 1       , j - 1 + indy, k     + indz, em::bx1);
-        c011 = EB(i           , j     + indy, k     + indz, em::bx1);
-        c111 = EB(i + 1       , j     + indy, k     + indz, em::bx1);
-        c00  = c000 * ponpmx + c100 * ponppx;
-        c10  = c010 * ponpmx + c110 * ponppx;
-        c0   = c00  * pondmy + c10  * pondpy;
-        c01  = c001 * ponpmx + c101 * ponppx;
-        c11  = c011 * ponpmx + c111 * ponppx;
-        c1   = c01  * pondmy + c11  * pondpy;
+        c000  = EB(i, j - 1 + indy, k - 1 + indz, em::bx1);
+        c100  = EB(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
+        c010  = EB(i, j + indy, k - 1 + indz, em::bx1);
+        c110  = EB(i + 1, j + indy, k - 1 + indz, em::bx1);
+        c001  = EB(i, j - 1 + indy, k + indz, em::bx1);
+        c101  = EB(i + 1, j - 1 + indy, k + indz, em::bx1);
+        c011  = EB(i, j + indy, k + indz, em::bx1);
+        c111  = EB(i + 1, j + indy, k + indz, em::bx1);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        c0    = c00 * pondmy + c10 * pondpy;
+        c01   = c001 * ponpmx + c101 * ponppx;
+        c11   = c011 * ponpmx + c111 * ponppx;
+        c1    = c01 * pondmy + c11 * pondpy;
         b0[0] = c0 * pondmz + c1 * pondpz;
         // Bx2
         // Interpolate -- (dual, primal, dual)
-        c000 = EB(i - 1 + indx, j           , k - 1 + indz, em::bx2);
-        c100 = EB(i     + indx, j           , k - 1 + indz, em::bx2);
-        c010 = EB(i - 1 + indx, j + 1       , k - 1 + indz, em::bx2);
-        c110 = EB(i     + indx, j + 1       , k - 1 + indz, em::bx2);
-        c001 = EB(i - 1 + indx, j           , k     + indz, em::bx2);
-        c101 = EB(i     + indx, j           , k     + indz, em::bx2);
-        c011 = EB(i - 1 + indx, j + 1       , k     + indz, em::bx2);
-        c111 = EB(i     + indx, j + 1       , k     + indz, em::bx2);
-        c00  = c000 * pondmx + c100 * pondpx;
-        c10  = c010 * pondmx + c110 * pondpx;
-        c0   = c00  * ponpmy + c10  * ponppy;
-        c01  = c001 * pondmx + c101 * pondpx;
-        c11  = c011 * pondmx + c111 * pondpx;
-        c1   = c01  * ponpmy + c11  * ponppy;
+        c000  = EB(i - 1 + indx, j, k - 1 + indz, em::bx2);
+        c100  = EB(i + indx, j, k - 1 + indz, em::bx2);
+        c010  = EB(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
+        c110  = EB(i + indx, j + 1, k - 1 + indz, em::bx2);
+        c001  = EB(i - 1 + indx, j, k + indz, em::bx2);
+        c101  = EB(i + indx, j, k + indz, em::bx2);
+        c011  = EB(i - 1 + indx, j + 1, k + indz, em::bx2);
+        c111  = EB(i + indx, j + 1, k + indz, em::bx2);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * pondmx + c101 * pondpx;
+        c11   = c011 * pondmx + c111 * pondpx;
+        c1    = c01 * ponpmy + c11 * ponppy;
         b0[1] = c0 * pondmz + c1 * pondpz;
         // Bx3
         // Interpolate -- (dual, dual, primal)
-        c000 = EB(i - 1 + indx, j - 1 + indy, k           , em::bx3);
-        c100 = EB(i     + indx, j - 1 + indy, k           , em::bx3);
-        c010 = EB(i - 1 + indx, j     + indy, k           , em::bx3);
-        c110 = EB(i     + indx, j     + indy, k           , em::bx3);
-        c001 = EB(i - 1 + indx, j - 1 + indy, k + 1       , em::bx3);
-        c101 = EB(i     + indx, j - 1 + indy, k + 1       , em::bx3);
-        c011 = EB(i - 1 + indx, j     + indy, k + 1       , em::bx3);
-        c111 = EB(i     + indx, j     + indy, k + 1       , em::bx3);
-        c00  = c000 * pondmx + c100 * pondpx;
-        c10  = c010 * pondmx + c110 * pondpx;
-        c0   = c00  * ponpmy + c10  * ponppy;
-        c01  = c001 * pondmx + c101 * pondpx;
-        c11  = c011 * pondmx + c111 * pondpx;
-        c1   = c01  * ponpmy + c11  * ponppy;
+        c000  = EB(i - 1 + indx, j - 1 + indy, k, em::bx3);
+        c100  = EB(i + indx, j - 1 + indy, k, em::bx3);
+        c010  = EB(i - 1 + indx, j + indy, k, em::bx3);
+        c110  = EB(i + indx, j + indy, k, em::bx3);
+        c001  = EB(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
+        c101  = EB(i + indx, j - 1 + indy, k + 1, em::bx3);
+        c011  = EB(i - 1 + indx, j + indy, k + 1, em::bx3);
+        c111  = EB(i + indx, j + indy, k + 1, em::bx3);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * pondmx + c101 * pondpx;
+        c11   = c011 * pondmx + c111 * pondpx;
+        c1    = c01 * ponpmy + c11 * ponppy;
         b0[2] = c0 * ponpmz + c1 * ponppz;
       }
     }

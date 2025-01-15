@@ -46,7 +46,16 @@ namespace traits {
   struct has_member<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
 
   // for fieldsetter
-  // special ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
+  // special ::fx1, ::fx2, ::fx3, ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
+  template <typename T>
+  using fx1_t = decltype(&T::fx1);
+
+  template <typename T>
+  using fx2_t = decltype(&T::fx2);
+
+  template <typename T>
+  using fx3_t = decltype(&T::fx3);
+
   template <typename T>
   using ex1_t = decltype(&T::ex1);
 
