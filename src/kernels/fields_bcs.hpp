@@ -645,6 +645,26 @@ template <class M>
               i1_ + HALF) };
             const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
             Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.bx2({ x1_H, x2_0 });
+          } else if (comp == em::bx3) {
+            const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
+              i1_ + HALF) };
+            const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
+              i2_ + HALF) };
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.bx3({ x1_H, x2_H });
+          } else if (comp == em::ex1) {
+            const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
+              i1_ + HALF) };
+            const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.dx1({ x1_H, x2_0 });
+          } else if (comp == em::ex2) {
+            const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
+            const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
+              i2_ + HALF) };
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.dx2({ x1_0, x2_H });
+          } else if (comp == em::ex3) {
+            const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
+            const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
+            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) * finit.dx3({ x1_0, x2_0 });
           }
         }
       } else {
