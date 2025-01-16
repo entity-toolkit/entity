@@ -293,11 +293,11 @@ namespace user {
 
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
-          // auto theta = HALF * dseed + s*dseed;
-          // if (theta < 0.05) return;
+          auto theta = HALF * dseed + s*dseed;
+          if (theta < 0.05) return;
 
-          auto theta = constant::PI - HALF * dseed - s*dseed;
-          if (theta > constant::PI - 0.05) return;
+          // auto theta = constant::PI - HALF * dseed - s*dseed;
+          // if (theta > constant::PI - 0.05) return;
 
           coord_t<Dim::_3D> x_Cart { ZERO };
           coord_t<Dim::_2D> x_Ph { 1.05, theta };
@@ -334,9 +334,9 @@ namespace user {
           auto bc2 = bcart[1] / bnorm;
           auto bc3 = bcart[2] / bnorm;
 
-          auto v1 = - gam * beta * bc1;
-          auto v2 = - gam * beta * bc2;
-          auto v3 = - gam * beta * bc3;
+          auto v1 = gam * beta * bc1;
+          auto v2 = gam * beta * bc2;
+          auto v3 = gam * beta * bc3;
 
               auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
               auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
