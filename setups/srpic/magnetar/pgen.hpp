@@ -655,6 +655,8 @@ namespace user {
             // if (true) {
               
               auto pnorm { NORM(px, py, pz) };
+              if (pnorm < 0.001) return;
+
               auto f_drag = 1.41631 * math::pow(10.0, 18) * SQR(Rstar_/xPh[0]) * (rand_costheta_RF - math::sqrt(beta_sq)) * CUBE(eph_LF) / (math::exp(eph_LF/tpeak) - 1.0);
               auto dp = dt_ * f_drag;
 
