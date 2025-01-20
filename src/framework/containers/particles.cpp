@@ -15,7 +15,7 @@
 #include <vector>
 
 namespace ntt {
-  template <Dimension D, Coord::type C>
+  template <Dimension D, ntt::Coord::type C>
   Particles<D, C>::Particles(unsigned short     index,
                              const std::string& label,
                              float              m,
@@ -80,7 +80,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, ntt::Coord::type C>
   auto Particles<D, C>::npart_per_tag() const -> std::vector<std::size_t> {
     auto                  this_tag = tag;
     std::vector<std::size_t> npart_tag_vec;
@@ -140,7 +140,7 @@ return npart_tag_vec;
 //   return npart_tag_vec;
 // }
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, ntt::Coord::type C>
   auto Particles<D, C>::SortByTags() -> std::vector<std::size_t> {
     if (npart() == 0 || is_sorted()) {
       return npart_per_tag().first;
