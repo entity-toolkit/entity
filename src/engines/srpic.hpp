@@ -102,6 +102,7 @@ namespace ntt {
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
+        Kokkos::fence();
       }
 
       {
@@ -125,9 +126,14 @@ namespace ntt {
           timers.stop("CurrentFiltering");
         }
 
+        // Tags are assigned by now
+        if (step == 0){
+          m_metadomain.SetParticleIDs(dom);
+        }
+
         timers.start("Communications");
         if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
+          m_metadomain.CommunicateParticlesBuffer(dom, &timers);
         }
         timers.stop("Communications");
       }
@@ -168,6 +174,14 @@ namespace ntt {
         timers.start("Injector");
         ParticleInjector(dom);
         timers.stop("Injector");
+      }
+
+      if (step % 100 == 0 && step > 0){
+        MPI_Barrier(MPI_COMM_WORLD);
+        timers.start("RemoveDead");
+        m_metadomain.RemoveDeadParticles(dom, &timers);
+        timers.stop("RemoveDead");
+        MPI_Barrier(MPI_COMM_WORLD);
       }
     }
 
