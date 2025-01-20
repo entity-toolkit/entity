@@ -16,10 +16,10 @@ void ntt::GlobalInitialize(int argc, char* argv[]) {
                   &argv,
                   required,
                   &provided);
-  if (provided != required) {
-    std::cerr << "MPI_Init_thread() did not provide the requested threading support." << std::endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
+  // if (provided != required) {
+  //   std::cerr << "MPI_Init_thread() did not provide the requested threading support." << std::endl;
+  //   MPI_Abort(MPI_COMM_WORLD, 1);
+  // }
   //MPI_Init(&argc, &argv);
 #endif // MPI_ENABLED
 }
