@@ -64,6 +64,8 @@ namespace ntt {
     std::vector<array_t<real_t*>> pld;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>              phi;
+    // Array to store the particle ids
+    array_t<long*>                particleID;
 
     // host mirrors
     array_mirror_t<int*>                 i1_h, i2_h, i3_h;
@@ -73,6 +75,7 @@ namespace ntt {
     array_mirror_t<real_t*>              phi_h;
     array_mirror_t<short*>               tag_h;
     std::vector<array_mirror_t<real_t*>> pld_h;
+    array_mirror_t<long*>                particleID_h;
 
     // for empty allocation
     Particles() {}
@@ -178,6 +181,7 @@ namespace ntt {
       footprint             += sizeof(prtldx_t) * dx2_prev.extent(0);
       footprint             += sizeof(prtldx_t) * dx3_prev.extent(0);
       footprint             += sizeof(short) * tag.extent(0);
+      footprint             += sizeof(long) * particleID.extent(0);
       for (auto& p : pld) {
         footprint += sizeof(real_t) * p.extent(0);
       }
@@ -189,8 +193,7 @@ namespace ntt {
      * @brief Count the number of particles with a specific tag.
      * @return The vector of counts for each tag.
      */
-    [[nodiscard]]
-    auto npart_per_tag() const -> std::vector<std::size_t>;
+    auto npart_per_tag() const -> std::pair<std::vector<std::size_t>, array_t<std::size_t*>>;
 
     /* setters -------------------------------------------------------------- */
     /**

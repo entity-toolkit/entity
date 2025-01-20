@@ -38,24 +38,18 @@ namespace ntt {
                                const boundaries_t<FldsBC>&     global_flds_bc,
                                const boundaries_t<PrtlBC>&     global_prtl_bc,
                                const std::map<std::string, real_t>& metric_params,
-                               const std::vector<ParticleSpecies>& species_params
-#if defined(OUTPUT_ENABLED)
-                               ,
-                               const std::string& output_engine
-#endif
-                               )
+                               const std::vector<ParticleSpecies>& species_params)
     : g_ndomains { global_ndomains }
     , g_decomposition { global_decomposition }
     , g_mesh { global_ncells, global_extent, metric_params, global_flds_bc, global_prtl_bc }
     , g_metric_params { metric_params }
-    , g_species_params { species_params }
-#if defined(OUTPUT_ENABLED)
-    , g_writer { output_engine }
-#endif
-  {
+    , g_species_params { species_params } {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
+    raise::ErrorIf(global_ndomains != g_mpi_size,
+                   "Exactly 1 domain per MPI rank is allowed",
+                   HERE);
 #endif
     initialValidityCheck();
 
@@ -352,7 +346,7 @@ namespace ntt {
       }
       // check that local subdomains are contained in g_local_subdomain_indices
       auto contained_in_local = false;
-      for (const auto& gidx : g_local_subdomain_indices) {
+      for (const auto& gidx : l_subdomain_indices()) {
         contained_in_local |= (idx == gidx);
       }
 #if defined(MPI_ENABLED)
@@ -404,6 +398,33 @@ namespace ntt {
                      HERE);
     }
 #endif
+  }
+
+  // Function to assign a unique ID to each particle
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::SetParticleIDs(Domain<S, M>& domain){
+    for (auto& species : domain.species) {
+      auto &this_particleID = species.particleID;
+      auto &this_tag  = species.tag;
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      const auto offset_per_rank = static_cast<long>(1e9 * rank);
+      std::size_t current_particleID = 0;
+      Kokkos::View<std::size_t*> counter_view("current_particleID", 1);
+      Kokkos::deep_copy(counter_view, current_particleID);
+      
+      Kokkos::parallel_for(
+        "Set Particle IDs",
+        species.npart(),
+        Lambda(const std::size_t p){
+          if (this_tag(p) == ParticleTag::alive)
+          {
+          Kokkos::atomic_increment(&counter_view(0));
+          this_particleID(p) = offset_per_rank + static_cast<long>(counter_view(0));
+          }
+    });
+    }
+    return;
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;

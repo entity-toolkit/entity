@@ -35,6 +35,8 @@
 #endif
 
 namespace raise {
+  using namespace files;
+
   inline void Warning(const std::string& msg,
                       const std::string& file,
                       const std::string& func,

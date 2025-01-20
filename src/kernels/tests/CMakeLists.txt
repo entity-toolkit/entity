@@ -1,9 +1,11 @@
 # ------------------------------
 # @brief: Generates tests for the `ntt_kernels` module
+#
 # @uses:
-# - kokkos [required]
-# - plog [required]
-# - mpi [optional]
+#
+# * kokkos [required]
+# * plog [required]
+# * mpi [optional]
 # ------------------------------
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)

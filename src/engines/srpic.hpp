@@ -21,6 +21,7 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
+#include "utils/toml.h"
 
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
@@ -70,7 +71,7 @@ namespace ntt {
   public:
     static constexpr auto S { SimEngine::SRPIC };
 
-    SRPICEngine(SimulationParams& params) : base_t { params } {}
+    SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
     ~SRPICEngine() = default;
 
@@ -101,6 +102,7 @@ namespace ntt {
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
+        Kokkos::fence();
       }
 
       {
@@ -124,9 +126,14 @@ namespace ntt {
           timers.stop("CurrentFiltering");
         }
 
+        // Tags are assigned by now
+        if (step == 0){
+          m_metadomain.SetParticleIDs(dom);
+        }
+
         timers.start("Communications");
         if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
+          m_metadomain.CommunicateParticlesBuffer(dom, &timers);
         }
         timers.stop("Communications");
       }
@@ -167,6 +174,14 @@ namespace ntt {
         timers.start("Injector");
         ParticleInjector(dom);
         timers.stop("Injector");
+      }
+
+      if (step % 100 == 0 && step > 0){
+        MPI_Barrier(MPI_COMM_WORLD);
+        timers.start("RemoveDead");
+        m_metadomain.RemoveDeadParticles(dom, &timers);
+        timers.stop("RemoveDead");
+        MPI_Barrier(MPI_COMM_WORLD);
       }
     }
 
@@ -884,8 +899,15 @@ namespace ntt {
                        xi_min.size() != static_cast<std::size_t>(M::Dim),
                      "Invalid range size",
                      HERE);
-      for (const unsigned short comp :
-           { normal_b_comp, tang_e_comp1, tang_e_comp2 }) {
+      std::vector<unsigned short> comps;
+      if (tags & BC::E) {
+        comps.push_back(tang_e_comp1);
+        comps.push_back(tang_e_comp2);
+      }
+      if (tags & BC::B) {
+        comps.push_back(normal_b_comp);
+      }
+      for (const auto& comp : comps) {
         if constexpr (M::Dim == Dim::_1D) {
           Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
                                             std::make_pair(xi_min[0], xi_max[0]),
