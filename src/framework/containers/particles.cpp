@@ -102,15 +102,14 @@ namespace ntt {
     std::vector<std::size_t> npart_tag;
     for (std::size_t t { 0 }; t < ntags(); ++t) {
       std::size_t npart_tag_i = 0;
-      Kokkos::parallel_reduce(
-        "NpartPerTag",
-      npart(),
+      Kokkos::parallel_reduce("NpartPerTag",npart(),
       Lambda(index_t p, std::size_t& loc_npart_tag) {
         if (this_tag(p) == t) {
           loc_npart_tag++;
         }
       }, npart_tag_i);
       npart_tag.push_back(npart_tag_i);
+    }
 
     auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
     Kokkos::deep_copy(npart_tag_host, npart_tag);
