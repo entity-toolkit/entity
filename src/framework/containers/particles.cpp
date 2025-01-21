@@ -99,7 +99,7 @@ namespace ntt {
     //   });
     // Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
 
-    std::vector<std::size_t> npart_tag;
+    array_t<std::size_t*> npart_tag("npart_tags", ntags());
     for (std::size_t t { 0 }; t < ntags(); ++t) {
       std::size_t npart_tag_i = 0;
       Kokkos::parallel_reduce("NpartPerTag",npart(),
@@ -108,7 +108,7 @@ namespace ntt {
           loc_npart_tag++;
         }
       }, npart_tag_i);
-      npart_tag.push_back(npart_tag_i);
+      npart_tag(t) = npart_tag_i;
     }
 
     auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
