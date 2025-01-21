@@ -229,10 +229,10 @@ namespace diag {
 
     // progress bar
     if (diag_flags & Diag::Progress) {
-      const auto progbar = pbar::ProgressBar(time_history, step, tot_steps, diag_flags);
-      CallOnce([&]() {
-        ss << progbar;
-      });
+      // const auto progbar = pbar::ProgressBar(time_history, step, tot_steps, diag_flags);
+      // CallOnce([&]() {
+      //   ss << progbar;
+      // });
     }
 
     // separator

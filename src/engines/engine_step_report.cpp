@@ -103,7 +103,7 @@ namespace ntt {
       });
     }
     if (diag_flags & Diag::Progress) {
-      pbar::ProgressBar(time_history, step, max_steps, diag_flags, std::cout);
+      // pbar::ProgressBar(time_history, step, max_steps, diag_flags, std::cout);
     }
     CallOnce([]() {
       std::cout << std::setw(80) << std::setfill('.') << "" << std::endl
