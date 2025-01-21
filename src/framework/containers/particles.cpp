@@ -84,7 +84,7 @@ namespace ntt {
   auto Particles<D, C>::npart_per_tag() const -> std::pair<std::vector<std::size_t>,
                                                  array_t<std::size_t*>>{
     auto                  this_tag = tag;
-    array_t<std::size_t*> npart_tag("npart_tags", ntags());
+    // array_t<std::size_t*> npart_tag("npart_tags", ntags());
 
     // // Print tag_h array
     // auto tag_host = Kokkos::create_mirror_view(tag);
@@ -99,6 +99,7 @@ namespace ntt {
     //   });
     // Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
 
+    std::vector<std::size_t> npart_tag_vec;
     for (std::size_t t { 0 }; t < ntags(); ++t) {
       std::size_t npart_tag_i = 0;
       Kokkos::parallel_reduce("NpartPerTag",npart(),
@@ -107,17 +108,17 @@ namespace ntt {
           loc_npart_tag++;
         }
       }, npart_tag_i);
-      npart_tag(t) = npart_tag_i;
+      npart_tag_vec.push_back(npart_tag_i);
     }
 
-    auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
-    Kokkos::deep_copy(npart_tag_host, npart_tag);
+    // auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
+    // Kokkos::deep_copy(npart_tag_host, npart_tag);
     array_t<std::size_t*> tag_offset("tag_offset", ntags());
     auto tag_offset_host = Kokkos::create_mirror_view(tag_offset);
 
     std::vector<std::size_t> npart_tag_vec(ntags());
     for (std::size_t t { 0 }; t < ntags(); ++t) {
-      npart_tag_vec[t]    = npart_tag_host(t);
+      // npart_tag_vec[t]    = npart_tag_host(t);
       tag_offset_host(t)  = (t > 0) ? npart_tag_vec[t - 1] : 0;
     }
     for (std::size_t t { 0 }; t < ntags(); ++t) {
