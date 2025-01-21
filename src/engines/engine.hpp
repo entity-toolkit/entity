@@ -55,10 +55,13 @@ namespace ntt {
     static_assert(user::PGen<S, M>::is_pgen, "unrecognized problem generator");
 
   protected:
+  
+#if OUTPUT_ENABLED
 #if MPI_ENABLED
     adios2::ADIOS m_adios { MPI_COMM_WORLD };
 #else
     adios2::ADIOS m_adios;
+#endif
 #endif
 
     SimulationParams m_params;
