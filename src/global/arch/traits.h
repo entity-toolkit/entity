@@ -24,114 +24,123 @@
  * @note realized with SFINAE technique
  */
 
-#ifndef GLOBAL_ARCH_TRAITS_H
-#define GLOBAL_ARCH_TRAITS_H
-
-#include <type_traits>
-#include <utility>
-
-namespace traits {
-
-  template <template <typename> class Trait, typename T, typename = void>
-  struct has_method : std::false_type {};
-
-  template <template <typename> class Trait, typename T>
-  struct has_method<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
-
-  // trivial overload of `has_method` for readability
-  template <template <typename> class Trait, typename T, typename = void>
-  struct has_member : std::false_type {};
-
-  template <template <typename> class Trait, typename T>
-  struct has_member<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
-
-  // for fieldsetter
-  // special ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
-  template <typename T>
-  using ex1_t = decltype(&T::ex1);
-
-  template <typename T>
-  using ex2_t = decltype(&T::ex2);
-
-  template <typename T>
-  using ex3_t = decltype(&T::ex3);
-
-  template <typename T>
-  using bx1_t = decltype(&T::bx1);
-
-  template <typename T>
-  using bx2_t = decltype(&T::bx2);
-
-  template <typename T>
-  using bx3_t = decltype(&T::bx3);
-
-  template <typename T>
-  using dx1_t = decltype(&T::dx1);
-
-  template <typename T>
-  using dx2_t = decltype(&T::dx2);
-
-  template <typename T>
-  using dx3_t = decltype(&T::dx3);
-
-  // for simengine
-  template <typename T>
-  using run_t = decltype(&T::run);
-
-  // for params
-  template <typename T>
-  using to_string_t = decltype(&T::to_string);
-
-  // for pgen
-  namespace pgen {
-    template <typename T>
-    using init_flds_t = decltype(&T::init_flds);
-
-    template <typename T>
-    using init_prtls_t = decltype(&T::InitPrtls);
-
-    template <typename T>
-    using ext_force_t = decltype(&T::ext_force);
-
-    template <typename T>
-    using field_driver_t = decltype(&T::FieldDriver);
-
-    template <typename T>
-    using custom_fields_t = decltype(&T::CustomFields);
-
-    template <typename T>
-    using custom_poststep_t = decltype(&T::CustomPostStep);
-
-    template <typename T>
-    using custom_field_output_t = decltype(&T::CustomFieldOutput);
-  } // namespace pgen
-
-  // for pgen extforce
-  template <typename T>
-  using species_t = decltype(&T::species);
-
-  // checking compat for the problem generator + engine
-  template <int N>
-  struct check_compatibility {
-    template <int... Is>
-    static constexpr bool value(std::integer_sequence<int, Is...>) {
-      return ((Is == N) || ...);
-    }
-  };
-
-  template <int... Is>
-  struct compatible_with {
-    static constexpr auto value = std::integer_sequence<int, Is...> {};
-  };
-
-  // generic
-
-  template <typename T>
-  struct is_pair : std::false_type {};
-
-  template <typename T, typename U>
-  struct is_pair<std::pair<T, U>> : std::true_type {};
-
-} // namespace traits
-
-#endif // GLOBAL_ARCH_TRAITS_H
+ #ifndef GLOBAL_ARCH_TRAITS_H
+ #define GLOBAL_ARCH_TRAITS_H
+ 
+ #include <type_traits>
+ #include <utility>
+ 
+ namespace traits {
+ 
+   template <template <typename> class Trait, typename T, typename = void>
+   struct has_method : std::false_type {};
+ 
+   template <template <typename> class Trait, typename T>
+   struct has_method<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
+ 
+   // trivial overload of `has_method` for readability
+   template <template <typename> class Trait, typename T, typename = void>
+   struct has_member : std::false_type {};
+ 
+   template <template <typename> class Trait, typename T>
+   struct has_member<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
+ 
+   // for fieldsetter
+   // special ::fx1, ::fx2, ::fx3, ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3
+   template <typename T>
+   using fx1_t = decltype(&T::fx1);
+ 
+   template <typename T>
+   using fx2_t = decltype(&T::fx2);
+ 
+   template <typename T>
+   using fx3_t = decltype(&T::fx3);
+ 
+   template <typename T>
+   using ex1_t = decltype(&T::ex1);
+ 
+   template <typename T>
+   using ex2_t = decltype(&T::ex2);
+ 
+   template <typename T>
+   using ex3_t = decltype(&T::ex3);
+ 
+   template <typename T>
+   using bx1_t = decltype(&T::bx1);
+ 
+   template <typename T>
+   using bx2_t = decltype(&T::bx2);
+ 
+   template <typename T>
+   using bx3_t = decltype(&T::bx3);
+ 
+   template <typename T>
+   using dx1_t = decltype(&T::dx1);
+ 
+   template <typename T>
+   using dx2_t = decltype(&T::dx2);
+ 
+   template <typename T>
+   using dx3_t = decltype(&T::dx3);
+ 
+   // for simengine
+   template <typename T>
+   using run_t = decltype(&T::run);
+ 
+   // for params
+   template <typename T>
+   using to_string_t = decltype(&T::to_string);
+ 
+   // for pgen
+   namespace pgen {
+     template <typename T>
+     using init_flds_t = decltype(&T::init_flds);
+ 
+     template <typename T>
+     using init_prtls_t = decltype(&T::InitPrtls);
+ 
+     template <typename T>
+     using ext_force_t = decltype(&T::ext_force);
+ 
+     template <typename T>
+     using field_driver_t = decltype(&T::FieldDriver);
+ 
+     template <typename T>
+     using custom_fields_t = decltype(&T::CustomFields);
+ 
+     template <typename T>
+     using custom_poststep_t = decltype(&T::CustomPostStep);
+ 
+     template <typename T>
+     using custom_field_output_t = decltype(&T::CustomFieldOutput);
+   } // namespace pgen
+ 
+   // for pgen extforce
+   template <typename T>
+   using species_t = decltype(&T::species);
+ 
+   // checking compat for the problem generator + engine
+   template <int N>
+   struct check_compatibility {
+     template <int... Is>
+     static constexpr bool value(std::integer_sequence<int, Is...>) {
+       return ((Is == N) || ...);
+     }
+   };
+ 
+   template <int... Is>
+   struct compatible_with {
+     static constexpr auto value = std::integer_sequence<int, Is...> {};
+   };
+ 
+   // generic
+ 
+   template <typename T>
+   struct is_pair : std::false_type {};
+ 
+   template <typename T, typename U>
+   struct is_pair<std::pair<T, U>> : std::true_type {};
+ 
+ } // namespace traits
+ 
+ #endif // GLOBAL_ARCH_TRAITS_H

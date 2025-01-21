@@ -16,6 +16,36 @@
 namespace user {
   using namespace ntt;
 
+  template <Dimension D>
+  struct InitFields {
+    InitFields() {}
+
+    inline auto bx1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    inline auto bx2(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    inline auto bx3(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    inline auto ex1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    inline auto ex2(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    inline auto ex3(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
 
@@ -32,13 +62,16 @@ namespace user {
 
     const real_t temp_1, temp_2;
     const real_t drift_u_1, drift_u_2;
+    InitFields<D> init_flds;
+
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , temp_1 { p.template get<real_t>("setup.temp_1") }
       , temp_2 { p.template get<real_t>("setup.temp_2") }
       , drift_u_1 { p.template get<real_t>("setup.drift_u_1") }
-      , drift_u_2 { p.template get<real_t>("setup.drift_u_2") } {}
+      , drift_u_2 { p.template get<real_t>("setup.drift_u_2") } 
+      , init_flds {} {}
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist_1 = arch::Maxwellian<S, M>(local_domain.mesh.metric,

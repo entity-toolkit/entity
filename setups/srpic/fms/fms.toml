@@ -1,0 +1,74 @@
+[simulation]
+  name = "fms"
+  engine = "srpic"
+  runtime = 10000.0
+
+[grid]
+  resolution = [16384]
+  extent = [[0.0, 320.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields = [["PERIODIC"]]
+    particles = [["PERIODIC"]]
+    
+[scales]
+  larmor0 = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 8
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 20.0
+
+  [[particles.species]]
+    label = "e-"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e8
+
+  [[particles.species]]
+    label = "e+"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e8
+
+[setup]
+  drift_ux = 0.0
+  temperature = 1e-4
+  Bz0 = 40.0
+  amp = 0.1
+  damp = 200.0
+  omega = 6e-5
+  imax = 16370 # 262140
+  iosc = 16000 # 262130
+
+  lgrad = 3200.0
+  pow = -2.0
+
+[output]
+  interval_time = 10.0
+  format = "hdf5"
+  
+  [output.fields]
+    quantities = ["N_1", "N_2", "B", "E", "T0i_1", "T0i_2", "J"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+  # [output.debug]
+  #   as_is = true
+  #   ghosts = true
+
+[diagnostics]
+  colored_stdout = false
+
