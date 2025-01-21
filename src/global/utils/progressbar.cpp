@@ -72,10 +72,10 @@ namespace pbar {
     std::vector<long double> mpi_avg_durations(size, 0.0);
     MPI_Gather(&avg_duration,
                1,
-               mpi::get_type<long double>(),
+               mpi::get_type<double>(),
                mpi_avg_durations.data(),
                1,
-               mpi::get_type<long double>(),
+               mpi::get_type<double>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     if (rank != MPI_ROOT_RANK) {
