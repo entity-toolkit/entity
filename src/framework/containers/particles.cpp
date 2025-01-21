@@ -112,7 +112,7 @@ namespace ntt {
     }
 
     // auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
-    Kokkos::deep_copy(npart_tag_host, npart_tag);
+    // Kokkos::deep_copy(npart_tag_host, npart_tag);
     array_t<std::size_t*> tag_offset("tag_offset", ntags());
     auto tag_offset_host = Kokkos::create_mirror_view(tag_offset);
 
