@@ -116,7 +116,7 @@ namespace ntt {
     array_t<std::size_t*> tag_offset("tag_offset", ntags());
     auto tag_offset_host = Kokkos::create_mirror_view(tag_offset);
 
-    std::vector<std::size_t> npart_tag_vec(ntags());
+    // std::vector<std::size_t> npart_tag_vec(ntags());
     for (std::size_t t { 0 }; t < ntags(); ++t) {
       // npart_tag_vec[t]    = npart_tag_host(t);
       tag_offset_host(t)  = (t > 0) ? npart_tag_vec[t - 1] : 0;
