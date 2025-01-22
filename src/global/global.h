@@ -209,7 +209,7 @@ namespace Timer {
     PrintTitle      = 1 << 1,
     AutoConvert     = 1 << 2,
     PrintOutput     = 1 << 3,
-    PrintSorting    = 1 << 4,
+    PrintPrtlClear  = 1 << 4,
     PrintCheckpoint = 1 << 5,
     PrintNormed     = 1 << 6,
     Default         = PrintNormed | PrintTotal | PrintTitle | AutoConvert,

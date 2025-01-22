@@ -90,7 +90,7 @@ namespace kernel::sr {
     Force(const F& pgen_force)
       : Force {
         pgen_force,
-        {ZERO, ZERO, ZERO},
+        { ZERO, ZERO, ZERO },
         ZERO,
         ZERO
     } {

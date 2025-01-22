@@ -80,8 +80,8 @@ namespace ntt {
         "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
-      const auto sort_interval = m_params.template get<std::size_t>(
-        "particles.sort_interval");
+      const auto clear_interval = m_params.template get<std::size_t>(
+        "particles.clear_interval");
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
@@ -126,15 +126,8 @@ namespace ntt {
           timers.stop("CurrentFiltering");
         }
 
-        // Tags are assigned by now
-        if (step == 0){
-          m_metadomain.SetParticleIDs(dom);
-        }
-
         timers.start("Communications");
-        if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticlesBuffer(dom, &timers);
-        }
+        m_metadomain.CommunicateParticles(dom);
         timers.stop("Communications");
       }
 
@@ -176,12 +169,10 @@ namespace ntt {
         timers.stop("Injector");
       }
 
-      if (step % 100 == 0 && step > 0){
-        MPI_Barrier(MPI_COMM_WORLD);
-        timers.start("RemoveDead");
-        m_metadomain.RemoveDeadParticles(dom, &timers);
-        timers.stop("RemoveDead");
-        MPI_Barrier(MPI_COMM_WORLD);
+      if (clear_interval > 0 and step % clear_interval == 0 and step > 0) {
+        timers.start("PrtlClear");
+        m_metadomain.RemoveDeadParticles(dom);
+        timers.stop("PrtlClear");
       }
     }
 

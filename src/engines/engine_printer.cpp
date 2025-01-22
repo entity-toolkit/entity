@@ -105,8 +105,8 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(std::size_t bytes)
-      -> std::pair<long double, std::string> {
+    auto bytes_to_human_readable(
+      std::size_t bytes) -> std::pair<long double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
       std::size_t                    unit_idx = 0;
       auto                           size     = static_cast<long double>(bytes);

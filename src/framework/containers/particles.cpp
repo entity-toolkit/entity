@@ -10,7 +10,9 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <Kokkos_StdAlgorithms.hpp>
 
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -47,9 +49,6 @@ namespace ntt {
     tag   = array_t<short*> { label + "_tag", maxnpart };
     tag_h = Kokkos::create_mirror_view(tag);
 
-    particleID  = array_t<long*> {label + "_particleID", maxnpart};
-    particleID_h = Kokkos::create_mirror_view(particleID);
-
     for (unsigned short n { 0 }; n < npld; ++n) {
       pld.push_back(array_t<real_t*>("pld", maxnpart));
       pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
@@ -81,93 +80,150 @@ namespace ntt {
   }
 
   template <Dimension D, Coord::type C>
-  auto Particles<D, C>::npart_per_tag() const -> std::pair<std::vector<std::size_t>,
-                                                 array_t<std::size_t*>>{
+  auto Particles<D, C>::NpartsPerTagAndOffsets() const
+    -> std::pair<std::vector<std::size_t>, array_t<std::size_t*>> {
     auto                  this_tag = tag;
-    array_t<std::size_t*> npart_tag("npart_tags", ntags());
+    const auto            num_tags = ntags();
+    array_t<std::size_t*> npptag("nparts_per_tag", ntags());
 
-    // Print tag_h array
-    auto tag_host = Kokkos::create_mirror_view(tag);
-    Kokkos::deep_copy(tag_host, tag);
-    auto npart_tag_scatter = Kokkos::Experimental::create_scatter_view(npart_tag);
+    // count # of particles per each tag
+    auto npptag_scat = Kokkos::Experimental::create_scatter_view(npptag);
     Kokkos::parallel_for(
       "NpartPerTag",
-      npart(),
+      rangeActiveParticles(),
       Lambda(index_t p) {
-        auto npart_tag_scatter_access = npart_tag_scatter.access();
-        npart_tag_scatter_access((int)(this_tag(p))) += 1;
+        auto npptag_acc = npptag_scat.access();
+        if (this_tag(p) < 0 || this_tag(p) >= num_tags) {
+          raise::KernelError(HERE, "Invalid tag value");
+        }
+        npptag_acc(this_tag(p)) += 1;
       });
-    Kokkos::Experimental::contribute(npart_tag, npart_tag_scatter);
+    Kokkos::Experimental::contribute(npptag, npptag_scat);
 
-    auto npart_tag_host = Kokkos::create_mirror_view(npart_tag);
-    Kokkos::deep_copy(npart_tag_host, npart_tag);
-    array_t<std::size_t*> tag_offset("tag_offset", ntags());
-    auto tag_offset_host = Kokkos::create_mirror_view(tag_offset);
+    // copy the count to a vector on the host
+    auto npptag_h = Kokkos::create_mirror_view(npptag);
+    Kokkos::deep_copy(npptag_h, npptag);
+    std::vector<std::size_t> npptag_vec(num_tags);
+    for (auto t { 0u }; t < num_tags; ++t) {
+      npptag_vec[t] = npptag_h(t);
+    }
 
-    std::vector<std::size_t> npart_tag_vec(ntags());
-    for (std::size_t t { 0 }; t < ntags(); ++t) {
-      npart_tag_vec[t]    = npart_tag_host(t);
-      tag_offset_host(t)  = (t > 0) ? npart_tag_vec[t - 1] : 0;
+    // count the offsets on the host and copy to device
+    array_t<std::size_t*> tag_offset("tag_offset", num_tags - 3);
+    auto                  tag_offset_h = Kokkos::create_mirror_view(tag_offset);
+
+    for (auto t { 0u }; t < num_tags - 3; ++t) {
+      tag_offset_h(t) = npptag_vec[t + 2] + (t > 0u ? tag_offset_h(t - 1) : 0);
     }
-    for (std::size_t t { 0 }; t < ntags(); ++t) {
-      tag_offset_host(t)  += (t > 0) ? tag_offset_host(t - 1) : 0;
-    }
-    Kokkos::deep_copy(tag_offset, tag_offset_host);
-    return std::make_pair(npart_tag_vec, tag_offset);
+    Kokkos::deep_copy(tag_offset, tag_offset_h);
+
+    return { npptag_vec, tag_offset };
+  }
+
+  template <typename T>
+  void RemoveDeadInArray(array_t<T*>&                 arr,
+                         const array_t<std::size_t*>& indices_alive) {
+    auto n_alive = indices_alive.extent(0);
+    auto buffer  = Kokkos::View<T*>("buffer", n_alive);
+    Kokkos::parallel_for(
+      "PopulateBufferAlive",
+      n_alive,
+      Lambda(index_t p) { buffer(p) = arr(indices_alive(p)); });
+
+    Kokkos::deep_copy(
+      Kokkos::subview(arr, std::make_pair(static_cast<std::size_t>(0), n_alive)),
+      buffer);
   }
 
   template <Dimension D, Coord::type C>
-  auto Particles<D, C>::SortByTags() -> std::vector<std::size_t> {
-    if (npart() == 0 || is_sorted()) {
-      return npart_per_tag().first;
+  void Particles<D, C>::RemoveDead() {
+    const auto  n_part  = npart();
+    std::size_t n_alive = 0, n_dead = 0;
+    auto&       this_tag = tag;
+
+    Kokkos::parallel_reduce(
+      "CountDeadAlive",
+      rangeActiveParticles(),
+      Lambda(index_t p, std::size_t & nalive, std::size_t & ndead) {
+        nalive += (this_tag(p) == ParticleTag::alive);
+        ndead  += (this_tag(p) == ParticleTag::dead);
+        if (this_tag(p) != ParticleTag::alive and this_tag(p) != ParticleTag::dead) {
+          raise::KernelError(HERE, "wrong particle tag");
+        }
+      },
+      n_alive,
+      n_dead);
+
+    array_t<std::size_t*> indices_alive { "indices_alive", n_alive };
+    array_t<std::size_t*> alive_counter { "counter_alive", 1 };
+
+    Kokkos::parallel_for(
+      "AliveIndices",
+      rangeActiveParticles(),
+      Lambda(index_t p) {
+        if (this_tag(p) == ParticleTag::alive) {
+          const auto idx     = Kokkos::atomic_fetch_add(&alive_counter(0), 1);
+          indices_alive(idx) = p;
+        }
+      });
+
+    {
+      auto alive_counter_h = Kokkos::create_mirror_view(alive_counter);
+      Kokkos::deep_copy(alive_counter_h, alive_counter);
+      raise::ErrorIf(alive_counter_h(0) != n_alive,
+                     "error in finding alive particle indices",
+                     HERE);
     }
-    using KeyType = array_t<short*>;
-    using BinOp   = sort::BinTag<KeyType>;
-    BinOp bin_op(ntags());
-    auto  slice = range_tuple_t(0, npart());
-    Kokkos::BinSort<KeyType, BinOp> Sorter(Kokkos::subview(tag, slice), bin_op, false);
-    Sorter.create_permute_vector();
 
-    Sorter.sort(Kokkos::subview(i1, slice));
-    Sorter.sort(Kokkos::subview(dx1, slice));
-    Sorter.sort(Kokkos::subview(i1_prev, slice));
-    Sorter.sort(Kokkos::subview(dx1_prev, slice));
-    Sorter.sort(Kokkos::subview(ux1, slice));
-    Sorter.sort(Kokkos::subview(ux2, slice));
-    Sorter.sort(Kokkos::subview(ux3, slice));
-
-    Sorter.sort(Kokkos::subview(tag, slice));
-    Sorter.sort(Kokkos::subview(weight, slice));
-
-    for (unsigned short n { 0 }; n < npld(); ++n) {
-      Sorter.sort(Kokkos::subview(pld[n], slice));
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      RemoveDeadInArray(i1, indices_alive);
+      RemoveDeadInArray(i1_prev, indices_alive);
+      RemoveDeadInArray(dx1, indices_alive);
+      RemoveDeadInArray(dx1_prev, indices_alive);
     }
 
-    if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-      Sorter.sort(Kokkos::subview(i2, slice));
-      Sorter.sort(Kokkos::subview(dx2, slice));
-
-      Sorter.sort(Kokkos::subview(i2_prev, slice));
-      Sorter.sort(Kokkos::subview(dx2_prev, slice));
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      RemoveDeadInArray(i2, indices_alive);
+      RemoveDeadInArray(i2_prev, indices_alive);
+      RemoveDeadInArray(dx2, indices_alive);
+      RemoveDeadInArray(dx2_prev, indices_alive);
     }
+
     if constexpr (D == Dim::_3D) {
-      Sorter.sort(Kokkos::subview(i3, slice));
-      Sorter.sort(Kokkos::subview(dx3, slice));
-
-      Sorter.sort(Kokkos::subview(i3_prev, slice));
-      Sorter.sort(Kokkos::subview(dx3_prev, slice));
+      RemoveDeadInArray(i3, indices_alive);
+      RemoveDeadInArray(i3_prev, indices_alive);
+      RemoveDeadInArray(dx3, indices_alive);
+      RemoveDeadInArray(dx3_prev, indices_alive);
     }
 
-    if ((D == Dim::_2D) && (C != Coord::Cart)) {
-      Sorter.sort(Kokkos::subview(phi, slice));
+    RemoveDeadInArray(ux1, indices_alive);
+    RemoveDeadInArray(ux2, indices_alive);
+    RemoveDeadInArray(ux3, indices_alive);
+    RemoveDeadInArray(weight, indices_alive);
+
+    if constexpr (D == Dim::_2D && C != Coord::Cart) {
+      RemoveDeadInArray(phi, indices_alive);
     }
 
-    auto np_per_tag_tag_offset = npart_per_tag();
-    const auto np_per_tag = np_per_tag_tag_offset.first;
-    set_npart(np_per_tag[(short)(ParticleTag::alive)]);
+    for (auto& payload : pld) {
+      RemoveDeadInArray(payload, indices_alive);
+    }
 
+    Kokkos::Experimental::fill(
+      "TagAliveParticles",
+      AccelExeSpace(),
+      Kokkos::subview(this_tag,
+                      std::make_pair(static_cast<std::size_t>(0), n_alive)),
+      ParticleTag::alive);
+
+    Kokkos::Experimental::fill(
+      "TagDeadParticles",
+      AccelExeSpace(),
+      Kokkos::subview(this_tag, std::make_pair(n_alive, n_alive + n_dead)),
+      ParticleTag::dead);
+
+    set_npart(n_alive);
     m_is_sorted = true;
-    return np_per_tag;
   }
 
   template <Dimension D, Coord::type C>

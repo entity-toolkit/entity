@@ -64,8 +64,6 @@ namespace ntt {
     std::vector<array_t<real_t*>> pld;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>              phi;
-    // Array to store the particle ids
-    array_t<long*>                particleID;
 
     // host mirrors
     array_mirror_t<int*>                 i1_h, i2_h, i3_h;
@@ -75,7 +73,6 @@ namespace ntt {
     array_mirror_t<real_t*>              phi_h;
     array_mirror_t<short*>               tag_h;
     std::vector<array_mirror_t<real_t*>> pld_h;
-    array_mirror_t<long*>                particleID_h;
 
     // for empty allocation
     Particles() {}
@@ -181,7 +178,6 @@ namespace ntt {
       footprint             += sizeof(prtldx_t) * dx2_prev.extent(0);
       footprint             += sizeof(prtldx_t) * dx3_prev.extent(0);
       footprint             += sizeof(short) * tag.extent(0);
-      footprint             += sizeof(long) * particleID.extent(0);
       for (auto& p : pld) {
         footprint += sizeof(real_t) * p.extent(0);
       }
@@ -191,9 +187,19 @@ namespace ntt {
 
     /**
      * @brief Count the number of particles with a specific tag.
-     * @return The vector of counts for each tag.
+     * @return The vector of counts for each tag + offsets
+     * @note For instance, given the counts: 0 -> n0, 1 -> n1, 2 -> n2, 3 -> n3,
+     * ... it returns:
+     * ... [n0, n1, n2, n3, ...] of size ntags
+     * ... [n2, n2 + n3, n2 + n3 + n4, ...]  of size ntags - 3
+     * ... so in buffer array:
+     * ... tag=2 particles are offset by 0
+     * ... tag=3 particles are offset by n2
+     * ... tag=4 particles are offset by n2 + n3
+     * ... etc.
      */
-    auto npart_per_tag() const -> std::pair<std::vector<std::size_t>, array_t<std::size_t*>>;
+    auto NpartsPerTagAndOffsets() const
+      -> std::pair<std::vector<std::size_t>, array_t<std::size_t*>>;
 
     /* setters -------------------------------------------------------------- */
     /**
@@ -216,10 +222,9 @@ namespace ntt {
     }
 
     /**
-     * @brief Sort particles by their tags.
-     * @return The vector of counts per each tag.
+     * @brief Move dead particles to the end of arrays
      */
-    auto SortByTags() -> std::vector<std::size_t>;
+    void RemoveDead();
 
     /**
      * @brief Copy particle data from device to host.
