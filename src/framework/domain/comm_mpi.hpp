@@ -345,6 +345,8 @@ namespace comm {
     auto& this_weight   = species.weight;
     auto& this_tag      = species.tag;
 
+    // @TODO_1.2.0: communicate payloads
+
     // number of arrays of each type to send/recv
     const unsigned short NREALS = 4 + static_cast<unsigned short>(
                                         D == Dim::_2D and C != Coord::Cart);
