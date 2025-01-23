@@ -368,14 +368,18 @@ namespace comm {
       array_t<real_t*> send_buff_real { "send_buff_real", npart_send_in * NREALS };
       array_t<prtldx_t*> send_buff_prtldx { "send_buff_prtldx",
                                             npart_send_in * NPRTLDX };
+
+      std::size_t idx_offset = npart_dead;
+      if (tag_send > 2) {
+        idx_offset += tag_offsets(tag_send - 3);
+      }
       // clang-format off
       Kokkos::parallel_for(
         "PopulateSendBuffer",
         npart_send_in,
         kernel::comm::PopulatePrtlSendBuffer_kernel<D, C>(
           send_buff_int, send_buff_real, send_buff_prtldx,
-          NINTS, NREALS, NPRTLDX,
-          (tag_send > 2 ? tag_offsets(tag_send - 3) : 0) + npart_dead,
+          NINTS, NREALS, NPRTLDX, idx_offset,
           species.i1, species.i1_prev, species.dx1, species.dx1_prev,
           species.i2, species.i2_prev, species.dx2, species.dx2_prev,
           species.i3, species.i3_prev, species.dx3, species.dx3_prev,

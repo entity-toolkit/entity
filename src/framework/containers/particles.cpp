@@ -97,15 +97,16 @@ namespace ntt {
     }
 
     // count the offsets on the host and copy to device
-    array_t<std::size_t*> tag_offset("tag_offset", num_tags - 3);
-    auto                  tag_offset_h = Kokkos::create_mirror_view(tag_offset);
+    array_t<std::size_t*> tag_offsets("tag_offsets", num_tags - 3);
+    auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
 
-    for (auto t { 0u }; t < num_tags - 3; ++t) {
-      tag_offset_h(t) = npptag_vec[t + 2] + (t > 0u ? tag_offset_h(t - 1) : 0);
+    tag_offsets_h(0) = npptag_vec[2];
+    for (auto t { 1u }; t < num_tags - 3; ++t) {
+      tag_offsets_h(t) = npptag_vec[t + 2] + tag_offsets_h(t - 1);
     }
-    Kokkos::deep_copy(tag_offset, tag_offset_h);
+    Kokkos::deep_copy(tag_offsets, tag_offsets_h);
 
-    return { npptag_vec, tag_offset };
+    return { npptag_vec, tag_offsets };
   }
 
   template <typename T>

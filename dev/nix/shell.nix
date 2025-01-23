@@ -38,7 +38,7 @@ pkgs.mkShell {
     ++ (if hdf5 then (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5 ]) else [ ]);
 
   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath ([
-    pkgs.clang19Stdenv.cc.cc
+    pkgs.stdenv.cc.cc
     pkgs.zlib
   ]);
 
