@@ -369,9 +369,12 @@ namespace comm {
       array_t<prtldx_t*> send_buff_prtldx { "send_buff_prtldx",
                                             npart_send_in * NPRTLDX };
 
+      auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
+      Kokkos::deep_copy(tag_offsets_h, tag_offsets);
+
       std::size_t idx_offset = npart_dead;
       if (tag_send > 2) {
-        idx_offset += tag_offsets(tag_send - 3);
+        idx_offset += tag_offsets_h(tag_send - 3);
       }
       // clang-format off
       Kokkos::parallel_for(
