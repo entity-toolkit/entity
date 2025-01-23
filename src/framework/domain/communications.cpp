@@ -20,6 +20,7 @@
   #include "arch/mpi_tags.h"
 
   #include "framework/domain/comm_mpi.hpp"
+  #include "kernels/comm.hpp"
 #else
   #include "framework/domain/comm_nompi.hpp"
 #endif
@@ -601,50 +602,24 @@ namespace ntt {
         }
       } // end directions loop
 
-      auto& this_tag     = species.tag;
-      auto& this_i1      = species.i1;
-      auto& this_i1_prev = species.i1_prev;
-      auto& this_i2      = species.i2;
-      auto& this_i2_prev = species.i2_prev;
-      auto& this_i3      = species.i3;
-      auto& this_i3_prev = species.i3_prev;
+      array_t<std::size_t*> outgoing_indices { "outgoing_indices",
+                                               npart - npart_alive };
 
-      array_t<std::size_t*> outgoing_indices("outgoing_indices",
-                                             npart - npart_alive);
-
-      array_t<std::size_t*> current_offset("current_offset", ntags);
+      // clang-format off
       Kokkos::parallel_for(
         "OutgoingIndicesAndDisplace",
         species.rangeActiveParticles(),
-        Lambda(index_t p) {
-          if (this_tag(p) != ParticleTag::alive) {
-            // dead or to-be-sent
-            const auto idx_for_tag =
-              Kokkos::atomic_fetch_add(&current_offset(this_tag(p)), 1) +
-              (this_tag(p) != ParticleTag::dead ? npart_dead : 0) +
-              (this_tag(p) > 2 ? tag_offsets(this_tag(p) - 3) : 0);
-            if (idx_for_tag >= npart - npart_alive) {
-              raise::KernelError(HERE,
-                                 "Outgoing indices idx exceeds the array size");
-            }
-            outgoing_indices(idx_for_tag) = p;
-            // apply offsets
-            if (this_tag(p) != ParticleTag::dead) {
-              if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
-                this_i1(p)      += shifts_in_x1(this_tag(p) - 2);
-                this_i1_prev(p) += shifts_in_x1(this_tag(p) - 2);
-              }
-              if constexpr (D == Dim::_2D or D == Dim::_3D) {
-                this_i2(p)      += shifts_in_x2(this_tag(p) - 2);
-                this_i2_prev(p) += shifts_in_x2(this_tag(p) - 2);
-              }
-              if constexpr (D == Dim::_3D) {
-                this_i3(p)      += shifts_in_x3(this_tag(p) - 2);
-                this_i3_prev(p) += shifts_in_x3(this_tag(p) - 2);
-              }
-            }
-          }
-        });
+        kernel::comm::PrepareOutgoingPrtls_kernel<M::Dim>(
+            shifts_in_x1, shifts_in_x2, shifts_in_x3,
+            outgoing_indices,
+            npart, npart_alive, npart_dead, ntags,
+            species.i1, species.i1_prev, 
+            species.i2, species.i2_prev,
+            species.i3, species.i3_prev,
+            species.tag, tag_offsets)
+      );
+      // clang-format on
+
       comm::CommunicateParticles<M::Dim, M::CoordType>(species,
                                                        outgoing_indices,
                                                        tag_offsets,

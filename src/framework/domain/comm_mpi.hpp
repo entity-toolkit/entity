@@ -22,6 +22,8 @@
 
 #include "framework/containers/particles.h"
 
+#include "kernels/comm.hpp"
+
 #include <Kokkos_Core.hpp>
 #include <mpi.h>
 
@@ -318,34 +320,14 @@ namespace comm {
   }
 
   template <Dimension D, Coord::type C>
-  void CommunicateParticles(Particles<D, C>&           species,
-                            Kokkos::View<std::size_t*> outgoing_indices,
-                            Kokkos::View<std::size_t*> tag_offsets,
-                            std::vector<std::size_t>   npptag_vec,
-                            std::vector<std::size_t>   npptag_recv_vec,
-                            std::vector<int>           send_ranks,
-                            std::vector<int>           recv_ranks,
-                            const dir::dirs_t<D>&      dirs_to_comm) {
-    // Pointers to the particle data arrays
-    auto& this_i1       = species.i1;
-    auto& this_i1_prev  = species.i1_prev;
-    auto& this_i2       = species.i2;
-    auto& this_i2_prev  = species.i2_prev;
-    auto& this_i3       = species.i3;
-    auto& this_i3_prev  = species.i3_prev;
-    auto& this_dx1      = species.dx1;
-    auto& this_dx1_prev = species.dx1_prev;
-    auto& this_dx2      = species.dx2;
-    auto& this_dx2_prev = species.dx2_prev;
-    auto& this_dx3      = species.dx3;
-    auto& this_dx3_prev = species.dx3_prev;
-    auto& this_phi      = species.phi;
-    auto& this_ux1      = species.ux1;
-    auto& this_ux2      = species.ux2;
-    auto& this_ux3      = species.ux3;
-    auto& this_weight   = species.weight;
-    auto& this_tag      = species.tag;
-
+  void CommunicateParticles(Particles<D, C>&         species,
+                            array_t<std::size_t*>    outgoing_indices,
+                            array_t<std::size_t*>    tag_offsets,
+                            std::vector<std::size_t> npptag_vec,
+                            std::vector<std::size_t> npptag_recv_vec,
+                            std::vector<int>         send_ranks,
+                            std::vector<int>         recv_ranks,
+                            const dir::dirs_t<D>&    dirs_to_comm) {
     // @TODO_1.2.0: communicate payloads
 
     // number of arrays of each type to send/recv
@@ -365,10 +347,9 @@ namespace comm {
                                             npptag_recv_vec.end(),
                                             static_cast<std::size_t>(0));
 
-    Kokkos::View<int*> recv_buff_int { "recv_buff_int", npart_recv * NINTS };
-    Kokkos::View<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
-    Kokkos::View<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx",
-                                               npart_recv * NPRTLDX };
+    array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };
+    array_t<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
+    array_t<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx", npart_recv * NPRTLDX };
 
     auto iteration        = 0;
     auto current_received = 0;
@@ -383,44 +364,26 @@ namespace comm {
       if (send_rank < 0 and recv_rank < 0) {
         continue;
       }
-      Kokkos::View<int*> send_buff_int { "send_buff_int", npart_send_in * NINTS };
-      Kokkos::View<real_t*>   send_buff_real { "send_buff_real",
-                                             npart_send_in * NREALS };
-      Kokkos::View<prtldx_t*> send_buff_prtldx { "send_buff_prtldx",
-                                                 npart_send_in * NPRTLDX };
+      array_t<int*> send_buff_int { "send_buff_int", npart_send_in * NINTS };
+      array_t<real_t*> send_buff_real { "send_buff_real", npart_send_in * NREALS };
+      array_t<prtldx_t*> send_buff_prtldx { "send_buff_prtldx",
+                                            npart_send_in * NPRTLDX };
+      // clang-format off
       Kokkos::parallel_for(
         "PopulateSendBuffer",
         npart_send_in,
-        Lambda(index_t p) {
-          const auto idx = outgoing_indices(
-            (tag_send > 2 ? tag_offsets(tag_send - 3) : 0) + npart_dead + p);
-          if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
-            send_buff_int(NINTS * p + 0)      = this_i1(idx);
-            send_buff_int(NINTS * p + 1)      = this_i1_prev(idx);
-            send_buff_prtldx(NPRTLDX * p + 0) = this_dx1(idx);
-            send_buff_prtldx(NPRTLDX * p + 1) = this_dx1_prev(idx);
-          }
-          if constexpr (D == Dim::_2D or D == Dim::_3D) {
-            send_buff_int(NINTS * p + 2)      = this_i2(idx);
-            send_buff_int(NINTS * p + 3)      = this_i2_prev(idx);
-            send_buff_prtldx(NPRTLDX * p + 2) = this_dx2(idx);
-            send_buff_prtldx(NPRTLDX * p + 3) = this_dx2_prev(idx);
-          }
-          if constexpr (D == Dim::_3D) {
-            send_buff_int(NINTS * p + 4)      = this_i3(idx);
-            send_buff_int(NINTS * p + 5)      = this_i3_prev(idx);
-            send_buff_prtldx(NPRTLDX * p + 4) = this_dx3(idx);
-            send_buff_prtldx(NPRTLDX * p + 5) = this_dx3_prev(idx);
-          }
-          send_buff_real(NREALS * p + 0) = this_ux1(idx);
-          send_buff_real(NREALS * p + 1) = this_ux2(idx);
-          send_buff_real(NREALS * p + 2) = this_ux3(idx);
-          send_buff_real(NREALS * p + 3) = this_weight(idx);
-          if constexpr (D == Dim::_2D and C != Coord::Cart) {
-            send_buff_real(NREALS * p + 4) = this_phi(idx);
-          }
-          this_tag(idx) = ParticleTag::dead;
-        });
+        kernel::comm::PopulatePrtlSendBuffer_kernel<D, C>(
+          send_buff_int, send_buff_real, send_buff_prtldx,
+          NINTS, NREALS, NPRTLDX,
+          (tag_send > 2 ? tag_offsets(tag_send - 3) : 0) + npart_dead,
+          species.i1, species.i1_prev, species.dx1, species.dx1_prev,
+          species.i2, species.i2_prev, species.dx2, species.dx2_prev,
+          species.i3, species.i3_prev, species.dx3, species.dx3_prev,
+          species.ux1, species.ux2, species.ux3, 
+          species.weight, species.phi, species.tag,
+          outgoing_indices, tag_offsets)
+      );
+      // clang-format on
 
       const auto recv_offset_int    = current_received * NINTS;
       const auto recv_offset_real   = current_received * NREALS;
@@ -519,43 +482,25 @@ namespace comm {
 
     } // end direction loop
 
-    const auto npart       = species.npart();
-    const auto npart_holes = outgoing_indices.extent(0);
-
+    // clang-format off
     Kokkos::parallel_for(
       "PopulateFromRecvBuffer",
       npart_recv,
-      Lambda(const std::size_t p) {
-        const auto idx = (p >= npart_holes ? npart + p - npart_holes
-                                           : outgoing_indices(p));
-        if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
-          this_i1(idx)       = recv_buff_int(NINTS * p + 0);
-          this_i1_prev(idx)  = recv_buff_int(NINTS * p + 1);
-          this_dx1(idx)      = recv_buff_prtldx(NPRTLDX * p + 0);
-          this_dx1_prev(idx) = recv_buff_prtldx(NPRTLDX * p + 1);
-        }
-        if constexpr (D == Dim::_2D or D == Dim::_3D) {
-          this_i2(idx)       = recv_buff_int(NINTS * p + 2);
-          this_i2_prev(idx)  = recv_buff_int(NINTS * p + 3);
-          this_dx2(idx)      = recv_buff_prtldx(NPRTLDX * p + 2);
-          this_dx2_prev(idx) = recv_buff_prtldx(NPRTLDX * p + 3);
-        }
-        if constexpr (D == Dim::_3D) {
-          this_i3(idx)       = recv_buff_int(NINTS * p + 4);
-          this_i3_prev(idx)  = recv_buff_int(NINTS * p + 5);
-          this_dx3(idx)      = recv_buff_prtldx(NPRTLDX * p + 4);
-          this_dx3_prev(idx) = recv_buff_prtldx(NPRTLDX * p + 5);
-        }
-        this_ux1(idx)    = recv_buff_real(NREALS * p + 0);
-        this_ux2(idx)    = recv_buff_real(NREALS * p + 1);
-        this_ux3(idx)    = recv_buff_real(NREALS * p + 2);
-        this_weight(idx) = recv_buff_real(NREALS * p + 3);
-        if constexpr (D == Dim::_2D and C != Coord::Cart) {
-          this_phi(idx) = recv_buff_real(NREALS * p + 4);
-        }
-        this_tag(idx) = ParticleTag::alive;
-      });
+      kernel::comm::ExtractReceivedPrtls_kernel<D, C>(
+            recv_buff_int, recv_buff_real, recv_buff_prtldx,
+            NINTS, NREALS, NPRTLDX,
+            species.npart(),
+            species.i1, species.i1_prev, species.dx1, species.dx1_prev,
+            species.i2, species.i2_prev, species.dx2, species.dx2_prev,
+            species.i3, species.i3_prev, species.dx3, species.dx3_prev,
+            species.ux1, species.ux2, species.ux3,
+            species.weight, species.phi, species.tag,
+            outgoing_indices)
+    );
+    // clang-format on
 
+    const auto npart       = species.npart();
+    const auto npart_holes = outgoing_indices.extent(0);
     if (npart_recv > npart_holes) {
       species.set_npart(npart + npart_recv - npart_holes);
     }
