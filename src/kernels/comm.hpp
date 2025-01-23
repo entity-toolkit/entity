@@ -74,10 +74,15 @@ namespace kernel::comm {
     Inline void operator()(index_t p) const {
       if (tag(p) != ParticleTag::alive) {
         // dead or to-be-sent
-        const auto idx_for_tag = Kokkos::atomic_fetch_add(&current_offset(tag(p)),
-                                                          1) +
-                                 (tag(p) != ParticleTag::dead ? npart_dead : 0) +
-                                 (tag(p) > 2 ? tag_offsets(tag(p) - 3) : 0);
+        auto idx_for_tag = Kokkos::atomic_fetch_add(&current_offset(tag(p)), 1);
+        if (tag(p) != ParticleTag::dead) {
+          idx_for_tag += npart_dead;
+        }
+        if (tag(p) > 2) {
+          idx_for_tag += tag_offsets(tag(p) - 3);
+        }
+        // (tag(p) != ParticleTag::dead ? npart_dead : 0) +
+        // (tag(p) > 2 ? tag_offsets(tag(p) - 3) : 0);
         if (idx_for_tag >= npart - npart_alive) {
           raise::KernelError(HERE, "Outgoing indices idx exceeds the array size");
         }
@@ -114,7 +119,7 @@ namespace kernel::comm {
     const array_t<real_t*>      ux1, ux2, ux3, weight, phi;
     const array_t<prtldx_t*>    dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
     array_t<short*>             tag;
-    const array_t<std::size_t*> outgoing_indices, tag_offsets;
+    const array_t<std::size_t*> outgoing_indices;
 
   public:
     PopulatePrtlSendBuffer_kernel(array_t<int*>&               send_buff_int,
@@ -142,8 +147,7 @@ namespace kernel::comm {
                                   const array_t<real_t*>&      weight,
                                   const array_t<real_t*>&      phi,
                                   array_t<short*>&             tag,
-                                  const array_t<std::size_t*>& outgoing_indices,
-                                  const array_t<std::size_t*>& tag_offsets)
+                                  const array_t<std::size_t*>& outgoing_indices)
       : send_buff_int { send_buff_int }
       , send_buff_real { send_buff_real }
       , send_buff_prtldx { send_buff_prtldx }
@@ -169,8 +173,7 @@ namespace kernel::comm {
       , weight { weight }
       , phi { phi }
       , tag { tag }
-      , outgoing_indices { outgoing_indices }
-      , tag_offsets { tag_offsets } {}
+      , outgoing_indices { outgoing_indices } {}
 
     Inline void operator()(index_t p) const {
       const auto idx = outgoing_indices(idx_offset + p);

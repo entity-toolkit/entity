@@ -381,7 +381,7 @@ namespace comm {
           species.i3, species.i3_prev, species.dx3, species.dx3_prev,
           species.ux1, species.ux2, species.ux3, 
           species.weight, species.phi, species.tag,
-          outgoing_indices, tag_offsets)
+          outgoing_indices)
       );
       // clang-format on
 
