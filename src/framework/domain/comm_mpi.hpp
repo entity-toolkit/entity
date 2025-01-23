@@ -17,6 +17,7 @@
 #include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "arch/mpi_aliases.h"
+#include "arch/mpi_tags.h"
 #include "utils/error.h"
 
 #include "framework/containers/particles.h"

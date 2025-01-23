@@ -28,54 +28,42 @@ namespace ntt {
                              const Cooling&     cooling,
                              unsigned short     npld)
     : ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
-    i1    = array_t<int*> { label + "_i1", maxnpart };
-    i1_h  = Kokkos::create_mirror_view(i1);
-    dx1   = array_t<prtldx_t*> { label + "_dx1", maxnpart };
-    dx1_h = Kokkos::create_mirror_view(dx1);
 
-    i1_prev  = array_t<int*> { label + "_i1_prev", maxnpart };
-    dx1_prev = array_t<prtldx_t*> { label + "_dx1_prev", maxnpart };
-
-    ux1   = array_t<real_t*> { label + "_ux1", maxnpart };
-    ux1_h = Kokkos::create_mirror_view(ux1);
-    ux2   = array_t<real_t*> { label + "_ux2", maxnpart };
-    ux2_h = Kokkos::create_mirror_view(ux2);
-    ux3   = array_t<real_t*> { label + "_ux3", maxnpart };
-    ux3_h = Kokkos::create_mirror_view(ux3);
-
-    weight   = array_t<real_t*> { label + "_w", maxnpart };
-    weight_h = Kokkos::create_mirror_view(weight);
-
-    tag   = array_t<short*> { label + "_tag", maxnpart };
-    tag_h = Kokkos::create_mirror_view(tag);
-
-    for (unsigned short n { 0 }; n < npld; ++n) {
-      pld.push_back(array_t<real_t*>("pld", maxnpart));
-      pld_h.push_back(Kokkos::create_mirror_view(pld[n]));
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      i1       = array_t<int*> { label + "_i1", maxnpart };
+      dx1      = array_t<prtldx_t*> { label + "_dx1", maxnpart };
+      i1_prev  = array_t<int*> { label + "_i1_prev", maxnpart };
+      dx1_prev = array_t<prtldx_t*> { label + "_dx1_prev", maxnpart };
     }
 
-    if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-      i2    = array_t<int*> { label + "_i2", maxnpart };
-      i2_h  = Kokkos::create_mirror_view(i2);
-      dx2   = array_t<prtldx_t*> { label + "_dx2", maxnpart };
-      dx2_h = Kokkos::create_mirror_view(dx2);
-
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      i2       = array_t<int*> { label + "_i2", maxnpart };
+      dx2      = array_t<prtldx_t*> { label + "_dx2", maxnpart };
       i2_prev  = array_t<int*> { label + "_i2_prev", maxnpart };
       dx2_prev = array_t<prtldx_t*> { label + "_dx2_prev", maxnpart };
     }
-    if ((D == Dim::_2D) && (C != Coord::Cart)) {
-      phi   = array_t<real_t*> { label + "_phi", maxnpart };
-      phi_h = Kokkos::create_mirror_view(phi);
-    }
 
     if constexpr (D == Dim::_3D) {
-      i3    = array_t<int*> { label + "_i3", maxnpart };
-      i3_h  = Kokkos::create_mirror_view(i3);
-      dx3   = array_t<prtldx_t*> { label + "_dx3", maxnpart };
-      dx3_h = Kokkos::create_mirror_view(dx3);
-
+      i3       = array_t<int*> { label + "_i3", maxnpart };
+      dx3      = array_t<prtldx_t*> { label + "_dx3", maxnpart };
       i3_prev  = array_t<int*> { label + "_i3_prev", maxnpart };
       dx3_prev = array_t<prtldx_t*> { label + "_dx3_prev", maxnpart };
+    }
+
+    ux1 = array_t<real_t*> { label + "_ux1", maxnpart };
+    ux2 = array_t<real_t*> { label + "_ux2", maxnpart };
+    ux3 = array_t<real_t*> { label + "_ux3", maxnpart };
+
+    weight = array_t<real_t*> { label + "_w", maxnpart };
+
+    tag = array_t<short*> { label + "_tag", maxnpart };
+
+    if (npld > 0) {
+      pld = array_t<real_t**> { label + "_pld", maxnpart, npld };
+    }
+
+    if ((D == Dim::_2D) && (C != Coord::Cart)) {
+      phi = array_t<real_t*> { label + "_phi", maxnpart };
     }
   }
 
@@ -205,9 +193,10 @@ namespace ntt {
       RemoveDeadInArray(phi, indices_alive);
     }
 
-    for (auto& payload : pld) {
-      RemoveDeadInArray(payload, indices_alive);
-    }
+    // for (auto& payload : pld) {
+    //   // @TODO_1.2.0: fix
+    //   RemoveDeadInArray(payload, indices_alive);
+    // }
 
     Kokkos::Experimental::fill(
       "TagAliveParticles",
@@ -224,35 +213,6 @@ namespace ntt {
 
     set_npart(n_alive);
     m_is_sorted = true;
-  }
-
-  template <Dimension D, Coord::type C>
-  void Particles<D, C>::SyncHostDevice() {
-    Kokkos::deep_copy(i1_h, i1);
-    Kokkos::deep_copy(dx1_h, dx1);
-    Kokkos::deep_copy(ux1_h, ux1);
-    Kokkos::deep_copy(ux2_h, ux2);
-    Kokkos::deep_copy(ux3_h, ux3);
-
-    Kokkos::deep_copy(tag_h, tag);
-    Kokkos::deep_copy(weight_h, weight);
-
-    for (auto n { 0 }; n < npld(); ++n) {
-      Kokkos::deep_copy(pld_h[n], pld[n]);
-    }
-
-    if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-      Kokkos::deep_copy(i2_h, i2);
-      Kokkos::deep_copy(dx2_h, dx2);
-    }
-    if constexpr (D == Dim::_3D) {
-      Kokkos::deep_copy(i3_h, i3);
-      Kokkos::deep_copy(dx3_h, dx3);
-    }
-
-    if ((D == Dim::_2D) && (C != Coord::Cart)) {
-      Kokkos::deep_copy(phi_h, phi);
-    }
   }
 
   template struct Particles<Dim::_1D, Coord::Cart>;
