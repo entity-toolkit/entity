@@ -320,14 +320,14 @@ namespace comm {
   }
 
   template <Dimension D, Coord::type C>
-  void CommunicateParticles(Particles<D, C>&         species,
-                            array_t<std::size_t*>    outgoing_indices,
-                            array_t<std::size_t*>    tag_offsets,
-                            std::vector<std::size_t> npptag_vec,
-                            std::vector<std::size_t> npptag_recv_vec,
-                            std::vector<int>         send_ranks,
-                            std::vector<int>         recv_ranks,
-                            const dir::dirs_t<D>&    dirs_to_comm) {
+  void CommunicateParticles(Particles<D, C>&                species,
+                            const array_t<std::size_t*>&    outgoing_indices,
+                            const array_t<std::size_t*>&    tag_offsets,
+                            const std::vector<std::size_t>& npptag_vec,
+                            const std::vector<std::size_t>& npptag_recv_vec,
+                            const std::vector<int>&         send_ranks,
+                            const std::vector<int>&         recv_ranks,
+                            const dir::dirs_t<D>&           dirs_to_comm) {
     // @TODO_1.2.0: communicate payloads
 
     // number of arrays of each type to send/recv
