@@ -340,13 +340,12 @@ namespace comm {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // buffers to store recv data
-    const auto npart_alive = npptag_vec[ParticleTag::alive];
-    const auto npart_dead  = npptag_vec[ParticleTag::dead];
-    const auto npart_send  = outgoing_indices.extent(0) - npart_dead;
-    const auto npart_recv  = std::accumulate(npptag_recv_vec.begin(),
+    const auto       npart_alive = npptag_vec[ParticleTag::alive];
+    const auto       npart_dead  = npptag_vec[ParticleTag::dead];
+    const auto       npart_send  = outgoing_indices.extent(0) - npart_dead;
+    const auto       npart_recv  = std::accumulate(npptag_recv_vec.begin(),
                                             npptag_recv_vec.end(),
                                             static_cast<std::size_t>(0));
-
     array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };
     array_t<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
     array_t<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx", npart_recv * NPRTLDX };
@@ -376,21 +375,23 @@ namespace comm {
       if (tag_send > 2) {
         idx_offset += tag_offsets_h(tag_send - 3);
       }
-      // clang-format off
-      Kokkos::parallel_for(
-        "PopulateSendBuffer",
-        npart_send_in,
-        kernel::comm::PopulatePrtlSendBuffer_kernel<D, C>(
-          send_buff_int, send_buff_real, send_buff_prtldx,
-          NINTS, NREALS, NPRTLDX, idx_offset,
-          species.i1, species.i1_prev, species.dx1, species.dx1_prev,
-          species.i2, species.i2_prev, species.dx2, species.dx2_prev,
-          species.i3, species.i3_prev, species.dx3, species.dx3_prev,
-          species.ux1, species.ux2, species.ux3, 
-          species.weight, species.phi, species.tag,
-          outgoing_indices)
-      );
-      // clang-format on
+      if (npart_send_in > 0) {
+        // clang-format off
+        Kokkos::parallel_for(
+          "PopulatePrtlSendBuffer",
+          npart_send_in,
+          kernel::comm::PopulatePrtlSendBuffer_kernel<D, C>(
+            send_buff_int, send_buff_real, send_buff_prtldx,
+            NINTS, NREALS, NPRTLDX, idx_offset,
+            species.i1, species.i1_prev, species.dx1, species.dx1_prev,
+            species.i2, species.i2_prev, species.dx2, species.dx2_prev,
+            species.i3, species.i3_prev, species.dx3, species.dx3_prev,
+            species.ux1, species.ux2, species.ux3, 
+            species.weight, species.phi, species.tag,
+            outgoing_indices)
+        );
+        // clang-format on
+      }
 
       const auto recv_offset_int    = current_received * NINTS;
       const auto recv_offset_real   = current_received * NREALS;
@@ -489,22 +490,24 @@ namespace comm {
 
     } // end direction loop
 
-    // clang-format off
-    Kokkos::parallel_for(
-      "PopulateFromRecvBuffer",
-      npart_recv,
-      kernel::comm::ExtractReceivedPrtls_kernel<D, C>(
-            recv_buff_int, recv_buff_real, recv_buff_prtldx,
-            NINTS, NREALS, NPRTLDX,
-            species.npart(),
-            species.i1, species.i1_prev, species.dx1, species.dx1_prev,
-            species.i2, species.i2_prev, species.dx2, species.dx2_prev,
-            species.i3, species.i3_prev, species.dx3, species.dx3_prev,
-            species.ux1, species.ux2, species.ux3,
-            species.weight, species.phi, species.tag,
-            outgoing_indices)
-    );
-    // clang-format on
+    if (npart_recv > 0) {
+      // clang-format off
+      Kokkos::parallel_for(
+        "ExtractReceivedPrtls",
+        npart_recv,
+        kernel::comm::ExtractReceivedPrtls_kernel<D, C>(
+              recv_buff_int, recv_buff_real, recv_buff_prtldx,
+              NINTS, NREALS, NPRTLDX,
+              species.npart(), species.maxnpart(), 
+              species.i1, species.i1_prev, species.dx1, species.dx1_prev,
+              species.i2, species.i2_prev, species.dx2, species.dx2_prev,
+              species.i3, species.i3_prev, species.dx3, species.dx3_prev,
+              species.ux1, species.ux2, species.ux3,
+              species.weight, species.phi, species.tag,
+              outgoing_indices)
+      );
+      // clang-format on
+    }
 
     const auto npart       = species.npart();
     const auto npart_holes = outgoing_indices.extent(0);

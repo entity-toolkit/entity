@@ -81,8 +81,6 @@ namespace kernel::comm {
         if (tag(p) > 2) {
           idx_for_tag += tag_offsets(tag(p) - 3);
         }
-        // (tag(p) != ParticleTag::dead ? npart_dead : 0) +
-        // (tag(p) > 2 ? tag_offsets(tag(p) - 3) : 0);
         if (idx_for_tag >= npart - npart_alive) {
           raise::KernelError(HERE, "Outgoing indices idx exceeds the array size");
         }
@@ -214,6 +212,7 @@ namespace kernel::comm {
 
     const unsigned short NINTS, NREALS, NPRTLDX;
     const std::size_t    npart, npart_holes;
+    const std::size_t    maxnpart;
 
     array_t<int*>               i1, i1_prev, i2, i2_prev, i3, i3_prev;
     array_t<real_t*>            ux1, ux2, ux3, weight, phi;
@@ -229,6 +228,7 @@ namespace kernel::comm {
                                 unsigned short               NREALS,
                                 unsigned short               NPRTLDX,
                                 std::size_t                  npart,
+                                std::size_t                  maxnpart,
                                 array_t<int*>&               i1,
                                 array_t<int*>&               i1_prev,
                                 array_t<prtldx_t*>&          dx1,
@@ -255,6 +255,7 @@ namespace kernel::comm {
       , NREALS { NREALS }
       , NPRTLDX { NPRTLDX }
       , npart { npart }
+      , maxnpart { maxnpart }
       , npart_holes { outgoing_indices.extent(0) }
       , i1 { i1 }
       , i1_prev { i1_prev }
@@ -281,6 +282,9 @@ namespace kernel::comm {
         idx = npart + p - npart_holes;
       } else {
         idx = outgoing_indices(p);
+      }
+      if (idx >= maxnpart) {
+        raise::KernelError(HERE, "Received particle index exceeds the array size");
       }
       if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
         i1(idx)       = recv_buff_int(NINTS * p + 0);

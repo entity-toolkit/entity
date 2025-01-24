@@ -219,6 +219,8 @@ namespace ntt {
      * @brief Copy particle data from device to host.
      */
     void SyncHostDevice();
+
+    // void PrintTags();
   };
 
 } // namespace ntt
