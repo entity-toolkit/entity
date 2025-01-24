@@ -335,9 +335,7 @@ namespace comm {
                                         D == Dim::_2D and C != Coord::Cart);
     const unsigned short NINTS   = 2 * static_cast<unsigned short>(D);
     const unsigned short NPRTLDX = 2 * static_cast<unsigned short>(D);
-    const unsigned short NPLD    = species.npld();
-    int                  rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    const unsigned short NPLDS   = species.npld();
 
     // buffers to store recv data
     const auto npart_alive = npptag_vec[ParticleTag::alive];
@@ -350,6 +348,11 @@ namespace comm {
     array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };
     array_t<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
     array_t<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx", npart_recv * NPRTLDX };
+    array_t<real_t*> recv_buff_pld;
+
+    if (NPLDS > 0) {
+      recv_buff_pld = array_t<real_t*> { "recv_buff_pld", npart_recv * NPLDS };
+    }
 
     auto iteration        = 0;
     auto current_received = 0;
@@ -368,6 +371,10 @@ namespace comm {
       array_t<real_t*> send_buff_real { "send_buff_real", npart_send_in * NREALS };
       array_t<prtldx_t*> send_buff_prtldx { "send_buff_prtldx",
                                             npart_send_in * NPRTLDX };
+      array_t<real_t*>   send_buff_pld;
+      if (NPLDS > 0) {
+        send_buff_pld = array_t<real_t*> { "send_buff_pld", npart_send_in * NPLDS };
+      }
 
       auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
       Kokkos::deep_copy(tag_offsets_h, tag_offsets);
@@ -381,13 +388,13 @@ namespace comm {
         "PopulateSendBuffer",
         npart_send_in,
         kernel::comm::PopulatePrtlSendBuffer_kernel<D, C>(
-          send_buff_int, send_buff_real, send_buff_prtldx,
-          NINTS, NREALS, NPRTLDX, idx_offset,
+          send_buff_int, send_buff_real, send_buff_prtldx, send_buff_pld,
+          NINTS, NREALS, NPRTLDX, NPLDS, idx_offset,
           species.i1, species.i1_prev, species.dx1, species.dx1_prev,
           species.i2, species.i2_prev, species.dx2, species.dx2_prev,
           species.i3, species.i3_prev, species.dx3, species.dx3_prev,
           species.ux1, species.ux2, species.ux3, 
-          species.weight, species.phi, species.tag,
+          species.weight, species.phi, species.pld, species.tag,
           outgoing_indices)
       );
       // clang-format on
@@ -395,6 +402,7 @@ namespace comm {
       const auto recv_offset_int    = current_received * NINTS;
       const auto recv_offset_real   = current_received * NREALS;
       const auto recv_offset_prtldx = current_received * NPRTLDX;
+      const auto recv_offset_pld    = current_received * NPLDS;
 
       if ((send_rank >= 0) and (recv_rank >= 0) and (npart_send_in > 0) and
           (npart_recv_in > 0)) {
@@ -438,6 +446,20 @@ namespace comm {
                      0,
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
+        if (NPLDS > 0) {
+          MPI_Sendrecv(send_buff_pld.data(),
+                       npart_send_in * NPLDS,
+                       mpi::get_type<real_t>(),
+                       send_rank,
+                       0,
+                       recv_buff_pld.data() + recv_offset_pld,
+                       npart_recv_in * NPLDS,
+                       mpi::get_type<real_t>(),
+                       recv_rank,
+                       0,
+                       MPI_COMM_WORLD,
+                       MPI_STATUS_IGNORE);
+        }
       } else if ((send_rank >= 0) and (npart_send_in > 0)) {
         MPI_Send(send_buff_int.data(),
                  npart_send_in * NINTS,
@@ -457,6 +479,14 @@ namespace comm {
                  send_rank,
                  0,
                  MPI_COMM_WORLD);
+        if (NPLDS > 0) {
+          MPI_Send(send_buff_pld.data(),
+                   npart_send_in * NPLDS,
+                   mpi::get_type<real_t>(),
+                   send_rank,
+                   0,
+                   MPI_COMM_WORLD);
+        }
       } else if ((recv_rank >= 0) and (npart_recv_in > 0)) {
         raise::ErrorIf(recv_offset_int + npart_recv_in * NINTS >
                          recv_buff_int.extent(0),
@@ -483,6 +513,15 @@ namespace comm {
                  0,
                  MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
+        if (NPLDS > 0) {
+          MPI_Recv(recv_buff_pld.data() + recv_offset_pld,
+                   npart_recv_in * NPLDS,
+                   mpi::get_type<real_t>(),
+                   recv_rank,
+                   0,
+                   MPI_COMM_WORLD,
+                   MPI_STATUS_IGNORE);
+        }
       }
       current_received += npart_recv_in;
       iteration++;
@@ -494,14 +533,14 @@ namespace comm {
       "PopulateFromRecvBuffer",
       npart_recv,
       kernel::comm::ExtractReceivedPrtls_kernel<D, C>(
-            recv_buff_int, recv_buff_real, recv_buff_prtldx,
-            NINTS, NREALS, NPRTLDX,
+            recv_buff_int, recv_buff_real, recv_buff_prtldx, recv_buff_pld,
+            NINTS, NREALS, NPRTLDX, NPLDS,
             species.npart(),
             species.i1, species.i1_prev, species.dx1, species.dx1_prev,
             species.i2, species.i2_prev, species.dx2, species.dx2_prev,
             species.i3, species.i3_prev, species.dx3, species.dx3_prev,
             species.ux1, species.ux2, species.ux3,
-            species.weight, species.phi, species.tag,
+            species.weight, species.phi, species.pld, species.tag,
             outgoing_indices)
     );
     // clang-format on
