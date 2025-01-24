@@ -36,10 +36,10 @@ namespace ntt {
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvRanks(
-    Metadomain<S, M>*        metadomain,
-    Domain<S, M>&            domain,
-    dir::direction_t<M::Dim> direction) -> std::pair<address_t, address_t> {
+  auto GetSendRecvRanks(Metadomain<S, M>*        metadomain,
+                        Domain<S, M>&            domain,
+                        dir::direction_t<M::Dim> direction)
+    -> std::pair<address_t, address_t> {
     Domain<S, M>* send_to_nghbr_ptr   = nullptr;
     Domain<S, M>* recv_from_nghbr_ptr = nullptr;
     // set pointers to the correct send/recv domains
@@ -119,11 +119,11 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvParams(
-    Metadomain<S, M>*        metadomain,
-    Domain<S, M>&            domain,
-    dir::direction_t<M::Dim> direction,
-    bool synchronize) -> std::pair<comm_params_t, comm_params_t> {
+  auto GetSendRecvParams(Metadomain<S, M>*        metadomain,
+                         Domain<S, M>&            domain,
+                         dir::direction_t<M::Dim> direction,
+                         bool                     synchronize)
+    -> std::pair<comm_params_t, comm_params_t> {
     const auto [send_indrank,
                 recv_indrank] = GetSendRecvRanks(metadomain, domain, direction);
     const auto [send_ind, send_rank] = send_indrank;
@@ -512,11 +512,15 @@ namespace ntt {
       // # of particles to receive per each tag (direction)
       std::vector<std::size_t> npptag_recv_vec(ntags - 2, 0);
       // coordinate shifts per each direction
-      array_t<int*>            shifts_in_x1("shifts_in_x1", ntags - 2);
-      array_t<int*>            shifts_in_x2("shifts_in_x2", ntags - 2);
-      array_t<int*>            shifts_in_x3("shifts_in_x3", ntags - 2);
+      array_t<int*>            shifts_in_x1 { "shifts_in_x1", ntags - 2 };
+      array_t<int*>            shifts_in_x2 { "shifts_in_x2", ntags - 2 };
+      array_t<int*>            shifts_in_x3 { "shifts_in_x3", ntags - 2 };
+      auto shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
+      auto shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
+      auto shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
+
       // all directions requiring communication
-      dir::dirs_t<D>           dirs_to_comm;
+      dir::dirs_t<D> dirs_to_comm;
 
       // ranks & indices of meshblock to send/recv from
       std::vector<int> send_ranks, send_inds;
@@ -568,7 +572,6 @@ namespace ntt {
         // ... tag_send - 2: because we only shift tags > 2 (i.e. no dead/alive)
         if (is_sending) {
           if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-            auto shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
             if (direction[0] == -1) {
               // sending backwards in x1 (add sx1 of target meshblock)
               shifts_in_x1_h(tag_send - 2) = subdomain(send_ind).mesh.n_active(
@@ -577,37 +580,35 @@ namespace ntt {
               // sending forward in x1 (subtract sx1 of source meshblock)
               shifts_in_x1_h(tag_send - 2) = -domain.mesh.n_active(in::x1);
             }
-            Kokkos::deep_copy(shifts_in_x1, shifts_in_x1_h);
           }
           if constexpr (D == Dim::_2D || D == Dim::_3D) {
-            auto shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
             if (direction[1] == -1) {
               shifts_in_x2_h(tag_send - 2) = subdomain(send_ind).mesh.n_active(
                 in::x2);
             } else if (direction[1] == 1) {
               shifts_in_x2_h(tag_send - 2) = -domain.mesh.n_active(in::x2);
             }
-            Kokkos::deep_copy(shifts_in_x2, shifts_in_x2_h);
           }
           if constexpr (D == Dim::_3D) {
-            auto shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
             if (direction[2] == -1) {
               shifts_in_x3_h(tag_send - 2) = subdomain(send_ind).mesh.n_active(
                 in::x3);
             } else if (direction[2] == 1) {
               shifts_in_x3_h(tag_send - 2) = -domain.mesh.n_active(in::x3);
             }
-            Kokkos::deep_copy(shifts_in_x3, shifts_in_x3_h);
           }
         }
       } // end directions loop
 
+      Kokkos::deep_copy(shifts_in_x1, shifts_in_x1_h);
+      Kokkos::deep_copy(shifts_in_x2, shifts_in_x2_h);
+      Kokkos::deep_copy(shifts_in_x3, shifts_in_x3_h);
+
       array_t<std::size_t*> outgoing_indices { "outgoing_indices",
                                                npart - npart_alive };
-
       // clang-format off
       Kokkos::parallel_for(
-        "OutgoingIndicesAndDisplace",
+        "PrepareOutgoingPrtls",
         species.rangeActiveParticles(),
         kernel::comm::PrepareOutgoingPrtls_kernel<M::Dim>(
             shifts_in_x1, shifts_in_x2, shifts_in_x3,

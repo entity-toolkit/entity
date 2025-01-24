@@ -328,8 +328,6 @@ namespace comm {
                             const std::vector<int>&         send_ranks,
                             const std::vector<int>&         recv_ranks,
                             const dir::dirs_t<D>&           dirs_to_comm) {
-    // @TODO_1.2.0: communicate payloads
-
     // number of arrays of each type to send/recv
     const unsigned short NREALS = 4 + static_cast<unsigned short>(
                                         D == Dim::_2D and C != Coord::Cart);
@@ -338,13 +336,12 @@ namespace comm {
     const unsigned short NPLDS   = species.npld();
 
     // buffers to store recv data
-    const auto npart_alive = npptag_vec[ParticleTag::alive];
-    const auto npart_dead  = npptag_vec[ParticleTag::dead];
-    const auto npart_send  = outgoing_indices.extent(0) - npart_dead;
-    const auto npart_recv  = std::accumulate(npptag_recv_vec.begin(),
+    const auto       npart_alive = npptag_vec[ParticleTag::alive];
+    const auto       npart_dead  = npptag_vec[ParticleTag::dead];
+    const auto       npart_send  = outgoing_indices.extent(0) - npart_dead;
+    const auto       npart_recv  = std::accumulate(npptag_recv_vec.begin(),
                                             npptag_recv_vec.end(),
                                             static_cast<std::size_t>(0));
-
     array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };
     array_t<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
     array_t<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx", npart_recv * NPRTLDX };
@@ -385,7 +382,7 @@ namespace comm {
       }
       // clang-format off
       Kokkos::parallel_for(
-        "PopulateSendBuffer",
+        "PopulatePrtlSendBuffer",
         npart_send_in,
         kernel::comm::PopulatePrtlSendBuffer_kernel<D, C>(
           send_buff_int, send_buff_real, send_buff_prtldx, send_buff_pld,

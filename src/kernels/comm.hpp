@@ -81,8 +81,6 @@ namespace kernel::comm {
         if (tag(p) > 2) {
           idx_for_tag += tag_offsets(tag(p) - 3);
         }
-        // (tag(p) != ParticleTag::dead ? npart_dead : 0) +
-        // (tag(p) > 2 ? tag_offsets(tag(p) - 3) : 0);
         if (idx_for_tag >= npart - npart_alive) {
           raise::KernelError(HERE, "Outgoing indices idx exceeds the array size");
         }
@@ -210,8 +208,8 @@ namespace kernel::comm {
       if constexpr (D == Dim::_2D and C != Coord::Cart) {
         send_buff_real(NREALS * p + 4) = phi(idx);
       }
-      if (NPLD > 0) {
-        for (auto l { 0u }; l < NPLD; ++l) {
+      if (NPLDS > 0) {
+        for (auto l { 0u }; l < NPLDS; ++l) {
           send_buff_pld(NPLDS * p + l) = pld(idx, l);
         }
       }
@@ -327,6 +325,11 @@ namespace kernel::comm {
       weight(idx) = recv_buff_real(NREALS * p + 3);
       if constexpr (D == Dim::_2D and C != Coord::Cart) {
         phi(idx) = recv_buff_real(NREALS * p + 4);
+      }
+      if (NPLDS > 0) {
+        for (auto l { 0u }; l < NPLDS; ++l) {
+          pld(idx, l) = recv_buff_pld(NPLDS * p + l);
+        }
       }
       tag(idx) = ParticleTag::alive;
     }

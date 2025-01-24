@@ -4,6 +4,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/numeric.h"
 #include "utils/sorting.h"
 
 #include "framework/containers/species.h"
@@ -12,6 +13,8 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
+#include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -72,7 +75,7 @@ namespace ntt {
     -> std::pair<std::vector<std::size_t>, array_t<std::size_t*>> {
     auto                  this_tag = tag;
     const auto            num_tags = ntags();
-    array_t<std::size_t*> npptag("nparts_per_tag", ntags());
+    array_t<std::size_t*> npptag { "nparts_per_tag", ntags() };
 
     // count # of particles per each tag
     auto npptag_scat = Kokkos::Experimental::create_scatter_view(npptag);
@@ -100,7 +103,7 @@ namespace ntt {
     array_t<std::size_t*> tag_offsets("tag_offsets", num_tags - 3);
     auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
 
-    tag_offsets_h(0) = npptag_vec[2];
+    tag_offsets_h(0) = npptag_vec[2]; // offset for tag = 3
     for (auto t { 1u }; t < num_tags - 3; ++t) {
       tag_offsets_h(t) = npptag_vec[t + 2] + tag_offsets_h(t - 1);
     }
@@ -121,6 +124,23 @@ namespace ntt {
 
     Kokkos::deep_copy(
       Kokkos::subview(arr, std::make_pair(static_cast<std::size_t>(0), n_alive)),
+      buffer);
+  }
+
+  template <typename T>
+  void RemoveDeadInArray(array_t<T**>&                arr,
+                         const array_t<std::size_t*>& indices_alive) {
+    auto n_alive = indices_alive.extent(0);
+    auto buffer  = array_t<T**> { "buffer", n_alive, arr.extent(1) };
+    Kokkos::parallel_for(
+      "PopulateBufferAlive",
+      CreateRangePolicy<Dim::_2D>({ 0, 0 }, { n_alive, arr.extent(1) }),
+      Lambda(index_t p, index_t l) { buffer(p, l) = arr(indices_alive(p), l); });
+
+    Kokkos::deep_copy(
+      Kokkos::subview(arr,
+                      std::make_pair(static_cast<std::size_t>(0), n_alive),
+                      Kokkos::ALL),
       buffer);
   }
 
@@ -194,10 +214,9 @@ namespace ntt {
       RemoveDeadInArray(phi, indices_alive);
     }
 
-    // for (auto& payload : pld) {
-    //   // @TODO_1.2.0: fix
-    //   RemoveDeadInArray(payload, indices_alive);
-    // }
+    if (npld() > 0) {
+      RemoveDeadInArray(pld, indices_alive);
+    }
 
     Kokkos::Experimental::fill(
       "TagAliveParticles",
@@ -215,6 +234,60 @@ namespace ntt {
     set_npart(n_alive);
     m_is_sorted = true;
   }
+
+  // template <Dimension D, Coord::type C>
+  // void Particles<D, C>::PrintTags() {
+  //   auto tag_h = Kokkos::create_mirror_view(tag);
+  //   Kokkos::deep_copy(tag_h, tag);
+  //   auto i1_h = Kokkos::create_mirror_view(i1);
+  //   Kokkos::deep_copy(i1_h, i1);
+  //   auto dx1_h = Kokkos::create_mirror_view(dx1);
+  //   Kokkos::deep_copy(dx1_h, dx1);
+  //   std::cout << "species " << label() << " [npart = " << npart() << "]"
+  //             << std::endl;
+  //   std::cout << "idxs: ";
+  //   for (auto i = 0; i < IMIN(tag_h.extent(0), 30); ++i) {
+  //     std::cout << std::setw(3) << i << " ";
+  //     if (i == npart() - 1) {
+  //       std::cout << "| ";
+  //     }
+  //   }
+  //   if (tag_h.extent(0) > 30) {
+  //     std::cout << "... " << std::setw(3) << tag_h.extent(0) - 1;
+  //   }
+  //   std::cout << std::endl << "tags: ";
+  //   for (auto i = 0; i < IMIN(tag_h.extent(0), 30); ++i) {
+  //     std::cout << std::setw(3) << (short)tag_h(i) << " ";
+  //     if (i == npart() - 1) {
+  //       std::cout << "| ";
+  //     }
+  //   }
+  //   if (tag_h.extent(0) > 30) {
+  //     std::cout << "..." << std::setw(3) << (short)tag_h(tag_h.extent(0) - 1);
+  //   }
+  //   std::cout << std::endl << "i1s : ";
+  //   for (auto i = 0; i < IMIN(i1_h.extent(0), 30); ++i) {
+  //     std::cout << std::setw(3) << i1_h(i) << " ";
+  //     if (i == npart() - 1) {
+  //       std::cout << "| ";
+  //     }
+  //   }
+  //   if (i1_h.extent(0) > 30) {
+  //     std::cout << "..." << std::setw(3) << i1_h(i1_h.extent(0) - 1);
+  //   }
+  //   std::cout << std::endl << "dx1s : ";
+  //   for (auto i = 0; i < IMIN(dx1_h.extent(0), 30); ++i) {
+  //     std::cout << std::setprecision(2) << std::setw(3) << dx1_h(i) << " ";
+  //     if (i == npart() - 1) {
+  //       std::cout << "| ";
+  //     }
+  //   }
+  //   if (dx1_h.extent(0) > 30) {
+  //     std::cout << "..." << std::setprecision(2) << std::setw(3)
+  //               << dx1_h(dx1_h.extent(0) - 1);
+  //   }
+  //   std::cout << std::endl;
+  // }
 
   template struct Particles<Dim::_1D, Coord::Cart>;
   template struct Particles<Dim::_2D, Coord::Cart>;
