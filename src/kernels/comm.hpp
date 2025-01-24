@@ -276,8 +276,12 @@ namespace kernel::comm {
       , tag { tag } {}
 
     Inline void operator()(index_t p) const {
-      const auto idx = (p >= npart_holes ? npart + p - npart_holes
-                                         : outgoing_indices(p));
+      std::size_t idx;
+      if (p >= npart_holes) {
+        idx = npart + p - npart_holes;
+      } else {
+        idx = outgoing_indices(p);
+      }
       if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
         i1(idx)       = recv_buff_int(NINTS * p + 0);
         i1_prev(idx)  = recv_buff_int(NINTS * p + 1);
