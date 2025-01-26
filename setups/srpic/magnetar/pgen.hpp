@@ -186,7 +186,7 @@ namespace user {
       const real_t omega_t =
         Omega *
         ((ONE - math::tanh((static_cast<real_t>(5.0) - time) * HALF)) *
-         (ONE + (-ONE + math::tanh((static_cast<real_t>(45.0) - time) * HALF)) *
+         (ONE + (-ONE + math::tanh((static_cast<real_t>(90.0) - time) * HALF)) *
                   HALF)) *
         HALF;
       return DriveFields<D> { time, Bsurf, Rstar, omega_t };
