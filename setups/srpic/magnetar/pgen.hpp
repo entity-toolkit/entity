@@ -404,14 +404,21 @@ namespace user {
       auto inv_n0_      = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
-            // if (s == 2 || s == 3) {
-            if (s == 1 || s == 2 || s == 3) {
+            if (s == 2 || s == 3) {
+            // if (s == 1 || s == 2 || s == 3) {
             // if (s == 1) {
               continue;
             }
 
-            // auto  rand_gen = random_pool.get_state();
-            // if (Random<real_t>(rand_gen) < p_scatter) {
+            if (s == 1) {
+              auto  rand_gen_pre = random_pool.get_state();
+              if (Random<real_t>(rand_gen_pre) < 0.75) {
+                continue;
+              }
+              random_pool.free_state(rand_gen_pre);
+            }
+
+
 
             auto& species = domain.species[s];
             auto ux1    = species.ux1;
@@ -1104,29 +1111,29 @@ namespace user {
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
               // HACK for more multiplicity
-              elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-              i1_e(elec_p + offset_e) = i1(p);
-              dx1_e(elec_p + offset_e) = dx1(p);
-              i2_e(elec_p + offset_e) = i2(p);
-              dx2_e(elec_p + offset_e) = dx2(p);
-              phi_e(elec_p + offset_e) = phi(p);
-              ux1_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
-              ux2_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
-              ux3_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
-              weight_e(elec_p + offset_e) = weight(p);
-              tag_e(elec_p + offset_e) = ParticleTag::alive;
+              // elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              // i1_e(elec_p + offset_e) = i1(p);
+              // dx1_e(elec_p + offset_e) = dx1(p);
+              // i2_e(elec_p + offset_e) = i2(p);
+              // dx2_e(elec_p + offset_e) = dx2(p);
+              // phi_e(elec_p + offset_e) = phi(p);
+              // ux1_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
+              // ux2_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
+              // ux3_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
+              // weight_e(elec_p + offset_e) = weight(p);
+              // tag_e(elec_p + offset_e) = ParticleTag::alive;
 
-              pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-              i1_p(pos_p + offset_p) = i1(p);
-              dx1_p(pos_p + offset_p) = dx1(p);
-              i2_p(pos_p + offset_p) = i2(p);
-              dx2_p(pos_p + offset_p) = dx2(p);
-              phi_p(pos_p + offset_p) = phi(p);
-              ux1_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
-              ux2_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
-              ux3_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
-              weight_p(pos_p + offset_p) = weight(p);
-              tag_p(pos_p + offset_p) = ParticleTag::alive;
+              // pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+              // i1_p(pos_p + offset_p) = i1(p);
+              // dx1_p(pos_p + offset_p) = dx1(p);
+              // i2_p(pos_p + offset_p) = i2(p);
+              // dx2_p(pos_p + offset_p) = dx2(p);
+              // phi_p(pos_p + offset_p) = phi(p);
+              // ux1_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
+              // ux2_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
+              // ux3_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
+              // weight_p(pos_p + offset_p) = weight(p);
+              // tag_p(pos_p + offset_p) = ParticleTag::alive;
 
 
               auto cbuff_acc     = cbuff_sc.access();
