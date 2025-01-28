@@ -292,7 +292,8 @@ namespace kernel::comm {
       , weight { weight }
       , phi { phi }
       , pld { pld }
-      , tag { tag } {}
+      , tag { tag }
+      , outgoing_indices { outgoing_indices } {}
 
     Inline void operator()(index_t p) const {
       std::size_t idx;
