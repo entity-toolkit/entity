@@ -690,7 +690,7 @@ namespace user {
             if (s == 1) {
               if (Random<real_t>(rand_gen) < 0.75) {
                 random_pool.free_state(rand_gen);
-                continue;
+                return;
               }
             }
 
