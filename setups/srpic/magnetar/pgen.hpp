@@ -685,11 +685,12 @@ namespace user {
 
             auto  rand_gen = random_pool.get_state();
             
-            if (s == 1) {
-              if (Random<real_t>(rand_gen) < 0.75) {
-                return;
-              }
-            }
+            // Exclude scattering for some atmospheric positrons
+            // if (s == 1) {
+            //   if (Random<real_t>(rand_gen) < 0.75) {
+            //     return;
+            //   }
+            // }
 
 
             if (Random<real_t>(rand_gen) < p_scatter) {
@@ -1107,6 +1108,32 @@ namespace user {
               ux3_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[2];
               weight_p(pos_p + offset_p) = weight(p);
               tag_p(pos_p + offset_p) = ParticleTag::alive;
+
+              // HACK for more multiplicity
+              auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              i1_e(elec_p + offset_e) = i1(p);
+              dx1_e(elec_p + offset_e) = dx1(p);
+              i2_e(elec_p + offset_e) = i2(p);
+              dx2_e(elec_p + offset_e) = dx2(p);
+              phi_e(elec_p + offset_e) = phi(p);
+              ux1_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
+              ux2_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
+              ux3_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
+              weight_e(elec_p + offset_e) = weight(p);
+              tag_e(elec_p + offset_e) = ParticleTag::alive;
+
+              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+              i1_p(pos_p + offset_p) = i1(p);
+              dx1_p(pos_p + offset_p) = dx1(p);
+              i2_p(pos_p + offset_p) = i2(p);
+              dx2_p(pos_p + offset_p) = dx2(p);
+              phi_p(pos_p + offset_p) = phi(p);
+              ux1_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
+              ux2_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
+              ux3_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
+              weight_p(pos_p + offset_p) = weight(p);
+              tag_p(pos_p + offset_p) = ParticleTag::alive;
+
 
               auto cbuff_acc     = cbuff_sc.access();
               cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
