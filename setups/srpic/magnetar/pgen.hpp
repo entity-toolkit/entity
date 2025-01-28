@@ -688,7 +688,7 @@ namespace user {
             auto  rand_gen = random_pool.get_state();
 
             if (s == 1) {
-              if (Random<real_t>(rand_gen_pre) < 0.75) {
+              if (Random<real_t>(rand_gen) < 0.75) {
                 random_pool.free_state(rand_gen);
                 continue;
               }
