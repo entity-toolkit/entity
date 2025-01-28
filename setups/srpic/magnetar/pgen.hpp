@@ -1110,7 +1110,7 @@ namespace user {
               tag_p(pos_p + offset_p) = ParticleTag::alive;
 
               // HACK for more multiplicity
-              auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
               i1_e(elec_p + offset_e) = i1(p);
               dx1_e(elec_p + offset_e) = dx1(p);
               i2_e(elec_p + offset_e) = i2(p);
@@ -1122,7 +1122,7 @@ namespace user {
               weight_e(elec_p + offset_e) = weight(p);
               tag_e(elec_p + offset_e) = ParticleTag::alive;
 
-              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+              pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
               i1_p(pos_p + offset_p) = i1(p);
               dx1_p(pos_p + offset_p) = dx1(p);
               i2_p(pos_p + offset_p) = i2(p);
