@@ -47,7 +47,7 @@ namespace ntt {
 
   /*
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-   * Parameters that must not be changed during after the checkpoint restart
+   * Parameters that must not be changed during the checkpoint restart
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
    */
   void SimulationParams::setImmutableParams(const toml::value& toml_data) {
@@ -322,7 +322,7 @@ namespace ntt {
 
   /*
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-   * Parameters that may be changed during after the checkpoint restart
+   * Parameters that may be changed during the checkpoint restart
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
    */
   void SimulationParams::setMutableParams(const toml::value& toml_data) {
@@ -351,9 +351,9 @@ namespace ntt {
       auto atm_defined = false;
       for (const auto& bcs : flds_bc) {
         for (const auto& bc : bcs) {
-          if (fmt::toLower(bc) == "absorb") {
-            promiseToDefine("grid.boundaries.absorb.ds");
-            promiseToDefine("grid.boundaries.absorb.coeff");
+          if (fmt::toLower(bc) == "match") {
+            promiseToDefine("grid.boundaries.match.ds");
+            promiseToDefine("grid.boundaries.match.coeff");
           }
           if (fmt::toLower(bc) == "atmosphere") {
             raise::ErrorIf(atm_defined,
@@ -386,7 +386,6 @@ namespace ntt {
         for (const auto& bc : bcs) {
           if (fmt::toLower(bc) == "absorb") {
             promiseToDefine("grid.boundaries.absorb.ds");
-            promiseToDefine("grid.boundaries.absorb.coeff");
           }
           if (fmt::toLower(bc) == "atmosphere") {
             raise::ErrorIf(atm_defined,
@@ -731,6 +730,38 @@ namespace ntt {
     set("grid.boundaries.fields", flds_bc_pairwise);
     set("grid.boundaries.particles", prtl_bc_pairwise);
 
+    if (isPromised("grid.boundaries.match.ds")) {
+      if (coord_enum == Coord::Cart) {
+        auto min_extent = std::numeric_limits<real_t>::max();
+        for (const auto& e : extent_pairwise) {
+          min_extent = std::min(min_extent, e.second - e.first);
+        }
+        set("grid.boundaries.match.ds",
+            toml::find_or(toml_data,
+                          "grid",
+                          "boundaries",
+                          "match",
+                          "ds",
+                          min_extent * defaults::bc::match::ds_frac));
+      } else {
+        auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
+        set("grid.boundaries.match.ds",
+            toml::find_or(toml_data,
+                          "grid",
+                          "boundaries",
+                          "match",
+                          "ds",
+                          r_extent * defaults::bc::match::ds_frac));
+      }
+      set("grid.boundaries.match.coeff",
+          toml::find_or(toml_data,
+                        "grid",
+                        "boundaries",
+                        "match",
+                        "coeff",
+                        defaults::bc::match::coeff));
+    }
+
     if (isPromised("grid.boundaries.absorb.ds")) {
       if (coord_enum == Coord::Cart) {
         auto min_extent = std::numeric_limits<real_t>::max();
@@ -754,13 +785,6 @@ namespace ntt {
                           "ds",
                           r_extent * defaults::bc::absorb::ds_frac));
       }
-      set("grid.boundaries.absorb.coeff",
-          toml::find_or(toml_data,
-                        "grid",
-                        "boundaries",
-                        "absorb",
-                        "coeff",
-                        defaults::bc::absorb::coeff));
     }
 
     if (isPromised("grid.boundaries.atmosphere.temperature")) {

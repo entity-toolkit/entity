@@ -41,9 +41,13 @@ namespace ntt::defaults {
   } // namespace gr
 
   namespace bc {
-    namespace absorb {
+    namespace match {
       const real_t ds_frac = 0.01;
       const real_t coeff   = 1.0;
+    } // namespace match
+
+    namespace absorb {
+      const real_t ds_frac = 0.01;
     } // namespace absorb
   } // namespace bc
 

@@ -13,6 +13,10 @@
  *   - enum PrepareOutput
  *   - enum CellLayer           // allLayer, activeLayer, minGhostLayer,
  *                                 minActiveLayer, maxActiveLayer, maxGhostLayer
+ *   - enum Idx                // U, D, T, XYZ, Sph, PU, PD
+ *   - enum Crd                // Cd, Ph, XYZ, Sph
+ *   - enum in                 // x1, x2, x3
+ *   - enum bc_in                // Px1, Mx1, Px2, Mx2, Px3, Mx3
  *   - type box_region_t
  *   - files::LogFile, files::ErrFile, files::InfoFile
  *   - type prtldx_t
@@ -182,6 +186,15 @@ enum class in : unsigned short {
   x1 = 0,
   x2 = 1,
   x3 = 2,
+};
+
+enum class bc_in : short {
+  Mx1 = -1,
+  Px1 = 1,
+  Mx2 = -2,
+  Px2 = 2,
+  Mx3 = -3,
+  Px3 = 3,
 };
 
 template <Dimension D>
