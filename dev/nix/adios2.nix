@@ -52,23 +52,6 @@ pkgs.stdenv.mkDerivation {
     }
   '';
 
-  # configurePhase =
-  #   ''
-  #     cmake -B build $src \
-  #       -D CMAKE_CXX_STANDARD=17 \
-  #       -D CMAKE_CXX_EXTENSIONS=OFF \
-  #       -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
-  #       -D BUILD_SHARED_LIBS=ON \
-  #       -D ADIOS2_USE_HDF5=${if hdf5 then "ON" else "OFF"} \
-  #       -D ADIOS2_USE_Python=OFF \
-  #       -D ADIOS2_USE_Fortran=OFF \
-  #       -D ADIOS2_USE_ZeroMQ=OFF \
-  #       -D BUILD_TESTING=OFF \
-  #       -D ADIOS2_BUILD_EXAMPLES=OFF \
-  #       -D ADIOS2_USE_MPI=${if mpi then "ON" else "OFF"} \
-  #       -D CMAKE_BUILD_TYPE=Release
-  #   ''
-
   buildPhase = ''
     cmake --build build -j
   '';

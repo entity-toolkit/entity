@@ -235,60 +235,6 @@ namespace ntt {
     m_is_sorted = true;
   }
 
-  // template <Dimension D, Coord::type C>
-  // void Particles<D, C>::PrintTags() {
-  //   auto tag_h = Kokkos::create_mirror_view(tag);
-  //   Kokkos::deep_copy(tag_h, tag);
-  //   auto i1_h = Kokkos::create_mirror_view(i1);
-  //   Kokkos::deep_copy(i1_h, i1);
-  //   auto dx1_h = Kokkos::create_mirror_view(dx1);
-  //   Kokkos::deep_copy(dx1_h, dx1);
-  //   std::cout << "species " << label() << " [npart = " << npart() << "]"
-  //             << std::endl;
-  //   std::cout << "idxs: ";
-  //   for (auto i = 0; i < IMIN(tag_h.extent(0), 30); ++i) {
-  //     std::cout << std::setw(3) << i << " ";
-  //     if (i == npart() - 1) {
-  //       std::cout << "| ";
-  //     }
-  //   }
-  //   if (tag_h.extent(0) > 30) {
-  //     std::cout << "... " << std::setw(3) << tag_h.extent(0) - 1;
-  //   }
-  //   std::cout << std::endl << "tags: ";
-  //   for (auto i = 0; i < IMIN(tag_h.extent(0), 30); ++i) {
-  //     std::cout << std::setw(3) << (short)tag_h(i) << " ";
-  //     if (i == npart() - 1) {
-  //       std::cout << "| ";
-  //     }
-  //   }
-  //   if (tag_h.extent(0) > 30) {
-  //     std::cout << "..." << std::setw(3) << (short)tag_h(tag_h.extent(0) - 1);
-  //   }
-  //   std::cout << std::endl << "i1s : ";
-  //   for (auto i = 0; i < IMIN(i1_h.extent(0), 30); ++i) {
-  //     std::cout << std::setw(3) << i1_h(i) << " ";
-  //     if (i == npart() - 1) {
-  //       std::cout << "| ";
-  //     }
-  //   }
-  //   if (i1_h.extent(0) > 30) {
-  //     std::cout << "..." << std::setw(3) << i1_h(i1_h.extent(0) - 1);
-  //   }
-  //   std::cout << std::endl << "dx1s : ";
-  //   for (auto i = 0; i < IMIN(dx1_h.extent(0), 30); ++i) {
-  //     std::cout << std::setprecision(2) << std::setw(3) << dx1_h(i) << " ";
-  //     if (i == npart() - 1) {
-  //       std::cout << "| ";
-  //     }
-  //   }
-  //   if (dx1_h.extent(0) > 30) {
-  //     std::cout << "..." << std::setprecision(2) << std::setw(3)
-  //               << dx1_h(dx1_h.extent(0) - 1);
-  //   }
-  //   std::cout << std::endl;
-  // }
-
   template struct Particles<Dim::_1D, Coord::Cart>;
   template struct Particles<Dim::_2D, Coord::Cart>;
   template struct Particles<Dim::_3D, Coord::Cart>;
