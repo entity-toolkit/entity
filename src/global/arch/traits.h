@@ -97,6 +97,9 @@ namespace traits {
     using field_driver_t = decltype(&T::FieldDriver);
 
     template <typename T>
+    using fix_field_t = decltype(&T::FixField);
+
+    template <typename T>
     using custom_fields_t = decltype(&T::CustomFields);
 
     template <typename T>

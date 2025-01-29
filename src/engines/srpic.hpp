@@ -42,7 +42,6 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 
-#include <string>
 #include <utility>
 
 namespace ntt {
@@ -593,9 +592,9 @@ namespace ntt {
           }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ATMOSPHERE) {
           AtmosphereFieldsIn(direction, domain, tags);
-        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
-          if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
-            ConductorFieldsIn(direction, domain, tags);
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::FIXED) {
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::FIXED) {
+            FixedFieldsIn(direction, domain, tags);
           }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
@@ -718,141 +717,18 @@ namespace ntt {
       }
     }
 
-    void AtmosphereFieldsIn(dir::direction_t<M::Dim> direction,
-                            domain_t&                domain,
-                            BCTags                   tags) {
+    void FixedFieldsIn(dir::direction_t<M::Dim> direction,
+                       domain_t&                domain,
+                       BCTags                   tags) {
       /**
-       * atmosphere boundaries
+       * fixed field boundaries
        */
-      if constexpr (traits::has_member<traits::pgen::field_driver_t, pgen_t>::value) {
-        const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
-        const auto           dd = static_cast<unsigned short>(dim);
-        boundaries_t<real_t> box;
-        boundaries_t<bool>   incl_ghosts;
-        for (unsigned short d { 0 }; d < M::Dim; ++d) {
-          if (d == dd) {
-            box.push_back({ xg_min, xg_max });
-            if (sign > 0) {
-              incl_ghosts.push_back({ false, true });
-            } else {
-              incl_ghosts.push_back({ true, false });
-            }
-          } else {
-            box.push_back(Range::All);
-            incl_ghosts.push_back({ true, true });
-          }
-        }
-        if (not domain.mesh.Intersects(box)) {
-          return;
-        }
-        const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<std::size_t, M::Dim> range_min { 0 };
-        tuple_t<std::size_t, M::Dim> range_max { 0 };
-
-        for (unsigned short d { 0 }; d < M::Dim; ++d) {
-          range_min[d] = intersect_range[d].first;
-          range_max[d] = intersect_range[d].second;
-        }
-        auto        field_driver = m_pgen.FieldDriver(time);
-        std::size_t il_edge;
-        if (sign > 0) {
-          il_edge = range_min[dd] - N_GHOSTS;
-        } else {
-          il_edge = range_max[dd] - 1 - N_GHOSTS;
-        }
-        const auto range = CreateRangePolicy<M::Dim>(range_min, range_max);
-        if (dim == in::x1) {
-          if (sign > 0) {
-            Kokkos::parallel_for(
-              "AtmosphereBCFields",
-              range,
-              kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x1>(
-                domain.fields.em,
-                field_driver,
-                domain.mesh.metric,
-                il_edge,
-                tags));
-          } else {
-            Kokkos::parallel_for(
-              "AtmosphereBCFields",
-              range,
-              kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x1>(
-                domain.fields.em,
-                field_driver,
-                domain.mesh.metric,
-                il_edge,
-                tags));
-          }
-        } else if (dim == in::x2) {
-          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            if (sign > 0) {
-              Kokkos::parallel_for(
-                "AtmosphereBCFields",
-                range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x2>(
-                  domain.fields.em,
-                  field_driver,
-                  domain.mesh.metric,
-                  il_edge,
-                  tags));
-            } else {
-              Kokkos::parallel_for(
-                "AtmosphereBCFields",
-                range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x2>(
-                  domain.fields.em,
-                  field_driver,
-                  domain.mesh.metric,
-                  il_edge,
-                  tags));
-            }
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        } else if (dim == in::x3) {
-          if constexpr (M::Dim == Dim::_3D) {
-            if (sign > 0) {
-              Kokkos::parallel_for(
-                "AtmosphereBCFields",
-                range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, true, in::x3>(
-                  domain.fields.em,
-                  field_driver,
-                  domain.mesh.metric,
-                  il_edge,
-                  tags));
-            } else {
-              Kokkos::parallel_for(
-                "AtmosphereBCFields",
-                range,
-                kernel::AtmosphereBoundaries_kernel<decltype(field_driver), M, false, in::x3>(
-                  domain.fields.em,
-                  field_driver,
-                  domain.mesh.metric,
-                  il_edge,
-                  tags));
-            }
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
-      } else {
-        raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
-                     HERE);
-      }
-    }
-
-    void ConductorFieldsIn(dir::direction_t<M::Dim> direction,
-                           domain_t&                domain,
-                           BCTags                   tags) {
       const auto sign = direction.get_sign();
       const auto dim  = direction.get_dim();
-      raise::ErrorIf(
-        dim != in::x1 and M::CoordType != Coord::Cart,
-        "Conductor BCs only implemented for x1 in non-cartesian coordinates",
-        HERE);
+      raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
+                     "Fixed BCs only implemented for x1 in "
+                     "non-cartesian coordinates",
+                     HERE);
       em normal_b_comp, tang_e_comp1, tang_e_comp2;
       if (dim == in::x1) {
         normal_b_comp = em::bx1;
@@ -898,28 +774,166 @@ namespace ntt {
       if (tags & BC::B) {
         comps.push_back(normal_b_comp);
       }
-      for (const auto& comp : comps) {
-        if constexpr (M::Dim == Dim::_1D) {
-          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
-                                            std::make_pair(xi_min[0], xi_max[0]),
-                                            comp),
-                            ZERO);
-        } else if constexpr (M::Dim == Dim::_2D) {
-          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
-                                            std::make_pair(xi_min[0], xi_max[0]),
-                                            std::make_pair(xi_min[1], xi_max[1]),
-                                            comp),
-                            ZERO);
-        } else if constexpr (M::Dim == Dim::_3D) {
-          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
-                                            std::make_pair(xi_min[0], xi_max[0]),
-                                            std::make_pair(xi_min[1], xi_max[1]),
-                                            std::make_pair(xi_min[2], xi_max[2]),
-                                            comp),
-                            ZERO);
+      if constexpr (traits::has_member<traits::pgen::field_driver_t, pgen_t>::value) {
+        raise::Error("Field driver for fixed fields not implemented", HERE);
+      } else {
+        // if field driver not present, set fields to fixed values
+        for (const auto& comp : comps) {
+          auto value = ZERO;
+          if constexpr (
+            traits::has_member<traits::pgen::fix_field_t, pgen_t>::value) {
+            // if fix field function present, read from it
+            value = m_pgen.FixField((em)comp);
+          }
+          if constexpr (M::Dim == Dim::_1D) {
+            Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                              std::make_pair(xi_min[0], xi_max[0]),
+                                              comp),
+                              value);
+          } else if constexpr (M::Dim == Dim::_2D) {
+            Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                              std::make_pair(xi_min[0], xi_max[0]),
+                                              std::make_pair(xi_min[1], xi_max[1]),
+                                              comp),
+                              value);
+          } else if constexpr (M::Dim == Dim::_3D) {
+            Kokkos::deep_copy(
+              Kokkos::subview(domain.fields.em,
+                              std::make_pair(xi_min[0], xi_max[0]),
+                              std::make_pair(xi_min[1], xi_max[1]),
+                              std::make_pair(xi_min[2], xi_max[2]),
+                              comp),
+              value);
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        }
+      }
+    }
+
+    void AtmosphereFieldsIn(dir::direction_t<M::Dim> direction,
+                            domain_t&                domain,
+                            BCTags                   tags) {
+      /**
+       * atmosphere field boundaries
+       */
+      if constexpr (traits::has_member<traits::pgen::field_driver_t, pgen_t>::value) {
+        const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
+        const auto           dd = static_cast<unsigned short>(dim);
+        boundaries_t<real_t> box;
+        boundaries_t<bool>   incl_ghosts;
+        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+          if (d == dd) {
+            box.push_back({ xg_min, xg_max });
+            if (sign > 0) {
+              incl_ghosts.push_back({ false, true });
+            } else {
+              incl_ghosts.push_back({ true, false });
+            }
+          } else {
+            box.push_back(Range::All);
+            incl_ghosts.push_back({ true, true });
+          }
+        }
+        if (not domain.mesh.Intersects(box)) {
+          return;
+        }
+        const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
+        tuple_t<std::size_t, M::Dim> range_min { 0 };
+        tuple_t<std::size_t, M::Dim> range_max { 0 };
+
+        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+          range_min[d] = intersect_range[d].first;
+          range_max[d] = intersect_range[d].second;
+        }
+        auto        field_driver = m_pgen.FieldDriver(time);
+        std::size_t il_edge;
+        if (sign > 0) {
+          il_edge = range_min[dd] - N_GHOSTS;
+        } else {
+          il_edge = range_max[dd] - 1 - N_GHOSTS;
+        }
+        const auto range = CreateRangePolicy<M::Dim>(range_min, range_max);
+        if (dim == in::x1) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "AtmosphereBCFields",
+              range,
+              kernel::EnforcedBoundaries_kernel<decltype(field_driver), M, true, in::x1>(
+                domain.fields.em,
+                field_driver,
+                domain.mesh.metric,
+                il_edge,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "AtmosphereBCFields",
+              range,
+              kernel::EnforcedBoundaries_kernel<decltype(field_driver), M, false, in::x1>(
+                domain.fields.em,
+                field_driver,
+                domain.mesh.metric,
+                il_edge,
+                tags));
+          }
+        } else if (dim == in::x2) {
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::EnforcedBoundaries_kernel<decltype(field_driver), M, true, in::x2>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::EnforcedBoundaries_kernel<decltype(field_driver), M, false, in::x2>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else if (dim == in::x3) {
+          if constexpr (M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::EnforcedBoundaries_kernel<decltype(field_driver), M, true, in::x3>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "AtmosphereBCFields",
+                range,
+                kernel::EnforcedBoundaries_kernel<decltype(field_driver), M, false, in::x3>(
+                  domain.fields.em,
+                  field_driver,
+                  domain.mesh.metric,
+                  il_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
         } else {
           raise::Error("Invalid dimension", HERE);
         }
+      } else {
+        raise::Error("Field driver not implemented in PGEN for atmosphere BCs",
+                     HERE);
       }
     }
 
