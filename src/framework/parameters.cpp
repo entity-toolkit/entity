@@ -31,10 +31,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<std::size_t>&      resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<std::size_t>&      resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -445,15 +445,8 @@ namespace ntt {
                         defaults::gr::pusher_niter));
     }
     /* [particles] ---------------------------------------------------------- */
-#if defined(MPI_ENABLED)
-    const std::size_t sort_interval = 1;
-#else
-    const std::size_t sort_interval = toml::find_or(toml_data,
-                                                    "particles",
-                                                    "sort_interval",
-                                                    defaults::sort_interval);
-#endif
-    set("particles.sort_interval", sort_interval);
+    set("particles.clear_interval",
+        toml::find_or(toml_data, "particles", "clear_interval", defaults::clear_interval));
 
     /* [output] ------------------------------------------------------------- */
     // fields
@@ -463,6 +456,9 @@ namespace ntt {
         toml::find_or(toml_data, "output", "interval", defaults::output::interval));
     set("output.interval_time",
         toml::find_or<long double>(toml_data, "output", "interval_time", -1.0));
+    set("output.separate_files",
+        toml::find_or<bool>(toml_data, "output", "separate_files", true));
+
     promiseToDefine("output.fields.interval");
     promiseToDefine("output.fields.interval_time");
     promiseToDefine("output.fields.enable");
@@ -509,11 +505,16 @@ namespace ntt {
     set("output.fields.downsampling", field_dwn);
 
     // particles
+    auto       all_specs = std::vector<unsigned short> {};
+    const auto nspec     = get<std::size_t>("particles.nspec");
+    for (auto i = 0u; i < nspec; ++i) {
+      all_specs.push_back(static_cast<unsigned short>(i + 1));
+    }
     const auto prtl_out = toml::find_or(toml_data,
                                         "output",
                                         "particles",
                                         "species",
-                                        std::vector<unsigned short> {});
+                                        all_specs);
     set("output.particles.species", prtl_out);
     set("output.particles.stride",
         toml::find_or(toml_data,

@@ -209,7 +209,7 @@ namespace Timer {
     PrintTitle      = 1 << 1,
     AutoConvert     = 1 << 2,
     PrintOutput     = 1 << 3,
-    PrintSorting    = 1 << 4,
+    PrintPrtlClear  = 1 << 4,
     PrintCheckpoint = 1 << 5,
     PrintNormed     = 1 << 6,
     Default         = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
@@ -248,6 +248,17 @@ namespace Comm {
 } // namespace Comm
 
 typedef int CommTags;
+
+namespace WriteMode {
+  enum WriteModeTags_ {
+    None      = 0,
+    Fields    = 1 << 0,
+    Particles = 1 << 1,
+    Spectra   = 1 << 2,
+  };
+} // namespace WriteMode
+
+typedef int WriteModeTags;
 
 namespace BC {
   enum BCTags_ {

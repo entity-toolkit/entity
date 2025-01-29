@@ -46,6 +46,9 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
+    raise::ErrorIf(global_ndomains != g_mpi_size,
+                   "Exactly 1 domain per MPI rank is allowed",
+                   HERE);
 #endif
     initialValidityCheck();
 
@@ -381,7 +384,7 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     auto dx_mins        = std::vector<real_t>(g_ndomains);
     dx_mins[g_mpi_rank] = dx_min;
-    MPI_Allgather(&dx_mins[g_mpi_rank],
+    MPI_Allgather(&dx_min,
                   1,
                   mpi::get_type<real_t>(),
                   dx_mins.data(),
