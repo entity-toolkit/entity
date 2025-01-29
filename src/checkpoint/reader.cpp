@@ -98,7 +98,7 @@ namespace checkpoint {
       fmt::format("s%d_%s", s + 1, quantity.c_str()));
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
-      const auto slice   = std::pair<std::size_t, std::size_t> { 0, count };
+      const auto slice   = range_tuple_t(0, count);
       auto       array_h = Kokkos::create_mirror_view(array);
       reader.Get(var, Kokkos::subview(array_h, slice).data(), adios2::Mode::Sync);
       Kokkos::deep_copy(Kokkos::subview(array, slice),
@@ -121,13 +121,12 @@ namespace checkpoint {
     auto var = io.InquireVariable<real_t>(fmt::format("s%d_plds", s + 1));
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ offset, 0 }, { count, nplds }));
-      const auto slice   = std::pair<std::size_t, std::size_t> { 0, count };
+      const auto slice   = range_tuple_t(0, count);
       auto       array_h = Kokkos::create_mirror_view(array);
       reader.Get(var,
                  Kokkos::subview(array_h, slice, range_tuple_t(0, nplds)).data(),
                  adios2::Mode::Sync);
-      Kokkos::deep_copy(Kokkos::subview(array, slice, range_tuple_t(0, nplds)),
-                        Kokkos::subview(array_h, slice, range_tuple_t(0, nplds)));
+      Kokkos::deep_copy(array, array_h);
     } else {
       raise::Error(fmt::format("Variable: s%d_plds not found", s + 1), HERE);
     }
