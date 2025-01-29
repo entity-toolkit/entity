@@ -30,6 +30,7 @@ namespace kernel::bc {
    *
    * @brief Applies matching boundary conditions (with a smooth profile) in a specific direction.
    * @note If a component is not specified in the field setter, it is ignored.
+   * @note It is supposed to only be called on the active side of the absorbing edge (so sign is not needed).
    */
   template <SimEngine::type S, class I, class M, in o>
   struct MatchBoundaries_kernel {
