@@ -46,8 +46,10 @@ void testParticles(const int&             index,
   raise::ErrorIf(p.tag.extent(0) != maxnpart, "tag incorrectly allocated", HERE);
   raise::ErrorIf(p.weight.extent(0) != maxnpart, "weight incorrectly allocated", HERE);
 
-  raise::ErrorIf(p.pld.extent(1) != npld, "pld incorrectly allocated", HERE);
-  raise::ErrorIf(p.pld.extent(0) != maxnpart, "pld incorrectly allocated", HERE);
+  if (npld > 0) {
+    raise::ErrorIf(p.pld.extent(0) != maxnpart, "pld incorrectly allocated", HERE);
+    raise::ErrorIf(p.pld.extent(1) != npld, "pld incorrectly allocated", HERE);
+  }
 
   if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
     raise::ErrorIf(p.i2.extent(0) != maxnpart, "i2 incorrectly allocated", HERE);
@@ -115,7 +117,8 @@ auto main(int argc, char** argv) -> int {
                                          0.0,
                                          100,
                                          PrtlPusher::PHOTON,
-                                         Cooling::NONE);
+                                         Cooling::NONE,
+                                         5);
     testParticles<Dim::_2D, Coord::Sph>(4,
                                         "e+",
                                         1.0,
@@ -129,7 +132,8 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          100,
                                          PrtlPusher::BORIS,
-                                         Cooling::NONE);
+                                         Cooling::NONE,
+                                         1);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     Kokkos::finalize();
