@@ -271,7 +271,6 @@ namespace ntt {
           });
         g_writer.writeMesh(dim, xc, xe);
       }
-
       const auto output_asis = params.template get<bool>("output.debug.as_is");
       // !TODO: this can probably be optimized to dump things at once
       for (auto& fld : g_writer.fieldWriters()) {
@@ -475,16 +474,14 @@ namespace ntt {
       for (const auto& prtl : g_writer.speciesWriters()) {
         auto& species = local_domain->species[prtl.species() - 1];
         if (not species.is_sorted()) {
-          species.SortByTags();
+          species.RemoveDead();
         }
         const std::size_t nout = species.npart() / prtl_stride;
         array_t<real_t*>  buff_x1, buff_x2, buff_x3;
-        array_t<real_t*>  buff_ux1, buff_ux2, buff_ux3;
-        array_t<real_t*>  buff_wei;
-        buff_wei = array_t<real_t*> { "w", nout };
-        buff_ux1 = array_t<real_t*> { "u1", nout };
-        buff_ux2 = array_t<real_t*> { "u2", nout };
-        buff_ux3 = array_t<real_t*> { "u3", nout };
+        array_t<real_t*>  buff_ux1 { "u1", nout };
+        array_t<real_t*>  buff_ux2 { "ux2", nout };
+        array_t<real_t*>  buff_ux3 { "ux3", nout };
+        array_t<real_t*>  buff_wei { "w", nout };
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
           buff_x1 = array_t<real_t*> { "x1", nout };

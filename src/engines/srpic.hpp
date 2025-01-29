@@ -80,8 +80,8 @@ namespace ntt {
         "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
-      const auto sort_interval = m_params.template get<std::size_t>(
-        "particles.sort_interval");
+      const auto clear_interval = m_params.template get<std::size_t>(
+        "particles.clear_interval");
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
@@ -102,6 +102,7 @@ namespace ntt {
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
+        Kokkos::fence();
       }
 
       {
@@ -126,9 +127,7 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
-        }
+        m_metadomain.CommunicateParticles(dom);
         timers.stop("Communications");
       }
 
@@ -168,6 +167,12 @@ namespace ntt {
         timers.start("Injector");
         ParticleInjector(dom);
         timers.stop("Injector");
+      }
+
+      if (clear_interval > 0 and step % clear_interval == 0 and step > 0) {
+        timers.start("PrtlClear");
+        m_metadomain.RemoveDeadParticles(dom);
+        timers.stop("PrtlClear");
       }
     }
 
