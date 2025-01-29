@@ -7,6 +7,20 @@
 let
   name = "adios2";
   version = "2.10.2";
+  cmakeFlags = {
+    CMAKE_CXX_STANDARD = "17";
+    CMAKE_CXX_EXTENSIONS = "OFF";
+    CMAKE_POSITION_INDEPENDENT_CODE = "TRUE";
+    BUILD_SHARED_LIBS = "ON";
+    ADIOS2_USE_HDF5 = if hdf5 then "ON" else "OFF";
+    ADIOS2_USE_Python = "OFF";
+    ADIOS2_USE_Fortran = "OFF";
+    ADIOS2_USE_ZeroMQ = "OFF";
+    BUILD_TESTING = "OFF";
+    ADIOS2_BUILD_EXAMPLES = "OFF";
+    ADIOS2_USE_MPI = if mpi then "ON" else "OFF";
+    CMAKE_BUILD_TYPE = "Release";
+  } // (if !mpi then { ADIOS2_HAVE_HDF5_VOL = "OFF"; } else { });
 in
 pkgs.stdenv.mkDerivation {
   pname = "${name}${if hdf5 then "-hdf5" else ""}${if mpi then "-mpi" else ""}";
@@ -17,34 +31,43 @@ pkgs.stdenv.mkDerivation {
     sha256 = "sha256-NVyw7xoPutXeUS87jjVv1YxJnwNGZAT4QfkBLzvQbwg=";
   };
 
-  nativeBuildInputs =
-    with pkgs;
-    [
-      cmake
-      libgcc
-      perl
-      breakpointHook
-    ]
-    ++ (if mpi then [ openmpi ] else [ ]);
+  nativeBuildInputs = with pkgs; [
+    cmake
+    perl
+  ];
 
-  buildInputs = if hdf5 then (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5 ]) else [ ];
+  propagatedBuildInputs =
+    [
+      pkgs.gcc13
+    ]
+    ++ (if hdf5 then (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5 ]) else [ ])
+    ++ (if mpi then [ pkgs.openmpi ] else [ ]);
 
   configurePhase = ''
-    cmake -B build $src \
-      -D CMAKE_CXX_STANDARD=17 \
-      -D CMAKE_CXX_EXTENSIONS=OFF \
-      -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
-      -D BUILD_SHARED_LIBS=ON \
-      -D ADIOS2_USE_HDF5=${if hdf5 then "ON" else "OFF"} \
-      -D ADIOS2_USE_Python=OFF \
-      -D ADIOS2_USE_Fortran=OFF \
-      -D ADIOS2_USE_ZeroMQ=OFF \
-      -D BUILD_TESTING=OFF \
-      -D ADIOS2_BUILD_EXAMPLES=OFF \
-      -D ADIOS2_USE_MPI=${if mpi then "ON" else "OFF"} \
-      -D ADIOS2_HAVE_HDF5_VOL=OFF \
-      -D CMAKE_BUILD_TYPE=Release
+    cmake -B build $src ${
+      pkgs.lib.attrsets.foldlAttrs (
+        acc: key: value:
+        acc + " -D ${key}=${value}"
+      ) "" cmakeFlags
+    }
   '';
+
+  # configurePhase =
+  #   ''
+  #     cmake -B build $src \
+  #       -D CMAKE_CXX_STANDARD=17 \
+  #       -D CMAKE_CXX_EXTENSIONS=OFF \
+  #       -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+  #       -D BUILD_SHARED_LIBS=ON \
+  #       -D ADIOS2_USE_HDF5=${if hdf5 then "ON" else "OFF"} \
+  #       -D ADIOS2_USE_Python=OFF \
+  #       -D ADIOS2_USE_Fortran=OFF \
+  #       -D ADIOS2_USE_ZeroMQ=OFF \
+  #       -D BUILD_TESTING=OFF \
+  #       -D ADIOS2_BUILD_EXAMPLES=OFF \
+  #       -D ADIOS2_USE_MPI=${if mpi then "ON" else "OFF"} \
+  #       -D CMAKE_BUILD_TYPE=Release
+  #   ''
 
   buildPhase = ''
     cmake --build build -j
