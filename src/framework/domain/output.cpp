@@ -328,6 +328,14 @@ namespace ntt {
                                                  {},
                                                  local_domain->fields.bckp,
                                                  c);
+            } else if (fld.id() == FldsID::V) {
+              ComputeMoments<S, M, FldsID::V>(params,
+                                                 local_domain->mesh,
+                                                 local_domain->species,
+                                                 fld.species,
+                                                 fld.comp[0],
+                                                 local_domain->fields.bckp,
+                                                 c);
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
