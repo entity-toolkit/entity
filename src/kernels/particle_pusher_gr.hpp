@@ -142,9 +142,7 @@ namespace kernel::gr {
       , ni3 { ni3 }
       , epsilon { epsilon }
       , niter { niter }
-      , i1_absorb { static_cast<int>(metric.template convert<1, Crd::Ph, Crd::Cd>(
-                      metric.rhorizon())) -
-                    5 } {
+      , i1_absorb {N_GHOSTS} {
 
       raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ABSORB) ||
@@ -706,6 +704,9 @@ namespace kernel::gr {
       EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       /* x^i(n) -> x^i(n + 1) */
       coord_t<Dim::_2D> xp_upd { ZERO };
+      if (i1(p) < 15 && is_absorb_i1min) {
+        vp_upd[0] = -10.0;
+      }
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
 
       // update phi
