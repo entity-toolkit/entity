@@ -1069,9 +1069,10 @@ namespace kernel::bc {
         x_Cd[1]       = i2_;
         const auto dx = math::abs(
           metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
-        J(i1, i2, cur::jx1) *= math::tanh(dx / (INV_4 * dx_abs));
-        J(i1, i2, cur::jx2) *= math::tanh(dx / (INV_4 * dx_abs));
-        J(i1, i2, cur::jx3) *= math::tanh(dx / (INV_4 * dx_abs));
+        J(i1, i2, 0) *= math::tanh(dx / (INV_4 * dx_abs));
+        J(i1, i2, 1) *= math::tanh(dx / (INV_4 * dx_abs));
+        J(i1, i2, 2) *= math::tanh(dx / (INV_4 * dx_abs));
+
       } else {
         raise::KernelError(
           HERE,
