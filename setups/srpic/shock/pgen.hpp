@@ -13,6 +13,8 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
+#include <utility>
+
 namespace user {
   using namespace ntt;
 
@@ -28,7 +30,7 @@ namespace user {
       @param drift_ux: drift velocity in the x direction
     */
     InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
-      : Bmag { bmag * static_cast<real_t>(convert::deg2rad) }
+      : Bmag { bmag }
       , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
       , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
       , Vx { drift_ux } {}
@@ -93,18 +95,19 @@ namespace user {
 
     inline PGen() {}
 
-    auto FixField(const em& comp) const -> real_t {
+    auto FixFieldsConst(const bc_in&, const em& comp) const
+      -> std::pair<real_t, bool> {
       if (comp == em::ex2) {
-        return init_flds.ex2({ ZERO });
+        return { init_flds.ex2({ ZERO }), true };
       } else if (comp == em::ex3) {
-        return init_flds.ex3({ ZERO });
-      } else if (comp == em::bx1) {
-        return init_flds.bx1({ ZERO });
+        return { init_flds.ex3({ ZERO }), true };
       } else {
-        raise::Error("Other components should not be requested when BC is in X",
-                     HERE);
-        return ZERO;
+        return { ZERO, false };
       }
+    }
+
+    auto MatchFields(real_t time) const -> InitFields<D> {
+      return init_flds;
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {

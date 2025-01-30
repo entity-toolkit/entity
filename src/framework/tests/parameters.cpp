@@ -32,7 +32,7 @@ const auto mink_1d = u8R"(
     fields = [["PERIODIC"]]
     particles = [["ABSORB", "ABSORB"]]
 
-    [grid.boundaries.absorb]
+    [grid.boundaries.match]
       coeff = 10.0
       ds = 0.025
 
@@ -101,10 +101,10 @@ const auto sph_2d = u8R"(
     metric = "spherical"
 
   [grid.boundaries]
-    fields = [["ATMOSPHERE", "ABSORB"]]
+    fields = [["ATMOSPHERE", "MATCH"]]
     particles = [["ATMOSPHERE", "ABSORB"]]
 
-    [grid.boundaries.absorb]
+    [grid.boundaries.match]
       coeff = 10.0
 
     [grid.boundaries.atmosphere]
@@ -180,7 +180,7 @@ const auto qks_2d = u8R"(
     ks_a = 0.99
 
   [grid.boundaries]
-    fields = [["ABSORB"]]
+    fields = [["MATCH"]]
     particles = [["ABSORB"]]
 
 [scales]
@@ -345,8 +345,8 @@ auto main(int argc, char* argv[]) -> int {
                               "simulation.engine");
 
       boundaries_t<FldsBC> fbc = {
-        { FldsBC::ATMOSPHERE, FldsBC::ABSORB },
-        {       FldsBC::AXIS,   FldsBC::AXIS }
+        { FldsBC::ATMOSPHERE, FldsBC::MATCH },
+        {       FldsBC::AXIS,  FldsBC::AXIS }
       };
 
       assert_equal<real_t>(params_sph_2d.get<real_t>("scales.B0"),
@@ -381,16 +381,16 @@ auto main(int argc, char* argv[]) -> int {
         fbc.size(),
         "grid.boundaries.fields.size()");
 
-      // absorb coeffs
+      // match coeffs
       assert_equal<real_t>(
-        params_sph_2d.get<real_t>("grid.boundaries.absorb.ds"),
-        (real_t)(defaults::bc::absorb::ds_frac * 19.0),
-        "grid.boundaries.absorb.ds");
+        params_sph_2d.get<real_t>("grid.boundaries.match.ds"),
+        (real_t)(defaults::bc::match::ds_frac * 19.0),
+        "grid.boundaries.match.ds");
 
       assert_equal<real_t>(
-        params_sph_2d.get<real_t>("grid.boundaries.absorb.coeff"),
+        params_sph_2d.get<real_t>("grid.boundaries.match.coeff"),
         (real_t)10.0,
-        "grid.boundaries.absorb.coeff");
+        "grid.boundaries.match.coeff");
 
       assert_equal(params_sph_2d.get<bool>("particles.use_weights"),
                    true,
@@ -537,16 +537,16 @@ auto main(int argc, char* argv[]) -> int {
         pbc.size(),
         "grid.boundaries.particles.size()");
 
-      // absorb coeffs
+      // match coeffs
       assert_equal<real_t>(
-        params_qks_2d.get<real_t>("grid.boundaries.absorb.ds"),
-        (real_t)(defaults::bc::absorb::ds_frac * (100.0 - 0.8)),
-        "grid.boundaries.absorb.ds");
+        params_qks_2d.get<real_t>("grid.boundaries.match.ds"),
+        (real_t)(defaults::bc::match::ds_frac * (100.0 - 0.8)),
+        "grid.boundaries.match.ds");
 
       assert_equal<real_t>(
-        params_qks_2d.get<real_t>("grid.boundaries.absorb.coeff"),
-        defaults::bc::absorb::coeff,
-        "grid.boundaries.absorb.coeff");
+        params_qks_2d.get<real_t>("grid.boundaries.match.coeff"),
+        defaults::bc::match::coeff,
+        "grid.boundaries.match.coeff");
 
       const auto species = params_qks_2d.get<std::vector<ParticleSpecies>>(
         "particles.species");

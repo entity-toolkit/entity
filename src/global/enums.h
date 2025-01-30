@@ -8,7 +8,7 @@
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
- *   - enum ntt::FldsBC            // periodic, absorb, fixed, atmosphere,
+ *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
  *                                    custom, horizon, axis, sync
  *   - enum ntt::PrtlPusher        // boris, vay, photon, none
  *   - enum ntt::Cooling           // synchrotron, none
@@ -215,7 +215,7 @@ namespace ntt {
     enum type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
-      ABSORB     = 2,
+      MATCH      = 2,
       FIXED      = 3,
       ATMOSPHERE = 4,
       CUSTOM     = 5,
@@ -226,9 +226,9 @@ namespace ntt {
 
     constexpr FldsBC(uint8_t c) : enums_hidden::BaseEnum<FldsBC> { c } {}
 
-    static constexpr type variants[] = { PERIODIC, ABSORB,  FIXED, ATMOSPHERE,
+    static constexpr type variants[] = { PERIODIC, MATCH,   FIXED, ATMOSPHERE,
                                          CUSTOM,   HORIZON, AXIS,  SYNC };
-    static constexpr const char* lookup[] = { "periodic",   "absorb", "fixed",
+    static constexpr const char* lookup[] = { "periodic",   "match",  "fixed",
                                               "atmosphere", "custom", "horizon",
                                               "axis",       "sync" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
