@@ -99,8 +99,8 @@ namespace ntt {
         "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
-      const auto sort_interval = m_params.template get<std::size_t>(
-        "particles.sort_interval");
+      const auto clear_interval = m_params.template get<std::size_t>(
+        "particles.clear_interval");
       
       if (step == 0) {
         if (fieldsolver_enabled) {
@@ -384,9 +384,10 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
-        }
+        // if ((sort_interval > 0) and (step % sort_interval == 0)) {
+        //   m_metadomain.CommunicateParticles(dom, &timers);
+        // }
+        m_metadomain.CommunicateParticles(dom);
         timers.stop("Communications");
       }
 
@@ -518,6 +519,13 @@ namespace ntt {
         FieldBoundaries(dom, BC::E, gr_bc::main);
         timers.stop("FieldBoundaries");
       }
+
+      if (clear_interval > 0 and step % clear_interval == 0 and step > 0) {
+        timers.start("PrtlClear");
+        m_metadomain.RemoveDeadParticles(dom);
+        timers.stop("PrtlClear");
+      }
+
       /**
        * Finally: em0::B   at n-1/2
        *          em0::D   at n
@@ -539,7 +547,7 @@ namespace ntt {
     void FieldBoundaries(domain_t& domain, BCTags tags, const gr_bc& g) {
       if (g == gr_bc::main) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
-          if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::ABSORB) {
+          if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::MATCH) {
             AbsorbFieldsIn(direction, domain, tags);
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
             if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
@@ -602,7 +610,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "AbsorbFields",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em,
+          kernel::bc::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em,
                                                 m_pgen.init_flds,
                                                 domain.mesh.metric,
                                                 xg_edge,
@@ -611,7 +619,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "AbsorbFields",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em0,
+          kernel::bc::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em0,
                                                 m_pgen.init_flds,
                                                 domain.mesh.metric,
                                                 xg_edge,
@@ -659,7 +667,7 @@ namespace ntt {
       Kokkos::parallel_for(
           "AbsorbCurrent",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::AbsorbCurrentGR_kernel<M, 1>(domain.fields.cur0,
+          kernel::bc::AbsorbCurrentGR_kernel<M, 1>(domain.fields.cur0,
                                                domain.mesh.metric,
                                                xg_edge,
                                                ds));
@@ -686,16 +694,16 @@ namespace ntt {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
+          kernel::bc::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
         Kokkos::parallel_for(
           "OpenBCFields",
           range, 
-          kernel::OpenBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
+          kernel::bc::OpenBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
       } else if (g == gr_bc::aux) {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::OpenBoundariesAux_kernel<M>(domain.fields.aux, i1_min, tags));
+          kernel::bc::OpenBoundariesAux_kernel<M>(domain.fields.aux, i1_min, tags));
       }
     }
 
@@ -720,20 +728,20 @@ namespace ntt {
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
       } else {
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
       }
     }
 
