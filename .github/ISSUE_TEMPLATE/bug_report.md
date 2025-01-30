@@ -1,8 +1,8 @@
 ---
 name: Bug report
 about: template for reporting an unexpected behavior or bugs
-title: ''
-labels: ''
+title: "[BUG]"
+labels: bug
 assignees: ''
 
 ---
