@@ -26,10 +26,7 @@ pkgs.mkShell {
     python312Packages.jupyter
 
     cmake-format
-<<<<<<< HEAD
     cmake-lint
-=======
->>>>>>> 8b0f205a866f7f7534d8190e3ebee580ea09f7d8
     neocmakelsp
     black
     pyright

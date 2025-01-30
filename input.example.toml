@@ -93,8 +93,8 @@
     #   @valid: "PERIODIC", "MATCH", "FIXED", "ATMOSPHERE", "CUSTOM", "HORIZON"
     #   @example: [["CUSTOM", "MATCH"]] (for 2D spherical [[rmin, rmax]])
     #   @note: When periodic in any of the directions, you should only set one value: [..., ["PERIODIC"], ...]
-    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]): [["ATMOSPHERE", "match"]]
-    #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["match"]]
+    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]): [["ATMOSPHERE", "MATCH"]]
+    #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["MATCH"]]
     fields = ""
     # Boundary conditions for fields:
     #   @required
