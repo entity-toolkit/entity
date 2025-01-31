@@ -1,10 +1,10 @@
 [simulation]
-  name = "wald_Dph_abs_a95"
+  name = "vacuum"
   engine = "grpic"
-  runtime = 1.0
+  runtime = 100.0
 
 [grid]
-  resolution = [128,128]
+  resolution = [128, 128]
   extent = [[1.0, 10.0]]
 
   [grid.metric]
@@ -14,7 +14,7 @@
     ks_a = 0.95
 
   [grid.boundaries]
-    fields = [["ABSORB"]]
+    fields = [["MATCH"]]
     particles = [["ABSORB"]]
 
     [grid.boundaries.absorb]
@@ -41,6 +41,7 @@
 
 [output]
   format = "hdf5"
+  separate_files = false
 
   [output.fields]
     interval_time = 1.0
