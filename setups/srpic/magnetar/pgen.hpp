@@ -404,8 +404,8 @@ namespace user {
       auto inv_n0_      = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
-            if (s == 2 || s == 3) {
-            // if (s == 1 || s == 2 || s == 3) {
+            // if (s == 2 || s == 3) {
+            if (s == 1 || s == 2 || s == 3) {
             // if (s == 1) {
               continue;
             }
@@ -687,12 +687,12 @@ namespace user {
 
             auto  rand_gen = random_pool.get_state();
 
-            if (s == 1) {
-              if (Random<real_t>(rand_gen) < 0.75) {
-                random_pool.free_state(rand_gen);
-                return;
-              }
-            }
+            // if (s == 1) {
+            //   if (Random<real_t>(rand_gen) < 0.75) {
+            //     random_pool.free_state(rand_gen);
+            //     return;
+            //   }
+            // }
 
             if (Random<real_t>(rand_gen) < p_scatter) {
 
@@ -1073,10 +1073,12 @@ namespace user {
                             ePh };
             auto sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
 
-            auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
-            if (s == 3) {
-              ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
-            }
+            // auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
+            // if (s == 3) {
+            //   ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
+            // }
+            auto ethres { 2.0 };
+
 
               // Check for pair production trigger
               if (ePh >= ethres) {
