@@ -392,9 +392,10 @@ namespace ntt {
                   mpi::get_type<real_t>(),
                   MPI_COMM_WORLD);
     for (const auto& dx : dx_mins) {
-      raise::ErrorIf(!cmp::AlmostEqual(dx, dx_min),
-                     "dx_min is not the same across all MPI ranks",
-                     HERE);
+      raise::ErrorIf(
+        !cmp::AlmostEqual(dx, dx_min, std::numeric_limits<real_t>::epsilon()),
+        "dx_min is not the same across all MPI ranks",
+        HERE);
     }
 #endif
   }
