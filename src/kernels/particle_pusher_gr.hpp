@@ -704,9 +704,6 @@ namespace kernel::gr {
       EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
       /* x^i(n) -> x^i(n + 1) */
       coord_t<Dim::_2D> xp_upd { ZERO };
-      if (i1(p) < 15 && is_absorb_i1min) {
-        vp_upd[0] = -10.0;
-      }
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
 
       // update phi
@@ -756,7 +753,7 @@ namespace kernel::gr {
           ux2(p) = -ux2(p);
         }
       } else if (i2(p) >= ni2) {
-        if (is_axis_i2min) {
+        if (is_axis_i2max) {
           i2(p)  = ni2 - 1;
           dx2(p) = ONE - dx2(p);
           ux2(p) = -ux2(p);
