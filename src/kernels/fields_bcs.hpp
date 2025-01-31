@@ -992,43 +992,44 @@ namespace kernel::bc {
 
           const auto dx = math::abs(
             metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
-          Fld(i1, i2, comp) *= math::tanh(dx / (INV_4 * dx_abs));
+          const auto tanh = math::tanh(dx / (INV_4 * dx_abs));
+          Fld(i1, i2, comp) *= tanh;
 
           if (comp == em::bx1) {
             const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
             const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
               i2_ + HALF) };
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) *
+            Fld(i1, i2, comp) += (ONE - tanh) *
                                  finit.bx1({ x1_0, x2_H });
           } else if (comp == em::bx2) {
             const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
               i1_ + HALF) };
             const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) *
+            Fld(i1, i2, comp) += (ONE - tanh) *
                                  finit.bx2({ x1_H, x2_0 });
           } else if (comp == em::bx3) {
             const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
               i1_ + HALF) };
             const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
               i2_ + HALF) };
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) *
+            Fld(i1, i2, comp) += (ONE - tanh) *
                                  finit.bx3({ x1_H, x2_H });
           } else if (comp == em::ex1) {
             const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
               i1_ + HALF) };
             const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) *
+            Fld(i1, i2, comp) += (ONE - tanh) *
                                  finit.dx1({ x1_H, x2_0 });
           } else if (comp == em::ex2) {
             const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
             const real_t x2_H { metric.template convert<2, Crd::Cd, Crd::Ph>(
               i2_ + HALF) };
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) *
+            Fld(i1, i2, comp) += (ONE - tanh) *
                                  finit.dx2({ x1_0, x2_H });
           } else if (comp == em::ex3) {
             const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
             const real_t x2_0 { metric.template convert<2, Crd::Cd, Crd::Ph>(i2_) };
-            Fld(i1, i2, comp) += (ONE - math::tanh(dx / (INV_4 * dx_abs))) *
+            Fld(i1, i2, comp) += (ONE - tanh) *
                                  finit.dx3({ x1_0, x2_0 });
           }
         }
