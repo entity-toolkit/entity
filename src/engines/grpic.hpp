@@ -391,12 +391,14 @@ namespace ntt {
 
       if (fieldsolver_enabled) {
         timers.start("FieldSolver");
-        /**
-         * cur::J <- (cur0::J + cur::J) / 2
-         *
-         * Now: cur::J at n
-         */
-        TimeAverageJ(dom);
+        if (deposit_enabled) {
+          /**
+           * cur::J <- (cur0::J + cur::J) / 2
+           *
+           * Now: cur::J at n
+           */
+          TimeAverageJ(dom);
+        }
         /**
          * aux::Е <- alpha * em::D + beta x em0::B
          *
@@ -556,13 +558,17 @@ namespace ntt {
               CustomFieldsIn(direction, domain, tags, g);
             }
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            HorizonFieldsIn(direction, domain, tags, g);
+            if (domain.mesh.flds_bc_in(direction) == FldsBC::HORIZON) {
+              HorizonFieldsIn(direction, domain, tags, g);
+            }
           }
         } // loop over directions
       } else if (g == gr_bc::aux) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
           if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            HorizonFieldsIn(direction, domain, tags, g);
+            if (domain.mesh.flds_bc_in(direction) == FldsBC::HORIZON) {
+              HorizonFieldsIn(direction, domain, tags, g);
+            }
           }
         }
       }
@@ -679,10 +685,10 @@ namespace ntt {
        * open boundaries
        */
       raise::ErrorIf(M::CoordType == Coord::Cart,
-                     "Invalid coordinate type for axis BCs",
+                     "Invalid coordinate type for horizon BCs",
                      HERE);
       raise::ErrorIf(direction.get_dim() != in::x1,
-                     "Invalid axis direction, should be x2",
+                     "Invalid horizon direction, should be x1",
                      HERE);
       const auto i1_min = domain.mesh.i_min(in::x1);
       auto range = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x2) },
@@ -1075,12 +1081,16 @@ namespace ntt {
                            m_params.template get<real_t>(
                              "algorithms.timestep.correction") *
                            m_params.template get<real_t>("scales.omegaB0");
+        const auto eps = m_params.template get<real_t>(
+          "algorithms.gr.pusher_eps");
+        const auto niter = m_params.template get<unsigned short>(
+          "algorithms.gr.pusher_niter");
         // clang-format off
-
         if (species.pusher() == PrtlPusher::PHOTON) {
         auto range_policy = Kokkos::RangePolicy<AccelExeSpace, kernel::gr::Massless_t>(
           0,
           species.npart());
+
         Kokkos::parallel_for(
           "ParticlePusher",
           range_policy,
@@ -1098,7 +1108,7 @@ namespace ntt {
               domain.mesh.n_active(in::x1),
               domain.mesh.n_active(in::x2),
               domain.mesh.n_active(in::x3),
-              m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<unsigned short>("algorithms.gr.pusher_niter"),
+              eps, niter,
               domain.mesh.prtl_bc()
           ));
         } else if (species.pusher() == PrtlPusher::BORIS) {
@@ -1122,7 +1132,7 @@ namespace ntt {
                 domain.mesh.n_active(in::x1),
                 domain.mesh.n_active(in::x2),
                 domain.mesh.n_active(in::x3),
-                m_params.template get<real_t>("algorithms.gr.pusher_eps"), m_params.template get<unsigned short>("algorithms.gr.pusher_niter"),
+                eps, niter,
                 domain.mesh.prtl_bc()
           ));
         } else if (species.pusher() == PrtlPusher::NONE) {
