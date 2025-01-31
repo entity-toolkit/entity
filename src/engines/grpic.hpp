@@ -101,7 +101,7 @@ namespace ntt {
         "algorithms.toggles.deposit");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
-      
+
       if (step == 0) {
         if (fieldsolver_enabled) {
           // communicate fields and apply BCs on the first timestep
@@ -124,8 +124,9 @@ namespace ntt {
           /**
            * em0::D, em::D, em0::B, em::B <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
-          FieldBoundaries(dom, BC::B | BC::E, gr_bc::main);
+          m_metadomain.CommunicateFields(dom,
+                                         Comm::B | Comm::B0 | Comm::D | Comm::D0);
+          FieldBoundaries(dom, BC::B | BC::D, gr_bc::main);
 
           /**
            * em0::B <- em::B
@@ -147,7 +148,7 @@ namespace ntt {
           /**
            * aux::E, aux::H <- boundary conditions
            */
-          FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
+          FieldBoundaries(dom, BC::H | BC::E, gr_bc::aux);
 
           /**
            * em0::B <- (em0::B) <- -curl aux::E
@@ -173,7 +174,7 @@ namespace ntt {
            * em0::D, em::D <- boundary conditions
            */
           m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-          FieldBoundaries(dom, BC::E, gr_bc::main);
+          FieldBoundaries(dom, BC::D, gr_bc::main);
 
           /**
            * aux::E <- alpha * em::D + beta x em0::B
@@ -187,7 +188,7 @@ namespace ntt {
           /**
            * aux::E, aux::H <- boundary conditions
            */
-          FieldBoundaries(dom, BC::B | BC::E, gr_bc::aux);
+          FieldBoundaries(dom, BC::H | BC::E, gr_bc::aux);
 
           // !ADD: GR -- particles?
 
@@ -213,7 +214,7 @@ namespace ntt {
            * em0::D, em::D <- boundary conditions
            */
           m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-          FieldBoundaries(dom, BC::E, gr_bc::main);
+          FieldBoundaries(dom, BC::D, gr_bc::main);
 
           /**
            * aux::H <- alpha * em0::B - beta x em0::D
@@ -224,7 +225,7 @@ namespace ntt {
           /**
            * aux::H <- boundary conditions
            */
-          FieldBoundaries(dom, BC::B, gr_bc::aux);
+          FieldBoundaries(dom, BC::H, gr_bc::aux);
 
           /**
            * em0::D <- (em::D) <- curl aux::H
@@ -237,7 +238,7 @@ namespace ntt {
            * em0::D, em::D <- boundary conditions
            */
           m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
-          FieldBoundaries(dom, BC::E, gr_bc::main);
+          FieldBoundaries(dom, BC::D, gr_bc::main);
 
           /**
            * em::D <-> em0::D
@@ -261,31 +262,31 @@ namespace ntt {
            *          u_prtl   at 1/2
            */
         } else {
-            /**
-             * em0::B <- em::B
-             * em0::D <- em::D
-             *
-             * Now: em0::B & em0::D at -1/2
-             */
-            CopyFields(dom);
+          /**
+           * em0::B <- em::B
+           * em0::D <- em::D
+           *
+           * Now: em0::B & em0::D at -1/2
+           */
+          CopyFields(dom);
         }
       }
 
-    /**
-     * Initially: em0::B   at n-3/2
-     *            em0::D   at n-1
-     *            em::B    at n-1/2
-     *            em::D    at n
-     *
-     *            cur0::J  --
-     *            cur::J   at n-1/2
-     *
-     *            aux::E   --
-     *            aux::H   --
-     *
-     *            x_prtl   at n
-     *            u_prtl   at n-1/2
-     */
+      /**
+       * Initially: em0::B   at n-3/2
+       *            em0::D   at n-1
+       *            em::B    at n-1/2
+       *            em::D    at n
+       *
+       *            cur0::J  --
+       *            cur::J   at n-1/2
+       *
+       *            aux::E   --
+       *            aux::H   --
+       *
+       *            x_prtl   at n
+       *            u_prtl   at n-1/2
+       */
 
       if (fieldsolver_enabled) {
         timers.start("FieldSolver");
@@ -304,14 +305,14 @@ namespace ntt {
          */
         ComputeAuxE(dom, gr_getE::D0_B);
         timers.stop("FieldSolver");
-        
+
         timers.start("FieldBoundaries");
         /**
          * aux::E <- boundary conditions
          */
         FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
-        
+
         timers.start("FieldSolver");
         /**
          * em0::B <- (em0::B) <- -curl aux::E
@@ -344,7 +345,7 @@ namespace ntt {
         /**
          * aux::H <- boundary conditions
          */
-        FieldBoundaries(dom, BC::B, gr_bc::aux);
+        FieldBoundaries(dom, BC::H, gr_bc::aux);
         timers.stop("FieldBoundaries");
       }
 
@@ -384,9 +385,6 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        // if ((sort_interval > 0) and (step % sort_interval == 0)) {
-        //   m_metadomain.CommunicateParticles(dom, &timers);
-        // }
         m_metadomain.CommunicateParticles(dom);
         timers.stop("Communications");
       }
@@ -423,7 +421,7 @@ namespace ntt {
          */
         Faraday(dom, gr_faraday::main, ONE);
         timers.stop("FieldSolver");
-        
+
         /**
          * em0::B, em::B <- boundary conditions
          */
@@ -453,7 +451,7 @@ namespace ntt {
           AmpereCurrents(dom, gr_ampere::aux);
           timers.stop("FieldSolver");
         }
-        
+
         /**
          * em0::D, em::D <- boundary conditions
          */
@@ -461,7 +459,7 @@ namespace ntt {
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::E, gr_bc::main);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
         timers.stop("FieldBoundaries");
 
         timers.start("FieldSolver");
@@ -516,7 +514,7 @@ namespace ntt {
         m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
-        FieldBoundaries(dom, BC::E, gr_bc::main);
+        FieldBoundaries(dom, BC::D, gr_bc::main);
         timers.stop("FieldBoundaries");
       }
 
@@ -548,7 +546,7 @@ namespace ntt {
       if (g == gr_bc::main) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
           if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::MATCH) {
-            AbsorbFieldsIn(direction, domain, tags);
+            MatchFieldsIn(direction, domain, tags);
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
             if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
               AxisFieldsIn(direction, domain, tags);
@@ -558,26 +556,25 @@ namespace ntt {
               CustomFieldsIn(direction, domain, tags, g);
             }
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            OpenFieldsIn(direction, domain, tags, g);
+            HorizonFieldsIn(direction, domain, tags, g);
           }
         } // loop over directions
       } else if (g == gr_bc::aux) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
           if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            OpenFieldsIn(direction, domain, tags, g);
+            HorizonFieldsIn(direction, domain, tags, g);
           }
         }
       }
     }
 
-    void AbsorbFieldsIn(dir::direction_t<M::Dim> direction,
-                        domain_t&                domain,
-                        BCTags                   tags) {
+    void MatchFieldsIn(dir::direction_t<M::Dim> direction,
+                       domain_t&                domain,
+                       BCTags                   tags) {
       /**
-       * absorbing boundaries
+       * match boundaries
        */
-      const auto ds = m_params.template get<real_t>(
-        "grid.boundaries.absorb.ds");
+      const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
       xg_max  = m_metadomain.mesh().extent(dim).second;
@@ -608,34 +605,35 @@ namespace ntt {
       }
       if (dim == in::x1) {
         Kokkos::parallel_for(
-          "AbsorbFields",
+          "MatchBoundaries",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::bc::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em,
-                                                m_pgen.init_flds,
-                                                domain.mesh.metric,
-                                                xg_edge,
-                                                ds,
-                                                tags));
+          kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+            domain.fields.em,
+            m_pgen.init_flds,
+            domain.mesh.metric,
+            xg_edge,
+            ds,
+            tags));
         Kokkos::parallel_for(
-          "AbsorbFields",
+          "MatchBoundaries",
           CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::bc::AbsorbBoundariesGR_kernel<decltype(m_pgen.init_flds), M, 1>(domain.fields.em0,
-                                                m_pgen.init_flds,
-                                                domain.mesh.metric,
-                                                xg_edge,
-                                                ds,
-                                                tags));
+          kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+            domain.fields.em0,
+            m_pgen.init_flds,
+            domain.mesh.metric,
+            xg_edge,
+            ds,
+            tags));
       } else {
-          raise::Error("Invalid dimension", HERE);
+        raise::Error("Invalid dimension", HERE);
       }
     }
 
     void CurrentsBoundaryConditions(domain_t& domain) {
       /**
-       * absorbing boundaries
+       * match boundaries
        */
-      const auto ds = m_params.template get<real_t>(
-        "grid.boundaries.absorb.ds");
+      const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
       const auto dim = in::x1;
       real_t     xg_min, xg_max, xg_edge;
       xg_max  = m_metadomain.mesh().extent(dim).second;
@@ -665,18 +663,18 @@ namespace ntt {
         range_max[d] = intersect_range[d].second;
       }
       Kokkos::parallel_for(
-          "AbsorbCurrent",
-          CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::bc::AbsorbCurrentGR_kernel<M, 1>(domain.fields.cur0,
-                                               domain.mesh.metric,
-                                               xg_edge,
-                                               ds));
+        "AbsorbCurrentsGR",
+        CreateRangePolicy<M::Dim>(range_min, range_max),
+        kernel::bc::AbsorbCurrentsGR_kernel<M, 1>(domain.fields.cur0,
+                                                  domain.mesh.metric,
+                                                  xg_edge,
+                                                  ds));
     }
 
-    void OpenFieldsIn(dir::direction_t<M::Dim> direction,
-                      domain_t&                domain,
-                      BCTags                   tags,
-                      const gr_bc&             g) {
+    void HorizonFieldsIn(dir::direction_t<M::Dim> direction,
+                         domain_t&                domain,
+                         BCTags                   tags,
+                         const gr_bc&             g) {
       /**
        * open boundaries
        */
@@ -687,23 +685,28 @@ namespace ntt {
                      "Invalid axis direction, should be x2",
                      HERE);
       const auto i1_min = domain.mesh.i_min(in::x1);
-      auto range = CreateRangePolicy<Dim::_1D>(
-        {domain.mesh.i_min(in::x2)},
-        {domain.mesh.i_max(in::x2) + 1});
+      auto range = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x2) },
+                                               { domain.mesh.i_max(in::x2) + 1 });
       if (g == gr_bc::main) {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::OpenBoundaries_kernel<M>(domain.fields.em, i1_min, tags));
+          kernel::bc::HorizonBoundaries_kernel<M, false>(domain.fields.em,
+                                                         i1_min,
+                                                         tags));
         Kokkos::parallel_for(
           "OpenBCFields",
-          range, 
-          kernel::bc::OpenBoundaries_kernel<M>(domain.fields.em0, i1_min, tags));
+          range,
+          kernel::bc::HorizonBoundaries_kernel<M, false>(domain.fields.em0,
+                                                         i1_min,
+                                                         tags));
       } else if (g == gr_bc::aux) {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::OpenBoundariesAux_kernel<M>(domain.fields.aux, i1_min, tags));
+          kernel::bc::HorizonBoundaries_kernel<M, true>(domain.fields.aux,
+                                                        i1_min,
+                                                        tags));
       }
     }
 
@@ -721,27 +724,34 @@ namespace ntt {
                      HERE);
       const auto i2_min = domain.mesh.i_min(in::x2);
       const auto i2_max = domain.mesh.i_max(in::x2);
-      auto range = CreateRangePolicy<Dim::_1D>(
-        {domain.mesh.i_min(in::x1) - 1},
-        {domain.mesh.i_max(in::x1)});
+      auto range = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x1) - 1 },
+                                               { domain.mesh.i_max(in::x1) });
       if (direction.get_sign() < 0) {
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em, i2_min, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em,
+                                                             i2_min,
+                                                             tags));
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em0, i2_min, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em0,
+                                                             i2_min,
+                                                             tags));
       } else {
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em, i2_max, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em,
+                                                            i2_max,
+                                                            tags));
         Kokkos::parallel_for(
           "AxisBCFields",
           range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em0, i2_max, tags));
+          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em0,
+                                                            i2_max,
+                                                            tags));
       }
     }
 
@@ -783,12 +793,13 @@ namespace ntt {
     void ComputeAuxE(domain_t& domain, const gr_getE& g) {
       auto range = range_with_axis_BCs(domain);
       if (g == gr_getE::D0_B) {
-        Kokkos::parallel_for("ComputeAuxE",
-                             range,
-                             kernel::gr::ComputeAuxE_kernel<M>(domain.fields.em0,  // D
-                                                               domain.fields.em,   // B
-                                                               domain.fields.aux,  // E
-                                                               domain.mesh.metric));
+        Kokkos::parallel_for(
+          "ComputeAuxE",
+          range,
+          kernel::gr::ComputeAuxE_kernel<M>(domain.fields.em0, // D
+                                            domain.fields.em,  // B
+                                            domain.fields.aux, // E
+                                            domain.mesh.metric));
       } else if (g == gr_getE::D_B0) {
         Kokkos::parallel_for("ComputeAuxE",
                              range,
@@ -804,12 +815,13 @@ namespace ntt {
     void ComputeAuxH(domain_t& domain, const gr_getH& g) {
       auto range = range_with_axis_BCs(domain);
       if (g == gr_getH::D_B0) {
-        Kokkos::parallel_for("ComputeAuxH",
-                             range,
-                             kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em,  // D
-                                                               domain.fields.em0, // B
-                                                               domain.fields.aux, // H
-                                                               domain.mesh.metric));
+        Kokkos::parallel_for(
+          "ComputeAuxH",
+          range,
+          kernel::gr::ComputeAuxH_kernel<M>(domain.fields.em,  // D
+                                            domain.fields.em0, // B
+                                            domain.fields.aux, // H
+                                            domain.mesh.metric));
       } else if (g == gr_getH::D0_B0) {
         Kokkos::parallel_for("ComputeAuxH",
                              range,
@@ -880,8 +892,8 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = CreateRangePolicy<Dim::_2D>(
-        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
-        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
       const auto ni2 = domain.mesh.n_active(in::x2);
 
       if (g == gr_ampere::aux) {
@@ -927,51 +939,52 @@ namespace ntt {
       const auto q0    = m_params.template get<real_t>("scales.q0");
       const auto B0    = m_params.template get<real_t>("scales.B0");
       const auto coeff = -dt * q0 / B0;
-      auto range = CreateRangePolicy<Dim::_2D>(
-        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
-        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
-      const auto ni2   = domain.mesh.n_active(in::x2);
+      auto       range = CreateRangePolicy<Dim::_2D>(
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+      const auto ni2 = domain.mesh.n_active(in::x2);
 
       if (g == gr_ampere::aux) {
         // Updates D0 with J: D0(n-1/2) -> (J(n)) -> D0(n+1/2)
-        Kokkos::parallel_for("AmpereCurrentsAux",
-                             range,
-                             kernel::gr::CurrentsAmpere_kernel<M>(domain.fields.em0,
-                                                                  domain.fields.cur,
-                                                                  domain.mesh.metric,
-                                                                  coeff,
-                                                                  ni2,
-                                                                  domain.mesh.flds_bc()));
+        Kokkos::parallel_for(
+          "AmpereCurrentsAux",
+          range,
+          kernel::gr::CurrentsAmpere_kernel<M>(domain.fields.em0,
+                                               domain.fields.cur,
+                                               domain.mesh.metric,
+                                               coeff,
+                                               ni2,
+                                               domain.mesh.flds_bc()));
       } else if (g == gr_ampere::main) {
         // Updates D0 with J0: D0(n) -> (J0(n+1/2)) -> D0(n+1)
-        Kokkos::parallel_for("mpereCurrentsMain",
-                             range,
-                             kernel::gr::CurrentsAmpere_kernel<M>(domain.fields.em0,
-                                                                  domain.fields.cur0,
-                                                                  domain.mesh.metric,
-                                                                  coeff,
-                                                                  ni2,
-                                                                  domain.mesh.flds_bc()));
+        Kokkos::parallel_for(
+          "AmpereCurrentsMain",
+          range,
+          kernel::gr::CurrentsAmpere_kernel<M>(domain.fields.em0,
+                                               domain.fields.cur0,
+                                               domain.mesh.metric,
+                                               coeff,
+                                               ni2,
+                                               domain.mesh.flds_bc()));
       } else {
         raise::Error("Wrong option for `g`", HERE);
       }
-
     }
 
     void TimeAverageDB(domain_t& domain) {
-    Kokkos::parallel_for("TimeAverageDB",
-                         domain.mesh.rangeActiveCells(),
-                         kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
-                                                             domain.fields.em0,
-                                                             domain.mesh.metric));
+      Kokkos::parallel_for("TimeAverageDB",
+                           domain.mesh.rangeActiveCells(),
+                           kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
+                                                               domain.fields.em0,
+                                                               domain.mesh.metric));
     }
 
     void TimeAverageJ(domain_t& domain) {
-    Kokkos::parallel_for("TimeAverageJ",
-                         domain.mesh.rangeActiveCells(),
-                         kernel::gr::TimeAverageJ_kernel<M>(domain.fields.cur,
-                                                             domain.fields.cur0,
-                                                             domain.mesh.metric));
+      Kokkos::parallel_for("TimeAverageJ",
+                           domain.mesh.rangeActiveCells(),
+                           kernel::gr::TimeAverageJ_kernel<M>(domain.fields.cur,
+                                                              domain.fields.cur0,
+                                                              domain.mesh.metric));
     }
 
     void CurrentsDeposit(domain_t& domain) {
@@ -1020,8 +1033,8 @@ namespace ntt {
     void CurrentsFilter(domain_t& domain) {
       logger::Checkpoint("Launching currents filtering kernels", HERE);
       auto range = CreateRangePolicy<Dim::_2D>(
-        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2)},
-        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1});
+        { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+        { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
       const auto nfilter = m_params.template get<unsigned short>(
         "algorithms.current_filters");
       tuple_t<std::size_t, M::Dim> size;
@@ -1038,7 +1051,7 @@ namespace ntt {
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
-        m_metadomain.CommunicateFields(domain, Comm::J); //J0
+        m_metadomain.CommunicateFields(domain, Comm::J); // J0
       }
     }
 
@@ -1058,9 +1071,10 @@ namespace ntt {
                                ? species.charge() / species.mass()
                                : ZERO;
         //  coeff = q / m (dt / 2) omegaB0
-        const auto coeff   = q_ovr_m * HALF * dt * m_params.template get<real_t>(
-                             "algorithms.timestep.correction") * 
-                             m_params.template get<real_t>("scales.omegaB0");
+        const auto coeff   = q_ovr_m * HALF * dt *
+                           m_params.template get<real_t>(
+                             "algorithms.timestep.correction") *
+                           m_params.template get<real_t>("scales.omegaB0");
         // clang-format off
 
         if (species.pusher() == PrtlPusher::PHOTON) {
@@ -1119,7 +1133,6 @@ namespace ntt {
         // clang-format on
       }
     }
-
   };
 } // namespace ntt
 

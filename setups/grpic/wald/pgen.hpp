@@ -6,14 +6,15 @@
 
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
+#include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
-#include "archetypes/spatial_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
+#include "archetypes/spatial_dist.h"
 #include "framework/domain/metadomain.h"
+
 #include "kernels/particle_moments.hpp"
-#include "utils/numeric.h"
 
 namespace user {
   using namespace ntt;
@@ -23,30 +24,31 @@ namespace user {
     InitFields(M metric_, real_t m_eps) : metric { metric_ }, m_eps { m_eps } {}
 
     Inline auto A_3(const coord_t<D>& x_Cd) const -> real_t {
-      return HALF * (metric.template h_<3, 3>(x_Cd) 
-             + TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd)
-      );
+      return HALF * (metric.template h_<3, 3>(x_Cd) +
+                     TWO * metric.spin() * metric.template h_<1, 3>(x_Cd) *
+                       metric.beta1(x_Cd));
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
-      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
       x0m[0] = xi[0];
       x0m[1] = xi[1] - HALF * m_eps;
       x0p[0] = xi[0];
       x0p[1] = xi[1] + HALF * m_eps;
-      
+
       real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
 
-      if (cmp::AlmostZero(x_Ph[1]))
+      if (cmp::AlmostZero(x_Ph[1])) {
         return ONE;
-      else
+      } else {
         return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
+      }
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
-      coord_t<D> xi {ZERO}, x0m { ZERO }, x0p { ZERO };
+      coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
       x0m[0] = xi[0] - HALF * m_eps;
@@ -54,11 +56,12 @@ namespace user {
       x0p[0] = xi[0] + HALF * m_eps;
       x0p[1] = xi[1];
 
-      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0] , xi[1] }) };
-      if (cmp::AlmostZero(x_Ph[1]))
+      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      if (cmp::AlmostZero(x_Ph[1])) {
         return ZERO;
-      else
+      } else {
         return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
+      }
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
@@ -78,7 +81,7 @@ namespace user {
     }
 
   private:
-    const M metric;
+    const M      metric;
     const real_t m_eps;
   };
 
@@ -89,14 +92,13 @@ namespace user {
                       const real_t               sigma_thr,
                       const real_t               dens_thr,
                       const SimulationParams&    params,
-                      Domain<S, M>*              domain_ptr
-                      )
-      : arch::SpatialDistribution<S, M> { domain_ptr->mesh.metric } 
+                      Domain<S, M>*              domain_ptr)
+      : arch::SpatialDistribution<S, M> { domain_ptr->mesh.metric }
       , metric { domain_ptr->mesh.metric }
-      , EM { domain_ptr->fields.em } 
+      , EM { domain_ptr->fields.em }
       , density { domain_ptr->fields.buff }
-      , sigma_thr {sigma_thr} 
-      , dens_thr {dens_thr} {
+      , sigma_thr { sigma_thr }
+      , dens_thr { dens_thr } {
       std::copy(xi_min.begin(), xi_min.end(), x_min);
       std::copy(xi_max.begin(), xi_max.end(), x_max);
 
@@ -108,12 +110,13 @@ namespace user {
       }
 
       Kokkos::deep_copy(density, ZERO);
-      auto scatter_buff = Kokkos::Experimental::create_scatter_view(density);
+      auto  scatter_buff = Kokkos::Experimental::create_scatter_view(density);
       // some parameters
-      auto& mesh = domain_ptr->mesh;
-      const auto use_weights = params.template get<bool>("particles.use_weights");
-      const auto ni2         = mesh.n_active(in::x2);
-      const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
+      auto& mesh         = domain_ptr->mesh;
+      const auto use_weights = params.template get<bool>(
+        "particles.use_weights");
+      const auto ni2    = mesh.n_active(in::x2);
+      const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
 
       for (const auto& sp : specs) {
         auto& prtl_spec = domain_ptr->species[sp - 1];
@@ -136,15 +139,18 @@ namespace user {
     }
 
     Inline auto sigma_crit(const coord_t<M::Dim>& x_Ph) const -> bool {
-      coord_t<M::Dim> xi {ZERO};
+      coord_t<M::Dim> xi { ZERO };
       if constexpr (M::Dim == Dim::_2D) {
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
         const auto i1 = static_cast<int>(xi[0]) + static_cast<int>(N_GHOSTS);
         const auto i2 = static_cast<int>(xi[1]) + static_cast<int>(N_GHOSTS);
-        const vec_t<Dim::_3D> B_cntrv { EM(i1, i2, em::bx1), EM(i1, i2, em::bx2), EM(i1, i2, em::bx3) };
-        vec_t<Dim::_3D> B_cov { ZERO };
+        const vec_t<Dim::_3D> B_cntrv { EM(i1, i2, em::bx1),
+                                        EM(i1, i2, em::bx2),
+                                        EM(i1, i2, em::bx3) };
+        vec_t<Dim::_3D>       B_cov { ZERO };
         metric.template transform<Idx::U, Idx::D>(xi, B_cntrv, B_cov);
-        const auto bsqr = DOT(B_cntrv[0], B_cntrv[1], B_cntrv[2], B_cov[0], B_cov[1], B_cov[2]);
+        const auto bsqr =
+          DOT(B_cntrv[0], B_cntrv[1], B_cntrv[2], B_cov[0], B_cov[1], B_cov[2]);
         const auto dens = density(i1, i2, 0);
         return (bsqr > sigma_thr * dens) || (dens < dens_thr);
       }
@@ -162,12 +168,12 @@ namespace user {
   private:
     tuple_t<real_t, M::Dim> x_min;
     tuple_t<real_t, M::Dim> x_max;
-    const real_t sigma_thr;
-    const real_t dens_thr;
-    Domain<S, M>* domain_ptr;
-    ndfield_t<M::Dim, 3> density;
-    ndfield_t<M::Dim, 6> EM;
-    const M metric;
+    const real_t            sigma_thr;
+    const real_t            dens_thr;
+    Domain<S, M>*           domain_ptr;
+    ndfield_t<M::Dim, 3>    density;
+    ndfield_t<M::Dim, 6>    EM;
+    const M                 metric;
   };
 
   template <SimEngine::type S, class M>
@@ -197,13 +203,14 @@ namespace user {
       , sigma_max { p.template get<real_t>("setup.sigma_max") }
       , sigma0 { p.template get<real_t>("scales.sigma0") }
       , multiplicity { p.template get<real_t>("setup.multiplicity") }
-      , nGJ { p.template get<real_t>("scales.B0") * SQR(p.template get<real_t>("scales.skindepth0")) }
+      , nGJ { p.template get<real_t>("scales.B0") *
+              SQR(p.template get<real_t>("scales.skindepth0")) }
       , temperature { p.template get<real_t>("setup.temperature") }
       , m_eps { p.template get<real_t>("setup.m_eps") }
       , init_flds { m.mesh().metric, m_eps } {}
-    
+
     inline void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                                       local_domain.random_pool,
                                                       temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
@@ -211,22 +218,22 @@ namespace user {
                                                         sigma_max / sigma0,
                                                         multiplicity * nGJ,
                                                         params,
-                                                        &local_domain
-                                                       );
+                                                        &local_domain);
 
-      const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
-        energy_dist,
-        spatial_dist,
-        { 1, 2 });
+      const auto injector =
+        arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
+          energy_dist,
+          spatial_dist,
+          { 1, 2 });
       arch::InjectNonUniform<S, M, decltype(injector)>(params,
-        local_domain,
-        injector,
-        1.0,
-        true);
+                                                       local_domain,
+                                                       injector,
+                                                       1.0,
+                                                       true);
     }
 
     void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                                       local_domain.random_pool,
                                                       temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
@@ -234,20 +241,19 @@ namespace user {
                                                         sigma_max / sigma0,
                                                         multiplicity * nGJ,
                                                         params,
-                                                        &local_domain
-                                                       );
+                                                        &local_domain);
 
-      const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
-        energy_dist,
-        spatial_dist,
-        { 1, 2 });
+      const auto injector =
+        arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
+          energy_dist,
+          spatial_dist,
+          { 1, 2 });
       arch::InjectNonUniform<S, M, decltype(injector)>(params,
-        local_domain,
-        injector,
-        1.0,
-        true);
+                                                       local_domain,
+                                                       injector,
+                                                       1.0,
+                                                       true);
     }
-
   };
 
 } // namespace user
