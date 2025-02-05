@@ -68,7 +68,7 @@ auto main() -> int {
 
   enum_str_t all_out_flds = { "e",      "dive", "d",    "divd",  "b",
                               "h",      "j",    "a",    "t",     "rho",
-                              "charge", "n",    "nppc", "custom" };
+                              "charge", "n",    "nppc", "custom" , "v"};
 
   checkEnum<Coord>(all_coords);
   checkEnum<Metric>(all_metrics);
