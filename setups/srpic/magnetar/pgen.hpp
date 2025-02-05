@@ -184,11 +184,14 @@ namespace user {
 
     auto FieldDriver(real_t time) const -> DriveFields<D> {
       const real_t omega_t =
+        // Omega *
+        // ((ONE - math::tanh((static_cast<real_t>(5.0) - time) * HALF)) *
+        //  (ONE + (-ONE + math::tanh((static_cast<real_t>(90.0) - time) * HALF)) *
+        //           HALF)) *
+        // HALF;
         Omega *
-        ((ONE - math::tanh((static_cast<real_t>(5.0) - time) * HALF)) *
-         (ONE + (-ONE + math::tanh((static_cast<real_t>(90.0) - time) * HALF)) *
-                  HALF)) *
-        HALF;
+        ((ONE + (-ONE + math::tanh((static_cast<real_t>(90.0) - time) * HALF)) *
+                  HALF));
       return DriveFields<D> { time, Bsurf, Rstar, omega_t };
     }
 
