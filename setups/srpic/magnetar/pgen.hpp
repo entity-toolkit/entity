@@ -211,8 +211,10 @@ namespace user {
     // Ad-hoc PP kernel
     if (threshold_pp) {
 
-        auto& species2_e = domain.species[2];
-        auto& species2_p = domain.species[3];
+      // auto& species2_e = domain.species[2];
+      // auto& species2_p = domain.species[3];
+        auto& species2_e = domain.species[4];
+        auto& species2_p = domain.species[5];
         auto& species3_e = domain.species[4];
         auto& species3_p = domain.species[5];
         auto metric = domain.mesh.metric;
@@ -223,7 +225,8 @@ namespace user {
         auto inv_n0_ = this->inv_n0;
 
          for (std::size_t s { 0 }; s < 6; ++s) {
-            if (s == 1) {
+          // if (s == 1) {
+            if (s == 0 || s == 2 || s == 3 || s == 4 || s == 5) {
               continue;
             }
 
