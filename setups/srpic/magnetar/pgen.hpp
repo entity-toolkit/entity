@@ -190,7 +190,7 @@ namespace user {
         //           HALF)) *
         // HALF;
         Omega *
-        ((ONE + (-ONE + math::tanh((static_cast<real_t>(90.0) - time) * HALF)) *
+        ((ONE + (-ONE + math::tanh((static_cast<real_t>(40.0) - time) * HALF)) *
                   HALF));
       return DriveFields<D> { time, Bsurf, Rstar, omega_t };
     }
