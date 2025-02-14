@@ -700,65 +700,65 @@ namespace user {
             //   }
             // }
 
-            // if (Random<real_t>(rand_gen) < p_scatter) {
+            if (Random<real_t>(rand_gen) < p_scatter) {
 
-            //   // Make sure the photon has exact resonance energy (momentum according to the 'most' resonant one above)
-            //   u_ph_RF_L = u_ph_RF_L / eph_RF_L *
-            //               math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
-            //                         bz0_rest * bz0_rest) /
-            //               bq_;
-            //   v_ph_RF_L = v_ph_RF_L / eph_RF_L *
-            //               math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
-            //                         bz0_rest * bz0_rest) /
-            //               bq_;
-            //   w_ph_RF_L = w_ph_RF_L / eph_RF_L *
-            //               math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
-            //                         bz0_rest * bz0_rest) /
-            //               bq_;
+              // Make sure the photon has exact resonance energy (momentum according to the 'most' resonant one above)
+              u_ph_RF_L = u_ph_RF_L / eph_RF_L *
+                          math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                    bz0_rest * bz0_rest) /
+                          bq_;
+              v_ph_RF_L = v_ph_RF_L / eph_RF_L *
+                          math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                    bz0_rest * bz0_rest) /
+                          bq_;
+              w_ph_RF_L = w_ph_RF_L / eph_RF_L *
+                          math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                    bz0_rest * bz0_rest) /
+                          bq_;
 
-            //   // Calculate lepton properties after collision in excitation rest frame
-            //   auto eb = math::sqrt(
-            //     1.0 + 2.0 *
-            //             math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
-            //                        bz0_rest * bz0_rest) /
-            //             bq_);
-            //   auto gammaeb     = 1.0 + math::sqrt(u_ph_RF_L * u_ph_RF_L +
-            //                                   v_ph_RF_L * v_ph_RF_L +
-            //                                   w_ph_RF_L * w_ph_RF_L);
-            //   auto gamma_ex    = gammaeb / eb;
-            //   auto betax_ex    = u_ph_RF_L / gammaeb;
-            //   auto betay_ex    = v_ph_RF_L / gammaeb;
-            //   auto betaz_ex    = w_ph_RF_L / gammaeb;
-            //   auto pel_ex_x    = gamma_ex * betax_ex;
-            //   auto pel_ex_y    = gamma_ex * betay_ex;
-            //   auto pel_ex_z    = gamma_ex * betaz_ex;
-            //   auto betax_ex_sq = SQR(betax_ex) + SQR(betay_ex) + SQR(betaz_ex);
+              // Calculate lepton properties after collision in excitation rest frame
+              auto eb = math::sqrt(
+                1.0 + 2.0 *
+                        math::sqrt(bx0_rest * bx0_rest + by0_rest * by0_rest +
+                                   bz0_rest * bz0_rest) /
+                        bq_);
+              auto gammaeb     = 1.0 + math::sqrt(u_ph_RF_L * u_ph_RF_L +
+                                              v_ph_RF_L * v_ph_RF_L +
+                                              w_ph_RF_L * w_ph_RF_L);
+              auto gamma_ex    = gammaeb / eb;
+              auto betax_ex    = u_ph_RF_L / gammaeb;
+              auto betay_ex    = v_ph_RF_L / gammaeb;
+              auto betaz_ex    = w_ph_RF_L / gammaeb;
+              auto pel_ex_x    = gamma_ex * betax_ex;
+              auto pel_ex_y    = gamma_ex * betay_ex;
+              auto pel_ex_z    = gamma_ex * betaz_ex;
+              auto betax_ex_sq = SQR(betax_ex) + SQR(betay_ex) + SQR(betaz_ex);
 
-            //  // Boost fields into the de-excitation rest frame
-            //   auto bx0_drest = gamma_ex * (bx0_rest - betay_ex * ez0_rest +
-            //                                betaz_ex * ey0_rest) -
-            //                    (gamma_ex - 1.0) *
-            //                      (bx0_rest * betax_ex + by0_rest * betay_ex +
-            //                       bz0_rest * betaz_ex) *
-            //                      betax_ex / betax_ex_sq;
-            //   auto by0_drest = gamma_ex * (by0_rest - betaz_ex * ex0_rest +
-            //                                betax_ex * ez0_rest) -
-            //                    (gamma_ex - 1.0) *
-            //                      (bx0_rest * betax_ex + by0_rest * betay_ex +
-            //                       bz0_rest * betaz_ex) *
-            //                      betay_ex / betax_ex_sq;
-            //   auto bz0_drest = gamma_ex * (bz0_rest - betax_ex * ey0_rest +
-            //                                betay_ex * ex0_rest) -
-            //                    (gamma_ex - 1.0) *
-            //                      (bx0_rest * betax_ex + by0_rest * betay_ex +
-            //                       bz0_rest * betaz_ex) *
-            //                      betaz_ex / betax_ex_sq;
+             // Boost fields into the de-excitation rest frame
+              auto bx0_drest = gamma_ex * (bx0_rest - betay_ex * ez0_rest +
+                                           betaz_ex * ey0_rest) -
+                               (gamma_ex - 1.0) *
+                                 (bx0_rest * betax_ex + by0_rest * betay_ex +
+                                  bz0_rest * betaz_ex) *
+                                 betax_ex / betax_ex_sq;
+              auto by0_drest = gamma_ex * (by0_rest - betaz_ex * ex0_rest +
+                                           betax_ex * ez0_rest) -
+                               (gamma_ex - 1.0) *
+                                 (bx0_rest * betax_ex + by0_rest * betay_ex +
+                                  bz0_rest * betaz_ex) *
+                                 betay_ex / betax_ex_sq;
+              auto bz0_drest = gamma_ex * (bz0_rest - betax_ex * ey0_rest +
+                                           betay_ex * ex0_rest) -
+                               (gamma_ex - 1.0) *
+                                 (bx0_rest * betax_ex + by0_rest * betay_ex +
+                                  bz0_rest * betaz_ex) *
+                                 betaz_ex / betax_ex_sq;
 
-            //   // Prescribe the fraction of parallel polarization
-            //   bool pol_par = false;
-            //   if (Random<real_t>(rand_gen) < 0.25) {
-            //     pol_par = true;
-            //   }
+              // Prescribe the fraction of parallel polarization
+              bool pol_par = false;
+              if (Random<real_t>(rand_gen) < 0.25) {
+                pol_par = true;
+              }
 
             //   // Draw scattering angles (depending on polarization)
             //   auto mudash = Random<real_t>(rand_gen);
@@ -926,7 +926,7 @@ namespace user {
 
             //   }
 
-            // }
+            }
 
           random_pool.free_state(rand_gen);
 
