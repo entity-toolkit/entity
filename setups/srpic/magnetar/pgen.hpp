@@ -760,135 +760,135 @@ namespace user {
                 pol_par = true;
               }
 
-            //   // Draw scattering angles (depending on polarization)
-            //   auto mudash = Random<real_t>(rand_gen);
-            //   if (pol_par) {
-            //     if (mudash <= 0.5) {
-            //       mudash = -math::pow(math::abs(-1.0 + 2.0 * mudash),
-            //                           0.3333333333333333);
-            //     } else {
-            //       mudash = math::pow(math::abs(-1.0 + 2.0 * mudash),
-            //                          0.3333333333333333);
-            //     }
-            //   } else {
-            //     mudash = (2.0 * mudash - 1.0);
-            //   }
+              // Draw scattering angles (depending on polarization)
+              auto mudash = Random<real_t>(rand_gen);
+              if (pol_par) {
+                if (mudash <= 0.5) {
+                  mudash = -math::pow(math::abs(-1.0 + 2.0 * mudash),
+                                      0.3333333333333333);
+                } else {
+                  mudash = math::pow(math::abs(-1.0 + 2.0 * mudash),
+                                     0.3333333333333333);
+                }
+              } else {
+                mudash = (2.0 * mudash - 1.0);
+              }
 
-            //   // Build a basis along the rest frame magnetic field
-            //   auto norm { 1.0 / NORM(bx0_drest, by0_drest, bz0_drest) };
-            //   auto a_RF_x = bx0_drest * norm;
-            //   auto a_RF_y = by0_drest * norm;
-            //   auto a_RF_z = bz0_drest * norm;
-            //   auto b_RF_x = 1.0;
-            //   auto b_RF_y = 0.0;
-            //   auto b_RF_z = 0.0;
-            //   if (a_RF_x != ZERO) {
-            //     b_RF_x = -a_RF_y / a_RF_x;
-            //     b_RF_y = 1.0;
-            //     b_RF_z = 0.0;
-            //     norm   = 1.0 / math::sqrt(b_RF_x * b_RF_x + b_RF_y *
-            //     b_RF_y); b_RF_x = b_RF_x * norm; b_RF_y = b_RF_y * norm;
-            //   }
-            //   auto c_RF_x = b_RF_z * a_RF_y - b_RF_y * a_RF_z;
-            //   auto c_RF_y = b_RF_x * a_RF_z - b_RF_z * a_RF_x;
-            //   auto c_RF_z = b_RF_y * a_RF_x - b_RF_x * a_RF_y;
+              // Build a basis along the rest frame magnetic field
+              auto norm { 1.0 / NORM(bx0_drest, by0_drest, bz0_drest) };
+              auto a_RF_x = bx0_drest * norm;
+              auto a_RF_y = by0_drest * norm;
+              auto a_RF_z = bz0_drest * norm;
+              auto b_RF_x = 1.0;
+              auto b_RF_y = 0.0;
+              auto b_RF_z = 0.0;
+              if (a_RF_x != ZERO) {
+                b_RF_x = -a_RF_y / a_RF_x;
+                b_RF_y = 1.0;
+                b_RF_z = 0.0;
+                norm   = 1.0 / math::sqrt(b_RF_x * b_RF_x + b_RF_y *
+                b_RF_y); b_RF_x = b_RF_x * norm; b_RF_y = b_RF_y * norm;
+              }
+              auto c_RF_x = b_RF_z * a_RF_y - b_RF_y * a_RF_z;
+              auto c_RF_y = b_RF_x * a_RF_z - b_RF_z * a_RF_x;
+              auto c_RF_z = b_RF_y * a_RF_x - b_RF_x * a_RF_y;
 
-            //   // Calculate emission vector for photon
-            //   auto rand_phi_RF      = 2.0 * M_PI * Random<real_t>(rand_gen);
-            //   auto rand_costheta_RF = mudash;
-            //   auto rand_sintheta_RF = math::sqrt(1.0 - SQR(mudash));
-            //   auto rand_cosphi_RF   = math::cos(rand_phi_RF);
-            //   auto rand_sinphi_RF   = math::sin(rand_phi_RF);
+              // Calculate emission vector for photon
+              auto rand_phi_RF      = 2.0 * M_PI * Random<real_t>(rand_gen);
+              auto rand_costheta_RF = mudash;
+              auto rand_sintheta_RF = math::sqrt(1.0 - SQR(mudash));
+              auto rand_cosphi_RF   = math::cos(rand_phi_RF);
+              auto rand_sinphi_RF   = math::sin(rand_phi_RF);
 
-            //   // Calculate rest frame energy and momentum of emitted photon
-            //   auto eph_RFS = eb / (rand_sintheta_RF * rand_sintheta_RF) *
-            //                  (1.0 - math::sqrt(
-            //                           (rand_costheta_RF * rand_costheta_RF) +
-            //                           (1.0 / (eb * eb)) *
-            //                             (rand_sintheta_RF * rand_sintheta_RF)));
+              // Calculate rest frame energy and momentum of emitted photon
+              auto eph_RFS = eb / (rand_sintheta_RF * rand_sintheta_RF) *
+                             (1.0 - math::sqrt(
+                                      (rand_costheta_RF * rand_costheta_RF) +
+                                      (1.0 / (eb * eb)) *
+                                        (rand_sintheta_RF * rand_sintheta_RF)));
 
-            //   if (fabs(mudash) >= 1.0) {
-            //     eph_RFS = (-1 + SQR(eb)) / (2. * eb);
-            //   }
+              if (fabs(mudash) >= 1.0) {
+                eph_RFS = (-1 + SQR(eb)) / (2. * eb);
+              }
 
-            //   auto kph_RFS_x = eph_RFS *
-            //                    (rand_costheta_RF * a_RF_x +
-            //                     rand_sintheta_RF * rand_cosphi_RF * b_RF_x +
-            //                     rand_sintheta_RF * rand_sinphi_RF * c_RF_x);
-            //   auto kph_RFS_y = eph_RFS *
-            //                    (rand_costheta_RF * a_RF_y +
-            //                     rand_sintheta_RF * rand_cosphi_RF * b_RF_y +
-            //                     rand_sintheta_RF * rand_sinphi_RF * c_RF_y);
-            //   auto kph_RFS_z = eph_RFS *
-            //                    (rand_costheta_RF * a_RF_z +
-            //                     rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
-            //                     rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
+              auto kph_RFS_x = eph_RFS *
+                               (rand_costheta_RF * a_RF_x +
+                                rand_sintheta_RF * rand_cosphi_RF * b_RF_x +
+                                rand_sintheta_RF * rand_sinphi_RF * c_RF_x);
+              auto kph_RFS_y = eph_RFS *
+                               (rand_costheta_RF * a_RF_y +
+                                rand_sintheta_RF * rand_cosphi_RF * b_RF_y +
+                                rand_sintheta_RF * rand_sinphi_RF * c_RF_y);
+              auto kph_RFS_z = eph_RFS *
+                               (rand_costheta_RF * a_RF_z +
+                                rand_sintheta_RF * rand_cosphi_RF * b_RF_z +
+                                rand_sintheta_RF * rand_sinphi_RF * c_RF_z);
 
-            //   // Calculate the lepton energy and momentum after scattering
-            //   auto el_RF   = eb - eph_RFS;
-            //   auto kl_RF_x = -eph_RFS * rand_costheta_RF * a_RF_x;
-            //   auto kl_RF_y = -eph_RFS * rand_costheta_RF * a_RF_y;
-            //   auto kl_RF_z = -eph_RFS * rand_costheta_RF * a_RF_z;
+              // Calculate the lepton energy and momentum after scattering
+              auto el_RF   = eb - eph_RFS;
+              auto kl_RF_x = -eph_RFS * rand_costheta_RF * a_RF_x;
+              auto kl_RF_y = -eph_RFS * rand_costheta_RF * a_RF_y;
+              auto kl_RF_z = -eph_RFS * rand_costheta_RF * a_RF_z;
 
-            //  real_t el_EX, kl_EX_x, kl_EX_y, kl_EX_z;
-            //   boost_lepton(el_RF,
-            //                kl_RF_x,
-            //                kl_RF_y,
-            //                kl_RF_z,
-            //                gamma_ex,
-            //                -pel_ex_x,
-            //                -pel_ex_y,
-            //                -pel_ex_z,
-            //                el_EX,
-            //                kl_EX_x,
-            //                kl_EX_y,
-            //                kl_EX_z);
+             real_t el_EX, kl_EX_x, kl_EX_y, kl_EX_z;
+              boost_lepton(el_RF,
+                           kl_RF_x,
+                           kl_RF_y,
+                           kl_RF_z,
+                           gamma_ex,
+                           -pel_ex_x,
+                           -pel_ex_y,
+                           -pel_ex_z,
+                           el_EX,
+                           kl_EX_x,
+                           kl_EX_y,
+                           kl_EX_z);
 
-            //   real_t gamma_el_new, u_el_new, v_el_new, w_el_new;
-            //   boost_lepton(el_EX,
-            //                kl_EX_x,
-            //                kl_EX_y,
-            //                kl_EX_z,
-            //                gamma,
-            //                -px,
-            //                -py,
-            //                -pz,
-            //                gamma_el_new,
-            //                u_el_new,
-            //                v_el_new,
-            //                w_el_new);
+              real_t gamma_el_new, u_el_new, v_el_new, w_el_new;
+              boost_lepton(el_EX,
+                           kl_EX_x,
+                           kl_EX_y,
+                           kl_EX_z,
+                           gamma,
+                           -px,
+                           -py,
+                           -pz,
+                           gamma_el_new,
+                           u_el_new,
+                           v_el_new,
+                           w_el_new);
 
-            //   ux1(p) = u_el_new;
-            //   ux2(p) = v_el_new;
-            //   ux3(p) = w_el_new;
+              ux1(p) = u_el_new;
+              ux2(p) = v_el_new;
+              ux3(p) = w_el_new;
 
-            //   real_t eph_EX, kph_EX_x, kph_EX_y, kph_EX_z;
-            //   boost_photon(eph_RFS,
-            //                kph_RFS_x,
-            //                kph_RFS_y,
-            //                kph_RFS_z,
-            //                gamma_ex,
-            //                -pel_ex_x,
-            //                -pel_ex_y,
-            //                -pel_ex_z,
-            //                eph_EX,
-            //                kph_EX_x,
-            //                kph_EX_y,
-            //                kph_EX_z);
+              real_t eph_EX, kph_EX_x, kph_EX_y, kph_EX_z;
+              boost_photon(eph_RFS,
+                           kph_RFS_x,
+                           kph_RFS_y,
+                           kph_RFS_z,
+                           gamma_ex,
+                           -pel_ex_x,
+                           -pel_ex_y,
+                           -pel_ex_z,
+                           eph_EX,
+                           kph_EX_x,
+                           kph_EX_y,
+                           kph_EX_z);
 
-            //   real_t eph, kph_x, kph_y, kph_z;
-            //   boost_photon(eph_EX,
-            //                kph_EX_x,
-            //                kph_EX_y,
-            //                kph_EX_z,
-            //                gamma,
-            //                -px,
-            //                -py,
-            //                -pz,
-            //                eph,
-            //                kph_x,
-            //                kph_y,
-            //                kph_z);
+              real_t eph, kph_x, kph_y, kph_z;
+              boost_photon(eph_EX,
+                           kph_EX_x,
+                           kph_EX_y,
+                           kph_EX_z,
+                           gamma,
+                           -px,
+                           -py,
+                           -pz,
+                           eph,
+                           kph_x,
+                           kph_y,
+                           kph_z);
 
             //   // Inject the scattered photon
             //   if ((eph > 2.0)) {
