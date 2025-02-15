@@ -891,39 +891,39 @@ namespace user {
                            kph_z);
 
               // Inject the scattered photon
-              // if ((eph > 2.0)) {
-              //   if (pol_par) {
-              //     auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
-              //     i1_par(ph_p + ph_offset_par) = i1(p);
-              //     dx1_par(ph_p + ph_offset_par) = dx1(p);
-              //     i2_par(ph_p + ph_offset_par) = i2(p);
-              //     dx2_par(ph_p + ph_offset_par) = dx2(p);
-              //     phi_par(ph_p + ph_offset_par) = phi(p);
-              //     ux1_par(ph_p + ph_offset_par) = kph_x;
-              //     ux2_par(ph_p + ph_offset_par) = kph_y;
-              //     ux3_par(ph_p + ph_offset_par) = kph_z;
-              //     weight_par(ph_p + ph_offset_par) = weight(p);
-              //     tag_par(ph_p + ph_offset_par) = ParticleTag::alive;
-              //   } else {
-              //     auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_perp(), 1);
-              //     i1_perp(ph_p + ph_offset_perp) = i1(p);
-              //     dx1_perp(ph_p + ph_offset_perp) = dx1(p);
-              //     i2_perp(ph_p + ph_offset_perp) = i2(p);
-              //     dx2_perp(ph_p + ph_offset_perp) = dx2(p);
-              //     phi_perp(ph_p + ph_offset_perp) = phi(p);
-              //     ux1_perp(ph_p + ph_offset_perp) = kph_x;
-              //     ux2_perp(ph_p + ph_offset_perp) = kph_y;
-              //     ux3_perp(ph_p + ph_offset_perp) = kph_z;
-              //     weight_perp(ph_p + ph_offset_perp) = weight(p);
-              //     tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
-              //   }
+              if ((eph > 2.0)) {
+                if (pol_par) {
+                  auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_par(), 1);
+                  i1_par(ph_p + ph_offset_par) = i1(p);
+                  dx1_par(ph_p + ph_offset_par) = dx1(p);
+                  i2_par(ph_p + ph_offset_par) = i2(p);
+                  dx2_par(ph_p + ph_offset_par) = dx2(p);
+                  phi_par(ph_p + ph_offset_par) = phi(p);
+                  ux1_par(ph_p + ph_offset_par) = kph_x;
+                  ux2_par(ph_p + ph_offset_par) = kph_y;
+                  ux3_par(ph_p + ph_offset_par) = kph_z;
+                  weight_par(ph_p + ph_offset_par) = weight(p);
+                  tag_par(ph_p + ph_offset_par) = ParticleTag::alive;
+                } else {
+                  auto ph_p = Kokkos::atomic_fetch_add(&ph_ind_perp(), 1);
+                  i1_perp(ph_p + ph_offset_perp) = i1(p);
+                  dx1_perp(ph_p + ph_offset_perp) = dx1(p);
+                  i2_perp(ph_p + ph_offset_perp) = i2(p);
+                  dx2_perp(ph_p + ph_offset_perp) = dx2(p);
+                  phi_perp(ph_p + ph_offset_perp) = phi(p);
+                  ux1_perp(ph_p + ph_offset_perp) = kph_x;
+                  ux2_perp(ph_p + ph_offset_perp) = kph_y;
+                  ux3_perp(ph_p + ph_offset_perp) = kph_z;
+                  weight_perp(ph_p + ph_offset_perp) = weight(p);
+                  tag_perp(ph_p + ph_offset_perp) = ParticleTag::alive;
+                }
 
-              //   // auto cbuff2_acc     = cbuff2_sc.access();
-              //   // cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
-              //   //     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
-              //   //                         static_cast<real_t>(i2(p)) + HALF });
+                // auto cbuff2_acc     = cbuff2_sc.access();
+                // cbuff2_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
+                //     metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+                //                         static_cast<real_t>(i2(p)) + HALF });
 
-              // }
+              }
 
             }
 
@@ -931,13 +931,13 @@ namespace user {
 
          });
 
-          auto ph_ind_h = Kokkos::create_mirror(ph_ind_par);
-          Kokkos::deep_copy(ph_ind_h, ph_ind_par);
-          photons_par.set_npart(ph_offset_par + ph_ind_h());
+          auto ph_ind_par_h = Kokkos::create_mirror(ph_ind_par);
+          Kokkos::deep_copy(ph_ind_par_h, ph_ind_par);
+          photons_par.set_npart(ph_offset_par + ph_ind_par_h());
 
-          ph_ind_h = Kokkos::create_mirror(ph_ind_perp);
-          Kokkos::deep_copy(ph_ind_h, ph_ind_perp);
-          photons_perp.set_npart(ph_offset_perp + ph_ind_h());
+          auto ph_ind_perp_h = Kokkos::create_mirror(ph_ind_perp);
+          Kokkos::deep_copy(ph_ind_perp_h, ph_ind_perp);
+          photons_perp.set_npart(ph_offset_perp + ph_ind_perp_h());
 
          }
 
