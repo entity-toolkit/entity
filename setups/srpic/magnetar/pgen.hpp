@@ -944,224 +944,224 @@ namespace user {
       } // Resonant scattering kernel
 
       // Pair production kernel (threshold)
-    //   {
-    //     auto& species_e   = domain.species[4];
-    //     auto& species_p   = domain.species[5];
-    //     auto metric       = domain.mesh.metric;
-    //     auto EB           = domain.fields.em;
-    //     auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
-    //     auto bq_          = this->bq;
-    //     auto inv_n0_      = this->inv_n0;
-    //     auto Rstar_       = this->Rstar;
-    //     auto is_first_step_ = this->is_first_step;
+      {
+        auto& species_e   = domain.species[4];
+        auto& species_p   = domain.species[5];
+        auto metric       = domain.mesh.metric;
+        auto EB           = domain.fields.em;
+        auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
+        auto bq_          = this->bq;
+        auto inv_n0_      = this->inv_n0;
+        auto Rstar_       = this->Rstar;
+        auto is_first_step_ = this->is_first_step;
 
-    //      for (std::size_t s { 0 }; s < 6; ++s) {
-    //         if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
-    //           continue;
-    //         }
+         for (std::size_t s { 0 }; s < 6; ++s) {
+            if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
+              continue;
+            }
 
-    //         array_t<std::size_t> elec_ind("elec_ind");
-    //         array_t<std::size_t> pos_ind("pos_ind");
-    //         auto offset_e = species_e.npart();
-    //         auto offset_p = species_p.npart();
+            array_t<std::size_t> elec_ind("elec_ind");
+            array_t<std::size_t> pos_ind("pos_ind");
+            auto offset_e = species_e.npart();
+            auto offset_p = species_p.npart();
 
-    //         auto ux1_e    = species_e.ux1;
-    //         auto ux2_e    = species_e.ux2;
-    //         auto ux3_e    = species_e.ux3;
-    //         auto i1_e     = species_e.i1;
-    //         auto i2_e     = species_e.i2;
-    //         auto dx1_e    = species_e.dx1;
-    //         auto dx2_e    = species_e.dx2;
-    //         auto phi_e    = species_e.phi;
-    //         auto weight_e = species_e.weight;
-    //         auto tag_e    = species_e.tag;
+            auto ux1_e    = species_e.ux1;
+            auto ux2_e    = species_e.ux2;
+            auto ux3_e    = species_e.ux3;
+            auto i1_e     = species_e.i1;
+            auto i2_e     = species_e.i2;
+            auto dx1_e    = species_e.dx1;
+            auto dx2_e    = species_e.dx2;
+            auto phi_e    = species_e.phi;
+            auto weight_e = species_e.weight;
+            auto tag_e    = species_e.tag;
 
-    //         auto ux1_p    = species_p.ux1;
-    //         auto ux2_p    = species_p.ux2;
-    //         auto ux3_p    = species_p.ux3;
-    //         auto i1_p     = species_p.i1;
-    //         auto i2_p     = species_p.i2;
-    //         auto dx1_p    = species_p.dx1;
-    //         auto dx2_p    = species_p.dx2;
-    //         auto phi_p    = species_p.phi;
-    //         auto weight_p = species_p.weight;
-    //         auto tag_p    = species_p.tag;
+            auto ux1_p    = species_p.ux1;
+            auto ux2_p    = species_p.ux2;
+            auto ux3_p    = species_p.ux3;
+            auto i1_p     = species_p.i1;
+            auto i2_p     = species_p.i2;
+            auto dx1_p    = species_p.dx1;
+            auto dx2_p    = species_p.dx2;
+            auto phi_p    = species_p.phi;
+            auto weight_p = species_p.weight;
+            auto tag_p    = species_p.tag;
 
-    //         auto& species = domain.species[s];
-    //         auto ux1    = species.ux1;
-    //         auto ux2    = species.ux2;
-    //         auto ux3    = species.ux3;
-    //         auto i1     = species.i1;
-    //         auto i2     = species.i2;
-    //         auto dx1    = species.dx1;
-    //         auto dx2    = species.dx2;
-    //         auto phi    = species.phi;
-    //         auto weight = species.weight;
-    //         auto tag    = species.tag;
+            auto& species = domain.species[s];
+            auto ux1    = species.ux1;
+            auto ux2    = species.ux2;
+            auto ux3    = species.ux3;
+            auto i1     = species.i1;
+            auto i2     = species.i2;
+            auto dx1    = species.dx1;
+            auto dx2    = species.dx2;
+            auto phi    = species.phi;
+            auto weight = species.weight;
+            auto tag    = species.tag;
 
-    // Kokkos::parallel_for(
-    //     "InjectPairs", species.rangeActiveParticles(), Lambda(index_t p) {
-    //       if (tag(p) == ParticleTag::dead) {
-    //         return;
-    //       }
+    Kokkos::parallel_for(
+        "InjectPairs", species.rangeActiveParticles(), Lambda(index_t p) {
+          if (tag(p) == ParticleTag::dead) {
+            return;
+          }
 
-    //         // Get particle coordinates for later processing
-    //         const coord_t<Dim::_3D> xc3d {static_cast<real_t>(i1(p)) + dx1(p),
-    //               static_cast<real_t>(i2(p)) + dx2(p), phi(p)};   
+            // Get particle coordinates for later processing
+            const coord_t<Dim::_3D> xc3d {static_cast<real_t>(i1(p)) + dx1(p),
+                  static_cast<real_t>(i2(p)) + dx2(p), phi(p)};   
 
-    //         const coord_t<D> xCd{
-    //             static_cast<real_t>(i1(p)) + dx1(p),
-    //             static_cast<real_t>(i2(p)) + dx2(p)};
+            const coord_t<D> xCd{
+                static_cast<real_t>(i1(p)) + dx1(p),
+                static_cast<real_t>(i2(p)) + dx2(p)};
 
-    //         coord_t<D> xPh { ZERO };
-    //         metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
+            coord_t<D> xPh { ZERO };
+            metric.template convert<Crd::Cd, Crd::Ph>(xCd, xPh);
 
-    //         if (xPh[0] > 25.0*Rstar_) {
-    //           tag(p) = ParticleTag::dead;
-    //           return;
-    //         }
+            if (xPh[0] > 25.0*Rstar_) {
+              tag(p) = ParticleTag::dead;
+              return;
+            }
 
-    //         // Interpolation and conversion of electric and magnetic fields
-    //         vec_t<Dim::_3D> b_int_Cart { ZERO };
-    //         vec_t<Dim::_3D> b_int { ZERO };
+            // Interpolation and conversion of electric and magnetic fields
+            vec_t<Dim::_3D> b_int_Cart { ZERO };
+            vec_t<Dim::_3D> b_int { ZERO };
             
-    //         real_t      c000, c100, c010, c110, c00, c10;
-    //         const auto   i { i1(p) + N_GHOSTS };
-    //         const real_t dx1_ { dx1(p) };
-    //         const auto   j { i2(p) + N_GHOSTS };
-    //         const real_t dx2_ { dx2(p) };
+            real_t      c000, c100, c010, c110, c00, c10;
+            const auto   i { i1(p) + N_GHOSTS };
+            const real_t dx1_ { dx1(p) };
+            const auto   j { i2(p) + N_GHOSTS };
+            const real_t dx2_ { dx2(p) };
 
-    //         // Bx1
-    //         c000  = HALF * (EB(i, j, em::bx1) + EB(i, j - 1, em::bx1));
-    //         c100  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j - 1, em::bx1));
-    //         c010  = HALF * (EB(i, j, em::bx1) + EB(i, j + 1, em::bx1));
-    //         c110  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j + 1, em::bx1));
-    //         c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-    //         c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-    //         b_int[0] = c00 * (ONE - dx2_) + c10 * dx2_;
-    //         // Bx2
-    //         c000  = HALF * (EB(i - 1, j, em::bx2) + EB(i, j, em::bx2));
-    //         c100  = HALF * (EB(i, j, em::bx2) + EB(i + 1, j, em::bx2));
-    //         c010  = HALF * (EB(i - 1, j + 1, em::bx2) + EB(i, j + 1, em::bx2));
-    //         c110  = HALF * (EB(i, j + 1, em::bx2) + EB(i + 1, j + 1, em::bx2));
-    //         c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-    //         c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-    //         b_int[1] = c00 * (ONE - dx2_) + c10 * dx2_;
-    //         // Bx3
-    //         c000  = INV_4 * (EB(i - 1, j - 1, em::bx3) + EB(i - 1, j, em::bx3) +
-    //                         EB(i, j - 1, em::bx3) + EB(i, j, em::bx3));
-    //         c100  = INV_4 * (EB(i, j - 1, em::bx3) + EB(i, j, em::bx3) +
-    //                         EB(i + 1, j - 1, em::bx3) + EB(i + 1, j, em::bx3));
-    //         c010  = INV_4 * (EB(i - 1, j, em::bx3) + EB(i - 1, j + 1, em::bx3) +
-    //                         EB(i, j, em::bx3) + EB(i, j + 1, em::bx3));
-    //         c110  = INV_4 * (EB(i, j, em::bx3) + EB(i, j + 1, em::bx3) +
-    //                         EB(i + 1, j, em::bx3) + EB(i + 1, j + 1, em::bx3));
-    //         c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-    //         c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-    //         b_int[2] = c00 * (ONE - dx2_) + c10 * dx2_;
+            // Bx1
+            c000  = HALF * (EB(i, j, em::bx1) + EB(i, j - 1, em::bx1));
+            c100  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j - 1, em::bx1));
+            c010  = HALF * (EB(i, j, em::bx1) + EB(i, j + 1, em::bx1));
+            c110  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j + 1, em::bx1));
+            c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+            c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+            b_int[0] = c00 * (ONE - dx2_) + c10 * dx2_;
+            // Bx2
+            c000  = HALF * (EB(i - 1, j, em::bx2) + EB(i, j, em::bx2));
+            c100  = HALF * (EB(i, j, em::bx2) + EB(i + 1, j, em::bx2));
+            c010  = HALF * (EB(i - 1, j + 1, em::bx2) + EB(i, j + 1, em::bx2));
+            c110  = HALF * (EB(i, j + 1, em::bx2) + EB(i + 1, j + 1, em::bx2));
+            c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+            c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+            b_int[1] = c00 * (ONE - dx2_) + c10 * dx2_;
+            // Bx3
+            c000  = INV_4 * (EB(i - 1, j - 1, em::bx3) + EB(i - 1, j, em::bx3) +
+                            EB(i, j - 1, em::bx3) + EB(i, j, em::bx3));
+            c100  = INV_4 * (EB(i, j - 1, em::bx3) + EB(i, j, em::bx3) +
+                            EB(i + 1, j - 1, em::bx3) + EB(i + 1, j, em::bx3));
+            c010  = INV_4 * (EB(i - 1, j, em::bx3) + EB(i - 1, j + 1, em::bx3) +
+                            EB(i, j, em::bx3) + EB(i, j + 1, em::bx3));
+            c110  = INV_4 * (EB(i, j, em::bx3) + EB(i, j + 1, em::bx3) +
+                            EB(i + 1, j, em::bx3) + EB(i + 1, j + 1, em::bx3));
+            c00   = c000 * (ONE - dx1_) + c100 * dx1_;
+            c10   = c010 * (ONE - dx1_) + c110 * dx1_;
+            b_int[2] = c00 * (ONE - dx2_) + c10 * dx2_;
 
-    //         metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, b_int, b_int_Cart);
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xc3d, b_int, b_int_Cart);
 
-    //         //  Check for the angle of photon propagation with magnetic field
-    //         auto babs { NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2]) };
-    //         b_int_Cart[0] /= (babs + 1e-12);
-    //         b_int_Cart[1] /= (babs + 1e-12);
-    //         b_int_Cart[2] /= (babs + 1e-12);
-    //         auto ePh { NORM(ux1(p), ux2(p), ux3(p)) };
-    //         auto cosAngle { DOT(b_int_Cart[0],
-    //                             b_int_Cart[1],
-    //                             b_int_Cart[2],
-    //                             ux1(p),
-    //                             ux2(p),
-    //                             ux3(p)) /
-    //                         ePh };
-    //         auto sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
+            //  Check for the angle of photon propagation with magnetic field
+            auto babs { NORM(b_int_Cart[0], b_int_Cart[1], b_int_Cart[2]) };
+            b_int_Cart[0] /= (babs + 1e-12);
+            b_int_Cart[1] /= (babs + 1e-12);
+            b_int_Cart[2] /= (babs + 1e-12);
+            auto ePh { NORM(ux1(p), ux2(p), ux3(p)) };
+            auto cosAngle { DOT(b_int_Cart[0],
+                                b_int_Cart[1],
+                                b_int_Cart[2],
+                                ux1(p),
+                                ux2(p),
+                                ux3(p)) /
+                            ePh };
+            auto sinAngle { math::sqrt(ONE - SQR(cosAngle)) };
 
-    //         // auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
-    //         // if (s == 3) {
-    //         //   ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
-    //         // }
-    //         auto ethres { 2.0 };
-
-
-    //           // Check for pair production trigger
-    //           if (ePh >= ethres) {
-
-    //             tag(p) = ParticleTag::dead;
-
-    //             auto upar { math::abs(cosAngle) * math::sqrt(SQR(ePh) - FOUR) /
-    //                         math::sqrt(SQR(ePh * sinAngle) + FOUR * SQR(cosAngle)) };
-
-    //           auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-    //           i1_e(elec_p + offset_e) = i1(p);
-    //           dx1_e(elec_p + offset_e) = dx1(p);
-    //           i2_e(elec_p + offset_e) = i2(p);
-    //           dx2_e(elec_p + offset_e) = dx2(p);
-    //           phi_e(elec_p + offset_e) = phi(p);
-    //           ux1_e(elec_p + offset_e) = SIGN(cosAngle) * upar * b_int_Cart[0];
-    //           ux2_e(elec_p + offset_e) = SIGN(cosAngle) * upar * b_int_Cart[1];
-    //           ux3_e(elec_p + offset_e) = SIGN(cosAngle) * upar * b_int_Cart[2];
-    //           weight_e(elec_p + offset_e) = weight(p);
-    //           tag_e(elec_p + offset_e) = ParticleTag::alive;
-
-    //           auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-    //           i1_p(pos_p + offset_p) = i1(p);
-    //           dx1_p(pos_p + offset_p) = dx1(p);
-    //           i2_p(pos_p + offset_p) = i2(p);
-    //           dx2_p(pos_p + offset_p) = dx2(p);
-    //           phi_p(pos_p + offset_p) = phi(p);
-    //           ux1_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[0];
-    //           ux2_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[1];
-    //           ux3_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[2];
-    //           weight_p(pos_p + offset_p) = weight(p);
-    //           tag_p(pos_p + offset_p) = ParticleTag::alive;
-
-    //           // HACK for more multiplicity
-    //           // elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-    //           // i1_e(elec_p + offset_e) = i1(p);
-    //           // dx1_e(elec_p + offset_e) = dx1(p);
-    //           // i2_e(elec_p + offset_e) = i2(p);
-    //           // dx2_e(elec_p + offset_e) = dx2(p);
-    //           // phi_e(elec_p + offset_e) = phi(p);
-    //           // ux1_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
-    //           // ux2_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
-    //           // ux3_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
-    //           // weight_e(elec_p + offset_e) = weight(p);
-    //           // tag_e(elec_p + offset_e) = ParticleTag::alive;
-
-    //           // pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-    //           // i1_p(pos_p + offset_p) = i1(p);
-    //           // dx1_p(pos_p + offset_p) = dx1(p);
-    //           // i2_p(pos_p + offset_p) = i2(p);
-    //           // dx2_p(pos_p + offset_p) = dx2(p);
-    //           // phi_p(pos_p + offset_p) = phi(p);
-    //           // ux1_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
-    //           // ux2_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
-    //           // ux3_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
-    //           // weight_p(pos_p + offset_p) = weight(p);
-    //           // tag_p(pos_p + offset_p) = ParticleTag::alive;
+            // auto ethres { 2.0 / math::abs(sinAngle + 1e-12) };
+            // if (s == 3) {
+            //   ethres *= math::sqrt(1.0 + 2.0 * babs / bq_);
+            // }
+            auto ethres { 2.0 };
 
 
-    //           auto cbuff_acc     = cbuff_sc.access();
-    //           cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
-    //                metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
-    //                                    static_cast<real_t>(i2(p)) + HALF });
-    //       }
+              // Check for pair production trigger
+              if (ePh >= ethres) {
 
-    //     });
+                tag(p) = ParticleTag::dead;
 
-    //         auto elec_ind_h = Kokkos::create_mirror(elec_ind);
-    //         Kokkos::deep_copy(elec_ind_h, elec_ind);
-    //         species_e.set_npart(offset_e + elec_ind_h());
+                auto upar { math::abs(cosAngle) * math::sqrt(SQR(ePh) - FOUR) /
+                            math::sqrt(SQR(ePh * sinAngle) + FOUR * SQR(cosAngle)) };
 
-    //         auto pos_ind_h = Kokkos::create_mirror(pos_ind);
-    //         Kokkos::deep_copy(pos_ind_h, pos_ind);
-    //         species_p.set_npart(offset_p + pos_ind_h());
+              auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              i1_e(elec_p + offset_e) = i1(p);
+              dx1_e(elec_p + offset_e) = dx1(p);
+              i2_e(elec_p + offset_e) = i2(p);
+              dx2_e(elec_p + offset_e) = dx2(p);
+              phi_e(elec_p + offset_e) = phi(p);
+              ux1_e(elec_p + offset_e) = SIGN(cosAngle) * upar * b_int_Cart[0];
+              ux2_e(elec_p + offset_e) = SIGN(cosAngle) * upar * b_int_Cart[1];
+              ux3_e(elec_p + offset_e) = SIGN(cosAngle) * upar * b_int_Cart[2];
+              weight_e(elec_p + offset_e) = weight(p);
+              tag_e(elec_p + offset_e) = ParticleTag::alive;
 
-    //       }
+              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+              i1_p(pos_p + offset_p) = i1(p);
+              dx1_p(pos_p + offset_p) = dx1(p);
+              i2_p(pos_p + offset_p) = i2(p);
+              dx2_p(pos_p + offset_p) = dx2(p);
+              phi_p(pos_p + offset_p) = phi(p);
+              ux1_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[0];
+              ux2_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[1];
+              ux3_p(pos_p + offset_p) = SIGN(cosAngle) * upar * b_int_Cart[2];
+              weight_p(pos_p + offset_p) = weight(p);
+              tag_p(pos_p + offset_p) = ParticleTag::alive;
 
-    //   Kokkos::Experimental::contribute(cbuff, cbuff_sc);
-    //   } // Pair production kernel (threshold)
+              // HACK for more multiplicity
+              // elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              // i1_e(elec_p + offset_e) = i1(p);
+              // dx1_e(elec_p + offset_e) = dx1(p);
+              // i2_e(elec_p + offset_e) = i2(p);
+              // dx2_e(elec_p + offset_e) = dx2(p);
+              // phi_e(elec_p + offset_e) = phi(p);
+              // ux1_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
+              // ux2_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
+              // ux3_e(elec_p + offset_e) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
+              // weight_e(elec_p + offset_e) = weight(p);
+              // tag_e(elec_p + offset_e) = ParticleTag::alive;
+
+              // pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+              // i1_p(pos_p + offset_p) = i1(p);
+              // dx1_p(pos_p + offset_p) = dx1(p);
+              // i2_p(pos_p + offset_p) = i2(p);
+              // dx2_p(pos_p + offset_p) = dx2(p);
+              // phi_p(pos_p + offset_p) = phi(p);
+              // ux1_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[0];
+              // ux2_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[1];
+              // ux3_p(pos_p + offset_p) = 0.9 * SIGN(cosAngle) * upar * b_int_Cart[2];
+              // weight_p(pos_p + offset_p) = weight(p);
+              // tag_p(pos_p + offset_p) = ParticleTag::alive;
+
+
+              auto cbuff_acc     = cbuff_sc.access();
+              cbuff_acc(static_cast<int>(i1(p)), static_cast<int>(i2(p))) += weight(p) * inv_n0_ /
+                   metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
+                                       static_cast<real_t>(i2(p)) + HALF });
+          }
+
+        });
+
+            auto elec_ind_h = Kokkos::create_mirror(elec_ind);
+            Kokkos::deep_copy(elec_ind_h, elec_ind);
+            species_e.set_npart(offset_e + elec_ind_h());
+
+            auto pos_ind_h = Kokkos::create_mirror(pos_ind);
+            Kokkos::deep_copy(pos_ind_h, pos_ind);
+            species_p.set_npart(offset_p + pos_ind_h());
+
+          }
+
+      Kokkos::Experimental::contribute(cbuff, cbuff_sc);
+      } // Pair production kernel (threshold)
     }
 
     if (is_first_step) {
