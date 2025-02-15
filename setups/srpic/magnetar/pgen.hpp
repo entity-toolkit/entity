@@ -416,8 +416,6 @@ namespace user {
               continue;
             }
 
-
-
             auto& species = domain.species[s];
             auto ux1    = species.ux1;
             auto ux2    = species.ux2;
@@ -430,7 +428,7 @@ namespace user {
             auto weight = species.weight;
             auto tag    = species.tag;
 
-            array_t<std::size_t> ph_ind_par("ph_ind");
+            array_t<std::size_t> ph_ind_par("ph_ind_par");
             const auto  ph_offset_par  = photons_par.npart();
 
             auto ux1_par    = photons_par.ux1;
@@ -444,7 +442,7 @@ namespace user {
             auto weight_par = photons_par.weight;
             auto tag_par    = photons_par.tag;
 
-            array_t<std::size_t> ph_ind_perp("ph_ind");
+            array_t<std::size_t> ph_ind_perp("ph_ind_perp");
             const auto  ph_offset_perp = photons_perp.npart();
 
             auto ux1_perp    = photons_perp.ux1;
