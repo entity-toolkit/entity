@@ -409,9 +409,9 @@ namespace user {
       auto cbuff2_sc = Kokkos::Experimental::create_scatter_view(cbuff2);
       auto inv_n0_      = this->inv_n0;
 
-         for (std::size_t s { 0 }; s < 6; ++s) {
+         for (std::size_t s { 0 }; s < 8; ++s) {
             // if (s == 2 || s == 3) {
-            if (s == 1 || s == 2 || s == 3) {
+            if (s == 1 || s == 2 || s == 3 || s == 4 || s == 5) {
             // if (s == 1) {
               continue;
             }
@@ -947,8 +947,8 @@ namespace user {
 
       // Pair production kernel (threshold)
       {
-        auto& species_e   = domain.species[4];
-        auto& species_p   = domain.species[5];
+        auto& species_e   = domain.species[6];
+        auto& species_p   = domain.species[7];
         auto metric       = domain.mesh.metric;
         auto EB           = domain.fields.em;
         auto cbuff_sc = Kokkos::Experimental::create_scatter_view(cbuff);
@@ -957,8 +957,8 @@ namespace user {
         auto Rstar_       = this->Rstar;
         auto is_first_step_ = this->is_first_step;
 
-         for (std::size_t s { 0 }; s < 6; ++s) {
-            if ((s == 0) || (s == 1) || (s == 4) || (s == 5)) {
+         for (std::size_t s { 0 }; s < 8; ++s) {
+            if ((s == 0) || (s == 1) || (s == 4) || (s == 5) || (s == 6) || (s == 7)) {
               continue;
             }
 
