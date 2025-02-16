@@ -472,7 +472,9 @@ namespace user {
 
             // If particle is too close to atmosphere, skip (saving time)
             if (xPh[0] < Rstar_ + 0.1) return;
-                                    
+                           
+            if(math::sin(xPh[1]) > 0.1) return;
+
             // Define lepton properties for evaluation
             auto px      = ux1(p);
             auto py      = ux2(p);
@@ -1020,6 +1022,8 @@ namespace user {
               tag(p) = ParticleTag::dead;
               return;
             }
+
+            if(math::sin(xPh[1]) > 0.1) return;
 
             // Interpolation and conversion of electric and magnetic fields
             vec_t<Dim::_3D> b_int_Cart { ZERO };
