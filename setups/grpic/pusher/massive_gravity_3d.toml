@@ -14,7 +14,7 @@
     ks_a = 0.995
 
   [grid.boundaries]
-    fields = [["ABSORB"]]
+    fields = [["MATCH"]]
     particles = [["ABSORB"]]
 
     [grid.boundaries.absorb]
