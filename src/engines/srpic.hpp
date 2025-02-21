@@ -596,6 +596,10 @@ namespace ntt {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::FIXED) {
             FixedFieldsIn(direction, domain, tags);
           }
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+            PerfectConductorFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
             CustomFieldsIn(direction, domain, tags);
@@ -833,6 +837,135 @@ namespace ntt {
         raise::Error("Fixed fields not present (both const and non-const)", HERE);
       }
     }
+
+    void PerfectConductorFieldsIn(dir::direction_t<M::Dim> direction,
+                       domain_t&                domain,
+                       BCTags                   tags) {
+      /**
+       * perfect conductor field boundaries
+       */
+      const auto sign = direction.get_sign();
+      const auto dim  = direction.get_dim();
+      raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
+                     "Perfect conductor BCs only implemented for x1 in "
+                     "non-cartesian coordinates",
+                     HERE);
+
+      // magnetic and electron field components
+      em normal_b_comp, tang_b_comp1, tang_b_comp2,
+         normal_e_comp, tang_e_comp1, tang_e_comp2;
+
+      // current components
+      // cur normal_j_comp, tang_j_comp1, tang_j_comp2;
+
+      if (dim == in::x1) {
+        normal_b_comp = em::bx1;
+        tang_b_comp1  = em::bx2;
+        tang_b_comp2  = em::bx3;
+
+        normal_e_comp = em::ex1;
+        tang_e_comp1 = em::ex2;
+        tang_e_comp2 = em::ex3;
+      } else if (dim == in::x2) {
+        normal_b_comp = em::bx2;
+        tang_b_comp1  = em::bx1;
+        tang_b_comp2  = em::bx3;
+
+        normal_e_comp = em::ex2;
+        tang_e_comp1  = em::ex1;
+        tang_e_comp2  = em::ex3;
+      } else if (dim == in::x3) {
+        normal_b_comp = em::bx3;
+        tang_b_comp1  = em::bx1;
+        tang_b_comp2  = em::bx2;
+
+        normal_e_comp = em::ex3;
+        tang_e_comp1  = em::ex1;
+        tang_e_comp2  = em::ex2;
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+
+      std::vector<std::size_t> origin_xi_min, origin_xi_max,
+          target_xi_min, target_xi_max;
+      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
+      
+      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        const auto dd = all_dirs[d];
+        if (dim == dd) {
+            // origin: right side of boundary
+            origin_xi_min.push_back(N_GHOSTS+1);
+            origin_xi_max.push_back(2*N_GHOSTS);
+            // target: left side of boundary
+            target_xi_min.push_back(0);
+            target_xi_max.push_back(N_GHOSTS);
+          
+        } else {
+          origin_xi_min.push_back(0);
+          origin_xi_max.push_back(domain.mesh.n_all(dd));
+
+          target_xi_min.push_back(0);
+          target_xi_max.push_back(domain.mesh.n_all(dd));
+        }
+      }
+      raise::ErrorIf(target_xi_min.size() != origin_xi_min.size() or
+                       origin_xi_min.size() != static_cast<std::size_t>(M::Dim),
+                     "Invalid range size",
+                     HERE);
+
+      std::vector<unsigned short> comps;
+      if (tags & BC::E) {
+        comps.push_back(normal_e_comp);
+        comps.push_back(tang_e_comp1);
+        comps.push_back(tang_e_comp2);
+      }
+      if (tags & BC::B) {
+        comps.push_back(normal_b_comp);
+        comps.push_back(tang_b_comp1);
+        comps.push_back(tang_b_comp2);
+      }
+
+      // ToDo: smarter loop/views
+      auto EB = domain.fields.em;
+        
+      // loop over all components
+      for (const auto& comp : comps) {
+
+        // store sign of component behind boundary
+        auto new_sign = m_pgen.PerfectConductorFieldsConst(
+                (bc_in)(sign * ((short)dim + 1)),
+                (em)comp);
+        // to do: Kokkos::parallel_for
+        for (int i = 0; i < N_GHOSTS; i++)
+        {
+          if constexpr (M::Dim == Dim::_1D) {
+              // multiply with correct sign
+              EB(target_xi_min[0]+i, comp) = new_sign * EB(origin_xi_max[0]-i, comp);
+
+          } else if constexpr (M::Dim == Dim::_2D) {
+              for (int j = 0; j < domain.mesh.n_all(in::x2); j++)
+              {
+                EB(target_xi_min[0]+i, j, comp) = 
+                  new_sign * EB(origin_xi_max[0]-i, j, comp);
+              }
+          } else if constexpr (M::Dim == Dim::_3D) {
+              for (int j = 0; j < domain.mesh.n_all(in::x2); j++)
+              {
+                for (int k = 0; k < domain.mesh.n_all(in::x3); k++)
+                {
+                  EB(target_xi_min[0]+i, j, k, comp) = 
+                    new_sign * EB(origin_xi_max[0]-i, j, k, comp);                
+                }
+              }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        }
+
+        // ToDo: set zero at boundary
+      }
+    }
+
 
     void AtmosphereFieldsIn(dir::direction_t<M::Dim> direction,
                             domain_t&                domain,
