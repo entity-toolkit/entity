@@ -485,7 +485,7 @@ namespace kernel::bc {
     }
   };
 
-  template <SimEngine::type S, class I, class M, in o>
+  template <SimEngine::type S, class M, in o>
   struct ConductorBoundaries_kernel {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(static_cast<unsigned short>(o) <
@@ -494,7 +494,6 @@ namespace kernel::bc {
     static constexpr idx_t i = static_cast<idx_t>(o) + 1u;
 
     ndfield_t<M::Dim, 6> Fld;
-    const I              fset;
     const M              metric;
     const BCTags         tags;
 
@@ -562,13 +561,10 @@ namespace kernel::bc {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
-        const auto i1_ = COORD(i1);
-        const auto i2_ = COORD(i2);
-        const auto i3_ = COORD(i3);
 
         if constexpr (S == SimEngine::SRPIC) {
           // SRPIC
-            if (tags & BC::E) {
+          if (tags & BC::E) {
             Fld((N_GHOSTS-1)-i1, i2, i3, em::ex1) =  Fld(N_GHOSTS+i1, i2, i3, em::ex1);
             Fld((N_GHOSTS-1)-i1, i2, i3, em::ex2) = -Fld(N_GHOSTS+i1, i2, i3, em::ex2);
             Fld((N_GHOSTS-1)-i1, i2, i3, em::ex3) = -Fld(N_GHOSTS+i1, i2, i3, em::ex3);
