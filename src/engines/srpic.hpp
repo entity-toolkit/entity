@@ -871,11 +871,11 @@ namespace ntt {
                      "Invalid range size",
                      HERE);
 
-      if (dim == in::x1)
+      if constexpr (M::Dim == Dim::_1D) {
       {
           Kokkos::parallel_for(
               "MatchFields",
-              CreateRangePolicy<M::Dim>(xi_min, xi_max),
+              CreateRangePolicy<M::Dim>(xi_min[0], xi_max[0]),
               kernel::bc::ConductorBoundaries_kernel<SimEngine::SRPIC, M, in::x1>(
                   domain.fields.em,
                   tags));
