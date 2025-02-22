@@ -875,7 +875,7 @@ namespace ntt {
       {
           Kokkos::parallel_for(
               "MatchFields",
-              CreateRangePolicy<M::Dim>(xi_min[0], xi_max[0]),
+              CreateRangePolicy<M::Dim>( { xi_min[0] } , { xi_max[0] } ),
               kernel::bc::ConductorBoundaries_kernel<SimEngine::SRPIC, M, in::x1>(
                   domain.fields.em,
                   tags));
