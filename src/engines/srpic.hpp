@@ -871,7 +871,7 @@ namespace ntt {
                      "Invalid range size",
                      HERE);
 
-      if constexpr (M::Dim == Dim::_1D) {
+      if constexpr (M::Dim == Dim::_1D)
       {
           Kokkos::parallel_for(
               "MatchFields",
