@@ -880,6 +880,16 @@ namespace ntt {
                   domain.fields.em,
                   tags));
       }
+
+      if constexpr (M::Dim == Dim::_2D)
+      {
+          Kokkos::parallel_for(
+              "MatchFields",
+              CreateRangePolicy<M::Dim>( { xi_min[0], xi_min[1] } , { xi_max[0], xi_max[1] } ),
+              kernel::bc::ConductorBoundaries_kernel<SimEngine::SRPIC, M, in::x1>(
+                  domain.fields.em,
+                  tags));
+      }
     
     
     }
