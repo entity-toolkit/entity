@@ -40,24 +40,24 @@ namespace user {
       return x_Ph[0];
     }
 
-    Inline auto bx2(const coord_t<D>&) const -> real_t {
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
       return x_Ph[0];
     }
 
-    Inline auto bx3(const coord_t<D>&) const -> real_t {
+    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
       return x_Ph[0];
     }
 
     // electric field components
-    Inline auto ex1(const coord_t<D>&) const -> real_t {
+    Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
       return x_Ph[0];
     }
 
-    Inline auto ex2(const coord_t<D>&) const -> real_t {
+    Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
       return x_Ph[0];
     }
 
-    Inline auto ex3(const coord_t<D>&) const -> real_t {
+    Inline auto ex3(const coord_t<D>& x_Ph) const -> real_t {
       return x_Ph[0];
     }
 
