@@ -54,3 +54,6 @@
 
   [output.fields]
     quantities = ["N_1", "N_2", "E", "B", "T0i_1", "T0i_2", "J"]
+
+  [output.debug]
+    ghosts = true
