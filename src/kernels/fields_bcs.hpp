@@ -494,7 +494,6 @@ namespace kernel::bc {
     static constexpr idx_t i = static_cast<idx_t>(o) + 1u;
 
     ndfield_t<M::Dim, 6> Fld;
-    const M              metric;
     const BCTags         tags;
 
     ConductorBoundaries_kernel(ndfield_t<M::Dim, 6> Fld,
