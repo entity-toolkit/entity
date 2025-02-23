@@ -37,7 +37,7 @@ namespace user {
 
     // magnetic field components
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return x_Ph[0];
+      return ZERO;
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
@@ -50,15 +50,15 @@ namespace user {
 
     // electric field components
     Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-      return x_Ph[0];
+      return ZERO;
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      return x_Ph[0];
+      return ZERO;
     }
 
     Inline auto ex3(const coord_t<D>& x_Ph) const -> real_t {
-      return x_Ph[0];
+      return ZERO;
     }
 
   private:
