@@ -45,7 +45,7 @@ namespace user {
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      return x_Ph[0];
+      return ONE;
     }
 
     // electric field components
