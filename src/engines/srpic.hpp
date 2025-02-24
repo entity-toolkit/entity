@@ -102,6 +102,7 @@ namespace ntt {
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B);
         timers.stop("FieldBoundaries");
+        Kokkos::fence();
       }
 
       {
@@ -125,9 +126,14 @@ namespace ntt {
           timers.stop("CurrentFiltering");
         }
 
+        // Tags are assigned by now
+        if (step == 0){
+          m_metadomain.SetParticleIDs(dom);
+        }
+
         timers.start("Communications");
         if ((sort_interval > 0) and (step % sort_interval == 0)) {
-          m_metadomain.CommunicateParticles(dom, &timers);
+          m_metadomain.CommunicateParticlesBuffer(dom, &timers);
         }
         timers.stop("Communications");
       }
@@ -168,6 +174,14 @@ namespace ntt {
         timers.start("Injector");
         ParticleInjector(dom);
         timers.stop("Injector");
+      }
+
+      if (step % 100 == 0 && step > 0){
+        MPI_Barrier(MPI_COMM_WORLD);
+        timers.start("RemoveDead");
+        m_metadomain.RemoveDeadParticles(dom, &timers);
+        timers.stop("RemoveDead");
+        MPI_Barrier(MPI_COMM_WORLD);
       }
     }
 
@@ -522,17 +536,36 @@ namespace ntt {
       const auto n0    = m_params.template get<real_t>("scales.n0");
       const auto B0    = m_params.template get<real_t>("scales.B0");
       const auto coeff = -dt * q0 * n0 / B0;
+      bool has_extcurrent = false;
       if constexpr (M::CoordType == Coord::Cart) {
+        // toggle to indicate whether pgen defines the external current
+        if constexpr (traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
+          has_extcurrent = true;
+        const auto current =
+          kernel::mink::Current<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_current)> {
+            m_pgen.ext_current
+        };
+        }
+
+
         // minkowski case
         const auto V0 = m_params.template get<real_t>("scales.V0");
-
+        if (has_extcurrent) {
+          Kokkos::parallel_for(
+            "Ampere",
+            domain.mesh.rangeActiveCells(),
+            kernel::mink::CurrentsAmpere_kernel<M, decltype(m_pgen.ext_current)>(
+              domain.fields.em, domain.fields.cur, domain.mesh.metric, coeff / V0, ONE / n0, V0, m_pgen.ext_current));
+        } else {
         Kokkos::parallel_for(
           "Ampere",
           domain.mesh.rangeActiveCells(),
-          kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
-                                                      domain.fields.cur,
+          kernel::mink::CurrentsAmpere_kernel<M>(domain.fields.em,
+                                                      domain.fields.cur, 
+                                                      domain.mesh.metric,
                                                       coeff / V0,
                                                       ONE / n0));
+        }
       } else {
         auto       range = range_with_axis_BCs(domain);
         const auto ni2   = domain.mesh.n_active(in::x2);

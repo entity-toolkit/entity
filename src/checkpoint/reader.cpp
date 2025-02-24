@@ -28,11 +28,15 @@ namespace checkpoint {
                   ndfield_t<D, N>&                 array) {
     logger::Checkpoint(fmt::format("Reading field: %s", field.c_str()), HERE);
     auto field_var = io.InquireVariable<real_t>(field);
-    field_var.SetSelection(range);
+    if (field_var) {
+      field_var.SetSelection(range);
 
-    auto array_h = Kokkos::create_mirror_view(array);
-    reader.Get(field_var, array_h.data(), adios2::Mode::Sync);
-    Kokkos::deep_copy(array, array_h);
+      auto array_h = Kokkos::create_mirror_view(array);
+      reader.Get(field_var, array_h.data(), adios2::Mode::Sync);
+      Kokkos::deep_copy(array, array_h);
+    } else {
+      raise::Error(fmt::format("Field variable: %s not found", field.c_str()), HERE);
+    }
   }
 
   auto ReadParticleCount(adios2::IO&     io,
@@ -44,32 +48,38 @@ namespace checkpoint {
     logger::Checkpoint(fmt::format("Reading particle count for: %d", s + 1), HERE);
     auto npart_var = io.InquireVariable<std::size_t>(
       fmt::format("s%d_npart", s + 1));
-    raise::ErrorIf(
-      npart_var.Shape()[0] != ndomains or npart_var.Shape().size() != 1,
-      "npart_var.Shape()[0] != ndomains or npart_var.Shape().size() != 1",
-      HERE);
-
-    npart_var.SetSelection(adios2::Box<adios2::Dims>({ local_dom }, { 1 }));
-    std::size_t npart;
-    reader.Get(npart_var, &npart, adios2::Mode::Sync);
-    const auto loc_npart = npart;
+    if (npart_var) {
+      raise::ErrorIf(npart_var.Shape()[0] != ndomains,
+                     "npart_var.Shape()[0] != ndomains",
+                     HERE);
+      raise::ErrorIf(npart_var.Shape().size() != 1,
+                     "npart_var.Shape().size() != 1",
+                     HERE);
+      npart_var.SetSelection(adios2::Box<adios2::Dims>({ local_dom }, { 1 }));
+      std::size_t npart;
+      reader.Get(npart_var, &npart, adios2::Mode::Sync);
+      const auto loc_npart = npart;
 #if !defined(MPI_ENABLED)
-    std::size_t offset_npart = 0;
+      std::size_t offset_npart = 0;
 #else
-    std::vector<std::size_t> glob_nparts(ndomains);
-    MPI_Allgather(&loc_npart,
-                  1,
-                  mpi::get_type<std::size_t>(),
-                  glob_nparts.data(),
-                  1,
-                  mpi::get_type<std::size_t>(),
-                  MPI_COMM_WORLD);
-    std::size_t offset_npart = 0;
-    for (auto d { 0u }; d < local_dom; ++d) {
-      offset_npart += glob_nparts[d];
-    }
+      std::vector<std::size_t> glob_nparts(ndomains);
+      MPI_Allgather(&loc_npart,
+                    1,
+                    mpi::get_type<std::size_t>(),
+                    glob_nparts.data(),
+                    1,
+                    mpi::get_type<std::size_t>(),
+                    MPI_COMM_WORLD);
+      std::size_t offset_npart = 0;
+      for (auto d { 0u }; d < local_dom; ++d) {
+        offset_npart += glob_nparts[d];
+      }
 #endif
-    return { loc_npart, offset_npart };
+      return { loc_npart, offset_npart };
+    } else {
+      raise::Error("npart_var is not found", HERE);
+      return { 0, 0 };
+    }
   }
 
   template <typename T>
@@ -85,12 +95,18 @@ namespace checkpoint {
       HERE);
     auto var = io.InquireVariable<T>(
       fmt::format("s%d_%s", s + 1, quantity.c_str()));
-    var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
-    const auto slice   = std::pair<std::size_t, std::size_t> { 0, count };
-    auto       array_h = Kokkos::create_mirror_view(array);
-    reader.Get(var, Kokkos::subview(array_h, slice).data(), adios2::Mode::Sync);
-    Kokkos::deep_copy(Kokkos::subview(array, slice),
-                      Kokkos::subview(array_h, slice));
+    if (var) {
+      var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
+      const auto slice   = std::pair<std::size_t, std::size_t> { 0, count };
+      auto       array_h = Kokkos::create_mirror_view(array);
+      reader.Get(var, Kokkos::subview(array_h, slice).data(), adios2::Mode::Sync);
+      Kokkos::deep_copy(Kokkos::subview(array, slice),
+                        Kokkos::subview(array_h, slice));
+    } else {
+      raise::Error(
+        fmt::format("Variable: s%d_%s not found", s + 1, quantity.c_str()),
+        HERE);
+    }
   }
 
   template void ReadFields<Dim::_1D, 3>(adios2::IO&,

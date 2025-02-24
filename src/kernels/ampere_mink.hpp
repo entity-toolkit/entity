@@ -19,6 +19,57 @@
 namespace kernel::mink {
   using namespace ntt;
 
+  struct NoCurrent_t {
+    NoCurrent_t() {}
+  };
+
+  /**
+   * @brief
+   * A helper struct which combines the atmospheric gravity
+   * with (optionally) custom user-defined force
+   * @tparam D Dimension
+   * @tparam C Coordinate system
+   * @tparam F Additional force
+   * @tparam Atm Toggle for atmospheric gravity
+   * @note when `Atm` is true, `g` contains a vector of gravity acceleration
+   * @note when `Atm` is true, sign of `ds` indicates the direction of the boundary
+   * !TODO: compensate for the species mass when applying atmospheric force
+   */
+  template <Dimension D, Coord::type C, class Cu = NoCurrent_t>
+  struct Current {
+    static constexpr auto ExtCurrent = not std::is_same<Cu, NoCurrent_t>::value;
+    const Cu      pgen_current;
+
+    Current(const Cu& pgen_current)
+      : pgen_current { pgen_current } {}
+
+    Inline auto jx1(const coord_t<D>&     x_Ph) const -> real_t {
+      real_t j_x1 = ZERO;
+      if constexpr (ExtCurrent) {
+          j_x1 += pgen_current.jx1(x_Ph);
+      }
+
+      return j_x1;
+    }
+
+    Inline auto jx2(const coord_t<D>&     x_Ph) const -> real_t {
+      real_t j_x2 = ZERO;
+      if constexpr (ExtCurrent) {
+          j_x2 += pgen_current.jx2(x_Ph);
+      }
+      return j_x2;
+    }
+
+    Inline auto jx3(const coord_t<D>&     x_Ph) const -> real_t {
+      real_t j_x3 = ZERO;
+      if constexpr (ExtCurrent) {
+        j_x3 += pgen_current.jx3(x_Ph);
+      }
+
+      return j_x3;
+    }
+  };
+
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in Minkowski space.
    * @tparam D Dimension.
@@ -88,23 +139,41 @@ namespace kernel::mink {
    * @brief `coeff` includes metric coefficient.
    * @tparam D Dimension.
    */
-  template <Dimension D>
-  class CurrentsAmpere_kernel {
+  template <class M, class Cu = NoCurrent_t>
+  struct CurrentsAmpere_kernel {
+    static constexpr auto        D     = M::Dim;
+    static constexpr auto ExtCurrent = not std::is_same<Cu, NoCurrent_t>::value;
     ndfield_t<D, 6> E;
     ndfield_t<D, 3> J;
+    const M           metric;
     // coeff = -dt * q0 * n0 / (B0 * V0)
     const real_t    coeff;
     const real_t    inv_n0;
+    const real_t    V0;
+    const Cu current;
 
   public:
     CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
                           const ndfield_t<D, 3>  J,
+                          const M&               metric,
                           real_t                 coeff,
-                          real_t                 inv_n0)
+                          real_t                 inv_n0,
+                          real_t                 V0,
+                          const Cu&              current)
       : E { E }
       , J { J }
       , coeff { coeff }
-      , inv_n0 { inv_n0 } {}
+      , inv_n0 { inv_n0 } 
+      , V0 { V0 }
+      , metric { metric }
+      , current {current} {}
+
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
+                          const ndfield_t<D, 3>  J,
+                          const M&              metric,
+                          real_t                 coeff,
+                          real_t                 inv_n0)
+      : CurrentsAmpere_kernel(E, J, metric, coeff, inv_n0, ZERO, NoCurrent_t {}) {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -124,9 +193,32 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
+      vec_t<Dim::_3D> current_Cd { ZERO };
+
+      if constexpr (ExtCurrent) {
+        coord_t<Dim::_2D> xp_Ph { ZERO };
+        coord_t<Dim::_2D> xp_Cd { i1, i2 };
+        xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
+        xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
+        metric.template transform<Idx::T, Idx::U>(
+          xp_Ph,
+          { current.jx1(xp_Ph),
+            current.jx2(xp_Ph),
+            current.jx3(xp_Ph) },
+          current_Cd);
+      }
+
         J(i1, i2, cur::jx1) *= inv_n0;
         J(i1, i2, cur::jx2) *= inv_n0;
         J(i1, i2, cur::jx3) *= inv_n0;
+
+        // J(i1, i2, cur::jx1) *= ZERO;
+        // J(i1, i2, cur::jx2) *= ZERO;
+        // J(i1, i2, cur::jx3) *= ZERO;
+
+        J(i1, i2, cur::jx1) += current_Cd[0] * V0;
+        J(i1, i2, cur::jx2) += current_Cd[1] * V0;
+        J(i1, i2, cur::jx3) += current_Cd[2] * V0;
 
         E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
         E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
@@ -148,6 +240,7 @@ namespace kernel::mink {
         E(i1, i2, i3, em::ex1) += J(i1, i2, i3, cur::jx1) * coeff;
         E(i1, i2, i3, em::ex2) += J(i1, i2, i3, cur::jx2) * coeff;
         E(i1, i2, i3, em::ex3) += J(i1, i2, i3, cur::jx3) * coeff;
+        
       } else {
         raise::KernelError(
           HERE,

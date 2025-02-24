@@ -4,6 +4,7 @@
  * @implements
  *   - checkpoint::ReadFields -> void
  *   - checkpoint::ReadParticleData -> void
+ *   - checkpoint::ReadParticleCount -> std::pair<std::size_t, std::size_t>
  * @cpp:
  *   - reader.cpp
  * @namespaces:

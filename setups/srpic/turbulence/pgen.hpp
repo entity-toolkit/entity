@@ -255,7 +255,7 @@ namespace user {
         const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
           energy_dist,
           { 1, 2 });
-        const real_t ndens = 1.0;
+        const real_t ndens = 0.9;
         arch::InjectUniform<S, M, decltype(injector)>(params,
                                                       local_domain,
                                                       injector,

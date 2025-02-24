@@ -101,23 +101,28 @@ namespace user {
 
   template <Dimension D>
   struct ExtForce {
-    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
+    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3, array_t<real_t*> damp0)
       : amps { amplitudes }
       , sx1 { SX1 }
       , sx2 { SX2 }
       , sx3 { SX3 } 
-      , k01 {ONE * constant::TWO_PI / sx1}
-      , k02 {ZERO * constant::TWO_PI / sx2}
-      , k03 {ZERO * constant::TWO_PI / sx3}
-      , k04 {ONE}
+      , damp { damp0 }
       , k11 {ZERO * constant::TWO_PI / sx1}
-      , k12 {ONE * constant::TWO_PI / sx2}
-      , k13 {ZERO * constant::TWO_PI / sx3}
-      , k14 {ONE}
+      , k12 { ONE * constant::TWO_PI / sx2}
       , k21 {ZERO * constant::TWO_PI / sx1}
-      , k22 {ZERO * constant::TWO_PI / sx2}
-      , k23 {ONE * constant::TWO_PI / sx3}
-      , k24 {ONE} {}
+      , k22 {-ONE * constant::TWO_PI / sx2}
+      , k31 { ONE * constant::TWO_PI / sx1}
+      , k32 {ZERO * constant::TWO_PI / sx2}
+      , k41 {-ONE * constant::TWO_PI / sx1}
+      , k42 {ZERO * constant::TWO_PI / sx2} 
+      , k51 {ZERO * constant::TWO_PI / sx1}
+      , k52 { ONE * constant::TWO_PI / sx2}
+      , k61 {ZERO * constant::TWO_PI / sx1}
+      , k62 {-ONE * constant::TWO_PI / sx2}
+      , k71 { ONE * constant::TWO_PI / sx1}
+      , k72 {ZERO * constant::TWO_PI / sx2}
+      , k81 {-ONE * constant::TWO_PI / sx1}
+      , k82 {ZERO * constant::TWO_PI / sx2} {}
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -128,12 +133,16 @@ namespace user {
                     const coord_t<D>& x_Ph) const -> real_t {
 
       // return ZERO;
-      return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-              k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
+      return damp(4) * amps(4, REAL) *
+                math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
+              damp(4) * amps(4, IMAG) *
+                math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+              damp(5) * amps(5, REAL) *
+                math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
+              damp(5) * amps(5, IMAG) *
+                math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]);
 
-      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
+      // return ONE * math::cos(ONE * constant::TWO_PI * x_Ph[1]);
 
     }
 
@@ -141,10 +150,14 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return (k04 * amps(2, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-              k04 * amps(2, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
+      return damp(6) * amps(6, REAL) *
+                math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
+              damp(6) * amps(6, IMAG) *
+                math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+              damp(7) * amps(7, REAL) *
+                math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
+              damp(7) * amps(7, IMAG) *
+                math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
       // return ZERO;
     }
 
@@ -152,21 +165,113 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return (k04 * amps(4, REAL) *
-      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-      //         k04 * amps(4, IMAG) *
-      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) +
-      //        (k14 * amps(5, REAL) *
-      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-      //         k14 * amps(5, IMAG) *
-      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0));
-      return ZERO;
+      return damp(0) * amps(0, REAL) *
+               math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) -
+             damp(0) * amps(0, IMAG) *
+               math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+             damp(1) * amps(1, REAL) *
+               math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) -
+             damp(1) * amps(1, IMAG) *
+               math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+             damp(2) * amps(2, REAL) *
+                math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) -
+              damp(2) * amps(2, IMAG) *
+                math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+              damp(3) * amps(3, REAL) *
+                math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
+              damp(3) * amps(3, IMAG) *
+                math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+      // return ZERO;
     }
 
   private:
     array_t<real_t* [2]> amps;
+    array_t<real_t*> damp;
     const real_t         sx1, sx2, sx3;
-    const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
+    const real_t         k11, k12, k21, k22, k31, k32, k41, k42;
+    const real_t         k51, k52, k61, k62, k71, k72, k81, k82;
+    };
+
+    template <Dimension D>
+  struct ExtCurrent {
+    ExtCurrent(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3, array_t<real_t*> damp0)
+      : amps { amplitudes }
+      , sx1 { SX1 }
+      , sx2 { SX2 }
+      , sx3 { SX3 }
+      , damp { damp0 }
+      , k11 {ZERO * constant::TWO_PI / sx1}
+      , k12 { ONE * constant::TWO_PI / sx2}
+      , k21 {ZERO * constant::TWO_PI / sx1}
+      , k22 {-ONE * constant::TWO_PI / sx2}
+      , k31 { ONE * constant::TWO_PI / sx1}
+      , k32 {ZERO * constant::TWO_PI / sx2}
+      , k41 {-ONE * constant::TWO_PI / sx1}
+      , k42 {ZERO * constant::TWO_PI / sx2} 
+      , k51 {ZERO * constant::TWO_PI / sx1}
+      , k52 { ONE * constant::TWO_PI / sx2}
+      , k61 {ZERO * constant::TWO_PI / sx1}
+      , k62 {-ONE * constant::TWO_PI / sx2}
+      , k71 { ONE * constant::TWO_PI / sx1}
+      , k72 {ZERO * constant::TWO_PI / sx2}
+      , k81 {-ONE * constant::TWO_PI / sx1}
+      , k82 {ZERO * constant::TWO_PI / sx2} {}
+
+    ExtCurrent() = default;
+
+    Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return damp(4) * amps(4, REAL) *
+      //          math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
+      //        damp(4) * amps(4, IMAG) *
+      //          math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+      //        damp(5) * amps(5, REAL) *
+      //          math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
+      //        damp(5) * amps(5, IMAG) *
+      //          math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]);
+    }
+
+    Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return damp(6) * amps(6, REAL) *
+      //          math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
+      //        damp(6) * amps(6, IMAG) *
+      //          math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+      //        damp(7) * amps(7, REAL) *
+      //          math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
+      //        damp(7) * amps(7, IMAG) *
+      //          math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
+    }
+
+    Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return damp(0) * amps(0, REAL) *
+      //          math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) -
+      //        damp(0) * amps(0, IMAG) *
+      //          math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+      //        damp(1) * amps(1, REAL) *
+      //          math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) -
+      //        damp(1) * amps(1, IMAG) *
+      //          math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+      //        damp(2) * amps(2, REAL) *
+      //           math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) -
+      //         damp(2) * amps(2, IMAG) *
+      //           math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+      //         damp(3) * amps(3, REAL) *
+      //           math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
+      //         damp(3) * amps(3, IMAG) *
+      //           math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+    }
+
+  private:
+    array_t<real_t* [2]> amps;
+    array_t<real_t*> damp;
+    const real_t         sx1, sx2, sx3;
+    const real_t         k11, k12, k21, k22, k31, k32, k41, k42;
+    const real_t         k51, k52, k61, k62, k71, k72, k81, k82;
   };
 
   template <SimEngine::type S, class M>
@@ -186,9 +291,11 @@ namespace user {
     const unsigned int   nmodes;
     const real_t         amp0;
     const real_t        pl_gamma_min, pl_gamma_max, pl_index;
+    real_t               gamma0;
     array_t<real_t* [2]> amplitudes;
-    array_t<real_t*> phi0;
+    array_t<real_t*> phi0, rands, damp0;
     ExtForce<M::PrtlDim> ext_force;
+    ExtCurrent<M::PrtlDim>   ext_current;
     const real_t         dt;
     InitFields<D> init_flds;
 
@@ -203,24 +310,44 @@ namespace user {
       , SX3 { TWO }
       , temperature { params.template get<real_t>("setup.temperature", 0.16) }
       , machno { params.template get<real_t>("setup.machno", 1.0) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
+      , nmodes { params.template get<unsigned int>("setup.nmodes", 8) }
       , Bnorm { params.template get<real_t>("setup.Bnorm", 0.0) }
       , pl_gamma_min { params.template get<real_t>("setup.pl_gamma_min", 0.1) }
       , pl_gamma_max { params.template get<real_t>("setup.pl_gamma_max", 100.0) }
-      , pl_index { params.template get<real_t>("setup.pl_index", -2.0) }  
-      , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
+      , pl_index { params.template get<real_t>("setup.pl_index", -2.0) } 
+      , dt { params.template get<real_t>("algorithms.timestep.dt") } 
+      , amp0 { machno * temperature / static_cast<real_t>(nmodes) * 0.1 }
+      , gamma0 { ONE }
+      , damp0 { "Damping", nmodes }  
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
-      , ext_force { amplitudes, SX1, SX2, SX3 }
-      , init_flds { Bnorm }
-      , dt { params.template get<real_t>("algorithms.timestep.dt") } {
+      , rands { "RandomNumbers", 2*nmodes }
+      , ext_force { amplitudes, SX1, SX2, SX3, damp0 }
+      , ext_current { amplitudes, SX1, SX2, SX3, damp0}
+      , init_flds { Bnorm } {
+      // Initialize mean gamma
+      if (temperature < 0.7) {
+        gamma0 = 1.0 + 1.5 * temperature + 1.875 * SQR(temperature) - 1.875 * CUBE(temperature) + 1.05469 * SQR(SQR(temperature)) + 1.40625 * SQR(temperature) * CUBE(temperature);
+      } else {
+        gamma0 = 0.5 / temperature + 3.0 * temperature + (0.0625 * (- 1.23186 - 2.0 * math::log(temperature))) / (SQR(temperature) * CUBE(temperature));
+      }
       // Initializing random phases
       auto phi0_ = Kokkos::create_mirror_view(phi0);
-      srand (static_cast <unsigned> (12345));
+      auto damp0_ = Kokkos::create_mirror_view(damp0);
+      // srand (static_cast <unsigned> (12345));
       for (int i = 0; i < nmodes; ++i) {
         phi0_(i) = constant::TWO_PI * static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX);
+        damp0_(i) = ZERO;
       }
       Kokkos::deep_copy(phi0, phi0_);
+      Kokkos::deep_copy(damp0, damp0_);
+
+      #if defined(MPI_ENABLED)
+        int              rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Bcast(phi0.data(), phi0.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
+      #endif
+
       // Initializing amplitudes
       Init();
     }
@@ -236,7 +363,6 @@ namespace user {
         Lambda(index_t i) {
           amplitudes_(i, REAL) = amp0_ * math::cos(phi0_(i));
           amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_(i));
-          printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
         });
     }
 
@@ -288,10 +414,15 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
-      auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
-      auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0 / dt);
-      auto pool   = domain.random_pool;
+      // auto omega0 = 0.5*0.6 * math::sqrt(temperature * machno) * constant::TWO_PI / SX1;
+      // auto gamma0 = 0.5*0.5 * math::sqrt(temperature * machno) * constant::TWO_PI / SX2;
+      const auto mag0 = params.template get<real_t>("scales.sigma0") / (this->gamma0);
+      const auto vA0 = math::sqrt(mag0/(mag0 + 1.3333333333333333));
+      const auto omega0 = 0.6 * vA0 * constant::TWO_PI / (1.73205 * (this->SX1));
+      const auto gamma0 = 0.5 * vA0 * constant::TWO_PI / (1.73205 * (this->SX1));
+      const auto sigma0 = (this->amp0) * math::sqrt(static_cast<real_t>(this->nmodes) * gamma0 / this->dt);
+      const auto pool   = domain.random_pool;
+      const auto dt_    = this->dt;
 
       #if defined(MPI_ENABLED)
         int              rank;
@@ -299,30 +430,51 @@ namespace user {
       #endif
 
       Kokkos::parallel_for(
+        "RandomNumbers",
+        rands.extent(0),
+        ClassLambda(index_t i) {
+          auto       rand_gen = pool.get_state();
+          rands(i) = Random<real_t>(rand_gen);
+          pool.free_state(rand_gen);
+        });
+
+      #if defined(MPI_ENABLED)
+        MPI_Bcast(rands.data(), rands.extent(0), mpi::get_type<real_t>(), 0, MPI_COMM_WORLD);
+      #endif
+
+      // auto rand_m = Kokkos::create_mirror_view(rands);
+      // Kokkos::deep_copy(rand_m, rands);
+      // printf("rands(0) = %f\n", rand_m(0));
+
+      Kokkos::parallel_for(
         "RandomAmplitudes",
         amplitudes.extent(0),
         ClassLambda(index_t i) {
-          auto       rand_gen = pool.get_state();
-          const auto unr      = Random<real_t>(rand_gen) - HALF;
-          const auto uni      = Random<real_t>(rand_gen) - HALF;
-          pool.free_state(rand_gen);
+          const auto unr      = rands(i) - HALF;
+          const auto uni      = rands(amplitudes.extent(0) + i) - HALF;
           const auto ampr_prev = amplitudes(i, REAL);
           const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                unr * sigma0 * dt;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                uni * sigma0 * dt;
+          auto omega0in = omega0;
+
+          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0in * dt_) +
+                                 ampi_prev * math::sin(omega0in * dt_)) *
+                                  math::exp(-gamma0 * dt_) +
+                                unr * sigma0 * dt_;
+          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0in * dt_) +
+                                 ampi_prev * math::cos(omega0in * dt_)) *
+                                  math::exp(-gamma0 * dt_) +
+                                uni * sigma0 * dt_;
+
+          if(damp0(i) < ONE) {
+            damp0(i) += dt_;
+          }
         });
 
       auto amplitudes_ = Kokkos::create_mirror_view(amplitudes);
       Kokkos::deep_copy(amplitudes_, amplitudes);
-      for (int i = 0; i < nmodes; ++i) {
-        printf("amplitudes_(%d, REAL) = %f\n", i, amplitudes_(i, REAL));
-      }
+      // for (int i = 0; i < nmodes; ++i) {
+      //   printf("amplitudes_(%d, REAL) = %f\n, rank = %d", i, amplitudes_(i, REAL), rank);
+      // }
 
       auto fext_en_total = ZERO;
       for (auto& species : domain.species) {
@@ -378,6 +530,7 @@ namespace user {
         
       auto benrg_total = ZERO;
       auto eenrg_total = ZERO;
+      auto ej_total = ZERO;
 
       if constexpr (D == Dim::_3D) {
         
@@ -497,12 +650,50 @@ namespace user {
       // Weight the field integral by sim parameters
         eenrg_total *= params.template get<real_t>("scales.V0") * params.template get<real_t>("scales.sigma0") * HALF;
 
+        auto ej_s = ZERO;
+        auto ext_current_ = this->ext_current;
+        Kokkos::parallel_reduce(
+          "BEnrg",
+          domain.mesh.rangeActiveCells(),
+          Lambda(index_t i1, index_t i2, real_t & ej) {
+            coord_t<Dim::_2D> x_Cd { i1, i2 };
+            vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, em::ex1),
+                                      EB(i1, i2, em::ex2),
+                                      EB(i1, i2, em::ex3) };
+            vec_t<Dim::_3D>   e_XYZ;
+            metric.template transform<Idx::U, Idx::T>(x_Cd, e_Cntrv, e_XYZ);  
+
+            coord_t<Dim::_2D> xp_Ph { ZERO };
+            xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(x_Cd[0]);
+            xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(x_Cd[1]);
+
+            ej -= (e_XYZ[0] * ext_current_.jx1(xp_Ph) +
+                   e_XYZ[1] * ext_current_.jx2(xp_Ph) +
+                   e_XYZ[2] * ext_current_.jx3(xp_Ph));
+
+          },
+          ej_s);
+
+        #if defined(MPI_ENABLED)
+          auto ej_sg = ZERO;
+          MPI_Allreduce(&ej_s, &ej_sg, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+          ej_total += ej_sg;
+        #else
+          ej_total += ej_s;
+        #endif
+
+      // Weight the field integral by sim parameters
+        ej_total *= params.template get<real_t>("scales.V0") / params.template get<real_t>("scales.larmor0");
+
       }
 
       std::ofstream myfile1;
       std::ofstream myfile2;
       std::ofstream myfile3;
       std::ofstream myfile4;
+      std::ofstream myfile5;
+      std::ofstream myfile6;
+      
 
       #if defined(MPI_ENABLED)
 
@@ -537,6 +728,25 @@ namespace user {
             myfile4.open("esqenrg.txt", std::ios_base::app);
           }
           myfile4 << eenrg_total << std::endl;
+
+          if (time == 0) {
+            myfile5.open("amps.txt");
+          } else {
+            myfile5.open("amps.txt", std::ios_base::app);
+          }
+
+          for (int i = 0; i < nmodes; ++i) {
+            myfile5 << amplitudes_(i, REAL) << " " << amplitudes_(i, IMAG) << " ";
+          }
+          myfile5 << std::endl;
+
+          if (time == 0) {
+            myfile6.open("ejenrg.txt");
+          } else {
+            myfile6.open("ejenrg.txt", std::ios_base::app);
+          }
+          myfile6 << ej_total << std::endl;
+
         }
 
       #else
@@ -569,6 +779,23 @@ namespace user {
           }
           myfile4 << eenrg_total << std::endl;
 
+          if (time == 0) {
+            myfile5.open("amps.txt");
+          } else {
+            myfile5.open("amps.txt", std::ios_base::app);
+          }
+          for (int i = 0; i < nmodes; ++i) {
+            myfile5 << amplitudes_(i, REAL) << " " << amplitudes_(i, IMAG) << " ";
+          }
+          myfile5 << std::endl;
+
+          if (time == 0) {
+            myfile6.open("ejenrg.txt");
+          } else {
+            myfile6.open("ejenrg.txt", std::ios_base::app);
+          }
+          myfile6 << ej_total << std::endl;
+          
       #endif
     }
   };
