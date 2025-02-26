@@ -36,16 +36,16 @@ namespace user {
       , Vx { drift_ux } {}
 
     // magnetic field components
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
+      return Bmag * math::cos(Btheta);
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
-      return -x_Ph[0];
+    Inline auto bx2(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(Btheta) * math::sin(Bphi);
     }
 
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      return -x_Ph[0];
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(Btheta) * math::cos(Bphi);
     }
 
     // electric field components
