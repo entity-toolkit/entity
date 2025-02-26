@@ -49,16 +49,16 @@ namespace user {
     }
 
     // electric field components
-    Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto ex1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
+      return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
     }
 
-    Inline auto ex3(const coord_t<D>& x_Ph) const -> real_t {
-      return ZERO;
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
+      return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
     }
 
   private:
