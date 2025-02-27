@@ -659,7 +659,7 @@ namespace user {
 
             auto tpeak = fid_freq_ / 2.821;
             if (xPh[0] * math::sin(xPh[1]) > 3.0) {
-              tpeak *=  ONE / (ONE + (xPh[0] * math::sin(xPh[1]) - 3.0));
+              tpeak *=  math::max(ONE / (ONE + (xPh[0] * math::sin(xPh[1]) - 3.0)), 0.125);
             }
 
             // if (gamma < 2.0) {
