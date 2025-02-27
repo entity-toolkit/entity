@@ -36,29 +36,34 @@ namespace user {
       , Vx { drift_ux } {}
 
     // magnetic field components
-    Inline auto bx1(const coord_t<D>&) const -> real_t {
-      return Bmag * math::cos(Btheta);
-    }
-
-    Inline auto bx2(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(Btheta) * math::sin(Bphi);
-    }
-
-    Inline auto bx3(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(Btheta) * math::cos(Bphi);
-    }
-
-    // electric field components
-    Inline auto ex1(const coord_t<D>&) const -> real_t {
+    Inline auto bx1(const coord_t<D>& x_ph) const -> real_t {
+      // return Bmag * math::cos(Btheta);
       return ZERO;
     }
 
-    Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
+    Inline auto bx2(const coord_t<D>& x_ph) const -> real_t {
+      // return Bmag * math::sin(Btheta) * math::sin(Bphi);
+      return ZERO;
     }
 
-    Inline auto ex3(const coord_t<D>&) const -> real_t {
-      return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
+    Inline auto bx3(const coord_t<D>& x_ph) const -> real_t {
+      // return Bmag * math::sin(Btheta) * math::cos(Bphi);
+      return ONE + 0.01 * (ONE - math::tanh(20.*(-1.5 + x))*math::tanh(20.*(-0.5 + x)))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+    }
+
+    // electric field components
+    Inline auto ex1(const coord_t<D>& x_ph) const -> real_t {
+      return ZERO;
+    }
+
+    Inline auto ex2(const coord_t<D>& x_ph) const -> real_t {
+      // return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
+      return ZERO + 0.01 * (ONE - math::tanh(20.*(-1.5 + x))*math::tanh(20.*(-0.5 + x)))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+    }
+
+    Inline auto ex3(const coord_t<D>& x_ph) const -> real_t {
+      // return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
+      return ZERO;
     }
 
   private:
