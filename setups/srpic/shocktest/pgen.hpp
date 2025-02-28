@@ -169,8 +169,8 @@ namespace user {
               dx1_e(elec_p + offset_e) = dx1_;
               i2_e(elec_p + offset_e) = i2_;
               dx2_e(elec_p + offset_e) = dx2_;
-              ux1_e(elec_p + offset_e) = -drift_ux;
-              ux2_e(elec_p + offset_e) = drift_ux;
+              ux1_e(elec_p + offset_e) = -0.5;
+              ux2_e(elec_p + offset_e) = 0.5;
               ux3_e(elec_p + offset_e) = ZERO;
               weight_e(elec_p + offset_e) = ONE;
               tag_e(elec_p + offset_e) = ParticleTag::alive;
@@ -179,8 +179,8 @@ namespace user {
               dx1_p(pos_p + offset_p) = dx1_;
               i2_p(pos_p + offset_p) = i2_;
               dx2_p(pos_p + offset_p) = dx2_;
-              ux1_p(pos_p + offset_p) = -drift_ux;
-              ux2_p(pos_p + offset_p) = drift_ux;
+              ux1_p(pos_p + offset_p) = -0.5;
+              ux2_p(pos_p + offset_p) = 0.5;
               ux3_p(pos_p + offset_p) = ZERO;
               weight_p(pos_p + offset_p) = ONE;
               tag_p(pos_p + offset_p) = ParticleTag::alive;
