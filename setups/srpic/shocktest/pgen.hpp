@@ -48,7 +48,8 @@ namespace user {
 
     Inline auto bx3(const coord_t<D>& x_ph) const -> real_t {
       // return Bmag * math::sin(Btheta) * math::cos(Bphi);
-      return ONE + 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+      // return ONE + 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+      return ZERO;
     }
 
     // electric field components
@@ -58,7 +59,8 @@ namespace user {
 
     Inline auto ex2(const coord_t<D>& x_ph) const -> real_t {
       // return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
-      return ZERO - 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+      // return ZERO - 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+      return ZERO;
     }
 
     Inline auto ex3(const coord_t<D>& x_ph) const -> real_t {
@@ -120,8 +122,6 @@ namespace user {
 
         auto& species_e = domain.species[0];
         auto& species_p = domain.species[1];
-        auto metric = domain.mesh.metric;
-        auto m = domain.mesh.metric;
 
         array_t<std::size_t> elec_ind("elec_ind");
         array_t<std::size_t> pos_ind("pos_ind");
@@ -152,15 +152,14 @@ namespace user {
         auto tag_p    = species_p.tag;
 
         int nseed = 1;
-        auto dseed = HALF * constant::PI / static_cast<real_t>(nseed); 
 
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
           // ToDo: fix this
           auto i1_ = ONE;
           auto i2_ = ONE;
-          auto dx1_ = ONE - HALF;
-          auto dx2_ = ONE - HALF;
+          auto dx1_ = HALF;
+          auto dx2_ = HALF;
 
 
               auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
