@@ -111,72 +111,116 @@ namespace user {
       }
     }
 
-    
-    auto PerfectConductorFieldsConst(const bc_in&, const em& comp) const -> real_t{
-
-      // electric field components
-      if (comp == em::ex1) {
-          return ONE;
-      } else if (comp == em::ex2) {
-        return -ONE;
-      } else if (comp == em::ex3) {
-          return -ONE; } 
-      // magentic field components
-      else if (comp == em::bx1) {
-        return -ONE;
-      } else if (comp == em::bx2) {
-        return ONE;
-      } else if (comp == em::bx3) {
-        return ONE;}
-      // should never be the case
-      else
-      {
-          return ZERO;
-      }
-    }
-
-    // auto PerfectConductorCurrentsConst(const bc_in &, const cur &comp) const
-    //     -> std::pair<real_t, bool>
-    // {
-    //     // ToDo
-    //     if (comp == cur::jx1)
-    //     {
-    //         return ZERO;
-    //     }
-    //     else if (comp == cur::jx2)
-    //     {
-    //         return ZERO;
-    //     }
-    //     else if (comp == cur::jx3)
-    //     {
-    //         return ZERO;
-    //     }
-    //     else
-    //     {
-    //         return ZERO;
-    //     }
-    // }
 
     auto MatchFields(real_t time) const -> InitFields<D> {
       return init_flds;
     }
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+    inline void InitPrtls(Domain<S, M>& domain) {
 
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 });
-      // arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
-      //   params,
-      //   local_domain,
-      //   injector,
-      //   1.0);
+        auto& species_e = domain.species[0];
+        auto& species_p = domain.species[1];
+        auto metric = domain.mesh.metric;
+        auto m = domain.mesh.metric;
+
+        array_t<std::size_t> elec_ind("elec_ind");
+        array_t<std::size_t> pos_ind("pos_ind");
+          
+        auto offset_e = species_e.npart();
+        auto offset_p = species_p.npart();
+
+        auto ux1_e    = species_e.ux1;
+        auto ux2_e    = species_e.ux2;
+        auto ux3_e    = species_e.ux3;
+        auto i1_e     = species_e.i1;
+        auto i2_e     = species_e.i2;
+        auto dx1_e    = species_e.dx1;
+        auto dx2_e    = species_e.dx2;
+        auto phi_e    = species_e.phi;
+        auto weight_e = species_e.weight;
+        auto tag_e    = species_e.tag;
+
+        auto ux1_p    = species_p.ux1;
+        auto ux2_p    = species_p.ux2;
+        auto ux3_p    = species_p.ux3;
+        auto i1_p     = species_p.i1;
+        auto i2_p     = species_p.i2;
+        auto dx1_p    = species_p.dx1;
+        auto dx2_p    = species_p.dx2;
+        auto phi_p    = species_p.phi;
+        auto weight_p = species_p.weight;
+        auto tag_p    = species_p.tag;
+
+        int nseed = 1;
+        auto dseed = HALF * constant::PI / static_cast<real_t>(nseed); 
+
+        Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
+
+          // ToDo: fix this
+          auto i1_ = ONE;
+          auto i2_ = ONE;
+          auto dx1_ = ONE - HALF;
+          auto dx2_ = ONE - HALF;
+
+
+              auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+
+              i1_e(elec_p + offset_e) = i1_;
+              dx1_e(elec_p + offset_e) = dx1_;
+              i2_e(elec_p + offset_e) = i2_;
+              dx2_e(elec_p + offset_e) = dx2_;
+              phi_e(elec_p + offset_e) = ZERO;
+              ux1_e(elec_p + offset_e) = -drift_ux;
+              ux2_e(elec_p + offset_e) = -drift_ux;
+              ux3_e(elec_p + offset_e) = ZERO;
+              weight_e(elec_p + offset_e) = ONE;
+              tag_e(elec_p + offset_e) = ParticleTag::alive;
+
+              i1_p(pos_p + offset_p) = i1_;
+              dx1_p(pos_p + offset_p) = dx1_;
+              i2_p(pos_p + offset_p) = i2_;
+              dx2_p(pos_p + offset_p) = dx2_;
+              phi_p(pos_p + offset_p) = ZERO;
+              ux1_p(pos_p + offset_p) = -drift_ux;
+              ux2_p(pos_p + offset_p) = drift_ux;
+              ux3_p(pos_p + offset_p) = ZERO;
+              weight_p(pos_p + offset_p) = ONE;
+              tag_p(pos_p + offset_p) = ParticleTag::alive;
+
+
+          });
+
+
+            auto elec_ind_h = Kokkos::create_mirror(elec_ind);
+            Kokkos::deep_copy(elec_ind_h, elec_ind);
+            species_e.set_npart(offset_e + elec_ind_h());
+
+            auto pos_ind_h = Kokkos::create_mirror(pos_ind);
+            Kokkos::deep_copy(pos_ind_h, pos_ind);
+            species_p.set_npart(offset_p + pos_ind_h());
+
+
     }
+
+
+    // inline void InitPrtls(Domain<S, M>& local_domain) {
+    //   const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+    //                                                   local_domain.random_pool,
+    //                                                   temperature,
+    //                                                   -drift_ux,
+    //                                                   in::x1);
+
+    //   const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+    //     energy_dist,
+    //     { 1, 2 });
+    //   arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+    //     params,
+    //     local_domain,
+    //     injector,
+    //     1.0);
+    // }
+
   };
 
 } // namespace user
