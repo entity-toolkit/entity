@@ -506,19 +506,19 @@ namespace kernel::bc {
 
         if constexpr (S == SimEngine::SRPIC) {
 
-        if (tags & BC::E) {
-          Fld((N_GHOSTS-1)-i1, em::ex1) =  Fld(N_GHOSTS+i1, em::ex1);
-          Fld((N_GHOSTS-1)-i1, em::ex2) = -Fld(N_GHOSTS+i1, em::ex2);
-          Fld((N_GHOSTS-1)-i1, em::ex3) = -Fld(N_GHOSTS+i1, em::ex3);
-        }
+            if (tags & BC::E)
+            {
+                Fld((N_GHOSTS - 1) - i1, em::ex1) =  Fld(N_GHOSTS + i1, em::ex1);
+                Fld((N_GHOSTS - 1) - i1, em::ex2) = -Fld(N_GHOSTS + 1 + i1, em::ex2);
+                Fld((N_GHOSTS - 1) - i1, em::ex3) = -Fld(N_GHOSTS + 1 + i1, em::ex3);
+            }
 
-        if (tags & BC::B)
-        {
-          Fld((N_GHOSTS-1)-i1, em::bx1) = -Fld(N_GHOSTS+i1, em::bx1);
-          Fld((N_GHOSTS-1)-i1, em::bx1) =  Fld(N_GHOSTS+i1, em::bx1);
-          Fld((N_GHOSTS-1)-i1, em::bx1) =  Fld(N_GHOSTS+i1, em::bx1);
-        }
-
+            if (tags & BC::B)
+            {
+                Fld((N_GHOSTS - 1) - i1, em::bx1) = -Fld(N_GHOSTS + 1 + i1, em::bx1);
+                Fld((N_GHOSTS - 1) - i1, em::bx2) =  Fld(N_GHOSTS + i1, em::bx2);
+                Fld((N_GHOSTS - 1) - i1, em::bx3) =  Fld(N_GHOSTS + i1, em::bx3);
+            }
         } else {
           // GRPIC
           raise::KernelError(HERE, "1D GRPIC not implemented");
@@ -546,9 +546,6 @@ namespace kernel::bc {
             Fld((N_GHOSTS-1)-i1, i2, em::bx1) =  - Fld(N_GHOSTS+1+i1, i2, em::bx1);
             Fld((N_GHOSTS-1)-i1, i2, em::bx2) =    Fld(N_GHOSTS+i1, i2, em::bx2);
             Fld((N_GHOSTS-1)-i1, i2, em::bx3) =    Fld(N_GHOSTS+i1, i2, em::bx3);
-            // Fld((N_GHOSTS-1)-i1, i2, em::bx1) = 1.0;
-            // Fld((N_GHOSTS-1)-i1, i2, em::bx2) = 2.0;
-            // Fld((N_GHOSTS-1)-i1, i2, em::bx3) = 3.0;
           }
         } else {
           // GRPIC
