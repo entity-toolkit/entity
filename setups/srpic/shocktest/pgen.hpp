@@ -156,8 +156,8 @@ namespace user {
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
           // ToDo: fix this
-          auto i1_ = ONE;
-          auto i2_ = ONE;
+          auto i1_ = 100;
+          auto i2_ = 100;
           auto dx1_ = HALF;
           auto dx2_ = HALF;
 
