@@ -156,7 +156,7 @@ namespace user {
         Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
           // ToDo: fix this
-          auto i1_ = math::floor(100);
+          auto i1_ = math::floor(10);
           auto i2_ = math::floor(64);
           auto dx1_ = HALF;
           auto dx2_ = HALF;
