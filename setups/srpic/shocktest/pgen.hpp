@@ -179,8 +179,8 @@ namespace user {
               dx1_p(pos_p + offset_p) = dx1_;
               i2_p(pos_p + offset_p) = i2_;
               dx2_p(pos_p + offset_p) = dx2_;
-              ux1_p(pos_p + offset_p) = -0.5;
-              ux2_p(pos_p + offset_p) = 0.5;
+              ux1_p(pos_p + offset_p) = 0.5;
+              ux2_p(pos_p + offset_p) = -0.5;
               ux3_p(pos_p + offset_p) = ZERO;
               weight_p(pos_p + offset_p) = ONE;
               tag_p(pos_p + offset_p) = ParticleTag::alive;
