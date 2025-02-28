@@ -537,13 +537,13 @@ namespace kernel::bc {
           // SRPIC
           if (tags & BC::E) {
             Fld((N_GHOSTS-1)-i1, i2, em::ex1) =   Fld(N_GHOSTS+i1, i2, em::ex1);
-            Fld((N_GHOSTS-1)-i1, i2, em::ex2) = - Fld(N_GHOSTS+1+i1, i2, em::ex2);
-            Fld((N_GHOSTS-1)-i1, i2, em::ex3) = - Fld(N_GHOSTS+1+i1, i2, em::ex3);
+            Fld((N_GHOSTS-1)-i1, i2, em::ex2) = - Fld(N_GHOSTS+i1, i2, em::ex2);
+            Fld((N_GHOSTS-1)-i1, i2, em::ex3) = - Fld(N_GHOSTS+i1, i2, em::ex3);
           }
 
           if (tags & BC::B)
           {
-            Fld((N_GHOSTS-1)-i1, i2, em::bx1) =  - Fld(N_GHOSTS+1+i1, i2, em::bx1);
+            Fld((N_GHOSTS-1)-i1, i2, em::bx1) =  - Fld(N_GHOSTS+i1, i2, em::bx1);
             Fld((N_GHOSTS-1)-i1, i2, em::bx2) =    Fld(N_GHOSTS+i1, i2, em::bx2);
             Fld((N_GHOSTS-1)-i1, i2, em::bx3) =    Fld(N_GHOSTS+i1, i2, em::bx3);
           }
