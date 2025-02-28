@@ -542,6 +542,8 @@ namespace kernel::bc {
             Fld((N_GHOSTS-1)-i1, i2, em::ex1) = ZERO;
             Fld((N_GHOSTS-1)-i1, i2, em::ex2) = ZERO;
             Fld((N_GHOSTS-1)-i1, i2, em::ex3) = ZERO;
+            Fld((N_GHOSTS), i2, em::ex2) = ZERO;
+            Fld((N_GHOSTS), i2, em::ex3) = ZERO;
           }
 
           if (tags & BC::B)
