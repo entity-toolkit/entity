@@ -506,19 +506,19 @@ namespace kernel::bc {
 
         if constexpr (S == SimEngine::SRPIC) {
 
-            if (tags & BC::E)
-            {
-                Fld((N_GHOSTS - 1) - i1, em::ex1) =  Fld(N_GHOSTS + i1, em::ex1);
-                Fld((N_GHOSTS - 1) - i1, em::ex2) = -Fld(N_GHOSTS + 1 + i1, em::ex2);
-                Fld((N_GHOSTS - 1) - i1, em::ex3) = -Fld(N_GHOSTS + 1 + i1, em::ex3);
-            }
+        if (tags & BC::E) {
+          Fld((N_GHOSTS-1)-i1, em::ex1) =  Fld(N_GHOSTS+i1, em::ex1);
+          Fld((N_GHOSTS-1)-i1, em::ex2) = -Fld(N_GHOSTS+i1+1, em::ex2);
+          Fld((N_GHOSTS-1)-i1, em::ex3) = -Fld(N_GHOSTS+i1+1, em::ex3);
+        }
 
-            if (tags & BC::B)
-            {
-                Fld((N_GHOSTS - 1) - i1, em::bx1) = -Fld(N_GHOSTS + 1 + i1, em::bx1);
-                Fld((N_GHOSTS - 1) - i1, em::bx2) =  Fld(N_GHOSTS + i1, em::bx2);
-                Fld((N_GHOSTS - 1) - i1, em::bx3) =  Fld(N_GHOSTS + i1, em::bx3);
-            }
+        if (tags & BC::B)
+        {
+          Fld((N_GHOSTS-1)-i1, em::bx1) = -Fld(N_GHOSTS+i1+1, em::bx1);
+          Fld((N_GHOSTS-1)-i1, em::bx1) =  Fld(N_GHOSTS+i1, em::bx1);
+          Fld((N_GHOSTS-1)-i1, em::bx1) =  Fld(N_GHOSTS+i1, em::bx1);
+        }
+
         } else {
           // GRPIC
           raise::KernelError(HERE, "1D GRPIC not implemented");
@@ -530,64 +530,75 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
-      if constexpr (M::Dim == Dim::_2D) {
+    Inline void operator()(index_t i1, index_t i2) const
+    {
+      if constexpr (M::Dim == Dim::_2D)
+      {
 
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (S == SimEngine::SRPIC)
+        {
           // SRPIC
-          if (tags & BC::E) {
-            // Fld((N_GHOSTS-1)-i1, i2, em::ex1) =   Fld(N_GHOSTS+i1, i2, em::ex1);
-            // Fld((N_GHOSTS-1)-i1, i2, em::ex2) = - Fld(N_GHOSTS+1+i1, i2, em::ex2);
-            // Fld((N_GHOSTS-1)-i1, i2, em::ex3) = - Fld(N_GHOSTS+1+i1, i2, em::ex3);
-            Fld((N_GHOSTS-1)-i1, i2, em::ex1) = ZERO;
-            Fld((N_GHOSTS-1)-i1, i2, em::ex2) = ZERO;
-            Fld((N_GHOSTS-1)-i1, i2, em::ex3) = ZERO;
-            Fld((N_GHOSTS), i2, em::ex2) = ZERO;
-            Fld((N_GHOSTS), i2, em::ex3) = ZERO;
+          if (tags & BC::E)
+          {
+            Fld((N_GHOSTS - 1) - i1, i2, em::ex1) = Fld(N_GHOSTS + i1, i2, em::ex1);
+            Fld((N_GHOSTS - 1) - i1, i2, em::ex2) = -Fld(N_GHOSTS + 1 + i1, i2, em::ex2);
+            Fld((N_GHOSTS - 1) - i1, i2, em::ex3) = -Fld(N_GHOSTS + 1 + i1, i2, em::ex3);
           }
 
           if (tags & BC::B)
           {
-            Fld((N_GHOSTS-1)-i1, i2, em::bx1) = ZERO;
-            Fld((N_GHOSTS-1)-i1, i2, em::bx2) = ZERO;
-            Fld((N_GHOSTS-1)-i1, i2, em::bx3) = ZERO;
+            Fld((N_GHOSTS - 1) - i1, i2, em::bx1) = -Fld(N_GHOSTS + 1 + i1, i2, em::bx1);
+            Fld((N_GHOSTS - 1) - i1, i2, em::bx2) = Fld(N_GHOSTS + i1, i2, em::bx2);
+            Fld((N_GHOSTS - 1) - i1, i2, em::bx3) = Fld(N_GHOSTS + i1, i2, em::bx3);
           }
-        } else {
+        }
+        else
+        {
           // GRPIC
           raise::KernelError(HERE, "2D GRPIC not implemented");
         }
-      } else {
+      }
+      else
+      {
         raise::KernelError(
-          HERE,
-          "ConductorBoundaries_kernel: 2D implementation called for D != 2");
+            HERE,
+            "ConductorBoundaries_kernel: 2D implementation called for D != 2");
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
-      if constexpr (M::Dim == Dim::_3D) {
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const
+    {
+      if constexpr (M::Dim == Dim::_3D)
+      {
 
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (S == SimEngine::SRPIC)
+        {
           // SRPIC
-          if (tags & BC::E) {
-            Fld((N_GHOSTS-1)-i1, i2, i3, em::ex1) =  Fld(N_GHOSTS+i1, i2, i3, em::ex1);
-            Fld((N_GHOSTS-1)-i1, i2, i3, em::ex2) = -Fld(N_GHOSTS+i1, i2, i3, em::ex2);
-            Fld((N_GHOSTS-1)-i1, i2, i3, em::ex3) = -Fld(N_GHOSTS+i1, i2, i3, em::ex3);
+          if (tags & BC::E)
+          {
+            Fld((N_GHOSTS - 1) - i1, i2, i3, em::ex1) = Fld(N_GHOSTS + i1, i2, i3, em::ex1);
+            Fld((N_GHOSTS - 1) - i1, i2, i3, em::ex2) = -Fld(N_GHOSTS + i1 + 1, i2, i3, em::ex2);
+            Fld((N_GHOSTS - 1) - i1, i2, i3, em::ex3) = -Fld(N_GHOSTS + i1 + 1, i2, i3, em::ex3);
           }
 
           if (tags & BC::B)
           {
-            Fld((N_GHOSTS-1)-i1, i2, i3, em::bx1) = -Fld(N_GHOSTS+i1, i2, i3, em::bx1);
-            Fld((N_GHOSTS-1)-i1, i2, i3, em::bx2) =  Fld(N_GHOSTS+i1, i2, i3, em::bx2);
-            Fld((N_GHOSTS-1)-i1, i2, i3, em::bx3) =  Fld(N_GHOSTS+i1, i2, i3, em::bx3);
+            Fld((N_GHOSTS - 1) - i1, i2, i3, em::bx1) = -Fld(N_GHOSTS + i1 + 1, i2, i3, em::bx1);
+            Fld((N_GHOSTS - 1) - i1, i2, i3, em::bx2) = Fld(N_GHOSTS + i1, i2, i3, em::bx2);
+            Fld((N_GHOSTS - 1) - i1, i2, i3, em::bx3) = Fld(N_GHOSTS + i1, i2, i3, em::bx3);
           }
-        } else {
+        }
+        else
+        {
           // GRPIC
           raise::KernelError(HERE, "3D GRPIC not implemented");
         }
-      } else {
+      }
+      else
+      {
         raise::KernelError(
-          HERE,
-          "ConductorBoundaries_kernel: 3D implementation called for D != 3");
+            HERE,
+            "ConductorBoundaries_kernel: 3D implementation called for D != 3");
       }
     }
   };
