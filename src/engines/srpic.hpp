@@ -839,59 +839,104 @@ namespace ntt {
     }
 
     void PerfectConductorFieldsIn(dir::direction_t<M::Dim> direction,
-                       domain_t&                domain,
-                       BCTags                   tags) {
+                                  domain_t&                domain,
+                                  BCTags                   tags) {
       /**
        * perfect conductor field boundaries
        */
-      const auto sign = direction.get_sign();
-      const auto dim  = direction.get_dim();
-      raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
-                     "Perfect conductor BCs only implemented for x1 in "
-                     "non-cartesian coordinates",
-                     HERE);
+      if constexpr (M::CoordType != Coord::Cart) {
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error(
+          "Perfect conductor BCs only applicable to cartesian coordinates",
+          HERE);
+      } else {
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
 
+        std::vector<std::size_t> xi_min, xi_max;
 
-      std::vector<std::size_t> xi_min, xi_max;
+        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
 
-      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
-      
-      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
-        const auto dd = all_dirs[d];
-        if (dim == dd) {
+        for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+          const auto dd = all_dirs[d];
+          if (dim == dd) {
             xi_min.push_back(0);
-            xi_max.push_back(N_GHOSTS);
+            xi_max.push_back((sign < 0) ? (N_GHOSTS + 1) : N_GHOSTS);
+          } else {
+            xi_min.push_back(0);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          }
+        }
+        raise::ErrorIf(xi_min.size() != xi_max.size() or
+                         xi_min.size() != static_cast<std::size_t>(M::Dim),
+                       "Invalid range size",
+                       HERE);
+
+        range_t<M::Dim> range;
+        if constexpr (M::Dim == Dim::_1D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
+        } else if constexpr (M::Dim == Dim::_2D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
+                                            { xi_max[0], xi_max[1] });
+        } else if constexpr (M::Dim == Dim::_3D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
+                                            { xi_max[0], xi_max[1], xi_max[2] });
         } else {
-          xi_min.push_back(0);
-          xi_max.push_back(domain.mesh.n_all(dd));
+          raise::Error("Invalid dimension", HERE);
+        }
+
+        if (dim == in::x1) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
+                domain.fields.em,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
+                domain.fields.em,
+                tags));
+          }
+        } else if (dim == in::x2) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
+                domain.fields.em,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
+                domain.fields.em,
+                tags));
+          }
+        } else {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
+                domain.fields.em,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
+                domain.fields.em,
+                tags));
+          }
         }
       }
-      raise::ErrorIf(xi_min.size() != xi_max.size() or
-                       xi_min.size() != static_cast<std::size_t>(M::Dim),
-                     "Invalid range size",
-                     HERE);
-
-      if constexpr (M::Dim == Dim::_1D)
-      {
-          Kokkos::parallel_for(
-              "MatchFields",
-              CreateRangePolicy<M::Dim>( { xi_min[0] } , { xi_max[0] } ),
-              kernel::bc::ConductorBoundaries_kernel<SimEngine::SRPIC, M, in::x1>(
-                  domain.fields.em,
-                  tags));
-      }
-
-      if constexpr (M::Dim == Dim::_2D)
-      {
-          Kokkos::parallel_for(
-              "MatchFields",
-              CreateRangePolicy<M::Dim>( { xi_min[0], xi_min[1] } , { xi_max[0], xi_max[1] } ),
-              kernel::bc::ConductorBoundaries_kernel<SimEngine::SRPIC, M, in::x1>(
-                  domain.fields.em,
-                  tags));
-      }
-    
-    
     }
 
     void AtmosphereFieldsIn(dir::direction_t<M::Dim> direction,
@@ -922,15 +967,15 @@ namespace ntt {
           return;
         }
         const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<ncells_t, M::Dim> range_min { 0 };
-        tuple_t<ncells_t, M::Dim> range_max { 0 };
+        tuple_t<std::size_t, M::Dim> range_min { 0 };
+        tuple_t<std::size_t, M::Dim> range_max { 0 };
 
         for (unsigned short d { 0 }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
-        auto     atm_fields = m_pgen.AtmFields(time);
-        ncells_t il_edge;
+        auto        atm_fields = m_pgen.AtmFields(time);
+        std::size_t il_edge;
         if (sign > 0) {
           il_edge = range_min[dd] - N_GHOSTS;
         } else {
