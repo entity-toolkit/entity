@@ -918,7 +918,7 @@ namespace ntt {
         {
           Kokkos::deep_copy(
               Kokkos::subview(domain.fields.em,
-                              std::make_pair(N_GHOSTS, N_GHOSTS),
+                              std::make_pair(N_GHOSTS, N_GHOSTS+1),
                               std::make_pair(xi_min[1], xi_max[1]),
                               comp),
               ZERO);
