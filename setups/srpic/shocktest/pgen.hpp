@@ -48,8 +48,8 @@ namespace user {
 
     Inline auto bx3(const coord_t<D>& x_ph) const -> real_t {
       // return Bmag * math::sin(Btheta) * math::cos(Bphi);
-      return ONE + 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
-      // return ZERO;
+      // return ONE + 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+      return ZERO;
     }
 
     // electric field components
@@ -59,8 +59,8 @@ namespace user {
 
     Inline auto ex2(const coord_t<D>& x_ph) const -> real_t {
       // return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
-      return ZERO - 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
-      // return ZERO;
+      // return ZERO - 0.01 * (ONE - math::tanh(20.*(-1.5 + x_ph[0]))*math::tanh(20.*(-0.5 + x_ph[0])))/2.0 * math::sin(4.0 * constant::PI * x_ph[0]);
+      return ZERO;
     }
 
     Inline auto ex3(const coord_t<D>& x_ph) const -> real_t {
@@ -120,82 +120,82 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& domain) {
 
-        // auto& species_e = domain.species[0];
-        // auto& species_p = domain.species[1];
+        auto& species_e = domain.species[0];
+        auto& species_p = domain.species[1];
 
-        // array_t<std::size_t> elec_ind("elec_ind");
-        // array_t<std::size_t> pos_ind("pos_ind");
+        array_t<std::size_t> elec_ind("elec_ind");
+        array_t<std::size_t> pos_ind("pos_ind");
           
-        // auto offset_e = species_e.npart();
-        // auto offset_p = species_p.npart();
+        auto offset_e = species_e.npart();
+        auto offset_p = species_p.npart();
 
-        // auto ux1_e    = species_e.ux1;
-        // auto ux2_e    = species_e.ux2;
-        // auto ux3_e    = species_e.ux3;
-        // auto i1_e     = species_e.i1;
-        // auto i2_e     = species_e.i2;
-        // auto dx1_e    = species_e.dx1;
-        // auto dx2_e    = species_e.dx2;
-        // auto phi_e    = species_e.phi;
-        // auto weight_e = species_e.weight;
-        // auto tag_e    = species_e.tag;
+        auto ux1_e    = species_e.ux1;
+        auto ux2_e    = species_e.ux2;
+        auto ux3_e    = species_e.ux3;
+        auto i1_e     = species_e.i1;
+        auto i2_e     = species_e.i2;
+        auto dx1_e    = species_e.dx1;
+        auto dx2_e    = species_e.dx2;
+        auto phi_e    = species_e.phi;
+        auto weight_e = species_e.weight;
+        auto tag_e    = species_e.tag;
 
-        // auto ux1_p    = species_p.ux1;
-        // auto ux2_p    = species_p.ux2;
-        // auto ux3_p    = species_p.ux3;
-        // auto i1_p     = species_p.i1;
-        // auto i2_p     = species_p.i2;
-        // auto dx1_p    = species_p.dx1;
-        // auto dx2_p    = species_p.dx2;
-        // auto phi_p    = species_p.phi;
-        // auto weight_p = species_p.weight;
-        // auto tag_p    = species_p.tag;
+        auto ux1_p    = species_p.ux1;
+        auto ux2_p    = species_p.ux2;
+        auto ux3_p    = species_p.ux3;
+        auto i1_p     = species_p.i1;
+        auto i2_p     = species_p.i2;
+        auto dx1_p    = species_p.dx1;
+        auto dx2_p    = species_p.dx2;
+        auto phi_p    = species_p.phi;
+        auto weight_p = species_p.weight;
+        auto tag_p    = species_p.tag;
 
-        // int nseed = 1;
+        int nseed = 1;
 
-        // Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
+        Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
 
-        //   // ToDo: fix this
-        //   auto i1_ = math::floor(10);
-        //   auto i2_ = math::floor(64);
-        //   auto dx1_ = HALF;
-        //   auto dx2_ = HALF;
-
-
-        //       auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-        //       auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
-
-        //       i1_e(elec_p + offset_e) = i1_;
-        //       dx1_e(elec_p + offset_e) = dx1_;
-        //       i2_e(elec_p + offset_e) = i2_;
-        //       dx2_e(elec_p + offset_e) = dx2_;
-        //       ux1_e(elec_p + offset_e) = -0.5;
-        //       ux2_e(elec_p + offset_e) = 0.5;
-        //       ux3_e(elec_p + offset_e) = ZERO;
-        //       weight_e(elec_p + offset_e) = ONE;
-        //       tag_e(elec_p + offset_e) = ParticleTag::alive;
-
-        //       i1_p(pos_p + offset_p) = i1_;
-        //       dx1_p(pos_p + offset_p) = dx1_;
-        //       i2_p(pos_p + offset_p) = i2_;
-        //       dx2_p(pos_p + offset_p) = dx2_;
-        //       ux1_p(pos_p + offset_p) = 0.5;
-        //       ux2_p(pos_p + offset_p) = -0.5;
-        //       ux3_p(pos_p + offset_p) = ZERO;
-        //       weight_p(pos_p + offset_p) = ONE;
-        //       tag_p(pos_p + offset_p) = ParticleTag::alive;
+          // ToDo: fix this
+          auto i1_ = math::floor(10);
+          auto i2_ = math::floor(64);
+          auto dx1_ = HALF;
+          auto dx2_ = HALF;
 
 
-        //   });
+              auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
+              auto pos_p  = Kokkos::atomic_fetch_add(&pos_ind(), 1);
+
+              i1_e(elec_p + offset_e) = i1_;
+              dx1_e(elec_p + offset_e) = dx1_;
+              i2_e(elec_p + offset_e) = i2_;
+              dx2_e(elec_p + offset_e) = dx2_;
+              ux1_e(elec_p + offset_e) = -0.5;
+              ux2_e(elec_p + offset_e) = 0.5;
+              ux3_e(elec_p + offset_e) = ZERO;
+              weight_e(elec_p + offset_e) = ONE;
+              tag_e(elec_p + offset_e) = ParticleTag::alive;
+
+              i1_p(pos_p + offset_p) = i1_;
+              dx1_p(pos_p + offset_p) = dx1_;
+              i2_p(pos_p + offset_p) = i2_;
+              dx2_p(pos_p + offset_p) = dx2_;
+              ux1_p(pos_p + offset_p) = 0.5;
+              ux2_p(pos_p + offset_p) = -0.5;
+              ux3_p(pos_p + offset_p) = ZERO;
+              weight_p(pos_p + offset_p) = ONE;
+              tag_p(pos_p + offset_p) = ParticleTag::alive;
 
 
-        //     auto elec_ind_h = Kokkos::create_mirror(elec_ind);
-        //     Kokkos::deep_copy(elec_ind_h, elec_ind);
-        //     species_e.set_npart(offset_e + elec_ind_h());
+          });
 
-        //     auto pos_ind_h = Kokkos::create_mirror(pos_ind);
-        //     Kokkos::deep_copy(pos_ind_h, pos_ind);
-        //     species_p.set_npart(offset_p + pos_ind_h());
+
+            auto elec_ind_h = Kokkos::create_mirror(elec_ind);
+            Kokkos::deep_copy(elec_ind_h, elec_ind);
+            species_e.set_npart(offset_e + elec_ind_h());
+
+            auto pos_ind_h = Kokkos::create_mirror(pos_ind);
+            Kokkos::deep_copy(pos_ind_h, pos_ind);
+            species_p.set_npart(offset_p + pos_ind_h());
 
 
     }
