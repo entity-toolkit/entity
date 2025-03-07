@@ -854,6 +854,19 @@ namespace ntt {
       } else {
         const auto sign = direction.get_sign();
         const auto dim  = direction.get_dim();
+<<<<<<< HEAD
+||||||| parent of bd723f39 (minor reformatting of conductor BC)
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
+        raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
+                       "Perfect conductor BCs only implemented for x1 in "
+                       "non-cartesian coordinates",
+                       HERE);
+=======
+        raise::ErrorIf(dim != in::x1,
+                       "Perfect conductor BCs only implemented for x1",
+                       HERE);
+>>>>>>> bd723f39 (minor reformatting of conductor BC)
 
         std::vector<std::size_t> xi_min, xi_max;
 
@@ -863,7 +876,13 @@ namespace ntt {
           const auto dd = all_dirs[d];
           if (dim == dd) {
             xi_min.push_back(0);
+<<<<<<< HEAD
             xi_max.push_back((sign < 0) ? (N_GHOSTS + 1) : N_GHOSTS);
+||||||| parent of bd723f39 (minor reformatting of conductor BC)
+            xi_max.push_back(N_GHOSTS);
+=======
+            xi_max.push_back(N_GHOSTS + 1);
+>>>>>>> bd723f39 (minor reformatting of conductor BC)
           } else {
             xi_min.push_back(0);
             xi_max.push_back(domain.mesh.n_all(dd));
@@ -886,6 +905,7 @@ namespace ntt {
         } else {
           raise::Error("Invalid dimension", HERE);
         }
+<<<<<<< HEAD
 
         if (dim == in::x1) {
           if (sign > 0) {
@@ -936,6 +956,38 @@ namespace ntt {
                 tags));
           }
         }
+||||||| parent of bd723f39 (minor reformatting of conductor BC)
+=======
+        Kokkos::parallel_for(
+          "MatchFields",
+          range,
+          kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
+                                                                 tags));
+
+        // if constexpr (M::Dim == Dim::_1D) {
+        //   Kokkos::parallel_for(
+        //     "MatchFields",
+        //     CreateRangePolicy<Dim::_1D>({ xi_min[0] }, { xi_max[0] }),
+        //     kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
+        //                                                       tags));
+        // } else if constexpr (M::Dim == Dim::_2D) {
+        //   Kokkos::parallel_for(
+        //     "MatchFields",
+        //     CreateRangePolicy<Dim::_2D>({ xi_min[0], xi_min[1] },
+        //                                 { xi_max[0], xi_max[1] }),
+        //     kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
+        //                                                       tags));
+        // } else if constexpr (M::Dim == Dim::_3D) {
+        //   Kokkos::parallel_for(
+        //     "MatchFields",
+        //     CreateRangePolicy<Dim::_3D>({ xi_min[0], xi_min[1], xi_min[2] },
+        //                                 { xi_max[0], xi_max[1], xi_max[2] }),
+        //     kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
+        //                                                       tags));
+        // } else {
+        //   raise::Error("Invalid dimension", HERE);
+        // }
+>>>>>>> bd723f39 (minor reformatting of conductor BC)
       }
     }
 
