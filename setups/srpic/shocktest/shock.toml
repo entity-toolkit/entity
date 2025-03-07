@@ -11,7 +11,7 @@
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["CONDUCTOR", "FIXED"], ["PERIODIC"]]
+    fields    = [["CONDUCTOR", "FIXED"], ["PERIODIC"]]
     particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
 
 [scales]
@@ -20,8 +20,8 @@
 
 [algorithms]
   current_filters = 8
-  fieldsolver = "false"
-  deposit = "false"
+  fieldsolver     = "false"
+  deposit         = "false"
 
   [algorithms.timestep]
     CFL = 0.5
@@ -44,13 +44,23 @@
 [setup]
   drift_ux    = 0.1
   temperature = 1e-3
-  Bmag = 1.0
-  Btheta = 0.0
-  Bphi = 0.0
+  Bmag        = 1.0
+  Btheta      = 0.0
+  Bphi        = 0.0
+  x_e         = [0.05]
+  y_e         = [0.0]
+  ux_e        = [-0.01]
+  uy_e        = [0.01]
+  uz_e        = [0.001]
+  x_i         = [0.05]
+  y_i         = [0.0]
+  ux_i        = [0.01]
+  uy_i        = [-0.01]
+  uz_i        = [-0.001]
 
 [output]
-  interval      = 1
-  format        = "hdf5"
+  interval = 1
+  format   = "hdf5"
 
   [output.fields]
     quantities = ["N_1", "N_2", "E", "B", "T0i_1", "T0i_2", "J"]
