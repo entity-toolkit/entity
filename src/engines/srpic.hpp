@@ -889,11 +889,13 @@ namespace ntt {
         } else {
           raise::Error("Invalid dimension", HERE);
         }
+
+        auto match_fields = m_pgen.MatchFields(time);
         Kokkos::parallel_for(
-          "MatchFields",
+          "ConductorFields",
           range,
-          kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
-                                                                 tags));
+          kernel::bc::ConductorBoundaries_kernel<M::Dim,decltype(match_fields), in::x1>(domain.fields.em,
+                                                                 match_fields, tags));
 
         // if constexpr (M::Dim == Dim::_1D) {
         //   Kokkos::parallel_for(
