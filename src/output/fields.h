@@ -94,9 +94,7 @@ namespace out {
           tmp += m_name.substr(1, 2);
         } else if (id() == FldsID::A) {
           tmp += "3";
-        } else if (id() == FldsID::V) {
-          tmp += m_name.substr(1, 1);
-        } else if (is_field()) {
+        } else if (is_field() || id() == FldsID::V) {
           tmp += "i";
         }
         if (species.size() > 0) {
