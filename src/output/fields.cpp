@@ -30,9 +30,6 @@ namespace out {
       m_id = FldsID::Custom;
     }
     // check compatibility
-    raise::ErrorIf(is_gr_aux_field() and S != SimEngine::GRPIC,
-                   "GR auxiliary field output not supported for non-GRPIC",
-                   HERE);
     raise::ErrorIf(id() == FldsID::A and S != SimEngine::GRPIC,
                    "Output of A_phi not supported for non-GRPIC",
                    HERE);
