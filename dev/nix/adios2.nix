@@ -1,7 +1,7 @@
 {
   pkgs ? import <nixpkgs> { },
-  hdf5 ? false,
-  mpi ? false,
+  hdf5,
+  mpi,
 }:
 
 let

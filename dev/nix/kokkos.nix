@@ -1,11 +1,10 @@
 {
   pkgs ? import <nixpkgs> { },
-  arch ? "native",
-  gpu ? "none",
+  arch,
+  gpu,
 }:
 
 let
-  gpuUpper = pkgs.lib.toUpper gpu;
   name = "kokkos";
   version = "4.5.01";
   compilerPkgs = {
@@ -30,10 +29,10 @@ let
   };
   getArch =
     _:
-    if gpu != "none" && arch == "native" then
+    if gpu != "NONE" && arch == "NATIVE" then
       throw "Please specify an architecture when the GPU support is enabled. Available architectures: https://kokkos.org/kokkos-core-wiki/keywords.html#architectures"
     else
-      pkgs.lib.toUpper arch;
+      arch;
 
 in
 pkgs.stdenv.mkDerivation {
@@ -41,7 +40,7 @@ pkgs.stdenv.mkDerivation {
   version = "${version}";
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
-    rev = "v${version}";
+    rev = "${version}";
     sha256 = "sha256-cI2p+6J+8BRV5fXTDxxHTfh6P5PeeLUiF73o5zVysHQ=";
   };
 
@@ -49,16 +48,16 @@ pkgs.stdenv.mkDerivation {
     cmake
   ];
 
-  propagatedBuildInputs = compilerPkgs.${gpuUpper};
+  propagatedBuildInputs = compilerPkgs.${gpu};
 
   cmakeFlags = [
     "-D CMAKE_CXX_STANDARD=17"
     "-D CMAKE_CXX_EXTENSIONS=OFF"
     "-D CMAKE_POSITION_INDEPENDENT_CODE=TRUE"
     "-D Kokkos_ARCH_${getArch { }}=ON"
-    (if gpu != "none" then "-D Kokkos_ENABLE_${gpuUpper}=ON" else "")
+    (if gpu != "none" then "-D Kokkos_ENABLE_${gpu}=ON" else "")
     "-D CMAKE_BUILD_TYPE=Release"
-  ] ++ cmakeFlags.${gpuUpper};
+  ] ++ cmakeFlags.${gpu};
 
   enableParallelBuilding = true;
 }
