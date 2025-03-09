@@ -51,6 +51,9 @@ namespace out {
     } else if (id() == FldsID::T) {
       // energy-momentum tensor
       comp = InterpretComponents({ name.substr(1, 1), name.substr(2, 1) });
+    } else if (id() == FldsID::V) {
+      // energy-momentum tensor
+      comp = InterpretComponents({ name.substr(1, 1) });
     } else {
       // scalar (Rho, divE, Custom, etc.)
       comp = {};
