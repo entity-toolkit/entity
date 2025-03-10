@@ -890,36 +890,10 @@ namespace ntt {
           raise::Error("Invalid dimension", HERE);
         }
 
-        auto match_fields = m_pgen.MatchFields(time);
         Kokkos::parallel_for(
           "ConductorFields",
           range,
-          kernel::bc::ConductorBoundaries_kernel<M::Dim,decltype(match_fields), in::x1>(domain.fields.em,
-                                                                 match_fields, tags));
-
-        // if constexpr (M::Dim == Dim::_1D) {
-        //   Kokkos::parallel_for(
-        //     "MatchFields",
-        //     CreateRangePolicy<Dim::_1D>({ xi_min[0] }, { xi_max[0] }),
-        //     kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
-        //                                                       tags));
-        // } else if constexpr (M::Dim == Dim::_2D) {
-        //   Kokkos::parallel_for(
-        //     "MatchFields",
-        //     CreateRangePolicy<Dim::_2D>({ xi_min[0], xi_min[1] },
-        //                                 { xi_max[0], xi_max[1] }),
-        //     kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
-        //                                                       tags));
-        // } else if constexpr (M::Dim == Dim::_3D) {
-        //   Kokkos::parallel_for(
-        //     "MatchFields",
-        //     CreateRangePolicy<Dim::_3D>({ xi_min[0], xi_min[1], xi_min[2] },
-        //                                 { xi_max[0], xi_max[1], xi_max[2] }),
-        //     kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em,
-        //                                                       tags));
-        // } else {
-        //   raise::Error("Invalid dimension", HERE);
-        // }
+          kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1>(domain.fields.em, tags));
       }
     }
 
