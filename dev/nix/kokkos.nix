@@ -41,7 +41,7 @@ pkgs.stdenv.mkDerivation {
   version = "${version}";
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
-    rev = "v${version}";
+    rev = "${version}";
     sha256 = "sha256-cI2p+6J+8BRV5fXTDxxHTfh6P5PeeLUiF73o5zVysHQ=";
   };
 

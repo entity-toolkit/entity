@@ -83,9 +83,7 @@ namespace arch {
       , g_max { g_max }
       , pl_ind { pl_ind } {}
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           unsigned short         sp = 0) const override {
+    Inline void operator()(vec_t<Dim::_3D>& v, unsigned short sp = 0) const override {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -107,15 +105,6 @@ namespace arch {
       v[2]         = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
       v[1]         = v[2] * math::cos(constant::TWO_PI * rand_X3);
       v[2]         = v[2] * math::sin(constant::TWO_PI * rand_X3);
-
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
 
       pool.free_state(rand_gen);
     }
@@ -223,23 +212,15 @@ namespace arch {
                      (v[boost_dir] + boost_beta * gamma);
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           unsigned short         s = 0) const override {
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
+                           unsigned short   s = 0) const override {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;
         v[2] = ZERO;
       } else {
         JS(v, temperature);
-      }
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
       }
       if constexpr (M::CoordType == Coord::Cart) {
         // boost only when using cartesian coordinates
